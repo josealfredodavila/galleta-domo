@@ -2,13 +2,12 @@
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/css/carrusel-3d.css
 
-   v3 · MODO TIMES SQUARE
-   - Degradados vivos animados (nunca estáticos).
-   - Borde con glow pulsante (respira).
-   - Partículas de luz flotando dentro.
-   - Ken Burns en imágenes.
-   - Reflejo inferior tipo piso mojado.
-   - Video dentro de la tarjeta (autoplay muted loop).
+   v4 · ARCOÍRIS FLUIDO (estilo Times Square)
+   - Cada tarjeta tiene un degradado multicolor animado.
+   - Los colores fluyen constantemente (nunca estáticos).
+   - Cada tarjeta ve una parte distinta del arcoíris.
+   - Degradado lleno + partículas + glow pulsante.
+   - Soporta imágenes (Ken Burns) y videos (autoplay muted loop).
    ============================================ */
 
 .carrusel-3d-wrapper {
@@ -34,12 +33,10 @@
 }
 .carrusel-3d-track::-webkit-scrollbar { display: none; }
 
-/* ---------- TARJETA BASE ---------- */
+/* ============================================
+   TARJETA BASE — ARCOÍRIS FLUIDO
+   ============================================ */
 .carrusel-3d-card {
-    --c: #ff9100;
-    --c1: #ff3d00;
-    --c2: #ffc400;
-
     position: relative;
     flex: 0 0 240px;
     height: 330px;
@@ -51,17 +48,34 @@
     overflow: hidden;
     text-decoration: none;
     color: #ffffff;
-    background: linear-gradient(135deg, var(--c1) 0%, var(--c2) 100%);
-    background-size: 200% 200%;
-    animation: timesGradientShift 8s ease-in-out infinite;
-    border: 1.5px solid rgba(255, 255, 255, 0.22);
+
+    background:
+        linear-gradient(
+            var(--angle, 135deg),
+            #ff3d00 0%,
+            #ff9100 12%,
+            #ffd600 24%,
+            #00e676 36%,
+            #00e5ff 48%,
+            #2962ff 60%,
+            #7c4dff 72%,
+            #ff3cb4 84%,
+            #ff3d00 100%
+        );
+    background-size: 400% 400%;
+    background-position: var(--phase, 0%) 50%;
+
+    animation: rainbowFlow 14s ease-in-out infinite;
+
+    border: 1.5px solid rgba(255, 255, 255, 0.18);
     box-shadow:
         0 12px 30px rgba(0, 0, 0, 0.55),
         0 0 0 1px rgba(255, 255, 255, 0.06) inset,
-        0 0 20px -4px color-mix(in srgb, var(--c) 45%, transparent);
+        0 0 24px -6px rgba(255, 255, 255, 0.25);
+
     transform: perspective(900px) rotateY(0deg) scale(0.92);
-    opacity: 0.7;
-    will-change: transform, opacity;
+    opacity: 0.75;
+    will-change: transform, opacity, background-position;
     transition: transform 0.4s ease, box-shadow 0.35s ease, border-color 0.35s ease;
     -webkit-tap-highlight-color: transparent;
     scroll-snap-align: center;
@@ -69,20 +83,20 @@
     isolation: isolate;
 }
 
-@keyframes timesGradientShift {
-    0%   { background-position: 0% 50%; }
-    50%  { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+@keyframes rainbowFlow {
+    0%   { background-position: var(--phase, 0%) 50%; }
+    50%  { background-position: calc(var(--phase, 0%) + 100%) 50%; }
+    100% { background-position: var(--phase, 0%) 50%; }
 }
 
-/* Capa de brillo superior + degradado inferior para legibilidad */
+/* Overlay: brillo arriba + sombra abajo (legibilidad) sin oscurecer el centro */
 .carrusel-3d-card::before {
     content: '';
     position: absolute;
     inset: 0;
     background:
-        radial-gradient(120% 60% at 50% 0%, rgba(255, 255, 255, 0.22) 0%, transparent 60%),
-        linear-gradient(180deg, transparent 45%, rgba(0, 0, 0, 0.62) 100%);
+        radial-gradient(140% 65% at 50% 0%, rgba(255, 255, 255, 0.28) 0%, transparent 55%),
+        linear-gradient(180deg, transparent 55%, rgba(0, 0, 0, 0.55) 100%);
     pointer-events: none;
     z-index: 1;
 }
@@ -92,7 +106,7 @@
     content: '';
     position: absolute;
     inset: -40% -60%;
-    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.28) 50%, transparent 58%);
+    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.3) 50%, transparent 58%);
     transform: translateX(-60%);
     transition: transform 1s ease;
     pointer-events: none;
@@ -108,29 +122,34 @@
     z-index: 2;
 }
 
-/* ---------- TARJETA ACTIVA: glow pulsante ---------- */
+/* ============================================
+   TARJETA ACTIVA: glow pulsante
+   ============================================ */
 .carrusel-3d-card.active {
-    border-color: rgba(255, 255, 255, 0.65);
+    border-color: rgba(255, 255, 255, 0.7);
+    opacity: 1;
     animation:
-        timesGradientShift 8s ease-in-out infinite,
-        timesNeonPulse 3s ease-in-out infinite;
+        rainbowFlow 14s ease-in-out infinite,
+        neonPulse 3s ease-in-out infinite;
 }
-@keyframes timesNeonPulse {
+@keyframes neonPulse {
     0%, 100% {
         box-shadow:
-            0 0 22px -2px color-mix(in srgb, var(--c) 55%, transparent),
+            0 0 26px -2px rgba(255, 255, 255, 0.55),
             0 18px 44px rgba(0, 0, 0, 0.7),
-            0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+            0 0 0 1px rgba(255, 255, 255, 0.2) inset;
     }
     50% {
         box-shadow:
-            0 0 42px 2px color-mix(in srgb, var(--c) 85%, transparent),
-            0 18px 44px rgba(0, 0, 0, 0.8),
-            0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+            0 0 48px 4px rgba(255, 255, 255, 0.85),
+            0 18px 44px rgba(0, 0, 0, 0.85),
+            0 0 0 1px rgba(255, 255, 255, 0.35) inset;
     }
 }
 
-/* ---------- IMAGEN / VIDEO DE FONDO ---------- */
+/* ============================================
+   IMAGEN / VIDEO DE FONDO (anuncios reales)
+   ============================================ */
 .carrusel-3d-card .anuncio-img,
 .carrusel-3d-card .anuncio-video {
     position: absolute;
@@ -143,35 +162,34 @@
     opacity: 0.95;
 }
 
-/* Ken Burns (zoom lento) solo para imágenes */
 .carrusel-3d-card .anuncio-img {
-    animation: timesKenBurns 14s ease-in-out infinite alternate;
+    animation: kenBurns 14s ease-in-out infinite alternate;
     transform-origin: center;
 }
-@keyframes timesKenBurns {
+@keyframes kenBurns {
     0%   { transform: scale(1) translate(0, 0); }
     100% { transform: scale(1.14) translate(-2%, -1%); }
 }
 
-/* El video no lleva Ken Burns (ya tiene su propio movimiento) */
 .carrusel-3d-card .anuncio-video {
     animation: none;
 }
 
-/* Asegurar que los placeholders no tengan imagen/video de fondo */
 .carrusel-3d-card.anuncio-placeholder .anuncio-img,
 .carrusel-3d-card.anuncio-placeholder .anuncio-video {
     display: none;
 }
 
-/* ---------- PARTÍCULAS DE LUZ FLOTANDO ---------- */
+/* ============================================
+   PARTÍCULAS DE LUZ FLOTANDO
+   ============================================ */
 .carrusel-3d-card .times-particles {
     position: absolute;
     inset: 0;
     z-index: 1;
     pointer-events: none;
     overflow: hidden;
-    opacity: 0.75;
+    opacity: 0.85;
     mix-blend-mode: screen;
 }
 .carrusel-3d-card .times-particles span {
@@ -180,8 +198,8 @@
     height: 6px;
     border-radius: 50%;
     background: radial-gradient(circle, #fff 0%, rgba(255, 255, 255, 0) 70%);
-    box-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
-    animation: timesFloat 7s ease-in-out infinite;
+    box-shadow: 0 0 12px rgba(255, 255, 255, 0.95);
+    animation: floatUp 7s ease-in-out infinite;
     opacity: 0;
 }
 .carrusel-3d-card .times-particles span:nth-child(1) { left: 12%; top: 80%; animation-delay: 0s; }
@@ -190,14 +208,16 @@
 .carrusel-3d-card .times-particles span:nth-child(4) { left: 72%; top: 72%; animation-delay: 3.6s; }
 .carrusel-3d-card .times-particles span:nth-child(5) { left: 85%; top: 90%; animation-delay: 4.8s; }
 
-@keyframes timesFloat {
+@keyframes floatUp {
     0%   { opacity: 0; transform: translateY(0) scale(0.6); }
     20%  { opacity: 1; }
     80%  { opacity: 1; }
     100% { opacity: 0; transform: translateY(-90px) scale(1.2); }
 }
 
-/* ---------- ETIQUETA SUPERIOR ---------- */
+/* ============================================
+   ETIQUETA SUPERIOR
+   ============================================ */
 .carrusel-3d-card .ads-tag {
     position: absolute;
     top: 16px;
@@ -212,7 +232,7 @@
     letter-spacing: 0.14em;
     text-transform: uppercase;
     color: #fff;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
     pointer-events: none;
 }
 .carrusel-3d-card .ads-tag .dot {
@@ -221,14 +241,16 @@
     border-radius: 50%;
     background: #fff;
     box-shadow: 0 0 12px rgba(255, 255, 255, 0.95);
-    animation: timesDotPulse 1.8s ease-in-out infinite;
+    animation: dotPulse 1.8s ease-in-out infinite;
 }
-@keyframes timesDotPulse {
+@keyframes dotPulse {
     0%, 100% { transform: scale(1); opacity: 1; }
     50%      { transform: scale(1.25); opacity: 0.85; }
 }
 
-/* ---------- CONTADOR "1/7" ---------- */
+/* ============================================
+   CONTADOR
+   ============================================ */
 .carrusel-3d-card .ads-counter {
     position: absolute;
     top: 18px;
@@ -237,13 +259,15 @@
     font-family: 'Rajdhani', sans-serif;
     font-size: 0.72rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.92);
+    color: rgba(255, 255, 255, 0.95);
     letter-spacing: 0.06em;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
+    text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55);
     pointer-events: none;
 }
 
-/* ---------- CHIP ---------- */
+/* ============================================
+   CHIP
+   ============================================ */
 .carrusel-3d-card .ads-chip {
     display: inline-block;
     align-self: flex-start;
@@ -253,17 +277,20 @@
     letter-spacing: 0.16em;
     text-transform: uppercase;
     color: #fff;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.35);
+    background: rgba(0, 0, 0, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.45);
     padding: 5px 11px;
     border-radius: 99px;
     margin-bottom: 10px;
     backdrop-filter: blur(6px);
     position: relative;
     z-index: 2;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
-/* ---------- ICONO ---------- */
+/* ============================================
+   ICONO
+   ============================================ */
 .carrusel-3d-card .card-icon {
     font-size: 2.6rem;
     line-height: 1;
@@ -271,14 +298,16 @@
     filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55));
 }
 .carrusel-3d-card.active .card-icon {
-    animation: timesIconFloat 3.6s ease-in-out infinite;
+    animation: iconFloat 3.6s ease-in-out infinite;
 }
-@keyframes timesIconFloat {
+@keyframes iconFloat {
     0%, 100% { transform: translateY(0) scale(1); }
-    50%      { transform: translateY(-5px) scale(1.04); }
+    50%      { transform: translateY(-5px) scale(1.05); }
 }
 
-/* ---------- TÍTULO ---------- */
+/* ============================================
+   TÍTULO
+   ============================================ */
 .carrusel-3d-card .card-title {
     font-family: 'Orbitron', 'Rajdhani', sans-serif;
     font-size: 1.05rem;
@@ -288,20 +317,26 @@
     line-height: 1.1;
     margin-bottom: 8px;
     color: #ffffff;
-    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.65);
+    text-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.65),
+        0 0 20px rgba(0, 0, 0, 0.35);
 }
 
-/* ---------- DESCRIPCIÓN ---------- */
+/* ============================================
+   DESCRIPCIÓN
+   ============================================ */
 .carrusel-3d-card .card-desc {
     font-family: 'Inter', sans-serif;
     font-size: 0.72rem;
     line-height: 1.42;
-    color: rgba(255, 255, 255, 0.95);
+    color: rgba(255, 255, 255, 0.98);
     text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
     margin-bottom: 12px;
 }
 
-/* ---------- CTA BLANCO ---------- */
+/* ============================================
+   CTA BLANCO
+   ============================================ */
 .carrusel-3d-card .ads-cta {
     align-self: flex-start;
     font-family: 'Rajdhani', 'Inter', sans-serif;
@@ -314,7 +349,7 @@
     padding: 9px 18px;
     border-radius: 99px;
     cursor: pointer;
-    box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.45);
+    box-shadow: 0 6px 18px -4px rgba(0, 0, 0, 0.5);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     -webkit-tap-highlight-color: transparent;
     position: relative;
@@ -322,10 +357,12 @@
 }
 .carrusel-3d-card .ads-cta:hover {
     transform: translateY(-1px);
-    box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.55);
+    box-shadow: 0 10px 24px -6px rgba(0, 0, 0, 0.6);
 }
 
-/* ---------- REFLEJO INFERIOR (piso mojado) ---------- */
+/* ============================================
+   REFLEJO INFERIOR tipo piso mojado
+   ============================================ */
 .carrusel-3d-wrapper::before {
     content: '';
     position: absolute;
@@ -342,7 +379,9 @@
     z-index: 0;
 }
 
-/* ---------- BARRA TRICOLOR INFERIOR ---------- */
+/* ============================================
+   BARRA TRICOLOR (arcoíris animado)
+   ============================================ */
 .carrusel-3d-wrapper::after {
     content: '';
     display: block;
@@ -350,20 +389,25 @@
     width: calc(100% - 80px);
     margin: 8px auto 0;
     background: linear-gradient(90deg,
-        #ff3d00 0%, #ffc400 25%,
-        #00c853 50%, #00e5ff 75%,
+        #ff3d00 0%,
+        #ffd600 20%,
+        #00e676 40%,
+        #00e5ff 60%,
+        #2962ff 80%,
         #7c4dff 100%);
     background-size: 200% 100%;
     border-radius: 99px;
-    box-shadow: 0 0 18px -2px rgba(124, 77, 255, 0.7);
-    animation: timesColorBar 4s linear infinite;
+    box-shadow: 0 0 18px -2px rgba(124, 77, 255, 0.75);
+    animation: colorBarFlow 4s linear infinite;
 }
-@keyframes timesColorBar {
+@keyframes colorBarFlow {
     0%   { background-position: 0% 0; }
     100% { background-position: 200% 0; }
 }
 
-/* ---------- DOTS ---------- */
+/* ============================================
+   DOTS
+   ============================================ */
 .carrusel-3d-dots {
     display: flex;
     justify-content: center;
@@ -387,7 +431,9 @@
     box-shadow: 0 0 14px rgba(255, 255, 255, 0.95);
 }
 
-/* ---------- RESPONSIVE ---------- */
+/* ============================================
+   RESPONSIVE
+   ============================================ */
 @media (max-width: 480px) {
     .carrusel-3d-card {
         flex: 0 0 215px;
@@ -400,7 +446,9 @@
     .carrusel-3d-card .ads-cta { font-size: 0.68rem; padding: 7px 14px; }
 }
 
-/* ---------- ACCESIBILIDAD: reduce motion ---------- */
+/* ============================================
+   ACCESIBILIDAD: reduce motion
+   ============================================ */
 @media (prefers-reduced-motion: reduce) {
     .carrusel-3d-card,
     .carrusel-3d-card::after,
