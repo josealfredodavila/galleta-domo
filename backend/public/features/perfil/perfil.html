@@ -1215,12 +1215,14 @@
 
 <script>
 /* ================================================================
-   WALLET · INTEGRACIÓN CON EL PERFIL (v3)
+   WALLET · INTEGRACIÓN CON EL PERFIL (v4)
    - Espera a que Supabase y la sesión existan antes de leer.
    - Vuelve a cargar al volver a la página (bfcache / historial),
      al regresar a la pestaña y tras conectar o desconectar.
-   - Usa perfil-wallet.js (conectarWallet, desconectarWallet,
-     iniciarEscuchaWallet). Este bloque solo dibuja el estado.
+   - Vigilante: si la sección se oculta o se queda en "Cargando…",
+     la vuelve a pintar.
+   - Usa perfil-wallet.js (conectarWallet, desconectarWallet).
+     La escucha de eventos la inicia perfil-init.js (una sola vez).
    ================================================================ */
 (function () {
     'use strict';
@@ -1347,6 +1349,22 @@
 
     window.refrescarWalletPerfil = refrescarWallet;
 
+    // Vigilante: cada 3 s, si la sección quedó oculta o atascada en
+    // "Cargando…", vuelve a consultar y pintar. Solo actúa con la pestaña visible.
+    function vigilarWallet() {
+        setInterval(function () {
+            if (document.hidden) return;
+            var sec = $w('walletSection');
+            var estado = $w('walletEstado');
+            if (!sec || !estado) return;
+
+            var oculta = sec.style.display === 'none' || sec.offsetParent === null && sec.getClientRects().length === 0;
+            var atascada = estado.textContent.trim() === 'Cargando…';
+
+            if (oculta || atascada) refrescarWallet();
+        }, 3000);
+    }
+
     window.copiarWalletPerfil = async function () {
         var direccion = ($w('walletDireccion').dataset.full || '').trim();
         if (!direccion || direccion.indexOf('0x') !== 0) return;
@@ -1377,7 +1395,6 @@
         if (typeof window.conectarWallet !== 'function') return;
         await window.conectarWallet();
         await refrescarWallet();
-        // Por si perfil-wallet.js guarda en la base de datos después de conectar
         setTimeout(refrescarWallet, 1500);
     };
 
@@ -1431,10 +1448,6 @@
             });
         }
 
-        if (typeof window.iniciarEscuchaWallet === 'function') {
-            window.iniciarEscuchaWallet();
-        }
-
         // Evento que puede emitir perfil-wallet.js al cambiar la wallet
         window.addEventListener('wallet:actualizada', refrescarWallet);
 
@@ -1448,6 +1461,7 @@
             if (!document.hidden) refrescarWallet();
         });
 
+        vigilarWallet();
         refrescarWallet();
     }
 
