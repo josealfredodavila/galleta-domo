@@ -28,7 +28,6 @@
 
 <article class="detail hidden" id="detail">
 
-    <!-- Barra superior con botón volver -->
     <header class="detail-topbar">
         <a href="/features/perfil/perfil.html" class="detail-back" aria-label="Volver">
             <span aria-hidden="true">←</span>
@@ -40,19 +39,16 @@
         </span>
     </header>
 
-    <!-- Media (imagen o video) -->
     <div class="detail-media-wrap" id="mediaWrap">
         <img id="mediaImg" class="detail-media hidden" alt="" loading="eager" decoding="async">
         <video id="mediaVideo" class="detail-media hidden" controls autoplay muted loop playsinline preload="metadata"></video>
     </div>
 
-    <!-- Cuerpo del anuncio -->
     <div class="detail-body">
 
         <h1 class="detail-title" id="titulo"></h1>
         <p class="detail-text hidden" id="texto"></p>
 
-        <!-- Ubicación (solo si existe) -->
         <div class="detail-ubicacion hidden" id="ubicacionWrap">
             <span class="ubicacion-icon" aria-hidden="true">📍</span>
             <div class="ubicacion-info">
@@ -61,7 +57,6 @@
             </div>
         </div>
 
-        <!-- Perfil del anunciante -->
         <section class="detail-section hidden" id="sectionPerfil">
             <h2 class="section-title">Sobre el anunciante</h2>
 
@@ -80,7 +75,6 @@
             </div>
         </section>
 
-        <!-- Acciones dinámicas -->
         <div class="detail-actions" id="actionsWrap">
             <a class="btn-whatsapp hidden" id="btnWhatsApp" href="#" target="_blank" rel="noopener">
                 <span class="btn-icon" aria-hidden="true">☎</span>
@@ -95,7 +89,6 @@
             </a>
         </div>
 
-        <!-- Meta inferior -->
         <footer class="detail-meta">
             <span id="metaInfo"></span>
         </footer>
@@ -178,7 +171,6 @@
     async function cargarPerfil(usuarioId) {
         if (!usuarioId) return null;
 
-        // Intento 1: columnas extendidas
         try {
             var r1 = await db
                 .from(TABLA_PERFILES)
@@ -192,7 +184,6 @@
             if (!r1.error && r1.data) return r1.data;
         } catch (e) {}
 
-        // Intento 2: columnas seguras
         try {
             var r2 = await db
                 .from(TABLA_PERFILES)
@@ -202,7 +193,6 @@
             if (!r2.error && r2.data) return r2.data;
         } catch (e) {}
 
-        // Intento 3: mínimas
         try {
             var r3 = await db
                 .from(TABLA_PERFILES)
@@ -241,8 +231,8 @@
             if (soloDigitos.length === 10) v = '+52' + soloDigitos;
             else v = '+' + soloDigitos;
         }
-        var soloDigitos = v.replace(/\D/g, '');
-        if (soloDigitos.length < 8 || soloDigitos.length > 15) return null;
+        var total = v.replace(/\D/g, '');
+        if (total.length < 8 || total.length > 15) return null;
         return v;
     }
 
@@ -294,6 +284,7 @@
 
         $('sectionPerfil').classList.remove('hidden');
         $('perfilNombre').textContent = perfil.nombre || 'Negocio';
+
         if (perfil.handle) {
             $('perfilHandle').textContent = '@' + perfil.handle;
         }
@@ -306,7 +297,7 @@
             $('avatarLetter').textContent = inicial;
         }
 
-        // Ubicación del perfil (si no hay ubicación del anuncio)
+        // Solo mostrar ubicación del perfil si NO hay una del anuncio
         var ubicacionPerfil = perfil.ubicacion || perfil.ciudad || perfil.estado_region || '';
         if (ubicacionPerfil && !anuncio.ubicacion_negocio) {
             $('perfilLocTexto').textContent = ubicacionPerfil;
@@ -317,7 +308,7 @@
     function renderAcciones() {
         var mostradas = 0;
 
-        // 1) WhatsApp (prioritario)
+        // 1) WhatsApp (prioritario: del anuncio; si no, del perfil)
         var wa = normalizarWhatsApp(anuncio.whatsapp_contacto);
         if (!wa && perfil) wa = normalizarWhatsApp(perfil.whatsapp);
         if (wa) {
@@ -341,7 +332,6 @@
             mostradas++;
         }
 
-        // Si no hay ningún botón, ocultar el contenedor
         if (mostradas === 0) {
             $('actionsWrap').style.display = 'none';
         }
