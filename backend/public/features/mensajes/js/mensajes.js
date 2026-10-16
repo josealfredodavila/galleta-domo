@@ -1,13 +1,10 @@
 // ================================================================
-// MENSAJES · JS v3.0 (Parte 1 de 3)
+// MENSAJES · JS v3.1 (Parte 1 de 3)
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIOS v3.0:
-// - Subidas de imágenes, videos, avatares y estados ahora pasan por
-//   POST /api/media/upload (moderación con Rekognition en backend).
-// - Audios siguen subiéndose directo a Storage (sin moderación de audio).
-// - Se muestra cartel amarillo cuando aviso_moderacion = 'lenguaje_inapropiado'.
-// - Textos bloqueados por la BD se devuelven al input para edición.
+// CAMBIOS v3.1:
+// - Llamadas migradas 100% a /api/llamadas/* (LiveKit centralizado).
+// - Eliminadas inserciones/updates directos a Supabase en llamadas.
 // ================================================================
 
 'use strict';
@@ -62,7 +59,9 @@ const call = {
     audio: null,
     video: null,
     screen: null,
-    initiator: false
+    initiator: false,
+    roomName: null,
+    tipo: 'video'
 };
 
 // ================================================================
@@ -666,8 +665,10 @@ async function publicarEstado() {
         btn.disabled = false;
         btn.textContent = 'Publicar estado';
     }
-}// ================================================================
-// MENSAJES · JS v3.0 (Parte 2 de 3)
+}
+
+// ================================================================
+// MENSAJES · JS v3.1 (Parte 2 de 3)
 // Conversaciones, chat, Marquinhos (candados + términos), voz, archivos
 // ================================================================
 
@@ -1933,13 +1934,11 @@ async function recordAudioNota() {
         $('audio').textContent = '🎙️';
         toast('❌ No se pudo acceder al micrófono', 'error');
     }
-}// ================================================================
-// MENSAJES · JS v3.0 (Parte 3 de 3) — FINAL
-// Canales, grupos, llamadas, inicialización y listeners
-//
-// CAMBIO v3.0:
-// - Subidas vía endpoint /api/media/upload con moderación.
-// - Cartel de lenguaje inapropiado en burbujas.
+}
+
+// ================================================================
+// MENSAJES · JS v3.1 (Parte 3 de 3) — FINAL
+// Canales, grupos, llamadas (migradas a /api/llamadas/*), init
 // ================================================================
 
 // ================================================================
@@ -2341,25 +2340,15 @@ async function crearGrupo() {
 }
 
 // ================================================================
-// LLAMADAS (LiveKit) — v2.2 con textos claros
+// LLAMADAS (LiveKit) — v3.1 · Migrado a /api/llamadas/*
 // ================================================================
-async function token(roomName, participantName) {
-    const s = await session();
-    if (!s) throw Error('No autenticado');
-    const r = await fetch('/api/livekit/token', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: 'Bearer ' + s.access_token
-        },
-        body: JSON.stringify({ roomName, participantName })
-    });
-    const d = await r.json().catch(() => ({}));
-    if (!r.ok) throw Error(d.error || 'No se pudo obtener token LiveKit');
-    return d;
-}
 
-async function startCall() {
+/**
+ * Inicia una llamada a través del backend.
+ * POST /api/llamadas/iniciar  { destinatarioId, tipo }
+ * @param {string} tipo - 'audio' | 'video'
+ */
+async function startCall(tipo = 'video') {
     if (current?.bot) {
         toast('⚠️ Marquinhos no acepta llamadas', 'warning');
         return;
@@ -2379,51 +2368,78 @@ async function startCall() {
             toast('⚠️ Inicia sesión para llamar', 'error');
             return;
         }
-        const id = crypto.randomUUID();
-        const roomName = 'call_' + id;
 
-        const ins = await db.from('llamadas').insert({
-            id,
-            creador_id: user.id,
-            destinatario_id: current.id,
-            tipo: 'video',
-            estado: 'ringing',
-            room_name: roomName,
-            conversation_id: current.id
+        const r = await fetch('/api/llamadas/iniciar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + s.access_token
+            },
+            body: JSON.stringify({
+                destinatarioId: current.id,
+                tipo: tipo
+            })
         });
-        if (ins.error) throw ins.error;
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.ok) {
+            throw new Error(d.error || 'No se pudo iniciar la llamada');
+        }
 
-        const pi = await db.from('llamadas_participantes').insert({
-            llamada_id: id,
-            usuario_id: user.id,
-            rol: 'creador',
-            estado: 'conectado',
-            entro_at: new Date().toISOString()
-        });
-        if (pi.error) throw pi.error;
-
-        call.id = id;
+        // d = { ok: true, llamadaId, roomName }
+        call.id = d.llamadaId;
+        call.roomName = d.roomName;
+        call.tipo = tipo;
         call.initiator = true;
 
-        await connectCall(roomName, user.id);
-        subscribeCall(id);
+        // El backend ya gestiona los participantes. Conectamos a LiveKit con el token que nos dará el backend.
+        await connectCallWithToken(d.roomName, user.id);
+        subscribeCall(d.llamadaId);
 
         $('callOverlay').classList.add('show');
-        $('callInfo').innerHTML = '📞 <strong>Llamando a ' + esc(current.profile.nombre || 'usuario') + '…</strong><br><small style="opacity:.7">Esperando respuesta</small>';
+        $('callInfo').innerHTML = `📞 <strong>Llamando a ${esc(current.profile.nombre || 'usuario')}…</strong><br><small style="opacity:.7">Esperando respuesta</small>`;
 
-        toast('📞 Llamando a ' + (current.profile.nombre || 'usuario') + '…', 'success');
+        toast(`📞 Llamando a ${current.profile.nombre || 'usuario'}…`, 'success');
     } catch (e) {
-        console.error(e);
+        console.error('[Llamadas] Error al iniciar:', e);
         toast('❌ No se pudo iniciar la llamada: ' + e.message, 'error');
-        cleanupCall();
+        await cleanupCall();
     }
 }
 
-async function connectCall(roomName, name) {
-    if (!window.LivekitClient) {
-        throw Error('LiveKit no está cargado');
+/**
+ * Obtiene un token de LiveKit para una sala y conecta.
+ * POST /api/llamadas/:llamadaId/token
+ */
+async function obtenerTokenLlamada(llamadaId) {
+    const s = await session();
+    if (!s) throw new Error('No autenticado');
+
+    const r = await fetch(`/api/llamadas/${encodeURIComponent(llamadaId)}/token`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + s.access_token
+        },
+        body: JSON.stringify({})
+    });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) {
+        throw new Error(d.error || 'No se pudo obtener el token de la sala');
     }
-    const td = await token(roomName, name);
+    // d = { ok: true, token, url }
+    return d;
+}
+
+/**
+ * Conecta a LiveKit usando el token obtenido del backend.
+ */
+async function connectCallWithToken(roomName, participantName) {
+    if (!window.LivekitClient) {
+        throw new Error('LiveKit no está cargado');
+    }
+
+    const tokenData = await obtenerTokenLlamada(call.id);
+
     const room = new LivekitClient.Room();
 
     room.on(LivekitClient.RoomEvent.TrackSubscribed, track => {
@@ -2435,22 +2451,32 @@ async function connectCall(roomName, name) {
         if (call.active) cleanupCall();
     });
 
-    await room.connect(td.url, td.token);
+    await room.connect(tokenData.url, tokenData.token);
 
-    const stream = await navigator.mediaDevices.getUserMedia({
+    const mediaConstraints = {
         audio: true,
-        video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-    });
+        video: call.tipo === 'video'
+            ? { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+            : false
+    };
+
+    const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
 
     const at = stream.getAudioTracks()[0];
     const vt = stream.getVideoTracks()[0];
 
     if (at) {
-        await room.localParticipant.publishTrack(at, { name: 'microphone', source: LivekitClient.TrackSource.Microphone });
+        await room.localParticipant.publishTrack(at, {
+            name: 'microphone',
+            source: LivekitClient.TrackSource.Microphone
+        });
         call.audio = at;
     }
     if (vt) {
-        await room.localParticipant.publishTrack(vt, { name: 'camera', source: LivekitClient.TrackSource.Camera });
+        await room.localParticipant.publishTrack(vt, {
+            name: 'camera',
+            source: LivekitClient.TrackSource.Camera
+        });
         call.video = vt;
         $('localVideo').srcObject = new MediaStream([vt]);
     }
@@ -2460,13 +2486,17 @@ async function connectCall(roomName, name) {
     $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
 }
 
-function subscribeCall(id) {
+/**
+ * Suscribe a cambios en la tabla de llamadas para reaccionar al estado.
+ * Esto es solo lectura de notificaciones; no modifica nada en Supabase.
+ */
+function subscribeCall(llamadaId) {
     if (callChannel) db.removeChannel(callChannel);
-    callChannel = db.channel('call-' + id).on('postgres_changes', {
+    callChannel = db.channel('call-' + llamadaId).on('postgres_changes', {
         event: 'UPDATE',
         schema: 'public',
         table: 'llamadas',
-        filter: 'id=eq.' + id
+        filter: 'id=eq.' + llamadaId
     }, p => {
         if (p.new.estado === 'active') {
             $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
@@ -2478,12 +2508,26 @@ function subscribeCall(id) {
     }).subscribe();
 }
 
+/**
+ * Gestiona una llamada entrante (notificación vía Supabase Realtime).
+ * Al aceptar/rechazar se llama al backend.
+ */
 async function incoming(data) {
     if (call.active) {
-        await db.from('llamadas').update({
-            estado: 'rejected',
-            finalizada_at: new Date().toISOString()
-        }).eq('id', data.id);
+        // Rechazar automáticamente la nueva llamada si ya estamos en una
+        try {
+            const s = await session();
+            if (s) {
+                await fetch(`/api/llamadas/${encodeURIComponent(data.id)}/terminar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + s.access_token
+                    },
+                    body: JSON.stringify({ motivo: 'ocupado' })
+                });
+            }
+        } catch (e) { /* silencioso */ }
         return;
     }
     if (data.creador_id === user.id) return;
@@ -2499,48 +2543,143 @@ async function incoming(data) {
     toast('🔔 ' + (p.nombre || 'Alguien') + ' te está llamando…', 'success');
 }
 
+/**
+ * Acepta una llamada entrante.
+ * POST /api/llamadas/:llamadaId/aceptar
+ * El backend devuelve el token y los datos de la sala.
+ */
 async function acceptCall() {
     if (!incomingId) return;
     try {
-        const r = await db.from('llamadas').select('room_name,creador_id').eq('id', incomingId).single();
-        if (r.error) throw r.error;
+        const s = await session();
+        if (!s) throw new Error('No autenticado');
 
-        await db.from('llamadas').update({
-            estado: 'active',
-            contestada_at: new Date().toISOString()
-        }).eq('id', incomingId);
+        const r = await fetch(`/api/llamadas/${encodeURIComponent(incomingId)}/aceptar`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + s.access_token
+            },
+            body: JSON.stringify({})
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.ok) {
+            throw new Error(d.error || 'No se pudo aceptar la llamada');
+        }
+        // d = { ok: true, token, url, roomName, llamadaId? }
 
-        await db.from('llamadas_participantes').insert({
-            llamada_id: incomingId,
-            usuario_id: user.id,
-            rol: 'invitado',
-            estado: 'conectado',
-            entro_at: new Date().toISOString()
+        call.id = d.llamadaId || incomingId;
+        call.roomName = d.roomName;
+        call.tipo = d.tipo || 'video';
+        call.initiator = false;
+
+        $('incomingOverlay').classList.remove('show');
+        incomingId = null;
+
+        // Conectar directamente con el token devuelto
+        if (!window.LivekitClient) throw new Error('LiveKit no está cargado');
+        const room = new LivekitClient.Room();
+
+        room.on(LivekitClient.RoomEvent.TrackSubscribed, track => {
+            if (track.kind === 'video') track.attach($('remoteVideo'));
+            if (track.kind === 'audio') track.attach();
+        });
+        room.on(LivekitClient.RoomEvent.Disconnected, () => {
+            if (call.active) cleanupCall();
         });
 
-        call.id = incomingId;
-        call.initiator = false;
-        $('incomingOverlay').classList.remove('show');
+        await room.connect(d.url, d.token);
 
-        await connectCall(r.data.room_name, user.id);
-        subscribeCall(incomingId);
+        const mediaConstraints = {
+            audio: true,
+            video: call.tipo === 'video'
+                ? { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+                : false
+        };
+
+        const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+        const at = stream.getAudioTracks()[0];
+        const vt = stream.getVideoTracks()[0];
+
+        if (at) {
+            await room.localParticipant.publishTrack(at, {
+                name: 'microphone',
+                source: LivekitClient.TrackSource.Microphone
+            });
+            call.audio = at;
+        }
+        if (vt) {
+            await room.localParticipant.publishTrack(vt, {
+                name: 'camera',
+                source: LivekitClient.TrackSource.Camera
+            });
+            call.video = vt;
+            $('localVideo').srcObject = new MediaStream([vt]);
+        }
+        call.room = room;
+        call.active = true;
+
+        subscribeCall(call.id);
+        $('callOverlay').classList.add('show');
+        $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
     } catch (e) {
-        console.error(e);
+        console.error('[Llamadas] Error al aceptar:', e);
         toast('❌ ' + e.message, 'error');
-        cleanupCall();
+        await cleanupCall();
     }
 }
 
+/**
+ * Rechaza una llamada entrante.
+ * POST /api/llamadas/:llamadaId/terminar
+ */
 async function rejectCall() {
     if (incomingId) {
-        await db.from('llamadas').update({
-            estado: 'rejected',
-            finalizada_at: new Date().toISOString()
-        }).eq('id', incomingId);
+        try {
+            const s = await session();
+            if (s) {
+                await fetch(`/api/llamadas/${encodeURIComponent(incomingId)}/terminar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + s.access_token
+                    },
+                    body: JSON.stringify({ motivo: 'rechazada' })
+                });
+            }
+        } catch (e) {
+            console.warn('[Llamadas] Error al rechazar:', e);
+        }
     }
     incomingId = null;
     $('incomingOverlay').classList.remove('show');
     toast('📵 Llamada rechazada', 'warning');
+}
+
+/**
+ * Cuelga una llamada activa o iniciada.
+ * POST /api/llamadas/:llamadaId/terminar
+ */
+async function hangup() {
+    if (call.id) {
+        try {
+            const s = await session();
+            if (s) {
+                await fetch(`/api/llamadas/${encodeURIComponent(call.id)}/terminar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + s.access_token
+                    },
+                    body: JSON.stringify({})
+                });
+            }
+        } catch (e) {
+            console.warn('[Llamadas] Error al colgar:', e);
+        }
+    }
+    toast('📞 Llamada finalizada', 'warning');
+    await cleanupCall();
 }
 
 async function cleanupCall() {
@@ -2555,23 +2694,13 @@ async function cleanupCall() {
     } catch (e) {}
 
     Object.assign(call, {
-        room: null, id: null, active: false, audio: null, video: null, screen: null
+        room: null, id: null, active: false, audio: null, video: null,
+        screen: null, roomName: null, initiator: false
     });
     $('callOverlay').classList.remove('show');
     $('toggleMic').innerHTML = '<span class="ctrl-icon">🎤</span><span class="ctrl-label">Micrófono</span>';
     $('toggleCam').innerHTML = '<span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span>';
     $('toggleScreen').innerHTML = '<span class="ctrl-icon">🖥️</span><span class="ctrl-label">Pantalla</span>';
-}
-
-async function hangup() {
-    if (call.id) {
-        await db.from('llamadas').update({
-            estado: 'ended',
-            finalizada_at: new Date().toISOString()
-        }).eq('id', call.id);
-    }
-    toast('📞 Llamada finalizada', 'warning');
-    await cleanupCall();
 }
 
 async function toggleMic() {
@@ -2617,7 +2746,7 @@ async function toggleScreen() {
 }
 
 // ================================================================
-// INIT — INICIALIZACIÓN PRINCIPAL (v3.0)
+// INIT — INICIALIZACIÓN PRINCIPAL (v3.1)
 // ================================================================
 async function init() {
     try {
@@ -2775,7 +2904,7 @@ async function init() {
 
     // Chat actions
     $('deleteChat').onclick = deleteConversation;
-    $('videoCall').onclick = startCall;
+    $('videoCall').onclick = () => startCall('video');
     $('backBtn').onclick = cerrarConversacion;
 
     // Controles llamada
@@ -2833,7 +2962,7 @@ async function init() {
         if (e.target.id === 'modalCrearGrupo') cerrarModalCrearGrupo();
     });
 
-    // Suscripción a llamadas entrantes
+    // Suscripción a llamadas entrantes (solo notificación; el backend gestiona todo)
     db.channel('incoming-calls').on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
