@@ -42,7 +42,7 @@
 
     <!-- Media (imagen o video) -->
     <div class="detail-media-wrap" id="mediaWrap">
-        <img id="mediaImg" class="detail-media" alt="" loading="eager" decoding="async">
+        <img id="mediaImg" class="detail-media hidden" alt="" loading="eager" decoding="async">
         <video id="mediaVideo" class="detail-media hidden" controls autoplay muted loop playsinline preload="metadata"></video>
     </div>
 
@@ -50,11 +50,20 @@
     <div class="detail-body">
 
         <h1 class="detail-title" id="titulo"></h1>
-        <p class="detail-text" id="texto"></p>
+        <p class="detail-text hidden" id="texto"></p>
+
+        <!-- Ubicación (solo si existe) -->
+        <div class="detail-ubicacion hidden" id="ubicacionWrap">
+            <span class="ubicacion-icon" aria-hidden="true">📍</span>
+            <div class="ubicacion-info">
+                <span class="ubicacion-label">Ubicación del negocio</span>
+                <span class="ubicacion-valor" id="ubicacionTexto"></span>
+            </div>
+        </div>
 
         <!-- Perfil del anunciante -->
-        <section class="detail-section" id="sectionPerfil">
-            <h2 class="section-title">Sobre el negocio</h2>
+        <section class="detail-section hidden" id="sectionPerfil">
+            <h2 class="section-title">Sobre el anunciante</h2>
 
             <div class="detail-perfil">
                 <div class="detail-avatar" id="avatar">
@@ -69,17 +78,16 @@
                     </div>
                 </div>
             </div>
-
-            <div class="detail-contact hidden" id="contactoWrap">
-                <h3 class="contact-title">Contacto</h3>
-                <div class="contact-list" id="contactoList"></div>
-            </div>
         </section>
 
-        <!-- Acciones -->
-        <div class="detail-actions">
+        <!-- Acciones dinámicas -->
+        <div class="detail-actions" id="actionsWrap">
+            <a class="btn-whatsapp hidden" id="btnWhatsApp" href="#" target="_blank" rel="noopener">
+                <span class="btn-icon" aria-hidden="true">☎</span>
+                <span>WhatsApp</span>
+            </a>
             <a class="btn-primary hidden" id="btnVisitar" href="#" target="_blank" rel="noopener">
-                Visitar sitio
+                <span>Visitar sitio</span>
                 <span aria-hidden="true">→</span>
             </a>
             <a class="btn-secondary hidden" id="btnPerfil" href="#">
@@ -100,7 +108,6 @@
 (function () {
     'use strict';
 
-    var URL_PERFIL_DEFAULT = '/features/perfil/perfil.html';
     var TABLA_ANUNCIOS = 'anuncios';
     var TABLA_PERFILES = 'perfiles_publicos';
 
@@ -155,7 +162,8 @@
             .from(TABLA_ANUNCIOS)
             .select(
                 'id, usuario_id, titulo, texto, tipo, media_url, ' +
-                'destino_url, vistas, toques, created_at, vigencia_fin'
+                'destino_url, whatsapp_contacto, ubicacion_negocio, ' +
+                'vistas, toques, created_at, vigencia_fin'
             )
             .eq('id', id)
             .maybeSingle();
@@ -223,6 +231,21 @@
         return '#';
     }
 
+    function normalizarWhatsApp(valor) {
+        if (!valor) return null;
+        var v = String(valor).trim().replace(/[^\d+]/g, '');
+        if (!v) return null;
+        if (/^00/.test(v)) v = '+' + v.slice(2);
+        if (!/^\+/.test(v)) {
+            var soloDigitos = v.replace(/\D/g, '');
+            if (soloDigitos.length === 10) v = '+52' + soloDigitos;
+            else v = '+' + soloDigitos;
+        }
+        var soloDigitos = v.replace(/\D/g, '');
+        if (soloDigitos.length < 8 || soloDigitos.length > 15) return null;
+        return v;
+    }
+
     function renderMedia() {
         var tipo = String(anuncio.tipo || 'imagen').toLowerCase();
         var mediaUrl = String(anuncio.media_url || '').trim();
@@ -252,8 +275,14 @@
         if (texto) {
             $('texto').textContent = texto;
             $('texto').classList.remove('hidden');
-        } else {
-            $('texto').classList.add('hidden');
+        }
+    }
+
+    function renderUbicacion() {
+        var ubicacion = String(anuncio.ubicacion_negocio || '').trim();
+        if (ubicacion) {
+            $('ubicacionTexto').textContent = ubicacion;
+            $('ubicacionWrap').classList.remove('hidden');
         }
     }
 
@@ -263,11 +292,10 @@
             return;
         }
 
+        $('sectionPerfil').classList.remove('hidden');
         $('perfilNombre').textContent = perfil.nombre || 'Negocio';
         if (perfil.handle) {
             $('perfilHandle').textContent = '@' + perfil.handle;
-        } else {
-            $('perfilHandle').textContent = '';
         }
 
         var avatar = $('avatar');
@@ -278,65 +306,44 @@
             $('avatarLetter').textContent = inicial;
         }
 
-        var ubicacion = perfil.ubicacion || perfil.ciudad || perfil.estado_region || '';
-        if (ubicacion) {
-            $('perfilLocTexto').textContent = ubicacion;
+        // Ubicación del perfil (si no hay ubicación del anuncio)
+        var ubicacionPerfil = perfil.ubicacion || perfil.ciudad || perfil.estado_region || '';
+        if (ubicacionPerfil && !anuncio.ubicacion_negocio) {
+            $('perfilLocTexto').textContent = ubicacionPerfil;
             $('perfilLoc').classList.remove('hidden');
-        }
-
-        // Contacto
-        var items = [];
-
-        if (perfil.whatsapp) {
-            var num = String(perfil.whatsapp).replace(/\D/g, '');
-            items.push(
-                '<a class="contact-item" href="https://wa.me/' + esc(num) + '" target="_blank" rel="noopener">' +
-                    '<span class="contact-icon">☎</span>' +
-                    '<span>WhatsApp</span>' +
-                '</a>'
-            );
-        }
-        if (perfil.telefono) {
-            items.push(
-                '<a class="contact-item" href="tel:' + esc(String(perfil.telefono).replace(/[^\d+]/g, '')) + '">' +
-                    '<span class="contact-icon">☎</span>' +
-                    '<span>' + esc(perfil.telefono) + '</span>' +
-                '</a>'
-            );
-        }
-        if (perfil.email) {
-            items.push(
-                '<a class="contact-item" href="mailto:' + esc(perfil.email) + '">' +
-                    '<span class="contact-icon">✉</span>' +
-                    '<span>' + esc(perfil.email) + '</span>' +
-                '</a>'
-            );
-        }
-        if (perfil.sitio_web) {
-            items.push(
-                '<a class="contact-item" href="' + esc(urlSegura(perfil.sitio_web)) + '" target="_blank" rel="noopener">' +
-                    '<span class="contact-icon">🌐</span>' +
-                    '<span>Sitio web</span>' +
-                '</a>'
-            );
-        }
-
-        if (items.length) {
-            $('contactoList').innerHTML = items.join('');
-            $('contactoWrap').classList.remove('hidden');
         }
     }
 
     function renderAcciones() {
+        var mostradas = 0;
+
+        // 1) WhatsApp (prioritario)
+        var wa = normalizarWhatsApp(anuncio.whatsapp_contacto);
+        if (!wa && perfil) wa = normalizarWhatsApp(perfil.whatsapp);
+        if (wa) {
+            $('btnWhatsApp').href = 'https://wa.me/' + wa.replace(/^\+/, '');
+            $('btnWhatsApp').classList.remove('hidden');
+            mostradas++;
+        }
+
+        // 2) Visitar sitio
         var destino = urlSegura(anuncio.destino_url);
         if (destino && destino !== '#') {
             $('btnVisitar').href = destino;
             $('btnVisitar').classList.remove('hidden');
+            mostradas++;
         }
 
+        // 3) Ver perfil
         if (perfil && perfil.handle) {
             $('btnPerfil').href = '/perfil/' + encodeURIComponent(perfil.handle);
             $('btnPerfil').classList.remove('hidden');
+            mostradas++;
+        }
+
+        // Si no hay ningún botón, ocultar el contenedor
+        if (mostradas === 0) {
+            $('actionsWrap').style.display = 'none';
         }
     }
 
@@ -368,7 +375,6 @@
             return;
         }
 
-        // Requiere sesión para que RLS permita leer
         try {
             var s = await db.auth.getSession();
             if (!s.data || !s.data.session) {
@@ -386,8 +392,6 @@
             return;
         }
 
-        // Aunque la política RLS permite leer solo si está aprobado y vigente,
-        // por si acaso verificamos manualmente:
         if (anuncio.vigencia_fin && new Date(anuncio.vigencia_fin) <= new Date()) {
             mostrarError();
             return;
@@ -397,6 +401,7 @@
 
         renderMedia();
         renderTexto();
+        renderUbicacion();
         renderPerfil();
         renderAcciones();
         renderMeta();
