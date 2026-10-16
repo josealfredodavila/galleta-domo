@@ -1,0 +1,176 @@
+/* ============================================
+   CARRUSEL 3D HORIZONTAL - Csariel's
+   Ruta: /features/perfil/css/carrusel-3d.css
+   Scroll libre + inclinación 3D controlada por JS (carrusel-3d.js)
+   ============================================ */
+
+.carrusel-3d-wrapper {
+    width: 100%;
+    position: relative;
+    padding: 18px 0 10px;
+    overflow: hidden;
+}
+
+.carrusel-3d-track {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 40px 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+}
+
+.carrusel-3d-track::-webkit-scrollbar {
+    display: none;
+}
+
+/* Tarjeta: el color de cada módulo llega desde --c (lo asigna carrusel-3d.js) */
+.carrusel-3d-card {
+    --c: #D4AF37;
+    position: relative;
+    flex: 0 0 240px;
+    height: 330px;
+    padding: 20px;
+    border-radius: 22px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--text-primary, #ffffff);
+    background:
+        radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--c) 24%, transparent), transparent 60%),
+        linear-gradient(165deg, rgba(20, 40, 34, 0.92), rgba(5, 8, 15, 0.96));
+    border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55);
+    transform: perspective(900px) rotateY(0deg) scale(0.92);
+    opacity: 0.7;
+    will-change: transform, opacity;
+    transition: box-shadow 0.35s ease, border-color 0.35s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Brillo que cruza la tarjeta activa */
+.carrusel-3d-card::after {
+    content: '';
+    position: absolute;
+    inset: -40% -60%;
+    background: linear-gradient(115deg, transparent 42%, rgba(255, 255, 255, 0.16) 50%, transparent 58%);
+    transform: translateX(-60%);
+    transition: transform 1s ease;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.carrusel-3d-card.active::after {
+    transform: translateX(60%);
+}
+
+/* Degradado inferior para legibilidad del texto */
+.carrusel-3d-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.88) 100%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.carrusel-3d-card > * {
+    position: relative;
+    z-index: 1;
+}
+
+.carrusel-3d-card.active {
+    border-color: var(--c);
+    box-shadow:
+        0 0 28px color-mix(in srgb, var(--c) 50%, transparent),
+        0 16px 40px rgba(0, 0, 0, 0.7);
+}
+
+.carrusel-3d-card .card-icon {
+    font-size: 2.9rem;
+    line-height: 1;
+    margin-bottom: 12px;
+    filter: drop-shadow(0 0 14px color-mix(in srgb, var(--c) 80%, transparent));
+}
+
+.carrusel-3d-card.active .card-icon {
+    animation: carruselFloat 3.6s ease-in-out infinite;
+}
+
+@keyframes carruselFloat {
+    0%, 100% { transform: scale(1.08) translateY(0); }
+    50%      { transform: scale(1.12) translateY(-5px); }
+}
+
+.carrusel-3d-card .card-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.15rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    color: var(--c);
+    text-shadow: 0 0 16px color-mix(in srgb, var(--c) 50%, transparent);
+}
+
+.carrusel-3d-card .card-desc {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    line-height: 1.45;
+    color: var(--text-secondary, #c0d8e8);
+}
+
+/* Indicadores (puntos) creados por carrusel-3d.js */
+.carrusel-3d-dots {
+    display: flex;
+    justify-content: center;
+    gap: 7px;
+    margin-top: 6px;
+}
+
+.carrusel-3d-dots button {
+    width: 7px;
+    height: 7px;
+    padding: 0;
+    border: 0;
+    border-radius: 99px;
+    background: rgba(212, 175, 55, 0.25);
+    cursor: pointer;
+    transition: width 0.3s ease, background 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.carrusel-3d-dots button.active {
+    width: 22px;
+    background: var(--gold, #D4AF37);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.6);
+}
+
+@media (max-width: 480px) {
+    .carrusel-3d-card {
+        flex: 0 0 215px;
+        height: 300px;
+        padding: 16px;
+    }
+    .carrusel-3d-card .card-icon {
+        font-size: 2.4rem;
+    }
+    .carrusel-3d-card .card-title {
+        font-size: 1rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .carrusel-3d-card,
+    .carrusel-3d-card::after,
+    .carrusel-3d-card .card-icon,
+    .carrusel-3d-dots button {
+        transition: none !important;
+        animation: none !important;
+    }
+}
