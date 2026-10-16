@@ -1,7 +1,8 @@
 /* ============================================
    CSARIEL'S · VER ANUNCIO EN DETALLE
    Ruta: /features/anuncios/ver.css
-   v3 · Cabecera limpia sin barra superior.
+   v4 · Imagen completa (sin recortes) + chip
+        de Patrocinado integrado en el contenido.
    ============================================ */
 
 :root {
@@ -94,51 +95,26 @@ html, body {
     padding-bottom: 60px;
 }
 
-/* ============ MEDIA (imagen/video limpia) ============ */
+/* ============ MEDIA (imagen/video COMPLETA sin recortes) ============ */
 .detail-media-wrap {
     width: 100%;
-    aspect-ratio: 16 / 10;
+    max-height: 70vh;
     background: #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     overflow: hidden;
     position: relative;
 }
+
 .detail-media {
     width: 100%;
-    height: 100%;
-    object-fit: cover;
+    max-height: 70vh;
+    height: auto;
+    object-fit: contain;
+    object-position: center;
     display: block;
-}
-
-/* Etiqueta PATROCINADO discreta, flotando arriba de la imagen */
-.detail-tag-floating {
-    position: absolute;
-    top: 14px;
-    left: 14px;
-    z-index: 2;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    font-family: 'Rajdhani', sans-serif;
-    font-size: .62rem;
-    font-weight: 800;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: #ffffff;
-    background: rgba(0, 0, 0, .42);
-    border: 1px solid rgba(255, 255, 255, .22);
-    padding: 5px 10px;
-    border-radius: 99px;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    pointer-events: none;
-    text-shadow: 0 1px 4px rgba(0,0,0,.6);
-}
-.detail-tag-floating .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--verde);
-    box-shadow: 0 0 8px rgba(0,230,118,.9);
+    background: #000;
 }
 
 /* ============ BODY ============ */
@@ -146,7 +122,32 @@ html, body {
     padding: 22px 18px 32px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 18px;
+}
+
+/* ============ CHIP PATROCINADO (integrado, discreto) ============ */
+.detail-chip-patrocinado {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    align-self: flex-start;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: .66rem;
+    font-weight: 800;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--gold);
+    background: rgba(212, 175, 55, .08);
+    border: 1px solid rgba(212, 175, 55, .35);
+    padding: 6px 12px;
+    border-radius: 99px;
+}
+.detail-chip-patrocinado .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--verde);
+    box-shadow: 0 0 8px rgba(0,230,118,.9);
 }
 
 /* ============ TÍTULO ============ */
@@ -288,7 +289,7 @@ html, body {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
-    margin-top: 8px;
+    margin-top: 4px;
 }
 
 .btn-whatsapp,
@@ -352,9 +353,11 @@ html, body {
 @media (max-width: 480px) {
     .detail-title { font-size: 1.5rem; }
     .detail-text { font-size: .95rem; }
-    .detail-body { padding: 18px 14px 28px; gap: 18px; }
+    .detail-body { padding: 18px 14px 28px; gap: 16px; }
+    .detail-chip-patrocinado { font-size: .62rem; padding: 5px 10px; }
     .btn-whatsapp,
     .btn-primary,
     .btn-secondary { font-size: .88rem; padding: 13px 20px; flex: 1 1 auto; }
-    .detail-media-wrap { aspect-ratio: 1 / 1; }
+    .detail-media-wrap { max-height: 60vh; }
+    .detail-media { max-height: 60vh; }
 }
