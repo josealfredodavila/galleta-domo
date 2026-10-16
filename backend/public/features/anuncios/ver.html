@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05080f">
+<title>Anuncio · Csariel's</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Arial' font-size='48' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<link rel="stylesheet" href="/features/anuncios/ver.css">
+</head>
+<body>
+
+<div class="detail-loading" id="loading">
+    <div class="loading-spinner"></div>
+    <p>Cargando anuncio…</p>
+</div>
+
+<div class="detail-error hidden" id="error">
+    <div class="error-icon">!</div>
+    <h2>No se encontró el anuncio</h2>
+    <p>Es posible que el anuncio haya expirado o no esté disponible.</p>
+    <a href="/features/perfil/perfil.html" class="btn-primary">Volver al perfil</a>
+</div>
+
+<article class="detail hidden" id="detail">
+
+    <!-- Barra superior con botón volver -->
+    <header class="detail-topbar">
+        <a href="/features/perfil/perfil.html" class="detail-back" aria-label="Volver">
+            <span aria-hidden="true">←</span>
+            <span>Volver</span>
+        </a>
+        <span class="detail-tag">
+            <span class="dot"></span>
+            PATROCINADO
+        </span>
+    </header>
+
+    <!-- Media (imagen o video) -->
+    <div class="detail-media-wrap" id="mediaWrap">
+        <img id="mediaImg" class="detail-media" alt="" loading="eager" decoding="async">
+        <video id="mediaVideo" class="detail-media hidden" controls autoplay muted loop playsinline preload="metadata"></video>
+    </div>
+
+    <!-- Cuerpo del anuncio -->
+    <div class="detail-body">
+
+        <h1 class="detail-title" id="titulo"></h1>
+        <p class="detail-text" id="texto"></p>
+
+        <!-- Perfil del anunciante -->
+        <section class="detail-section" id="sectionPerfil">
+            <h2 class="section-title">Sobre el negocio</h2>
+
+            <div class="detail-perfil">
+                <div class="detail-avatar" id="avatar">
+                    <span class="avatar-letter" id="avatarLetter">?</span>
+                </div>
+                <div class="detail-perfil-info">
+                    <div class="perfil-name" id="perfilNombre">Negocio</div>
+                    <div class="perfil-handle" id="perfilHandle"></div>
+                    <div class="perfil-loc hidden" id="perfilLoc">
+                        <span aria-hidden="true">📍</span>
+                        <span id="perfilLocTexto"></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="detail-contact hidden" id="contactoWrap">
+                <h3 class="contact-title">Contacto</h3>
+                <div class="contact-list" id="contactoList"></div>
+            </div>
+        </section>
+
+        <!-- Acciones -->
+        <div class="detail-actions">
+            <a class="btn-primary hidden" id="btnVisitar" href="#" target="_blank" rel="noopener">
+                Visitar sitio
+                <span aria-hidden="true">→</span>
+            </a>
+            <a class="btn-secondary hidden" id="btnPerfil" href="#">
+                Ver perfil
+            </a>
+        </div>
+
+        <!-- Meta inferior -->
+        <footer class="detail-meta">
+            <span id="metaInfo"></span>
+        </footer>
+
+    </div>
+
+</article>
+
+<script>
+(function () {
+    'use strict';
+
+    var URL_PERFIL_DEFAULT = '/features/perfil/perfil.html';
+    var TABLA_ANUNCIOS = 'anuncios';
+    var TABLA_PERFILES = 'perfiles_publicos';
+
+    var db = null;
+    var anuncio = null;
+    var perfil = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    function esc(v) {
+        var d = document.createElement('div');
+        d.textContent = v == null ? '' : String(v);
+        return d.innerHTML;
+    }
+
+    function getParam(name) {
+        try {
+            var url = new URL(window.location.href);
+            return url.searchParams.get(name);
+        } catch (e) { return null; }
+    }
+
+    function mostrarError() {
+        $('loading').classList.add('hidden');
+        $('error').classList.remove('hidden');
+    }
+
+    function mostrarDetalle() {
+        $('loading').classList.add('hidden');
+        $('detail').classList.remove('hidden');
+        document.title = (anuncio.titulo || 'Anuncio') + ' · Csariel\'s';
+    }
+
+    async function crearCliente() {
+        if (window.supabaseClient) return window.supabaseClient;
+
+        var r = await fetch('/api/config/public', {
+            cache: 'no-store',
+            credentials: 'same-origin'
+        });
+        var config = await r.json();
+        window.supabaseClient = window.supabase.createClient(
+            config.supabaseUrl,
+            config.supabaseAnonKey,
+            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+        );
+        return window.supabaseClient;
+    }
+
+    async function cargarAnuncio(id) {
+        var r = await db
+            .from(TABLA_ANUNCIOS)
+            .select(
+                'id, usuario_id, titulo, texto, tipo, media_url, ' +
+                'destino_url, vistas, toques, created_at, vigencia_fin'
+            )
+            .eq('id', id)
+            .maybeSingle();
+
+        if (r.error) {
+            console.warn('[Anuncio] Error cargando:', r.error);
+            return null;
+        }
+        return r.data || null;
+    }
+
+    async function cargarPerfil(usuarioId) {
+        if (!usuarioId) return null;
+
+        // Intento 1: columnas extendidas
+        try {
+            var r1 = await db
+                .from(TABLA_PERFILES)
+                .select(
+                    'id, nombre, handle, avatar_url, bio, ' +
+                    'ciudad, estado_region, ubicacion, ' +
+                    'whatsapp, telefono, sitio_web, email'
+                )
+                .eq('id', usuarioId)
+                .maybeSingle();
+            if (!r1.error && r1.data) return r1.data;
+        } catch (e) {}
+
+        // Intento 2: columnas seguras
+        try {
+            var r2 = await db
+                .from(TABLA_PERFILES)
+                .select('id, nombre, handle, avatar_url, bio')
+                .eq('id', usuarioId)
+                .maybeSingle();
+            if (!r2.error && r2.data) return r2.data;
+        } catch (e) {}
+
+        // Intento 3: mínimas
+        try {
+            var r3 = await db
+                .from(TABLA_PERFILES)
+                .select('id, nombre, handle, avatar_url')
+                .eq('id', usuarioId)
+                .maybeSingle();
+            if (!r3.error && r3.data) return r3.data;
+        } catch (e) {}
+
+        return null;
+    }
+
+    function urlSegura(valor) {
+        var url = String(valor || '').trim();
+        if (!url || url === '#') return '#';
+        if (/^(https?:\/\/|\/|\.\/|\.\.\/|#)/i.test(url)) {
+            if (/^https?:\/\//i.test(url)) {
+                try {
+                    var parsed = new URL(url);
+                    if (parsed.protocol !== 'https:' &&
+                        parsed.protocol !== 'http:') return '#';
+                } catch (e) { return '#'; }
+            }
+            return url;
+        }
+        return '#';
+    }
+
+    function renderMedia() {
+        var tipo = String(anuncio.tipo || 'imagen').toLowerCase();
+        var mediaUrl = String(anuncio.media_url || '').trim();
+
+        if (!mediaUrl || !/^https?:\/\//i.test(mediaUrl)) {
+            $('mediaWrap').style.display = 'none';
+            return;
+        }
+
+        if (tipo === 'video') {
+            var v = $('mediaVideo');
+            v.src = mediaUrl;
+            v.classList.remove('hidden');
+            var p = v.play();
+            if (p && typeof p.catch === 'function') p.catch(function () {});
+        } else {
+            var img = $('mediaImg');
+            img.src = mediaUrl;
+            img.classList.remove('hidden');
+            img.alt = anuncio.titulo || '';
+        }
+    }
+
+    function renderTexto() {
+        $('titulo').textContent = anuncio.titulo || 'Anuncio';
+        var texto = anuncio.texto || '';
+        if (texto) {
+            $('texto').textContent = texto;
+            $('texto').classList.remove('hidden');
+        } else {
+            $('texto').classList.add('hidden');
+        }
+    }
+
+    function renderPerfil() {
+        if (!perfil) {
+            $('sectionPerfil').classList.add('hidden');
+            return;
+        }
+
+        $('perfilNombre').textContent = perfil.nombre || 'Negocio';
+        if (perfil.handle) {
+            $('perfilHandle').textContent = '@' + perfil.handle;
+        } else {
+            $('perfilHandle').textContent = '';
+        }
+
+        var avatar = $('avatar');
+        if (perfil.avatar_url) {
+            avatar.innerHTML = '<img src="' + esc(perfil.avatar_url) + '" alt="">';
+        } else {
+            var inicial = (perfil.nombre || '?').charAt(0).toUpperCase();
+            $('avatarLetter').textContent = inicial;
+        }
+
+        var ubicacion = perfil.ubicacion || perfil.ciudad || perfil.estado_region || '';
+        if (ubicacion) {
+            $('perfilLocTexto').textContent = ubicacion;
+            $('perfilLoc').classList.remove('hidden');
+        }
+
+        // Contacto
+        var items = [];
+
+        if (perfil.whatsapp) {
+            var num = String(perfil.whatsapp).replace(/\D/g, '');
+            items.push(
+                '<a class="contact-item" href="https://wa.me/' + esc(num) + '" target="_blank" rel="noopener">' +
+                    '<span class="contact-icon">☎</span>' +
+                    '<span>WhatsApp</span>' +
+                '</a>'
+            );
+        }
+        if (perfil.telefono) {
+            items.push(
+                '<a class="contact-item" href="tel:' + esc(String(perfil.telefono).replace(/[^\d+]/g, '')) + '">' +
+                    '<span class="contact-icon">☎</span>' +
+                    '<span>' + esc(perfil.telefono) + '</span>' +
+                '</a>'
+            );
+        }
+        if (perfil.email) {
+            items.push(
+                '<a class="contact-item" href="mailto:' + esc(perfil.email) + '">' +
+                    '<span class="contact-icon">✉</span>' +
+                    '<span>' + esc(perfil.email) + '</span>' +
+                '</a>'
+            );
+        }
+        if (perfil.sitio_web) {
+            items.push(
+                '<a class="contact-item" href="' + esc(urlSegura(perfil.sitio_web)) + '" target="_blank" rel="noopener">' +
+                    '<span class="contact-icon">🌐</span>' +
+                    '<span>Sitio web</span>' +
+                '</a>'
+            );
+        }
+
+        if (items.length) {
+            $('contactoList').innerHTML = items.join('');
+            $('contactoWrap').classList.remove('hidden');
+        }
+    }
+
+    function renderAcciones() {
+        var destino = urlSegura(anuncio.destino_url);
+        if (destino && destino !== '#') {
+            $('btnVisitar').href = destino;
+            $('btnVisitar').classList.remove('hidden');
+        }
+
+        if (perfil && perfil.handle) {
+            $('btnPerfil').href = '/perfil/' + encodeURIComponent(perfil.handle);
+            $('btnPerfil').classList.remove('hidden');
+        }
+    }
+
+    function renderMeta() {
+        var vistas = anuncio.vistas || 0;
+        var toques = anuncio.toques || 0;
+        var partes = [vistas + ' vistas', toques + ' toques'];
+        if (anuncio.created_at) {
+            try {
+                var d = new Date(anuncio.created_at);
+                partes.push(d.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' }));
+            } catch (e) {}
+        }
+        $('metaInfo').textContent = partes.join(' · ');
+    }
+
+    async function iniciar() {
+        var id = getParam('id');
+        if (!id) {
+            mostrarError();
+            return;
+        }
+
+        try {
+            db = await crearCliente();
+        } catch (e) {
+            console.error('[Anuncio] Sin cliente Supabase:', e);
+            mostrarError();
+            return;
+        }
+
+        // Requiere sesión para que RLS permita leer
+        try {
+            var s = await db.auth.getSession();
+            if (!s.data || !s.data.session) {
+                window.location.replace('/');
+                return;
+            }
+        } catch (e) {
+            mostrarError();
+            return;
+        }
+
+        anuncio = await cargarAnuncio(id);
+        if (!anuncio) {
+            mostrarError();
+            return;
+        }
+
+        // Aunque la política RLS permite leer solo si está aprobado y vigente,
+        // por si acaso verificamos manualmente:
+        if (anuncio.vigencia_fin && new Date(anuncio.vigencia_fin) <= new Date()) {
+            mostrarError();
+            return;
+        }
+
+        perfil = await cargarPerfil(anuncio.usuario_id);
+
+        renderMedia();
+        renderTexto();
+        renderPerfil();
+        renderAcciones();
+        renderMeta();
+
+        mostrarDetalle();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciar);
+    } else {
+        iniciar();
+    }
+})();
+</script>
+
+</body>
+</html>
