@@ -2,16 +2,15 @@
    CARRUSEL 3D HORIZONTAL - Csariel's
    Ruta: /features/perfil/js/carrusel-3d.js
 
-   v5 · ARCOÍRIS FLUIDO (estilo Times Square)
+   v6 · OPTIMIZADO + SIN DOBLE RENDER
    - Carga anuncios reales desde Supabase (tabla `anuncios`).
-   - 7 slots fijos: los primeros se llenan con anuncios reales,
-     el resto con placeholders de marketing.
-   - Soporta imagen O video (según el campo `tipo` del anuncio).
-   - Los medios SIEMPRE se reproducen DENTRO de la tarjeta.
-   - Cada tarjeta recibe una "fase" distinta del arcoíris.
-   - Realtime: se actualiza al publicar/pausar/vencer un anuncio.
-   - NO modifica contadores (vistas/toques) para no chocar con
-     los triggers de Supabase. Esos ya funcionan por su lado.
+   - 7 slots fijos: los primeros se llenan con anuncios reales.
+   - Soporta imagen O video (según el campo `tipo`).
+   - Asigna colores vivos estáticos (sin animación de fondo).
+   - UN SOLO render por carga (sin duplicados).
+   - Debounce en Realtime (evita re-renderizados múltiples).
+   - Pausa animaciones cuando la pestaña no está visible.
+   - NO modifica contadores (vistas/toques).
    ============================================ */
 
 (function () {
@@ -23,6 +22,19 @@
     var TABLA = 'anuncios';
     var TOTAL_SLOTS = 7;
     var MAX_ANUNCIOS = TOTAL_SLOTS;
+    var REALTIME_DEBOUNCE_MS = 400;
+
+    // Paleta de 7 colores vivos (par [inicio, fin]).
+    // Cada slot recibe un par distinto, en orden.
+    var PALETA = [
+        ['#ff3d00', '#ffc400'], // Naranja → Dorado
+        ['#00c853', '#00e5ff'], // Verde → Cian
+        ['#7c4dff', '#ff3cb4'], // Morado → Rosa
+        ['#2962ff', '#00e5ff'], // Azul → Turquesa
+        ['#d50000', '#ff6d00'], // Rojo → Naranja
+        ['#ffd600', '#00e676'], // Amarillo → Verde
+        ['#ff4081', '#7c4dff']  // Rosa → Violeta
+    ];
 
     // 7 placeholders (uno por slot). Mensajes de la plataforma al usuario.
     var PLACEHOLDERS = [
@@ -72,7 +84,7 @@
 
     var MAX_ROTACION = 28;
     var PERDIDA_ESCALA = 0.1;
-    var OPACIDAD_MIN = 0.55;
+    var OPACIDAD_MIN = 0.6;
 
     // -----------------------------------------------------------
     // ESTADO
@@ -88,6 +100,8 @@
     var anunciosCache = [];
     var realtimeChannel = null;
     var cargaEnCurso = false;
+    var realtimeTimer = null;
+    var rafId = null;
 
     // -----------------------------------------------------------
     // HELPERS
@@ -172,24 +186,18 @@
     }
 
     // -----------------------------------------------------------
-    // ASIGNACIÓN DE FASES DEL ARCOÍRIS
+    // ASIGNACIÓN DE COLORES (estáticos, por slot)
     // -----------------------------------------------------------
-    /**
-     * Asigna a cada tarjeta una "fase" distinta del arcoíris,
-     * para que no se vean todas iguales.
-     * La variable CSS --phase controla desde qué punto del
-     * degradado arranca cada tarjeta (0% a 100%).
-     */
     function asignarColores() {
-        var total = cards.length || 1;
         cards.forEach(function (card, i) {
-            var fase = Math.round((i * 100) / total);
-            card.style.setProperty('--phase', fase + '%');
+            var par = PALETA[i % PALETA.length];
+            card.style.setProperty('--c1', par[0]);
+            card.style.setProperty('--c2', par[1]);
         });
     }
 
     // -----------------------------------------------------------
-    // HTML: partículas (efecto Times Square)
+    // HTML: partículas (2 por tarjeta)
     // -----------------------------------------------------------
     function htmlParticulas() {
         return '<div class="times-particles"><span></span><span></span><span></span><span></span><span></span></div>';
@@ -199,11 +207,11 @@
     // HTML: anuncio real (imagen o video)
     // -----------------------------------------------------------
     function htmlAnuncioReal(a, i, total) {
-        var fase = Math.round((i * 100) / total);
         var destino = a.destino_url || '#';
         var titulo = esc(a.titulo || 'Anuncio');
         var texto = esc(a.texto || '');
         var tipo = (a.tipo || 'imagen').toLowerCase();
+        var par = PALETA[i % PALETA.length];
 
         var media = '';
         if (a.media_url && tipo === 'video') {
@@ -217,7 +225,7 @@
             '<a class="carrusel-3d-card anuncio-card" href="' + esc(destino) + '" ' +
                 'data-anuncio-id="' + esc(a.id) + '" ' +
                 'data-tipo="' + esc(tipo) + '" ' +
-                'style="--phase:' + fase + '%;">' +
+                'style="--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
                 htmlParticulas() +
                 '<div class="ads-tag"><span class="dot"></span> PATROCINADO</div>' +
                 '<div class="ads-counter">' + (i + 1) + '/' + total + '</div>' +
@@ -231,11 +239,11 @@
     // HTML: placeholder
     // -----------------------------------------------------------
     function htmlPlaceholder(p, i, total) {
-        var fase = Math.round((i * 100) / total);
+        var par = PALETA[i % PALETA.length];
         return '' +
             '<a class="carrusel-3d-card anuncio-placeholder" href="#" ' +
                 'data-placeholder="1" ' +
-                'style="--phase:' + fase + '%;">' +
+                'style="--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
                 htmlParticulas() +
                 '<div class="ads-tag"><span class="dot"></span> ÚNETE A LA COMUNIDAD</div>' +
                 '<div class="ads-counter">' + (i + 1) + '/' + total + '</div>' +
@@ -248,7 +256,7 @@
     }
 
     // -----------------------------------------------------------
-    // CONSTRUIR SLOTS (anuncios reales + placeholders)
+    // CONSTRUIR SLOTS
     // -----------------------------------------------------------
     function construirSlots(anuncios) {
         var slots = [];
@@ -267,7 +275,7 @@
     }
 
     // -----------------------------------------------------------
-    // RENDER
+    // RENDER — UNA sola vez, limpia antes de pintar
     // -----------------------------------------------------------
     function renderizar(anuncios) {
         if (!track) return;
@@ -276,10 +284,14 @@
         var slots = construirSlots(anunciosCache);
         var total = slots.length;
 
-        track.innerHTML = slots.map(function (slot, i) {
+        // Se construye todo el HTML en un string y se reemplaza de una vez.
+        // Esto evita el doble render y el flash de contenido.
+        var html = slots.map(function (slot, i) {
             if (slot.tipo === 'real') return htmlAnuncioReal(slot.data, i, total);
             return htmlPlaceholder(slot.data, i, total);
         }).join('');
+
+        track.innerHTML = html;
 
         // Handlers: placeholders → ir a crear anuncio
         track.querySelectorAll('.anuncio-placeholder').forEach(function (card) {
@@ -297,6 +309,12 @@
             var p = v.play();
             if (p && typeof p.catch === 'function') p.catch(function () {});
         });
+
+        // Refrescar referencias y dots
+        cards = coleccionar();
+        asignarColores();
+        construirPuntos();
+        pedirActualizacion();
     }
 
     function irACrearAnuncio() {
@@ -344,6 +362,7 @@
 
     function actualizar() {
         pendiente = false;
+        rafId = null;
         if (!cards.length || !track) return;
 
         var trackRect = track.getBoundingClientRect();
@@ -379,10 +398,9 @@
     }
 
     function pedirActualizacion() {
-        if (!pendiente) {
-            pendiente = true;
-            window.requestAnimationFrame(actualizar);
-        }
+        if (pendiente) return;
+        pendiente = true;
+        rafId = window.requestAnimationFrame(actualizar);
     }
 
     function refrescar() {
@@ -414,7 +432,7 @@
     }
 
     // -----------------------------------------------------------
-    // REALTIME
+    // REALTIME con DEBOUNCE
     // -----------------------------------------------------------
     async function suscribirRealtime() {
         var db = await obtenerCliente();
@@ -426,7 +444,11 @@
                 .on('postgres_changes',
                     { event: '*', schema: 'public', table: TABLA },
                     function () {
-                        if (!cargaEnCurso) cargarYRenderizar();
+                        // Debounce: solo se recarga 1 vez cada 400ms
+                        if (realtimeTimer) clearTimeout(realtimeTimer);
+                        realtimeTimer = setTimeout(function () {
+                            if (!cargaEnCurso) cargarYRenderizar();
+                        }, REALTIME_DEBOUNCE_MS);
                     }
                 )
                 .subscribe();
@@ -436,21 +458,33 @@
     }
 
     // -----------------------------------------------------------
-    // CARGA PRINCIPAL
+    // CARGA PRINCIPAL (un solo render)
     // -----------------------------------------------------------
     async function cargarYRenderizar() {
         if (!track) return;
+        if (cargaEnCurso) return; // evita cargas simultáneas
         cargaEnCurso = true;
         try {
             var anuncios = await cargarAnunciosDesdeSupabase();
             renderizar(anuncios);
-            refrescar();
         } catch (e) {
             console.warn('[Carrusel] Error cargando:', e);
-            renderizar([]);
-            refrescar();
+            // Solo renderizar placeholders si NO hay nada aún
+            if (!cards.length) renderizar([]);
         } finally {
             cargaEnCurso = false;
+        }
+    }
+
+    // -----------------------------------------------------------
+    // PAUSA ANIMACIONES CUANDO LA PESTAÑA NO ESTÁ VISIBLE
+    // -----------------------------------------------------------
+    function gestionarVisibilidad() {
+        if (!wrapper) return;
+        if (document.hidden) {
+            wrapper.classList.add('is-paused');
+        } else {
+            wrapper.classList.remove('is-paused');
         }
     }
 
@@ -467,8 +501,10 @@
         if (inicializado) return;
         inicializado = true;
 
-        // 1) Placeholders inmediatos
+        // 1) Render inicial con placeholders (una sola vez)
         renderizar([]);
+
+        // 2) Refs para el layout 3D
         cards = coleccionar();
         asignarColores();
         construirPuntos();
@@ -486,11 +522,15 @@
             irACardInicial(inicial, 0);
         });
 
-        // 2) Carga real desde Supabase
+        // 3) Carga real desde Supabase (reemplaza placeholders)
         cargarYRenderizar();
 
-        // 3) Realtime
+        // 4) Realtime con debounce
         suscribirRealtime();
+
+        // 5) Pausar animaciones cuando la pestaña no está visible
+        document.addEventListener('visibilitychange', gestionarVisibilidad);
+        gestionarVisibilidad();
 
         // API global
         window.carrusel3D = { refrescar: refrescar, recargar: cargarYRenderizar };
