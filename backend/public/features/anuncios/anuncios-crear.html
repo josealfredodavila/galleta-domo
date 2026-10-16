@@ -64,6 +64,11 @@
         font-size: .85rem; color: var(--gold);
         margin: 0 0 12px; letter-spacing: 1px;
     }
+    .tarjeta h2.separador {
+        margin-top: 22px;
+        padding-top: 16px;
+        border-top: 1px solid var(--line);
+    }
 
     .aviso {
         font-size: .75rem; line-height: 1.5; color: var(--muted);
@@ -74,6 +79,7 @@
 
     label { display: block; font-size: .72rem; color: var(--muted); margin: 12px 0 6px; font-weight: 600; }
     label .opcional { color: var(--muted); font-weight: 400; font-size: .65rem; }
+    label .req { color: var(--danger); }
 
     input[type="text"], input[type="url"], input[type="tel"], textarea, select {
         width: 100%; padding: 12px 14px; border-radius: 12px;
@@ -85,6 +91,9 @@
     }
     textarea { min-height: 70px; resize: vertical; }
     .contador { font-size: .65rem; color: var(--muted); text-align: right; margin-top: 4px; }
+    .contador.izq { text-align: left; }
+    .contador.ok { color: var(--success); }
+    .contador.err { color: var(--danger); }
 
     .archivo {
         border: 2px dashed var(--line); border-radius: 14px;
@@ -138,16 +147,6 @@
 
     .vacio { color: var(--muted); font-size: .8rem; text-align: center; padding: 14px 0; }
 
-    .fila-doble {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-top: 4px;
-    }
-    @media (max-width: 420px) {
-        .fila-doble { grid-template-columns: 1fr; }
-    }
-
     @media (prefers-reduced-motion: reduce) {
         * { transition: none !important; animation: none !important; }
     }
@@ -171,7 +170,7 @@
     <form class="tarjeta" id="formAnuncio" novalidate>
         <h2>NUEVO ANUNCIO</h2>
 
-        <label for="titulo">Título <span style="color:var(--danger)">*</span></label>
+        <label for="titulo">Título <span class="req">*</span></label>
         <input type="text" id="titulo" maxlength="80" placeholder="Ej: Galletas de temporada">
         <div class="contador" id="contadorTitulo">0 / 80</div>
 
@@ -179,7 +178,7 @@
         <textarea id="texto" maxlength="200" placeholder="Una frase que invite a tocar el anuncio"></textarea>
         <div class="contador" id="contadorTexto">0 / 200</div>
 
-        <label>Imagen <span style="color:var(--danger)">*</span></label>
+        <label>Imagen <span class="req">*</span></label>
         <label class="archivo" for="archivo">
             Toca para elegir una imagen (JPEG, PNG o WebP, máximo 5 MB)
             <input type="file" id="archivo" accept="image/jpeg,image/png,image/webp">
@@ -189,10 +188,7 @@
             <span class="etiq">ANUNCIO</span>
         </div>
 
-        <!-- ══════════════════════════════════════════════
-             CONTACTO Y UBICACIÓN DEL NEGOCIO
-             ══════════════════════════════════════════════ -->
-        <h2 style="margin-top:22px;">CONTACTO DEL NEGOCIO</h2>
+        <h2 class="separador">CONTACTO DEL NEGOCIO</h2>
 
         <label for="whatsapp">
             WhatsApp / Celular <span class="opcional">(opcional)</span>
@@ -202,9 +198,10 @@
             id="whatsapp"
             maxlength="20"
             inputmode="tel"
+            autocomplete="tel"
             placeholder="Ej: +521234567890">
-        <div class="contador" id="contadorWhatsapp" style="text-align:left;">
-            Con código de país. Se usará para el botón "WhatsApp".
+        <div class="contador izq" id="contadorWhatsapp">
+            Con código de país. Se usará para el botón "WhatsApp" en el detalle.
         </div>
 
         <label for="ubicacion">
@@ -215,7 +212,7 @@
             id="ubicacion"
             maxlength="100"
             placeholder="Ej: Texcoco, Estado de México">
-        <div class="contador" id="contadorUbicacion" style="text-align:left;">
+        <div class="contador izq" id="contadorUbicacion">
             Aparecerá en el detalle del anuncio.
         </div>
 
@@ -287,22 +284,20 @@
 
     /**
      * Normaliza el número de WhatsApp:
-     * - Deja solo dígitos y un signo + al inicio.
-     * - Si empieza con 0, lo quita.
-     * - Si no empieza con +, intenta deducir código de país MX (+52).
+     * - Deja solo dígitos y +.
+     * - Si empieza con 00 → cambia a +.
+     * - Si es 10 dígitos sin + → asume México (+52).
+     * - Valida entre 8 y 15 dígitos.
+     * @returns {string|null} Número normalizado o null si es inválido.
      */
     function normalizarWhatsApp(valor) {
         var v = String(valor || '').trim();
         if (!v) return null;
 
-        // Deja solo dígitos y +
         v = v.replace(/[^\d+]/g, '');
 
-        // Si empieza con 00, cambia a +
         if (/^00/.test(v)) v = '+' + v.slice(2);
 
-        // Si NO empieza con +, deduce por longitud:
-        // 10 dígitos → asumimos MX sin código → +52
         if (!/^\+/.test(v)) {
             var soloDigitos = v.replace(/\D/g, '');
             if (soloDigitos.length === 10) {
@@ -312,9 +307,8 @@
             }
         }
 
-        // Debe tener al menos 8 dígitos totales
-        var soloDigitos = v.replace(/\D/g, '');
-        if (soloDigitos.length < 8 || soloDigitos.length > 15) return null;
+        var total = v.replace(/\D/g, '');
+        if (total.length < 8 || total.length > 15) return null;
 
         return v;
     }
@@ -364,17 +358,20 @@
         $('contadorTexto').textContent = this.value.length + ' / 200';
     });
     $('whatsapp').addEventListener('input', function () {
-        var norm = normalizarWhatsApp(this.value);
         var hint = $('contadorWhatsapp');
-        if (!this.value.trim()) {
-            hint.textContent = 'Con código de país. Se usará para el botón "WhatsApp".';
-            hint.style.color = 'var(--muted)';
-        } else if (norm) {
+        hint.classList.remove('ok', 'err');
+        var raw = this.value.trim();
+        if (!raw) {
+            hint.textContent = 'Con código de país. Se usará para el botón "WhatsApp" en el detalle.';
+            return;
+        }
+        var norm = normalizarWhatsApp(raw);
+        if (norm) {
             hint.textContent = 'Se guardará como: ' + norm;
-            hint.style.color = 'var(--success)';
+            hint.classList.add('ok');
         } else {
             hint.textContent = 'Número inválido. Ejemplo: +521234567890';
-            hint.style.color = 'var(--danger)';
+            hint.classList.add('err');
         }
     });
 
@@ -441,7 +438,6 @@
         if (!titulo) { estado('Escribe un título.', 'error'); return; }
         if (!archivoSeleccionado) { estado('Elige una imagen.', 'error'); return; }
 
-        // Validar WhatsApp si lo escribió
         var whatsapp = null;
         if (whatsappRaw) {
             whatsapp = normalizarWhatsApp(whatsappRaw);
@@ -469,8 +465,7 @@
             var url = await subirImagen(archivoSeleccionado);
 
             estado('Publicando…');
-
-            var payload = {
+            var r = await client.from('anuncios').insert({
                 usuario_id: uid,
                 tipo: 'imagen',
                 titulo: titulo,
@@ -479,9 +474,7 @@
                 destino_url: destino,
                 whatsapp_contacto: whatsapp,
                 ubicacion_negocio: ubicacionRaw || null
-            };
-
-            var r = await client.from('anuncios').insert(payload).select('id').single();
+            }).select('id').single();
 
             if (r.error) throw r.error;
 
@@ -489,8 +482,9 @@
             $('formAnuncio').reset();
             $('contadorTitulo').textContent = '0 / 80';
             $('contadorTexto').textContent = '0 / 200';
-            $('contadorWhatsapp').textContent = 'Con código de país. Se usará para el botón "WhatsApp".';
-            $('contadorWhatsapp').style.color = 'var(--muted)';
+            var hint = $('contadorWhatsapp');
+            hint.textContent = 'Con código de país. Se usará para el botón "WhatsApp" en el detalle.';
+            hint.classList.remove('ok', 'err');
             $('vistaPrevia').style.display = 'none';
             $('destinoExterno').style.display = 'none';
             archivoSeleccionado = null;
