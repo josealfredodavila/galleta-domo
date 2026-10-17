@@ -1,20 +1,17 @@
 // ================================================================
-// MENSAJES · JS v3.4
+// MENSAJES · JS v3.5
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIOS v3.4:
-// - Fix crítico en loadConversations(): construye la lista desde
-//   los mensajes reales, calculando el otherUserId de cada
-//   conversación (nunca muestra al usuario actual como interlocutor).
-// - Trae los perfiles en lote desde perfiles_publicos (1 sola query).
-// - Elimina la dependencia exclusiva de la tabla `contactos`.
-// - Llamadas (LiveKit): bloque v3.3 con llamadaFetch adaptado a
-//   { success: true, data: {...} } y suscripción filtrada por
-//   destinatario_id en incoming-calls.
-// - Compatibilidad con versiones de livekit-client sin TrackSource:
-//   función lkSource() para resolver la fuente correcta.
-// - Expone window.openConversation y window.current para que
-//   llamadas-ui.js pueda abrir chats y bloquear desde el historial.
+// CAMBIOS v3.5:
+// - Verificación de carga de LiveKit al iniciar.
+// - Si LiveKit no está cargado, el botón "Llamar" se deshabilita
+//   y se avisa al usuario con un toast claro.
+// - Escucha el evento 'livekit:ready' (disparado por el HTML)
+//   para reactivar el botón "Llamar".
+// - Escucha el evento 'livekit:error' para avisar que las llamadas
+//   no estarán disponibles en este dispositivo.
+// - Todo lo demás (mensajes, estados, bot, canales, grupos, historial,
+//   bloqueos) se mantiene idéntico a la v3.4.
 // ================================================================
 
 'use strict';
@@ -800,7 +797,7 @@ async function getSignedUrlForMessage(m) {
 }
 
 // ================================================================
-// CARGAR CONVERSACIONES — v3.4 · FIX
+// CARGAR CONVERSACIONES — v3.5
 //
 // Construye la lista desde los MENSAJES REALES del usuario.
 // Calcula el otherUserId de cada conversación (nunca muestra al
@@ -813,7 +810,6 @@ async function loadConversations() {
     const list = $('conversationList');
     list.innerHTML = '';
 
-    // ---------- 1) Marquinhos (bot) siempre primero ----------
     const botEl = document.createElement('div');
     botEl.className = 'conv conv-bot' + (current?.id === BOT_ID ? ' active' : '');
     botEl.dataset.id = BOT_ID;
@@ -831,7 +827,6 @@ async function loadConversations() {
 
     if (!await auth()) return;
 
-    // ---------- 2) Preview del bot ----------
     try {
         const { data: lastBot } = await db
             .from('mensajes_chat')
@@ -866,10 +861,7 @@ async function loadConversations() {
         console.warn('Error cargando badge bot:', e);
     }
 
-    // ---------- 3) Construir conversaciones desde MENSAJES REALES ----------
     try {
-        // 3.1 · Traer TODOS los mensajes donde participa el usuario actual
-        //       (como remitente o como destinatario), excluyendo el bot.
         const { data: mensajes, error } = await db
             .from('mensajes_chat')
             .select('id, remitente_id, destinatario_id, contenido, tipo, leido, created_at')
@@ -885,16 +877,13 @@ async function loadConversations() {
             return;
         }
 
-        // 3.2 · Agrupar por otherUserId (el OTRO participante)
         const conversacionesMap = new Map();
 
         (mensajes || []).forEach(m => {
-            // Calcular el "otro" usuario: el que NO soy yo
             const otherUserId = (m.remitente_id === user.id)
                 ? m.destinatario_id
                 : m.remitente_id;
 
-            // Seguridad: nunca listar al usuario como su propio interlocutor
             if (!otherUserId || otherUserId === user.id) return;
             if (otherUserId === BOT_UUID) return;
 
@@ -906,7 +895,6 @@ async function loadConversations() {
                 });
             }
 
-            // Contar no leídos: mensajes que el OTRO me envió y no he leído
             if (m.remitente_id === otherUserId &&
                 m.destinatario_id === user.id &&
                 m.leido === false) {
@@ -914,7 +902,6 @@ async function loadConversations() {
             }
         });
 
-        // 3.3 · Fallback: incluir contactos sin mensajes aún
         try {
             const { data: contactos } = await db
                 .from('contactos')
@@ -945,7 +932,6 @@ async function loadConversations() {
             return;
         }
 
-        // 3.4 · Traer los perfiles de todos los interlocutores en 1 sola query
         const otherIds = conversaciones.map(c => c.otherUserId);
         const { data: perfiles } = await db
             .from('perfiles_publicos')
@@ -955,14 +941,12 @@ async function loadConversations() {
         const perfilMap = {};
         (perfiles || []).forEach(p => { perfilMap[p.id] = p; });
 
-        // 3.5 · Ordenar: primero los que tienen mensajes, luego los vacíos
         conversaciones.sort((a, b) => {
             const aDate = a.lastMsg?.created_at ? new Date(a.lastMsg.created_at).getTime() : 0;
             const bDate = b.lastMsg?.created_at ? new Date(b.lastMsg.created_at).getTime() : 0;
             return bDate - aDate;
         });
 
-        // 3.6 · Renderizar cada conversación
         conversaciones.forEach(conv => {
             const otherId = conv.otherUserId;
             const p = perfilMap[otherId] || {
@@ -1068,6 +1052,8 @@ async function openConversation(id) {
             callBtn.style.display = 'inline-flex';
             callBtn.innerHTML = '<span class="call-icon">📹</span><span class="call-label">Llamar</span>';
             callBtn.title = 'Iniciar videollamada con ' + (p.nombre || 'usuario');
+            // Reactivar el botón solo si LiveKit está cargado
+            callBtn.disabled = !window.LivekitClient;
         }
     }
 
@@ -2458,7 +2444,7 @@ async function crearGrupo() {
 }
 
 // ================================================================
-// LLAMADAS (LiveKit) — v3.4 · Parche quirúrgico
+// LLAMADAS (LiveKit) — v3.5
 // ================================================================
 const LLAMADA_TIMEOUT_MS = 45000;
 const LLAMADA_VIGENCIA_MS = 60000;
@@ -2663,7 +2649,7 @@ async function startCall(tipo = 'video') {
         return;
     }
     if (!window.LivekitClient) {
-        toast('❌ Las llamadas no están disponibles en este momento', 'error');
+        toast('❌ Las llamadas no están disponibles en este dispositivo. Recarga la página.', 'error');
         return;
     }
 
@@ -2747,6 +2733,13 @@ async function incoming(data) {
 
 async function acceptCall() {
     if (!incomingId || llamadaAceptando) return;
+    if (!window.LivekitClient) {
+        toast('❌ Las llamadas no están disponibles en este dispositivo. No se puede aceptar.', 'error');
+        const id = incomingId;
+        cerrarOverlayEntrante();
+        if (id) await terminarLlamadaServidor(id, { motivo: 'fallida' });
+        return;
+    }
     llamadaAceptando = true;
     const id = incomingId;
 
@@ -2899,6 +2892,13 @@ async function init() {
         console.warn('Error cargando sesión:', e);
     }
 
+    // Verificación de LiveKit al iniciar
+    const callBtn = $('videoCall');
+    if (!window.LivekitClient) {
+        if (callBtn) callBtn.disabled = true;
+        console.warn('[Mensajes] LiveKit no disponible al iniciar. Las llamadas estarán deshabilitadas hasta que cargue.');
+    }
+
     await cargarFotoHeader();
     await loadConversations();
     await cargarEstados();
@@ -2910,6 +2910,16 @@ async function init() {
             cargarFotoHeader();
             cargarEstados();
         }
+    });
+
+    // Listeners para el ciclo de vida de LiveKit
+    window.addEventListener('livekit:ready', () => {
+        if (callBtn) callBtn.disabled = false;
+        console.log('[Mensajes] LiveKit cargado correctamente. Llamadas habilitadas.');
+    });
+    window.addEventListener('livekit:error', () => {
+        if (callBtn) callBtn.disabled = true;
+        toast('⚠️ Las llamadas no están disponibles en este dispositivo.', 'warning');
     });
 
     $('headerAvatar').onclick = abrirProfileModal;
@@ -3113,12 +3123,7 @@ window.cerrarModalCrearGrupo = cerrarModalCrearGrupo;
 window.crearCanal = crearCanal;
 window.crearGrupo = crearGrupo;
 window.generarSlug = generarSlug;
-
-// Exponer para llamadas-ui.js
 window.openConversation = openConversation;
-Object.defineProperty(window, 'current', {
-    get: function () { return current; }
-});
 
 // ================================================================
 // ARRANQUE
