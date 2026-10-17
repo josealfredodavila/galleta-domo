@@ -6,23 +6,13 @@
 <meta name="theme-color" content="#05080f">
 <title>◈ Mensajes · Csariel's</title>
 
-<!-- ✅ SDK Supabase PRIMERO -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<!-- ✅ AUTH GLOBAL (crea el cliente singleton) -->
 <script src="/features/shared/js/auth-global.js"></script>
-
-<!-- ✅ PRESENCIA GLOBAL (usa el cliente) -->
 <script src="/features/shared/js/presencia-global.js" defer></script>
-
-<!-- ✅ APARIENCIA GLOBAL v3.0 (usa el cliente) -->
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
-
-<!-- ✅ LiveKit (tercero) -->
 <script src="https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js"></script>
-
-<!-- ✅ CSS externo -->
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css">
+<link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
@@ -34,6 +24,7 @@
     <a class="logo" href="/"><b>◈</b><span>Csariel's</span><em class="badge">WEB3</em></a>
     <div class="header-right">
         <div class="network"><i></i>Polygon</div>
+        <button class="iconbtn" id="btnConfigLlamadas" title="Configuración de llamadas" style="color:var(--muted);">⚙</button>
         <div class="header-avatar" id="headerAvatar" title="Mi perfil">◈</div>
         <input type="file" id="avatarInput" hidden accept="image/*">
     </div>
@@ -49,7 +40,7 @@
 <main class="panel" id="panel">
 <aside class="sidebar">
 
-    <!-- ✅ PESTAÑAS: Chats / Canales / Grupos -->
+    <!-- PESTAÑAS: Chats / Canales / Grupos / Llamadas -->
     <div class="sidebar-tabs">
         <button class="sidebar-tab active" data-tab="chats" onclick="cambiarPestana('chats')">
             <span class="tab-icon">◈</span>
@@ -62,6 +53,10 @@
         <button class="sidebar-tab" data-tab="grupos" onclick="cambiarPestana('grupos')">
             <span class="tab-icon">◆</span>
             <span class="tab-label">Grupos</span>
+        </button>
+        <button class="sidebar-tab" data-tab="llamadas" onclick="cambiarPestana('llamadas')">
+            <span class="tab-icon">☎</span>
+            <span class="tab-label">Llamadas</span>
         </button>
     </div>
 
@@ -115,6 +110,32 @@
         <div class="canales-lista" id="gruposLista"></div>
     </div>
 
+    <!-- TAB: LLAMADAS -->
+    <div class="tab-content hidden" id="tabLlamadas">
+        <div class="sidehead">
+            <span>☎ Historial de llamadas</span>
+            <button class="btn-subir-estado" id="btnBorrarTodoHistorial" title="Borrar todo el historial" style="background:linear-gradient(135deg,#ff3366,#cc1a4d);color:#fff;">🗑 Todo</button>
+        </div>
+        <div class="filtros-canales" style="padding:0 12px 6px; gap:6px; flex-wrap:wrap;">
+            <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;">
+                <option value="all">Todos los tipos</option>
+                <option value="audio">Solo audio</option>
+                <option value="video">Solo video</option>
+            </select>
+            <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;">
+                <option value="all">Todas</option>
+                <option value="entrante">Entrantes</option>
+                <option value="saliente">Salientes</option>
+            </select>
+        </div>
+        <div class="canales-lista" id="historialLlamadasLista">
+            <div class="empty-state-small">
+                <div class="empty-icon">☎</div>
+                <div class="empty-text">Cargando historial…</div>
+            </div>
+        </div>
+    </div>
+
     <button class="fab" id="newChat" title="Nueva conversación">＋</button>
 </aside>
 <section class="chat">
@@ -127,7 +148,7 @@
         </div>
         <div class="actions" id="chatActions" style="display:none;">
             <button class="iconbtn" id="deleteChat" title="Eliminar conversación">◇</button>
-            <!-- ✅ v2.2: Botón de llamada con texto e ícono claros -->
+            <button class="iconbtn" id="blockUser" title="Bloquear contacto" style="color:#ff3366;">⛔</button>
             <button class="iconbtn callbtn" id="videoCall" title="Iniciar videollamada">
                 <span class="call-icon">📹</span>
                 <span class="call-label">Llamar</span>
@@ -253,6 +274,36 @@
     </div>
 </div>
 
+<!-- MODAL: Configuración de llamadas -->
+<div class="modal" id="modalConfigLlamadas">
+    <div class="modalbox" style="max-width:480px;">
+        <button class="iconbtn" id="closeModalConfig" style="float:right">✕</button>
+        <h2>⚙ Configuración de llamadas</h2>
+
+        <label style="display:block;color:var(--muted);font-size:.75rem;margin-bottom:6px;font-weight:600;">¿Quién puede llamarme?</label>
+        <select id="selectQuienPuedeLlamarme" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;margin-bottom:16px;">
+            <option value="todos">Todos</option>
+            <option value="contactos">Solo mis contactos</option>
+            <option value="nadie">Nadie</option>
+        </select>
+
+        <button class="btn" id="btnVerBloqueados" style="width:100%;margin-bottom:10px;">⛔ Ver usuarios bloqueados (<span id="countBloqueados">0</span>)</button>
+
+        <button class="btn send" id="btnGuardarConfig" style="width:100%;">Guardar configuración</button>
+    </div>
+</div>
+
+<!-- MODAL: Usuarios bloqueados -->
+<div class="modal" id="modalBloqueados">
+    <div class="modalbox" style="max-width:480px;">
+        <button class="iconbtn" id="closeModalBloqueados" style="float:right">✕</button>
+        <h2>⛔ Usuarios bloqueados</h2>
+        <div id="listaBloqueados" style="margin-top:10px;">
+            <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>
+        </div>
+    </div>
+</div>
+
 <!-- VIEWER: Foto ampliada -->
 <div class="photo-viewer" id="photoViewer">
     <button class="pv-close" id="pvClose">✕</button>
@@ -292,7 +343,6 @@
         <video id="localVideo" class="local" autoplay playsinline muted></video>
     </div>
     <div class="callinfo" id="callInfo">◈ Conectando…</div>
-    <!-- ✅ v2.2: Botones con etiquetas de texto claras -->
     <div class="controls">
         <button id="toggleMic" title="Activar/Silenciar micrófono">
             <span class="ctrl-icon">🎤</span>
@@ -317,7 +367,6 @@
 <div class="call" id="incomingOverlay">
     <div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div>
     <h2 id="incomingName">Usuario</h2>
-    <!-- ✅ v2.2: Texto más visible -->
     <div class="callinfo">🔔 <strong>Llamada entrante</strong></div>
     <div class="controls">
         <button id="acceptCall" class="accept" title="Aceptar llamada">
@@ -334,10 +383,8 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<!-- ✅ Idiomas -->
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-
-<!-- ✅ JS externo del módulo -->
-<script src="/features/mensajes/js/mensajes.js?v=9"></script>
+<script src="/features/mensajes/js/mensajes.js?v=10"></script>
+<script src="/features/mensajes/js/llamadas-ui.js?v=1"></script>
 </body>
 </html>
