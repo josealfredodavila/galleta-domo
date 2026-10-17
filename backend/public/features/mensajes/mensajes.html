@@ -10,7 +10,50 @@
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/presencia-global.js" defer></script>
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js"></script>
+
+<!-- LiveKit con carga diferida + reintento -->
+<script>
+    (function () {
+        var url = 'https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js';
+        var maxIntentos = 3;
+        var intento = 0;
+        var yaCargado = false;
+
+        function cargarScript() {
+            if (window.LivekitClient) { yaCargado = true; return; }
+            if (intento >= maxIntentos) {
+                console.warn('[LiveKit] No se pudo cargar tras ' + maxIntentos + ' intentos. Las llamadas no estarán disponibles.');
+                window.dispatchEvent(new CustomEvent('livekit:error'));
+                return;
+            }
+            intento++;
+            var s = document.createElement('script');
+            s.src = url;
+            s.async = true;
+            s.onload = function () {
+                if (window.LivekitClient) {
+                    yaCargado = true;
+                    window.dispatchEvent(new CustomEvent('livekit:ready'));
+                } else {
+                    console.warn('[LiveKit] Script cargado pero window.LivekitClient no existe. Reintentando...');
+                    setTimeout(cargarScript, 1500);
+                }
+            };
+            s.onerror = function () {
+                console.warn('[LiveKit] Error de carga intento ' + intento);
+                setTimeout(cargarScript, 1500);
+            };
+            document.head.appendChild(s);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', cargarScript);
+        } else {
+            cargarScript();
+        }
+    })();
+</script>
+
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css">
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 
@@ -40,7 +83,6 @@
 <main class="panel" id="panel">
 <aside class="sidebar">
 
-    <!-- PESTAÑAS: Chats / Canales / Grupos / Llamadas -->
     <div class="sidebar-tabs">
         <button class="sidebar-tab active" data-tab="chats" onclick="cambiarPestana('chats')">
             <span class="tab-icon">◈</span>
@@ -60,7 +102,6 @@
         </button>
     </div>
 
-    <!-- TAB: CHATS -->
     <div class="tab-content" id="tabChats">
         <div class="sidehead">
             <span>◈ Conversaciones</span>
@@ -78,7 +119,6 @@
         <div class="convlist" id="conversationList"></div>
     </div>
 
-    <!-- TAB: CANALES -->
     <div class="tab-content hidden" id="tabCanales">
         <div class="sidehead">
             <span>⬡ Canales Públicos</span>
@@ -94,7 +134,6 @@
         <div class="canales-lista" id="canalesLista"></div>
     </div>
 
-    <!-- TAB: GRUPOS -->
     <div class="tab-content hidden" id="tabGrupos">
         <div class="sidehead">
             <span>◆ Grupos Privados</span>
@@ -110,7 +149,6 @@
         <div class="canales-lista" id="gruposLista"></div>
     </div>
 
-    <!-- TAB: LLAMADAS -->
     <div class="tab-content hidden" id="tabLlamadas">
         <div class="sidehead">
             <span>☎ Historial de llamadas</span>
@@ -149,7 +187,7 @@
         <div class="actions" id="chatActions" style="display:none;">
             <button class="iconbtn" id="deleteChat" title="Eliminar conversación">◇</button>
             <button class="iconbtn" id="blockUser" title="Bloquear contacto" style="color:#ff3366;">⛔</button>
-            <button class="iconbtn callbtn" id="videoCall" title="Iniciar videollamada">
+            <button class="iconbtn callbtn" id="videoCall" title="Iniciar videollamada" disabled>
                 <span class="call-icon">📹</span>
                 <span class="call-label">Llamar</span>
             </button>
@@ -181,7 +219,6 @@
 <footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Csariel's · Sabor al Paladar · WEB3</footer>
 </div>
 
-<!-- MODAL: Nueva conversación -->
 <div class="modal" id="newModal">
     <div class="modalbox">
         <button class="iconbtn" id="closeModal" style="float:right">✕</button>
@@ -191,7 +228,6 @@
     </div>
 </div>
 
-<!-- MODAL: Mi perfil -->
 <div class="modal" id="profileModal">
     <div class="profile-modal-box">
         <div class="profile-modal-avatar" id="profileModalAvatar">◈</div>
@@ -207,7 +243,6 @@
     </div>
 </div>
 
-<!-- MODAL: Vistas de estado -->
 <div class="modal" id="vistasModal">
     <div class="modalbox" style="max-width:420px;">
         <button class="iconbtn" id="closeVistasModal" style="float:right">✕</button>
@@ -218,7 +253,6 @@
     </div>
 </div>
 
-<!-- MODAL: Crear Canal -->
 <div class="modal" id="modalCrearCanal">
     <div class="modalbox" style="max-width:520px;">
         <button class="iconbtn" id="closeModalCanal" style="float:right" onclick="cerrarModalCrearCanal()">✕</button>
@@ -238,7 +272,6 @@
     </div>
 </div>
 
-<!-- MODAL: Crear Grupo -->
 <div class="modal" id="modalCrearGrupo">
     <div class="modalbox" style="max-width:520px;">
         <button class="iconbtn" id="closeModalGrupo" style="float:right" onclick="cerrarModalCrearGrupo()">✕</button>
@@ -258,7 +291,6 @@
     </div>
 </div>
 
-<!-- MODAL: Subir estado -->
 <div class="modal" id="estadoUploadModal">
     <div class="modalbox" style="text-align:center;">
         <button class="iconbtn" id="closeEstadoModal" style="float:right">✕</button>
@@ -274,7 +306,6 @@
     </div>
 </div>
 
-<!-- MODAL: Configuración de llamadas -->
 <div class="modal" id="modalConfigLlamadas">
     <div class="modalbox" style="max-width:480px;">
         <button class="iconbtn" id="closeModalConfig" style="float:right">✕</button>
@@ -293,7 +324,6 @@
     </div>
 </div>
 
-<!-- MODAL: Usuarios bloqueados -->
 <div class="modal" id="modalBloqueados">
     <div class="modalbox" style="max-width:480px;">
         <button class="iconbtn" id="closeModalBloqueados" style="float:right">✕</button>
@@ -304,7 +334,6 @@
     </div>
 </div>
 
-<!-- VIEWER: Foto ampliada -->
 <div class="photo-viewer" id="photoViewer">
     <button class="pv-close" id="pvClose">✕</button>
     <img id="pvImage" src="" alt="Foto">
@@ -312,7 +341,6 @@
     <div class="pv-handle" id="pvHandle"></div>
 </div>
 
-<!-- VIEWER: Estado -->
 <div class="estado-viewer" id="estadoViewer">
     <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
     <div class="estado-viewer-header">
@@ -336,7 +364,6 @@
     </div>
 </div>
 
-<!-- OVERLAY: Videollamada -->
 <div class="call" id="callOverlay">
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
@@ -363,7 +390,6 @@
     </div>
 </div>
 
-<!-- OVERLAY: Llamada entrante -->
 <div class="call" id="incomingOverlay">
     <div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div>
     <h2 id="incomingName">Usuario</h2>
@@ -380,11 +406,10 @@
     </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-<script src="/features/mensajes/js/mensajes.js?v=10"></script>
+<script src="/features/mensajes/js/mensajes.js?v=11"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=1"></script>
 </body>
 </html>
