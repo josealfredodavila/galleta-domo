@@ -274,6 +274,64 @@ function verFotoAmpliada(url, nombre, handle) {
     $('photoViewer').classList.add('show');
 }
 
+// ================================================================
+// VISOR DE IMAGEN CON DESCARGA
+// ================================================================
+let pvDownloadUrl = null;
+let pvDownloadNombre = null;
+
+function asegurarBotonDescarga() {
+    let btn = document.getElementById('pvDownload');
+    if (btn) return btn;
+    const visor = $('photoViewer');
+    if (!visor) return null;
+    btn = document.createElement('button');
+    btn.id = 'pvDownload';
+    btn.type = 'button';
+    btn.textContent = '⬇ Descargar';
+    btn.style.cssText = 'position:absolute;bottom:28px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:99px;border:1px solid var(--gold);background:rgba(5,8,15,.85);color:var(--gold);font-weight:800;font-size:.85rem;cursor:pointer;z-index:2;';
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        descargarImagen(pvDownloadUrl, pvDownloadNombre);
+    });
+    visor.appendChild(btn);
+    return btn;
+}
+
+function abrirVisorImagen(url, nombreArchivo) {
+    if (!url) return;
+    pvDownloadUrl = url;
+    pvDownloadNombre = nombreArchivo || 'imagen.jpg';
+    $('pvImage').src = url;
+    $('pvName').textContent = '';
+    $('pvHandle').textContent = '';
+    asegurarBotonDescarga();
+    $('photoViewer').classList.add('show');
+}
+
+async function descargarImagen(url, nombreArchivo) {
+    if (!url) return;
+    const nombre = (nombreArchivo || 'imagen.jpg').replace(/[^\w.\-]+/g, '_');
+    try {
+        const r = await fetch(url, { mode: 'cors' });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const blob = await r.blob();
+        const objUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = objUrl;
+        a.download = nombre;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(objUrl), 3000);
+        toast('✅ Descarga iniciada', 'success');
+    } catch (e) {
+        console.warn('Descarga directa no disponible, abriendo en pestaña:', e);
+        window.open(url, '_blank', 'noopener');
+        toast('ℹ️ Mantén presionada la imagen para guardarla', 'warning');
+    }
+}
+
 function cerrarPhotoViewer() { $('photoViewer').classList.remove('show'); }
 
 // ================================================================
@@ -1219,7 +1277,7 @@ function messageHTML(m, sent, signedUrl) {
 
     if (urlToUse) {
         if (m.tipo === 'imagen') {
-            body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy">`;
+            body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy" data-visor="1" data-src="${esc(urlToUse)}" data-nombre="${esc(m.nombre_archivo || 'imagen.jpg')}" style="cursor:zoom-in;">`;
         } else if (m.tipo === 'video') {
             body = `<video controls playsinline src="${esc(urlToUse)}"></video>`;
         } else if (m.tipo === 'audio') {
@@ -3036,6 +3094,10 @@ async function init() {
     $('rejectCall').onclick = rejectCall;
 
     $('messages').addEventListener('scroll', detectarSiEstaAbajo);
+    $('messages').addEventListener('click', e => {
+        const img = e.target.closest && e.target.closest('img[data-visor]');
+        if (img) abrirVisorImagen(img.dataset.src, img.dataset.nombre);
+    });
 
     $('scrollDownBtn').onclick = () => {
         isUserAtBottom = true;
