@@ -5,15 +5,16 @@
 // reacciones, comentarios, eliminar publicación.
 // Depende de: perfil-config.js, perfil-utils.js
 //
-// v4.2 (Reacciones estilo Facebook):
+// v4.3 (Control de descargas + Reacciones estilo Facebook):
 // - Inyección de CSS para barra tipo píldora (blur), animación popup
 //   y zoom en emojis (scale 1.4).
-// - Lógica de Long Press (~350ms) para desplegar la barra de reacciones
-//   y toque rápido para reaccionar con el emoji por defecto.
+// - Lógica de Long Press (~350ms) para desplegar la barra de reacciones.
+// - Checkbox para permitir/bloquear descargas de multimedia.
+// - Botón de descarga en el visor modal (fetch -> blob -> download).
 // ================================================================
 
 // ================================================================
-// INYECCIÓN DE ESTILOS CSS PARA REACCIONES (Estilo Facebook)
+// INYECCIÓN DE ESTILOS CSS PARA REACCIONES Y DESCARGAS
 // ================================================================
 (function inyectarEstilosReaccionesPerfil() {
     if (document.getElementById('perfil-reacciones-fb-styles')) return;
@@ -149,6 +150,26 @@
             font-size: 0.75rem;
             font-weight: 500;
         }
+
+        /* Estilos para el checkbox de descarga */
+        .preview-download-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: var(--text-muted, #a1a1aa);
+            cursor: pointer;
+        }
+        .preview-download-control input {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+            accent-color: #3b82f6;
+        }
     `;
     document.head.appendChild(style);
 })();
@@ -222,6 +243,52 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
     }
 
     return data;
+}
+
+// ================================================================
+// HELPER — Descargar Archivo Forzado (Blob)
+// ================================================================
+async function descargarArchivoForzado(url, nombreOriginal) {
+    try {
+        if (window.showToast) window.showToast('Preparando descarga...', 'info', 2000);
+        
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Error al descargar el archivo');
+        
+        const blob = await response.blob();
+        
+        // Intentar obtener la extensión del archivo original o del MIME type
+        let extension = '';
+        if (nombreOriginal && nombreOriginal.includes('.')) {
+            extension = nombreOriginal.split('.').pop().split('?')[0];
+        } else if (blob.type) {
+            const mimeMap = {
+                'image/jpeg': 'jpg',
+                'image/png': 'png',
+                'image/gif': 'gif',
+                'image/webp': 'webp',
+                'video/mp4': 'mp4',
+                'video/webm': 'webm'
+            };
+            extension = mimeMap[blob.type] || 'file';
+        }
+
+        const nombreDescarga = `descarga_${Date.now()}.${extension}`;
+        
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = nombreDescarga;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+
+        if (window.showToast) window.showToast('✅ Descarga completada', 'success', 2000);
+    } catch (error) {
+        console.error('Error descargando:', error);
+        if (window.showToast) window.showToast('❌ Error al descargar el archivo', 'error');
+    }
 }
 
 // ================================================================
@@ -310,17 +377,21 @@ function seleccionarArchivoPerfil(event, tipo) {
 }
 
 // ================================================================
-// RENDERIZAR PREVIEW
+// RENDERIZAR PREVIEW (Con control de descarga)
 // ================================================================
 function renderizarPreviewPerfil() {
     var container = document.getElementById('previewArchivosPerfil');
     if (!container) return;
     container.innerHTML = '';
+    
     Object.keys(archivosSeleccionados).forEach(function (tipo) {
         var file = archivosSeleccionados[tipo];
         if (!file) return;
+        
         var wrapper = document.createElement('div');
         wrapper.className = 'preview-item';
+        wrapper.style.position = 'relative';
+        
         var reader = new FileReader();
         reader.onload = function (e) {
             if (tipo === 'imagen') {
@@ -332,6 +403,26 @@ function renderizarPreviewPerfil() {
         reader.readAsDataURL(file);
         container.appendChild(wrapper);
     });
+
+    // Agregar el checkbox de descarga si hay algún archivo
+    if (archivosSeleccionados.imagen || archivosSeleccionados.video) {
+        var controlDiv = document.createElement('div');
+        controlDiv.className = 'preview-download-control';
+        
+        var checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = 'chkPermitirDescarga';
+        checkbox.checked = true; // Permitido por defecto
+        
+        var label = document.createElement('label');
+        label.htmlFor = 'chkPermitirDescarga';
+        label.textContent = 'Permitir que otros descarguen este archivo';
+        label.style.cursor = 'pointer';
+        
+        controlDiv.appendChild(checkbox);
+        controlDiv.appendChild(label);
+        container.appendChild(controlDiv);
+    }
 }
 
 function quitarArchivoPerfil(tipo) {
@@ -343,7 +434,7 @@ function quitarArchivoPerfil(tipo) {
 }
 
 // ================================================================
-// PUBLICAR DESDE EL PERFIL — con moderación
+// PUBLICAR DESDE EL PERFIL — con moderación y control de descarga
 // ================================================================
 async function publicarDesdePerfil() {
     var btn = document.getElementById('btnPublicarPerfil');
@@ -377,6 +468,10 @@ async function publicarDesdePerfil() {
 
         var mediaUrl = null;
         var mediaType = null;
+        
+        // Leer el estado del checkbox de descarga
+        var chkDescarga = document.getElementById('chkPermitirDescarga');
+        var permitirDescarga = chkDescarga ? chkDescarga.checked : true;
 
         // Subir imagen (con moderación)
         if (archivosSeleccionados.imagen) {
@@ -412,7 +507,8 @@ async function publicarDesdePerfil() {
             contenido: contenido || '',
             media_url: mediaUrl,
             media_type: mediaType,
-            estado: 'publicado'
+            estado: 'publicado',
+            permitir_descarga: permitirDescarga // NUEVO CAMPO
         };
         var insertResult = await client.from('publicaciones').insert(insertPayload).select().single();
         if (insertResult.error) throw new Error(insertResult.error.message);
@@ -567,7 +663,11 @@ async function cargarMisPublicaciones(forzarRefresco) {
             contenido.className = 'contenido';
             contenido.setAttribute('data-no-traducir', '1');
             contenido.appendChild(document.createTextNode(p.contenido || ''));
+            
             if (esUrlSegura(p.media_url)) {
+                // Verificamos si la descarga está permitida (compatibilidad por si la columna no existe aún en BD)
+                var permiteDescarga = p.permitir_descarga !== false; 
+                
                 if (p.media_type === 'video') {
                     var video = document.createElement('video');
                     video.controls = true;
@@ -581,7 +681,8 @@ async function cargarMisPublicaciones(forzarRefresco) {
                     img.style.cursor = 'pointer';
                     img.addEventListener('click', function () {
                         if (typeof window.expandirFotoPublicacion === 'function') {
-                            window.expandirFotoPublicacion(img.src);
+                            // Se pasa el 3er parámetro indicando si permite descarga
+                            window.expandirFotoPublicacion(img.src, p.id, permiteDescarga);
                         }
                     });
                     img.src = p.media_url;
@@ -648,7 +749,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
             var isLongPress = false;
 
             function startPress(e) {
-                // Ignorar clics derechos
                 if (e.type === 'mousedown' && e.button !== 0) return;
                 
                 isLongPress = false;
@@ -656,19 +756,16 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 
                 pressTimer = setTimeout(function () {
                     isLongPress = true;
-                    toggleReaccionDropdown(p.id, true); // force show
-                    if (navigator.vibrate) navigator.vibrate(50); // Vibración háptica opcional
-                }, 350); // 350ms
+                    toggleReaccionDropdown(p.id, true);
+                    if (navigator.vibrate) navigator.vibrate(50);
+                }, 350);
             }
 
             function cancelPress(e) {
                 clearTimeout(pressTimer);
                 if (!isLongPress) {
-                    // Fue un toque rápido
                     e.preventDefault();
                     e.stopPropagation();
-                    
-                    // Si ya hay una reacción, se elimina. Si no, se pone la por defecto.
                     var emojiPorDefecto = '❤️';
                     reaccionarPublicacionPerfil(p.id, reaccionUsuario || emojiPorDefecto);
                 }
@@ -677,7 +774,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             trigger.addEventListener('mousedown', startPress);
             trigger.addEventListener('touchstart', startPress, { passive: true });
-            
             trigger.addEventListener('mouseup', cancelPress);
             trigger.addEventListener('mouseleave', function() { clearTimeout(pressTimer); });
             trigger.addEventListener('touchend', cancelPress);
@@ -1074,3 +1170,8 @@ async function eliminarMiPublicacion(publicacionId, event) {
         }
     }
 }
+
+// ================================================================
+// EXPONER FUNCIONES GLOBALES (Para el visor modal)
+// ================================================================
+window.descargarArchivoForzado = descargarArchivoForzado;
