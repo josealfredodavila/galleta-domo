@@ -2,10 +2,17 @@
 // ROUTES/WEBHOOKS.JS — Csariel's
 // Montado en /api/webhook
 //   POST /api/webhook/nowpayments → IPN de NOWPayments (firma verificada)
+//       LP-   → Live Pass
+//       DON-  → donaciones de live (confirmar_donacion_live, 3 argumentos)
+//       TRX-  → accesos de pago a lives (pagos_transmision)
+//       NET-  → paquetes de Internet (ordenes_internet)
+//       PRO-  → membresía PRO
+//       resto → membresía de Mercado (por payment_id)
 //   POST /api/webhook/membresia   → membresía PRO (firma verificada)
 //   POST /api/webhook/stripe      → placeholder
 //   POST /api/webhook/fintoc      → placeholder
 // Toda petición de NOWPayments pasa primero por verificarFirmaNowPayments.
+// Estados de pago unificados: pagado / fallido / pendiente.
 // ================================================================
 
 const express = require('express');
@@ -55,14 +62,17 @@ router.post('/nowpayments', async (req, res) => {
         if (orderUpper.startsWith('DON-')) {
             return nowpayments.procesarDonacion(orderId, npStatus, data, res);
         }
-        if (orderUpper.startsWith('PRO-')) {
-            return handleWebhookMembresia(req, res);
+        if (orderUpper.startsWith('TRX-')) {
+            return nowpayments.procesarTransmision(orderId, npStatus, data, res);
         }
         if (orderUpper.startsWith('NET-')) {
             return handleWebhookInternet(req, res);
         }
+        if (orderUpper.startsWith('PRO-')) {
+            return handleWebhookMembresia(req, res);
+        }
 
-        // Resto (muro_, MKT-, TRX-, membresía de Mercado): busca por payment_id.
+        // Resto (muro_, MKT-, membresía de Mercado): busca por payment_id.
         // Si no existe, responde 200 sin activar nada.
         return nowpayments.procesarMembresia(npStatus, data, res);
     } catch (e) {
