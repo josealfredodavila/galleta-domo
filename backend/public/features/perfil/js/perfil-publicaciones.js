@@ -1,22 +1,11 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// Publicar desde el perfil (texto/foto/video), listar mis posts,
-// reacciones, comentarios, eliminar publicación.
-// Depende de: perfil-config.js, perfil-utils.js
-//
-// v4.5 (Autoplay configurable en el feed + Visor con Swipe)
-// - Lee 'contenido_auto_reproducir' de localStorage.
-// - Si está activo, el video se mutea, entra en loop y se auto-reproduce.
-// - Si está desactivado, el video espera a que el usuario le dé play.
+// v4.6 (Autoplay en tiempo real y Swipe respetando la configuración)
 // ================================================================
 
-// Variable global para que el visor sepa qué archivos hay en la lista
 window.listaMultimediaPerfil = [];
 
-// ================================================================
-// INYECCIÓN DE ESTILOS CSS
-// ================================================================
 (function inyectarEstilosReaccionesPerfil() {
     if (document.getElementById('perfil-reacciones-fb-styles')) return;
     var style = document.createElement('style');
@@ -51,9 +40,6 @@ window.listaMultimediaPerfil = [];
     document.head.appendChild(style);
 })();
 
-// ================================================================
-// HELPERS
-// ================================================================
 function pubCodigoIdioma() {
     try { if (typeof window.obtenerCodigoIdiomaActual === 'function') return window.obtenerCodigoIdiomaActual(); } catch (e) {}
     return 'es-MX';
@@ -112,9 +98,6 @@ async function descargarArchivoForzado(url, nombreOriginal) {
     }
 }
 
-// ================================================================
-// EMOJI PICKER Y HASHTAG
-// ================================================================
 function toggleEmojiPickerPerfil() {
     var picker = document.getElementById('emojiPickerPerfil');
     if (!picker) return;
@@ -146,9 +129,6 @@ function insertarHashtagPerfil() {
     input.focus(); input.selectionStart = input.selectionEnd = start + 1;
 }
 
-// ================================================================
-// SELECCIONAR ARCHIVO Y PREVIEW
-// ================================================================
 function seleccionarArchivoPerfil(event, tipo) {
     var file = event.target.files[0];
     if (!file) return;
@@ -194,9 +174,6 @@ function quitarArchivoPerfil(tipo) {
     renderizarPreviewPerfil();
 }
 
-// ================================================================
-// PUBLICAR DESDE EL PERFIL
-// ================================================================
 async function publicarDesdePerfil() {
     var btn = document.getElementById('btnPublicarPerfil'); var input = document.getElementById('inputNuevaPublicacion');
     var contenido = input ? input.value.trim() : '';
@@ -236,8 +213,28 @@ async function publicarDesdePerfil() {
 }
 
 // ================================================================
-// CARGAR MIS PUBLICACIONES
+// OBSERVADOR PARA EL AUTOPLAY INTELIGENTE
 // ================================================================
+const videoObserverPerfil = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        const video = entry.target;
+        // Leer la preferencia CADA VEZ que el video aparece en pantalla
+        const autoPlayPref = localStorage.getItem('contenido_auto_reproducir');
+        const activarAutoplay = autoPlayPref === null || autoPlayPref === 'true';
+
+        if (entry.isIntersecting) {
+            if (activarAutoplay) {
+                video.muted = true;
+                video.play().catch(e => console.log('Autoplay bloqueado por el navegador', e));
+            }
+        } else {
+            video.pause();
+            // Si el usuario desliza a otro video, lo reiniciamos
+            video.currentTime = 0; 
+        }
+    });
+}, { threshold: 0.5 }); // Se activa cuando el 50% del video es visible
+
 async function cargarMisPublicaciones(forzarRefresco) {
     var container = document.getElementById('misPublicacionesList'); var contador = document.getElementById('misPostsCount');
     if (!container) return;
@@ -252,7 +249,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
         if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><h4>Sin publicaciones aún</h4><p>Publica algo para verlo aquí</p></div>'; return; }
         container.innerHTML = '';
         
-        // Limpiamos la lista global cada vez que recargamos para que el visor sepa qué mostrar
         window.listaMultimediaPerfil = [];
 
         var reaccionesUsuario = {}; var conteosReacciones = {};
@@ -284,7 +280,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 var permiteDescarga = p.permitir_descarga !== false; 
                 
                 if (p.media_type === 'video' || p.media_type === 'imagen') {
-                    // GUARDAMOS EL ARCHIVO EN LA LISTA GLOBAL PARA EL VISOR
                     var indexEnLista = window.listaMultimediaPerfil.length;
                     window.listaMultimediaPerfil.push({
                         url: p.media_url,
@@ -299,27 +294,21 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         video.src = p.media_url;
                         video.style.cursor = 'pointer'; 
                         
-                        // --- LÓGICA DE AUTOPLAY CONFIGURABLE ---
-                        // Leer la preferencia del usuario desde localStorage
-                        const autoPlayPref = localStorage.getItem('contenido_auto_reproducir');
-                        const activarAutoplay = autoPlayPref === null || autoPlayPref === 'true'; // Por defecto true
-
-                        if (activarAutoplay) {
-                            video.loop = true;
-                            video.autoplay = true;
-                            video.muted = true; // Silenciado para que el navegador permita el autoplay
-                            // Intentar reproducir
-                            setTimeout(() => video.play().catch(e => console.log('Autoplay bloqueado:', e)), 100);
-                        } else {
-                            video.loop = false;
-                            video.autoplay = false;
-                            video.muted = false;
-                        }
-                        // ----------------------------------------
+                        // Configuración inicial al crear el elemento
+                        video.loop = false; // El loop lo quitamos para que sea más natural
                         
-                        // AGREGAMOS EL EVENTO AL VIDEO PARA QUE ABRA EL VISOR
+                        // Si no se permite autoplay, que se vea el botón de play
+                        const autoPlayPrefInicial = localStorage.getItem('contenido_auto_reproducir');
+                        if (autoPlayPrefInicial === 'false') {
+                            video.pause();
+                        } else {
+                            video.muted = true;
+                        }
+
+                        // El observador se encarga de dar play/pause cuando aparece en pantalla
+                        videoObserverPerfil.observe(video);
+
                         video.addEventListener('click', function (e) {
-                            // Evitar que el clic en los controles (play, pausa) abra el visor
                             if(e.target.tagName !== 'VIDEO') return; 
                             if (typeof window.expandirFotoPublicacion === 'function') {
                                 window.expandirFotoPublicacion(indexEnLista);
@@ -376,9 +365,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
     } catch (error) { console.error('Error cargando mis publicaciones:', error); container.innerHTML = '<div class="empty-state"><h4>Error al cargar</h4><p>' + escapeHtmlPerfil(error.message) + '</p></div>'; }
 }
 
-// ================================================================
-// REACCIONES
-// ================================================================
 function toggleReaccionDropdown(postId, forzarApertura) {
     var dd = document.getElementById('reaccion-dropdown-' + postId); if (!dd) return; var esta = dd.classList.contains('show');
     document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) { el.classList.remove('show'); });
@@ -402,9 +388,6 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
     } catch (error) { console.error('Error reaccionando:', error); }
 }
 
-// ================================================================
-// COMENTARIOS
-// ================================================================
 async function toggleComentariosPerfil(publicacionId) {
     var container = document.getElementById('comentarios-container-' + publicacionId); if (!container) return;
     if (container.classList.contains('show')) { container.classList.remove('show'); return; }
@@ -448,9 +431,6 @@ async function enviarComentarioPerfil(publicacionId) {
     } catch (error) { console.error('Error enviando comentario:', error); if (window.showToast) { if (esErrorModeracionPerfil(error)) window.showToast('❌ Contenido no permitido', 'error', 6000); else window.showToast('Error al enviar comentario: ' + error.message, 'error'); } }
 }
 
-// ================================================================
-// ELIMINAR PUBLICACIÓN
-// ================================================================
 async function eliminarMiPublicacion(publicacionId, event) {
     if (event) { event.preventDefault(); event.stopPropagation(); }
     if (!confirm('¿Seguro que quieres eliminar esta publicación?')) return;
