@@ -5,14 +5,153 @@
 // reacciones, comentarios, eliminar publicación.
 // Depende de: perfil-config.js, perfil-utils.js
 //
-// v4.1 (moderación):
-// - Las consultas usan select('*'): las vistas publicaciones_publicas
-//   y publicaciones_comentarios_publicos ya exponen aviso_moderacion.
-// - publicarDesdePerfil() maneja error 'contenido_no_permitido'.
-// - enviarComentarioPerfil() maneja error 'contenido_no_permitido'.
-// - Cartel amarillo ⚠️ en posts y comentarios con aviso_moderacion.
-// - Sube imagen/video vía /api/media/upload (destino muro-videos).
+// v4.2 (Reacciones estilo Facebook):
+// - Inyección de CSS para barra tipo píldora (blur), animación popup
+//   y zoom en emojis (scale 1.4).
+// - Lógica de Long Press (~350ms) para desplegar la barra de reacciones
+//   y toque rápido para reaccionar con el emoji por defecto.
 // ================================================================
+
+// ================================================================
+// INYECCIÓN DE ESTILOS CSS PARA REACCIONES (Estilo Facebook)
+// ================================================================
+(function inyectarEstilosReaccionesPerfil() {
+    if (document.getElementById('perfil-reacciones-fb-styles')) return;
+    var style = document.createElement('style');
+    style.id = 'perfil-reacciones-fb-styles';
+    style.innerHTML = `
+        /* Contenedor principal de la reacción */
+        .reaccion-wrap {
+            position: relative;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        /* Barra flotante tipo píldora */
+        .reaccion-dropdown {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            background: rgba(20, 20, 20, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px) scale(0.9);
+            transform-origin: bottom left;
+            transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), visibility 0.2s;
+            z-index: 100;
+        }
+
+        /* Clase para mostrar la barra */
+        .reaccion-dropdown.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0) scale(1);
+            animation: popupEmojiBar 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        @keyframes popupEmojiBar {
+            0% { transform: translateY(10px) scale(0.8); opacity: 0; }
+            100% { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Botones de emojis dentro de la barra */
+        .reaccion-dropdown button {
+            background: transparent;
+            border: none;
+            font-size: 1.6rem;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            width: 38px;
+            height: 38px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.15s;
+            position: relative;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        /* Zoom al pasar el cursor o presionar */
+        .reaccion-dropdown button:hover,
+        .reaccion-dropdown button:active {
+            transform: scale(1.4) translateY(-6px);
+            background: rgba(255, 255, 255, 0.1);
+            z-index: 2;
+        }
+
+        /* Mini contador en cada emoji */
+        .reaccion-dropdown button .mini-count {
+            position: absolute;
+            bottom: -4px;
+            right: -4px;
+            background: #3b82f6;
+            color: white;
+            font-size: 0.55rem;
+            font-weight: bold;
+            padding: 1px 4px;
+            border-radius: 10px;
+            line-height: 1;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .reaccion-dropdown button:hover .mini-count {
+            opacity: 1;
+        }
+
+        /* Botón trigger (Me gusta / Reaccionar) */
+        .reaccion-trigger {
+            background: transparent;
+            border: none;
+            color: var(--text-muted, #a1a1aa);
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s, color 0.2s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .reaccion-trigger:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .reaccion-trigger.activa {
+            color: #3b82f6;
+        }
+
+        .reaccion-trigger .emoji-actual {
+            font-size: 1.1rem;
+            line-height: 1;
+        }
+
+        .reaccion-trigger .count {
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+    `;
+    document.head.appendChild(style);
+})();
 
 // Código de idioma actual para formatear fechas
 function pubCodigoIdioma() {
@@ -451,7 +590,9 @@ async function cargarMisPublicaciones(forzarRefresco) {
             }
             card.appendChild(contenido);
 
-            // REACCIONES
+            // ==========================================
+            // REACCIONES (Lógica Facebook)
+            // ==========================================
             var reaccionUsuario = reaccionesUsuario[p.id] || null;
             var conteos = conteosReacciones[p.id] || {};
             var totalReacciones = 0;
@@ -466,6 +607,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
             dropdown.className = 'reaccion-dropdown';
             dropdown.id = 'reaccion-dropdown-' + p.id;
             dropdown.setAttribute('data-no-traducir', '1');
+            
             EMOJIS_REACCION.forEach(function (emoji) {
                 var b = document.createElement('button');
                 b.type = 'button';
@@ -473,10 +615,12 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 if (reaccionUsuario === emoji) b.classList.add('activa');
                 b.title = perfilT('perfil_reaccionar', 'Reaccionar') + ' ' + emoji;
                 b.textContent = emoji;
+                
                 b.addEventListener('click', function (ev) {
                     ev.stopPropagation();
                     reaccionarPublicacionPerfil(p.id, emoji);
                 });
+                
                 var count = conteos[emoji] || 0;
                 if (count > 0) {
                     var mini = document.createElement('span');
@@ -498,10 +642,46 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 (totalReacciones > 0
                     ? '<span class="count" data-no-traducir="1">' + totalReacciones + '</span>'
                     : '<span class="count" data-no-traducir="1">' + escaparHTML(perfilT('perfil_reaccionar', 'Reaccionar')) + '</span>');
-            trigger.addEventListener('click', function (ev) {
-                ev.stopPropagation();
-                toggleReaccionDropdown(p.id);
-            });
+
+            // Lógica de Long Press (Toque prolongado)
+            var pressTimer;
+            var isLongPress = false;
+
+            function startPress(e) {
+                // Ignorar clics derechos
+                if (e.type === 'mousedown' && e.button !== 0) return;
+                
+                isLongPress = false;
+                clearTimeout(pressTimer);
+                
+                pressTimer = setTimeout(function () {
+                    isLongPress = true;
+                    toggleReaccionDropdown(p.id, true); // force show
+                    if (navigator.vibrate) navigator.vibrate(50); // Vibración háptica opcional
+                }, 350); // 350ms
+            }
+
+            function cancelPress(e) {
+                clearTimeout(pressTimer);
+                if (!isLongPress) {
+                    // Fue un toque rápido
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Si ya hay una reacción, se elimina. Si no, se pone la por defecto.
+                    var emojiPorDefecto = '❤️';
+                    reaccionarPublicacionPerfil(p.id, reaccionUsuario || emojiPorDefecto);
+                }
+                isLongPress = false;
+            }
+
+            trigger.addEventListener('mousedown', startPress);
+            trigger.addEventListener('touchstart', startPress, { passive: true });
+            
+            trigger.addEventListener('mouseup', cancelPress);
+            trigger.addEventListener('mouseleave', function() { clearTimeout(pressTimer); });
+            trigger.addEventListener('touchend', cancelPress);
+            trigger.addEventListener('touchcancel', function() { clearTimeout(pressTimer); });
 
             wrap.appendChild(dropdown);
             wrap.appendChild(trigger);
@@ -566,15 +746,31 @@ async function cargarMisPublicaciones(forzarRefresco) {
 // ================================================================
 // TOGGLE DROPDOWN DE REACCIONES
 // ================================================================
-function toggleReaccionDropdown(postId) {
+function toggleReaccionDropdown(postId, forzarApertura) {
     var dd = document.getElementById('reaccion-dropdown-' + postId);
     if (!dd) return;
     var esta = dd.classList.contains('show');
+    
+    // Cerrar todos los demás dropdowns abiertos
     document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) {
         el.classList.remove('show');
     });
-    if (!esta) dd.classList.add('show');
+
+    if (forzarApertura === true) {
+        dd.classList.add('show');
+    } else if (!esta) {
+        dd.classList.add('show');
+    }
 }
+
+// Cerrar dropdowns si se hace clic fuera
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.reaccion-wrap')) {
+        document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) {
+            el.classList.remove('show');
+        });
+    }
+});
 
 // ================================================================
 // REACCIONAR
@@ -602,14 +798,17 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
             .maybeSingle();
 
         if (existing.data && existing.data.tipo === emoji) {
+            // Si hace clic en el mismo emoji, se elimina la reacción
             await client.from('publicaciones_reacciones').delete().eq('id', existing.data.id);
             if (window.showToast) {
                 window.showToast(perfilT('perfil_pub_reaccion_eliminada', 'Reacción eliminada'), 'warning', 2000);
             }
         } else {
             if (existing.data) {
+                // Actualizar reacción
                 await client.from('publicaciones_reacciones').update({ tipo: emoji }).eq('id', existing.data.id);
             } else {
+                // Insertar nueva reacción
                 var insert = await client.from('publicaciones_reacciones').insert({
                     publicacion_id: postId,
                     usuario_id: session.user.id,
