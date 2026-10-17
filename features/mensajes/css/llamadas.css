@@ -1,0 +1,175 @@
+/* ============================================================
+   CSARIEL'S · HISTORIAL DE LLAMADAS · CONFIGURACIÓN · BLOQUEOS
+   Estilos exclusivos para la pestaña "Llamadas" y sus modales.
+   ============================================================ */
+
+.llamada-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 6px;
+    transition: all .2s;
+}
+
+.llamada-item:hover {
+    background: rgba(212, 175, 55, 0.06);
+    border-color: rgba(212, 175, 55, 0.35);
+}
+
+.llamada-icono {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--space);
+}
+
+.llamada-icono.entrante { background: linear-gradient(135deg, #00d68f, #00b377); }
+.llamada-icono.saliente { background: linear-gradient(135deg, var(--gold), #b8923a); }
+.llamada-icono.perdida  { background: linear-gradient(135deg, #ff3366, #cc1a4d); }
+.llamada-icono.rechazada { background: linear-gradient(135deg, #ffaa00, #cc8800); }
+.llamada-icono.fallida  { background: linear-gradient(135deg, #8aa8b8, #5c7a8a); }
+
+.llamada-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.llamada-nombre {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.llamada-meta {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    font-size: .65rem;
+    color: var(--muted);
+    align-items: center;
+}
+
+.llamada-meta .badge-tipo {
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: .58rem;
+    font-weight: 700;
+    border: 1px solid var(--border);
+    color: var(--gold);
+    background: rgba(212, 175, 55, 0.08);
+}
+
+.llamada-meta .badge-estado {
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: .58rem;
+    font-weight: 700;
+    border: 1px solid var(--border);
+}
+
+.badge-estado.contestada { color: var(--success); border-color: rgba(0, 214, 143, 0.4); background: rgba(0, 214, 143, 0.08); }
+.badge-estado.perdida    { color: #ff3366; border-color: rgba(255, 51, 102, 0.4); background: rgba(255, 51, 102, 0.08); }
+.badge-estado.rechazada  { color: #ffaa00; border-color: rgba(255, 170, 0, 0.4); background: rgba(255, 170, 0, 0.08); }
+.badge-estado.cancelada  { color: var(--muted); border-color: rgba(138, 168, 184, 0.4); background: rgba(138, 168, 184, 0.08); }
+.badge-estado.fallida    { color: var(--muted); border-color: rgba(138, 168, 184, 0.4); background: rgba(138, 168, 184, 0.08); }
+
+.llamada-acciones {
+    display: flex;
+    gap: 4px;
+}
+
+.llamada-acciones button {
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: .85rem;
+    transition: all .2s;
+}
+
+.llamada-acciones button:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.llamada-acciones button.danger:hover {
+    color: #ff3366;
+    border-color: #ff3366;
+    background: rgba(255, 51, 102, 0.1);
+}
+
+.llamada-acciones button.block:hover {
+    color: #ff3366;
+    border-color: #ff3366;
+    background: rgba(255, 51, 102, 0.1);
+}
+
+/* Bloqueado item */
+.bloqueado-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.bloqueado-item .avatar {
+    width: 40px;
+    height: 40px;
+    flex-basis: 40px;
+}
+
+.bloqueado-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.bloqueado-nombre {
+    font-size: .85rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.bloqueado-handle {
+    font-size: .68rem;
+    color: var(--muted);
+}
+
+.bloqueado-item button {
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1px solid #ff3366;
+    background: transparent;
+    color: #ff3366;
+    font-size: .7rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all .2s;
+}
+
+.bloqueado-item button:hover {
+    background: #ff3366;
+    color: #fff;
+}
