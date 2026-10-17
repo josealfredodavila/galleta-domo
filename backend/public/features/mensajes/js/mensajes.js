@@ -1,15 +1,17 @@
 // ================================================================
-// MENSAJES · JS v3.7
+// MENSAJES · JS v3.5
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIOS v3.7:
-// - Fix visor de fotos: ya no se abre el visor nativo del navegador.
-//   Ahora las fotos se abren SOLO en el visor custom con botón
-//   de descarga dorado.
-// - Fix botón "Descargar" en archivos adjuntos (PDF, docs, etc.):
-//   ahora es un botón visible con estilo, no un link azul.
-// - Todo lo demás (llamadas, historial, bloqueos, configuración,
-//   compartir pantalla, mensajes, bot, canales, grupos) intacto.
+// CAMBIOS v3.5:
+// - Verificación de carga de LiveKit al iniciar.
+// - Si LiveKit no está cargado, el botón "Llamar" se deshabilita
+//   y se avisa al usuario con un toast claro.
+// - Escucha el evento 'livekit:ready' (disparado por el HTML)
+//   para reactivar el botón "Llamar".
+// - Escucha el evento 'livekit:error' para avisar que las llamadas
+//   no estarán disponibles en este dispositivo.
+// - Todo lo demás (mensajes, estados, bot, canales, grupos, historial,
+//   bloqueos) se mantiene idéntico a la v3.4.
 // ================================================================
 
 'use strict';
@@ -273,47 +275,6 @@ function verFotoAmpliada(url, nombre, handle) {
 }
 
 function cerrarPhotoViewer() { $('photoViewer').classList.remove('show'); }
-
-// ================================================================
-// VISOR DE MEDIA (fotos / videos del chat)
-// ================================================================
-function abrirMediaViewer(url, nombreArchivo, tipo) {
-    if (!url) return;
-
-    const modal = $('mediaViewer');
-    const img = $('mediaViewerImg');
-    const video = $('mediaViewerVideo');
-    const btnDescargar = $('mediaViewerDownload');
-    const nombre = $('mediaViewerName');
-
-    if (!modal || !img || !btnDescargar) return;
-
-    if (tipo === 'video') {
-        img.classList.add('hidden');
-        video.classList.remove('hidden');
-        video.src = url;
-    } else {
-        video.classList.add('hidden');
-        img.classList.remove('hidden');
-        img.src = url;
-    }
-
-    nombre.textContent = nombreArchivo || 'Archivo';
-    btnDescargar.href = url;
-    btnDescargar.download = nombreArchivo || 'archivo';
-
-    modal.classList.add('show');
-}
-
-function cerrarMediaViewer() {
-    const modal = $('mediaViewer');
-    const video = $('mediaViewerVideo');
-    if (modal) modal.classList.remove('show');
-    if (video) {
-        try { video.pause(); } catch (e) {}
-        video.src = '';
-    }
-}
 
 // ================================================================
 // ESTADOS
@@ -836,7 +797,12 @@ async function getSignedUrlForMessage(m) {
 }
 
 // ================================================================
-// CARGAR CONVERSACIONES — v3.7
+// CARGAR CONVERSACIONES — v3.5
+//
+// Construye la lista desde los MENSAJES REALES del usuario.
+// Calcula el otherUserId de cada conversación (nunca muestra al
+// propio usuario). Trae los perfiles en lote desde
+// perfiles_publicos en 1 sola consulta.
 // ================================================================
 let conversationFilter = '';
 
@@ -1086,6 +1052,7 @@ async function openConversation(id) {
             callBtn.style.display = 'inline-flex';
             callBtn.innerHTML = '<span class="call-icon">📹</span><span class="call-label">Llamar</span>';
             callBtn.title = 'Iniciar videollamada con ' + (p.nombre || 'usuario');
+            // Reactivar el botón solo si LiveKit está cargado
             callBtn.disabled = !window.LivekitClient;
         }
     }
@@ -1252,30 +1219,14 @@ function messageHTML(m, sent, signedUrl) {
 
     if (urlToUse) {
         if (m.tipo === 'imagen') {
-            body = `
-                <a href="javascript:void(0);" class="media-link"
-                   data-media-url="${esc(urlToUse)}"
-                   data-media-name="${esc(m.nombre_archivo || 'imagen.jpg')}"
-                   data-media-type="imagen"
-                   onclick="event.preventDefault(); event.stopPropagation(); window.abrirMediaViewer(this.dataset.mediaUrl, this.dataset.mediaName, this.dataset.mediaType); return false;">
-                    <img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy">
-                </a>
-            `;
+            body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy">`;
         } else if (m.tipo === 'video') {
             body = `<video controls playsinline src="${esc(urlToUse)}"></video>`;
         } else if (m.tipo === 'audio') {
             body = `<audio controls preload="metadata" src="${esc(urlToUse)}"></audio>`;
         } else {
             const displayName = esc(m.nombre_archivo || limpiarMarkdown(m.contenido) || 'Archivo');
-            body = `
-                <div class="file-attachment">
-                    📎 <span>${displayName}</span>
-                    <a href="${esc(urlToUse)}" download="${esc(m.nombre_archivo || 'archivo')}"
-                       class="file-download-btn">
-                        ⬇ Descargar
-                    </a>
-                </div>
-            `;
+            body = `📎 <a href="${esc(urlToUse)}" target="_blank" rel="noopener" style="color:var(--gold)">${displayName}</a>`;
         }
     }
 
@@ -2493,7 +2444,7 @@ async function crearGrupo() {
 }
 
 // ================================================================
-// LLAMADAS (LiveKit) — v3.7
+// LLAMADAS (LiveKit) — v3.5
 // ================================================================
 const LLAMADA_TIMEOUT_MS = 45000;
 const LLAMADA_VIGENCIA_MS = 60000;
@@ -2888,98 +2839,29 @@ async function toggleCam() {
         : '<span class="ctrl-icon">📷❌</span><span class="ctrl-label">Sin cámara</span>';
 }
 
-// ================================================================
-// COMPARTIR PANTALLA — v3.7
-// ================================================================
 async function toggleScreen() {
-    if (!call.room) {
-        toast('⚠️ Inicia una llamada primero para compartir pantalla', 'warning');
-        return;
-    }
-    if (call.tipo !== 'video') {
-        toast('⚠️ Solo puedes compartir pantalla en videollamadas', 'warning');
-        return;
-    }
-
-    const btn = $('toggleScreen');
-
-    if (call.screen) {
-        try {
+    if (!call.room) return;
+    try {
+        if (call.screen) {
             await call.room.localParticipant.unpublishTrack(call.screen);
-        } catch (e) {
-            console.warn('[Pantalla] unpublish:', e);
-        }
-        try { call.screen.stop(); } catch (e) {}
-        call.screen = null;
-        btn.innerHTML = '<span class="ctrl-icon">🖥️</span><span class="ctrl-label">Pantalla</span>';
-
-        if (call.video && !call.video.enabled) {
-            call.video.enabled = true;
-            $('toggleCam').innerHTML = '<span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span>';
-        }
-        toast('🖥️ Pantalla compartida detenida', 'success');
-        return;
-    }
-
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-        toast('❌ Tu navegador no permite compartir pantalla', 'error');
-        return;
-    }
-
-    let displayStream;
-    try {
-        displayStream = await navigator.mediaDevices.getDisplayMedia({
-            video: true,
-            audio: false
-        });
-    } catch (e) {
-        console.warn('[Pantalla] getDisplayMedia:', e);
-        if (e.name === 'NotAllowedError' || e.name === 'AbortError') {
-            toast('⚠️ Cancelaste compartir pantalla o no diste permiso', 'warning');
-        } else if (e.name === 'NotSupportedError') {
-            toast('❌ Este dispositivo no permite compartir pantalla', 'error');
-        } else {
-            toast('❌ No se pudo compartir pantalla: ' + (e.message || e.name), 'error');
-        }
-        return;
-    }
-
-    try {
-        const track = displayStream.getVideoTracks()[0];
-        if (!track) {
-            toast('❌ No se obtuvo video de la pantalla', 'error');
+            call.screen.stop();
+            call.screen = null;
+            $('toggleScreen').innerHTML = '<span class="ctrl-icon">🖥️</span><span class="ctrl-label">Pantalla</span>';
             return;
         }
-
-        if (call.video) {
-            call.video.enabled = false;
-            $('toggleCam').innerHTML = '<span class="ctrl-icon">📷❌</span><span class="ctrl-label">Sin cámara</span>';
-        }
-
-        await call.room.localParticipant.publishTrack(track, {
+        const s = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const t = s.getVideoTracks()[0];
+        await call.room.localParticipant.publishTrack(t, {
             name: 'screen',
             source: lkSource('ScreenShare')
         });
-
-        call.screen = track;
-        btn.innerHTML = '<span class="ctrl-icon">🖥️⏹️</span><span class="ctrl-label">Detener</span>';
-        toast('🖥️ Compartiendo pantalla', 'success');
-
-        track.onended = () => {
-            if (call.screen === track) {
-                call.screen = null;
-                btn.innerHTML = '<span class="ctrl-icon">🖥️</span><span class="ctrl-label">Pantalla</span>';
-                if (call.video) {
-                    call.video.enabled = true;
-                    $('toggleCam').innerHTML = '<span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span>';
-                }
-                toast('🖥️ Pantalla compartida detenida', 'success');
-            }
-        };
+        call.screen = t;
+        $('toggleScreen').innerHTML = '<span class="ctrl-icon">🖥️⏹️</span><span class="ctrl-label">Detener</span>';
+        t.onended = () => toggleScreen();
     } catch (e) {
-        console.error('[Pantalla] publicar:', e);
-        try { displayStream.getTracks().forEach(t => t.stop()); } catch (_) {}
-        toast('❌ No se pudo publicar la pantalla: ' + (e.message || e.name), 'error');
+        if (e.name !== 'NotAllowedError') {
+            toast('❌ No se pudo compartir pantalla', 'error');
+        }
     }
 }
 
@@ -3010,6 +2892,7 @@ async function init() {
         console.warn('Error cargando sesión:', e);
     }
 
+    // Verificación de LiveKit al iniciar
     const callBtn = $('videoCall');
     if (!window.LivekitClient) {
         if (callBtn) callBtn.disabled = true;
@@ -3029,6 +2912,7 @@ async function init() {
         }
     });
 
+    // Listeners para el ciclo de vida de LiveKit
     window.addEventListener('livekit:ready', () => {
         if (callBtn) callBtn.disabled = false;
         console.log('[Mensajes] LiveKit cargado correctamente. Llamadas habilitadas.');
@@ -3101,7 +2985,6 @@ async function init() {
             cerrarModalCrearCanal();
             cerrarModalCrearGrupo();
             $('newModal').classList.remove('show');
-            cerrarMediaViewer();
         }
     });
 
@@ -3151,15 +3034,6 @@ async function init() {
     $('toggleScreen').onclick = toggleScreen;
     $('acceptCall').onclick = acceptCall;
     $('rejectCall').onclick = rejectCall;
-
-    const mediaViewer = $('mediaViewer');
-    if (mediaViewer) {
-        const closeBtn = $('mediaViewerClose');
-        if (closeBtn) closeBtn.onclick = cerrarMediaViewer;
-        mediaViewer.addEventListener('click', (e) => {
-            if (e.target.id === 'mediaViewer') cerrarMediaViewer();
-        });
-    }
 
     $('messages').addEventListener('scroll', detectarSiEstaAbajo);
 
@@ -3250,8 +3124,6 @@ window.crearCanal = crearCanal;
 window.crearGrupo = crearGrupo;
 window.generarSlug = generarSlug;
 window.openConversation = openConversation;
-window.abrirMediaViewer = abrirMediaViewer;
-window.cerrarMediaViewer = cerrarMediaViewer;
 
 // ================================================================
 // ARRANQUE
