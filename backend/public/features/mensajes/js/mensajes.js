@@ -1,17 +1,15 @@
 // ================================================================
-// MENSAJES · JS v3.6
+// MENSAJES · JS v3.7
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIOS v3.6:
-// - Corregido "compartir pantalla": getDisplayMedia se llama primero,
-//   el error real se muestra en pantalla, y al detener se reactiva
-//   la cámara si estaba activa.
-// - Las fotos enviadas en el chat se abren en pantalla completa
-//   con botón de descarga al tocarlas.
-// - Los archivos (PDF, docs, etc.) muestran botón de descarga.
-// - Nuevo modal #mediaViewer para pantalla completa de fotos.
-// - Todo lo demás (mensajes, estados, bot, canales, grupos,
-//   historial de llamadas, bloqueos) se mantiene intacto.
+// CAMBIOS v3.7:
+// - Fix visor de fotos: ya no se abre el visor nativo del navegador.
+//   Ahora las fotos se abren SOLO en el visor custom con botón
+//   de descarga dorado.
+// - Fix botón "Descargar" en archivos adjuntos (PDF, docs, etc.):
+//   ahora es un botón visible con estilo, no un link azul.
+// - Todo lo demás (llamadas, historial, bloqueos, configuración,
+//   compartir pantalla, mensajes, bot, canales, grupos) intacto.
 // ================================================================
 
 'use strict';
@@ -277,7 +275,7 @@ function verFotoAmpliada(url, nombre, handle) {
 function cerrarPhotoViewer() { $('photoViewer').classList.remove('show'); }
 
 // ================================================================
-// NUEVO: VISOR DE FOTOS DEL CHAT (pantalla completa + descarga)
+// VISOR DE MEDIA (fotos / videos del chat)
 // ================================================================
 function abrirMediaViewer(url, nombreArchivo, tipo) {
     if (!url) return;
@@ -838,7 +836,7 @@ async function getSignedUrlForMessage(m) {
 }
 
 // ================================================================
-// CARGAR CONVERSACIONES — v3.6
+// CARGAR CONVERSACIONES — v3.7
 // ================================================================
 let conversationFilter = '';
 
@@ -1254,11 +1252,15 @@ function messageHTML(m, sent, signedUrl) {
 
     if (urlToUse) {
         if (m.tipo === 'imagen') {
-            body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy"
-                data-media-url="${esc(urlToUse)}"
-                data-media-name="${esc(m.nombre_archivo || 'imagen.jpg')}"
-                data-media-type="imagen"
-                style="cursor:zoom-in;">`;
+            body = `
+                <a href="javascript:void(0);" class="media-link"
+                   data-media-url="${esc(urlToUse)}"
+                   data-media-name="${esc(m.nombre_archivo || 'imagen.jpg')}"
+                   data-media-type="imagen"
+                   onclick="event.preventDefault(); event.stopPropagation(); window.abrirMediaViewer(this.dataset.mediaUrl, this.dataset.mediaName, this.dataset.mediaType); return false;">
+                    <img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy">
+                </a>
+            `;
         } else if (m.tipo === 'video') {
             body = `<video controls playsinline src="${esc(urlToUse)}"></video>`;
         } else if (m.tipo === 'audio') {
@@ -1267,9 +1269,9 @@ function messageHTML(m, sent, signedUrl) {
             const displayName = esc(m.nombre_archivo || limpiarMarkdown(m.contenido) || 'Archivo');
             body = `
                 <div class="file-attachment">
-                    📎 <a href="${esc(urlToUse)}" target="_blank" rel="noopener" style="color:var(--gold)">${displayName}</a>
+                    📎 <span>${displayName}</span>
                     <a href="${esc(urlToUse)}" download="${esc(m.nombre_archivo || 'archivo')}"
-                       style="display:inline-block;margin-left:8px;color:var(--success);font-weight:700;font-size:.75rem;">
+                       class="file-download-btn">
                         ⬇ Descargar
                     </a>
                 </div>
@@ -1289,19 +1291,6 @@ function messageHTML(m, sent, signedUrl) {
         <div class="meta">${m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}${sent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : ''}</div>
     </div>`;
 }
-
-// Delegación de clics para abrir imágenes en pantalla completa
-document.addEventListener('click', (e) => {
-    const target = e.target;
-    if (target && target.tagName === 'IMG' && target.dataset.mediaUrl) {
-        e.preventDefault();
-        abrirMediaViewer(
-            target.dataset.mediaUrl,
-            target.dataset.mediaName,
-            target.dataset.mediaType
-        );
-    }
-});
 
 // ================================================================
 // ENVIAR MENSAJE
@@ -2504,7 +2493,7 @@ async function crearGrupo() {
 }
 
 // ================================================================
-// LLAMADAS (LiveKit) — v3.6
+// LLAMADAS (LiveKit) — v3.7
 // ================================================================
 const LLAMADA_TIMEOUT_MS = 45000;
 const LLAMADA_VIGENCIA_MS = 60000;
@@ -2900,7 +2889,7 @@ async function toggleCam() {
 }
 
 // ================================================================
-// COMPARTIR PANTALLA — v3.6 (CORREGIDO)
+// COMPARTIR PANTALLA — v3.7
 // ================================================================
 async function toggleScreen() {
     if (!call.room) {
@@ -2914,7 +2903,6 @@ async function toggleScreen() {
 
     const btn = $('toggleScreen');
 
-    // Si YA está compartiendo, detener
     if (call.screen) {
         try {
             await call.room.localParticipant.unpublishTrack(call.screen);
@@ -2925,7 +2913,6 @@ async function toggleScreen() {
         call.screen = null;
         btn.innerHTML = '<span class="ctrl-icon">🖥️</span><span class="ctrl-label">Pantalla</span>';
 
-        // Reactivar cámara si estaba activa
         if (call.video && !call.video.enabled) {
             call.video.enabled = true;
             $('toggleCam').innerHTML = '<span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span>';
@@ -2934,13 +2921,11 @@ async function toggleScreen() {
         return;
     }
 
-    // Si el navegador no soporta getDisplayMedia
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
         toast('❌ Tu navegador no permite compartir pantalla', 'error');
         return;
     }
 
-    // INICIAR captura PRIMERO (antes de cualquier await)
     let displayStream;
     try {
         displayStream = await navigator.mediaDevices.getDisplayMedia({
@@ -2966,7 +2951,6 @@ async function toggleScreen() {
             return;
         }
 
-        // Pausar la cámara para no saturar (opcional pero recomendado)
         if (call.video) {
             call.video.enabled = false;
             $('toggleCam').innerHTML = '<span class="ctrl-icon">📷❌</span><span class="ctrl-label">Sin cámara</span>';
@@ -2981,7 +2965,6 @@ async function toggleScreen() {
         btn.innerHTML = '<span class="ctrl-icon">🖥️⏹️</span><span class="ctrl-label">Detener</span>';
         toast('🖥️ Compartiendo pantalla', 'success');
 
-        // Cuando el usuario detiene desde la barra del navegador
         track.onended = () => {
             if (call.screen === track) {
                 call.screen = null;
@@ -3169,7 +3152,6 @@ async function init() {
     $('acceptCall').onclick = acceptCall;
     $('rejectCall').onclick = rejectCall;
 
-    // Visor de fotos del chat
     const mediaViewer = $('mediaViewer');
     if (mediaViewer) {
         const closeBtn = $('mediaViewerClose');
