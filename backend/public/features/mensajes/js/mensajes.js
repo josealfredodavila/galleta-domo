@@ -1,8 +1,8 @@
 // ================================================================
-// MENSAJES · JS v3.3
+// MENSAJES · JS v3.4
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIOS v3.3:
+// CAMBIOS v3.4:
 // - Fix crítico en loadConversations(): construye la lista desde
 //   los mensajes reales, calculando el otherUserId de cada
 //   conversación (nunca muestra al usuario actual como interlocutor).
@@ -11,6 +11,10 @@
 // - Llamadas (LiveKit): bloque v3.3 con llamadaFetch adaptado a
 //   { success: true, data: {...} } y suscripción filtrada por
 //   destinatario_id en incoming-calls.
+// - Compatibilidad con versiones de livekit-client sin TrackSource:
+//   función lkSource() para resolver la fuente correcta.
+// - Expone window.openConversation y window.current para que
+//   llamadas-ui.js pueda abrir chats y bloquear desde el historial.
 // ================================================================
 
 'use strict';
@@ -796,7 +800,7 @@ async function getSignedUrlForMessage(m) {
 }
 
 // ================================================================
-// CARGAR CONVERSACIONES — v3.3 · FIX
+// CARGAR CONVERSACIONES — v3.4 · FIX
 //
 // Construye la lista desde los MENSAJES REALES del usuario.
 // Calcula el otherUserId de cada conversación (nunca muestra al
@@ -2081,10 +2085,12 @@ function cambiarPestana(pestana) {
     var tabChats = document.getElementById('tabChats');
     var tabCanales = document.getElementById('tabCanales');
     var tabGrupos = document.getElementById('tabGrupos');
+    var tabLlamadas = document.getElementById('tabLlamadas');
 
     if (tabChats) tabChats.classList.toggle('hidden', pestana !== 'chats');
     if (tabCanales) tabCanales.classList.toggle('hidden', pestana !== 'canales');
     if (tabGrupos) tabGrupos.classList.toggle('hidden', pestana !== 'grupos');
+    if (tabLlamadas) tabLlamadas.classList.toggle('hidden', pestana !== 'llamadas');
 
     var fab = document.getElementById('newChat');
     if (fab) {
@@ -2095,6 +2101,9 @@ function cambiarPestana(pestana) {
 
     if (pestana === 'canales') cargarCanales();
     else if (pestana === 'grupos') cargarGrupos();
+    else if (pestana === 'llamadas' && typeof window.cargarHistorialLlamadas === 'function') {
+        window.cargarHistorialLlamadas();
+    }
 }
 
 function onNuevoClick() {
@@ -2449,14 +2458,23 @@ async function crearGrupo() {
 }
 
 // ================================================================
-// LLAMADAS (LiveKit) — v3.3 · Parche quirúrgico
+// LLAMADAS (LiveKit) — v3.4 · Parche quirúrgico
 // ================================================================
 const LLAMADA_TIMEOUT_MS = 45000;
 const LLAMADA_VIGENCIA_MS = 60000;
+
+function lkSource(nombre) {
+    const LK = window.LivekitClient || {};
+    const fuentes = (LK.Track && LK.Track.Source) || LK.TrackSource || {};
+    const respaldo = { Microphone: 'microphone', Camera: 'camera', ScreenShare: 'screen_share' };
+    return fuentes[nombre] || respaldo[nombre];
+}
+
 const MENSAJES_LLAMADA = {
     llamada_no_disponible: 'La llamada ya no está disponible.',
     servidor: 'Error del servidor. Intenta de nuevo.',
-    no_autenticado: 'Tu sesión expiró. Vuelve a iniciar sesión.'
+    no_autenticado: 'Tu sesión expiró. Vuelve a iniciar sesión.',
+    llamada_no_permitida: 'No puedes llamar a este usuario.'
 };
 
 let llamadaTimeoutTimer = null;
@@ -2513,10 +2531,11 @@ function mostrarEnCurso() {
 }
 
 function crearRoom() {
-    if (!window.LivekitClient) throw new Error('LiveKit no está cargado');
-    const room = new LivekitClient.Room();
+    const LK = window.LivekitClient;
+    if (!LK || !LK.Room || !LK.RoomEvent) throw new Error('LiveKit no está cargado correctamente');
+    const room = new LK.Room();
 
-    room.on(LivekitClient.RoomEvent.TrackSubscribed, track => {
+    room.on(LK.RoomEvent.TrackSubscribed, track => {
         if (track.kind === 'video') {
             track.attach($('remoteVideo'));
         } else if (track.kind === 'audio') {
@@ -2528,7 +2547,7 @@ function crearRoom() {
         }
     });
 
-    room.on(LivekitClient.RoomEvent.Disconnected, () => {
+    room.on(LK.RoomEvent.Disconnected, () => {
         if (!call.active) return;
         const id = call.id;
         finalizarLlamadaLocal();
@@ -2559,14 +2578,14 @@ async function conectarYPublicar(url, token, tipo) {
         if (at) {
             await room.localParticipant.publishTrack(at, {
                 name: 'microphone',
-                source: LivekitClient.TrackSource.Microphone
+                source: lkSource('Microphone')
             });
             call.audio = at;
         }
         if (vt) {
             await room.localParticipant.publishTrack(vt, {
                 name: 'camera',
-                source: LivekitClient.TrackSource.Camera
+                source: lkSource('Camera')
             });
             call.video = vt;
             $('localVideo').srcObject = new MediaStream([vt]);
@@ -2841,7 +2860,7 @@ async function toggleScreen() {
         const t = s.getVideoTracks()[0];
         await call.room.localParticipant.publishTrack(t, {
             name: 'screen',
-            source: LivekitClient.TrackSource.ScreenShare
+            source: lkSource('ScreenShare')
         });
         call.screen = t;
         $('toggleScreen').innerHTML = '<span class="ctrl-icon">🖥️⏹️</span><span class="ctrl-label">Detener</span>';
@@ -3094,6 +3113,12 @@ window.cerrarModalCrearGrupo = cerrarModalCrearGrupo;
 window.crearCanal = crearCanal;
 window.crearGrupo = crearGrupo;
 window.generarSlug = generarSlug;
+
+// Exponer para llamadas-ui.js
+window.openConversation = openConversation;
+Object.defineProperty(window, 'current', {
+    get: function () { return current; }
+});
 
 // ================================================================
 // ARRANQUE
