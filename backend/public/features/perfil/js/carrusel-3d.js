@@ -2,20 +2,6 @@
 // CSARIEL'S · CARRUSEL 3D HORIZONTAL
 // Ruta: /features/perfil/js/carrusel-3d.js
 // v10 · NAVEGACIÓN LIMPIA POR URL
-//
-// CAMBIOS EN ESTA VERSIÓN:
-// ✅ Se ELIMINARON los modales flotantes en JS.
-// ✅ Al tocar un ANUNCIO → redirige a:
-//    /features/anuncios/ver.html?id={id}
-// ✅ Al tocar una INVITACIÓN → redirige a:
-//    /features/anuncios/anuncios-crear.html
-// ✅ Sin pantallas negras, sin errores 404, sin UI rota.
-// ✅ No se toca el formulario de creación desde el carrusel.
-//
-// CONSERVADO DE v9:
-// ✅ Guard global, deduplicación, urlSegura, cache,
-//    detección de conexión lenta, lazy video,
-//    IntersectionObserver, pausa al ocultar, Realtime.
 // ============================================
 
 (function () {
@@ -47,7 +33,7 @@
         ['#ff4081', '#7c4dff']
     ];
 
-    // 7 invitaciones
+    // 7 invitaciones (reemplazan a las tarjetas viejas de Muro/Perfil)
     var PLACEHOLDERS = [
         {
             chip: 'ANÚNCIATE GRATIS',
@@ -266,7 +252,6 @@
 
             var filas = Array.isArray(resultado.data) ? resultado.data : [];
 
-            // Deduplicación por ID
             var vistos = Object.create(null);
             var unicos = [];
             filas.forEach(function (a) {
@@ -419,13 +404,11 @@
             return htmlPlaceholder(slot.data, indice, total);
         }).join('');
 
+        // Limpieza total del contenedor para evitar tarjetas residuales
         track.innerHTML = html;
+        
         activoActual = 0;
         cards = coleccionar();
-
-        // No se añaden handlers manuales:
-        // los <a href="..."> navegan solos con la URL correcta.
-        // Solo se evita el drag accidental cuando el usuario hace scroll.
 
         configurarVideosLazy();
         construirPuntos();
@@ -701,6 +684,11 @@
             window.requestAnimationFrame(init);
             return;
         }
+
+        // LIMPIEZA QUIRÚRGICA INICIAL: 
+        // Eliminamos cualquier rastro de HTML viejo (Muro/Perfil) 
+        // antes de que el JS pinte las tarjetas correctas.
+        if (track) track.innerHTML = '';
 
         inicializado = true;
         window.__csarielsCarrusel3DIniciado = true;
