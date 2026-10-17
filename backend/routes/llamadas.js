@@ -38,7 +38,7 @@ function esParticipante(llamada, uid) {
   return llamada.creador_id === uid || llamada.destinatario_id === uid;
 }
 
-async function registrarParticipante(llamadaId, uid, rol) {
+async function registrarParticipante(llamadaId, uid) {
   const ahora = new Date().toISOString();
 
   const { data } = await supabaseAdmin
@@ -47,14 +47,15 @@ async function registrarParticipante(llamadaId, uid, rol) {
 
   if (data) {
     const { error } = await supabaseAdmin.from('llamadas_participantes')
-      .update({ estado: 'conectado', entro_at: ahora, salio_at: null })
+      .update({ salio_at: null })
       .eq('id', data.id);
     if (error) throw error;
     return;
   }
 
   const { error } = await supabaseAdmin.from('llamadas_participantes').insert({
-    llamada_id: llamadaId, usuario_id: uid, rol, estado: 'conectado', entro_at: ahora
+    llamada_id: llamadaId,
+    usuario_id: uid
   });
   if (error) throw error;
 }
@@ -87,8 +88,6 @@ function livekitConfigurado() {
 // POST /iniciar
 // Body: { destinatarioId, tipo: 'audio' | 'video' }
 //    o: { numero: '+52...', tipo }   (Fase 2)
-// Crea la fila en llamadas; el INSERT dispara el aviso Realtime
-// que ya escucha mensajes.js (estado 'ringing').
 // ================================================================
 router.post('/iniciar', verificarToken, async (req, res) => {
   try {
@@ -143,7 +142,7 @@ router.post('/iniciar', verificarToken, async (req, res) => {
     });
     if (errIns) throw errIns;
 
-    await registrarParticipante(id, uid, 'creador');
+    await registrarParticipante(id, uid);
 
     return res.json({
       success: true,
@@ -179,7 +178,7 @@ router.post('/:id/aceptar', verificarToken, async (req, res) => {
     }).eq('id', llamada.id);
     if (error) throw error;
 
-    await registrarParticipante(llamada.id, uid, 'invitado');
+    await registrarParticipante(llamada.id, uid);
 
     const sala = await tokenParaSala(llamada.room_name, uid);
     return res.json({ success: true, data: { ...sala, roomName: llamada.room_name, canPublish: true } });
@@ -265,7 +264,7 @@ router.post('/:id/terminar', verificarToken, async (req, res) => {
     if (error) throw error;
 
     await supabaseAdmin.from('llamadas_participantes')
-      .update({ salio_at: ahora.toISOString(), estado: 'desconectado' })
+      .update({ salio_at: ahora.toISOString() })
       .eq('llamada_id', llamada.id)
       .eq('usuario_id', uid);
 
