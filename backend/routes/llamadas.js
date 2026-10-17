@@ -1,13 +1,15 @@
 // backend/routes/llamadas.js
-// Decide el motor de cada llamada en el servidor:
+// Motor de cada llamada:
 //   - usuario del ecosistema  → LiveKit (motor 'livekit')
 //   - número real             → Telnyx  (motor 'telnyx', Fase 2, deshabilitado)
 // Esquema verificado contra Supabase (proyecto zultnlogdoajehbswlih):
 //   llamadas: estado IN (ringing, active, ended, rejected, missed, failed)
 //   llamadas_participantes:
-//     rol    IN ('caller', 'participant')      default 'participant'
-//     estado IN ('invited', 'joined', 'left', 'declined')  default 'invited'
-//   función public.puede_llamar(p_origen, p_destino) ya existente
+//     rol    IN ('caller', 'participant')
+//     estado IN ('invited', 'joined', 'left', 'declined')
+//   historial_llamadas: auditoría alimentada por trigger (trg_registrar_historial_llamada)
+//   bloqueos: (usuario_id, bloqueado_id, motivo, created_at)
+//   función public.puede_llamar(p_origen, p_destino)
 // El backend usa service_role (omite RLS).
 const express = require('express');
 const crypto = require('crypto');
@@ -43,9 +45,7 @@ function rolDe(llamada, uid) {
   return llamada.creador_id === uid ? 'caller' : 'participant';
 }
 
-// Valores válidos según los CHECK de la tabla:
-//   rol: 'caller' | 'participant'
-//   estado: 'invited' | 'joined' | 'left' | 'declined'
+// Valores válidos según los CHECK de la tabla
 async function registrarParticipante(llamadaId, uid, rol, estado) {
   const ahora = new Date().toISOString();
 
@@ -96,12 +96,23 @@ function livekitConfigurado() {
   return Boolean(LIVEKIT_API_KEY && LIVEKIT_API_SECRET && LIVEKIT_WS_URL);
 }
 
+async function perfilesPorIds(ids) {
+  const unicos = [...new Set(ids.filter(Boolean))];
+  if (!unicos.length) return {};
+  const { data, error } = await supabaseAdmin
+    .from('perfiles_publicos')
+    .select('id, nombre, handle, avatar_url')
+    .in('id', unicos);
+  if (error) throw error;
+  const mapa = {};
+  (data || []).forEach((p) => { mapa[p.id] = p; });
+  return mapa;
+}
+
 // ================================================================
 // POST /iniciar
 // Body: { destinatarioId, tipo: 'audio' | 'video' }
 //    o: { numero: '+52...', tipo }   (Fase 2)
-// Crea la fila en llamadas (estado 'ringing'); el UPDATE/INSERT
-// llega por Realtime a mensajes.js.
 // ================================================================
 router.post('/iniciar', verificarToken, async (req, res) => {
   try {
@@ -135,7 +146,6 @@ router.post('/iniciar', verificarToken, async (req, res) => {
       .rpc('puede_llamar', { p_origen: uid, p_destino: destinoId });
     if (errPuede) throw errPuede;
 
-    // Mensaje genérico: no revela si hay bloqueo ni si el usuario existe
     if (!puede) {
       return res.status(403).json({ success: false, error: 'llamada_no_permitida' });
     }
@@ -238,8 +248,7 @@ router.post('/:id/token', verificarToken, async (req, res) => {
 
 // ================================================================
 // POST /:id/terminar
-// Reglas:
-//   - creador, ringing         → 'missed'   (cancelada antes de contestar)
+//   - creador, ringing         → 'missed'
 //   - destinatario, ringing    → 'rejected'
 //   - cualquiera, active       → 'ended' (con duración)
 // ================================================================
@@ -301,45 +310,200 @@ router.post('/:id/terminar', verificarToken, async (req, res) => {
 });
 
 // ================================================================
-// GET /historial?limite=50
+// GET /historial?limite=50&tipo=all|audio|video&direccion=all|saliente|entrante
+// Lee de historial_llamadas (auditoría alimentada por trigger).
 // ================================================================
 router.get('/historial', verificarToken, async (req, res) => {
   try {
     const uid = req.usuario.id;
     const limite = Math.min(Number(req.query.limite) || 50, 100);
+    const tipo = req.query.tipo;
+    const direccion = req.query.direccion;
 
-    const { data, error } = await supabaseAdmin
-      .from('llamadas')
-      .select('id, creador_id, destinatario_id, numero_destino, tipo, estado, motivo_fin, duracion_seg, created_at, contestada_at')
-      .or(`creador_id.eq.${uid},destinatario_id.eq.${uid}`)
-      .order('created_at', { ascending: false })
+    let q = supabaseAdmin
+      .from('historial_llamadas')
+      .select('id, llamada_id, direccion, tipo, estado, duracion_seg, contraparte_id, iniciada_at, finalizada_at')
+      .eq('usuario_id', uid)
+      .eq('oculto_por_usuario', false);
+
+    if (tipo === 'audio' || tipo === 'video') q = q.eq('tipo', tipo);
+    if (direccion === 'saliente' || direccion === 'entrante') q = q.eq('direccion', direccion);
+
+    const { data, error } = await q
+      .order('iniciada_at', { ascending: false })
       .limit(limite);
     if (error) throw error;
 
-    const lista = (data || []).map((l) => {
-      const saliente = l.creador_id === uid;
-      let resultado = 'realizada';
+    const perfiles = await perfilesPorIds((data || []).map((h) => h.contraparte_id));
 
-      if (!l.contestada_at) {
-        if (saliente) resultado = 'no_contestada';
-        else resultado = l.estado === 'rejected' ? 'rechazada' : 'perdida';
-      }
-
+    const lista = (data || []).map((h) => {
+      const p = perfiles[h.contraparte_id] || {};
       return {
-        id: l.id,
-        direccion: saliente ? 'saliente' : 'entrante',
-        resultado,
-        contraparte_id: saliente ? l.destinatario_id : l.creador_id,
-        numero_destino: l.numero_destino,
-        tipo: l.tipo,
-        duracion_seg: l.duracion_seg,
-        fecha: l.created_at
+        id: h.id,
+        llamada_id: h.llamada_id,
+        direccion: h.direccion,
+        tipo: h.tipo,
+        estado: h.estado,
+        duracion_seg: h.duracion_seg,
+        contraparte_id: h.contraparte_id,
+        contraparte_nombre: p.nombre || 'Usuario',
+        contraparte_avatar: p.avatar_url || null,
+        iniciada_at: h.iniciada_at,
+        finalizada_at: h.finalizada_at
       };
     });
 
     return res.json({ success: true, data: lista });
   } catch (e) {
     logger.error(`[llamadas] historial: ${e.message}`);
+    return res.status(500).json({ success: false, error: 'servidor' });
+  }
+});
+
+// ================================================================
+// DELETE /historial/:id  → soft delete (oculto_por_usuario = true)
+// ================================================================
+router.delete('/historial/:id', verificarToken, async (req, res) => {
+  try {
+    const uid = req.usuario.id;
+    const id = String(req.params.id || '');
+    if (!UUID.test(id)) {
+      return res.status(400).json({ success: false, error: 'id_invalido' });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('historial_llamadas')
+      .update({ oculto_por_usuario: true })
+      .eq('id', id)
+      .eq('usuario_id', uid)
+      .select('id')
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({ success: false, error: 'entrada_no_encontrada' });
+    }
+
+    return res.json({ success: true, data: { id: data.id } });
+  } catch (e) {
+    logger.error(`[llamadas] historial delete: ${e.message}`);
+    return res.status(500).json({ success: false, error: 'servidor' });
+  }
+});
+
+// ================================================================
+// DELETE /historial  → oculta TODO el historial del usuario
+// ================================================================
+router.delete('/historial', verificarToken, async (req, res) => {
+  try {
+    const uid = req.usuario.id;
+    const { data, error } = await supabaseAdmin
+      .from('historial_llamadas')
+      .update({ oculto_por_usuario: true })
+      .eq('usuario_id', uid)
+      .eq('oculto_por_usuario', false)
+      .select('id');
+    if (error) throw error;
+
+    return res.json({ success: true, data: { eliminadas: (data || []).length } });
+  } catch (e) {
+    logger.error(`[llamadas] historial delete all: ${e.message}`);
+    return res.status(500).json({ success: false, error: 'servidor' });
+  }
+});
+
+// ================================================================
+// GET /bloqueos  → usuarios bloqueados por el actual
+// ================================================================
+router.get('/bloqueos', verificarToken, async (req, res) => {
+  try {
+    const uid = req.usuario.id;
+    const { data, error } = await supabaseAdmin
+      .from('bloqueos')
+      .select('id, bloqueado_id, motivo, created_at')
+      .eq('usuario_id', uid)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+
+    const perfiles = await perfilesPorIds((data || []).map((b) => b.bloqueado_id));
+
+    const lista = (data || []).map((b) => {
+      const p = perfiles[b.bloqueado_id] || {};
+      return {
+        id: b.id,
+        bloqueado_id: b.bloqueado_id,
+        nombre: p.nombre || 'Usuario',
+        handle: p.handle || null,
+        avatar_url: p.avatar_url || null,
+        motivo: b.motivo,
+        created_at: b.created_at
+      };
+    });
+
+    return res.json({ success: true, data: lista });
+  } catch (e) {
+    logger.error(`[llamadas] bloqueos get: ${e.message}`);
+    return res.status(500).json({ success: false, error: 'servidor' });
+  }
+});
+
+// ================================================================
+// POST /bloqueos  Body: { bloqueadoId, motivo? }
+// ================================================================
+router.post('/bloqueos', verificarToken, async (req, res) => {
+  try {
+    const uid = req.usuario.id;
+    const bloqueadoId = String(req.body?.bloqueadoId || '');
+    const motivo = req.body?.motivo ? String(req.body.motivo).slice(0, 200) : null;
+
+    if (!UUID.test(bloqueadoId) || bloqueadoId === uid) {
+      return res.status(400).json({ success: false, error: 'bloqueado_invalido' });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('bloqueos')
+      .insert({ usuario_id: uid, bloqueado_id: bloqueadoId, motivo })
+      .select('id')
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(409).json({ success: false, error: 'ya_bloqueado' });
+      }
+      throw error;
+    }
+
+    return res.json({ success: true, data: { id: data.id } });
+  } catch (e) {
+    logger.error(`[llamadas] bloqueos post: ${e.message}`);
+    return res.status(500).json({ success: false, error: 'servidor' });
+  }
+});
+
+// ================================================================
+// DELETE /bloqueos/:bloqueadoId
+// ================================================================
+router.delete('/bloqueos/:bloqueadoId', verificarToken, async (req, res) => {
+  try {
+    const uid = req.usuario.id;
+    const bloqueadoId = String(req.params.bloqueadoId || '');
+    if (!UUID.test(bloqueadoId)) {
+      return res.status(400).json({ success: false, error: 'bloqueado_invalido' });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('bloqueos')
+      .delete()
+      .eq('usuario_id', uid)
+      .eq('bloqueado_id', bloqueadoId)
+      .select('id');
+    if (error) throw error;
+    if (!data || !data.length) {
+      return res.status(404).json({ success: false, error: 'bloqueo_no_encontrado' });
+    }
+
+    return res.json({ success: true, data: { eliminado: true } });
+  } catch (e) {
+    logger.error(`[llamadas] bloqueos delete: ${e.message}`);
     return res.status(500).json({ success: false, error: 'servidor' });
   }
 });
