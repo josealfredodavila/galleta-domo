@@ -1,9 +1,11 @@
 // ================================================================
 // NOWPAYMENTS-INTERNET.JS — Csariel's (paquetes de Internet, order "NET-")
 // Llamado desde routes/webhooks.js, que ya verificó la firma.
-// Estados de ordenes_internet permitidos: pendiente, pagado, activo, cancelado.
-// Flujo: pendiente → pagado → (activar_orden_internet) activo → aprovisionar eSIM.
-// procesarOrdenInternet debe ser idempotente: se vuelve a llamar en cada IPN final.
+// La factura se crea en MXN (monto_mxn). NOWPayments convierte el pago
+// a cripto (USDT/USDC), y el IPN regresa price_amount en MXN.
+// Por eso se valida price_amount contra monto_mxn; actually_paid solo
+// confirma que hubo pago real. No se calcula ningún tipo de cambio aquí.
+// Estados de ordenes_internet: pendiente, pagado, activo, cancelado.
 // ================================================================
 
 const { supabaseAdmin } = require('../../config/supabase');
@@ -15,11 +17,23 @@ const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 const log = (...args) => console.log('[Internet IPN]', ...args);
 const logError = (...args) => console.error('[Internet IPN ERROR]', ...args);
 
-// Estado de NOWPayments → estado local permitido (o null si no cambia el estado)
+// Estado de NOWPayments → estado local (o null si no cambia el estado)
 function estadoNoFinal(npStatus) {
     const s = String(npStatus || '').toLowerCase();
     if (['failed', 'refunded', 'expired', 'canceled', 'cancelled'].includes(s)) return 'cancelado';
     return null; // waiting, confirming, sending, partially_paid: siguen pendientes
+}
+
+// Valida que el IPN corresponda a la factura creada en MXN por el monto de la orden
+function montoCoincide(payload, orden) {
+    const moneda = String(payload.price_currency || '').toLowerCase();
+    const precio = Number(payload.price_amount);
+    const cripto = Number(payload.actually_paid);
+
+    if (moneda !== 'mxn') return false;
+    if (!Number.isFinite(precio) || Math.abs(precio - Number(orden.monto_mxn)) > 0.01) return false;
+    if (!Number.isFinite(cripto) || cripto <= 0) return false;
+    return true;
 }
 
 async function handleWebhookInternet(req, res) {
@@ -77,15 +91,16 @@ async function handleWebhookInternet(req, res) {
             return res.status(200).json({ ok: true, ignorado: 'orden_cancelada' });
         }
 
-        // Validar monto (requiere factura creada en MXN, igual que Live Pass y Pro)
-        const precio = Number(payload.price_amount);
-        const moneda = String(payload.price_currency || '').toLowerCase();
-        if (moneda !== 'mxn' || !Number.isFinite(precio) || Math.abs(precio - Number(orden.monto_mxn)) > 0.01) {
-            logError('monto/moneda no coincide:', orden.id, { precio, moneda, esperado: orden.monto_mxn });
-            await supabaseAdmin.from('ordenes_internet')
-                .update({ estado: 'cancelado', nowpayments_status: npStatus, updated_at: new Date().toISOString() })
-                .eq('id', orden.id)
-                .eq('estado', 'pendiente');
+        // Validación de monto: NO se cancela la orden si no coincide, porque
+        // el cliente ya pagó. Queda en pendiente para revisión manual.
+        if (!montoCoincide(payload, orden)) {
+            logError('REVISIÓN MANUAL — monto/moneda no coincide:', orden.id, {
+                price_amount: payload.price_amount,
+                price_currency: payload.price_currency,
+                actually_paid: payload.actually_paid,
+                pay_currency: payload.pay_currency,
+                esperado_mxn: orden.monto_mxn
+            });
             return res.status(200).json({ ok: true, ignorado: 'monto_no_coincide' });
         }
 
