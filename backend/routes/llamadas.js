@@ -3,11 +3,12 @@
 //   - usuario del ecosistema  → LiveKit (motor 'livekit')
 //   - número real             → Telnyx  (motor 'telnyx', Fase 2, deshabilitado)
 // Esquema verificado contra Supabase (proyecto zultnlogdoajehbswlih):
-//   llamadas: motor, origen, numero_destino, duracion_seg, motivo_fin,
-//             contestada_at, finalizada_at, conversation_id, room_name
-//   llamadas_participantes: salio_at, invitado_at (default)
-//   función public.puede_llamar(origen, destino) ya existente
-// Las políticas RLS existentes no se modifican: el backend usa service_role.
+//   llamadas: estado IN (ringing, active, ended, rejected, missed, failed)
+//   llamadas_participantes:
+//     rol    IN ('caller', 'participant')      default 'participant'
+//     estado IN ('invited', 'joined', 'left', 'declined')  default 'invited'
+//   función public.puede_llamar(p_origen, p_destino) ya existente
+// El backend usa service_role (omite RLS).
 const express = require('express');
 const crypto = require('crypto');
 const { AccessToken } = require('livekit-server-sdk');
@@ -38,16 +39,24 @@ function esParticipante(llamada, uid) {
   return llamada.creador_id === uid || llamada.destinatario_id === uid;
 }
 
-async function registrarParticipante(llamadaId, uid) {
+function rolDe(llamada, uid) {
+  return llamada.creador_id === uid ? 'caller' : 'participant';
+}
+
+// Valores válidos según los CHECK de la tabla:
+//   rol: 'caller' | 'participant'
+//   estado: 'invited' | 'joined' | 'left' | 'declined'
+async function registrarParticipante(llamadaId, uid, rol, estado) {
   const ahora = new Date().toISOString();
 
-  const { data } = await supabaseAdmin
+  const { data, error: errBusca } = await supabaseAdmin
     .from('llamadas_participantes').select('id')
     .eq('llamada_id', llamadaId).eq('usuario_id', uid).maybeSingle();
+  if (errBusca) throw errBusca;
 
   if (data) {
     const { error } = await supabaseAdmin.from('llamadas_participantes')
-      .update({ salio_at: null })
+      .update({ estado, entro_at: ahora, salio_at: null })
       .eq('id', data.id);
     if (error) throw error;
     return;
@@ -55,7 +64,10 @@ async function registrarParticipante(llamadaId, uid) {
 
   const { error } = await supabaseAdmin.from('llamadas_participantes').insert({
     llamada_id: llamadaId,
-    usuario_id: uid
+    usuario_id: uid,
+    rol,
+    estado,
+    entro_at: estado === 'joined' ? ahora : null
   });
   if (error) throw error;
 }
@@ -88,6 +100,8 @@ function livekitConfigurado() {
 // POST /iniciar
 // Body: { destinatarioId, tipo: 'audio' | 'video' }
 //    o: { numero: '+52...', tipo }   (Fase 2)
+// Crea la fila en llamadas (estado 'ringing'); el UPDATE/INSERT
+// llega por Realtime a mensajes.js.
 // ================================================================
 router.post('/iniciar', verificarToken, async (req, res) => {
   try {
@@ -142,7 +156,7 @@ router.post('/iniciar', verificarToken, async (req, res) => {
     });
     if (errIns) throw errIns;
 
-    await registrarParticipante(id, uid);
+    await registrarParticipante(id, uid, 'caller', 'invited');
 
     return res.json({
       success: true,
@@ -178,10 +192,13 @@ router.post('/:id/aceptar', verificarToken, async (req, res) => {
     }).eq('id', llamada.id);
     if (error) throw error;
 
-    await registrarParticipante(llamada.id, uid);
+    await registrarParticipante(llamada.id, uid, 'participant', 'joined');
 
     const sala = await tokenParaSala(llamada.room_name, uid);
-    return res.json({ success: true, data: { ...sala, roomName: llamada.room_name, canPublish: true } });
+    return res.json({
+      success: true,
+      data: { ...sala, llamadaId: llamada.id, roomName: llamada.room_name, tipo: llamada.tipo, canPublish: true }
+    });
   } catch (e) {
     logger.error(`[llamadas] aceptar: ${e.message}`);
     return res.status(500).json({ success: false, error: 'servidor' });
@@ -206,8 +223,13 @@ router.post('/:id/token', verificarToken, async (req, res) => {
       return res.status(400).json({ success: false, error: 'motor_no_compatible' });
     }
 
+    await registrarParticipante(llamada.id, uid, rolDe(llamada, uid), 'joined');
+
     const sala = await tokenParaSala(llamada.room_name, uid);
-    return res.json({ success: true, data: { ...sala, roomName: llamada.room_name, canPublish: true } });
+    return res.json({
+      success: true,
+      data: { ...sala, llamadaId: llamada.id, roomName: llamada.room_name, tipo: llamada.tipo, canPublish: true }
+    });
   } catch (e) {
     logger.error(`[llamadas] token: ${e.message}`);
     return res.status(500).json({ success: false, error: 'servidor' });
@@ -264,7 +286,7 @@ router.post('/:id/terminar', verificarToken, async (req, res) => {
     if (error) throw error;
 
     await supabaseAdmin.from('llamadas_participantes')
-      .update({ salio_at: ahora.toISOString() })
+      .update({ salio_at: ahora.toISOString(), estado: 'left' })
       .eq('llamada_id', llamada.id)
       .eq('usuario_id', uid);
 
@@ -280,7 +302,6 @@ router.post('/:id/terminar', verificarToken, async (req, res) => {
 
 // ================================================================
 // GET /historial?limite=50
-// Perdidas, entrantes, salientes y realizadas.
 // ================================================================
 router.get('/historial', verificarToken, async (req, res) => {
   try {
@@ -325,7 +346,6 @@ router.get('/historial', verificarToken, async (req, res) => {
 
 // ================================================================
 // GET /configuracion  y  PUT /configuracion
-// Body PUT: { quien_puede_llamarme: 'todos' | 'contactos' | 'nadie' }
 // ================================================================
 router.get('/configuracion', verificarToken, async (req, res) => {
   try {
