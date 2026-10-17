@@ -1085,7 +1085,7 @@ function mostrarPaywall(streamId, precio) {
         id: 'paywallBackdrop',
         icono: '◆',
         titulo: 'Live de pago',
-        texto: `Este live cuesta ${formatoUsd(precio)} USD. El pago es en USDT o USDC y se confirma automáticamente.`,
+        texto: `Este live cuesta ${formatoUsd(precio)} USD. El pago es en USDT (red TRON, TRC20) y se confirma automáticamente.`,
         contenido: [
             el('div', { class: 'livepass-modal-actions' },
                 el('button', { type: 'button', class: 'livepass-modal-btn-primary',
