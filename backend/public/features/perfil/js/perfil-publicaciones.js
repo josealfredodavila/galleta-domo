@@ -5,9 +5,10 @@
 // reacciones, comentarios, eliminar publicación.
 // Depende de: perfil-config.js, perfil-utils.js
 //
-// v4.4 (Soporte para Visor con Swipe en Videos e Imágenes)
-// - Lista global de multimedia (window.listaMultimediaPerfil) para el visor.
-// - Los videos y las imágenes abren el visor usando su índice en la lista.
+// v4.5 (Autoplay configurable en el feed + Visor con Swipe)
+// - Lee 'contenido_auto_reproducir' de localStorage.
+// - Si está activo, el video se mutea, entra en loop y se auto-reproduce.
+// - Si está desactivado, el video espera a que el usuario le dé play.
 // ================================================================
 
 // Variable global para que el visor sepa qué archivos hay en la lista
@@ -296,7 +297,25 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         video.controls = true; 
                         video.preload = 'metadata'; 
                         video.src = p.media_url;
-                        video.style.cursor = 'pointer'; // Para que se vea clickeable
+                        video.style.cursor = 'pointer'; 
+                        
+                        // --- LÓGICA DE AUTOPLAY CONFIGURABLE ---
+                        // Leer la preferencia del usuario desde localStorage
+                        const autoPlayPref = localStorage.getItem('contenido_auto_reproducir');
+                        const activarAutoplay = autoPlayPref === null || autoPlayPref === 'true'; // Por defecto true
+
+                        if (activarAutoplay) {
+                            video.loop = true;
+                            video.autoplay = true;
+                            video.muted = true; // Silenciado para que el navegador permita el autoplay
+                            // Intentar reproducir
+                            setTimeout(() => video.play().catch(e => console.log('Autoplay bloqueado:', e)), 100);
+                        } else {
+                            video.loop = false;
+                            video.autoplay = false;
+                            video.muted = false;
+                        }
+                        // ----------------------------------------
                         
                         // AGREGAMOS EL EVENTO AL VIDEO PARA QUE ABRA EL VISOR
                         video.addEventListener('click', function (e) {
