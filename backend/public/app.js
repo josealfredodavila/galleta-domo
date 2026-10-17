@@ -18,6 +18,12 @@
    v2.0.3 — Correcciones contra esquema real de Supabase
    - obtenerTransmisionesActivas / Programadas: join usuarios(avatar_url).
    - crearTransmision: se elimina el campo inexistente "tags".
+
+   v2.0.4 — Pagos Live vía backend
+   - registrarPago: ya NO inserta directo en pagos_transmision (RLS lo bloquea).
+     Ahora llama POST /api/payments/create; el servidor valida tarifa real
+     y crea la orden TRX-. El monto del cliente se ignora.
+   - verificarAcceso: estado unificado a 'pagado' (coincide con webhook y DB).
 ================================================================ */
 
 'use strict';
@@ -2167,13 +2173,15 @@ class GalletaDomoApp {
 
 
     /* ============================================================
-       PAGOS LIVE
+       PAGOS LIVE — acceso a transmisión de pago
+       El cliente NO escribe en pagos_transmision (la RLS lo bloquea).
+       El servidor crea la orden TRX- y el webhook la marca 'pagado'.
     ============================================================ */
 
     async registrarPago(
         transmisionId,
         monto,
-        metodo
+        metodo = 'crypto'
     ) {
 
         try {
@@ -2188,89 +2196,79 @@ class GalletaDomoApp {
                 return null;
             }
 
-            monto =
-                Number(monto);
+            const id = Number(transmisionId);
 
-            if (
-                !Number.isFinite(monto) ||
-                monto <= 0
-            ) {
+            if (!Number.isInteger(id) || id <= 0) {
 
                 showToast(
-                    '⚠️ Monto inválido',
+                    '⚠️ Transmisión inválida',
                     'error'
                 );
 
                 return null;
             }
 
-            const comision =
-                monto * 0.5;
+            const session =
+                await this.supabase.auth.getSession();
 
-            const montoStreamer =
-                monto * 0.5;
+            const token =
+                session?.data?.session?.access_token;
 
-            const idempotencyKey =
-                'pago_' +
-                this.usuario.id +
-                '_' +
-                transmisionId +
-                '_' +
-                Date.now() +
-                '_' +
-                Math.random()
-                    .toString(36)
-                    .substring(2, 8);
+            if (!token) {
 
-            const {
-                data,
-                error
-            } =
-                await this.supabase
-                    .from(
-                        'pagos_transmision'
-                    )
-                    .insert({
-                        transmision_id:
-                            transmisionId,
+                showToast(
+                    '⚠️ Tu sesión expiró. Vuelve a iniciar sesión.',
+                    'error'
+                );
 
-                        espectador_id:
-                            this.usuario.id,
+                return null;
+            }
 
-                        monto_pagado:
-                            monto,
+            // El precio lo decide el servidor; el monto del cliente se ignora
+            const resp =
+                await fetch(
+                    '/api/payments/create',
+                    {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type':
+                                'application/json',
+                            'Authorization':
+                                'Bearer ' + token
+                        },
+                        body: JSON.stringify({
+                            transmisionId:
+                                id,
+                            metodo:
+                                metodo
+                        })
+                    }
+                );
 
-                        comision_sariels:
-                            comision,
+            const json =
+                await resp
+                    .json()
+                    .catch(function () {
+                        return {};
+                    });
 
-                        monto_streamer:
-                            montoStreamer,
+            if (
+                resp.status !== 201 ||
+                !json?.data?.id
+            ) {
 
-                        metodo_pago:
-                            metodo,
-
-                        tipo_pago:
-                            'acceso',
-
-                        estado:
-                            'completado',
-
-                        idempotency_key:
-                            idempotencyKey
-                    })
-                    .select()
-                    .single();
-
-            if (error) {
-                throw error;
+                throw new Error(
+                    json?.error ||
+                    'No se pudo crear el pago'
+                );
             }
 
             showToast(
-                `✅ Pago de $${monto} MXN completado`,
+                '🧾 Orden de pago creada. Completa el pago para entrar al live.',
                 'success'
             );
 
-            return data;
+            return json.data;
 
         } catch (error) {
 
@@ -2280,7 +2278,7 @@ class GalletaDomoApp {
             );
 
             showToast(
-                '❌ Error en pago',
+                '❌ ' + (error?.message || 'Error en pago'),
                 'error'
             );
 
@@ -2318,7 +2316,7 @@ class GalletaDomoApp {
                     )
                     .eq(
                         'estado',
-                        'completado'
+                        'pagado'
                     )
                     .limit(1);
 
