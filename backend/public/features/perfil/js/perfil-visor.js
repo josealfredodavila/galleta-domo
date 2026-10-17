@@ -2,7 +2,7 @@
 // PERFIL · VISOR DE MULTIMEDIA (Fotos y Videos)
 // ================================================================
 // Maneja el modal a pantalla completa, botón de descarga y swipe táctil.
-// v2.0 (Soporte para videos + deslizamiento arriba/abajo)
+// v3.0 (Sin flechas, deslizamiento puro con el dedo)
 // ================================================================
 
 (function() {
@@ -58,29 +58,15 @@
         .btn-descarga-visormodal:hover {
             background: #ccff00; color: #000; transform: translateX(-50%) scale(1.05);
         }
-        
-        /* Flechas indicadoras de deslizamiento */
-        .visor-arrow-hint {
-            position: absolute; left: 50%; transform: translateX(-50%);
-            color: rgba(255,255,255,0.4); font-size: 28px; pointer-events: none;
-            font-weight: bold; text-shadow: 0 2px 4px rgba(0,0,0,0.5);
-        }
-        .visor-arrow-up { top: 15px; }
-        .visor-arrow-down { bottom: 80px; }
     `;
     document.head.appendChild(style);
 
-    // 2. Inyectar el HTML del visor en el BODY
+    // 2. Inyectar el HTML del visor en el BODY (Sin flechas)
     const modalHTML = `
         <div id="visorMediaModal">
             <button class="btn-cerrar-visor" onclick="window.cerrarVisorModal()">×</button>
-            
-            <div class="visor-arrow-hint visor-arrow-up" style="display:none;">↑</div>
-            
             <img id="visorMediaContenido" src="" alt="Visor" style="display:none;" />
             <video id="visorVideoContenido" src="" controls playsinline style="display:none;"></video>
-            
-            <div class="visor-arrow-hint visor-arrow-down" style="display:none;">↓</div>
             
             <button id="btnDescargarVisor" class="btn-descarga-visormodal" style="display:none;">
                 <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -107,7 +93,7 @@
         });
 
         // ==========================================
-        // LÓGICA DE DESLIZAMIENTO (SWIPE)
+        // LÓGICA DE DESLIZAMIENTO (SWIPE) SIN FLECHAS
         // ==========================================
         
         // Para pantallas táctiles (celular)
@@ -132,7 +118,7 @@
 
     function procesarSwipe() {
         const distancia = startY - endY;
-        const minimoDesliz = 50; // Píxeles mínimos para que cuente como deslizamiento
+        const minimoDesliz = 40; // Píxeles mínimos para que cuente como deslizamiento
 
         if (Math.abs(distancia) < minimoDesliz) return;
 
@@ -153,8 +139,6 @@
         const img = document.getElementById('visorMediaContenido');
         const video = document.getElementById('visorVideoContenido');
         const btnDescarga = document.getElementById('btnDescargarVisor');
-        const flechaUp = document.querySelector('.visor-arrow-up');
-        const flechaDown = document.querySelector('.visor-arrow-down');
 
         // Ocultar ambos y pausar video por defecto
         img.style.display = 'none';
@@ -184,15 +168,6 @@
             });
         } else {
             btnDescarga.style.display = 'none';
-        }
-        
-        // Mostrar u ocultar flechas de guía
-        if (lista.length > 1) {
-            flechaUp.style.display = indiceActual < lista.length - 1 ? 'block' : 'none';
-            flechaDown.style.display = indiceActual > 0 ? 'block' : 'none';
-        } else {
-            flechaUp.style.display = 'none';
-            flechaDown.style.display = 'none';
         }
     }
 
