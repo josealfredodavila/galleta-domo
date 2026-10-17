@@ -2,7 +2,7 @@
 // PERFIL · VISOR DE MULTIMEDIA (Fotos y Videos)
 // ================================================================
 // Maneja el modal a pantalla completa, botón de descarga y swipe táctil.
-// v3.0 (Sin flechas, deslizamiento puro con el dedo)
+// v3.1 (Soporte para Autoplay configurable por el usuario)
 // ================================================================
 
 (function() {
@@ -24,14 +24,12 @@
         }
         #visorMediaModal.show { display: flex; opacity: 1; }
         
-        /* Contenedor de la imagen */
         #visorMediaContenido {
             max-width: 95vw; max-height: 90vh; object-fit: contain;
             border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);
             transition: transform 0.2s ease-out;
         }
 
-        /* Contenedor del video */
         #visorVideoContenido {
             max-width: 95vw; max-height: 90vh; border-radius: 8px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.8); z-index: 10;
@@ -48,7 +46,7 @@
         
         .btn-descarga-visormodal {
             position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%);
-            background: rgba(20, 20, 20, 0.85); color: #ccff00; /* Verde neón Csariel */
+            background: rgba(20, 20, 20, 0.85); color: #ccff00; 
             border: 1px solid #ccff00; border-radius: 30px; padding: 10px 24px;
             font-size: 0.9rem; font-weight: bold; cursor: pointer;
             display: flex; align-items: center; gap: 8px;
@@ -87,16 +85,11 @@
 
         const modal = document.getElementById('visorMediaModal');
         
-        // Cerrar al hacer clic en el fondo oscuro
         modal.addEventListener('click', function(e) {
             if (e.target === this) window.cerrarVisorModal();
         });
 
-        // ==========================================
-        // LÓGICA DE DESLIZAMIENTO (SWIPE) SIN FLECHAS
-        // ==========================================
-        
-        // Para pantallas táctiles (celular)
+        // Lógica de Swipe (sin flechas)
         modal.addEventListener('touchstart', function(e) {
             startY = e.changedTouches[0].screenY;
         }, { passive: true });
@@ -106,7 +99,6 @@
             procesarSwipe();
         }, { passive: true });
         
-        // Para mouse (computadora)
         modal.addEventListener('mousedown', function(e) {
             startY = e.screenY;
         });
@@ -118,16 +110,14 @@
 
     function procesarSwipe() {
         const distancia = startY - endY;
-        const minimoDesliz = 40; // Píxeles mínimos para que cuente como deslizamiento
+        const minimoDesliz = 40;
 
         if (Math.abs(distancia) < minimoDesliz) return;
 
         if (distancia > 0) {
-            // Deslizó hacia ARRIBA -> Siguiente
-            cambiarMultimedia(1);
+            cambiarMultimedia(1); // Arriba -> Siguiente
         } else {
-            // Deslizó hacia ABAJO -> Anterior
-            cambiarMultimedia(-1);
+            cambiarMultimedia(-1); // Abajo -> Anterior
         }
     }
 
@@ -140,22 +130,34 @@
         const video = document.getElementById('visorVideoContenido');
         const btnDescarga = document.getElementById('btnDescargarVisor');
 
-        // Ocultar ambos y pausar video por defecto
         img.style.display = 'none';
         video.style.display = 'none';
         video.pause(); 
         video.src = ''; 
 
-        // Mostrar el tipo de archivo correcto
         if (item.tipo === 'video') {
             video.src = item.url;
             video.style.display = 'block';
+            
+            // Leer la preferencia del usuario
+            const autoPlayPref = localStorage.getItem('contenido_auto_reproducir');
+            const activarAutoplay = autoPlayPref === null || autoPlayPref === 'true'; // Por defecto true
+
+            if (activarAutoplay) {
+                video.loop = true;
+                video.autoplay = true;
+                // Intentar reproducir (algunos navegadores bloquean autoplay con sonido)
+                video.play().catch(e => console.log('Autoplay bloqueado por el navegador:', e));
+            } else {
+                video.loop = false;
+                video.autoplay = false;
+            }
+
         } else {
             img.src = item.url;
             img.style.display = 'block';
         }
 
-        // Configurar botón de descarga
         if (item.permiteDescarga) {
             btnDescarga.style.display = 'flex';
             const newBtn = btnDescarga.cloneNode(true);
@@ -175,14 +177,12 @@
         const lista = window.listaMultimediaPerfil || [];
         const nuevoIndice = indiceActual + direccion;
 
-        // Validar que no nos salgamos de los límites
         if (nuevoIndice >= 0 && nuevoIndice < lista.length) {
             indiceActual = nuevoIndice;
             actualizarVisor();
         }
     }
 
-    // 3. Función Global para abrir el visor
     window.expandirFotoPublicacion = function(index) {
         initVisor();
         indiceActual = index;
@@ -194,7 +194,6 @@
         document.body.style.overflow = 'hidden';
     };
 
-    // 4. Función Global para cerrar
     window.cerrarVisorModal = function() {
         const modal = document.getElementById('visorMediaModal');
         if (modal) {
