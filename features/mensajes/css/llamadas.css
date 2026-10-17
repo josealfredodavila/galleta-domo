@@ -1,6 +1,5 @@
 /* ============================================================
    CSARIEL'S · HISTORIAL DE LLAMADAS · CONFIGURACIÓN · BLOQUEOS
-   Estilos exclusivos para la pestaña "Llamadas" y sus modales.
    ============================================================ */
 
 .llamada-item {
@@ -123,7 +122,6 @@
     background: rgba(255, 51, 102, 0.1);
 }
 
-/* Bloqueado item */
 .bloqueado-item {
     display: flex;
     align-items: center;
@@ -172,4 +170,121 @@
 .bloqueado-item button:hover {
     background: #ff3366;
     color: #fff;
+}
+
+/* ============================================================
+   VISOR DE FOTOS DEL CHAT (pantalla completa + descarga)
+   ============================================================ */
+.media-viewer {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(12px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    padding: 20px;
+}
+
+.media-viewer.show { display: flex; }
+
+.media-viewer-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: calc(100vh - 120px);
+    padding: 0 20px;
+}
+
+.media-viewer-body img,
+.media-viewer-body video {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 12px;
+    border: 2px solid var(--gold);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    object-fit: contain;
+}
+
+.media-viewer-footer {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 14px;
+    flex-wrap: wrap;
+    text-align: center;
+}
+
+.media-viewer-name {
+    color: var(--muted);
+    font-size: .85rem;
+    max-width: 60vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.media-viewer-download {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 20px;
+    border-radius: 99px;
+    background: linear-gradient(135deg, var(--gold), #b8923a);
+    color: var(--space);
+    text-decoration: none;
+    font-weight: 800;
+    font-size: .85rem;
+    border: 0;
+    cursor: pointer;
+    transition: transform .2s;
+}
+
+.media-viewer-download:hover { transform: scale(1.04); }
+
+.media-viewer-close {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: rgba(212, 175, 55, 0.15);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    cursor: pointer;
+    font-size: 1.2rem;
+    font-weight: 800;
+    display: grid;
+    place-items: center;
+    transition: background .2s;
+    z-index: 2;
+}
+
+.media-viewer-close:hover {
+    background: var(--gold);
+    color: var(--space);
+}
+
+/* File attachment con botón de descarga */
+.file-attachment {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    word-break: break-all;
+}
+
+/* Imágenes del chat: cursor de zoom */
+.bubble img[data-media-url] {
+    cursor: zoom-in;
+    transition: transform .15s;
+}
+
+.bubble img[data-media-url]:hover {
+    transform: scale(1.02);
 }
