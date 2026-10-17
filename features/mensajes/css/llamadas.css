@@ -195,7 +195,7 @@
     align-items: center;
     justify-content: center;
     width: 100%;
-    height: calc(100vh - 120px);
+    height: calc(100vh - 140px);
     padding: 0 20px;
 }
 
@@ -232,19 +232,20 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 10px 20px;
+    padding: 10px 22px;
     border-radius: 99px;
     background: linear-gradient(135deg, var(--gold), #b8923a);
-    color: var(--space);
-    text-decoration: none;
+    color: var(--space) !important;
+    text-decoration: none !important;
     font-weight: 800;
     font-size: .85rem;
     border: 0;
     cursor: pointer;
-    transition: transform .2s;
+    transition: transform .15s ease;
+    box-shadow: 0 4px 16px rgba(212, 175, 55, 0.4);
 }
 
-.media-viewer-download:hover { transform: scale(1.04); }
+.media-viewer-download:hover { transform: scale(1.05); }
 
 .media-viewer-close {
     position: absolute;
@@ -270,7 +271,7 @@
     color: var(--space);
 }
 
-/* File attachment con botón de descarga */
+/* Botón de descarga en archivos adjuntos */
 .file-attachment {
     display: flex;
     align-items: center;
@@ -279,12 +280,43 @@
     word-break: break-all;
 }
 
-/* Imágenes del chat: cursor de zoom */
-.bubble img[data-media-url] {
-    cursor: zoom-in;
-    transition: transform .15s;
+.file-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 99px;
+    background: linear-gradient(135deg, var(--gold), #b8923a);
+    color: var(--space) !important;
+    text-decoration: none !important;
+    font-weight: 800;
+    font-size: .72rem;
+    border: 0;
+    cursor: pointer;
+    transition: transform .15s ease;
 }
 
-.bubble img[data-media-url]:hover {
+.file-download-btn:hover {
+    transform: scale(1.04);
+}
+
+/* Imágenes del chat: no deben parecer links */
+.bubble a.media-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    cursor: zoom-in;
+    border-radius: 9px;
+    overflow: hidden;
+}
+
+.bubble a.media-link img {
+    display: block;
+    max-width: 100%;
+    border-radius: 9px;
+    transition: transform .15s ease;
+}
+
+.bubble a.media-link:hover img {
     transform: scale(1.02);
 }
