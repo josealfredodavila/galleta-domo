@@ -1,14 +1,16 @@
 // ================================================================
-// MENSAJES · JS v3.2
+// MENSAJES · JS v3.3
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIOS v3.2:
-// - Fix crítico en loadConversations(): ahora construye la lista
-//   desde los mensajes reales, calculando el otherUserId de cada
+// CAMBIOS v3.3:
+// - Fix crítico en loadConversations(): construye la lista desde
+//   los mensajes reales, calculando el otherUserId de cada
 //   conversación (nunca muestra al usuario actual como interlocutor).
 // - Trae los perfiles en lote desde perfiles_publicos (1 sola query).
 // - Elimina la dependencia exclusiva de la tabla `contactos`.
-// - Mantiene compatibilidad total con el resto del sistema.
+// - Llamadas (LiveKit): bloque v3.3 con llamadaFetch adaptado a
+//   { success: true, data: {...} } y suscripción filtrada por
+//   destinatario_id en incoming-calls.
 // ================================================================
 
 'use strict';
@@ -794,7 +796,7 @@ async function getSignedUrlForMessage(m) {
 }
 
 // ================================================================
-// CARGAR CONVERSACIONES — v3.2 · FIX
+// CARGAR CONVERSACIONES — v3.3 · FIX
 //
 // Construye la lista desde los MENSAJES REALES del usuario.
 // Calcula el otherUserId de cada conversación (nunca muestra al
@@ -2447,232 +2449,110 @@ async function crearGrupo() {
 }
 
 // ================================================================
-// LLAMADAS (LiveKit) — v3.2 · Migrado a /api/llamadas/*
+// LLAMADAS (LiveKit) — v3.3 · Parche quirúrgico
 // ================================================================
-async function startCall(tipo = 'video') {
-    if (current?.bot) {
-        toast('⚠️ Marquinhos no acepta llamadas', 'warning');
-        return;
-    }
-    if (!current) {
-        toast('⚠️ Selecciona una conversación primero', 'error');
-        return;
-    }
-    if (call.active) {
-        $('callOverlay').classList.add('show');
-        return;
-    }
+const LLAMADA_TIMEOUT_MS = 45000;
+const LLAMADA_VIGENCIA_MS = 60000;
+const MENSAJES_LLAMADA = {
+    llamada_no_disponible: 'La llamada ya no está disponible.',
+    servidor: 'Error del servidor. Intenta de nuevo.',
+    no_autenticado: 'Tu sesión expiró. Vuelve a iniciar sesión.'
+};
 
-    try {
-        const s = await session();
-        if (!s) {
-            toast('⚠️ Inicia sesión para llamar', 'error');
-            return;
-        }
+let llamadaTimeoutTimer = null;
+let ringTimer = null;
+let ringChannel = null;
+let llamadaConectando = false;
+let llamadaAceptando = false;
 
-        const r = await fetch('/api/llamadas/iniciar', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + s.access_token
-            },
-            body: JSON.stringify({
-                destinatarioId: current.id,
-                tipo: tipo
-            })
-        });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok || !d.ok) {
-            throw new Error(d.error || 'No se pudo iniciar la llamada');
-        }
-
-        call.id = d.llamadaId;
-        call.roomName = d.roomName;
-        call.tipo = tipo;
-        call.initiator = true;
-
-        await connectCallWithToken(d.roomName, user.id);
-        subscribeCall(d.llamadaId);
-
-        $('callOverlay').classList.add('show');
-        $('callInfo').innerHTML = `📞 <strong>Llamando a ${esc(current.profile.nombre || 'usuario')}…</strong><br><small style="opacity:.7">Esperando respuesta</small>`;
-
-        toast(`📞 Llamando a ${current.profile.nombre || 'usuario'}…`, 'success');
-    } catch (e) {
-        console.error('[Llamadas] Error al iniciar:', e);
-        toast('❌ No se pudo iniciar la llamada: ' + e.message, 'error');
-        await cleanupCall();
-    }
+function textoErrorLlamada(err) {
+    const code = err && (err.code || err.message);
+    return MENSAJES_LLAMADA[code] || `No se pudo completar la acción (${code || 'desconocido'})`;
 }
 
-async function obtenerTokenLlamada(llamadaId) {
+async function llamadaFetch(path, body = {}) {
     const s = await session();
-    if (!s) throw new Error('No autenticado');
-
-    const r = await fetch(`/api/llamadas/${encodeURIComponent(llamadaId)}/token`, {
+    if (!s) {
+        const e = new Error('no_autenticado');
+        e.code = 'no_autenticado';
+        throw e;
+    }
+    const r = await fetch(path, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + s.access_token
         },
-        body: JSON.stringify({})
+        body: JSON.stringify(body)
     });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok || !d.ok) {
-        throw new Error(d.error || 'No se pudo obtener el token de la sala');
+    if (!r.ok || d.success !== true) {
+        const code = d.error || ('http_' + r.status);
+        const err = new Error(code);
+        err.code = code;
+        throw err;
     }
-    return d;
+    return d.data || {};
 }
 
-async function connectCallWithToken(roomName, participantName) {
-    if (!window.LivekitClient) {
-        throw new Error('LiveKit no está cargado');
+async function terminarLlamadaServidor(id, body = {}) {
+    if (!id) return;
+    try {
+        await llamadaFetch(`/api/llamadas/${encodeURIComponent(id)}/terminar`, body);
+    } catch (e) {
+        console.warn('[Llamadas] terminar:', e.code || e.message);
     }
+}
 
-    const tokenData = await obtenerTokenLlamada(call.id);
+function mostrarLlamando(nombre) {
+    $('callInfo').innerHTML = `📞 <strong>Llamando a ${esc(nombre)}…</strong><br><small style="opacity:.7">Esperando respuesta</small>`;
+}
 
-    const room = new LivekitClient.Room();
-
-    room.on(LivekitClient.RoomEvent.TrackSubscribed, track => {
-        if (track.kind === 'video') track.attach($('remoteVideo'));
-        if (track.kind === 'audio') track.attach();
-    });
-
-    room.on(LivekitClient.RoomEvent.Disconnected, () => {
-        if (call.active) cleanupCall();
-    });
-
-    await room.connect(tokenData.url, tokenData.token);
-
-    const mediaConstraints = {
-        audio: true,
-        video: call.tipo === 'video'
-            ? { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
-            : false
-    };
-
-    const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
-
-    const at = stream.getAudioTracks()[0];
-    const vt = stream.getVideoTracks()[0];
-
-    if (at) {
-        await room.localParticipant.publishTrack(at, {
-            name: 'microphone',
-            source: LivekitClient.TrackSource.Microphone
-        });
-        call.audio = at;
-    }
-    if (vt) {
-        await room.localParticipant.publishTrack(vt, {
-            name: 'camera',
-            source: LivekitClient.TrackSource.Camera
-        });
-        call.video = vt;
-        $('localVideo').srcObject = new MediaStream([vt]);
-    }
-    call.room = room;
-    call.active = true;
-
+function mostrarEnCurso() {
     $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
 }
 
-function subscribeCall(llamadaId) {
-    if (callChannel) db.removeChannel(callChannel);
-    callChannel = db.channel('call-' + llamadaId).on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'llamadas',
-        filter: 'id=eq.' + llamadaId
-    }, p => {
-        if (p.new.estado === 'active') {
-            $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
+function crearRoom() {
+    if (!window.LivekitClient) throw new Error('LiveKit no está cargado');
+    const room = new LivekitClient.Room();
+
+    room.on(LivekitClient.RoomEvent.TrackSubscribed, track => {
+        if (track.kind === 'video') {
+            track.attach($('remoteVideo'));
+        } else if (track.kind === 'audio') {
+            const el = track.attach();
+            el.dataset.lk = '1';
+            el.style.display = 'none';
+            document.body.appendChild(el);
+            el.play?.().catch(() => {});
         }
-        if (['ended', 'rejected', 'missed'].includes(p.new.estado)) {
-            toast('📞 La llamada terminó', '');
-            cleanupCall();
-        }
-    }).subscribe();
+    });
+
+    room.on(LivekitClient.RoomEvent.Disconnected, () => {
+        if (!call.active) return;
+        const id = call.id;
+        finalizarLlamadaLocal();
+        terminarLlamadaServidor(id);
+    });
+
+    return room;
 }
 
-async function incoming(data) {
-    if (call.active) {
-        try {
-            const s = await session();
-            if (s) {
-                await fetch(`/api/llamadas/${encodeURIComponent(data.id)}/terminar`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + s.access_token
-                    },
-                    body: JSON.stringify({ motivo: 'ocupado' })
-                });
-            }
-        } catch (e) { /* silencioso */ }
-        return;
-    }
-    if (data.creador_id === user.id) return;
-
-    incomingId = data.id;
-    const p = await profile(data.creador_id);
-    $('incomingName').textContent = p.nombre || 'Usuario';
-    $('incomingAvatar').innerHTML = p.avatar_url
-        ? `<img src="${esc(p.avatar_url)}" alt="">`
-        : esc((p.nombre || '◈').charAt(0).toUpperCase());
-    $('incomingOverlay').classList.add('show');
-
-    toast('🔔 ' + (p.nombre || 'Alguien') + ' te está llamando…', 'success');
-}
-
-async function acceptCall() {
-    if (!incomingId) return;
+async function conectarYPublicar(url, token, tipo) {
+    if (llamadaConectando) return;
+    llamadaConectando = true;
+    const room = crearRoom();
+    let stream = null;
     try {
-        const s = await session();
-        if (!s) throw new Error('No autenticado');
+        await room.connect(url, token);
 
-        const r = await fetch(`/api/llamadas/${encodeURIComponent(incomingId)}/aceptar`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + s.access_token
-            },
-            body: JSON.stringify({})
-        });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok || !d.ok) {
-            throw new Error(d.error || 'No se pudo aceptar la llamada');
-        }
-
-        call.id = d.llamadaId || incomingId;
-        call.roomName = d.roomName;
-        call.tipo = d.tipo || 'video';
-        call.initiator = false;
-
-        $('incomingOverlay').classList.remove('show');
-        incomingId = null;
-
-        if (!window.LivekitClient) throw new Error('LiveKit no está cargado');
-        const room = new LivekitClient.Room();
-
-        room.on(LivekitClient.RoomEvent.TrackSubscribed, track => {
-            if (track.kind === 'video') track.attach($('remoteVideo'));
-            if (track.kind === 'audio') track.attach();
-        });
-        room.on(LivekitClient.RoomEvent.Disconnected, () => {
-            if (call.active) cleanupCall();
-        });
-
-        await room.connect(d.url, d.token);
-
-        const mediaConstraints = {
+        stream = await navigator.mediaDevices.getUserMedia({
             audio: true,
-            video: call.tipo === 'video'
+            video: tipo === 'video'
                 ? { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
                 : false
-        };
+        });
 
-        const stream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
         const at = stream.getAudioTracks()[0];
         const vt = stream.getVideoTracks()[0];
 
@@ -2691,83 +2571,244 @@ async function acceptCall() {
             call.video = vt;
             $('localVideo').srcObject = new MediaStream([vt]);
         }
+
         call.room = room;
+        call.tipo = tipo;
         call.active = true;
+    } catch (e) {
+        if (stream) stream.getTracks().forEach(t => t.stop());
+        try { room.disconnect(); } catch (_) {}
+        throw e;
+    } finally {
+        llamadaConectando = false;
+    }
+}
+
+function subscribeCall(llamadaId) {
+    if (callChannel) {
+        db.removeChannel(callChannel);
+        callChannel = null;
+    }
+    callChannel = db.channel('call-' + llamadaId).on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'llamadas',
+        filter: 'id=eq.' + llamadaId
+    }, async p => {
+        if (call.id !== llamadaId) return;
+        const estado = p.new?.estado;
+
+        if (estado === 'active') {
+            if (!call.initiator || call.active || llamadaConectando) return;
+            clearTimeout(llamadaTimeoutTimer);
+            $('callInfo').innerHTML = 'Conectando…';
+            try {
+                const t = await llamadaFetch(`/api/llamadas/${encodeURIComponent(llamadaId)}/token`, {});
+                await conectarYPublicar(t.url, t.token, call.tipo);
+                mostrarEnCurso();
+            } catch (e) {
+                console.error('[Llamadas] Error conectando al que llama:', e);
+                toast('❌ ' + textoErrorLlamada(e), 'error');
+                await terminarLlamadaServidor(llamadaId);
+                await finalizarLlamadaLocal();
+            }
+        } else if (['ended', 'rejected', 'missed'].includes(estado)) {
+            toast(estado === 'rejected' ? '📵 La llamada fue rechazada' : '📞 La llamada terminó', '');
+            await finalizarLlamadaLocal();
+        }
+    }).subscribe();
+}
+
+function iniciarTimeoutLlamada() {
+    clearTimeout(llamadaTimeoutTimer);
+    llamadaTimeoutTimer = setTimeout(async () => {
+        if (!call.initiator || call.active || !call.id) return;
+        const id = call.id;
+        toast('📵 Sin respuesta', 'warning');
+        await terminarLlamadaServidor(id);
+        await finalizarLlamadaLocal();
+    }, LLAMADA_TIMEOUT_MS);
+}
+
+async function startCall(tipo = 'video') {
+    if (current?.bot) {
+        toast('⚠️ Marquinhos no acepta llamadas', 'warning');
+        return;
+    }
+    if (!current) {
+        toast('⚠️ Selecciona una conversación primero', 'error');
+        return;
+    }
+    if (call.active || call.id) {
+        $('callOverlay').classList.add('show');
+        return;
+    }
+    if (!window.LivekitClient) {
+        toast('❌ Las llamadas no están disponibles en este momento', 'error');
+        return;
+    }
+
+    const nombre = current.profile?.nombre || 'usuario';
+    try {
+        const d = await llamadaFetch('/api/llamadas/iniciar', {
+            destinatarioId: current.id,
+            tipo
+        });
+        call.id = d.llamadaId;
+        call.roomName = d.roomName;
+        call.tipo = tipo;
+        call.initiator = true;
 
         subscribeCall(call.id);
         $('callOverlay').classList.add('show');
-        $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
+        mostrarLlamando(nombre);
+        toast(`📞 Llamando a ${nombre}…`, 'success');
+        iniciarTimeoutLlamada();
+    } catch (e) {
+        console.error('[Llamadas] Error al iniciar:', e);
+        toast('❌ No se pudo iniciar la llamada: ' + textoErrorLlamada(e), 'error');
+        await finalizarLlamadaLocal();
+    }
+}
+
+function cerrarOverlayEntrante() {
+    clearTimeout(ringTimer);
+    ringTimer = null;
+    if (ringChannel) {
+        db.removeChannel(ringChannel);
+        ringChannel = null;
+    }
+    incomingId = null;
+    $('incomingOverlay').classList.remove('show');
+}
+
+async function incoming(data) {
+    if (!user || !data || data.creador_id === user.id) return;
+    if (data.estado && data.estado !== 'ringing') return;
+
+    const edad = Date.now() - new Date(data.created_at || Date.now()).getTime();
+    if (edad > LLAMADA_VIGENCIA_MS) return;
+
+    if (call.active || call.id || incomingId) {
+        if (incomingId !== data.id && !call.id) {
+            await terminarLlamadaServidor(data.id, { motivo: 'ocupado' });
+        }
+        return;
+    }
+
+    incomingId = data.id;
+    const id = data.id;
+    const p = await profile(data.creador_id);
+
+    $('incomingName').textContent = p.nombre || 'Usuario';
+    $('incomingAvatar').innerHTML = p.avatar_url
+        ? `<img src="${esc(p.avatar_url)}" alt="">`
+        : esc((p.nombre || '◈').charAt(0).toUpperCase());
+    $('incomingOverlay').classList.add('show');
+    toast('🔔 ' + (p.nombre || 'Alguien') + ' te está llamando…', 'success');
+
+    ringChannel = db.channel('ring-' + id).on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'llamadas',
+        filter: 'id=eq.' + id
+    }, p2 => {
+        if (incomingId === id && p2.new?.estado !== 'ringing') {
+            cerrarOverlayEntrante();
+            toast('📞 La llamada ya no está disponible', 'warning');
+        }
+    }).subscribe();
+
+    ringTimer = setTimeout(async () => {
+        if (incomingId !== id) return;
+        cerrarOverlayEntrante();
+        await terminarLlamadaServidor(id);
+    }, LLAMADA_TIMEOUT_MS);
+}
+
+async function acceptCall() {
+    if (!incomingId || llamadaAceptando) return;
+    llamadaAceptando = true;
+    const id = incomingId;
+
+    try {
+        const d = await llamadaFetch(`/api/llamadas/${encodeURIComponent(id)}/aceptar`, {});
+
+        cerrarOverlayEntrante();
+        call.id = d.llamadaId || id;
+        call.roomName = d.roomName;
+        call.tipo = d.tipo || 'video';
+        call.initiator = false;
+
+        subscribeCall(call.id);
+        $('callOverlay').classList.add('show');
+        $('callInfo').innerHTML = 'Conectando…';
+
+        await conectarYPublicar(d.url, d.token, call.tipo);
+        mostrarEnCurso();
     } catch (e) {
         console.error('[Llamadas] Error al aceptar:', e);
-        toast('❌ ' + e.message, 'error');
-        await cleanupCall();
+        toast('❌ ' + textoErrorLlamada(e), 'error');
+        cerrarOverlayEntrante();
+        await terminarLlamadaServidor(id);
+        await finalizarLlamadaLocal();
+    } finally {
+        llamadaAceptando = false;
     }
 }
 
 async function rejectCall() {
-    if (incomingId) {
-        try {
-            const s = await session();
-            if (s) {
-                await fetch(`/api/llamadas/${encodeURIComponent(incomingId)}/terminar`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + s.access_token
-                    },
-                    body: JSON.stringify({ motivo: 'rechazada' })
-                });
-            }
-        } catch (e) {
-            console.warn('[Llamadas] Error al rechazar:', e);
-        }
-    }
-    incomingId = null;
-    $('incomingOverlay').classList.remove('show');
+    const id = incomingId;
+    cerrarOverlayEntrante();
+    if (id) await terminarLlamadaServidor(id, { motivo: 'rechazada' });
     toast('📵 Llamada rechazada', 'warning');
 }
 
 async function hangup() {
-    if (call.id) {
-        try {
-            const s = await session();
-            if (s) {
-                await fetch(`/api/llamadas/${encodeURIComponent(call.id)}/terminar`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + s.access_token
-                    },
-                    body: JSON.stringify({})
-                });
-            }
-        } catch (e) {
-            console.warn('[Llamadas] Error al colgar:', e);
-        }
-    }
+    const id = call.id;
+    await terminarLlamadaServidor(id);
     toast('📞 Llamada finalizada', 'warning');
-    await cleanupCall();
+    await finalizarLlamadaLocal();
 }
 
-async function cleanupCall() {
+async function finalizarLlamadaLocal() {
+    clearTimeout(llamadaTimeoutTimer);
+    llamadaTimeoutTimer = null;
+
+    const room = call.room;
+    call.room = null;
+    call.active = false;
+    try { room?.disconnect(); } catch (e) {}
+
     try {
-        if (call.room) call.room.disconnect();
-        if (call.audio) call.audio.stop();
-        if (call.video) call.video.stop();
-        if (call.screen) call.screen.stop();
-        $('localVideo').srcObject = null;
-        $('remoteVideo').srcObject = null;
-        if (callChannel) db.removeChannel(callChannel);
+        call.audio?.stop();
+        call.video?.stop();
+        call.screen?.stop();
     } catch (e) {}
+
+    $('localVideo').srcObject = null;
+    $('remoteVideo').srcObject = null;
+    document.querySelectorAll('audio[data-lk="1"]').forEach(el => el.remove());
+
+    if (callChannel) {
+        db.removeChannel(callChannel);
+        callChannel = null;
+    }
 
     Object.assign(call, {
         room: null, id: null, active: false, audio: null, video: null,
         screen: null, roomName: null, initiator: false
     });
+    llamadaConectando = false;
+
     $('callOverlay').classList.remove('show');
     $('toggleMic').innerHTML = '<span class="ctrl-icon">🎤</span><span class="ctrl-label">Micrófono</span>';
     $('toggleCam').innerHTML = '<span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span>';
     $('toggleScreen').innerHTML = '<span class="ctrl-icon">🖥️</span><span class="ctrl-label">Pantalla</span>';
+}
+
+async function cleanupCall() {
+    await finalizarLlamadaLocal();
 }
 
 async function toggleMic() {
@@ -3012,11 +3053,10 @@ async function init() {
     db.channel('incoming-calls').on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
-        table: 'llamadas'
+        table: 'llamadas',
+        filter: `destinatario_id=eq.${user.id}`
     }, p => {
-        if (user && p.new.destinatario_id === user.id && p.new.estado === 'ringing') {
-            incoming(p.new);
-        }
+        if (user && p.new.estado === 'ringing') incoming(p.new);
     }).subscribe();
 
     setInterval(() => {
