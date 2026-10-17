@@ -1,10 +1,21 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
+// Publicar desde el perfil (texto/foto/video), listar mis posts,
+// reacciones, comentarios, eliminar publicación.
+// Depende de: perfil-config.js, perfil-utils.js
+//
+// v4.4 (Soporte para Visor con Swipe en Videos e Imágenes)
+// - Lista global de multimedia (window.listaMultimediaPerfil) para el visor.
+// - Los videos y las imágenes abren el visor usando su índice en la lista.
+// ================================================================
 
 // Variable global para que el visor sepa qué archivos hay en la lista
 window.listaMultimediaPerfil = [];
 
+// ================================================================
+// INYECCIÓN DE ESTILOS CSS
+// ================================================================
 (function inyectarEstilosReaccionesPerfil() {
     if (document.getElementById('perfil-reacciones-fb-styles')) return;
     var style = document.createElement('style');
@@ -39,6 +50,9 @@ window.listaMultimediaPerfil = [];
     document.head.appendChild(style);
 })();
 
+// ================================================================
+// HELPERS
+// ================================================================
 function pubCodigoIdioma() {
     try { if (typeof window.obtenerCodigoIdiomaActual === 'function') return window.obtenerCodigoIdiomaActual(); } catch (e) {}
     return 'es-MX';
@@ -97,6 +111,9 @@ async function descargarArchivoForzado(url, nombreOriginal) {
     }
 }
 
+// ================================================================
+// EMOJI PICKER Y HASHTAG
+// ================================================================
 function toggleEmojiPickerPerfil() {
     var picker = document.getElementById('emojiPickerPerfil');
     if (!picker) return;
@@ -128,6 +145,9 @@ function insertarHashtagPerfil() {
     input.focus(); input.selectionStart = input.selectionEnd = start + 1;
 }
 
+// ================================================================
+// SELECCIONAR ARCHIVO Y PREVIEW
+// ================================================================
 function seleccionarArchivoPerfil(event, tipo) {
     var file = event.target.files[0];
     if (!file) return;
@@ -173,6 +193,9 @@ function quitarArchivoPerfil(tipo) {
     renderizarPreviewPerfil();
 }
 
+// ================================================================
+// PUBLICAR DESDE EL PERFIL
+// ================================================================
 async function publicarDesdePerfil() {
     var btn = document.getElementById('btnPublicarPerfil'); var input = document.getElementById('inputNuevaPublicacion');
     var contenido = input ? input.value.trim() : '';
@@ -211,6 +234,9 @@ async function publicarDesdePerfil() {
     } finally { if (btn) { btn.disabled = false; btn.innerHTML = textoOriginalBtn; } }
 }
 
+// ================================================================
+// CARGAR MIS PUBLICACIONES
+// ================================================================
 async function cargarMisPublicaciones(forzarRefresco) {
     var container = document.getElementById('misPublicacionesList'); var contador = document.getElementById('misPostsCount');
     if (!container) return;
@@ -225,7 +251,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
         if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><h4>Sin publicaciones aún</h4><p>Publica algo para verlo aquí</p></div>'; return; }
         container.innerHTML = '';
         
-        // Limpiamos la lista global cada vez que recargamos
+        // Limpiamos la lista global cada vez que recargamos para que el visor sepa qué mostrar
         window.listaMultimediaPerfil = [];
 
         var reaccionesUsuario = {}; var conteosReacciones = {};
@@ -266,13 +292,28 @@ async function cargarMisPublicaciones(forzarRefresco) {
                     });
 
                     if (p.media_type === 'video') {
-                        var video = document.createElement('video'); video.controls = true; video.preload = 'metadata'; video.src = p.media_url;
+                        var video = document.createElement('video'); 
+                        video.controls = true; 
+                        video.preload = 'metadata'; 
+                        video.src = p.media_url;
+                        video.style.cursor = 'pointer'; // Para que se vea clickeable
+                        
+                        // AGREGAMOS EL EVENTO AL VIDEO PARA QUE ABRA EL VISOR
+                        video.addEventListener('click', function (e) {
+                            // Evitar que el clic en los controles (play, pausa) abra el visor
+                            if(e.target.tagName !== 'VIDEO') return; 
+                            if (typeof window.expandirFotoPublicacion === 'function') {
+                                window.expandirFotoPublicacion(indexEnLista);
+                            }
+                        });
                         contenido.appendChild(video);
                     } else if (p.media_type === 'imagen') {
-                        var img = document.createElement('img'); img.alt = perfilT('perfil_imagen', 'Imagen'); img.loading = 'lazy'; img.style.cursor = 'pointer';
+                        var img = document.createElement('img'); 
+                        img.alt = perfilT('perfil_imagen', 'Imagen'); 
+                        img.loading = 'lazy'; 
+                        img.style.cursor = 'pointer';
                         img.addEventListener('click', function () {
                             if (typeof window.expandirFotoPublicacion === 'function') {
-                                // Le pasamos el INDEX de la lista global al visor
                                 window.expandirFotoPublicacion(indexEnLista);
                             }
                         });
@@ -316,6 +357,9 @@ async function cargarMisPublicaciones(forzarRefresco) {
     } catch (error) { console.error('Error cargando mis publicaciones:', error); container.innerHTML = '<div class="empty-state"><h4>Error al cargar</h4><p>' + escapeHtmlPerfil(error.message) + '</p></div>'; }
 }
 
+// ================================================================
+// REACCIONES
+// ================================================================
 function toggleReaccionDropdown(postId, forzarApertura) {
     var dd = document.getElementById('reaccion-dropdown-' + postId); if (!dd) return; var esta = dd.classList.contains('show');
     document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) { el.classList.remove('show'); });
@@ -339,6 +383,9 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
     } catch (error) { console.error('Error reaccionando:', error); }
 }
 
+// ================================================================
+// COMENTARIOS
+// ================================================================
 async function toggleComentariosPerfil(publicacionId) {
     var container = document.getElementById('comentarios-container-' + publicacionId); if (!container) return;
     if (container.classList.contains('show')) { container.classList.remove('show'); return; }
@@ -382,6 +429,9 @@ async function enviarComentarioPerfil(publicacionId) {
     } catch (error) { console.error('Error enviando comentario:', error); if (window.showToast) { if (esErrorModeracionPerfil(error)) window.showToast('❌ Contenido no permitido', 'error', 6000); else window.showToast('Error al enviar comentario: ' + error.message, 'error'); } }
 }
 
+// ================================================================
+// ELIMINAR PUBLICACIÓN
+// ================================================================
 async function eliminarMiPublicacion(publicacionId, event) {
     if (event) { event.preventDefault(); event.stopPropagation(); }
     if (!confirm('¿Seguro que quieres eliminar esta publicación?')) return;
@@ -401,4 +451,10 @@ async function eliminarMiPublicacion(publicacionId, event) {
     } catch (error) { console.error('Error eliminando:', error); if (window.showToast) window.showToast('Error al eliminar: ' + error.message, 'error'); }
 }
 
+// Exponer funciones globales necesarias
 window.descargarArchivoForzado = descargarArchivoForzado;
+window.publicarDesdePerfil = publicarDesdePerfil;
+window.seleccionarArchivoPerfil = seleccionarArchivoPerfil;
+window.quitarArchivoPerfil = quitarArchivoPerfil;
+window.toggleEmojiPickerPerfil = toggleEmojiPickerPerfil;
+window.insertarHashtagPerfil = insertarHashtagPerfil;
