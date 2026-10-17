@@ -11,18 +11,15 @@
 <script src="/features/shared/js/presencia-global.js" defer></script>
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
-<!-- LiveKit con carga diferida + reintento -->
 <script>
     (function () {
         var url = 'https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js';
         var maxIntentos = 3;
         var intento = 0;
-        var yaCargado = false;
 
         function cargarScript() {
-            if (window.LivekitClient) { yaCargado = true; return; }
+            if (window.LivekitClient) return;
             if (intento >= maxIntentos) {
-                console.warn('[LiveKit] No se pudo cargar tras ' + maxIntentos + ' intentos. Las llamadas no estarán disponibles.');
                 window.dispatchEvent(new CustomEvent('livekit:error'));
                 return;
             }
@@ -32,15 +29,12 @@
             s.async = true;
             s.onload = function () {
                 if (window.LivekitClient) {
-                    yaCargado = true;
                     window.dispatchEvent(new CustomEvent('livekit:ready'));
                 } else {
-                    console.warn('[LiveKit] Script cargado pero window.LivekitClient no existe. Reintentando...');
                     setTimeout(cargarScript, 1500);
                 }
             };
             s.onerror = function () {
-                console.warn('[LiveKit] Error de carga intento ' + intento);
                 setTimeout(cargarScript, 1500);
             };
             document.head.appendChild(s);
@@ -364,6 +358,21 @@
     </div>
 </div>
 
+<!-- ✅ NUEVO: Visor de fotos del chat en pantalla completa -->
+<div class="media-viewer" id="mediaViewer">
+    <button class="media-viewer-close" id="mediaViewerClose">✕</button>
+    <div class="media-viewer-body">
+        <img id="mediaViewerImg" src="" alt="Foto">
+        <video id="mediaViewerVideo" class="hidden" controls playsinline></video>
+    </div>
+    <div class="media-viewer-footer">
+        <div class="media-viewer-name" id="mediaViewerName"></div>
+        <a class="media-viewer-download" id="mediaViewerDownload" href="" download>
+            ⬇ Descargar
+        </a>
+    </div>
+</div>
+
 <div class="call" id="callOverlay">
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
@@ -409,7 +418,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-<script src="/features/mensajes/js/mensajes.js?v=11"></script>
+<script src="/features/mensajes/js/mensajes.js?v=12"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=1"></script>
 </body>
 </html>
