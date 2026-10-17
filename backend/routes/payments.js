@@ -632,8 +632,13 @@ router.get('/marketing/status/:pagoId', verificarToken, async (req, res) => {
         if (errP) throw errP;
         if (!pago) return respuestaError(res, 404, 'Pago no encontrado');
 
-        if (pago.estado === 'pagado') return res.json({ success: true, data: pago, final: true, paid: true });
-        if (!pago.payment_id) return res.json({ success: true, data: pago, final: false, paid: false, message: 'El pago todavía no tiene payment_id' });
+        // Solo se marca 'pagado' después de activar la campaña, así que esto significa activado
+        if (pago.estado === 'pagado') {
+            return res.json({ success: true, data: pago, final: true, paid: true, activated: true });
+        }
+        if (!pago.payment_id) {
+            return res.json({ success: true, data: pago, final: false, paid: false, message: 'El pago todavía no tiene payment_id' });
+        }
 
         let payment;
         try {
@@ -650,9 +655,39 @@ router.get('/marketing/status/:pagoId', verificarToken, async (req, res) => {
         const pagado = estadoNow === 'finished';
         const fallido = ['failed', 'refunded', 'expired'].includes(estadoNow);
 
+        if (pagado) {
+            // 1) Activar primero. Si falla, el pago queda en 'confirmando' y el siguiente sondeo reintenta.
+            const { data: camp, error: errC } = await supabaseAdmin
+                .from('marketing_campaigns').select('id, estado').eq('id', pago.campaign_id).maybeSingle();
+            if (errC) throw errC;
+            if (!camp) return respuestaError(res, 404, 'Campaña no encontrada');
+
+            if (camp.estado !== 'activa') {
+                const { error: errAct } = await supabaseAdmin.rpc('activar_campana_marketing', { p_campaign_id: camp.id });
+                if (errAct) {
+                    logger.error(`activar_campana_marketing ${camp.id}: ${errAct.message}`);
+                    const { data: pendiente } = await supabaseAdmin
+                        .from('marketing_pagos')
+                        .update({ nowpayments_status: estadoNow, estado: 'confirmando' })
+                        .eq('id', pago.id).eq('anunciante_id', userId).select().single();
+                    return res.json({ success: true, data: pendiente || pago, final: false, paid: true, activated: false,
+                        message: 'Pago confirmado. La activación está pendiente de procesamiento.' });
+                }
+            }
+
+            // 2) Marcar pagado solo después de activar
+            const { data: actualizado, error: errU } = await supabaseAdmin
+                .from('marketing_pagos')
+                .update({ nowpayments_status: estadoNow, estado: 'pagado' })
+                .eq('id', pago.id).eq('anunciante_id', userId).select().single();
+            if (errU) throw errU;
+
+            return res.json({ success: true, data: actualizado, final: true, paid: true, activated: true });
+        }
+
+        // Estados no finales
         let estadoLocal = 'pendiente';
-        if (pagado) estadoLocal = 'pagado';
-        else if (fallido) estadoLocal = 'cancelado';
+        if (fallido) estadoLocal = 'cancelado';
         else if (['confirming', 'sending'].includes(estadoNow)) estadoLocal = 'confirmando';
 
         const { data: actualizado, error: errU } = await supabaseAdmin
@@ -661,15 +696,6 @@ router.get('/marketing/status/:pagoId', verificarToken, async (req, res) => {
             .eq('id', pago.id).eq('anunciante_id', userId).select().single();
         if (errU) throw errU;
 
-        if (pagado) {
-            const { error: errAct } = await supabaseAdmin.rpc('activar_campana_marketing', { p_campaign_id: pago.campaign_id });
-            if (errAct) {
-                logger.error(`activar_campana_marketing ${pago.campaign_id}: ${errAct.message}`);
-                return res.json({ success: true, data: actualizado, final: true, paid: true, activated: false,
-                    message: 'Pago confirmado. La activación está pendiente de procesamiento.' });
-            }
-            return res.json({ success: true, data: actualizado, final: true, paid: true, activated: true });
-        }
         return res.json({ success: true, data: actualizado, final: fallido, paid: false, failed: fallido });
     } catch (e) {
         logger.error(`Error estado Marketing: ${e.message}`);
