@@ -14,6 +14,10 @@
      Ahora usa POST /api/wallet/nonce → personal_sign → POST /api/wallet/link.
    - desconectarWallet: llama POST /api/wallet/unlink antes de limpiar
      estado local.
+
+   v2.0.3 — Correcciones contra esquema real de Supabase
+   - obtenerTransmisionesActivas / Programadas: join usuarios(avatar_url).
+   - crearTransmision: se elimina el campo inexistente "tags".
 ================================================================ */
 
 'use strict';
@@ -1858,10 +1862,6 @@ class GalletaDomoApp {
                             datos.descripcion ||
                             '',
 
-                        tags:
-                            datos.tags ||
-                            [],
-
                         tipo_transmision:
                             datos.tipo ||
                             'pago',
@@ -1927,7 +1927,7 @@ class GalletaDomoApp {
                 await this.supabase
                     .from('transmisiones')
                     .select(
-                        '*, usuarios(nombre, avatar)'
+                        '*, usuarios(nombre, avatar_url)'
                     )
                     .eq(
                         'estado',
@@ -1970,7 +1970,7 @@ class GalletaDomoApp {
                 await this.supabase
                     .from('transmisiones')
                     .select(
-                        '*, usuarios(nombre, avatar)'
+                        '*, usuarios(nombre, avatar_url)'
                     )
                     .eq(
                         'estado',
