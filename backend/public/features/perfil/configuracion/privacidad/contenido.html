@@ -236,14 +236,12 @@
             background: rgba(212, 175, 55, 0.15);
             border-color: #D4AF37;
         }
-        /* ✅ Ya no hay .sariels-tema-emoji - se eliminó del render */
         .sariels-tema-nombre {
             flex: 1;
             color: #f0f4f8;
             font-size: 0.9rem;
             font-weight: 500;
         }
-        /* ✅ Checkbox rediseñado - círculo limpio con borde gris neutro */
         .sariels-tema-check {
             width: 22px;
             height: 22px;
@@ -505,7 +503,27 @@
         };
 
         window.onToggleAutoPlay = async (value) => {
+            // 1. Guardar en el navegador para que funcione al instante
             await cfgSetPref(PREF_KEYS.contenido_auto_reproducir, value);
+            
+            // 2. Guardar en Supabase para sincronizar entre dispositivos
+            try {
+                const client = await esperarCliente();
+                if (client) {
+                    const { data } = await client.auth.getSession();
+                    const session = data && data.session;
+                    if (session) {
+                        await client.from('usuarios_preferencias').upsert({
+                            usuario_id: session.user.id,
+                            contenido_auto_reproducir: value,
+                            updated_at: new Date().toISOString()
+                        }, { onConflict: 'usuario_id' });
+                    }
+                }
+            } catch (e) {
+                console.error('Error guardando preferencia en BD:', e);
+            }
+
             cfgToast(
                 value ? '▶️ Reproducción automática activada' : '⏸️ Reproducción automática desactivada',
                 value ? 'success' : ''
@@ -517,8 +535,8 @@
         // ============================================================
 
         var modalEstado = {
-            tipo: null,          // 'interes' | 'bloqueado' | 'idioma'
-            items: [],           // lista completa de temas o idiomas
+            tipo: null,
+            items: [],
             seleccionados: new Set(),
             guardando: false
         };
@@ -563,7 +581,6 @@
             document.getElementById('sarielsModal').classList.add('active');
 
             try {
-                // Cargar temas
                 var temasResult = await client
                     .from('temas')
                     .select('id, slug, nombre, emoji')
@@ -573,7 +590,6 @@
                 if (temasResult.error) throw temasResult.error;
                 modalEstado.items = temasResult.data || [];
 
-                // Cargar selección actual del usuario
                 var tabla = tipo === 'interes' ? 'usuarios_temas_interes' : 'usuarios_temas_bloqueados';
                 var selResult = await client
                     .from(tabla)
@@ -608,8 +624,6 @@
                 return;
             }
 
-            // ✅ Ya NO se renderiza el emoji del tema
-            // ✅ Solo nombre + checkbox rediseñado
             body.innerHTML = filtrados.map(function (t) {
                 var selected = modalEstado.seleccionados.has(t.id);
                 return '<div class="sariels-tema-item' + (selected ? ' selected' : '') + '" data-id="' + t.id + '">' +
@@ -618,7 +632,6 @@
                 '</div>';
             }).join('');
 
-            // Conectar click
             body.querySelectorAll('.sariels-tema-item').forEach(function (el) {
                 el.addEventListener('click', function () {
                     toggleSeleccionTema(el.dataset.id, el);
@@ -671,14 +684,12 @@
             var tabla = modalEstado.tipo === 'interes' ? 'usuarios_temas_interes' : 'usuarios_temas_bloqueados';
 
             try {
-                // 1. Borrar la selección actual
                 var del = await client
                     .from(tabla)
                     .delete()
                     .eq('usuario_id', session.user.id);
                 if (del.error) throw del.error;
 
-                // 2. Insertar la nueva selección (si hay)
                 var ids = Array.from(modalEstado.seleccionados);
                 if (ids.length > 0) {
                     var rows = ids.map(function (temaId) {
@@ -739,7 +750,6 @@
 
                 if (idiomasResult.error) throw idiomasResult.error;
 
-                // ✅ Ya NO se usa la bandera. Solo nombre nativo o nombre
                 modalEstado.items = (idiomasResult.data || []).map(function (i) {
                     return {
                         id: i.id,
@@ -758,7 +768,7 @@
                     modalEstado.seleccionados.add(row.idioma_id);
                 });
 
-                renderListaTemas(); // reutiliza la misma función de render
+                renderListaTemas();
             } catch (e) {
                 console.error('Error cargando idiomas:', e);
                 document.getElementById('sarielsModalBody').innerHTML =
@@ -766,7 +776,7 @@
             }
         }
 
-        // Sobrescribir guardar para idiomas (la lógica cambia la tabla y el campo)
+        // Sobrescribir guardar para idiomas
         var guardarOriginal = window.guardarSeleccionTemas;
         window.guardarSeleccionTemas = async function () {
             if (modalEstado.guardando) return;
@@ -836,7 +846,6 @@
                 });
             }
 
-            // Cerrar al hacer click en el overlay
             var overlay = document.getElementById('sarielsModal');
             if (overlay) {
                 overlay.addEventListener('click', function (e) {
@@ -844,20 +853,50 @@
                 });
             }
 
-            // Cerrar con Escape
             document.addEventListener('keydown', function (e) {
                 if (e.key === 'Escape') window.cerrarModalTemas();
             });
         });
 
         // ============================================================
-        // ARRANQUE
+        // ARRANQUE Y CARGA DESDE SUPABASE
         // ============================================================
 
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
             renderSecciones();
+            
+            // Llamar a la función que lee las preferencias de la BD
+            setTimeout(cargarPreferenciasDesdeDB, 1000);
         });
+
+        async function cargarPreferenciasDesdeDB() {
+            try {
+                const client = await esperarCliente();
+                if (!client) return;
+                
+                const { data } = await client.auth.getSession();
+                const session = data && data.session;
+                if (!session) return;
+
+                const { data: pref } = await client
+                    .from('usuarios_preferencias')
+                    .select('*')
+                    .eq('usuario_id', session.user.id)
+                    .maybeSingle();
+
+                if (pref) {
+                    if (pref.contenido_auto_reproducir !== null) {
+                        localStorage.setItem(PREF_KEYS.contenido_auto_reproducir, pref.contenido_auto_reproducir);
+                    }
+                    // Aquí puedes ir agregando los demás ifs cuando quieras guardar más cosas en la BD
+                    
+                    renderSecciones(); // Volver a dibujar los toggles con los datos reales
+                }
+            } catch (e) {
+                console.error('Error cargando preferencias de BD:', e);
+            }
+        }
 
         (async function cargarHandleSubtitulo() {
             try {
