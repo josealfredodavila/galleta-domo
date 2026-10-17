@@ -2,17 +2,19 @@
 // ROUTES/WEBHOOKS.JS — Csariel's
 // Montado en /api/webhook
 //   POST /api/webhook/nowpayments → IPN de NOWPayments (firma verificada)
-//       LP-   → Live Pass
-//       DON-  → donaciones de live (confirmar_donacion_live, 3 argumentos)
-//       TRX-  → accesos de pago a lives (pagos_transmision)
-//       NET-  → paquetes de Internet (ordenes_internet)
-//       PRO-  → membresía PRO
-//       resto → membresía de Mercado (por payment_id)
+//       LP-     → Live Pass
+//       DON-    → donaciones de live (confirmar_donacion_live, 3 argumentos)
+//       TRX-    → accesos de pago a lives (pagos_transmision)
+//       muro_   → ventas P2P del Muro (muro_ventas_tokens)
+//       MKT-    → pagos de campañas de marketing (marketing_pagos)
+//       NET-    → paquetes de Internet (ordenes_internet)
+//       PRO-    → membresía PRO
+//       resto   → membresía de Mercado (por payment_id)
 //   POST /api/webhook/membresia   → membresía PRO (firma verificada)
 //   POST /api/webhook/stripe      → placeholder
 //   POST /api/webhook/fintoc      → placeholder
 // Toda petición de NOWPayments pasa primero por verificarFirmaNowPayments.
-// Estados de pago unificados: pagado / fallido / pendiente.
+// Estados de pago unificados: pagado / cancelado / pendiente.
 // ================================================================
 
 const express = require('express');
@@ -20,6 +22,7 @@ const router = express.Router();
 
 const { verificarFirmaNowPayments } = require('../utils/nowpayments-sig');
 const nowpayments = require('./webhooks/nowpayments');
+const ventas = require('./webhooks/nowpayments-ventas');
 const { handleWebhookMembresia } = require('./membresia-webhook-handler');
 const { handleWebhookInternet } = require('./webhooks/nowpayments-internet');
 
@@ -65,6 +68,12 @@ router.post('/nowpayments', async (req, res) => {
         if (orderUpper.startsWith('TRX-')) {
             return nowpayments.procesarTransmision(orderId, npStatus, data, res);
         }
+        if (orderUpper.startsWith('MURO_')) {
+            return ventas.procesarVentaMuro(orderId.slice(5), npStatus, data, res);
+        }
+        if (orderUpper.startsWith('MKT-')) {
+            return ventas.procesarPagoMarketing(orderId.slice(4), npStatus, data, res);
+        }
         if (orderUpper.startsWith('NET-')) {
             return handleWebhookInternet(req, res);
         }
@@ -72,7 +81,7 @@ router.post('/nowpayments', async (req, res) => {
             return handleWebhookMembresia(req, res);
         }
 
-        // Resto (muro_, MKT-, membresía de Mercado): busca por payment_id.
+        // Resto (membresía de Mercado): busca por payment_id.
         // Si no existe, responde 200 sin activar nada.
         return nowpayments.procesarMembresia(npStatus, data, res);
     } catch (e) {
