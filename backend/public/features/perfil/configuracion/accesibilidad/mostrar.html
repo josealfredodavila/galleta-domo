@@ -7,12 +7,12 @@
     <title>Mostrar · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
-    <!-- ✅ APARIENCIA GLOBAL v2.0 - Se carga PRIMERO para evitar flash -->
+
+    <!-- ✅ APARIENCIA GLOBAL v3.3 - Se carga PRIMERO para evitar flash -->
     <script src="/features/shared/js/apariencia-global.js"></script>
-    
+
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
-    
+
     <style>
         .cfg-preview-box {
             margin: 0 16px 24px 16px;
@@ -22,24 +22,33 @@
             border: 1px solid var(--cfg-border);
         }
 
+        /* Cuatro temas: se distribuyen en una fila que se ajusta al ancho */
         .cfg-tema-selector {
-            display: flex;
-            gap: 12px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
             padding: 0 16px 20px 16px;
         }
 
+        @media (max-width: 380px) {
+            .cfg-tema-selector {
+                gap: 8px;
+                padding: 0 12px 20px 12px;
+            }
+        }
+
         .cfg-tema-card {
-            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
             gap: 8px;
-            padding: 16px 8px;
+            padding: 16px 4px;
             border-radius: 12px;
             border: 2px solid var(--cfg-border);
             background: rgba(255, 255, 255, 0.02);
             cursor: pointer;
             transition: var(--cfg-transition);
+            min-width: 0;
         }
 
         .cfg-tema-card:hover {
@@ -52,8 +61,8 @@
         }
 
         /* ============================================
-           PREVIEW DEL TEMA - Ahora contiene SVGs limpios
-           en lugar de emojis. El SVG hereda el color:
+           PREVIEW DEL TEMA - SVGs limpios en lugar de emojis.
+           El SVG hereda el color del contenedor:
            - Gris cuando inactivo
            - Dorado (o color de acento) cuando activo
            ============================================ */
@@ -83,10 +92,11 @@
             stroke-linejoin: round;
         }
 
-        /* Fondos de los 3 previews (se mantienen los gradientes visuales) */
+        /* Fondos de los 4 previews */
         .cfg-tema-card .preview.sistema { background: linear-gradient(135deg, #000 50%, #fff 50%); }
         .cfg-tema-card .preview.dia     { background: #f5f5f5; }
         .cfg-tema-card .preview.noche   { background: #0a0a0a; }
+        .cfg-tema-card .preview.bn      { background: #000000; border-color: #2f3336; }
 
         /* Ajuste específico: en Día el fondo es claro, así que el SVG inactivo debe ser oscuro */
         .cfg-tema-card .preview.dia {
@@ -100,6 +110,7 @@
             font-size: 0.72rem;
             color: var(--cfg-text);
             font-weight: 500;
+            text-align: center;
         }
 
         .cfg-tema-card.active .label {
@@ -276,6 +287,23 @@
             --cfg-text-dim: #5a6870;
             --cfg-border: rgba(255, 255, 255, 0.08);
         }
+
+        /* Tema blanco y negro (estilo X en negro) */
+        [data-tema="bn"] {
+            --cfg-bg: #000000;
+            --cfg-bg-2: #16181c;
+            --cfg-bg-3: #16181c;
+            --cfg-text: #e7e9ea;
+            --cfg-text-muted: #71767b;
+            --cfg-text-dim: #536471;
+            --cfg-border: #2f3336;
+        }
+        [data-tema="bn"] .cfg-header { background: #000000; }
+        [data-tema="bn"] .cfg-page { background: #000000; }
+        [data-tema="bn"] .cfg-tema-card { background: #16181c; }
+        [data-tema="bn"] .cfg-preview-box { background: #16181c; }
+        [data-tema="bn"] .cfg-text-preview { background: #16181c; }
+        [data-tema="bn"] .cfg-fuente-slider input[type="range"] { background: #2f3336; }
     </style>
 </head>
 <body class="cfg-page">
@@ -394,6 +422,10 @@
             noche: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
             </svg>`,
+            // Blanco y negro: logo X (aspa estilizada)
+            bn: `<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 4l16 16M20 4L4 20"/>
+            </svg>`,
         };
 
         // ✅ Usar la API global para guardar en localStorage + Supabase
@@ -423,9 +455,10 @@
         function renderTemas() {
             const temaActual = getPref(PREF_KEYS.tema, 'sistema');
             const temas = [
-                { id: 'sistema', label: 'Sistema', svg: SVG_ICONS.sistema },
-                { id: 'dia',     label: 'Día',     svg: SVG_ICONS.dia },
-                { id: 'noche',   label: 'Noche',   svg: SVG_ICONS.noche },
+                { id: 'sistema', label: 'Sistema',       svg: SVG_ICONS.sistema },
+                { id: 'dia',     label: 'Día',           svg: SVG_ICONS.dia },
+                { id: 'noche',   label: 'Noche',         svg: SVG_ICONS.noche },
+                { id: 'bn',      label: 'Blanco y negro', svg: SVG_ICONS.bn },
             ];
 
             $('#seccionTema').innerHTML = temas.map(t => `
@@ -442,6 +475,7 @@
             cfgToast(
                 tema === 'dia' ? '☀️ Tema día activado' :
                 tema === 'noche' ? '🌙 Tema noche activado' :
+                tema === 'bn' ? '⚫ Tema blanco y negro activado' :
                 '📱 Siguiendo tema del sistema',
                 'success'
             );
@@ -453,7 +487,7 @@
         function renderColores() {
             const colorActual = (getPref(PREF_KEYS.color_acento, '#D4AF37') || '').toLowerCase();
             $('#seccionAcento').innerHTML = COLORES_ACENTO.map(c => `
-                <div class="cfg-color-dot ${c.valor.toLowerCase() === colorActual ? 'active' : ''}" 
+                <div class="cfg-color-dot ${c.valor.toLowerCase() === colorActual ? 'active' : ''}"
                      style="background:${c.valor};"
                      title="${c.label}"
                      onclick="window.onCambiarColor('${c.valor}')">
@@ -518,7 +552,7 @@
                 });
             }
 
-            console.log('[Mostrar] ✅ Página inicializada con 16 colores y SVGs en temas');
+            console.log('[Mostrar] ✅ Página inicializada con 4 temas, 16 colores y SVGs');
         });
 
     })();
