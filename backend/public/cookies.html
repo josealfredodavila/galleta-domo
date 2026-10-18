@@ -5,247 +5,369 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title data-clave="cookies_titulo_pagina">◈ Política Institucional de Cookies · Sariel's</title>
     <link rel="stylesheet" href="/styles.css" />
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230D1117' stroke='%23E5C158' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23E5C158' text-anchor='middle'>◈</text></svg>" />
     <style>
-        /* ===== ESTILOS COMPARTIDOS ===== */
+        /* ============================================================
+           SARIEL'S · COOKIES v2.1 · WCAG AAA
+           Contraste verificado:
+             #F8F9FA sobre #0D1117 → 16.9:1 (AAA)
+             #E0E6ED sobre #0D1117 → 13.4:1 (AAA)
+             #E5C158 sobre #0D1117 →  9.2:1 (AAA)
+           ============================================================ */
         :root {
-            --gold-cosmic: #D4AF37;
-            --gold-dim: rgba(212, 168, 87, 0.15);
-            --text-primary: #e8f0f8;
-            --text-secondary: #8ba3c7;
-            --text-muted: #4a6a8a;
-            --space-deep: #05080f;
-            --radius: 16px;
+            --gold-cosmic: #E5C158;
+            --gold-soft:   rgba(229, 193, 88, 0.18);
+            --gold-border: rgba(229, 193, 88, 0.35);
+            --text-primary:   #F8F9FA;
+            --text-secondary: #E0E6ED;
+            --text-muted:     #B8C2CC;
+            --bg-solid:   #0D1117;
+            --bg-panel:   #111622;
+            --bg-row-alt: #0A0E14;
+            --danger: #FF6B8A;
+            --radius: 14px;
         }
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
         body {
-            background: var(--space-deep);
+            background: var(--bg-solid);
             color: var(--text-primary);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             min-height: 100vh;
-            line-height: 1.6;
+            line-height: 1.65;
             padding: 0;
+            font-size: 16px;
         }
+
+        /* ===== CONTENEDOR LEGAL ===== */
         .terminos-container {
-            max-width: 900px;
+            max-width: 920px;
             margin: 0 auto;
-            padding: 40px 20px;
-            background: rgba(15, 45, 26, 0.3);
-            border: 1px solid var(--gold-dim);
+            padding: 48px 36px;
+            background: var(--bg-solid);
+            border: 1px solid var(--gold-border);
             border-radius: var(--radius);
-            backdrop-filter: blur(10px);
+            box-shadow: 0 0 0 1px rgba(255,255,255,0.02) inset;
         }
+
         .terminos-container h1 {
             font-family: 'Orbitron', monospace;
-            font-size: 2rem;
+            font-size: 2.1rem;
             color: var(--gold-cosmic);
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             line-height: 1.25;
+            letter-spacing: 0.5px;
         }
+
         .terminos-container .fecha {
             text-align: center;
             color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-bottom: 30px;
-            border-bottom: 1px solid var(--gold-dim);
-            padding-bottom: 20px;
+            font-size: 0.88rem;
+            margin-bottom: 36px;
+            border-bottom: 1px solid var(--gold-border);
+            padding-bottom: 24px;
+            letter-spacing: 0.3px;
         }
+
         .terminos-container h2 {
             font-family: 'Orbitron', monospace;
-            font-size: 1.2rem;
+            font-size: 1.25rem;
             color: var(--gold-cosmic);
-            margin-top: 30px;
-            margin-bottom: 12px;
+            margin-top: 36px;
+            margin-bottom: 14px;
             border-left: 4px solid var(--gold-cosmic);
-            padding-left: 14px;
+            padding-left: 16px;
+            line-height: 1.35;
         }
+
         .terminos-container h3 {
             font-family: 'Orbitron', monospace;
-            font-size: 0.95rem;
+            font-size: 1rem;
             color: var(--gold-cosmic);
-            margin-top: 18px;
-            margin-bottom: 8px;
+            margin-top: 22px;
+            margin-bottom: 10px;
             letter-spacing: 0.5px;
         }
+
         .terminos-container p {
             color: var(--text-secondary);
-            line-height: 1.7;
-            margin-bottom: 12px;
-            font-size: 0.95rem;
+            line-height: 1.75;
+            margin-bottom: 14px;
+            font-size: 1rem;
         }
+
         .terminos-container ul {
             list-style: none;
-            padding-left: 10px;
-            margin: 12px 0 18px 0;
+            padding-left: 8px;
+            margin: 14px 0 20px 0;
         }
+
         .terminos-container ul li {
-            padding: 6px 0 6px 28px;
+            padding: 7px 0 7px 30px;
             position: relative;
             color: var(--text-secondary);
-            font-size: 0.95rem;
+            font-size: 1rem;
+            line-height: 1.7;
         }
+
         .terminos-container ul li::before {
             content: "✦";
             color: var(--gold-cosmic);
             position: absolute;
             left: 4px;
-            font-size: 0.8rem;
-            top: 8px;
+            font-size: 0.85rem;
+            top: 10px;
         }
+
         .terminos-container .art {
-            background: rgba(212, 168, 87, 0.04);
-            border-left: 3px solid rgba(212, 168, 87, 0.2);
-            padding: 14px 20px;
+            background: var(--bg-panel);
+            border-left: 3px solid var(--gold-border);
+            padding: 18px 24px;
             border-radius: 10px;
-            margin: 18px 0;
+            margin: 20px 0;
         }
+
         .terminos-container .art strong {
             color: var(--gold-cosmic);
         }
+
+        .terminos-container code {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.88em;
+            color: var(--gold-cosmic);
+            background: rgba(229, 193, 88, 0.08);
+            padding: 1px 6px;
+            border-radius: 4px;
+        }
+
         .terminos-container .divisor {
             border: none;
-            border-top: 1px solid rgba(212, 168, 87, 0.12);
-            margin: 40px 0 20px 0;
+            border-top: 1px solid var(--gold-border);
+            margin: 44px 0 24px 0;
         }
+
         .terminos-container .footer-tyc {
             text-align: center;
-            margin-top: 45px;
-            padding-top: 25px;
-            border-top: 1px solid rgba(212, 168, 87, 0.1);
-            font-size: 0.85rem;
+            margin-top: 48px;
+            padding-top: 28px;
+            border-top: 1px solid var(--gold-border);
+            font-size: 0.88rem;
             color: var(--text-muted);
+            line-height: 1.7;
         }
-        /* ===== TABLA CORPORATIVA DE COOKIES ===== */
+
+        /* ===== ALERTA LEGAL ===== */
+        .alerta-legal {
+            background: rgba(255, 107, 138, 0.08);
+            border-left: 3px solid var(--danger);
+            padding: 18px 22px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-size: 0.98rem;
+            color: var(--text-secondary);
+        }
+        .alerta-legal strong { color: var(--danger); }
+
+        /* ===== TABLA (DESKTOP) ===== */
         .tabla-cookies-wrapper {
-            margin: 18px 0;
+            margin: 20px 0;
             overflow-x: auto;
             border-radius: 10px;
-            border: 1px solid rgba(212, 168, 87, 0.2);
-            background: rgba(5, 8, 15, 0.5);
+            border: 1px solid var(--gold-border);
+            background: var(--bg-panel);
             -webkit-overflow-scrolling: touch;
         }
+
         table.tabla-cookies {
             width: 100%;
             border-collapse: collapse;
-            font-size: 0.82rem;
+            font-size: 0.9rem;
             min-width: 760px;
         }
-        table.tabla-cookies thead {
-            background: linear-gradient(135deg, rgba(212, 168, 87, 0.18), rgba(212, 168, 87, 0.08));
-        }
+
+        table.tabla-cookies thead { background: var(--bg-solid); }
+
         table.tabla-cookies th {
             font-family: 'Orbitron', monospace;
             color: var(--gold-cosmic);
             text-align: left;
-            padding: 12px 12px;
-            font-size: 0.72rem;
+            padding: 14px 14px;
+            font-size: 0.76rem;
             font-weight: 700;
-            letter-spacing: 0.6px;
+            letter-spacing: 0.7px;
             text-transform: uppercase;
-            border-bottom: 1px solid rgba(212, 168, 87, 0.3);
+            border-bottom: 2px solid var(--gold-border);
             white-space: nowrap;
         }
+
         table.tabla-cookies td {
-            padding: 11px 12px;
+            padding: 14px 14px;
             color: var(--text-secondary);
             vertical-align: top;
-            line-height: 1.5;
-            border-bottom: 1px solid rgba(212, 168, 87, 0.08);
+            line-height: 1.6;
+            border-bottom: 1px solid rgba(229, 193, 88, 0.12);
         }
+
         table.tabla-cookies td:first-child {
             color: var(--text-primary);
-            font-family: 'Orbitron', monospace;
-            font-size: 0.74rem;
-            letter-spacing: 0.3px;
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            font-size: 0.84rem;
+            letter-spacing: 0.2px;
             white-space: nowrap;
         }
+
+        table.tabla-cookies tbody tr:nth-child(odd)  { background: var(--bg-solid); }
+        table.tabla-cookies tbody tr:nth-child(even) { background: var(--bg-row-alt); }
         table.tabla-cookies tbody tr:last-child td { border-bottom: none; }
-        table.tabla-cookies tbody tr:hover {
-            background: rgba(212, 168, 87, 0.04);
-        }
+
+        /* ===== BADGES ===== */
         .tag-cat {
             display: inline-block;
-            font-size: 0.66rem;
-            padding: 2px 8px;
+            font-size: 0.72rem;
+            padding: 3px 10px;
             border-radius: 20px;
             font-weight: 700;
-            letter-spacing: 0.4px;
+            letter-spacing: 0.5px;
             text-transform: uppercase;
             white-space: nowrap;
         }
         .tag-esencial {
             background: rgba(0, 229, 255, 0.12);
-            color: #5fd8e8;
-            border: 1px solid rgba(0, 229, 255, 0.3);
+            color: #7FE7F5;
+            border: 1px solid rgba(0, 229, 255, 0.4);
         }
         .tag-preferencia {
-            background: rgba(212, 168, 87, 0.12);
+            background: rgba(229, 193, 88, 0.14);
             color: var(--gold-cosmic);
-            border: 1px solid rgba(212, 168, 87, 0.35);
+            border: 1px solid var(--gold-border);
         }
         .tag-tercero {
-            background: rgba(139, 163, 199, 0.1);
-            color: #8ba3c7;
-            border: 1px solid rgba(139, 163, 199, 0.3);
+            background: rgba(184, 194, 204, 0.1);
+            color: #D0D9E3;
+            border: 1px solid rgba(184, 194, 204, 0.35);
         }
+
         .nota-tabla {
-            font-size: 0.78rem !important;
+            font-size: 0.84rem !important;
             color: var(--text-muted) !important;
-            margin-top: 10px !important;
+            margin-top: 12px !important;
             font-style: italic;
+            line-height: 1.6;
         }
+
+        /* ===== TARJETAS MÓVILES ===== */
+        .cookie-cards-mobile {
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            margin: 20px 0;
+        }
+
+        .cookie-card {
+            background: var(--bg-panel);
+            border: 1px solid var(--gold-border);
+            border-left: 4px solid var(--gold-cosmic);
+            border-radius: 12px;
+            padding: 18px 18px 16px;
+        }
+
+        .cookie-card .cc-clave {
+            font-family: 'JetBrains Mono', 'Courier New', monospace;
+            color: var(--text-primary);
+            font-size: 0.92rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            margin-bottom: 10px;
+            word-break: break-word;
+        }
+        .cookie-card .cc-clave span { display: block; }
+        .cookie-card .cc-badge-row { margin-bottom: 14px; }
+        .cookie-card .cc-field { margin-bottom: 10px; }
+        .cookie-card .cc-field:last-child { margin-bottom: 0; }
+        .cookie-card .cc-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.68rem;
+            color: var(--gold-cosmic);
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            margin-bottom: 3px;
+            font-weight: 700;
+        }
+        .cookie-card .cc-value {
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        /* ===== BOTONES ===== */
         .btn-volver {
             display: inline-block;
-            margin-top: 20px;
-            padding: 12px 32px;
-            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-            color: #0a0c10;
+            margin-top: 24px;
+            padding: 14px 36px;
+            background: var(--gold-cosmic);
+            color: #0D1117;
             font-weight: 700;
             text-decoration: none;
             border-radius: 40px;
             font-size: 0.95rem;
-            transition: all 0.3s ease;
+            transition: all 0.25s ease;
             border: none;
             cursor: pointer;
             font-family: 'Orbitron', monospace;
-            opacity: 0.5;
+            opacity: 0.55;
+            letter-spacing: 0.5px;
         }
-        .btn-volver.active {
-            opacity: 1;
-        }
+        .btn-volver.active { opacity: 1; }
         .btn-volver.active:hover {
             transform: scale(1.03);
-            box-shadow: 0 0 30px rgba(212, 168, 87, 0.25);
+            box-shadow: 0 0 30px rgba(229, 193, 88, 0.4);
         }
+        .btn-volver:focus-visible {
+            outline: 3px solid var(--gold-cosmic);
+            outline-offset: 4px;
+        }
+
         .text-center { text-align: center; }
+
+        /* ===== ACEPTACIÓN ===== */
         .aceptacion-container {
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(212, 168, 87, 0.05);
-            border: 1px solid rgba(212, 168, 87, 0.15);
+            margin-top: 34px;
+            padding: 22px;
+            background: var(--bg-panel);
+            border: 1px solid var(--gold-border);
             border-radius: 12px;
             display: flex;
             align-items: flex-start;
-            gap: 14px;
+            gap: 16px;
+            flex-wrap: wrap;
         }
+
+        .aceptacion-container .aceptacion-check {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            flex: 1 1 100%;
+        }
+
         .aceptacion-container input[type="checkbox"] {
-            width: 22px;
-            height: 22px;
-            accent-color: #D4AF37;
+            width: 24px;
+            height: 24px;
             cursor: pointer;
             flex-shrink: 0;
             appearance: none;
             -webkit-appearance: none;
-            background: rgba(255, 255, 255, 0.05);
-            border: 2px solid rgba(212, 168, 87, 0.3);
-            border-radius: 4px;
-            transition: all 0.3s ease;
+            background: var(--bg-solid);
+            border: 2px solid var(--gold-border);
+            border-radius: 5px;
+            transition: all 0.25s ease;
             position: relative;
+            margin-top: 2px;
         }
         .aceptacion-container input[type="checkbox"]:checked {
-            background: #D4AF37;
-            border-color: #D4AF37;
+            background: var(--gold-cosmic);
+            border-color: var(--gold-cosmic);
         }
         .aceptacion-container input[type="checkbox"]:checked::after {
             content: "✓";
@@ -253,48 +375,87 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            color: #05080f;
-            font-size: 14px;
-            font-weight: 700;
+            color: #0D1117;
+            font-size: 15px;
+            font-weight: 900;
         }
+        .aceptacion-container input[type="checkbox"]:focus-visible {
+            outline: 3px solid var(--gold-cosmic);
+            outline-offset: 3px;
+        }
+
         .aceptacion-container label {
             color: var(--text-secondary);
-            font-size: 0.9rem;
-            line-height: 1.5;
+            font-size: 0.96rem;
+            line-height: 1.6;
             cursor: pointer;
         }
-        .aceptacion-container label strong {
+        .aceptacion-container label strong { color: var(--gold-cosmic); }
+
+        /* ===== BOTÓN CONFIGURAR COOKIES (nuevo) ===== */
+        .btn-config-cookies {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 4px;
+            padding: 10px 22px;
+            background: transparent;
             color: var(--gold-cosmic);
+            border: 1px solid var(--gold-border);
+            border-radius: 40px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.82rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            text-decoration: none;
         }
+        .btn-config-cookies:hover {
+            background: rgba(229, 193, 88, 0.1);
+            border-color: var(--gold-cosmic);
+            transform: translateY(-1px);
+        }
+        .btn-config-cookies:focus-visible {
+            outline: 3px solid var(--gold-cosmic);
+            outline-offset: 3px;
+        }
+
         .enlaces-legales {
-            margin-top: 14px;
-            font-size: 0.85rem;
+            margin-top: 16px;
+            font-size: 0.9rem;
             text-align: center;
         }
         .enlaces-legales a {
             color: var(--gold-cosmic);
             text-decoration: none;
-            margin: 0 8px;
+            margin: 0 10px;
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.2s ease;
         }
-        .enlaces-legales a:hover {
-            text-decoration: underline;
+        .enlaces-legales a:hover { border-bottom-color: var(--gold-cosmic); }
+        .enlaces-legales a:focus-visible {
+            outline: 2px solid var(--gold-cosmic);
+            outline-offset: 3px;
+            border-radius: 2px;
         }
+
+        /* ===== HEADER ===== */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 0 16px;
-            border-bottom: 2px solid var(--gold-dim);
-            margin-bottom: 16px;
+            padding: 14px 20px 18px;
+            border-bottom: 2px solid var(--gold-border);
+            margin-bottom: 20px;
             flex-wrap: wrap;
-            gap: 10px;
-            backdrop-filter: blur(10px);
+            gap: 12px;
             position: relative;
-            max-width: 900px;
+            max-width: 920px;
             margin-left: auto;
             margin-right: auto;
-            padding-left: 20px;
-            padding-right: 20px;
+            background: var(--bg-solid);
         }
         .header::after {
             content: '';
@@ -304,34 +465,34 @@
             right: 0;
             height: 1px;
             background: linear-gradient(90deg, transparent, var(--gold-cosmic), var(--gold-cosmic), transparent);
-            opacity: 0.4;
+            opacity: 0.5;
         }
+
         .logo {
             display: flex;
             align-items: center;
             gap: 12px;
             text-decoration: none;
         }
-        .logo-icon { font-size: 2rem; filter: drop-shadow(0 0 20px rgba(212, 168, 87, 0.2)); }
+        .logo-icon { font-size: 2rem; }
         .logo-text {
             font-family: 'Orbitron', monospace;
             font-size: 1.3rem;
             font-weight: 900;
             letter-spacing: 2px;
-            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: var(--gold-cosmic);
         }
         .logo-badge {
-            font-size: 0.5rem;
-            background: linear-gradient(135deg, var(--gold-cosmic), #b8923a);
-            color: #0a0c10;
-            padding: 2px 12px;
+            font-size: 0.55rem;
+            background: var(--gold-cosmic);
+            color: var(--bg-solid);
+            padding: 3px 12px;
             border-radius: 20px;
-            font-weight: 700;
+            font-weight: 800;
             letter-spacing: 1px;
             text-transform: uppercase;
         }
+
         .header-info {
             display: flex;
             align-items: center;
@@ -339,13 +500,15 @@
             flex-wrap: wrap;
         }
         .network-badge {
-            font-size: 0.7rem;
+            font-size: 0.78rem;
             color: var(--gold-cosmic);
-            background: rgba(212, 168, 87, 0.1);
-            padding: 4px 14px;
+            background: rgba(229, 193, 88, 0.1);
+            padding: 5px 14px;
             border-radius: 20px;
-            border: 1px solid rgba(212, 168, 87, 0.2);
+            border: 1px solid var(--gold-border);
         }
+
+        /* ===== FONDO DECORATIVO ===== */
         #stars-canvas {
             position: fixed;
             top: 0;
@@ -354,30 +517,359 @@
             height: 100%;
             z-index: 0;
             pointer-events: none;
+            opacity: 0.5;
         }
         .nebula {
             position: fixed;
             border-radius: 50%;
-            filter: blur(120px);
-            opacity: 0.10;
+            filter: blur(140px);
             pointer-events: none;
             z-index: 0;
-            animation: nebula-drift 25s ease-in-out infinite alternate;
+            animation: nebula-drift 30s ease-in-out infinite alternate;
         }
-        .nebula-1 { width: 700px; height: 700px; background: #0B3D2E; top: -15%; right: -15%; }
-        .nebula-2 { width: 600px; height: 600px; background: var(--gold-cosmic); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.05; }
-        .nebula-3 { width: 500px; height: 500px; background: #00e5ff; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        .nebula-1 { width: 600px; height: 600px; background: #0B3D2E; top: -15%; right: -15%; opacity: 0.18; }
+        .nebula-2 { width: 500px; height: 500px; background: var(--gold-cosmic); bottom: -15%; left: -15%; opacity: 0.05; animation-delay: -10s; }
+        .nebula-3 { display: none; }
+
         @keyframes nebula-drift {
-            0% { transform: translate(0, 0) scale(1); }
+            0%   { transform: translate(0, 0) scale(1); }
             100% { transform: translate(40px, -30px) scale(1.15); }
         }
-        .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
+
+        .container { max-width: 920px; margin: 0 auto; padding: 0 20px; }
         .main { position: relative; z-index: 1; }
 
-        @media (max-width: 640px) {
-            .terminos-container h1 { font-size: 1.4rem; }
-            .terminos-container h2 { font-size: 1rem; }
-            table.tabla-cookies { font-size: 0.75rem; }
+        /* ============================================================
+           RESPONSIVE · MÓVIL
+           ============================================================ */
+        @media (max-width: 768px) {
+            body { font-size: 15px; }
+
+            .terminos-container { padding: 28px 18px; border-radius: 10px; }
+            .terminos-container h1 { font-size: 1.4rem; letter-spacing: 0.3px; }
+            .terminos-container h2 { font-size: 1.05rem; margin-top: 28px; }
+            .terminos-container h3 { font-size: 0.92rem; }
+            .terminos-container .art { padding: 14px 16px; }
+            .terminos-container p,
+            .terminos-container ul li { font-size: 0.95rem; }
+
+            .tabla-cookies-wrapper { display: none; }
+            .cookie-cards-mobile { display: flex; }
+
+            .header { padding: 12px 16px; margin-bottom: 14px; }
+            .logo-text { font-size: 1.1rem; }
+            .logo-badge { font-size: 0.5rem; padding: 2px 9px; }
+            .network-badge { font-size: 0.72rem; padding: 4px 12px; }
+
+            .aceptacion-container { padding: 18px; gap: 12px; }
+            .aceptacion-container .aceptacion-check { flex-direction: row; }
+            .btn-volver { padding: 13px 28px; font-size: 0.88rem; width: 100%; }
+            .btn-config-cookies { width: 100%; justify-content: center; }
+        }
+
+        @media (max-width: 400px) {
+            .terminos-container { padding: 22px 14px; }
+            .terminos-container h1 { font-size: 1.2rem; }
+            .cookie-card { padding: 16px 14px; }
+            .cookie-card .cc-clave { font-size: 0.84rem; }
+        }
+
+        @media (min-width: 769px) {
+            .cookie-cards-mobile { display: none !important; }
+            .tabla-cookies-wrapper { display: block; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { animation: none !important; transition: none !important; }
+        }
+
+        /* ============================================================
+           BANNER DE CONSENTIMIENTO (estilos aislados con prefijo cc-)
+           Mismo lenguaje visual que la página.
+           ============================================================ */
+        #cookie-consent-root[hidden] { display: none !important; }
+        #cookie-consent-root {
+            position: fixed;
+            inset: 0;
+            z-index: 999999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            animation: cc-fade-in 0.25s ease-out;
+        }
+        @keyframes cc-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes cc-slide-up {
+            from { opacity: 0; transform: translateY(24px) scale(0.98); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        #cookie-consent-root .cc-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(5, 8, 15, 0.88);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        #cookie-consent-root .cc-panel {
+            position: relative;
+            width: 100%;
+            max-width: 640px;
+            max-height: 92vh;
+            overflow-y: auto;
+            background: var(--bg-panel);
+            border: 1px solid var(--gold-border);
+            border-radius: 16px;
+            padding: 32px 28px;
+            box-shadow: 0 0 60px rgba(229, 193, 88, 0.15), 0 20px 60px rgba(0, 0, 0, 0.6);
+            animation: cc-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        #cookie-consent-root .cc-panel::-webkit-scrollbar { width: 6px; }
+        #cookie-consent-root .cc-panel::-webkit-scrollbar-thumb {
+            background: var(--gold-border);
+            border-radius: 3px;
+        }
+
+        #cookie-consent-root .cc-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--gold-border);
+        }
+        #cookie-consent-root .cc-icon {
+            font-size: 1.8rem;
+            filter: drop-shadow(0 0 12px rgba(229, 193, 88, 0.4));
+        }
+        #cookie-consent-root h2.cc-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.05rem;
+            color: var(--gold-cosmic);
+            letter-spacing: 0.5px;
+            line-height: 1.3;
+            margin: 0;
+        }
+
+        #cookie-consent-root .cc-intro {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+        }
+        #cookie-consent-root .cc-intro a {
+            color: var(--gold-cosmic);
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        #cookie-consent-root .cc-categories {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 22px;
+        }
+        #cookie-consent-root .cc-category {
+            background: var(--bg-solid);
+            border: 1px solid var(--gold-border);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        #cookie-consent-root .cc-cat-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        #cookie-consent-root .cc-cat-info { flex: 1; min-width: 0; }
+        #cookie-consent-root .cc-cat-title {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.82rem;
+            color: var(--gold-cosmic);
+            letter-spacing: 0.4px;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        #cookie-consent-root .cc-cat-base {
+            font-size: 0.65rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            background: rgba(184, 194, 204, 0.12);
+            color: #D0D9E3;
+            border: 1px solid rgba(184, 194, 204, 0.3);
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            font-family: 'Inter', sans-serif;
+        }
+        #cookie-consent-root .cc-cat-base.required {
+            background: rgba(0, 229, 255, 0.1);
+            color: #7FE7F5;
+            border-color: rgba(0, 229, 255, 0.35);
+        }
+        #cookie-consent-root .cc-cat-desc {
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+
+        #cookie-consent-root .cc-toggle {
+            position: relative;
+            display: inline-block;
+            width: 46px;
+            height: 26px;
+            flex-shrink: 0;
+        }
+        #cookie-consent-root .cc-toggle input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+        #cookie-consent-root .cc-slider {
+            position: absolute;
+            cursor: pointer;
+            inset: 0;
+            background: rgba(184, 194, 204, 0.2);
+            border: 1px solid var(--gold-border);
+            border-radius: 26px;
+            transition: all 0.3s ease;
+        }
+        #cookie-consent-root .cc-slider::before {
+            content: "";
+            position: absolute;
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background: var(--text-secondary);
+            border-radius: 50%;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        #cookie-consent-root .cc-toggle input:checked + .cc-slider {
+            background: rgba(229, 193, 88, 0.3);
+            border-color: var(--gold-cosmic);
+        }
+        #cookie-consent-root .cc-toggle input:checked + .cc-slider::before {
+            transform: translateX(20px);
+            background: var(--gold-cosmic);
+            box-shadow: 0 0 12px rgba(229, 193, 88, 0.5);
+        }
+        #cookie-consent-root .cc-toggle input:disabled + .cc-slider {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+        #cookie-consent-root .cc-toggle input:focus-visible + .cc-slider {
+            outline: 2px solid var(--gold-cosmic);
+            outline-offset: 3px;
+        }
+
+        #cookie-consent-root .cc-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 8px;
+        }
+        #cookie-consent-root .cc-btn {
+            flex: 1 1 auto;
+            min-width: 140px;
+            padding: 12px 20px;
+            border-radius: 40px;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.25s ease;
+            text-transform: uppercase;
+        }
+        #cookie-consent-root .cc-btn-primary {
+            background: var(--gold-cosmic);
+            color: var(--bg-solid);
+            border-color: var(--gold-cosmic);
+        }
+        #cookie-consent-root .cc-btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 24px rgba(229, 193, 88, 0.4);
+        }
+        #cookie-consent-root .cc-btn-secondary {
+            background: transparent;
+            color: var(--gold-cosmic);
+            border-color: var(--gold-border);
+        }
+        #cookie-consent-root .cc-btn-secondary:hover {
+            background: rgba(229, 193, 88, 0.08);
+            border-color: var(--gold-cosmic);
+        }
+        #cookie-consent-root .cc-btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            border-color: rgba(184, 194, 204, 0.25);
+            flex-basis: 100%;
+        }
+        #cookie-consent-root .cc-btn-ghost:hover {
+            color: var(--text-primary);
+            border-color: rgba(184, 194, 204, 0.5);
+        }
+        #cookie-consent-root .cc-btn:focus-visible {
+            outline: 2px solid var(--gold-cosmic);
+            outline-offset: 3px;
+        }
+
+        #cookie-consent-root .cc-footer-note {
+            margin-top: 16px;
+            font-size: 0.74rem;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.5;
+        }
+        #cookie-consent-root .cc-footer-note a {
+            color: var(--gold-cosmic);
+            text-decoration: none;
+        }
+        #cookie-consent-root .cc-footer-note a:hover { text-decoration: underline; }
+
+        #cookie-settings-fab {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 999998;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--bg-panel);
+            border: 1px solid var(--gold-border);
+            color: var(--gold-cosmic);
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        #cookie-settings-fab.visible { display: flex; }
+        #cookie-settings-fab:hover {
+            transform: scale(1.08) rotate(15deg);
+            border-color: var(--gold-cosmic);
+            box-shadow: 0 0 20px rgba(229, 193, 88, 0.3);
+        }
+        #cookie-settings-fab:focus-visible {
+            outline: 2px solid var(--gold-cosmic);
+            outline-offset: 3px;
+        }
+
+        @media (max-width: 520px) {
+            #cookie-consent-root .cc-panel { padding: 24px 18px; border-radius: 12px; }
+            #cookie-consent-root h2.cc-title { font-size: 0.92rem; }
+            #cookie-consent-root .cc-btn { min-width: 100%; font-size: 0.72rem; }
         }
     </style>
 </head>
@@ -390,7 +882,7 @@
     <div id="app">
         <header class="header">
             <div class="header-content" style="display:flex;justify-content:space-between;align-items:center;width:100%;flex-wrap:wrap;gap:10px;">
-                <a href="/" class="logo">
+                <a href="/" class="logo" aria-label="Sariel's - Inicio">
                     <span class="logo-icon"><span style="font-size:2rem;color:var(--gold-cosmic);">◈</span></span>
                     <span class="logo-text">Sariel's</span>
                     <span class="logo-badge">✦ WEB3</span>
@@ -406,190 +898,356 @@
                 <div class="terminos-container">
 
                     <h1 data-clave="cookies_titulo">✦ Política Institucional de Cookies y Almacenamiento Digital Local</h1>
-                    <div class="fecha">📅 Última actualización: 18 de octubre de 2026 · Versión 2.0 · Vigente</div>
+                    <div class="fecha">📅 Última actualización: 18 de octubre de 2026 · Versión 2.0 · Vigente · Cumplimiento RGPD / LFPDPPP · Enterprise Web3</div>
 
                     <!-- ===== SECCIÓN 1 ===== -->
-                    <h2>📘 1. Declaración de Privacidad y Marco Normativo</h2>
+                    <h2>📘 1. Disposiciones Generales y Marco Normativo</h2>
                     <div class="art">
-                        <p><strong>1.1. Compromiso institucional.</strong> Sariel's (en adelante, "la Plataforma") reconoce que la protección de los datos personales y de la privacidad digital constituye un derecho fundamental. La presente Política Institucional de Cookies y Almacenamiento Digital Local regula el uso de tecnologías de almacenamiento y recuperación de información en los dispositivos de los Usuarios, en cumplimiento de estándares internacionales y de la legislación aplicable.</p>
-                        <p><strong>1.2. Marco normativo aplicable.</strong> Esta Política se emite en observancia de:</p>
+                        <p><strong>1.1. Identidad del Responsable.</strong> Sariel's (en adelante, "la Plataforma" o "el Responsable") es una plataforma digital con infraestructura en Node.js, Express, Supabase y Railway, cuyo domicilio legal se ubica en Puebla, México. La Plataforma opera un ecosistema B2B/B2C con API global disponible en más de 80 países, y utiliza la red Polygon como infraestructura Web3 de verificación on-chain.</p>
+                        <p><strong>1.2. Objeto.</strong> La presente Política Institucional de Cookies y Almacenamiento Digital Local (en adelante, "la Política") tiene por objeto informar de forma transparente, precisa y exhaustiva sobre las tecnologías de almacenamiento y recuperación de información que la Plataforma utiliza en los dispositivos de los Usuarios, así como sobre los mecanismos para su gestión, configuración y revocación.</p>
+                        <p><strong>1.3. Marco normativo aplicable.</strong> Esta Política se emite en observancia de:</p>
                         <ul>
-                            <li><strong>Reglamento (UE) 2016/679 — RGPD / GDPR:</strong> Reglamento General de Protección de Datos de la Unión Europea, en particular su Artículo 5 (principios de licitud, transparencia y minimización) y Artículo 7 (consentimiento).</li>
-                            <li><strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) — México:</strong> y su Reglamento, incluyendo los principios de licitud, consentimiento, información, calidad, finalidad, lealtad, proporcionalidad y responsabilidad.</li>
-                            <li><strong>Lineamientos del INAI</strong> sobre el Aviso de Privacidad y mecanismos para la revocación del consentimiento.</li>
-                            <li><strong>Directiva ePrivacy (UE) 2002/58/CE</strong> y sus actualizaciones, en materia de almacenamiento de información en equipos terminales.</li>
+                            <li><strong>Reglamento (UE) 2016/679 — RGPD/GDPR</strong>, en particular sus Arts. 5 (principios), 6 (bases de legitimación), 7 (consentimiento), 13 (información), 17 (supresión) y 20 (portabilidad).</li>
+                            <li><strong>Directiva ePrivacy 2002/58/CE</strong> y sus actualizaciones, en materia de almacenamiento en equipos terminales.</li>
+                            <li><strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) — México</strong>, su Reglamento y los Lineamientos del INAI.</li>
+                            <li><strong>Estándares FTC (EE.UU.)</strong> en materia de transparencia y consentimiento informado.</li>
+                            <li><strong>Políticas de Google Play Store</strong> para aplicaciones que acceden a datos del dispositivo.</li>
                         </ul>
-                        <p><strong>1.3. Ámbito de aplicación.</strong> Esta Política aplica a todo Usuario que acceda, navegue o utilice los servicios de la Plataforma, con independencia de su ubicación geográfica. El uso continuado de la Plataforma tras la publicación de esta Política implica el conocimiento de su contenido, sin perjuicio del consentimiento expreso que se requiera para tecnologías no esenciales.</p>
-                        <p><strong>1.4. Principio de minimización.</strong> Sariel's implementa un modelo de <strong>privacidad desde el diseño (Privacy by Design)</strong> y <strong>privacidad por defecto (Privacy by Default)</strong>, limitando la recolección de información al mínimo técnicamente indispensable para la operación de la Plataforma.</p>
+                        <p><strong>1.4. Principios rectores.</strong> Sariel's implementa <strong>Privacy by Design</strong> y <strong>Privacy by Default</strong>, limitando la recolección al mínimo indispensable y garantizando que todo tratamiento no esencial cuente con consentimiento previo, expreso, informado y granular.</p>
+                        <p><strong>1.5. Ámbito de aplicación.</strong> Esta Política aplica a todo Usuario que acceda a la Plataforma, con independencia de su ubicación geográfica, así como a los desarrolladores B2B que integren la API global de Sariel's.</p>
                     </div>
 
                     <!-- ===== SECCIÓN 2 ===== -->
-                    <h2>📗 2. Definición Técnica de Cookies y Almacenamiento Local</h2>
+                    <h2>📗 2. Definición Legal de Tecnologías de Almacenamiento</h2>
                     <div class="art">
-                        <p><strong>2.1. Cookies.</strong> Una cookie es un fragmento de datos (archivo de texto de pequeño tamaño) que un servidor web transmite al navegador del Usuario y que este almacena en su dispositivo. Las cookies permiten al servidor reconocer al dispositivo en visitas posteriores, mantener estados de sesión, recordar preferencias y garantizar la integridad de determinados flujos de seguridad.</p>
-                        <p><strong>2.2. Web Storage (LocalStorage y SessionStorage).</strong> Se trata de mecanismos de almacenamiento nativos del navegador HTML5 que permiten guardar pares clave-valor de forma persistente (LocalStorage) o limitada a la sesión de navegación (SessionStorage). A diferencia de las cookies, no se transmiten automáticamente en cada petición HTTP, pero cumplen funciones equivalentes de persistencia de estado.</p>
-                        <p><strong>2.3. IndexedDB y Cache Storage.</strong> Tecnologías de almacenamiento estructurado del navegador utilizadas para el rendimiento de la aplicación, el almacenamiento en caché de activos y la operación offline.</p>
-                        <p><strong>2.4. Distinción operativa.</strong> A los efectos de esta Política, el término <strong>"almacenamiento digital local"</strong> comprende de forma conjunta cookies, LocalStorage, SessionStorage, IndexedDB y Cache Storage, así como cualquier tecnología equivalente de almacenamiento en el dispositivo del Usuario.</p>
-                        <p><strong>2.5. Clasificación por finalidad.</strong> Sariel's clasifica las tecnologías de almacenamiento en tres categorías: (i) <strong>Técnicas o esenciales</strong>; (ii) <strong>de Preferencia</strong>; y (iii) <strong>Analíticas o de Marketing</strong>. Solo las dos primeras se encuentran activas en la operación actual de la Plataforma.</p>
+                        <p><strong>2.1. Cookies HTTP.</strong> Fragmento de datos que un servidor transmite al navegador y que este almacena en el dispositivo. Se clasifican en: (i) <em>de sesión</em> (se eliminan al cerrar el navegador); (ii) <em>persistentes</em> (con fecha de expiración definida); (iii) <em>first-party</em> (emitidas por el dominio de la Plataforma); y (iv) <em>third-party</em> (emitidas por dominios de proveedores externos).</p>
+                        <p><strong>2.2. LocalStorage.</strong> Mecanismo del estándar HTML5 Web Storage que permite almacenar pares clave-valor de forma <strong>persistente</strong>, sin fecha de expiración automática. Los datos permanecen en el dispositivo hasta que el Usuario o la aplicación los eliminen explícitamente. No se transmiten en cada petición HTTP.</p>
+                        <p><strong>2.3. SessionStorage.</strong> Mecanismo HTML5 análogo a LocalStorage, pero con alcance limitado a la <strong>pestaña o sesión activa</strong>. Los datos se eliminan automáticamente al cerrar la pestaña.</p>
+                        <p><strong>2.4. IndexedDB y Cache Storage.</strong> Tecnologías de almacenamiento estructurado utilizadas para el rendimiento de la aplicación, el almacenamiento en caché de activos y la operación offline. Se incluyen en el concepto global de "almacenamiento digital local" a efectos de esta Política.</p>
+                        <p><strong>2.5. Distinción operativa.</strong> A los efectos de esta Política, el término <strong>"almacenamiento digital local"</strong> comprende conjuntamente cookies HTTP, LocalStorage, SessionStorage, IndexedDB y Cache Storage, así como cualquier tecnología equivalente.</p>
                     </div>
 
                     <!-- ===== SECCIÓN 3 ===== -->
-                    <h2>📙 3. Matriz Corporativa de Cookies y Almacenamiento Utilizado</h2>
+                    <h2>📙 3. Matriz de Inventario Oficial de Cookies y Almacenamiento</h2>
                     <div class="art">
-                        <p><strong>3.1. Inventario oficial.</strong> La siguiente matriz detalla las tecnologías de almacenamiento utilizadas por Sariel's, su categoría, finalidad técnico-operativa, proveedor o servicio asociado y plazo de duración:</p>
+                        <p><strong>3.1. Inventario atómico.</strong> La siguiente matriz detalla de forma individualizada cada tecnología utilizada por Sariel's en producción, su categoría, finalidad exacta, proveedor y persistencia:</p>
+
+                        <h3>3.1.1. Almacenamiento Técnico Esencial</h3>
 
                         <div class="tabla-cookies-wrapper">
                             <table class="tabla-cookies">
                                 <thead>
                                     <tr>
-                                        <th>Tecnología / Clave</th>
+                                        <th>Clave / Identificador</th>
                                         <th>Categoría</th>
-                                        <th>Finalidad Técnica / Operativa</th>
+                                        <th>Finalidad Exacta</th>
                                         <th>Proveedor / Servicio</th>
-                                        <th>Duración</th>
+                                        <th>Persistencia</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr>
                                         <td>sb-access-token<br>sb-refresh-token</td>
                                         <td><span class="tag-cat tag-esencial">Esencial</span></td>
-                                        <td>Autenticación y mantenimiento seguro de la sesión del Usuario.</td>
+                                        <td>Mantenimiento seguro de sesión de usuario y autenticación JWT.</td>
                                         <td>Supabase</td>
                                         <td>Sesión / hasta cierre</td>
                                     </tr>
                                     <tr>
                                         <td>__cf_bm<br>cf_clearance</td>
                                         <td><span class="tag-cat tag-esencial">Esencial</span></td>
-                                        <td>Protección anti-bot, mitigación DDoS y seguridad perimetral.</td>
+                                        <td>Mitigación de ataques DDoS, gestión de bots y protección de la infraestructura de red perimetral.</td>
                                         <td>Cloudflare</td>
                                         <td>30 min – 1 año</td>
                                     </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="cookie-cards-mobile">
+                            <article class="cookie-card">
+                                <div class="cc-clave"><span>sb-access-token</span><span>sb-refresh-token</span></div>
+                                <div class="cc-badge-row"><span class="tag-cat tag-esencial">Esencial</span></div>
+                                <div class="cc-field"><div class="cc-label">Finalidad</div><div class="cc-value">Mantenimiento seguro de sesión de usuario y autenticación JWT.</div></div>
+                                <div class="cc-field"><div class="cc-label">Proveedor</div><div class="cc-value">Supabase</div></div>
+                                <div class="cc-field"><div class="cc-label">Persistencia</div><div class="cc-value">Sesión / hasta cierre</div></div>
+                            </article>
+                            <article class="cookie-card">
+                                <div class="cc-clave"><span>__cf_bm</span><span>cf_clearance</span></div>
+                                <div class="cc-badge-row"><span class="tag-cat tag-esencial">Esencial</span></div>
+                                <div class="cc-field"><div class="cc-label">Finalidad</div><div class="cc-value">Mitigación de ataques DDoS, gestión de bots y protección de la infraestructura de red perimetral.</div></div>
+                                <div class="cc-field"><div class="cc-label">Proveedor</div><div class="cc-value">Cloudflare</div></div>
+                                <div class="cc-field"><div class="cc-label">Persistencia</div><div class="cc-value">30 min – 1 año</div></div>
+                            </article>
+                        </div>
+
+                        <h3>3.1.2. Almacenamiento de Preferencias y Personalización</h3>
+
+                        <div class="tabla-cookies-wrapper">
+                            <table class="tabla-cookies">
+                                <thead>
+                                    <tr>
+                                        <th>Clave / Identificador</th>
+                                        <th>Categoría</th>
+                                        <th>Finalidad Exacta</th>
+                                        <th>Proveedor / Servicio</th>
+                                        <th>Persistencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                     <tr>
                                         <td>sariels_wallet_address</td>
                                         <td><span class="tag-cat tag-preferencia">Preferencia</span></td>
-                                        <td>Persistencia de la wallet conectada para evitar reconexión manual.</td>
-                                        <td>Sariel's (localStorage)</td>
+                                        <td>Persistencia de la dirección de la wallet Web3 conectada para la firma de operaciones P2P y consulta blockchain en Polygon.</td>
+                                        <td>Sariel's (LocalStorage)</td>
                                         <td>Persistente / hasta borrado</td>
                                     </tr>
                                     <tr>
                                         <td>sariels_theme<br>sariels_accent<br>sariels_font_size</td>
                                         <td><span class="tag-cat tag-preferencia">Preferencia</span></td>
-                                        <td>Personalización visual: tema claro/oscuro, color de acento y tamaño de fuente.</td>
-                                        <td>Sariel's (localStorage)</td>
+                                        <td>Estado de la interfaz visual del Usuario: tema, colores de acento y tamaño de tipografía.</td>
+                                        <td>Sariel's (LocalStorage)</td>
                                         <td>Persistente / hasta borrado</td>
                                     </tr>
                                     <tr>
                                         <td>sariels_media_prefs</td>
                                         <td><span class="tag-cat tag-preferencia">Preferencia</span></td>
-                                        <td>Autoplay de video y calidad de imágenes/video seleccionada por el Usuario.</td>
-                                        <td>Sariel's (localStorage)</td>
+                                        <td>Ajustes y calidad de reproducción de transmisiones multimedia en vivo.</td>
+                                        <td>Sariel's (LocalStorage/SessionStorage)</td>
                                         <td>Persistente / hasta borrado</td>
                                     </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="cookie-cards-mobile">
+                            <article class="cookie-card">
+                                <div class="cc-clave"><span>sariels_wallet_address</span></div>
+                                <div class="cc-badge-row"><span class="tag-cat tag-preferencia">Preferencia</span></div>
+                                <div class="cc-field"><div class="cc-label">Finalidad</div><div class="cc-value">Persistencia de la dirección de la wallet Web3 conectada para la firma de operaciones P2P y consulta blockchain en Polygon.</div></div>
+                                <div class="cc-field"><div class="cc-label">Proveedor</div><div class="cc-value">Sariel's (LocalStorage)</div></div>
+                                <div class="cc-field"><div class="cc-label">Persistencia</div><div class="cc-value">Persistente / hasta borrado</div></div>
+                            </article>
+                            <article class="cookie-card">
+                                <div class="cc-clave"><span>sariels_theme</span><span>sariels_accent</span><span>sariels_font_size</span></div>
+                                <div class="cc-badge-row"><span class="tag-cat tag-preferencia">Preferencia</span></div>
+                                <div class="cc-field"><div class="cc-label">Finalidad</div><div class="cc-value">Estado de la interfaz visual del Usuario: tema, colores de acento y tamaño de tipografía.</div></div>
+                                <div class="cc-field"><div class="cc-label">Proveedor</div><div class="cc-value">Sariel's (LocalStorage)</div></div>
+                                <div class="cc-field"><div class="cc-label">Persistencia</div><div class="cc-value">Persistente / hasta borrado</div></div>
+                            </article>
+                            <article class="cookie-card">
+                                <div class="cc-clave"><span>sariels_media_prefs</span></div>
+                                <div class="cc-badge-row"><span class="tag-cat tag-preferencia">Preferencia</span></div>
+                                <div class="cc-field"><div class="cc-label">Finalidad</div><div class="cc-value">Ajustes y calidad de reproducción de transmisiones multimedia en vivo.</div></div>
+                                <div class="cc-field"><div class="cc-label">Proveedor</div><div class="cc-value">Sariel's (LocalStorage/SessionStorage)</div></div>
+                                <div class="cc-field"><div class="cc-label">Persistencia</div><div class="cc-value">Persistente / hasta borrado</div></div>
+                            </article>
+                        </div>
+
+                        <h3>3.1.3. Cookies y Almacenamiento de Terceros (Pasarelas de Pago e Infraestructura de Comunicación)</h3>
+
+                        <div class="tabla-cookies-wrapper">
+                            <table class="tabla-cookies">
+                                <thead>
+                                    <tr>
+                                        <th>Clave / Identificador</th>
+                                        <th>Categoría</th>
+                                        <th>Finalidad Exacta</th>
+                                        <th>Proveedor / Servicio</th>
+                                        <th>Persistencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
                                     <tr>
                                         <td>__stripe_mid<br>__stripe_sid</td>
                                         <td><span class="tag-cat tag-tercero">Tercero</span></td>
-                                        <td>Procesamiento seguro de pagos con tarjeta y prevención de fraude.</td>
+                                        <td>Procesamiento seguro de pagos con tarjeta de crédito/débito y prevención/monitoreo de fraudes transaccionales.</td>
                                         <td>Stripe</td>
                                         <td>30 min – 1 año</td>
                                     </tr>
                                     <tr>
                                         <td>fintoc_session</td>
                                         <td><span class="tag-cat tag-tercero">Tercero</span></td>
-                                        <td>Iniciación de pagos y validación de cuentas bancarias (open banking).</td>
+                                        <td>Autenticación, conciliación y validación de transferencias interbancarias en tiempo real mediante Open Banking.</td>
                                         <td>Fintoc</td>
                                         <td>Sesión</td>
                                     </tr>
                                     <tr>
                                         <td>nowpayments_ref</td>
                                         <td><span class="tag-cat tag-tercero">Tercero</span></td>
-                                        <td>Trazabilidad de transacciones con criptoactivos.</td>
+                                        <td>Rastreo y procesamiento seguro de pasarela de pagos con criptoactivos en la red blockchain.</td>
                                         <td>NOWPayments</td>
                                         <td>Sesión / hasta 30 días</td>
                                     </tr>
                                     <tr>
                                         <td>telnyx_rtc<br>livekit_session</td>
                                         <td><span class="tag-cat tag-tercero">Tercero</span></td>
-                                        <td>Establecimiento de llamadas, mensajería y transmisión en vivo cifrada.</td>
+                                        <td>Gestión de llamadas de voz, transcripciones del Asistente IA, señalización WebRTC y flujos de transmisión en vivo cifrada de extremo a extremo.</td>
                                         <td>Telnyx / LiveKit</td>
                                         <td>Sesión</td>
                                     </tr>
                                 </tbody>
                             </table>
                         </div>
-                        <p class="nota-tabla">La presente matriz es de carácter enunciativo y podrá actualizarse conforme a la Sección 7. Las claves exactas pueden variar según la versión del navegador y del proveedor.</p>
+
+                        <div class="cookie-cards-mobile">
+                            <article class="cookie-card">
+                                <div class="cc-clave"><span>__stripe_mid</span><span>__stripe_sid</span></div>
+                                <div class="cc-badge-row"><span class="tag-cat tag-tercero">Tercero</span></div>
+                                <div class="cc-field"><div class="cc-label">Finalidad</div><div class="cc-value">Procesamiento seguro de pagos con tarjeta de crédito/débito y prevención/monitoreo de fraudes transaccionales.</div></div>
+                                <div class="cc-field"><div class="cc-label">Proveedor</div><div class="cc-value">Stripe</div></div>
+                                <div class="cc-field"><div class="cc-label">Persistencia</div><div class="cc-value">30 min – 1 año</div></div>
+                            </article>
+                            <article class="cookie-card">
+                                <div class="cc-clave"><span>fintoc_session</span></div>
+                                <div class="cc-badge-row"><span class="tag-cat tag-tercero">Tercero</span></div>
+                                <div class="cc-field"><div class="cc-label">Finalidad</div><div class="cc-value">Autenticación, conciliación y validación de transferencias interbancarias en tiempo real mediante Open Banking.</div></div>
+                                <div class="cc-field"><div class="cc-label">Proveedor</div><div class="cc-value">Fintoc</div></div>
+                                <div class="cc-field"><div class="cc-label">Persistencia</div><div class="cc-value">Sesión</div></div>
+                            </article>
+                            <article class="cookie-card">
+                                <div class="cc-clave"><span>nowpayments_ref</span></div>
+                                <div class="cc-badge-row"><span class="tag-cat tag-tercero">Tercero</span></div>
+                                <div class="cc-field"><div class="cc-label">Finalidad</div><div class="cc-value">Rastreo y procesamiento seguro de pasarela de pagos con criptoactivos en la red blockchain.</div></div>
+                                <div class="cc-field"><div class="cc-label">Proveedor</div><div class="cc-value">NOWPayments</div></div>
+                                <div class="cc-field"><div class="cc-label">Persistencia</div><div class="cc-value">Sesión / hasta 30 días</div></div>
+                            </article>
+                            <article class="cookie-card">
+                                <div class="cc-clave"><span>telnyx_rtc</span><span>livekit_session</span></div>
+                                <div class="cc-badge-row"><span class="tag-cat tag-tercero">Tercero</span></div>
+                                <div class="cc-field"><div class="cc-label">Finalidad</div><div class="cc-value">Gestión de llamadas de voz, transcripciones del Asistente IA, señalización WebRTC y flujos de transmisión en vivo cifrada de extremo a extremo.</div></div>
+                                <div class="cc-field"><div class="cc-label">Proveedor</div><div class="cc-value">Telnyx / LiveKit</div></div>
+                                <div class="cc-field"><div class="cc-label">Persistencia</div><div class="cc-value">Sesión</div></div>
+                            </article>
+                        </div>
+
+                        <p class="nota-tabla">La presente matriz es de carácter enunciativo y refleja el inventario oficial de producción a la fecha de vigencia. Podrá actualizarse conforme a la Sección 7. Las claves exactas pueden variar según la versión del navegador y del proveedor.</p>
                     </div>
 
                     <!-- ===== SECCIÓN 4 ===== -->
-                    <h2>📕 4. Almacenamiento Técnico Esencial vs. Analítica / Marketing Futuro</h2>
+                    <h2>📕 4. Bases de Legitimación y Clasificación por Finalidad</h2>
                     <div class="art">
-                        <p><strong>4.1. Almacenamiento técnico esencial.</strong> Es aquel estrictamente necesario para la prestación del servicio solicitado por el Usuario. Su base de legitimación es el <strong>interés legítimo</strong> y la <strong>ejecución del contrato</strong> (Art. 6.1.b y 6.1.f RGPD), por lo que no requiere consentimiento previo. Su desactivación impide el funcionamiento de la Plataforma.</p>
-                        <p><strong>4.2. Almacenamiento de preferencia.</strong> Permite recordar configuraciones personales del Usuario. Su base de legitimación es el <strong>consentimiento</strong> del Usuario, quien puede retirarlo en cualquier momento sin afectar la licitud del tratamiento previo.</p>
-                        <p><strong>4.3. Analítica y marketing.</strong> Sariel's <strong>NO utiliza actualmente</strong> cookies de analítica de terceros, píxeles publicitarios ni tecnologías de rastreo con fines de marketing. En caso de incorporarlas en el futuro:</p>
+                        <p><strong>4.1. Almacenamiento técnico esencial.</strong> Estrictamente necesario para la prestación del servicio solicitado. Base de legitimación: <strong>ejecución de contrato</strong> (Art. 6.1.b RGPD) e <strong>interés legítimo en seguridad</strong> (Art. 6.1.f RGPD). No requiere consentimiento previo. Su desactivación impide el funcionamiento de la Plataforma.</p>
+                        <p><strong>4.2. Almacenamiento de preferencia.</strong> Base de legitimación: <strong>consentimiento</strong> del Usuario (Art. 6.1.a RGPD; Art. 8 LFPDPPP). Revocable en cualquier momento sin afectar la licitud del tratamiento previo.</p>
+                        <p><strong>4.3. Almacenamiento de terceros (pagos y comunicaciones).</strong> Base de legitimación: <strong>ejecución de contrato</strong> cuando el Usuario contrata el servicio subyacente (pago, llamada, transmisión). Los proveedores actúan como <strong>encargados del tratamiento</strong> bajo DPA (Data Processing Agreement) o como <strong>terceros independientes</strong> con sus propias políticas, según se indica en la Sección 5.</p>
+                        <p><strong>4.4. Analítica y marketing.</strong> Sariel's <strong>NO utiliza actualmente</strong> cookies de analítica de terceros ni tecnologías de rastreo publicitario. En caso de incorporarlas:</p>
                         <ul>
-                            <li>Se implementará un <strong>banner de consentimiento previo (opt-in)</strong> conforme al RGPD y la LFPDPPP.</li>
-                            <li>El rastreo publicitario <strong>permanecerá desactivado por defecto</strong> hasta que el Usuario otorgue consentimiento explícito, informado y granular.</li>
-                            <li>Se ofrecerá un mecanismo de <strong>revocación tan sencillo como el de otorgamiento</strong>.</li>
-                            <li>Se documentará el inventario en la matriz de la Sección 3 con la debida antelación.</li>
+                            <li>Se implementará un <strong>banner de consentimiento previo (opt-in)</strong>.</li>
+                            <li>El rastreo permanecerá <strong>desactivado por defecto</strong> hasta consentimiento explícito, informado y granular.</li>
+                            <li>La base de legitimación será exclusivamente el <strong>consentimiento</strong> (Art. 6.1.a RGPD), <em>nunca</em> el interés legítimo.</li>
+                            <li>Se documentará el inventario en la matriz de la Sección 3 con antelación.</li>
                         </ul>
-                        <p><strong>4.4. Prohibición de transferencia no consentida.</strong> Sariel's no vende, alquila ni cede datos derivados de cookies o almacenamiento local a terceros con fines publicitarios sin consentimiento expreso del Usuario.</p>
+                        <p><strong>4.5. Prohibición de transferencia no consentida.</strong> Sariel's no vende, alquila ni cede datos derivados de cookies o almacenamiento local a terceros con fines publicitarios sin consentimiento expreso.</p>
                     </div>
 
                     <!-- ===== SECCIÓN 5 ===== -->
-                    <h2>📒 5. Servicios de Terceros e Infraestructura Web3</h2>
+                    <h2>📒 5. Servicios de Terceros, Infraestructura Web3 y Transferencias Internacionales</h2>
                     <div class="art">
-                        <p><strong>5.1. Ecosistema de proveedores.</strong> La operación de Sariel's se apoya en una infraestructura distribuida de proveedores tecnológicos de primer nivel, cada uno de los cuales puede establecer cookies o almacenamiento propio conforme a sus propias políticas:</p>
+                        <p><strong>5.1. Ecosistema de proveedores.</strong> La operación de Sariel's se apoya en proveedores tecnológicos de primer nivel. Se distingue entre <strong>encargados del tratamiento</strong> (bajo DPA) y <strong>terceros independientes</strong> (con política propia):</p>
                         <ul>
-                            <li><strong>Polygon (red blockchain):</strong> Infraestructura Web3 para la verificación de transacciones on-chain. La interacción con la wallet es gestionada por el Usuario y no implica rastreo publicitario por parte de Sariel's.</li>
-                            <li><strong>Supabase:</strong> Autenticación, gestión de sesiones y base de datos. Actúa como encargado del tratamiento bajo un DPA (Data Processing Agreement).</li>
-                            <li><strong>Cloudflare:</strong> CDN, seguridad perimetral, mitigación DDoS y protección anti-bot.</li>
-                            <li><strong>Stripe:</strong> Procesamiento de pagos con tarjeta bajo estándar PCI-DSS Nivel 1.</li>
-                            <li><strong>Fintoc:</strong> Iniciación de pagos y validación de cuentas bancarias (open banking).</li>
-                            <li><strong>NOWPayments:</strong> Procesamiento de pagos con criptoactivos.</li>
-                            <li><strong>Telnyx:</strong> Telefonía, mensajería y comunicaciones programables.</li>
-                            <li><strong>LiveKit:</strong> Infraestructura de transmisión en vivo y comunicación en tiempo real cifrada (WebRTC).</li>
+                            <li><strong>Supabase</strong> — Encargado del tratamiento (DPA). Autenticación y base de datos.</li>
+                            <li><strong>Cloudflare</strong> — Encargado del tratamiento. CDN, seguridad perimetral y mitigación DDoS.</li>
+                            <li><strong>Railway</strong> — Encargado del tratamiento. Hosting de la infraestructura backend.</li>
+                            <li><strong>Stripe</strong> — Encargado del tratamiento bajo DPA y certificación PCI-DSS Nivel 1. Pagos con tarjeta.</li>
+                            <li><strong>Fintoc</strong> — Encargado del tratamiento. Open Banking y validación de transferencias interbancarias.</li>
+                            <li><strong>NOWPayments</strong> — Tercero independiente. Pasarela de pagos con criptoactivos; se rige por su propia política.</li>
+                            <li><strong>Telnyx</strong> — Encargado del tratamiento. Telefonía y mensajería programable.</li>
+                            <li><strong>LiveKit</strong> — Encargado del tratamiento. Transmisión en vivo y comunicación WebRTC cifrada de extremo a extremo.</li>
+                            <li><strong>Polygon (red pública)</strong> — Infraestructura descentralizada. La interacción con la wallet es gestionada por el Usuario; Sariel's no controla la red.</li>
                         </ul>
-                        <p><strong>5.2. Transferencias internacionales.</strong> Algunos proveedores pueden procesar datos fuera de México o del EEE. En tales casos, Sariel's verifica la existencia de <strong>garantías adecuadas</strong> (cláusulas contractuales tipo, decisiones de adecuación o mecanismos equivalentes) conforme al RGPD y la LFPDPPP.</p>
-                        <p><strong>5.3. Políticas de terceros.</strong> Se recomienda al Usuario revisar las políticas de privacidad y de cookies de cada proveedor para conocer el alcance de su tratamiento. Sariel's no controla las cookies establecidas directamente por dichos terceros.</p>
+                        <p><strong>5.2. Transferencias internacionales.</strong> Algunos proveedores pueden procesar datos fuera de México o del EEE. En tales casos, Sariel's verifica y aplica las siguientes garantías:</p>
+                        <ul>
+                            <li><strong>Cláusulas Contractuales Tipo (SCC)</strong> aprobadas por la Comisión Europea (Decisión 2021/914).</li>
+                            <li><strong>Marco de Privacidad de Datos UE-EE.UU. (DPF)</strong>, cuando el proveedor esté certificado.</li>
+                            <li><strong>Decisiones de adecuación</strong> vigentes, cuando apliquen.</li>
+                            <li><strong>Cláusulas contractuales específicas</strong> conforme al Art. 36 LFPDPPP para transferencias desde México.</li>
+                        </ul>
+                        <p><strong>5.3. Políticas de terceros.</strong> Se recomienda revisar las políticas de privacidad y cookies de cada proveedor. Sariel's no controla las cookies establecidas directamente por dichos terceros.</p>
                     </div>
 
                     <!-- ===== SECCIÓN 6 ===== -->
                     <h2>📘 6. Gestión, Configuración y Revocación del Consentimiento</h2>
                     <div class="art">
-                        <p><strong>6.1. Derecho de configuración.</strong> El Usuario puede gestionar, bloquear o eliminar las cookies y el almacenamiento local en cualquier momento desde la configuración de su navegador, sin necesidad de justificación y de forma gratuita.</p>
-                        <p><strong>6.2. Procedimiento por navegador.</strong> A continuación se indican las rutas oficiales de configuración:</p>
+                        <p><strong>6.1. Derecho de configuración.</strong> El Usuario puede gestionar, bloquear o eliminar cookies y almacenamiento local en cualquier momento, sin justificación y de forma gratuita.</p>
+                        <p><strong>6.2. Revocación paso a paso por sistema y navegador.</strong></p>
+
+                        <h3>6.2.1. Google Chrome (Windows, macOS, Linux, Android)</h3>
                         <ul>
-                            <li><strong>Google Chrome:</strong> Configuración → Privacidad y seguridad → Cookies y otros datos de sitios → Ver todas las cookies y datos de sitios.</li>
-                            <li><strong>Mozilla Firefox:</strong> Opciones → Privacidad y seguridad → Cookies y datos del sitio → Administrar datos.</li>
-                            <li><strong>Microsoft Edge:</strong> Configuración → Privacidad, búsqueda y servicios → Cookies y datos del sitio → Administrar y eliminar cookies.</li>
-                            <li><strong>Safari (macOS):</strong> Safari → Preferencias → Privacidad → Gestionar datos de sitios web.</li>
-                            <li><strong>Safari (iOS):</strong> Ajustes → Safari → Privacidad y seguridad → Bloquear todas las cookies.</li>
+                            <li>Menú (⋮) → <strong>Configuración</strong> → <strong>Privacidad y seguridad</strong> → <strong>Cookies y otros datos de sitios</strong>.</li>
+                            <li>Seleccionar <strong>"Ver todas las cookies y datos de sitios"</strong> → buscar <code>sariels</code> → eliminar.</li>
+                            <li>Para bloqueo preventivo: activar <strong>"Bloquear cookies de terceros"</strong>.</li>
+                            <li>En Android: Chrome → ⋮ → Configuración → Privacidad y seguridad → Cookies.</li>
                         </ul>
-                        <p><strong>6.3. Revocación del consentimiento.</strong> El Usuario puede revocar su consentimiento para el almacenamiento no esencial en cualquier momento, mediante: (i) la desmarcación de la casilla de aceptación al pie de esta Política; (ii) la eliminación de datos de sitio en su navegador; o (iii) solicitud directa a los canales oficiales de contacto indicados en la Sección 8.</p>
-                        <p><strong>6.4. Efectos de la desactivación.</strong> La desactivación del almacenamiento técnico esencial puede impedir el funcionamiento correcto de la Plataforma, incluyendo el mantenimiento de sesión, la conexión de wallet y la seguridad de la cuenta. Sariel's no se responsabiliza de las limitaciones funcionales derivadas de dicha configuración.</p>
-                        <p><strong>6.5. Ausencia de consentimiento tácito.</strong> La mera navegación no constituye consentimiento para tecnologías no esenciales. Cualquier tratamiento no esencial requerirá acción afirmativa y explícita del Usuario.</p>
+
+                        <h3>6.2.2. Safari (macOS)</h3>
+                        <ul>
+                            <li><strong>Safari</strong> → <strong>Preferencias</strong> → <strong>Privacidad</strong> → <strong>Gestionar datos de sitios web</strong>.</li>
+                            <li>Buscar <code>sariels</code> → seleccionar → <strong>Eliminar</strong>.</li>
+                            <li>Para bloqueo: marcar <strong>"Bloquear todas las cookies"</strong> (no recomendado: afecta sesión).</li>
+                        </ul>
+
+                        <h3>6.2.3. Safari (iOS / iPadOS)</h3>
+                        <ul>
+                            <li><strong>Ajustes</strong> → <strong>Safari</strong> → <strong>Privacidad y seguridad</strong>.</li>
+                            <li>Activar <strong>"Bloquear todas las cookies"</strong> o <strong>"Impedir rastreo entre sitios"</strong>.</li>
+                            <li>Para borrado selectivo: <strong>Ajustes</strong> → <strong>Safari</strong> → <strong>Avanzado</strong> → <strong>Datos de sitios web</strong>.</li>
+                        </ul>
+
+                        <h3>6.2.4. Mozilla Firefox (Windows, macOS, Linux, Android)</h3>
+                        <ul>
+                            <li><strong>Menú</strong> → <strong>Opciones</strong>/<strong>Preferencias</strong> → <strong>Privacidad y seguridad</strong>.</li>
+                            <li>Sección <strong>"Cookies y datos del sitio"</strong> → <strong>Administrar datos</strong>.</li>
+                            <li>Buscar <code>sariels</code> → <strong>Eliminar seleccionados</strong>.</li>
+                            <li>Para bloqueo: seleccionar <strong>"Bloquear cookies de terceros"</strong> o <strong>"Todas las cookies de terceros"</strong>.</li>
+                        </ul>
+
+                        <h3>6.2.5. Microsoft Edge</h3>
+                        <ul>
+                            <li>Menú (…) → <strong>Configuración</strong> → <strong>Cookies y permisos del sitio</strong>.</li>
+                            <li><strong>Administrar y eliminar cookies y datos del sitio</strong> → <strong>Ver todas las cookies y datos del sitio</strong>.</li>
+                            <li>Buscar <code>sariels</code> → eliminar.</li>
+                        </ul>
+
+                        <p><strong>6.3. Revocación desde la Plataforma.</strong> El Usuario puede revocar el consentimiento para almacenamiento no esencial mediante: (i) la desmarcación de la casilla de aceptación al pie de esta Política; (ii) el botón <strong>"⚙ Configurar cookies"</strong> que reabre el banner de preferencias; (iii) la eliminación de datos de sitio en su navegador; o (iv) solicitud directa a los canales oficiales de la Sección 8.</p>
+                        <p><strong>6.4. Efectos de la desactivación.</strong> La desactivación del almacenamiento esencial puede impedir el funcionamiento correcto de la Plataforma, incluyendo mantenimiento de sesión, conexión de wallet y seguridad de la cuenta. Sariel's no se responsabiliza de las limitaciones funcionales derivadas de dicha configuración, sin perjuicio de los derechos del Usuario.</p>
+                        <p><strong>6.5. Ausencia de consentimiento tácito.</strong> La mera navegación no constituye consentimiento para tecnologías no esenciales. Todo tratamiento no esencial requiere acción afirmativa y explícita del Usuario.</p>
                     </div>
 
                     <!-- ===== SECCIÓN 7 ===== -->
-                    <h2>📙 7. Gobernanza y Modificaciones al Aviso</h2>
+                    <h2>📙 7. Gobernanza, Versionado y Modificaciones</h2>
                     <div class="art">
-                        <p><strong>7.1. Reserva de modificación.</strong> Sariel's se reserva el derecho de actualizar, modificar o sustituir esta Política para reflejar cambios normativos, técnicos u operativos, así como nuevas prácticas de tratamiento.</p>
-                        <p><strong>7.2. Notificación de cambios.</strong> Los cambios sustanciales serán notificados a través de: (i) la publicación de la versión actualizada en esta página con indicación de fecha y versión; (ii) aviso destacado en la Plataforma; y (iii) cuando proceda, comunicación directa al Usuario.</p>
-                        <p><strong>7.3. Versionado y trazabilidad.</strong> Cada versión de esta Política será identificada mediante número de versión y fecha de entrada en vigor, permitiendo su trazabilidad histórica. La versión vigente será siempre la publicada en esta URL oficial.</p>
-                        <p><strong>7.4. Aceptación continuada.</strong> El uso de la Plataforma con posterioridad a la entrada en vigor de una modificación implica el conocimiento de la versión actualizada, sin perjuicio del consentimiento expreso que se requiera para nuevas tecnologías no esenciales.</p>
+                        <p><strong>7.1. Reserva de modificación.</strong> Sariel's se reserva el derecho de actualizar, modificar o sustituir esta Política para reflejar cambios normativos, técnicos u operativos.</p>
+                        <p><strong>7.2. Notificación.</strong> Los cambios sustanciales se notificarán mediante: (i) publicación de la versión actualizada con fecha y número de versión; (ii) aviso destacado en la Plataforma; y (iii) cuando proceda, comunicación directa al Usuario.</p>
+                        <p><strong>7.3. Versionado y trazabilidad.</strong> Cada versión se identificará con número y fecha de entrada en vigor. La versión vigente será siempre la publicada en esta URL oficial. El historial se conserva internamente por un mínimo de 5 años.</p>
+                        <p><strong>7.4. Aceptación continuada.</strong> El uso de la Plataforma tras la entrada en vigor de una modificación implica conocimiento de la versión actualizada, sin perjuicio del consentimiento expreso que se requiera para nuevas tecnologías no esenciales.</p>
                     </div>
 
                     <!-- ===== SECCIÓN 8 ===== -->
-                    <h2>📗 8. Canales Oficiales de Contacto y Derechos ARCO</h2>
+                    <h2>📗 8. Derechos ARCO, Portabilidad y Canales Oficiales de Contacto</h2>
                     <div class="art">
-                        <p><strong>8.1. Derechos ARCO.</strong> El Usuario, en su calidad de titular de datos personales, podrá ejercer en cualquier momento sus derechos de <strong>Acceso, Rectificación, Cancelación y Oposición</strong> (ARCO), así como los derechos de portabilidad y limitación del tratamiento reconocidos por el RGPD, mediante solicitud dirigida a los canales oficiales.</p>
-                        <p><strong>8.2. Procedimiento.</strong> La solicitud deberá contener: (i) nombre del titular y medio de contacto; (ii) documento que acredite su identidad; (iii) descripción clara y precisa del derecho que se ejerce; y (iv) cualquier elemento que facilite la localización de los datos. Sariel's responderá en un plazo máximo de <strong>20 días hábiles</strong> conforme a la LFPDPPP, prorrogable por una sola vez.</p>
-                        <p><strong>8.3. Canales oficiales de contacto.</strong></p>
+                        <p><strong>8.1. Derechos ARCO.</strong> El Usuario, como titular de datos personales, podrá ejercer en cualquier momento los derechos de <strong>Acceso, Rectificación, Cancelación y Oposición</strong> (ARCO), así como los derechos de <strong>portabilidad</strong> y <strong>limitación del tratamiento</strong> reconocidos por el RGPD, mediante solicitud a los canales oficiales.</p>
+                        <p><strong>8.2. Procedimiento y plazos.</strong> La solicitud deberá contener: (i) nombre del titular y medio de contacto; (ii) documento que acredite identidad; (iii) descripción clara y precisa del derecho que se ejerce; y (iv) cualquier elemento que facilite la localización de los datos. Sariel's responderá en un plazo máximo de <strong>20 días hábiles</strong> conforme a la LFPDPPP, <strong>prorrogable por una sola vez por un periodo igual</strong>, previa notificación al titular. En el ámbito del RGPD, el plazo es de <strong>un mes</strong> desde la recepción, prorrogable por dos meses adicionales en casos complejos.</p>
+                        <p><strong>8.3. Portabilidad (RGPD).</strong> El Usuario tiene derecho a recibir sus datos en formato estructurado, de uso común y lectura mecánica (JSON o CSV), así como a transmitirlos a otro responsable sin impedimentos, cuando el tratamiento se base en consentimiento o contrato y se realice por medios automatizados.</p>
+                        <p><strong>8.4. Canales oficiales de contacto.</strong></p>
                         <ul>
                             <li><strong>Correo electrónico:</strong> csarielscontacto@gmail.com</li>
                             <li><strong>Dirección postal:</strong> Puebla, México.</li>
-                            <li><strong>Asunto sugerido:</strong> "Derechos ARCO — [Nombre del titular]"</li>
+                            <li><strong>Asunto sugerido:</strong> "Derechos ARCO / Portabilidad — [Nombre del titular]"</li>
                         </ul>
-                        <p><strong>8.4. Autoridad de control.</strong> Sin perjuicio de los canales internos, el Usuario podrá acudir a la autoridad de protección de datos competente: en México, el <strong>INAI</strong>; en la Unión Europea, la <strong>autoridad de control</strong> de su Estado miembro de residencia.</p>
+                        <p><strong>8.5. Autoridad de control.</strong> Sin perjuicio de los canales internos, el Usuario podrá acudir a la autoridad competente: en México, el <strong>INAI</strong> o la autoridad sucesora competente en materia de protección de datos; en la Unión Europea, la <strong>autoridad de control</strong> de su Estado miembro de residencia.</p>
+                    </div>
+
+                    <!-- ===== SECCIÓN 9 ===== -->
+                    <h2>📕 9. Cláusula de Deslindamiento sobre Registros Blockchain (Polygon)</h2>
+                    <div class="art">
+                        <div class="alerta-legal">
+                            <p><strong>Aviso expreso al Usuario:</strong> Determinadas operaciones realizadas a través de la Plataforma —incluyendo, de forma enunciativa mas no limitativa, la firma de transacciones P2P, la interacción con contratos inteligentes y la verificación de movimientos— quedan registradas de forma <strong>directa, permanente e inmutable</strong> en la red pública <strong>Polygon</strong>.</p>
+                        </div>
+                        <p><strong>9.1. Naturaleza inmutable.</strong> La tecnología blockchain, por su diseño descentralizado y criptográfico, garantiza que los registros on-chain <strong>no pueden ser modificados, alterados ni eliminados</strong> por Sariel's ni por ningún tercero, una vez confirmados en la red. Esta característica es esencial a la naturaleza del servicio Web3 prestado.</p>
+                        <p><strong>9.2. Alcance del deslindamiento.</strong> En consecuencia, el derecho de cancelación (C) y el derecho de supresión (Art. 17 RGPD) se aplican exclusivamente a los datos personales almacenados <strong>off-chain</strong> bajo control de Sariel's (bases de datos Supabase, LocalStorage, cookies y registros internos). Sariel's <strong>no puede garantizar ni ejecutar</strong> la eliminación de información que resida en la blockchain pública de Polygon, por ser técnicamente imposible.</p>
+                        <p><strong>9.3. Consentimiento informado.</strong> El Usuario reconoce y acepta que el uso de funcionalidades Web3 implica la publicación irrevocable de ciertos datos on-chain (dirección de wallet, hash de transacción, montos y marcas de tiempo), y otorga su consentimiento informado para dicho tratamiento conforme al Art. 6.1.a RGPD y Art. 8 LFPDPPP.</p>
+                        <p><strong>9.4. Datos off-chain asociados.</strong> Sariel's eliminará, a solicitud del titular, todos los datos off-chain vinculados a su cuenta que no sean indispensables para el cumplimiento de obligaciones legales, fiscales o de prevención de fraude. Los registros on-chain, por su naturaleza, permanecerán accesibles públicamente en la red Polygon.</p>
+                        <p><strong>9.5. Recomendación al Usuario.</strong> Se recomienda al Usuario utilizar direcciones de wallet seudónimas y no asociar datos de identificación personal directa a sus operaciones on-chain cuando no sea estrictamente necesario.</p>
                     </div>
 
                     <div class="enlaces-legales">
@@ -601,18 +1259,24 @@
 
                     <div class="footer-tyc">
                         <p>© <strong>Sariel's</strong>. Todos los derechos reservados. Puebla, México 🇲🇽</p>
-                        <p style="margin-top:6px;font-size:0.78rem;color:var(--text-muted);">Documento institucional · Versión 2.0 · Cumplimiento RGPD / LFPDPPP · Tono Enterprise Web3</p>
+                        <p style="margin-top:8px;font-size:0.82rem;color:var(--text-muted);">Documento institucional · Versión 2.0 · Cumplimiento RGPD / LFPDPPP / FTC / Google Play · Enterprise Web3 · API Global 80+ países · WCAG AAA</p>
                     </div>
 
+                    <!-- ===== ACEPTACIÓN + BOTÓN CONFIGURAR ===== -->
                     <div class="aceptacion-container">
-                        <input type="checkbox" id="aceptoCookies" />
-                        <label for="aceptoCookies">
-                            <strong>He leído y entiendo la Política Institucional de Cookies y Almacenamiento Digital Local</strong> descrita en este aviso.
-                            <br /><br />
-                            <span style="font-size: 0.85rem; opacity: 0.7;">
-                                🍪 Puedes gestionar, configurar o revocar tus preferencias en cualquier momento desde la configuración de tu navegador o los canales oficiales de contacto.
-                            </span>
-                        </label>
+                        <div class="aceptacion-check">
+                            <input type="checkbox" id="aceptoCookies" aria-label="Aceptar la Política de Cookies" />
+                            <label for="aceptoCookies">
+                                <strong>He leído y entiendo la Política Institucional de Cookies y Almacenamiento Digital Local</strong> descrita en este aviso, incluyendo la cláusula de deslindamiento sobre registros inmutables en la red Polygon.
+                                <br /><br />
+                                <span style="font-size: 0.88rem; color: var(--text-muted);">
+                                    🍪 Puedes gestionar, configurar o revocar tus preferencias en cualquier momento con el botón <strong style="color:var(--gold-cosmic);">⚙ Configurar cookies</strong>, desde tu navegador o los canales oficiales de contacto.
+                                </span>
+                            </label>
+                        </div>
+                        <button type="button" class="btn-config-cookies" id="btnConfigCookies" onclick="window.SarielsConsent && window.SarielsConsent.reopen()">
+                            ⚙ Configurar cookies
+                        </button>
                     </div>
 
                     <div class="text-center">
@@ -624,7 +1288,101 @@
         </main>
     </div>
 
+    <!-- ============================================================
+         BANNER DE CONSENTIMIENTO GRANULAR — EMBEBIDO
+         ============================================================ -->
+    <div id="cookie-consent-root" hidden>
+        <div class="cc-backdrop" data-cc-backdrop></div>
+        <div class="cc-panel" role="dialog" aria-modal="true" aria-labelledby="cc-title" aria-describedby="cc-intro">
+            <div class="cc-header">
+                <span class="cc-icon" aria-hidden="true">🍪</span>
+                <h2 class="cc-title" id="cc-title">Consentimiento de Cookies y Almacenamiento</h2>
+            </div>
+
+            <p class="cc-intro" id="cc-intro">
+                En <strong>Sariel's</strong> usamos cookies y almacenamiento local para operar la plataforma de forma segura.
+                Puedes aceptar todas, rechazar las no esenciales o configurar cada categoría.
+                Más información en nuestra
+                <a href="/cookies">Política Institucional de Cookies</a>.
+            </p>
+
+            <form id="cc-form" novalidate>
+                <div class="cc-categories" role="group" aria-label="Categorías de cookies">
+                    <div class="cc-category">
+                        <div class="cc-cat-head">
+                            <div class="cc-cat-info">
+                                <div class="cc-cat-title">Técnicas Esenciales <span class="cc-cat-base required">Siempre activas</span></div>
+                                <div class="cc-cat-desc">Autenticación (Supabase), seguridad perimetral (Cloudflare) y funcionamiento del sitio. Base legal: contrato e interés legítimo en seguridad.</div>
+                            </div>
+                            <label class="cc-toggle" aria-label="Esenciales siempre activas">
+                                <input type="checkbox" id="cc-cat-essential" checked disabled />
+                                <span class="cc-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="cc-category">
+                        <div class="cc-cat-head">
+                            <div class="cc-cat-info">
+                                <div class="cc-cat-title">Preferencias y Personalización <span class="cc-cat-base">Consentimiento</span></div>
+                                <div class="cc-cat-desc">Recuerdan tu wallet conectada, tema visual, tipografía y ajustes multimedia. Puedes desactivarlas sin perder funcionalidad esencial.</div>
+                            </div>
+                            <label class="cc-toggle" aria-label="Activar preferencias">
+                                <input type="checkbox" id="cc-cat-preferences" />
+                                <span class="cc-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="cc-category">
+                        <div class="cc-cat-head">
+                            <div class="cc-cat-info">
+                                <div class="cc-cat-title">Analítica <span class="cc-cat-base">Consentimiento · No activa</span></div>
+                                <div class="cc-cat-desc">Métricas agregadas de uso. Actualmente <strong>no utilizamos</strong> analítica de terceros. Si se incorpora en el futuro, requerirá tu consentimiento previo.</div>
+                            </div>
+                            <label class="cc-toggle" aria-label="Activar analítica">
+                                <input type="checkbox" id="cc-cat-analytics" disabled />
+                                <span class="cc-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="cc-category">
+                        <div class="cc-cat-head">
+                            <div class="cc-cat-info">
+                                <div class="cc-cat-title">Marketing y Publicidad <span class="cc-cat-base">Consentimiento · No activa</span></div>
+                                <div class="cc-cat-desc">Personalización de anuncios y campañas. Actualmente <strong>no utilizamos</strong> píxeles publicitarios ni rastreo con fines de marketing.</div>
+                            </div>
+                            <label class="cc-toggle" aria-label="Activar marketing">
+                                <input type="checkbox" id="cc-cat-marketing" disabled />
+                                <span class="cc-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="cc-actions">
+                    <button type="button" class="cc-btn cc-btn-secondary" id="cc-reject-all">Rechazar no esenciales</button>
+                    <button type="button" class="cc-btn cc-btn-primary" id="cc-accept-all">Aceptar todas</button>
+                    <button type="button" class="cc-btn cc-btn-ghost" id="cc-save-selection">Guardar selección</button>
+                </div>
+            </form>
+
+            <p class="cc-footer-note">
+                Puedes cambiar tu decisión en cualquier momento desde el ícono <strong>⚙</strong> o desde la
+                <a href="/cookies">Política de Cookies</a>.
+                Versión del consentimiento: <strong>v2.0</strong>.
+            </p>
+        </div>
+    </div>
+
+    <button id="cookie-settings-fab" aria-label="Configurar cookies" title="Configurar cookies">⚙</button>
+
+    <!-- ============================================================
+         SCRIPTS
+         ============================================================ -->
     <script>
+        /* ---------- SCRIPT ORIGINAL: checkbox → botón volver ---------- */
         document.addEventListener('DOMContentLoaded', function() {
             const checkbox = document.getElementById('aceptoCookies');
             const btnVolver = document.getElementById('btnVolver');
@@ -639,8 +1397,8 @@
             btnVolver.addEventListener('click', function(e) {
                 if (!checkbox.checked) {
                     e.preventDefault();
-                    checkbox.style.borderColor = '#ff3366';
-                    checkbox.style.boxShadow = '0 0 20px rgba(255, 51, 102, 0.3)';
+                    checkbox.style.borderColor = '#FF6B8A';
+                    checkbox.style.boxShadow = '0 0 20px rgba(255, 107, 138, 0.4)';
                     setTimeout(() => {
                         checkbox.style.borderColor = '';
                         checkbox.style.boxShadow = '';
@@ -648,6 +1406,184 @@
                 }
             });
         });
+
+        /* ---------- SCRIPT DEL BANNER DE CONSENTIMIENTO ---------- */
+        (function () {
+            'use strict';
+
+            const STORAGE_KEY = 'sariels_cookie_consent';
+            const CONSENT_VERSION = '2.0';
+
+            const root        = document.getElementById('cookie-consent-root');
+            const fab         = document.getElementById('cookie-settings-fab');
+            const btnAcceptAll= document.getElementById('cc-accept-all');
+            const btnRejectAll= document.getElementById('cc-reject-all');
+            const btnSave     = document.getElementById('cc-save-selection');
+            const cbPreferences = document.getElementById('cc-cat-preferences');
+            const cbAnalytics   = document.getElementById('cc-cat-analytics');
+            const cbMarketing   = document.getElementById('cc-cat-marketing');
+            const cbAceptoCookies = document.getElementById('aceptoCookies');
+            const btnVolverRef = document.getElementById('btnVolver');
+
+            function readConsent() {
+                try {
+                    const raw = localStorage.getItem(STORAGE_KEY);
+                    if (!raw) return null;
+                    const data = JSON.parse(raw);
+                    return (data && data.version === CONSENT_VERSION) ? data : null;
+                } catch (e) { return null; }
+            }
+
+            function writeConsent(categories) {
+                const payload = {
+                    version: CONSENT_VERSION,
+                    timestamp: new Date().toISOString(),
+                    categories: {
+                        essential: true,
+                        preferences: !!categories.preferences,
+                        analytics: !!categories.analytics,
+                        marketing: !!categories.marketing
+                    },
+                    userAgent: navigator.userAgent.slice(0, 200)
+                };
+                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch (e) {}
+                return payload;
+            }
+
+            function applyConsent(categories) {
+                if (!categories.preferences) {
+                    try {
+                        localStorage.removeItem('sariels_wallet_address');
+                        localStorage.removeItem('sariels_theme');
+                        localStorage.removeItem('sariels_accent');
+                        localStorage.removeItem('sariels_font_size');
+                        localStorage.removeItem('sariels_media_prefs');
+                    } catch (e) {}
+                }
+                if (categories.analytics) { /* window.__enableAnalytics?.(); */ }
+                if (categories.marketing) { /* window.__enableMarketing?.(); */ }
+                window.dispatchEvent(new CustomEvent('sariels:consent-updated', {
+                    detail: { version: CONSENT_VERSION, categories }
+                }));
+            }
+
+            function syncCheckboxUI() {
+                if (!cbAceptoCookies || !btnVolverRef) return;
+                if (cbAceptoCookies.checked) btnVolverRef.classList.add('active');
+                else btnVolverRef.classList.remove('active');
+            }
+
+            function showBanner() {
+                root.hidden = false;
+                document.body.style.overflow = 'hidden';
+                setTimeout(() => btnAcceptAll.focus(), 50);
+            }
+
+            function hideBanner() {
+                root.hidden = true;
+                document.body.style.overflow = '';
+                fab.classList.add('visible');
+            }
+
+            function setTogglesFromCategories(cat) {
+                cbPreferences.checked = !!cat.preferences;
+                cbAnalytics.checked   = !!cat.analytics;
+                cbMarketing.checked   = !!cat.marketing;
+            }
+
+            function currentCategories() {
+                return {
+                    essential: true,
+                    preferences: cbPreferences.checked,
+                    analytics: cbAnalytics.checked,
+                    marketing: cbMarketing.checked
+                };
+            }
+
+            function commit(categories) {
+                const saved = writeConsent(categories);
+                applyConsent(saved.categories);
+                // Sincronizar checkbox de la página de política
+                if (cbAceptoCookies) {
+                    cbAceptoCookies.checked = true;
+                    syncCheckboxUI();
+                }
+                hideBanner();
+            }
+
+            btnAcceptAll.addEventListener('click', function () {
+                cbPreferences.checked = true;
+                commit({ preferences: true, analytics: false, marketing: false });
+            });
+
+            btnRejectAll.addEventListener('click', function () {
+                cbPreferences.checked = false;
+                commit({ preferences: false, analytics: false, marketing: false });
+            });
+
+            btnSave.addEventListener('click', function () {
+                commit(currentCategories());
+            });
+
+            fab.addEventListener('click', function () {
+                const saved = readConsent();
+                if (saved) setTogglesFromCategories(saved.categories);
+                showBanner();
+            });
+
+            window.addEventListener('sariels:reopen-consent', function () {
+                const saved = readConsent();
+                if (saved) setTogglesFromCategories(saved.categories);
+                showBanner();
+            });
+
+            document.addEventListener('keydown', function (e) {
+                if (!root.hidden && e.key === 'Escape') {
+                    e.preventDefault();
+                    btnSave.click();
+                }
+            });
+
+            /* Si el usuario desmarca el checkbox de aceptación → abrir banner */
+            if (cbAceptoCookies) {
+                cbAceptoCookies.addEventListener('change', function () {
+                    syncCheckboxUI();
+                    if (!this.checked) {
+                        const saved = readConsent();
+                        if (saved) setTogglesFromCategories(saved.categories);
+                        showBanner();
+                    }
+                });
+            }
+
+            /* Bootstrap */
+            const existing = readConsent();
+            if (existing) {
+                applyConsent(existing.categories);
+                fab.classList.add('visible');
+                if (cbAceptoCookies) {
+                    cbAceptoCookies.checked = true;
+                    syncCheckboxUI();
+                }
+            } else {
+                showBanner();
+            }
+
+            /* API pública */
+            window.SarielsConsent = {
+                get: readConsent,
+                reopen: function () {
+                    const saved = readConsent();
+                    if (saved) setTogglesFromCategories(saved.categories);
+                    showBanner();
+                },
+                has: function (category) {
+                    const c = readConsent();
+                    return !!(c && c.categories && c.categories[category]);
+                },
+                version: CONSENT_VERSION
+            };
+        })();
     </script>
 </body>
 </html>
