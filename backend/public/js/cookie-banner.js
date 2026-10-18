@@ -93,6 +93,7 @@
     document.head.appendChild(style);
 
     // 2. INYECTAR HTML
+    // NOTA: El href apunta a "/cookies.html" para evitar el enrutamiento de Express (SPA) que te mandaba al perfil.
     const bannerHTML = `
         <div id="cookie-consent-root" hidden>
             <div class="cc-backdrop" data-cc-backdrop></div>
@@ -104,7 +105,7 @@
                 <p class="cc-intro">
                     En <strong>Sariel's</strong> usamos cookies y almacenamiento local para operar la plataforma de forma segura.
                     Puedes aceptar todas, rechazar las no esenciales o configurar cada categoría.
-                    Más información en nuestra <a href="/cookies">Política Institucional de Cookies</a>.
+                    Más información en nuestra <a href="/cookies.html">Política Institucional de Cookies</a>.
                 </p>
                 <form id="cc-form" novalidate>
                     <div class="cc-categories" role="group" aria-label="Categorías de cookies">
@@ -165,7 +166,7 @@
                 </form>
                 <p class="cc-footer-note">
                     Puedes cambiar tu decisión en cualquier momento desde el ícono <strong>⚙</strong> o en la
-                    <a href="/cookies">Política de Cookies</a>.
+                    <a href="/cookies.html">Política de Cookies</a>.
                 </p>
             </div>
         </div>
