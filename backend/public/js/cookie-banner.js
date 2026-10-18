@@ -124,7 +124,7 @@
             <div class="cc-backdrop" data-cc-backdrop></div>
             <div class="cc-panel" role="dialog" aria-modal="true" aria-labelledby="cc-title">
                 <div class="cc-header">
-                    <span class="cc-icon" aria-hidden="true">🍪</span>
+                    <span class="cc-icon" aria-hidden="true">◈</span>
                     <h2 class="cc-title" id="cc-title">Consentimiento de Cookies y Almacenamiento</h2>
                 </div>
                 <p class="cc-intro">
