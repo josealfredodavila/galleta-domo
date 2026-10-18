@@ -1,5 +1,5 @@
 /* ============================================================
-   CSARIEL'S · LLAMADAS · WEB3 NEON UI KIT v2.1
+   CSARIEL'S · LLAMADAS · WEB3 NEON UI KIT v2.2
    ============================================================ */
 
 :root {
@@ -22,8 +22,6 @@
 
 /* ============================================================
    1. HISTORIAL DE LLAMADAS — REDISEÑO
-   Avatar circular limpio, badges neón delicadas, acciones
-   circulares intuitivas.
    ============================================================ */
 .llamada-item {
     display: flex;
@@ -63,7 +61,6 @@
 
 .llamada-item:hover::before { opacity: 1; }
 
-/* Avatar circular limpio */
 .llamada-avatar {
     width: 46px;
     height: 46px;
@@ -88,7 +85,6 @@
 
 .llamada-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-/* Badge de dirección sobre el avatar (flecha pequeña) */
 .llamada-avatar .dir-badge {
     position: absolute;
     bottom: -2px;
@@ -148,7 +144,6 @@
     align-items: center;
 }
 
-/* Badges delicadas con tonos neón */
 .badge-tipo,
 .badge-estado {
     display: inline-flex;
@@ -214,7 +209,6 @@
     font-weight: 700;
 }
 
-/* Acciones circulares intuitivas */
 .llamada-acciones {
     display: flex;
     gap: 6px;
@@ -268,6 +262,11 @@
     border-color: rgba(var(--neon-success), .7);
     background: rgba(var(--neon-success), .12);
     box-shadow: var(--neon-glow-success);
+}
+
+.llamada-acciones button:focus-visible {
+    outline: 2px solid rgba(var(--neon-gold), .9);
+    outline-offset: 2px;
 }
 
 /* ============================================================
@@ -339,10 +338,7 @@
     overflow: auto;
 }
 
-#callOverlay.call.show {
-    display: flex;
-    animation: callFadeIn .3s var(--neon-ease);
-}
+#callOverlay.call.show { display: flex; animation: callFadeIn .3s var(--neon-ease); }
 
 @keyframes callFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
@@ -401,10 +397,7 @@
     position: absolute;
     inset: -6px;
     border-radius: 50%;
-    background: conic-gradient(from 0deg,
-        rgba(var(--neon-gold), .9),
-        rgba(var(--neon-cyan), .7),
-        rgba(var(--neon-gold), .9));
+    background: conic-gradient(from 0deg, rgba(var(--neon-gold), .9), rgba(var(--neon-cyan), .7), rgba(var(--neon-gold), .9));
     z-index: -1;
     animation: haloSpin 4s linear infinite;
     filter: blur(2px);
@@ -594,7 +587,6 @@
 
 #callOverlay .callinfo { margin: 10px 0; color: var(--text); font-size: .85rem; text-align: center; }
 
-/* Compatibilidad con markup .controls original */
 #callOverlay .controls {
     display: flex;
     gap: 20px;
