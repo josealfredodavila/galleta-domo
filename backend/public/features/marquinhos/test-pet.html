@@ -92,7 +92,7 @@ body.is-thinking .robot-mouth{transform:scaleX(1.5);opacity:.8}
 .check-title{font-size:12px;font-weight:800;overflow-wrap:anywhere}
 .check-desc{font-size:10px;color:#8fa7c0;margin-top:3px;overflow-wrap:anywhere}
 .badge{font-size:9px;letter-spacing:.04em;font-weight:850;border:1px solid #ffffff18;border-radius:8px;padding:5px 8px;color:#91a7bd;white-space:nowrap}
-.badge.ok{color:var(--green);border-color:#00e6a044}.badge.fail{color:var(--red);border-color:#ff527744}.badge.wait{color:var(--yellow);border-color:#ffd16644}
+.badge.ok{color:var(--green);border-color:#00e6a044}.badge.fail{color:var(--red);border-color:#ff527744}.badge.wait{color:var(--yellow);border-color:#ffd16644}.badge.info{color:var(--cyan);border-color:#27e7ff44}
 .response-area{padding:16px}
 .chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px}
 .chip{font-size:10px;color:#c8d9eb;border:1px solid #ffffff16;background:#ffffff05;border-radius:8px;padding:6px 9px}
@@ -139,7 +139,7 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overfl
     <p class="hero-copy">Soy tu asistente de IA, creado para <strong>aprender, ayudarte y hacer tu vida digital más fácil.</strong> Vamos a comprobar mi conexión, paso a paso, sin esconder ningún error.</p>
     <div class="traits"><span class="trait"><b>✓</b> Inteligente</span><span class="trait"><b>✓</b> Cercano</span><span class="trait"><b>✓</b> Transparente</span></div>
     <div class="actions"><button class="btn btn-primary" id="btnProbar" type="button">✦ Ejecutar diagnóstico</button><button class="btn btn-secondary" id="btnVer" type="button">⌄ Ver respuesta IA</button></div>
-    <div class="hero-note">Conexión real con Supabase y tu endpoint existente · No se simulan resultados.</div>
+    <div class="hero-note">Conexión real con Supabase y tu endpoint existente · No se simulan resultados · Timeout de 20s.</div>
   </div>
 
   <div class="stage" aria-label="Visualización de Marquinhos, robot futurista inspirado en talavera poblana">
@@ -215,7 +215,7 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overfl
   </div>
   <div class="panel" id="respuesta">
     <div class="panel-head"><div class="panel-icon">✧</div><div><h3>Respuesta del núcleo IA</h3><p>Contenido recibido del endpoint, sin inventar resultados</p></div></div>
-    <div class="response-area"><div class="chips"><span class="chip" id="chipHTTP">HTTP: pendiente</span><span class="chip" id="chipTiempo">Tiempo: pendiente</span></div><div class="empty" id="respuestaVacia"><span>◇</span>La respuesta del servidor aparecerá aquí.<br>Ejecuta el diagnóstico para comenzar.</div><pre id="respuestaJSON" hidden></pre></div>
+    <div class="response-area"><div class="chips"><span class="chip" id="chipHTTP">HTTP: pendiente</span><span class="chip" id="chipTiempo">Tiempo: pendiente</span><span class="chip" id="chipMath">Mate: pendiente</span></div><div class="empty" id="respuestaVacia"><span>◇</span>La respuesta del servidor aparecerá aquí.<br>Ejecuta el diagnóstico para comenzar.</div><pre id="respuestaJSON" hidden></pre></div>
   </div>
 </section>
 
@@ -226,20 +226,22 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overfl
   <article class="trait-card"><div class="symbol">⬡</div><h3>Transparente y confiable</h3><p>La sesión, el estado HTTP y el contenido devuelto se muestran por separado. Los tokens no se imprimen en pantalla ni se guardan en este archivo.</p></article>
 </section>
 </main>
-<footer class="footer"><div><strong>CSARIEL'S</strong> · Ecosistema digital</div><div>MARQUINHOS AI · Diagnostic Console 3.0</div><div>Azul talavera · Oro · Núcleo cian</div></footer>
+<footer class="footer"><div><strong>CSARIEL'S</strong> · Ecosistema digital</div><div>MARQUINHOS AI · Diagnostic Console 3.1</div><div>Azul talavera · Oro · Núcleo cian</div></footer>
 </div>
 
 <script>
 "use strict";
 (function(){
   const $ = id => document.getElementById(id);
+  const FETCH_TIMEOUT_MS = 20000;
+  const EXPECTED_NUMBER = "345";
   const ui = {
     resultado:$("resultado"), btn:$("btnProbar"), btnVer:$("btnVer"),
     estadoTop:$("estadoTop"), robotState:$("robotState"),
     metricaSesion:$("metricaSesion"), metricaTiempo:$("metricaTiempo"),
     metricaEstado:$("metricaEstado"), metricaDetalle:$("metricaDetalle"),
     metricaChecks:$("metricaChecks"), estadoDiagnostico:$("estadoDiagnostico"),
-    chipHTTP:$("chipHTTP"), chipTiempo:$("chipTiempo"),
+    chipHTTP:$("chipHTTP"), chipTiempo:$("chipTiempo"), chipMath:$("chipMath"),
     vacia:$("respuestaVacia"), json:$("respuestaJSON"),
     consejoTitulo:$("consejoTitulo"), consejoTexto:$("consejoTexto")
   };
@@ -288,13 +290,34 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overfl
   }
   function getDetail(data,text){
     if(data&&typeof data==="object"){
-      for(const k of ["error","message","mensaje","details"]){
+      for(const k of ["error","message","mensaje","details","reply","respuesta","text","content"]){
         if(typeof data[k]==="string"&&data[k].trim()){
           return data[k].trim().slice(0,500);
         }
       }
     }
     return (text||"").slice(0,500);
+  }
+  function collectAllStrings(value,out,seen){
+    if(value===null||value===undefined)return out;
+    if(typeof value==="string"){out.push(value);return out;}
+    if(typeof value==="number"||typeof value==="boolean"){out.push(String(value));return out;}
+    if(typeof value==="object"){
+      if(seen.has(value))return out;
+      seen.add(value);
+      try{
+        for(const k of Object.keys(value))collectAllStrings(value[k],out,seen);
+      }catch(_){}
+    }
+    return out;
+  }
+  function containsExpectedNumber(data,rawText){
+    const pieces=[];
+    collectAllStrings(data,pieces,new WeakSet());
+    if(rawText)pieces.push(rawText);
+    const combined=pieces.join(" ");
+    const normalized=combined.replace(/[.,\s]/g,"");
+    return normalized.indexOf(EXPECTED_NUMBER)!==-1;
   }
   function explainStatus(status,detail){
     const messages={
@@ -321,6 +344,21 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overfl
       return {data:null,text:text.slice(0,12000)};
     }
   }
+  async function ensureFreshSession(sb,session){
+    try{
+      if(!session||!session.expires_at)return session;
+      const nowSec=Math.floor(Date.now()/1000);
+      const expiresAt=Number(session.expires_at);
+      if(!isFinite(expiresAt))return session;
+      if(expiresAt-nowSec>60)return session;
+      if(typeof sb.auth.refreshSession!=="function")return session;
+      const r=await sb.auth.refreshSession();
+      if(r&&r.data&&r.data.session)return r.data.session;
+      return session;
+    }catch(_){
+      return session;
+    }
+  }
 
   async function run(){
     if(ejecutando)return;
@@ -336,6 +374,7 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overfl
     ui.metricaDetalle.textContent="Verificando conexión";
     ui.chipHTTP.textContent="HTTP: pendiente";
     ui.chipTiempo.textContent="Tiempo: calculando";
+    ui.chipMath.textContent="Mate: pendiente";
     ui.vacia.hidden=false;
     ui.json.hidden=true;
     clearChecks();
@@ -391,10 +430,20 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overfl
 
       addCheck("ok","Sesión de Supabase activa","Usuario: "+String(session.user.id).slice(0,8)+"… · Token presente y oculto por seguridad.","AUTENTICADO");
       ui.metricaSesion.textContent="Activa";
+
+      const refreshed=await ensureFreshSession(sb,session);
+      if(refreshed!==session){
+        session=refreshed;
+        addCheck("info","Token renovado","El token estaba a punto de expirar y se solicitó una renovación.","REFRESCADO");
+      }
+
       addCheck("wait","Conectando con Marquinhos AI","Enviando la pregunta de prueba al endpoint existente.","CONECTANDO");
 
       const start=Date.now();
-      let resp;
+      let resp=null;
+      let aborted=false;
+      const controller=(typeof AbortController!=="undefined")?new AbortController():null;
+      const timeoutId=controller?setTimeout(()=>{aborted=true;try{controller.abort();}catch(_){}} ,FETCH_TIMEOUT_MS):null;
 
       try{
         resp=await fetch("/api/ai/chat-pet",{
@@ -409,19 +458,30 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overfl
             history:[],
             page:"/test-pet",
             user_name:"Test"
-          })
+          }),
+          signal:controller?controller.signal:undefined
         });
       }catch(networkError){
         const ms=Date.now()-start;
         ui.metricaTiempo.textContent=ms+" ms";
         ui.chipTiempo.textContent="Tiempo: "+ms+" ms";
-        addCheck("fail","No se pudo completar la petición",networkError.message||"No se recibió una respuesta HTTP.","RED / FETCH");
+        const isAbort=aborted||(networkError&&networkError.name==="AbortError");
+        addCheck("fail",isAbort?"Tiempo de espera agotado":"No se pudo completar la petición",
+          isAbort?("La petición superó "+Math.round(FETCH_TIMEOUT_MS/1000)+"s sin respuesta. El endpoint puede estar colgado o lento.")
+                :(networkError.message||"No se recibió una respuesta HTTP."),
+          isAbort?"TIMEOUT":"RED / FETCH");
         ui.metricaEstado.textContent="Error";
         ui.metricaEstado.className="metric-value red";
-        ui.metricaDetalle.textContent="Sin respuesta HTTP";
-        setStatus("error","Error de conexión");
-        advice("No pude comunicarme con el servidor","Comprueba el dominio, el estado del backend y las políticas del navegador. Este error por sí solo no demuestra que sea CORS ni un problema de la clave del proveedor.");
+        ui.metricaDetalle.textContent=isAbort?"Timeout":"Sin respuesta HTTP";
+        setStatus("error",isAbort?"Timeout de red":"Error de conexión");
+        advice(
+          isAbort?"El servidor tardó demasiado en responder":"No pude comunicarme con el servidor",
+          isAbort?"La petición superó el límite de "+Math.round(FETCH_TIMEOUT_MS/1000)+"s. Revisa la latencia del backend y los timeouts de tu proveedor de IA."
+                 :"Comprueba el dominio, el estado del backend y las políticas del navegador. Este error por sí solo no demuestra que sea CORS ni un problema de la clave del proveedor."
+        );
         return;
+      }finally{
+        if(timeoutId)clearTimeout(timeoutId);
       }
 
       const ms=Date.now()-start;
@@ -454,11 +514,22 @@ pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overfl
 
         const detail=getDetail(body.data,"");
         if(detail)addCheck("info","Mensaje de la API",detail,"INFORMACIÓN");
+
+        const mathOk=containsExpectedNumber(body.data,body.text);
+        if(mathOk){
+          ui.chipMath.textContent="Mate: 345 ✓";
+          addCheck("ok","Verificación matemática correcta","La respuesta contiene el número esperado (345 = 15 × 23). La IA respondió al contenido enviado.","345 OK");
+        }else{
+          ui.chipMath.textContent="Mate: sin 345";
+          addCheck("info","Verificación matemática no concluyente","La respuesta HTTP es correcta, pero no se encontró el número esperado (345) en el cuerpo. Revisa el JSON para confirmar que la IA procesó la pregunta.","SIN 345");
+          advice("HTTP correcto, verificación matemática pendiente","La API respondió, pero no encontré el número esperado (345 = 15 × 23) en el cuerpo. Es posible que el formato de respuesta difiera o que la IA no haya procesado la pregunta como se esperaba.");
+        }
       }else{
         const [title,msg]=explainStatus(resp.status,getDetail(body.data,body.text));
         ui.metricaEstado.textContent="Error";
         ui.metricaEstado.className="metric-value red";
         ui.metricaDetalle.textContent="HTTP "+resp.status;
+        ui.chipMath.textContent="Mate: —";
         setStatus("error","Error HTTP "+resp.status);
         advice(title,msg);
         addCheck("info","Siguiente paso recomendado",msg,"DIAGNÓSTICO");
