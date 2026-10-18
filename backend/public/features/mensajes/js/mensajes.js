@@ -1,12 +1,11 @@
 // ================================================================
-// MENSAJES · JS v3.8 · WEB3 NEON UI
-// Configuración, utilidades, autenticación, avatar, perfil, estados.
-//
-// CAMBIOS v3.8:
-// - Añadidas decorarComposerWeb3() y decorarSidebarTabsWeb3():
-//   solo manipulan DOM (envuelven botones con icono+label).
-// - NADA de Supabase, LiveKit, WebRTC ni firmas se toca.
-// - El resto es idéntico a v3.7.
+// MENSAJES · JS v3.9 · WEB3 NEON UI
+// Cambios v3.9:
+// - NeonModal (confirm/prompt personalizado, glassmorphism + neón)
+// - deleteConversation usa NeonModal.confirm en lugar de window.confirm
+// - handler de #searchChat usa NeonModal.prompt en lugar de window.prompt
+// - decorarChatActions(): envuelve #searchChat y #deleteChat con icono SVG + label
+// - NADA de Supabase, LiveKit, WebRTC ni endpoints se ha modificado.
 // ================================================================
 
 'use strict';
@@ -120,6 +119,154 @@ function limpiarMarkdown(texto) {
 
     return t.trim();
 }
+
+// ================================================================
+// NEON MODAL — confirm / prompt personalizado
+// Reemplaza window.confirm y window.prompt sin tocar la lógica
+// de negocio. Devuelve Promise<boolean> o Promise<string|null>.
+// ================================================================
+const NeonModal = (function () {
+    let activeBackdrop = null;
+    let activeResolve = null;
+    let activeEscHandler = null;
+
+    function _cleanup() {
+        if (activeBackdrop && activeBackdrop.parentNode) {
+            activeBackdrop.parentNode.removeChild(activeBackdrop);
+        }
+        if (activeEscHandler) {
+            document.removeEventListener('keydown', activeEscHandler);
+        }
+        activeBackdrop = null;
+        activeResolve = null;
+        activeEscHandler = null;
+    }
+
+    function _open(opts, resolveFn) {
+        _cleanup();
+        activeResolve = resolveFn;
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'neon-modal-backdrop show';
+        backdrop.setAttribute('role', 'dialog');
+        backdrop.setAttribute('aria-modal', 'true');
+
+        const danger = !!opts.danger;
+
+        const card = document.createElement('div');
+        card.className = 'neon-modal-card' + (danger ? ' danger' : '');
+
+        const iconHtml = opts.icon ? `<div class="neon-modal-icon">${opts.icon}</div>` : '';
+        const titleHtml = opts.title ? `<h3 class="neon-modal-title">${esc(opts.title)}</h3>` : '';
+        const messageHtml = opts.message ? `<p class="neon-modal-message">${esc(opts.message)}</p>` : '';
+        const inputHtml = opts.type === 'prompt'
+            ? `<input class="neon-modal-input" type="text" placeholder="${esc(opts.placeholder || '')}" value="${esc(opts.defaultValue || '')}" maxlength="${opts.maxlength || 200}">`
+            : '';
+
+        const confirmText = opts.confirmText || (opts.type === 'prompt' ? 'Aceptar' : 'Aceptar');
+        const cancelText = opts.cancelText || 'Cancelar';
+        const confirmClass = danger ? 'danger' : 'confirm';
+
+        card.innerHTML = `
+            ${iconHtml}
+            ${titleHtml}
+            ${messageHtml}
+            ${inputHtml}
+            <div class="neon-modal-actions">
+                <button type="button" class="neon-modal-btn cancel" data-role="cancel">${esc(cancelText)}</button>
+                <button type="button" class="neon-modal-btn ${confirmClass}" data-role="confirm">${esc(confirmText)}</button>
+            </div>
+        `;
+
+        backdrop.appendChild(card);
+        document.body.appendChild(backdrop);
+        activeBackdrop = backdrop;
+
+        const inputEl = card.querySelector('.neon-modal-input');
+        const btnCancel = card.querySelector('[data-role="cancel"]');
+        const btnConfirm = card.querySelector('[data-role="confirm"]');
+
+        if (inputEl) {
+            setTimeout(() => {
+                inputEl.focus();
+                inputEl.select();
+            }, 40);
+        } else {
+            setTimeout(() => btnConfirm && btnConfirm.focus(), 40);
+        }
+
+        function finish(value) {
+            const r = activeResolve;
+            _cleanup();
+            if (typeof r === 'function') r(value);
+        }
+
+        btnCancel.addEventListener('click', () => finish(null));
+        btnConfirm.addEventListener('click', () => {
+            if (opts.type === 'prompt') {
+                const v = inputEl ? inputEl.value.trim() : '';
+                finish(v || null);
+            } else {
+                finish(true);
+            }
+        });
+
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) finish(null);
+        });
+
+        if (inputEl) {
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const v = inputEl.value.trim();
+                    finish(v || null);
+                }
+            });
+        }
+
+        activeEscHandler = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                finish(null);
+            }
+        };
+        document.addEventListener('keydown', activeEscHandler);
+    }
+
+    function confirm(opts) {
+        return new Promise((resolve) => {
+            _open({
+                type: 'confirm',
+                title: opts.title || 'Confirmar',
+                message: opts.message || '',
+                icon: opts.icon || '?',
+                confirmText: opts.confirmText || 'Aceptar',
+                cancelText: opts.cancelText || 'Cancelar',
+                danger: !!opts.danger
+            }, resolve);
+        });
+    }
+
+    function prompt(opts) {
+        return new Promise((resolve) => {
+            _open({
+                type: 'prompt',
+                title: opts.title || 'Ingresa un valor',
+                message: opts.message || '',
+                icon: opts.icon || '✎',
+                placeholder: opts.placeholder || '',
+                defaultValue: opts.defaultValue || '',
+                maxlength: opts.maxlength || 200,
+                confirmText: opts.confirmText || 'Aceptar',
+                cancelText: opts.cancelText || 'Cancelar',
+                danger: !!opts.danger
+            }, resolve);
+        });
+    }
+
+    return { confirm, prompt };
+})();
 
 // ================================================================
 // SESIÓN Y AUTH
@@ -863,7 +1010,7 @@ async function loadConversations() {
     botEl.dataset.id = BOT_ID;
     botEl.dataset.name = 'marquinhos';
     botEl.innerHTML = `
-        <div class="avatar avatar-bot" data-tag-ia>✦</div>
+        <div class="avatar avatar-bot">✦</div>
         <div class="convinfo">
             <div class="convname">Marquinhos</div>
             <div class="convmsg" id="botLastMsg">Tu asistente personal ✦</div>
@@ -1163,7 +1310,7 @@ async function cerrarConversacion() {
 }
 
 // ================================================================
-// CONVERSACIÓN CON MARQUINHOS (BOT)
+// CONVERSACIÓN CON MARQUINHOS
 // ================================================================
 async function abrirConversacionBot() {
     const box = $('messages');
@@ -1407,7 +1554,7 @@ async function sendMessage(text) {
 }
 
 // ================================================================
-// VERIFICACIÓN DE TÉRMINOS PARA MARQUINHOS
+// VERIFICACIÓN DE TÉRMINOS
 // ================================================================
 async function verificarTerminosMarquinhos() {
     const TERMINOS_VERSION = '1.1';
@@ -1603,7 +1750,7 @@ async function markRead(id) {
 }
 
 // ================================================================
-// ELIMINAR CONVERSACIÓN
+// ELIMINAR CONVERSACIÓN — usa NeonModal.confirm
 // ================================================================
 async function deleteConversation() {
     if (!current) {
@@ -1613,8 +1760,17 @@ async function deleteConversation() {
     if (!await auth()) return;
 
     const nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
-    const confirmar = confirm(`⚠️ ¿Estás seguro de que quieres eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`);
-    if (!confirmar) return;
+
+    const confirmado = await NeonModal.confirm({
+        title: 'Eliminar conversación',
+        message: `¿Eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`,
+        icon: '🗑',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        danger: true
+    });
+
+    if (!confirmado) return;
 
     try {
         const targetId = current.bot ? BOT_UUID : current.id;
@@ -1661,7 +1817,7 @@ function subscribeMessages(id) {
 }
 
 // ================================================================
-// GRABAR VOZ
+// GRABAR VOZ BOT
 // ================================================================
 async function grabarVozParaBot() {
     if (!current?.bot) return;
@@ -2499,7 +2655,7 @@ async function crearGrupo() {
 }
 
 // ================================================================
-// LLAMADAS (LiveKit) — v3.5
+// LLAMADAS (LiveKit) — v3.5 — SIN CAMBIOS
 // ================================================================
 const LLAMADA_TIMEOUT_MS = 45000;
 const LLAMADA_VIGENCIA_MS = 60000;
@@ -2765,7 +2921,6 @@ async function incoming(data) {
         ? `<img src="${esc(p.avatar_url)}" alt="">`
         : esc((p.nombre || '◈').charAt(0).toUpperCase());
 
-    // Si el enhancer ya reemplazó el markup, actualizamos el halo
     const halo = $('incomingHalo');
     if (halo) {
         halo.innerHTML = p.avatar_url
@@ -2959,7 +3114,6 @@ async function init() {
     const callBtn = $('videoCall');
     if (!window.LivekitClient) {
         if (callBtn) callBtn.disabled = true;
-        console.warn('[Mensajes] LiveKit no disponible al iniciar.');
     }
 
     await cargarFotoHeader();
@@ -2977,7 +3131,6 @@ async function init() {
 
     window.addEventListener('livekit:ready', () => {
         if (callBtn) callBtn.disabled = false;
-        console.log('[Mensajes] LiveKit cargado correctamente.');
     });
     window.addEventListener('livekit:error', () => {
         if (callBtn) callBtn.disabled = true;
@@ -3109,6 +3262,7 @@ async function init() {
         actualizarFlecha();
     };
 
+    // Handler de búsqueda — REEMPLAZADO window.prompt por NeonModal.prompt
     $('searchChat').onclick = async () => {
         if (!current) {
             toast('⚠️ Selecciona una conversación', 'error');
@@ -3118,8 +3272,17 @@ async function init() {
             toast('ℹ️ Marquinhos no tiene búsqueda local aún', 'warning');
             return;
         }
-        const q = prompt('🔍 Buscar en la conversación:');
-        if (!q?.trim()) return;
+
+        const q = await NeonModal.prompt({
+            title: 'Buscar en la conversación',
+            message: 'Escribe el texto que quieres encontrar:',
+            icon: '🔍',
+            placeholder: 'Texto a buscar…',
+            confirmText: 'Buscar',
+            cancelText: 'Cancelar'
+        });
+
+        if (!q || !q.trim()) return;
 
         const r = await db.from('mensajes_chat')
             .select('*')
@@ -3159,15 +3322,14 @@ async function init() {
         cargarEstados();
     }, 5 * 60 * 1000);
 
-    // Decoración Web3 del composer y las tabs (solo DOM, no lógica)
     decorarComposerWeb3();
     decorarSidebarTabsWeb3();
+    decorarChatActions();
 
     setTimeout(async () => {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
                 await window.inicializarIdiomas();
-                console.log('✅ Idiomas aplicados a mensajes');
             }
         } catch (e) {
             console.warn('⚠️ Error aplicando idiomas:', e);
@@ -3176,32 +3338,22 @@ async function init() {
 }
 
 // ================================================================
-// WEB3 UI DECORATOR — v3.8
-// Envuelve los botones del composer (Adjuntar / Nota de voz /
-// Videollamada / Enviar) con icono + label. NO cambia IDs ni
-// handlers. Envuelve también las tabs del sidebar con data-tag.
+// WEB3 UI DECORATOR
 // ================================================================
 function decorarComposerWeb3() {
     const composer = $('composer');
     if (!composer || composer.dataset.web3decorated) return;
 
-    // Adjuntar (#attach)
     envolverBotonConLabel($('attach'), '◆', 'Adjuntar');
-
-    // Nota de voz (#audio)
     envolverBotonConLabel($('audio'), '🎙️', 'Audio');
-
-    // Voice bot (#voiceBot) — solo si existe
     envolverBotonConLabel($('voiceBot'), '🔊', 'Voz');
 
-    // Botón Enviar (submit)
     const sendBtn = composer.querySelector('button[type="submit"]');
     if (sendBtn && !sendBtn.classList.contains('composer-send')) {
         sendBtn.classList.add('composer-send');
         sendBtn.innerHTML = '<span>Enviar</span><span style="font-size:.9rem;">➤</span>';
     }
 
-    // Input principal: garantizar placeholder visible
     const input = $('messageInput');
     if (input && !input.placeholder) input.placeholder = 'Escribe un mensaje…';
 
@@ -3210,17 +3362,12 @@ function decorarComposerWeb3() {
 
 function envolverBotonConLabel(btn, icono, label) {
     if (!btn || btn.dataset.web3labeled) return;
-    // Preservamos id, title, type, onclick y cualquier listener ya ligado.
     btn.classList.add('composer-btn');
     btn.innerHTML =
         '<span class="composer-btn-icon">' + icono + '</span>' +
         '<span class="composer-btn-label">' + label + '</span>';
     btn.dataset.web3labeled = '1';
 
-    // El enhancer de grabación cambia textContent del botón al grabar.
-    // Lo manejamos en observadores: cuando cambie el textContent, lo
-    // restauramos a la estructura con label. Para no romper lógica,
-    // solo lo hacemos al detectar textContent === '⏹️'.
     const observer = new MutationObserver(() => {
         const t = btn.textContent.trim();
         if (t === '⏹️' || t === '⏳') {
@@ -3230,13 +3377,10 @@ function envolverBotonConLabel(btn, icono, label) {
                 '<span class="composer-btn-icon">' + icon + '</span>' +
                 '<span class="composer-btn-label">' + lbl + '</span>';
         } else if (t === '🎙️' || t === '🔊') {
-            // Restaurar a icono original
-            const originalIcon = icono;
-            const originalLabel = label;
             if (!btn.querySelector('.composer-btn-icon')) {
                 btn.innerHTML =
-                    '<span class="composer-btn-icon">' + originalIcon + '</span>' +
-                    '<span class="composer-btn-label">' + originalLabel + '</span>';
+                    '<span class="composer-btn-icon">' + icono + '</span>' +
+                    '<span class="composer-btn-label">' + label + '</span>';
             }
         }
     });
@@ -3245,11 +3389,47 @@ function envolverBotonConLabel(btn, icono, label) {
 
 function decorarSidebarTabsWeb3() {
     const tabs = document.querySelectorAll('.sidebar-tab');
-    tabs.forEach((tab, i) => {
-        const tagMap = ['CHATS', 'CANALES', 'GRUPOS', 'LLAMADAS'];
-        tab.setAttribute('data-tab-tag', tagMap[i] || '');
+    tabs.forEach(tab => {
         tab.setAttribute('role', 'tab');
     });
+}
+
+// ================================================================
+// DECORAR CHAT ACTIONS — Buscar / Eliminar chat con icono + label
+// ================================================================
+function decorarChatActions() {
+    const search = $('searchChat');
+    if (search && !search.dataset.web3labeled) {
+        search.classList.remove('iconbtn');
+        search.classList.add('action-labeled');
+        search.setAttribute('title', 'Buscar en la conversación');
+        search.innerHTML = `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="11" cy="11" r="7"></circle>
+                <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span class="action-label">Buscar</span>
+        `;
+        search.dataset.web3labeled = '1';
+    }
+
+    const del = $('deleteChat');
+    if (del && !del.dataset.web3labeled) {
+        del.classList.remove('iconbtn');
+        del.classList.add('action-labeled', 'danger');
+        del.setAttribute('title', 'Eliminar chat');
+        del.innerHTML = `
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+                <path d="M10 11v6"></path>
+                <path d="M14 11v6"></path>
+                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
+            </svg>
+            <span class="action-label">Eliminar chat</span>
+        `;
+        del.dataset.web3labeled = '1';
+    }
 }
 
 // ================================================================
@@ -3271,10 +3451,12 @@ window.crearCanal = crearCanal;
 window.crearGrupo = crearGrupo;
 window.generarSlug = generarSlug;
 window.openConversation = openConversation;
+window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '3.8.0',
+    version: '3.9.0',
     decorarComposer: decorarComposerWeb3,
-    decorarSidebarTabs: decorarSidebarTabsWeb3
+    decorarSidebarTabs: decorarSidebarTabsWeb3,
+    decorarChatActions: decorarChatActions
 };
 
 // ================================================================
