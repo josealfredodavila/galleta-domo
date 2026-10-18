@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
     <title>◈ Muro · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
@@ -38,15 +39,15 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link active">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link">▣ Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">⬡ Canales</a>
-            <a href="/features/mercado/index.html" class="nav-link">◆ Mercado</a>
+            <a href="/" class="nav-link" data-nav="inicio">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link active" data-nav="muro" aria-current="page">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link" data-nav="perfil">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link" data-nav="contactos">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live" data-nav="live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link" data-nav="internet">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link" data-nav="videos">▣ Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link" data-nav="grupos">⬡ Canales</a>
+            <a href="/features/mercado/index.html" class="nav-link" data-nav="mercado">◆ Mercado</a>
         </nav>
 
         <div class="valor-mercado" id="valorMercado">
@@ -261,7 +262,7 @@
                     </div>
                 </div>
                 <div class="form-group" style="text-align:left;margin-top:12px;">
-                    <label>Red de pago (cripto)</label>
+                    <label for="muro-pay-currency">Red de pago (cripto)</label>
                     <select id="muro-pay-currency" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
                         <option value="usdttrc20">USDT · TRON (TRC20) — recomendado</option>
                         <option value="usdtbsc">USDT · BSC (BEP20)</option>
@@ -340,7 +341,7 @@
     </div>
 
     <!-- ================= SCRIPTS ================= -->
-    
+
     <!-- Librerías externas -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js"></script>
@@ -358,6 +359,36 @@
     <script src="/features/muro/js/muro-pagos.js"></script>
     <script src="/features/muro/js/muro-realtime.js"></script>
     <script src="/features/muro/js/muro-init.js"></script>
+
+    <!-- Guardia de navegación: restaura los destinos correctos del menú
+         por si algún script, caché o traducción cambió los href. -->
+    <script>
+    (function () {
+        'use strict';
+
+        var DESTINOS = {
+            inicio:    '/',
+            muro:      '/features/muro/muro.html',
+            perfil:    '/features/perfil/perfil.html',
+            contactos: '/features/mensajes/contactos.html',
+            live:      '/features/live/live.html',
+            internet:  '/features/internet/internet.html',
+            videos:    '/features/videos/videos.html',
+            grupos:    '/features/grupos/grupos.html',
+            mercado:   '/features/mercado/index.html'
+        };
+
+        document.querySelectorAll('.main-nav a[data-nav]').forEach(function (enlace) {
+            var clave = enlace.getAttribute('data-nav');
+            var destino = DESTINOS[clave];
+
+            if (destino && enlace.getAttribute('href') !== destino) {
+                console.warn('[Muro] Corrigiendo enlace de navegación:', clave);
+                enlace.setAttribute('href', destino);
+            }
+        });
+    })();
+    </script>
 
 </body>
 </html>
