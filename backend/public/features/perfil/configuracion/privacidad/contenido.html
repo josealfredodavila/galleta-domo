@@ -502,8 +502,9 @@
             );
         };
 
+        // ESTA ES LA FUNCIÓN QUE SE ACTUALIZÓ PARA GUARDAR EN LOCALSTORAGE Y SUPABASE
         window.onToggleAutoPlay = async (value) => {
-            // 1. Guardar en el navegador para que funcione al instante
+            // 1. Guardar en el navegador (localStorage) para efecto inmediato en el feed
             await cfgSetPref(PREF_KEYS.contenido_auto_reproducir, value);
             
             // 2. Guardar en Supabase para sincronizar entre dispositivos
@@ -886,10 +887,10 @@
                     .maybeSingle();
 
                 if (pref) {
+                    // Sincronizar localStorage con lo que dice la nube
                     if (pref.contenido_auto_reproducir !== null) {
                         localStorage.setItem(PREF_KEYS.contenido_auto_reproducir, pref.contenido_auto_reproducir);
                     }
-                    // Aquí puedes ir agregando los demás ifs cuando quieras guardar más cosas en la BD
                     
                     renderSecciones(); // Volver a dibujar los toggles con los datos reales
                 }
