@@ -24,6 +24,10 @@
      Ahora llama POST /api/payments/create; el servidor valida tarifa real
      y crea la orden TRX-. El monto del cliente se ignora.
    - verificarAcceso: estado unificado a 'pagado' (coincide con webhook y DB).
+
+   v2.0.5 — Interceptor legal
+   - Añadido listener global para forzar recarga en enlaces /cookies y /privacidad
+     asegurando que sirvan los archivos HTML estáticos y no la SPA.
 ================================================================ */
 
 'use strict';
@@ -3078,6 +3082,27 @@ if (
         }
     );
 }
+
+
+/* ================================================================
+   INTERCEPTOR GLOBAL DE ENLACES LEGALES
+   Evita que el router SPA capture los clics en /cookies y /privacidad 
+   y los redirija al perfil. Fuerza la recarga de las páginas estáticas.
+================================================================ */
+document.addEventListener('click', function(e) {
+    const a = e.target.closest('a');
+    if (!a) return;
+    
+    const href = a.getAttribute('href');
+    if (!href) return;
+
+    // Si el enlace es hacia las cookies o privacidad sin la extensión .html, forzamos la recarga al archivo estático
+    if (href === '/cookies' || href === '/privacidad') {
+        e.preventDefault();
+        const target = href === '/cookies' ? '/cookies.html' : '/privacidad.html';
+        window.location.href = target;
+    }
+});
 
 
 /* ================================================================
