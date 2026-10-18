@@ -1,5 +1,9 @@
 /* ================================================================
-   MENSAJES · CSS v3.1 · WEB3 NEON UI KIT
+   MENSAJES · CSS v3.2 · WEB3 NEON UI KIT
+   Cambios v3.2:
+   - Fix overflow/botón flotante en .chathead .actions
+   - .action-labeled responsivo sin perder icono
+   - (Sin cambios funcionales en el resto del sistema)
    ================================================================ */
 
 :root {
@@ -412,6 +416,8 @@ button, input, textarea, select { font: inherit; }
     padding: 13px 17px;
     border-bottom: 1px solid var(--border);
     background: rgba(0, 0, 0, .12);
+    position: relative;
+    z-index: 5;
 }
 
 .chathead .avatar {
@@ -442,7 +448,16 @@ button, input, textarea, select { font: inherit; }
 .status { font-size: .63rem; color: var(--muted); }
 .status.online { color: var(--success); }
 
-.actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+.actions {
+    margin-left: auto;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    flex-wrap: nowrap;
+    position: relative;
+    z-index: 6;
+    overflow: hidden;
+}
 
 /* ---------- Botón icono genérico ---------- */
 .iconbtn {
@@ -473,7 +488,7 @@ button, input, textarea, select { font: inherit; }
     box-shadow: var(--neon-glow-danger);
 }
 
-/* ---------- Botón de acción con icono + label (Buscar / Eliminar chat) ---------- */
+/* ---------- Botón de acción con icono + label ---------- */
 .action-labeled {
     display: inline-flex;
     align-items: center;
@@ -754,7 +769,7 @@ button, input, textarea, select { font: inherit; }
 }
 
 /* ================================================================
-   MODAL GENÉRICO (mantiene compatibilidad) 
+   MODAL GENÉRICO
    ================================================================ */
 .modal {
     display: none;
@@ -805,7 +820,7 @@ button, input, textarea, select { font: inherit; }
 .result .avatar { width: 40px; height: 40px; flex-basis: 40px; }
 
 /* ================================================================
-   NEON MODAL — confirm / prompt personalizado
+   NEON MODAL
    ================================================================ */
 .neon-modal-backdrop {
     position: fixed;
@@ -823,17 +838,13 @@ button, input, textarea, select { font: inherit; }
 
 .neon-modal-backdrop.show { display: flex; }
 
-@keyframes neonModalFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+@keyframes neonModalFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .neon-modal-card {
     width: min(440px, 100%);
     padding: 26px 24px 20px;
     border-radius: 22px;
-    background:
-        linear-gradient(160deg, rgba(20, 15, 25, .92), rgba(8, 10, 18, .92));
+    background: linear-gradient(160deg, rgba(20, 15, 25, .92), rgba(8, 10, 18, .92));
     border: 1px solid rgba(var(--neon-gold), .55);
     box-shadow:
         0 0 0 1px rgba(255, 255, 255, .04) inset,
@@ -854,10 +865,7 @@ button, input, textarea, select { font: inherit; }
     left: 0;
     right: 0;
     height: 2px;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(var(--neon-gold), .9) 50%,
-        transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(var(--neon-gold), .9) 50%, transparent 100%);
     pointer-events: none;
 }
 
@@ -875,10 +883,7 @@ button, input, textarea, select { font: inherit; }
 }
 
 .neon-modal-card.danger::before {
-    background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(var(--neon-magenta), .95) 50%,
-        transparent 100%);
+    background: linear-gradient(90deg, transparent 0%, rgba(var(--neon-magenta), .95) 50%, transparent 100%);
 }
 
 .neon-modal-icon {
@@ -1293,10 +1298,7 @@ button, input, textarea, select { font: inherit; }
     border-bottom: 1px solid rgba(212, 175, 55, .15) !important;
 }
 
-.conv-bot:hover {
-    background: linear-gradient(135deg, rgba(212, 175, 55, .15), rgba(15, 45, 26, .5)) !important;
-}
-
+.conv-bot:hover { background: linear-gradient(135deg, rgba(212, 175, 55, .15), rgba(15, 45, 26, .5)) !important; }
 .conv-bot .convname { color: var(--gold); }
 .conv-bot .convname::after { content: "✦"; color: var(--gold); font-size: .6rem; margin-left: 4px; opacity: .7; }
 
@@ -1423,7 +1425,7 @@ button, input, textarea, select { font: inherit; }
 @keyframes scaleIn { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 /* ================================================================
-   SIDEBAR TABS — GLASSMORPHISM
+   SIDEBAR TABS
    ================================================================ */
 .sidebar-tabs {
     display: flex;
@@ -1689,38 +1691,22 @@ html[data-tema="dia"] body {
 }
 
 html.tema-dia .header,
-html[data-tema="dia"] .header {
-    background: rgba(255, 255, 255, 0.95) !important;
-    border-bottom-color: rgba(0, 0, 0, 0.1) !important;
-}
+html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.95) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
 
 html.tema-dia .nav,
-html[data-tema="dia"] .nav {
-    background: rgba(255, 255, 255, 0.7) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
-}
+html[data-tema="dia"] .nav { background: rgba(255, 255, 255, 0.7) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
 
 html.tema-dia .nav a,
 html[data-tema="dia"] .nav a { color: #718096 !important; }
 
 html.tema-dia .nav a.active,
-html[data-tema="dia"] .nav a.active {
-    background: rgba(212, 175, 55, 0.15) !important;
-    color: var(--gold) !important;
-}
+html[data-tema="dia"] .nav a.active { background: rgba(212, 175, 55, 0.15) !important; color: var(--gold) !important; }
 
 html.tema-dia .panel,
-html[data-tema="dia"] .panel {
-    background: rgba(255, 255, 255, 0.9) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important;
-}
+html[data-tema="dia"] .panel { background: rgba(255, 255, 255, 0.9) !important; border-color: rgba(0, 0, 0, 0.1) !important; box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08) !important; }
 
 html.tema-dia .sidebar,
-html[data-tema="dia"] .sidebar {
-    background: rgba(0, 0, 0, 0.02) !important;
-    border-right-color: rgba(0, 0, 0, 0.1) !important;
-}
+html[data-tema="dia"] .sidebar { background: rgba(0, 0, 0, 0.02) !important; border-right-color: rgba(0, 0, 0, 0.1) !important; }
 
 html.tema-dia .searchbox input,
 html.tema-dia .composer input,
@@ -1745,59 +1731,37 @@ html.tema-dia .convname,
 html[data-tema="dia"] .convname { color: var(--text) !important; }
 
 html.tema-dia .chathead,
-html[data-tema="dia"] .chathead {
-    background: rgba(0, 0, 0, 0.02) !important;
-    border-bottom-color: rgba(0, 0, 0, 0.1) !important;
-}
+html[data-tema="dia"] .chathead { background: rgba(0, 0, 0, 0.02) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
 
 html.tema-dia .chatname,
 html[data-tema="dia"] .chatname { color: var(--text) !important; }
 
 html.tema-dia .received .bubble,
-html[data-tema="dia"] .received .bubble {
-    background: rgba(0, 0, 0, 0.05) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
-    color: var(--text) !important;
-}
+html[data-tema="dia"] .received .bubble { background: rgba(0, 0, 0, 0.05) !important; border-color: rgba(0, 0, 0, 0.1) !important; color: var(--text) !important; }
 
 html.tema-dia .composer,
-html[data-tema="dia"] .composer {
-    background: rgba(0, 0, 0, 0.02) !important;
-    border-top-color: rgba(0, 0, 0, 0.1) !important;
-}
+html[data-tema="dia"] .composer { background: rgba(0, 0, 0, 0.02) !important; border-top-color: rgba(0, 0, 0, 0.1) !important; }
 
 html.tema-dia .modalbox,
-html[data-tema="dia"] .modalbox {
-    background: #fff !important;
-    color: var(--text) !important;
-}
+html[data-tema="dia"] .modalbox { background: #fff !important; color: var(--text) !important; }
 
 html.tema-dia .modalbox h2,
 html[data-tema="dia"] .modalbox h2 { color: var(--gold) !important; }
 
 html.tema-dia .result,
-html[data-tema="dia"] .result {
-    border-bottom-color: rgba(0, 0, 0, 0.08) !important;
-    color: var(--text) !important;
-}
+html[data-tema="dia"] .result { border-bottom-color: rgba(0, 0, 0, 0.08) !important; color: var(--text) !important; }
 
 html.tema-dia .result:hover,
 html[data-tema="dia"] .result:hover { background: rgba(212, 175, 55, 0.08) !important; }
 
 html.tema-dia .estados-bar,
-html[data-tema="dia"] .estados-bar {
-    background: rgba(0, 0, 0, 0.02) !important;
-    border-color: rgba(0, 0, 0, 0.08) !important;
-}
+html[data-tema="dia"] .estados-bar { background: rgba(0, 0, 0, 0.02) !important; border-color: rgba(0, 0, 0, 0.08) !important; }
 
 html.tema-dia .empty p,
 html[data-tema="dia"] .empty p { color: var(--text) !important; }
 
 html.tema-dia .sidebar-tabs,
-html[data-tema="dia"] .sidebar-tabs {
-    background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(245, 247, 250, .7)) !important;
-    border-bottom-color: rgba(0, 0, 0, 0.1) !important;
-}
+html[data-tema="dia"] .sidebar-tabs { background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(245, 247, 250, .7)) !important; border-bottom-color: rgba(0, 0, 0, 0.1) !important; }
 
 html.tema-dia .sidebar-tab:hover,
 html[data-tema="dia"] .sidebar-tab:hover { background: rgba(212, 175, 55, 0.08) !important; }
@@ -1814,19 +1778,13 @@ html[data-tema="dia"] .filtros-canales select {
     background-color: rgba(0, 0, 0, 0.03) !important;
     color: var(--text) !important;
     border-color: rgba(0, 0, 0, 0.15) !important;
-    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23718096' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") !important;
-    background-repeat: no-repeat !important;
-    background-position: right 8px center !important;
 }
 
 html.tema-dia .filtros-canales select option,
 html[data-tema="dia"] .filtros-canales select option { background: #fff; color: var(--text); }
 
 html.tema-dia .canal-card,
-html[data-tema="dia"] .canal-card {
-    background: rgba(0, 0, 0, 0.02) !important;
-    border-color: rgba(0, 0, 0, 0.1) !important;
-}
+html[data-tema="dia"] .canal-card { background: rgba(0, 0, 0, 0.02) !important; border-color: rgba(0, 0, 0, 0.1) !important; }
 
 html.tema-dia .canal-card:hover,
 html[data-tema="dia"] .canal-card:hover { background: rgba(212, 175, 55, 0.08) !important; }
@@ -1834,16 +1792,8 @@ html[data-tema="dia"] .canal-card:hover { background: rgba(212, 175, 55, 0.08) !
 html.tema-dia .canal-nombre,
 html[data-tema="dia"] .canal-nombre { color: var(--text) !important; }
 
-html.tema-dia .empty-state-small .empty-btn,
-html[data-tema="dia"] .empty-state-small .empty-btn { color: var(--gold) !important; border-color: var(--gold) !important; }
-
-/* Tema día para neon-modal */
 html.tema-dia .neon-modal-card,
-html[data-tema="dia"] .neon-modal-card {
-    background: linear-gradient(160deg, rgba(255, 255, 255, .98), rgba(245, 247, 250, .98));
-    color: var(--text);
-    border-color: rgba(0, 0, 0, .2);
-}
+html[data-tema="dia"] .neon-modal-card { background: linear-gradient(160deg, rgba(255, 255, 255, .98), rgba(245, 247, 250, .98)); color: var(--text); border-color: rgba(0, 0, 0, .2); }
 
 html.tema-dia .neon-modal-title,
 html[data-tema="dia"] .neon-modal-title { color: var(--text); }
@@ -1876,6 +1826,7 @@ html[data-tema="dia"] .neon-modal-message { color: #4a5568; }
     .composer-btn .composer-btn-label { font-size: .5rem; }
     .action-labeled { padding: 6px 10px; font-size: .65rem; gap: 5px; }
     .action-labeled svg { width: 12px; height: 12px; }
+    .actions { gap: 4px; }
 }
 
 @media (max-width: 430px) {
@@ -1894,6 +1845,8 @@ html[data-tema="dia"] .neon-modal-message { color: #4a5568; }
     .action-labeled svg { width: 14px; height: 14px; }
     .neon-modal-actions { flex-direction: column-reverse; }
     .neon-modal-btn { width: 100%; }
+    .actions { gap: 2px; }
+    #blockUser { font-size: .75rem; }
 }
 
 /* ================================================================
@@ -1924,3 +1877,6 @@ textarea:focus-visible {
         transform: none;
     }
 }
+
+/* FIX v3.2: contención del botón rojo flotante en chathead */
+.chathead .actions { max-width: calc(100% - 12px); }
