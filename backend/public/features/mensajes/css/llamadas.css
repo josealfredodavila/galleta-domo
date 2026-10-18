@@ -1,35 +1,36 @@
 /* ============================================================
-   CSARIEL'S · LLAMADAS · WEB3 NEON UI KIT v2.0
-   Rediseño completo: overlay de llamada, temporizador, avatar
-   con halo neón, barra de controles circulares con etiquetas,
-   historial glassmorphism. Paleta original preservada.
+   CSARIEL'S · LLAMADAS · WEB3 NEON UI KIT v2.1
    ============================================================ */
 
-/* ---------- Tokens neón (aditivos, no rompen --gold) ---------- */
 :root {
     --neon-gold: 212, 175, 55;
     --neon-cyan: 0, 214, 255;
     --neon-danger: 255, 51, 102;
+    --neon-magenta: 255, 51, 128;
     --neon-success: 0, 214, 143;
+    --neon-warning: 255, 170, 0;
+    --neon-muted: 138, 168, 184;
     --neon-glass: rgba(15, 25, 40, .55);
     --neon-glass-border: rgba(212, 175, 55, .35);
     --neon-glow-soft: 0 0 0 1px rgba(var(--neon-gold), .35), 0 0 24px rgba(var(--neon-gold), .25);
     --neon-glow-strong: 0 0 0 1px rgba(var(--neon-gold), .65), 0 0 32px rgba(var(--neon-gold), .45);
     --neon-glow-danger: 0 0 0 1px rgba(var(--neon-danger), .65), 0 0 28px rgba(var(--neon-danger), .45);
-    --neon-glow-cyan: 0 0 0 1px rgba(var(--neon-cyan), .55), 0 0 24px rgba(var(--neon-cyan), .4);
+    --neon-glow-magenta: 0 0 0 1px rgba(var(--neon-magenta), .65), 0 0 28px rgba(var(--neon-magenta), .45);
+    --neon-glow-success: 0 0 0 1px rgba(var(--neon-success), .55), 0 0 22px rgba(var(--neon-success), .45);
     --neon-ease: cubic-bezier(.22, 1, .36, 1);
 }
 
 /* ============================================================
-   1. HISTORIAL DE LLAMADAS
+   1. HISTORIAL DE LLAMADAS — REDISEÑO
+   Avatar circular limpio, badges neón delicadas, acciones
+   circulares intuitivas.
    ============================================================ */
 .llamada-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 14px;
-    background:
-        linear-gradient(135deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+    padding: 13px 14px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, .04), rgba(255, 255, 255, .01));
     border: 1px solid var(--border);
     border-radius: 14px;
     margin-bottom: 8px;
@@ -44,10 +45,7 @@
     inset: 0;
     border-radius: 14px;
     padding: 1px;
-    background: linear-gradient(135deg,
-        rgba(var(--neon-gold), 0) 0%,
-        rgba(var(--neon-gold), .25) 50%,
-        rgba(var(--neon-gold), 0) 100%);
+    background: linear-gradient(135deg, rgba(var(--neon-gold), 0) 0%, rgba(var(--neon-gold), .25) 50%, rgba(var(--neon-gold), 0) 100%);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor;
     mask-composite: exclude;
@@ -57,55 +55,71 @@
 }
 
 .llamada-item:hover {
-    background:
-        linear-gradient(135deg, rgba(var(--neon-gold), .08), rgba(var(--neon-gold), .02));
+    background: linear-gradient(135deg, rgba(var(--neon-gold), .08), rgba(var(--neon-gold), .02));
     border-color: rgba(var(--neon-gold), .5);
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-gold), .25),
-        0 8px 26px rgba(0, 0, 0, .35),
-        0 0 18px rgba(var(--neon-gold), .15);
+    box-shadow: 0 0 0 1px rgba(var(--neon-gold), .25), 0 8px 26px rgba(0, 0, 0, .35), 0 0 18px rgba(var(--neon-gold), .15);
     transform: translateY(-1px);
 }
 
 .llamada-item:hover::before { opacity: 1; }
 
-.llamada-icono {
+/* Avatar circular limpio */
+.llamada-avatar {
     width: 46px;
     height: 46px;
     flex: 0 0 46px;
     border-radius: 50%;
     display: grid;
     place-items: center;
-    font-size: 1.2rem;
+    background: linear-gradient(135deg, #0f2d1a, #1a4a2a);
+    color: var(--gold);
+    font-size: 1rem;
     font-weight: 800;
-    color: var(--space);
+    overflow: hidden;
+    border: 1px solid rgba(var(--neon-gold), .35);
     position: relative;
-    transition: transform .25s var(--neon-ease);
+    transition: transform .25s var(--neon-ease), box-shadow .25s var(--neon-ease);
 }
 
-.llamada-item:hover .llamada-icono {
+.llamada-item:hover .llamada-avatar {
     transform: scale(1.06);
+    box-shadow: 0 0 0 1px rgba(var(--neon-gold), .5), 0 0 18px rgba(var(--neon-gold), .35);
 }
 
-.llamada-icono.entrante {
+.llamada-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* Badge de dirección sobre el avatar (flecha pequeña) */
+.llamada-avatar .dir-badge {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: .62rem;
+    font-weight: 900;
+    color: var(--space);
+    border: 2px solid var(--space);
+    line-height: 1;
+}
+
+.llamada-avatar .dir-badge.entrante {
     background: linear-gradient(135deg, #00d68f, #00b377);
-    box-shadow: 0 0 18px rgba(var(--neon-success), .5);
+    box-shadow: 0 0 8px rgba(var(--neon-success), .8);
 }
-.llamada-icono.saliente {
+
+.llamada-avatar .dir-badge.saliente {
     background: linear-gradient(135deg, var(--gold), #b8923a);
-    box-shadow: 0 0 18px rgba(var(--neon-gold), .5);
+    box-shadow: 0 0 8px rgba(var(--neon-gold), .8);
 }
-.llamada-icono.perdida {
+
+.llamada-avatar .dir-badge.perdida,
+.llamada-avatar .dir-badge.rechazada,
+.llamada-avatar .dir-badge.fallida {
     background: linear-gradient(135deg, #ff3366, #cc1a4d);
-    box-shadow: 0 0 18px rgba(var(--neon-danger), .5);
-}
-.llamada-icono.rechazada {
-    background: linear-gradient(135deg, #ffaa00, #cc8800);
-    box-shadow: 0 0 18px rgba(255, 170, 0, .5);
-}
-.llamada-icono.fallida {
-    background: linear-gradient(135deg, #8aa8b8, #5c7a8a);
-    box-shadow: 0 0 18px rgba(138, 168, 184, .35);
+    box-shadow: 0 0 8px rgba(var(--neon-danger), .8);
 }
 
 .llamada-info {
@@ -127,70 +141,108 @@
 
 .llamada-meta {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
     font-size: .65rem;
     color: var(--muted);
     align-items: center;
 }
 
-.llamada-meta .badge-tipo,
-.llamada-meta .badge-estado {
-    padding: 3px 9px;
+/* Badges delicadas con tonos neón */
+.badge-tipo,
+.badge-estado {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
     border-radius: 99px;
-    font-size: .58rem;
+    font-size: .56rem;
     font-weight: 800;
-    letter-spacing: .3px;
-    border: 1px solid var(--border);
+    letter-spacing: .4px;
+    text-transform: uppercase;
+    border: 1px solid;
+    line-height: 1.5;
+    white-space: nowrap;
 }
 
-.llamada-meta .badge-tipo {
+.badge-tipo {
     color: var(--gold);
-    background: rgba(var(--neon-gold), .1);
-    border-color: rgba(var(--neon-gold), .4);
+    background: rgba(var(--neon-gold), .08);
+    border-color: rgba(var(--neon-gold), .35);
+    box-shadow: 0 0 6px rgba(var(--neon-gold), .15);
 }
 
 .badge-estado.contestada {
     color: var(--success);
-    border-color: rgba(var(--neon-success), .45);
-    background: rgba(var(--neon-success), .1);
-    box-shadow: 0 0 8px rgba(var(--neon-success), .2);
+    background: rgba(var(--neon-success), .08);
+    border-color: rgba(var(--neon-success), .4);
+    box-shadow: 0 0 6px rgba(var(--neon-success), .18);
 }
+
 .badge-estado.perdida {
-    color: #ff3366;
-    border-color: rgba(var(--neon-danger), .45);
-    background: rgba(var(--neon-danger), .1);
-    box-shadow: 0 0 8px rgba(var(--neon-danger), .2);
+    color: #ff7099;
+    background: rgba(var(--neon-magenta), .08);
+    border-color: rgba(var(--neon-magenta), .4);
+    box-shadow: 0 0 6px rgba(var(--neon-magenta), .18);
 }
+
 .badge-estado.rechazada {
-    color: #ffaa00;
-    border-color: rgba(255, 170, 0, .45);
-    background: rgba(255, 170, 0, .1);
+    color: #ffb84d;
+    background: rgba(var(--neon-warning), .08);
+    border-color: rgba(var(--neon-warning), .4);
+    box-shadow: 0 0 6px rgba(var(--neon-warning), .18);
 }
+
 .badge-estado.cancelada,
 .badge-estado.fallida {
     color: var(--muted);
-    border-color: rgba(138, 168, 184, .4);
     background: rgba(138, 168, 184, .08);
+    border-color: rgba(138, 168, 184, .35);
 }
 
+.llamada-meta .meta-time {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--muted);
+    font-size: .62rem;
+}
+
+.llamada-meta .meta-duration {
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    font-weight: 700;
+}
+
+/* Acciones circulares intuitivas */
 .llamada-acciones {
     display: flex;
-    gap: 5px;
+    gap: 6px;
 }
 
 .llamada-acciones button {
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     border: 1px solid var(--border);
     background: rgba(255, 255, 255, .03);
     color: var(--muted);
-    border-radius: 10px;
+    border-radius: 50%;
     cursor: pointer;
-    font-size: .9rem;
-    transition: all .2s var(--neon-ease);
     display: grid;
     place-items: center;
+    padding: 0;
+    transition: all .22s var(--neon-ease);
+    position: relative;
+}
+
+.llamada-acciones button svg {
+    width: 15px;
+    height: 15px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
 }
 
 .llamada-acciones button:hover {
@@ -198,15 +250,24 @@
     border-color: rgba(var(--neon-gold), .65);
     background: rgba(var(--neon-gold), .12);
     box-shadow: 0 0 12px rgba(var(--neon-gold), .35);
-    transform: translateY(-1px);
+    transform: translateY(-1px) scale(1.05);
 }
+
+.llamada-acciones button:active { transform: translateY(0) scale(.96); }
 
 .llamada-acciones button.danger:hover,
 .llamada-acciones button.block:hover {
-    color: #ff3366;
-    border-color: rgba(var(--neon-danger), .65);
-    background: rgba(var(--neon-danger), .12);
-    box-shadow: 0 0 12px rgba(var(--neon-danger), .35);
+    color: #ff7099;
+    border-color: rgba(var(--neon-magenta), .7);
+    background: rgba(var(--neon-magenta), .12);
+    box-shadow: var(--neon-glow-magenta);
+}
+
+.llamada-acciones button.call-back:hover {
+    color: var(--success);
+    border-color: rgba(var(--neon-success), .7);
+    background: rgba(var(--neon-success), .12);
+    box-shadow: var(--neon-glow-success);
 }
 
 /* ============================================================
@@ -235,21 +296,9 @@
     flex-basis: 40px;
 }
 
-.bloqueado-info {
-    flex: 1;
-    min-width: 0;
-}
-
-.bloqueado-nombre {
-    font-size: .85rem;
-    font-weight: 700;
-    color: var(--text);
-}
-
-.bloqueado-handle {
-    font-size: .68rem;
-    color: var(--muted);
-}
+.bloqueado-info { flex: 1; min-width: 0; }
+.bloqueado-nombre { font-size: .85rem; font-weight: 700; color: var(--text); }
+.bloqueado-handle { font-size: .68rem; color: var(--muted); }
 
 .bloqueado-item button {
     padding: 7px 14px;
@@ -270,7 +319,7 @@
 }
 
 /* ============================================================
-   3. OVERLAY DE LLAMADA — REDISEÑO COMPLETO
+   3. OVERLAY DE LLAMADA
    ============================================================ */
 #callOverlay.call {
     display: none;
@@ -295,12 +344,8 @@
     animation: callFadeIn .3s var(--neon-ease);
 }
 
-@keyframes callFadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
+@keyframes callFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-/* --- Cabecera E2E --- */
 #callOverlay .call-e2e-header {
     width: 100%;
     max-width: 720px;
@@ -326,7 +371,6 @@
     filter: drop-shadow(0 0 6px rgba(var(--neon-success), .8));
 }
 
-/* --- Avatar + Halo --- */
 #callOverlay .call-avatar-block {
     display: flex;
     flex-direction: column;
@@ -336,10 +380,7 @@
     animation: avatarPop .5s var(--neon-ease);
 }
 
-@keyframes avatarPop {
-    from { opacity: 0; transform: scale(.85); }
-    to { opacity: 1; transform: scale(1); }
-}
+@keyframes avatarPop { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: scale(1); } }
 
 #callOverlay .call-avatar-halo {
     position: relative;
@@ -360,12 +401,10 @@
     position: absolute;
     inset: -6px;
     border-radius: 50%;
-    background: conic-gradient(
-        from 0deg,
+    background: conic-gradient(from 0deg,
         rgba(var(--neon-gold), .9),
         rgba(var(--neon-cyan), .7),
-        rgba(var(--neon-gold), .9)
-    );
+        rgba(var(--neon-gold), .9));
     z-index: -1;
     animation: haloSpin 4s linear infinite;
     filter: blur(2px);
@@ -377,28 +416,15 @@
     inset: -18px;
     border-radius: 50%;
     border: 1px solid rgba(var(--neon-gold), .35);
-    box-shadow:
-        0 0 24px rgba(var(--neon-gold), .35),
-        inset 0 0 24px rgba(var(--neon-gold), .2);
+    box-shadow: 0 0 24px rgba(var(--neon-gold), .35), inset 0 0 24px rgba(var(--neon-gold), .2);
     animation: haloPulse 2.4s ease-in-out infinite;
     pointer-events: none;
 }
 
-@keyframes haloSpin {
-    to { transform: rotate(360deg); }
-}
+@keyframes haloSpin { to { transform: rotate(360deg); } }
+@keyframes haloPulse { 0%, 100% { transform: scale(1); opacity: .9; } 50% { transform: scale(1.06); opacity: .55; } }
 
-@keyframes haloPulse {
-    0%, 100% { transform: scale(1); opacity: .9; }
-    50% { transform: scale(1.06); opacity: .55; }
-}
-
-#callOverlay .call-avatar-halo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
+#callOverlay .call-avatar-halo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
 
 #callOverlay .call-name {
     font-size: 1.3rem;
@@ -416,16 +442,13 @@
     font-weight: 700;
 }
 
-/* --- Temporizador grande --- */
 #callOverlay .call-timer {
     font-size: 3.2rem;
     font-weight: 300;
     letter-spacing: 4px;
     font-variant-numeric: tabular-nums;
     color: var(--gold);
-    text-shadow:
-        0 0 20px rgba(var(--neon-gold), .55),
-        0 0 42px rgba(var(--neon-gold), .3);
+    text-shadow: 0 0 20px rgba(var(--neon-gold), .55), 0 0 42px rgba(var(--neon-gold), .3);
     margin: 8px 0 6px;
     font-family: 'Inter', 'SF Mono', Menlo, monospace;
     line-height: 1;
@@ -452,12 +475,8 @@
     animation: statusPulse 1.6s ease-in-out infinite;
 }
 
-@keyframes statusPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: .55; transform: scale(.8); }
-}
+@keyframes statusPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: .55; transform: scale(.8); } }
 
-/* --- Videos (cuando existen) --- */
 #callOverlay .videos {
     width: 100%;
     max-width: 720px;
@@ -485,7 +504,6 @@
     box-shadow: 0 0 22px rgba(var(--neon-cyan), .2);
 }
 
-/* --- Barra de controles circulares con etiquetas --- */
 #callOverlay .call-controls-bar {
     display: flex;
     gap: 22px;
@@ -498,10 +516,7 @@
     border-radius: 26px;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-gold), .12),
-        0 12px 40px rgba(0, 0, 0, .5),
-        0 0 32px rgba(var(--neon-gold), .08);
+    box-shadow: 0 0 0 1px rgba(var(--neon-gold), .12), 0 12px 40px rgba(0, 0, 0, .5), 0 0 32px rgba(var(--neon-gold), .08);
     margin-top: 10px;
 }
 
@@ -535,22 +550,16 @@
 #callOverlay .call-ctrl:hover .ctrl-circle {
     background: rgba(var(--neon-gold), .15);
     border-color: rgba(var(--neon-gold), .8);
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-gold), .5),
-        0 0 22px rgba(var(--neon-gold), .5);
+    box-shadow: 0 0 0 1px rgba(var(--neon-gold), .5), 0 0 22px rgba(var(--neon-gold), .5);
     transform: translateY(-2px) scale(1.04);
 }
 
-#callOverlay .call-ctrl:active .ctrl-circle {
-    transform: translateY(0) scale(.96);
-}
+#callOverlay .call-ctrl:active .ctrl-circle { transform: translateY(0) scale(.96); }
 
 #callOverlay .call-ctrl .ctrl-circle.active-state {
     background: rgba(var(--neon-danger), .15);
     border-color: rgba(var(--neon-danger), .8);
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-danger), .55),
-        0 0 22px rgba(var(--neon-danger), .5);
+    box-shadow: 0 0 0 1px rgba(var(--neon-danger), .55), 0 0 22px rgba(var(--neon-danger), .5);
     color: var(--danger);
 }
 
@@ -563,234 +572,30 @@
     transition: color .2s;
 }
 
-#callOverlay .call-ctrl:hover .ctrl-label {
-    color: var(--gold);
-}
+#callOverlay .call-ctrl:hover .ctrl-label { color: var(--gold); }
 
 #callOverlay .call-ctrl.hang .ctrl-circle {
     width: 70px;
     height: 70px;
     background: linear-gradient(135deg, #ff3366, #cc1a4d);
-    border-color: rgba(var(--neon-danger), .7);
+    border-color: rgba(var(--neon-magenta), .7);
     color: #fff;
     font-size: 1.6rem;
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-danger), .5),
-        0 0 26px rgba(var(--neon-danger), .55);
+    box-shadow: 0 0 0 1px rgba(var(--neon-magenta), .5), 0 0 26px rgba(var(--neon-magenta), .55);
 }
 
 #callOverlay .call-ctrl.hang:hover .ctrl-circle {
     background: linear-gradient(135deg, #ff5580, #dd2a5a);
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-danger), .9),
-        0 0 34px rgba(var(--neon-danger), .7);
+    box-shadow: 0 0 0 1px rgba(var(--neon-magenta), .9), 0 0 34px rgba(var(--neon-magenta), .7);
     transform: translateY(-2px) scale(1.06);
 }
 
-#callOverlay .call-ctrl.hang .ctrl-label {
-    color: #ff3366;
-    font-weight: 900;
-}
+#callOverlay .call-ctrl.hang .ctrl-label { color: #ff3366; font-weight: 900; }
 
-/* --- Botón colgar grande inferior --- */
-#callOverlay .hangup-dock {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    margin-top: 22px;
-}
+#callOverlay .callinfo { margin: 10px 0; color: var(--text); font-size: .85rem; text-align: center; }
 
-#callOverlay .hangup-dock .ctrl-circle {
-    width: 78px;
-    height: 78px;
-    font-size: 1.8rem;
-}
-
-/* --- Caja de info (fallback) --- */
-#callOverlay .callinfo {
-    margin: 10px 0;
-    color: var(--text);
-    font-size: .85rem;
-    text-align: center;
-}
-
-/* ============================================================
-   4. OVERLAY ENTRANTE — REDISEÑO
-   ============================================================ */
-#incomingOverlay.call {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 155;
-    background:
-        radial-gradient(ellipse at 50% 30%, rgba(var(--neon-success), .1), transparent 60%),
-        rgba(5, 8, 15, .98);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    padding: 20px;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 10px;
-}
-
-#incomingOverlay.call.show {
-    display: flex;
-    animation: callFadeIn .25s var(--neon-ease);
-}
-
-#incomingOverlay .incoming-halo {
-    position: relative;
-    width: 130px;
-    height: 130px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    background: linear-gradient(135deg, var(--gold), #b8923a);
-    color: var(--space);
-    font-size: 2.8rem;
-    font-weight: 900;
-    overflow: hidden;
-    margin-bottom: 8px;
-}
-
-#incomingOverlay .incoming-halo::before {
-    content: "";
-    position: absolute;
-    inset: -6px;
-    border-radius: 50%;
-    background: conic-gradient(
-        from 0deg,
-        rgba(var(--neon-success), .9),
-        rgba(var(--neon-cyan), .7),
-        rgba(var(--neon-success), .9)
-    );
-    z-index: -1;
-    animation: haloSpin 3s linear infinite;
-    filter: blur(2px);
-}
-
-#incomingOverlay .incoming-halo::after {
-    content: "";
-    position: absolute;
-    inset: -18px;
-    border-radius: 50%;
-    border: 1px solid rgba(var(--neon-success), .35);
-    box-shadow:
-        0 0 26px rgba(var(--neon-success), .45),
-        inset 0 0 26px rgba(var(--neon-success), .2);
-    animation: haloPulse 1.8s ease-in-out infinite;
-    pointer-events: none;
-}
-
-#incomingOverlay .incoming-halo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
-}
-
-#incomingOverlay h2 {
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: var(--text);
-    margin: 8px 0 4px;
-    text-shadow: 0 0 20px rgba(var(--neon-success), .3);
-}
-
-#incomingOverlay .callinfo {
-    color: var(--muted);
-    font-size: .8rem;
-    letter-spacing: .8px;
-    text-transform: uppercase;
-    font-weight: 700;
-    margin-bottom: 18px;
-}
-
-#incomingOverlay .callinfo strong {
-    color: var(--success);
-    text-shadow: 0 0 12px rgba(var(--neon-success), .5);
-}
-
-#incomingOverlay .controls {
-    display: flex;
-    gap: 34px;
-    padding: 18px 26px;
-    background: rgba(15, 25, 40, .55);
-    border: 1px solid rgba(var(--neon-success), .3);
-    border-radius: 26px;
-    backdrop-filter: blur(16px);
-    box-shadow: 0 0 28px rgba(var(--neon-success), .15);
-}
-
-#incomingOverlay .controls button {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    background: transparent;
-    border: 0;
-    cursor: pointer;
-    color: var(--text);
-    font-family: inherit;
-}
-
-#incomingOverlay .controls button .ctrl-circle {
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
-    display: grid;
-    place-items: center;
-    font-size: 1.6rem;
-    transition: all .22s var(--neon-ease);
-}
-
-#incomingOverlay .controls button.accept .ctrl-circle {
-    background: linear-gradient(135deg, #00d68f, #00b377);
-    color: #fff;
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-success), .55),
-        0 0 26px rgba(var(--neon-success), .55);
-    animation: acceptPulse 1.6s ease-in-out infinite;
-}
-
-@keyframes acceptPulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 0 1px rgba(var(--neon-success), .55), 0 0 26px rgba(var(--neon-success), .55); }
-    50% { transform: scale(1.05); box-shadow: 0 0 0 1px rgba(var(--neon-success), .9), 0 0 38px rgba(var(--neon-success), .75); }
-}
-
-#incomingOverlay .controls button.hang .ctrl-circle {
-    background: linear-gradient(135deg, #ff3366, #cc1a4d);
-    color: #fff;
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-danger), .55),
-        0 0 26px rgba(var(--neon-danger), .55);
-}
-
-#incomingOverlay .controls button .ctrl-label {
-    font-size: .62rem;
-    font-weight: 800;
-    letter-spacing: .7px;
-    text-transform: uppercase;
-    color: var(--muted);
-}
-
-#incomingOverlay .controls button.accept .ctrl-label {
-    color: var(--success);
-}
-
-#incomingOverlay .controls button.hang .ctrl-label {
-    color: #ff3366;
-}
-
-/* ============================================================
-   5. COMPATIBILIDAD CON MARKUP EXISTENTE
-   Si el HTML trae el markup original (.controls > button con
-   .ctrl-icon / .ctrl-label) lo estilizamos igual.
-   ============================================================ */
-#callOverlay .controls,
-#incomingOverlay .controls {
+/* Compatibilidad con markup .controls original */
+#callOverlay .controls {
     display: flex;
     gap: 20px;
     align-items: flex-start;
@@ -837,9 +642,7 @@
 #incomingOverlay .controls button:hover .ctrl-icon {
     background: rgba(var(--neon-gold), .15);
     border-color: rgba(var(--neon-gold), .8);
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-gold), .5),
-        0 0 22px rgba(var(--neon-gold), .5);
+    box-shadow: 0 0 0 1px rgba(var(--neon-gold), .5), 0 0 22px rgba(var(--neon-gold), .5);
     transform: translateY(-2px) scale(1.04);
 }
 
@@ -853,88 +656,188 @@
     transition: color .2s;
 }
 
-#callOverlay .controls button:hover .ctrl-label {
-    color: var(--gold);
-}
+#callOverlay .controls button:hover .ctrl-label { color: var(--gold); }
 
 #callOverlay .controls .hang .ctrl-icon,
 #incomingOverlay .controls .hang .ctrl-icon {
     background: linear-gradient(135deg, #ff3366, #cc1a4d);
-    border-color: rgba(var(--neon-danger), .7);
+    border-color: rgba(var(--neon-magenta), .7);
     color: #fff;
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-danger), .5),
-        0 0 26px rgba(var(--neon-danger), .55);
+    box-shadow: 0 0 0 1px rgba(var(--neon-magenta), .5), 0 0 26px rgba(var(--neon-magenta), .55);
 }
 
 #callOverlay .controls .hang .ctrl-label,
-#incomingOverlay .controls .hang .ctrl-label {
-    color: #ff3366;
-}
+#incomingOverlay .controls .hang .ctrl-label { color: #ff3366; }
 
 #incomingOverlay .controls .accept .ctrl-icon {
     background: linear-gradient(135deg, #00d68f, #00b377);
     border-color: rgba(var(--neon-success), .55);
     color: #fff;
-    box-shadow:
-        0 0 0 1px rgba(var(--neon-success), .55),
-        0 0 26px rgba(var(--neon-success), .55);
+    box-shadow: 0 0 0 1px rgba(var(--neon-success), .55), 0 0 26px rgba(var(--neon-success), .55);
     animation: acceptPulse 1.6s ease-in-out infinite;
 }
 
-#incomingOverlay .controls .accept .ctrl-label {
-    color: var(--success);
+#incomingOverlay .controls .accept .ctrl-label { color: var(--success); }
+
+@keyframes acceptPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 1px rgba(var(--neon-success), .55), 0 0 26px rgba(var(--neon-success), .55); }
+    50% { transform: scale(1.05); box-shadow: 0 0 0 1px rgba(var(--neon-success), .9), 0 0 38px rgba(var(--neon-success), .75); }
 }
 
 /* ============================================================
-   6. RESPONSIVE
+   4. OVERLAY ENTRANTE
+   ============================================================ */
+#incomingOverlay.call {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 155;
+    background:
+        radial-gradient(ellipse at 50% 30%, rgba(var(--neon-success), .1), transparent 60%),
+        rgba(5, 8, 15, .98);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    padding: 20px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#incomingOverlay.call.show { display: flex; animation: callFadeIn .25s var(--neon-ease); }
+
+#incomingOverlay .incoming-halo {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, var(--gold), #b8923a);
+    color: var(--space);
+    font-size: 2.8rem;
+    font-weight: 900;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+#incomingOverlay .incoming-halo::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg, rgba(var(--neon-success), .9), rgba(var(--neon-cyan), .7), rgba(var(--neon-success), .9));
+    z-index: -1;
+    animation: haloSpin 3s linear infinite;
+    filter: blur(2px);
+}
+
+#incomingOverlay .incoming-halo::after {
+    content: "";
+    position: absolute;
+    inset: -18px;
+    border-radius: 50%;
+    border: 1px solid rgba(var(--neon-success), .35);
+    box-shadow: 0 0 26px rgba(var(--neon-success), .45), inset 0 0 26px rgba(var(--neon-success), .2);
+    animation: haloPulse 1.8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+#incomingOverlay .incoming-halo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+
+#incomingOverlay h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--text);
+    margin: 8px 0 4px;
+    text-shadow: 0 0 20px rgba(var(--neon-success), .3);
+}
+
+#incomingOverlay .callinfo {
+    color: var(--muted);
+    font-size: .8rem;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+
+#incomingOverlay .callinfo strong { color: var(--success); text-shadow: 0 0 12px rgba(var(--neon-success), .5); }
+
+#incomingOverlay .controls {
+    display: flex;
+    gap: 34px;
+    padding: 18px 26px;
+    background: rgba(15, 25, 40, .55);
+    border: 1px solid rgba(var(--neon-success), .3);
+    border-radius: 26px;
+    backdrop-filter: blur(16px);
+    box-shadow: 0 0 28px rgba(var(--neon-success), .15);
+}
+
+#incomingOverlay .controls button .ctrl-circle {
+    width: 68px;
+    height: 68px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 1.6rem;
+    transition: all .22s var(--neon-ease);
+}
+
+#incomingOverlay .controls button.accept .ctrl-circle {
+    background: linear-gradient(135deg, #00d68f, #00b377);
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(var(--neon-success), .55), 0 0 26px rgba(var(--neon-success), .55);
+    animation: acceptPulse 1.6s ease-in-out infinite;
+}
+
+#incomingOverlay .controls button.hang .ctrl-circle {
+    background: linear-gradient(135deg, #ff3366, #cc1a4d);
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(var(--neon-magenta), .55), 0 0 26px rgba(var(--neon-magenta), .55);
+}
+
+#incomingOverlay .controls button .ctrl-label {
+    font-size: .62rem;
+    font-weight: 800;
+    letter-spacing: .7px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+#incomingOverlay .controls button.accept .ctrl-label { color: var(--success); }
+#incomingOverlay .controls button.hang .ctrl-label { color: #ff3366; }
+
+/* ============================================================
+   5. RESPONSIVE
    ============================================================ */
 @media (max-width: 640px) {
-    #callOverlay .call-timer {
-        font-size: 2.4rem;
-        letter-spacing: 3px;
-    }
+    #callOverlay .call-timer { font-size: 2.4rem; letter-spacing: 3px; }
     #callOverlay .call-avatar-halo,
-    #incomingOverlay .incoming-halo {
-        width: 100px;
-        height: 100px;
-        font-size: 2.2rem;
-    }
-    #callOverlay .call-controls-bar {
-        gap: 14px;
-        padding: 14px 16px;
-    }
+    #incomingOverlay .incoming-halo { width: 100px; height: 100px; font-size: 2.2rem; }
+    #callOverlay .call-controls-bar { gap: 14px; padding: 14px 16px; }
     #callOverlay .call-ctrl .ctrl-circle,
-    #callOverlay .controls button .ctrl-icon {
-        width: 54px;
-        height: 54px;
-        font-size: 1.15rem;
-    }
-    #callOverlay .call-ctrl.hang .ctrl-circle {
-        width: 62px;
-        height: 62px;
-        font-size: 1.4rem;
-    }
-    #incomingOverlay .controls {
-        gap: 24px;
-    }
+    #callOverlay .controls button .ctrl-icon { width: 54px; height: 54px; font-size: 1.15rem; }
+    #callOverlay .call-ctrl.hang .ctrl-circle { width: 62px; height: 62px; font-size: 1.4rem; }
+    #incomingOverlay .controls { gap: 24px; }
     #incomingOverlay .controls button .ctrl-circle,
-    #incomingOverlay .controls button .ctrl-icon {
-        width: 58px;
-        height: 58px;
-        font-size: 1.4rem;
-    }
-    #callOverlay .videos video {
-        width: 100%;
-        min-height: 160px;
-    }
-    #callOverlay .videos video.local {
-        width: 40%;
-    }
+    #incomingOverlay .controls button .ctrl-icon { width: 58px; height: 58px; font-size: 1.4rem; }
+    #callOverlay .videos video { width: 100%; min-height: 160px; }
+    #callOverlay .videos video.local { width: 40%; }
+    .llamada-avatar { width: 40px; height: 40px; flex: 0 0 40px; }
+    .llamada-acciones button { width: 32px; height: 32px; }
+    .llamada-acciones button svg { width: 13px; height: 13px; }
+}
+
+@media (max-width: 430px) {
+    .llamada-item { padding: 10px 11px; gap: 10px; }
+    .llamada-acciones { gap: 4px; }
+    .llamada-acciones button { width: 30px; height: 30px; }
 }
 
 /* ============================================================
-   7. ACCESIBILIDAD
+   6. ACCESIBILIDAD
    ============================================================ */
 #callOverlay .call-ctrl:focus-visible .ctrl-circle,
 #callOverlay .controls button:focus-visible .ctrl-icon,
@@ -950,7 +853,8 @@
     #incomingOverlay .incoming-halo::before,
     #incomingOverlay .incoming-halo::after,
     #callOverlay .call-status .dot,
-    #incomingOverlay .controls .accept .ctrl-icon {
+    #incomingOverlay .controls .accept .ctrl-icon,
+    .llamada-item::before {
         animation: none !important;
     }
 }
