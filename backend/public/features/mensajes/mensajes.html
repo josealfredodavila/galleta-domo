@@ -11,7 +11,6 @@
 <script src="/features/shared/js/presencia-global.js" defer></script>
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
-<!-- LiveKit con carga diferida + reintento -->
 <script>
     (function () {
         var url = 'https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js';
@@ -59,6 +58,9 @@
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
+    /* FIX: contenedor relativo del header de chat para que acciones no "floten" */
+    .chathead { position: relative; z-index: 5; }
+    .chathead .actions { position: relative; z-index: 6; }
 </style>
 </head>
 <body>
@@ -409,7 +411,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-<script src="/features/mensajes/js/mensajes.js?v=12"></script>
-<script src="/features/mensajes/js/llamadas-ui.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes.js?v=13"></script>
+<script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
 </body>
 </html>
