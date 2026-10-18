@@ -1,7 +1,7 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v4.6 (Autoplay en tiempo real y Swipe respetando la configuración)
+// v4.7 (Ajuste visual: Las imágenes y videos ya no se ven como "piezas de Lego")
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -36,6 +36,26 @@ window.listaMultimediaPerfil = [];
         .reaccion-trigger .count { font-size: 0.75rem; font-weight: 500; }
         .preview-download-control { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.8rem; color: var(--text-muted, #a1a1aa); cursor: pointer; }
         .preview-download-control input { cursor: pointer; width: 16px; height: 16px; accent-color: #3b82f6; }
+
+        /* ============================================================
+           NUEVAS REGLAS PARA QUE NO SE VEAN COMO PIEZAS DE LEGO
+           ============================================================ */
+        .publicacion-card .contenido {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .publicacion-card .contenido img,
+        .publicacion-card .contenido video {
+            width: 100%;
+            height: auto;
+            max-height: 600px; /* Para que los videos verticales no ocupen toda la pantalla */
+            object-fit: contain; /* Mantiene la proporción original sin recortar */
+            background: transparent; /* Quita el fondo negro que los hacía ver cuadrados */
+            border-radius: 12px; /* Bordes redondeados como en Facebook */
+            display: block;
+        }
     `;
     document.head.appendChild(style);
 })();
@@ -212,13 +232,9 @@ async function publicarDesdePerfil() {
     } finally { if (btn) { btn.disabled = false; btn.innerHTML = textoOriginalBtn; } }
 }
 
-// ================================================================
-// OBSERVADOR PARA EL AUTOPLAY INTELIGENTE
-// ================================================================
 const videoObserverPerfil = new IntersectionObserver((entries) => {
     entries.forEach(entry => {
         const video = entry.target;
-        // Leer la preferencia CADA VEZ que el video aparece en pantalla
         const autoPlayPref = localStorage.getItem('contenido_auto_reproducir');
         const activarAutoplay = autoPlayPref === null || autoPlayPref === 'true';
 
@@ -229,11 +245,10 @@ const videoObserverPerfil = new IntersectionObserver((entries) => {
             }
         } else {
             video.pause();
-            // Si el usuario desliza a otro video, lo reiniciamos
             video.currentTime = 0; 
         }
     });
-}, { threshold: 0.5 }); // Se activa cuando el 50% del video es visible
+}, { threshold: 0.5 });
 
 async function cargarMisPublicaciones(forzarRefresco) {
     var container = document.getElementById('misPublicacionesList'); var contador = document.getElementById('misPostsCount');
@@ -294,10 +309,8 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         video.src = p.media_url;
                         video.style.cursor = 'pointer'; 
                         
-                        // Configuración inicial al crear el elemento
-                        video.loop = false; // El loop lo quitamos para que sea más natural
+                        video.loop = false; 
                         
-                        // Si no se permite autoplay, que se vea el botón de play
                         const autoPlayPrefInicial = localStorage.getItem('contenido_auto_reproducir');
                         if (autoPlayPrefInicial === 'false') {
                             video.pause();
@@ -305,7 +318,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
                             video.muted = true;
                         }
 
-                        // El observador se encarga de dar play/pause cuando aparece en pantalla
                         videoObserverPerfil.observe(video);
 
                         video.addEventListener('click', function (e) {
@@ -450,7 +462,6 @@ async function eliminarMiPublicacion(publicacionId, event) {
     } catch (error) { console.error('Error eliminando:', error); if (window.showToast) window.showToast('Error al eliminar: ' + error.message, 'error'); }
 }
 
-// Exponer funciones globales necesarias
 window.descargarArchivoForzado = descargarArchivoForzado;
 window.publicarDesdePerfil = publicarDesdePerfil;
 window.seleccionarArchivoPerfil = seleccionarArchivoPerfil;
