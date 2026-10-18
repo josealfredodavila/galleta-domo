@@ -373,8 +373,8 @@
 
         const $ = (sel) => document.querySelector(sel);
 
-        // Claves de preferencia: son a la vez la clave de localStorage
-        // y el nombre de la columna en usuarios_preferencias.
+        // Claves de preferencia. Son las mismas claves que usa config-layout.js
+        // en preferencias_usuario.prefs, que es la fuente única de verdad.
         const PREF_KEYS = {
             contenido_sensible: 'contenido_mostrar_sensible',
             contenido_auto_reproducir: 'contenido_auto_reproducir',
@@ -402,11 +402,12 @@
             return { client, session };
         }
 
-        // Guarda una preferencia en Supabase. Devuelve true si quedó guardada.
-        async function guardarPrefBD(columna, valor) {
+        // Espejo de escritura en usuarios_preferencias (tabla tipada).
+        // Solo escribe; nunca se lee desde aquí para no pisar la fuente principal.
+        async function replicarEnUsuariosPreferencias(columna, valor) {
             try {
                 const s = await obtenerSesion();
-                if (!s) return false;
+                if (!s) return;
                 const { error } = await s.client
                     .from('usuarios_preferencias')
                     .upsert({
@@ -414,17 +415,10 @@
                         [columna]: valor,
                         updated_at: new Date().toISOString()
                     }, { onConflict: 'usuario_id' });
-                if (error) throw error;
-                return true;
+                if (error) console.warn('Espejo usuarios_preferencias falló:', error);
             } catch (e) {
-                console.error('Error guardando preferencia en BD:', e);
-                return false;
+                console.warn('Espejo usuarios_preferencias falló:', e);
             }
-        }
-
-        function avisoGuardado(ok, msgOk, msgLocal) {
-            if (ok) cfgToast(msgOk, 'success');
-            else cfgToast('⚠️ ' + msgLocal, 'warning');
         }
 
         cfgInitPage({
@@ -463,14 +457,14 @@
                     id: 'toggleSensible',
                     title: 'Mostrar contenido sensible',
                     desc: 'Incluye contenido marcado como sensible en tu feed',
-                    checked: cfgGetPref(PREF_KEYS.contenido_sensible, false),
+                    checked: cfgGetPref(PREF_KEYS.contenido_sensible, false) === true,
                     onChange: 'window.onToggleSensible(this.checked)',
                 }),
                 cfgRenderToggle({
                     id: 'toggleAhorrador',
                     title: 'Ahorrador de datos',
                     desc: 'No reproduce videos automáticamente y carga imágenes en calidad reducida',
-                    checked: cfgGetPref(PREF_KEYS.contenido_ahorrador, false),
+                    checked: cfgGetPref(PREF_KEYS.contenido_ahorrador, false) === true,
                     onChange: 'window.onToggleAhorrador(this.checked)',
                 }),
             ].join('');
@@ -480,33 +474,40 @@
                     id: 'toggleImgAlta',
                     title: 'Imágenes en alta calidad',
                     desc: 'Carga automáticamente las imágenes en alta calidad (hasta 4K)',
-                    checked: cfgGetPref(PREF_KEYS.contenido_imagenes_alta, true),
+                    checked: cfgGetPref(PREF_KEYS.contenido_imagenes_alta, true) === true,
                     onChange: 'window.onToggleImgAlta(this.checked)',
                 }),
                 cfgRenderToggle({
                     id: 'toggleVidAlta',
                     title: 'Video en alta calidad',
                     desc: 'Usa la mejor calidad disponible para reproducción de video',
-                    checked: cfgGetPref(PREF_KEYS.contenido_videos_alta, true),
+                    checked: cfgGetPref(PREF_KEYS.contenido_videos_alta, true) === true,
                     onChange: 'window.onToggleVidAlta(this.checked)',
                 }),
                 cfgRenderToggle({
                     id: 'toggleAutoPlay',
                     title: 'Reproducción automática de video',
                     desc: 'Los videos se reproducen automáticamente al aparecer en pantalla',
-                    checked: cfgGetPref(PREF_KEYS.contenido_auto_reproducir, true),
+                    checked: cfgGetPref(PREF_KEYS.contenido_auto_reproducir, true) === true,
                     onChange: 'window.onToggleAutoPlay(this.checked)',
                 }),
             ].join('');
         }
 
         // ============================================================
-        // TOGGLES: guardan en localStorage (efecto inmediato) y en Supabase
+        // TOGGLES
+        // cfgSetPref guarda en localStorage y en preferencias_usuario (nube).
+        // Su resultado indica si llegó a la nube (ok: true).
         // ============================================================
         async function guardarToggle(clave, valor, msgOk, msgOff) {
-            await cfgSetPref(clave, valor);
-            const ok = await guardarPrefBD(clave, valor);
-            avisoGuardado(ok, valor ? msgOk : msgOff, 'Guardado solo en este dispositivo (sin conexión a la nube)');
+            const resultado = await cfgSetPref(clave, valor);
+            replicarEnUsuariosPreferencias(clave, valor);
+
+            if (resultado && resultado.ok) {
+                cfgToast(valor ? msgOk : msgOff, 'success');
+            } else {
+                cfgToast('⚠️ Guardado solo en este dispositivo (sin conexión a la nube)', 'warning');
+            }
         }
 
         window.onToggleSensible = (value) => guardarToggle(
@@ -548,7 +549,6 @@
         window.onConfigurarNoIntereses = () => abrirModalSeleccion('bloqueado');
         window.onConfigurarIdiomasContenido = () => abrirModalSeleccion('idioma');
 
-        // Configuración por tipo: tabla de selección, columna de id y consulta de opciones
         const CONFIG_MODAL = {
             interes: {
                 titulo: 'Temas que me interesan',
@@ -608,8 +608,14 @@
             } catch (e) {
                 console.error('Error cargando opciones:', e);
                 document.getElementById('sarielsModalBody').innerHTML =
-                    '<div class="sariels-modal-empty">❌ Error al cargar: ' + (e.message || 'Desconocido') + '</div>';
+                    '<div class="sariels-modal-empty">❌ Error al cargar: ' + escapeHtml(e.message || 'Desconocido') + '</div>';
             }
+        }
+
+        function escapeHtml(v) {
+            const d = document.createElement('div');
+            d.textContent = v == null ? '' : String(v);
+            return d.innerHTML;
         }
 
         function renderListaOpciones() {
@@ -631,7 +637,7 @@
 
             body.innerHTML = filtrados.map(o => {
                 const selected = modalEstado.seleccionados.has(o.id);
-                return '<div class="sariels-tema-item' + (selected ? ' selected' : '') + '" data-id="' + o.id + '">' +
+                return '<div class="sariels-tema-item' + (selected ? ' selected' : '') + '" data-id="' + escapeHtml(o.id) + '">' +
                     '<span class="sariels-tema-nombre">' + escapeHtml(cfg.etiqueta(o)) + '</span>' +
                     '<span class="sariels-tema-check">✓</span>' +
                 '</div>';
@@ -642,12 +648,6 @@
             });
 
             actualizarContador();
-        }
-
-        function escapeHtml(v) {
-            const d = document.createElement('div');
-            d.textContent = v == null ? '' : String(v);
-            return d.innerHTML;
         }
 
         function toggleSeleccion(id, el) {
@@ -736,32 +736,11 @@
         });
 
         // ============================================================
-        // CARGA INICIAL DESDE SUPABASE
+        // SINCRONIZACIÓN
+        // config-layout.js carga preferencias_usuario y emite
+        // 'cfg-preferences-ready' cuando termina. Ahí se vuelve a dibujar.
         // ============================================================
-        async function cargarPreferenciasDesdeDB() {
-            try {
-                const s = await obtenerSesion();
-                if (!s) return;
-
-                const { data: pref, error } = await s.client
-                    .from('usuarios_preferencias')
-                    .select('*')
-                    .eq('usuario_id', s.session.user.id)
-                    .maybeSingle();
-                if (error) throw error;
-
-                if (pref) {
-                    // La nube manda: copia cada preferencia guardada a localStorage
-                    for (const columna of Object.values(PREF_KEYS)) {
-                        if (pref[columna] !== null && pref[columna] !== undefined) {
-                            await cfgSetPref(columna, pref[columna]);
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error('Error cargando preferencias de BD:', e);
-            }
-        }
+        window.addEventListener('cfg-preferences-ready', renderSecciones);
 
         async function cargarSubtituloHandle() {
             try {
@@ -783,12 +762,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', async () => {
-            // Dibuja con lo local primero para que la pantalla no espere
-            await new Promise(resolve => setTimeout(resolve, 400));
-            renderSecciones();
-
-            // Después sincroniza con la nube y vuelve a dibujar
-            await cargarPreferenciasDesdeDB();
+            // Dibuja de inmediato con lo que haya en localStorage
             renderSecciones();
             cargarSubtituloHandle();
         });
