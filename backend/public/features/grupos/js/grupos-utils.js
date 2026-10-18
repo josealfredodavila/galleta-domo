@@ -13,12 +13,11 @@ function grpOk(r) {
     return r;
 }
 
+// Espera a que el cliente compartido esté listo (lo resuelve grupos-config.js
+// desde el singleton de app.js). Devuelve true si el cliente está disponible.
 async function esperarSupabase() {
-    for (var i = 0; i < 10; i++) {
-        if (window.supabaseClient) return true;
-        await new Promise(function(r) { setTimeout(r, 300); });
-    }
-    return false;
+    try { await window.supabaseReady; } catch (e) {}
+    return !!window.supabaseClient;
 }
 
 async function grpGetSession() {
@@ -84,7 +83,7 @@ async function cargarUsuarioActual() {
         if (!session) { sessionUser = null; return null; }
         sessionUser = session.user;
 
-        // ✅ NUEVO: leer perfil propio vía RPC seguro (SETOF usuarios → array)
+        // ✅ Perfil propio vía RPC seguro (SETOF usuarios → array)
         var data = null;
         try {
             var rpc = await window.supabaseClient.rpc('mi_perfil_privado');
