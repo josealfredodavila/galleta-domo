@@ -1,8 +1,9 @@
 // ================================================================
 // GRUPOS · CONFIGURACIÓN GLOBAL
 // ================================================================
-// Este archivo define variables, constantes y el cliente de Supabase.
-// Debe cargarse ANTES que cualquier otro script de grupos.
+// Este archivo define variables, constantes y la referencia al cliente
+// de Supabase compartido. Debe cargarse DESPUÉS de app.js y ANTES que
+// cualquier otro script de grupos.
 // ================================================================
 
 // ================================================================
@@ -14,7 +15,7 @@
         const html = document.documentElement;
         html.classList.remove('tema-dia', 'tema-noche');
         html.removeAttribute('data-tema');
-        
+
         if (tema === 'dia') {
             html.classList.add('tema-dia');
             html.setAttribute('data-tema', 'dia');
@@ -26,10 +27,10 @@
             html.setAttribute('data-tema', prefiereOscuro ? 'noche' : 'dia');
             html.classList.add(prefiereOscuro ? 'tema-noche' : 'tema-dia');
         }
-        
+
         const color = localStorage.getItem('mostrar_color_acento') || '#D4AF37';
         html.style.setProperty('--gold', color);
-        
+
         const fuente = parseInt(localStorage.getItem('mostrar_tamano_fuente') || 100);
         html.style.fontSize = (16 * fuente / 100) + 'px';
     } catch (e) {
@@ -38,41 +39,20 @@
 })();
 
 // ================================================================
-// ✅ INICIALIZAR SUPABASE
+// ✅ CLIENTE SUPABASE: reutiliza el singleton de app.js (no crea otro)
 // ================================================================
-(function inicializarSupabase() {
-    try {
-        if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
-            console.log('[Grupos] ✅ supabaseClient ya existía');
-            return;
-        }
-        
-        var SDK = window.__SB_SDK || window.supabase;
-        if (!SDK || typeof SDK.createClient !== 'function') {
-            console.error('[Grupos] ❌ Supabase SDK no disponible');
-            if (window.__dbgShow) window.__dbgShow('Supabase: SDK no disponible');
-            return;
-        }
-        
-        window.supabaseClient = SDK.createClient(
-            'https://zultnlogdoajehbswlih.supabase.co',
-            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
-            {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                    detectSessionInUrl: true
-                }
-            }
-        );
-        console.log('[Grupos] ✅ Supabase Client inicializado');
-    } catch (e) {
-        console.error('[Grupos] ❌ Error inicializando Supabase:', e);
-        if (window.__dbgShow) window.__dbgShow('Supabase: ' + (e && e.message ? e.message : String(e)));
-    }
-})();
-
-window.supabaseReady = Promise.resolve(window.supabaseClient);
+// app.js expone window.getSupabase(), que devuelve el mismo cliente
+// compartido por toda la app. Aquí solo se espera esa promesa.
+window.supabaseReady = (typeof window.getSupabase === 'function'
+    ? window.getSupabase()
+    : Promise.resolve(window.supabaseClient || null)
+).then(function (client) {
+    if (client) window.supabaseClient = client;
+    return window.supabaseClient || null;
+}).catch(function (e) {
+    console.error('[Grupos] No se pudo obtener Supabase:', e);
+    return null;
+});
 
 // ================================================================
 // ✅ CONSTANTES GLOBALES
