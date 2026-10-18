@@ -1,17 +1,13 @@
 // ================================================================
-// MENSAJES · JS v3.5
+// MENSAJES · JS v3.6
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIOS v3.5:
-// - Verificación de carga de LiveKit al iniciar.
-// - Si LiveKit no está cargado, el botón "Llamar" se deshabilita
-//   y se avisa al usuario con un toast claro.
-// - Escucha el evento 'livekit:ready' (disparado por el HTML)
-//   para reactivar el botón "Llamar".
-// - Escucha el evento 'livekit:error' para avisar que las llamadas
-//   no estarán disponibles en este dispositivo.
-// - Todo lo demás (mensajes, estados, bot, canales, grupos, historial,
-//   bloqueos) se mantiene idéntico a la v3.4.
+// CAMBIOS v3.6:
+// - Verificación de términos de Marquinhos corregida: usa la versión
+//   1.1, revisa localStorage y, si no está, consulta el RPC
+//   verificar_aceptacion_terminos en Supabase.
+// - sendMessage espera la verificación (await).
+// - Todo lo demás se mantiene idéntico a la v3.5.
 // ================================================================
 
 'use strict';
@@ -1312,7 +1308,7 @@ async function sendMessage(text) {
     $('messageInput').value = '';
 
     if (current.bot) {
-        if (!verificarTerminosMarquinhos()) {
+        if (!(await verificarTerminosMarquinhos())) {
             $('messageInput').value = textoLimpio;
             return;
         }
@@ -1418,26 +1414,34 @@ async function sendMessage(text) {
 }
 
 // ================================================================
-// VERIFICACIÓN DE TÉRMINOS PARA MARQUINHOS
+// VERIFICACIÓN DE TÉRMINOS PARA MARQUINHOS (v1.1)
+// Revisa localStorage; si no está, consulta el RPC en Supabase.
 // ================================================================
-function verificarTerminosMarquinhos() {
+async function verificarTerminosMarquinhos() {
+    const TERMINOS_VERSION = '1.1';
+    const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
+
     try {
-        const TERMINOS_KEY = 'marquinhos_terminos_aceptados_1.0';
-        const aceptados = localStorage.getItem(TERMINOS_KEY);
+        if (localStorage.getItem(TERMINOS_KEY)) return true;
+    } catch (e) {}
 
-        if (aceptados) return true;
-
-        toast('⚠️ Debes aceptar los Términos de Marquinhos primero', 'warning');
-
-        setTimeout(() => {
-            window.open('/legal/terminos-marquinhos', '_blank');
-        }, 1200);
-
-        return false;
+    try {
+        const { data, error } = await db.rpc('verificar_aceptacion_terminos', {
+            p_version: TERMINOS_VERSION
+        });
+        if (!error && data && data.aceptado === true) {
+            try { localStorage.setItem(TERMINOS_KEY, 'true'); } catch (e) {}
+            return true;
+        }
     } catch (e) {
         console.warn('Error verificando términos:', e);
-        return true;
     }
+
+    toast('⚠️ Debes aceptar los Términos de Marquinhos primero', 'warning');
+    setTimeout(() => {
+        window.open('/legal/terminos-marquinhos', '_blank');
+    }, 1200);
+    return false;
 }
 
 // ================================================================
