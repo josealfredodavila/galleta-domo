@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title data-clave="cookies_titulo_pagina">◈ Aviso de Cookies · Sariel's</title>
+    <title data-clave="cookies_titulo_pagina">◈ Política Institucional de Cookies · Sariel's</title>
     <link rel="stylesheet" href="/styles.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <style>
@@ -41,6 +41,7 @@
             color: var(--gold-cosmic);
             text-align: center;
             margin-bottom: 8px;
+            line-height: 1.25;
         }
         .terminos-container .fecha {
             text-align: center;
@@ -58,6 +59,14 @@
             margin-bottom: 12px;
             border-left: 4px solid var(--gold-cosmic);
             padding-left: 14px;
+        }
+        .terminos-container h3 {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95rem;
+            color: var(--gold-cosmic);
+            margin-top: 18px;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
         }
         .terminos-container p {
             color: var(--text-secondary);
@@ -106,6 +115,85 @@
             border-top: 1px solid rgba(212, 168, 87, 0.1);
             font-size: 0.85rem;
             color: var(--text-muted);
+        }
+        /* ===== TABLA CORPORATIVA DE COOKIES ===== */
+        .tabla-cookies-wrapper {
+            margin: 18px 0;
+            overflow-x: auto;
+            border-radius: 10px;
+            border: 1px solid rgba(212, 168, 87, 0.2);
+            background: rgba(5, 8, 15, 0.5);
+            -webkit-overflow-scrolling: touch;
+        }
+        table.tabla-cookies {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+            min-width: 760px;
+        }
+        table.tabla-cookies thead {
+            background: linear-gradient(135deg, rgba(212, 168, 87, 0.18), rgba(212, 168, 87, 0.08));
+        }
+        table.tabla-cookies th {
+            font-family: 'Orbitron', monospace;
+            color: var(--gold-cosmic);
+            text-align: left;
+            padding: 12px 12px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(212, 168, 87, 0.3);
+            white-space: nowrap;
+        }
+        table.tabla-cookies td {
+            padding: 11px 12px;
+            color: var(--text-secondary);
+            vertical-align: top;
+            line-height: 1.5;
+            border-bottom: 1px solid rgba(212, 168, 87, 0.08);
+        }
+        table.tabla-cookies td:first-child {
+            color: var(--text-primary);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.74rem;
+            letter-spacing: 0.3px;
+            white-space: nowrap;
+        }
+        table.tabla-cookies tbody tr:last-child td { border-bottom: none; }
+        table.tabla-cookies tbody tr:hover {
+            background: rgba(212, 168, 87, 0.04);
+        }
+        .tag-cat {
+            display: inline-block;
+            font-size: 0.66rem;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-weight: 700;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        .tag-esencial {
+            background: rgba(0, 229, 255, 0.12);
+            color: #5fd8e8;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+        }
+        .tag-preferencia {
+            background: rgba(212, 168, 87, 0.12);
+            color: var(--gold-cosmic);
+            border: 1px solid rgba(212, 168, 87, 0.35);
+        }
+        .tag-tercero {
+            background: rgba(139, 163, 199, 0.1);
+            color: #8ba3c7;
+            border: 1px solid rgba(139, 163, 199, 0.3);
+        }
+        .nota-tabla {
+            font-size: 0.78rem !important;
+            color: var(--text-muted) !important;
+            margin-top: 10px !important;
+            font-style: italic;
         }
         .btn-volver {
             display: inline-block;
@@ -285,6 +373,12 @@
         }
         .container { max-width: 900px; margin: 0 auto; padding: 0 20px; }
         .main { position: relative; z-index: 1; }
+
+        @media (max-width: 640px) {
+            .terminos-container h1 { font-size: 1.4rem; }
+            .terminos-container h2 { font-size: 1rem; }
+            table.tabla-cookies { font-size: 0.75rem; }
+        }
     </style>
 </head>
 <body>
@@ -311,63 +405,191 @@
             <div class="container">
                 <div class="terminos-container">
 
-                    <h1 data-clave="cookies_titulo">✦ Aviso de Cookies</h1>
-                    <div class="fecha">📅 Última actualización: 18 de octubre de 2026</div>
+                    <h1 data-clave="cookies_titulo">✦ Política Institucional de Cookies y Almacenamiento Digital Local</h1>
+                    <div class="fecha">📅 Última actualización: 18 de octubre de 2026 · Versión 2.0 · Vigente</div>
 
-                    <h2>📘 1. ¿Qué son las Cookies?</h2>
+                    <!-- ===== SECCIÓN 1 ===== -->
+                    <h2>📘 1. Declaración de Privacidad y Marco Normativo</h2>
                     <div class="art">
-                        <p>Las cookies son pequeños archivos de texto que un sitio web guarda en tu dispositivo cuando lo visitas. Sirven para mantener tu sesión iniciada, recordar tus preferencias y hacer que la plataforma funcione correctamente.</p>
-                    </div>
-
-                    <h2>📗 2. Tipos de Almacenamiento que Utilizamos</h2>
-                    <div class="art">
-                        <p><strong>2.1. Almacenamiento técnico (necesario):</strong> Es indispensable para el funcionamiento de la plataforma. Permite mantener tu sesión, la conexión de tu wallet y la seguridad de tu cuenta.</p>
-                        <p><strong>2.2. Preferencias:</strong> Guardan tus configuraciones personales, como el tema claro u oscuro, el color de acento, el tamaño de fuente, la reproducción automática de video y la calidad de imágenes y video.</p>
-                        <p><strong>2.3. Analítica y marketing:</strong> Actualmente Sariel's <strong>no utiliza</strong> cookies de analítica de terceros ni cookies de marketing o publicidad. Si en el futuro se incorporan, te pediremos tu consentimiento antes de activarlas.</p>
-                    </div>
-
-                    <h2>📙 3. ¿Qué Almacenamiento Específico Usamos?</h2>
-                    <div class="art">
-                        <p><strong>3.1. Supabase:</strong> Autenticación y gestión de sesiones de usuario.</p>
-                        <p><strong>3.2. Cloudflare:</strong> Seguridad y optimización de rendimiento (red de distribución de contenido).</p>
-                        <p><strong>3.3. Almacenamiento local del navegador (localStorage):</strong> Guarda tus preferencias de la plataforma y datos temporales, como la wallet conectada y tus preferencias de contenido. No es una cookie, pero cumple una función similar, así que también aparece en este aviso.</p>
-                        <p><strong>3.4. Servicios de pago y comunicación:</strong> Stripe, Fintoc, NOWPayments, Telnyx y LiveKit pueden establecer cookies o almacenamiento propio cuando los utilizas para pagar, hacer llamadas o transmitir en vivo.</p>
-                    </div>
-
-                    <h2>📕 4. ¿Cómo Controlar las Cookies?</h2>
-                    <div class="art">
-                        <p><strong>4.1. Configuración del Navegador:</strong> Puedes gestionar las cookies desde la configuración de tu navegador.</p>
+                        <p><strong>1.1. Compromiso institucional.</strong> Sariel's (en adelante, "la Plataforma") reconoce que la protección de los datos personales y de la privacidad digital constituye un derecho fundamental. La presente Política Institucional de Cookies y Almacenamiento Digital Local regula el uso de tecnologías de almacenamiento y recuperación de información en los dispositivos de los Usuarios, en cumplimiento de estándares internacionales y de la legislación aplicable.</p>
+                        <p><strong>1.2. Marco normativo aplicable.</strong> Esta Política se emite en observancia de:</p>
                         <ul>
-                            <li><strong>Google Chrome:</strong> Configuración → Privacidad y seguridad → Cookies y otros datos de sitios.</li>
-                            <li><strong>Mozilla Firefox:</strong> Opciones → Privacidad y seguridad → Cookies y datos del sitio.</li>
-                            <li><strong>Microsoft Edge:</strong> Configuración → Privacidad, búsqueda y servicios → Cookies.</li>
-                            <li><strong>Safari:</strong> Preferencias → Privacidad → Gestionar datos de sitios web.</li>
+                            <li><strong>Reglamento (UE) 2016/679 — RGPD / GDPR:</strong> Reglamento General de Protección de Datos de la Unión Europea, en particular su Artículo 5 (principios de licitud, transparencia y minimización) y Artículo 7 (consentimiento).</li>
+                            <li><strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) — México:</strong> y su Reglamento, incluyendo los principios de licitud, consentimiento, información, calidad, finalidad, lealtad, proporcionalidad y responsabilidad.</li>
+                            <li><strong>Lineamientos del INAI</strong> sobre el Aviso de Privacidad y mecanismos para la revocación del consentimiento.</li>
+                            <li><strong>Directiva ePrivacy (UE) 2002/58/CE</strong> y sus actualizaciones, en materia de almacenamiento de información en equipos terminales.</li>
                         </ul>
-                        <p><strong>4.2. Desactivar el almacenamiento:</strong> Puedes bloquearlo, pero algunas funciones de la plataforma, como mantener tu sesión o tu wallet conectada, dejarán de funcionar.</p>
+                        <p><strong>1.3. Ámbito de aplicación.</strong> Esta Política aplica a todo Usuario que acceda, navegue o utilice los servicios de la Plataforma, con independencia de su ubicación geográfica. El uso continuado de la Plataforma tras la publicación de esta Política implica el conocimiento de su contenido, sin perjuicio del consentimiento expreso que se requiera para tecnologías no esenciales.</p>
+                        <p><strong>1.4. Principio de minimización.</strong> Sariel's implementa un modelo de <strong>privacidad desde el diseño (Privacy by Design)</strong> y <strong>privacidad por defecto (Privacy by Default)</strong>, limitando la recolección de información al mínimo técnicamente indispensable para la operación de la Plataforma.</p>
                     </div>
 
-                    <h2>📒 5. Proveedores Externos</h2>
+                    <!-- ===== SECCIÓN 2 ===== -->
+                    <h2>📗 2. Definición Técnica de Cookies y Almacenamiento Local</h2>
                     <div class="art">
-                        <p><strong>5.1. Proveedores:</strong> Algunos servicios que utilizamos (como Supabase, Cloudflare, Stripe, Fintoc, NOWPayments, Telnyx y LiveKit) pueden establecer sus propias cookies o almacenamiento para funcionar correctamente.</p>
-                        <p><strong>5.2. Políticas de terceros:</strong> Te recomendamos revisar las políticas de privacidad de cada proveedor para más información.</p>
+                        <p><strong>2.1. Cookies.</strong> Una cookie es un fragmento de datos (archivo de texto de pequeño tamaño) que un servidor web transmite al navegador del Usuario y que este almacena en su dispositivo. Las cookies permiten al servidor reconocer al dispositivo en visitas posteriores, mantener estados de sesión, recordar preferencias y garantizar la integridad de determinados flujos de seguridad.</p>
+                        <p><strong>2.2. Web Storage (LocalStorage y SessionStorage).</strong> Se trata de mecanismos de almacenamiento nativos del navegador HTML5 que permiten guardar pares clave-valor de forma persistente (LocalStorage) o limitada a la sesión de navegación (SessionStorage). A diferencia de las cookies, no se transmiten automáticamente en cada petición HTTP, pero cumplen funciones equivalentes de persistencia de estado.</p>
+                        <p><strong>2.3. IndexedDB y Cache Storage.</strong> Tecnologías de almacenamiento estructurado del navegador utilizadas para el rendimiento de la aplicación, el almacenamiento en caché de activos y la operación offline.</p>
+                        <p><strong>2.4. Distinción operativa.</strong> A los efectos de esta Política, el término <strong>"almacenamiento digital local"</strong> comprende de forma conjunta cookies, LocalStorage, SessionStorage, IndexedDB y Cache Storage, así como cualquier tecnología equivalente de almacenamiento en el dispositivo del Usuario.</p>
+                        <p><strong>2.5. Clasificación por finalidad.</strong> Sariel's clasifica las tecnologías de almacenamiento en tres categorías: (i) <strong>Técnicas o esenciales</strong>; (ii) <strong>de Preferencia</strong>; y (iii) <strong>Analíticas o de Marketing</strong>. Solo las dos primeras se encuentran activas en la operación actual de la Plataforma.</p>
                     </div>
 
-                    <h2>📘 6. Duración del Almacenamiento</h2>
+                    <!-- ===== SECCIÓN 3 ===== -->
+                    <h2>📙 3. Matriz Corporativa de Cookies y Almacenamiento Utilizado</h2>
                     <div class="art">
-                        <p><strong>6.1. Cookies de sesión:</strong> Se eliminan cuando cierras el navegador.</p>
-                        <p><strong>6.2. Almacenamiento persistente:</strong> Permanece en tu dispositivo hasta que lo borres o cierres sesión, para recordar tus preferencias.</p>
+                        <p><strong>3.1. Inventario oficial.</strong> La siguiente matriz detalla las tecnologías de almacenamiento utilizadas por Sariel's, su categoría, finalidad técnico-operativa, proveedor o servicio asociado y plazo de duración:</p>
+
+                        <div class="tabla-cookies-wrapper">
+                            <table class="tabla-cookies">
+                                <thead>
+                                    <tr>
+                                        <th>Tecnología / Clave</th>
+                                        <th>Categoría</th>
+                                        <th>Finalidad Técnica / Operativa</th>
+                                        <th>Proveedor / Servicio</th>
+                                        <th>Duración</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>sb-access-token<br>sb-refresh-token</td>
+                                        <td><span class="tag-cat tag-esencial">Esencial</span></td>
+                                        <td>Autenticación y mantenimiento seguro de la sesión del Usuario.</td>
+                                        <td>Supabase</td>
+                                        <td>Sesión / hasta cierre</td>
+                                    </tr>
+                                    <tr>
+                                        <td>__cf_bm<br>cf_clearance</td>
+                                        <td><span class="tag-cat tag-esencial">Esencial</span></td>
+                                        <td>Protección anti-bot, mitigación DDoS y seguridad perimetral.</td>
+                                        <td>Cloudflare</td>
+                                        <td>30 min – 1 año</td>
+                                    </tr>
+                                    <tr>
+                                        <td>sariels_wallet_address</td>
+                                        <td><span class="tag-cat tag-preferencia">Preferencia</span></td>
+                                        <td>Persistencia de la wallet conectada para evitar reconexión manual.</td>
+                                        <td>Sariel's (localStorage)</td>
+                                        <td>Persistente / hasta borrado</td>
+                                    </tr>
+                                    <tr>
+                                        <td>sariels_theme<br>sariels_accent<br>sariels_font_size</td>
+                                        <td><span class="tag-cat tag-preferencia">Preferencia</span></td>
+                                        <td>Personalización visual: tema claro/oscuro, color de acento y tamaño de fuente.</td>
+                                        <td>Sariel's (localStorage)</td>
+                                        <td>Persistente / hasta borrado</td>
+                                    </tr>
+                                    <tr>
+                                        <td>sariels_media_prefs</td>
+                                        <td><span class="tag-cat tag-preferencia">Preferencia</span></td>
+                                        <td>Autoplay de video y calidad de imágenes/video seleccionada por el Usuario.</td>
+                                        <td>Sariel's (localStorage)</td>
+                                        <td>Persistente / hasta borrado</td>
+                                    </tr>
+                                    <tr>
+                                        <td>__stripe_mid<br>__stripe_sid</td>
+                                        <td><span class="tag-cat tag-tercero">Tercero</span></td>
+                                        <td>Procesamiento seguro de pagos con tarjeta y prevención de fraude.</td>
+                                        <td>Stripe</td>
+                                        <td>30 min – 1 año</td>
+                                    </tr>
+                                    <tr>
+                                        <td>fintoc_session</td>
+                                        <td><span class="tag-cat tag-tercero">Tercero</span></td>
+                                        <td>Iniciación de pagos y validación de cuentas bancarias (open banking).</td>
+                                        <td>Fintoc</td>
+                                        <td>Sesión</td>
+                                    </tr>
+                                    <tr>
+                                        <td>nowpayments_ref</td>
+                                        <td><span class="tag-cat tag-tercero">Tercero</span></td>
+                                        <td>Trazabilidad de transacciones con criptoactivos.</td>
+                                        <td>NOWPayments</td>
+                                        <td>Sesión / hasta 30 días</td>
+                                    </tr>
+                                    <tr>
+                                        <td>telnyx_rtc<br>livekit_session</td>
+                                        <td><span class="tag-cat tag-tercero">Tercero</span></td>
+                                        <td>Establecimiento de llamadas, mensajería y transmisión en vivo cifrada.</td>
+                                        <td>Telnyx / LiveKit</td>
+                                        <td>Sesión</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p class="nota-tabla">La presente matriz es de carácter enunciativo y podrá actualizarse conforme a la Sección 7. Las claves exactas pueden variar según la versión del navegador y del proveedor.</p>
                     </div>
 
-                    <h2>📙 7. Actualizaciones del Aviso de Cookies</h2>
+                    <!-- ===== SECCIÓN 4 ===== -->
+                    <h2>📕 4. Almacenamiento Técnico Esencial vs. Analítica / Marketing Futuro</h2>
                     <div class="art">
-                        <p><strong>7.1. Modificaciones:</strong> Podemos actualizar este aviso para reflejar cambios en nuestras prácticas.</p>
-                        <p><strong>7.2. Notificaciones:</strong> Te informaremos de cambios significativos a través de la plataforma.</p>
+                        <p><strong>4.1. Almacenamiento técnico esencial.</strong> Es aquel estrictamente necesario para la prestación del servicio solicitado por el Usuario. Su base de legitimación es el <strong>interés legítimo</strong> y la <strong>ejecución del contrato</strong> (Art. 6.1.b y 6.1.f RGPD), por lo que no requiere consentimiento previo. Su desactivación impide el funcionamiento de la Plataforma.</p>
+                        <p><strong>4.2. Almacenamiento de preferencia.</strong> Permite recordar configuraciones personales del Usuario. Su base de legitimación es el <strong>consentimiento</strong> del Usuario, quien puede retirarlo en cualquier momento sin afectar la licitud del tratamiento previo.</p>
+                        <p><strong>4.3. Analítica y marketing.</strong> Sariel's <strong>NO utiliza actualmente</strong> cookies de analítica de terceros, píxeles publicitarios ni tecnologías de rastreo con fines de marketing. En caso de incorporarlas en el futuro:</p>
+                        <ul>
+                            <li>Se implementará un <strong>banner de consentimiento previo (opt-in)</strong> conforme al RGPD y la LFPDPPP.</li>
+                            <li>El rastreo publicitario <strong>permanecerá desactivado por defecto</strong> hasta que el Usuario otorgue consentimiento explícito, informado y granular.</li>
+                            <li>Se ofrecerá un mecanismo de <strong>revocación tan sencillo como el de otorgamiento</strong>.</li>
+                            <li>Se documentará el inventario en la matriz de la Sección 3 con la debida antelación.</li>
+                        </ul>
+                        <p><strong>4.4. Prohibición de transferencia no consentida.</strong> Sariel's no vende, alquila ni cede datos derivados de cookies o almacenamiento local a terceros con fines publicitarios sin consentimiento expreso del Usuario.</p>
                     </div>
 
-                    <h2>📗 8. Contacto</h2>
+                    <!-- ===== SECCIÓN 5 ===== -->
+                    <h2>📒 5. Servicios de Terceros e Infraestructura Web3</h2>
                     <div class="art">
-                        <p><strong>Correo electrónico:</strong> csarielscontacto@gmail.com</p>
-                        <p><strong>Dirección postal:</strong> Puebla, México.</p>
+                        <p><strong>5.1. Ecosistema de proveedores.</strong> La operación de Sariel's se apoya en una infraestructura distribuida de proveedores tecnológicos de primer nivel, cada uno de los cuales puede establecer cookies o almacenamiento propio conforme a sus propias políticas:</p>
+                        <ul>
+                            <li><strong>Polygon (red blockchain):</strong> Infraestructura Web3 para la verificación de transacciones on-chain. La interacción con la wallet es gestionada por el Usuario y no implica rastreo publicitario por parte de Sariel's.</li>
+                            <li><strong>Supabase:</strong> Autenticación, gestión de sesiones y base de datos. Actúa como encargado del tratamiento bajo un DPA (Data Processing Agreement).</li>
+                            <li><strong>Cloudflare:</strong> CDN, seguridad perimetral, mitigación DDoS y protección anti-bot.</li>
+                            <li><strong>Stripe:</strong> Procesamiento de pagos con tarjeta bajo estándar PCI-DSS Nivel 1.</li>
+                            <li><strong>Fintoc:</strong> Iniciación de pagos y validación de cuentas bancarias (open banking).</li>
+                            <li><strong>NOWPayments:</strong> Procesamiento de pagos con criptoactivos.</li>
+                            <li><strong>Telnyx:</strong> Telefonía, mensajería y comunicaciones programables.</li>
+                            <li><strong>LiveKit:</strong> Infraestructura de transmisión en vivo y comunicación en tiempo real cifrada (WebRTC).</li>
+                        </ul>
+                        <p><strong>5.2. Transferencias internacionales.</strong> Algunos proveedores pueden procesar datos fuera de México o del EEE. En tales casos, Sariel's verifica la existencia de <strong>garantías adecuadas</strong> (cláusulas contractuales tipo, decisiones de adecuación o mecanismos equivalentes) conforme al RGPD y la LFPDPPP.</p>
+                        <p><strong>5.3. Políticas de terceros.</strong> Se recomienda al Usuario revisar las políticas de privacidad y de cookies de cada proveedor para conocer el alcance de su tratamiento. Sariel's no controla las cookies establecidas directamente por dichos terceros.</p>
+                    </div>
+
+                    <!-- ===== SECCIÓN 6 ===== -->
+                    <h2>📘 6. Gestión, Configuración y Revocación del Consentimiento</h2>
+                    <div class="art">
+                        <p><strong>6.1. Derecho de configuración.</strong> El Usuario puede gestionar, bloquear o eliminar las cookies y el almacenamiento local en cualquier momento desde la configuración de su navegador, sin necesidad de justificación y de forma gratuita.</p>
+                        <p><strong>6.2. Procedimiento por navegador.</strong> A continuación se indican las rutas oficiales de configuración:</p>
+                        <ul>
+                            <li><strong>Google Chrome:</strong> Configuración → Privacidad y seguridad → Cookies y otros datos de sitios → Ver todas las cookies y datos de sitios.</li>
+                            <li><strong>Mozilla Firefox:</strong> Opciones → Privacidad y seguridad → Cookies y datos del sitio → Administrar datos.</li>
+                            <li><strong>Microsoft Edge:</strong> Configuración → Privacidad, búsqueda y servicios → Cookies y datos del sitio → Administrar y eliminar cookies.</li>
+                            <li><strong>Safari (macOS):</strong> Safari → Preferencias → Privacidad → Gestionar datos de sitios web.</li>
+                            <li><strong>Safari (iOS):</strong> Ajustes → Safari → Privacidad y seguridad → Bloquear todas las cookies.</li>
+                        </ul>
+                        <p><strong>6.3. Revocación del consentimiento.</strong> El Usuario puede revocar su consentimiento para el almacenamiento no esencial en cualquier momento, mediante: (i) la desmarcación de la casilla de aceptación al pie de esta Política; (ii) la eliminación de datos de sitio en su navegador; o (iii) solicitud directa a los canales oficiales de contacto indicados en la Sección 8.</p>
+                        <p><strong>6.4. Efectos de la desactivación.</strong> La desactivación del almacenamiento técnico esencial puede impedir el funcionamiento correcto de la Plataforma, incluyendo el mantenimiento de sesión, la conexión de wallet y la seguridad de la cuenta. Sariel's no se responsabiliza de las limitaciones funcionales derivadas de dicha configuración.</p>
+                        <p><strong>6.5. Ausencia de consentimiento tácito.</strong> La mera navegación no constituye consentimiento para tecnologías no esenciales. Cualquier tratamiento no esencial requerirá acción afirmativa y explícita del Usuario.</p>
+                    </div>
+
+                    <!-- ===== SECCIÓN 7 ===== -->
+                    <h2>📙 7. Gobernanza y Modificaciones al Aviso</h2>
+                    <div class="art">
+                        <p><strong>7.1. Reserva de modificación.</strong> Sariel's se reserva el derecho de actualizar, modificar o sustituir esta Política para reflejar cambios normativos, técnicos u operativos, así como nuevas prácticas de tratamiento.</p>
+                        <p><strong>7.2. Notificación de cambios.</strong> Los cambios sustanciales serán notificados a través de: (i) la publicación de la versión actualizada en esta página con indicación de fecha y versión; (ii) aviso destacado en la Plataforma; y (iii) cuando proceda, comunicación directa al Usuario.</p>
+                        <p><strong>7.3. Versionado y trazabilidad.</strong> Cada versión de esta Política será identificada mediante número de versión y fecha de entrada en vigor, permitiendo su trazabilidad histórica. La versión vigente será siempre la publicada en esta URL oficial.</p>
+                        <p><strong>7.4. Aceptación continuada.</strong> El uso de la Plataforma con posterioridad a la entrada en vigor de una modificación implica el conocimiento de la versión actualizada, sin perjuicio del consentimiento expreso que se requiera para nuevas tecnologías no esenciales.</p>
+                    </div>
+
+                    <!-- ===== SECCIÓN 8 ===== -->
+                    <h2>📗 8. Canales Oficiales de Contacto y Derechos ARCO</h2>
+                    <div class="art">
+                        <p><strong>8.1. Derechos ARCO.</strong> El Usuario, en su calidad de titular de datos personales, podrá ejercer en cualquier momento sus derechos de <strong>Acceso, Rectificación, Cancelación y Oposición</strong> (ARCO), así como los derechos de portabilidad y limitación del tratamiento reconocidos por el RGPD, mediante solicitud dirigida a los canales oficiales.</p>
+                        <p><strong>8.2. Procedimiento.</strong> La solicitud deberá contener: (i) nombre del titular y medio de contacto; (ii) documento que acredite su identidad; (iii) descripción clara y precisa del derecho que se ejerce; y (iv) cualquier elemento que facilite la localización de los datos. Sariel's responderá en un plazo máximo de <strong>20 días hábiles</strong> conforme a la LFPDPPP, prorrogable por una sola vez.</p>
+                        <p><strong>8.3. Canales oficiales de contacto.</strong></p>
+                        <ul>
+                            <li><strong>Correo electrónico:</strong> csarielscontacto@gmail.com</li>
+                            <li><strong>Dirección postal:</strong> Puebla, México.</li>
+                            <li><strong>Asunto sugerido:</strong> "Derechos ARCO — [Nombre del titular]"</li>
+                        </ul>
+                        <p><strong>8.4. Autoridad de control.</strong> Sin perjuicio de los canales internos, el Usuario podrá acudir a la autoridad de protección de datos competente: en México, el <strong>INAI</strong>; en la Unión Europea, la <strong>autoridad de control</strong> de su Estado miembro de residencia.</p>
                     </div>
 
                     <div class="enlaces-legales">
@@ -379,15 +601,16 @@
 
                     <div class="footer-tyc">
                         <p>© <strong>Sariel's</strong>. Todos los derechos reservados. Puebla, México 🇲🇽</p>
+                        <p style="margin-top:6px;font-size:0.78rem;color:var(--text-muted);">Documento institucional · Versión 2.0 · Cumplimiento RGPD / LFPDPPP · Tono Enterprise Web3</p>
                     </div>
 
                     <div class="aceptacion-container">
                         <input type="checkbox" id="aceptoCookies" />
                         <label for="aceptoCookies">
-                            <strong>He leído y entiendo el uso de cookies y almacenamiento</strong> descrito en este aviso.
+                            <strong>He leído y entiendo la Política Institucional de Cookies y Almacenamiento Digital Local</strong> descrita en este aviso.
                             <br /><br />
                             <span style="font-size: 0.85rem; opacity: 0.7;">
-                                🍪 Puedes cambiar tus preferencias en cualquier momento desde la configuración de tu navegador.
+                                🍪 Puedes gestionar, configurar o revocar tus preferencias en cualquier momento desde la configuración de tu navegador o los canales oficiales de contacto.
                             </span>
                         </label>
                     </div>
