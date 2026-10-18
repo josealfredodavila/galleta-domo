@@ -1,12 +1,11 @@
 // ============================================================
-// CSARIEL'S · LLAMADAS-UI · v1.2
-// Pestaña "Llamadas", historial, bloqueos y configuración.
-// Depende de: window.supabaseClient o window.supabaseReady
-//
-// v1.2: añadido CALLS UI ENHANCER al final (inyecta el overlay
-// del UI Kit Web3 con temporizador + halo + barra circular).
-// NO toca lógica de llamadaFetch, auth, historial, bloqueos,
-// config, ni LiveKit/WebRTC. Solo markup y ticker de temporizador.
+// CSARIEL'S · LLAMADAS-UI · v1.3
+// Cambios v1.3:
+// - renderFilaHistorial rediseñada: avatar circular con badge
+//   de dirección superpuesto, badges neón delicadas, acciones
+//   circulares con SVG (llamar / bloquear / borrar).
+// - NO se tocó: llamadaFetch, auth, historial logic, bloques,
+//   config, enhancer del overlay (v1.2).
 // ============================================================
 
 (function () {
@@ -36,7 +35,6 @@
         el.t = setTimeout(function () { el.classList.remove('show'); }, 3500);
     }
 
-    // Espera una promesa con límite de tiempo
     function conLimite(promesa, ms, codigo) {
         return new Promise(function (resolve, reject) {
             var t = setTimeout(function () {
@@ -74,7 +72,6 @@
         return { token: r.data.session.access_token, user: r.data.session.user };
     }
 
-    // Único punto de llamadas al backend. Siempre envía Authorization: Bearer
     async function llamadaFetch(path, options) {
         options = options || {};
 
@@ -128,7 +125,6 @@
         return d.data;
     }
 
-    // Traduce un error técnico a un texto legible para el usuario
     function textoError(e) {
         var code = e && e.code;
         var status = e && e.status;
@@ -143,7 +139,7 @@
     }
 
     // ============================================================
-    // CARGAR HISTORIAL
+    // HISTORIAL
     // ============================================================
     async function cargarHistorialLlamadas() {
         var cont = $('historialLlamadasLista');
@@ -208,23 +204,46 @@
         '</div>';
     }
 
+    function svgIcon(name) {
+        switch (name) {
+            case 'phone':
+                return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+            case 'block':
+                return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
+            case 'trash':
+                return '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
+            case 'arrow-in':
+                return '↙';
+            case 'arrow-out':
+                return '↗';
+            case 'close':
+                return '✕';
+            case 'alert':
+                return '!';
+            default:
+                return '';
+        }
+    }
+
     function renderFilaHistorial(h) {
-        var claseIcono = 'entrante';
-        var icono = '↙';
-        if (h.direccion === 'saliente') { claseIcono = 'saliente'; icono = '↗'; }
+        // Dirección y estado
+        var esEntrante = h.direccion !== 'saliente';
+        var dirClass = esEntrante ? 'entrante' : 'saliente';
+        var dirIcon = esEntrante ? '↙' : '↗';
 
-        if (h.estado === 'perdida') { claseIcono = 'perdida'; icono = '✕'; }
-        else if (h.estado === 'rechazada') { claseIcono = 'rechazada'; icono = '✕'; }
-        else if (h.estado === 'fallida') { claseIcono = 'fallida'; icono = '!'; }
-
-        var tipoLabel = h.tipo === 'video' ? '📹 Video' : '☎ Audio';
+        var estadoClase = h.estado || 'cancelada';
         var estadoLabel = {
             'contestada': 'Contestada',
             'perdida': 'Perdida',
             'rechazada': 'Rechazada',
             'cancelada': 'Cancelada',
             'fallida': 'Fallida'
-        }[h.estado] || h.estado;
+        }[h.estado] || (h.estado || '—');
+
+        var esFallida = ['perdida', 'rechazada', 'fallida'].indexOf(h.estado) !== -1;
+        if (esFallida) dirClass = 'perdida';
+
+        var tipoLabel = h.tipo === 'video' ? '📹 Video' : '☎ Audio';
 
         var duracion = '';
         if (h.duracion_seg != null && h.duracion_seg > 0) {
@@ -243,21 +262,29 @@
                   d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
+        // Avatar
+        var inicial = (h.contraparte_nombre || '?').charAt(0).toUpperCase();
+        var avatarHTML = h.contraparte_avatar
+            ? '<img src="' + esc(h.contraparte_avatar) + '" alt="">'
+            : esc(inicial);
+
         return '<div class="llamada-item">' +
-            '<div class="llamada-icono ' + claseIcono + '">' + icono + '</div>' +
+            '<div class="llamada-avatar">' + avatarHTML +
+                '<span class="dir-badge ' + dirClass + '">' + dirIcon + '</span>' +
+            '</div>' +
             '<div class="llamada-info">' +
                 '<div class="llamada-nombre">' + esc(h.contraparte_nombre || 'Usuario') + '</div>' +
                 '<div class="llamada-meta">' +
                     '<span class="badge-tipo">' + tipoLabel + '</span>' +
-                    '<span class="badge-estado ' + esc(h.estado) + '">' + estadoLabel + '</span>' +
-                    (duracion ? '<span>' + duracion + '</span>' : '') +
-                    '<span>' + fecha + '</span>' +
+                    '<span class="badge-estado ' + esc(estadoClase) + '">' + estadoLabel + '</span>' +
+                    (duracion ? '<span class="meta-duration">' + duracion + '</span>' : '') +
+                    '<span class="meta-time">' + fecha + '</span>' +
                 '</div>' +
             '</div>' +
             '<div class="llamada-acciones">' +
-                '<button data-action="call-back" data-userid="' + esc(h.contraparte_id) + '" title="Llamar de nuevo">☎</button>' +
-                '<button class="block" data-action="block" data-userid="' + esc(h.contraparte_id) + '" data-nombre="' + esc(h.contraparte_nombre) + '" title="Bloquear">⛔</button>' +
-                '<button class="danger" data-action="delete" data-id="' + esc(h.id) + '" title="Eliminar del historial">🗑</button>' +
+                '<button type="button" class="call-back" data-action="call-back" data-userid="' + esc(h.contraparte_id) + '" title="Llamar de nuevo" aria-label="Llamar de nuevo">' + svgIcon('phone') + '</button>' +
+                '<button type="button" class="block" data-action="block" data-userid="' + esc(h.contraparte_id) + '" data-nombre="' + esc(h.contraparte_nombre) + '" title="Bloquear" aria-label="Bloquear">' + svgIcon('block') + '</button>' +
+                '<button type="button" class="danger" data-action="delete" data-id="' + esc(h.id) + '" title="Eliminar del historial" aria-label="Eliminar del historial">' + svgIcon('trash') + '</button>' +
             '</div>' +
         '</div>';
     }
@@ -368,7 +395,7 @@
     }
 
     // ============================================================
-    // CONFIGURACIÓN
+    // CONFIG
     // ============================================================
     async function cargarConfiguracionLlamadas() {
         try {
@@ -424,7 +451,7 @@
     }
 
     // ============================================================
-    // HOOK: cambiar pestaña (extiende la existente)
+    // HOOK cambiarPestana
     // ============================================================
     var _cambiarPestanaOriginal = window.cambiarPestana;
     window.cambiarPestana = function (pestana) {
@@ -506,18 +533,11 @@
             cargarBloqueados().catch(function () {});
         }, 1500);
 
-        // === CALLS UI ENHANCER ===
         iniciarEnhancerOverlayLlamada();
     });
 
     // ============================================================
-    // ============================================================
-    // CALLS UI ENHANCER — v1.2
-    // Inyecta el markup del overlay Web3 (temporizador, halo, barra
-    // circular con labels) SI los overlays existen pero están
-    // "planos". NO modifica listeners existentes de mic/cam/screen/
-    // hang/accept/reject: solo decora el HTML y gestiona el ticker.
-    // ============================================================
+    // CALLS UI ENHANCER — v1.2 (sin cambios)
     // ============================================================
     var enhancerTimer = null;
     var enhancerStartAt = 0;
@@ -528,21 +548,15 @@
         var callOverlay = $('callOverlay');
         if (!callOverlay) return;
 
-        // Envuelve el contenido existente con la estructura Web3.
-        // IMPORTANTE: respetamos todos los IDs (#remoteVideo, #localVideo,
-        // #callInfo, #toggleMic, #toggleCam, #toggleScreen, #hangup) y sus
-        // listeners ya enlazados desde mensajes.js.
         if (!callOverlay.dataset.upgraded) {
             const videos = callOverlay.querySelector('.videos');
             const callinfo = callOverlay.querySelector('#callInfo');
             const controls = callOverlay.querySelector('.controls');
 
-            // Cabecera E2E
             const headerE2E = document.createElement('div');
             headerE2E.className = 'call-e2e-header';
             headerE2E.innerHTML = '<span class="lock">🔒</span><span>Llamada privada y cifrada · E2E</span>';
 
-            // Bloque de avatar (se rellena luego con datos reales)
             const avatarBlock = document.createElement('div');
             avatarBlock.className = 'call-avatar-block';
             avatarBlock.id = 'callAvatarBlock';
@@ -552,7 +566,6 @@
                 <div class="call-subname" id="callSubnameDisplay">Conectando…</div>
             `;
 
-            // Temporizador + status
             const timerEl = document.createElement('div');
             timerEl.className = 'call-timer';
             timerEl.id = 'callTimer';
@@ -563,7 +576,6 @@
             statusEl.id = 'callStatus';
             statusEl.innerHTML = '<span class="dot"></span><span id="callStatusText">Conectando…</span>';
 
-            // Limpiar overlay y reconstruir en el orden Web3
             callOverlay.innerHTML = '';
             callOverlay.appendChild(headerE2E);
             callOverlay.appendChild(avatarBlock);
@@ -572,7 +584,6 @@
             if (videos) callOverlay.appendChild(videos);
             if (callinfo) callOverlay.appendChild(callinfo);
             if (controls) {
-                // Envolver controles en una barra glass si no lo está
                 if (!controls.classList.contains('call-controls-bar')) {
                     controls.classList.add('call-controls-bar');
                 }
@@ -582,7 +593,6 @@
             callOverlay.dataset.upgraded = '1';
         }
 
-        // --- Envolver incomingOverlay ---
         var incomingOverlay = $('incomingOverlay');
         if (incomingOverlay && !incomingOverlay.dataset.upgraded) {
             const avatar = incomingOverlay.querySelector('#incomingAvatar');
@@ -595,13 +605,8 @@
             halo.id = 'incomingHalo';
             if (avatar) {
                 halo.innerHTML = avatar.innerHTML || '◈';
-                // Preservar el id antiguo en un nodo oculto no es necesario;
-                // mantenemos #incomingAvatar para compatibilidad del JS
-                // moviéndolo dentro del halo si existe.
-                if (avatar.id) {
-                    avatar.style.display = 'none';
-                    avatar.setAttribute('aria-hidden', 'true');
-                }
+                avatar.style.display = 'none';
+                avatar.setAttribute('aria-hidden', 'true');
             } else {
                 halo.innerHTML = '◈';
             }
@@ -618,7 +623,6 @@
             if (callinfo) incomingOverlay.appendChild(callinfo);
             if (controls) incomingOverlay.appendChild(controls);
 
-            // Reconectar #incomingAvatar dentro del halo (para compatibilidad)
             if (avatar) {
                 avatar.style.display = 'none';
                 halo.appendChild(avatar);
@@ -627,13 +631,11 @@
             incomingOverlay.dataset.upgraded = '1';
         }
 
-        // --- Observar apertura/cierre del overlay de llamada ---
         observarCambiosOverlay(callOverlay);
         enhancerInjected = true;
     }
 
     function observarCambiosOverlay(callOverlay) {
-        // Usamos MutationObserver para detectar .show sin tocar el JS original
         var observer = new MutationObserver(function () {
             var isOpen = callOverlay.classList.contains('show');
             if (isOpen) {
@@ -645,7 +647,6 @@
         });
         observer.observe(callOverlay, { attributes: true, attributeFilter: ['class'] });
 
-        // Estado inicial
         if (callOverlay.classList.contains('show')) {
             iniciarTickerLlamada();
             actualizarAvatarLlamada();
@@ -653,8 +654,6 @@
     }
 
     function actualizarAvatarLlamada() {
-        // Intenta leer el usuario actual desde window.current (expuesto
-        // por mensajes.js) para mostrar nombre/avatar en el overlay.
         var halo = $('callAvatarHalo');
         var nameDisplay = $('callNameDisplay');
         var subDisplay = $('callSubnameDisplay');
@@ -680,8 +679,6 @@
         var statusText = $('callStatusText');
         if (!timer) return;
 
-        // Cuando la llamada pase a "en curso", el texto del #callInfo
-        // original cambia. No lo controlamos, pero el ticker es estable.
         function tick() {
             var elapsed = Math.floor((Date.now() - enhancerStartAt) / 1000);
             var mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
@@ -715,7 +712,7 @@
     window.abrirModalConfig = abrirModalConfig;
     window.abrirModalBloqueados = abrirModalBloqueados;
     window.LlamadasUI = {
-        version: '1.2.0',
+        version: '1.3.0',
         iniciarEnhancerOverlayLlamada: iniciarEnhancerOverlayLlamada
     };
 })();
