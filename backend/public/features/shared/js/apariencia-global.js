@@ -1,5 +1,5 @@
 /* ================================================================
-   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.2
+   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.3
    Archivo: backend/public/features/js/apariencia-global.js
 
    Conserva sin cambios:
@@ -7,6 +7,11 @@
    - Tema, color de acento y tamaño de fuente (80–140 %).
    - window.SarielApariencia y todas sus funciones públicas.
    - Carga exclusiva de la mascota activa.
+
+   v3.3:
+   - Nuevo cuarto tema "bn" (Blanco y negro, estilo X en negro).
+   - Temas válidos: sistema, dia, noche, bn.
+   - CSS del tema "bn" inyectado una sola vez.
 
    v3.2:
    - Microinteracciones táctiles con transform y brillo (sin tocar layout).
@@ -32,6 +37,9 @@
         color_acento: '#D4AF37'
     };
 
+    // Temas válidos. Si se agrega otro, añadirlo aquí y en aplicarTema().
+    const TEMAS_VALIDOS = ['sistema', 'dia', 'noche', 'bn'];
+
     let prefsActuales = { ...DEFAULTS };
     let syncConSupabaseListo = false;
     let inicializacionEnCurso = null;
@@ -54,7 +62,7 @@
     }
 
     function normalizarTema(valor) {
-        return ['sistema', 'dia', 'noche'].includes(valor)
+        return TEMAS_VALIDOS.includes(valor)
             ? valor
             : DEFAULTS.tema;
     }
@@ -309,11 +317,53 @@
        TEMA
        ================================================================ */
 
+    /*
+     * Tema "bn" (Blanco y negro): fondo negro puro y textos grises
+     * claros, al estilo del modo negro de X. Solo cambia colores;
+     * no toca dimensiones ni layout.
+     */
+    const CSS_TEMA_BN = `
+        html.tema-bn {
+            color-scheme: dark;
+            --bg: #000000;
+            --bg-color: #000000;
+            --bg-primary: #000000;
+            --bg-secondary: #16181c;
+            --card: #16181c;
+            --surface: #16181c;
+            --text: #e7e9ea;
+            --text-color: #e7e9ea;
+            --text-primary: #e7e9ea;
+            --text-secondary: #71767b;
+            --muted: #71767b;
+            --border: #2f3336;
+            --border-color: #2f3336;
+        }
+
+        html.tema-bn,
+        html.tema-bn body {
+            background: #000000 !important;
+            color: #e7e9ea;
+        }
+    `;
+
+    function instalarTemaBN() {
+        if (document.getElementById('sariels-tema-bn-css')) {
+            return;
+        }
+
+        const style = document.createElement('style');
+        style.id = 'sariels-tema-bn-css';
+        style.textContent = CSS_TEMA_BN;
+
+        (document.head || document.documentElement).appendChild(style);
+    }
+
     function aplicarTema(tema) {
         const html = document.documentElement;
         tema = normalizarTema(tema);
 
-        html.classList.remove('tema-dia', 'tema-noche');
+        html.classList.remove('tema-dia', 'tema-noche', 'tema-bn');
         html.removeAttribute('data-tema');
 
         if (tema === 'dia') {
@@ -325,6 +375,13 @@
         if (tema === 'noche') {
             html.classList.add('tema-noche');
             html.setAttribute('data-tema', 'noche');
+            return;
+        }
+
+        if (tema === 'bn') {
+            instalarTemaBN();
+            html.classList.add('tema-bn');
+            html.setAttribute('data-tema', 'bn');
             return;
         }
 
@@ -621,7 +678,8 @@
 
         recargar: inicializar,
         KEYS: KEYS,
-        DEFAULTS: DEFAULTS
+        DEFAULTS: DEFAULTS,
+        TEMAS: TEMAS_VALIDOS.slice()
     };
 
     /* ================================================================
@@ -838,7 +896,7 @@
     })();
 
     console.log(
-        '[Apariencia] Módulo global v3.2 cargado. Mascota activa:',
+        '[Apariencia] Módulo global v3.3 cargado. Mascota activa:',
         getMascotaActiva()
     );
 })();
