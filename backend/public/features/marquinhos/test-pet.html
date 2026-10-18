@@ -2,1924 +2,491 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#05070b">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#030914">
 <meta name="color-scheme" content="dark">
-
-<title>Marquinhos · Centro de Diagnóstico IA</title>
-
+<title>Marquinhos · Centro de Inteligencia</title>
 <style>
-/* ==========================================================
-   CSARIEL'S ECOSYSTEM
-   MARQUINHOS AI · DIAGNÓSTICO PREMIUM
-   Versión 2.0
-   Archivo independiente · HTML + CSS + JavaScript
-   ========================================================== */
-
-:root {
-    --bg: #05070b;
-    --surface: #0b1017;
-    --surface-2: #101722;
-    --surface-3: #151e2b;
-    --gold: #d4af37;
-    --gold-light: #ffe7a0;
-    --green: #00df9a;
-    --cyan: #4de8ff;
-    --red: #ff5277;
-    --yellow: #ffce57;
-    --text: #f4f6fb;
-    --muted: #8895a8;
-    --border: rgba(212,175,55,.18);
-    --radius: 22px;
-    --shadow: 0 24px 80px rgba(0,0,0,.38);
-}
-
-* {
-    box-sizing: border-box;
-}
-
-html {
-    min-height: 100%;
-    scroll-behavior: smooth;
-}
-
-body {
-    margin: 0;
-    min-height: 100vh;
-    background:
-        radial-gradient(ellipse at 50% -15%, rgba(212,175,55,.12), transparent 45%),
-        radial-gradient(ellipse at 0% 55%, rgba(0,223,154,.055), transparent 35%),
-        var(--bg);
-    color: var(--text);
-    font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", sans-serif;
-    font-size: 14px;
-    line-height: 1.65;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-}
-
-button {
-    font: inherit;
-}
-
-button:focus-visible {
-    outline: 2px solid var(--gold-light);
-    outline-offset: 4px;
-}
-
-button:disabled {
-    opacity: .5;
-    cursor: not-allowed;
-}
-
-button:disabled:hover {
-    transform: none;
-}
-
-.ambient {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    overflow: hidden;
-    z-index: 0;
-}
-
-.ambient::before,
-.ambient::after {
-    content: "";
-    position: absolute;
-    width: 340px;
-    height: 340px;
-    border-radius: 50%;
-    filter: blur(100px);
-    opacity: .12;
-}
-
-.ambient::before {
-    background: var(--gold);
-    top: 15%;
-    left: -230px;
-}
-
-.ambient::after {
-    background: var(--green);
-    right: -240px;
-    bottom: 8%;
-}
-
-.app {
-    position: relative;
-    z-index: 1;
-    width: min(100% - 32px, 1080px);
-    margin: 0 auto;
-    padding: 25px 0 36px;
-}
-
-/* HEADER */
-
-.topbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-    padding: 12px 0 22px;
-    border-bottom: 1px solid rgba(255,255,255,.07);
-}
-
-.brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    min-width: 0;
-}
-
-.brand-mark {
-    display: grid;
-    place-items: center;
-    width: 45px;
-    height: 45px;
-    flex-shrink: 0;
-    color: var(--gold-light);
-    font-size: 22px;
-    border: 1px solid var(--border);
-    border-radius: 15px;
-    background: linear-gradient(145deg, #1b1b16, #0c100f);
-    box-shadow: inset 0 0 18px rgba(212,175,55,.08);
-}
-
-.brand-name {
-    font-size: 15px;
-    font-weight: 850;
-    letter-spacing: .045em;
-}
-
-.brand-sub {
-    color: var(--muted);
-    font-size: 11px;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-}
-
-.status-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 8px 12px;
-    border: 1px solid rgba(255,255,255,.1);
-    border-radius: 999px;
-    color: var(--muted);
-    background: rgba(255,255,255,.025);
-    font-size: 11px;
-    font-weight: 750;
-    white-space: nowrap;
-}
-
-.status-dot {
-    width: 7px;
-    height: 7px;
-    background: var(--yellow);
-    border-radius: 50%;
-    box-shadow: 0 0 10px currentColor;
-    color: var(--yellow);
-}
-
-.status-pill.is-running .status-dot {
-    background: var(--cyan);
-    color: var(--cyan);
-    animation: pulse 1s infinite;
-}
-
-.status-pill.is-ok .status-dot {
-    background: var(--green);
-    color: var(--green);
-}
-
-.status-pill.is-error .status-dot {
-    background: var(--red);
-    color: var(--red);
-}
-
-/* HERO */
-
-.hero {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    align-items: center;
-    gap: 35px;
-    padding: 42px 0 30px;
-}
-
-.eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--gold-light);
-    font-size: 10px;
-    font-weight: 850;
-    letter-spacing: .18em;
-    text-transform: uppercase;
-}
-
-.eyebrow::before {
-    content: "";
-    width: 19px;
-    height: 1px;
-    background: var(--gold);
-}
-
-h1 {
-    margin: 13px 0 12px;
-    font-size: clamp(35px, 6vw, 60px);
-    font-weight: 900;
-    letter-spacing: -.065em;
-    line-height: 1.03;
-}
-
-.gradient-text {
-    color: var(--gold);
-    background: linear-gradient(100deg, #fff0b6, #d4af37 45%, #a9cbbd 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.hero-description {
-    max-width: 440px;
-    color: #9ca9ba;
-    font-size: 14px;
-    line-height: 1.85;
-}
-
-.hero-description strong {
-    color: #e7edf5;
-    font-weight: 650;
-}
-
-.hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 23px;
-}
-
-.btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 9px;
-    min-height: 45px;
-    padding: 0 17px;
-    border: 1px solid transparent;
-    border-radius: 13px;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: 800;
-    transition: transform .2s ease, background .2s ease,
-        border-color .2s ease, box-shadow .2s ease;
-}
-
-.btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-}
-
-.btn-primary {
-    color: #171407;
-    background: linear-gradient(135deg, #f5dc86, #c9a32d);
-    box-shadow: 0 7px 25px rgba(212,175,55,.13);
-}
-
-.btn-primary:hover:not(:disabled) {
-    box-shadow: 0 10px 30px rgba(212,175,55,.25);
-}
-
-.btn-secondary {
-    color: #e0e7f0;
-    background: rgba(255,255,255,.035);
-    border-color: rgba(255,255,255,.1);
-}
-
-.btn-secondary:hover:not(:disabled) {
-    background: rgba(255,255,255,.075);
-    border-color: var(--border);
-}
-
-/* MARQUINHOS */
-
-.mascot-stage {
-    position: relative;
-    display: grid;
-    place-items: center;
-    min-height: 310px;
-    isolation: isolate;
-}
-
-.orbit {
-    position: absolute;
-    width: 260px;
-    height: 260px;
-    border: 1px solid rgba(212,175,55,.15);
-    border-radius: 50%;
-    animation: rotate 28s linear infinite;
-}
-
-.orbit::before,
-.orbit::after {
-    content: "";
-    position: absolute;
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: var(--gold);
-    box-shadow: 0 0 15px var(--gold);
-}
-
-.orbit::before {
-    top: 36px;
-    left: 34px;
-}
-
-.orbit::after {
-    bottom: 29px;
-    right: 42px;
-    background: var(--cyan);
-    box-shadow: 0 0 15px var(--cyan);
-}
-
-.orbit-inner {
-    position: absolute;
-    width: 205px;
-    height: 205px;
-    border: 1px dashed rgba(77,232,255,.17);
-    border-radius: 50%;
-    animation: rotate 36s linear infinite reverse;
-}
-
-.mascot-glow {
-    position: absolute;
-    width: 180px;
-    height: 180px;
-    border-radius: 50%;
-    background: rgba(212,175,55,.10);
-    filter: blur(35px);
-}
-
-.robot {
-    position: relative;
-    z-index: 2;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    width: 166px;
-    animation: float 4s ease-in-out infinite;
-}
-
-.robot-aura {
-    position: absolute;
-    top: 24px;
-    width: 120px;
-    height: 120px;
-    border-radius: 40%;
-    background: rgba(0,223,154,.09);
-    filter: blur(23px);
-}
-
-.robot-antenna {
-    position: relative;
-    z-index: 1;
-    width: 3px;
-    height: 20px;
-    background: linear-gradient(var(--gold), #75601e);
-}
-
-.robot-antenna::before {
-    content: "";
-    position: absolute;
-    width: 11px;
-    height: 11px;
-    left: -4px;
-    top: -7px;
-    border-radius: 50%;
-    background: var(--gold-light);
-    box-shadow: 0 0 15px rgba(255,231,160,.8);
-    animation: pulse 2s ease-in-out infinite;
-}
-
-.robot-head {
-    position: relative;
-    z-index: 2;
-    width: 145px;
-    height: 115px;
-    border: 2px solid #8f7939;
-    border-radius: 39px;
-    background:
-        radial-gradient(ellipse at 50% 0%, rgba(255,255,255,.12), transparent 60%),
-        linear-gradient(145deg, #26342f, #0b1314 65%, #080b10);
-    box-shadow:
-        inset 0 2px 8px rgba(255,255,255,.08),
-        inset 0 -8px 20px rgba(0,0,0,.5),
-        0 0 35px rgba(0,223,154,.08),
-        0 15px 35px rgba(0,0,0,.5);
-}
-
-.robot-ear {
-    position: absolute;
-    top: 39px;
-    width: 12px;
-    height: 35px;
-    border: 1px solid #8f7939;
-    background: #15251f;
-    border-radius: 5px;
-}
-
-.robot-ear.left {
-    left: -12px;
-}
-
-.robot-ear.right {
-    right: -12px;
-}
-
-.robot-face {
-    position: absolute;
-    inset: 13px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: 19px;
-    padding: 12px;
-    border: 1px solid rgba(77,232,255,.2);
-    border-radius: 27px;
-    background: linear-gradient(145deg, #071014, #101f22);
-}
-
-.robot-eyes {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 29px;
-}
-
-.robot-eye {
-    width: 15px;
-    height: 20px;
-    border-radius: 50%;
-    background: var(--cyan);
-    box-shadow: 0 0 12px rgba(77,232,255,.8);
-    animation: blink 5s infinite;
-}
-
-.robot-mouth {
-    align-self: center;
-    width: 29px;
-    height: 5px;
-    border-radius: 9px;
-    background: var(--green);
-    box-shadow: 0 0 10px rgba(0,223,154,.55);
-    transition: width .2s ease;
-}
-
-.robot-body {
-    position: relative;
-    width: 95px;
-    height: 48px;
-    margin-top: -2px;
-    border: 1px solid #806c31;
-    border-radius: 8px 8px 22px 22px;
-    background: linear-gradient(145deg, #28352e, #0b1211);
-    box-shadow: 0 12px 22px rgba(0,0,0,.3);
-}
-
-.robot-core {
-    position: absolute;
-    top: 10px;
-    left: 50%;
-    width: 22px;
-    height: 22px;
-    transform: translateX(-50%);
-    border: 2px solid var(--gold);
-    border-radius: 50%;
-    background: rgba(212,175,55,.15);
-    box-shadow: 0 0 15px rgba(212,175,55,.3);
-}
-
-.robot-core::after {
-    content: "";
-    position: absolute;
-    inset: 5px;
-    border-radius: 50%;
-    background: var(--gold-light);
-}
-
-.mascot-caption {
-    position: absolute;
-    bottom: 0;
-    text-align: center;
-}
-
-.mascot-name {
-    color: var(--gold-light);
-    font-size: 17px;
-    font-weight: 900;
-    letter-spacing: .03em;
-}
-
-.mascot-role {
-    color: var(--muted);
-    font-size: 10px;
-    letter-spacing: .15em;
-    text-transform: uppercase;
-}
-
-.mascot-badge {
-    position: absolute;
-    top: 15px;
-    right: 0;
-    padding: 7px 10px;
-    border: 1px solid rgba(0,223,154,.18);
-    border-radius: 10px;
-    color: #8fffd3;
-    background: rgba(0,223,154,.055);
-    font-size: 10px;
-    font-weight: 750;
-}
-
-/* METRICS */
-
-.metrics {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin: 8px 0 24px;
-}
-
-.metric {
-    min-width: 0;
-    padding: 17px;
-    border: 1px solid rgba(255,255,255,.075);
-    border-radius: 17px;
-    background: linear-gradient(145deg, rgba(255,255,255,.035), rgba(255,255,255,.012));
-}
-
-.metric-label {
-    color: var(--muted);
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: .1em;
-    text-transform: uppercase;
-}
-
-.metric-value {
-    margin-top: 7px;
-    font-size: clamp(21px, 4vw, 29px);
-    font-weight: 850;
-    letter-spacing: -.04em;
-    overflow-wrap: anywhere;
-}
-
-.metric-detail {
-    margin-top: 3px;
-    color: #78869a;
-    font-size: 11px;
-}
-
-.metric-value.gold {
-    color: var(--gold-light);
-}
-
-.metric-value.green {
-    color: var(--green);
-}
-
-.metric-value.cyan {
-    color: var(--cyan);
-}
-
-/* SECTION */
-
-.section-heading {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin: 30px 0 14px;
-}
-
-.section-heading h2 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 850;
-    letter-spacing: -.02em;
-}
-
-.section-kicker {
-    color: var(--muted);
-    font-size: 10px;
-}
-
-/* DIAGNOSTICS */
-
-.panel {
-    border: 1px solid rgba(255,255,255,.075);
-    border-radius: var(--radius);
-    background: linear-gradient(145deg, rgba(16,23,34,.96), rgba(9,13,20,.97));
-    box-shadow: var(--shadow);
-    overflow: hidden;
-}
-
-.panel-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 18px 20px;
-    border-bottom: 1px solid rgba(255,255,255,.065);
-}
-
-.panel-icon {
-    display: grid;
-    place-items: center;
-    width: 38px;
-    height: 38px;
-    flex-shrink: 0;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    color: var(--gold-light);
-    background: rgba(212,175,55,.055);
-    font-size: 17px;
-}
-
-.panel-title {
-    font-size: 13px;
-    font-weight: 850;
-}
-
-.panel-subtitle {
-    color: var(--muted);
-    font-size: 11px;
-}
-
-.panel-body {
-    padding: 7px 20px;
-}
-
-.check-row {
-    display: grid;
-    grid-template-columns: 36px minmax(0, 1fr) auto;
-    align-items: center;
-    gap: 12px;
-    padding: 16px 0;
-    border-bottom: 1px solid rgba(255,255,255,.055);
-    animation: appear .35s ease both;
-}
-
-.check-row:last-child {
-    border-bottom: 0;
-}
-
-.check-icon {
-    display: grid;
-    place-items: center;
-    width: 35px;
-    height: 35px;
-    border-radius: 11px;
-    color: var(--muted);
-    background: rgba(255,255,255,.045);
-    font-size: 15px;
-}
-
-.check-icon.ok {
-    color: var(--green);
-    background: rgba(0,223,154,.085);
-}
-
-.check-icon.fail {
-    color: var(--red);
-    background: rgba(255,82,119,.085);
-}
-
-.check-icon.wait {
-    color: var(--yellow);
-    background: rgba(255,206,87,.08);
-}
-
-.check-icon.info {
-    color: var(--cyan);
-    background: rgba(77,232,255,.08);
-}
-
-.check-title {
-    font-size: 12px;
-    font-weight: 800;
-    overflow-wrap: anywhere;
-}
-
-.check-description {
-    margin-top: 3px;
-    color: var(--muted);
-    font-size: 11px;
-    overflow-wrap: anywhere;
-}
-
-.check-badge {
-    padding: 5px 8px;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 8px;
-    color: var(--muted);
-    font-size: 9px;
-    font-weight: 850;
-    white-space: nowrap;
-}
-
-.check-badge.ok {
-    color: var(--green);
-    border-color: rgba(0,223,154,.2);
-}
-
-.check-badge.fail {
-    color: var(--red);
-    border-color: rgba(255,82,119,.2);
-}
-
-.check-badge.wait {
-    color: var(--yellow);
-}
-
-/* RESPONSE */
-
-.response-content {
-    padding: 20px;
-}
-
-.response-meta {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 14px;
-}
-
-.meta-chip {
-    padding: 6px 10px;
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 9px;
-    color: #c6d1df;
-    background: rgba(255,255,255,.025);
-    font-size: 10px;
-}
-
-.response-pre {
-    display: block;
-    width: 100%;
-    max-height: 360px;
-    overflow: auto;
-    margin: 0;
-    padding: 17px;
-    border: 1px solid rgba(77,232,255,.12);
-    border-radius: 14px;
-    background: #05090e;
-    color: #b8d5df;
-    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-    font-size: 11px;
-    line-height: 1.8;
-    white-space: pre-wrap;
-    overflow-wrap: anywhere;
-}
-
-.empty-state {
-    padding: 28px 16px;
-    text-align: center;
-    color: var(--muted);
-    font-size: 12px;
-}
-
-.empty-symbol {
-    margin-bottom: 9px;
-    color: #647386;
-    font-size: 25px;
-}
-
-.advice {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    margin-top: 17px;
-    padding: 15px;
-    border: 1px solid rgba(212,175,55,.15);
-    border-radius: 15px;
-    background: rgba(212,175,55,.035);
-}
-
-.advice-icon {
-    flex-shrink: 0;
-    color: var(--gold-light);
-    font-size: 18px;
-}
-
-.advice-title {
-    margin-bottom: 4px;
-    color: var(--gold-light);
-    font-size: 11px;
-    font-weight: 850;
-}
-
-.advice-text {
-    color: #a4afbe;
-    font-size: 11px;
-    line-height: 1.8;
-}
-
-/* PERSONALITY */
-
-.personality {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 13px;
-    margin-top: 22px;
-}
-
-.personality-card {
-    padding: 19px;
-    border: 1px solid rgba(255,255,255,.075);
-    border-radius: 17px;
-    background: rgba(255,255,255,.018);
-}
-
-.personality-icon {
-    margin-bottom: 9px;
-    font-size: 20px;
-}
-
-.personality-title {
-    margin-bottom: 5px;
-    font-size: 12px;
-    font-weight: 850;
-}
-
-.personality-text {
-    color: var(--muted);
-    font-size: 11px;
-    line-height: 1.8;
-}
-
-/* FOOTER */
-
-.footer {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 10px;
-    margin-top: 30px;
-    padding-top: 18px;
-    border-top: 1px solid rgba(255,255,255,.065);
-    color: #647184;
-    font-size: 10px;
-}
-
-.footer strong {
-    color: #aeb8c7;
-}
-
-/* ANIMATIONS */
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: .5; transform: scale(.78); }
-}
-
-@keyframes rotate {
-    to { transform: rotate(360deg); }
-}
-
-@keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-9px); }
-}
-
-@keyframes blink {
-    0%, 45%, 48%, 100% { transform: scaleY(1); }
-    46%, 47% { transform: scaleY(.1); }
-}
-
-@keyframes appear {
-    from { opacity: 0; transform: translateY(7px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-body.is-thinking .robot-mouth {
-    width: 40px;
-    animation: pulse .6s ease-in-out infinite;
-}
-
-body.is-thinking .robot-eye {
-    animation: pulse .8s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        scroll-behavior: auto !important;
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: .01ms !important;
-    }
-}
-
-@media (max-width: 700px) {
-    .app {
-        width: min(100% - 24px, 520px);
-        padding-top: 13px;
-    }
-
-    .hero {
-        grid-template-columns: 1fr;
-        gap: 5px;
-        padding-top: 32px;
-    }
-
-    .hero-copy {
-        text-align: center;
-    }
-
-    .hero-copy .eyebrow {
-        justify-content: center;
-    }
-
-    .hero-description {
-        margin-left: auto;
-        margin-right: auto;
-    }
-
-    .hero-actions {
-        justify-content: center;
-    }
-
-    .mascot-stage {
-        min-height: 300px;
-        margin-top: 4px;
-    }
-
-    .mascot-badge {
-        right: 8%;
-    }
-
-    .metrics {
-        gap: 8px;
-    }
-
-    .metric {
-        padding: 12px 10px;
-    }
-
-    .metric-label {
-        font-size: 9px;
-        letter-spacing: .045em;
-    }
-
-    .metric-detail {
-        font-size: 10px;
-    }
-
-    .panel-header {
-        padding: 15px;
-    }
-
-    .panel-body {
-        padding: 5px 15px;
-    }
-
-    .check-row {
-        grid-template-columns: 34px minmax(0, 1fr);
-        gap: 10px;
-    }
-
-    .check-badge {
-        grid-column: 2;
-        justify-self: start;
-        margin-top: -5px;
-    }
-
-    .response-content {
-        padding: 14px;
-    }
-
-    .personality {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 380px) {
-    .brand-sub {
-        font-size: 9px;
-        letter-spacing: .06em;
-    }
-
-    .status-pill {
-        padding: 7px 8px;
-        font-size: 10px;
-    }
-
-    .brand-mark {
-        width: 38px;
-        height: 38px;
-    }
-
-    .metrics {
-        grid-template-columns: 1fr;
-    }
-
-    .metric {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        align-items: center;
-        gap: 0 8px;
-    }
-
-    .metric-label {
-        grid-column: 1;
-    }
-
-    .metric-value {
-        grid-column: 2;
-        grid-row: 1 / span 2;
-    }
-
-    .metric-detail {
-        grid-column: 1;
-    }
-}
+:root{
+  --bg:#030914;--panel:#071528;--panel2:#0a1c32;--line:rgba(63,177,255,.24);
+  --blue:#168cff;--cyan:#27e7ff;--gold:#f7c94b;--green:#00e6a0;
+  --red:#ff5277;--yellow:#ffd166;--text:#f4f8ff;--muted:#94aac4;
+  --shadow:0 22px 70px rgba(0,0,0,.38);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:radial-gradient(ellipse at 16% 10%,#092b4a 0,transparent 36%),radial-gradient(ellipse at 86% 65%,#062c36 0,transparent 35%),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.55;min-height:100vh}
+button{font:inherit}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
+button:disabled{opacity:.55;cursor:not-allowed}
+.shell{max-width:1440px;width:calc(100% - 32px);margin:auto}
+.topbar{height:78px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid rgba(77,181,255,.16)}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.brand-icon{width:48px;height:48px;display:grid;place-items:center;border:1px solid rgba(247,201,75,.4);border-radius:15px;background:linear-gradient(145deg,#10314d,#07111f);color:var(--gold);font-size:26px;box-shadow:0 0 26px #168cff22}
+.brand-name{font-size:21px;font-weight:900;letter-spacing:-.04em}
+.brand-name span{color:var(--gold)}
+.brand-sub{font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:#9bb8d8}
+.nav{display:flex;align-items:center;gap:6px}
+.nav a{color:#c5d8ec;text-decoration:none;padding:10px 13px;border-radius:12px;font-size:12px}
+.nav a.active,.nav a:hover{background:#0d3153;color:white;box-shadow:inset 0 0 0 1px #168cff55}
+.live-pill{display:flex;align-items:center;gap:9px;padding:9px 13px;border:1px solid #00e6a033;border-radius:99px;color:#9effdc;font-size:11px;white-space:nowrap;background:#00e6a00a}
+.dot{width:8px;height:8px;background:var(--green);border-radius:50%;box-shadow:0 0 14px var(--green)}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(390px,.98fr);gap:30px;align-items:center;padding:30px 0 25px}
+.eyebrow{display:flex;align-items:center;gap:9px;color:var(--cyan);text-transform:uppercase;letter-spacing:.17em;font-size:10px;font-weight:850}
+.eyebrow:before{content:"";width:25px;height:1px;background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+h1{font-size:clamp(43px,6vw,82px);line-height:.98;letter-spacing:-.075em;margin:18px 0 16px;font-weight:950}
+.gold-text{background:linear-gradient(105deg,#fff1b0 0%,#f7c94b 40%,#e9a82e 75%,#fff0ad 100%);color:transparent;background-clip:text;-webkit-background-clip:text}
+.hero-copy{max-width:600px;color:#adc1d7;font-size:15px;line-height:1.85}
+.hero-copy strong{color:white}
+.traits{display:flex;flex-wrap:wrap;gap:9px;margin:20px 0}
+.trait{display:inline-flex;align-items:center;gap:7px;border:1px solid #24e7ff28;background:#06223a99;border-radius:99px;padding:7px 11px;color:#d8faff;font-size:11px}
+.trait b{color:var(--green);font-size:14px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.btn{border:1px solid transparent;border-radius:13px;padding:12px 17px;cursor:pointer;font-weight:800;font-size:12px;transition:transform .2s,box-shadow .2s,background .2s;display:inline-flex;align-items:center;justify-content:center;gap:9px}
+.btn:hover:not(:disabled){transform:translateY(-2px)}
+.btn-primary{background:linear-gradient(135deg,#ffe28b,#e4a927);color:#1b1708;box-shadow:0 8px 25px #f7c94b25}
+.btn-secondary{background:#0b1d31;border-color:#2c5277;color:#e7f4ff}
+.hero-note{color:#7f9ab7;font-size:11px;margin-top:14px}
+.stage{min-height:480px;position:relative;display:grid;place-items:center;isolation:isolate;overflow:hidden;border:1px solid #248eff29;border-radius:28px;background:radial-gradient(ellipse at 50% 40%,#123a59 0,#07182a 48%,#030914 78%);box-shadow:var(--shadow)}
+.stage-grid{position:absolute;inset:0;opacity:.2;background-image:linear-gradient(#168cff22 1px,transparent 1px),linear-gradient(90deg,#168cff22 1px,transparent 1px);background-size:31px 31px;mask-image:linear-gradient(transparent,black 25%,black 75%,transparent)}
+.stage-ring{position:absolute;width:350px;height:350px;border:1px solid #28dfff2d;border-radius:50%;animation:rotate 32s linear infinite}
+.stage-ring:before,.stage-ring:after{content:"";position:absolute;border-radius:50%;border:1px dashed #f7c94b4d;inset:23px}
+.stage-ring:after{inset:57px;border-color:#27e7ff45}
+.orbit-dot{position:absolute;width:9px;height:9px;border-radius:50%;background:var(--gold);box-shadow:0 0 20px var(--gold);top:41px;left:65px}
+.robot-wrap{position:relative;z-index:2;width:min(92%,380px);filter:drop-shadow(0 22px 30px #0009);animation:float 5s ease-in-out infinite}
+.robot-svg{width:100%;height:auto;display:block;overflow:visible}
+.robot-eyes{transform-origin:center;animation:eyePulse 4s ease-in-out infinite}
+.robot-mouth{transition:all .2s}
+body.is-thinking .robot-wrap{animation:float 1.8s ease-in-out infinite}
+body.is-thinking .robot-eyes{animation:thinkingEyes .8s ease-in-out infinite}
+body.is-thinking .robot-mouth{transform:scaleX(1.5);opacity:.8}
+.stage-tag{position:absolute;z-index:3;display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:12px;border:1px solid #1de7ff3b;background:#041526df;backdrop-filter:blur(12px);font-size:10px;color:#d8faff;box-shadow:0 8px 30px #0004}
+.stage-tag small{display:block;color:#82a7c6;font-size:9px}
+.stage-tag.top{top:20px;right:18px}
+.stage-tag.bottom{bottom:20px;left:18px}
+.stage-tag .tag-icon{color:var(--cyan);font-size:19px}
+.stage-caption{position:absolute;bottom:18px;right:20px;text-align:right;z-index:3}
+.stage-caption strong{display:block;color:var(--gold);font-size:17px;font-style:italic}
+.stage-caption span{font-size:9px;letter-spacing:.14em;color:#89a7c6;text-transform:uppercase}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:8px 0 28px}
+.metric{padding:17px;border:1px solid #2b5b7b55;border-radius:17px;background:linear-gradient(145deg,#0a1c30dd,#06111fdd);min-width:0}
+.metric-label{font-size:10px;text-transform:uppercase;letter-spacing:.09em;color:#8fa9c5;font-weight:800}
+.metric-value{font-size:26px;font-weight:900;letter-spacing:-.04em;margin-top:5px;overflow-wrap:anywhere}
+.metric-value.gold{color:var(--gold)}.metric-value.cyan{color:var(--cyan)}.metric-value.green{color:var(--green)}.metric-value.red{color:var(--red)}
+.metric-detail{font-size:10px;color:#7892ad;margin-top:2px}
+.section-head{display:flex;align-items:end;justify-content:space-between;gap:15px;margin:28px 0 13px}
+.section-head h2{font-size:19px;letter-spacing:-.04em;margin:0}
+.section-head p{font-size:11px;color:#7994b1;margin:4px 0 0}
+.section-label{color:var(--cyan);font-size:10px;text-transform:uppercase;letter-spacing:.12em}
+.layout-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(310px,.9fr);gap:15px;align-items:start}
+.panel{border:1px solid #2b5b7b66;border-radius:20px;background:linear-gradient(145deg,#08182a,#050e1a);box-shadow:var(--shadow);overflow:hidden}
+.panel-head{display:flex;align-items:center;gap:12px;padding:17px 19px;border-bottom:1px solid #ffffff0d}
+.panel-icon{width:39px;height:39px;display:grid;place-items:center;border:1px solid #168cff55;border-radius:12px;color:var(--cyan);background:#168cff13;font-size:18px}
+.panel-head h3{font-size:13px;margin:0;font-weight:850}
+.panel-head p{font-size:10px;color:#819bb6;margin:3px 0 0}
+.panel-body{padding:7px 19px}
+.check-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:11px;align-items:center;padding:15px 0;border-bottom:1px solid #ffffff0d;animation:appear .25s ease both}
+.check-row:last-child{border-bottom:0}
+.check-icon{width:35px;height:35px;display:grid;place-items:center;border-radius:11px;background:#ffffff09;color:#91a7bd;font-size:15px}
+.check-icon.ok{background:#00e6a015;color:var(--green)}.check-icon.fail{background:#ff52771a;color:var(--red)}.check-icon.wait{background:#ffd16617;color:var(--yellow)}.check-icon.info{background:#27e7ff14;color:var(--cyan)}
+.check-title{font-size:12px;font-weight:800;overflow-wrap:anywhere}
+.check-desc{font-size:10px;color:#8fa7c0;margin-top:3px;overflow-wrap:anywhere}
+.badge{font-size:9px;letter-spacing:.04em;font-weight:850;border:1px solid #ffffff18;border-radius:8px;padding:5px 8px;color:#91a7bd;white-space:nowrap}
+.badge.ok{color:var(--green);border-color:#00e6a044}.badge.fail{color:var(--red);border-color:#ff527744}.badge.wait{color:var(--yellow);border-color:#ffd16644}
+.response-area{padding:16px}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:11px}
+.chip{font-size:10px;color:#c8d9eb;border:1px solid #ffffff16;background:#ffffff05;border-radius:8px;padding:6px 9px}
+pre{margin:0;white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overflow:auto;border:1px solid #168cff35;background:#020914;border-radius:13px;padding:15px;color:#9beaff;font:11px/1.8 ui-monospace,SFMono-Regular,Consolas,monospace}
+.empty{padding:26px 12px;text-align:center;color:#7894b0;font-size:11px}
+.empty span{display:block;color:#27e7ff;font-size:27px;margin-bottom:7px}
+.advice{margin:12px 16px 16px;padding:13px;border:1px solid #f7c94b2b;border-radius:13px;background:#f7c94b08;display:flex;gap:10px}
+.advice .spark{color:var(--gold);font-size:18px}
+.advice strong{display:block;font-size:11px;color:#ffe5a0;margin-bottom:3px}
+.advice p{margin:0;color:#a9bbce;font-size:10px;line-height:1.8}
+.personality{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:26px}
+.trait-card{padding:17px;border:1px solid #2b5b7b55;border-radius:16px;background:linear-gradient(145deg,#09192a,#06101c)}
+.trait-card .symbol{font-size:20px;color:var(--gold);margin-bottom:8px}
+.trait-card h3{font-size:12px;margin:0 0 5px}
+.trait-card p{font-size:10px;color:#8ca5bf;line-height:1.8;margin:0}
+.footer{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-top:1px solid #ffffff12;padding:18px 0 25px;color:#6f89a4;font-size:10px}
+.footer strong{color:#c1d4e8}
+@keyframes rotate{to{transform:rotate(360deg)}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes eyePulse{0%,42%,48%,100%{opacity:1}45%{opacity:.5}}
+@keyframes thinkingEyes{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes appear{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@media(max-width:900px){.nav{display:none}.hero{grid-template-columns:1fr}.hero-left{text-align:center}.hero-left .eyebrow{justify-content:center}.hero-copy{margin:auto}.traits,.actions{justify-content:center}.stage{min-height:430px}.layout-grid{grid-template-columns:1fr}}
+@media(max-width:600px){.shell{width:calc(100% - 22px)}.topbar{height:68px}.brand-icon{width:40px;height:40px}.brand-name{font-size:18px}.brand-sub{font-size:8px}.live-pill{font-size:9px;padding:8px}.hero{padding-top:26px;gap:16px}h1{font-size:47px}.hero-copy{font-size:13px}.stage{min-height:365px;border-radius:20px}.stage-ring{width:280px;height:280px}.stage-tag.top{top:12px;right:10px}.stage-tag.bottom{bottom:12px;left:10px}.stage-caption{display:none}.metrics{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.metric{padding:13px}.metric-value{font-size:23px}.section-head h2{font-size:17px}.check-row{grid-template-columns:34px minmax(0,1fr)}.badge{grid-column:2;justify-self:start;margin-top:-4px}.panel-body{padding:5px 13px}.panel-head{padding:14px}.personality{grid-template-columns:1fr}.footer{font-size:9px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.01ms!important}}
 </style>
 </head>
-
 <body>
-<div class="ambient" aria-hidden="true"></div>
+<div class="shell">
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-icon" aria-hidden="true">♛</div>
+    <div><div class="brand-name">Marquinhos<span> ✦</span></div><div class="brand-sub">Tu mascota de IA · Siempre contigo</div></div>
+  </div>
+  <nav class="nav" aria-label="Navegación"><a class="active" href="#inicio">⌂ Test Pet IA</a><a href="#diagnostico">◇ Diagnóstico</a><a href="#respuesta">⌁ Conexión</a></nav>
+  <div class="live-pill"><span class="dot"></span><span id="estadoTop">Sistema listo</span></div>
+</header>
 
-<main class="app">
+<main>
+<section class="hero" id="inicio">
+  <div class="hero-left">
+    <div class="eyebrow">Tu compañero inteligente · Csariel's</div>
+    <h1>¡Hola!<br><span class="gold-text">Soy Marquinhos.</span></h1>
+    <p class="hero-copy">Soy tu asistente de IA, creado para <strong>aprender, ayudarte y hacer tu vida digital más fácil.</strong> Vamos a comprobar mi conexión, paso a paso, sin esconder ningún error.</p>
+    <div class="traits"><span class="trait"><b>✓</b> Inteligente</span><span class="trait"><b>✓</b> Cercano</span><span class="trait"><b>✓</b> Transparente</span></div>
+    <div class="actions"><button class="btn btn-primary" id="btnProbar" type="button">✦ Ejecutar diagnóstico</button><button class="btn btn-secondary" id="btnVer" type="button">⌄ Ver respuesta IA</button></div>
+    <div class="hero-note">Conexión real con Supabase y tu endpoint existente · No se simulan resultados.</div>
+  </div>
 
-    <header class="topbar">
-        <div class="brand">
-            <div class="brand-mark" aria-hidden="true">◈</div>
-            <div>
-                <div class="brand-name">CSARIEL'S</div>
-                <div class="brand-sub">Intelligence ecosystem</div>
-            </div>
-        </div>
-
-        <div class="status-pill" id="estadoGeneral" role="status"
-             aria-live="polite">
-            <span class="status-dot"></span>
-            <span id="estadoTexto">Preparando sistema</span>
-        </div>
-    </header>
-
-    <section class="hero">
-
-        <div class="hero-copy">
-            <div class="eyebrow">Artificial intelligence · Core system</div>
-
-            <h1>
-                Tu compañero.<br>
-                <span class="gradient-text">Tu inteligencia.</span>
-            </h1>
-
-            <p class="hero-description">
-                Soy <strong>Marquinhos</strong>, tu asistente inteligente
-                dentro de Csariel's. Mi misión es ayudarte, responder con
-                claridad y acompañarte mientras la tecnología trabaja
-                contigo. Primero, comprobemos que mi conexión funciona.
-            </p>
-
-            <div class="hero-actions">
-                <button class="btn btn-primary" id="btnProbar" type="button">
-                    <span aria-hidden="true">✦</span>
-                    Ejecutar diagnóstico
-                </button>
-
-                <button class="btn btn-secondary" id="btnRespuesta"
-                        type="button">
-                    Ver respuesta IA <span aria-hidden="true">↓</span>
-                </button>
-            </div>
-        </div>
-
-        <div class="mascot-stage" aria-label="Representación visual de Marquinhos">
-            <div class="mascot-glow"></div>
-            <div class="orbit"></div>
-            <div class="orbit-inner"></div>
-
-            <div class="mascot-badge">
-                <span aria-hidden="true">✦</span> Núcleo inteligente
-            </div>
-
-            <div class="robot" aria-hidden="true">
-                <div class="robot-aura"></div>
-                <div class="robot-antenna"></div>
-
-                <div class="robot-head">
-                    <div class="robot-ear left"></div>
-                    <div class="robot-ear right"></div>
-
-                    <div class="robot-face">
-                        <div class="robot-eyes">
-                            <div class="robot-eye"></div>
-                            <div class="robot-eye"></div>
-                        </div>
-                        <div class="robot-mouth"></div>
-                    </div>
-                </div>
-
-                <div class="robot-body">
-                    <div class="robot-core"></div>
-                </div>
-            </div>
-
-            <div class="mascot-caption">
-                <div class="mascot-name">MARQUINHOS</div>
-                <div class="mascot-role">Tu compañero digital</div>
-            </div>
-        </div>
-    </section>
-
-    <section class="metrics" aria-label="Indicadores del diagnóstico">
-
-        <div class="metric">
-            <div class="metric-label">Autenticación</div>
-            <div class="metric-value gold" id="metricaSesion">—</div>
-            <div class="metric-detail">Sesión de Supabase</div>
-        </div>
-
-        <div class="metric">
-            <div class="metric-label">Respuesta</div>
-            <div class="metric-value cyan" id="metricaTiempo">—</div>
-            <div class="metric-detail">Tiempo de la petición</div>
-        </div>
-
-        <div class="metric">
-            <div class="metric-label">Diagnóstico</div>
-            <div class="metric-value green" id="metricaEstado">Listo</div>
-            <div class="metric-detail" id="metricaDetalle">Esperando prueba</div>
-        </div>
-
-    </section>
-
-    <div class="section-heading">
-        <h2>Centro de diagnóstico</h2>
-        <span class="section-kicker" id="contadorPruebas">0 comprobaciones</span>
+  <div class="stage" aria-label="Visualización de Marquinhos, robot futurista inspirado en talavera poblana">
+    <div class="stage-grid"></div><div class="stage-ring"><i class="orbit-dot"></i></div>
+    <div class="stage-tag top"><span class="tag-icon">✧</span><span><b>NÚCLEO IA</b><small id="robotState">En espera de diagnóstico</small></span></div>
+    <div class="robot-wrap">
+      <svg class="robot-svg" viewBox="0 0 420 440" role="img" aria-label="Marquinhos, robot azul, blanco y oro con ojos luminosos">
+        <defs>
+          <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0a1"/><stop offset=".35" stop-color="#e4a82d"/><stop offset=".65" stop-color="#fbe18a"/><stop offset="1" stop-color="#916019"/></linearGradient>
+          <linearGradient id="armor" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f7fbff"/><stop offset=".45" stop-color="#cbd9e9"/><stop offset="1" stop-color="#738da8"/></linearGradient>
+          <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#1252a5"/><stop offset=".5" stop-color="#06234e"/><stop offset="1" stop-color="#07152c"/></linearGradient>
+          <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#103b59"/><stop offset=".5" stop-color="#03111f"/><stop offset="1" stop-color="#071c2b"/></linearGradient>
+          <filter id="glow"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+          <pattern id="talavera" width="36" height="36" patternUnits="userSpaceOnUse"><path d="M18 2 C25 10 25 14 18 18 C11 14 11 10 18 2Z M18 34 C25 26 25 22 18 18 C11 22 11 26 18 34Z M2 18 C10 11 14 11 18 18 C14 25 10 25 2 18Z M34 18 C26 11 22 11 18 18 C22 25 26 25 34 18Z" fill="none" stroke="#1453a0" stroke-width="1.7"/><circle cx="18" cy="18" r="3" fill="#d9a632"/></pattern>
+        </defs>
+        <path d="M210 73V42" stroke="url(#gold)" stroke-width="7" stroke-linecap="round"/>
+        <circle cx="210" cy="31" r="13" fill="url(#gold)" stroke="#fff0a1" stroke-width="2"/>
+        <circle cx="210" cy="31" r="5" fill="#27e7ff" filter="url(#glow)"/>
+        <rect x="70" y="142" width="32" height="88" rx="12" fill="url(#blue)" stroke="url(#gold)" stroke-width="5"/>
+        <rect x="318" y="142" width="32" height="88" rx="12" fill="url(#blue)" stroke="url(#gold)" stroke-width="5"/>
+        <rect x="76" y="160" width="20" height="48" rx="8" fill="#27e7ff" opacity=".85" filter="url(#glow)"/>
+        <rect x="324" y="160" width="20" height="48" rx="8" fill="#27e7ff" opacity=".85" filter="url(#glow)"/>
+        <path d="M105 108 Q105 76 139 70 L281 70 Q315 76 315 108 L325 207 Q325 257 282 274 L138 274 Q95 257 95 207Z" fill="url(#armor)" stroke="url(#gold)" stroke-width="7"/>
+        <path d="M122 104 Q125 83 149 82 L271 82 Q295 83 298 104 L286 124 L134 124Z" fill="#f7fbff" stroke="#cda33e" stroke-width="3"/>
+        <path d="M132 103 Q150 82 168 103 T204 103 T240 103 T276 103" fill="none" stroke="#1556a0" stroke-width="5"/>
+        <path d="M151 86 Q166 102 151 116 M269 86 Q254 102 269 116" fill="none" stroke="#1556a0" stroke-width="4"/>
+        <path d="M193 82 L210 94 L227 82 L222 111 L198 111Z" fill="url(#gold)" stroke="#fff0a1" stroke-width="1.5"/>
+        <path d="M121 125 Q121 112 140 112 L280 112 Q299 112 299 132 L291 220 Q287 245 265 249 L155 249 Q133 245 129 220Z" fill="url(#blue)" stroke="url(#gold)" stroke-width="4"/>
+        <path d="M139 133 Q139 124 151 124 L269 124 Q281 124 281 137 L275 212 Q273 229 257 232 L163 232 Q147 229 145 212Z" fill="url(#glass)" stroke="#27e7ff" stroke-opacity=".45" stroke-width="2"/>
+        <g class="robot-eyes" filter="url(#glow)">
+          <path d="M158 177 Q174 155 190 177" fill="none" stroke="#27e7ff" stroke-width="10" stroke-linecap="round"/>
+          <path d="M230 177 Q246 155 262 177" fill="none" stroke="#27e7ff" stroke-width="10" stroke-linecap="round"/>
+        </g>
+        <path class="robot-mouth" d="M185 205 Q210 224 235 205" fill="none" stroke="#00e6a0" stroke-width="7" stroke-linecap="round" filter="url(#glow)"/>
+        <circle cx="145" cy="198" r="5" fill="#f7c94b"/><circle cx="275" cy="198" r="5" fill="#f7c94b"/>
+        <path d="M177 269 L177 295 L243 295 L243 269" fill="url(#blue)" stroke="url(#gold)" stroke-width="5"/>
+        <path d="M128 293 Q139 278 163 278 L257 278 Q281 278 292 293 L330 381 Q336 399 314 405 L106 405 Q84 399 90 381Z" fill="url(#armor)" stroke="url(#gold)" stroke-width="7"/>
+        <path d="M147 299 L273 299 L304 376 L116 376Z" fill="url(#blue)" stroke="#e6b73f" stroke-width="4"/>
+        <path d="M158 308 Q178 319 190 308 T222 308 T254 308" fill="none" stroke="#f8fbff" stroke-width="3"/>
+        <path d="M210 317 L246 333 L241 357 Q228 373 210 380 Q192 373 179 357 L174 333Z" fill="url(#gold)" stroke="#fff0a1" stroke-width="2"/>
+        <path d="M210 328 L228 338 L225 353 L210 365 L195 353 L192 338Z" fill="#09254a" stroke="#27e7ff" stroke-width="2"/>
+        <path d="M202 346 L208 352 L219 338" fill="none" stroke="#f8d76b" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M127 304 Q98 300 85 323 L70 361 Q65 379 87 384 L116 383 L143 332Z" fill="url(#blue)" stroke="url(#gold)" stroke-width="5"/>
+        <path d="M293 304 Q322 300 335 323 L350 361 Q355 379 333 384 L304 383 L277 332Z" fill="url(#blue)" stroke="url(#gold)" stroke-width="5"/>
+        <path d="M86 334 L118 344 L108 366 L77 360Z" fill="url(#armor)"/>
+        <path d="M334 334 L302 344 L312 366 L343 360Z" fill="url(#armor)"/>
+        <path d="M83 375 L61 399 Q54 414 70 421 L97 419 L119 394" fill="url(#armor)" stroke="url(#gold)" stroke-width="5"/>
+        <path d="M337 375 L359 399 Q366 414 350 421 L323 419 L301 394" fill="url(#armor)" stroke="url(#gold)" stroke-width="5"/>
+        <path d="M140 322 Q151 334 140 346 M280 322 Q269 334 280 346" fill="none" stroke="#27e7ff" stroke-width="3"/>
+        <circle cx="141" cy="357" r="5" fill="#f7c94b"/><circle cx="279" cy="357" r="5" fill="#f7c94b"/>
+        <g fill="#fff0a1"><circle cx="112" cy="137" r="3"/><circle cx="308" cy="137" r="3"/><circle cx="113" cy="246" r="3"/><circle cx="307" cy="246" r="3"/><circle cx="145" cy="291" r="3"/><circle cx="275" cy="291" r="3"/></g>
+      </svg>
     </div>
+    <div class="stage-tag bottom"><span class="tag-icon">⌁</span><span><b>CSARIEL'S CORE</b><small>Supabase · API · IA</small></span></div>
+    <div class="stage-caption"><strong>¡Siempre contigo!</strong><span>Inteligencia con personalidad</span></div>
+  </div>
+</section>
 
-    <section class="panel" aria-label="Resultados de comprobaciones">
-        <div class="panel-header">
-            <div class="panel-icon" aria-hidden="true">⌘</div>
-            <div>
-                <div class="panel-title">Estado del sistema</div>
-                <div class="panel-subtitle">
-                    Autenticación · API · Inteligencia artificial
-                </div>
-            </div>
-        </div>
+<section class="metrics" aria-label="Indicadores">
+  <div class="metric"><div class="metric-label">Autenticación</div><div class="metric-value gold" id="metricaSesion">—</div><div class="metric-detail">Sesión de Supabase</div></div>
+  <div class="metric"><div class="metric-label">Tiempo de respuesta</div><div class="metric-value cyan" id="metricaTiempo">—</div><div class="metric-detail">Petición HTTP</div></div>
+  <div class="metric"><div class="metric-label">Estado del endpoint</div><div class="metric-value green" id="metricaEstado">Listo</div><div class="metric-detail" id="metricaDetalle">Esperando diagnóstico</div></div>
+  <div class="metric"><div class="metric-label">Comprobaciones</div><div class="metric-value gold" id="metricaChecks">0</div><div class="metric-detail">Resultados de esta prueba</div></div>
+</section>
 
-        <div class="panel-body" id="resultado" aria-live="polite">
-            <div class="check-row">
-                <div class="check-icon wait">◌</div>
-                <div>
-                    <div class="check-title">Diagnóstico pendiente</div>
-                    <div class="check-description">
-                        Ejecuta la prueba para verificar la conexión real.
-                    </div>
-                </div>
-                <span class="check-badge wait">PENDIENTE</span>
-            </div>
-        </div>
-    </section>
+<div class="section-head" id="diagnostico"><div><div class="section-label">Sistema · En vivo</div><h2>Centro de diagnóstico</h2><p>Autenticación, conexión con el servidor y resultado de la IA.</p></div><div class="section-label" id="estadoDiagnostico">LISTO PARA PROBAR</div></div>
 
-    <div class="section-heading" id="tituloRespuesta">
-        <h2>Respuesta del núcleo IA</h2>
-        <span class="section-kicker">Datos recibidos del servidor</span>
-    </div>
+<section class="layout-grid">
+  <div class="panel">
+    <div class="panel-head"><div class="panel-icon">⌘</div><div><h3>Estado del sistema</h3><p>Resultados reales de las comprobaciones</p></div></div>
+    <div class="panel-body" id="resultado"><div class="check-row"><div class="check-icon wait">◌</div><div><div class="check-title">Diagnóstico pendiente</div><div class="check-desc">Ejecuta la prueba para comprobar tu conexión.</div></div><span class="badge wait">PENDIENTE</span></div></div>
+    <div class="advice"><span class="spark">✦</span><div><strong id="consejoTitulo">Un mensaje de Marquinhos</strong><p id="consejoTexto">Estoy listo para comprobar mi conexión contigo. Si algo falla, te mostraré la información disponible para localizar el problema.</p></div></div>
+  </div>
+  <div class="panel" id="respuesta">
+    <div class="panel-head"><div class="panel-icon">✧</div><div><h3>Respuesta del núcleo IA</h3><p>Contenido recibido del endpoint, sin inventar resultados</p></div></div>
+    <div class="response-area"><div class="chips"><span class="chip" id="chipHTTP">HTTP: pendiente</span><span class="chip" id="chipTiempo">Tiempo: pendiente</span></div><div class="empty" id="respuestaVacia"><span>◇</span>La respuesta del servidor aparecerá aquí.<br>Ejecuta el diagnóstico para comenzar.</div><pre id="respuestaJSON" hidden></pre></div>
+  </div>
+</section>
 
-    <section class="panel" id="panelRespuesta">
-        <div class="panel-header">
-            <div class="panel-icon" aria-hidden="true">✧</div>
-            <div>
-                <div class="panel-title">Comunicación con Marquinhos</div>
-                <div class="panel-subtitle">
-                    Resultado original de la API, sin inventar respuestas
-                </div>
-            </div>
-        </div>
-
-        <div class="response-content">
-            <div class="response-meta">
-                <span class="meta-chip" id="chipHTTP">HTTP: pendiente</span>
-                <span class="meta-chip" id="chipTiempo">Tiempo: pendiente</span>
-            </div>
-
-            <div class="empty-state" id="respuestaVacia">
-                <div class="empty-symbol" aria-hidden="true">◇</div>
-                <div>La respuesta de la IA aparecerá aquí.</div>
-                <div>Primero ejecuta el diagnóstico.</div>
-            </div>
-
-            <pre class="response-pre" id="respuestaJSON" hidden></pre>
-
-            <div class="advice" id="consejoBox">
-                <div class="advice-icon" aria-hidden="true">✦</div>
-                <div>
-                    <div class="advice-title" id="consejoTitulo">
-                        Un mensaje de Marquinhos
-                    </div>
-                    <div class="advice-text" id="consejoTexto">
-                        Estoy listo para comprobar mi conexión contigo.
-                        Si algo falla, te mostraré qué respondió el servidor
-                        para que puedas localizar el problema.
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="section-heading">
-        <h2>Mi personalidad</h2>
-        <span class="section-kicker">Diseñado para acompañarte</span>
-    </div>
-
-    <section class="personality">
-        <article class="personality-card">
-            <div class="personality-icon" aria-hidden="true">◈</div>
-            <div class="personality-title">Cercano y resolutivo</div>
-            <div class="personality-text">
-                Quiero que cada interacción sea clara, útil y natural.
-                Mi objetivo es ayudarte a encontrar soluciones sin
-                complicarte las cosas.
-            </div>
-        </article>
-
-        <article class="personality-card">
-            <div class="personality-icon" aria-hidden="true">⬡</div>
-            <div class="personality-title">Transparente y confiable</div>
-            <div class="personality-text">
-                Una conexión se comprueba con resultados reales.
-                No confundo una pantalla bonita con un sistema que
-                funciona ni oculto los errores de diagnóstico.
-            </div>
-        </article>
-    </section>
-
-    <footer class="footer">
-        <div><strong>CSARIEL'S</strong> · Ecosistema digital</div>
-        <div>MARQUINHOS AI · Diagnostic Console v2.0</div>
-    </footer>
-
+<div class="section-head"><div><div class="section-label">Identidad Marquinhos</div><h2>Más que una interfaz</h2><p>Una personalidad cercana, con transparencia en cada resultado.</p></div></div>
+<section class="personality">
+  <article class="trait-card"><div class="symbol">♛</div><h3>Identidad propia</h3><p>Un diseño robótico original con cerámica azul y blanca, detalles dorados, armadura tecnológica y núcleo luminoso inspirado en la talavera poblana.</p></article>
+  <article class="trait-card"><div class="symbol">◉</div><h3>Expresivo y dinámico</h3><p>La mascota cambia su animación mientras se realiza una petición. El estado visual acompaña al proceso real, sin simular respuestas inexistentes.</p></article>
+  <article class="trait-card"><div class="symbol">⬡</div><h3>Transparente y confiable</h3><p>La sesión, el estado HTTP y el contenido devuelto se muestran por separado. Los tokens no se imprimen en pantalla ni se guardan en este archivo.</p></article>
+</section>
 </main>
+<footer class="footer"><div><strong>CSARIEL'S</strong> · Ecosistema digital</div><div>MARQUINHOS AI · Diagnostic Console 3.0</div><div>Azul talavera · Oro · Núcleo cian</div></footer>
+</div>
 
 <script>
 "use strict";
+(function(){
+  const $ = id => document.getElementById(id);
+  const ui = {
+    resultado:$("resultado"), btn:$("btnProbar"), btnVer:$("btnVer"),
+    estadoTop:$("estadoTop"), robotState:$("robotState"),
+    metricaSesion:$("metricaSesion"), metricaTiempo:$("metricaTiempo"),
+    metricaEstado:$("metricaEstado"), metricaDetalle:$("metricaDetalle"),
+    metricaChecks:$("metricaChecks"), estadoDiagnostico:$("estadoDiagnostico"),
+    chipHTTP:$("chipHTTP"), chipTiempo:$("chipTiempo"),
+    vacia:$("respuestaVacia"), json:$("respuestaJSON"),
+    consejoTitulo:$("consejoTitulo"), consejoTexto:$("consejoTexto")
+  };
+  let ejecutando=false, total=0;
 
-/* ==========================================================
-   MARQUINHOS AI · MOTOR DE DIAGNÓSTICO
-   Conserva:
-   - window.getSupabase()
-   - window.supabaseClient
-   - Supabase Auth getSession()
-   - POST /api/ai/chat-pet
-   - Authorization Bearer
-   - message, history, page, user_name
-
-   Seguridad:
-   - No muestra tokens de sesión.
-   - No inserta respuestas del servidor con innerHTML.
-   - Distingue errores HTTP de fallos de red.
-   ========================================================== */
-
-(function () {
-    const $ = (id) => document.getElementById(id);
-
-    const ui = {
-        resultado: $("resultado"),
-        btnProbar: $("btnProbar"),
-        btnRespuesta: $("btnRespuesta"),
-        estadoGeneral: $("estadoGeneral"),
-        estadoTexto: $("estadoTexto"),
-        metricaSesion: $("metricaSesion"),
-        metricaTiempo: $("metricaTiempo"),
-        metricaEstado: $("metricaEstado"),
-        metricaDetalle: $("metricaDetalle"),
-        contadorPruebas: $("contadorPruebas"),
-        chipHTTP: $("chipHTTP"),
-        chipTiempo: $("chipTiempo"),
-        respuestaVacia: $("respuestaVacia"),
-        respuestaJSON: $("respuestaJSON"),
-        consejoTitulo: $("consejoTitulo"),
-        consejoTexto: $("consejoTexto")
+  function el(tag,cls,text){
+    const node=document.createElement(tag);
+    if(cls) node.className=cls;
+    if(text!==undefined && text!==null) node.textContent=String(text);
+    return node;
+  }
+  function setStatus(kind,text){
+    ui.estadoTop.textContent=text;
+    ui.robotState.textContent=text;
+    ui.estadoDiagnostico.textContent=text.toUpperCase();
+    ui.estadoDiagnostico.style.color=kind==="ok"?"var(--green)":kind==="error"?"var(--red)":"var(--cyan)";
+  }
+  function addCheck(kind,title,desc,label){
+    const row=el("div","check-row");
+    const symbols={ok:"✓",fail:"!",wait:"◌",info:"i"};
+    row.append(el("div","check-icon "+kind,symbols[kind]||"•"));
+    const content=el("div","");
+    content.append(el("div","check-title",title),el("div","check-desc",desc));
+    row.append(content,el("span","badge "+kind,label||kind.toUpperCase()));
+    ui.resultado.append(row);
+    total++;
+    ui.metricaChecks.textContent=String(total);
+  }
+  function clearChecks(){
+    ui.resultado.replaceChildren();
+    total=0;
+    ui.metricaChecks.textContent="0";
+  }
+  function advice(title,msg){
+    ui.consejoTitulo.textContent=title;
+    ui.consejoTexto.textContent=msg;
+  }
+  function showJSON(value){
+    ui.vacia.hidden=true;
+    ui.json.hidden=false;
+    try{
+      ui.json.textContent=typeof value==="string"?value:JSON.stringify(value,null,2);
+    }catch(_){
+      ui.json.textContent=String(value);
+    }
+  }
+  function getDetail(data,text){
+    if(data&&typeof data==="object"){
+      for(const k of ["error","message","mensaje","details"]){
+        if(typeof data[k]==="string"&&data[k].trim()){
+          return data[k].trim().slice(0,500);
+        }
+      }
+    }
+    return (text||"").slice(0,500);
+  }
+  function explainStatus(status,detail){
+    const messages={
+      400:["Solicitud rechazada","El servidor no aceptó los datos enviados. Revisa el formato esperado por el endpoint."],
+      401:["Autenticación rechazada","El servidor no aceptó la sesión o el token. Comprueba la validación de Supabase en el backend."],
+      403:["Acceso denegado","El servidor rechazó el acceso. Revisa permisos, políticas y requisitos del endpoint."],
+      404:["Endpoint no encontrado","No se encontró /api/ai/chat-pet en la URL consultada. Comprueba la ruta, el montaje de Express y el despliegue."],
+      408:["Tiempo de espera agotado","La solicitud tardó demasiado. Revisa los límites de tiempo del servidor."],
+      429:["Límite de solicitudes","El servidor aplicó un límite de peticiones. Comprueba las cuotas y la política de uso."],
+      500:["Error interno del servidor","El backend devolvió HTTP 500. Consulta los logs del servidor para encontrar la causa real."],
+      502:["Error de comunicación con un proveedor","Puede existir un problema entre el backend y el proveedor de IA. Revisa la respuesta y los logs antes de atribuirlo a una clave API."],
+      503:["Servicio temporalmente no disponible","Comprueba el estado del backend y de sus dependencias."],
+      504:["Tiempo de espera agotado","El servidor o una dependencia tardó demasiado. Revisa los timeouts y los logs."]
     };
+    const result=messages[status]||["Respuesta HTTP "+status,"El servidor devolvió un estado no satisfactorio. Consulta la respuesta original y los logs."];
+    return [result[0],detail||result[1]];
+  }
+  async function readBody(resp){
+    const text=await resp.text();
+    if(!text)return {data:null,text:""};
+    try{
+      return {data:JSON.parse(text),text};
+    }catch(_){
+      return {data:null,text:text.slice(0,12000)};
+    }
+  }
 
-    let ejecutando = false;
-    let totalComprobaciones = 0;
-    let ultimaRespuesta = null;
+  async function run(){
+    if(ejecutando)return;
+    ejecutando=true;
+    ui.btn.disabled=true;
+    ui.btn.textContent="◌ Diagnosticando...";
+    document.body.classList.add("is-thinking");
+    setStatus("running","Comprobando sistema");
+    ui.metricaSesion.textContent="…";
+    ui.metricaTiempo.textContent="…";
+    ui.metricaEstado.textContent="En curso";
+    ui.metricaEstado.className="metric-value cyan";
+    ui.metricaDetalle.textContent="Verificando conexión";
+    ui.chipHTTP.textContent="HTTP: pendiente";
+    ui.chipTiempo.textContent="Tiempo: calculando";
+    ui.vacia.hidden=false;
+    ui.json.hidden=true;
+    clearChecks();
 
-    function crearElemento(tag, clase, contenido) {
-        const el = document.createElement(tag);
+    try{
+      addCheck("wait","Verificando sesión Supabase","Buscando el cliente de autenticación.","EN CURSO");
+      let sb=null,session=null,authError=null;
 
-        if (clase) {
-            el.className = clase;
+      try{
+        sb=typeof window.getSupabase==="function"
+          ?window.getSupabase()
+          :(window.supabaseClient||null);
+
+        if(!sb||!sb.auth||typeof sb.auth.getSession!=="function"){
+          addCheck("fail","Cliente Supabase no disponible","No se encontró un cliente con auth.getSession(). Carga e inicializa Supabase antes de este archivo.","SIN CLIENTE");
+          ui.metricaSesion.textContent="No";
+          ui.metricaEstado.textContent="Error";
+          ui.metricaEstado.className="metric-value red";
+          ui.metricaDetalle.textContent="Falta el cliente";
+          setStatus("error","Sin cliente Supabase");
+          advice("No encuentro la conexión de autenticación","Este archivo no crea un cliente Supabase nuevo. Debe abrirse desde la aplicación donde window.getSupabase() o window.supabaseClient ya estén inicializados.");
+          return;
         }
 
-        if (contenido !== undefined && contenido !== null) {
-            el.textContent = String(contenido);
-        }
-
-        return el;
-    }
-
-    function establecerEstado(tipo, texto) {
-        ui.estadoGeneral.className = "status-pill";
-
-        if (tipo === "running") {
-            ui.estadoGeneral.classList.add("is-running");
-        } else if (tipo === "ok") {
-            ui.estadoGeneral.classList.add("is-ok");
-        } else if (tipo === "error") {
-            ui.estadoGeneral.classList.add("is-error");
-        }
-
-        ui.estadoTexto.textContent = texto;
-    }
-
-    function actualizarConsejo(titulo, mensaje) {
-        ui.consejoTitulo.textContent = titulo;
-        ui.consejoTexto.textContent = mensaje;
-    }
-
-    function limpiarResultados() {
-        ui.resultado.replaceChildren();
-        totalComprobaciones = 0;
-        actualizarContador();
-    }
-
-    function actualizarContador() {
-        ui.contadorPruebas.textContent =
-            totalComprobaciones + (
-                totalComprobaciones === 1
-                    ? " comprobación"
-                    : " comprobaciones"
-            );
-    }
-
-    function agregarComprobacion(tipo, titulo, descripcion, etiqueta) {
-        const fila = crearElemento("div", "check-row");
-        const iconos = {
-            ok: "✓",
-            fail: "!",
-            wait: "◌",
-            info: "i"
-        };
-
-        const icono = crearElemento(
-            "div",
-            "check-icon " + tipo,
-            iconos[tipo] || "•"
-        );
-
-        icono.setAttribute("aria-hidden", "true");
-
-        const contenido = crearElemento("div", "");
-        contenido.appendChild(
-            crearElemento("div", "check-title", titulo)
-        );
-        contenido.appendChild(
-            crearElemento("div", "check-description", descripcion)
-        );
-
-        const badge = crearElemento(
-            "span",
-            "check-badge " + tipo,
-            etiqueta || tipo.toUpperCase()
-        );
-
-        fila.append(icono, contenido, badge);
-        ui.resultado.appendChild(fila);
-
-        totalComprobaciones++;
-        actualizarContador();
-    }
-
-    function mostrarJSON(data) {
-        ui.respuestaVacia.hidden = true;
-        ui.respuestaJSON.hidden = false;
-
-        try {
-            ui.respuestaJSON.textContent = JSON.stringify(data, null, 2);
-        } catch (_) {
-            ui.respuestaJSON.textContent = String(data);
-        }
-    }
-
-    function mostrarTextoRespuesta(texto) {
-        ui.respuestaVacia.hidden = true;
-        ui.respuestaJSON.hidden = false;
-        ui.respuestaJSON.textContent = texto;
-    }
-
-    function mostrarSinRespuesta() {
-        ui.respuestaJSON.hidden = true;
-        ui.respuestaVacia.hidden = false;
-    }
-
-    function extraerMensajeError(data) {
-        if (!data || typeof data !== "object") {
-            return "";
-        }
-
-        const posibles = [
-            data.error,
-            data.message,
-            data.mensaje,
-            data.details
-        ];
-
-        for (const valor of posibles) {
-            if (typeof valor === "string" && valor.trim()) {
-                return valor.trim().slice(0, 500);
-            }
-        }
-
-        return "";
-    }
-
-    function interpretarErrorHTTP(status, detalle) {
-        switch (status) {
-            case 400:
-                return {
-                    titulo: "Solicitud no aceptada",
-                    mensaje: detalle ||
-                        "El servidor rechazó los datos enviados. " +
-                        "Revisa el formato esperado por el endpoint."
-                };
-
-            case 401:
-                return {
-                    titulo: "Autenticación rechazada",
-                    mensaje: detalle ||
-                        "El servidor no aceptó la autenticación. " +
-                        "Comprueba la sesión y la validación del token " +
-                        "en el backend."
-                };
-
-            case 403:
-                return {
-                    titulo: "Acceso denegado",
-                    mensaje: detalle ||
-                        "El servidor rechazó el acceso. Comprueba los " +
-                        "permisos, políticas y requisitos del endpoint."
-                };
-
-            case 404:
-                return {
-                    titulo: "Endpoint no encontrado",
-                    mensaje:
-                        "No se encontró /api/ai/chat-pet en la URL " +
-                        "consultada. Comprueba la ruta, el montaje de " +
-                        "Express y el despliegue activo."
-                };
-
-            case 408:
-                return {
-                    titulo: "Solicitud agotó el tiempo",
-                    mensaje: detalle ||
-                        "El servidor indicó que la solicitud tardó " +
-                        "demasiado. Revisa los tiempos de espera."
-                };
-
-            case 429:
-                return {
-                    titulo: "Límite de solicitudes",
-                    mensaje:
-                        "El servidor aplicó un límite de peticiones. " +
-                        "Revisa la política de uso y los límites del " +
-                        "proveedor de IA."
-                };
-
-            case 500:
-                return {
-                    titulo: "Error interno del servidor",
-                    mensaje: detalle ||
-                        "El backend devolvió HTTP 500. Consulta los logs " +
-                        "del servidor para encontrar el error real."
-                };
-
-            case 502:
-                return {
-                    titulo: "Error de comunicación con un proveedor",
-                    mensaje: detalle ||
-                        "El backend devolvió HTTP 502. Puede existir un " +
-                        "problema entre el servidor y el proveedor de IA. " +
-                        "Confirma la configuración y los logs antes de " +
-                        "atribuirlo a una API key."
-                };
-
-            case 503:
-                return {
-                    titulo: "Servicio temporalmente no disponible",
-                    mensaje: detalle ||
-                        "El servicio no está disponible en este momento. " +
-                        "Comprueba el estado del backend y sus dependencias."
-                };
-
-            case 504:
-                return {
-                    titulo: "Tiempo de espera agotado",
-                    mensaje: detalle ||
-                        "El servidor o una dependencia tardó demasiado. " +
-                        "Revisa los timeouts y los logs del proveedor."
-                };
-
-            default:
-                return {
-                    titulo: "Respuesta HTTP " + status,
-                    mensaje: detalle ||
-                        "El servidor devolvió un estado no satisfactorio. " +
-                        "Consulta la respuesta mostrada y los logs."
-                };
-        }
-    }
-
-    async function leerRespuesta(resp) {
-        const texto = await resp.text();
-
-        if (!texto) {
-            return {
-                data: null,
-                texto: ""
-            };
-        }
-
-        try {
-            return {
-                data: JSON.parse(texto),
-                texto: texto
-            };
-        } catch (_) {
-            return {
-                data: null,
-                texto: texto.slice(0, 12000)
-            };
-        }
-    }
-
-    async function ejecutarDiagnostico() {
-        if (ejecutando) {
-            return;
-        }
-
-        ejecutando = true;
-        ultimaRespuesta = null;
-
-        ui.btnProbar.disabled = true;
-        ui.btnProbar.textContent = "◌ Ejecutando diagnóstico...";
-        document.body.classList.add("is-thinking");
-
-        establecerEstado("running", "Comprobando sistema");
-        ui.metricaSesion.textContent = "…";
-        ui.metricaTiempo.textContent = "…";
-        ui.metricaEstado.textContent = "En curso";
-        ui.metricaDetalle.textContent = "Verificando conexión";
-
-        ui.chipHTTP.textContent = "HTTP: pendiente";
-        ui.chipTiempo.textContent = "Tiempo: calculando";
-
-        mostrarSinRespuesta();
-        limpiarResultados();
-
-        try {
-            /* 1. SESIÓN SUPABASE */
-
-            agregarComprobacion(
-                "wait",
-                "Verificando sesión Supabase",
-                "Buscando el cliente de autenticación.",
-                "EN CURSO"
-            );
-
-            let sb = null;
-            let session = null;
-            let authError = null;
-
-            try {
-                sb = typeof window.getSupabase === "function"
-                    ? window.getSupabase()
-                    : (window.supabaseClient || null);
-
-                if (!sb || !sb.auth ||
-                    typeof sb.auth.getSession !== "function") {
-                    agregarComprobacion(
-                        "fail",
-                        "Cliente Supabase no disponible",
-                        "No se encontró un cliente con auth.getSession(). " +
-                        "Verifica que Supabase se inicialice antes de este archivo.",
-                        "SIN CLIENTE"
-                    );
-
-                    ui.metricaSesion.textContent = "No";
-                    ui.metricaEstado.textContent = "Error";
-                    ui.metricaDetalle.textContent = "Falta el cliente";
-                    establecerEstado("error", "Sin cliente Supabase");
-
-                    actualizarConsejo(
-                        "No encuentro la conexión de autenticación",
-                        "Este diagnóstico no crea un cliente Supabase nuevo. " +
-                        "Necesitas cargar e inicializar el cliente de tu " +
-                        "aplicación antes de ejecutar esta página."
-                    );
-
-                    return;
-                }
-
-                const resultadoSesion = await sb.auth.getSession();
-
-                if (resultadoSesion.error) {
-                    authError = resultadoSesion.error;
-                } else {
-                    session = resultadoSesion.data
-                        ? resultadoSesion.data.session
-                        : null;
-                }
-            } catch (errorSesion) {
-                authError = errorSesion;
-            }
-
-            if (authError) {
-                agregarComprobacion(
-                    "fail",
-                    "Error al consultar Supabase",
-                    authError.message ||
-                        "No se pudo recuperar la sesión de autenticación.",
-                    "ERROR"
-                );
-
-                ui.metricaSesion.textContent = "Error";
-                ui.metricaEstado.textContent = "Error";
-                ui.metricaDetalle.textContent = "Autenticación";
-                establecerEstado("error", "Error de autenticación");
-
-                actualizarConsejo(
-                    "No pude comprobar tu sesión",
-                    "Revisa la inicialización de Supabase, la configuración " +
-                    "del proyecto y la consola del navegador."
-                );
-
-                return;
-            }
-
-            if (!session || !session.user || !session.access_token) {
-                agregarComprobacion(
-                    "fail",
-                    "No hay sesión activa",
-                    "Inicia sesión en tu aplicación antes de probar Marquinhos.",
-                    "SIN SESIÓN"
-                );
-
-                ui.metricaSesion.textContent = "No";
-                ui.metricaEstado.textContent = "Pendiente";
-                ui.metricaDetalle.textContent = "Inicia sesión";
-                establecerEstado("error", "Sesión requerida");
-
-                actualizarConsejo(
-                    "Primero necesitamos reconocerte",
-                    "Inicia sesión en Csariel's y vuelve a ejecutar el " +
-                    "diagnóstico. No se enviará ninguna petición a la IA " +
-                    "sin una sesión disponible."
-                );
-
-                return;
-            }
-
-            agregarComprobacion(
-                "ok",
-                "Sesión de Supabase activa",
-                "Usuario verificado: " +
-                    String(session.user.id).slice(0, 8) +
-                    "… · Token presente; contenido oculto por seguridad.",
-                "AUTENTICADO"
-            );
-
-            ui.metricaSesion.textContent = "Activa";
-
-            /* 2. PETICIÓN A LA API */
-
-            agregarComprobacion(
-                "wait",
-                "Conectando con Marquinhos AI",
-                "Enviando la pregunta de prueba al endpoint configurado.",
-                "CONECTANDO"
-            );
-
-            const inicio = Date.now();
-            let resp;
-
-            try {
-                resp = await fetch("/api/ai/chat-pet", {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept": "application/json",
-                        "Authorization": "Bearer " + session.access_token
-                    },
-                    body: JSON.stringify({
-                        message: "Hola, ¿cuánto es 15 por 23?",
-                        history: [],
-                        page: "/test-pet",
-                        user_name: "Test"
-                    })
-                });
-            } catch (errorRed) {
-                const msRed = Date.now() - inicio;
-
-                ui.metricaTiempo.textContent = msRed + " ms";
-                ui.chipTiempo.textContent = "Tiempo: " + msRed + " ms";
-
-                agregarComprobacion(
-                    "fail",
-                    "No se pudo completar la petición",
-                    errorRed.message ||
-                        "La petición falló antes de recibir una respuesta HTTP.",
-                    "RED / FETCH"
-                );
-
-                ui.metricaEstado.textContent = "Error";
-                ui.metricaDetalle.textContent = "Sin respuesta HTTP";
-                establecerEstado("error", "Error de conexión");
-
-                actualizarConsejo(
-                    "No pude comunicarme con el servidor",
-                    "Comprueba que la página esté servida desde el dominio " +
-                    "correcto, que el backend esté activo y que las políticas " +
-                    "de seguridad del navegador permitan la solicitud. " +
-                    "Este error por sí solo no demuestra que sea un problema " +
-                    "de CORS o de la clave del proveedor."
-                );
-
-                return;
-            }
-
-            const ms = Date.now() - inicio;
-
-            ui.metricaTiempo.textContent = ms + " ms";
-            ui.chipHTTP.textContent = "HTTP: " + resp.status;
-            ui.chipTiempo.textContent = "Tiempo: " + ms + " ms";
-
-            const contenido = await leerRespuesta(resp);
-            const data = contenido.data;
-
-            ultimaRespuesta = data !== null
-                ? data
-                : contenido.texto;
-
-            mostrarJSON(
-                data !== null
-                    ? data
-                    : { respuesta_texto: contenido.texto }
-            );
-
-            agregarComprobacion(
-                resp.ok ? "ok" : "fail",
-                "Respuesta del endpoint",
-                "HTTP " + resp.status + " · " + ms +
-                    " ms · " + (resp.ok
-                        ? "El servidor respondió con éxito HTTP."
-                        : "El servidor devolvió un estado HTTP no satisfactorio."),
-                resp.ok ? "HTTP OK" : "HTTP " + resp.status
-            );
-
-            /* 3. INTERPRETAR EL RESULTADO */
-
-            if (resp.ok) {
-                ui.metricaEstado.textContent = "Conectado";
-                ui.metricaEstado.className = "metric-value green";
-                ui.metricaDetalle.textContent = "HTTP satisfactorio";
-
-                establecerEstado("ok", "API respondió");
-
-                actualizarConsejo(
-                    "La comunicación con la API respondió correctamente",
-                    "El servidor devolvió un estado HTTP satisfactorio. " +
-                    "Revisa el JSON recibido para confirmar que contiene " +
-                    "la respuesta esperada de Marquinhos. Un HTTP exitoso " +
-                    "no garantiza por sí solo que todas las funciones de " +
-                    "la IA estén operativas."
-                );
-
-                if (data !== null) {
-                    agregarComprobacion(
-                        "ok",
-                        "Contenido JSON recibido",
-                        "La respuesta se pudo interpretar como JSON.",
-                        "JSON VÁLIDO"
-                    );
-                } else {
-                    agregarComprobacion(
-                        "info",
-                        "Respuesta no JSON",
-                        "El servidor respondió correctamente, pero el cuerpo " +
-                        "no contiene JSON válido. Revisa la respuesta original.",
-                        "REVISAR CUERPO"
-                    );
-                }
-
-                const mensajeError = extraerMensajeError(data);
-
-                if (mensajeError) {
-                    agregarComprobacion(
-                        "info",
-                        "Mensaje devuelto por la API",
-                        mensajeError,
-                        "INFORMACIÓN"
-                    );
-                }
-            } else {
-                const detalle = extraerMensajeError(data) ||
-                    contenido.texto.slice(0, 500);
-
-                const diagnostico = interpretarErrorHTTP(
-                    resp.status,
-                    detalle
-                );
-
-                ui.metricaEstado.textContent = "Error";
-                ui.metricaEstado.className = "metric-value";
-                ui.metricaEstado.style.color = "var(--red)";
-                ui.metricaDetalle.textContent = "HTTP " + resp.status;
-
-                establecerEstado("error", "Error HTTP " + resp.status);
-
-                actualizarConsejo(
-                    diagnostico.titulo,
-                    diagnostico.mensaje
-                );
-
-                agregarComprobacion(
-                    "info",
-                    "Siguiente paso recomendado",
-                    diagnostico.mensaje,
-                    "DIAGNÓSTICO"
-                );
-            }
-
-        } catch (error) {
-            agregarComprobacion(
-                "fail",
-                "Error durante el diagnóstico",
-                error && error.message
-                    ? error.message
-                    : "Se produjo un error inesperado.",
-                "ERROR"
-            );
-
-            ui.metricaEstado.textContent = "Error";
-            ui.metricaEstado.className = "metric-value";
-            ui.metricaEstado.style.color = "var(--red)";
-            ui.metricaDetalle.textContent = "Error inesperado";
-
-            establecerEstado("error", "Diagnóstico interrumpido");
-
-            actualizarConsejo(
-                "Encontré un problema inesperado",
-                "Consulta el resultado del diagnóstico y la consola del " +
-                "navegador para identificar el origen del error."
-            );
-
-        } finally {
-            ejecutando = false;
-            ui.btnProbar.disabled = false;
-            ui.btnProbar.replaceChildren();
-
-            const icono = crearElemento("span", "", "✦");
-            icono.setAttribute("aria-hidden", "true");
-
-            ui.btnProbar.append(
-                icono,
-                document.createTextNode(" Ejecutar diagnóstico")
-            );
-
-            document.body.classList.remove("is-thinking");
-        }
-    }
-
-    ui.btnProbar.addEventListener("click", ejecutarDiagnostico);
-
-    ui.btnRespuesta.addEventListener("click", function () {
-        $("panelRespuesta").scrollIntoView({
-            behavior: window.matchMedia(
-                "(prefers-reduced-motion: reduce)"
-            ).matches ? "auto" : "smooth",
-            block: "start"
+        const result=await sb.auth.getSession();
+        if(result.error)authError=result.error;
+        else session=result.data?result.data.session:null;
+      }catch(e){
+        authError=e;
+      }
+
+      if(authError){
+        addCheck("fail","Error al consultar Supabase",authError.message||"No se pudo recuperar la sesión.","ERROR");
+        ui.metricaSesion.textContent="Error";
+        ui.metricaEstado.textContent="Error";
+        ui.metricaEstado.className="metric-value red";
+        ui.metricaDetalle.textContent="Autenticación";
+        setStatus("error","Error de autenticación");
+        advice("No pude comprobar tu sesión","Revisa la inicialización de Supabase, la configuración del proyecto y la consola del navegador.");
+        return;
+      }
+
+      if(!session||!session.user||!session.access_token){
+        addCheck("fail","No hay sesión activa","Inicia sesión en la aplicación antes de probar Marquinhos.","SIN SESIÓN");
+        ui.metricaSesion.textContent="No";
+        ui.metricaEstado.textContent="Pendiente";
+        ui.metricaEstado.className="metric-value red";
+        ui.metricaDetalle.textContent="Inicia sesión";
+        setStatus("error","Sesión requerida");
+        advice("Primero necesitamos reconocerte","Inicia sesión en Csariel's y vuelve a ejecutar el diagnóstico. No se enviará la petición a la IA sin una sesión disponible.");
+        return;
+      }
+
+      addCheck("ok","Sesión de Supabase activa","Usuario: "+String(session.user.id).slice(0,8)+"… · Token presente y oculto por seguridad.","AUTENTICADO");
+      ui.metricaSesion.textContent="Activa";
+      addCheck("wait","Conectando con Marquinhos AI","Enviando la pregunta de prueba al endpoint existente.","CONECTANDO");
+
+      const start=Date.now();
+      let resp;
+
+      try{
+        resp=await fetch("/api/ai/chat-pet",{
+          method:"POST",
+          headers:{
+            "Content-Type":"application/json",
+            "Accept":"application/json",
+            "Authorization":"Bearer "+session.access_token
+          },
+          body:JSON.stringify({
+            message:"Hola, ¿cuánto es 15 por 23?",
+            history:[],
+            page:"/test-pet",
+            user_name:"Test"
+          })
         });
+      }catch(networkError){
+        const ms=Date.now()-start;
+        ui.metricaTiempo.textContent=ms+" ms";
+        ui.chipTiempo.textContent="Tiempo: "+ms+" ms";
+        addCheck("fail","No se pudo completar la petición",networkError.message||"No se recibió una respuesta HTTP.","RED / FETCH");
+        ui.metricaEstado.textContent="Error";
+        ui.metricaEstado.className="metric-value red";
+        ui.metricaDetalle.textContent="Sin respuesta HTTP";
+        setStatus("error","Error de conexión");
+        advice("No pude comunicarme con el servidor","Comprueba el dominio, el estado del backend y las políticas del navegador. Este error por sí solo no demuestra que sea CORS ni un problema de la clave del proveedor.");
+        return;
+      }
+
+      const ms=Date.now()-start;
+      ui.metricaTiempo.textContent=ms+" ms";
+      ui.chipHTTP.textContent="HTTP: "+resp.status;
+      ui.chipTiempo.textContent="Tiempo: "+ms+" ms";
+
+      const body=await readBody(resp);
+      showJSON(body.data!==null?body.data:{respuesta_texto:body.text});
+
+      addCheck(
+        resp.ok?"ok":"fail",
+        "Respuesta del endpoint",
+        "HTTP "+resp.status+" · "+ms+" ms · "+(resp.ok?"El servidor respondió con estado satisfactorio.":"El servidor devolvió un estado no satisfactorio."),
+        resp.ok?"HTTP OK":"HTTP "+resp.status
+      );
+
+      if(resp.ok){
+        ui.metricaEstado.textContent="Conectado";
+        ui.metricaEstado.className="metric-value green";
+        ui.metricaDetalle.textContent="HTTP satisfactorio";
+        setStatus("ok","API respondió");
+        advice("La API respondió correctamente","El servidor devolvió un estado HTTP satisfactorio. Revisa el JSON para confirmar que contiene la respuesta esperada de Marquinhos; un HTTP exitoso no garantiza por sí solo que todas las funciones de IA estén operativas.");
+
+        if(body.data!==null){
+          addCheck("ok","Contenido JSON recibido","La respuesta se pudo interpretar como JSON.","JSON VÁLIDO");
+        }else{
+          addCheck("info","Respuesta no JSON","El servidor respondió, pero el cuerpo no contiene JSON válido.","REVISAR CUERPO");
+        }
+
+        const detail=getDetail(body.data,"");
+        if(detail)addCheck("info","Mensaje de la API",detail,"INFORMACIÓN");
+      }else{
+        const [title,msg]=explainStatus(resp.status,getDetail(body.data,body.text));
+        ui.metricaEstado.textContent="Error";
+        ui.metricaEstado.className="metric-value red";
+        ui.metricaDetalle.textContent="HTTP "+resp.status;
+        setStatus("error","Error HTTP "+resp.status);
+        advice(title,msg);
+        addCheck("info","Siguiente paso recomendado",msg,"DIAGNÓSTICO");
+      }
+    }catch(error){
+      addCheck("fail","Error durante el diagnóstico",error&&error.message?error.message:"Error inesperado.","ERROR");
+      ui.metricaEstado.textContent="Error";
+      ui.metricaEstado.className="metric-value red";
+      ui.metricaDetalle.textContent="Error inesperado";
+      setStatus("error","Diagnóstico interrumpido");
+      advice("Encontré un problema inesperado","Consulta los resultados y la consola del navegador para identificar el origen del error.");
+    }finally{
+      ejecutando=false;
+      ui.btn.disabled=false;
+      ui.btn.textContent="✦ Ejecutar diagnóstico";
+      document.body.classList.remove("is-thinking");
+    }
+  }
+
+  ui.btn.addEventListener("click",run);
+  ui.btnVer.addEventListener("click",()=>{
+    $("respuesta").scrollIntoView({
+      behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",
+      block:"start"
     });
-
-    /* La prueba comienza automáticamente, como en el archivo original. */
-    ejecutarDiagnostico();
-
+  });
+  run();
 })();
 </script>
-
 </body>
 </html>
