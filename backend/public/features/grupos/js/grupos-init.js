@@ -11,11 +11,6 @@
 // ================================================================
 document.addEventListener('DOMContentLoaded', async function() {
     console.log('◈ Sariel\'s - Cablera Descentralizada');
-    console.log('[Grupos] supabaseClient:', !!window.supabaseClient);
-
-    if (!window.supabaseClient) {
-        if (window.__dbgShow) window.__dbgShow('Init: supabaseClient no disponible');
-    }
 
     var timeoutGlobal = setTimeout(function() {
         var grid = document.getElementById('gruposGrid');
@@ -26,7 +21,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     }, 8000);
 
     try {
+        // Espera al cliente compartido (singleton de app.js) antes de cualquier consulta
         await esperarSupabase();
+        console.log('[Grupos] supabaseClient:', !!window.supabaseClient);
 
         try { await cargarUsuarioActual(); } catch (e) { console.warn('[Grupos] Usuario:', e.message); }
 
