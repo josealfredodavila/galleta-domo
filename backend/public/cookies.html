@@ -7,13 +7,6 @@
     <link rel="stylesheet" href="/styles.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230D1117' stroke='%23E5C158' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23E5C158' text-anchor='middle'>◈</text></svg>" />
     <style>
-        /* ============================================================
-           SARIEL'S · COOKIES v2.1 · WCAG AAA
-           Contraste verificado:
-             #F8F9FA sobre #0D1117 → 16.9:1 (AAA)
-             #E0E6ED sobre #0D1117 → 13.4:1 (AAA)
-             #E5C158 sobre #0D1117 →  9.2:1 (AAA)
-           ============================================================ */
         :root {
             --gold-cosmic: #E5C158;
             --gold-soft:   rgba(229, 193, 88, 0.18);
@@ -40,7 +33,6 @@
             font-size: 16px;
         }
 
-        /* ===== CONTENEDOR LEGAL ===== */
         .terminos-container {
             max-width: 920px;
             margin: 0 auto;
@@ -129,9 +121,7 @@
             margin: 20px 0;
         }
 
-        .terminos-container .art strong {
-            color: var(--gold-cosmic);
-        }
+        .terminos-container .art strong { color: var(--gold-cosmic); }
 
         .terminos-container code {
             font-family: 'JetBrains Mono', 'Courier New', monospace;
@@ -158,7 +148,6 @@
             line-height: 1.7;
         }
 
-        /* ===== ALERTA LEGAL ===== */
         .alerta-legal {
             background: rgba(255, 107, 138, 0.08);
             border-left: 3px solid var(--danger);
@@ -170,7 +159,6 @@
         }
         .alerta-legal strong { color: var(--danger); }
 
-        /* ===== TABLA (DESKTOP) ===== */
         .tabla-cookies-wrapper {
             margin: 20px 0;
             overflow-x: auto;
@@ -222,7 +210,6 @@
         table.tabla-cookies tbody tr:nth-child(even) { background: var(--bg-row-alt); }
         table.tabla-cookies tbody tr:last-child td { border-bottom: none; }
 
-        /* ===== BADGES ===== */
         .tag-cat {
             display: inline-block;
             font-size: 0.72rem;
@@ -233,21 +220,9 @@
             text-transform: uppercase;
             white-space: nowrap;
         }
-        .tag-esencial {
-            background: rgba(0, 229, 255, 0.12);
-            color: #7FE7F5;
-            border: 1px solid rgba(0, 229, 255, 0.4);
-        }
-        .tag-preferencia {
-            background: rgba(229, 193, 88, 0.14);
-            color: var(--gold-cosmic);
-            border: 1px solid var(--gold-border);
-        }
-        .tag-tercero {
-            background: rgba(184, 194, 204, 0.1);
-            color: #D0D9E3;
-            border: 1px solid rgba(184, 194, 204, 0.35);
-        }
+        .tag-esencial { background: rgba(0, 229, 255, 0.12); color: #7FE7F5; border: 1px solid rgba(0, 229, 255, 0.4); }
+        .tag-preferencia { background: rgba(229, 193, 88, 0.14); color: var(--gold-cosmic); border: 1px solid var(--gold-border); }
+        .tag-tercero { background: rgba(184, 194, 204, 0.1); color: #D0D9E3; border: 1px solid rgba(184, 194, 204, 0.35); }
 
         .nota-tabla {
             font-size: 0.84rem !important;
@@ -257,7 +232,6 @@
             line-height: 1.6;
         }
 
-        /* ===== TARJETAS MÓVILES ===== */
         .cookie-cards-mobile {
             display: none;
             flex-direction: column;
@@ -295,13 +269,8 @@
             margin-bottom: 3px;
             font-weight: 700;
         }
-        .cookie-card .cc-value {
-            color: var(--text-secondary);
-            font-size: 0.92rem;
-            line-height: 1.6;
-        }
+        .cookie-card .cc-value { color: var(--text-secondary); font-size: 0.92rem; line-height: 1.6; }
 
-        /* ===== BOTONES ===== */
         .btn-volver {
             display: inline-block;
             margin-top: 24px;
@@ -320,18 +289,11 @@
             letter-spacing: 0.5px;
         }
         .btn-volver.active { opacity: 1; }
-        .btn-volver.active:hover {
-            transform: scale(1.03);
-            box-shadow: 0 0 30px rgba(229, 193, 88, 0.4);
-        }
-        .btn-volver:focus-visible {
-            outline: 3px solid var(--gold-cosmic);
-            outline-offset: 4px;
-        }
+        .btn-volver.active:hover { transform: scale(1.03); box-shadow: 0 0 30px rgba(229, 193, 88, 0.4); }
+        .btn-volver:focus-visible { outline: 3px solid var(--gold-cosmic); outline-offset: 4px; }
 
         .text-center { text-align: center; }
 
-        /* ===== ACEPTACIÓN ===== */
         .aceptacion-container {
             margin-top: 34px;
             padding: 22px;
@@ -365,34 +327,16 @@
             position: relative;
             margin-top: 2px;
         }
-        .aceptacion-container input[type="checkbox"]:checked {
-            background: var(--gold-cosmic);
-            border-color: var(--gold-cosmic);
-        }
+        .aceptacion-container input[type="checkbox"]:checked { background: var(--gold-cosmic); border-color: var(--gold-cosmic); }
         .aceptacion-container input[type="checkbox"]:checked::after {
-            content: "✓";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #0D1117;
-            font-size: 15px;
-            font-weight: 900;
+            content: "✓"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #0D1117; font-size: 15px; font-weight: 900;
         }
-        .aceptacion-container input[type="checkbox"]:focus-visible {
-            outline: 3px solid var(--gold-cosmic);
-            outline-offset: 3px;
-        }
+        .aceptacion-container input[type="checkbox"]:focus-visible { outline: 3px solid var(--gold-cosmic); outline-offset: 3px; }
 
-        .aceptacion-container label {
-            color: var(--text-secondary);
-            font-size: 0.96rem;
-            line-height: 1.6;
-            cursor: pointer;
-        }
+        .aceptacion-container label { color: var(--text-secondary); font-size: 0.96rem; line-height: 1.6; cursor: pointer; }
         .aceptacion-container label strong { color: var(--gold-cosmic); }
 
-        /* ===== BOTÓN CONFIGURAR COOKIES (nuevo) ===== */
         .btn-config-cookies {
             display: inline-flex;
             align-items: center;
@@ -412,155 +356,62 @@
             transition: all 0.25s ease;
             text-decoration: none;
         }
-        .btn-config-cookies:hover {
-            background: rgba(229, 193, 88, 0.1);
-            border-color: var(--gold-cosmic);
-            transform: translateY(-1px);
-        }
-        .btn-config-cookies:focus-visible {
-            outline: 3px solid var(--gold-cosmic);
-            outline-offset: 3px;
-        }
+        .btn-config-cookies:hover { background: rgba(229, 193, 88, 0.1); border-color: var(--gold-cosmic); transform: translateY(-1px); }
+        .btn-config-cookies:focus-visible { outline: 3px solid var(--gold-cosmic); outline-offset: 3px; }
 
-        .enlaces-legales {
-            margin-top: 16px;
-            font-size: 0.9rem;
-            text-align: center;
-        }
+        .enlaces-legales { margin-top: 16px; font-size: 0.9rem; text-align: center; }
         .enlaces-legales a {
-            color: var(--gold-cosmic);
-            text-decoration: none;
-            margin: 0 10px;
-            border-bottom: 1px solid transparent;
-            transition: border-color 0.2s ease;
+            color: var(--gold-cosmic); text-decoration: none; margin: 0 10px;
+            border-bottom: 1px solid transparent; transition: border-color 0.2s ease;
         }
         .enlaces-legales a:hover { border-bottom-color: var(--gold-cosmic); }
-        .enlaces-legales a:focus-visible {
-            outline: 2px solid var(--gold-cosmic);
-            outline-offset: 3px;
-            border-radius: 2px;
-        }
+        .enlaces-legales a:focus-visible { outline: 2px solid var(--gold-cosmic); outline-offset: 3px; border-radius: 2px; }
 
-        /* ===== HEADER ===== */
         .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 20px 18px;
-            border-bottom: 2px solid var(--gold-border);
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 12px;
-            position: relative;
-            max-width: 920px;
-            margin-left: auto;
-            margin-right: auto;
-            background: var(--bg-solid);
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 20px 18px; border-bottom: 2px solid var(--gold-border);
+            margin-bottom: 20px; flex-wrap: wrap; gap: 12px; position: relative;
+            max-width: 920px; margin-left: auto; margin-right: auto; background: var(--bg-solid);
         }
         .header::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 1px;
+            content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 1px;
             background: linear-gradient(90deg, transparent, var(--gold-cosmic), var(--gold-cosmic), transparent);
             opacity: 0.5;
         }
 
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            text-decoration: none;
-        }
+        .logo { display: flex; align-items: center; gap: 12px; text-decoration: none; }
         .logo-icon { font-size: 2rem; }
-        .logo-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.3rem;
-            font-weight: 900;
-            letter-spacing: 2px;
-            color: var(--gold-cosmic);
-        }
-        .logo-badge {
-            font-size: 0.55rem;
-            background: var(--gold-cosmic);
-            color: var(--bg-solid);
-            padding: 3px 12px;
-            border-radius: 20px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.3rem; font-weight: 900; letter-spacing: 2px; color: var(--gold-cosmic); }
+        .logo-badge { font-size: 0.55rem; background: var(--gold-cosmic); color: var(--bg-solid); padding: 3px 12px; border-radius: 20px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
 
-        .header-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        .network-badge {
-            font-size: 0.78rem;
-            color: var(--gold-cosmic);
-            background: rgba(229, 193, 88, 0.1);
-            padding: 5px 14px;
-            border-radius: 20px;
-            border: 1px solid var(--gold-border);
-        }
+        .header-info { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+        .network-badge { font-size: 0.78rem; color: var(--gold-cosmic); background: rgba(229, 193, 88, 0.1); padding: 5px 14px; border-radius: 20px; border: 1px solid var(--gold-border); }
 
-        /* ===== FONDO DECORATIVO ===== */
-        #stars-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            pointer-events: none;
-            opacity: 0.5;
-        }
-        .nebula {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(140px);
-            pointer-events: none;
-            z-index: 0;
-            animation: nebula-drift 30s ease-in-out infinite alternate;
-        }
+        #stars-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.5; }
+        .nebula { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: 0; animation: nebula-drift 30s ease-in-out infinite alternate; }
         .nebula-1 { width: 600px; height: 600px; background: #0B3D2E; top: -15%; right: -15%; opacity: 0.18; }
         .nebula-2 { width: 500px; height: 500px; background: var(--gold-cosmic); bottom: -15%; left: -15%; opacity: 0.05; animation-delay: -10s; }
         .nebula-3 { display: none; }
 
-        @keyframes nebula-drift {
-            0%   { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(40px, -30px) scale(1.15); }
-        }
+        @keyframes nebula-drift { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(40px, -30px) scale(1.15); } }
 
         .container { max-width: 920px; margin: 0 auto; padding: 0 20px; }
         .main { position: relative; z-index: 1; }
 
-        /* ============================================================
-           RESPONSIVE · MÓVIL
-           ============================================================ */
         @media (max-width: 768px) {
             body { font-size: 15px; }
-
             .terminos-container { padding: 28px 18px; border-radius: 10px; }
             .terminos-container h1 { font-size: 1.4rem; letter-spacing: 0.3px; }
             .terminos-container h2 { font-size: 1.05rem; margin-top: 28px; }
             .terminos-container h3 { font-size: 0.92rem; }
             .terminos-container .art { padding: 14px 16px; }
-            .terminos-container p,
-            .terminos-container ul li { font-size: 0.95rem; }
-
+            .terminos-container p, .terminos-container ul li { font-size: 0.95rem; }
             .tabla-cookies-wrapper { display: none; }
             .cookie-cards-mobile { display: flex; }
-
             .header { padding: 12px 16px; margin-bottom: 14px; }
             .logo-text { font-size: 1.1rem; }
             .logo-badge { font-size: 0.5rem; padding: 2px 9px; }
             .network-badge { font-size: 0.72rem; padding: 4px 12px; }
-
             .aceptacion-container { padding: 18px; gap: 12px; }
             .aceptacion-container .aceptacion-check { flex-direction: row; }
             .btn-volver { padding: 13px 28px; font-size: 0.88rem; width: 100%; }
@@ -581,295 +432,6 @@
 
         @media (prefers-reduced-motion: reduce) {
             * { animation: none !important; transition: none !important; }
-        }
-
-        /* ============================================================
-           BANNER DE CONSENTIMIENTO (estilos aislados con prefijo cc-)
-           Mismo lenguaje visual que la página.
-           ============================================================ */
-        #cookie-consent-root[hidden] { display: none !important; }
-        #cookie-consent-root {
-            position: fixed;
-            inset: 0;
-            z-index: 999999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            animation: cc-fade-in 0.25s ease-out;
-        }
-        @keyframes cc-fade-in { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes cc-slide-up {
-            from { opacity: 0; transform: translateY(24px) scale(0.98); }
-            to   { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        #cookie-consent-root .cc-backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(5, 8, 15, 0.88);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-        }
-
-        #cookie-consent-root .cc-panel {
-            position: relative;
-            width: 100%;
-            max-width: 640px;
-            max-height: 92vh;
-            overflow-y: auto;
-            background: var(--bg-panel);
-            border: 1px solid var(--gold-border);
-            border-radius: 16px;
-            padding: 32px 28px;
-            box-shadow: 0 0 60px rgba(229, 193, 88, 0.15), 0 20px 60px rgba(0, 0, 0, 0.6);
-            animation: cc-slide-up 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-            color: var(--text-primary);
-            line-height: 1.6;
-        }
-        #cookie-consent-root .cc-panel::-webkit-scrollbar { width: 6px; }
-        #cookie-consent-root .cc-panel::-webkit-scrollbar-thumb {
-            background: var(--gold-border);
-            border-radius: 3px;
-        }
-
-        #cookie-consent-root .cc-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 16px;
-            padding-bottom: 16px;
-            border-bottom: 1px solid var(--gold-border);
-        }
-        #cookie-consent-root .cc-icon {
-            font-size: 1.8rem;
-            filter: drop-shadow(0 0 12px rgba(229, 193, 88, 0.4));
-        }
-        #cookie-consent-root h2.cc-title {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.05rem;
-            color: var(--gold-cosmic);
-            letter-spacing: 0.5px;
-            line-height: 1.3;
-            margin: 0;
-        }
-
-        #cookie-consent-root .cc-intro {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            margin-bottom: 20px;
-        }
-        #cookie-consent-root .cc-intro a {
-            color: var(--gold-cosmic);
-            text-decoration: underline;
-            text-underline-offset: 3px;
-        }
-
-        #cookie-consent-root .cc-categories {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 22px;
-        }
-        #cookie-consent-root .cc-category {
-            background: var(--bg-solid);
-            border: 1px solid var(--gold-border);
-            border-radius: 10px;
-            padding: 14px 16px;
-        }
-        #cookie-consent-root .cc-cat-head {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 12px;
-        }
-        #cookie-consent-root .cc-cat-info { flex: 1; min-width: 0; }
-        #cookie-consent-root .cc-cat-title {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.82rem;
-            color: var(--gold-cosmic);
-            letter-spacing: 0.4px;
-            margin-bottom: 4px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-        #cookie-consent-root .cc-cat-base {
-            font-size: 0.65rem;
-            padding: 2px 8px;
-            border-radius: 20px;
-            background: rgba(184, 194, 204, 0.12);
-            color: #D0D9E3;
-            border: 1px solid rgba(184, 194, 204, 0.3);
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
-            font-family: 'Inter', sans-serif;
-        }
-        #cookie-consent-root .cc-cat-base.required {
-            background: rgba(0, 229, 255, 0.1);
-            color: #7FE7F5;
-            border-color: rgba(0, 229, 255, 0.35);
-        }
-        #cookie-consent-root .cc-cat-desc {
-            font-size: 0.82rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-        }
-
-        #cookie-consent-root .cc-toggle {
-            position: relative;
-            display: inline-block;
-            width: 46px;
-            height: 26px;
-            flex-shrink: 0;
-        }
-        #cookie-consent-root .cc-toggle input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-            position: absolute;
-        }
-        #cookie-consent-root .cc-slider {
-            position: absolute;
-            cursor: pointer;
-            inset: 0;
-            background: rgba(184, 194, 204, 0.2);
-            border: 1px solid var(--gold-border);
-            border-radius: 26px;
-            transition: all 0.3s ease;
-        }
-        #cookie-consent-root .cc-slider::before {
-            content: "";
-            position: absolute;
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
-            background: var(--text-secondary);
-            border-radius: 50%;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        #cookie-consent-root .cc-toggle input:checked + .cc-slider {
-            background: rgba(229, 193, 88, 0.3);
-            border-color: var(--gold-cosmic);
-        }
-        #cookie-consent-root .cc-toggle input:checked + .cc-slider::before {
-            transform: translateX(20px);
-            background: var(--gold-cosmic);
-            box-shadow: 0 0 12px rgba(229, 193, 88, 0.5);
-        }
-        #cookie-consent-root .cc-toggle input:disabled + .cc-slider {
-            opacity: 0.55;
-            cursor: not-allowed;
-        }
-        #cookie-consent-root .cc-toggle input:focus-visible + .cc-slider {
-            outline: 2px solid var(--gold-cosmic);
-            outline-offset: 3px;
-        }
-
-        #cookie-consent-root .cc-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 8px;
-        }
-        #cookie-consent-root .cc-btn {
-            flex: 1 1 auto;
-            min-width: 140px;
-            padding: 12px 20px;
-            border-radius: 40px;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            cursor: pointer;
-            border: 1px solid transparent;
-            transition: all 0.25s ease;
-            text-transform: uppercase;
-        }
-        #cookie-consent-root .cc-btn-primary {
-            background: var(--gold-cosmic);
-            color: var(--bg-solid);
-            border-color: var(--gold-cosmic);
-        }
-        #cookie-consent-root .cc-btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 6px 24px rgba(229, 193, 88, 0.4);
-        }
-        #cookie-consent-root .cc-btn-secondary {
-            background: transparent;
-            color: var(--gold-cosmic);
-            border-color: var(--gold-border);
-        }
-        #cookie-consent-root .cc-btn-secondary:hover {
-            background: rgba(229, 193, 88, 0.08);
-            border-color: var(--gold-cosmic);
-        }
-        #cookie-consent-root .cc-btn-ghost {
-            background: transparent;
-            color: var(--text-secondary);
-            border-color: rgba(184, 194, 204, 0.25);
-            flex-basis: 100%;
-        }
-        #cookie-consent-root .cc-btn-ghost:hover {
-            color: var(--text-primary);
-            border-color: rgba(184, 194, 204, 0.5);
-        }
-        #cookie-consent-root .cc-btn:focus-visible {
-            outline: 2px solid var(--gold-cosmic);
-            outline-offset: 3px;
-        }
-
-        #cookie-consent-root .cc-footer-note {
-            margin-top: 16px;
-            font-size: 0.74rem;
-            color: var(--text-muted);
-            text-align: center;
-            line-height: 1.5;
-        }
-        #cookie-consent-root .cc-footer-note a {
-            color: var(--gold-cosmic);
-            text-decoration: none;
-        }
-        #cookie-consent-root .cc-footer-note a:hover { text-decoration: underline; }
-
-        #cookie-settings-fab {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            z-index: 999998;
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: var(--bg-panel);
-            border: 1px solid var(--gold-border);
-            color: var(--gold-cosmic);
-            font-size: 1.2rem;
-            cursor: pointer;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.25s ease;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        }
-        #cookie-settings-fab.visible { display: flex; }
-        #cookie-settings-fab:hover {
-            transform: scale(1.08) rotate(15deg);
-            border-color: var(--gold-cosmic);
-            box-shadow: 0 0 20px rgba(229, 193, 88, 0.3);
-        }
-        #cookie-settings-fab:focus-visible {
-            outline: 2px solid var(--gold-cosmic);
-            outline-offset: 3px;
-        }
-
-        @media (max-width: 520px) {
-            #cookie-consent-root .cc-panel { padding: 24px 18px; border-radius: 12px; }
-            #cookie-consent-root h2.cc-title { font-size: 0.92rem; }
-            #cookie-consent-root .cc-btn { min-width: 100%; font-size: 0.72rem; }
         }
     </style>
 </head>
@@ -900,7 +462,6 @@
                     <h1 data-clave="cookies_titulo">✦ Política Institucional de Cookies y Almacenamiento Digital Local</h1>
                     <div class="fecha">📅 Última actualización: 18 de octubre de 2026 · Versión 2.0 · Vigente · Cumplimiento RGPD / LFPDPPP · Enterprise Web3</div>
 
-                    <!-- ===== SECCIÓN 1 ===== -->
                     <h2>📘 1. Disposiciones Generales y Marco Normativo</h2>
                     <div class="art">
                         <p><strong>1.1. Identidad del Responsable.</strong> Sariel's (en adelante, "la Plataforma" o "el Responsable") es una plataforma digital con infraestructura en Node.js, Express, Supabase y Railway, cuyo domicilio legal se ubica en Puebla, México. La Plataforma opera un ecosistema B2B/B2C con API global disponible en más de 80 países, y utiliza la red Polygon como infraestructura Web3 de verificación on-chain.</p>
@@ -917,7 +478,6 @@
                         <p><strong>1.5. Ámbito de aplicación.</strong> Esta Política aplica a todo Usuario que acceda a la Plataforma, con independencia de su ubicación geográfica, así como a los desarrolladores B2B que integren la API global de Sariel's.</p>
                     </div>
 
-                    <!-- ===== SECCIÓN 2 ===== -->
                     <h2>📗 2. Definición Legal de Tecnologías de Almacenamiento</h2>
                     <div class="art">
                         <p><strong>2.1. Cookies HTTP.</strong> Fragmento de datos que un servidor transmite al navegador y que este almacena en el dispositivo. Se clasifican en: (i) <em>de sesión</em> (se eliminan al cerrar el navegador); (ii) <em>persistentes</em> (con fecha de expiración definida); (iii) <em>first-party</em> (emitidas por el dominio de la Plataforma); y (iv) <em>third-party</em> (emitidas por dominios de proveedores externos).</p>
@@ -927,7 +487,6 @@
                         <p><strong>2.5. Distinción operativa.</strong> A los efectos de esta Política, el término <strong>"almacenamiento digital local"</strong> comprende conjuntamente cookies HTTP, LocalStorage, SessionStorage, IndexedDB y Cache Storage, así como cualquier tecnología equivalente.</p>
                     </div>
 
-                    <!-- ===== SECCIÓN 3 ===== -->
                     <h2>📙 3. Matriz de Inventario Oficial de Cookies y Almacenamiento</h2>
                     <div class="art">
                         <p><strong>3.1. Inventario atómico.</strong> La siguiente matriz detalla de forma individualizada cada tecnología utilizada por Sariel's en producción, su categoría, finalidad exacta, proveedor y persistencia:</p>
@@ -1124,7 +683,6 @@
                         <p class="nota-tabla">La presente matriz es de carácter enunciativo y refleja el inventario oficial de producción a la fecha de vigencia. Podrá actualizarse conforme a la Sección 7. Las claves exactas pueden variar según la versión del navegador y del proveedor.</p>
                     </div>
 
-                    <!-- ===== SECCIÓN 4 ===== -->
                     <h2>📕 4. Bases de Legitimación y Clasificación por Finalidad</h2>
                     <div class="art">
                         <p><strong>4.1. Almacenamiento técnico esencial.</strong> Estrictamente necesario para la prestación del servicio solicitado. Base de legitimación: <strong>ejecución de contrato</strong> (Art. 6.1.b RGPD) e <strong>interés legítimo en seguridad</strong> (Art. 6.1.f RGPD). No requiere consentimiento previo. Su desactivación impide el funcionamiento de la Plataforma.</p>
@@ -1140,7 +698,6 @@
                         <p><strong>4.5. Prohibición de transferencia no consentida.</strong> Sariel's no vende, alquila ni cede datos derivados de cookies o almacenamiento local a terceros con fines publicitarios sin consentimiento expreso.</p>
                     </div>
 
-                    <!-- ===== SECCIÓN 5 ===== -->
                     <h2>📒 5. Servicios de Terceros, Infraestructura Web3 y Transferencias Internacionales</h2>
                     <div class="art">
                         <p><strong>5.1. Ecosistema de proveedores.</strong> La operación de Sariel's se apoya en proveedores tecnológicos de primer nivel. Se distingue entre <strong>encargados del tratamiento</strong> (bajo DPA) y <strong>terceros independientes</strong> (con política propia):</p>
@@ -1165,7 +722,6 @@
                         <p><strong>5.3. Políticas de terceros.</strong> Se recomienda revisar las políticas de privacidad y cookies de cada proveedor. Sariel's no controla las cookies establecidas directamente por dichos terceros.</p>
                     </div>
 
-                    <!-- ===== SECCIÓN 6 ===== -->
                     <h2>📘 6. Gestión, Configuración y Revocación del Consentimiento</h2>
                     <div class="art">
                         <p><strong>6.1. Derecho de configuración.</strong> El Usuario puede gestionar, bloquear o eliminar cookies y almacenamiento local en cualquier momento, sin justificación y de forma gratuita.</p>
@@ -1213,7 +769,6 @@
                         <p><strong>6.5. Ausencia de consentimiento tácito.</strong> La mera navegación no constituye consentimiento para tecnologías no esenciales. Todo tratamiento no esencial requiere acción afirmativa y explícita del Usuario.</p>
                     </div>
 
-                    <!-- ===== SECCIÓN 7 ===== -->
                     <h2>📙 7. Gobernanza, Versionado y Modificaciones</h2>
                     <div class="art">
                         <p><strong>7.1. Reserva de modificación.</strong> Sariel's se reserva el derecho de actualizar, modificar o sustituir esta Política para reflejar cambios normativos, técnicos u operativos.</p>
@@ -1222,7 +777,6 @@
                         <p><strong>7.4. Aceptación continuada.</strong> El uso de la Plataforma tras la entrada en vigor de una modificación implica conocimiento de la versión actualizada, sin perjuicio del consentimiento expreso que se requiera para nuevas tecnologías no esenciales.</p>
                     </div>
 
-                    <!-- ===== SECCIÓN 8 ===== -->
                     <h2>📗 8. Derechos ARCO, Portabilidad y Canales Oficiales de Contacto</h2>
                     <div class="art">
                         <p><strong>8.1. Derechos ARCO.</strong> El Usuario, como titular de datos personales, podrá ejercer en cualquier momento los derechos de <strong>Acceso, Rectificación, Cancelación y Oposición</strong> (ARCO), así como los derechos de <strong>portabilidad</strong> y <strong>limitación del tratamiento</strong> reconocidos por el RGPD, mediante solicitud a los canales oficiales.</p>
@@ -1237,7 +791,6 @@
                         <p><strong>8.5. Autoridad de control.</strong> Sin perjuicio de los canales internos, el Usuario podrá acudir a la autoridad competente: en México, el <strong>INAI</strong> o la autoridad sucesora competente en materia de protección de datos; en la Unión Europea, la <strong>autoridad de control</strong> de su Estado miembro de residencia.</p>
                     </div>
 
-                    <!-- ===== SECCIÓN 9 ===== -->
                     <h2>📕 9. Cláusula de Deslindamiento sobre Registros Blockchain (Polygon)</h2>
                     <div class="art">
                         <div class="alerta-legal">
@@ -1262,7 +815,6 @@
                         <p style="margin-top:8px;font-size:0.82rem;color:var(--text-muted);">Documento institucional · Versión 2.0 · Cumplimiento RGPD / LFPDPPP / FTC / Google Play · Enterprise Web3 · API Global 80+ países · WCAG AAA</p>
                     </div>
 
-                    <!-- ===== ACEPTACIÓN + BOTÓN CONFIGURAR ===== -->
                     <div class="aceptacion-container">
                         <div class="aceptacion-check">
                             <input type="checkbox" id="aceptoCookies" aria-label="Aceptar la Política de Cookies" />
@@ -1288,101 +840,8 @@
         </main>
     </div>
 
-    <!-- ============================================================
-         BANNER DE CONSENTIMIENTO GRANULAR — EMBEBIDO
-         ============================================================ -->
-    <div id="cookie-consent-root" hidden>
-        <div class="cc-backdrop" data-cc-backdrop></div>
-        <div class="cc-panel" role="dialog" aria-modal="true" aria-labelledby="cc-title" aria-describedby="cc-intro">
-            <div class="cc-header">
-                <span class="cc-icon" aria-hidden="true">🍪</span>
-                <h2 class="cc-title" id="cc-title">Consentimiento de Cookies y Almacenamiento</h2>
-            </div>
-
-            <p class="cc-intro" id="cc-intro">
-                En <strong>Sariel's</strong> usamos cookies y almacenamiento local para operar la plataforma de forma segura.
-                Puedes aceptar todas, rechazar las no esenciales o configurar cada categoría.
-                Más información en nuestra
-                <a href="/cookies">Política Institucional de Cookies</a>.
-            </p>
-
-            <form id="cc-form" novalidate>
-                <div class="cc-categories" role="group" aria-label="Categorías de cookies">
-                    <div class="cc-category">
-                        <div class="cc-cat-head">
-                            <div class="cc-cat-info">
-                                <div class="cc-cat-title">Técnicas Esenciales <span class="cc-cat-base required">Siempre activas</span></div>
-                                <div class="cc-cat-desc">Autenticación (Supabase), seguridad perimetral (Cloudflare) y funcionamiento del sitio. Base legal: contrato e interés legítimo en seguridad.</div>
-                            </div>
-                            <label class="cc-toggle" aria-label="Esenciales siempre activas">
-                                <input type="checkbox" id="cc-cat-essential" checked disabled />
-                                <span class="cc-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="cc-category">
-                        <div class="cc-cat-head">
-                            <div class="cc-cat-info">
-                                <div class="cc-cat-title">Preferencias y Personalización <span class="cc-cat-base">Consentimiento</span></div>
-                                <div class="cc-cat-desc">Recuerdan tu wallet conectada, tema visual, tipografía y ajustes multimedia. Puedes desactivarlas sin perder funcionalidad esencial.</div>
-                            </div>
-                            <label class="cc-toggle" aria-label="Activar preferencias">
-                                <input type="checkbox" id="cc-cat-preferences" />
-                                <span class="cc-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="cc-category">
-                        <div class="cc-cat-head">
-                            <div class="cc-cat-info">
-                                <div class="cc-cat-title">Analítica <span class="cc-cat-base">Consentimiento · No activa</span></div>
-                                <div class="cc-cat-desc">Métricas agregadas de uso. Actualmente <strong>no utilizamos</strong> analítica de terceros. Si se incorpora en el futuro, requerirá tu consentimiento previo.</div>
-                            </div>
-                            <label class="cc-toggle" aria-label="Activar analítica">
-                                <input type="checkbox" id="cc-cat-analytics" disabled />
-                                <span class="cc-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="cc-category">
-                        <div class="cc-cat-head">
-                            <div class="cc-cat-info">
-                                <div class="cc-cat-title">Marketing y Publicidad <span class="cc-cat-base">Consentimiento · No activa</span></div>
-                                <div class="cc-cat-desc">Personalización de anuncios y campañas. Actualmente <strong>no utilizamos</strong> píxeles publicitarios ni rastreo con fines de marketing.</div>
-                            </div>
-                            <label class="cc-toggle" aria-label="Activar marketing">
-                                <input type="checkbox" id="cc-cat-marketing" disabled />
-                                <span class="cc-slider"></span>
-                            </label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="cc-actions">
-                    <button type="button" class="cc-btn cc-btn-secondary" id="cc-reject-all">Rechazar no esenciales</button>
-                    <button type="button" class="cc-btn cc-btn-primary" id="cc-accept-all">Aceptar todas</button>
-                    <button type="button" class="cc-btn cc-btn-ghost" id="cc-save-selection">Guardar selección</button>
-                </div>
-            </form>
-
-            <p class="cc-footer-note">
-                Puedes cambiar tu decisión en cualquier momento desde el ícono <strong>⚙</strong> o desde la
-                <a href="/cookies">Política de Cookies</a>.
-                Versión del consentimiento: <strong>v2.0</strong>.
-            </p>
-        </div>
-    </div>
-
-    <button id="cookie-settings-fab" aria-label="Configurar cookies" title="Configurar cookies">⚙</button>
-
-    <!-- ============================================================
-         SCRIPTS
-         ============================================================ -->
+    <!-- SCRIPT LOCAL DE LA PÁGINA (Checkbox → Botón Volver) -->
     <script>
-        /* ---------- SCRIPT ORIGINAL: checkbox → botón volver ---------- */
         document.addEventListener('DOMContentLoaded', function() {
             const checkbox = document.getElementById('aceptoCookies');
             const btnVolver = document.getElementById('btnVolver');
@@ -1390,8 +849,15 @@
             btnVolver.classList.remove('active');
 
             checkbox.addEventListener('change', function() {
-                if (this.checked) btnVolver.classList.add('active');
-                else btnVolver.classList.remove('active');
+                if (this.checked) {
+                    btnVolver.classList.add('active');
+                } else {
+                    btnVolver.classList.remove('active');
+                    // Si desmarca, reabrimos el banner (la lógica de SarielsConsent lo maneja)
+                    if (window.SarielsConsent && window.SarielsConsent.reopen) {
+                        window.SarielsConsent.reopen();
+                    }
+                }
             });
 
             btnVolver.addEventListener('click', function(e) {
@@ -1406,184 +872,9 @@
                 }
             });
         });
-
-        /* ---------- SCRIPT DEL BANNER DE CONSENTIMIENTO ---------- */
-        (function () {
-            'use strict';
-
-            const STORAGE_KEY = 'sariels_cookie_consent';
-            const CONSENT_VERSION = '2.0';
-
-            const root        = document.getElementById('cookie-consent-root');
-            const fab         = document.getElementById('cookie-settings-fab');
-            const btnAcceptAll= document.getElementById('cc-accept-all');
-            const btnRejectAll= document.getElementById('cc-reject-all');
-            const btnSave     = document.getElementById('cc-save-selection');
-            const cbPreferences = document.getElementById('cc-cat-preferences');
-            const cbAnalytics   = document.getElementById('cc-cat-analytics');
-            const cbMarketing   = document.getElementById('cc-cat-marketing');
-            const cbAceptoCookies = document.getElementById('aceptoCookies');
-            const btnVolverRef = document.getElementById('btnVolver');
-
-            function readConsent() {
-                try {
-                    const raw = localStorage.getItem(STORAGE_KEY);
-                    if (!raw) return null;
-                    const data = JSON.parse(raw);
-                    return (data && data.version === CONSENT_VERSION) ? data : null;
-                } catch (e) { return null; }
-            }
-
-            function writeConsent(categories) {
-                const payload = {
-                    version: CONSENT_VERSION,
-                    timestamp: new Date().toISOString(),
-                    categories: {
-                        essential: true,
-                        preferences: !!categories.preferences,
-                        analytics: !!categories.analytics,
-                        marketing: !!categories.marketing
-                    },
-                    userAgent: navigator.userAgent.slice(0, 200)
-                };
-                try { localStorage.setItem(STORAGE_KEY, JSON.stringify(payload)); } catch (e) {}
-                return payload;
-            }
-
-            function applyConsent(categories) {
-                if (!categories.preferences) {
-                    try {
-                        localStorage.removeItem('sariels_wallet_address');
-                        localStorage.removeItem('sariels_theme');
-                        localStorage.removeItem('sariels_accent');
-                        localStorage.removeItem('sariels_font_size');
-                        localStorage.removeItem('sariels_media_prefs');
-                    } catch (e) {}
-                }
-                if (categories.analytics) { /* window.__enableAnalytics?.(); */ }
-                if (categories.marketing) { /* window.__enableMarketing?.(); */ }
-                window.dispatchEvent(new CustomEvent('sariels:consent-updated', {
-                    detail: { version: CONSENT_VERSION, categories }
-                }));
-            }
-
-            function syncCheckboxUI() {
-                if (!cbAceptoCookies || !btnVolverRef) return;
-                if (cbAceptoCookies.checked) btnVolverRef.classList.add('active');
-                else btnVolverRef.classList.remove('active');
-            }
-
-            function showBanner() {
-                root.hidden = false;
-                document.body.style.overflow = 'hidden';
-                setTimeout(() => btnAcceptAll.focus(), 50);
-            }
-
-            function hideBanner() {
-                root.hidden = true;
-                document.body.style.overflow = '';
-                fab.classList.add('visible');
-            }
-
-            function setTogglesFromCategories(cat) {
-                cbPreferences.checked = !!cat.preferences;
-                cbAnalytics.checked   = !!cat.analytics;
-                cbMarketing.checked   = !!cat.marketing;
-            }
-
-            function currentCategories() {
-                return {
-                    essential: true,
-                    preferences: cbPreferences.checked,
-                    analytics: cbAnalytics.checked,
-                    marketing: cbMarketing.checked
-                };
-            }
-
-            function commit(categories) {
-                const saved = writeConsent(categories);
-                applyConsent(saved.categories);
-                // Sincronizar checkbox de la página de política
-                if (cbAceptoCookies) {
-                    cbAceptoCookies.checked = true;
-                    syncCheckboxUI();
-                }
-                hideBanner();
-            }
-
-            btnAcceptAll.addEventListener('click', function () {
-                cbPreferences.checked = true;
-                commit({ preferences: true, analytics: false, marketing: false });
-            });
-
-            btnRejectAll.addEventListener('click', function () {
-                cbPreferences.checked = false;
-                commit({ preferences: false, analytics: false, marketing: false });
-            });
-
-            btnSave.addEventListener('click', function () {
-                commit(currentCategories());
-            });
-
-            fab.addEventListener('click', function () {
-                const saved = readConsent();
-                if (saved) setTogglesFromCategories(saved.categories);
-                showBanner();
-            });
-
-            window.addEventListener('sariels:reopen-consent', function () {
-                const saved = readConsent();
-                if (saved) setTogglesFromCategories(saved.categories);
-                showBanner();
-            });
-
-            document.addEventListener('keydown', function (e) {
-                if (!root.hidden && e.key === 'Escape') {
-                    e.preventDefault();
-                    btnSave.click();
-                }
-            });
-
-            /* Si el usuario desmarca el checkbox de aceptación → abrir banner */
-            if (cbAceptoCookies) {
-                cbAceptoCookies.addEventListener('change', function () {
-                    syncCheckboxUI();
-                    if (!this.checked) {
-                        const saved = readConsent();
-                        if (saved) setTogglesFromCategories(saved.categories);
-                        showBanner();
-                    }
-                });
-            }
-
-            /* Bootstrap */
-            const existing = readConsent();
-            if (existing) {
-                applyConsent(existing.categories);
-                fab.classList.add('visible');
-                if (cbAceptoCookies) {
-                    cbAceptoCookies.checked = true;
-                    syncCheckboxUI();
-                }
-            } else {
-                showBanner();
-            }
-
-            /* API pública */
-            window.SarielsConsent = {
-                get: readConsent,
-                reopen: function () {
-                    const saved = readConsent();
-                    if (saved) setTogglesFromCategories(saved.categories);
-                    showBanner();
-                },
-                has: function (category) {
-                    const c = readConsent();
-                    return !!(c && c.categories && c.categories[category]);
-                },
-                version: CONSENT_VERSION
-            };
-        })();
     </script>
+
+    <!-- INYECCIÓN DEL BANNER GLOBAL (Desde /js/) -->
+    <script src="/js/cookie-banner.js"></script>
 </body>
 </html>
