@@ -1,16 +1,29 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v4.7 (Ajuste visual: Las imágenes y videos ya no se ven como "piezas de Lego")
+// v4.8 (Autocontenido + Estilos "No Lego" + Reacciones)
 // ================================================================
 
+// 1. BLINDAJE: Si los emojis no existen en perfil-config.js, los creamos aquí.
+if (typeof window.EMOJIS_REACCION === 'undefined') {
+    window.EMOJIS_REACCION = ['❤️', '🔥', '🚀', '😂', '👍'];
+}
+if (typeof window.emojisDisponibles === 'undefined') {
+    window.emojisDisponibles = ['😀','😂','🥰','😎','🤔','😴','🤯','🥳','😭','😡','👍','👎','🙏','👏','💪','🔥','✨','⭐','🎉','❤️','💔','💯'];
+}
+
+// Variable global para el visor
 window.listaMultimediaPerfil = [];
 
+// ================================================================
+// INYECCIÓN DE ESTILOS CSS (Reacciones y Visual "No Lego")
+// ================================================================
 (function inyectarEstilosReaccionesPerfil() {
     if (document.getElementById('perfil-reacciones-fb-styles')) return;
     var style = document.createElement('style');
     style.id = 'perfil-reacciones-fb-styles';
     style.innerHTML = `
+        /* --- REACCIONES --- */
         .reaccion-wrap { position: relative; display: inline-block; margin-top: 10px; }
         .reaccion-dropdown {
             position: absolute; bottom: 100%; left: 0; margin-bottom: 8px;
@@ -34,32 +47,35 @@ window.listaMultimediaPerfil = [];
         .reaccion-trigger.activa { color: #3b82f6; }
         .reaccion-trigger .emoji-actual { font-size: 1.1rem; line-height: 1; }
         .reaccion-trigger .count { font-size: 0.75rem; font-weight: 500; }
+        
+        /* --- PREVIEW Y CHECKBOX --- */
         .preview-download-control { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding: 8px; background: rgba(255, 255, 255, 0.05); border-radius: 8px; font-size: 0.8rem; color: var(--text-muted, #a1a1aa); cursor: pointer; }
         .preview-download-control input { cursor: pointer; width: 16px; height: 16px; accent-color: #3b82f6; }
 
-        /* ============================================================
-           NUEVAS REGLAS PARA QUE NO SE VEAN COMO PIEZAS DE LEGO
-           ============================================================ */
+        /* --- ARREGLO VISUAL "NO LEGO" --- */
         .publicacion-card .contenido {
             display: flex;
             flex-direction: column;
             gap: 10px;
+            align-items: center; /* Centra el contenido */
         }
-        
         .publicacion-card .contenido img,
         .publicacion-card .contenido video {
             width: 100%;
             height: auto;
-            max-height: 600px; /* Para que los videos verticales no ocupen toda la pantalla */
-            object-fit: contain; /* Mantiene la proporción original sin recortar */
-            background: transparent; /* Quita el fondo negro que los hacía ver cuadrados */
-            border-radius: 12px; /* Bordes redondeados como en Facebook */
+            max-height: 600px; 
+            object-fit: contain; /* Mantiene la proporción original */
+            background: transparent; /* Quita el fondo negro */
+            border-radius: 12px; /* Bordes redondeados */
             display: block;
         }
     `;
     document.head.appendChild(style);
 })();
 
+// ================================================================
+// HELPERS
+// ================================================================
 function pubCodigoIdioma() {
     try { if (typeof window.obtenerCodigoIdiomaActual === 'function') return window.obtenerCodigoIdiomaActual(); } catch (e) {}
     return 'es-MX';
@@ -118,13 +134,16 @@ async function descargarArchivoForzado(url, nombreOriginal) {
     }
 }
 
+// ================================================================
+// EMOJI PICKER Y HASHTAG
+// ================================================================
 function toggleEmojiPickerPerfil() {
     var picker = document.getElementById('emojiPickerPerfil');
     if (!picker) return;
     if (picker.classList.contains('show')) { picker.classList.remove('show'); return; }
     var grid = document.getElementById('emojiGridPerfil');
     if (grid && grid.children.length === 0) {
-        emojisDisponibles.forEach(function (emoji) {
+        window.emojisDisponibles.forEach(function (emoji) {
             var btn = document.createElement('button'); btn.type = 'button'; btn.textContent = emoji;
             btn.addEventListener('click', function (e) { e.stopPropagation(); insertarEmojiEnPerfil(emoji); picker.classList.remove('show'); });
             grid.appendChild(btn);
@@ -149,6 +168,9 @@ function insertarHashtagPerfil() {
     input.focus(); input.selectionStart = input.selectionEnd = start + 1;
 }
 
+// ================================================================
+// SELECCIONAR ARCHIVO Y PREVIEW
+// ================================================================
 function seleccionarArchivoPerfil(event, tipo) {
     var file = event.target.files[0];
     if (!file) return;
@@ -194,6 +216,9 @@ function quitarArchivoPerfil(tipo) {
     renderizarPreviewPerfil();
 }
 
+// ================================================================
+// PUBLICAR DESDE EL PERFIL
+// ================================================================
 async function publicarDesdePerfil() {
     var btn = document.getElementById('btnPublicarPerfil'); var input = document.getElementById('inputNuevaPublicacion');
     var contenido = input ? input.value.trim() : '';
@@ -232,24 +257,9 @@ async function publicarDesdePerfil() {
     } finally { if (btn) { btn.disabled = false; btn.innerHTML = textoOriginalBtn; } }
 }
 
-const videoObserverPerfil = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-        const video = entry.target;
-        const autoPlayPref = localStorage.getItem('contenido_auto_reproducir');
-        const activarAutoplay = autoPlayPref === null || autoPlayPref === 'true';
-
-        if (entry.isIntersecting) {
-            if (activarAutoplay) {
-                video.muted = true;
-                video.play().catch(e => console.log('Autoplay bloqueado por el navegador', e));
-            }
-        } else {
-            video.pause();
-            video.currentTime = 0; 
-        }
-    });
-}, { threshold: 0.5 });
-
+// ================================================================
+// CARGAR MIS PUBLICACIONES
+// ================================================================
 async function cargarMisPublicaciones(forzarRefresco) {
     var container = document.getElementById('misPublicacionesList'); var contador = document.getElementById('misPostsCount');
     if (!container) return;
@@ -296,11 +306,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 
                 if (p.media_type === 'video' || p.media_type === 'imagen') {
                     var indexEnLista = window.listaMultimediaPerfil.length;
-                    window.listaMultimediaPerfil.push({
-                        url: p.media_url,
-                        tipo: p.media_type,
-                        permiteDescarga: permiteDescarga
-                    });
+                    window.listaMultimediaPerfil.push({ url: p.media_url, tipo: p.media_type, permiteDescarga: permiteDescarga });
 
                     if (p.media_type === 'video') {
                         var video = document.createElement('video'); 
@@ -309,16 +315,8 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         video.src = p.media_url;
                         video.style.cursor = 'pointer'; 
                         
-                        video.loop = false; 
-                        
                         const autoPlayPrefInicial = localStorage.getItem('contenido_auto_reproducir');
-                        if (autoPlayPrefInicial === 'false') {
-                            video.pause();
-                        } else {
-                            video.muted = true;
-                        }
-
-                        videoObserverPerfil.observe(video);
+                        if (autoPlayPrefInicial === 'false') { video.pause(); } else { video.muted = true; }
 
                         video.addEventListener('click', function (e) {
                             if(e.target.tagName !== 'VIDEO') return; 
@@ -347,12 +345,14 @@ async function cargarMisPublicaciones(forzarRefresco) {
             Object.keys(conteos).forEach(function (k) { totalReacciones += (conteos[k] || 0); }); var emojiMostrado = reaccionUsuario || '❤️';
             var wrap = document.createElement('div'); wrap.className = 'reaccion-wrap'; wrap.setAttribute('data-no-traducir', '1');
             var dropdown = document.createElement('div'); dropdown.className = 'reaccion-dropdown'; dropdown.id = 'reaccion-dropdown-' + p.id; dropdown.setAttribute('data-no-traducir', '1');
-            EMOJIS_REACCION.forEach(function (emoji) {
+            
+            window.EMOJIS_REACCION.forEach(function (emoji) {
                 var b = document.createElement('button'); b.type = 'button'; b.setAttribute('data-no-traducir', '1'); if (reaccionUsuario === emoji) b.classList.add('activa'); b.title = 'Reaccionar ' + emoji; b.textContent = emoji;
                 b.addEventListener('click', function (ev) { ev.stopPropagation(); reaccionarPublicacionPerfil(p.id, emoji); });
                 var count = conteos[emoji] || 0; if (count > 0) { var mini = document.createElement('span'); mini.className = 'mini-count'; mini.setAttribute('data-no-traducir', '1'); mini.textContent = count; b.appendChild(mini); }
                 dropdown.appendChild(b);
             });
+            
             var trigger = document.createElement('button'); trigger.type = 'button'; trigger.setAttribute('data-no-traducir', '1'); trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
             trigger.innerHTML = '<span class="emoji-actual" data-no-traducir="1">' + emojiMostrado + '</span>' + (totalReacciones > 0 ? '<span class="count" data-no-traducir="1">' + totalReacciones + '</span>' : '<span class="count" data-no-traducir="1">Reaccionar</span>');
             var pressTimer; var isLongPress = false;
@@ -377,6 +377,9 @@ async function cargarMisPublicaciones(forzarRefresco) {
     } catch (error) { console.error('Error cargando mis publicaciones:', error); container.innerHTML = '<div class="empty-state"><h4>Error al cargar</h4><p>' + escapeHtmlPerfil(error.message) + '</p></div>'; }
 }
 
+// ================================================================
+// REACCIONES
+// ================================================================
 function toggleReaccionDropdown(postId, forzarApertura) {
     var dd = document.getElementById('reaccion-dropdown-' + postId); if (!dd) return; var esta = dd.classList.contains('show');
     document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) { el.classList.remove('show'); });
@@ -385,7 +388,7 @@ function toggleReaccionDropdown(postId, forzarApertura) {
 document.addEventListener('click', function(e) { if (!e.target.closest('.reaccion-wrap')) { document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) { el.classList.remove('show'); }); } });
 
 async function reaccionarPublicacionPerfil(postId, emoji) {
-    if (!EMOJIS_REACCION.includes(emoji)) return;
+    if (!window.EMOJIS_REACCION.includes(emoji)) return;
     try {
         var client = window.supabaseClient; if (!client) return; var sessionResult = await client.auth.getSession(); var session = sessionResult.data.session; if (!session) return;
         var dd = document.getElementById('reaccion-dropdown-' + postId); if (dd) dd.classList.remove('show');
@@ -400,6 +403,9 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
     } catch (error) { console.error('Error reaccionando:', error); }
 }
 
+// ================================================================
+// COMENTARIOS
+// ================================================================
 async function toggleComentariosPerfil(publicacionId) {
     var container = document.getElementById('comentarios-container-' + publicacionId); if (!container) return;
     if (container.classList.contains('show')) { container.classList.remove('show'); return; }
@@ -443,6 +449,9 @@ async function enviarComentarioPerfil(publicacionId) {
     } catch (error) { console.error('Error enviando comentario:', error); if (window.showToast) { if (esErrorModeracionPerfil(error)) window.showToast('❌ Contenido no permitido', 'error', 6000); else window.showToast('Error al enviar comentario: ' + error.message, 'error'); } }
 }
 
+// ================================================================
+// ELIMINAR PUBLICACIÓN
+// ================================================================
 async function eliminarMiPublicacion(publicacionId, event) {
     if (event) { event.preventDefault(); event.stopPropagation(); }
     if (!confirm('¿Seguro que quieres eliminar esta publicación?')) return;
@@ -462,6 +471,7 @@ async function eliminarMiPublicacion(publicacionId, event) {
     } catch (error) { console.error('Error eliminando:', error); if (window.showToast) window.showToast('Error al eliminar: ' + error.message, 'error'); }
 }
 
+// Exponer funciones globales
 window.descargarArchivoForzado = descargarArchivoForzado;
 window.publicarDesdePerfil = publicarDesdePerfil;
 window.seleccionarArchivoPerfil = seleccionarArchivoPerfil;
