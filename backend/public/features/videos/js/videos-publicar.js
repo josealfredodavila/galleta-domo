@@ -1,25 +1,14 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.4
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.5
    ================================================================
    FASE 1: UI de modales (sonidos, ubicación, borradores, preview)
    FASE 2: Carga modular de archivos (subirMultimedia)
    FASE 3C: (N/A aquí, el INSERT lo hace videos.html)
 
-   Novedades v1.4 (moderación):
-   - subirMultimediaSupabase() ya NO sube directo a Supabase Storage.
-   - Ahora llama a POST /api/media/upload con moderación.
-   - El bucket 'videos' sigue aceptando imágenes (miniaturas) y videos.
-
-   Novedades v1.3:
-   - Traducciones i18n completas (helper vt + data-clave en HTML generado)
-   - Claves nuevas en Supabase: videos_agregar_sonido, videos_ubicacion_btn, etc.
-
-   Novedades v1.2:
-   - Input file 100% oculto con display:none !important
-   - Label estilizado que reemplaza visualmente el input
-   - Reset completo del formulario tras publicar exitosamente
-   - Refresco automático del feed sin recargar URL
-   - Reset de preview, sonido, ubicación y progreso
+   Novedades v1.5 (Autoplay en el mismo archivo):
+   - Se inyectó un IntersectionObserver al final para leer el localStorage.
+   - Ahora este archivo controla que los videos se reproduzcan o pausen 
+     dependiendo de la configuración del usuario.
    ================================================================ */
 
 (function () {
@@ -231,10 +220,6 @@
         const token = session.access_token;
         if (!token) return { ok: false, error: 'Sin token de sesión' };
 
-        // El endpoint /api/media/upload recibe:
-        //   file    → el archivo
-        //   destino → el bucket ('videos' en este caso)
-        //   tipo    → 'video' o 'imagen'
         const fd = new FormData();
         fd.append('file', archivo);
         fd.append('destino', CONFIG.BUCKET);
@@ -817,6 +802,49 @@
     }
 
     // ============================================================
+    // INYECCIÓN DE AUTOPLAY (NUEVO EN v1.5)
+    // ============================================================
+    function iniciarVigilanteAutoplay() {
+        function usuarioQuiereAutoplay() {
+            const pref = localStorage.getItem('contenido_auto_reproducir');
+            return pref === null || pref === 'true';
+        }
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const video = entry.target;
+                // Ignorar el video de preview de subida
+                if (video.id === 'csPreviewVideo') return;
+
+                if (entry.isIntersecting) {
+                    if (usuarioQuiereAutoplay()) {
+                        video.muted = true;
+                        video.play().catch(e => console.log('Autoplay bloqueado:', e));
+                    }
+                } else {
+                    video.pause();
+                    video.currentTime = 0;
+                }
+            });
+        }, { threshold: 0.5 });
+
+        function engancharVideos() {
+            document.querySelectorAll('video').forEach(video => {
+                if (!video.dataset.autoplayEnganchado) {
+                    video.dataset.autoplayEnganchado = 'true';
+                    observer.observe(video);
+                }
+            });
+        }
+
+        // Ejecutar cada 2 segundos para atrapar videos nuevos
+        setInterval(engancharVideos, 2000);
+        
+        // Escuchar cuando se recarga el feed
+        window.addEventListener('csariels:videos:refresh', () => setTimeout(engancharVideos, 1000));
+    }
+
+    // ============================================================
     // LISTENERS GLOBALES
     // ============================================================
     function engancharListenersGlobales() {
@@ -886,7 +914,11 @@
         engancharInputArchivo();
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
-        log('✅ Módulo Publicar v1.4 listo (moderación + i18n)');
+        
+        // ¡AQUÍ ESTÁ LA MAGIA DEL AUTOPLAY INYECTADA!
+        iniciarVigilanteAutoplay(); 
+        
+        log('✅ Módulo Publicar v1.5 listo (con autoplay integrado)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
