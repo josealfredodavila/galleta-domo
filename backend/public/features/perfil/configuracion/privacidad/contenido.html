@@ -7,7 +7,7 @@
     <title>Contenido que ves · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -54,10 +54,7 @@
 
             async function inicializarSupabase() {
                 try {
-                    if (
-                        !window.supabase ||
-                        typeof window.supabase.createClient !== 'function'
-                    ) {
+                    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
                         throw new Error('Supabase SDK no disponible.');
                     }
 
@@ -88,17 +85,13 @@
 
                         window.SupabaseSDK = window.supabase;
 
-                        window.supabaseClient = window.SupabaseSDK.createClient(
-                            supabaseUrl,
-                            supabaseAnonKey,
-                            {
-                                auth: {
-                                    persistSession: true,
-                                    autoRefreshToken: true,
-                                    detectSessionInUrl: true
-                                }
+                        window.supabaseClient = window.SupabaseSDK.createClient(supabaseUrl, supabaseAnonKey, {
+                            auth: {
+                                persistSession: true,
+                                autoRefreshToken: true,
+                                detectSessionInUrl: true
                             }
-                        );
+                        });
                     }
 
                     const resultado = await window.supabaseClient.auth.getSession();
@@ -380,6 +373,16 @@
 
         const $ = (sel) => document.querySelector(sel);
 
+        // Claves de preferencia: son a la vez la clave de localStorage
+        // y el nombre de la columna en usuarios_preferencias.
+        const PREF_KEYS = {
+            contenido_sensible: 'contenido_mostrar_sensible',
+            contenido_auto_reproducir: 'contenido_auto_reproducir',
+            contenido_imagenes_alta: 'contenido_imagenes_alta_calidad',
+            contenido_videos_alta: 'contenido_videos_alta_calidad',
+            contenido_ahorrador: 'contenido_ahorrador_datos',
+        };
+
         async function esperarCliente() {
             const inicio = Date.now();
             while (Date.now() - inicio < 10000) {
@@ -389,19 +392,46 @@
             return null;
         }
 
+        // Devuelve { client, session } o null si no hay sesión
+        async function obtenerSesion() {
+            const client = await esperarCliente();
+            if (!client) return null;
+            const r = await client.auth.getSession();
+            const session = r && r.data ? r.data.session : null;
+            if (!session) return null;
+            return { client, session };
+        }
+
+        // Guarda una preferencia en Supabase. Devuelve true si quedó guardada.
+        async function guardarPrefBD(columna, valor) {
+            try {
+                const s = await obtenerSesion();
+                if (!s) return false;
+                const { error } = await s.client
+                    .from('usuarios_preferencias')
+                    .upsert({
+                        usuario_id: s.session.user.id,
+                        [columna]: valor,
+                        updated_at: new Date().toISOString()
+                    }, { onConflict: 'usuario_id' });
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.error('Error guardando preferencia en BD:', e);
+                return false;
+            }
+        }
+
+        function avisoGuardado(ok, msgOk, msgLocal) {
+            if (ok) cfgToast(msgOk, 'success');
+            else cfgToast('⚠️ ' + msgLocal, 'warning');
+        }
+
         cfgInitPage({
             title: 'Contenido que ves',
             subtitle: '@tu_usuario',
             backUrl: '/features/perfil/configuracion/index.html',
         });
-
-        const PREF_KEYS = {
-            contenido_sensible: 'contenido_mostrar_sensible',
-            contenido_auto_reproducir: 'contenido_auto_reproducir',
-            contenido_imagenes_alta: 'contenido_imagenes_alta_calidad',
-            contenido_videos_alta: 'contenido_videos_alta_calidad',
-            contenido_ahorrador: 'contenido_ahorrador_datos',
-        };
 
         function renderSecciones() {
             $('#seccionIntereses').innerHTML = [
@@ -434,14 +464,14 @@
                     title: 'Mostrar contenido sensible',
                     desc: 'Incluye contenido marcado como sensible en tu feed',
                     checked: cfgGetPref(PREF_KEYS.contenido_sensible, false),
-                    onChange: `window.onToggleSensible(this.checked)`,
+                    onChange: 'window.onToggleSensible(this.checked)',
                 }),
                 cfgRenderToggle({
                     id: 'toggleAhorrador',
                     title: 'Ahorrador de datos',
                     desc: 'No reproduce videos automáticamente y carga imágenes en calidad reducida',
                     checked: cfgGetPref(PREF_KEYS.contenido_ahorrador, false),
-                    onChange: `window.onToggleAhorrador(this.checked)`,
+                    onChange: 'window.onToggleAhorrador(this.checked)',
                 }),
             ].join('');
 
@@ -451,198 +481,176 @@
                     title: 'Imágenes en alta calidad',
                     desc: 'Carga automáticamente las imágenes en alta calidad (hasta 4K)',
                     checked: cfgGetPref(PREF_KEYS.contenido_imagenes_alta, true),
-                    onChange: `window.onToggleImgAlta(this.checked)`,
+                    onChange: 'window.onToggleImgAlta(this.checked)',
                 }),
                 cfgRenderToggle({
                     id: 'toggleVidAlta',
                     title: 'Video en alta calidad',
                     desc: 'Usa la mejor calidad disponible para reproducción de video',
                     checked: cfgGetPref(PREF_KEYS.contenido_videos_alta, true),
-                    onChange: `window.onToggleVidAlta(this.checked)`,
+                    onChange: 'window.onToggleVidAlta(this.checked)',
                 }),
                 cfgRenderToggle({
                     id: 'toggleAutoPlay',
                     title: 'Reproducción automática de video',
                     desc: 'Los videos se reproducen automáticamente al aparecer en pantalla',
                     checked: cfgGetPref(PREF_KEYS.contenido_auto_reproducir, true),
-                    onChange: `window.onToggleAutoPlay(this.checked)`,
+                    onChange: 'window.onToggleAutoPlay(this.checked)',
                 }),
             ].join('');
         }
 
-        window.onToggleSensible = async (value) => {
-            await cfgSetPref(PREF_KEYS.contenido_sensible, value);
-            cfgToast(
-                value ? '👁️ Contenido sensible visible' : '🚫 Contenido sensible oculto',
-                value ? 'warning' : 'success'
-            );
-        };
+        // ============================================================
+        // TOGGLES: guardan en localStorage (efecto inmediato) y en Supabase
+        // ============================================================
+        async function guardarToggle(clave, valor, msgOk, msgOff) {
+            await cfgSetPref(clave, valor);
+            const ok = await guardarPrefBD(clave, valor);
+            avisoGuardado(ok, valor ? msgOk : msgOff, 'Guardado solo en este dispositivo (sin conexión a la nube)');
+        }
 
-        window.onToggleAhorrador = async (value) => {
-            await cfgSetPref(PREF_KEYS.contenido_ahorrador, value);
-            cfgToast(
-                value ? '📉 Ahorrador de datos activado' : '📈 Ahorrador de datos desactivado',
-                value ? 'success' : ''
-            );
-        };
+        window.onToggleSensible = (value) => guardarToggle(
+            PREF_KEYS.contenido_sensible, value,
+            '👁️ Contenido sensible visible', '🚫 Contenido sensible oculto'
+        );
 
-        window.onToggleImgAlta = async (value) => {
-            await cfgSetPref(PREF_KEYS.contenido_imagenes_alta, value);
-            cfgToast(
-                value ? '🖼️ Imágenes en alta calidad' : '📉 Imágenes en calidad reducida',
-                value ? 'success' : ''
-            );
-        };
+        window.onToggleAhorrador = (value) => guardarToggle(
+            PREF_KEYS.contenido_ahorrador, value,
+            '📉 Ahorrador de datos activado', '📈 Ahorrador de datos desactivado'
+        );
 
-        window.onToggleVidAlta = async (value) => {
-            await cfgSetPref(PREF_KEYS.contenido_videos_alta, value);
-            cfgToast(
-                value ? '🎬 Video en alta calidad' : '📉 Video en calidad reducida',
-                value ? 'success' : ''
-            );
-        };
+        window.onToggleImgAlta = (value) => guardarToggle(
+            PREF_KEYS.contenido_imagenes_alta, value,
+            '🖼️ Imágenes en alta calidad', '📉 Imágenes en calidad reducida'
+        );
 
-        // ESTA ES LA FUNCIÓN QUE SE ACTUALIZÓ PARA GUARDAR EN LOCALSTORAGE Y SUPABASE
-        window.onToggleAutoPlay = async (value) => {
-            // 1. Guardar en el navegador (localStorage) para efecto inmediato en el feed
-            await cfgSetPref(PREF_KEYS.contenido_auto_reproducir, value);
-            
-            // 2. Guardar en Supabase para sincronizar entre dispositivos
-            try {
-                const client = await esperarCliente();
-                if (client) {
-                    const { data } = await client.auth.getSession();
-                    const session = data && data.session;
-                    if (session) {
-                        await client.from('usuarios_preferencias').upsert({
-                            usuario_id: session.user.id,
-                            contenido_auto_reproducir: value,
-                            updated_at: new Date().toISOString()
-                        }, { onConflict: 'usuario_id' });
-                    }
-                }
-            } catch (e) {
-                console.error('Error guardando preferencia en BD:', e);
-            }
+        window.onToggleVidAlta = (value) => guardarToggle(
+            PREF_KEYS.contenido_videos_alta, value,
+            '🎬 Video en alta calidad', '📉 Video en calidad reducida'
+        );
 
-            cfgToast(
-                value ? '▶️ Reproducción automática activada' : '⏸️ Reproducción automática desactivada',
-                value ? 'success' : ''
-            );
-        };
+        window.onToggleAutoPlay = (value) => guardarToggle(
+            PREF_KEYS.contenido_auto_reproducir, value,
+            '▶️ Reproducción automática activada', '⏸️ Reproducción automática desactivada'
+        );
 
         // ============================================================
-        // MODAL DE TEMAS E IDIOMAS - LÓGICA
+        // MODAL DE TEMAS E IDIOMAS
         // ============================================================
-
-        var modalEstado = {
-            tipo: null,
+        const modalEstado = {
+            tipo: null,          // 'interes' | 'bloqueado' | 'idioma'
             items: [],
             seleccionados: new Set(),
             guardando: false
         };
 
-        window.onConfigurarIntereses = () => {
-            abrirModalTemas('interes');
-        };
+        window.onConfigurarIntereses = () => abrirModalSeleccion('interes');
+        window.onConfigurarNoIntereses = () => abrirModalSeleccion('bloqueado');
+        window.onConfigurarIdiomasContenido = () => abrirModalSeleccion('idioma');
 
-        window.onConfigurarNoIntereses = () => {
-            abrirModalTemas('bloqueado');
-        };
-
-        window.onConfigurarIdiomasContenido = () => {
-            abrirModalIdiomas();
-        };
-
-        async function abrirModalTemas(tipo) {
-            var client = await esperarCliente();
-            if (!client) {
-                cfgToast('❌ Sin conexión', 'error');
-                return;
+        // Configuración por tipo: tabla de selección, columna de id y consulta de opciones
+        const CONFIG_MODAL = {
+            interes: {
+                titulo: 'Temas que me interesan',
+                tabla: 'usuarios_temas_interes',
+                columna: 'tema_id',
+                opciones: (c) => c.from('temas').select('id, slug, nombre, emoji').eq('activo', true).order('orden', { ascending: true }),
+                etiqueta: (o) => o.nombre || o.slug || ''
+            },
+            bloqueado: {
+                titulo: 'Temas que no me interesan',
+                tabla: 'usuarios_temas_bloqueados',
+                columna: 'tema_id',
+                opciones: (c) => c.from('temas').select('id, slug, nombre, emoji').eq('activo', true).order('orden', { ascending: true }),
+                etiqueta: (o) => o.nombre || o.slug || ''
+            },
+            idioma: {
+                titulo: 'Idiomas del contenido',
+                tabla: 'usuarios_idiomas_contenido',
+                columna: 'idioma_id',
+                opciones: (c) => c.from('idiomas_sistema').select('id, codigo, nombre, nombre_nativo, bandera').eq('activo', true).order('nombre', { ascending: true }),
+                etiqueta: (o) => o.nombre_nativo || o.nombre || o.codigo || ''
             }
+        };
 
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
-            if (!session) {
+        async function abrirModalSeleccion(tipo) {
+            const s = await obtenerSesion();
+            if (!s) {
                 cfgToast('⚠️ Inicia sesión', 'warning');
                 return;
             }
 
+            const cfg = CONFIG_MODAL[tipo];
             modalEstado.tipo = tipo;
             modalEstado.guardando = false;
             modalEstado.seleccionados = new Set();
             modalEstado.items = [];
 
-            var titulo = tipo === 'interes' ? 'Temas que me interesan' : 'Temas que no me interesan';
-            document.getElementById('sarielsModalTitulo').textContent = titulo;
-            document.getElementById('sarielsModalBody').innerHTML = '<div class="sariels-modal-loading">Cargando temas...</div>';
+            document.getElementById('sarielsModalTitulo').textContent = cfg.titulo;
+            document.getElementById('sarielsModalBody').innerHTML = '<div class="sariels-modal-loading">Cargando...</div>';
             document.getElementById('sarielsModalContador').textContent = '0 seleccionados';
             document.getElementById('sarielsModalSearch').value = '';
-
             document.getElementById('sarielsModal').classList.add('active');
 
             try {
-                var temasResult = await client
-                    .from('temas')
-                    .select('id, slug, nombre, emoji')
-                    .eq('activo', true)
-                    .order('orden', { ascending: true });
+                const opc = await cfg.opciones(s.client);
+                if (opc.error) throw opc.error;
+                modalEstado.items = opc.data || [];
 
-                if (temasResult.error) throw temasResult.error;
-                modalEstado.items = temasResult.data || [];
+                const sel = await s.client
+                    .from(cfg.tabla)
+                    .select(cfg.columna)
+                    .eq('usuario_id', s.session.user.id);
+                if (sel.error) throw sel.error;
+                (sel.data || []).forEach(row => modalEstado.seleccionados.add(row[cfg.columna]));
 
-                var tabla = tipo === 'interes' ? 'usuarios_temas_interes' : 'usuarios_temas_bloqueados';
-                var selResult = await client
-                    .from(tabla)
-                    .select('tema_id')
-                    .eq('usuario_id', session.user.id);
-
-                if (selResult.error) throw selResult.error;
-                (selResult.data || []).forEach(function (row) {
-                    modalEstado.seleccionados.add(row.tema_id);
-                });
-
-                renderListaTemas();
+                renderListaOpciones();
             } catch (e) {
-                console.error('Error cargando temas:', e);
+                console.error('Error cargando opciones:', e);
                 document.getElementById('sarielsModalBody').innerHTML =
                     '<div class="sariels-modal-empty">❌ Error al cargar: ' + (e.message || 'Desconocido') + '</div>';
             }
         }
 
-        function renderListaTemas() {
-            var body = document.getElementById('sarielsModalBody');
-            var busqueda = (document.getElementById('sarielsModalSearch').value || '').toLowerCase().trim();
+        function renderListaOpciones() {
+            const cfg = CONFIG_MODAL[modalEstado.tipo];
+            const body = document.getElementById('sarielsModalBody');
+            const busqueda = (document.getElementById('sarielsModalSearch').value || '').toLowerCase().trim();
 
-            var filtrados = modalEstado.items.filter(function (t) {
+            const filtrados = modalEstado.items.filter(o => {
                 if (!busqueda) return true;
-                return (t.nombre || '').toLowerCase().indexOf(busqueda) !== -1 ||
-                       (t.slug || '').toLowerCase().indexOf(busqueda) !== -1;
+                const texto = (cfg.etiqueta(o) + ' ' + (o.slug || o.codigo || '')).toLowerCase();
+                return texto.indexOf(busqueda) !== -1;
             });
 
             if (filtrados.length === 0) {
                 body.innerHTML = '<div class="sariels-modal-empty">Sin resultados</div>';
+                actualizarContador();
                 return;
             }
 
-            body.innerHTML = filtrados.map(function (t) {
-                var selected = modalEstado.seleccionados.has(t.id);
-                return '<div class="sariels-tema-item' + (selected ? ' selected' : '') + '" data-id="' + t.id + '">' +
-                    '<span class="sariels-tema-nombre">' + (t.nombre || t.slug || '') + '</span>' +
+            body.innerHTML = filtrados.map(o => {
+                const selected = modalEstado.seleccionados.has(o.id);
+                return '<div class="sariels-tema-item' + (selected ? ' selected' : '') + '" data-id="' + o.id + '">' +
+                    '<span class="sariels-tema-nombre">' + escapeHtml(cfg.etiqueta(o)) + '</span>' +
                     '<span class="sariels-tema-check">✓</span>' +
                 '</div>';
             }).join('');
 
-            body.querySelectorAll('.sariels-tema-item').forEach(function (el) {
-                el.addEventListener('click', function () {
-                    toggleSeleccionTema(el.dataset.id, el);
-                });
+            body.querySelectorAll('.sariels-tema-item').forEach(el => {
+                el.addEventListener('click', () => toggleSeleccion(el.dataset.id, el));
             });
 
             actualizarContador();
         }
 
-        function toggleSeleccionTema(id, el) {
+        function escapeHtml(v) {
+            const d = document.createElement('div');
+            d.textContent = v == null ? '' : String(v);
+            return d.innerHTML;
+        }
+
+        function toggleSeleccion(id, el) {
             if (modalEstado.seleccionados.has(id)) {
                 modalEstado.seleccionados.delete(id);
                 el.classList.remove('selected');
@@ -654,7 +662,7 @@
         }
 
         function actualizarContador() {
-            var n = modalEstado.seleccionados.size;
+            const n = modalEstado.seleccionados.size;
             document.getElementById('sarielsModalContador').textContent =
                 n + ' seleccionado' + (n !== 1 ? 's' : '');
         }
@@ -667,36 +675,34 @@
         };
 
         window.guardarSeleccionTemas = async function () {
-            if (modalEstado.guardando) return;
-            if (!modalEstado.tipo) return;
+            if (modalEstado.guardando || !modalEstado.tipo) return;
 
-            var client = await esperarCliente();
-            if (!client) return;
+            const s = await obtenerSesion();
+            if (!s) {
+                cfgToast('⚠️ Inicia sesión', 'warning');
+                return;
+            }
 
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
-            if (!session) return;
-
+            const cfg = CONFIG_MODAL[modalEstado.tipo];
+            const btn = document.getElementById('sarielsModalBtnGuardar');
             modalEstado.guardando = true;
-            var btn = document.getElementById('sarielsModalBtnGuardar');
             btn.disabled = true;
             btn.textContent = '⏳';
 
-            var tabla = modalEstado.tipo === 'interes' ? 'usuarios_temas_interes' : 'usuarios_temas_bloqueados';
-
             try {
-                var del = await client
-                    .from(tabla)
+                const del = await s.client
+                    .from(cfg.tabla)
                     .delete()
-                    .eq('usuario_id', session.user.id);
+                    .eq('usuario_id', s.session.user.id);
                 if (del.error) throw del.error;
 
-                var ids = Array.from(modalEstado.seleccionados);
+                const ids = Array.from(modalEstado.seleccionados);
                 if (ids.length > 0) {
-                    var rows = ids.map(function (temaId) {
-                        return { usuario_id: session.user.id, tema_id: temaId };
-                    });
-                    var ins = await client.from(tabla).insert(rows);
+                    const rows = ids.map(id => ({
+                        usuario_id: s.session.user.id,
+                        [cfg.columna]: id
+                    }));
+                    const ins = await s.client.from(cfg.tabla).insert(rows);
                     if (ins.error) throw ins.error;
                 }
 
@@ -712,142 +718,12 @@
             }
         };
 
-        // ============================================================
-        // MODAL DE IDIOMAS (usa el mismo modal)
-        // ============================================================
-
-        async function abrirModalIdiomas() {
-            var client = await esperarCliente();
-            if (!client) {
-                cfgToast('❌ Sin conexión', 'error');
-                return;
-            }
-
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
-            if (!session) {
-                cfgToast('⚠️ Inicia sesión', 'warning');
-                return;
-            }
-
-            modalEstado.tipo = 'idioma';
-            modalEstado.guardando = false;
-            modalEstado.seleccionados = new Set();
-            modalEstado.items = [];
-
-            document.getElementById('sarielsModalTitulo').textContent = 'Idiomas del contenido';
-            document.getElementById('sarielsModalBody').innerHTML = '<div class="sariels-modal-loading">Cargando idiomas...</div>';
-            document.getElementById('sarielsModalContador').textContent = '0 seleccionados';
-            document.getElementById('sarielsModalSearch').value = '';
-
-            document.getElementById('sarielsModal').classList.add('active');
-
-            try {
-                var idiomasResult = await client
-                    .from('idiomas_sistema')
-                    .select('id, codigo, nombre, nombre_nativo, bandera')
-                    .eq('activo', true)
-                    .order('nombre', { ascending: true });
-
-                if (idiomasResult.error) throw idiomasResult.error;
-
-                modalEstado.items = (idiomasResult.data || []).map(function (i) {
-                    return {
-                        id: i.id,
-                        slug: i.codigo,
-                        nombre: (i.nombre_nativo || i.nombre || i.codigo),
-                    };
-                });
-
-                var selResult = await client
-                    .from('usuarios_idiomas_contenido')
-                    .select('idioma_id')
-                    .eq('usuario_id', session.user.id);
-
-                if (selResult.error) throw selResult.error;
-                (selResult.data || []).forEach(function (row) {
-                    modalEstado.seleccionados.add(row.idioma_id);
-                });
-
-                renderListaTemas();
-            } catch (e) {
-                console.error('Error cargando idiomas:', e);
-                document.getElementById('sarielsModalBody').innerHTML =
-                    '<div class="sariels-modal-empty">❌ Error al cargar: ' + (e.message || 'Desconocido') + '</div>';
-            }
-        }
-
-        // Sobrescribir guardar para idiomas
-        var guardarOriginal = window.guardarSeleccionTemas;
-        window.guardarSeleccionTemas = async function () {
-            if (modalEstado.guardando) return;
-            if (!modalEstado.tipo) return;
-
-            var client = await esperarCliente();
-            if (!client) return;
-
-            var sessionResult = await client.auth.getSession();
-            var session = sessionResult && sessionResult.data ? sessionResult.data.session : null;
-            if (!session) return;
-
-            modalEstado.guardando = true;
-            var btn = document.getElementById('sarielsModalBtnGuardar');
-            btn.disabled = true;
-            btn.textContent = '⏳';
-
-            try {
-                if (modalEstado.tipo === 'idioma') {
-                    var del2 = await client
-                        .from('usuarios_idiomas_contenido')
-                        .delete()
-                        .eq('usuario_id', session.user.id);
-                    if (del2.error) throw del2.error;
-
-                    var ids2 = Array.from(modalEstado.seleccionados);
-                    if (ids2.length > 0) {
-                        var rows2 = ids2.map(function (idiomaId) {
-                            return { usuario_id: session.user.id, idioma_id: idiomaId };
-                        });
-                        var ins2 = await client.from('usuarios_idiomas_contenido').insert(rows2);
-                        if (ins2.error) throw ins2.error;
-                    }
-                } else {
-                    var tabla = modalEstado.tipo === 'interes' ? 'usuarios_temas_interes' : 'usuarios_temas_bloqueados';
-                    var del = await client.from(tabla).delete().eq('usuario_id', session.user.id);
-                    if (del.error) throw del.error;
-
-                    var ids = Array.from(modalEstado.seleccionados);
-                    if (ids.length > 0) {
-                        var rows = ids.map(function (temaId) {
-                            return { usuario_id: session.user.id, tema_id: temaId };
-                        });
-                        var ins = await client.from(tabla).insert(rows);
-                        if (ins.error) throw ins.error;
-                    }
-                }
-
-                cfgToast('✅ Guardado correctamente', 'success');
-                window.cerrarModalTemas();
-            } catch (e) {
-                console.error('Error guardando:', e);
-                cfgToast('❌ Error: ' + (e.message || 'Desconocido'), 'error');
-            } finally {
-                modalEstado.guardando = false;
-                btn.disabled = false;
-                btn.textContent = 'Guardar';
-            }
-        };
-
-        // Buscador
+        // Buscador y cierre del modal
         document.addEventListener('DOMContentLoaded', function () {
-            var searchInput = document.getElementById('sarielsModalSearch');
-            if (searchInput) {
-                searchInput.addEventListener('input', function () {
-                    renderListaTemas();
-                });
-            }
+            const searchInput = document.getElementById('sarielsModalSearch');
+            if (searchInput) searchInput.addEventListener('input', renderListaOpciones);
 
-            var overlay = document.getElementById('sarielsModal');
+            const overlay = document.getElementById('sarielsModal');
             if (overlay) {
                 overlay.addEventListener('click', function (e) {
                     if (e.target === overlay) window.cerrarModalTemas();
@@ -860,57 +736,62 @@
         });
 
         // ============================================================
-        // ARRANQUE Y CARGA DESDE SUPABASE
+        // CARGA INICIAL DESDE SUPABASE
         // ============================================================
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            renderSecciones();
-            
-            // Llamar a la función que lee las preferencias de la BD
-            setTimeout(cargarPreferenciasDesdeDB, 1000);
-        });
-
         async function cargarPreferenciasDesdeDB() {
             try {
-                const client = await esperarCliente();
-                if (!client) return;
-                
-                const { data } = await client.auth.getSession();
-                const session = data && data.session;
-                if (!session) return;
+                const s = await obtenerSesion();
+                if (!s) return;
 
-                const { data: pref } = await client
+                const { data: pref, error } = await s.client
                     .from('usuarios_preferencias')
                     .select('*')
-                    .eq('usuario_id', session.user.id)
+                    .eq('usuario_id', s.session.user.id)
                     .maybeSingle();
+                if (error) throw error;
 
                 if (pref) {
-                    // Sincronizar localStorage con lo que dice la nube
-                    if (pref.contenido_auto_reproducir !== null) {
-                        localStorage.setItem(PREF_KEYS.contenido_auto_reproducir, pref.contenido_auto_reproducir);
+                    // La nube manda: copia cada preferencia guardada a localStorage
+                    for (const columna of Object.values(PREF_KEYS)) {
+                        if (pref[columna] !== null && pref[columna] !== undefined) {
+                            await cfgSetPref(columna, pref[columna]);
+                        }
                     }
-                    
-                    renderSecciones(); // Volver a dibujar los toggles con los datos reales
                 }
             } catch (e) {
                 console.error('Error cargando preferencias de BD:', e);
             }
         }
 
-        (async function cargarHandleSubtitulo() {
+        async function cargarSubtituloHandle() {
             try {
-                const client = await esperarCliente();
-                if (!client) return;
-                const { data } = await client.auth.getSession();
-                const session = data && data.session;
-                if (!session) return;
-                const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
+                const s = await obtenerSesion();
+                if (!s) return;
+
+                const { data } = await s.client
+                    .from('usuarios')
+                    .select('handle')
+                    .eq('id', s.session.user.id)
+                    .maybeSingle();
+
+                const handle = (data && data.handle) || 'usuario';
                 const subEl = document.querySelector('.cfg-header-subtitle');
                 if (subEl) subEl.textContent = '@' + handle;
-            } catch (e) { /* silencioso */ }
-        })();
+            } catch (e) {
+                console.warn('No se pudo cargar el handle:', e);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            // Dibuja con lo local primero para que la pantalla no espere
+            await new Promise(resolve => setTimeout(resolve, 400));
+            renderSecciones();
+
+            // Después sincroniza con la nube y vuelve a dibujar
+            await cargarPreferenciasDesdeDB();
+            renderSecciones();
+            cargarSubtituloHandle();
+        });
 
     })();
     </script>
