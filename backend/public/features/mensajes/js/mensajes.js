@@ -1,13 +1,11 @@
 // ================================================================
-// MENSAJES · JS v3.6
+// MENSAJES · JS v3.7
 // Configuración, utilidades, autenticación, avatar, perfil, estados
 //
-// CAMBIOS v3.6:
-// - Verificación de términos de Marquinhos corregida: usa la versión
-//   1.1, revisa localStorage y, si no está, consulta el RPC
-//   verificar_aceptacion_terminos en Supabase.
-// - sendMessage espera la verificación (await).
-// - Todo lo demás se mantiene idéntico a la v3.5.
+// CAMBIOS v3.7:
+// - Añadido bloque NEON UI HELPERS al final (presentación pura,
+//   sin tocar Supabase, ni estado, ni firmas).
+// - El resto es idéntico a v3.6.
 // ================================================================
 
 'use strict';
@@ -869,7 +867,7 @@ async function loadConversations() {
     botEl.dataset.id = BOT_ID;
     botEl.dataset.name = 'marquinhos';
     botEl.innerHTML = `
-        <div class="avatar avatar-bot">✦</div>
+        <div class="avatar avatar-bot" data-tag-ia>✦</div>
         <div class="convinfo">
             <div class="convname">Marquinhos</div>
             <div class="convmsg" id="botLastMsg">Tu asistente personal ✦</div>
@@ -2128,6 +2126,9 @@ function cambiarPestana(pestana) {
 
     document.querySelectorAll('.sidebar-tab').forEach(function(btn) {
         btn.classList.toggle('active', btn.dataset.tab === pestana);
+        if (btn.hasAttribute('data-neon')) {
+            btn.setAttribute('aria-selected', btn.dataset.tab === pestana ? 'true' : 'false');
+        }
     });
 
     var tabChats = document.getElementById('tabChats');
@@ -3190,6 +3191,79 @@ window.crearCanal = crearCanal;
 window.crearGrupo = crearGrupo;
 window.generarSlug = generarSlug;
 window.openConversation = openConversation;
+
+// ================================================================
+// NEON UI HELPERS — v3.7 (presentación pura, sin tocar Supabase)
+// Funciones auxiliares que el UI Kit usa opcionalmente. No cambian
+// estado global ni dependencias. Se exponen por si en el futuro
+// se quieren usar desde HTML (por ejemplo, para micro-etiquetas
+// dinámicas en las tarjetas de canal o grupo).
+// ================================================================
+window.NeonUI = {
+    /**
+     * Añade/actualiza una micro-etiqueta de claridad sobre un contenedor.
+     * Uso: NeonUI.tag(el, 'IA') | NeonUI.tag(el, 'LIVE') | NeonUI.tag(el, null)
+     * @param {HTMLElement} el
+     * @param {string|null} label  ('IA' | 'LIVE' | 'NUEVO' | 'PRIVADO' | 'PÚBLICO' | 'BOT' | null)
+     */
+    tag(el, label) {
+        if (!el) return;
+        if (!label) {
+            el.removeAttribute('data-tag');
+            return;
+        }
+        el.setAttribute('data-tag', String(label).toUpperCase());
+    },
+
+    /**
+     * Marca un botón como “activo” visualmente (sin cambiar listeners).
+     * No usar en botones con [data-neon="tab"] — esos usan .active.
+     * @param {HTMLElement} el
+     * @param {boolean} on
+     */
+    setActive(el, on) {
+        if (!el) return;
+        el.classList.toggle('is-active', !!on);
+    },
+
+    /**
+     * Efecto ripple respetuoso con reduced-motion. Desactivado por defecto
+     * para no alterar el look original. Se puede llamar manualmente.
+     * @param {MouseEvent|TouchEvent} ev
+     * @param {HTMLElement} host
+     */
+    ripple(ev, host) {
+        if (!host) return;
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const rect = host.getBoundingClientRect();
+        const point = ev.touches ? ev.touches[0] : ev;
+        if (!point) return;
+        const span = document.createElement('span');
+        const size = Math.max(rect.width, rect.height) * 1.6;
+        span.className = 'neon-ripple';
+        span.style.cssText =
+            'position:absolute;border-radius:50%;pointer-events:none;' +
+            'background:radial-gradient(circle, rgba(212,175,55,.35), transparent 60%);' +
+            'width:' + size + 'px;height:' + size + 'px;' +
+            'left:' + (point.clientX - rect.left - size / 2) + 'px;' +
+            'top:' + (point.clientY - rect.top - size / 2) + 'px;' +
+            'transform:scale(0);opacity:.9;transition:transform .45s cubic-bezier(.22,1,.36,1), opacity .6s;';
+        if (getComputedStyle(host).position === 'static') {
+            host.style.position = 'relative';
+        }
+        host.appendChild(span);
+        requestAnimationFrame(() => {
+            span.style.transform = 'scale(1)';
+            span.style.opacity = '0';
+        });
+        setTimeout(() => span.remove(), 650);
+    },
+
+    /**
+     * Devuelve la versión actual del UI Kit neón, para diagnóstico.
+     */
+    version: '3.0.0'
+};
 
 // ================================================================
 // ARRANQUE
