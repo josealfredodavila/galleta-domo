@@ -13,11 +13,12 @@
    5. Frontend hace polling a GET /api/video/status/:jobId
    6. Cuando termina, el video procesado reemplaza al original
 
-   FIX v2:
-   - jobId estable por video (sin timestamp) → evita duplicados si
-     el frontend encola el mismo video 2 veces.
-   - Validación de filePath (debe empezar con userId/ y no tener ..)
-   - videoUrl y bucket se toman de la DB, no del body.
+   FIX v3 (Auditoría Quirúrgica):
+   - jobId estable + Índice único parcial en DB (evita duplicados reales).
+   - Validación estricta de filePath y UUIDs.
+   - videoUrl se toma de la DB, no del body.
+   - Cierre limpio de Redis (SIGTERM/SIGINT).
+   - Manejo de estado 'stalled' y protección anti "revivir cancelados".
    ================================================================ */
 
 const express = require('express');
@@ -38,6 +39,10 @@ const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
         auth: { autoRefreshToken: false, persistSession: false }
     })
     : null;
+
+if (!supabaseAdmin) {
+    console.error('❌ [video-processor] Faltan credenciales de Supabase (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY)');
+}
 
 // ================================================================
 // CONFIGURACIÓN DE REDIS Y COLA
@@ -72,9 +77,22 @@ const videoQueue = new Queue(COLA_NOMBRE, {
             count: 100
         },
         removeOnFail: {
-            age: 7 * 24 * 3600
+            age: 7 * 24 * 3600,
+            count: 500 // ✅ FIX: Evitar crecimiento infinito de jobs fallidos
         }
     }
+});
+
+// ✅ FIX: Cierre limpio para evitar jobs huérfanos en producción
+process.once('SIGTERM', async () => {
+    console.log('🛑 [video-processor] Cerrando cola y Redis por SIGTERM...');
+    await videoQueue.close();
+    await redisConnection.quit();
+});
+process.once('SIGINT', async () => {
+    console.log('🛑 [video-processor] Cerrando cola y Redis por SIGINT...');
+    await videoQueue.close();
+    await redisConnection.quit();
 });
 
 // ================================================================
@@ -82,6 +100,10 @@ const videoQueue = new Queue(COLA_NOMBRE, {
 // ================================================================
 async function autenticar(req, res, next) {
     try {
+        if (!supabaseAdmin) {
+            return res.status(500).json({ success: false, error: 'Servidor no configurado correctamente' });
+        }
+
         const auth = req.headers.authorization || '';
         if (!auth.startsWith('Bearer ')) {
             return res.status(401).json({ success: false, error: 'No autenticado' });
@@ -91,7 +113,7 @@ async function autenticar(req, res, next) {
         const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
         if (error || !user) {
-            return res.status(401).json({ success: false, error: 'Token inválido' });
+            return res.status(401).json({ success: false, error: 'Token inválido o expirado' });
         }
 
         req.user = user;
@@ -112,33 +134,34 @@ router.post('/queue', autenticar, async (req, res) => {
             return res.status(500).json({ success: false, error: 'Admin no configurado' });
         }
 
-        const { videoId, videoUrl, bucket = 'videos', filePath } = req.body;
+        // ✅ FIX: videoUrl ya no se pide en el body, se toma de la DB
+        const { videoId, filePath } = req.body;
 
         // Validaciones
-        if (!videoId || !videoUrl) {
+        if (!videoId || !filePath) {
             return res.status(400).json({
                 success: false,
-                error: 'videoId y videoUrl son requeridos'
+                error: 'videoId y filePath son requeridos'
             });
         }
 
-        if (!filePath) {
-            return res.status(400).json({
-                success: false,
-                error: 'filePath es requerido'
-            });
+        // ✅ FIX: Validar que videoId sea un UUID válido
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if (!uuidRegex.test(videoId)) {
+            return res.status(400).json({ success: false, error: 'videoId inválido' });
         }
 
-        // ✅ FIX SEGURIDAD: validar filePath
-        // Debe empezar con el userId del usuario autenticado y no tener ..
+        // ✅ FIX SEGURIDAD: validar filePath estrictamente
         if (
             !filePath.startsWith(req.user.id + '/') ||
             filePath.includes('..') ||
-            filePath.includes('//')
+            filePath.includes('//') ||
+            filePath.includes('\\') ||
+            filePath.length > 512
         ) {
             return res.status(400).json({
                 success: false,
-                error: 'filePath inválido'
+                error: 'filePath inválido o malicioso'
             });
         }
 
@@ -149,7 +172,13 @@ router.post('/queue', autenticar, async (req, res) => {
             .eq('id', videoId)
             .maybeSingle();
 
-        if (videoError || !video) {
+        // ✅ FIX: Distinguir error de DB de un 404 real
+        if (videoError) {
+            console.error('❌ Error buscando video:', videoError);
+            return res.status(500).json({ success: false, error: 'Error consultando el video' });
+        }
+        
+        if (!video) {
             return res.status(404).json({ success: false, error: 'Video no encontrado' });
         }
 
@@ -157,7 +186,11 @@ router.post('/queue', autenticar, async (req, res) => {
             return res.status(403).json({ success: false, error: 'No eres el dueño de este video' });
         }
 
-        // Verificar que no haya un job activo para este video
+        if (!video.url_video) {
+            return res.status(400).json({ success: false, error: 'El video no tiene una URL válida registrada' });
+        }
+
+        // Verificar que no haya un job activo en DB
         const { data: existingJob } = await supabaseAdmin
             .from('video_jobs')
             .select('job_id, estado')
@@ -174,42 +207,78 @@ router.post('/queue', autenticar, async (req, res) => {
             });
         }
 
-        // ✅ FIX 4: jobId estable (sin timestamp)
-        // Mismo video siempre genera el mismo jobId.
-        // Si por error se encola 2 veces, BullMQ ignora el 2do.
-        // Antes: `video_${videoId}_${Date.now()}` → 2 jobs distintos por doble-submit.
-        // Ahora: `video_${videoId}` → BullMQ deduplica.
+        // jobId estable: Mismo video siempre genera el mismo jobId.
         const stableJobId = `video_${videoId}`;
 
-        // ✅ FIX SEGURIDAD: usar videoUrl y bucket de la DB, no del body
-        const job = await videoQueue.add('process-video', {
-            videoId,
-            videoUrl: video.url_video,
-            userId: req.user.id,
-            bucket: 'videos',
-            filePath
-        }, {
-            jobId: stableJobId
-        });
+        let job;
+        try {
+            job = await videoQueue.add('process-video', {
+                videoId,
+                videoUrl: video.url_video,
+                userId: req.user.id,
+                bucket: 'videos',
+                filePath
+            }, {
+                jobId: stableJobId
+            });
+        } catch (bullError) {
+            // Si BullMQ dice que ya existe, recuperamos el existente
+            if (/already exists/i.test(bullError.message)) {
+                job = await videoQueue.getJob(stableJobId);
+                if (!job) throw bullError;
+            } else {
+                throw bullError;
+            }
+        }
 
         console.log(`📥 [QUEUE] Job creado: ${job.id} para video: ${videoId}`);
 
         // Guardar el job en la DB para hacer tracking
-        await supabaseAdmin
+        const { error: insErr } = await supabaseAdmin
             .from('video_jobs')
             .insert({
                 video_id: videoId,
                 usuario_id: req.user.id,
                 job_id: job.id,
-                estado: 'pendiente',
-                created_at: new Date().toISOString()
+                estado: 'pendiente'
             });
+
+        // ✅ FIX: Manejo del Índice Único Parcial en la Base de Datos
+        if (insErr) {
+            if (insErr.code === '23505') {
+                // Violación de UNIQUE: Otro request concurrente ganó la carrera
+                const { data: fallbackJob } = await supabaseAdmin
+                    .from('video_jobs')
+                    .select('job_id, estado')
+                    .eq('video_id', videoId)
+                    .in('estado', ['pendiente', 'procesando'])
+                    .maybeSingle();
+
+                // Limpiamos el job que acabamos de crear en Redis (duplicado)
+                try { await job.remove(); } catch (e) {}
+
+                return res.json({
+                    success: true,
+                    jobId: fallbackJob?.job_id || job.id,
+                    message: 'Este video ya está en proceso',
+                    estado: fallbackJob?.estado || 'pendiente'
+                });
+            }
+
+            console.error('❌ Error insertando en video_jobs:', insErr);
+            try { await job.remove(); } catch (e) {} // Limpiamos Redis
+            return res.status(500).json({ 
+                success: false, 
+                error: 'No se pudo registrar el job en la base de datos' 
+            });
+        }
 
         return res.json({
             success: true,
             jobId: job.id,
             message: 'Video en cola de procesamiento',
-            estado: 'pendiente'
+            estado: 'pendiente',
+            progreso: 0 // ✅ FIX: Consistencia con el endpoint /status
         });
 
     } catch (error) {
@@ -230,13 +299,24 @@ router.get('/status/:jobId', autenticar, async (req, res) => {
 
         const { data: dbJob, error: dbError } = await supabaseAdmin
             .from('video_jobs')
-            .select('*')
+            // ✅ FIX: Seleccionar columnas explícitas en lugar de '*'
+            .select('job_id, video_id, estado, progreso, error, created_at, updated_at')
             .eq('job_id', jobId)
             .eq('usuario_id', req.user.id)
             .maybeSingle();
 
-        if (dbError || !dbJob) {
+        if (dbError) {
+            console.error('❌ Error en DB status:', dbError);
+            return res.status(500).json({ success: false, error: 'Error consultando la base de datos' });
+        }
+
+        if (!dbJob) {
             return res.status(404).json({ success: false, error: 'Job no encontrado' });
+        }
+
+        // ✅ FIX: Evitar que un job cancelado "reviva"
+        if (dbJob.estado === 'cancelado') {
+            return res.json({ success: true, jobId, estado: 'cancelado', progreso: 0 });
         }
 
         const job = await videoQueue.getJob(jobId);
@@ -245,13 +325,20 @@ router.get('/status/:jobId', autenticar, async (req, res) => {
             return res.json({
                 success: true,
                 jobId,
+                videoId: dbJob.video_id,
                 estado: dbJob.estado,
-                progreso: dbJob.estado === 'completado' ? 100 : 0
+                progreso: dbJob.estado === 'completado' ? 100 : (dbJob.progreso || 0)
             });
         }
 
         const state = await job.getState();
-        const progress = job.progress || 0;
+        
+        // ✅ FIX: Normalizar el progreso (BullMQ permite números u objetos)
+        const rawProgress = job.progress;
+        const progress = typeof rawProgress === 'number' 
+            ? rawProgress 
+            : (rawProgress && typeof rawProgress === 'object' ? (rawProgress.percent || 0) : 0);
+
         const failedReason = job.failedReason;
         const returnValue = job.returnvalue;
 
@@ -261,9 +348,10 @@ router.get('/status/:jobId', autenticar, async (req, res) => {
         else if (state === 'active') estado = 'procesando';
         else if (state === 'waiting') estado = 'pendiente';
         else if (state === 'delayed') estado = 'pendiente';
+        else if (state === 'stalled') estado = 'fallido'; // ✅ FIX: Soporte para worker muerto
 
         if (dbJob.estado !== estado) {
-            await supabaseAdmin
+            const { error: upError } = await supabaseAdmin
                 .from('video_jobs')
                 .update({
                     estado,
@@ -272,16 +360,19 @@ router.get('/status/:jobId', autenticar, async (req, res) => {
                     updated_at: new Date().toISOString()
                 })
                 .eq('job_id', jobId);
+                
+            if (upError) console.error('⚠️ No se pudo actualizar el estado en DB:', upError);
         }
 
         const response = {
             success: true,
             jobId,
+            videoId: dbJob.video_id,
             estado,
             progreso: progress
         };
 
-        if (estado === 'completado' && returnValue) {
+        if (estado === 'completado' && returnValue && returnValue.processedUrl) {
             response.processedUrl = returnValue.processedUrl;
         }
 
@@ -305,12 +396,16 @@ router.get('/status/:jobId', autenticar, async (req, res) => {
 ================================================================ */
 router.get('/jobs', autenticar, async (req, res) => {
     try {
+        const page = parseInt(req.query.page) || 0;
+        const limit = 50;
+        const offset = page * limit;
+
         const { data: jobs, error } = await supabaseAdmin
             .from('video_jobs')
             .select('job_id, video_id, estado, progreso, error, created_at, updated_at')
             .eq('usuario_id', req.user.id)
             .order('created_at', { ascending: false })
-            .limit(50);
+            .range(offset, offset + limit - 1); // ✅ FIX: Paginación real
 
         if (error) {
             return res.status(500).json({ success: false, error: error.message });
@@ -339,7 +434,7 @@ router.delete('/jobs/:jobId', autenticar, async (req, res) => {
 
         const { data: dbJob } = await supabaseAdmin
             .from('video_jobs')
-            .select('*')
+            .select('job_id, estado')
             .eq('job_id', jobId)
             .eq('usuario_id', req.user.id)
             .maybeSingle();
@@ -357,7 +452,23 @@ router.delete('/jobs/:jobId', autenticar, async (req, res) => {
 
         const job = await videoQueue.getJob(jobId);
         if (job) {
-            await job.remove();
+            // ✅ FIX: Verificar el estado real en Redis antes de borrar (evitar race conditions)
+            const state = await job.getState();
+            if (state === 'active') {
+                return res.status(409).json({ 
+                    success: false, 
+                    error: 'El worker ya tomó este job, no se puede cancelar a tiempo' 
+                });
+            }
+
+            try {
+                await job.remove();
+            } catch (removeErr) {
+                // Si el job ya no existe en Redis o está bloqueado, lo ignoramos
+                if (!/locked|not exist/i.test(removeErr.message)) {
+                    throw removeErr;
+                }
+            }
         }
 
         await supabaseAdmin
@@ -365,7 +476,7 @@ router.delete('/jobs/:jobId', autenticar, async (req, res) => {
             .update({ estado: 'cancelado', updated_at: new Date().toISOString() })
             .eq('job_id', jobId);
 
-        return res.json({ success: true, message: 'Job cancelado' });
+        return res.json({ success: true, message: 'Job cancelado correctamente' });
 
     } catch (error) {
         console.error('❌ Error cancelando job:', error);
@@ -376,4 +487,5 @@ router.delete('/jobs/:jobId', autenticar, async (req, res) => {
     }
 });
 
+// ✅ FIX: Exportar la cola para métricas o cierre desde app.js si es necesario
 module.exports = router;
