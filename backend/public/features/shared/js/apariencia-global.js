@@ -1,20 +1,19 @@
+
 /* ================================================================
-   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.2
+   CSARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.3
    Archivo: backend/public/features/js/apariencia-global.js
 
-   Conserva sin cambios:
-   - Preferencias locales y sincronización con Supabase.
-   - Tema, color de acento y tamaño de fuente (80–140 %).
-   - window.SarielApariencia y todas sus funciones públicas.
-   - Carga exclusiva de la mascota activa.
-
-   v3.2:
-   - Microinteracciones táctiles con transform y brillo (sin tocar layout).
-   - Entrada suave de tarjetas y encabezados (sin ocultar contenido).
-   - CSS inyectado consolidado en una sola lista de selectores.
-   - prefers-reduced-motion respetado en todas las animaciones.
-
-   No modifica anchos, alturas, márgenes ni escalas de contenedores.
+   v3.3:
+   - Tema negro global inspirado en X.
+   - Fondos negros y textos blancos en todo el ecosistema.
+   - Paneles, tarjetas, formularios, menús y modales oscuros.
+   - Conserva acentos dorados y colores personalizados.
+   - Conserva preferencias locales y sincronización con Supabase.
+   - Conserva tamaños de fuente del 80 % al 140 %.
+   - Conserva window.SarielApariencia y su API pública.
+   - Conserva la carga exclusiva de la mascota activa.
+   - No modifica dimensiones, márgenes ni escalas de contenedores.
+   - Respeta prefers-reduced-motion.
    ================================================================ */
 
 (function () {
@@ -27,7 +26,7 @@
     };
 
     const DEFAULTS = {
-        tema: 'sistema',
+        tema: 'noche',
         tamano_fuente: 100,
         color_acento: '#D4AF37'
     };
@@ -129,8 +128,10 @@
 
                     return normalizarPreferencias({
                         tema: datos.mostrar_tema,
-                        tamano_fuente: datos.mostrar_tamano_fuente,
-                        color_acento: datos.mostrar_color_acento
+                        tamano_fuente:
+                            datos.mostrar_tamano_fuente,
+                        color_acento:
+                            datos.mostrar_color_acento
                     });
                 }
             } catch (error) {
@@ -319,26 +320,37 @@
         if (tema === 'dia') {
             html.classList.add('tema-dia');
             html.setAttribute('data-tema', 'dia');
-            return;
-        }
-
-        if (tema === 'noche') {
+        } else if (tema === 'noche') {
             html.classList.add('tema-noche');
             html.setAttribute('data-tema', 'noche');
-            return;
+        } else {
+            const prefiereOscuro = Boolean(
+                window.matchMedia &&
+                window.matchMedia(
+                    '(prefers-color-scheme: dark)'
+                ).matches
+            );
+
+            const temaSistema = prefiereOscuro
+                ? 'noche'
+                : 'dia';
+
+            html.setAttribute('data-tema', temaSistema);
+            html.classList.add(
+                temaSistema === 'noche'
+                    ? 'tema-noche'
+                    : 'tema-dia'
+            );
         }
 
-        const prefiereOscuro = Boolean(
-            window.matchMedia &&
-            window.matchMedia('(prefers-color-scheme: dark)').matches
-        );
+        /*
+         * La apariencia negra de Csariel's es independiente del
+         * tema guardado. Así no se elimina la preferencia anterior,
+         * pero la interfaz global mantiene la identidad oscura.
+         */
+        html.classList.add('sariel-tema-negro');
 
-        const temaSistema = prefiereOscuro ? 'noche' : 'dia';
-
-        html.setAttribute('data-tema', temaSistema);
-        html.classList.add(
-            temaSistema === 'noche' ? 'tema-noche' : 'tema-dia'
-        );
+        html.style.colorScheme = 'dark';
     }
 
     function aplicarColorAcento(color) {
@@ -346,25 +358,41 @@
         color = normalizarColor(color);
 
         html.style.setProperty('--gold', color);
-        html.style.setProperty('--gold-dark', ajustarColor(color, -15));
-        html.style.setProperty('--gold-light', ajustarColor(color, 15));
-        html.style.setProperty('--gold-bright', ajustarColor(color, 25));
+        html.style.setProperty(
+            '--gold-dark',
+            ajustarColor(color, -15)
+        );
+        html.style.setProperty(
+            '--gold-light',
+            ajustarColor(color, 15)
+        );
+        html.style.setProperty(
+            '--gold-bright',
+            ajustarColor(color, 25)
+        );
         html.style.setProperty('--cfg-gold', color);
         html.style.setProperty('--accent', color);
-        html.style.setProperty('--accent-dark', ajustarColor(color, -15));
-        html.style.setProperty('--accent-light', ajustarColor(color, 15));
+        html.style.setProperty(
+            '--accent-dark',
+            ajustarColor(color, -15)
+        );
+        html.style.setProperty(
+            '--accent-light',
+            ajustarColor(color, 15)
+        );
+
+        html.style.setProperty('--sariel-bg', '#000000');
+        html.style.setProperty('--sariel-surface', '#080808');
+        html.style.setProperty('--sariel-surface-raised', '#111111');
+        html.style.setProperty('--sariel-border', '#292929');
+        html.style.setProperty('--sariel-text', '#FFFFFF');
+        html.style.setProperty('--sariel-muted', '#A7A7A7');
     }
 
     function aplicarTamanoFuente(porcentaje) {
         const html = document.documentElement;
         const valor = normalizarFuente(porcentaje);
 
-        /*
-         * Se conserva el ajuste original de Configuración.
-         * No se modifica el ancho, alto, zoom ni escala de los
-         * contenedores. El tamaño raíz sigue siendo compatible
-         * con los diseños que usan rem.
-         */
         html.style.fontSize = (16 * valor / 100) + 'px';
         html.setAttribute('data-font-size', String(valor));
 
@@ -385,14 +413,297 @@
     }
 
     /* ================================================================
-       MICROINTERACCIONES
-       Solo transform, brillo, color y sombra: nunca dimensiones,
-       márgenes ni escalas de contenedores.
+       TEMA NEGRO GLOBAL
+       Inspirado en la interfaz oscura de X.
+       No utiliza zoom ni cambia dimensiones de los contenedores.
        ================================================================ */
 
-    // Lista única de elementos interactivos (antes estaba repetida)
-    // Solo elementos de Configuración: nunca botones ni enlaces globales,
-    // para no afectar a la mascota ni al resto de la app.
+    const CSS_TEMA_NEGRO = `
+        html.sariel-tema-negro {
+            color-scheme: dark !important;
+
+            --sariel-bg: #000000;
+            --sariel-surface: #080808;
+            --sariel-surface-raised: #111111;
+            --sariel-border: #292929;
+            --sariel-text: #FFFFFF;
+            --sariel-muted: #A7A7A7;
+
+            --background: #000000;
+            --background-color: #000000;
+            --bg-primary: #000000;
+            --bg-secondary: #080808;
+            --surface: #080808;
+            --surface-color: #080808;
+            --card-bg: #080808;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A7A7A7;
+            --border-color: #292929;
+        }
+
+        html.sariel-tema-negro,
+        html.sariel-tema-negro body {
+            background-color: #000000 !important;
+            color: #FFFFFF;
+        }
+
+        html.sariel-tema-negro body {
+            min-height: 100%;
+        }
+
+        /* Texto general */
+        html.sariel-tema-negro body,
+        html.sariel-tema-negro body p,
+        html.sariel-tema-negro body label,
+        html.sariel-tema-negro body li,
+        html.sariel-tema-negro body td,
+        html.sariel-tema-negro body th,
+        html.sariel-tema-negro body figcaption,
+        html.sariel-tema-negro body summary,
+        html.sariel-tema-negro body legend {
+            color: #FFFFFF;
+        }
+
+        /* Encabezados */
+        html.sariel-tema-negro body h1,
+        html.sariel-tema-negro body h2,
+        html.sariel-tema-negro body h3,
+        html.sariel-tema-negro body h4,
+        html.sariel-tema-negro body h5,
+        html.sariel-tema-negro body h6 {
+            color: #FFFFFF;
+        }
+
+        /* Textos secundarios */
+        html.sariel-tema-negro body small,
+        html.sariel-tema-negro body .text-muted,
+        html.sariel-tema-negro body .text-secondary,
+        html.sariel-tema-negro body .subtitle,
+        html.sariel-tema-negro body .descripcion-secundaria,
+        html.sariel-tema-negro body .muted,
+        html.sariel-tema-negro body time {
+            color: #A7A7A7;
+        }
+
+        /* Enlaces: se conserva el color propio del acento */
+        html.sariel-tema-negro body a {
+            color: var(--accent, #D4AF37);
+        }
+
+        /* Contenedores principales de todas las pantallas */
+        html.sariel-tema-negro body main,
+        html.sariel-tema-negro body .app,
+        html.sariel-tema-negro body .app-container,
+        html.sariel-tema-negro body .app-shell,
+        html.sariel-tema-negro body .page,
+        html.sariel-tema-negro body .page-container,
+        html.sariel-tema-negro body .main-content,
+        html.sariel-tema-negro body .content,
+        html.sariel-tema-negro body .contenido,
+        html.sariel-tema-negro body .layout,
+        html.sariel-tema-negro body .dashboard,
+        html.sariel-tema-negro body .dashboard-container,
+        html.sariel-tema-negro body .view,
+        html.sariel-tema-negro body .screen,
+        html.sariel-tema-negro body .pantalla,
+        html.sariel-tema-negro body .panel-principal {
+            background-color: #000000 !important;
+            color: #FFFFFF !important;
+        }
+
+        /* Barras superiores, inferiores y navegación */
+        html.sariel-tema-negro body header,
+        html.sariel-tema-negro body nav,
+        html.sariel-tema-negro body footer,
+        html.sariel-tema-negro body .navbar,
+        html.sariel-tema-negro body .nav-bar,
+        html.sariel-tema-negro body .topbar,
+        html.sariel-tema-negro body .top-bar,
+        html.sariel-tema-negro body .bottom-nav,
+        html.sariel-tema-negro body .bottom-navigation,
+        html.sariel-tema-negro body .tab-bar,
+        html.sariel-tema-negro body .sidebar,
+        html.sariel-tema-negro body .app-header,
+        html.sariel-tema-negro body .app-footer,
+        html.sariel-tema-negro body .mobile-nav {
+            background-color: #000000 !important;
+            color: #FFFFFF !important;
+            border-color: #292929 !important;
+        }
+
+        /* Tarjetas y publicaciones */
+        html.sariel-tema-negro body .card,
+        html.sariel-tema-negro body .cfg-item,
+        html.sariel-tema-negro body .cfg-card,
+        html.sariel-tema-negro body .post,
+        html.sariel-tema-negro body .post-card,
+        html.sariel-tema-negro body .publication,
+        html.sariel-tema-negro body .publicacion,
+        html.sariel-tema-negro body .feed-item,
+        html.sariel-tema-negro body .notification,
+        html.sariel-tema-negro body .notification-item,
+        html.sariel-tema-negro body .message-card,
+        html.sariel-tema-negro body .profile-card,
+        html.sariel-tema-negro body .service-card,
+        html.sariel-tema-negro body .product-card,
+        html.sariel-tema-negro body .modal-content,
+        html.sariel-tema-negro body .dialog-content,
+        html.sariel-tema-negro body .dropdown-menu,
+        html.sariel-tema-negro body .popover,
+        html.sariel-tema-negro body .menu-panel {
+            background-color: #080808 !important;
+            color: #FFFFFF !important;
+            border-color: #292929 !important;
+        }
+
+        /* Capas y fondos de paneles */
+        html.sariel-tema-negro body .panel,
+        html.sariel-tema-negro body .section,
+        html.sariel-tema-negro body .seccion,
+        html.sariel-tema-negro body .settings-panel,
+        html.sariel-tema-negro body .settings-section,
+        html.sariel-tema-negro body .cfg-section,
+        html.sariel-tema-negro body .list-container,
+        html.sariel-tema-negro body .feed-container,
+        html.sariel-tema-negro body .profile-container,
+        html.sariel-tema-negro body .modal,
+        html.sariel-tema-negro body dialog,
+        html.sariel-tema-negro body [role="dialog"],
+        html.sariel-tema-negro body [role="menu"] {
+            background-color: #000000 !important;
+            color: #FFFFFF !important;
+            border-color: #292929 !important;
+        }
+
+        /* Formularios */
+        html.sariel-tema-negro body input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+        html.sariel-tema-negro body textarea,
+        html.sariel-tema-negro body select,
+        html.sariel-tema-negro body .form-control,
+        html.sariel-tema-negro body .input-field {
+            background-color: #080808 !important;
+            color: #FFFFFF !important;
+            border-color: #3A3A3A !important;
+            caret-color: #FFFFFF;
+        }
+
+        html.sariel-tema-negro body input::placeholder,
+        html.sariel-tema-negro body textarea::placeholder {
+            color: #888888 !important;
+            opacity: 1;
+        }
+
+        html.sariel-tema-negro body option {
+            background-color: #080808;
+            color: #FFFFFF;
+        }
+
+        /* Botones: mantiene fondos y acentos personalizados */
+        html.sariel-tema-negro body button,
+        html.sariel-tema-negro body .btn,
+        html.sariel-tema-negro body .cfg-btn {
+            border-color: var(--sariel-border, #292929);
+        }
+
+        /* Botones neutros */
+        html.sariel-tema-negro body button:not(.primary):not(.btn-primary):not(.accent-button):not(.gold-button):not(.cfg-primary):not([data-theme-preserve]):not([class*="gold"]):not([class*="accent"]),
+        html.sariel-tema-negro body .btn:not(.btn-primary):not(.primary):not([data-theme-preserve]) {
+            color: #FFFFFF;
+        }
+
+        /* Separadores y bordes */
+        html.sariel-tema-negro body hr,
+        html.sariel-tema-negro body table,
+        html.sariel-tema-negro body td,
+        html.sariel-tema-negro body th,
+        html.sariel-tema-negro body fieldset,
+        html.sariel-tema-negro body .border,
+        html.sariel-tema-negro body .divider,
+        html.sariel-tema-negro body .separator {
+            border-color: #292929;
+        }
+
+        /* Tablas */
+        html.sariel-tema-negro body table {
+            background-color: #000000;
+            color: #FFFFFF;
+        }
+
+        html.sariel-tema-negro body thead,
+        html.sariel-tema-negro body tr {
+            border-color: #292929;
+        }
+
+        /* Elementos activos y selección */
+        html.sariel-tema-negro body ::selection {
+            background: var(--accent, #D4AF37);
+            color: #000000;
+        }
+
+        html.sariel-tema-negro body :focus-visible {
+            outline-color: var(--accent, #D4AF37);
+        }
+
+        /* Scrollbar discreta */
+        html.sariel-tema-negro body * {
+            scrollbar-color: #444444 #000000;
+        }
+
+        html.sariel-tema-negro body *::-webkit-scrollbar-track {
+            background: #000000;
+        }
+
+        html.sariel-tema-negro body *::-webkit-scrollbar-thumb {
+            background: #444444;
+            border-color: #000000;
+        }
+
+        /* Imágenes, vídeos y avatares conservan sus colores originales.
+           No se aplica filtro global que altere sus fotografías. */
+
+        /* Mascotas: no se fuerzan fondos ni filtros sobre el dibujo. */
+        html.sariel-tema-negro body #marquinhos-pet,
+        html.sariel-tema-negro body #capitan-maiz-pet,
+        html.sariel-tema-negro body #itlasuhua-pet,
+        html.sariel-tema-negro body .mascota-widget,
+        html.sariel-tema-negro body .pet-widget {
+            color: inherit;
+        }
+
+        /* Accesibilidad */
+        @media (prefers-reduced-motion: reduce) {
+            html.sariel-tema-negro *,
+            html.sariel-tema-negro *::before,
+            html.sariel-tema-negro *::after {
+                scroll-behavior: auto !important;
+            }
+        }
+    `;
+
+    function instalarTemaNegro() {
+        let style = document.getElementById(
+            'sariel-tema-negro-global-css'
+        );
+
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'sariel-tema-negro-global-css';
+
+            (document.head || document.documentElement)
+                .appendChild(style);
+        }
+
+        style.textContent = CSS_TEMA_NEGRO;
+
+        document.documentElement.classList.add(
+            'sariel-tema-negro'
+        );
+    }
+
+    /* ================================================================
+       MICROINTERACCIONES
+       ================================================================ */
+
     const SELECTOR_INTERACTIVO = [
         '.cfg-item',
         '.cfg-btn',
@@ -400,10 +711,7 @@
         '.cfg-header-action'
     ].join(',');
 
-    // Elementos que reaccionan al toque con una compresión sutil
     const SELECTOR_PRESIONABLE = SELECTOR_INTERACTIVO;
-
-    // Elementos que se animan al entrar (solo opacidad, nunca ocultan contenido)
     const SELECTOR_ENTRADA = '.cfg-item, .cfg-header';
 
     const CSS_MICROINTERACCIONES = `
@@ -431,13 +739,17 @@
         @media (hover: hover) and (pointer: fine) {
             ${SELECTOR_PRESIONABLE}:hover {
                 box-shadow: 0 0 0 1px
-                    color-mix(in srgb, var(--accent, #D4AF37) 22%, transparent);
+                    color-mix(
+                        in srgb,
+                        var(--accent, #D4AF37) 22%,
+                        transparent
+                    );
             }
         }
 
         @keyframes sarielFadeIn {
             from { opacity: 0; }
-            to   { opacity: 1; }
+            to { opacity: 1; }
         }
 
         ${SELECTOR_ENTRADA} {
@@ -458,15 +770,19 @@
     `;
 
     function instalarMicrointeracciones() {
-        if (document.getElementById('sariels-motion-safe-css')) {
-            return;
+        let style = document.getElementById(
+            'sariels-motion-safe-css'
+        );
+
+        if (!style) {
+            style = document.createElement('style');
+            style.id = 'sariels-motion-safe-css';
+
+            (document.head || document.documentElement)
+                .appendChild(style);
         }
 
-        const style = document.createElement('style');
-        style.id = 'sariels-motion-safe-css';
         style.textContent = CSS_MICROINTERACCIONES;
-
-        (document.head || document.documentElement).appendChild(style);
     }
 
     /* ================================================================
@@ -480,7 +796,9 @@
 
         inicializacionEnCurso = (async function () {
             const prefsLocal = leerDeLocalStorage();
+
             aplicarTodo(prefsLocal);
+            instalarTemaNegro();
 
             let intentos = 0;
 
@@ -528,6 +846,9 @@
                 }
             }
 
+            /* La sincronización de preferencias nunca quita el negro. */
+            instalarTemaNegro();
+
             syncConSupabaseListo = true;
         })();
 
@@ -544,6 +865,7 @@
             Object.values(KEYS).includes(evento.key)
         ) {
             aplicarTodo(leerDeLocalStorage());
+            instalarTemaNegro();
         }
     });
 
@@ -555,16 +877,21 @@
         const actualizarTemaSistema = function () {
             if (prefsActuales.tema === 'sistema') {
                 aplicarTema('sistema');
+                instalarTemaNegro();
             }
         };
 
         if (typeof mq.addEventListener === 'function') {
-            mq.addEventListener('change', actualizarTemaSistema);
+            mq.addEventListener(
+                'change',
+                actualizarTemaSistema
+            );
         } else if (typeof mq.addListener === 'function') {
             mq.addListener(actualizarTemaSistema);
         }
     } catch (_) {}
 
+    instalarTemaNegro();
     instalarMicrointeracciones();
 
     if (document.readyState === 'loading') {
@@ -572,6 +899,8 @@
             'DOMContentLoaded',
             function () {
                 aplicarTodo();
+                instalarTemaNegro();
+                instalarMicrointeracciones();
             },
             { once: true }
         );
@@ -584,8 +913,16 @@
        ================================================================ */
 
     window.SarielApariencia = {
-        aplicar: aplicarTodo,
-        aplicarTema: aplicarTema,
+        aplicar: function (prefs) {
+            aplicarTodo(prefs);
+            instalarTemaNegro();
+        },
+
+        aplicarTema: function (tema) {
+            aplicarTema(tema);
+            instalarTemaNegro();
+        },
+
         aplicarColorAcento: aplicarColorAcento,
         aplicarTamanoFuente: aplicarTamanoFuente,
         leer: leerDeLocalStorage,
@@ -597,6 +934,7 @@
 
             prefsActuales.tema = tema;
             aplicarTema(tema);
+            instalarTemaNegro();
 
             return guardarPref(KEYS.tema, tema);
         },
@@ -606,6 +944,7 @@
 
             prefsActuales.color_acento = color;
             aplicarColorAcento(color);
+            instalarTemaNegro();
 
             return guardarPref(KEYS.color_acento, color);
         },
@@ -616,7 +955,10 @@
             prefsActuales.tamano_fuente = fuente;
             aplicarTamanoFuente(fuente);
 
-            return guardarPref(KEYS.tamano_fuente, fuente);
+            return guardarPref(
+                KEYS.tamano_fuente,
+                fuente
+            );
         },
 
         recargar: inicializar,
@@ -653,7 +995,8 @@
         css.rel = 'stylesheet';
         css.href = src;
 
-        (document.head || document.documentElement).appendChild(css);
+        (document.head || document.documentElement)
+            .appendChild(css);
     }
 
     function cargarScript(id, src, alCargar) {
@@ -714,11 +1057,16 @@
 
     (function inyectarMarquinhosPet() {
         if (getMascotaActiva() !== 'marquinhos') return;
-        if (!puedeInyectarMascota(['/features/marquinhos/tienda'])) {
+
+        if (!puedeInyectarMascota([
+            '/features/marquinhos/tienda'
+        ])) {
             return;
         }
 
-        if (document.getElementById('marquinhos-pet-script')) return;
+        if (document.getElementById('marquinhos-pet-script')) {
+            return;
+        }
 
         alDOMListo(function () {
             cargarCSS(
@@ -764,11 +1112,16 @@
 
     (function inyectarCapitanMaizPet() {
         if (getMascotaActiva() !== 'capitan-maiz') return;
-        if (!puedeInyectarMascota(['/features/capitan-maiz/tienda'])) {
+
+        if (!puedeInyectarMascota([
+            '/features/capitan-maiz/tienda'
+        ])) {
             return;
         }
 
-        if (document.getElementById('capitan-maiz-pet-script')) return;
+        if (document.getElementById('capitan-maiz-pet-script')) {
+            return;
+        }
 
         alDOMListo(function () {
             cargarCSS(
@@ -799,11 +1152,16 @@
 
     (function inyectarItlasuhuaPet() {
         if (getMascotaActiva() !== 'itlasuhua') return;
-        if (!puedeInyectarMascota(['/features/itlasuhua/tienda'])) {
+
+        if (!puedeInyectarMascota([
+            '/features/itlasuhua/tienda'
+        ])) {
             return;
         }
 
-        if (document.getElementById('itlasuhua-pet-script')) return;
+        if (document.getElementById('itlasuhua-pet-script')) {
+            return;
+        }
 
         alDOMListo(function () {
             cargarCSS(
@@ -838,7 +1196,8 @@
     })();
 
     console.log(
-        '[Apariencia] Módulo global v3.2 cargado. Mascota activa:',
+        '[Apariencia] Módulo global v3.3 cargado. ' +
+        'Tema negro activo. Mascota activa:',
         getMascotaActiva()
     );
 })();
