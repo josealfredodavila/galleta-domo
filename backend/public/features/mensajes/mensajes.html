@@ -67,7 +67,7 @@
     <a class="logo" href="/"><b>◈</b><span>Csariel's</span><em class="badge">WEB3</em></a>
     <div class="header-right">
         <div class="network"><i></i>Polygon</div>
-        <button class="iconbtn" id="btnConfigLlamadas" title="Configuración de llamadas" style="color:var(--muted);">⚙</button>
+        <button class="iconbtn" id="btnConfigLlamadas" title="Configuración de llamadas" style="color:var(--muted);" data-neon="icon">⚙</button>
         <div class="header-avatar" id="headerAvatar" title="Mi perfil">◈</div>
         <input type="file" id="avatarInput" hidden accept="image/*">
     </div>
@@ -77,26 +77,26 @@
     <a href="/features/muro/muro.html">◇ Muro</a>
     <a href="/features/perfil/perfil.html">◆ Perfil</a>
     <a href="/features/mensajes/contactos.html">◈ Contactos</a>
-    <a class="active" href="/features/mensajes/mensajes.html">◈ Mensajes</a>
+    <a class="active" href="/features/mensajes/mensajes.html" data-neon="nav">◈ Mensajes</a>
     <a href="/features/live/live.html">◉ Live</a>
 </nav>
 <main class="panel" id="panel">
 <aside class="sidebar">
 
-    <div class="sidebar-tabs">
-        <button class="sidebar-tab active" data-tab="chats" onclick="cambiarPestana('chats')">
+    <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
+        <button class="sidebar-tab active" data-tab="chats" data-neon="tab" role="tab" aria-selected="true" onclick="cambiarPestana('chats')">
             <span class="tab-icon">◈</span>
             <span class="tab-label">Chats</span>
         </button>
-        <button class="sidebar-tab" data-tab="canales" onclick="cambiarPestana('canales')">
+        <button class="sidebar-tab" data-tab="canales" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
             <span class="tab-icon">⬡</span>
             <span class="tab-label">Canales</span>
         </button>
-        <button class="sidebar-tab" data-tab="grupos" onclick="cambiarPestana('grupos')">
+        <button class="sidebar-tab" data-tab="grupos" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
             <span class="tab-icon">◆</span>
             <span class="tab-label">Grupos</span>
         </button>
-        <button class="sidebar-tab" data-tab="llamadas" onclick="cambiarPestana('llamadas')">
+        <button class="sidebar-tab" data-tab="llamadas" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')">
             <span class="tab-icon">☎</span>
             <span class="tab-label">Llamadas</span>
         </button>
@@ -112,7 +112,7 @@
         <div class="estados-bar">
             <div class="estados-header">
                 <div class="estados-title">◈ ESTADOS</div>
-                <button class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">＋ Subir</button>
+                <button class="btn-subir-estado" id="btnSubirEstado" title="Subir estado" data-neon="chip">＋ Subir</button>
             </div>
             <div class="estados-scroll" id="estadosScroll"></div>
         </div>
@@ -152,7 +152,7 @@
     <div class="tab-content hidden" id="tabLlamadas">
         <div class="sidehead">
             <span>☎ Historial de llamadas</span>
-            <button class="btn-subir-estado" id="btnBorrarTodoHistorial" title="Borrar todo el historial" style="background:linear-gradient(135deg,#ff3366,#cc1a4d);color:#fff;">🗑 Todo</button>
+            <button class="btn-subir-estado" id="btnBorrarTodoHistorial" title="Borrar todo el historial" data-neon="chip-danger" style="background:linear-gradient(135deg,#ff3366,#cc1a4d);color:#fff;">🗑 Todo</button>
         </div>
         <div class="filtros-canales" style="padding:0 12px 6px; gap:6px; flex-wrap:wrap;">
             <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;">
@@ -174,24 +174,24 @@
         </div>
     </div>
 
-    <button class="fab" id="newChat" title="Nueva conversación">＋</button>
+    <button class="fab" id="newChat" title="Nueva conversación" data-neon="fab">＋</button>
 </aside>
 <section class="chat">
     <header class="chathead">
-        <button class="backbtn" id="backBtn" title="Volver">←</button>
+        <button class="backbtn" id="backBtn" title="Volver" data-neon="icon">←</button>
         <div class="avatar" id="chatAvatar" title="Ver foto">◈</div>
         <div>
             <div class="chatname" id="chatName">Selecciona una conversación</div>
             <div class="status" id="chatStatus">◈ En espera</div>
         </div>
         <div class="actions" id="chatActions" style="display:none;">
-            <button class="iconbtn" id="deleteChat" title="Eliminar conversación">◇</button>
-            <button class="iconbtn" id="blockUser" title="Bloquear contacto" style="color:#ff3366;">⛔</button>
-            <button class="iconbtn callbtn" id="videoCall" title="Iniciar videollamada" disabled>
+            <button class="iconbtn" id="deleteChat" title="Eliminar conversación" data-neon="icon">◇</button>
+            <button class="iconbtn" id="blockUser" title="Bloquear contacto" data-neon="icon-danger" style="color:#ff3366;">⛔</button>
+            <button class="iconbtn callbtn" id="videoCall" title="Iniciar videollamada" data-neon="icon-call" disabled>
                 <span class="call-icon">📹</span>
                 <span class="call-label">Llamar</span>
             </button>
-            <button class="iconbtn" id="searchChat" title="Buscar en la conversación">◇</button>
+            <button class="iconbtn" id="searchChat" title="Buscar en la conversación" data-neon="icon">◇</button>
         </div>
     </header>
     <div class="messages" id="messages">
@@ -207,11 +207,11 @@
         </button>
     </div>
     <form class="composer" id="composer" style="display:none;">
-        <button type="button" class="btn" id="attach" title="Adjuntar">◆</button>
-        <button type="button" class="btn" id="audio" title="Grabar audio">●</button>
-        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">◉</button>
+        <button type="button" class="btn" id="attach" title="Adjuntar" data-neon="btn">◆</button>
+        <button type="button" class="btn" id="audio" title="Grabar audio" data-neon="btn">●</button>
+        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" data-neon="btn-bot" style="display:none;">◉</button>
         <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje…">
-        <button class="btn send" type="submit">Enviar</button>
+        <button class="btn send" type="submit" data-neon="send">Enviar</button>
         <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
     </form>
 </section>
@@ -221,7 +221,7 @@
 
 <div class="modal" id="newModal">
     <div class="modalbox">
-        <button class="iconbtn" id="closeModal" style="float:right">✕</button>
+        <button class="iconbtn" id="closeModal" style="float:right" data-neon="icon">✕</button>
         <h2>◈ Nueva conversación</h2>
         <input class="search" id="userSearch" placeholder="Buscar por nombre o usuario…">
         <div id="userResults" style="margin-top:10px"></div>
@@ -239,13 +239,13 @@
                 <span>Cambiar foto de perfil</span>
             </button>
         </div>
-        <button class="btn" id="btnCerrarProfileModal" style="margin-top:18px;width:100%;">Cerrar</button>
+        <button class="btn" id="btnCerrarProfileModal" style="margin-top:18px;width:100%;" data-neon="btn">Cerrar</button>
     </div>
 </div>
 
 <div class="modal" id="vistasModal">
     <div class="modalbox" style="max-width:420px;">
-        <button class="iconbtn" id="closeVistasModal" style="float:right">✕</button>
+        <button class="iconbtn" id="closeVistasModal" style="float:right" data-neon="icon">✕</button>
         <h2 style="display:flex;align-items:center;gap:8px;">◉ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
         <div id="vistasList" style="margin-top:10px;">
             <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>
@@ -255,7 +255,7 @@
 
 <div class="modal" id="modalCrearCanal">
     <div class="modalbox" style="max-width:520px;">
-        <button class="iconbtn" id="closeModalCanal" style="float:right" onclick="cerrarModalCrearCanal()">✕</button>
+        <button class="iconbtn" id="closeModalCanal" style="float:right" onclick="cerrarModalCrearCanal()" data-neon="icon">✕</button>
         <h2>⬡ Crear Canal Público</h2>
         <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">Los canales son públicos: cualquier usuario puede verlos y unirse.</p>
         <input class="search" id="canalNombre" placeholder="Nombre del canal *" maxlength="80" style="margin-bottom:10px;">
@@ -268,13 +268,13 @@
             <input class="search" id="canalCiudad" placeholder="Ciudad (opcional)">
             <input class="search" id="canalPais" placeholder="País" value="México">
         </div>
-        <button class="btn send" id="btnCrearCanal" onclick="crearCanal()" style="width:100%;">⬡ Crear Canal</button>
+        <button class="btn send" id="btnCrearCanal" onclick="crearCanal()" style="width:100%;" data-neon="send">⬡ Crear Canal</button>
     </div>
 </div>
 
 <div class="modal" id="modalCrearGrupo">
     <div class="modalbox" style="max-width:520px;">
-        <button class="iconbtn" id="closeModalGrupo" style="float:right" onclick="cerrarModalCrearGrupo()">✕</button>
+        <button class="iconbtn" id="closeModalGrupo" style="float:right" onclick="cerrarModalCrearGrupo()" data-neon="icon">✕</button>
         <h2>◆ Crear Grupo Privado</h2>
         <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">Los grupos son privados: solo por invitación.</p>
         <input class="search" id="grupoNombre" placeholder="Nombre del grupo *" maxlength="80" style="margin-bottom:10px;">
@@ -287,28 +287,28 @@
             <input class="search" id="grupoCiudad" placeholder="Ciudad (opcional)">
             <input class="search" id="grupoPais" placeholder="País" value="México">
         </div>
-        <button class="btn send" id="btnCrearGrupo" onclick="crearGrupo()" style="width:100%;">◆ Crear Grupo</button>
+        <button class="btn send" id="btnCrearGrupo" onclick="crearGrupo()" style="width:100%;" data-neon="send">◆ Crear Grupo</button>
     </div>
 </div>
 
 <div class="modal" id="estadoUploadModal">
     <div class="modalbox" style="text-align:center;">
-        <button class="iconbtn" id="closeEstadoModal" style="float:right">✕</button>
+        <button class="iconbtn" id="closeEstadoModal" style="float:right" data-neon="icon">✕</button>
         <h2>◈ Nuevo Estado</h2>
         <p style="color:var(--muted);font-size:.8rem;margin-bottom:14px;">Se mostrará 24 horas</p>
         <div id="estadoPreviewWrap" style="margin:16px 0;display:none;">
             <img id="estadoPreviewImg" style="max-width:100%;max-height:240px;border-radius:12px;border:2px solid var(--gold);">
         </div>
         <input type="file" id="estadoFileInput" accept="image/*" style="display:none;">
-        <button class="btn" id="btnSeleccionarEstado" style="width:100%;margin-bottom:10px;">◆ Seleccionar imagen</button>
+        <button class="btn" id="btnSeleccionarEstado" style="width:100%;margin-bottom:10px;" data-neon="btn">◆ Seleccionar imagen</button>
         <textarea id="estadoCaption" placeholder="Escribe un mensaje (opcional)" maxlength="120" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:60px;margin-bottom:12px;"></textarea>
-        <button class="btn send" id="btnPublicarEstado" style="width:100%;" disabled>Publicar estado</button>
+        <button class="btn send" id="btnPublicarEstado" style="width:100%;" disabled data-neon="send">Publicar estado</button>
     </div>
 </div>
 
 <div class="modal" id="modalConfigLlamadas">
     <div class="modalbox" style="max-width:480px;">
-        <button class="iconbtn" id="closeModalConfig" style="float:right">✕</button>
+        <button class="iconbtn" id="closeModalConfig" style="float:right" data-neon="icon">✕</button>
         <h2>⚙ Configuración de llamadas</h2>
 
         <label style="display:block;color:var(--muted);font-size:.75rem;margin-bottom:6px;font-weight:600;">¿Quién puede llamarme?</label>
@@ -318,15 +318,15 @@
             <option value="nadie">Nadie</option>
         </select>
 
-        <button class="btn" id="btnVerBloqueados" style="width:100%;margin-bottom:10px;">⛔ Ver usuarios bloqueados (<span id="countBloqueados">0</span>)</button>
+        <button class="btn" id="btnVerBloqueados" style="width:100%;margin-bottom:10px;" data-neon="btn">⛔ Ver usuarios bloqueados (<span id="countBloqueados">0</span>)</button>
 
-        <button class="btn send" id="btnGuardarConfig" style="width:100%;">Guardar configuración</button>
+        <button class="btn send" id="btnGuardarConfig" style="width:100%;" data-neon="send">Guardar configuración</button>
     </div>
 </div>
 
 <div class="modal" id="modalBloqueados">
     <div class="modalbox" style="max-width:480px;">
-        <button class="iconbtn" id="closeModalBloqueados" style="float:right">✕</button>
+        <button class="iconbtn" id="closeModalBloqueados" style="float:right" data-neon="icon">✕</button>
         <h2>⛔ Usuarios bloqueados</h2>
         <div id="listaBloqueados" style="margin-top:10px;">
             <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>
@@ -409,7 +409,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-<script src="/features/mensajes/js/mensajes.js?v=11"></script>
+<script src="/features/mensajes/js/mensajes.js?v=12"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=1"></script>
 </body>
 </html>
