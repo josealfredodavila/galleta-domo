@@ -1,14 +1,16 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v5.2 (Reacciones optimizadas, comentarios protegidos contra envíos
+// v5.3 (Emojis de reacción alineados con la base de datos,
+//       reacciones optimizadas, comentarios protegidos contra envíos
 //       repetidos, vista previa segura, medios compatibles con el
 //       esquema actual y mejor manejo de errores)
 // ================================================================
 
 window.listaMultimediaPerfil = [];
 
-var PUB_EMOJIS_REACCION_DEFAULT = ['❤️', '😊', '👏', '😍', '😂', '😮', '😢', '🔥'];
+// Solo los emojis que acepta la restricción de publicaciones_reacciones.
+var PUB_EMOJIS_REACCION_DEFAULT = ['❤️', '😊', '👏', '😍', '😂', '🔥', '🎉', '🤩', '💎'];
 
 var PUB_EMOJIS_PICKER_DEFAULT = [
     '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😋','😛','😜',
@@ -575,7 +577,6 @@ function seleccionarArchivoPerfil(event, tipo) {
     }
 
     // La tabla actual guarda un solo media_url y un solo media_type por publicación.
-    // Evitamos aceptar dos medios que el esquema actual no puede representar juntos.
     var otroTipo = tipo === 'imagen' ? 'video' : 'imagen';
 
     if (archivosSeleccionados[otroTipo]) {
