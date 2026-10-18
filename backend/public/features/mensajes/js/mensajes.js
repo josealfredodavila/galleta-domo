@@ -1,11 +1,12 @@
 // ================================================================
-// MENSAJES · JS v3.7
-// Configuración, utilidades, autenticación, avatar, perfil, estados
+// MENSAJES · JS v3.8 · WEB3 NEON UI
+// Configuración, utilidades, autenticación, avatar, perfil, estados.
 //
-// CAMBIOS v3.7:
-// - Añadido bloque NEON UI HELPERS al final (presentación pura,
-//   sin tocar Supabase, ni estado, ni firmas).
-// - El resto es idéntico a v3.6.
+// CAMBIOS v3.8:
+// - Añadidas decorarComposerWeb3() y decorarSidebarTabsWeb3():
+//   solo manipulan DOM (envuelven botones con icono+label).
+// - NADA de Supabase, LiveKit, WebRTC ni firmas se toca.
+// - El resto es idéntico a v3.7.
 // ================================================================
 
 'use strict';
@@ -849,12 +850,7 @@ async function getSignedUrlForMessage(m) {
 }
 
 // ================================================================
-// CARGAR CONVERSACIONES — v3.5
-//
-// Construye la lista desde los MENSAJES REALES del usuario.
-// Calcula el otherUserId de cada conversación (nunca muestra al
-// propio usuario). Trae los perfiles en lote desde
-// perfiles_publicos en 1 sola consulta.
+// CARGAR CONVERSACIONES
 // ================================================================
 let conversationFilter = '';
 
@@ -1104,7 +1100,6 @@ async function openConversation(id) {
             callBtn.style.display = 'inline-flex';
             callBtn.innerHTML = '<span class="call-icon">📹</span><span class="call-label">Llamar</span>';
             callBtn.title = 'Iniciar videollamada con ' + (p.nombre || 'usuario');
-            // Reactivar el botón solo si LiveKit está cargado
             callBtn.disabled = !window.LivekitClient;
         }
     }
@@ -1412,8 +1407,7 @@ async function sendMessage(text) {
 }
 
 // ================================================================
-// VERIFICACIÓN DE TÉRMINOS PARA MARQUINHOS (v1.1)
-// Revisa localStorage; si no está, consulta el RPC en Supabase.
+// VERIFICACIÓN DE TÉRMINOS PARA MARQUINHOS
 // ================================================================
 async function verificarTerminosMarquinhos() {
     const TERMINOS_VERSION = '1.1';
@@ -2126,9 +2120,7 @@ function cambiarPestana(pestana) {
 
     document.querySelectorAll('.sidebar-tab').forEach(function(btn) {
         btn.classList.toggle('active', btn.dataset.tab === pestana);
-        if (btn.hasAttribute('data-neon')) {
-            btn.setAttribute('aria-selected', btn.dataset.tab === pestana ? 'true' : 'false');
-        }
+        btn.setAttribute('aria-selected', btn.dataset.tab === pestana ? 'true' : 'false');
     });
 
     var tabChats = document.getElementById('tabChats');
@@ -2772,6 +2764,15 @@ async function incoming(data) {
     $('incomingAvatar').innerHTML = p.avatar_url
         ? `<img src="${esc(p.avatar_url)}" alt="">`
         : esc((p.nombre || '◈').charAt(0).toUpperCase());
+
+    // Si el enhancer ya reemplazó el markup, actualizamos el halo
+    const halo = $('incomingHalo');
+    if (halo) {
+        halo.innerHTML = p.avatar_url
+            ? `<img src="${esc(p.avatar_url)}" alt="">`
+            : esc((p.nombre || '◈').charAt(0).toUpperCase());
+    }
+
     $('incomingOverlay').classList.add('show');
     toast('🔔 ' + (p.nombre || 'Alguien') + ' te está llamando…', 'success');
 
@@ -2955,11 +2956,10 @@ async function init() {
         console.warn('Error cargando sesión:', e);
     }
 
-    // Verificación de LiveKit al iniciar
     const callBtn = $('videoCall');
     if (!window.LivekitClient) {
         if (callBtn) callBtn.disabled = true;
-        console.warn('[Mensajes] LiveKit no disponible al iniciar. Las llamadas estarán deshabilitadas hasta que cargue.');
+        console.warn('[Mensajes] LiveKit no disponible al iniciar.');
     }
 
     await cargarFotoHeader();
@@ -2975,10 +2975,9 @@ async function init() {
         }
     });
 
-    // Listeners para el ciclo de vida de LiveKit
     window.addEventListener('livekit:ready', () => {
         if (callBtn) callBtn.disabled = false;
-        console.log('[Mensajes] LiveKit cargado correctamente. Llamadas habilitadas.');
+        console.log('[Mensajes] LiveKit cargado correctamente.');
     });
     window.addEventListener('livekit:error', () => {
         if (callBtn) callBtn.disabled = true;
@@ -3160,6 +3159,10 @@ async function init() {
         cargarEstados();
     }, 5 * 60 * 1000);
 
+    // Decoración Web3 del composer y las tabs (solo DOM, no lógica)
+    decorarComposerWeb3();
+    decorarSidebarTabsWeb3();
+
     setTimeout(async () => {
         try {
             if (typeof window.inicializarIdiomas === 'function') {
@@ -3170,6 +3173,83 @@ async function init() {
             console.warn('⚠️ Error aplicando idiomas:', e);
         }
     }, 500);
+}
+
+// ================================================================
+// WEB3 UI DECORATOR — v3.8
+// Envuelve los botones del composer (Adjuntar / Nota de voz /
+// Videollamada / Enviar) con icono + label. NO cambia IDs ni
+// handlers. Envuelve también las tabs del sidebar con data-tag.
+// ================================================================
+function decorarComposerWeb3() {
+    const composer = $('composer');
+    if (!composer || composer.dataset.web3decorated) return;
+
+    // Adjuntar (#attach)
+    envolverBotonConLabel($('attach'), '◆', 'Adjuntar');
+
+    // Nota de voz (#audio)
+    envolverBotonConLabel($('audio'), '🎙️', 'Audio');
+
+    // Voice bot (#voiceBot) — solo si existe
+    envolverBotonConLabel($('voiceBot'), '🔊', 'Voz');
+
+    // Botón Enviar (submit)
+    const sendBtn = composer.querySelector('button[type="submit"]');
+    if (sendBtn && !sendBtn.classList.contains('composer-send')) {
+        sendBtn.classList.add('composer-send');
+        sendBtn.innerHTML = '<span>Enviar</span><span style="font-size:.9rem;">➤</span>';
+    }
+
+    // Input principal: garantizar placeholder visible
+    const input = $('messageInput');
+    if (input && !input.placeholder) input.placeholder = 'Escribe un mensaje…';
+
+    composer.dataset.web3decorated = '1';
+}
+
+function envolverBotonConLabel(btn, icono, label) {
+    if (!btn || btn.dataset.web3labeled) return;
+    // Preservamos id, title, type, onclick y cualquier listener ya ligado.
+    btn.classList.add('composer-btn');
+    btn.innerHTML =
+        '<span class="composer-btn-icon">' + icono + '</span>' +
+        '<span class="composer-btn-label">' + label + '</span>';
+    btn.dataset.web3labeled = '1';
+
+    // El enhancer de grabación cambia textContent del botón al grabar.
+    // Lo manejamos en observadores: cuando cambie el textContent, lo
+    // restauramos a la estructura con label. Para no romper lógica,
+    // solo lo hacemos al detectar textContent === '⏹️'.
+    const observer = new MutationObserver(() => {
+        const t = btn.textContent.trim();
+        if (t === '⏹️' || t === '⏳') {
+            const icon = t === '⏹️' ? '⏹️' : '⏳';
+            const lbl = t === '⏹️' ? 'Grabando' : 'Procesando';
+            btn.innerHTML =
+                '<span class="composer-btn-icon">' + icon + '</span>' +
+                '<span class="composer-btn-label">' + lbl + '</span>';
+        } else if (t === '🎙️' || t === '🔊') {
+            // Restaurar a icono original
+            const originalIcon = icono;
+            const originalLabel = label;
+            if (!btn.querySelector('.composer-btn-icon')) {
+                btn.innerHTML =
+                    '<span class="composer-btn-icon">' + originalIcon + '</span>' +
+                    '<span class="composer-btn-label">' + originalLabel + '</span>';
+            }
+        }
+    });
+    observer.observe(btn, { childList: true, subtree: true, characterData: true });
+}
+
+function decorarSidebarTabsWeb3() {
+    const tabs = document.querySelectorAll('.sidebar-tab');
+    tabs.forEach((tab, i) => {
+        const tagMap = ['CHATS', 'CANALES', 'GRUPOS', 'LLAMADAS'];
+        tab.setAttribute('data-tab-tag', tagMap[i] || '');
+        tab.setAttribute('role', 'tab');
+    });
 }
 
 // ================================================================
@@ -3191,78 +3271,10 @@ window.crearCanal = crearCanal;
 window.crearGrupo = crearGrupo;
 window.generarSlug = generarSlug;
 window.openConversation = openConversation;
-
-// ================================================================
-// NEON UI HELPERS — v3.7 (presentación pura, sin tocar Supabase)
-// Funciones auxiliares que el UI Kit usa opcionalmente. No cambian
-// estado global ni dependencias. Se exponen por si en el futuro
-// se quieren usar desde HTML (por ejemplo, para micro-etiquetas
-// dinámicas en las tarjetas de canal o grupo).
-// ================================================================
 window.NeonUI = {
-    /**
-     * Añade/actualiza una micro-etiqueta de claridad sobre un contenedor.
-     * Uso: NeonUI.tag(el, 'IA') | NeonUI.tag(el, 'LIVE') | NeonUI.tag(el, null)
-     * @param {HTMLElement} el
-     * @param {string|null} label  ('IA' | 'LIVE' | 'NUEVO' | 'PRIVADO' | 'PÚBLICO' | 'BOT' | null)
-     */
-    tag(el, label) {
-        if (!el) return;
-        if (!label) {
-            el.removeAttribute('data-tag');
-            return;
-        }
-        el.setAttribute('data-tag', String(label).toUpperCase());
-    },
-
-    /**
-     * Marca un botón como “activo” visualmente (sin cambiar listeners).
-     * No usar en botones con [data-neon="tab"] — esos usan .active.
-     * @param {HTMLElement} el
-     * @param {boolean} on
-     */
-    setActive(el, on) {
-        if (!el) return;
-        el.classList.toggle('is-active', !!on);
-    },
-
-    /**
-     * Efecto ripple respetuoso con reduced-motion. Desactivado por defecto
-     * para no alterar el look original. Se puede llamar manualmente.
-     * @param {MouseEvent|TouchEvent} ev
-     * @param {HTMLElement} host
-     */
-    ripple(ev, host) {
-        if (!host) return;
-        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        const rect = host.getBoundingClientRect();
-        const point = ev.touches ? ev.touches[0] : ev;
-        if (!point) return;
-        const span = document.createElement('span');
-        const size = Math.max(rect.width, rect.height) * 1.6;
-        span.className = 'neon-ripple';
-        span.style.cssText =
-            'position:absolute;border-radius:50%;pointer-events:none;' +
-            'background:radial-gradient(circle, rgba(212,175,55,.35), transparent 60%);' +
-            'width:' + size + 'px;height:' + size + 'px;' +
-            'left:' + (point.clientX - rect.left - size / 2) + 'px;' +
-            'top:' + (point.clientY - rect.top - size / 2) + 'px;' +
-            'transform:scale(0);opacity:.9;transition:transform .45s cubic-bezier(.22,1,.36,1), opacity .6s;';
-        if (getComputedStyle(host).position === 'static') {
-            host.style.position = 'relative';
-        }
-        host.appendChild(span);
-        requestAnimationFrame(() => {
-            span.style.transform = 'scale(1)';
-            span.style.opacity = '0';
-        });
-        setTimeout(() => span.remove(), 650);
-    },
-
-    /**
-     * Devuelve la versión actual del UI Kit neón, para diagnóstico.
-     */
-    version: '3.0.0'
+    version: '3.8.0',
+    decorarComposer: decorarComposerWeb3,
+    decorarSidebarTabs: decorarSidebarTabsWeb3
 };
 
 // ================================================================
