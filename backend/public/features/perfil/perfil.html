@@ -29,370 +29,68 @@
 <style>
     /* ================================================================
        PERFIL · MICROINTERACCIONES Y TRANSICIONES (v2)
-       Solo transform, brillo, color, sombra y opacidad.
-       No cambian dimensiones ni márgenes.
-       El carrusel 3D (.carrusel-3d-*) queda excluido a propósito.
        ================================================================ */
-
-    .btn,
-    .btn-estado,
-    .btn-conexion,
-    .accion-btn,
-    .tab-btn,
-    .btn-publicar,
-    .config-btn,
-    .rep-btn,
-    .pro-btn,
-    .internet-filter,
-    .nav-link,
-    .avatar-menu button {
+    .btn, .btn-estado, .btn-conexion, .accion-btn, .tab-btn, .btn-publicar, .config-btn, .rep-btn, .pro-btn, .internet-filter, .nav-link, .avatar-menu button {
         -webkit-tap-highlight-color: transparent;
-        transition:
-            transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1),
-            filter 160ms ease,
-            background-color 180ms ease,
-            border-color 180ms ease,
-            color 160ms ease,
-            box-shadow 200ms ease,
-            opacity 160ms ease;
+        transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 160ms ease, background-color 180ms ease, border-color 180ms ease, color 160ms ease, box-shadow 200ms ease, opacity 160ms ease;
     }
-
-    .btn:active,
-    .btn-estado:active,
-    .btn-conexion:active,
-    .accion-btn:active,
-    .tab-btn:active,
-    .btn-publicar:active,
-    .config-btn:active,
-    .rep-btn:active,
-    .pro-btn:active,
-    .internet-filter:active,
-    .avatar-menu button:active {
+    .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active, .avatar-menu button:active {
         transform: scale(0.97);
         filter: brightness(1.08);
     }
-
-    .nav-link:active {
-        opacity: 0.8;
-    }
-
-    /* Sin anillos de enfoque ni sombras de hover: evitan recuadros
-       alrededor de botones, pestañas y la mascota. */
-
-    /* Entrada suave de cada pestaña (solo opacidad: nunca oculta contenido) */
-    @keyframes perfilTabIn {
-        from { opacity: 0; }
-        to   { opacity: 1; }
-    }
-
-    .tab-content.active {
-        animation: perfilTabIn 240ms ease both;
-    }
-
+    .nav-link:active { opacity: 0.8; }
+    @keyframes perfilTabIn { from { opacity: 0; } to { opacity: 1; } }
+    .tab-content.active { animation: perfilTabIn 240ms ease both; }
     @media (prefers-reduced-motion: reduce) {
-        .btn,
-        .btn-estado,
-        .btn-conexion,
-        .accion-btn,
-        .tab-btn,
-        .btn-publicar,
-        .config-btn,
-        .rep-btn,
-        .pro-btn,
-        .internet-filter,
-        .nav-link,
-        .avatar-menu button,
-        .tab-content.active {
-            transition: none !important;
-            animation: none !important;
-        }
-
-        .btn:active,
-        .btn-estado:active,
-        .btn-conexion:active,
-        .accion-btn:active,
-        .tab-btn:active,
-        .btn-publicar:active,
-        .config-btn:active,
-        .rep-btn:active,
-        .pro-btn:active,
-        .internet-filter:active,
-        .avatar-menu button:active {
-            transform: none !important;
-        }
+        .btn, .btn-estado, .btn-conexion, .accion-btn, .tab-btn, .btn-publicar, .config-btn, .rep-btn, .pro-btn, .internet-filter, .nav-link, .avatar-menu button, .tab-content.active { transition: none !important; animation: none !important; }
+        .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active, .avatar-menu button:active { transform: none !important; }
     }
 
     /* Sección de wallet (Polygon) */
-    .wallet-section {
-        margin: 0 0 16px;
-        padding: 14px;
-        border-radius: 16px;
-        border: 2px solid var(--line-black);
-        background: rgba(0,0,0,0.35);
-    }
-    .wallet-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
-    .wallet-header h3 {
-        font-size: 0.9rem;
-        font-weight: 700;
-        color: var(--cyan, #00e5ff);
-    }
-    .wallet-estado {
-        font-size: 0.65rem;
-        padding: 3px 10px;
-        border-radius: 99px;
-        border: 1px solid var(--text-muted);
-        color: var(--text-muted);
-    }
-    .wallet-estado.conectada {
-        border-color: var(--success);
-        color: var(--success);
-    }
-    .wallet-direccion {
-        margin: 10px 0;
-        font-family: monospace;
-        font-size: 0.8rem;
-        color: var(--text-secondary);
-        word-break: break-all;
-    }
-    .wallet-acciones {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-    }
+    .wallet-section { margin: 0 0 16px; padding: 14px; border-radius: 16px; border: 2px solid var(--line-black); background: rgba(0,0,0,0.35); }
+    .wallet-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .wallet-header h3 { font-size: 0.9rem; font-weight: 700; color: var(--cyan, #00e5ff); }
+    .wallet-estado { font-size: 0.65rem; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--text-muted); color: var(--text-muted); }
+    .wallet-estado.conectada { border-color: var(--success); color: var(--success); }
+    .wallet-direccion { margin: 10px 0; font-family: monospace; font-size: 0.8rem; color: var(--text-secondary); word-break: break-all; }
+    .wallet-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
     .wallet-acciones .btn { flex: 1; justify-content: center; }
-    .wallet-visible {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 12px;
-        font-size: 0.75rem;
-        color: var(--text-secondary);
-    }
-    .wallet-hint {
-        margin-top: 8px;
-        font-size: 0.65rem;
-        color: var(--text-muted);
-    }
-
-    .wallet-switch {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        margin-top: 12px;
-        padding: 12px;
-        border-radius: 14px;
-        border: 1px solid var(--line-black);
-        background: rgba(0,0,0,0.25);
-        cursor: pointer;
-    }
-    .wallet-switch-texto strong {
-        display: block;
-        font-size: 0.8rem;
-        color: var(--text-primary);
-    }
-    .wallet-switch-texto small {
-        display: block;
-        margin-top: 3px;
-        font-size: 0.65rem;
-        color: var(--text-muted);
-        line-height: 1.4;
-    }
-    .wallet-switch input {
-        position: absolute;
-        opacity: 0;
-        width: 0;
-        height: 0;
-    }
-    .wallet-switch-slider {
-        position: relative;
-        flex-shrink: 0;
-        width: 52px;
-        height: 28px;
-        border-radius: 99px;
-        background: rgba(255,255,255,0.15);
-        transition: background 0.2s ease;
-    }
-    .wallet-switch-slider::after {
-        content: '';
-        position: absolute;
-        top: 3px;
-        left: 3px;
-        width: 22px;
-        height: 22px;
-        border-radius: 50%;
-        background: #fff;
-        transition: transform 0.2s ease;
-    }
-    .wallet-switch input:checked + .wallet-switch-slider {
-        background: linear-gradient(135deg, var(--cyan, #00e5ff), var(--purple, #a855f7));
-    }
-    .wallet-switch input:checked + .wallet-switch-slider::after {
-        transform: translateX(24px);
-    }
-    .wallet-switch input:disabled + .wallet-switch-slider {
-        opacity: 0.4;
-    }
+    .wallet-visible { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.75rem; color: var(--text-secondary); }
+    .wallet-hint { margin-top: 8px; font-size: 0.65rem; color: var(--text-muted); }
+    .wallet-switch { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 12px; border-radius: 14px; border: 1px solid var(--line-black); background: rgba(0,0,0,0.25); cursor: pointer; }
+    .wallet-switch-texto strong { display: block; font-size: 0.8rem; color: var(--text-primary); }
+    .wallet-switch-texto small { display: block; margin-top: 3px; font-size: 0.65rem; color: var(--text-muted); line-height: 1.4; }
+    .wallet-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .wallet-switch-slider { position: relative; flex-shrink: 0; width: 52px; height: 28px; border-radius: 99px; background: rgba(255,255,255,0.15); transition: background 0.2s ease; }
+    .wallet-switch-slider::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform 0.2s ease; }
+    .wallet-switch input:checked + .wallet-switch-slider { background: linear-gradient(135deg, var(--cyan, #00e5ff), var(--purple, #a855f7)); }
+    .wallet-switch input:checked + .wallet-switch-slider::after { transform: translateX(24px); }
+    .wallet-switch input:disabled + .wallet-switch-slider { opacity: 0.4; }
 </style>
 <style>
-    /* Respaldo: evita que una imagen de anuncio cubra toda la pantalla si el CSS del carrusel no carga */
-    .anuncios-imagen-contenedor img {
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        height: auto;
-        max-height: 260px;
-        object-fit: cover;
-        border-radius: 16px;
-    }
+    .anuncios-imagen-contenedor img { display: block; width: 100%; max-width: 100%; height: auto; max-height: 260px; object-fit: cover; border-radius: 16px; }
 </style>
 <style>
-    /* Respaldo del overlay "Módulos". Se mantiene en el HTML para que sus scripts no fallen,
-       pero el botón redondo de módulos ya no se muestra: lo reemplaza el botón de llamadas. */
-    .carrusel-fullscreen-overlay {
-        display: none;
-    }
-    .carrusel-fullscreen-overlay.is-open,
-    .carrusel-fullscreen-overlay.open,
-    .carrusel-fullscreen-overlay.active,
-    .carrusel-fullscreen-overlay.abierto,
-    .carrusel-fullscreen-overlay.visible {
-        display: flex;
-        flex-direction: column;
-        position: fixed;
-        inset: 0;
-        z-index: 9500;
-        background: rgba(5, 8, 15, 0.97);
-        color: var(--text-primary, #ffffff);
-        padding: 16px;
-        box-sizing: border-box;
-    }
-    #btnAbrirCarruselFullscreen {
-        display: none !important;
-    }
+    .carrusel-fullscreen-overlay { display: none; }
+    .carrusel-fullscreen-overlay.is-open, .carrusel-fullscreen-overlay.open, .carrusel-fullscreen-overlay.active, .carrusel-fullscreen-overlay.abierto, .carrusel-fullscreen-overlay.visible { display: flex; flex-direction: column; position: fixed; inset: 0; z-index: 9500; background: rgba(5, 8, 15, 0.97); color: var(--text-primary, #ffffff); padding: 16px; box-sizing: border-box; }
+    #btnAbrirCarruselFullscreen { display: none !important; }
 </style>
-
 <style>
     /* ================= BOTÓN FLOTANTE DE LLAMADAS (arrastrable) ================= */
-    #btnLlamarFlotante {
-        position: fixed;
-        left: calc(100vw - 72px);
-        top: calc(100vh - 150px);
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        border: 2px solid var(--cyan, #1de9b6);
-        background: rgba(5, 8, 15, 0.92);
-        color: var(--cyan, #1de9b6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 0 18px rgba(29, 233, 182, 0.35);
-        z-index: 9000;
-        cursor: grab;
-        touch-action: none;
-        user-select: none;
-        -webkit-user-select: none;
-        -webkit-tap-highlight-color: transparent;
-        padding: 0;
-    }
-    #btnLlamarFlotante.arrastrando {
-        cursor: grabbing;
-        transform: scale(1.06);
-        box-shadow: 0 0 26px rgba(29, 233, 182, 0.55);
-    }
-    #btnLlamarFlotante svg {
-        width: 26px;
-        height: 26px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-        pointer-events: none;
-    }
-
+    #btnLlamarFlotante { position: fixed; left: calc(100vw - 72px); top: calc(100vh - 150px); width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--cyan, #1de9b6); background: rgba(5, 8, 15, 0.92); color: var(--cyan, #1de9b6); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 18px rgba(29, 233, 182, 0.35); z-index: 9000; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; padding: 0; }
+    #btnLlamarFlotante.arrastrando { cursor: grabbing; transform: scale(1.06); box-shadow: 0 0 26px rgba(29, 233, 182, 0.55); }
+    #btnLlamarFlotante svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
     /* ================= PANEL DE LLAMADA ================= */
-    #panelLlamar {
-        position: fixed;
-        left: 50%;
-        bottom: 16px;
-        transform: translate(-50%, 140%);
-        width: min(92vw, 380px);
-        padding: 18px;
-        border-radius: 18px;
-        background: rgba(5, 8, 15, 0.97);
-        border: 1px solid var(--cyan, #1de9b6);
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-        z-index: 9100;
-        transition: transform 0.25s ease;
-        box-sizing: border-box;
-    }
-    #panelLlamar.abierto {
-        transform: translate(-50%, 0);
-    }
-    #panelLlamar .llamar-titulo {
-        font-family: Orbitron, monospace;
-        font-size: 0.85rem;
-        color: var(--cyan, #1de9b6);
-        margin-bottom: 4px;
-    }
-    #panelLlamar .llamar-sub {
-        font-size: 0.68rem;
-        color: var(--text-secondary, #9fb3c8);
-        margin-bottom: 12px;
-        line-height: 1.4;
-    }
-    #llamarNumero {
-        width: 100%;
-        padding: 10px 12px;
-        background: rgba(0, 0, 0, 0.4);
-        border: 1px solid var(--glass-border, #2a3a4a);
-        border-radius: 10px;
-        color: white;
-        outline: none;
-        font-size: 0.9rem;
-        font-family: 'Inter', sans-serif;
-        box-sizing: border-box;
-    }
-    #panelLlamar .llamar-acciones {
-        display: flex;
-        gap: 8px;
-        margin-top: 12px;
-    }
-    #panelLlamar .llamar-acciones button {
-        flex: 1;
-        text-align: center;
-        padding: 10px;
-        border-radius: 12px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        cursor: pointer;
-        box-sizing: border-box;
-    }
-    #btnHacerLlamada {
-        border: 1px solid var(--cyan, #1de9b6);
-        background: linear-gradient(135deg, rgba(29, 233, 182, 0.25), rgba(29, 233, 182, 0.08));
-        color: var(--cyan, #1de9b6);
-    }
-    #btnCerrarLlamar {
-        border: 1px solid var(--text-muted, #6b7d90);
-        background: transparent;
-        color: var(--text-muted, #6b7d90);
-    }
-    #llamarAviso {
-        margin-top: 8px;
-        font-size: 0.65rem;
-        color: var(--danger, #ff3366);
-        min-height: 14px;
-    }
+    #panelLlamar { position: fixed; left: 50%; bottom: 16px; transform: translate(-50%, 140%); width: min(92vw, 380px); padding: 18px; border-radius: 18px; background: rgba(5, 8, 15, 0.97); border: 1px solid var(--cyan, #1de9b6); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); z-index: 9100; transition: transform 0.25s ease; box-sizing: border-box; }
+    #panelLlamar.abierto { transform: translate(-50%, 0); }
+    #panelLlamar .llamar-titulo { font-family: Orbitron, monospace; font-size: 0.85rem; color: var(--cyan, #1de9b6); margin-bottom: 4px; }
+    #panelLlamar .llamar-sub { font-size: 0.68rem; color: var(--text-secondary, #9fb3c8); margin-bottom: 12px; line-height: 1.4; }
+    #llamarNumero { width: 100%; padding: 10px 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border, #2a3a4a); border-radius: 10px; color: white; outline: none; font-size: 0.9rem; font-family: 'Inter', sans-serif; box-sizing: border-box; }
+    #panelLlamar .llamar-acciones { display: flex; gap: 8px; margin-top: 12px; }
+    #panelLlamar .llamar-acciones button { flex: 1; text-align: center; padding: 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; box-sizing: border-box; }
+    #btnHacerLlamada { border: 1px solid var(--cyan, #1de9b6); background: linear-gradient(135deg, rgba(29, 233, 182, 0.25), rgba(29, 233, 182, 0.08)); color: var(--cyan, #1de9b6); }
+    #btnCerrarLlamar { border: 1px solid var(--text-muted, #6b7d90); background: transparent; color: var(--text-muted, #6b7d90); }
+    #llamarAviso { margin-top: 8px; font-size: 0.65rem; color: var(--danger, #ff3366); min-height: 14px; }
 </style>
 </head>
 <body>
@@ -443,8 +141,6 @@
 </nav>
 
 <!-- ============ CARRUSEL 3D HORIZONTAL ============ -->
-<!-- Sin tarjetas fijas: carrusel-3d.js genera todas las tarjetas.
-     Así no aparecen Muro/Perfil antes de que cargue el script. -->
 <div class="carrusel-3d-wrapper">
     <div class="carrusel-3d-track"></div>
 </div>
@@ -1180,16 +876,13 @@
     }
     window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
     window.addEventListener('error', function (event) {
-        // REVISAR: mensajes de debug interno, no traducibles (solo visibles con ?debug=1)
         mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
     });
     window.addEventListener('unhandledrejection', function (event) {
-        // REVISAR: mensaje de debug interno, no traducible
         mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
     });
     window.addEventListener('load', function () {
         if (typeof window.supabase === 'undefined') {
-            // REVISAR: mensaje de debug interno, no traducible
             mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
         }
     });
@@ -1277,13 +970,6 @@
 <script>
 /* ================================================================
    WALLET · INTEGRACIÓN CON EL PERFIL (v4)
-   - Espera a que Supabase y la sesión existan antes de leer.
-   - Vuelve a cargar al volver a la página (bfcache / historial),
-     al regresar a la pestaña y tras conectar o desconectar.
-   - Vigilante: si la sección se oculta o se queda en "Cargando…",
-     la vuelve a pintar.
-   - Usa perfil-wallet.js (conectarWallet, desconectarWallet).
-     La escucha de eventos la inicia perfil-init.js (una sola vez).
    ================================================================ */
 (function () {
     'use strict';
@@ -1410,8 +1096,6 @@
 
     window.refrescarWalletPerfil = refrescarWallet;
 
-    // Vigilante: cada 3 s, si la sección quedó oculta o atascada en
-    // "Cargando…", vuelve a consultar y pintar. Solo actúa con la pestaña visible.
     function vigilarWallet() {
         setInterval(function () {
             if (document.hidden) return;
@@ -1509,15 +1193,8 @@
             });
         }
 
-        // Evento que puede emitir perfil-wallet.js al cambiar la wallet
         window.addEventListener('wallet:actualizada', refrescarWallet);
-
-        // Volver a la página desde el historial o caché del navegador
-        window.addEventListener('pageshow', function () {
-            refrescarWallet();
-        });
-
-        // Al regresar a la pestaña o a la app
+        window.addEventListener('pageshow', function () { refrescarWallet(); });
         document.addEventListener('visibilitychange', function () {
             if (!document.hidden) refrescarWallet();
         });
@@ -1536,15 +1213,8 @@
 
 <!-- ============ LÓGICA DEL BOTÓN FLOTANTE DE LLAMADAS (arrastrable) ============ -->
 <script>
-/* ================================================================
-   BOTÓN FLOTANTE DE LLAMADAS
-   - Se arrastra con el dedo o el mouse a cualquier parte de la pantalla.
-   - Un toque sin mover abre el panel de llamada.
-   - Recuerda su posición en este navegador.
-   ================================================================ */
 (function () {
     'use strict';
-
     var CLAVE_POS = 'sariels_llamar_pos';
     var UMBRAL_TAP = 6;
     var MARGEN = 4;
