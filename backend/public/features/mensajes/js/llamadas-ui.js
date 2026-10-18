@@ -1,9 +1,13 @@
 // ============================================================
-// CSARIEL'S · LLAMADAS-UI · v1.3
-// Cambios v1.3:
-// - renderFilaHistorial rediseñada: avatar circular con badge
-//   de dirección superpuesto, badges neón delicadas, acciones
-//   circulares con SVG (llamar / bloquear / borrar).
+// CSARIEL'S · LLAMADAS-UI · v2.0
+// Cambios v2.0 (Auditoría Senior):
+// - CERO confirm() nativos: todo usa NeonModal.confirm
+// - Botón "call-back" del historial INICIA LA LLAMADA directamente
+//   (antes abría el chat por error). Usa window.startCallConUsuario
+//   expuesto por mensajes.js.
+// - Botón "block" del historial y #blockUser usan bloquearUsuario()
+//   con NeonModal.confirm (Cancelar cierra limpio, Aceptar bloquea).
+// - Eliminado código muerto (svgIcon arrow-in/arrow-out).
 // - NO se tocó: llamadaFetch, auth, historial logic, bloques,
 //   config, enhancer del overlay (v1.2).
 // ============================================================
@@ -33,6 +37,49 @@
         el.className = 'toast show ' + (tipo || '');
         clearTimeout(el.t);
         el.t = setTimeout(function () { el.classList.remove('show'); }, 3500);
+    }
+
+    // ============================================================
+    // NeonModal: obtener referencia segura
+    // (mensajes.js carga primero y lo expone en window.NeonModal)
+    // ============================================================
+    function obtenerNeonModal() {
+        if (window.NeonModal && typeof window.NeonModal.confirm === 'function') {
+            return window.NeonModal;
+        }
+        // Fallback ultra-defensivo por si el orden de carga cambiara:
+        // un modal nativo estilizado mínimo, NO usa confirm().
+        return {
+            confirm: function (opts) {
+                return new Promise(function (resolve) {
+                    var backdrop = document.createElement('div');
+                    backdrop.className = 'neon-modal-backdrop show';
+                    backdrop.setAttribute('role', 'dialog');
+                    backdrop.setAttribute('aria-modal', 'true');
+                    var card = document.createElement('div');
+                    card.className = 'neon-modal-card' + (opts.danger ? ' danger' : '');
+                    card.innerHTML =
+                        (opts.icon ? '<div class="neon-modal-icon">' + opts.icon + '</div>' : '') +
+                        (opts.title ? '<h3 class="neon-modal-title">' + esc(opts.title) + '</h3>' : '') +
+                        (opts.message ? '<p class="neon-modal-message">' + esc(opts.message) + '</p>' : '') +
+                        '<div class="neon-modal-actions">' +
+                            '<button type="button" class="neon-modal-btn cancel" data-r="c">' + esc(opts.cancelText || 'Cancelar') + '</button>' +
+                            '<button type="button" class="neon-modal-btn ' + (opts.danger ? 'danger' : 'confirm') + '" data-r="k">' + esc(opts.confirmText || 'Aceptar') + '</button>' +
+                        '</div>';
+                    backdrop.appendChild(card);
+                    document.body.appendChild(backdrop);
+                    function close(v) {
+                        if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+                        resolve(v);
+                    }
+                    card.querySelector('[data-r="c"]').addEventListener('click', function () { close(null); });
+                    card.querySelector('[data-r="k"]').addEventListener('click', function () { close(true); });
+                    backdrop.addEventListener('click', function (e) {
+                        if (e.target === backdrop) close(null);
+                    });
+                });
+            }
+        };
     }
 
     function conLimite(promesa, ms, codigo) {
@@ -74,7 +121,6 @@
 
     async function llamadaFetch(path, options) {
         options = options || {};
-
         var s = await tokenSesion();
         if (!s || !s.token) {
             var eSesion = new Error('no_autenticado');
@@ -181,13 +227,10 @@
             cont.querySelectorAll('[data-action="block"]').forEach(function (btn) {
                 btn.onclick = function () { bloquearUsuario(btn.dataset.userid, btn.dataset.nombre); };
             });
+            // FIX v2.0: el botón call-back INICIA LA LLAMADA directamente.
             cont.querySelectorAll('[data-action="call-back"]').forEach(function (btn) {
                 btn.onclick = function () {
-                    if (typeof window.openConversation === 'function') {
-                        window.openConversation(btn.dataset.userid);
-                    } else {
-                        toast('ℹ️ Abre el chat con ese contacto para llamarle', 'warning');
-                    }
+                    iniciarLlamadaDesdeHistorial(btn.dataset.userid, btn.dataset.nombre);
                 };
             });
         } catch (e) {
@@ -212,10 +255,6 @@
                 return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
             case 'trash':
                 return '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
-            case 'arrow-in':
-                return '↙';
-            case 'arrow-out':
-                return '↗';
             case 'close':
                 return '✕';
             case 'alert':
@@ -226,7 +265,6 @@
     }
 
     function renderFilaHistorial(h) {
-        // Dirección y estado
         var esEntrante = h.direccion !== 'saliente';
         var dirClass = esEntrante ? 'entrante' : 'saliente';
         var dirIcon = esEntrante ? '↙' : '↗';
@@ -262,7 +300,6 @@
                   d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        // Avatar
         var inicial = (h.contraparte_nombre || '?').charAt(0).toUpperCase();
         var avatarHTML = h.contraparte_avatar
             ? '<img src="' + esc(h.contraparte_avatar) + '" alt="">'
@@ -282,15 +319,61 @@
                 '</div>' +
             '</div>' +
             '<div class="llamada-acciones">' +
-                '<button type="button" class="call-back" data-action="call-back" data-userid="' + esc(h.contraparte_id) + '" title="Llamar de nuevo" aria-label="Llamar de nuevo">' + svgIcon('phone') + '</button>' +
+                '<button type="button" class="call-back" data-action="call-back" data-userid="' + esc(h.contraparte_id) + '" data-nombre="' + esc(h.contraparte_nombre || '') + '" title="Llamar de nuevo" aria-label="Llamar de nuevo">' + svgIcon('phone') + '</button>' +
                 '<button type="button" class="block" data-action="block" data-userid="' + esc(h.contraparte_id) + '" data-nombre="' + esc(h.contraparte_nombre) + '" title="Bloquear" aria-label="Bloquear">' + svgIcon('block') + '</button>' +
                 '<button type="button" class="danger" data-action="delete" data-id="' + esc(h.id) + '" title="Eliminar del historial" aria-label="Eliminar del historial">' + svgIcon('trash') + '</button>' +
             '</div>' +
         '</div>';
     }
 
+    // ============================================================
+    // INICIAR LLAMADA DESDE HISTORIAL (fix v2.0)
+    // ============================================================
+    async function iniciarLlamadaDesdeHistorial(userId, nombre) {
+        if (!userId) {
+            toast('⚠️ Usuario no disponible', 'error');
+            return;
+        }
+        if (!window.LivekitClient) {
+            toast('❌ Las llamadas no están disponibles en este dispositivo. Recarga la página.', 'error');
+            return;
+        }
+        if (!window.current || window.current.id !== userId) {
+            if (typeof window.openConversation === 'function') {
+                try {
+                    await window.openConversation(userId);
+                } catch (e) {
+                    console.warn('[Llamadas UI] No se pudo abrir la conversación previa:', e);
+                }
+            }
+        }
+        if (typeof window.startCall !== 'function') {
+            toast('❌ El módulo de llamadas no está listo. Recarga la página.', 'error');
+            return;
+        }
+        try {
+            await window.startCall('video');
+        } catch (e) {
+            console.error('[Llamadas UI] Error iniciando llamada desde historial:', e);
+            toast('❌ No se pudo iniciar la llamada: ' + (e.message || 'error'), 'error');
+        }
+    }
+
+    // ============================================================
+    // BORRAR / BLOQUEAR — con NeonModal (CERO confirm nativos)
+    // ============================================================
     async function borrarLlamada(id) {
-        if (!confirm('¿Eliminar esta llamada del historial?')) return;
+        if (!id) return;
+        var modal = obtenerNeonModal();
+        var confirmado = await modal.confirm({
+            title: 'Eliminar llamada',
+            message: '¿Eliminar esta llamada del historial?\n\nEsta acción no se puede deshacer.',
+            icon: '🗑',
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+        if (!confirmado) return;
         try {
             await llamadaFetch('/api/llamadas/historial/' + encodeURIComponent(id), { method: 'DELETE' });
             toast('✅ Llamada eliminada del historial', 'success');
@@ -302,7 +385,16 @@
     }
 
     async function borrarTodoHistorial() {
-        if (!confirm('¿Borrar TODO el historial de llamadas? Esta acción no se puede deshacer.')) return;
+        var modal = obtenerNeonModal();
+        var confirmado = await modal.confirm({
+            title: 'Borrar TODO el historial',
+            message: '¿Borrar TODO el historial de llamadas?\n\nEsta acción no se puede deshacer.',
+            icon: '🗑',
+            confirmText: 'Borrar todo',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+        if (!confirmado) return;
         try {
             var d = await llamadaFetch('/api/llamadas/historial', { method: 'DELETE' });
             toast('✅ Historial borrado (' + ((d && d.eliminadas) || 0) + ' llamadas)', 'success');
@@ -318,7 +410,16 @@
     // ============================================================
     async function bloquearUsuario(userId, nombre) {
         if (!userId) return;
-        if (!confirm('¿Bloquear a ' + (nombre || 'este usuario') + '? No podrá llamarte ni tú a él.')) return;
+        var modal = obtenerNeonModal();
+        var confirmado = await modal.confirm({
+            title: 'Bloquear usuario',
+            message: '¿Bloquear a ' + (nombre || 'este usuario') + '?\n\nNo podrá llamarte ni tú a él.',
+            icon: '⛔',
+            confirmText: 'Bloquear',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+        if (!confirmado) return;
         try {
             await llamadaFetch('/api/llamadas/bloqueos', {
                 method: 'POST',
@@ -339,7 +440,15 @@
 
     async function desbloquearUsuario(userId) {
         if (!userId) return;
-        if (!confirm('¿Desbloquear a este usuario? Podrá volver a llamarte.')) return;
+        var modal = obtenerNeonModal();
+        var confirmado = await modal.confirm({
+            title: 'Desbloquear usuario',
+            message: '¿Desbloquear a este usuario?\n\nPodrá volver a llamarte.',
+            icon: '✓',
+            confirmText: 'Desbloquear',
+            cancelText: 'Cancelar'
+        });
+        if (!confirmado) return;
         try {
             await llamadaFetch('/api/llamadas/bloqueos/' + encodeURIComponent(userId), { method: 'DELETE' });
             toast('✅ Usuario desbloqueado', 'success');
@@ -494,6 +603,7 @@
         var btnBorrarTodo = $('btnBorrarTodoHistorial');
         if (btnBorrarTodo) btnBorrarTodo.onclick = borrarTodoHistorial;
 
+        // FIX v2.0: bloquearUsuario usa NeonModal, no confirm()
         var btnBlock = $('blockUser');
         if (btnBlock) {
             btnBlock.onclick = function () {
@@ -712,7 +822,8 @@
     window.abrirModalConfig = abrirModalConfig;
     window.abrirModalBloqueados = abrirModalBloqueados;
     window.LlamadasUI = {
-        version: '1.3.0',
-        iniciarEnhancerOverlayLlamada: iniciarEnhancerOverlayLlamada
+        version: '2.0.0',
+        iniciarEnhancerOverlayLlamada: iniciarEnhancerOverlayLlamada,
+        iniciarLlamadaDesdeHistorial: iniciarLlamadaDesdeHistorial
     };
 })();
