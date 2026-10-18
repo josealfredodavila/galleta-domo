@@ -1,235 +1,96 @@
-
 /* ================================================================
-   CSARIEL'S · MARQUINHOS PET CSS v7.0
-   "TALAVERA GALACTIC · PREMIUM EDITION"
-
-   Mejoras:
-   - Identidad visual azul talavera, oro y cian.
-   - Contenedor flotante aislado.
-   - Articulaciones y pivotes originales conservados.
-   - Animaciones de flotación, escucha y pensamiento.
-   - Parpadeo compatible con los identificadores existentes.
-   - Burbuja de subtítulos mejorada.
-   - Modal de términos premium y adaptable.
-   - Tema oscuro, tema claro y preferencias de movimiento.
-   - Mejoras de accesibilidad y dispositivos táctiles.
-
-   IMPORTANTE:
-   Este archivo estiliza la interfaz. La lógica de voz, IA,
-   términos, movimiento y persistencia depende de tu JavaScript.
+   MARQUINHOS · PET · CSS v6.9 "GALACTIC PRO"
+   - Brazos articulados: antebrazo gira en el codo, dedos con su propio pivote
+   - Eliminada la burbuja de 3 puntos
+   - Pivotes correctos en manos/piernas (ya no se sueltan)
+   - Ojos parpadean con transform (scaleY)
+   - Burbuja de subtítulos sube para no tapar la antena
+   - Quitado el bloque .mq-pet duplicado (lo cubre #marquinhos-pet)
    ================================================================ */
-
-/* ------------------------------------------------
-   1. IDENTIDAD VISUAL
------------------------------------------------- */
 
 #marquinhos-pet {
     --mq-pet-ancho: 90px;
     --mq-pet-alto: 130px;
-
-    --mq-azul: #1565C0;
-    --mq-azul-profundo: #07182E;
-    --mq-azul-noche: #030914;
-    --mq-cian: #27E7FF;
-    --mq-oro: #D4AF37;
-    --mq-oro-claro: #FFE7A0;
-    --mq-blanco: #F5F9FF;
-    --mq-verde: #00E6A0;
-    --mq-rojo: #FF5277;
-
-    --mq-borde: rgba(39, 231, 255, 0.30);
-    --mq-resplandor: rgba(21, 101, 192, 0.35);
-
-    isolation: isolate;
 }
-
-/* ------------------------------------------------
-   2. MASCOTA FLOTANTE
------------------------------------------------- */
 
 .mq-pet-avatar {
     position: absolute;
-    bottom: 0;
-    right: 0;
-
+    bottom: 0; right: 0;
     width: var(--mq-pet-ancho, 90px);
     height: var(--mq-pet-alto, 130px);
-
     cursor: grab;
-    filter:
-        drop-shadow(0 6px 12px rgba(0, 0, 0, 0.28))
-        drop-shadow(0 4px 20px rgba(21, 101, 192, 0.38));
-
+    filter: drop-shadow(0 6px 20px rgba(124, 77, 255, 0.5));
     animation: mq-float 4s ease-in-out infinite;
-
     touch-action: none;
     -webkit-tap-highlight-color: transparent;
-
-    transform-origin: center center;
-    backface-visibility: hidden;
-}
-
-.mq-pet-avatar:active {
-    cursor: grabbing;
 }
 
 .mq-pet.mq-dragging .mq-pet-avatar {
     animation: none;
     cursor: grabbing;
-    transform: scale(1.045);
-    filter:
-        drop-shadow(0 8px 18px rgba(0, 0, 0, 0.35))
-        drop-shadow(0 0 20px rgba(39, 231, 255, 0.50));
+    transform: scale(1.05);
 }
+
+.mq-pet-avatar:active { cursor: grabbing; }
 
 .mq-pet-svg {
+    width: 100%; height: 100%;
     display: block;
-
-    width: 100%;
-    height: 100%;
-
-    overflow: visible;
     pointer-events: none;
-
     transform-origin: center center;
-    backface-visibility: hidden;
+    overflow: visible;
 }
-
-/* ------------------------------------------------
-   3. ANIMACIÓN GENERAL
------------------------------------------------- */
 
 @keyframes mq-float {
-    0%, 100% {
-        transform: translateY(0);
-    }
-
-    50% {
-        transform: translateY(-4px);
-    }
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
 }
-
-/* El cuerpo conserva el pivote original. */
 
 #mq-cuerpo {
     transform-origin: 100px 200px;
     will-change: transform;
 }
 
-/* ------------------------------------------------
-   4. ARTICULACIONES
-   Se mantienen los pivotes originales.
------------------------------------------------- */
-
-.mq-brazo,
-.mq-antebrazo,
-.mq-mano,
-.mq-dedo,
-.mq-pierna {
+/* ✅ v6.8: cada parte gira sobre SU articulación.
+   Antes todas giraban sobre el centro del dibujo y las manos "se caían". */
+.mq-brazo, .mq-antebrazo, .mq-mano, .mq-dedo, .mq-pierna {
     will-change: transform;
-
-    transition:
-        transform 0.4s cubic-bezier(0.34, 1.45, 0.64, 1);
+    transition: transform 0.4s cubic-bezier(0.34, 1.45, 0.64, 1);
 }
 
-#mq-brazo-izq {
-    transform-origin: 60px 180px;
-}
-
-#mq-brazo-der {
-    transform-origin: 140px 180px;
-}
-
-#mq-antebrazo-izq {
-    transform-origin: 30px 205px;
-}
-
-#mq-antebrazo-der {
-    transform-origin: 170px 205px;
-}
-
-#mq-mano-izq {
-    transform-origin: 18px 228px;
-}
-
-#mq-mano-der {
-    transform-origin: 182px 228px;
-}
-
-#mq-pierna-izq {
-    transform-origin: 82px 250px;
-}
-
-#mq-pierna-der {
-    transform-origin: 118px 250px;
-}
-
-/* Cabeza */
+#mq-brazo-izq  { transform-origin: 60px 180px; }
+#mq-brazo-der  { transform-origin: 140px 180px; }
+#mq-antebrazo-izq { transform-origin: 30px 205px; }
+#mq-antebrazo-der { transform-origin: 170px 205px; }
+#mq-mano-izq   { transform-origin: 18px 228px; }
+#mq-mano-der   { transform-origin: 182px 228px; }
+#mq-pierna-izq { transform-origin: 82px 250px; }
+#mq-pierna-der { transform-origin: 118px 250px; }
 
 #mq-cabeza-grupo {
     transform-origin: 100px 160px;
     will-change: transform;
-
-    transition:
-        transform 0.5s cubic-bezier(0.34, 1.45, 0.64, 1);
+    transition: transform 0.5s cubic-bezier(0.34, 1.45, 0.64, 1);
 }
 
-/* ------------------------------------------------
-   5. BURBUJA DE SUBTÍTULOS
------------------------------------------------- */
-
+/* BURBUJA DE SUBTÍTULOS (arriba de la antena) */
 .mq-pet-bubble {
     position: absolute;
-
+    bottom: calc(100% + 14px);
     right: 0;
-    bottom: calc(100% + 17px);
-
-    min-width: 60px;
-    max-width: 230px;
-
-    padding: 9px 14px;
-
-    border: 1px solid rgba(21, 101, 192, 0.20);
-    border-radius: 15px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(255, 255, 255, 0.99),
-            rgba(238, 247, 255, 0.98)
-        );
-
-    color: #0D315E;
-
-    font-family:
-        'Space Grotesk',
-        'Inter',
-        system-ui,
-        sans-serif;
-
-    font-size: 12px;
-    line-height: 1.5;
-    font-weight: 650;
-
-    box-shadow:
-        0 12px 30px rgba(0, 0, 0, 0.18),
-        0 0 0 1px rgba(39, 231, 255, 0.15),
-        0 0 25px rgba(21, 101, 192, 0.12);
-
+    background: rgba(255, 255, 255, 0.98);
+    color: #0D47A1;
+    padding: 8px 14px;
+    border-radius: 14px;
+    font-size: 12px; line-height: 1.35; font-weight: 600;
+    max-width: 220px; min-width: 60px;
+    box-shadow: 0 8px 30px rgba(124, 77, 255, 0.3), 0 0 0 1px rgba(124, 77, 255, 0.2);
     opacity: 0;
-
-    transform: translateY(8px) scale(0.96);
+    transform: translateY(8px) scale(0.95);
     transform-origin: bottom right;
-
-    transition:
-        opacity 0.25s ease,
-        transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-
+    transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
     pointer-events: none;
-    overflow-wrap: anywhere;
-    white-space: normal;
-
-    z-index: 2;
+    word-wrap: break-word; white-space: normal; z-index: 1;
 }
 
 .mq-pet-bubble.mq-bubble-visible {
@@ -239,730 +100,215 @@
 
 .mq-pet-bubble::after {
     content: '';
-
     position: absolute;
-    right: 20px;
-    bottom: -8px;
-
-    width: 0;
-    height: 0;
-
+    bottom: -8px; right: 20px;
+    width: 0; height: 0;
     border-left: 8px solid transparent;
     border-right: 8px solid transparent;
-    border-top: 8px solid #F7FBFF;
-
-    filter: drop-shadow(0 2px 1px rgba(21, 101, 192, 0.10));
+    border-top: 8px solid rgba(255, 255, 255, 0.98);
 }
 
-/* En modo voz no se muestra la burbuja visual. */
-
-.mq-pet.mq-modo-voz .mq-pet-bubble {
-    display: none !important;
-}
-
-/* ------------------------------------------------
-   6. BOCA Y EXPRESIONES
------------------------------------------------- */
+.mq-pet.mq-modo-voz .mq-pet-bubble { display: none !important; }
 
 .mq-pet-boca {
+    transition: d 0.08s ease-out;
     stroke-linecap: round;
     stroke-linejoin: round;
-
-    transition:
-        d 0.08s ease-out,
-        opacity 0.15s ease,
-        stroke 0.2s ease;
 }
 
-/* Parpadeo sin alterar la geometría de los ojos. */
-
-#mq-ojo-izq,
-#mq-ojo-der {
-    will-change: transform;
-}
-
-#mq-ojo-izq {
-    transform-origin: 72px 108px;
-}
-
-#mq-ojo-der {
-    transform-origin: 128px 108px;
-}
-
-#mq-pupila-izq,
-#mq-pupila-der {
-    will-change: transform;
-}
-
-#mq-ceja-izq,
-#mq-ceja-der {
-    transition: d 0.3s ease-out;
-}
-
-/* ------------------------------------------------
-   7. ESTADO: ESCUCHANDO
------------------------------------------------- */
-
+/* ESTADOS */
 .mq-pet[data-estado="escuchando"] .mq-pet-avatar {
     animation: mq-pulse-listen 1.2s ease-in-out infinite;
 }
-
-.mq-pet[data-estado="escuchando"] {
-    --mq-resplandor: rgba(0, 229, 255, 0.65);
-}
-
-@keyframes mq-pulse-listen {
-    0%, 100% {
-        filter:
-            drop-shadow(0 5px 12px rgba(0, 0, 0, 0.25))
-            drop-shadow(0 0 12px rgba(0, 229, 255, 0.35));
-    }
-
-    50% {
-        filter:
-            drop-shadow(0 5px 12px rgba(0, 0, 0, 0.25))
-            drop-shadow(0 0 28px rgba(0, 229, 255, 0.90));
-    }
-}
-
-/* ------------------------------------------------
-   8. ESTADO: PENSANDO
------------------------------------------------- */
 
 .mq-pet[data-estado="pensando"] .mq-pet-avatar {
     animation: mq-pulse-think 1s ease-in-out infinite;
 }
 
-.mq-pet[data-estado="pensando"] {
-    --mq-resplandor: rgba(247, 201, 75, 0.65);
+@keyframes mq-pulse-listen {
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(0, 229, 255, 0.4)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(0, 229, 255, 0.95)); }
 }
 
 @keyframes mq-pulse-think {
-    0%, 100% {
-        filter:
-            drop-shadow(0 5px 12px rgba(0, 0, 0, 0.25))
-            drop-shadow(0 0 13px rgba(255, 215, 0, 0.35));
-    }
-
-    50% {
-        filter:
-            drop-shadow(0 5px 12px rgba(0, 0, 0, 0.25))
-            drop-shadow(0 0 28px rgba(255, 215, 0, 0.85));
-    }
+    0%, 100% { filter: drop-shadow(0 6px 16px rgba(255, 215, 0, 0.4)); }
+    50% { filter: drop-shadow(0 6px 28px rgba(255, 215, 0, 0.95)); }
 }
 
-/* ------------------------------------------------
-   9. ESTADO: HABLANDO
-   El JavaScript puede utilizar data-estado="hablando".
------------------------------------------------- */
+#mq-pupila-izq, #mq-pupila-der { will-change: transform; }
 
-.mq-pet[data-estado="hablando"] .mq-pet-avatar {
-    filter:
-        drop-shadow(0 6px 14px rgba(0, 0, 0, 0.30))
-        drop-shadow(0 0 23px rgba(0, 230, 160, 0.55));
+/* Los ojos parpadean con scaleY sobre su propio centro */
+#mq-ojo-izq { transform-origin: 72px 108px; }
+#mq-ojo-der { transform-origin: 128px 108px; }
+#mq-ojo-izq, #mq-ojo-der { will-change: transform; }
+
+#mq-ceja-izq, #mq-ceja-der { transition: d 0.3s ease-out; }
+
+/* MODAL */
+.mq-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 2147483646;
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: mq-fade-in 0.3s ease;
 }
 
-.mq-pet[data-estado="hablando"] .mq-pet-boca {
-    stroke: var(--mq-verde, #00E6A0);
+@keyframes mq-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+.mq-modal-content {
+    background: #0a0f1a;
+    border: 1px solid rgba(124, 77, 255, 0.4);
+    border-radius: 16px;
+    max-width: 480px; width: 100%; max-height: 85vh;
+    display: flex; flex-direction: column;
+    color: #f0f4f8;
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+    box-shadow: 0 20px 60px rgba(124, 77, 255, 0.3);
+    animation: mq-slide-up 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ------------------------------------------------
-   10. ESTADO: ERROR
------------------------------------------------- */
-
-.mq-pet[data-estado="error"] .mq-pet-avatar {
-    filter:
-        drop-shadow(0 6px 14px rgba(0, 0, 0, 0.30))
-        drop-shadow(0 0 20px rgba(255, 82, 119, 0.55));
+@keyframes mq-slide-up {
+    from { transform: translateY(30px) scale(0.95); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
 }
 
-/* ------------------------------------------------
-   11. CONTENEDOR GLOBAL AISLADO
-   Única definición del contenedor.
------------------------------------------------- */
+.mq-modal-content h2 {
+    color: #7C4DFF; font-size: 1.1rem; margin: 0;
+    padding: 20px 24px 12px;
+    border-bottom: 1px solid rgba(124, 77, 255, 0.2);
+}
 
+.mq-modal-body {
+    padding: 20px 24px;
+    overflow-y: auto;
+    font-size: 0.88rem; line-height: 1.55;
+    color: #c0d8e8;
+}
+
+.mq-modal-body p { margin: 0 0 12px; }
+.mq-modal-body ul { padding-left: 20px; margin: 8px 0 16px; }
+.mq-modal-body li { margin-bottom: 6px; }
+.mq-modal-body strong { color: #f0f4f8; }
+.mq-modal-body a { color: #7C4DFF; }
+
+.mq-modal-actions {
+    padding: 16px 24px 20px;
+    display: flex; gap: 10px;
+    border-top: 1px solid rgba(124, 77, 255, 0.2);
+}
+
+.mq-btn-aceptar, .mq-btn-rechazar {
+    flex: 1; padding: 12px 16px;
+    border-radius: 99px; border: 0;
+    font-weight: 700; font-size: 0.85rem;
+    cursor: pointer; font-family: inherit;
+    transition: transform 0.15s ease;
+}
+
+.mq-btn-aceptar {
+    background: linear-gradient(135deg, #7C4DFF, #00E5FF);
+    color: #ffffff;
+}
+
+.mq-btn-rechazar {
+    background: transparent;
+    border: 1px solid rgba(138, 168, 184, 0.4);
+    color: #8aa8b8;
+}
+
+.mq-btn-aceptar:hover, .mq-btn-rechazar:hover { transform: scale(1.03); }
+
+/* AISLAMIENTO (única definición del contenedor) */
 #marquinhos-pet {
     all: initial;
-
     position: fixed !important;
-
-    right: 16px !important;
     bottom: 16px !important;
-
+    right: 16px !important;
     z-index: 2147483647 !important;
-
     width: var(--mq-pet-ancho, 90px) !important;
     height: var(--mq-pet-alto, 130px) !important;
-
-    display: block !important;
-
+    pointer-events: auto !important;
     opacity: 1 !important;
     visibility: visible !important;
-
-    pointer-events: auto !important;
-
+    display: block !important;
     user-select: none !important;
     -webkit-user-select: none !important;
-    -webkit-tap-highlight-color: transparent !important;
-
     touch-action: none !important;
-
-    font-family:
-        'Space Grotesk',
-        'Inter',
-        system-ui,
-        sans-serif !important;
-
-    box-sizing: border-box !important;
-
-    isolation: isolate !important;
-
-    transition:
-        width 0.2s ease,
-        height 0.2s ease !important;
-}
-
-#marquinhos-pet *,
-#marquinhos-pet *::before,
-#marquinhos-pet *::after {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif !important;
+    -webkit-tap-highlight-color: transparent !important;
+    transition: width 0.2s ease, height 0.2s ease !important;
     box-sizing: border-box !important;
 }
 
-/* Avatar dentro del contenedor. */
+#marquinhos-pet * { box-sizing: border-box !important; }
 
 #marquinhos-pet .mq-pet-avatar {
     position: absolute !important;
-
-    right: 0 !important;
     bottom: 0 !important;
-
+    right: 0 !important;
     width: var(--mq-pet-ancho, 90px) !important;
     height: var(--mq-pet-alto, 130px) !important;
-
     cursor: grab !important;
-
     animation: mq-float 4s ease-in-out infinite !important;
-
     touch-action: none !important;
 }
 
 #marquinhos-pet.mq-dragging .mq-pet-avatar {
     animation: none !important;
     cursor: grabbing !important;
-    transform: scale(1.045) !important;
+    transform: scale(1.05) !important;
 }
 
 #marquinhos-pet .mq-pet-svg {
-    display: block !important;
-
     width: 100% !important;
     height: 100% !important;
-
+    display: block !important;
     pointer-events: none !important;
     transform-origin: center center !important;
-    overflow: visible !important;
 }
 
-/* ------------------------------------------------
-   12. MODAL: CAPA Y SUPERPOSICIÓN
------------------------------------------------- */
-
-.mq-modal-overlay {
-    position: fixed !important;
-    inset: 0 !important;
-
-    z-index: 2147483646 !important;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    padding: 20px;
-
-    background:
-        radial-gradient(
-            ellipse at 50% 0%,
-            rgba(21, 101, 192, 0.20),
-            transparent 55%
-        ),
-        rgba(1, 5, 14, 0.88);
-
-    -webkit-backdrop-filter: blur(12px);
-    backdrop-filter: blur(12px);
-
-    animation: mq-fade-in 0.25s ease both;
-}
-
-@keyframes mq-fade-in {
-    from {
-        opacity: 0;
-    }
-
-    to {
-        opacity: 1;
-    }
-}
-
-/* ------------------------------------------------
-   13. MODAL PREMIUM
------------------------------------------------- */
-
-.mq-modal-content {
-    position: relative;
-
-    width: 100%;
-    max-width: 480px;
-    max-height: 85vh;
-
-    display: flex;
-    flex-direction: column;
-
-    overflow: hidden;
-
-    border: 1px solid rgba(212, 175, 55, 0.42);
-    border-radius: 22px;
-
-    background:
-        radial-gradient(
-            ellipse at top right,
-            rgba(21, 101, 192, 0.17),
-            transparent 48%
-        ),
-        linear-gradient(150deg, #0B1729, #050B15 75%);
-
-    color: #F0F4F8;
-
-    font-family:
-        -apple-system,
-        BlinkMacSystemFont,
-        'Inter',
-        system-ui,
-        sans-serif;
-
-    box-shadow:
-        0 25px 80px rgba(0, 0, 0, 0.55),
-        0 0 0 1px rgba(39, 231, 255, 0.07),
-        0 0 45px rgba(21, 101, 192, 0.15);
-
-    animation: mq-slide-up 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-
-@keyframes mq-slide-up {
-    from {
-        transform: translateY(20px) scale(0.975);
-        opacity: 0;
-    }
-
-    to {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-    }
-}
-
-/* Encabezado */
-
-.mq-modal-content h2 {
-    position: relative;
-
-    margin: 0;
-    padding: 21px 24px 15px;
-
-    border-bottom: 1px solid rgba(212, 175, 55, 0.20);
-
-    color: #F2D578;
-
-    font-size: 1.1rem;
-    font-weight: 850;
-    line-height: 1.4;
-    letter-spacing: -0.025em;
-}
-
-/* Línea decorativa dorada. */
-
-.mq-modal-content h2::after {
-    content: '';
-
-    position: absolute;
-    bottom: -1px;
-    left: 24px;
-
-    width: 64px;
-    height: 2px;
-
-    background: linear-gradient(90deg, #D4AF37, #27E7FF);
-    border-radius: 99px;
-}
-
-/* ------------------------------------------------
-   14. CUERPO DEL MODAL
------------------------------------------------- */
-
-.mq-modal-body {
-    padding: 21px 24px;
-
-    overflow-y: auto;
-    overscroll-behavior: contain;
-
-    color: #C0D1E4;
-
-    font-size: 0.88rem;
-    line-height: 1.75;
-
-    scrollbar-width: thin;
-    scrollbar-color: #315477 #07111F;
-}
-
-.mq-modal-body p {
-    margin: 0 0 12px;
-}
-
-.mq-modal-body p:last-child {
-    margin-bottom: 0;
-}
-
-.mq-modal-body ul {
-    padding-left: 21px;
-    margin: 8px 0 16px;
-}
-
-.mq-modal-body li {
-    margin-bottom: 7px;
-}
-
-.mq-modal-body strong {
-    color: #F4F8FF;
-    font-weight: 800;
-}
-
-.mq-modal-body a {
-    color: #65DFFF;
-    text-decoration: underline;
-    text-decoration-color: rgba(101, 223, 255, 0.45);
-    text-underline-offset: 3px;
-}
-
-.mq-modal-body a:hover {
-    color: #FFE7A0;
-}
-
-/* ------------------------------------------------
-   15. ACCIONES DEL MODAL
------------------------------------------------- */
-
-.mq-modal-actions {
-    display: flex;
-    gap: 10px;
-
-    padding: 16px 24px 21px;
-
-    border-top: 1px solid rgba(212, 175, 55, 0.16);
-
-    background: rgba(1, 6, 15, 0.30);
-}
-
-.mq-btn-aceptar,
-.mq-btn-rechazar {
-    flex: 1;
-
-    min-height: 45px;
-
-    padding: 12px 16px;
-
-    border-radius: 99px;
-
-    font-family: inherit;
-    font-size: 0.85rem;
-    font-weight: 800;
-
-    cursor: pointer;
-
-    transition:
-        transform 0.18s ease,
-        box-shadow 0.18s ease,
-        border-color 0.18s ease,
-        background 0.18s ease;
-}
-
-.mq-btn-aceptar {
-    border: 1px solid rgba(255, 231, 160, 0.55);
-
-    background:
-        linear-gradient(120deg, #F6D875, #D4AF37 55%, #F8E7A1);
-
-    color: #101729;
-
-    box-shadow: 0 5px 20px rgba(212, 175, 55, 0.17);
-}
-
-.mq-btn-aceptar:hover {
-    transform: translateY(-2px);
-
-    box-shadow:
-        0 8px 25px rgba(212, 175, 55, 0.28),
-        0 0 18px rgba(39, 231, 255, 0.08);
-}
-
-.mq-btn-rechazar {
-    border: 1px solid rgba(138, 168, 184, 0.38);
-
-    background: rgba(255, 255, 255, 0.025);
-
-    color: #A9BDD1;
-}
-
-.mq-btn-rechazar:hover {
-    transform: translateY(-2px);
-
-    border-color: rgba(39, 231, 255, 0.50);
-    background: rgba(39, 231, 255, 0.06);
-    color: #F0FAFF;
-}
-
-.mq-btn-aceptar:active,
-.mq-btn-rechazar:active {
-    transform: scale(0.985);
-}
-
-.mq-btn-aceptar:focus-visible,
-.mq-btn-rechazar:focus-visible {
-    outline: 2px solid #27E7FF;
-    outline-offset: 3px;
-}
-
-/* ------------------------------------------------
-   16. RESPONSIVE
------------------------------------------------- */
-
+/* RESPONSIVE */
 @media (max-width: 520px) {
-    #marquinhos-pet {
-        bottom: 12px !important;
-        right: 12px !important;
-    }
-
     .mq-pet-bubble {
-        max-width: min(180px, calc(100vw - 35px));
-
-        padding: 7px 11px;
-
         font-size: 11px;
-        line-height: 1.45;
+        max-width: 180px;
+        padding: 6px 10px;
     }
-
-    .mq-modal-overlay {
-        padding:
-            max(12px, env(safe-area-inset-top))
-            12px
-            max(12px, env(safe-area-inset-bottom));
-    }
-
-    .mq-modal-content {
-        max-width: 100%;
-        max-height: 88vh;
-        max-height: 88dvh;
-
-        border-radius: 18px;
-    }
-
-    .mq-modal-content h2 {
-        padding: 17px 19px 13px;
-        font-size: 1rem;
-    }
-
-    .mq-modal-content h2::after {
-        left: 19px;
-    }
-
-    .mq-modal-body {
-        padding: 16px 19px;
-        font-size: 0.83rem;
-        line-height: 1.7;
-    }
-
-    .mq-modal-actions {
-        padding: 13px 19px 17px;
-        gap: 8px;
-    }
-
-    .mq-btn-aceptar,
-    .mq-btn-rechazar {
-        min-height: 43px;
-        padding: 10px 12px;
-        font-size: 0.8rem;
-    }
+    .mq-modal-content h2 { font-size: 1rem; padding: 16px 20px 10px; }
+    .mq-modal-body { padding: 16px 20px; font-size: 0.83rem; }
+    .mq-modal-actions { padding: 14px 20px 18px; }
+    .mq-btn-aceptar, .mq-btn-rechazar { font-size: 0.8rem; padding: 10px 12px; }
 }
 
-/* Pantallas muy estrechas. */
-
-@media (max-width: 350px) {
-    .mq-modal-overlay {
-        padding: 8px;
-    }
-
-    .mq-modal-content {
-        max-height: 92vh;
-        max-height: 92dvh;
-    }
-
-    .mq-modal-content h2 {
-        padding: 15px;
-    }
-
-    .mq-modal-content h2::after {
-        left: 15px;
-    }
-
-    .mq-modal-body {
-        padding: 14px 15px;
-    }
-
-    .mq-modal-actions {
-        padding: 12px 15px 15px;
-        flex-direction: column;
-    }
-
-    .mq-btn-aceptar,
-    .mq-btn-rechazar {
-        width: 100%;
-    }
-}
-
-/* Pantallas grandes: la mascota no crece automáticamente. */
-
-@media (min-width: 1200px) {
-    .mq-pet-bubble {
-        max-width: 250px;
-        font-size: 12px;
-    }
-}
-
-/* ------------------------------------------------
-   17. TEMA DÍA
-   Conserva los selectores utilizados por tu ecosistema.
------------------------------------------------- */
-
+/* TEMA DÍA */
 html.tema-dia .mq-pet-bubble,
 html[data-tema="dia"] .mq-pet-bubble {
-    border-color: rgba(21, 101, 192, 0.20);
-
     background: rgba(255, 255, 255, 0.99);
-
-    color: #0D315E;
-
-    box-shadow:
-        0 8px 28px rgba(18, 42, 80, 0.16),
-        0 0 0 1px rgba(21, 101, 192, 0.08);
-}
-
-html.tema-dia .mq-pet-bubble::after,
-html[data-tema="dia"] .mq-pet-bubble::after {
-    border-top-color: #FFFFFF;
-}
-
-html.tema-dia .mq-modal-overlay,
-html[data-tema="dia"] .mq-modal-overlay {
-    background: rgba(12, 27, 49, 0.60);
+    color: #0D47A1;
 }
 
 html.tema-dia .mq-modal-content,
 html[data-tema="dia"] .mq-modal-content {
-    background:
-        radial-gradient(
-            ellipse at top right,
-            rgba(21, 101, 192, 0.07),
-            transparent 50%
-        ),
-        #FFFFFF;
-
-    color: #10223D;
-
-    border-color: rgba(21, 101, 192, 0.25);
-
-    box-shadow:
-        0 25px 65px rgba(10, 30, 60, 0.25),
-        0 0 0 1px rgba(212, 175, 55, 0.12);
+    background: #ffffff;
+    color: #0a1a3e;
+    border-color: rgba(124, 77, 255, 0.4);
 }
 
 html.tema-dia .mq-modal-content h2,
 html[data-tema="dia"] .mq-modal-content h2 {
-    color: #1556A0;
-    border-bottom-color: rgba(21, 101, 192, 0.16);
-}
-
-html.tema-dia .mq-modal-content h2::after,
-html[data-tema="dia"] .mq-modal-content h2::after {
-    background: linear-gradient(90deg, #D4AF37, #1565C0);
+    color: #7C4DFF;
+    border-bottom-color: rgba(124, 77, 255, 0.3);
 }
 
 html.tema-dia .mq-modal-body,
-html[data-tema="dia"] .mq-modal-body {
-    color: #34465C;
-}
+html[data-tema="dia"] .mq-modal-body { color: #334; }
 
 html.tema-dia .mq-modal-body strong,
-html[data-tema="dia"] .mq-modal-body strong {
-    color: #10223D;
-}
-
-html.tema-dia .mq-modal-body a,
-html[data-tema="dia"] .mq-modal-body a {
-    color: #1556A0;
-}
-
-html.tema-dia .mq-modal-actions,
-html[data-tema="dia"] .mq-modal-actions {
-    background: rgba(21, 101, 192, 0.035);
-    border-top-color: rgba(21, 101, 192, 0.14);
-}
+html[data-tema="dia"] .mq-modal-body strong { color: #0a1a3e; }
 
 html.tema-dia .mq-btn-rechazar,
 html[data-tema="dia"] .mq-btn-rechazar {
-    border-color: rgba(10, 26, 62, 0.25);
-    color: #354861;
-    background: rgba(21, 101, 192, 0.025);
+    border-color: rgba(10, 26, 62, 0.3);
+    color: #556;
 }
-
-html.tema-dia .mq-btn-rechazar:hover,
-html[data-tema="dia"] .mq-btn-rechazar:hover {
-    border-color: #1565C0;
-    background: rgba(21, 101, 192, 0.06);
-    color: #0D315E;
-}
-
-/* ------------------------------------------------
-   18. ACCESIBILIDAD
------------------------------------------------- */
-
-/* Evita animaciones excesivas si el usuario lo solicita
-   desde las preferencias de su dispositivo. */
-
-@media (prefers-reduced-motion: reduce) {
-    .mq-pet-avatar,
-    #marquinhos-pet .mq-pet-avatar,
-    .mq-pet[data-estado="escuchando"] .mq-pet-avatar,
-    .mq-pet[data-estado="pensando"] .mq-pet-avatar {
-        animation: none !important;
-    }
-
-    .mq-modal-overlay,
-    .mq-modal-content {
-        animation: none !important;
-    }
-
-    .mq-pet-avatar,
-    .mq-pet-bubble,
-    .mq-brazo,
-    .mq-antebrazo,
-    .mq-mano,
-    .mq-dedo,
-    .mq-pierna,
-    #mq-cabeza-grupo,
-    .mq-pet-boca,
-    .mq-btn-aceptar,
-    .mq-btn-rechazar {
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* ------------------------------------------------
-   FIN · MARQUINHOS PET CSS v7.0
-   ================================================================ */
