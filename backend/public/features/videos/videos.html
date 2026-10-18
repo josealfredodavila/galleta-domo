@@ -22,13 +22,18 @@
             --line-black-soft: rgba(0, 0, 0, 0.85);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { overscroll-behavior-y: auto; }
+        
+        /* IMPORTANTE: Evitar scroll en el body para que solo el feed haga scroll */
+        html, body {
+            height: 100%;
+            overflow: hidden; 
+            overscroll-behavior-y: none;
+        }
+        
         body {
-            overscroll-behavior-y: auto;
             background: var(--space);
             color: var(--text-primary);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            min-height: 100vh;
             background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
             -webkit-tap-highlight-color: transparent;
         }
@@ -38,7 +43,7 @@
         .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
         @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
 
-        .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
+        .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 0; display: flex; flex-direction: column; height: 100vh; }
 
         .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border); background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100; }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -48,13 +53,14 @@
         .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
         .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: rgba(212,175,55,0.1); padding: 4px 12px; border-radius: 20px; }
         .token-badge { display: flex; align-items: center; gap: 6px; background: rgba(212,175,55,0.1); border: 1px solid rgba(212,175,55,0.15); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
-        .main-nav { display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto; }
+        .main-nav { display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 10px; overflow-x: auto; flex-shrink: 0; }
+        .main-nav::-webkit-scrollbar { display: none; }
         .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
         .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        .upload-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; }
+        .upload-section { background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); padding: 20px; margin-bottom: 20px; flex-shrink: 0; }
         .upload-section h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 12px; }
         .upload-section .form-group { margin-bottom: 12px; }
         .upload-section .form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; }
@@ -68,7 +74,7 @@
         .btn-subir-video:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
         .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
-        .processing-state { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 30px 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid var(--gold); border-radius: var(--radius-xl); margin-bottom: 20px; text-align: center; }
+        .processing-state { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 30px 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid var(--gold); border-radius: var(--radius-xl); margin-bottom: 20px; text-align: center; flex-shrink: 0; }
         .processing-state.visible { display: flex; }
         .processing-state .spinner { width: 60px; height: 60px; border: 4px solid rgba(212, 175, 55, 0.15); border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -78,7 +84,7 @@
         .processing-state .progress-bar-big .fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--gold-light)); border-radius: 10px; transition: width 0.5s ease; width: 0%; }
         .processing-state .progress-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
 
-        .marketing-ad-container { display: none; margin-bottom: 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); }
+        .marketing-ad-container { display: none; margin-bottom: 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid rgba(212, 175, 55, 0.25); border-radius: var(--radius-xl); overflow: hidden; backdrop-filter: blur(14px); flex-shrink: 0; }
         .marketing-ad-container.visible { display: block; animation: adFadeIn 0.5s ease; }
         @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
@@ -93,35 +99,41 @@
         .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; text-transform: uppercase; }
         @media (max-width: 480px) { .marketing-ad-body { flex-direction: column; } .marketing-ad-media { width: 100%; height: 140px; } }
 
+        /* ================================================================
+           CONTENEDOR DE VIDEOS TIPO TIKTOK (SCROLL SNAP)
+           ================================================================ */
         #videosContainer.videos-grid {
             display: flex;
             flex-direction: column;
             gap: 20px;
-            margin-top: 20px;
-            scroll-snap-type: y mandatory;
-            max-height: 85vh;
-            overflow-y: auto;
-            padding-bottom: 20px;
+            margin-top: 10px;
+            flex: 1; /* Ocupa el resto de la pantalla */
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory; /* Fuerza el ajuste al siguiente elemento */
             scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
-            overscroll-behavior-y: auto;
+            overscroll-behavior-y: contain; /* Evita que el scroll se salga del contenedor */
+            padding-bottom: 20px;
         }
-        #videosContainer.videos-grid::-webkit-scrollbar { width: 4px; }
-        #videosContainer.videos-grid::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
+        
+        /* Ocultar barra de scroll para que se vea como app nativa */
+        #videosContainer.videos-grid::-webkit-scrollbar { display: none; }
+        #videosContainer.videos-grid { -ms-overflow-style: none; scrollbar-width: none; }
 
         .video-card {
             position: relative;
             background: #000;
             border-radius: var(--radius-xl);
             overflow: hidden;
-            transition: border-radius 0.35s ease, min-height 0.35s ease, max-height 0.35s ease;
-            scroll-snap-align: center;
-            scroll-snap-stop: always;
-            min-height: 78vh;
+            transition: border-radius 0.35s ease;
+            scroll-snap-align: center; /* El video se centra al deslizar */
+            scroll-snap-stop: always; /* Evita que se salten videos con un solo desliz rápido */
+            min-height: 78vh; /* Ocupa casi toda la pantalla */
             max-height: 78vh;
             display: flex;
             flex-direction: column;
             box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            margin-bottom: 2vh; /* Separación mínima entre videos */
         }
         .video-card.visible { box-shadow: 0 10px 50px rgba(212, 175, 55, 0.2); }
 
@@ -142,7 +154,6 @@
             object-fit: contain;
             background: #000;
             display: block;
-            transition: object-fit 0.35s ease, transform 0.35s ease;
         }
         .video-card .thumbnail .play-btn {
             position: absolute;
@@ -479,7 +490,6 @@
             transition: width 0.15s linear;
         }
 
-        /* ELIMINADO EL BOTÓN ANTICUADO DE FULLSCREEN */
         .btn-fullscreen { display: none !important; }
 
         .video-card.pantalla-completa {
@@ -772,7 +782,7 @@
         .toast-siguiente { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: var(--gold); padding: 14px 28px; border-radius: 30px; font-family: 'Orbitron', monospace; font-size: 0.9rem; z-index: 100000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; border: 1px solid rgba(212, 175, 55, 0.5); }
         .toast-siguiente.visible { opacity: 1; }
 
-        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
+        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; flex-shrink: 0; padding-bottom: 20px; }
         .footer .brand { color: var(--gold); font-weight: 600; }
         .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
         .footer-links a { color: var(--text-muted); text-decoration: none; }
@@ -791,11 +801,11 @@
         html.tema-dia .toast, html[data-tema="dia"] .toast { background: rgba(255,255,255,0.98) !important; }
 
         @media (max-width: 768px) {
-            .app { padding: 12px 14px; }
-            .video-card { min-height: 72vh; max-height: 72vh; }
+            .app { padding: 12px 14px 0; }
+            .video-card { min-height: 75vh; max-height: 75vh; } /* Ajuste para móviles */
         }
         @media (max-width: 480px) {
-            .video-card { min-height: 68vh; max-height: 68vh; }
+            .video-card { min-height: 72vh; max-height: 72vh; }
             .video-card .btn-eliminar-card { width: 34px; height: 34px; }
             .sidebar-btn { width: 44px; height: 44px; }
             .sidebar-btn .ico-premium { width: 20px; height: 20px; }
@@ -946,7 +956,7 @@
     <script src="/features/videos/js/videos-publicar.js" defer></script>
     <script>
     // ================================================================
-    // VIDEOS · v15.8 — Fullscreen Pro + Doble Tap
+    // VIDEOS · v15.9 — Scroll Snap + Doble Tap
     // ================================================================
     
     // ================================================================
@@ -975,79 +985,41 @@
     // ================================================================
     var REACCIONES = ['❤️', '🔥', '🚀', '😂', '👍'];
     var REACCION_DEFAULT = '❤️';
-    var VISTAS_KEY = 'videos_vistas_sesion';
 
     // ================================================================
     // ESTADO GLOBAL
     // ================================================================
     var sessionUser = null;
     var videoActual = null;
-
     var videosPublicados = [];
     var likeCache = new Map();
     var reaccionesCache = new Map();
-
     var anuncioActualVideo = null;
     var adVistaTimerVideo = null;
     var adSessionIdVideo = null;
     var adCerradoVideo = false;
-
     var observerVideos = null;
     var observerCarga = null;
     var videoPausadoManualmente = null;
-
     var pollingVideoInterval = null;
     var videoEnProcesamiento = null;
-
     var videoIdComentariosActual = null;
     var longPressTimers = {};
-
-    var vistasContadas = {};
-
     var audioGlobalActivado = false;
 
     // ================================================================
     // HELPERS
     // ================================================================
-    function tr(clave, fallback) {
-        if (typeof window.tConFallback === 'function') return window.tConFallback(clave, fallback);
-        return fallback !== undefined ? fallback : clave;
-    }
-    function aplicarI18N(raiz) {
-        try { if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(raiz || document); } catch (e) {}
-    }
+    function tr(clave, fallback) { return (typeof window.tConFallback === 'function') ? window.tConFallback(clave, fallback) : (fallback !== undefined ? fallback : clave); }
+    function aplicarI18N(raiz) { try { if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(raiz || document); } catch (e) {} }
     function escapeHTML(texto) {
         if (texto === null || texto === undefined) return '';
-        return String(texto)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        return String(texto).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
-    function esURLValida(url) {
-        if (!url || typeof url !== 'string') return false;
-        try { var u = new URL(url); return u.protocol === 'http:' || u.protocol === 'https:'; }
-        catch (e) { return false; }
-    }
-    function safeAttr(url) {
-        if (!url || typeof url !== 'string') return '#';
-        if (!url.startsWith('https://')) return '#';
-        return url;
-    }
-    function formatearTiempo(seg) {
-        if (!seg || !isFinite(seg)) return '0:00';
-        var m = Math.floor(seg / 60);
-        var s = Math.floor(seg % 60);
-        if (s < 10) s = '0' + s;
-        return m + ':' + s;
-    }
-    function formatContador(n) {
-        if (!n || n === 0) return '0';
-        if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
-        if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K';
-        return String(n);
-    }
-    function vibrar(ms) {
-        try { if (navigator.vibrate) navigator.vibrate(ms || 15); } catch (e) {}
-    }
+    function safeAttr(url) { return (!url || typeof url !== 'string' || !url.startsWith('https://')) ? '#' : url; }
+    function formatearTiempo(seg) { if (!seg || !isFinite(seg)) return '0:00'; var m = Math.floor(seg / 60); var s = Math.floor(seg % 60); if (s < 10) s = '0' + s; return m + ':' + s; }
+    function formatContador(n) { if (!n || n === 0) return '0'; if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M'; if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K'; return String(n); }
+    function vibrar(ms) { try { if (navigator.vibrate) navigator.vibrate(ms || 15); } catch (e) {} }
     function showToast(msg, type, duration) {
         var t = document.getElementById('toast');
         if (!t) return;
@@ -1061,37 +1033,19 @@
         t._timeout = setTimeout(function() { t.classList.remove('show'); }, dur);
     }
     async function getSession() {
-        try {
-            if (!sbVideos) return null;
-            var r = await sbVideos.auth.getSession();
-            return r.data.session;
-        } catch (e) { return null; }
+        try { if (!sbVideos) return null; var r = await sbVideos.auth.getSession(); return r.data.session; } catch (e) { return null; }
     }
 
     // ================================================================
     // ICONOS SVG
     // ================================================================
-    function iconoBasuraSVG() {
-        return '<svg viewBox="0 0 24 24" class="ico-premium"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
-    }
-    function iconoComentarioSVG() {
-        return '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
-    }
-    function iconoCerrarSVG() {
-        return '<svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
-    }
-    function iconoVerificadoSVG() {
-        return '<svg viewBox="0 0 24 24" class="ico-premium"><polyline points="20 6 9 17 4 12"/></svg>';
-    }
-    function iconoAudioOnSVG() {
-        return '<svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
-    }
-    function iconoAudioOffSVG() {
-        return '<svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
-    }
-    function iconoPlaySVG() {
-        return '<svg viewBox="0 0 24 24" class="ico-premium" style="width:30px;height:30px;fill:#D4AF37;stroke:#D4AF37;margin-left:4px;"><polygon points="6 4 20 12 6 20 6 4"/></svg>';
-    }
+    function iconoBasuraSVG() { return '<svg viewBox="0 0 24 24" class="ico-premium"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>'; }
+    function iconoComentarioSVG() { return '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'; }
+    function iconoCerrarSVG() { return '<svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'; }
+    function iconoVerificadoSVG() { return '<svg viewBox="0 0 24 24" class="ico-premium"><polyline points="20 6 9 17 4 12"/></svg>'; }
+    function iconoAudioOnSVG() { return '<svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>'; }
+    function iconoAudioOffSVG() { return '<svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>'; }
+    function iconoPlaySVG() { return '<svg viewBox="0 0 24 24" class="ico-premium" style="width:30px;height:30px;fill:#D4AF37;stroke:#D4AF37;margin-left:4px;"><polygon points="6 4 20 12 6 20 6 4"/></svg>'; }
     function iconoReaccionSVG(tipo) {
         var iconos = {
             '❤️': '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
@@ -1103,16 +1057,7 @@
         return iconos[tipo] || iconos['❤️'];
     }
     function getIconoCompartirSVG() {
-        return '<svg class="icono-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">' +
-            '<circle cx="18" cy="5" r="2.5"/>' +
-            '<circle cx="6" cy="12" r="2.5"/>' +
-            '<circle cx="18" cy="19" r="2.5"/>' +
-            '<path d="M8.2 10.8 L15.8 6.2"/>' +
-            '<path d="M8.2 13.2 L15.8 17.8"/>' +
-            '</svg>';
-    }
-    function getIconoFullscreenSVG() {
-        return '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+        return '<svg class="icono-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor"><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8 L15.8 6.2"/><path d="M8.2 13.2 L15.8 17.8"/></svg>';
     }
 
     // ================================================================
@@ -1125,16 +1070,11 @@
             if (disparado) return;
             disparado = true;
             audioGlobalActivado = true;
-            document.querySelectorAll('.video-card video').forEach(function(v) {
-                v.muted = false;
-                v.volume = 1;
-                v.removeAttribute('muted');
-            });
+            document.querySelectorAll('.video-card video').forEach(function(v) { v.muted = false; v.volume = 1; v.removeAttribute('muted'); });
             var btn = document.getElementById('btnAudioGlobal');
             if (btn) {
                 btn.classList.add('activo');
-                var txt = btn.querySelector('.txt');
-                var ico = btn.querySelector('.ico');
+                var txt = btn.querySelector('.txt'); var ico = btn.querySelector('.ico');
                 if (txt) txt.textContent = 'Sonido activo';
                 if (ico) ico.innerHTML = iconoAudioOnSVG();
                 setTimeout(function() { btn.classList.remove('visible'); }, 2000);
@@ -1144,28 +1084,18 @@
         eventos.forEach(function(ev) { document.addEventListener(ev, onGesto, { capture: true, passive: true }); });
     })();
 
-    function mostrarBotonAudioGlobal() {
-        if (audioGlobalActivado) return;
-        var btn = document.getElementById('btnAudioGlobal');
-        if (btn) btn.classList.add('visible');
-    }
-
+    function mostrarBotonAudioGlobal() { if (!audioGlobalActivado) { var btn = document.getElementById('btnAudioGlobal'); if (btn) btn.classList.add('visible'); } }
     function activarAudioGlobal() {
         audioGlobalActivado = true;
         document.querySelectorAll('.video-card video').forEach(function(v) {
-            v.muted = false;
-            v.volume = 1;
-            v.removeAttribute('muted');
+            v.muted = false; v.volume = 1; v.removeAttribute('muted');
             var card = v.closest('.video-card');
-            if (card && card.classList.contains('visible')) {
-                v.play().catch(function() {});
-            }
+            if (card && card.classList.contains('visible')) v.play().catch(function() {});
         });
         var btn = document.getElementById('btnAudioGlobal');
         if (btn) {
             btn.classList.add('activo');
-            var txt = btn.querySelector('.txt');
-            var ico = btn.querySelector('.ico');
+            var txt = btn.querySelector('.txt'); var ico = btn.querySelector('.ico');
             if (txt) txt.textContent = 'Sonido activo';
             if (ico) ico.innerHTML = iconoAudioOnSVG();
             setTimeout(function() { btn.classList.remove('visible'); }, 2000);
@@ -1175,105 +1105,55 @@
 
     function reproducirVideoConSonido(video) {
         if (!video) return;
-        if (!video.getAttribute('src') && video.dataset.src) {
-            video.src = video.dataset.src;
-            video.load();
-        }
-        video.muted = false;
-        video.volume = 1;
-        video.removeAttribute('muted');
+        if (!video.getAttribute('src') && video.dataset.src) { video.src = video.dataset.src; video.load(); }
+        video.muted = false; video.volume = 1; video.removeAttribute('muted');
         var promesa = video.play();
         if (promesa && typeof promesa.then === 'function') {
             promesa.catch(function(err) {
                 if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
-                    video.muted = true;
-                    video.play().catch(function() {});
-                    mostrarBotonAudioGlobal();
+                    video.muted = true; video.play().catch(function() {}); mostrarBotonAudioGlobal();
                 }
             });
         }
     }
 
-    // ================================================================
-    // INCREMENTAR VISTA
-    // ================================================================
     async function incrementarVista(videoId) {
         if (!videoId) return;
-        var id = String(videoId);
-        if (vistasContadas[id]) return;
-        vistasContadas[id] = true;
-        var vistasInfo = document.querySelector('.video-card[data-video-id="' + id + '"] .vistas-info');
-        if (vistasInfo) {
-            var texto = vistasInfo.textContent || '';
-            var num = parseInt(texto.replace(/[^\d]/g, ''), 10) || 0;
-            vistasInfo.textContent = '◈ ' + formatContador(num + 1) + ' vistas';
-        }
-        try {
-            if (!sbVideos) return;
-            await sbVideos.rpc('incrementar_reproducciones', { video_id: id });
-        } catch (e) {}
+        try { if (!sbVideos) return; await sbVideos.rpc('incrementar_reproducciones', { video_id: String(videoId) }); } catch (e) {}
     }
 
-    // ================================================================
-    // USUARIO ACTUAL
-    // ================================================================
     async function cargarUsuarioActual() {
         try {
-            var session = await getSession();
-            if (!session) { sessionUser = null; return null; }
+            var session = await getSession(); if (!session) { sessionUser = null; return null; }
             sessionUser = session.user;
             var result = await sbVideos.rpc('mi_perfil_privado');
-            if (result.error) throw result.error;
-            var datos = result.data && result.data[0];
-            if (datos) {
+            if (!result.error && result.data && result.data[0]) {
                 var badgeCant = document.getElementById('tokenBadgeCantidad');
-                if (badgeCant) badgeCant.textContent = datos.tokens || 0;
+                if (badgeCant) badgeCant.textContent = result.data[0].tokens || 0;
             }
-            return datos || null;
+            return result.data ? result.data[0] : null;
         } catch (e) { return null; }
     }
 
-    // ================================================================
-    // CARGAR VIDEOS
-    // ================================================================
     async function cargarVideos() {
         var container = document.getElementById('videosContainer');
         try {
             if (!sbVideos) throw new Error('Cliente Supabase no disponible');
-            var result = await sbVideos
-                .from('videos')
-                .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, sonido_id, sonido_nombre, ubicacion_nombre, usuarios:usuario_id (id, nombre, handle, avatar_url)')
-                .eq('estado', 'publicado')
-                .eq('es_borrador', false)
-                .order('created_at', { ascending: false })
-                .limit(20);
-
-            var data = result.error ? (await sbVideos.from('videos').select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at').eq('estado', 'publicado').order('created_at', { ascending: false }).limit(20)).data : result.data;
-            
-            videosPublicados = data || [];
-
+            var result = await sbVideos.from('videos').select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, sonido_nombre, ubicacion_nombre, usuarios:usuario_id (id, nombre, handle, avatar_url)').eq('estado', 'publicado').eq('es_borrador', false).order('created_at', { ascending: false }).limit(20);
+            if (result.error) throw result.error;
+            videosPublicados = result.data || [];
             if (videosPublicados.length === 0) {
                 container.className = '';
-                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="videos_sin_videos">No hay videos aún</h3><p data-clave="videos_se_el_primero">Sé el primero en compartir un video.</p></div>';
-                aplicarI18N(container);
+                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>No hay videos aún</h3><p>Sé el primero en compartir un video.</p></div>';
                 return;
             }
-
             await cargarReaccionesDeVideos(videosPublicados.map(function(v){ return v.id; }));
-
             container.className = 'videos-grid';
             container.innerHTML = '';
-
-            videosPublicados.forEach(function(v) {
-                var card = crearVideoCard(v);
-                container.appendChild(card);
-            });
-
+            videosPublicados.forEach(function(v) { container.appendChild(crearVideoCard(v)); });
             aplicarI18N(container);
             activarAutoplayScroll();
-        } catch (e) {
-            console.error('[Videos] ❌ Error al cargar:', e);
-        }
+        } catch (e) { console.error('[Videos] ❌ Error al cargar:', e); }
     }
     window.cargarVideos = cargarVideos;
 
@@ -1284,37 +1164,26 @@
             var result = await sbVideos.from('videos_likes').select('video_id, usuario_id, tipo').in('video_id', videoIds);
             if (result.error) return;
             (result.data || []).forEach(function(r) {
-                var tipo = r.tipo || REACCION_DEFAULT;
-                var key = r.video_id + '_' + r.usuario_id;
+                var tipo = r.tipo || REACCION_DEFAULT; var key = r.video_id + '_' + r.usuario_id;
                 likeCache.set(key, tipo);
                 if (!reaccionesCache.has(r.video_id)) reaccionesCache.set(r.video_id, { tipo: REACCION_DEFAULT, totales: {} });
-                var obj = reaccionesCache.get(r.video_id);
-                obj.totales[tipo] = (obj.totales[tipo] || 0) + 1;
+                var obj = reaccionesCache.get(r.video_id); obj.totales[tipo] = (obj.totales[tipo] || 0) + 1;
             });
         } catch (e) {}
     }
 
-    // ================================================================
-    // CREAR CARD DE VIDEO
-    // ================================================================
     function crearVideoCard(v) {
         var autor = v.usuarios || {};
-        var vistas = v.reproducciones || 0;
-        var tipoMiReaccion = null;
-        if (sessionUser) tipoMiReaccion = likeCache.get(v.id + '_' + sessionUser.id);
-        var totalReacciones = 0;
-        var iconoMostrar = REACCION_DEFAULT;
+        var tipoMiReaccion = sessionUser ? likeCache.get(v.id + '_' + sessionUser.id) : null;
+        var totalReacciones = 0; var iconoMostrar = REACCION_DEFAULT;
         if (reaccionesCache.has(v.id)) {
             var obj = reaccionesCache.get(v.id);
             Object.keys(obj.totales).forEach(function(k) { totalReacciones += obj.totales[k]; });
-            var mayor = 0;
-            Object.keys(obj.totales).forEach(function(k) { if (obj.totales[k] > mayor) { mayor = obj.totales[k]; iconoMostrar = k; } });
-        } else {
-            totalReacciones = v.likes || 0;
-        }
+            var mayor = 0; Object.keys(obj.totales).forEach(function(k) { if (obj.totales[k] > mayor) { mayor = obj.totales[k]; iconoMostrar = k; } });
+        } else { totalReacciones = v.likes || 0; }
         var iconoFinal = tipoMiReaccion || iconoMostrar;
         var videoUrl = escapeHTML(safeAttr(v.url_video));
-        var posterUrl = (v.url_miniatura && typeof v.url_miniatura === 'string' && v.url_miniatura.startsWith('https://')) ? escapeHTML(v.url_miniatura) : '';
+        var posterUrl = (v.url_miniatura && v.url_miniatura.startsWith('https://')) ? escapeHTML(v.url_miniatura) : '';
         var esMio = !!(sessionUser && v.usuario_id === sessionUser.id);
         var autorNombre = escapeHTML(autor.nombre || 'Usuario');
         var autorHandle = escapeHTML(autor.handle || 'usuario');
@@ -1325,29 +1194,14 @@
         var ubicacionNombre = v.ubicacion_nombre ? escapeHTML(v.ubicacion_nombre) : null;
 
         var card = document.createElement('div');
-        card.className = 'video-card';
-        card.dataset.videoId = v.id;
-
+        card.className = 'video-card'; card.dataset.videoId = v.id;
         var html = '';
-
-        if (esMio) {
-            html += '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="Eliminar">' + iconoBasuraSVG() + '</button>';
-        }
-
-        html += '<div class="thumbnail">';
-        html += '<video preload="auto" playsinline webkit-playsinline crossorigin="anonymous" data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>';
-        html += '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">' + iconoPlaySVG() + '</div>';
-        html += '</div>';
-
+        if (esMio) html += '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="Eliminar">' + iconoBasuraSVG() + '</button>';
+        html += '<div class="thumbnail"><video preload="auto" playsinline webkit-playsinline crossorigin="anonymous" data-src="' + videoUrl + '" poster="' + posterUrl + '"></video><div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">' + iconoPlaySVG() + '</div></div>';
         var avatarHTML = autorAvatar ? '<img src="' + autorAvatar + '" alt="">' : escapeHTML((autorNombre.charAt(0) || '◈').toUpperCase());
-        html += '<div class="overlay-info">';
-        html += '<div class="autor-row">';
-        html += '<div class="autor-avatar">' + avatarHTML + '</div>';
-        html += '<div class="autor-nombre">@' + autorHandle + '</div>';
-        html += '</div>';
+        html += '<div class="overlay-info"><div class="autor-row"><div class="autor-avatar">' + avatarHTML + '</div><div class="autor-nombre">@' + autorHandle + '</div></div>';
         if (titulo) html += '<div class="titulo">' + titulo + '</div>';
         if (descripcion) html += '<div class="descripcion-corta">' + descripcion + '</div>';
-
         if (sonidoNombre || ubicacionNombre) {
             html += '<div class="video-meta-chips">';
             if (sonidoNombre) html += '<span class="video-chip video-chip-sonido">♪ ' + sonidoNombre + '</span>';
@@ -1355,188 +1209,89 @@
             html += '</div>';
         }
         html += '</div>';
-
         var claseLiked = tipoMiReaccion ? ' liked' : '';
         html += '<div class="sidebar-acciones">';
-        html += '<button class="sidebar-btn like-btn' + claseLiked + '" data-video-id="' + v.id + '" onclick="event.stopPropagation(); toggleLikeVideo(\'' + v.id + '\')">';
-        html += '<span class="icono">' + iconoReaccionSVG(iconoFinal) + '</span>';
-        html += '<span class="contador" id="likeCount-' + v.id + '">' + formatContador(totalReacciones) + '</span>';
-        html += '</button>';
-        html += '<button class="sidebar-btn" onclick="event.stopPropagation(); abrirComentarios(\'' + v.id + '\')">';
-        html += '<span class="icono">' + iconoComentarioSVG() + '</span>';
-        html += '<span class="contador" id="comentCount-' + v.id + '">' + formatContador(v.comentarios || 0) + '</span>';
-        html += '</button>';
-        html += '<button class="sidebar-btn btn-compartir-premium" onclick="event.stopPropagation(); compartirVideo(\'' + v.id + '\')" title="Compartir">';
-        html += getIconoCompartirSVG();
-        html += '</button>';
+        html += '<button class="sidebar-btn like-btn' + claseLiked + '" data-video-id="' + v.id + '" onclick="event.stopPropagation(); toggleLikeVideo(\'' + v.id + '\')"><span class="icono">' + iconoReaccionSVG(iconoFinal) + '</span><span class="contador" id="likeCount-' + v.id + '">' + formatContador(totalReacciones) + '</span></button>';
+        html += '<button class="sidebar-btn" onclick="event.stopPropagation(); abrirComentarios(\'' + v.id + '\')"><span class="icono">' + iconoComentarioSVG() + '</span><span class="contador" id="comentCount-' + v.id + '">' + formatContador(v.comentarios || 0) + '</span></button>';
+        html += '<button class="sidebar-btn btn-compartir-premium" onclick="event.stopPropagation(); compartirVideo(\'' + v.id + '\')" title="Compartir">' + getIconoCompartirSVG() + '</button>';
         html += '<div class="reaccion-picker" id="picker-' + v.id + '">';
-        REACCIONES.forEach(function(re) {
-            html += '<button class="reaccion-opcion" data-reaccion="' + re + '" onclick="event.stopPropagation(); elegirReaccion(\'' + v.id + '\', \'' + re + '\')">' + iconoReaccionSVG(re) + '</button>';
-        });
-        html += '</div>';
-        html += '</div>';
-
-        html += '<div class="barra-inferior">';
-        html += '<div class="fila-tiempo">';
-        html += '<span class="tiempo-actual-card">0:00</span>';
-        html += '<span class="vistas-info">◈ ' + formatContador(vistas) + ' vistas</span>';
-        html += '<span class="tiempo-total-card">0:00</span>';
-        html += '</div>';
-        html += '<div class="barra-progreso-card"><div class="fill"></div></div>';
-        html += '</div>';
-
+        REACCIONES.forEach(function(re) { html += '<button class="reaccion-opcion" data-reaccion="' + re + '" onclick="event.stopPropagation(); elegirReaccion(\'' + v.id + '\', \'' + re + '\')">' + iconoReaccionSVG(re) + '</button>'; });
+        html += '</div></div>';
+        html += '<div class="barra-inferior"><div class="fila-tiempo"><span class="tiempo-actual-card">0:00</span><span class="vistas-info">◈ ' + formatContador(v.reproducciones || 0) + ' vistas</span><span class="tiempo-total-card">0:00</span></div><div class="barra-progreso-card"><div class="fill"></div></div></div>';
         card.innerHTML = html;
 
-        var hintEl = document.createElement('div');
-        hintEl.className = 'doble-tap-hint';
-        hintEl.innerHTML = getIconoFullscreenSVG();
-        card.appendChild(hintEl);
-
-        configurarDobleTap(card, v.id);
-        configurarLongPressLike(card, v.id);
-
-        var videoEl = card.querySelector('video');
-        videoEl.muted = false;
-        videoEl.volume = 1;
-        videoEl.removeAttribute('muted');
-
-        videoEl.addEventListener('timeupdate', function() {
-            if (!videoEl.duration) return;
-            var pct = (videoEl.currentTime / videoEl.duration) * 100;
-            var fill = card.querySelector('.barra-progreso-card .fill');
-            if (fill) fill.style.width = pct + '%';
-            var tActual = card.querySelector('.tiempo-actual-card');
-            if (tActual) tActual.textContent = formatearTiempo(videoEl.currentTime);
-        });
-        videoEl.addEventListener('loadedmetadata', function() {
-            var tTotal = card.querySelector('.tiempo-total-card');
-            if (tTotal) tTotal.textContent = formatearTiempo(videoEl.duration);
-        });
-
+        var hintEl = document.createElement('div'); hintEl.className = 'doble-tap-hint'; hintEl.innerHTML = getIconoFullscreenSVG(); card.appendChild(hintEl);
+        configurarDobleTap(card, v.id); configurarLongPressLike(card, v.id);
+        var videoEl = card.querySelector('video'); videoEl.muted = false; videoEl.volume = 1; videoEl.removeAttribute('muted');
+        videoEl.addEventListener('timeupdate', function() { if (!videoEl.duration) return; var pct = (videoEl.currentTime / videoEl.duration) * 100; var fill = card.querySelector('.barra-progreso-card .fill'); if (fill) fill.style.width = pct + '%'; var tActual = card.querySelector('.tiempo-actual-card'); if (tActual) tActual.textContent = formatearTiempo(videoEl.currentTime); });
+        videoEl.addEventListener('loadedmetadata', function() { var tTotal = card.querySelector('.tiempo-total-card'); if (tTotal) tTotal.textContent = formatearTiempo(videoEl.duration); });
         return card;
     }
 
-    // ================================================================
-    // DOBLE TAP FULLSCREEN
-    // ================================================================
     function configurarDobleTap(card, videoId) {
-        var ultimoTap = 0;
-        var DOBLE_TAP_MS = 320;
-
+        var ultimoTap = 0; var DOBLE_TAP_MS = 320;
         function manejarTap(e) {
-            if (e.target.closest('.sidebar-btn') || e.target.closest('.play-btn') || e.target.closest('.btn-eliminar-card') || e.target.closest('.barra-inferior') || e.target.closest('.reaccion-picker') || e.target.closest('.overlay-info')) {
-                return;
-            }
-            var video = card.querySelector('video');
-            if (!video) return;
-            if (e.target !== video) return;
-
-            var ahora = Date.now();
-            var diff = ahora - ultimoTap;
-
+            if (e.target.closest('.sidebar-btn') || e.target.closest('.play-btn') || e.target.closest('.btn-eliminar-card') || e.target.closest('.barra-inferior') || e.target.closest('.reaccion-picker') || e.target.closest('.overlay-info')) return;
+            var video = card.querySelector('video'); if (!video || e.target !== video) return;
+            var ahora = Date.now(); var diff = ahora - ultimoTap;
             if (diff < DOBLE_TAP_MS) {
-                if (card.classList.contains('pantalla-completa')) {
-                    card.classList.remove('pantalla-completa');
-                    vibrar(15);
-                    showToast('◈ Modo normal', 'success', 1500);
-                } else {
-                    card.classList.add('pantalla-completa');
-                    vibrar(20);
-                    showToast('◈ Pantalla completa', 'success', 1500);
-                }
+                if (card.classList.contains('pantalla-completa')) { card.classList.remove('pantalla-completa'); vibrar(15); showToast('◈ Modo normal', 'success', 1500); }
+                else { card.classList.add('pantalla-completa'); vibrar(20); showToast('◈ Pantalla completa', 'success', 1500); }
                 ultimoTap = 0;
-            } else {
-                ultimoTap = ahora;
-            }
+            } else { ultimoTap = ahora; }
         }
         card.addEventListener('click', manejarTap);
     }
 
-    // ================================================================
-    // LONG PRESS EN LIKE
-    // ================================================================
     function configurarLongPressLike(card, videoId) {
-        var btnLike = card.querySelector('.like-btn');
-        if (!btnLike) return;
-        var startX = 0, startY = 0;
-        var LONG_PRESS_MS = 450;
-
+        var btnLike = card.querySelector('.like-btn'); if (!btnLike) return;
+        var startX = 0, startY = 0; var LONG_PRESS_MS = 450;
         function iniciarLongPress(e) {
             if (e.type === 'touchstart') { var t = e.touches[0]; startX = t.clientX; startY = t.clientY; }
             else { startX = e.clientX; startY = e.clientY; }
             if (longPressTimers[videoId]) clearTimeout(longPressTimers[videoId]);
-            longPressTimers[videoId] = setTimeout(function() {
-                vibrar(20);
-                mostrarPickerReacciones(videoId);
-                btnLike.dataset.longPressActivado = 'true';
-                longPressTimers[videoId] = null;
-            }, LONG_PRESS_MS);
+            longPressTimers[videoId] = setTimeout(function() { vibrar(20); mostrarPickerReacciones(videoId); btnLike.dataset.longPressActivado = 'true'; longPressTimers[videoId] = null; }, LONG_PRESS_MS);
         }
         function cancelarLongPress(e) {
-            if (e && e.type === 'touchmove') {
-                var t = e.touches[0];
-                if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) {
-                    if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; }
-                }
-            }
-            if (e && e.type === 'touchend') {
-                if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; }
-            }
+            if (e && e.type === 'touchmove') { var t = e.touches[0]; if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) { if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; } } }
+            if (e && e.type === 'touchend') { if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; } }
         }
-        btnLike.addEventListener('touchstart', iniciarLongPress, { passive: true });
-        btnLike.addEventListener('touchend', cancelarLongPress, { passive: true });
-        btnLike.addEventListener('touchcancel', cancelarLongPress, { passive: true });
-        btnLike.addEventListener('touchmove', cancelarLongPress, { passive: true });
-        btnLike.addEventListener('mousedown', iniciarLongPress);
-        btnLike.addEventListener('mouseup', function() { if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; } });
+        btnLike.addEventListener('touchstart', iniciarLongPress, { passive: true }); btnLike.addEventListener('touchend', cancelarLongPress, { passive: true });
+        btnLike.addEventListener('touchcancel', cancelarLongPress, { passive: true }); btnLike.addEventListener('touchmove', cancelarLongPress, { passive: true });
+        btnLike.addEventListener('mousedown', iniciarLongPress); btnLike.addEventListener('mouseup', function() { if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; } });
         btnLike.addEventListener('mouseleave', function() { if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; } });
     }
 
     function mostrarPickerReacciones(videoId) {
         document.querySelectorAll('.reaccion-picker.show').forEach(function(p) { p.classList.remove('show'); });
-        var picker = document.getElementById('picker-' + videoId);
-        if (!picker) return;
+        var picker = document.getElementById('picker-' + videoId); if (!picker) return;
         var tipoActual = sessionUser ? likeCache.get(videoId + '_' + sessionUser.id) : null;
-        picker.querySelectorAll('.reaccion-opcion').forEach(function(b) {
-            if (b.dataset.reaccion === tipoActual) b.classList.add('activa');
-            else b.classList.remove('activa');
-        });
+        picker.querySelectorAll('.reaccion-opcion').forEach(function(b) { if (b.dataset.reaccion === tipoActual) b.classList.add('activa'); else b.classList.remove('activa'); });
         picker.classList.add('show');
     }
 
-    // ================================================================
-    // ELEGIR REACCIÓN
-    // ================================================================
     async function elegirReaccion(videoId, tipo) {
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         if (!REACCIONES.includes(tipo)) return;
-        var picker = document.getElementById('picker-' + videoId);
-        if (picker) picker.classList.remove('show');
+        var picker = document.getElementById('picker-' + videoId); if (picker) picker.classList.remove('show');
         var btnLike = document.querySelector('.like-btn[data-video-id="' + videoId + '"]');
-        var key = videoId + '_' + sessionUser.id;
-        var tipoPrevio = likeCache.get(key);
+        var key = videoId + '_' + sessionUser.id; var tipoPrevio = likeCache.get(key);
         try {
             if (!sbVideos) throw new Error('Cliente no disponible');
             if (tipoPrevio === tipo) {
                 await sbVideos.from('videos_likes').delete().eq('video_id', videoId).eq('usuario_id', sessionUser.id);
-                likeCache.delete(key);
-                var obj = reaccionesCache.get(videoId);
-                if (obj) obj.totales[tipo] = Math.max(0, (obj.totales[tipo] || 0) - 1);
+                likeCache.delete(key); var obj = reaccionesCache.get(videoId); if (obj) obj.totales[tipo] = Math.max(0, (obj.totales[tipo] || 0) - 1);
                 actualizarUIContadorReaccion(videoId);
                 if (btnLike) { btnLike.classList.remove('liked'); btnLike.querySelector('.icono').innerHTML = iconoReaccionSVG(REACCION_DEFAULT); }
             } else if (tipoPrevio) {
                 await sbVideos.from('videos_likes').update({ tipo: tipo }).eq('video_id', videoId).eq('usuario_id', sessionUser.id);
-                var obj2 = reaccionesCache.get(videoId);
-                if (obj2) { obj2.totales[tipoPrevio] = Math.max(0, (obj2.totales[tipoPrevio] || 0) - 1); obj2.totales[tipo] = (obj2.totales[tipo] || 0) + 1; }
-                likeCache.set(key, tipo);
-                actualizarUIContadorReaccion(videoId);
+                var obj2 = reaccionesCache.get(videoId); if (obj2) { obj2.totales[tipoPrevio] = Math.max(0, (obj2.totales[tipoPrevio] || 0) - 1); obj2.totales[tipo] = (obj2.totales[tipo] || 0) + 1; }
+                likeCache.set(key, tipo); actualizarUIContadorReaccion(videoId);
                 if (btnLike) { btnLike.classList.add('liked'); btnLike.querySelector('.icono').innerHTML = iconoReaccionSVG(tipo); btnLike.classList.remove('like-pop'); void btnLike.offsetWidth; btnLike.classList.add('like-pop'); }
             } else {
                 await sbVideos.from('videos_likes').insert({ video_id: videoId, usuario_id: sessionUser.id, tipo: tipo });
-                likeCache.set(key, tipo);
-                if (!reaccionesCache.has(videoId)) reaccionesCache.set(videoId, { tipo: tipo, totales: {} });
-                var obj3 = reaccionesCache.get(videoId);
-                obj3.totales[tipo] = (obj3.totales[tipo] || 0) + 1;
+                likeCache.set(key, tipo); if (!reaccionesCache.has(videoId)) reaccionesCache.set(videoId, { tipo: tipo, totales: {} });
+                var obj3 = reaccionesCache.get(videoId); obj3.totales[tipo] = (obj3.totales[tipo] || 0) + 1;
                 actualizarUIContadorReaccion(videoId);
                 if (btnLike) { btnLike.classList.add('liked'); btnLike.querySelector('.icono').innerHTML = iconoReaccionSVG(tipo); btnLike.classList.remove('like-pop'); void btnLike.offsetWidth; btnLike.classList.add('like-pop'); }
                 vibrar(15);
@@ -1545,34 +1300,21 @@
     }
 
     function actualizarUIContadorReaccion(videoId) {
-        var countEl = document.getElementById('likeCount-' + videoId);
-        if (!countEl) return;
-        var total = 0;
-        if (reaccionesCache.has(videoId)) {
-            var obj = reaccionesCache.get(videoId);
-            Object.keys(obj.totales).forEach(function(k) { total += obj.totales[k]; });
-        }
+        var countEl = document.getElementById('likeCount-' + videoId); if (!countEl) return;
+        var total = 0; if (reaccionesCache.has(videoId)) { var obj = reaccionesCache.get(videoId); Object.keys(obj.totales).forEach(function(k) { total += obj.totales[k]; }); }
         countEl.textContent = formatContador(total);
     }
 
-    // ================================================================
-    // TOGGLE LIKE
-    // ================================================================
     async function toggleLikeVideo(videoId) {
         var btnLike = document.querySelector('.like-btn[data-video-id="' + videoId + '"]');
         if (btnLike && btnLike.dataset.longPressActivado === 'true') { delete btnLike.dataset.longPressActivado; return; }
         if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; }
-        var picker = document.getElementById('picker-' + videoId);
-        if (picker && picker.classList.contains('show')) return;
+        var picker = document.getElementById('picker-' + videoId); if (picker && picker.classList.contains('show')) return;
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         var tipoPrevio = likeCache.get(videoId + '_' + sessionUser.id);
-        if (tipoPrevio) await elegirReaccion(videoId, tipoPrevio);
-        else await elegirReaccion(videoId, REACCION_DEFAULT);
+        if (tipoPrevio) await elegirReaccion(videoId, tipoPrevio); else await elegirReaccion(videoId, REACCION_DEFAULT);
     }
 
-    // ================================================================
-    // COMPARTIR
-    // ================================================================
     async function compartirVideo(videoId) {
         var url = window.location.origin + '/features/videos/videos.html?v=' + videoId;
         try {
@@ -1581,136 +1323,92 @@
         } catch (e) { if (e.name !== 'AbortError') showToast('No se pudo compartir', 'warning'); }
     }
 
-    // ================================================================
-    // BOTTOM SHEET COMENTARIOS
-    // ================================================================
     function abrirComentarios(videoId) {
-        videoIdComentariosActual = videoId;
-        var sheet = document.getElementById('bottomSheet');
-        var backdrop = document.getElementById('sheetBackdrop');
+        videoIdComentariosActual = videoId; var sheet = document.getElementById('bottomSheet'); var backdrop = document.getElementById('sheetBackdrop');
         if (!sheet || !backdrop) return;
-        var lista = document.getElementById('comentariosLista');
-        if (lista) lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;">Cargando...</div>';
-        var contadorEl = document.getElementById('sheetContador');
-        if (contadorEl) contadorEl.textContent = '0';
-        backdrop.classList.add('show');
-        sheet.classList.add('show');
-        document.body.style.overflow = 'hidden';
+        var lista = document.getElementById('comentariosLista'); if (lista) lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;">Cargando...</div>';
+        var contadorEl = document.getElementById('sheetContador'); if (contadorEl) contadorEl.textContent = '0';
+        backdrop.classList.add('show'); sheet.classList.add('show'); document.body.style.overflow = 'hidden';
         cargarComentariosSheet(videoId);
     }
 
     function cerrarBottomSheet() {
-        var sheet = document.getElementById('bottomSheet');
-        var backdrop = document.getElementById('sheetBackdrop');
-        if (sheet) sheet.classList.remove('show');
-        if (backdrop) backdrop.classList.remove('show');
-        document.body.style.overflow = '';
-        videoIdComentariosActual = null;
-        var input = document.getElementById('inputComentarioSheet');
-        if (input) { input.value = ''; input.blur(); }
+        var sheet = document.getElementById('bottomSheet'); var backdrop = document.getElementById('sheetBackdrop');
+        if (sheet) sheet.classList.remove('show'); if (backdrop) backdrop.classList.remove('show');
+        document.body.style.overflow = ''; videoIdComentariosActual = null;
+        var input = document.getElementById('inputComentarioSheet'); if (input) { input.value = ''; input.blur(); }
     }
 
     async function cargarComentariosSheet(videoId) {
-        var lista = document.getElementById('comentariosLista');
-        if (!lista) return;
+        var lista = document.getElementById('comentariosLista'); if (!lista) return;
         try {
             if (!sbVideos) throw new Error('Cliente no disponible');
             var result = await sbVideos.from('videos_comentarios').select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)').eq('video_id', videoId).order('created_at', { ascending: true });
             if (result.error) throw result.error;
-            var data = result.data || [];
-            var contadorEl = document.getElementById('sheetContador');
-            if (contadorEl) contadorEl.textContent = data.length;
-            if (data.length === 0) {
-                lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:30px 20px;text-align:center;">Sin comentarios todavía. ¡Sé el primero! ◈</div>';
-                return;
-            }
+            var data = result.data || []; var contadorEl = document.getElementById('sheetContador'); if (contadorEl) contadorEl.textContent = data.length;
+            if (data.length === 0) { lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:30px 20px;text-align:center;">Sin comentarios todavía. ¡Sé el primero! ◈</div>'; return; }
             var html = '';
             data.forEach(function(c) {
-                var u = c.usuarios || {};
-                var avatarHTML = u.avatar_url ? '<img src="' + safeAttr(u.avatar_url) + '" alt="">' : escapeHTML((u.nombre || 'U').charAt(0).toUpperCase());
-                var nombre = escapeHTML(u.nombre || 'Usuario');
-                var handle = u.handle ? '@' + escapeHTML(u.handle) : '';
-                var contenido = escapeHTML(c.contenido || '');
-                var fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                var u = c.usuarios || {}; var avatarHTML = u.avatar_url ? '<img src="' + safeAttr(u.avatar_url) + '" alt="">' : escapeHTML((u.nombre || 'U').charAt(0).toUpperCase());
+                var nombre = escapeHTML(u.nombre || 'Usuario'); var handle = u.handle ? '@' + escapeHTML(u.handle) : '';
+                var contenido = escapeHTML(c.contenido || ''); var fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
                 var soyAutorComentario = !!(sessionUser && c.usuario_id === sessionUser.id);
                 var videoData = videosPublicados.find(function(v) { return v.id === videoId; });
                 var soyDuenoVideo = !!(sessionUser && videoData && videoData.usuario_id === sessionUser.id);
                 var puedoEliminar = soyAutorComentario || soyDuenoVideo;
-                html += '<div class="comentario-burbuja">';
-                html += '<div class="avatar">' + avatarHTML + '</div>';
-                html += '<div class="burbuja">';
+                html += '<div class="comentario-burbuja"><div class="avatar">' + avatarHTML + '</div><div class="burbuja">';
                 if (puedoEliminar) html += '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\', \'' + videoId + '\', event)" title="Eliminar">' + iconoCerrarSVG() + '</button>';
                 html += '<div class="nombre">' + nombre;
                 if (u.verificado) html += ' <span class="badge-verif">' + iconoVerificadoSVG() + '</span>';
                 if (handle) html += ' <span style="color:var(--text-muted);font-weight:400;font-size:0.7rem;">' + handle + '</span>';
-                html += '</div>';
-                html += '<div class="texto">' + contenido + '</div>';
-                html += '<div class="fecha">' + fecha + '</div>';
-                html += '</div></div>';
+                html += '</div><div class="texto">' + contenido + '</div><div class="fecha">' + fecha + '</div></div></div>';
             });
-            lista.innerHTML = html;
-            setTimeout(function(){ lista.scrollTop = lista.scrollHeight; }, 100);
+            lista.innerHTML = html; setTimeout(function(){ lista.scrollTop = lista.scrollHeight; }, 100);
         } catch (e) { lista.innerHTML = '<div style="color:var(--danger);font-size:0.8rem;padding:20px;text-align:center;">Error al cargar</div>'; }
     }
 
     async function enviarComentarioSheet() {
         if (!videoIdComentariosActual || !sessionUser) { showToast('Inicia sesión', 'error'); return; }
-        var input = document.getElementById('inputComentarioSheet');
-        var btn = document.getElementById('btnEnviarComentarioSheet');
-        if (!input) return;
-        var texto = input.value.trim();
-        if (!texto) return;
+        var input = document.getElementById('inputComentarioSheet'); var btn = document.getElementById('btnEnviarComentarioSheet');
+        if (!input) return; var texto = input.value.trim(); if (!texto) return;
         if (btn) btn.disabled = true;
         try {
             await sbVideos.from('videos_comentarios').insert({ video_id: videoIdComentariosActual, usuario_id: sessionUser.id, contenido: texto });
-            input.value = '';
-            var contEl = document.getElementById('comentCount-' + videoIdComentariosActual);
+            input.value = ''; var contEl = document.getElementById('comentCount-' + videoIdComentariosActual);
             if (contEl) contEl.textContent = formatContador((parseInt(contEl.textContent.replace(/[^\d]/g, '')) || 0) + 1);
-            await cargarComentariosSheet(videoIdComentariosActual);
-            vibrar(10);
+            await cargarComentariosSheet(videoIdComentariosActual); vibrar(10);
         } catch (e) { showToast('Error al enviar', 'error'); }
         finally { if (btn) btn.disabled = false; }
     }
 
     async function eliminarComentario(comentarioId, videoId, event) {
-        if (event) event.stopPropagation();
-        if (!sessionUser) return;
-        if (!confirm('¿Eliminar este comentario?')) return;
+        if (event) event.stopPropagation(); if (!sessionUser || !confirm('¿Eliminar este comentario?')) return;
         try {
             var comentarioResp = await sbVideos.from('videos_comentarios').select('usuario_id, video_id').eq('id', comentarioId).maybeSingle();
             if (!comentarioResp.data) return;
             var videoResp = await sbVideos.from('videos').select('usuario_id').eq('id', comentarioResp.data.video_id).maybeSingle();
-            var soyAutor = (comentarioResp.data.usuario_id === sessionUser.id);
-            var soyDueno = (!videoResp.error && videoResp.data && videoResp.data.usuario_id === sessionUser.id);
+            var soyAutor = (comentarioResp.data.usuario_id === sessionUser.id); var soyDueno = (!videoResp.error && videoResp.data && videoResp.data.usuario_id === sessionUser.id);
             if (!soyAutor && !soyDueno) { showToast('Sin permiso', 'error'); return; }
             await sbVideos.from('videos_comentarios').delete().eq('id', comentarioId);
             var contEl = document.getElementById('comentCount-' + videoId);
             if (contEl) contEl.textContent = formatContador(Math.max(0, (parseInt(contEl.textContent.replace(/[^\d]/g, '')) || 0) - 1));
-            await cargarComentariosSheet(videoId);
-            vibrar(15);
-            showToast('◈ Comentario eliminado', 'success');
+            await cargarComentariosSheet(videoId); vibrar(15); showToast('◈ Comentario eliminado', 'success');
         } catch (e) { showToast('Error al eliminar', 'error'); }
     }
 
-    // ================================================================
-    // TECLADO MÓVIL
-    // ================================================================
     function configurarTecladoMovil() {
-        if (!window.visualViewport) return;
-        var sheet = document.getElementById('bottomSheet');
-        if (!sheet) return;
+        if (!window.visualViewport) return; var sheet = document.getElementById('bottomSheet'); if (!sheet) return;
         var vv = window.visualViewport;
         function ajustar() {
             var diff = window.innerHeight - vv.height;
             if (diff > 150) { document.body.classList.add('teclado-abierto'); sheet.style.maxHeight = (vv.height - 40) + 'px'; }
             else { document.body.classList.remove('teclado-abierto'); sheet.style.maxHeight = ''; }
         }
-        vv.addEventListener('resize', ajustar);
-        vv.addEventListener('scroll', ajustar);
+        vv.addEventListener('resize', ajustar); vv.addEventListener('scroll', ajustar);
     }
 
     // ================================================================
-    // AUTOPLAY SCROLL
+    // AUTOPLAY SCROLL (El corazón del deslizamiento)
     // ================================================================
     function activarAutoplayScroll() {
         if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
@@ -1718,9 +1416,7 @@
         var contenedor = document.getElementById('videosContainer');
         var cards = document.querySelectorAll('.video-card');
 
-        function asegurarSrc(video) {
-            if (video && !video.getAttribute('src') && video.dataset.src) { video.preload = 'auto'; video.src = video.dataset.src; video.load(); }
-        }
+        function asegurarSrc(video) { if (video && !video.getAttribute('src') && video.dataset.src) { video.preload = 'auto'; video.src = video.dataset.src; video.load(); } }
 
         observerCarga = new IntersectionObserver(function (entries) {
             entries.forEach(function (entry) {
@@ -1735,6 +1431,8 @@
                 var card = entry.target;
                 var video = card.querySelector('video');
                 if (!video) return;
+                
+                // Si el video entra a la pantalla (más del 60% visible)
                 if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
                     card.classList.add('visible');
                     asegurarSrc(video);
@@ -1744,12 +1442,14 @@
                         adCerradoVideo = false;
                         if (adVistaTimerVideo) { clearTimeout(adVistaTimerVideo); adVistaTimerVideo = null; }
                     }
+                    // Reproducir solo si no está en pantalla completa y no se pausó manualmente
                     if (videoPausadoManualmente !== idVisible && !card.classList.contains('pantalla-completa')) {
                         reproducirVideoConSonido(video);
                         card.classList.add('playing');
                         incrementarVista(idVisible);
                     }
                 } else {
+                    // Si el video sale de la pantalla, pausar
                     card.classList.remove('visible');
                     if (!card.classList.contains('pantalla-completa')) {
                         video.pause();
@@ -1762,40 +1462,23 @@
         cards.forEach(function(card) { observerCarga.observe(card); observerVideos.observe(card); });
     }
 
-    // ================================================================
-    // TOGGLE PLAY
-    // ================================================================
     function togglePlayCard(event, videoId) {
         if (event) event.stopPropagation();
-        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
-        if (!card) return;
-        var video = card.querySelector('video');
-        if (!video) return;
+        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]'); if (!card) return;
+        var video = card.querySelector('video'); if (!video) return;
         if (!video.getAttribute('src') && video.dataset.src) { video.preload = 'auto'; video.src = video.dataset.src; video.load(); }
         if (video.paused) {
-            reproducirVideoConSonido(video);
-            card.classList.add('playing');
-            videoPausadoManualmente = null;
-            incrementarVista(videoId);
+            reproducirVideoConSonido(video); card.classList.add('playing'); videoPausadoManualmente = null; incrementarVista(videoId);
         } else {
-            video.pause();
-            card.classList.remove('playing');
-            videoPausadoManualmente = videoId;
+            video.pause(); card.classList.remove('playing'); videoPausadoManualmente = videoId;
         }
     }
 
-    // ================================================================
-    // ELIMINAR VIDEO
-    // ================================================================
     async function eliminarMiVideo(videoId) {
         if (!videoId || !confirm('¿Eliminar este video?')) return;
-        var session = await getSession();
-        if (!session) { showToast('Inicia sesión', 'error'); return; }
-        try {
-            await sbVideos.from('videos').delete().eq('id', videoId);
-            showToast('◈ Video eliminado', 'success');
-            await cargarVideos();
-        } catch (e) { showToast('Error al eliminar', 'error'); }
+        var session = await getSession(); if (!session) { showToast('Inicia sesión', 'error'); return; }
+        try { await sbVideos.from('videos').delete().eq('id', videoId); showToast('◈ Video eliminado', 'success'); await cargarVideos(); }
+        catch (e) { showToast('Error al eliminar', 'error'); }
     }
 
     // ================================================================
@@ -1811,15 +1494,11 @@
         var progressEl = document.getElementById('uploadProgress');
         var progressFill = document.getElementById('progressFill');
         var progressText = document.getElementById('progressText');
-        var filePath = null;
-        var videoId = null;
-        var encolado = false;
+        var filePath = null; var videoId = null; var encolado = false;
 
         function liberar() {
-            subiendoVideo = false;
-            if (btn) { btn.disabled = false; btn.textContent = '◈ Subir video'; }
-            if (progressEl) progressEl.style.display = 'none';
-            if (progressFill) progressFill.style.width = '0%';
+            subiendoVideo = false; if (btn) { btn.disabled = false; btn.textContent = '◈ Subir video'; }
+            if (progressEl) progressEl.style.display = 'none'; if (progressFill) progressFill.style.width = '0%';
             if (fileInput) { try { fileInput.value = ''; } catch (e) {} }
         }
 
@@ -1832,87 +1511,59 @@
             if (!fileInput || !fileInput.files || fileInput.files.length === 0) throw new Error('Selecciona un video');
             var file = fileInput.files[0];
             if (file.size > 100 * 1024 * 1024) throw new Error('Video muy grande (máx 100 MB)');
-            var session = await getSession();
-            if (!session) throw new Error('Inicia sesión');
+            var session = await getSession(); if (!session) throw new Error('Inicia sesión');
 
-            if (btn) btn.textContent = 'Subiendo...';
-            if (progressEl) progressEl.style.display = 'block';
-            if (progressFill) progressFill.style.width = '20%';
-            if (progressText) progressText.textContent = 'Subiendo y moderando...';
+            if (btn) btn.textContent = 'Subiendo...'; if (progressEl) progressEl.style.display = 'block';
+            if (progressFill) progressFill.style.width = '20%'; if (progressText) progressText.textContent = 'Subiendo y moderando...';
 
-            var fd = new FormData();
-            fd.append('file', file);
-            fd.append('destino', 'videos');
-            fd.append('tipo', 'video');
+            var fd = new FormData(); fd.append('file', file); fd.append('destino', 'videos'); fd.append('tipo', 'video');
             var subidaResp = await fetch('/api/media/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + session.access_token }, body: fd });
             var subidaJson = await subidaResp.json();
             if (!subidaResp.ok || !subidaJson.ok) throw new Error(subidaJson.error || 'Error subiendo');
 
-            var videoUrl = subidaJson.url;
-            filePath = subidaJson.path;
+            var videoUrl = subidaJson.url; filePath = subidaJson.path;
+            if (progressFill) progressFill.style.width = '60%'; if (progressText) progressText.textContent = 'Creando registro...';
 
-            if (progressFill) progressFill.style.width = '60%';
-            if (progressText) progressText.textContent = 'Creando registro...';
-
-            var ins = await sbVideos.from('videos').insert({
-                usuario_id: session.user.id, titulo: titulo, descripcion: descripcion || null, url_video: videoUrl, estado: 'procesando', duracion: 0, es_borrador: false
-            }).select().single();
-            if (ins.error) throw ins.error;
-            videoId = ins.data.id;
+            var ins = await sbVideos.from('videos').insert({ usuario_id: session.user.id, titulo: titulo, descripcion: descripcion || null, url_video: videoUrl, estado: 'procesando', duracion: 0, es_borrador: false }).select().single();
+            if (ins.error) throw ins.error; videoId = ins.data.id;
 
             if (progressFill) progressFill.style.width = '85%';
             var queueResponse = await fetch('/api/video/queue', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token }, body: JSON.stringify({ videoId: videoId, videoUrl: videoUrl, bucket: 'videos', filePath: filePath }) });
-            var queueData = await queueResponse.json();
-            if (!queueData.success) throw new Error(queueData.error || 'Error procesando');
+            var queueData = await queueResponse.json(); if (!queueData.success) throw new Error(queueData.error || 'Error procesando');
             encolado = true;
 
             document.getElementById('uploadSection').style.display = 'none';
             document.getElementById('processingState').classList.add('visible');
             showToast('◈ Procesando video', 'success', 3000);
-            document.getElementById('inputTituloVideo').value = '';
-            document.getElementById('inputDescripcionVideo').value = '';
+            document.getElementById('inputTituloVideo').value = ''; document.getElementById('inputDescripcionVideo').value = '';
             if (fileInput) { try { fileInput.value = ''; } catch (e) {} }
-            if (progressEl) progressEl.style.display = 'none';
-            subiendoVideo = false;
+            if (progressEl) progressEl.style.display = 'none'; subiendoVideo = false;
             iniciarPollingProcesamiento(queueData.jobId, videoId);
-        } catch (e) {
-            showToast('◈ ' + (e.message || 'Error'), 'error');
-            liberar();
-        }
+        } catch (e) { showToast('◈ ' + (e.message || 'Error'), 'error'); liberar(); }
     }
 
-    // ================================================================
-    // POLLING PROCESAMIENTO
-    // ================================================================
     function iniciarPollingProcesamiento(jobId, videoId) {
         if (pollingVideoInterval) clearInterval(pollingVideoInterval);
         var progressFill = document.getElementById('processingProgressFill');
         var progressText = document.getElementById('processingProgressText');
         var intentos = 0;
         pollingVideoInterval = setInterval(async function() {
-            intentos++;
-            if (intentos > 120) { clearInterval(pollingVideoInterval); pollingVideoInterval = null; mostrarErrorProcesamiento('Tardando demasiado'); return; }
+            intentos++; if (intentos > 120) { clearInterval(pollingVideoInterval); pollingVideoInterval = null; mostrarErrorProcesamiento('Tardando demasiado'); return; }
             try {
-                var session = await getSession();
-                if (!session) return;
+                var session = await getSession(); if (!session) return;
                 var response = await fetch('/api/video/status/' + jobId, { headers: { 'Authorization': 'Bearer ' + session.access_token } });
-                var data = await response.json();
-                if (!data.success) return;
+                var data = await response.json(); if (!data.success) return;
                 var progreso = data.progreso || 0;
-                if (progressFill) progressFill.style.width = progreso + '%';
-                if (progressText) progressText.textContent = progreso + '%';
+                if (progressFill) progressFill.style.width = progreso + '%'; if (progressText) progressText.textContent = progreso + '%';
                 if (data.estado === 'completado') {
                     clearInterval(pollingVideoInterval); pollingVideoInterval = null;
                     showToast('◈ ¡Video publicado!', 'success', 4000);
                     setTimeout(function() {
                         document.getElementById('processingState').classList.remove('visible');
                         document.getElementById('uploadSection').style.display = 'block';
-                        document.getElementById('btnSubirVideo').disabled = false;
-                        document.getElementById('btnSubirVideo').textContent = '◈ Subir video';
-                        videoEnProcesamiento = null;
-                        if (window.csResetFormularioPublicacion) window.csResetFormularioPublicacion();
-                        window.dispatchEvent(new CustomEvent('csariels:videos:publicado'));
-                        cargarVideos();
+                        document.getElementById('btnSubirVideo').disabled = false; document.getElementById('btnSubirVideo').textContent = '◈ Subir video';
+                        videoEnProcesamiento = null; if (window.csResetFormularioPublicacion) window.csResetFormularioPublicacion();
+                        window.dispatchEvent(new CustomEvent('csariels:videos:publicado')); cargarVideos();
                     }, 1500);
                 }
                 if (data.estado === 'fallido') { clearInterval(pollingVideoInterval); pollingVideoInterval = null; mostrarErrorProcesamiento(data.error || 'Error'); }
@@ -1922,45 +1573,25 @@
     function mostrarErrorProcesamiento(msg) {
         document.getElementById('processingState').classList.remove('visible');
         document.getElementById('uploadSection').style.display = 'block';
-        document.getElementById('btnSubirVideo').disabled = false;
-        document.getElementById('btnSubirVideo').textContent = '◈ Subir video';
-        videoEnProcesamiento = null;
-        showToast('◈ ' + msg, 'error', 6000);
+        document.getElementById('btnSubirVideo').disabled = false; document.getElementById('btnSubirVideo').textContent = '◈ Subir video';
+        videoEnProcesamiento = null; showToast('◈ ' + msg, 'error', 6000);
     }
 
     function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-    // ================================================================
-    // INIT
-    // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
-        aplicarI18N();
-        configurarTecladoMovil();
+        aplicarI18N(); configurarTecladoMovil();
         cargarUsuarioActual().then(async function() {
             try { if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas(); } catch (err) {}
-            aplicarI18N();
-            await cargarVideos();
+            aplicarI18N(); await cargarVideos();
         });
     });
 
-    // ================================================================
-    // EXPORTS
-    // ================================================================
-    window.subirVideo = subirVideo;
-    window.cargarVideos = cargarVideos;
-    window.toggleLikeVideo = toggleLikeVideo;
-    window.elegirReaccion = elegirReaccion;
-    window.abrirComentarios = abrirComentarios;
-    window.cerrarBottomSheet = cerrarBottomSheet;
-    window.enviarComentarioSheet = enviarComentarioSheet;
-    window.eliminarComentario = eliminarComentario;
-    window.compartirVideo = compartirVideo;
-    window.togglePlayCard = togglePlayCard;
-    window.eliminarMiVideo = eliminarMiVideo;
-    window.verTokens = verTokens;
-    window.toggleFullscreen = toggleFullscreen;
-    window.showToast = showToast;
-    window.activarAudioGlobal = activarAudioGlobal;
+    window.subirVideo = subirVideo; window.cargarVideos = cargarVideos; window.toggleLikeVideo = toggleLikeVideo;
+    window.elegirReaccion = elegirReaccion; window.abrirComentarios = abrirComentarios; window.cerrarBottomSheet = cerrarBottomSheet;
+    window.enviarComentarioSheet = enviarComentarioSheet; window.eliminarComentario = eliminarComentario;
+    window.compartirVideo = compartirVideo; window.togglePlayCard = togglePlayCard; window.eliminarMiVideo = eliminarMiVideo;
+    window.verTokens = verTokens; window.showToast = showToast; window.activarAudioGlobal = activarAudioGlobal;
     </script>
 
 </body>
