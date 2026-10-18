@@ -1,7 +1,12 @@
 // ============================================================
-// CSARIEL'S · LLAMADAS-UI · v1.1
+// CSARIEL'S · LLAMADAS-UI · v1.2
 // Pestaña "Llamadas", historial, bloqueos y configuración.
 // Depende de: window.supabaseClient o window.supabaseReady
+//
+// v1.2: añadido CALLS UI ENHANCER al final (inyecta el overlay
+// del UI Kit Web3 con temporizador + halo + barra circular).
+// NO toca lógica de llamadaFetch, auth, historial, bloqueos,
+// config, ni LiveKit/WebRTC. Solo markup y ticker de temporizador.
 // ============================================================
 
 (function () {
@@ -500,12 +505,217 @@
         setTimeout(function () {
             cargarBloqueados().catch(function () {});
         }, 1500);
+
+        // === CALLS UI ENHANCER ===
+        iniciarEnhancerOverlayLlamada();
     });
 
+    // ============================================================
+    // ============================================================
+    // CALLS UI ENHANCER — v1.2
+    // Inyecta el markup del overlay Web3 (temporizador, halo, barra
+    // circular con labels) SI los overlays existen pero están
+    // "planos". NO modifica listeners existentes de mic/cam/screen/
+    // hang/accept/reject: solo decora el HTML y gestiona el ticker.
+    // ============================================================
+    // ============================================================
+    var enhancerTimer = null;
+    var enhancerStartAt = 0;
+    var enhancerInjected = false;
+
+    function iniciarEnhancerOverlayLlamada() {
+        if (enhancerInjected) return;
+        var callOverlay = $('callOverlay');
+        if (!callOverlay) return;
+
+        // Envuelve el contenido existente con la estructura Web3.
+        // IMPORTANTE: respetamos todos los IDs (#remoteVideo, #localVideo,
+        // #callInfo, #toggleMic, #toggleCam, #toggleScreen, #hangup) y sus
+        // listeners ya enlazados desde mensajes.js.
+        if (!callOverlay.dataset.upgraded) {
+            const videos = callOverlay.querySelector('.videos');
+            const callinfo = callOverlay.querySelector('#callInfo');
+            const controls = callOverlay.querySelector('.controls');
+
+            // Cabecera E2E
+            const headerE2E = document.createElement('div');
+            headerE2E.className = 'call-e2e-header';
+            headerE2E.innerHTML = '<span class="lock">🔒</span><span>Llamada privada y cifrada · E2E</span>';
+
+            // Bloque de avatar (se rellena luego con datos reales)
+            const avatarBlock = document.createElement('div');
+            avatarBlock.className = 'call-avatar-block';
+            avatarBlock.id = 'callAvatarBlock';
+            avatarBlock.innerHTML = `
+                <div class="call-avatar-halo" id="callAvatarHalo">◈</div>
+                <div class="call-name" id="callNameDisplay">Llamada</div>
+                <div class="call-subname" id="callSubnameDisplay">Conectando…</div>
+            `;
+
+            // Temporizador + status
+            const timerEl = document.createElement('div');
+            timerEl.className = 'call-timer';
+            timerEl.id = 'callTimer';
+            timerEl.textContent = '00:00';
+
+            const statusEl = document.createElement('div');
+            statusEl.className = 'call-status';
+            statusEl.id = 'callStatus';
+            statusEl.innerHTML = '<span class="dot"></span><span id="callStatusText">Conectando…</span>';
+
+            // Limpiar overlay y reconstruir en el orden Web3
+            callOverlay.innerHTML = '';
+            callOverlay.appendChild(headerE2E);
+            callOverlay.appendChild(avatarBlock);
+            callOverlay.appendChild(timerEl);
+            callOverlay.appendChild(statusEl);
+            if (videos) callOverlay.appendChild(videos);
+            if (callinfo) callOverlay.appendChild(callinfo);
+            if (controls) {
+                // Envolver controles en una barra glass si no lo está
+                if (!controls.classList.contains('call-controls-bar')) {
+                    controls.classList.add('call-controls-bar');
+                }
+                callOverlay.appendChild(controls);
+            }
+
+            callOverlay.dataset.upgraded = '1';
+        }
+
+        // --- Envolver incomingOverlay ---
+        var incomingOverlay = $('incomingOverlay');
+        if (incomingOverlay && !incomingOverlay.dataset.upgraded) {
+            const avatar = incomingOverlay.querySelector('#incomingAvatar');
+            const nameEl = incomingOverlay.querySelector('#incomingName');
+            const callinfo = incomingOverlay.querySelector('.callinfo');
+            const controls = incomingOverlay.querySelector('.controls');
+
+            const halo = document.createElement('div');
+            halo.className = 'incoming-halo';
+            halo.id = 'incomingHalo';
+            if (avatar) {
+                halo.innerHTML = avatar.innerHTML || '◈';
+                // Preservar el id antiguo en un nodo oculto no es necesario;
+                // mantenemos #incomingAvatar para compatibilidad del JS
+                // moviéndolo dentro del halo si existe.
+                if (avatar.id) {
+                    avatar.style.display = 'none';
+                    avatar.setAttribute('aria-hidden', 'true');
+                }
+            } else {
+                halo.innerHTML = '◈';
+            }
+
+            const headerE2E = document.createElement('div');
+            headerE2E.className = 'call-e2e-header';
+            headerE2E.style.marginBottom = '18px';
+            headerE2E.innerHTML = '<span class="lock">🔒</span><span>Llamada privada y cifrada · E2E</span>';
+
+            incomingOverlay.innerHTML = '';
+            incomingOverlay.appendChild(headerE2E);
+            incomingOverlay.appendChild(halo);
+            if (nameEl) incomingOverlay.appendChild(nameEl);
+            if (callinfo) incomingOverlay.appendChild(callinfo);
+            if (controls) incomingOverlay.appendChild(controls);
+
+            // Reconectar #incomingAvatar dentro del halo (para compatibilidad)
+            if (avatar) {
+                avatar.style.display = 'none';
+                halo.appendChild(avatar);
+            }
+
+            incomingOverlay.dataset.upgraded = '1';
+        }
+
+        // --- Observar apertura/cierre del overlay de llamada ---
+        observarCambiosOverlay(callOverlay);
+        enhancerInjected = true;
+    }
+
+    function observarCambiosOverlay(callOverlay) {
+        // Usamos MutationObserver para detectar .show sin tocar el JS original
+        var observer = new MutationObserver(function () {
+            var isOpen = callOverlay.classList.contains('show');
+            if (isOpen) {
+                iniciarTickerLlamada();
+                actualizarAvatarLlamada();
+            } else {
+                detenerTickerLlamada();
+            }
+        });
+        observer.observe(callOverlay, { attributes: true, attributeFilter: ['class'] });
+
+        // Estado inicial
+        if (callOverlay.classList.contains('show')) {
+            iniciarTickerLlamada();
+            actualizarAvatarLlamada();
+        }
+    }
+
+    function actualizarAvatarLlamada() {
+        // Intenta leer el usuario actual desde window.current (expuesto
+        // por mensajes.js) para mostrar nombre/avatar en el overlay.
+        var halo = $('callAvatarHalo');
+        var nameDisplay = $('callNameDisplay');
+        var subDisplay = $('callSubnameDisplay');
+        if (!halo) return;
+
+        var c = window.current;
+        if (c && c.profile) {
+            var nombre = c.profile.nombre || 'Usuario';
+            if (nameDisplay) nameDisplay.textContent = nombre;
+            if (subDisplay) subDisplay.textContent = (c.profile.handle ? '@' + c.profile.handle : 'Llamada');
+            if (c.profile.avatar_url) {
+                halo.innerHTML = '<img src="' + esc(c.profile.avatar_url) + '" alt="">';
+            } else {
+                halo.textContent = (nombre.charAt(0) || '◈').toUpperCase();
+            }
+        }
+    }
+
+    function iniciarTickerLlamada() {
+        detenerTickerLlamada();
+        enhancerStartAt = Date.now();
+        var timer = $('callTimer');
+        var statusText = $('callStatusText');
+        if (!timer) return;
+
+        // Cuando la llamada pase a "en curso", el texto del #callInfo
+        // original cambia. No lo controlamos, pero el ticker es estable.
+        function tick() {
+            var elapsed = Math.floor((Date.now() - enhancerStartAt) / 1000);
+            var mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
+            var ss = String(elapsed % 60).padStart(2, '0');
+            timer.textContent = mm + ':' + ss;
+            if (elapsed < 2 && statusText) statusText.textContent = 'Conectando…';
+            else if (elapsed >= 2 && statusText) statusText.textContent = 'En llamada';
+        }
+        tick();
+        enhancerTimer = setInterval(tick, 1000);
+    }
+
+    function detenerTickerLlamada() {
+        if (enhancerTimer) {
+            clearInterval(enhancerTimer);
+            enhancerTimer = null;
+        }
+        var timer = $('callTimer');
+        if (timer) timer.textContent = '00:00';
+        var statusText = $('callStatusText');
+        if (statusText) statusText.textContent = 'Conectando…';
+    }
+
+    // ============================================================
+    // EXPOSICIÓN GLOBAL
+    // ============================================================
     window.cargarHistorialLlamadas = cargarHistorialLlamadas;
     window.cargarBloqueados = cargarBloqueados;
     window.bloquearUsuario = bloquearUsuario;
     window.desbloquearUsuario = desbloquearUsuario;
     window.abrirModalConfig = abrirModalConfig;
     window.abrirModalBloqueados = abrirModalBloqueados;
+    window.LlamadasUI = {
+        version: '1.2.0',
+        iniciarEnhancerOverlayLlamada: iniciarEnhancerOverlayLlamada
+    };
 })();
