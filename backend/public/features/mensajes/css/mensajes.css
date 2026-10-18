@@ -17,6 +17,15 @@
     --glass: rgba(15, 45, 26, .55);
     --r: 16px;
     --xl: 24px;
+
+    /* NEON UI KIT — tokens aditivos (no rompen los existentes) */
+    --neon-gold: 212, 175, 55;
+    --neon-cyan: 0, 214, 255;
+    --neon-danger: 255, 51, 102;
+    --neon-glow-sm: 0 0 0 1px rgba(var(--neon-gold), .35), 0 0 12px rgba(var(--neon-gold), .25);
+    --neon-glow-md: 0 0 0 1px rgba(var(--neon-gold), .55), 0 0 22px rgba(var(--neon-gold), .35);
+    --neon-glow-danger: 0 0 0 1px rgba(var(--neon-danger), .55), 0 0 18px rgba(var(--neon-danger), .35);
+    --ease-snap: cubic-bezier(.22, 1, .36, 1);
 }
 
 * { box-sizing: border-box; }
@@ -1338,13 +1347,15 @@ button, input, textarea, select { font: inherit; }
 @keyframes scaleIn {
     from { transform: scale(.9); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
-}/* ================================================================
+}
+
+/* ================================================================
    MENSAJES · CSS v2.0 (Parte 2 de 2)
    Canales, grupos, tema día, responsive
    ================================================================ */
 
 /* ================================================================
-   PESTAÑAS DEL SIDEBAR (Chats / Canales / Grupos)
+   PESTAÑAS DEL SIDEBAR (Chats / Canales / Grupos / Llamadas)
    ================================================================ */
 .sidebar-tabs {
     display: flex;
@@ -1889,5 +1900,330 @@ html[data-tema="dia"] .empty-state-small .empty-btn {
         height: 38px;
         flex: 0 0 38px;
         font-size: 1rem;
+    }
+}
+
+/* ================================================================
+   NEON UI KIT v3 — ADITIVO
+   Añade glow neón, micro-etiquetas de claridad y estados de
+   interacción coherentes sin alterar la paleta original.
+   Todo es opt-in vía [data-neon] o clases existentes.
+   ================================================================ */
+
+/* ---------- Base: foco accesible ---------- */
+[data-neon]:focus-visible,
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+    outline: 2px solid rgba(var(--neon-gold), .9);
+    outline-offset: 2px;
+    border-radius: 10px;
+}
+
+/* ---------- Botones icono (⚙ ⛔ ◇ ← ✕) ---------- */
+[data-neon="icon"].iconbtn,
+.iconbtn[data-neon="icon"] {
+    transition: color .18s var(--ease-snap),
+                background .18s var(--ease-snap),
+                box-shadow .22s var(--ease-snap),
+                transform .18s var(--ease-snap);
+}
+[data-neon="icon"].iconbtn:hover,
+[data-neon="icon"].iconbtn:focus-visible {
+    color: var(--gold);
+    background: rgba(var(--neon-gold), .10);
+    box-shadow: var(--neon-glow-sm);
+}
+[data-neon="icon"].iconbtn:active {
+    transform: scale(.94);
+}
+
+/* ---------- Botón peligro (⛔ bloquear) ---------- */
+[data-neon="icon-danger"].iconbtn:hover,
+[data-neon="icon-danger"].iconbtn:focus-visible {
+    color: var(--danger) !important;
+    background: rgba(var(--neon-danger), .10);
+    box-shadow: var(--neon-glow-danger);
+}
+[data-neon="icon-danger"].iconbtn:active { transform: scale(.94); }
+
+/* ---------- Botón llamada (📹 Llamar) ---------- */
+[data-neon="icon-call"].callbtn {
+    border: 1px solid rgba(var(--neon-gold), .35);
+    background: rgba(var(--neon-gold), .08);
+    color: var(--gold);
+    font-weight: 800;
+    gap: 6px;
+    transition: box-shadow .22s var(--ease-snap),
+                background .2s var(--ease-snap),
+                transform .18s var(--ease-snap);
+}
+[data-neon="icon-call"].callbtn:not(:disabled):hover,
+[data-neon="icon-call"].callbtn:not(:disabled):focus-visible {
+    background: rgba(var(--neon-gold), .18);
+    box-shadow: var(--neon-glow-md);
+    transform: translateY(-1px);
+}
+[data-neon="icon-call"].callbtn:not(:disabled):active {
+    transform: translateY(0) scale(.97);
+}
+[data-neon="icon-call"].callbtn:disabled {
+    opacity: .35;
+    cursor: not-allowed;
+    filter: grayscale(.4);
+}
+
+/* ---------- Botones .btn genéricos (◆ ● ◉) ---------- */
+[data-neon="btn"].btn {
+    transition: color .18s var(--ease-snap),
+                border-color .18s var(--ease-snap),
+                background .18s var(--ease-snap),
+                box-shadow .22s var(--ease-snap),
+                transform .16s var(--ease-snap);
+}
+[data-neon="btn"].btn:hover:not(:disabled),
+[data-neon="btn"].btn:focus-visible:not(:disabled) {
+    box-shadow: var(--neon-glow-sm);
+}
+[data-neon="btn"].btn:active:not(:disabled) {
+    transform: scale(.95);
+}
+
+/* ---------- Botón bot (◉ Marquinhos) ---------- */
+[data-neon="btn-bot"].btn {
+    border-color: rgba(var(--neon-gold), .45);
+    color: var(--gold);
+}
+[data-neon="btn-bot"].btn:hover:not(:disabled) {
+    background: rgba(var(--neon-gold), .12);
+    box-shadow: var(--neon-glow-md);
+}
+
+/* ---------- Botón Enviar / send ---------- */
+[data-neon="send"].send,
+[data-neon="send"].btn.send {
+    transition: box-shadow .22s var(--ease-snap),
+                transform .16s var(--ease-snap),
+                filter .18s var(--ease-snap);
+}
+[data-neon="send"].send:hover:not(:disabled),
+[data-neon="send"].send:focus-visible:not(:disabled) {
+    box-shadow:
+        0 0 0 1px rgba(var(--neon-gold), .8),
+        0 0 18px rgba(var(--neon-gold), .55),
+        0 6px 18px rgba(0, 0, 0, .35);
+    filter: brightness(1.08);
+}
+[data-neon="send"].send:active:not(:disabled) {
+    transform: scale(.96);
+}
+
+/* ---------- FAB (+) ---------- */
+[data-neon="fab"].fab {
+    transition: transform .2s var(--ease-snap),
+                box-shadow .25s var(--ease-snap);
+}
+[data-neon="fab"].fab:hover,
+[data-neon="fab"].fab:focus-visible {
+    box-shadow:
+        0 0 0 2px rgba(var(--neon-gold), .8),
+        0 0 26px rgba(var(--neon-gold), .6),
+        0 8px 26px rgba(0, 0, 0, .5);
+    transform: scale(1.08);
+}
+[data-neon="fab"].fab:active {
+    transform: scale(.98);
+}
+
+/* ---------- Chip (＋ Subir / 🗑 Todo) ---------- */
+[data-neon="chip"].btn-subir-estado {
+    transition: transform .18s var(--ease-snap),
+                box-shadow .22s var(--ease-snap),
+                filter .18s var(--ease-snap);
+}
+[data-neon="chip"].btn-subir-estado:hover,
+[data-neon="chip"].btn-subir-estado:focus-visible {
+    filter: brightness(1.08);
+    box-shadow:
+        0 0 0 1px rgba(var(--neon-gold), .8),
+        0 0 16px rgba(var(--neon-gold), .5);
+}
+[data-neon="chip"].btn-subir-estado:active {
+    transform: scale(.94);
+}
+[data-neon="chip-danger"].btn-subir-estado:hover,
+[data-neon="chip-danger"].btn-subir-estado:focus-visible {
+    box-shadow:
+        0 0 0 1px rgba(var(--neon-danger), .8),
+        0 0 16px rgba(var(--neon-danger), .55) !important;
+}
+
+/* ---------- Pestañas del sidebar ---------- */
+[data-neon="tab"].sidebar-tab {
+    position: relative;
+    transition: color .18s var(--ease-snap),
+                background .18s var(--ease-snap);
+}
+[data-neon="tab"].sidebar-tab:hover {
+    color: var(--gold);
+}
+[data-neon="tab"].sidebar-tab.active::after {
+    content: "";
+    position: absolute;
+    left: 20%;
+    right: 20%;
+    bottom: -1px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--gold);
+    box-shadow:
+        0 0 6px rgba(var(--neon-gold), .9),
+        0 0 14px rgba(var(--neon-gold), .55);
+    animation: neonTabIn .35s var(--ease-snap);
+}
+@keyframes neonTabIn {
+    from { transform: scaleX(.3); opacity: 0; }
+    to   { transform: scaleX(1);  opacity: 1; }
+}
+[data-neon="tab"].sidebar-tab.active {
+    border-bottom-color: transparent;
+}
+
+/* ---------- Nav activo ---------- */
+[data-neon="nav"].nav a.active {
+    box-shadow:
+        inset 0 0 0 1px rgba(var(--neon-gold), .35),
+        0 0 12px rgba(var(--neon-gold), .25);
+}
+
+/* ---------- Micro-etiquetas de claridad ----------
+   Uso: <span data-tag="IA"></span>, [data-tag="LIVE"], etc.
+   Se pueden colocar en cualquier contenedor sin romper layout.
+   ------------------------------------------------------------- */
+[data-tag] {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: .55rem;
+    font-weight: 900;
+    letter-spacing: .7px;
+    text-transform: uppercase;
+    line-height: 1.6;
+    white-space: nowrap;
+    border: 1px solid currentColor;
+    background: rgba(255, 255, 255, .04);
+    vertical-align: middle;
+}
+
+[data-tag="IA"] {
+    color: var(--gold);
+    box-shadow: 0 0 10px rgba(var(--neon-gold), .25);
+}
+[data-tag="LIVE"] {
+    color: #ff3366;
+    animation: tagLive 1.4s ease-in-out infinite;
+}
+[data-tag="NUEVO"] {
+    color: var(--success);
+    box-shadow: 0 0 10px rgba(0, 214, 143, .3);
+}
+[data-tag="PRIVADO"] {
+    color: #8aa8b8;
+}
+[data-tag="PÚBLICO"] {
+    color: var(--gold);
+}
+[data-tag="BOT"] {
+    color: #a78bfa;
+    box-shadow: 0 0 10px rgba(167, 139, 250, .3);
+}
+
+@keyframes tagLive {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .55; }
+}
+
+/* Coloca la micro-etiqueta automáticamente sobre el avatar del bot */
+.avatar-bot[data-tag-ia]::before {
+    content: "IA";
+    position: absolute;
+    top: -6px;
+    right: -8px;
+    font-size: .48rem;
+    font-weight: 900;
+    letter-spacing: .6px;
+    padding: 2px 5px;
+    border-radius: 99px;
+    background: var(--gold);
+    color: var(--space);
+    border: 1.5px solid var(--space);
+    box-shadow: 0 0 8px rgba(var(--neon-gold), .7);
+    pointer-events: none;
+    z-index: 2;
+}
+
+/* ---------- Indicador “en vivo” en la barra superior ---------- */
+.network[data-live] i {
+    box-shadow: 0 0 6px rgba(0, 214, 143, .9),
+                0 0 14px rgba(0, 214, 143, .5);
+    animation: netPulse 2.2s ease-in-out infinite;
+}
+@keyframes netPulse {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .55; }
+}
+
+/* ---------- Tarjetas canal/grupo: glow de borde al hover ---------- */
+.canal-card:hover {
+    box-shadow:
+        0 0 0 1px rgba(var(--neon-gold), .25),
+        0 8px 22px rgba(0, 0, 0, .35);
+}
+
+/* ---------- Bubbles: sutil acento neón en el borde ---------- */
+.received .bubble {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .02);
+}
+.sent .bubble {
+    box-shadow: 0 2px 10px rgba(var(--neon-gold), .18);
+}
+
+/* ---------- Reduced motion (accesibilidad senior) ---------- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+        scroll-behavior: auto !important;
+    }
+    [data-neon="tab"].sidebar-tab.active::after {
+        animation: none;
+        transform: none;
+        opacity: 1;
+    }
+}
+
+/* ---------- Fix iOS: evitar hover “pegado” en mobile ---------- */
+@media (hover: none) {
+    [data-neon="icon"].iconbtn:hover,
+    [data-neon="icon-danger"].iconbtn:hover,
+    [data-neon="btn"].btn:hover,
+    [data-neon="icon-call"].callbtn:not(:disabled):hover {
+        box-shadow: none;
+        transform: none;
+    }
+    [data-neon="icon"].iconbtn:active,
+    [data-neon="icon-danger"].iconbtn:active,
+    [data-neon="btn"].btn:active,
+    [data-neon="icon-call"].callbtn:active {
+        transform: scale(.94);
+        box-shadow: var(--neon-glow-sm);
     }
 }
