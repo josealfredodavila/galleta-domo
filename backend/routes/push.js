@@ -1,7 +1,8 @@
 // ================================================================
-// ROUTES/PUSH.JS — Csariel's · v2.3 (Soporte para Llamadas Push)
-// CAMBIOS v2.3:
-// - Se agregó console.log en enviarPushLlamadaEntrante para debug.
+// ROUTES/PUSH.JS — Csariel's · v2.4 (Soporte para Llamadas Push)
+// CAMBIOS v2.4:
+// - Se agregó 'actions' a la llamada entrante para mostrar botones
+//   de Aceptar/Rechazar en la notificación nativa de Android.
 // ================================================================
 
 const express = require('express');
@@ -244,7 +245,6 @@ router.post('/llamada-entrante', verificarAutenticacion, async (req, res) => {
             data: { tipo: 'llamada_entrante', llamadaId }
         });
 
-        // Log para el endpoint
         console.log(`[Push] Llamada ${llamadaId}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
 
         return res.json({
@@ -363,12 +363,9 @@ async function enviarPushASeguidores(streamerId, payload) {
 }
 
 // ================================================================
-// HELPER: Push específico para llamadas entrantes
+// HELPER: Push específico para llamadas entrantes (con botones)
 // ================================================================
 async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamadaId) {
-    // ============================================================
-    // LOG AGREGADO (Sugerencia de Anthropic) para depuración
-    // ============================================================
     console.log(`[Push] Iniciando envío de Push a ${destinatarioId} para llamada ${llamadaId}`);
 
     const resultado = await enviarPushAUsuarios([destinatarioId], {
@@ -380,7 +377,12 @@ async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamada
         tag: `llamada-${llamadaId}`,
         requireInteraction: true,
         vibrate: [500, 200, 500, 200, 500],
-        data: { tipo: 'llamada_entrante', llamadaId }
+        data: { tipo: 'llamada_entrante', llamadaId },
+        // AQUÍ AGREGAMOS LAS ACCIONES PARA QUE APAREZCAN LOS BOTONES
+        actions: [
+            { action: 'accept', title: '✅ Aceptar' },
+            { action: 'reject', title: '❌ Rechazar' }
+        ]
     });
 
     console.log(`[Push] Llamada ${llamadaId}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
