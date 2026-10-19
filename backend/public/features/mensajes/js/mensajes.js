@@ -1,7 +1,9 @@
 // ================================================================
-// MENSAJES · JS v4.4 · WEB3 NEON UI
-// Cambios v4.4:
-// - Manejo del botón "Rechazar" desde la notificación Push.
+// MENSAJES · JS v4.5 · WEB3 NEON UI
+// Cambios v4.5:
+// - Reducción de egress: límite de conversaciones, cache de perfiles
+//   y firmas, listener de auth sin repetición, intervalo de estados
+//   con pestaña visible.
 // ================================================================
 
 'use strict';
@@ -47,6 +49,18 @@ const call = {
     room: null, id: null, active: false, audio: null, video: null,
     screen: null, initiator: false, roomName: null, tipo: 'video'
 };
+
+// ================================================================
+// CACHE DE PERFILES
+// ================================================================
+const perfilCache = new Map();
+const TTL_PERFIL_MS = 5 * 60 * 1000;
+
+// ================================================================
+// CACHE DE URLS FIRMADAS
+// ================================================================
+const signedCache = new Map();
+const TTL_SIGNED_MS = 50 * 60 * 1000;
 
 const $ = id => document.getElementById(id);
 
@@ -277,15 +291,23 @@ function avatar(name, url, cls = 'avatar') {
     return `<div class="${cls}">${esc((name || '◈').charAt(0).toUpperCase())}</div>`;
 }
 
+// ================================================================
+// PERFIL CON CACHÉ (Parche B)
+// ================================================================
 async function profile(id) {
     if (id === BOT_ID) {
         return { id: BOT_ID, nombre: "Marquinhos", handle: 'marquinhos', avatar_url: null, online: true, bot: true };
     }
+    const enCache = perfilCache.get(id);
+    if (enCache && Date.now() - enCache.ts < TTL_PERFIL_MS) return enCache.data;
+
     const r = await db.from('perfiles_publicos')
         .select('id,nombre,handle,avatar_url,online,ultima_conexion')
         .eq('id', id)
         .maybeSingle();
-    return r.data || { id, nombre: 'Usuario', avatar_url: null, online: false };
+    const data = r.data || { id, nombre: 'Usuario', avatar_url: null, online: false };
+    perfilCache.set(id, { ts: Date.now(), data });
+    return data;
 }
 
 async function cargarFotoHeader() {
@@ -773,8 +795,18 @@ function observarCargaMultimedia(box) {
 }
 
 // ================================================================
-// SIGNED URLS
+// SIGNED URLS CON CACHÉ (Parche C)
 // ================================================================
+async function firmarConCache(bucket, filePath) {
+    const clave = bucket + '/' + filePath;
+    const enCache = signedCache.get(clave);
+    if (enCache && Date.now() - enCache.ts < TTL_SIGNED_MS) return enCache.url;
+    const { data, error } = await db.storage.from(bucket).createSignedUrl(filePath, 3600);
+    if (error || !data?.signedUrl) return null;
+    signedCache.set(clave, { ts: Date.now(), url: data.signedUrl });
+    return data.signedUrl;
+}
+
 async function getSignedUrlForMessage(m) {
     if (!m.imagen_url) return null;
     const raw = m.imagen_url;
@@ -787,9 +819,7 @@ async function getSignedUrlForMessage(m) {
             if (idx === -1) return raw;
             const bucket = parts[idx];
             const filePath = parts.slice(idx + 1).join('/');
-            const { data, error } = await db.storage.from(bucket).createSignedUrl(filePath, 3600);
-            if (error) return raw;
-            return data.signedUrl;
+            return (await firmarConCache(bucket, filePath)) || raw;
         } catch (e) { return raw; }
     }
     if (raw.startsWith('bucket://')) {
@@ -799,9 +829,7 @@ async function getSignedUrlForMessage(m) {
             if (slashIdx === -1) return null;
             const bucket = withoutPrefix.slice(0, slashIdx);
             const filePath = withoutPrefix.slice(slashIdx + 1);
-            const { data, error } = await db.storage.from(bucket).createSignedUrl(filePath, 3600);
-            if (error) { console.warn('Error firmando:', error); return null; }
-            return data.signedUrl;
+            return await firmarConCache(bucket, filePath);
         } catch (e) { console.warn('Error parseando ruta:', e); return null; }
     }
     return null;
@@ -867,7 +895,7 @@ async function loadConversations() {
             .neq('destinatario_id', BOT_UUID)
             .or(`remitente_id.eq.${user.id},destinatario_id.eq.${user.id}`)
             .order('created_at', { ascending: false })
-            .limit(500);
+            .limit(100);
         if (error) { console.error('Error cargando mensajes:', error); return; }
         const conversacionesMap = new Map();
         (mensajes || []).forEach(m => {
@@ -2376,7 +2404,12 @@ async function init() {
     await loadConversations();
     await cargarEstados();
 
+    // Parche D: Listener de auth sin repeticiones
+    let ultimoUserId = user?.id || null;
     db.auth.onAuthStateChange((event, s) => {
+        const nuevoId = s?.user?.id || null;
+        if (nuevoId === ultimoUserId) return;
+        ultimoUserId = nuevoId;
         user = s?.user || null;
         if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
             loadConversations();
@@ -2529,10 +2562,15 @@ async function init() {
         if (user && p.new.estado === 'ringing') incoming(p.new);
     }).subscribe();
 
-    setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
+    // Parche E: Intervalo de estados con pestaña visible
+    setInterval(() => {
+        if (document.hidden) return;
+        limpiarVistosAntiguos();
+        cargarEstados();
+    }, 10 * 60 * 1000);
 
     // ============================================================
-    // NUEVO v4.4: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
+    // NUEVO v4.5: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
     // ============================================================
     
     // 1. Suscripción a Push Notifications
@@ -2833,9 +2871,10 @@ window.openConversation = openConversation;
 
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.4.0',
+    version: '4.5.0',
     decorarComposer: decorarComposerWeb3,
-    decorarSidebarTabsWeb3,
+    decorarSidebarTabs: decorarSidebarTabsWeb3,
+    decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
     decorarChatActions: decorarChatActions
 };
 
