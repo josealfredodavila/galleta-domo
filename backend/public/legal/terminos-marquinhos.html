@@ -240,6 +240,12 @@
     const TERMINOS_VERSION = '1.1';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
 
+    // Tras aceptar: chat estático con Marquinhos.
+    // El parámetro ?chat=marquinhos indica a mensajes.html que abra la conversación con Marquinhos.
+    const RUTA_MENSAJES_MARQUINHOS = '/features/mensajes/mensajes.html?chat=marquinhos';
+    // Tras rechazar: puerta de entrada pública del ecosistema.
+    const RUTA_RECHAZO = '/';
+
     let cliente = null;
     let lineasDiag = [];
     let estadoUI = 'iniciando'; // iniciando | pendiente | aceptado | sin_sesion | error
@@ -266,15 +272,8 @@
         return e.message || e.error_description || e.details || e.hint || (typeof e === 'string' ? e : JSON.stringify(e));
     }
 
-    function volverAtras() {
-        try {
-            const ref = document.referrer;
-            if (ref && ref.indexOf(window.location.host) !== -1) {
-                window.location.href = ref;
-                return;
-            }
-        } catch (e) {}
-        window.location.href = '/';
+    function irAMensajesMarquinhos() {
+        window.location.href = RUTA_MENSAJES_MARQUINHOS;
     }
 
     function guardarLocal(fecha) {
@@ -302,12 +301,13 @@
         btn.disabled = false;
     }
 
+    // Ya aceptados: el botón sigue activo y lleva al chat con Marquinhos
     function marcarYaAceptado() {
         estadoUI = 'aceptado';
         const btn = document.getElementById('btnAceptar');
         if (!btn) return;
-        btn.textContent = '✅ Ya aceptaste estos términos';
-        btn.disabled = true;
+        btn.textContent = '💬 Hablar con Marquinhos';
+        btn.disabled = false;
     }
 
     function marcarSinSesion() {
@@ -459,10 +459,16 @@
         }
     }
 
-    // ── Clic en Aceptar ─────────────────────────────────────────
+    // ── Clic en Aceptar / Hablar con Marquinhos ─────────────────
     async function aceptar() {
         const btn = document.getElementById('btnAceptar');
         if (!btn) return;
+
+        // Ya aceptado: solo llevar al chat
+        if (estadoUI === 'aceptado') {
+            irAMensajesMarquinhos();
+            return;
+        }
 
         // Si no hay sesión, avisar y no intentar registrar
         if (estadoUI === 'sin_sesion') {
@@ -474,7 +480,6 @@
         // Evitar dobles clics
         if (btn.disabled) return;
         btn.disabled = true;
-        const textoPrevio = btn.textContent;
         btn.textContent = 'Guardando…';
         diag('→ Enviando aceptación…');
 
@@ -514,16 +519,14 @@
             // Solo ahora guardamos local
             guardarLocal(data.fecha_aceptacion);
             diag('✓ Aceptación registrada y confirmada por el servidor');
-            toast('✅ Términos aceptados y registrados', 'success');
+            toast('✅ Términos aceptados', 'success');
             marcarYaAceptado();
-            setTimeout(volverAtras, 1200);
+            setTimeout(irAMensajesMarquinhos, 900);
         } catch (e) {
             diag('✗ No se guardó: ' + textoError(e));
             toast('No se pudo registrar: ' + textoError(e), 'error');
             // Restaurar botón para permitir reintento
-            btn.textContent = textoPrevio && textoPrevio !== 'Guardando…' ? '⚠️ Reintentar' : '⚠️ Reintentar';
-            btn.disabled = false;
-            estadoUI = 'error';
+            marcarError();
         }
     }
 
@@ -531,7 +534,7 @@
         const ok = confirm('¿Seguro que no aceptas los términos?\n\nSin aceptarlos, no podrás hablar con Marquinhos.');
         if (!ok) return;
         borrarLocal();
-        volverAtras();
+        window.location.href = RUTA_RECHAZO;
     }
 
     document.getElementById('btnAceptar').addEventListener('click', aceptar);
