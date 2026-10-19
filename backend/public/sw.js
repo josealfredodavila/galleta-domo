@@ -1,6 +1,6 @@
 // ================================================================
-// SERVICE WORKER — Csariel's
-// Push: sin cambios funcionales.
+// SERVICE WORKER — Csariel's · v2.1 (Soporte para Llamadas)
+// Push: integración de notificación con sonido/vibración de alarma.
 // Caché: HTML, JS y APIs siempre desde red. CSS con revalidación en
 // segundo plano. Imágenes y fuentes con caché.
 // ================================================================
@@ -49,20 +49,25 @@ self.addEventListener('push', (event) => {
         }
     }
 
+    // Detectar si es una llamada para aplicar el modo "alarma"
+    const esLlamada = data.tag?.startsWith('llamada-') || data.data?.tipo === 'llamada_entrante';
+
     const options = {
         body: data.body,
         icon: data.icon || '/icon-192.png',
         badge: data.badge || '/badge-72.png',
         tag: data.tag || 'default',
         data: { url: data.url || '/', ...(data.data || {}) },
-        vibrate: [200, 100, 200, 100, 200],
-        requireInteraction: false,
+        vibrate: esLlamada ? [500, 200, 500, 200, 500] : [200, 100, 200, 100, 200],
+        requireInteraction: esLlamada ? true : (data.requireInteraction || false),
         silent: false,
         renotify: true,
         timestamp: Date.now()
     };
 
-    event.waitUntil(self.registration.showNotification(data.title, options));
+    event.waitUntil(
+        self.registration.showNotification(data.title, options)
+    );
 });
 
 // ================================================================
