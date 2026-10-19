@@ -11,12 +11,16 @@
 //   bloqueos: (usuario_id, bloqueado_id, motivo, created_at)
 //   función public.puede_llamar(p_origen, p_destino)
 // El backend usa service_role (omite RLS).
+
 const express = require('express');
 const crypto = require('crypto');
 const { AccessToken } = require('livekit-server-sdk');
 const { supabaseAdmin } = require('../config/supabase');
 const { verificarToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
+
+// NUEVO: Importamos el helper de Push para notificar al destinatario
+const { enviarPushLlamadaEntrante } = require('./push');
 
 const router = express.Router();
 
@@ -167,6 +171,30 @@ router.post('/iniciar', verificarToken, async (req, res) => {
     if (errIns) throw errIns;
 
     await registrarParticipante(id, uid, 'caller', 'invited');
+
+    // ============================================================
+    // NUEVO: Disparar Notificación Push al destinatario
+    // ============================================================
+    try {
+      // Obtenemos el nombre y avatar del que llama para la notificación
+      const { data: creador } = await supabaseAdmin
+        .from('usuarios')
+        .select('nombre, avatar_url')
+        .eq('id', uid)
+        .maybeSingle();
+
+      const nombreCreador = creador?.nombre || 'Alguien';
+      const avatarCreador = creador?.avatar_url || '/icon-192.png';
+
+      // Enviamos el push sin bloquear la respuesta HTTP (fire and forget)
+      enviarPushLlamadaEntrante(destinoId, nombreCreador, avatarCreador, id)
+        .catch((err) => logger.error(`[llamadas] Error enviando Push: ${err.message}`));
+
+    } catch (pushErr) {
+      // Si falla el push, no rompemos la llamada. Solo lo registramos en logs.
+      logger.error(`[llamadas] Error preparando Push: ${pushErr.message}`);
+    }
+    // ============================================================
 
     return res.json({
       success: true,
