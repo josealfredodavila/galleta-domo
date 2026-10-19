@@ -40,7 +40,7 @@
             flex-direction: column;
         }
 
-        /* Header Estilo X */
+        /* Header */
         .help-header {
             position: sticky;
             top: 0;
@@ -52,26 +52,28 @@
             padding: 14px 20px;
             display: flex;
             align-items: center;
-            gap: 16px;
+            gap: 12px;
         }
 
-        /* NUEVO: Estilo del botón de regreso con texto */
         .back-btn {
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: transparent;
-            border: none;
+            border: 1px solid var(--border); /* Borde añadido para que se vea como en Configuración */
             color: var(--text-primary);
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, border-color 0.2s;
             flex-shrink: 0;
         }
-        .back-btn:hover { background: rgba(255, 255, 255, 0.1); }
-        .back-btn svg { width: 20px; height: 20px; fill: currentColor; }
+        .back-btn:hover { 
+            background: rgba(255, 255, 255, 0.1); 
+            border-color: var(--cyan);
+        }
+        .back-btn svg { width: 22px; height: 22px; fill: currentColor; }
 
         .header-content {
             display: flex;
@@ -79,10 +81,11 @@
         }
 
         .header-title {
-            font-family: var(--font-base); /* Cambiado a Inter para que se vea como en Configuración */
-            font-size: 1.1rem;
+            font-family: var(--font-base);
+            font-size: 1.15rem;
             font-weight: 700;
             color: var(--text-primary);
+            line-height: 1.2;
         }
 
         .header-subtitle {
@@ -238,7 +241,7 @@
 <body>
 
     <header class="help-header">
-        <!-- Botón de regreso actualizado con redirección directa a configuración -->
+        <!-- Botón de regreso actualizado a Configuración -->
         <button class="back-btn" onclick="window.location.href='/features/perfil/configuracion/index.html'" aria-label="Volver a Configuración">
             <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </button>
