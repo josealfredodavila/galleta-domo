@@ -1,13 +1,15 @@
 // ================================================================
-// ROUTES/PUSH.JS — Csariel's
+// ROUTES/PUSH.JS — Csariel's · v2.0 (Soporte para Llamadas Push)
 //   GET  /api/push/vapid-public-key → clave pública VAPID
 //   POST /api/push/subscribe        → guarda suscripción
 //   POST /api/push/unsubscribe      → desactiva suscripción
 //   POST /api/push/test             → notificación de prueba
 //   POST /api/push/broadcast-live   → avisa a seguidores de un live ACTIVO
+//   POST /api/push/llamada-entrante → notifica al destinatario de una llamada
 // Exporta:
 //   enviarPushAUsuarios(ids, payload)
 //   enviarPushASeguidores(streamerId, payload)
+//   enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamadaId)
 // ================================================================
 
 const express = require('express');
@@ -151,7 +153,6 @@ router.post('/test', verificarAutenticacion, async (req, res) => {
 // ================================================================
 // POST /broadcast-live
 // Solo el dueño de un live EN VIVO puede avisar a sus seguidores.
-// El título sale de la base de datos, no del cliente.
 // ================================================================
 router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
     try {
@@ -160,7 +161,6 @@ router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
             return res.status(400).json({ success: false, error: 'stream_id inválido' });
         }
 
-        // El live debe existir, estar activo y ser del usuario autenticado
         const { data: stream, error: errStream } = await supabaseAdmin
             .from('transmisiones')
             .select('id, titulo, streamer_id, estado, is_live')
@@ -213,6 +213,62 @@ router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
 });
 
 // ================================================================
+// NUEVO: POST /llamada-entrante
+// Envía push al destinatario de una llamada.
+// ================================================================
+router.post('/llamada-entrante', verificarAutenticacion, async (req, res) => {
+    try {
+        const { llamadaId, destinatarioId } = req.body || {};
+        if (!llamadaId || !destinatarioId) {
+            return res.status(400).json({ success: false, error: 'Faltan llamadaId o destinatarioId' });
+        }
+
+        // Validar seguridad: que el creador de la llamada sea quien hace la petición
+        const { data: llamada } = await supabaseAdmin
+            .from('llamadas')
+            .select('creador_id, estado')
+            .eq('id', llamadaId)
+            .maybeSingle();
+
+        if (!llamada || llamada.creador_id !== req.user.id || llamada.estado !== 'ringing') {
+            return res.status(403).json({ success: false, error: 'Llamada no válida o no autorizada' });
+        }
+
+        const { data: usuario } = await supabaseAdmin
+            .from('usuarios')
+            .select('nombre, avatar_url')
+            .eq('id', req.user.id)
+            .maybeSingle();
+
+        const nombre = usuario?.nombre || 'Alguien';
+        const avatar = usuario?.avatar_url || '/icon-192.png';
+
+        const resultado = await enviarPushAUsuarios([destinatarioId], {
+            title: `📞 Llamada de ${nombre}`,
+            body: 'Toca para contestar la videollamada',
+            icon: avatar,
+            badge: '/badge-72.png',
+            url: `/features/mensajes/mensajes.html?llamadaId=${llamadaId}`,
+            tag: `llamada-${llamadaId}`,
+            requireInteraction: true,
+            vibrate: [500, 200, 500, 200, 500],
+            data: { tipo: 'llamada_entrante', llamadaId }
+        });
+
+        console.log(`[Push] Llamada ${llamadaId}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
+
+        return res.json({
+            success: true,
+            enviados: resultado.enviados,
+            fallidos: resultado.fallidos
+        });
+    } catch (error) {
+        console.error('[Push] Error en /llamada-entrante:', error.message);
+        return res.status(500).json({ success: false, error: 'Error interno' });
+    }
+});
+
+// ================================================================
 // HELPER: push a usuarios específicos
 // ================================================================
 async function enviarPushAUsuarios(usuarioIds, payload) {
@@ -248,6 +304,8 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
         url: payload.url || '/',
         tag: payload.tag || 'default',
         data: payload.data || {},
+        requireInteraction: payload.requireInteraction || false,
+        vibrate: payload.vibrate || [200, 100, 200, 100, 200],
         timestamp: Date.now()
     });
 
@@ -310,6 +368,24 @@ async function enviarPushASeguidores(streamerId, payload) {
     }
 }
 
+// ================================================================
+// NUEVO HELPER: Push específico para llamadas entrantes
+// ================================================================
+async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamadaId) {
+    return await enviarPushAUsuarios([destinatarioId], {
+        title: `📞 Llamada de ${nombre}`,
+        body: 'Toca para contestar la videollamada',
+        icon: avatar || '/icon-192.png',
+        badge: '/badge-72.png',
+        url: `/features/mensajes/mensajes.html?llamadaId=${llamadaId}`,
+        tag: `llamada-${llamadaId}`,
+        requireInteraction: true,
+        vibrate: [500, 200, 500, 200, 500],
+        data: { tipo: 'llamada_entrante', llamadaId }
+    });
+}
+
 module.exports = router;
 module.exports.enviarPushAUsuarios = enviarPushAUsuarios;
 module.exports.enviarPushASeguidores = enviarPushASeguidores;
+module.exports.enviarPushLlamadaEntrante = enviarPushLlamadaEntrante;
