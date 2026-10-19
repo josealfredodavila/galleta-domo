@@ -1,7 +1,7 @@
 /* ============================================================
    contactos.js
    Sariel's Ecosystem · Contactos
-   v8 — Botones con texto claro + Modales custom (sin alert/confirm nativos)
+   v9 — Botones Mensaje y Llamar con parámetros correctos
    ============================================================ */
 
 (() => {
@@ -92,11 +92,8 @@
     /* ============================================================
        MODAL CUSTOM DE CONFIRMACIÓN
        ============================================================ */
-    let _confirmResolve = null;
-
     function showConfirm({ title, message, icon = '⚠️', confirmText = 'Aceptar', cancelText = 'Cancelar', danger = true }) {
         return new Promise((resolve) => {
-            _confirmResolve = resolve;
             const overlay = document.getElementById('confirmModalOverlay');
             const iconEl = document.getElementById('confirmModalIcon');
             const titleEl = document.getElementById('confirmModalTitle');
@@ -128,7 +125,6 @@
             const finish = (value) => {
                 overlay.classList.remove('active');
                 overlay.setAttribute('aria-hidden', 'true');
-                _confirmResolve = null;
                 resolve(value);
             };
 
@@ -185,7 +181,7 @@
                 const esUltimoIntento = intento === CONFIG.RETRY_MAX - 1;
                 if (esUltimoIntento) break;
                 const delay = CONFIG.RETRY_BASE_MS * Math.pow(2, intento);
-                console.warn(`[Contactos] Reintentando ${contexto} en ${delay}ms (intento ${intento + 1}/${CONFIG.RETRY_MAX})`, error);
+                console.warn(`[Contactos] Reintentando ${contexto} en ${delay}ms`, error);
                 await new Promise((r) => setTimeout(r, delay));
             }
         }
@@ -454,7 +450,7 @@
     }
 
     /* ============================================================
-       ✅ NUEVA TARJETA DE CONTACTO CON BOTONES CLAROS
+       TARJETA CON BOTONES CLAROS
        ============================================================ */
     function renderizarTarjeta(contacto) {
         const inicial = escapeHtml((contacto.nombre || 'U').charAt(0).toUpperCase());
@@ -738,7 +734,7 @@
     window.toggleFavorito = toggleFavorito;
 
     /* ============================================================
-       ELIMINAR CONTACTO (con modal custom)
+       ELIMINAR CONTACTO (modal custom)
        ============================================================ */
     async function eliminarContacto(contactoRowId) {
         const client = sb();
@@ -746,7 +742,6 @@
         if (!client || !session) { showToast('⚠️ Inicia sesión', 'error'); return; }
         if (!contactoRowId) return;
 
-        // ✅ Modal custom en lugar de window.confirm
         const confirmado = await showConfirm({
             title: 'Eliminar contacto',
             message: '¿Quieres eliminar este contacto de tu lista? Esta acción no se puede deshacer.',
@@ -786,7 +781,7 @@
     window.eliminarContacto = eliminarContacto;
 
     /* ============================================================
-       BLOQUEAR CONTACTO (con modal custom)
+       BLOQUEAR CONTACTO (modal custom)
        ============================================================ */
     async function bloquearContacto(contactoId) {
         const client = sb();
@@ -795,7 +790,6 @@
         if (!contactoId) return;
         if (contactoId === session.user.id) { showToast('⚠️ No puedes bloquearte a ti mismo', 'warning'); return; }
 
-        // ✅ Modal custom en lugar de window.confirm
         const confirmado = await showConfirm({
             title: 'Bloquear usuario',
             message: '¿Quieres bloquear a este usuario? No podrá llamarte ni tú a él.',
@@ -817,7 +811,7 @@
     window.bloquearContacto = bloquearContacto;
 
     /* ============================================================
-       LLAMAR CONTACTO
+       LLAMAR CONTACTO (con acción)
        ============================================================ */
     function llamarContacto(contactoId) {
         if (!contactoId) return;
@@ -826,7 +820,7 @@
     window.llamarContacto = llamarContacto;
 
     /* ============================================================
-       MENSAJE
+       MENSAJE (chat directo)
        ============================================================ */
     function abrirMensaje(contactoId) {
         if (!contactoId) return;
