@@ -1,5 +1,9 @@
 // ================================================================
-// SERVICE WORKER — Csariel's · v3 (llamadas con botones)
+// SERVICE WORKER — Csariel's · v3.2 (llamadas con botones)
+// CAMBIOS v3.2:
+// - Rechazo: se envía a todas las ventanas de la app SIN navegarlas.
+//   Si la app está cerrada, abre Mensajes con action=reject.
+// - Aceptar: sigue navegando a Mensajes (LiveKit corre ahí).
 // ================================================================
 
 const PREFIJO_CACHE = 'csariels-';
@@ -19,7 +23,6 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    // Borra cachés de versiones anteriores para no servir recursos viejos
     const nombres = await caches.keys();
     await Promise.all(
       nombres
@@ -43,7 +46,6 @@ self.addEventListener('push', (event) => {
 
   const esLlamada = data?.data?.tipo === 'llamada_entrante';
 
-  // Si el backend no mandó actions para una llamada, las ponemos aquí
   let actions = [];
   if (esLlamada) {
     actions = Array.isArray(data.actions) && data.actions.length
@@ -72,25 +74,28 @@ self.addEventListener('push', (event) => {
 });
 
 // ================================================================
-// NOTIFICATIONCLICK: botones Aceptar / Rechazar y clic en el cuerpo
+// NOTIFICATIONCLICK: Aceptar / Rechazar / clic en el cuerpo
 // ================================================================
 self.addEventListener('notificationclick', (event) => {
   const info = event.notification.data || {};
   const esLlamada = info.tipo === 'llamada_entrante';
   event.notification.close();
 
-  // RECHAZAR llamada: registrar el rechazo aunque la app esté cerrada
+  // RECHAZAR: no navega ninguna pestaña.
   if (esLlamada && event.action === 'reject') {
     event.waitUntil((async () => {
       const ventanas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
-      const ventana = ventanas.find((c) => c.url.startsWith(self.location.origin));
-      if (ventana) {
-        // La app está abierta: se avisa a la página
-        ventana.postMessage({ tipo: 'notificacion_click', accion: 'reject', llamadaId: info.llamadaId });
+      const propias = ventanas.filter((c) => c.url.startsWith(self.location.origin));
+
+      if (propias.length > 0) {
+        // App abierta en cualquier página: cada una procesa el rechazo (auth-global.js)
+        const mensaje = { tipo: 'notificacion_click', accion: 'reject', llamadaId: info.llamadaId };
+        propias.forEach((c) => c.postMessage(mensaje));
         return;
       }
-      // La app está cerrada: se abre con action=reject para que la página registre el rechazo
-      const u = new URL(info.url || '/', self.location.origin);
+
+      // App cerrada: abrir Mensajes para registrar el rechazo
+      const u = new URL('/features/mensajes/mensajes.html', self.location.origin);
       u.searchParams.set('llamadaId', info.llamadaId);
       u.searchParams.set('action', 'reject');
       return self.clients.openWindow(u.href);
@@ -98,7 +103,7 @@ self.addEventListener('notificationclick', (event) => {
     return;
   }
 
-  // ACEPTAR o clic en el cuerpo
+  // ACEPTAR o clic en el cuerpo: sí lleva a Mensajes
   let url = info.url || '/';
   if (event.action === 'accept' && esLlamada) {
     url += (url.includes('?') ? '&' : '?') + 'accion=aceptar';
