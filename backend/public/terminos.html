@@ -1,23 +1,3 @@
-<!-- ================================================================
-     CSARIEL'S ECOSYSTEM
-     Términos y Condiciones de Uso (Generales)
-     Ruta: /backend/public/terminos.html
-     
-     Diseño: Fondo claro legible + branding Csariel's (verde + dorado)
-     Cumple WCAG AAA de contraste
-     Optimizado para impresión
-     
-     Fundamento legal:
-     - Código de Comercio (Art. 89, 90, 91, 92)
-     - Ley Federal de Protección al Consumidor (Art. 76 Bis, 76 Bis 1)
-     - Ley Federal de Protección de Datos Personales (LFPDPPP)
-     - Ley de Firma Electrónica Avanzada (LFEA)
-     - Ley Fintech (Art. 30-36 - activos virtuales)
-     - LFPIORPI
-     - Ley Federal del Derecho de Autor (LFDA)
-     - Ley Federal de Protección a la Propiedad Industrial (LFPPI)
-     - Código Civil Federal
-     ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -27,31 +7,22 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- CDN de Supabase (obligatorio para autenticación) -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-
-    <!-- Módulo global Csariel's (crea window.supabaseClient) -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
     <style>
-        /* ================================================================
-           VARIABLES · Diseño claro con branding Csariel's
-           Contraste WCAG AAA (>7:1)
-           ================================================================ */
         :root {
             --gold: #B8923A;
             --gold-light: #D4AF37;
             --gold-bg: #FDF9ED;
             --green-brand: #0F2D1A;
             --green-bg: #F0F7F2;
-
             --bg: #FEFEFE;
             --bg-soft: #FAFAF7;
             --text: #1F2937;
             --text-soft: #4B5563;
             --text-muted: #6B7280;
             --border: #E5E7EB;
-
             --link: #0052CC;
             --link-hover: #003D99;
             --success: #047857;
@@ -62,7 +33,6 @@
             --danger-bg: #FEF2F2;
             --info: #1E40AF;
             --info-bg: #EFF6FF;
-
             --radius: 12px;
             --radius-xl: 16px;
             --transition: all 0.2s ease;
@@ -86,7 +56,27 @@
             padding: 0 20px 60px;
         }
 
-        /* Header */
+        /* ===== BOTÓN CENTRO DE AYUDA ===== */
+        .btn-centro-ayuda {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background: var(--green-bg);
+            border: 1px solid var(--green-brand);
+            color: var(--green-brand);
+            text-decoration: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        .btn-centro-ayuda:hover {
+            background: var(--green-brand);
+            color: #fff;
+        }
+
         .header {
             display: flex;
             justify-content: space-between;
@@ -100,47 +90,13 @@
             flex-wrap: wrap;
             gap: 10px;
         }
-        .logo {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            text-decoration: none;
-            color: var(--green-brand);
-        }
-        .logo-hex {
-            font-size: 1.7rem;
-            color: var(--gold-light);
-            font-family: 'Orbitron', monospace;
-            line-height: 1;
-        }
-        .logo-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.15rem;
-            color: var(--green-brand);
-            letter-spacing: 2px;
-            font-weight: 700;
-        }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--green-brand); }
+        .logo-hex { font-size: 1.7rem; color: var(--gold-light); font-family: 'Orbitron', monospace; line-height: 1; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.15rem; color: var(--green-brand); letter-spacing: 2px; font-weight: 700; }
         .logo-text span { color: var(--gold-light); }
-        .logo-badge {
-            font-size: 0.55rem;
-            background: var(--green-brand);
-            color: #fff;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-weight: 700;
-            letter-spacing: 1px;
-        }
-        .network-badge {
-            font-size: 0.7rem;
-            color: var(--green-brand);
-            background: var(--green-bg);
-            padding: 4px 14px;
-            border-radius: 20px;
-            border: 1px solid var(--green-brand);
-            font-weight: 600;
-        }
+        .logo-badge { font-size: 0.55rem; background: var(--green-brand); color: #fff; padding: 3px 10px; border-radius: 20px; font-weight: 700; letter-spacing: 1px; }
+        .network-badge { font-size: 0.7rem; color: var(--green-brand); background: var(--green-bg); padding: 4px 14px; border-radius: 20px; border: 1px solid var(--green-brand); font-weight: 600; }
 
-        /* Botón volver */
         .btn-back {
             display: inline-flex;
             align-items: center;
@@ -157,452 +113,84 @@
             transition: var(--transition);
             cursor: pointer;
         }
-        .btn-back .simbolo {
-            color: var(--gold-light);
-            font-family: 'Orbitron', monospace;
-        }
-        .btn-back:hover {
-            border-color: var(--gold-light);
-            color: var(--gold);
-            background: var(--gold-bg);
-        }
+        .btn-back .simbolo { color: var(--gold-light); font-family: 'Orbitron', monospace; }
+        .btn-back:hover { border-color: var(--gold-light); color: var(--gold); background: var(--gold-bg); }
 
-        /* Hero */
-        .hero {
-            text-align: center;
-            padding: 30px 20px 24px;
-            margin-bottom: 28px;
-            border-bottom: 1px solid var(--border);
-        }
-        .hero .etiqueta {
-            display: inline-block;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.65rem;
-            letter-spacing: 2px;
-            color: var(--gold);
-            background: var(--gold-bg);
-            border: 1px solid var(--gold-light);
-            padding: 6px 16px;
-            border-radius: 20px;
-            margin-bottom: 16px;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-        .hero h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.7rem;
-            color: var(--green-brand);
-            margin-bottom: 10px;
-            line-height: 1.3;
-            font-weight: 700;
-        }
-        .hero .subtitulo {
-            font-size: 0.95rem;
-            color: var(--text-soft);
-            margin-bottom: 20px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .hero .meta-info {
-            display: inline-flex;
-            gap: 32px;
-            flex-wrap: wrap;
-            justify-content: center;
-            font-size: 0.8rem;
-            color: var(--text-soft);
-        }
-        .hero .meta-info > div {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .hero .meta-info strong {
-            color: var(--text-muted);
-            font-size: 0.65rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-weight: 700;
-        }
-        .hero .meta-info span {
-            color: var(--text);
-            font-weight: 600;
-        }
+        .hero { text-align: center; padding: 30px 20px 24px; margin-bottom: 28px; border-bottom: 1px solid var(--border); }
+        .hero .etiqueta { display: inline-block; font-family: 'Orbitron', monospace; font-size: 0.65rem; letter-spacing: 2px; color: var(--gold); background: var(--gold-bg); border: 1px solid var(--gold-light); padding: 6px 16px; border-radius: 20px; margin-bottom: 16px; text-transform: uppercase; font-weight: 700; }
+        .hero h1 { font-family: 'Orbitron', monospace; font-size: 1.7rem; color: var(--green-brand); margin-bottom: 10px; line-height: 1.3; font-weight: 700; }
+        .hero .subtitulo { font-size: 0.95rem; color: var(--text-soft); margin-bottom: 20px; max-width: 600px; margin-left: auto; margin-right: auto; }
+        .hero .meta-info { display: inline-flex; gap: 32px; flex-wrap: wrap; justify-content: center; font-size: 0.8rem; color: var(--text-soft); }
+        .hero .meta-info > div { display: flex; flex-direction: column; gap: 2px; }
+        .hero .meta-info strong { color: var(--text-muted); font-size: 0.65rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; }
+        .hero .meta-info span { color: var(--text); font-weight: 600; }
 
-        /* Aviso grande */
-        .aviso-grande {
-            background: var(--info-bg);
-            border: 1px solid #BFDBFE;
-            border-left: 4px solid var(--info);
-            border-radius: var(--radius);
-            padding: 20px 24px;
-            margin-bottom: 28px;
-            font-size: 0.92rem;
-            color: var(--text-soft);
-            line-height: 1.7;
-        }
-        .aviso-grande strong {
-            color: var(--info);
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 700;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.8rem;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
+        .aviso-grande { background: var(--info-bg); border: 1px solid #BFDBFE; border-left: 4px solid var(--info); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 28px; font-size: 0.92rem; color: var(--text-soft); line-height: 1.7; }
+        .aviso-grande strong { color: var(--info); display: block; margin-bottom: 8px; font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.8rem; letter-spacing: 0.5px; text-transform: uppercase; }
 
-        /* Índice */
-        .indice {
-            background: var(--bg-soft);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-xl);
-            padding: 24px 28px;
-            margin-bottom: 32px;
-        }
-        .indice h2 {
-            font-family: 'Orbitron', monospace;
-            font-size: 0.85rem;
-            color: var(--green-brand);
-            margin-bottom: 18px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .indice h2::before {
-            content: '◈';
-            color: var(--gold-light);
-            font-size: 1rem;
-        }
-        .indice ol {
-            list-style: none;
-            counter-reset: item;
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 4px;
-        }
-        .indice ol li {
-            counter-increment: item;
-            font-size: 0.88rem;
-        }
-        .indice ol li a {
-            color: var(--text-soft);
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: var(--transition);
-        }
-        .indice ol li a::before {
-            content: counter(item) ".";
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-weight: 700;
-            min-width: 24px;
-            font-size: 0.85rem;
-        }
-        .indice ol li a:hover {
-            background: var(--gold-bg);
-            color: var(--green-brand);
-        }
+        .indice { background: var(--bg-soft); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 24px 28px; margin-bottom: 32px; }
+        .indice h2 { font-family: 'Orbitron', monospace; font-size: 0.85rem; color: var(--green-brand); margin-bottom: 18px; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .indice h2::before { content: '◈'; color: var(--gold-light); font-size: 1rem; }
+        .indice ol { list-style: none; counter-reset: item; display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 4px; }
+        .indice ol li { counter-increment: item; font-size: 0.88rem; }
+        .indice ol li a { color: var(--text-soft); text-decoration: none; display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; transition: var(--transition); }
+        .indice ol li a::before { content: counter(item) "."; font-family: 'Orbitron', monospace; color: var(--gold); font-weight: 700; min-width: 24px; font-size: 0.85rem; }
+        .indice ol li a:hover { background: var(--gold-bg); color: var(--green-brand); }
 
-        /* Secciones */
-        .seccion {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-xl);
-            padding: 32px 30px;
-            margin-bottom: 24px;
-            scroll-margin-top: 90px;
-            transition: var(--transition);
-        }
-        .seccion:hover {
-            border-color: var(--gold-light);
-        }
-        .seccion h2 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.05rem;
-            color: var(--green-brand);
-            margin-bottom: 20px;
-            padding-bottom: 14px;
-            border-bottom: 2px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            letter-spacing: 0.5px;
-            font-weight: 700;
-        }
-        .seccion h2 .num {
-            background: var(--gold-light);
-            color: var(--green-brand);
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            min-width: 38px;
-            text-align: center;
-            font-weight: 700;
-            flex-shrink: 0;
-        }
-        .seccion h3 {
-            font-family: 'Inter', sans-serif;
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--green-brand);
-            margin: 24px 0 12px;
-        }
-        .seccion p {
-            font-size: 0.95rem;
-            color: var(--text-soft);
-            margin-bottom: 14px;
-            text-align: justify;
-        }
-        .seccion p strong {
-            color: var(--text);
-            font-weight: 700;
-        }
-        .seccion ul, .seccion ol {
-            margin: 12px 0 16px 28px;
-            font-size: 0.95rem;
-            color: var(--text-soft);
-        }
-        .seccion ul li, .seccion ol li {
-            margin-bottom: 8px;
-            line-height: 1.7;
-        }
-        .seccion ul li::marker {
-            color: var(--gold);
-        }
-        .seccion ol li::marker {
-            color: var(--gold);
-            font-weight: 700;
-        }
-        .seccion a {
-            color: var(--link);
-            text-decoration: underline;
-            font-weight: 500;
-        }
-        .seccion a:hover {
-            color: var(--link-hover);
-        }
+        .seccion { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius-xl); padding: 32px 30px; margin-bottom: 24px; scroll-margin-top: 90px; transition: var(--transition); }
+        .seccion:hover { border-color: var(--gold-light); }
+        .seccion h2 { font-family: 'Orbitron', monospace; font-size: 1.05rem; color: var(--green-brand); margin-bottom: 20px; padding-bottom: 14px; border-bottom: 2px solid var(--border); display: flex; align-items: center; gap: 12px; letter-spacing: 0.5px; font-weight: 700; }
+        .seccion h2 .num { background: var(--gold-light); color: var(--green-brand); padding: 6px 12px; border-radius: 8px; font-size: 0.9rem; min-width: 38px; text-align: center; font-weight: 700; flex-shrink: 0; }
+        .seccion h3 { font-family: 'Inter', sans-serif; font-size: 1rem; font-weight: 700; color: var(--green-brand); margin: 24px 0 12px; }
+        .seccion p { font-size: 0.95rem; color: var(--text-soft); margin-bottom: 14px; text-align: justify; }
+        .seccion p strong { color: var(--text); font-weight: 700; }
+        .seccion ul, .seccion ol { margin: 12px 0 16px 28px; font-size: 0.95rem; color: var(--text-soft); }
+        .seccion ul li, .seccion ol li { margin-bottom: 8px; line-height: 1.7; }
+        .seccion ul li::marker { color: var(--gold); }
+        .seccion ol li::marker { color: var(--gold); font-weight: 700; }
+        .seccion a { color: var(--link); text-decoration: underline; font-weight: 500; }
+        .seccion a:hover { color: var(--link-hover); }
 
-        /* Avisos */
-        .aviso {
-            background: var(--info-bg);
-            border-left: 4px solid var(--info);
-            border-radius: 8px;
-            padding: 16px 20px;
-            margin: 20px 0;
-            font-size: 0.9rem;
-            color: var(--text-soft);
-            line-height: 1.65;
-        }
-        .aviso strong {
-            color: var(--info);
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 700;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.78rem;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-        }
-        .aviso.warning {
-            background: var(--warning-bg);
-            border-left-color: var(--warning);
-        }
+        .aviso { background: var(--info-bg); border-left: 4px solid var(--info); border-radius: 8px; padding: 16px 20px; margin: 20px 0; font-size: 0.9rem; color: var(--text-soft); line-height: 1.65; }
+        .aviso strong { color: var(--info); display: block; margin-bottom: 8px; font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.78rem; letter-spacing: 0.5px; text-transform: uppercase; }
+        .aviso.warning { background: var(--warning-bg); border-left-color: var(--warning); }
         .aviso.warning strong { color: var(--warning); }
-        .aviso.danger {
-            background: var(--danger-bg);
-            border-left-color: var(--danger);
-        }
-        .aviso.danger strong { color: var(--danger); }
-        .aviso.success {
-            background: var(--success-bg);
-            border-left-color: var(--success);
-        }
-        .aviso.success strong { color: var(--success); }
 
-        /* Sección de aceptación */
-        .aceptacion-container {
-            margin-top: 32px;
-            padding: 24px 26px;
-            background: var(--gold-bg);
-            border: 2px solid var(--gold-light);
-            border-radius: var(--radius-xl);
-        }
-        .aceptacion-wrapper {
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-        }
-        .aceptacion-container input[type="checkbox"] {
-            width: 24px;
-            height: 24px;
-            cursor: pointer;
-            flex-shrink: 0;
-            appearance: none;
-            -webkit-appearance: none;
-            background: #fff;
-            border: 2px solid var(--green-brand);
-            border-radius: 6px;
-            transition: var(--transition);
-            position: relative;
-            margin-top: 2px;
-        }
-        .aceptacion-container input[type="checkbox"]:checked {
-            background: var(--green-brand);
-            border-color: var(--green-brand);
-        }
-        .aceptacion-container input[type="checkbox"]:checked::after {
-            content: "✓";
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: var(--gold-light);
-            font-size: 16px;
-            font-weight: 700;
-        }
-        .aceptacion-container label {
-            color: var(--text);
-            font-size: 0.92rem;
-            line-height: 1.6;
-            cursor: pointer;
-        }
-        .aceptacion-container label strong {
-            color: var(--green-brand);
-            font-weight: 700;
-        }
+        .aceptacion-container { margin-top: 32px; padding: 24px 26px; background: var(--gold-bg); border: 2px solid var(--gold-light); border-radius: var(--radius-xl); }
+        .aceptacion-wrapper { display: flex; align-items: flex-start; gap: 14px; }
+        .aceptacion-container input[type="checkbox"] { width: 24px; height: 24px; cursor: pointer; flex-shrink: 0; appearance: none; -webkit-appearance: none; background: #fff; border: 2px solid var(--green-brand); border-radius: 6px; transition: var(--transition); position: relative; margin-top: 2px; }
+        .aceptacion-container input[type="checkbox"]:checked { background: var(--green-brand); border-color: var(--green-brand); }
+        .aceptacion-container input[type="checkbox"]:checked::after { content: "✓"; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: var(--gold-light); font-size: 16px; font-weight: 700; }
+        .aceptacion-container label { color: var(--text); font-size: 0.92rem; line-height: 1.6; cursor: pointer; }
+        .aceptacion-container label strong { color: var(--green-brand); font-weight: 700; }
 
-        /* Firma digital */
-        .firma-digital {
-            margin-top: 16px;
-            padding: 16px 20px;
-            background: #fff;
-            border: 2px dashed var(--gold-light);
-            border-radius: var(--radius);
-            font-family: 'Courier New', monospace;
-            font-size: 0.82rem;
-            color: var(--text-soft);
-            display: none;
-            line-height: 1.7;
-        }
+        .firma-digital { margin-top: 16px; padding: 16px 20px; background: #fff; border: 2px dashed var(--gold-light); border-radius: var(--radius); font-family: 'Courier New', monospace; font-size: 0.82rem; color: var(--text-soft); display: none; line-height: 1.7; }
         .firma-digital.visible { display: block; }
-        .firma-digital .hash {
-            color: var(--green-brand);
-            font-weight: 700;
-            word-break: break-all;
-        }
-        .firma-digital .fecha-hora {
-            color: var(--success);
-            font-weight: 600;
-        }
-        .firma-digital .titulo-firma {
-            color: var(--gold);
-            font-weight: 700;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            display: block;
-            margin-bottom: 8px;
-        }
+        .firma-digital .hash { color: var(--green-brand); font-weight: 700; word-break: break-all; }
+        .firma-digital .fecha-hora { color: var(--success); font-weight: 600; }
+        .firma-digital .titulo-firma { color: var(--gold); font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; display: block; margin-bottom: 8px; }
 
-        /* Botón volver */
-        .btn-volver {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 14px 32px;
-            background: var(--green-brand);
-            color: #fff;
-            text-decoration: none;
-            border-radius: 40px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.85rem;
-            transition: var(--transition);
-            border: none;
-            cursor: pointer;
-            margin-top: 24px;
-        }
-        .btn-volver::before {
-            content: '◈';
-            color: var(--gold-light);
-        }
-        .btn-volver:hover {
-            transform: translateY(-3px);
-            background: #1a4a2a;
-            box-shadow: 0 12px 32px rgba(15, 45, 26, 0.3);
-        }
+        .btn-volver { display: inline-flex; align-items: center; gap: 8px; padding: 14px 32px; background: var(--green-brand); color: #fff; text-decoration: none; border-radius: 40px; font-family: 'Orbitron', monospace; font-weight: 700; font-size: 0.85rem; transition: var(--transition); border: none; cursor: pointer; margin-top: 24px; }
+        .btn-volver::before { content: '◈'; color: var(--gold-light); }
+        .btn-volver:hover { transform: translateY(-3px); background: #1a4a2a; box-shadow: 0 12px 32px rgba(15, 45, 26, 0.3); }
 
-        /* Footer */
-        .footer-legal {
-            margin-top: 40px;
-            padding-top: 28px;
-            border-top: 2px solid var(--green-brand);
-            text-align: center;
-            font-size: 0.82rem;
-            color: var(--text-soft);
-            line-height: 1.8;
-        }
-        .footer-legal .marca {
-            color: var(--green-brand);
-            font-weight: 700;
-            font-family: 'Orbitron', monospace;
-            font-size: 0.9rem;
-        }
+        .footer-legal { margin-top: 40px; padding-top: 28px; border-top: 2px solid var(--green-brand); text-align: center; font-size: 0.82rem; color: var(--text-soft); line-height: 1.8; }
+        .footer-legal .marca { color: var(--green-brand); font-weight: 700; font-family: 'Orbitron', monospace; font-size: 0.9rem; }
         .footer-legal .marca::before { content: '◈ '; color: var(--gold-light); }
 
-        /* Estado de procesamiento */
-        .aceptacion-container.procesando {
-            opacity: 0.75;
-        }
-        .aceptacion-container.procesando input {
-            cursor: wait;
-        }
+        .aceptacion-container.procesando { opacity: 0.75; }
+        .aceptacion-container.procesando input { cursor: wait; }
 
-        /* Mensaje de error */
-        .mensaje-error {
-            display: none;
-            margin-top: 14px;
-            padding: 12px 16px;
-            border-radius: 8px;
-            background: var(--danger-bg);
-            border-left: 4px solid var(--danger);
-            color: var(--danger);
-            font-size: 0.88rem;
-            line-height: 1.5;
-        }
-        .mensaje-error.visible {
-            display: block;
-        }
+        .mensaje-error { display: none; margin-top: 14px; padding: 12px 16px; border-radius: 8px; background: var(--danger-bg); border-left: 4px solid var(--danger); color: var(--danger); font-size: 0.88rem; line-height: 1.5; }
+        .mensaje-error.visible { display: block; }
 
-        /* Impresión */
         @media print {
             body { background: #fff !important; color: #000 !important; font-size: 11pt; }
-            .header, .btn-back, .btn-volver, .aceptacion-container { display: none !important; }
+            .header, .btn-back, .btn-volver, .aceptacion-container, .btn-centro-ayuda { display: none !important; }
             .app { max-width: 100%; padding: 0; }
-            .seccion {
-                page-break-inside: avoid;
-                border: none;
-                padding: 12px 0;
-                margin-bottom: 12px;
-            }
-            .seccion h2 {
-                border-bottom: 2px solid #000 !important;
-                color: #000 !important;
-            }
-            .seccion h2 .num {
-                background: transparent !important;
-                color: #000 !important;
-                border: 1px solid #000;
-            }
+            .seccion { page-break-inside: avoid; border: none; padding: 12px 0; margin-bottom: 12px; }
+            .seccion h2 { border-bottom: 2px solid #000 !important; color: #000 !important; }
+            .seccion h2 .num { background: transparent !important; color: #000 !important; border: 1px solid #000; }
             .hero h1, .hero .etiqueta { color: #000 !important; background: transparent !important; }
             .indice { background: transparent !important; border: 1px solid #ccc; }
             .aviso, .aviso-grande { background: #f5f5f5 !important; border-left: 3px solid #333; }
@@ -610,7 +198,6 @@
             a[href]::after { content: " (" attr(href) ")"; font-size: 9pt; color: #666; }
         }
 
-        /* Responsive */
         @media (max-width: 640px) {
             body { font-size: 15px; }
             .app { padding: 0 16px 40px; }
@@ -629,7 +216,6 @@
 
     <div class="app">
 
-        <!-- Header -->
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
@@ -639,12 +225,11 @@
             <span class="network-badge" data-clave="terminos_network">◈ Polygon</span>
         </header>
 
-        <!-- Botón volver -->
-        <a href="/" class="btn-back">
-            <span class="simbolo">◈</span> Volver a la plataforma
+        <!-- BOTÓN VOLVER AL CENTRO DE AYUDA -->
+        <a href="/features/centro-ayuda/index.html" class="btn-centro-ayuda">
+            ← Volver al Centro de Ayuda
         </a>
 
-        <!-- Hero -->
         <div class="hero">
             <span class="etiqueta">Documento Legal</span>
             <h1 data-clave="terminos_titulo">Términos y Condiciones de Uso</h1>
@@ -668,13 +253,11 @@
             </div>
         </div>
 
-        <!-- Aviso grande -->
         <div class="aviso-grande">
             <strong>◈ Aceptación obligatoria</strong>
             Al utilizar Csariel's Ecosystem, el programa de lealtad ES.stoks, los NFTs Domo o el Mercado P2P, aceptas los presentes Términos y Condiciones. Si no estás de acuerdo, debes abstenerte de usar la plataforma.
         </div>
 
-        <!-- Índice -->
         <div class="indice">
             <h2>Índice de Contenidos</h2>
             <ol>
@@ -696,7 +279,6 @@
             </ol>
         </div>
 
-        <!-- ART 1 -->
         <section class="seccion" id="art-1">
             <h2><span class="num">1</span> Aceptación de los Términos</h2>
             <p><strong>1.1.</strong> Al registrarte, conectar tu wallet o utilizar cualquier servicio de Csariel's Ecosystem (en adelante, "la Plataforma"), aceptas cumplir con estos Términos y Condiciones, así como con nuestras Políticas de Privacidad y Cookies.</p>
@@ -704,7 +286,6 @@
             <p><strong>1.3.</strong> Conforme al <strong>artículo 89 del Código de Comercio</strong>, los actos de comercio pueden celebrarse mediante mensajes de datos, los cuales surten los mismos efectos jurídicos que la documentación impresa.</p>
         </section>
 
-        <!-- ART 2 -->
         <section class="seccion" id="art-2">
             <h2><span class="num">2</span> Registro y Elegibilidad</h2>
             <div class="aviso warning">
@@ -717,7 +298,6 @@
             <p><strong>2.4.</strong> Si detectamos que un menor se registró sin autorización, eliminaremos su cuenta y sus datos personales.</p>
         </section>
 
-        <!-- ART 3 -->
         <section class="seccion" id="art-3">
             <h2><span class="num">3</span> Programa de Lealtad y Tokens ES.stoks</h2>
             <h3>3.1. Acumulación de Tokens ES.stoks</h3>
@@ -734,7 +314,6 @@
             <p>Al acumular <strong>12 tokens ES.stoks</strong> (ya sea por compras o por compra en el P2P), el usuario tiene derecho a <strong>mintear un NFT Domo</strong> en la red Polygon. Los 12 tokens se <strong>queman (burn)</strong> en el Smart Contract para validar el derecho.</p>
         </section>
 
-        <!-- ART 4 -->
         <section class="seccion" id="art-4">
             <h2><span class="num">4</span> NFT Domo y Regla de 30 Días</h2>
             <div class="aviso warning">
@@ -760,7 +339,6 @@
             <p>No realizamos envíos de galletas. El canje es <strong>presencial en Puebla</strong>.</p>
         </section>
 
-        <!-- ART 5 -->
         <section class="seccion" id="art-5">
             <h2><span class="num">5</span> NFT Conmemorativo (Soulbound)</h2>
             <div class="aviso warning">
@@ -773,7 +351,6 @@
             <p><strong>5.4. Naturaleza permanente:</strong> El NFT conmemorativo es permanente e inmutable. No se puede revertir ni recuperar el derecho de canje. <strong>Sigue siendo intransferible.</strong></p>
         </section>
 
-        <!-- ART 6 -->
         <section class="seccion" id="art-6">
             <h2><span class="num">6</span> Mercado Secundario P2P</h2>
             <div class="aviso">
@@ -787,7 +364,6 @@
             <p><strong>6.5. Responsabilidad del Usuario:</strong> Csariel's actúa como intermediario tecnológico. No se responsabiliza por negociaciones, precios o disputas entre compradores y vendedores.</p>
         </section>
 
-        <!-- ART 7 -->
         <section class="seccion" id="art-7">
             <h2><span class="num">7</span> Infraestructura y Datos Blockchain</h2>
             <p><strong>7.1. Transparencia en Blockchain:</strong> La dirección pública de wallet en Polygon, transacciones, minteos y burns se registran de forma <strong>pública e inmutable</strong> en la blockchain y no pueden ser borrados ni modificados por Csariel's.</p>
@@ -795,7 +371,6 @@
             <p><strong>7.3. Derecho de Eliminación:</strong> El usuario puede solicitar la eliminación de sus datos personales de nuestras bases de datos centralizadas (Hetzner/Supabase) en cualquier momento, pero acepta que los registros en la blockchain de Polygon (transacciones, tokens, NFTs) <strong>permanecerán públicos</strong> por la naturaleza descentralizada de la red.</p>
         </section>
 
-        <!-- ART 8 -->
         <section class="seccion" id="art-8">
             <h2><span class="num">8</span> Política de Reembolsos y Cancelaciones</h2>
             <p><strong>8.1. Naturaleza Digital:</strong> Los tokens ES.stoks, NFTs y transacciones en la blockchain son <strong>irreversibles por su naturaleza tecnológica</strong>.</p>
@@ -803,7 +378,6 @@
             <p><strong>8.3. Excepción:</strong> En caso de error comprobado del sistema, Csariel's evaluará cada caso de forma individual y podrá ofrecer soluciones discrecionales.</p>
         </section>
 
-        <!-- ART 9 -->
         <section class="seccion" id="art-9">
             <h2><span class="num">9</span> Gas Fees y Costos de Red</h2>
             <p><strong>9.1. Responsabilidad del Usuario:</strong> Todas las transacciones en la red Polygon requieren el pago de <strong>gas fees (comisiones de red)</strong>. Estas comisiones son pagadas por el usuario que ejecuta la transacción.</p>
@@ -811,7 +385,6 @@
             <p><strong>9.3. Congestión de Red:</strong> Csariel's no es responsable por retrasos, fallas o costos elevados debido a congestión en la red Polygon.</p>
         </section>
 
-        <!-- ART 10 -->
         <section class="seccion" id="art-10">
             <h2><span class="num">10</span> Limitación de Responsabilidad</h2>
             <p><strong>10.1. Plataforma "Como Está":</strong> Csariel's proporciona la Plataforma "tal cual" y "según disponibilidad". No garantizamos que el servicio sea ininterrumpido, libre de errores o seguro.</p>
@@ -820,7 +393,6 @@
             <p><strong>10.4. Máximo de Responsabilidad:</strong> En ningún caso, la responsabilidad de Csariel's excederá el monto pagado por el usuario en los últimos 12 meses.</p>
         </section>
 
-        <!-- ART 11 -->
         <section class="seccion" id="art-11">
             <h2><span class="num">11</span> Propiedad Intelectual</h2>
             <p><strong>11.1. Marca y Contenido:</strong> La marca "Csariel's", el logo, los diseños, el nombre "ES.stoks" y todos los contenidos de la Plataforma son <strong>propiedad intelectual de Csariel's</strong>.</p>
@@ -829,7 +401,6 @@
             <p><strong>11.4.</strong> Conforme a la <strong>Ley Federal del Derecho de Autor</strong> y la <strong>Ley Federal de Protección a la Propiedad Industrial</strong>, Csariel's podrá ejercer acciones legales por uso indebido de su marca o contenido.</p>
         </section>
 
-        <!-- ART 12 -->
         <section class="seccion" id="art-12">
             <h2><span class="num">12</span> Protección de Datos Personales</h2>
             <p><strong>12.1.</strong> Csariel's trata los datos personales de los Usuarios conforme a la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong>.</p>
@@ -842,7 +413,6 @@
             <p><strong>12.4.</strong> Csariel's implementa medidas de seguridad administrativas, técnicas y físicas para proteger los datos personales.</p>
         </section>
 
-        <!-- ART 13 -->
         <section class="seccion" id="art-13">
             <h2><span class="num">13</span> Modificaciones de los Términos</h2>
             <p><strong>13.1. Actualizaciones:</strong> Csariel's puede modificar estos Términos en cualquier momento. Te notificaremos mediante aviso en la Plataforma o por correo electrónico con <strong>15 días de anticipación</strong>.</p>
@@ -850,7 +420,6 @@
             <p><strong>13.3.</strong> Si no estás de acuerdo con las modificaciones, debes cancelar tu cuenta antes de la fecha de entrada en vigor.</p>
         </section>
 
-        <!-- ART 14 -->
         <section class="seccion" id="art-14">
             <h2><span class="num">14</span> Ley Aplicable y Jurisdicción</h2>
             <p><strong>14.1. Ley Mexicana:</strong> Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos.</p>
@@ -859,7 +428,6 @@
             <p><strong>14.4.</strong> Conforme al <strong>artículo 1 de la Ley Federal de Protección al Consumidor</strong>, las disposiciones son irrenunciables y de observancia en toda la República Mexicana.</p>
         </section>
 
-        <!-- ART 15 -->
         <section class="seccion" id="art-15">
             <h2><span class="num">15</span> Contacto</h2>
             <p><strong>15.1.</strong> Para dudas, aclaraciones o soporte, contacta a:</p>
@@ -876,11 +444,7 @@
                 <strong>CNBV</strong> (regulación financiera): <a href="https://www.gob.mx/cnbv" target="_blank" rel="noopener">gob.mx/cnbv</a>
             </div>
         </section>
-        <!-- ============================================================
-             ACEPTACIÓN + FIRMA DIGITAL
-             El servidor es responsable de generar el identificador,
-             timestamp, IP y registro de auditoría.
-             ============================================================ -->
+
         <div class="aceptacion-container" id="aceptacionContainer">
 
             <div class="aceptacion-wrapper">
@@ -897,7 +461,6 @@
                 </label>
             </div>
 
-            <!-- Error del proceso de aceptación -->
             <div
                 class="mensaje-error"
                 id="mensajeError"
@@ -905,7 +468,6 @@
                 aria-live="polite"
             ></div>
 
-            <!-- Registro electrónico generado por el servidor -->
             <div
                 class="firma-digital"
                 id="firmaDigital"
@@ -922,12 +484,10 @@
             </div>
         </div>
 
-        <!-- Botón volver -->
         <div style="text-align:center;">
             <a href="/" class="btn-volver" id="btnVolver">Volver a la plataforma</a>
         </div>
 
-        <!-- Footer -->
         <div class="footer-legal">
             <p>
                 <span class="marca">Csariel's Ecosystem</span><br>
@@ -939,24 +499,10 @@
     </div>
 
 <script>
-// ================================================================
-// REGISTRO ELECTRÓNICO DE ACEPTACIÓN
-// ================================================================
-// 1. Obtener la sesión existente de Supabase Auth.
-// 2. Descargar el HTML que realmente está siendo servido.
-// 3. Calcular SHA-256 sobre los bytes exactos del documento.
-// 4. Enviar el hash al backend.
-// 5. Recibir del servidor el identificador y timestamp del registro.
-//
-// El backend vuelve a validar el hash contra su valor oficial.
-// ================================================================
 'use strict';
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ============================================================
-    // NAVEGACIÓN DEL ÍNDICE
-    // ============================================================
     document.querySelectorAll('.indice ol li a').forEach(function (enlace) {
         enlace.addEventListener('click', function (evento) {
             evento.preventDefault();
@@ -969,9 +515,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // ============================================================
-    // ELEMENTOS DEL DOM
-    // ============================================================
     var checkbox = document.getElementById('aceptoTerminos');
     var firmaDigital = document.getElementById('firmaDigital');
     var fechaHoraFirma = document.getElementById('fechaHoraFirma');
@@ -983,10 +526,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var versionDocumento = '1.0';
     var aceptacionRegistrada = false;
 
-    // ============================================================
-    // OBTENER CLIENTE SUPABASE GLOBAL
-    // (creado por /features/shared/js/apariencia-global.js)
-    // ============================================================
     function obtenerClienteSupabase() {
         if (window.supabaseClient && typeof window.supabaseClient.auth?.getSession === 'function') {
             return window.supabaseClient;
@@ -997,9 +536,6 @@ document.addEventListener('DOMContentLoaded', function () {
         return null;
     }
 
-    // ============================================================
-    // SHA-256 REAL DEL DOCUMENTO SERVIDO
-    // ============================================================
     async function calcularHashDocumentoReal() {
         var respuesta = await fetch(window.location.pathname, {
             method: 'GET',
@@ -1021,9 +557,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }).join('');
     }
 
-    // ============================================================
-    // MOSTRAR / LIMPIAR ERROR
-    // ============================================================
     function mostrarError(mensaje) {
         if (mensajeError) {
             mensajeError.textContent = mensaje;
@@ -1039,9 +572,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ============================================================
-    // OBTENER JWT DE SUPABASE
-    // ============================================================
     async function obtenerAccessToken() {
         var clienteSupabase = obtenerClienteSupabase();
         if (!clienteSupabase) {
@@ -1056,23 +586,15 @@ document.addEventListener('DOMContentLoaded', function () {
         return sesion.access_token;
     }
 
-    // ============================================================
-    // REGISTRAR ACEPTACIÓN AL BACKEND
-    // ============================================================
     async function registrarAceptacion() {
         limpiarError();
         if (aceptacionContainer) aceptacionContainer.classList.add('procesando');
         if (checkbox) checkbox.disabled = true;
 
         try {
-            // 1. Obtener JWT existente
             var accessToken = await obtenerAccessToken();
-
-            // 2. Calcular SHA-256 del HTML real
             var hashDocumento = await calcularHashDocumentoReal();
 
-            // 3. Enviar solo lo que corresponde al cliente
-            // El cliente NO envía: firma_id, IP, timestamp, HMAC
             var respuesta = await fetch('/api/aceptar-terminos', {
                 method: 'POST',
                 headers: {
@@ -1090,9 +612,6 @@ document.addEventListener('DOMContentLoaded', function () {
             var datosRespuesta = {};
             try { datosRespuesta = await respuesta.json(); } catch (e) { datosRespuesta = {}; }
 
-            // ====================================================
-            // MANEJO DE ERRORES ESPECÍFICOS
-            // ====================================================
             if (!respuesta.ok) {
                 var codigo = datosRespuesta.codigo || datosRespuesta.error || 'ERROR_DESCONOCIDO';
 
@@ -1124,9 +643,6 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // ====================================================
-            // REGISTRO EXITOSO
-            // ====================================================
             aceptacionRegistrada = true;
             if (checkbox) checkbox.checked = true;
 
@@ -1136,7 +652,6 @@ document.addEventListener('DOMContentLoaded', function () {
             if (ipFirma) ipFirma.textContent = 'Registrada por el servidor';
             if (firmaDigital) firmaDigital.classList.add('visible');
 
-            // Bloquear el checkbox después del registro exitoso
             if (checkbox) checkbox.disabled = true;
 
             console.info('◈ Aceptación legal registrada correctamente.', {
@@ -1162,25 +677,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
         } finally {
             if (aceptacionContainer) aceptacionContainer.classList.remove('procesando');
-            // Si no se registró correctamente, permitir reintentar
             if (!aceptacionRegistrada && checkbox) {
                 checkbox.disabled = false;
             }
         }
     }
 
-    // ============================================================
-    // EVENTO DEL CHECKBOX
-    // ============================================================
     if (checkbox) {
         checkbox.addEventListener('change', async function () {
-            // Si ya existe un registro exitoso, no permitir modificarlo
             if (aceptacionRegistrada) {
                 this.checked = true;
                 return;
             }
 
-            // Si desmarca antes de registrar, limpiar la interfaz
             if (!this.checked) {
                 limpiarError();
                 if (firmaDigital) firmaDigital.classList.remove('visible');
@@ -1191,14 +700,10 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
 
-            // Marcó "Acepto" — comienza el registro real
             await registrarAceptacion();
         });
     }
 
-    // ============================================================
-    // LOG DE CARGA
-    // ============================================================
     console.info('◈ Términos y Condiciones v' + versionDocumento + ' cargados.');
 });
 </script>
