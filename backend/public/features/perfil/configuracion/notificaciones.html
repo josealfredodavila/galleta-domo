@@ -177,24 +177,48 @@
             }
         }
 
+        /*
+         * Pide el permiso del navegador. Debe llamarse directamente desde el toque
+         * del usuario: Chrome en Android solo muestra el aviso en ese caso.
+         * Devuelve 'granted', 'denied', 'default' (cerrado sin decidir) o 'unsupported'.
+         */
+        async function pedirPermisoPush() {
+            if (!('Notification' in window)) return 'unsupported';
+            if (Notification.permission === 'granted') return 'granted';
+            if (Notification.permission === 'denied') return 'denied';
+            try {
+                return await Notification.requestPermission();
+            } catch (e) {
+                console.warn('[Notificaciones] requestPermission:', e);
+                return 'default';
+            }
+        }
+
         async function alCambiar(event) {
             const input = event.target;
             if (!input || !input.dataset || !input.dataset.pref) return;
             const nombre = input.dataset.pref;
             const nuevo = input.checked;
 
-            if (nombre === 'push' && nuevo && 'Notification' in window) {
-                try {
-                    const permiso = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-                    if (permiso !== 'granted') {
-                        input.checked = false;
-                        toast('Permiso de notificaciones denegado en el navegador.', 'warning');
-                        marcarEstado('Activa el permiso de notificaciones en la configuración de tu navegador.', true);
-                        return;
-                    }
+            if (nombre === 'push' && nuevo) {
+                const permiso = await pedirPermisoPush();
+
+                if (permiso === 'granted') {
                     marcarEstado('');
-                } catch (e) {
-                    console.warn('[Notificaciones] Permiso:', e);
+                } else {
+                    input.checked = false;
+
+                    if (permiso === 'unsupported') {
+                        toast('Tu navegador no admite notificaciones.', 'warning');
+                        marcarEstado('Este navegador no permite notificaciones push.', true);
+                    } else if (permiso === 'denied') {
+                        toast('Permiso bloqueado en el navegador.', 'warning');
+                        marcarEstado('Permiso bloqueado. Actívalo en los ajustes del sitio de tu navegador y vuelve a intentarlo.', true);
+                    } else {
+                        toast('No aceptaste el permiso.', 'warning');
+                        marcarEstado('Vuelve a tocar el interruptor para intentarlo otra vez.', true);
+                    }
+                    return;
                 }
             }
 
