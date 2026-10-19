@@ -1,8 +1,9 @@
 // ================================================================
-// ROUTES/PUSH.JS — Csariel's · v2.1 (Soporte para Llamadas Push)
-// CAMBIOS v2.1:
-// - Se añadió 'urgency: high' y 'TTL' en la función enviarPushAUsuarios.
-//   Esto reduce la latencia de 30-40s a ~5-15s despertando al celular.
+// ROUTES/PUSH.JS — Csariel's · v2.2 (Soporte para Llamadas Push)
+// CAMBIOS v2.2:
+// - Se usa `urgency` y `topic` como propiedades nativas de web-push
+//   (recomendación de Anthropic) en lugar de headers.
+// - TTL aumentado de 30s a 60s para evitar pérdida bajo Doze profundo.
 // ================================================================
 
 const express = require('express');
@@ -145,7 +146,6 @@ router.post('/test', verificarAutenticacion, async (req, res) => {
 
 // ================================================================
 // POST /broadcast-live
-// Solo el dueño de un live EN VIVO puede avisar a sus seguidores.
 // ================================================================
 router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
     try {
@@ -207,7 +207,6 @@ router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
 
 // ================================================================
 // POST /llamada-entrante
-// Envía push al destinatario de una llamada.
 // ================================================================
 router.post('/llamada-entrante', verificarAutenticacion, async (req, res) => {
     try {
@@ -216,7 +215,6 @@ router.post('/llamada-entrante', verificarAutenticacion, async (req, res) => {
             return res.status(400).json({ success: false, error: 'Faltan llamadaId o destinatarioId' });
         }
 
-        // Validar seguridad: que el creador de la llamada sea quien hace la petición
         const { data: llamada } = await supabaseAdmin
             .from('llamadas')
             .select('creador_id, estado')
@@ -313,18 +311,10 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
         };
 
         try {
-            // ====================================================
-            // AQUÍ ESTÁ EL TRUCO PARA QUE LLEGUE RÁPIDO:
-            // TTL: 30 hace que el mensaje muera a los 30s si no se entrega.
-            // Urgency: high le dice a Google que es una llamada urgente,
-            // así que despierta el celular de inmediato en lugar de esperar.
-            // ====================================================
             await webpush.sendNotification(pushSubscription, payloadString, {
-                TTL: 30,
-                headers: {
-                    'Urgency': 'high',
-                    'Topic': 'llamada-entrante'
-                }
+                TTL: 60,
+                urgency: 'high',
+                topic: 'llamada-entrante'
             });
             enviados++;
         } catch (err) {
