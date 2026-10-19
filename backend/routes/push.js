@@ -1,8 +1,10 @@
 // ================================================================
-// ROUTES/PUSH.JS — Csariel's · v2.4 (Soporte para Llamadas Push)
-// CAMBIOS v2.4:
-// - Se agregó 'actions' a la llamada entrante para mostrar botones
-//   de Aceptar/Rechazar en la notificación nativa de Android.
+// ROUTES/PUSH.JS — Csariel's · v2.5 (Soporte para Llamadas Push)
+// CAMBIOS v2.5:
+// - El payload ahora incluye 'actions' y 'renotify' (antes se descartaban).
+// - /llamada-entrante usa el mismo helper enviarPushLlamadaEntrante.
+// - Logs de envío centralizados en un solo lugar.
+// - Los botones Aceptar/Rechazar los muestra sw.js (showNotification).
 // ================================================================
 
 const express = require('express');
@@ -206,6 +208,7 @@ router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
 
 // ================================================================
 // POST /llamada-entrante
+// Usa el mismo helper que llamadas.js para no duplicar lógica.
 // ================================================================
 router.post('/llamada-entrante', verificarAutenticacion, async (req, res) => {
     try {
@@ -230,22 +233,12 @@ router.post('/llamada-entrante', verificarAutenticacion, async (req, res) => {
             .eq('id', req.user.id)
             .maybeSingle();
 
-        const nombre = usuario?.nombre || 'Alguien';
-        const avatar = usuario?.avatar_url || '/icon-192.png';
-
-        const resultado = await enviarPushAUsuarios([destinatarioId], {
-            title: `📞 Llamada de ${nombre}`,
-            body: 'Toca para contestar la videollamada',
-            icon: avatar,
-            badge: '/badge-72.png',
-            url: `/features/mensajes/mensajes.html?llamadaId=${llamadaId}`,
-            tag: `llamada-${llamadaId}`,
-            requireInteraction: true,
-            vibrate: [500, 200, 500, 200, 500],
-            data: { tipo: 'llamada_entrante', llamadaId }
-        });
-
-        console.log(`[Push] Llamada ${llamadaId}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
+        const resultado = await enviarPushLlamadaEntrante(
+            destinatarioId,
+            usuario?.nombre || 'Alguien',
+            usuario?.avatar_url || null,
+            llamadaId
+        );
 
         return res.json({
             success: true,
@@ -286,6 +279,8 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
         return { enviados: 0, fallidos: 0 };
     }
 
+    // IMPORTANTE: 'actions' ahora viaja en el payload.
+    // El Service Worker es quien pinta los botones con showNotification().
     const payloadString = JSON.stringify({
         title: payload.title || "◈ Csariel's",
         body: payload.body || '',
@@ -295,7 +290,9 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
         tag: payload.tag || 'default',
         data: payload.data || {},
         requireInteraction: payload.requireInteraction || false,
+        renotify: payload.renotify || false,
         vibrate: payload.vibrate || [200, 100, 200, 100, 200],
+        actions: Array.isArray(payload.actions) ? payload.actions : [],
         timestamp: Date.now()
     });
 
@@ -363,7 +360,7 @@ async function enviarPushASeguidores(streamerId, payload) {
 }
 
 // ================================================================
-// HELPER: Push específico para llamadas entrantes (con botones)
+// HELPER: push de llamada entrante (usado por la ruta y por llamadas.js)
 // ================================================================
 async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamadaId) {
     console.log(`[Push] Iniciando envío de Push a ${destinatarioId} para llamada ${llamadaId}`);
@@ -376,9 +373,9 @@ async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamada
         url: `/features/mensajes/mensajes.html?llamadaId=${llamadaId}`,
         tag: `llamada-${llamadaId}`,
         requireInteraction: true,
+        renotify: true,
         vibrate: [500, 200, 500, 200, 500],
         data: { tipo: 'llamada_entrante', llamadaId },
-        // AQUÍ AGREGAMOS LAS ACCIONES PARA QUE APAREZCAN LOS BOTONES
         actions: [
             { action: 'accept', title: '✅ Aceptar' },
             { action: 'reject', title: '❌ Rechazar' }
