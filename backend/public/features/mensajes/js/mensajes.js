@@ -1,9 +1,8 @@
 // ================================================================
-// MENSAJES · JS v4.5 · WEB3 NEON UI
-// Cambios v4.5:
-// - Reducción de egress: límite de conversaciones, cache de perfiles
-//   y firmas, listener de auth sin repetición, intervalo de estados
-//   con pestaña visible.
+// MENSAJES · JS v4.6 · WEB3 NEON UI
+// Cambios v4.6:
+// - verificación de Términos de Marquinhos compatible con booleano/string/objeto;
+//   redirección a la página de términos en la misma pestaña.
 // ================================================================
 
 'use strict';
@@ -345,7 +344,7 @@ async function subirFotoHeader(event) {
     if (file.size > 5 * 1024 * 1024) { toast('❌ La imagen no puede superar los 5 MB', 'error'); event.target.value = ''; return; }
     if (!file.type.startsWith('image/')) { toast('❌ Solo se permiten imágenes', 'error'); event.target.value = ''; return; }
     try {
-        toast('⏳ Revisando y subiendo foto...', '', 5000);
+        toast('⏳ Revisando y subiendo foto...', '');
         const d = await subirViaBackend(file, 'sariels-avatars', 'imagen');
         const { error: updateError } = await db.from('usuarios')
             .update({ avatar_url: d.url + '?t=' + Date.now() })
@@ -1257,15 +1256,47 @@ async function verificarTerminosMarquinhos() {
     const TERMINOS_VERSION = '1.1';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
     try { if (localStorage.getItem(TERMINOS_KEY)) return true; } catch (e) {}
+    
     try {
         const { data, error } = await db.rpc('verificar_aceptacion_terminos', { p_version: TERMINOS_VERSION });
-        if (!error && data && data.aceptado === true) {
+        
+        if (error) throw error;
+
+        let aceptado = false;
+
+        if (data === true || data === "true") {
+            aceptado = true;
+        } else if (data === false || data === null || data === undefined || data === "false" || data === "") {
+            aceptado = false;
+        } else if (typeof data === 'string') {
+            try {
+                const parsed = JSON.parse(data);
+                if (parsed === true || parsed === "true") aceptado = true;
+                else if (parsed && typeof parsed === 'object') {
+                    if (parsed.aceptado === true || parsed.aceptado === "true") aceptado = true;
+                    else if (parsed.success === true && parsed.aceptado !== false) aceptado = true;
+                }
+            } catch (e) { aceptado = false; }
+        } else if (typeof data === 'object') {
+            if (data.aceptado === true || data.aceptado === "true") aceptado = true;
+            else if (data.success === true && data.aceptado !== false) aceptado = true;
+        }
+
+        if (aceptado) {
             try { localStorage.setItem(TERMINOS_KEY, 'true'); } catch (e) {}
             return true;
         }
-    } catch (e) { console.warn('Error verificando términos:', e); }
+    } catch (e) { 
+        console.warn('Error verificando términos:', e); 
+    }
+
     toast('⚠️ Debes aceptar los Términos de Marquinhos primero', 'warning');
-    setTimeout(() => { window.open('/legal/terminos-marquinhos', '_blank'); }, 1200);
+    
+    const RUTA_TERMINOS_REAL = '/legal/terminos-marquinhos';
+    setTimeout(() => {
+        window.location.href = RUTA_TERMINOS_REAL;
+    }, 1200);
+    
     return false;
 }
 
@@ -2570,7 +2601,7 @@ async function init() {
     }, 10 * 60 * 1000);
 
     // ============================================================
-    // NUEVO v4.5: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
+    // NUEVO v4.6: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
     // ============================================================
     
     // 1. Suscripción a Push Notifications
@@ -2871,7 +2902,7 @@ window.openConversation = openConversation;
 
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.5.0',
+    version: '4.6.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
