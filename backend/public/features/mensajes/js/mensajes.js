@@ -1,8 +1,8 @@
 // ================================================================
-// MENSAJES · JS v4.1 · WEB3 NEON UI
-// Cambios v4.1:
-// - Integración de Push Notifications (Service Worker + VAPID).
-// - Integración de initLlamadaDesdeUrl (para notificaciones push).
+// MENSAJES · JS v4.2 · WEB3 NEON UI
+// Cambios v4.2:
+// - Integración completa de acciones de Push (Aceptar / Rechazar)
+//   en la URL de la notificación.
 // ================================================================
 
 'use strict';
@@ -2533,25 +2533,25 @@ async function init() {
     setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
 
     // ============================================================
-    // NUEVO: INTEGRACIÓN DE PUSH Y LLAMADA DESDE URL
+    // NUEVO v4.2: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
     // ============================================================
     
     // 1. Suscripción a Push Notifications
     registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
 
-    // 2. Leer ?llamadaId de la URL (viene de una notificación Push)
+    // 2. Leer ?llamadaId y ?action de la URL (viene de una notificación Push)
     if (user && user.id) {
-        // Mapeamos la función 'incoming' para que Anthropic la reconozca
         const mostrarOverlayEntrante = (dataLlamada) => incoming(dataLlamada);
         
-        // Validamos el UUID y el estado
         const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
         const urlObj = new URL(window.location.href);
         const llamadaIdParam = urlObj.searchParams.get('llamadaId');
+        const actionParam = urlObj.searchParams.get('action');
         
         if (llamadaIdParam && UUID_RE.test(llamadaIdParam)) {
-            // Limpiamos la URL inmediatamente
+            // Limpiamos la URL inmediatamente para que no se repita al recargar
             urlObj.searchParams.delete('llamadaId');
+            urlObj.searchParams.delete('action');
             window.history.replaceState({}, '', urlObj.pathname + urlObj.search + urlObj.hash);
 
             db.from('llamadas')
@@ -2566,7 +2566,30 @@ async function init() {
                     
                     const edad = Date.now() - new Date(data.creado_at || data.created_at || Date.now()).getTime();
                     if (edad >= 0 && edad <= LLAMADA_VIGENCIA_MS) {
+                        
+                        // SI EL USUARIO TOCÓ "RECHAZAR" EN LA NOTIFICACIÓN
+                        if (actionParam === 'reject') {
+                            db.from('llamadas').update({ 
+                                estado: 'rejected', 
+                                motivo_fin: 'rechazada_desde_notificacion',
+                                finalizada_at: new Date().toISOString()
+                            }).eq('id', data.id).then(() => {
+                                toast('📵 Llamada rechazada', 'warning');
+                            });
+                            return; // No mostramos el overlay
+                        }
+
+                        // Si no es rechazar, mostramos el overlay
                         mostrarOverlayEntrante(data);
+                        
+                        // SI EL USUARIO TOCÓ "ACEPTAR" DIRECTAMENTE EN LA NOTIFICACIÓN
+                        if (actionParam === 'accept') {
+                            setTimeout(() => {
+                                if (typeof acceptCall === 'function' && incomingId === data.id) {
+                                    acceptCall();
+                                }
+                            }, 500); // 500ms para dar tiempo a que cargue el overlay
+                        }
                     }
                 })
                 .catch(err => console.error('[Llamadas] Error al validar llamada desde URL:', err));
@@ -2770,7 +2793,7 @@ window.openConversation = openConversation;
 
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.1.0',
+    version: '4.2.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarChatActions: decorarChatActions
