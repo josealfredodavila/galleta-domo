@@ -53,13 +53,12 @@
     })();
 </script>
 
-<!-- VERSIÓN ACTUALIZADA A v=3.2 PARA FORZAR LA CARGA DEL NUEVO CSS -->
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.2">
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
-    /* FIX: contenedor relativo del header de chat para que acciones no "floten" */
+    /* Contenedor relativo del header de chat para que las acciones no "floten" */
     .chathead { position: relative; z-index: 5; }
     .chathead .actions { position: relative; z-index: 6; }
 </style>
@@ -321,7 +320,6 @@
             <option value="nadie">Nadie</option>
         </select>
 
-        <!-- BOTONES ACTUALIZADOS CON LA CLASE "send" PARA QUE SE VEAN DORADOS -->
         <button class="btn send" id="btnVerBloqueados" style="width:100%;margin-bottom:10px;" data-neon="btn">⛔ Ver usuarios bloqueados (<span id="countBloqueados">0</span>)</button>
 
         <button class="btn send" id="btnGuardarConfig" style="width:100%;" data-neon="send">Guardar configuración</button>
@@ -415,5 +413,67 @@
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/mensajes/js/mensajes.js?v=13"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
+
+<script>
+    /* ============================================================
+       Apertura directa del chat con Marquinhos
+       Uso: mensajes.html?chat=marquinhos (destino tras aceptar Términos)
+       Busca la fila "Marquinhos" en la lista de conversaciones, la abre
+       y limpia el parámetro de la URL para que un refresh no la reabra.
+       ============================================================ */
+    (function () {
+        var params = new URLSearchParams(window.location.search);
+        if ((params.get('chat') || '').toLowerCase() !== 'marquinhos') return;
+
+        var intentos = 0;
+        var maxIntentos = 40; // 40 × 200 ms ≈ 8 s
+
+        function limpiarUrl() {
+            try {
+                var u = new URL(window.location.href);
+                u.searchParams.delete('chat');
+                window.history.replaceState({}, '', u.pathname + (u.search || '') + u.hash);
+            } catch (e) {}
+        }
+
+        function buscarFilaMarquinhos() {
+            var lista = document.getElementById('conversationList');
+            if (!lista) return null;
+            var filas = Array.prototype.slice.call(lista.children);
+            for (var i = 0; i < filas.length; i++) {
+                if (/marquinhos/i.test(filas[i].textContent || '')) return filas[i];
+            }
+            return null;
+        }
+
+        function intentarAbrir() {
+            intentos++;
+            // Asegura que la pestaña visible sea Chats
+            if (typeof window.cambiarPestana === 'function') {
+                try { window.cambiarPestana('chats'); } catch (e) {}
+            }
+
+            var fila = buscarFilaMarquinhos();
+            if (fila) {
+                fila.click();
+                limpiarUrl();
+                return;
+            }
+
+            if (intentos >= maxIntentos) {
+                console.warn('[Mensajes] No se encontró la conversación con Marquinhos en la lista.');
+                limpiarUrl();
+                return;
+            }
+            setTimeout(intentarAbrir, 200);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { setTimeout(intentarAbrir, 300); });
+        } else {
+            setTimeout(intentarAbrir, 300);
+        }
+    })();
+</script>
 </body>
 </html>
