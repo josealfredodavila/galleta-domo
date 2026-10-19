@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>◈ Sariel's · Ecosistema WEB3</title>
+<title>◈ Csariel's · Ecosistema WEB3</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 
@@ -206,11 +206,16 @@ body {
 .carrusel-barra > i.corre { animation:llenar var(--dur,6s) linear forwards; }
 @keyframes llenar { from{width:0%} to{width:100%} }
 
-.footer { margin-top:30px; padding-top:16px; border-top:1px solid var(--glass-border); display:flex; justify-content:space-between; font-size:.7rem; color:var(--text-muted); flex-wrap:wrap; gap:10px; }
+/* ================= FOOTER LIMPIO Y ACTUALIZADO ================= */
+.footer { 
+    margin-top:30px; padding-top:16px; border-top:1px solid var(--glass-border); 
+    display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center;
+    font-size:.7rem; color:var(--text-muted); 
+}
 .footer .brand { color:var(--gold); font-weight:600; }
-.footer-links { display:flex; gap:12px; flex-wrap:wrap; }
-.footer-links a { color:var(--text-muted); text-decoration:none; }
-.footer-links a:hover { color:var(--neon-cyan); }
+.footer .help-link { color:var(--neon-cyan); text-decoration:none; opacity:0.8; transition:all .3s; font-size:0.65rem; }
+.footer .help-link:hover { opacity:1; text-decoration:underline; }
+
 .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:rgba(5,8,15,.95); border:1px solid var(--glass-border); padding:12px 24px; border-radius:30px; color:var(--text-primary); font-size:.85rem; z-index:99999; opacity:0; pointer-events:none; max-width:90vw; transition:all .4s; }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 .toast.error { border-color:var(--danger); color:var(--danger); }
@@ -243,7 +248,7 @@ body {
 <div class="app">
 <header class="header">
     <div class="logo">
-        <a href="/" class="logo-main"><span class="logo-hex">◈</span><span class="logo-text">Sariel<span>'s</span></span></a>
+        <a href="/" class="logo-main"><span class="logo-hex">◈</span><span class="logo-text">Csariel<span>'s</span></span></a>
         <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">✦ WEB3</a>
     </div>
     <div class="header-actions">
@@ -253,7 +258,7 @@ body {
 
 <section class="login-wrap" id="login">
     <div class="login-card">
-        <div class="login-logo"><span class="logo-hex">◈</span><span class="logo-text">Sariel<span>'s</span></span></div>
+        <div class="login-logo"><span class="logo-hex">◈</span><span class="logo-text">Csariel<span>'s</span></span></div>
         <form id="loginForm">
             <input type="email" id="loginEmail" placeholder="Correo electrónico" autocomplete="email" inputmode="email" required />
             <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password" required />
@@ -278,7 +283,7 @@ body {
 </div>
 
 <!-- ================= CARRUSEL: EN VIVO / INVITACIÓN ================= -->
-<section class="carrusel-wrapper" id="carruselEnVivo" aria-roledescription="carrusel" aria-label="Lo que está pasando en Sariel's">
+<section class="carrusel-wrapper" id="carruselEnVivo" aria-roledescription="carrusel" aria-label="Lo que está pasando en Csariel's">
     <div class="carrusel-cabecera">
         <div class="carrusel-titulo"><span class="dot" id="carruselDot"></span><span id="carruselEtiqueta">CARGANDO</span></div>
         <div class="carrusel-contador" id="carruselContador"></div>
@@ -290,15 +295,10 @@ body {
     <div class="carrusel-barra"><i id="carruselBarra"></i></div>
 </section>
 
+<!-- ================= FOOTER PÚBLICO LIMPIO ================= -->
 <footer class="footer">
-    <span><span class="brand">◈ Sariel's</span> · Sabor al Paladar · WEB3</span>
-    <div class="footer-links">
-        <a href="/terminos">◈ Términos</a>
-        <a href="/privacidad">◈ Privacidad</a>
-        <a href="/cookies">◈ Cookies</a>
-        <a href="/eliminar-cuenta.html">◈ Eliminar cuenta</a>
-        <a href="/live-terminos">◉ Live Términos</a>
-    </div>
+    <span><span class="brand">© Csariel's ecosystem</span> · Sabor al Paladar · WEB3</span>
+    <a href="/configuracion/centro-ayuda.html" class="help-link">Términos y Privacidad</a>
 </footer>
 </div>
 <div class="toast" id="toast"></div>
@@ -438,7 +438,7 @@ var INVITACIONES = [
     {
         badge: 'Únete hoy',
         titulo: 'Tu comunidad empieza aquí',
-        texto: 'Crea tu cuenta en Sariel\'s y conecta con creadores, comunidades y personas de tu zona.',
+        texto: 'Crea tu cuenta en Csariel\'s y conecta con creadores, comunidades y personas de tu zona.',
         cta: 'Crear mi cuenta',
         href: '/registro.html'
     },
@@ -620,7 +620,7 @@ function renderCarrusel(slides, modo) {
         etiqueta.textContent = 'EN VIVO AHORA';
         dot.classList.remove('static');
     } else {
-        etiqueta.textContent = 'ÚNETE A SARIEL\'S';
+        etiqueta.textContent = 'ÚNETE A CSARIEL\'S';
         dot.classList.add('static');
     }
 
