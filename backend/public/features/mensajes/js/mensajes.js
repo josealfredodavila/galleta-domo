@@ -1,12 +1,8 @@
 // ================================================================
-// MENSAJES · JS v4.0 · WEB3 NEON UI
-// Cambios v4.0:
-// - window.openConversation ahora delega a una función segura
-//   que no colisiona con la API pública esperada por llamadas-ui.js.
-// - decorarChatActions() se ejecuta antes de asignar handlers de
-//   #searchChat y #deleteChat para evitar pérdida de SVG.
-// - Toda la lógica de negocio (Supabase, LiveKit, WebRTC, endpoints)
-//   permanece INTACTA.
+// MENSAJES · JS v4.1 · WEB3 NEON UI
+// Cambios v4.1:
+// - Integración de Push Notifications (Service Worker + VAPID).
+// - Integración de initLlamadaDesdeUrl (para notificaciones push).
 // ================================================================
 
 'use strict';
@@ -2536,6 +2532,48 @@ async function init() {
 
     setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
 
+    // ============================================================
+    // NUEVO: INTEGRACIÓN DE PUSH Y LLAMADA DESDE URL
+    // ============================================================
+    
+    // 1. Suscripción a Push Notifications
+    registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
+
+    // 2. Leer ?llamadaId de la URL (viene de una notificación Push)
+    if (user && user.id) {
+        // Mapeamos la función 'incoming' para que Anthropic la reconozca
+        const mostrarOverlayEntrante = (dataLlamada) => incoming(dataLlamada);
+        
+        // Validamos el UUID y el estado
+        const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        const urlObj = new URL(window.location.href);
+        const llamadaIdParam = urlObj.searchParams.get('llamadaId');
+        
+        if (llamadaIdParam && UUID_RE.test(llamadaIdParam)) {
+            // Limpiamos la URL inmediatamente
+            urlObj.searchParams.delete('llamadaId');
+            window.history.replaceState({}, '', urlObj.pathname + urlObj.search + urlObj.hash);
+
+            db.from('llamadas')
+                .select('*')
+                .eq('id', llamadaIdParam)
+                .maybeSingle()
+                .then(({ data, error }) => {
+                    if (error || !data) return;
+                    if (data.estado !== 'ringing') return;
+                    if (data.destinatario_id !== user.id) return;
+                    if (data.creador_id === user.id) return;
+                    
+                    const edad = Date.now() - new Date(data.creado_at || data.created_at || Date.now()).getTime();
+                    if (edad >= 0 && edad <= LLAMADA_VIGENCIA_MS) {
+                        mostrarOverlayEntrante(data);
+                    }
+                })
+                .catch(err => console.error('[Llamadas] Error al validar llamada desde URL:', err));
+        }
+    }
+    // ============================================================
+
     decorarComposerWeb3();
     decorarSidebarTabsWeb3();
     decorarChatActions();
@@ -2545,6 +2583,82 @@ async function init() {
             if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas();
         } catch (e) { console.warn('⚠️ Error aplicando idiomas:', e); }
     }, 500);
+}
+
+// ================================================================
+// NUEVO: LÓGICA DE PUSH NOTIFICATIONS
+// ================================================================
+async function registrarPushYServiceWorker() {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        console.warn('[Push] Este navegador no soporta notificaciones Push.');
+        return;
+    }
+
+    try {
+        // 1. Registrar el Service Worker
+        const register = await navigator.serviceWorker.register('/sw.js');
+        console.log('[Push] Service Worker registrado:', register.scope);
+
+        // 2. Verificar permiso de notificaciones
+        const permiso = await Notification.requestPermission();
+        if (permiso !== 'granted') {
+            console.warn('[Push] Permiso de notificaciones denegado por el usuario.');
+            return;
+        }
+
+        // 3. Obtener la llave pública VAPID desde tu backend
+        const resVapid = await fetch('/api/push/vapid-public-key');
+        if (!resVapid.ok) throw new Error('No se pudo obtener la llave VAPID');
+        const { publicKey } = await resVapid.json();
+
+        // 4. Suscribirse al PushManager
+        const suscripcion = await register.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+
+        // 5. Enviar la suscripción a tu backend para guardarla en Supabase
+        const s = await db.auth.getSession();
+        if (!s?.data?.session) throw new Error('No hay sesión activa');
+
+        const resSub = await fetch('/api/push/subscribe', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + s.data.session.access_token
+            },
+            body: JSON.stringify({
+                endpoint: suscripcion.endpoint,
+                keys: {
+                    p256dh: btoa(String.fromCharCode(...new Uint8Array(suscripcion.getKey('p256dh')))),
+                    auth: btoa(String.fromCharCode(...new Uint8Array(suscripcion.getKey('auth'))))
+                },
+                device_type: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+            })
+        });
+
+        const dataSub = await resSub.json();
+        if (dataSub.success) {
+            console.log('[Push] Suscripción guardada en Supabase correctamente ✅');
+        } else {
+            console.warn('[Push] Error guardando suscripción:', dataSub.error);
+        }
+
+    } catch (error) {
+        console.error('[Push] Error en el registro:', error);
+    }
+}
+
+// Helper para convertir la llave VAPID
+function urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+    }
+    return outputArray;
 }
 
 // ================================================================
@@ -2656,7 +2770,7 @@ window.openConversation = openConversation;
 
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.0.0',
+    version: '4.1.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarChatActions: decorarChatActions
