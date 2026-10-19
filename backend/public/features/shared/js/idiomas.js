@@ -1,5 +1,5 @@
 // ================================================================
-// IDIOMAS · I18N GLOBAL DE SARIEL'S ECOSYSTEM · v6
+// IDIOMAS · I18N GLOBAL DE SARIEL'S ECOSYSTEM · v7
 //
 // Compatible con:
 // - data-clave, data-clave-title, data-placeholder, data-vars
@@ -9,30 +9,57 @@
 // - window.esperarIdiomas() (promesa, idempotente)
 // - window.inicializarIdiomas() (idempotente)
 //
-// CAMBIOS v6:
-// - Se elimina la clave pública hardcodeada. getSupabaseClient() usa
-//   SOLO window.supabaseClient (lo crea auth-global.js o el HTML).
-// - Nueva función interpolarVariables(): reemplaza {x} por valores.
-// - t() y tConFallback() aceptan un 3er argumento opcional "vars".
-// - aplicarTraducciones() lee el atributo data-vars de cada elemento
-//   (JSON) y lo pasa a interpolarVariables().
-//
-// CAMBIOS v5 (se mantienen):
-// - inicializarIdiomas() idempotente.
-// - esperarIdiomas() permite que cualquier script espere.
-// - data-clave-title traduce el atributo title.
-// - <title data-clave> y <html lang> se actualizan.
-// - MutationObserver traduce elementos dinámicos.
-// - data-i18n-ok evita re-procesar en bucle.
+// CAMBIOS v7 (reducción de egress):
+// - La preferencia de idioma se resuelve UNA sola vez por página
+//   (antes se consultaba dos veces: inicialización y selector).
+// - Cache en localStorage con TTL para:
+//     · preferencia de idioma por usuario (1 h)
+//     · lista de idiomas activos (24 h)
+//     · traducciones por idioma (12 h)
+// - cambiarIdioma() invalida la cache de preferencia antes de recargar.
+// - El selector reutiliza la lista ya cargada (sin consulta extra).
+// - API pública idéntica a v6.
 // ================================================================
+
+// ================================================================
+// CONFIGURACIÓN DE CACHE
+// ================================================================
+
+const I18N_CACHE_PREFIJO = 'sariels_i18n_v7';
+const TTL_PREFERENCIA_MS = 60 * 60 * 1000;          // 1 hora
+const TTL_LISTA_IDIOMAS_MS = 24 * 60 * 60 * 1000;   // 24 horas
+const TTL_TRADUCCIONES_MS = 12 * 60 * 60 * 1000;    // 12 horas
+
+function leerCacheI18n(clave, ttl) {
+    try {
+        const raw = localStorage.getItem(clave);
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        if (!obj || typeof obj.ts !== 'number') return null;
+        if (Date.now() - obj.ts > ttl) return null;
+        return obj.data ?? null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function guardarCacheI18n(clave, data) {
+    try {
+        localStorage.setItem(clave, JSON.stringify({ ts: Date.now(), data }));
+    } catch (e) {
+        // Cache llena o modo privado: seguimos sin cache
+    }
+}
+
+function borrarCacheI18n(clave) {
+    try { localStorage.removeItem(clave); } catch (e) {}
+}
 
 // ================================================================
 // OBTENER CLIENTE SUPABASE
 // ================================================================
-// v6: ya no se crea un cliente nuevo con credenciales hardcodeadas.
-// Si no hay window.supabaseClient, es porque auth-global.js o el
-// bloque centralizado del HTML aún no lo crearon. Los llamadores
-// deben esperar (ver inicializarIdiomasInterno, que reintenta).
+// No se crea un cliente nuevo: se usa window.supabaseClient, creado
+// por auth-global.js o por el bloque centralizado del HTML.
 
 function getSupabaseClient() {
     if (window.supabaseClient) {
@@ -74,6 +101,8 @@ let traducciones = {};
 let observadorDinamico = null;
 let aplicandoTraducciones = false;
 let inicializacionPromesa = null;
+let idiomaPromesa = null;          // memo: se resuelve una vez por página
+let listaIdiomasPromesa = null;    // memo: lista de idiomas una vez por página
 
 window.traducciones = traducciones;
 window.idiomaActual = idiomaActual;
@@ -93,10 +122,7 @@ const IDIOMA_DEFAULT = {
 // INTERPOLAR VARIABLES EN UN TEXTO
 // ================================================================
 // Reemplaza {clave} por el valor correspondiente en el objeto vars.
-// Si una variable no existe en vars, deja {clave} tal cual (para no
-// perder información visible en pantalla).
-// Ej: interpolarVariables("Hola {nombre}", {nombre: "Alfredo"})
-//     => "Hola Alfredo"
+// Si una variable no existe en vars, deja {clave} tal cual.
 
 function interpolarVariables(texto, vars) {
     if (texto === null || texto === undefined) {
@@ -111,110 +137,145 @@ function interpolarVariables(texto, vars) {
             const valor = vars[clave];
             return valor === null || valor === undefined ? '' : String(valor);
         }
-        return match; // deja {clave} si no hay valor
+        return match;
     });
 }
 
 // ================================================================
-// OBTENER EL IDIOMA DEL USUARIO
+// LISTA DE IDIOMAS ACTIVOS (con cache y memo)
+// ================================================================
+
+async function obtenerListaIdiomas() {
+    if (listaIdiomasPromesa) return listaIdiomasPromesa;
+
+    listaIdiomasPromesa = (async () => {
+        const cacheKey = `${I18N_CACHE_PREFIJO}_lista`;
+        const enCache = leerCacheI18n(cacheKey, TTL_LISTA_IDIOMAS_MS);
+        if (Array.isArray(enCache) && enCache.length) return enCache;
+
+        const client = getSupabaseClient();
+        if (!client) return [];
+
+        const { data, error } = await client
+            .from('idiomas_sistema')
+            .select('*')
+            .eq('activo', true)
+            .order('nombre', { ascending: true });
+
+        if (error || !Array.isArray(data)) return [];
+
+        guardarCacheI18n(cacheKey, data);
+        return data;
+    })();
+
+    return listaIdiomasPromesa;
+}
+
+// ================================================================
+// OBTENER EL IDIOMA DEL USUARIO (memoizado por página)
 // ================================================================
 
 async function obtenerIdiomaUsuario() {
+    if (idiomaPromesa) return idiomaPromesa;
+
+    idiomaPromesa = resolverIdiomaUsuario();
+    const resultado = await idiomaPromesa;
+    idiomaActual = resultado;
+    window.idiomaActual = idiomaActual;
+    return resultado;
+}
+
+async function resolverIdiomaUsuario() {
     try {
         const client = getSupabaseClient();
 
         if (!client) {
-            idiomaActual = IDIOMA_DEFAULT;
-            window.idiomaActual = idiomaActual;
-            return idiomaActual;
+            return IDIOMA_DEFAULT;
         }
 
-        // 1. Perfil del usuario (fuente de verdad)
         const session = await getSession();
+        const userId = session?.user?.id || null;
 
-        if (session && session.user) {
-            const {
-                data: usuario,
-                error: errUsuario
-            } = await client
+        // 1. Preferencia del usuario logueado (cache por usuario)
+        if (userId) {
+            const prefKey = `${I18N_CACHE_PREFIJO}_pref_${userId}`;
+            const prefCache = leerCacheI18n(prefKey, TTL_PREFERENCIA_MS);
+            if (prefCache && prefCache.codigo) {
+                return prefCache;
+            }
+
+            const { data: usuario, error: errUsuario } = await client
                 .from('usuarios')
                 .select('idioma_preferido_id')
-                .eq('id', session.user.id)
+                .eq('id', userId)
                 .maybeSingle();
 
-            if (
-                !errUsuario &&
-                usuario &&
-                usuario.idioma_preferido_id
-            ) {
-                const { data: idioma } = await client
-                    .from('idiomas_sistema')
-                    .select('*')
-                    .eq('id', usuario.idioma_preferido_id)
-                    .maybeSingle();
+            if (!errUsuario && usuario && usuario.idioma_preferido_id) {
+                const lista = await obtenerListaIdiomas();
+                let idioma = lista.find(i => i.id === usuario.idioma_preferido_id) || null;
+
+                if (!idioma) {
+                    const { data } = await client
+                        .from('idiomas_sistema')
+                        .select('*')
+                        .eq('id', usuario.idioma_preferido_id)
+                        .maybeSingle();
+                    idioma = data || null;
+                }
 
                 if (idioma) {
-                    idiomaActual = idioma;
-                    window.idiomaActual = idiomaActual;
+                    guardarCacheI18n(prefKey, idioma);
                     return idioma;
                 }
             }
         }
 
-        // 2. localStorage (visitantes o cuando no hay perfil)
+        // 2. Preferencia guardada en este navegador (visitantes)
         let localId = null;
-
         try {
             localId = localStorage.getItem('idioma_preferido');
         } catch (e) {
             console.warn('⚠️ No se pudo leer idioma_preferido:', e);
         }
 
-        if (localId) {
-            const { data: idioma } = await client
-                .from('idiomas_sistema')
-                .select('*')
-                .eq('id', localId)
-                .maybeSingle();
+        const lista = await obtenerListaIdiomas();
 
-            if (idioma) {
-                idiomaActual = idioma;
-                window.idiomaActual = idiomaActual;
-                return idioma;
-            }
+        if (localId) {
+            const idioma = lista.find(i => i.id === localId);
+            if (idioma) return idioma;
         }
 
         // 3. Idioma por defecto: es-MX
-        const { data: idiomaDefault } = await client
-            .from('idiomas_sistema')
-            .select('*')
-            .eq('codigo', 'es-MX')
-            .eq('activo', true)
-            .maybeSingle();
-
-        idiomaActual = idiomaDefault || IDIOMA_DEFAULT;
-        window.idiomaActual = idiomaActual;
-
-        return idiomaActual;
+        const porDefecto = lista.find(i => i.codigo === 'es-MX');
+        return porDefecto || IDIOMA_DEFAULT;
     } catch (error) {
         console.error('Error obteniendo idioma:', error);
-
-        idiomaActual = IDIOMA_DEFAULT;
-        window.idiomaActual = idiomaActual;
-
-        return idiomaActual;
+        return IDIOMA_DEFAULT;
     }
 }
 
 // ================================================================
-// CARGAR TRADUCCIONES DEL IDIOMA ACTUAL
+// CARGAR TRADUCCIONES DEL IDIOMA ACTUAL (con cache por idioma)
 // ================================================================
 
 async function cargarTraducciones(idiomaId) {
     try {
-        const client = getSupabaseClient();
+        if (!idiomaId) {
+            traducciones = {};
+            window.traducciones = traducciones;
+            return traducciones;
+        }
 
-        if (!client || !idiomaId) {
+        const cacheKey = `${I18N_CACHE_PREFIJO}_tr_${idiomaId}`;
+        const enCache = leerCacheI18n(cacheKey, TTL_TRADUCCIONES_MS);
+        if (enCache && typeof enCache === 'object') {
+            traducciones = enCache;
+            window.traducciones = traducciones;
+            return traducciones;
+        }
+
+        const client = getSupabaseClient();
+        if (!client) {
             traducciones = {};
             window.traducciones = traducciones;
             return traducciones;
@@ -236,11 +297,11 @@ async function cargarTraducciones(idiomaId) {
                 if (!item || !item.clave) {
                     return;
                 }
-
                 nuevoMapa[item.clave] = item.valor ?? '';
             });
         }
 
+        guardarCacheI18n(cacheKey, nuevoMapa);
         traducciones = nuevoMapa;
         window.traducciones = traducciones;
 
@@ -258,7 +319,6 @@ async function cargarTraducciones(idiomaId) {
 // ================================================================
 // OBTENER TEXTO TRADUCIDO (sin interpolar)
 // ================================================================
-// Devuelve el valor crudo de la traducción, o null si no existe.
 
 function obtenerTraduccionReal(clave, modulo = null) {
     if (!clave) {
@@ -291,10 +351,6 @@ function obtenerTraduccionReal(clave, modulo = null) {
 // ================================================================
 // TRADUCIR + INTERPOLAR
 // ================================================================
-// t() y tConFallback() aceptan un 3er argumento opcional `vars`:
-// - Si se pasa, los {x} se reemplazan por los valores.
-// - Si no se pasa, se devuelve el texto sin interpolar (comportamiento
-//   anterior, retrocompatible).
 
 function t(clave, modulo = null, vars = null) {
     if (!clave) {
@@ -326,11 +382,6 @@ function tConFallback(clave, fallback = '', modulo = null, vars = null) {
 
 // ================================================================
 // ESCRIBIR TEXTO TRADUCIDO SIN BORRAR HIJOS
-// ================================================================
-//
-// - Sin hijos: reemplaza el contenido completo.
-// - Con hijos (iconos, spans): cambia solo el primer nodo de texto
-//   no vacío y conserva espacios. Si no hay texto directo, lo inserta.
 // ================================================================
 
 function escribirTextoTraducido(el, texto) {
@@ -384,8 +435,6 @@ function elementosConAtributo(raiz, selector) {
 // ================================================================
 // LEER VARIABLES DE UN ELEMENTO (data-vars)
 // ================================================================
-// Espera un JSON: <span data-vars='{"nombre":"Alfredo"}'>
-// Si es inválido, se ignora sin romper.
 
 function leerVarsDeElemento(el) {
     if (!el || !el.hasAttribute || !el.hasAttribute('data-vars')) {
@@ -444,7 +493,6 @@ function aplicarTraducciones(raiz = document) {
 
         aplicandoTraducciones = true;
 
-        // DATA-CLAVE (texto) + DATA-VARS (interpolación)
         elementosConAtributo(raiz, '[data-clave]').forEach(el => {
             if (el.hasAttribute('data-no-traducir')) {
                 return;
@@ -472,7 +520,6 @@ function aplicarTraducciones(raiz = document) {
             el.setAttribute('data-i18n-ok', codigo);
         });
 
-        // DATA-CLAVE-TITLE (atributo title)
         elementosConAtributo(raiz, '[data-clave-title]').forEach(el => {
             if (el.hasAttribute('data-no-traducir')) {
                 return;
@@ -491,7 +538,6 @@ function aplicarTraducciones(raiz = document) {
             }
         });
 
-        // DATA-PLACEHOLDER (atributo placeholder)
         elementosConAtributo(raiz, '[data-placeholder]').forEach(el => {
             if (el.hasAttribute('data-no-traducir')) {
                 return;
@@ -529,11 +575,6 @@ function aplicarTraduccionesDinamicas(raiz = document) {
 
 // ================================================================
 // OBSERVADOR DE CONTENIDO DINÁMICO
-// ================================================================
-//
-// Traduce elementos que el JS agrega después de cargar la página.
-// Solo mira nodos agregados (childList), no cambios de texto, para
-// no entrar en bucle con las propias traducciones.
 // ================================================================
 
 function iniciarObservadorDinamico() {
@@ -606,6 +647,9 @@ async function cambiarIdioma(idiomaId) {
         if (session && session.user) {
             const client = getSupabaseClient();
 
+            // Invalidar la cache de preferencia del usuario
+            borrarCacheI18n(`${I18N_CACHE_PREFIJO}_pref_${session.user.id}`);
+
             if (client) {
                 const { error } = await client
                     .from('usuarios')
@@ -640,26 +684,9 @@ async function cargarSelectorIdiomas() {
             return;
         }
 
-        const client = getSupabaseClient();
+        const lista = await obtenerListaIdiomas();
 
-        if (!client) {
-            select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
-            return;
-        }
-
-        select.innerHTML = '';
-
-        const { data, error } = await client
-            .from('idiomas_sistema')
-            .select('id, codigo, nombre, nombre_nativo, bandera')
-            .eq('activo', true)
-            .order('nombre', { ascending: true });
-
-        if (error) {
-            throw error;
-        }
-
-        if (!data || data.length === 0) {
+        if (!lista || lista.length === 0) {
             select.innerHTML = '<option value="es-MX" selected>🌐 Español</option>';
             return;
         }
@@ -668,7 +695,9 @@ async function cargarSelectorIdiomas() {
         const idiomaIdActual = idiomaUsuario?.id;
         const codigosVistos = new Set();
 
-        data.forEach(idioma => {
+        select.innerHTML = '';
+
+        lista.forEach(idioma => {
             if (!idioma || !idioma.codigo || codigosVistos.has(idioma.codigo)) {
                 return;
             }
@@ -776,9 +805,7 @@ window.esIdioma = esIdioma;
 // ================================================================
 // AUTO-ARRANQUE
 // ================================================================
-// Cualquier página que cargue este archivo queda traducida.
-// Como es idempotente, si otra página también lo llama, no duplica nada.
 
 inicializarIdiomas();
 
-console.log('✅ Sistema de idiomas v6 cargado');
+console.log('✅ Sistema de idiomas v7 cargado');
