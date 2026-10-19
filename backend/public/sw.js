@@ -1,154 +1,396 @@
 // ================================================================
-// SERVICE WORKER — Csariel's · v2.1 (Soporte para Llamadas)
-// Push: integración de notificación con sonido/vibración de alarma.
-// Caché: HTML, JS y APIs siempre desde red. CSS con revalidación en
-// segundo plano. Imágenes y fuentes con caché.
+// ROUTES/PUSH.JS — Csariel's · v2.4 (Soporte para Llamadas Push)
+// CAMBIOS v2.4:
+// - Se agregó 'actions' a la llamada entrante para mostrar botones
+//   de Aceptar/Rechazar en la notificación nativa de Android.
 // ================================================================
 
-const CACHE_NAME = 'csariels-v2';
+const express = require('express');
+const router = express.Router();
+const webpush = require('web-push');
+const { supabaseAdmin } = require('../config/supabase');
+
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:noreply@csariels.com';
+
+const PUSH_ACTIVO = Boolean(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
+
+if (!PUSH_ACTIVO) {
+    console.error('⚠️ [Push] VAPID keys NO configuradas. Push deshabilitadas.');
+} else {
+    webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+    console.log('✅ [Push] VAPID configurado');
+}
 
 // ================================================================
-// INSTALL
+// AUTENTICACIÓN
 // ================================================================
-self.addEventListener('install', () => {
-    self.skipWaiting();
+async function verificarAutenticacion(req, res, next) {
+    try {
+        const authHeader = req.headers.authorization || '';
+        if (!authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, error: 'No autenticado' });
+        }
+        const token = authHeader.slice(7).trim();
+        if (!token) {
+            return res.status(401).json({ success: false, error: 'Token vacío' });
+        }
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+        if (error || !user) {
+            return res.status(401).json({ success: false, error: 'Token inválido' });
+        }
+        req.user = user;
+        return next();
+    } catch (error) {
+        console.error('[Push] Error auth:', error.message);
+        return res.status(500).json({ success: false, error: 'Error de autenticación' });
+    }
+}
+
+// ================================================================
+// GET /vapid-public-key
+// ================================================================
+router.get('/vapid-public-key', (req, res) => {
+    if (!PUSH_ACTIVO) {
+        return res.status(503).json({ success: false, error: 'Push notifications no configuradas' });
+    }
+    return res.json({ success: true, publicKey: VAPID_PUBLIC_KEY });
 });
 
 // ================================================================
-// ACTIVATE — borra cachés de versiones anteriores
+// POST /subscribe
 // ================================================================
-self.addEventListener('activate', (event) => {
-    event.waitUntil(
-        caches.keys()
-            .then((keys) => Promise.all(
-                keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))
-            ))
-            .then(() => self.clients.claim())
-    );
+router.post('/subscribe', verificarAutenticacion, async (req, res) => {
+    try {
+        const { endpoint, keys, device_type } = req.body || {};
+
+        if (!endpoint || typeof endpoint !== 'string' || !keys || !keys.p256dh || !keys.auth) {
+            return res.status(400).json({ success: false, error: 'Faltan datos de suscripción' });
+        }
+
+        const { error } = await supabaseAdmin
+            .from('push_subscriptions')
+            .upsert({
+                usuario_id: req.user.id,
+                endpoint,
+                p256dh: keys.p256dh,
+                auth: keys.auth,
+                device_type: String(device_type || 'unknown').slice(0, 20),
+                user_agent: String(req.headers['user-agent'] || '').slice(0, 300) || null,
+                activo: true,
+                ultima_vez_usado: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'endpoint' });
+
+        if (error) {
+            console.error('[Push] Error guardando suscripción:', error.message);
+            return res.status(500).json({ success: false, error: 'Error guardando suscripción' });
+        }
+
+        return res.json({ success: true, message: 'Suscripción registrada' });
+    } catch (error) {
+        console.error('[Push] Error en /subscribe:', error.message);
+        return res.status(500).json({ success: false, error: 'Error interno' });
+    }
 });
 
 // ================================================================
-// PUSH
+// POST /unsubscribe
 // ================================================================
-self.addEventListener('push', (event) => {
-    let data = {
-        title: "◈ Csariel's",
-        body: 'Nueva notificación',
-        icon: '/icon-192.png',
-        badge: '/badge-72.png',
-        url: '/',
-        tag: 'default',
-        data: {}
-    };
+router.post('/unsubscribe', verificarAutenticacion, async (req, res) => {
+    try {
+        const { endpoint } = req.body || {};
+        if (!endpoint) {
+            return res.status(400).json({ success: false, error: 'Falta endpoint' });
+        }
 
-    if (event.data) {
+        const { error } = await supabaseAdmin
+            .from('push_subscriptions')
+            .update({ activo: false, updated_at: new Date().toISOString() })
+            .eq('endpoint', endpoint)
+            .eq('usuario_id', req.user.id);
+
+        if (error) {
+            console.error('[Push] Error desactivando suscripción:', error.message);
+            return res.status(500).json({ success: false, error: 'Error borrando suscripción' });
+        }
+
+        return res.json({ success: true, message: 'Suscripción eliminada' });
+    } catch (error) {
+        console.error('[Push] Error en /unsubscribe:', error.message);
+        return res.status(500).json({ success: false, error: 'Error interno' });
+    }
+});
+
+// ================================================================
+// POST /test
+// ================================================================
+router.post('/test', verificarAutenticacion, async (req, res) => {
+    try {
+        const resultado = await enviarPushAUsuarios([req.user.id], {
+            title: "◈ Csariel's",
+            body: 'Notificación de prueba ✅',
+            icon: '/icon-192.png',
+            badge: '/badge-72.png',
+            url: '/features/live/live.html',
+            tag: 'test-notification'
+        });
+        return res.json({ success: true, resultado });
+    } catch (error) {
+        console.error('[Push] Error en /test:', error.message);
+        return res.status(500).json({ success: false, error: 'Error interno' });
+    }
+});
+
+// ================================================================
+// POST /broadcast-live
+// ================================================================
+router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
+    try {
+        const streamId = Number(req.body?.stream_id);
+        if (!Number.isInteger(streamId) || streamId <= 0) {
+            return res.status(400).json({ success: false, error: 'stream_id inválido' });
+        }
+
+        const { data: stream, error: errStream } = await supabaseAdmin
+            .from('transmisiones')
+            .select('id, titulo, streamer_id, estado, is_live')
+            .eq('id', streamId)
+            .maybeSingle();
+
+        if (errStream) {
+            console.error('[Push] Error consultando transmisión:', errStream.message);
+            return res.status(500).json({ success: false, error: 'Error consultando transmisión' });
+        }
+
+        if (!stream || stream.estado !== 'en_vivo' || stream.is_live !== true) {
+            return res.status(404).json({ success: false, error: 'Transmisión no activa' });
+        }
+
+        if (stream.streamer_id !== req.user.id) {
+            return res.status(403).json({ success: false, error: 'No autorizado' });
+        }
+
+        const { data: usuario } = await supabaseAdmin
+            .from('usuarios')
+            .select('nombre')
+            .eq('id', req.user.id)
+            .maybeSingle();
+
+        const nombre = usuario?.nombre || 'Un streamer';
+        const titulo = String(stream.titulo || '¡Únete ahora!').slice(0, 120);
+
+        const resultado = await enviarPushASeguidores(req.user.id, {
+            title: `🔴 ${nombre} está en vivo`,
+            body: titulo,
+            icon: '/icon-192.png',
+            badge: '/badge-72.png',
+            url: '/features/live/live.html',
+            tag: `live-${stream.id}`,
+            data: { stream_id: stream.id, streamer_id: req.user.id, tipo: 'live_iniciado' }
+        });
+
+        console.log(`[Push] Live ${stream.id}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
+
+        return res.json({
+            success: true,
+            enviados: resultado.enviados,
+            fallidos: resultado.fallidos
+        });
+    } catch (error) {
+        console.error('[Push] Error en /broadcast-live:', error.message);
+        return res.status(500).json({ success: false, error: 'Error interno' });
+    }
+});
+
+// ================================================================
+// POST /llamada-entrante
+// ================================================================
+router.post('/llamada-entrante', verificarAutenticacion, async (req, res) => {
+    try {
+        const { llamadaId, destinatarioId } = req.body || {};
+        if (!llamadaId || !destinatarioId) {
+            return res.status(400).json({ success: false, error: 'Faltan llamadaId o destinatarioId' });
+        }
+
+        const { data: llamada } = await supabaseAdmin
+            .from('llamadas')
+            .select('creador_id, estado')
+            .eq('id', llamadaId)
+            .maybeSingle();
+
+        if (!llamada || llamada.creador_id !== req.user.id || llamada.estado !== 'ringing') {
+            return res.status(403).json({ success: false, error: 'Llamada no válida o no autorizada' });
+        }
+
+        const { data: usuario } = await supabaseAdmin
+            .from('usuarios')
+            .select('nombre, avatar_url')
+            .eq('id', req.user.id)
+            .maybeSingle();
+
+        const nombre = usuario?.nombre || 'Alguien';
+        const avatar = usuario?.avatar_url || '/icon-192.png';
+
+        const resultado = await enviarPushAUsuarios([destinatarioId], {
+            title: `📞 Llamada de ${nombre}`,
+            body: 'Toca para contestar la videollamada',
+            icon: avatar,
+            badge: '/badge-72.png',
+            url: `/features/mensajes/mensajes.html?llamadaId=${llamadaId}`,
+            tag: `llamada-${llamadaId}`,
+            requireInteraction: true,
+            vibrate: [500, 200, 500, 200, 500],
+            data: { tipo: 'llamada_entrante', llamadaId }
+        });
+
+        console.log(`[Push] Llamada ${llamadaId}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
+
+        return res.json({
+            success: true,
+            enviados: resultado.enviados,
+            fallidos: resultado.fallidos
+        });
+    } catch (error) {
+        console.error('[Push] Error en /llamada-entrante:', error.message);
+        return res.status(500).json({ success: false, error: 'Error interno' });
+    }
+});
+
+// ================================================================
+// HELPER: push a usuarios específicos
+// ================================================================
+async function enviarPushAUsuarios(usuarioIds, payload) {
+    if (!PUSH_ACTIVO) {
+        console.warn('[Push] VAPID no configurado, saltando envío');
+        return { enviados: 0, fallidos: 0 };
+    }
+
+    if (!Array.isArray(usuarioIds) || usuarioIds.length === 0) {
+        return { enviados: 0, fallidos: 0 };
+    }
+
+    const { data: subs, error } = await supabaseAdmin
+        .from('push_subscriptions')
+        .select('id, endpoint, p256dh, auth')
+        .in('usuario_id', usuarioIds)
+        .eq('activo', true);
+
+    if (error) {
+        console.error('[Push] Error consultando suscripciones:', error.message);
+        return { enviados: 0, fallidos: 0 };
+    }
+
+    if (!subs || subs.length === 0) {
+        return { enviados: 0, fallidos: 0 };
+    }
+
+    const payloadString = JSON.stringify({
+        title: payload.title || "◈ Csariel's",
+        body: payload.body || '',
+        icon: payload.icon || '/icon-192.png',
+        badge: payload.badge || '/badge-72.png',
+        url: payload.url || '/',
+        tag: payload.tag || 'default',
+        data: payload.data || {},
+        requireInteraction: payload.requireInteraction || false,
+        vibrate: payload.vibrate || [200, 100, 200, 100, 200],
+        timestamp: Date.now()
+    });
+
+    let enviados = 0;
+    let fallidos = 0;
+    const endpointsExpirados = [];
+
+    for (const sub of subs) {
+        const pushSubscription = {
+            endpoint: sub.endpoint,
+            keys: { p256dh: sub.p256dh, auth: sub.auth }
+        };
+
         try {
-            data = { ...data, ...event.data.json() };
-        } catch (e) {
-            data.body = event.data.text();
+            await webpush.sendNotification(pushSubscription, payloadString, {
+                TTL: 60,
+                urgency: 'high',
+                topic: 'llamada-entrante'
+            });
+            enviados++;
+        } catch (err) {
+            fallidos++;
+            if (err.statusCode === 410 || err.statusCode === 404) {
+                endpointsExpirados.push(sub.endpoint);
+            } else {
+                console.warn('[Push] Error enviando:', err.statusCode || err.message);
+            }
         }
     }
 
-    // Detectar si es una llamada para aplicar el modo "alarma"
-    const esLlamada = data.tag?.startsWith('llamada-') || data.data?.tipo === 'llamada_entrante';
+    if (endpointsExpirados.length > 0) {
+        await supabaseAdmin
+            .from('push_subscriptions')
+            .update({ activo: false })
+            .in('endpoint', endpointsExpirados);
+        console.log(`[Push] ${endpointsExpirados.length} suscripciones expiradas desactivadas`);
+    }
 
-    const options = {
-        body: data.body,
-        icon: data.icon || '/icon-192.png',
-        badge: data.badge || '/badge-72.png',
-        tag: data.tag || 'default',
-        data: { url: data.url || '/', ...(data.data || {}) },
-        vibrate: esLlamada ? [500, 200, 500, 200, 500] : [200, 100, 200, 100, 200],
-        requireInteraction: esLlamada ? true : (data.requireInteraction || false),
-        silent: false,
-        renotify: true,
-        timestamp: Date.now()
-    };
-
-    event.waitUntil(
-        self.registration.showNotification(data.title, options)
-    );
-});
-
-// ================================================================
-// NOTIFICATIONCLICK
-// ================================================================
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-
-    const url = event.notification.data?.url || '/';
-
-    event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            for (const client of clientList) {
-                if (client.url.startsWith(self.location.origin) && 'focus' in client) {
-                    return client.focus().then((c) => {
-                        if (c && 'navigate' in c) return c.navigate(url).catch(() => c);
-                        return c;
-                    });
-                }
-            }
-            if (clients.openWindow) return clients.openWindow(url);
-        })
-    );
-});
-
-// ================================================================
-// FETCH
-// ================================================================
-
-// Red primero para HTML/JS/API: nunca se sirve una copia vieja
-function siempreRed(request) {
-    return fetch(request);
+    return { enviados, fallidos };
 }
 
-// Imágenes y fuentes: caché primero (cambian poco)
-function cacheFirst(request) {
-    return caches.match(request).then((cached) => {
-        if (cached) return cached;
-        return fetch(request).then((response) => {
-            if (response.ok) {
-                const copia = response.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put(request, copia));
-            }
-            return response;
-        });
+// ================================================================
+// HELPER: push a seguidores de un streamer
+// ================================================================
+async function enviarPushASeguidores(streamerId, payload) {
+    try {
+        const { data: seguidores, error } = await supabaseAdmin
+            .from('live_seguidores')
+            .select('seguidor_id')
+            .eq('streamer_id', streamerId);
+
+        if (error || !seguidores || seguidores.length === 0) {
+            return { enviados: 0, fallidos: 0 };
+        }
+
+        const ids = seguidores
+            .map((s) => s.seguidor_id)
+            .filter((id) => id && id !== streamerId);
+
+        return await enviarPushAUsuarios(ids, payload);
+    } catch (error) {
+        console.error('[Push] Error enviando a seguidores:', error.message);
+        return { enviados: 0, fallidos: 0 };
+    }
+}
+
+// ================================================================
+// HELPER: Push específico para llamadas entrantes (con botones)
+// ================================================================
+async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamadaId) {
+    console.log(`[Push] Iniciando envío de Push a ${destinatarioId} para llamada ${llamadaId}`);
+
+    const resultado = await enviarPushAUsuarios([destinatarioId], {
+        title: `📞 Llamada de ${nombre}`,
+        body: 'Toca para contestar la videollamada',
+        icon: avatar || '/icon-192.png',
+        badge: '/badge-72.png',
+        url: `/features/mensajes/mensajes.html?llamadaId=${llamadaId}`,
+        tag: `llamada-${llamadaId}`,
+        requireInteraction: true,
+        vibrate: [500, 200, 500, 200, 500],
+        data: { tipo: 'llamada_entrante', llamadaId },
+        // AQUÍ AGREGAMOS LAS ACCIONES PARA QUE APAREZCAN LOS BOTONES
+        actions: [
+            { action: 'accept', title: '✅ Aceptar' },
+            { action: 'reject', title: '❌ Rechazar' }
+        ]
     });
+
+    console.log(`[Push] Llamada ${llamadaId}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
+
+    return resultado;
 }
 
-// CSS: muestra la copia guardada y actualiza en segundo plano
-function staleWhileRevalidate(request) {
-    return caches.open(CACHE_NAME).then((cache) =>
-        cache.match(request).then((cached) => {
-            const red = fetch(request).then((response) => {
-                if (response.ok) cache.put(request, response.clone());
-                return response;
-            }).catch(() => cached);
-            return cached || red;
-        })
-    );
-}
-
-self.addEventListener('fetch', (event) => {
-    const request = event.request;
-
-    if (request.method !== 'GET') return;
-
-    const url = new URL(request.url);
-    if (url.origin !== self.location.origin) return;
-
-    // Navegación, APIs, HTML y JS: siempre desde red
-    if (request.mode === 'navigate') return;
-    if (url.pathname.startsWith('/api/')) return;
-    if (/\.(html|js|mjs)$/i.test(url.pathname)) return;
-
-    if (/\.css$/i.test(url.pathname)) {
-        event.respondWith(staleWhileRevalidate(request));
-        return;
-    }
-
-    if (/\.(png|jpg|jpeg|gif|svg|webp|ico|woff|woff2|ttf)$/i.test(url.pathname)) {
-        event.respondWith(cacheFirst(request));
-        return;
-    }
-});
+module.exports = router;
+module.exports.enviarPushAUsuarios = enviarPushAUsuarios;
+module.exports.enviarPushASeguidores = enviarPushASeguidores;
+module.exports.enviarPushLlamadaEntrante = enviarPushLlamadaEntrante;
