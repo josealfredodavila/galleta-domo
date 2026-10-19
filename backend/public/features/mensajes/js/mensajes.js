@@ -1,8 +1,8 @@
 // ================================================================
-// MENSAJES · JS v4.2 · WEB3 NEON UI
-// Cambios v4.2:
-// - Integración completa de acciones de Push (Aceptar / Rechazar)
-//   en la URL de la notificación.
+// MENSAJES · JS v4.3 · WEB3 NEON UI
+// Cambios v4.3:
+// - Integración del listener para recibir mensajes del Service Worker
+//   (Botón Aceptar en la notificación cuando la app ya está abierta).
 // ================================================================
 
 'use strict';
@@ -2533,7 +2533,7 @@ async function init() {
     setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
 
     // ============================================================
-    // NUEVO v4.2: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
+    // NUEVO v4.3: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
     // ============================================================
     
     // 1. Suscripción a Push Notifications
@@ -2685,6 +2685,34 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 // ================================================================
+// ESCUCHAR MENSAJES DEL SERVICE WORKER (Botón Aceptar)
+// ================================================================
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+        const data = event.data || {};
+        if (data.tipo === 'notificacion_click') {
+            if (data.accion === 'accept' && data.llamadaId) {
+                console.log('[Push] Botón Aceptar tocado desde la notificación');
+                if (typeof incoming === 'function' && typeof incomingId !== 'undefined') {
+                    if (!call.active) {
+                        db.from('llamadas').select('*').eq('id', data.llamadaId).maybeSingle().then(({ data: llamada }) => {
+                            if (llamada && llamada.estado === 'ringing') {
+                                incoming(llamada);
+                                setTimeout(() => {
+                                    if (typeof acceptCall === 'function' && incomingId === llamada.id) {
+                                        acceptCall();
+                                    }
+                                }, 500);
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    });
+}
+
+// ================================================================
 // WEB3 UI DECORATOR
 // ================================================================
 function decorarComposerWeb3() {
@@ -2699,7 +2727,7 @@ function decorarComposerWeb3() {
         sendBtn.innerHTML = '<span>Enviar</span><span style="font-size:.9rem;">➤</span>';
     }
     const input = $('messageInput');
-    if (input && !input.placeholder) input.placeholder = 'Escribe un mensaje…';
+    if (!input.placeholder) input.placeholder = 'Escribe un mensaje…';
     composer.dataset.web3decorated = '1';
 }
 
@@ -2793,7 +2821,7 @@ window.openConversation = openConversation;
 
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.2.0',
+    version: '4.3.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarChatActions: decorarChatActions
