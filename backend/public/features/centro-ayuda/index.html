@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es" data-require-auth>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>Centro de Ayuda · Csariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/js/auth-global.js"></script>
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-card: #050B14;
+            --bg-card-hover: #0A1423;
+            --cyan: #00E5FF;
+            --purple: #A855F7;
+            --text-primary: #F8F9FA;
+            --text-secondary: #8B98A5;
+            --border: rgba(0, 229, 255, 0.15);
+            --font-base: 'Inter', -apple-system, sans-serif;
+            --font-title: 'Orbitron', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-base);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header Estilo X */
+        .help-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .back-btn:hover { background: rgba(255, 255, 255, 0.1); }
+        .back-btn svg { width: 20px; height: 20px; fill: currentColor; }
+
+        .header-title {
+            font-family: var(--font-title);
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        /* Contenido principal */
+        .help-main {
+            max-width: 680px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 24px 20px 60px;
+            flex: 1;
+        }
+
+        /* Título y búsqueda */
+        .hero-section { text-align: center; margin-bottom: 32px; }
+        .hero-title {
+            font-family: var(--font-title);
+            font-size: 1.5rem;
+            color: var(--cyan);
+            margin-bottom: 20px;
+            line-height: 1.2;
+            text-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+        }
+
+        .search-container {
+            position: relative;
+            width: 100%;
+        }
+        .search-container svg {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            fill: var(--text-secondary);
+        }
+        .search-input {
+            width: 100%;
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px 14px 48px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .search-input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.15);
+        }
+        .search-input::placeholder { color: var(--text-secondary); }
+
+        /* Grid de categorías */
+        .categories-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+            margin-top: 28px;
+        }
+
+        @media (min-width: 600px) {
+            .categories-grid { grid-template-columns: 1fr 1fr; }
+            .hero-title { font-size: 1.8rem; }
+        }
+
+        .category-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 20px;
+            transition: transform 0.2s, background 0.2s, border-color 0.2s;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .category-card:hover {
+            transform: translateY(-2px);
+            background-color: var(--bg-card-hover);
+            border-color: rgba(0, 229, 255, 0.4);
+        }
+        .category-card:hover::before { opacity: 1; }
+
+        .cat-icon {
+            font-size: 2rem;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.4));
+        }
+
+        .cat-title {
+            font-family: var(--font-title);
+            font-size: 1rem;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+        }
+
+        .cat-desc {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            flex: 1;
+        }
+
+        .cat-links {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .cat-links a {
+            color: var(--cyan);
+            text-decoration: none;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.2s;
+        }
+        .cat-links a::before { content: '▸'; font-size: 0.7rem; color: var(--purple); }
+        .cat-links a:hover { color: #fff; text-decoration: underline; }
+
+        /* Alerta inferior */
+        .help-alert {
+            margin-top: 40px;
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(0, 229, 255, 0.1));
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        .help-alert p { font-size: 0.85rem; color: var(--text-secondary); }
+        .help-alert strong { color: var(--purple); }
+
+    </style>
+</head>
+<body>
+
+    <header class="help-header">
+        <button class="back-btn" onclick="window.history.back()" aria-label="Volver">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div class="header-title">Centro de Ayuda</div>
+    </header>
+
+    <main class="help-main">
+        <div class="hero-section">
+            <h1 class="hero-title">¿Qué podemos ayudarte a encontrar hoy?</h1>
+            <div class="search-container">
+                <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                <input type="text" id="searchInput" class="search-input" placeholder="Buscar términos, privacidad, wallets..." aria-label="Buscar en el centro de ayuda">
+            </div>
+        </div>
+
+        <div class="categories-grid" id="categoriesGrid">
+            
+            <!-- Categoría 1 -->
+            <div class="category-card" data-search="reglas politicas generales terminos servicio privacidad cookies">
+                <div class="cat-icon">📘</div>
+                <div class="cat-title">Reglas y Políticas Generales</div>
+                <div class="cat-desc">Todo sobre el funcionamiento base de la plataforma.</div>
+                <ul class="cat-links">
+                    <li><a href="/terminos.html">Términos de Servicio</a></li>
+                    <li><a href="/privacidad.html">Política de Privacidad</a></li>
+                    <li><a href="/cookies.html">Política de Cookies</a></li>
+                </ul>
+            </div>
+
+            <!-- Categoría 2 -->
+            <div class="category-card" data-search="mercado web3 estoks membresia pro devoluciones crypto wallet polygon">
+                <div class="cat-icon">🌐</div>
+                <div class="cat-title">Mercado & Web3</div>
+                <div class="cat-desc">Economía de la app, tokens y sistema de reputación.</div>
+                <ul class="cat-links">
+                    <li><a href="/features/terminos/mercado.html">Términos del Mercado</a></li>
+                    <li><a href="/features/terminos/estoks.html">Reglas de e.stoks</a></li>
+                    <li><a href="/features/terminos/membresia.html">Membresía Pro y Devoluciones</a></li>
+                </ul>
+            </div>
+
+            <!-- Categoría 3 -->
+            <div class="category-card" data-search="servicios live ia marquinhos capitan maiz asistentes inteligencia artificial">
+                <div class="cat-icon">🤖</div>
+                <div class="cat-title">Servicios Live e IA</div>
+                <div class="cat-desc">Transmisiones, asistentes virtuales y bots.</div>
+                <ul class="cat-links">
+                    <li><a href="/live-terminos.html">Términos del Live</a></li>
+                    <li><a href="/features/terminos/marquinhos.html">Términos de Marquinhos IA</a></li>
+                    <li><a href="/features/terminos/capitan-maiz.html">Términos de Capitán Maíz</a></li>
+                </ul>
+            </div>
+
+            <!-- Categoría 4 -->
+            <div class="category-card" data-search="seguridad prevencion administrar cuenta eliminar desactivar">
+                <div class="cat-icon">🛡️</div>
+                <div class="cat-title">Seguridad y Cuenta</div>
+                <div class="cat-desc">Gestiona tu identidad y protege tu acceso.</div>
+                <ul class="cat-links">
+                    <li><a href="/features/perfil/configuracion/seguridad.html">Seguridad de la cuenta</a></li>
+                    <li><a href="/eliminar-cuenta.html">Eliminar mi cuenta</a></li>
+                    <li><a href="/features/terminos/derechos-sariels.html">Derechos y Usos</a></li>
+                </ul>
+            </div>
+
+        </div>
+
+        <div class="help-alert">
+            <p>¿No encuentras lo que buscas? Escríbenos a <strong>soporte@csariels.com</strong></p>
+        </div>
+    </main>
+
+    <script>
+        // Lógica simple de filtrado para la barra de búsqueda
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const val = e.target.value.toLowerCase().trim();
+            const cards = document.querySelectorAll('.category-card');
+            
+            cards.forEach(card => {
+                const text = card.getAttribute('data-search') + ' ' + card.innerText.toLowerCase();
+                if (text.includes(val)) {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+</html>
