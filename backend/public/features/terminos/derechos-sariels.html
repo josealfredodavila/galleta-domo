@@ -28,7 +28,29 @@
             line-height: 1.7;
         }
         .app { max-width: 900px; margin: 0 auto; padding: 20px 16px 40px; position: relative; z-index: 1; }
-        
+
+        /* ===== BOTÓN CENTRO DE AYUDA ===== */
+        .btn-centro-ayuda {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background: rgba(15, 45, 26, 0.6);
+            border: 1px solid var(--gold-dim);
+            color: var(--gold);
+            text-decoration: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+        .btn-centro-ayuda:hover {
+            background: rgba(212, 175, 55, 0.1);
+            border-color: var(--gold);
+            transform: translateY(-2px);
+        }
+
         .header {
             display: flex; justify-content: space-between; align-items: center;
             padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
@@ -475,6 +497,11 @@
             <a href="/features/grupos/grupos.html" class="nav-link">◈ Canales</a>
             <a href="/features/terminos/derechos-sariels.html" class="nav-link active">◈ Derechos y Usos</a>
         </nav>
+
+        <!-- BOTÓN VOLVER AL CENTRO DE AYUDA -->
+        <a href="/features/centro-ayuda/index.html" class="btn-centro-ayuda">
+            ← Volver al Centro de Ayuda
+        </a>
         
         <div class="hero">
             <div class="icon-grande">🦉</div>
@@ -483,7 +510,6 @@
             <div class="fecha">VERSIÓN 1.5 · VIGENTE DESDE SEPTIEMBRE 2026</div>
         </div>
         
-        <!-- ✅ RESUMEN EJECUTIVO -->
         <div class="resumen-ejecutivo">
             <div class="resumen-titulo">📋 Resumen Ejecutivo</div>
             <p class="resumen-intro">Antes de utilizar Sariel's, es importante que comprendas lo siguiente:</p>
@@ -563,7 +589,6 @@
             </div>
         </div>
         
-        <!-- ✅ CARD DEL ALGORITMO -->
         <div class="card-algoritmo">
             <div class="titulo">🤖 Sistema de Detección Automática</div>
             <p>Sariel's opera con un <strong style="color:var(--cyan);">algoritmo de moderación automática</strong> que analiza cada publicación antes de hacerse visible en la plataforma. Este sistema:</p>
@@ -590,13 +615,11 @@
             </div>
         </div>
         
-        <!-- ✅ CLÁUSULA ARTÍCULO 89 -->
         <div class="clausula-legal">
             <div class="titulo">⚖️ Naturaleza Legal de Sariel's</div>
             <p>Sariel's actúa exclusivamente como <strong style="color:var(--gold);">intermediario tecnológico</strong> conforme al artículo 89 de la Ley Federal de Protección al Consumidor de los Estados Unidos Mexicanos. No resguarda, posee ni garantiza los productos o servicios publicados por los usuarios. La responsabilidad fiscal, legal y de entrega es exclusiva del vendedor.</p>
         </div>
         
-        <!-- TABS -->
         <div class="tabs-container">
             <button class="tab-btn active" onclick="cambiarTab('autor')" id="tab-autor">
                 ⚖️ Derechos de Autor
@@ -609,11 +632,7 @@
             </button>
         </div>
         
-        <!-- ============================================
-             SECCIÓN 1: DERECHOS DE AUTOR
-             ============================================ -->
         <div class="seccion active" id="seccion-autor">
-            
             <div class="card">
                 <div class="card-titulo">Derechos de Autor · Sariel's</div>
                 <p>Esta sección describe qué contenido está permitido publicar en el ecosistema Sariel's (Muro, Canales/Grupos, Videos, Live, Mensajes) y las responsabilidades de cada usuario sobre el material que comparte.</p>
@@ -719,11 +738,8 @@
                 <p style="margin-top:12px;">Sariel's actúa como <strong style="color:var(--gold);">plataforma técnica</strong> y no se hace responsable del contenido publicado por los usuarios. Cada usuario es 100% responsable de lo que comparte.</p>
             </div>
         </div>
-        <!-- ============================================
-             SECCIÓN 2: DERECHOS DE USO
-             ============================================ -->
+        
         <div class="seccion" id="seccion-uso">
-            
             <div class="card">
                 <div class="card-titulo">Derechos de Uso · Sariel's</div>
                 <p>Esta sección describe cómo puedes usar la plataforma, qué límites existen y qué se espera de cada usuario dentro del ecosistema Sariel's.</p>
@@ -844,11 +860,7 @@
             </div>
         </div>
         
-        <!-- ============================================
-             SECCIÓN 3: MARKETPLACE
-             ============================================ -->
         <div class="seccion" id="seccion-marketplace">
-            
             <div class="card">
                 <div class="card-titulo">Marketplace · Sariel's</div>
                 <p>El Marketplace es una función opcional dentro de los Canales/Grupos que permite a los miembros vender productos o servicios lícitos entre ellos. Esta sección define las reglas del Marketplace.</p>
@@ -994,9 +1006,6 @@
             </div>
         </div>
         
-        <!-- ============================================
-             CLÁUSULAS FINALES
-             ============================================ -->
         <div class="card" style="margin-top: 24px; background: linear-gradient(155deg, rgba(212, 175, 55, 0.05), rgba(15, 45, 26, 0.5)); border-color: rgba(212, 175, 55, 0.3);">
             <div class="card-titulo">Cláusulas Finales</div>
             
@@ -1071,4 +1080,3 @@
     </script>
 </body>
 </html>
-        
