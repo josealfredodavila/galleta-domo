@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es" data-require-auth>
+<html lang="es">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -63,7 +63,7 @@
             height: 40px;
             border-radius: 50%;
             background: transparent;
-            border: 1px solid var(--border); /* Borde añadido para que se vea como en Configuración */
+            border: 1px solid var(--border);
             color: var(--text-primary);
             cursor: pointer;
             transition: background 0.2s, border-color 0.2s;
@@ -241,13 +241,13 @@
 <body>
 
     <header class="help-header">
-        <!-- Botón de regreso actualizado a Configuración -->
-        <button class="back-btn" onclick="window.location.href='/features/perfil/configuracion/index.html'" aria-label="Volver a Configuración">
+        <!-- Botón de regreso: si tiene historial regresa, si no, va al inicio -->
+        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/'; }" aria-label="Volver">
             <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </button>
         <div class="header-content">
-            <div class="header-title">Configuración</div>
-            <div class="header-subtitle">Centro de Ayuda y Legal</div>
+            <div class="header-title">Centro de Ayuda</div>
+            <div class="header-subtitle">Documentación Legal y Soporte</div>
         </div>
     </header>
 
