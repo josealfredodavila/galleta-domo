@@ -479,7 +479,6 @@
             transition: width 0.15s linear;
         }
 
-        /* ELIMINADO EL BOTÓN ANTICUADO DE FULLSCREEN */
         .btn-fullscreen { display: none !important; }
 
         .video-card.pantalla-completa {
@@ -772,11 +771,21 @@
         .toast-siguiente { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: var(--gold); padding: 14px 28px; border-radius: 30px; font-family: 'Orbitron', monospace; font-size: 0.9rem; z-index: 100000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; border: 1px solid rgba(212, 175, 55, 0.5); }
         .toast-siguiente.visible { opacity: 1; }
 
-        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
+        /* ===== FOOTER LIMPIO Y ACTUALIZADO ===== */
+        .footer { 
+            margin-top: 30px; 
+            padding-top: 16px; 
+            border-top: 1px solid var(--glass-border); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            gap: 6px; 
+            font-size: 0.7rem; 
+            color: var(--text-muted); 
+            text-align: center;
+        }
         .footer .brand { color: var(--gold); font-weight: 600; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; }
-        .footer-links a:hover { color: var(--gold); }
+        .footer .network-tag { font-size: 0.65rem; opacity: 0.5; display: flex; align-items: center; gap: 4px; }
 
         html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa; --glass-bg: rgba(255, 255, 255, 0.85); --glass-border: rgba(0, 0, 0, 0.1);
@@ -895,14 +904,10 @@
             </div>
         </div>
 
+        <!-- ===== FOOTER ACTUALIZADO Y LIMPIO ===== -->
         <footer class="footer">
-            <span><span class="brand">◈ Csariel's</span> · <span data-clave="videos_footer_tagline">Sabor al Paladar · WEB3</span></span>
-            <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos">◈ Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad">◈ Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies">◈ Cookies</a>
-                <span style="opacity:0.3;" data-no-traducir="1">⚡ Polygon</span>
-            </div>
+            <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
+            <span class="network-tag">⚡ Polygon</span>
         </footer>
     </div>
 
