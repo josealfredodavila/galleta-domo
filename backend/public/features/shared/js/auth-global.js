@@ -3,13 +3,22 @@
    AUTENTICACIÓN GLOBAL DEL FRONTEND
    ================================================================
    ARCHIVO:  backend/public/features/shared/js/auth-global.js
-   VERSIÓN:  2.0.1
+   VERSIÓN:  2.0.2
    ================================================================
 
    RESPONSABILIDAD ÚNICA:
    Proveer a cada página del frontend un cliente Supabase listo
    para usar, con la sesión del usuario resuelta, y proteger
    las rutas que declaren ser privadas.
+
+   ================================================================
+   CAMBIOS v2.0.2
+   ================================================================
+
+   - Listener global para el rechazo de llamadas desde la
+     notificación push (mensaje 'notificacion_click' con
+     accion 'reject'). Funciona en cualquier página de la app,
+     sin navegar al usuario. Se instala una sola vez.
 
    ================================================================
    CAMBIOS v2.0.1
@@ -422,6 +431,71 @@
 
 
     /* ================================================================
+       RECHAZO DE LLAMADA DESDE NOTIFICACIÓN (v2.0.2)
+       — Se instala una sola vez, en cualquier página de la app.
+       — No navega al usuario: solo registra el rechazo si la
+         llamada sigue en 'ringing' y el usuario es el destinatario.
+    ================================================================ */
+
+    let rechazoSWInstalado = false;
+
+    function instalarListenerRechazoSW() {
+        if (rechazoSWInstalado) {
+            return;
+        }
+
+        if (!('serviceWorker' in navigator)) {
+            return;
+        }
+
+        rechazoSWInstalado = true;
+
+        navigator.serviceWorker.addEventListener('message', async (event) => {
+            const d = event.data || {};
+
+            if (
+                d.tipo !== 'notificacion_click' ||
+                d.accion !== 'reject' ||
+                !d.llamadaId
+            ) {
+                return;
+            }
+
+            try {
+                const client = await window.supabaseReady;
+
+                if (!client || !client.auth) {
+                    return;
+                }
+
+                const resultado = await client.auth.getSession();
+                const session = resultado && resultado.data && resultado.data.session;
+
+                if (!session || !session.user) {
+                    return;
+                }
+
+                /* Solo rechaza si sigue sonando y el usuario es el destinatario.
+                   Si Mensajes ya lo procesó, este update no cambia nada. */
+                await client
+                    .from('llamadas')
+                    .update({
+                        estado: 'rejected',
+                        motivo_fin: 'rechazada_desde_notificacion',
+                        finalizada_at: new Date().toISOString()
+                    })
+                    .eq('id', d.llamadaId)
+                    .eq('estado', 'ringing')
+                    .eq('destinatario_id', session.user.id);
+
+            } catch (e) {
+                console.warn('[Llamadas] No se pudo registrar el rechazo:', e);
+            }
+        });
+    }
+
+
+    /* ================================================================
        TIMEOUT
     ================================================================ */
 
@@ -611,6 +685,8 @@
 
     window.supabaseReady = authPromise;
     window.sarielsAuthReady = authPromise;
+
+    instalarListenerRechazoSW();
 
 
     /* ================================================================
