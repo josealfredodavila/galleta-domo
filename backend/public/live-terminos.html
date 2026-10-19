@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="/styles.css" />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <style>
-        /* ===== ESTILOS COMPARTIDOS ===== */
         :root {
             --gold-cosmic: #D4AF37;
             --gold-dim: rgba(212, 168, 87, 0.15);
@@ -26,6 +25,33 @@
             line-height: 1.6;
             padding: 0;
         }
+
+        /* ===== BOTÓN CENTRO DE AYUDA ===== */
+        .btn-centro-ayuda {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 20px auto;
+            padding: 10px 20px;
+            background: rgba(15, 45, 26, 0.4);
+            border: 1px solid var(--gold-dim);
+            color: var(--gold-cosmic);
+            text-decoration: none;
+            border-radius: 40px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+            max-width: 900px;
+            width: fit-content;
+            position: relative;
+            z-index: 10;
+        }
+        .btn-centro-ayuda:hover {
+            background: rgba(212, 168, 87, 0.1);
+            border-color: var(--gold-cosmic);
+            transform: translateY(-2px);
+        }
+
         .terminos-container {
             max-width: 900px;
             margin: 0 auto;
@@ -302,6 +328,11 @@
                 </div>
             </div>
         </header>
+
+        <!-- BOTÓN VOLVER AL CENTRO DE AYUDA -->
+        <a href="/features/centro-ayuda/index.html" class="btn-centro-ayuda">
+            ← Volver al Centro de Ayuda
+        </a>
 
         <main class="main">
             <div class="container">
