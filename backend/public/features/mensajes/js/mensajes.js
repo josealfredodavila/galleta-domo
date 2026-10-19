@@ -1,8 +1,7 @@
 // ================================================================
-// MENSAJES · JS v4.3 · WEB3 NEON UI
-// Cambios v4.3:
-// - Integración del listener para recibir mensajes del Service Worker
-//   (Botón Aceptar en la notificación cuando la app ya está abierta).
+// MENSAJES · JS v4.4 · WEB3 NEON UI
+// Cambios v4.4:
+// - Manejo del botón "Rechazar" desde la notificación Push.
 // ================================================================
 
 'use strict';
@@ -2533,7 +2532,7 @@ async function init() {
     setInterval(() => { limpiarVistosAntiguos(); cargarEstados(); }, 5 * 60 * 1000);
 
     // ============================================================
-    // NUEVO v4.3: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
+    // NUEVO v4.4: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
     // ============================================================
     
     // 1. Suscripción a Push Notifications
@@ -2685,27 +2684,40 @@ function urlBase64ToUint8Array(base64String) {
 }
 
 // ================================================================
-// ESCUCHAR MENSAJES DEL SERVICE WORKER (Botón Aceptar)
+// ESCUCHAR MENSAJES DEL SERVICE WORKER (Botón Aceptar / Rechazar)
 // ================================================================
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         const data = event.data || {};
-        if (data.tipo === 'notificacion_click') {
-            if (data.accion === 'accept' && data.llamadaId) {
-                console.log('[Push] Botón Aceptar tocado desde la notificación');
-                if (typeof incoming === 'function' && typeof incomingId !== 'undefined') {
-                    if (!call.active) {
-                        db.from('llamadas').select('*').eq('id', data.llamadaId).maybeSingle().then(({ data: llamada }) => {
-                            if (llamada && llamada.estado === 'ringing') {
-                                incoming(llamada);
-                                setTimeout(() => {
-                                    if (typeof acceptCall === 'function' && incomingId === llamada.id) {
-                                        acceptCall();
-                                    }
-                                }, 500);
-                            }
-                        });
-                    }
+        if (data.tipo === 'notificacion_click' && data.llamadaId) {
+            
+            // --- RECHAZAR ---
+            if (data.accion === 'reject') {
+                console.log('[Push] Botón Rechazar tocado. Avisando al backend...');
+                db.from('llamadas').update({ 
+                    estado: 'rejected', 
+                    motivo_fin: 'rechazada_desde_notificacion',
+                    finalizada_at: new Date().toISOString()
+                }).eq('id', data.llamadaId).then(() => {
+                    toast('📵 Llamada rechazada', 'warning');
+                });
+                return;
+            }
+
+            // --- ACEPTAR ---
+            if (data.accion === 'accept') {
+                console.log('[Push] Botón Aceptar tocado. Conectando...');
+                if (typeof incoming === 'function' && typeof incomingId !== 'undefined' && !call.active) {
+                    db.from('llamadas').select('*').eq('id', data.llamadaId).maybeSingle().then(({ data: llamada }) => {
+                        if (llamada && llamada.estado === 'ringing') {
+                            incoming(llamada);
+                            setTimeout(() => {
+                                if (typeof acceptCall === 'function' && incomingId === llamada.id) {
+                                    acceptCall();
+                                }
+                            }, 500);
+                        }
+                    });
                 }
             }
         }
@@ -2821,9 +2833,9 @@ window.openConversation = openConversation;
 
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.3.0',
+    version: '4.4.0',
     decorarComposer: decorarComposerWeb3,
-    decorarSidebarTabs: decorarSidebarTabsWeb3,
+    decorarSidebarTabsWeb3,
     decorarChatActions: decorarChatActions
 };
 
