@@ -8,6 +8,7 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../shared/config-layout.css" />
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
     <style>
         .nt-row { display:flex; align-items:center; gap:12px; }
         .nt-row .cfg-item-content { flex:1; min-width:0; }
@@ -21,7 +22,7 @@
         .nt-preview { margin:16px; padding:16px; background:rgba(212,175,55,.05); border:1px solid rgba(212,175,55,.2); border-radius:12px; }
         .nt-preview-title { font-size:.72rem; color:var(--cfg-gold,#D4AF37); font-weight:700; text-transform:uppercase; letter-spacing:1px; font-family:'Orbitron',monospace; margin-bottom:10px; }
         .nt-card { background:rgba(0,0,0,.4); border:1px solid var(--cfg-border,rgba(255,255,255,.1)); border-radius:10px; padding:12px 14px; display:flex; gap:10px; align-items:flex-start; }
-        .nt-card-icon { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#0F2D1A,#D4AF37); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff; }
+        .nt-card-icon { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg,#0F2D1A,var(--cfg-gold,#D4AF37)); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#fff; }
         .nt-card-title { font-size:.8rem; font-weight:600; color:var(--cfg-text,#fff); margin-bottom:2px; }
         .nt-card-text { font-size:.72rem; color:var(--cfg-text-muted,#8aa8b8); line-height:1.4; }
         .nt-card-time { font-size:.6rem; color:var(--cfg-text-muted,#8aa8b8); margin-top:4px; opacity:.7; }
@@ -176,24 +177,48 @@
             }
         }
 
+        /*
+         * Pide el permiso del navegador. Debe llamarse directamente desde el toque
+         * del usuario: Chrome en Android solo muestra el aviso en ese caso.
+         * Devuelve 'granted', 'denied', 'default' (cerrado sin decidir) o 'unsupported'.
+         */
+        async function pedirPermisoPush() {
+            if (!('Notification' in window)) return 'unsupported';
+            if (Notification.permission === 'granted') return 'granted';
+            if (Notification.permission === 'denied') return 'denied';
+            try {
+                return await Notification.requestPermission();
+            } catch (e) {
+                console.warn('[Notificaciones] requestPermission:', e);
+                return 'default';
+            }
+        }
+
         async function alCambiar(event) {
             const input = event.target;
             if (!input || !input.dataset || !input.dataset.pref) return;
             const nombre = input.dataset.pref;
             const nuevo = input.checked;
 
-            if (nombre === 'push' && nuevo && 'Notification' in window) {
-                try {
-                    const permiso = Notification.permission === 'granted' ? 'granted' : await Notification.requestPermission();
-                    if (permiso !== 'granted') {
-                        input.checked = false;
-                        toast('Permiso de notificaciones denegado en el navegador.', 'warning');
-                        marcarEstado('Activa el permiso de notificaciones en la configuración de tu navegador.', true);
-                        return;
-                    }
+            if (nombre === 'push' && nuevo) {
+                const permiso = await pedirPermisoPush();
+
+                if (permiso === 'granted') {
                     marcarEstado('');
-                } catch (e) {
-                    console.warn('[Notificaciones] Permiso:', e);
+                } else {
+                    input.checked = false;
+
+                    if (permiso === 'unsupported') {
+                        toast('Tu navegador no admite notificaciones.', 'warning');
+                        marcarEstado('Este navegador no permite notificaciones push.', true);
+                    } else if (permiso === 'denied') {
+                        toast('Permiso bloqueado en el navegador.', 'warning');
+                        marcarEstado('Permiso bloqueado. Actívalo en los ajustes del sitio de tu navegador y vuelve a intentarlo.', true);
+                    } else {
+                        toast('No aceptaste el permiso.', 'warning');
+                        marcarEstado('Vuelve a tocar el interruptor para intentarlo otra vez.', true);
+                    }
+                    return;
                 }
             }
 
