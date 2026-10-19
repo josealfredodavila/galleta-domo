@@ -279,16 +279,14 @@
         .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
 
+        /* ===== FOOTER LIMPIO Y ACTUALIZADO ===== */
         .footer {
             margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border);
-            display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem;
-            color: var(--text-muted); flex-wrap: wrap; gap: 10px;
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            font-size: 0.7rem; color: var(--text-muted); text-align: center;
         }
         .footer .brand { color: var(--gold); font-weight: 600; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
-        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
-        .footer-links a:hover { color: var(--gold); }
+        .footer .network-tag { font-size: 0.65rem; opacity: 0.5; display: flex; align-items: center; gap: 4px; }
 
         html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa;
@@ -414,15 +412,10 @@
             </button>
         </div>
 
+        <!-- ===== FOOTER LIMPIO Y ACTUALIZADO ===== -->
         <footer class="footer">
-            <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
-            <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
-                <span style="opacity:0.3;" data-no-traducir="1">⚡ Polygon</span>
-            </div>
+            <span><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
+            <span class="network-tag">⚡ Polygon</span>
         </footer>
 
     </div>
