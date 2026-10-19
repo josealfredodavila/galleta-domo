@@ -79,10 +79,26 @@ self.addEventListener('notificationclick', (event) => {
   const esLlamada = info.tipo === 'llamada_entrante';
   event.notification.close();
 
-  // Rechazar: por ahora solo cierra la notificación.
-  // Pendiente: avisar al backend (ver nota arriba).
-  if (event.action === 'reject') return;
+  // RECHAZAR llamada: registrar el rechazo aunque la app esté cerrada
+  if (esLlamada && event.action === 'reject') {
+    event.waitUntil((async () => {
+      const ventanas = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+      const ventana = ventanas.find((c) => c.url.startsWith(self.location.origin));
+      if (ventana) {
+        // La app está abierta: se avisa a la página
+        ventana.postMessage({ tipo: 'notificacion_click', accion: 'reject', llamadaId: info.llamadaId });
+        return;
+      }
+      // La app está cerrada: se abre con action=reject para que la página registre el rechazo
+      const u = new URL(info.url || '/', self.location.origin);
+      u.searchParams.set('llamadaId', info.llamadaId);
+      u.searchParams.set('action', 'reject');
+      return self.clients.openWindow(u.href);
+    })());
+    return;
+  }
 
+  // ACEPTAR o clic en el cuerpo
   let url = info.url || '/';
   if (event.action === 'accept' && esLlamada) {
     url += (url.includes('?') ? '&' : '?') + 'accion=aceptar';
@@ -101,7 +117,6 @@ self.addEventListener('notificationclick', (event) => {
 
     const mismaPagina = new URL(ventana.url).pathname === destino.pathname;
     if (mismaPagina) {
-      // La página ya está abierta: le avisamos sin recargarla
       ventana.postMessage({
         tipo: 'notificacion_click',
         accion: event.action || 'open',
@@ -109,7 +124,6 @@ self.addEventListener('notificationclick', (event) => {
         url: destino.href
       });
     } else {
-      // Otra página: la navegamos al destino
       try {
         await ventana.navigate(destino.href);
       } catch (e) {
