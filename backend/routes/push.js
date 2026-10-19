@@ -1,9 +1,7 @@
 // ================================================================
-// ROUTES/PUSH.JS — Csariel's · v2.2 (Soporte para Llamadas Push)
-// CAMBIOS v2.2:
-// - Se usa `urgency` y `topic` como propiedades nativas de web-push
-//   (recomendación de Anthropic) en lugar de headers.
-// - TTL aumentado de 30s a 60s para evitar pérdida bajo Doze profundo.
+// ROUTES/PUSH.JS — Csariel's · v2.3 (Soporte para Llamadas Push)
+// CAMBIOS v2.3:
+// - Se agregó console.log en enviarPushLlamadaEntrante para debug.
 // ================================================================
 
 const express = require('express');
@@ -246,6 +244,7 @@ router.post('/llamada-entrante', verificarAutenticacion, async (req, res) => {
             data: { tipo: 'llamada_entrante', llamadaId }
         });
 
+        // Log para el endpoint
         console.log(`[Push] Llamada ${llamadaId}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
 
         return res.json({
@@ -367,7 +366,12 @@ async function enviarPushASeguidores(streamerId, payload) {
 // HELPER: Push específico para llamadas entrantes
 // ================================================================
 async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamadaId) {
-    return await enviarPushAUsuarios([destinatarioId], {
+    // ============================================================
+    // LOG AGREGADO (Sugerencia de Anthropic) para depuración
+    // ============================================================
+    console.log(`[Push] Iniciando envío de Push a ${destinatarioId} para llamada ${llamadaId}`);
+
+    const resultado = await enviarPushAUsuarios([destinatarioId], {
         title: `📞 Llamada de ${nombre}`,
         body: 'Toca para contestar la videollamada',
         icon: avatar || '/icon-192.png',
@@ -378,6 +382,10 @@ async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamada
         vibrate: [500, 200, 500, 200, 500],
         data: { tipo: 'llamada_entrante', llamadaId }
     });
+
+    console.log(`[Push] Llamada ${llamadaId}: ${resultado.enviados} enviados, ${resultado.fallidos} fallidos`);
+
+    return resultado;
 }
 
 module.exports = router;
