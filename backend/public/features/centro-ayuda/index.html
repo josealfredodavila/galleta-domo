@@ -55,6 +55,7 @@
             gap: 16px;
         }
 
+        /* NUEVO: Estilo del botón de regreso con texto */
         .back-btn {
             display: flex;
             align-items: center;
@@ -67,15 +68,27 @@
             color: var(--text-primary);
             cursor: pointer;
             transition: background 0.2s;
+            flex-shrink: 0;
         }
         .back-btn:hover { background: rgba(255, 255, 255, 0.1); }
         .back-btn svg { width: 20px; height: 20px; fill: currentColor; }
 
+        .header-content {
+            display: flex;
+            flex-direction: column;
+        }
+
         .header-title {
-            font-family: var(--font-title);
-            font-size: 1.2rem;
+            font-family: var(--font-base); /* Cambiado a Inter para que se vea como en Configuración */
+            font-size: 1.1rem;
             font-weight: 700;
             color: var(--text-primary);
+        }
+
+        .header-subtitle {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
         }
 
         /* Contenido principal */
@@ -225,11 +238,14 @@
 <body>
 
     <header class="help-header">
-        <!-- Botón con protección para no salir de la app si no hay historial -->
-        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/'; }" aria-label="Volver">
+        <!-- Botón de regreso actualizado con redirección directa a configuración -->
+        <button class="back-btn" onclick="window.location.href='/features/perfil/configuracion/index.html'" aria-label="Volver a Configuración">
             <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </button>
-        <div class="header-title">Centro de Ayuda</div>
+        <div class="header-content">
+            <div class="header-title">Configuración</div>
+            <div class="header-subtitle">Centro de Ayuda y Legal</div>
+        </div>
     </header>
 
     <main class="help-main">
