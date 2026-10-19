@@ -1,8 +1,8 @@
 // ================================================================
-// MENSAJES · JS v4.6 · WEB3 NEON UI
-// Cambios v4.6:
-// - verificación de Términos de Marquinhos compatible con booleano/string/objeto;
-//   redirección a la página de términos en la misma pestaña.
+// MENSAJES · JS v4.7 · WEB3 NEON UI
+// Cambios v4.7:
+// - Lee ?usuario= para abrir conversación directa.
+// - Lee &accion=llamada para iniciar la llamada automáticamente.
 // ================================================================
 
 'use strict';
@@ -49,15 +49,8 @@ const call = {
     screen: null, initiator: false, roomName: null, tipo: 'video'
 };
 
-// ================================================================
-// CACHE DE PERFILES
-// ================================================================
 const perfilCache = new Map();
 const TTL_PERFIL_MS = 5 * 60 * 1000;
-
-// ================================================================
-// CACHE DE URLS FIRMADAS
-// ================================================================
 const signedCache = new Map();
 const TTL_SIGNED_MS = 50 * 60 * 1000;
 
@@ -108,47 +101,29 @@ function limpiarMarkdown(texto) {
     return t.trim();
 }
 
-// ================================================================
-// NEON MODAL — confirm / prompt personalizado
-// ================================================================
 const NeonModal = (function () {
-    let activeBackdrop = null;
-    let activeResolve = null;
-    let activeEscHandler = null;
+    let activeBackdrop = null, activeResolve = null, activeEscHandler = null;
 
     function _cleanup() {
-        if (activeBackdrop && activeBackdrop.parentNode) {
-            activeBackdrop.parentNode.removeChild(activeBackdrop);
-        }
-        if (activeEscHandler) {
-            document.removeEventListener('keydown', activeEscHandler);
-        }
-        activeBackdrop = null;
-        activeResolve = null;
-        activeEscHandler = null;
+        if (activeBackdrop && activeBackdrop.parentNode) activeBackdrop.parentNode.removeChild(activeBackdrop);
+        if (activeEscHandler) document.removeEventListener('keydown', activeEscHandler);
+        activeBackdrop = null; activeResolve = null; activeEscHandler = null;
     }
 
     function _open(opts, resolveFn) {
         _cleanup();
         activeResolve = resolveFn;
-
         const backdrop = document.createElement('div');
         backdrop.className = 'neon-modal-backdrop show';
         backdrop.setAttribute('role', 'dialog');
         backdrop.setAttribute('aria-modal', 'true');
-
         const danger = !!opts.danger;
-
         const card = document.createElement('div');
         card.className = 'neon-modal-card' + (danger ? ' danger' : '');
-
         const iconHtml = opts.icon ? `<div class="neon-modal-icon">${opts.icon}</div>` : '';
         const titleHtml = opts.title ? `<h3 class="neon-modal-title">${esc(opts.title)}</h3>` : '';
         const messageHtml = opts.message ? `<p class="neon-modal-message">${esc(opts.message)}</p>` : '';
-        const inputHtml = opts.type === 'prompt'
-            ? `<input class="neon-modal-input" type="text" placeholder="${esc(opts.placeholder || '')}" value="${esc(opts.defaultValue || '')}" maxlength="${opts.maxlength || 200}">`
-            : '';
-
+        const inputHtml = opts.type === 'prompt' ? `<input class="neon-modal-input" type="text" placeholder="${esc(opts.placeholder || '')}" value="${esc(opts.defaultValue || '')}" maxlength="${opts.maxlength || 200}">` : '';
         const confirmText = opts.confirmText || 'Aceptar';
         const cancelText = opts.cancelText || 'Cancelar';
         const confirmClass = danger ? 'danger' : 'confirm';
@@ -172,11 +147,8 @@ const NeonModal = (function () {
         const btnCancel = card.querySelector('[data-role="cancel"]');
         const btnConfirm = card.querySelector('[data-role="confirm"]');
 
-        if (inputEl) {
-            setTimeout(() => { inputEl.focus(); inputEl.select(); }, 40);
-        } else {
-            setTimeout(() => btnConfirm && btnConfirm.focus(), 40);
-        }
+        if (inputEl) setTimeout(() => { inputEl.focus(); inputEl.select(); }, 40);
+        else setTimeout(() => btnConfirm && btnConfirm.focus(), 40);
 
         function finish(value) {
             const r = activeResolve;
@@ -189,71 +161,31 @@ const NeonModal = (function () {
             if (opts.type === 'prompt') {
                 const v = inputEl ? inputEl.value.trim() : '';
                 finish(v || null);
-            } else {
-                finish(true);
-            }
+            } else finish(true);
         });
-
-        backdrop.addEventListener('click', (e) => {
-            if (e.target === backdrop) finish(null);
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) finish(null); });
+        if (inputEl) inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); const v = inputEl.value.trim(); finish(v || null); }
         });
-
-        if (inputEl) {
-            inputEl.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    e.preventDefault();
-                    const v = inputEl.value.trim();
-                    finish(v || null);
-                }
-            });
-        }
-
-        activeEscHandler = (e) => {
-            if (e.key === 'Escape') {
-                e.preventDefault();
-                finish(null);
-            }
-        };
+        activeEscHandler = (e) => { if (e.key === 'Escape') { e.preventDefault(); finish(null); } };
         document.addEventListener('keydown', activeEscHandler);
     }
 
     function confirm(opts) {
         return new Promise((resolve) => {
-            _open({
-                type: 'confirm',
-                title: opts.title || 'Confirmar',
-                message: opts.message || '',
-                icon: opts.icon || '?',
-                confirmText: opts.confirmText || 'Aceptar',
-                cancelText: opts.cancelText || 'Cancelar',
-                danger: !!opts.danger
-            }, resolve);
+            _open({ type: 'confirm', title: opts.title || 'Confirmar', message: opts.message || '', icon: opts.icon || '?', confirmText: opts.confirmText || 'Aceptar', cancelText: opts.cancelText || 'Cancelar', danger: !!opts.danger }, resolve);
         });
     }
 
     function prompt(opts) {
         return new Promise((resolve) => {
-            _open({
-                type: 'prompt',
-                title: opts.title || 'Ingresa un valor',
-                message: opts.message || '',
-                icon: opts.icon || '✎',
-                placeholder: opts.placeholder || '',
-                defaultValue: opts.defaultValue || '',
-                maxlength: opts.maxlength || 200,
-                confirmText: opts.confirmText || 'Aceptar',
-                cancelText: opts.cancelText || 'Cancelar',
-                danger: !!opts.danger
-            }, resolve);
+            _open({ type: 'prompt', title: opts.title || 'Ingresa un valor', message: opts.message || '', icon: opts.icon || '✎', placeholder: opts.placeholder || '', defaultValue: opts.defaultValue || '', maxlength: opts.maxlength || 200, confirmText: opts.confirmText || 'Aceptar', cancelText: opts.cancelText || 'Cancelar', danger: !!opts.danger }, resolve);
         });
     }
 
     return { confirm, prompt };
 })();
 
-// ================================================================
-// SESIÓN Y AUTH
-// ================================================================
 async function session() {
     if (!db) return null;
     const r = await db.auth.getSession();
@@ -275,11 +207,7 @@ async function subirViaBackend(file, destino, tipo) {
     fd.append('file', file);
     fd.append('destino', destino);
     fd.append('tipo', tipo);
-    const r = await fetch('/api/media/upload', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + s.access_token },
-        body: fd
-    });
+    const r = await fetch('/api/media/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + s.access_token }, body: fd });
     const d = await r.json().catch(() => ({}));
     if (!r.ok || !d.ok) throw new Error(d.error || 'No se pudo subir el archivo');
     return d;
@@ -290,20 +218,11 @@ function avatar(name, url, cls = 'avatar') {
     return `<div class="${cls}">${esc((name || '◈').charAt(0).toUpperCase())}</div>`;
 }
 
-// ================================================================
-// PERFIL CON CACHÉ (Parche B)
-// ================================================================
 async function profile(id) {
-    if (id === BOT_ID) {
-        return { id: BOT_ID, nombre: "Marquinhos", handle: 'marquinhos', avatar_url: null, online: true, bot: true };
-    }
+    if (id === BOT_ID) return { id: BOT_ID, nombre: "Marquinhos", handle: 'marquinhos', avatar_url: null, online: true, bot: true };
     const enCache = perfilCache.get(id);
     if (enCache && Date.now() - enCache.ts < TTL_PERFIL_MS) return enCache.data;
-
-    const r = await db.from('perfiles_publicos')
-        .select('id,nombre,handle,avatar_url,online,ultima_conexion')
-        .eq('id', id)
-        .maybeSingle();
+    const r = await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id', id).maybeSingle();
     const data = r.data || { id, nombre: 'Usuario', avatar_url: null, online: false };
     perfilCache.set(id, { ts: Date.now(), data });
     return data;
@@ -312,23 +231,13 @@ async function profile(id) {
 async function cargarFotoHeader() {
     if (!user || !user.id) return;
     try {
-        const { data, error } = await db
-            .from('usuarios')
-            .select('avatar_url, nombre, handle')
-            .eq('id', user.id)
-            .maybeSingle();
+        const { data, error } = await db.from('usuarios').select('avatar_url, nombre, handle').eq('id', user.id).maybeSingle();
         if (error) { console.warn('No se pudo cargar perfil:', error.message); return; }
         currentUserProfile = data;
         const headerAvatar = $('headerAvatar');
-        if (data?.avatar_url) {
-            headerAvatar.innerHTML = `<img src="${esc(data.avatar_url)}" alt="Mi foto">`;
-        } else {
-            const inicial = (data?.nombre || data?.handle || '◈').charAt(0).toUpperCase();
-            headerAvatar.innerHTML = esc(inicial);
-        }
-        $('profileModalAvatar').innerHTML = data?.avatar_url
-            ? `<img src="${esc(data.avatar_url)}" alt="Mi foto">`
-            : esc((data?.nombre || data?.handle || '◈').charAt(0).toUpperCase());
+        if (data?.avatar_url) headerAvatar.innerHTML = `<img src="${esc(data.avatar_url)}" alt="Mi foto">`;
+        else { const inicial = (data?.nombre || data?.handle || '◈').charAt(0).toUpperCase(); headerAvatar.innerHTML = esc(inicial); }
+        $('profileModalAvatar').innerHTML = data?.avatar_url ? `<img src="${esc(data.avatar_url)}" alt="Mi foto">` : esc((data?.nombre || data?.handle || '◈').charAt(0).toUpperCase());
         $('profileModalName').textContent = data?.nombre || 'Mi Perfil';
         $('profileModalHandle').textContent = '@' + (data?.handle || 'usuario');
     } catch (e) { console.warn('Error cargando foto del header:', e); }
@@ -346,9 +255,7 @@ async function subirFotoHeader(event) {
     try {
         toast('⏳ Revisando y subiendo foto...', '');
         const d = await subirViaBackend(file, 'sariels-avatars', 'imagen');
-        const { error: updateError } = await db.from('usuarios')
-            .update({ avatar_url: d.url + '?t=' + Date.now() })
-            .eq('id', user.id);
+        const { error: updateError } = await db.from('usuarios').update({ avatar_url: d.url + '?t=' + Date.now() }).eq('id', user.id);
         if (updateError) throw updateError;
         toast('✅ Foto actualizada correctamente', 'success');
         event.target.value = '';
@@ -368,8 +275,7 @@ function verFotoAmpliada(url, nombre, handle) {
     $('photoViewer').classList.add('show');
 }
 
-let pvDownloadUrl = null;
-let pvDownloadNombre = null;
+let pvDownloadUrl = null, pvDownloadNombre = null;
 
 function asegurarBotonDescarga() {
     let btn = document.getElementById('pvDownload');
@@ -388,11 +294,8 @@ function asegurarBotonDescarga() {
 
 function abrirVisorImagen(url, nombreArchivo) {
     if (!url) return;
-    pvDownloadUrl = url;
-    pvDownloadNombre = nombreArchivo || 'imagen.jpg';
-    $('pvImage').src = url;
-    $('pvName').textContent = '';
-    $('pvHandle').textContent = '';
+    pvDownloadUrl = url; pvDownloadNombre = nombreArchivo || 'imagen.jpg';
+    $('pvImage').src = url; $('pvName').textContent = ''; $('pvHandle').textContent = '';
     asegurarBotonDescarga();
     $('photoViewer').classList.add('show');
 }
@@ -406,11 +309,8 @@ async function descargarImagen(url, nombreArchivo) {
         const blob = await r.blob();
         const objUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = objUrl;
-        a.download = nombre;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
+        a.href = objUrl; a.download = nombre;
+        document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(objUrl), 3000);
         toast('✅ Descarga iniciada', 'success');
     } catch (e) {
@@ -422,43 +322,24 @@ async function descargarImagen(url, nombreArchivo) {
 
 function cerrarPhotoViewer() { $('photoViewer').classList.remove('show'); }
 
-// ================================================================
-// ESTADOS
-// ================================================================
-function marcarEstadoVisto(estadoId) {
-    estadoVistos[estadoId] = Date.now();
-    localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
-}
-
+function marcarEstadoVisto(estadoId) { estadoVistos[estadoId] = Date.now(); localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos)); }
 function estadoEsNuevo(estado) { return !estadoVistos[estado.id]; }
-
 function limpiarVistosAntiguos() {
     const limite = Date.now() - (48 * 60 * 60 * 1000);
     Object.keys(estadoVistos).forEach(k => { if (estadoVistos[k] < limite) delete estadoVistos[k]; });
     localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
 }
-
 async function registrarVistaEstado(estadoId) {
     if (!user) return;
-    try {
-        await db.from('estados_vistas').upsert(
-            { estado_id: estadoId, usuario_id: user.id },
-            { onConflict: 'estado_id,usuario_id', ignoreDuplicates: true }
-        );
-    } catch (e) { }
+    try { await db.from('estados_vistas').upsert({ estado_id: estadoId, usuario_id: user.id }, { onConflict: 'estado_id,usuario_id', ignoreDuplicates: true }); } catch (e) { }
 }
-
 async function obtenerVistasEstado(estadoId) {
     try {
-        const { count, error } = await db
-            .from('estados_vistas')
-            .select('id', { count: 'exact', head: true })
-            .eq('estado_id', estadoId);
+        const { count, error } = await db.from('estados_vistas').select('id', { count: 'exact', head: true }).eq('estado_id', estadoId);
         if (error) return 0;
         return count || 0;
     } catch (e) { return 0; }
 }
-
 function haceTiempo(fecha) {
     if (!fecha) return 'hace tiempo';
     const diffMin = Math.floor((Date.now() - new Date(fecha).getTime()) / 60000);
@@ -467,17 +348,12 @@ function haceTiempo(fecha) {
     if (diffMin < 1440) return `hace ${Math.floor(diffMin / 60)} h`;
     return `hace ${Math.floor(diffMin / 1440)} d`;
 }
-
 async function cargarEstados() {
     const scroll = $('estadosScroll');
     scroll.innerHTML = '';
     if (!user) return;
     try {
-        const { data, error } = await db
-            .from('estados')
-            .select('id, usuario_id, imagen_url, caption, created_at, expires_at')
-            .gt('expires_at', new Date().toISOString())
-            .order('created_at', { ascending: true });
+        const { data, error } = await db.from('estados').select('id, usuario_id, imagen_url, caption, created_at, expires_at').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: true });
         if (error) {
             if (error.code === '42P01') { console.warn('Tabla estados no existe aún'); return; }
             throw error;
@@ -488,10 +364,7 @@ async function cargarEstados() {
             return;
         }
         const porUsuario = {};
-        estadosCache.forEach(e => {
-            if (!porUsuario[e.usuario_id]) porUsuario[e.usuario_id] = [];
-            porUsuario[e.usuario_id].push(e);
-        });
+        estadosCache.forEach(e => { if (!porUsuario[e.usuario_id]) porUsuario[e.usuario_id] = []; porUsuario[e.usuario_id].push(e); });
         const miEstado = porUsuario[user.id];
         if (miEstado && miEstado.length > 0) {
             const tieneNuevos = miEstado.some(e => estadoEsNuevo(e));
@@ -517,9 +390,7 @@ async function cargarEstados() {
             const html = `
                 <div class="estado-item" data-userid="${uid}">
                     <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
-                        <div class="estado-inner">
-                            ${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || '◈').charAt(0).toUpperCase())}
-                        </div>
+                        <div class="estado-inner">${p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || '◈').charAt(0).toUpperCase())}</div>
                     </div>
                     <div class="estado-name">${esc(p.nombre || 'Usuario')}</div>
                 </div>`;
@@ -532,10 +403,7 @@ async function cargarEstados() {
 function abrirEstadoUsuario(uid) {
     const estados = estadosCache.filter(e => e.usuario_id === uid);
     if (estados.length === 0) { toast('ℹ️ Este usuario no tiene estados', 'warning'); return; }
-    estadoActualUserId = uid;
-    estadoActualIndex = 0;
-    estadoProgresoActual = 0;
-    estadoPausado = false;
+    estadoActualUserId = uid; estadoActualIndex = 0; estadoProgresoActual = 0; estadoPausado = false;
     mostrarEstadoActual();
     $('estadoViewer').classList.add('show');
 }
@@ -545,46 +413,31 @@ async function mostrarEstadoActual() {
     if (estadoActualIndex >= estados.length) { cerrarEstadoViewer(); return; }
     const estado = estados[estadoActualIndex];
     const esMiEstado = (estadoActualUserId === user.id);
-
     if (esMiEstado) {
-        $('evAvatar').innerHTML = currentUserProfile?.avatar_url
-            ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">`
-            : esc((currentUserProfile?.nombre || '◈').charAt(0).toUpperCase());
+        $('evAvatar').innerHTML = currentUserProfile?.avatar_url ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">` : esc((currentUserProfile?.nombre || '◈').charAt(0).toUpperCase());
         $('evName').textContent = 'Tú';
     } else {
-        db.from('perfiles_publicos')
-            .select('nombre, handle, avatar_url')
-            .eq('id', estadoActualUserId)
-            .maybeSingle()
-            .then(r => {
-                if (r.data) {
-                    $('evAvatar').innerHTML = r.data.avatar_url
-                        ? `<img src="${esc(r.data.avatar_url)}" alt="">`
-                        : esc((r.data.nombre || '◈').charAt(0).toUpperCase());
-                    $('evName').textContent = r.data.nombre || 'Usuario';
-                }
-            });
+        db.from('perfiles_publicos').select('nombre, handle, avatar_url').eq('id', estadoActualUserId).maybeSingle().then(r => {
+            if (r.data) {
+                $('evAvatar').innerHTML = r.data.avatar_url ? `<img src="${esc(r.data.avatar_url)}" alt="">` : esc((r.data.nombre || '◈').charAt(0).toUpperCase());
+                $('evName').textContent = r.data.nombre || 'Usuario';
+            }
+        });
     }
-
     $('evImage').src = estado.imagen_url;
     $('evTime').textContent = haceTiempo(estado.created_at);
-
     if (estado.caption) { $('evCaption').textContent = estado.caption; $('evCaption').classList.remove('hidden'); }
-    else { $('evCaption').classList.add('hidden'); }
-
+    else $('evCaption').classList.add('hidden');
     marcarEstadoVisto(estado.id);
     registrarVistaEstado(estado.id);
-
     $('evPrev').classList.toggle('hidden', estadoActualIndex === 0);
     $('evNext').classList.toggle('hidden', estadoActualIndex >= estados.length - 1);
-
     if (esMiEstado) {
         const total = await obtenerVistasEstado(estado.id);
         $('evVistasCount').textContent = total;
         $('evVistas').classList.remove('hidden');
         $('evVistas').dataset.estadoId = estado.id;
-    } else { $('evVistas').classList.add('hidden'); }
-
+    } else $('evVistas').classList.add('hidden');
     iniciarProgresoEstado();
 }
 
@@ -602,15 +455,12 @@ function iniciarProgresoEstado() {
 
 function siguienteEstado() {
     const estados = estadosCache.filter(e => e.usuario_id === estadoActualUserId);
-    if (estadoActualIndex < estados.length - 1) {
-        estadoActualIndex++; estadoProgresoActual = 0; estadoPausado = false; mostrarEstadoActual();
-    } else { cerrarEstadoViewer(); }
+    if (estadoActualIndex < estados.length - 1) { estadoActualIndex++; estadoProgresoActual = 0; estadoPausado = false; mostrarEstadoActual(); }
+    else cerrarEstadoViewer();
 }
 
 function anteriorEstado() {
-    if (estadoActualIndex > 0) {
-        estadoActualIndex--; estadoProgresoActual = 0; estadoPausado = false; mostrarEstadoActual();
-    }
+    if (estadoActualIndex > 0) { estadoActualIndex--; estadoProgresoActual = 0; estadoPausado = false; mostrarEstadoActual(); }
 }
 
 function cerrarEstadoViewer() {
@@ -630,20 +480,12 @@ async function abrirVistasModal(estadoId) {
     list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>';
     $('vistasModalCount').textContent = '';
     try {
-        const { data: vistas, error } = await db
-            .from('estados_vistas')
-            .select('usuario_id, visto_at')
-            .eq('estado_id', estadoId)
-            .order('visto_at', { ascending: false });
+        const { data: vistas, error } = await db.from('estados_vistas').select('usuario_id, visto_at').eq('estado_id', estadoId).order('visto_at', { ascending: false });
         if (error) throw error;
-        if (!vistas || vistas.length === 0) {
-            list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Nadie ha visto este estado aún</div>';
-            return;
-        }
+        if (!vistas || vistas.length === 0) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Nadie ha visto este estado aún</div>'; return; }
         $('vistasModalCount').textContent = `(${vistas.length})`;
         const ids = vistas.map(v => v.usuario_id);
-        const { data: perfiles } = await db.from('perfiles_publicos')
-            .select('id, nombre, handle, avatar_url').in('id', ids);
+        const { data: perfiles } = await db.from('perfiles_publicos').select('id, nombre, handle, avatar_url').in('id', ids);
         const perfilMap = {};
         (perfiles || []).forEach(p => { perfilMap[p.id] = p; });
         list.innerHTML = '';
@@ -654,17 +496,11 @@ async function abrirVistasModal(estadoId) {
             list.insertAdjacentHTML('beforeend', `
                 <div class="result" style="cursor:pointer;" data-handle="${esc(p.handle || '')}">
                     <div class="avatar">${avatarHTML}</div>
-                    <div style="flex:1;min-width:0;">
-                        <b>${esc(p.nombre || 'Usuario')}</b>
-                        <div style="font-size:.68rem;color:var(--muted);">@${esc(p.handle || 'usuario')} · ${haceTiempo(v.visto_at)}</div>
-                    </div>
+                    <div style="flex:1;min-width:0;"><b>${esc(p.nombre || 'Usuario')}</b><div style="font-size:.68rem;color:var(--muted);">@${esc(p.handle || 'usuario')} · ${haceTiempo(v.visto_at)}</div></div>
                 </div>`);
         });
         list.querySelectorAll('.result').forEach(el => {
-            el.onclick = () => {
-                const handle = el.dataset.handle;
-                if (handle) window.location.href = `/perfil/${handle}`;
-            };
+            el.onclick = () => { const handle = el.dataset.handle; if (handle) window.location.href = `/perfil/${handle}`; };
         });
     } catch (e) {
         console.error('Error cargando vistas:', e);
@@ -692,11 +528,7 @@ async function previewEstado(event) {
     if (file.size > 5 * 1024 * 1024) { toast('❌ La imagen no puede superar 5 MB', 'error'); event.target.value = ''; return; }
     if (!file.type.startsWith('image/')) { toast('❌ Solo se permiten imágenes', 'error'); event.target.value = ''; return; }
     const reader = new FileReader();
-    reader.onload = e => {
-        $('estadoPreviewImg').src = e.target.result;
-        $('estadoPreviewWrap').style.display = 'block';
-        $('btnPublicarEstado').disabled = false;
-    };
+    reader.onload = e => { $('estadoPreviewImg').src = e.target.result; $('estadoPreviewWrap').style.display = 'block'; $('btnPublicarEstado').disabled = false; };
     reader.readAsDataURL(file);
 }
 
@@ -711,9 +543,7 @@ async function publicarEstado() {
     btn.textContent = '⏳ Publicando...';
     try {
         const d = await subirViaBackend(file, ESTADOS_BUCKET, 'imagen');
-        const { error: insertError } = await db.from('estados').insert({
-            usuario_id: user.id, imagen_url: d.url, caption: caption || null
-        });
+        const { error: insertError } = await db.from('estados').insert({ usuario_id: user.id, imagen_url: d.url, caption: caption || null });
         if (insertError) throw insertError;
         toast('✅ Estado publicado (24h)', 'success');
         cerrarModalEstado();
@@ -728,9 +558,6 @@ async function publicarEstado() {
     }
 }
 
-// ================================================================
-// SCROLL
-// ================================================================
 function scrollToBottom(force = false) {
     const box = $('messages');
     if (!box) return;
@@ -793,9 +620,6 @@ function observarCargaMultimedia(box) {
     });
 }
 
-// ================================================================
-// SIGNED URLS CON CACHÉ (Parche C)
-// ================================================================
 async function firmarConCache(bucket, filePath) {
     const clave = bucket + '/' + filePath;
     const enCache = signedCache.get(clave);
@@ -834,9 +658,6 @@ async function getSignedUrlForMessage(m) {
     return null;
 }
 
-// ================================================================
-// CARGAR CONVERSACIONES
-// ================================================================
 let conversationFilter = '';
 
 async function loadConversations() {
@@ -859,27 +680,12 @@ async function loadConversations() {
     if (!await auth()) return;
 
     try {
-        const { data: lastBot } = await db.from('mensajes_chat')
-            .select('contenido,tipo,created_at')
-            .eq('eliminado', false)
-            .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+        const { data: lastBot } = await db.from('mensajes_chat').select('contenido,tipo,created_at').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`).order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (lastBot) {
             const preview = $('botLastMsg');
-            if (preview) {
-                preview.textContent = lastBot.tipo === 'texto'
-                    ? (lastBot.contenido || '').slice(0, 60)
-                    : ('📎 ' + (lastBot.contenido || lastBot.tipo));
-            }
+            if (preview) preview.textContent = lastBot.tipo === 'texto' ? (lastBot.contenido || '').slice(0, 60) : ('📎 ' + (lastBot.contenido || lastBot.tipo));
         }
-        const { count: noLeidos } = await db.from('mensajes_chat')
-            .select('id', { count: 'exact', head: true })
-            .eq('remitente_id', BOT_UUID)
-            .eq('destinatario_id', user.id)
-            .eq('leido', false)
-            .eq('eliminado', false);
+        const { count: noLeidos } = await db.from('mensajes_chat').select('id', { count: 'exact', head: true }).eq('remitente_id', BOT_UUID).eq('destinatario_id', user.id).eq('leido', false).eq('eliminado', false);
         const badge = $('botBadge');
         if (badge && noLeidos && noLeidos > 0) {
             badge.innerHTML = `<span style="background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:99px;min-width:20px;text-align:center;display:inline-block;animation:pulse-badge 1.5s infinite;">${noLeidos > 9 ? '9+' : noLeidos}</span>`;
@@ -887,47 +693,30 @@ async function loadConversations() {
     } catch (e) { console.warn('Error cargando badge bot:', e); }
 
     try {
-        const { data: mensajes, error } = await db.from('mensajes_chat')
-            .select('id, remitente_id, destinatario_id, contenido, tipo, leido, created_at')
-            .eq('eliminado', false)
-            .neq('remitente_id', BOT_UUID)
-            .neq('destinatario_id', BOT_UUID)
-            .or(`remitente_id.eq.${user.id},destinatario_id.eq.${user.id}`)
-            .order('created_at', { ascending: false })
-            .limit(100);
+        const { data: mensajes, error } = await db.from('mensajes_chat').select('id, remitente_id, destinatario_id, contenido, tipo, leido, created_at').eq('eliminado', false).neq('remitente_id', BOT_UUID).neq('destinatario_id', BOT_UUID).or(`remitente_id.eq.${user.id},destinatario_id.eq.${user.id}`).order('created_at', { ascending: false }).limit(100);
         if (error) { console.error('Error cargando mensajes:', error); return; }
         const conversacionesMap = new Map();
         (mensajes || []).forEach(m => {
             const otherUserId = (m.remitente_id === user.id) ? m.destinatario_id : m.remitente_id;
             if (!otherUserId || otherUserId === user.id) return;
             if (otherUserId === BOT_UUID) return;
-            if (!conversacionesMap.has(otherUserId)) {
-                conversacionesMap.set(otherUserId, { otherUserId, lastMsg: m, unread: 0 });
-            }
-            if (m.remitente_id === otherUserId && m.destinatario_id === user.id && m.leido === false) {
-                conversacionesMap.get(otherUserId).unread++;
-            }
+            if (!conversacionesMap.has(otherUserId)) conversacionesMap.set(otherUserId, { otherUserId, lastMsg: m, unread: 0 });
+            if (m.remitente_id === otherUserId && m.destinatario_id === user.id && m.leido === false) conversacionesMap.get(otherUserId).unread++;
         });
         try {
-            const { data: contactos } = await db.from('contactos')
-                .select('contacto_id')
-                .eq('usuario_id', user.id)
-                .neq('estado', 'bloqueado');
+            const { data: contactos } = await db.from('contactos').select('contacto_id').eq('usuario_id', user.id).neq('estado', 'bloqueado');
             (contactos || []).forEach(c => {
                 if (!c.contacto_id) return;
                 if (c.contacto_id === user.id) return;
                 if (c.contacto_id === BOT_UUID) return;
-                if (!conversacionesMap.has(c.contacto_id)) {
-                    conversacionesMap.set(c.contacto_id, { otherUserId: c.contacto_id, lastMsg: null, unread: 0 });
-                }
+                if (!conversacionesMap.has(c.contacto_id)) conversacionesMap.set(c.contacto_id, { otherUserId: c.contacto_id, lastMsg: null, unread: 0 });
             });
         } catch (e) { console.warn('No se pudieron cargar contactos extra:', e); }
 
         const conversaciones = Array.from(conversacionesMap.values());
         if (!conversaciones.length) { aplicarFiltroConversaciones(); return; }
         const otherIds = conversaciones.map(c => c.otherUserId);
-        const { data: perfiles } = await db.from('perfiles_publicos')
-            .select('id, nombre, handle, avatar_url, online').in('id', otherIds);
+        const { data: perfiles } = await db.from('perfiles_publicos').select('id, nombre, handle, avatar_url, online').in('id', otherIds);
         const perfilMap = {};
         (perfiles || []).forEach(p => { perfilMap[p.id] = p; });
         conversaciones.sort((a, b) => {
@@ -939,12 +728,8 @@ async function loadConversations() {
             const otherId = conv.otherUserId;
             const p = perfilMap[otherId] || { id: otherId, nombre: 'Usuario', handle: 'usuario', avatar_url: null, online: false };
             const last = conv.lastMsg;
-            const preview = last
-                ? (last.tipo === 'texto' ? (last.contenido || '').slice(0, 60) : ('📎 ' + (last.contenido || last.tipo)))
-                : 'Sin mensajes';
-            const hora = last?.created_at
-                ? new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                : '';
+            const preview = last ? (last.tipo === 'texto' ? (last.contenido || '').slice(0, 60) : ('📎 ' + (last.contenido || last.tipo))) : 'Sin mensajes';
+            const hora = last?.created_at ? new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
             const el = document.createElement('div');
             el.className = 'conv' + (current?.id === otherId ? ' active' : '');
             el.dataset.id = otherId;
@@ -956,9 +741,7 @@ async function loadConversations() {
                 </div>
                 <div class="convtime">
                     ${hora}
-                    ${conv.unread > 0
-                        ? `<span style="display:inline-block;margin-left:6px;background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:99px;min-width:18px;text-align:center;">${conv.unread > 9 ? '9+' : conv.unread}</span>`
-                        : ''}
+                    ${conv.unread > 0 ? `<span style="display:inline-block;margin-left:6px;background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:99px;min-width:18px;text-align:center;">${conv.unread > 9 ? '9+' : conv.unread}</span>` : ''}
                 </div>`;
             el.onclick = () => openConversation(otherId);
             list.appendChild(el);
@@ -970,17 +753,11 @@ async function loadConversations() {
 function aplicarFiltroConversaciones() {
     const q = conversationFilter.trim().toLowerCase();
     document.querySelectorAll('.conv').forEach(el => {
-        if (!q ||
-            el.dataset.name?.includes(q) ||
-            el.querySelector('.convname')?.textContent.toLowerCase().includes(q)) {
-            el.style.display = 'flex';
-        } else { el.style.display = 'none'; }
+        if (!q || el.dataset.name?.includes(q) || el.querySelector('.convname')?.textContent.toLowerCase().includes(q)) el.style.display = 'flex';
+        else el.style.display = 'none';
     });
 }
 
-// ================================================================
-// ABRIR CONVERSACIÓN
-// ================================================================
 async function openConversation(id) {
     if (!await auth()) return;
     const p = await profile(id);
@@ -988,13 +765,9 @@ async function openConversation(id) {
     current = { id, profile: p, bot: esBot };
 
     $('chatName').textContent = p.nombre || 'Usuario';
-    $('chatAvatar').innerHTML = esBot
-        ? '✦'
-        : (p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || '◈').charAt(0).toUpperCase()));
+    $('chatAvatar').innerHTML = esBot ? '✦' : (p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || '◈').charAt(0).toUpperCase()));
     $('chatAvatar').className = 'avatar' + (esBot ? ' avatar-bot' : '');
-    $('chatStatus').textContent = esBot
-        ? '✦ IA · Siempre disponible'
-        : (p.online ? '◉ En línea' : '◈ Desconectado');
+    $('chatStatus').textContent = esBot ? '✦ IA · Siempre disponible' : (p.online ? '◉ En línea' : '◈ Desconectado');
     $('chatStatus').className = 'status' + (p.online ? ' online' : '');
 
     $('chatAvatar').onclick = () => {
@@ -1027,23 +800,14 @@ async function openConversation(id) {
     actualizarFlecha();
 
     if (esBot) {
-        await db.from('mensajes_chat')
-            .update({ leido: true })
-            .eq('remitente_id', BOT_UUID)
-            .eq('destinatario_id', user.id)
-            .eq('leido', false);
+        await db.from('mensajes_chat').update({ leido: true }).eq('remitente_id', BOT_UUID).eq('destinatario_id', user.id).eq('leido', false);
         const badge = $('botBadge');
         if (badge) { badge.textContent = 'IA'; badge.style.color = 'var(--success)'; }
         await abrirConversacionBot();
         return;
     }
 
-    const r = await db.from('mensajes_chat')
-        .select('*')
-        .eq('eliminado', false)
-        .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${id}),and(remitente_id.eq.${id},destinatario_id.eq.${user.id})`)
-        .order('created_at', { ascending: true })
-        .limit(100);
+    const r = await db.from('mensajes_chat').select('*').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${id}),and(remitente_id.eq.${id},destinatario_id.eq.${user.id})`).order('created_at', { ascending: true }).limit(100);
     if (r.error) { console.error(r.error); toast('❌ Error al cargar mensajes', 'error'); return; }
     await renderMessages(r.data || []);
     await markRead(id);
@@ -1066,19 +830,12 @@ async function cerrarConversacion() {
     document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
 }
 
-// ================================================================
-// CONVERSACIÓN CON MARQUINHOS
-// ================================================================
 async function abrirConversacionBot() {
     const box = $('messages');
     const btn = box.querySelector('#scrollDownBtn');
     const anchor = box.querySelector('#scrollAnchor');
     box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
-    if (!anchor) {
-        const newAnchor = document.createElement('div');
-        newAnchor.id = 'scrollAnchor';
-        box.appendChild(newAnchor);
-    }
+    if (!anchor) { const newAnchor = document.createElement('div'); newAnchor.id = 'scrollAnchor'; box.appendChild(newAnchor); }
     if (!btn) {
         const newBtn = document.createElement('button');
         newBtn.className = 'scroll-down-btn';
@@ -1090,12 +847,7 @@ async function abrirConversacionBot() {
 
     let historial = [];
     try {
-        const r = await db.from('mensajes_chat')
-            .select('*')
-            .eq('eliminado', false)
-            .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`)
-            .order('created_at', { ascending: true })
-            .limit(200);
+        const r = await db.from('mensajes_chat').select('*').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`).order('created_at', { ascending: true }).limit(200);
         if (!r.error) historial = r.data || [];
     } catch (e) { console.warn('No se pudo cargar el historial de Marquinhos:', e); }
 
@@ -1125,18 +877,11 @@ async function abrirConversacionBot() {
     scrollToBottom(true);
 }
 
-// ================================================================
-// RENDER MENSAJES
-// ================================================================
 async function renderMessages(rows) {
     const box = $('messages');
     box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
     let anchor = box.querySelector('#scrollAnchor');
-    if (!anchor) {
-        anchor = document.createElement('div');
-        anchor.id = 'scrollAnchor';
-        box.appendChild(anchor);
-    }
+    if (!anchor) { anchor = document.createElement('div'); anchor.id = 'scrollAnchor'; box.appendChild(anchor); }
     if (!rows.length) {
         anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
         return;
@@ -1154,31 +899,20 @@ function messageHTML(m, sent, signedUrl) {
     let body = esc(limpiarMarkdown(m.contenido || ''));
     const urlToUse = signedUrl || m.imagen_url;
     if (urlToUse) {
-        if (m.tipo === 'imagen') {
-            body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy" data-visor="1" data-src="${esc(urlToUse)}" data-nombre="${esc(m.nombre_archivo || 'imagen.jpg')}" style="cursor:zoom-in;">`;
-        } else if (m.tipo === 'video') {
-            body = `<video controls playsinline src="${esc(urlToUse)}"></video>`;
-        } else if (m.tipo === 'audio') {
-            body = `<audio controls preload="metadata" src="${esc(urlToUse)}"></audio>`;
-        } else {
-            const displayName = esc(m.nombre_archivo || limpiarMarkdown(m.contenido) || 'Archivo');
-            body = `📎 <a href="${esc(urlToUse)}" target="_blank" rel="noopener" style="color:var(--gold)">${displayName}</a>`;
-        }
+        if (m.tipo === 'imagen') body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy" data-visor="1" data-src="${esc(urlToUse)}" data-nombre="${esc(m.nombre_archivo || 'imagen.jpg')}" style="cursor:zoom-in;">`;
+        else if (m.tipo === 'video') body = `<video controls playsinline src="${esc(urlToUse)}"></video>`;
+        else if (m.tipo === 'audio') body = `<audio controls preload="metadata" src="${esc(urlToUse)}"></audio>`;
+        else { const displayName = esc(m.nombre_archivo || limpiarMarkdown(m.contenido) || 'Archivo'); body = `📎 <a href="${esc(urlToUse)}" target="_blank" rel="noopener" style="color:var(--gold)">${displayName}</a>`; }
     }
     const esBotRecibido = !sent && (m.es_bot || m.bot_message);
     const headerBot = esBotRecibido ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
-    const avisoHTML = m.aviso_moderacion === 'lenguaje_inapropiado'
-        ? '<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(247,212,74,.12);border:1px solid rgba(247,212,74,.4);color:#f7d44a;font-size:.68rem;">⚠️ Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>'
-        : '';
+    const avisoHTML = m.aviso_moderacion === 'lenguaje_inapropiado' ? '<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(247,212,74,.12);border:1px solid rgba(247,212,74,.4);color:#f7d44a;font-size:.68rem;">⚠️ Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>' : '';
     return `<div class="bubblewrap ${sent ? 'sent' : 'received'}">
         <div class="bubble">${headerBot}${body}${avisoHTML}</div>
         <div class="meta">${m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}${sent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : ''}</div>
     </div>`;
 }
 
-// ================================================================
-// ENVIAR MENSAJE
-// ================================================================
 async function sendMessage(text) {
     if (!current || !text.trim()) return;
     if (!await auth()) return;
@@ -1186,24 +920,14 @@ async function sendMessage(text) {
     $('messageInput').value = '';
 
     if (current.bot) {
-        if (!(await verificarTerminosMarquinhos())) {
-            $('messageInput').value = textoLimpio;
-            return;
-        }
+        if (!(await verificarTerminosMarquinhos())) { $('messageInput').value = textoLimpio; return; }
         let userMsg = { contenido: textoLimpio, created_at: new Date().toISOString(), tipo: 'texto', remitente_id: user.id, leido: true };
         try {
-            const ins = await db.from('mensajes_chat').insert({
-                remitente_id: user.id, destinatario_id: BOT_UUID,
-                contenido: textoLimpio, tipo: 'texto', leido: true, editado: false, eliminado: false
-            }).select('*').single();
+            const ins = await db.from('mensajes_chat').insert({ remitente_id: user.id, destinatario_id: BOT_UUID, contenido: textoLimpio, tipo: 'texto', leido: true, editado: false, eliminado: false }).select('*').single();
             if (ins.error) throw ins.error;
             userMsg = ins.data;
         } catch (e) {
-            if (esErrorContenidoNoPermitido(e)) {
-                toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
-                $('messageInput').value = textoLimpio;
-                return;
-            }
+            if (esErrorContenidoNoPermitido(e)) { toast('❌ Contenido no permitido por las normas de la comunidad', 'error'); $('messageInput').value = textoLimpio; return; }
             console.warn('No se pudo guardar el mensaje del usuario:', e);
         }
         append(userMsg, true);
@@ -1214,10 +938,7 @@ async function sendMessage(text) {
             quitarTypingBot();
             let botMsg = { contenido: respuesta, created_at: new Date().toISOString(), tipo: 'texto', remitente_id: BOT_UUID, leido: true, es_bot: true };
             try {
-                const insBot = await db.from('mensajes_chat').insert({
-                    remitente_id: BOT_UUID, destinatario_id: user.id,
-                    contenido: respuesta, tipo: 'texto', leido: true, editado: false, eliminado: false
-                }).select('*').single();
+                const insBot = await db.from('mensajes_chat').insert({ remitente_id: BOT_UUID, destinatario_id: user.id, contenido: respuesta, tipo: 'texto', leido: true, editado: false, eliminado: false }).select('*').single();
                 if (!insBot.error) botMsg = { ...insBot.data, es_bot: true };
             } catch (e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
             append(botMsg, false);
@@ -1225,19 +946,12 @@ async function sendMessage(text) {
         } catch (e) {
             quitarTypingBot();
             console.error('Error Marquinhos:', e);
-            append({
-                contenido: '⚠️ ' + (e.message || 'Ups, tuve un problema.'),
-                created_at: new Date().toISOString(), tipo: 'texto',
-                remitente_id: BOT_UUID, leido: true, es_bot: true
-            }, false);
+            append({ contenido: '⚠️ ' + (e.message || 'Ups, tuve un problema.'), created_at: new Date().toISOString(), tipo: 'texto', remitente_id: BOT_UUID, leido: true, es_bot: true }, false);
         }
         return;
     }
 
-    const r = await db.from('mensajes_chat').insert({
-        remitente_id: user.id, destinatario_id: current.id,
-        contenido: textoLimpio, tipo: 'texto', leido: false, editado: false, eliminado: false
-    }).select('*').single();
+    const r = await db.from('mensajes_chat').insert({ remitente_id: user.id, destinatario_id: current.id, contenido: textoLimpio, tipo: 'texto', leido: false, editado: false, eliminado: false }).select('*').single();
     if (r.error) {
         console.error(r.error);
         if (esErrorContenidoNoPermitido(r.error)) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
@@ -1249,26 +963,17 @@ async function sendMessage(text) {
     loadConversations();
 }
 
-// ================================================================
-// VERIFICACIÓN DE TÉRMINOS
-// ================================================================
 async function verificarTerminosMarquinhos() {
     const TERMINOS_VERSION = '1.1';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
     try { if (localStorage.getItem(TERMINOS_KEY)) return true; } catch (e) {}
-    
     try {
         const { data, error } = await db.rpc('verificar_aceptacion_terminos', { p_version: TERMINOS_VERSION });
-        
         if (error) throw error;
-
         let aceptado = false;
-
-        if (data === true || data === "true") {
-            aceptado = true;
-        } else if (data === false || data === null || data === undefined || data === "false" || data === "") {
-            aceptado = false;
-        } else if (typeof data === 'string') {
+        if (data === true || data === "true") aceptado = true;
+        else if (data === false || data === null || data === undefined || data === "false" || data === "") aceptado = false;
+        else if (typeof data === 'string') {
             try {
                 const parsed = JSON.parse(data);
                 if (parsed === true || parsed === "true") aceptado = true;
@@ -1281,46 +986,25 @@ async function verificarTerminosMarquinhos() {
             if (data.aceptado === true || data.aceptado === "true") aceptado = true;
             else if (data.success === true && data.aceptado !== false) aceptado = true;
         }
-
         if (aceptado) {
             try { localStorage.setItem(TERMINOS_KEY, 'true'); } catch (e) {}
             return true;
         }
-    } catch (e) { 
-        console.warn('Error verificando términos:', e); 
-    }
-
+    } catch (e) { console.warn('Error verificando términos:', e); }
     toast('⚠️ Debes aceptar los Términos de Marquinhos primero', 'warning');
-    
     const RUTA_TERMINOS_REAL = '/legal/terminos-marquinhos';
-    setTimeout(() => {
-        window.location.href = RUTA_TERMINOS_REAL;
-    }, 1200);
-    
+    setTimeout(() => { window.location.href = RUTA_TERMINOS_REAL; }, 1200);
     return false;
 }
 
-// ================================================================
-// HISTORIAL PARA MARQUINHOS
-// ================================================================
 async function cargarHistorialParaBot() {
     try {
-        const r = await db.from('mensajes_chat')
-            .select('remitente_id, contenido, tipo, created_at')
-            .eq('eliminado', false)
-            .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`)
-            .order('created_at', { ascending: false })
-            .limit(BOT_MAX_HISTORY);
+        const r = await db.from('mensajes_chat').select('remitente_id, contenido, tipo, created_at').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`).order('created_at', { ascending: false }).limit(BOT_MAX_HISTORY);
         if (r.error || !Array.isArray(r.data)) return [];
-        return r.data.reverse()
-            .map(m => ({ role: m.remitente_id === user.id ? 'user' : 'assistant', content: limpiarMarkdown(m.contenido || '').slice(0, 2000) }))
-            .filter(m => m.content && m.content.length > 0);
+        return r.data.reverse().map(m => ({ role: m.remitente_id === user.id ? 'user' : 'assistant', content: limpiarMarkdown(m.contenido || '').slice(0, 2000) })).filter(m => m.content && m.content.length > 0);
     } catch (e) { console.warn('No se pudo cargar historial para el bot:', e); return []; }
 }
 
-// ================================================================
-// PREGUNTAR AL BOT
-// ================================================================
 async function preguntarAlBotConMemoria(mensaje, historial) {
     const s = await session();
     if (!s) throw new Error('No hay una sesión activa. Inicia sesión nuevamente.');
@@ -1330,25 +1014,14 @@ async function preguntarAlBotConMemoria(mensaje, historial) {
     try {
         const r = await fetch('/api/ai/chat-pet', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + s.access_token
-            },
-            body: JSON.stringify({
-                message: mensaje.trim(),
-                history: Array.isArray(historial) ? historial : [],
-                page: '/features/mensajes/mensajes.html',
-                user_name: userInfo ? userInfo.nombre : null,
-                memoria: ''
-            }),
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'Authorization': 'Bearer ' + s.access_token },
+            body: JSON.stringify({ message: mensaje.trim(), history: Array.isArray(historial) ? historial : [], page: '/features/mensajes/mensajes.html', user_name: userInfo ? userInfo.nombre : null, memoria: '' }),
             signal: controller.signal
         });
         let data = null;
         const contentType = r.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-            try { data = await r.json(); } catch (_) { data = null; }
-        } else {
+        if (contentType.includes('application/json')) { try { data = await r.json(); } catch (_) { data = null; } }
+        else {
             const texto = await r.text().catch(() => '');
             if (!r.ok) {
                 if (r.status === 502 || r.status === 504) throw new Error('El servidor está tardando o no disponible. Intenta de nuevo.');
@@ -1369,9 +1042,6 @@ async function preguntarAlBotConMemoria(mensaje, historial) {
     } finally { clearTimeout(timeout); }
 }
 
-// ================================================================
-// TYPING INDICATOR
-// ================================================================
 function mostrarTypingBot() {
     const box = $('messages');
     const empty = box.querySelector('.empty');
@@ -1389,14 +1059,8 @@ function mostrarTypingBot() {
     scrollToBottom(true);
 }
 
-function quitarTypingBot() {
-    const el = $('typing-bot');
-    if (el) el.remove();
-}
+function quitarTypingBot() { const el = $('typing-bot'); if (el) el.remove(); }
 
-// ================================================================
-// APPEND MENSAJE
-// ================================================================
 async function append(m, sent) {
     const box = $('messages');
     const empty = box.querySelector('.empty');
@@ -1413,72 +1077,39 @@ async function append(m, sent) {
 
 async function markRead(id) {
     if (!user || id === BOT_ID) return;
-    await db.from('mensajes_chat')
-        .update({ leido: true })
-        .eq('remitente_id', id)
-        .eq('destinatario_id', user.id)
-        .eq('leido', false)
-        .eq('eliminado', false);
+    await db.from('mensajes_chat').update({ leido: true }).eq('remitente_id', id).eq('destinatario_id', user.id).eq('leido', false).eq('eliminado', false);
 }
 
-// ================================================================
-// ELIMINAR CONVERSACIÓN
-// ================================================================
 async function deleteConversation() {
     if (!current) { toast('⚠️ Selecciona una conversación', 'error'); return; }
     if (!await auth()) return;
     const nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
-    const confirmado = await NeonModal.confirm({
-        title: 'Eliminar conversación',
-        message: `¿Eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`,
-        icon: '🗑',
-        confirmText: 'Eliminar',
-        cancelText: 'Cancelar',
-        danger: true
-    });
+    const confirmado = await NeonModal.confirm({ title: 'Eliminar conversación', message: `¿Eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`, icon: '🗑', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
     if (!confirmado) return;
     try {
         const targetId = current.bot ? BOT_UUID : current.id;
-        const { error } = await db.from('mensajes_chat')
-            .update({ eliminado: true })
-            .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${targetId}),and(remitente_id.eq.${targetId},destinatario_id.eq.${user.id})`);
+        const { error } = await db.from('mensajes_chat').update({ eliminado: true }).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${targetId}),and(remitente_id.eq.${targetId},destinatario_id.eq.${user.id})`);
         if (error) throw error;
         toast('✅ Conversación eliminada correctamente', 'success');
         const box = $('messages');
         box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
         const anchor = box.querySelector('#scrollAnchor');
-        if (anchor) {
-            anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>');
-        }
+        if (anchor) anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>');
         unreadCount = 0;
         actualizarFlecha();
         await loadConversations();
-    } catch (e) {
-        console.error('Error eliminando conversación:', e);
-        toast('❌ No se pudo eliminar la conversación', 'error');
-    }
+    } catch (e) { console.error('Error eliminando conversación:', e); toast('❌ No se pudo eliminar la conversación', 'error'); }
 }
 
-// ================================================================
-// SUSCRIPCIÓN A MENSAJES NUEVOS
-// ================================================================
 function subscribeMessages(id) {
     if (id === BOT_ID) return;
     if (msgChannel) db.removeChannel(msgChannel);
-    msgChannel = db.channel('chat-' + id).on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'mensajes_chat'
-    }, p => {
+    msgChannel = db.channel('chat-' + id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat' }, p => {
         const m = p.new;
-        if (current?.id === id && m.remitente_id === id && m.destinatario_id === user.id) {
-            append(m, false);
-            markRead(id);
-        }
+        if (current?.id === id && m.remitente_id === id && m.destinatario_id === user.id) { append(m, false); markRead(id); }
     }).subscribe();
 }
 
-// ================================================================
-// GRABAR VOZ BOT
-// ================================================================
 async function grabarVozParaBot() {
     if (!current?.bot) return;
     if (!await auth()) return;
@@ -1508,10 +1139,7 @@ async function grabarVozParaBot() {
         $('voiceBot').classList.add('recording');
         $('voiceBot').textContent = '⏹️';
         toast('🎙️ Habla ahora… presiona otra vez para enviar');
-    } catch (e) {
-        console.error('Error micrófono:', e);
-        toast('❌ No se pudo acceder al micrófono', 'error');
-    }
+    } catch (e) { console.error('Error micrófono:', e); toast('❌ No se pudo acceder al micrófono', 'error'); }
 }
 
 async function enviarVozAlBot(file) {
@@ -1523,38 +1151,17 @@ async function enviarVozAlBot(file) {
     $btn.disabled = true;
     try {
         const s = await session();
-        if (!s) {
-            enviandoVozBot = false;
-            $btn.classList.remove('processing');
-            $btn.textContent = '🔊';
-            $btn.disabled = false;
-            return;
-        }
+        if (!s) { enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
         const path = `${user.id}/bot-voice/${Date.now()}.webm`;
         const { error: upErr } = await db.storage.from('chat-audio').upload(path, file, { contentType: file.type, upsert: false });
-        if (upErr) {
-            toast('❌ Error subiendo audio', 'error');
-            enviandoVozBot = false;
-            $btn.classList.remove('processing');
-            $btn.textContent = '🔊';
-            $btn.disabled = false;
-            return;
-        }
+        if (upErr) { toast('❌ Error subiendo audio', 'error'); enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
         const { data: signed } = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
-        if (!signed?.signedUrl) {
-            toast('❌ Error firmando audio', 'error');
-            enviandoVozBot = false;
-            $btn.classList.remove('processing');
-            $btn.textContent = '🔊';
-            $btn.disabled = false;
-            return;
-        }
+        if (!signed?.signedUrl) { toast('❌ Error firmando audio', 'error'); enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
         const tempId = 'voice-user-' + Date.now();
         const box = $('messages');
         const anchorRef = box.querySelector('#scrollAnchor');
         const tempHTML = `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">🎙️ TU VOZ</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`;
-        if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', tempHTML);
-        else box.insertAdjacentHTML('beforeend', tempHTML);
+        if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', tempHTML); else box.insertAdjacentHTML('beforeend', tempHTML);
         scrollToBottom(true);
 
         let intentos = 0;
@@ -1562,40 +1169,19 @@ async function enviarVozAlBot(file) {
         let exito = false;
         let data = {};
         while (intentos < maxIntentos && !exito) {
-            const r = await fetch('/api/ai/voice/chat', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token },
-                body: JSON.stringify({ audio_url: signed.signedUrl })
-            });
+            const r = await fetch('/api/ai/voice/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token }, body: JSON.stringify({ audio_url: signed.signedUrl }) });
             data = await r.json().catch(() => ({}));
-            if (r.status === 429) {
-                intentos++;
-                const waitTime = intentos * 2000;
-                toast(`⏳ Servidor ocupado. Reintentando en ${waitTime / 1000}s...`, 'warning');
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-                continue;
-            }
+            if (r.status === 429) { intentos++; const waitTime = intentos * 2000; toast(`⏳ Servidor ocupado. Reintentando en ${waitTime / 1000}s...`, 'warning'); await new Promise(resolve => setTimeout(resolve, waitTime)); continue; }
             if (!r.ok || data.success === false) throw new Error(data.error || 'Error del servicio de voz');
             exito = true;
         }
         if (!exito) throw new Error('El servidor de IA está saturado. Intenta de nuevo en unos minutos.');
         document.getElementById(tempId)?.remove();
         try {
-            await db.from('mensajes_chat').insert({
-                remitente_id: user.id, destinatario_id: BOT_UUID,
-                contenido: data.transcripcion || file.name,
-                nombre_archivo: file.name,
-                imagen_url: `bucket://chat-audio/${path}`,
-                tipo: 'audio', leido: true, editado: false, eliminado: false
-            });
+            await db.from('mensajes_chat').insert({ remitente_id: user.id, destinatario_id: BOT_UUID, contenido: data.transcripcion || file.name, nombre_archivo: file.name, imagen_url: `bucket://chat-audio/${path}`, tipo: 'audio', leido: true, editado: false, eliminado: false });
         } catch (e) { console.warn('No se pudo guardar la nota de voz:', e); }
         try {
-            if (data.reply) {
-                await db.from('mensajes_chat').insert({
-                    remitente_id: BOT_UUID, destinatario_id: user.id,
-                    contenido: data.reply, tipo: 'texto', leido: true, editado: false, eliminado: false
-                });
-            }
+            if (data.reply) await db.from('mensajes_chat').insert({ remitente_id: BOT_UUID, destinatario_id: user.id, contenido: data.reply, tipo: 'texto', leido: true, editado: false, eliminado: false });
         } catch (e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
 
         const botId = 'voice-bot-' + Date.now();
@@ -1604,20 +1190,15 @@ async function enviarVozAlBot(file) {
         botBody += `<div>${esc(limpiarMarkdown(data.reply || 'Sin respuesta'))}</div>`;
         if (data.audio_url) botBody += `<audio class="bot-audio" controls src="${esc(data.audio_url)}"></audio>`;
         const botHTML = `<div class="bubblewrap received" id="${botId}"><div class="bubble">${botBody}</div></div>`;
-        if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', botHTML);
-        else box.insertAdjacentHTML('beforeend', botHTML);
+        if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', botHTML); else box.insertAdjacentHTML('beforeend', botHTML);
         observarCargaMultimedia(box);
         scrollToBottom(true);
-        if (data.audio_url) {
-            const audio = document.querySelector(`#${botId} audio`);
-            if (audio) audio.play().catch(() => {});
-        }
+        if (data.audio_url) { const audio = document.querySelector(`#${botId} audio`); if (audio) audio.play().catch(() => {}); }
         loadConversations();
     } catch (e) {
         console.error('Error voz bot:', e);
-        if (e.message.includes('429') || e.message.includes('Too Many Requests') || e.message.includes('saturado')) {
-            toast('⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.', 'warning');
-        } else { toast('❌ ' + e.message, 'error'); }
+        if (e.message.includes('429') || e.message.includes('Too Many Requests') || e.message.includes('saturado')) toast('⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.', 'warning');
+        else toast('❌ ' + e.message, 'error');
     } finally {
         enviandoVozBot = false;
         $btn.classList.remove('processing');
@@ -1626,17 +1207,11 @@ async function enviarVozAlBot(file) {
     }
 }
 
-// ================================================================
-// SUBIR ARCHIVO
-// ================================================================
 async function uploadFile(file) {
     if (!current || !await auth()) return;
     if (current.bot) { toast('⚠️ Para Marquinhos usa el botón 🔊, o envía nota de voz con 🎙️', 'error'); return; }
     if (file.size > 50 * 1024 * 1024) { toast('⚠️ El archivo supera 50 MB', 'error'); return; }
-    const type = file.type.startsWith('image/') ? 'imagen'
-        : file.type.startsWith('video/') ? 'video'
-        : file.type.startsWith('audio/') ? 'audio'
-        : 'archivo';
+    const type = file.type.startsWith('image/') ? 'imagen' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'archivo';
     if (type === 'archivo') { toast('⚠️ En el chat solo se pueden enviar imágenes, videos o audios', 'error'); return; }
     let storageRef;
     try {
@@ -1650,16 +1225,8 @@ async function uploadFile(file) {
             const d = await subirViaBackend(file, 'chat-attachments', type);
             storageRef = `bucket://chat-attachments/${d.path}`;
         }
-    } catch (e) {
-        console.error('Error subiendo archivo:', e);
-        toast('❌ ' + (e.message || 'No se pudo subir el archivo'), 'error');
-        return;
-    }
-    const r = await db.from('mensajes_chat').insert({
-        remitente_id: user.id, destinatario_id: current.id,
-        contenido: file.name, nombre_archivo: file.name, imagen_url: storageRef,
-        tipo: type, leido: false, editado: false, eliminado: false
-    }).select('*').single();
+    } catch (e) { console.error('Error subiendo archivo:', e); toast('❌ ' + (e.message || 'No se pudo subir el archivo'), 'error'); return; }
+    const r = await db.from('mensajes_chat').insert({ remitente_id: user.id, destinatario_id: current.id, contenido: file.name, nombre_archivo: file.name, imagen_url: storageRef, tipo: type, leido: false, editado: false, eliminado: false }).select('*').single();
     if (r.error) {
         console.error(r.error);
         if (esErrorContenidoNoPermitido(r.error)) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
@@ -1670,9 +1237,6 @@ async function uploadFile(file) {
     loadConversations();
 }
 
-// ================================================================
-// NUEVA CONVERSACIÓN
-// ================================================================
 function newConversation() {
     $('newModal').classList.add('show');
     $('userSearch').value = '';
@@ -1682,18 +1246,10 @@ function newConversation() {
 
 async function searchUsers(q) {
     const box = $('userResults');
-    if (!q || q.trim().length < 2) {
-        box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--muted)">Escribe al menos 2 caracteres</div>';
-        return;
-    }
+    if (!q || q.trim().length < 2) { box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--muted)">Escribe al menos 2 caracteres</div>'; return; }
     if (!await auth()) return;
     const term = q.trim().replace(/[%_,\\]/g, ' ').replace(/\s+/g, ' ').trim();
-    const r = await db.from('perfiles_publicos')
-        .select('id,nombre,handle,avatar_url')
-        .or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`)
-        .neq('id', user.id)
-        .neq('id', BOT_UUID)
-        .limit(12);
+    const r = await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`).neq('id', user.id).neq('id', BOT_UUID).limit(12);
     if (r.error) { console.error(r.error); toast('❌ Error al buscar usuarios', 'error'); return; }
     box.innerHTML = r.data?.length ? '' : '<div style="padding:18px;text-align:center;color:var(--muted)">No se encontraron usuarios</div>';
     for (const p of r.data || []) {
@@ -1723,22 +1279,13 @@ async function createConversation(id) {
     await openConversation(id);
 }
 
-// ================================================================
-// RECORD AUDIO NOTA
-// ================================================================
 function getSupportedAudioMime() {
     const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg', 'audio/mp4'];
-    for (const type of candidates) {
-        if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) return type;
-    }
+    for (const type of candidates) { if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) return type; }
     return '';
 }
 
-function extensionForMime(mime) {
-    if (mime.includes('ogg')) return 'ogg';
-    if (mime.includes('mp4')) return 'm4a';
-    return 'webm';
-}
+function extensionForMime(mime) { if (mime.includes('ogg')) return 'ogg'; if (mime.includes('mp4')) return 'm4a'; return 'webm'; }
 
 async function recordAudioNota() {
     if (recorder && recorder.state === 'recording') { recorder.stop(); return; }
@@ -1772,30 +1319,13 @@ async function recordAudioNota() {
         $('audio').classList.add('recording');
         $('audio').textContent = '⏹️';
         toast(esBot ? '🎙️ Habla con Marquinhos… presiona otra vez para enviar' : '🎙️ Grabando… presiona otra vez para detener');
-    } catch (e) {
-        console.error('Micrófono:', e);
-        $('audio').classList.remove('recording');
-        $('audio').textContent = '🎙️';
-        toast('❌ No se pudo acceder al micrófono', 'error');
-    }
+    } catch (e) { console.error('Micrófono:', e); $('audio').classList.remove('recording'); $('audio').textContent = '🎙️'; toast('❌ No se pudo acceder al micrófono', 'error'); }
 }
 
-// ================================================================
-// CANALES Y GRUPOS
-// ================================================================
-var _canalesTimer = null;
-var _gruposTimer = null;
-var _pestanaActual = 'chats';
+var _canalesTimer = null, _gruposTimer = null, _pestanaActual = 'chats';
 
 function generarSlug(nombre) {
-    var slug = (nombre || '')
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
+    var slug = (nombre || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
     if (!slug) slug = 'grupo';
     return slug + '-' + Date.now();
 }
@@ -1822,9 +1352,7 @@ function cambiarPestana(pestana) {
     }
     if (pestana === 'canales') cargarCanales();
     else if (pestana === 'grupos') cargarGrupos();
-    else if (pestana === 'llamadas' && typeof window.cargarHistorialLlamadas === 'function') {
-        window.cargarHistorialLlamadas();
-    }
+    else if (pestana === 'llamadas' && typeof window.cargarHistorialLlamadas === 'function') window.cargarHistorialLlamadas();
 }
 
 function onNuevoClick() {
@@ -1833,15 +1361,8 @@ function onNuevoClick() {
     else if (_pestanaActual === 'grupos') abrirModalCrearGrupo();
 }
 
-function buscarCanalesDebounce() {
-    if (_canalesTimer) clearTimeout(_canalesTimer);
-    _canalesTimer = setTimeout(cargarCanales, 300);
-}
-
-function buscarGruposDebounce() {
-    if (_gruposTimer) clearTimeout(_gruposTimer);
-    _gruposTimer = setTimeout(cargarGrupos, 300);
-}
+function buscarCanalesDebounce() { if (_canalesTimer) clearTimeout(_canalesTimer); _canalesTimer = setTimeout(cargarCanales, 300); }
+function buscarGruposDebounce() { if (_gruposTimer) clearTimeout(_gruposTimer); _gruposTimer = setTimeout(cargarGrupos, 300); }
 
 async function cargarCanales() {
     var lista = document.getElementById('canalesLista');
@@ -1849,43 +1370,24 @@ async function cargarCanales() {
     if (!await auth()) return;
     lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">✦</div><div class="empty-text">Cargando canales...</div></div>';
     try {
-        var result = await db.from('grupos_video')
-            .select('*').eq('visibilidad', 'publico').eq('activo', true)
-            .order('created_at', { ascending: false }).limit(50);
+        var result = await db.from('grupos_video').select('*').eq('visibilidad', 'publico').eq('activo', true).order('created_at', { ascending: false }).limit(50);
         if (result.error) throw result.error;
         var canales = result.data || [];
         var searchInput = document.getElementById('searchCanales');
         var buscar = searchInput ? (searchInput.value || '').trim().toLowerCase() : '';
         var filtroEstado = document.getElementById('filtroEstadoCanal');
         var estadoSeleccionado = filtroEstado ? filtroEstado.value : '';
-        if (buscar) {
-            canales = canales.filter(function(c) {
-                return (c.nombre || '').toLowerCase().indexOf(buscar) !== -1 ||
-                       (c.descripcion || '').toLowerCase().indexOf(buscar) !== -1;
-            });
-        }
+        if (buscar) canales = canales.filter(function(c) { return (c.nombre || '').toLowerCase().indexOf(buscar) !== -1 || (c.descripcion || '').toLowerCase().indexOf(buscar) !== -1; });
         if (estadoSeleccionado) canales = canales.filter(function(c) { return c.estado_region === estadoSeleccionado; });
         if (canales.length === 0) {
-            lista.innerHTML =
-                '<div class="empty-state-small">' +
-                    '<div class="empty-icon">✦</div>' +
-                    '<div class="empty-text">Aún no hay canales públicos</div>' +
-                    '<button class="empty-btn" onclick="abrirModalCrearCanal()">Crear el primero</button>' +
-                '</div>';
+            lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">✦</div><div class="empty-text">Aún no hay canales públicos</div><button class="empty-btn" onclick="abrirModalCrearCanal()">Crear el primero</button></div>';
             return;
         }
         lista.innerHTML = canales.map(function(c) { return renderCanalCard(c, 'canal'); }).join('');
         actualizarFiltros('canal', canales);
     } catch (e) {
         console.error('[Mensajes/Canales] Error:', e);
-        lista.innerHTML =
-            '<div class="empty-state-small">' +
-                '<div class="empty-icon">!</div>' +
-                '<div class="empty-text">No se pudieron cargar los canales</div>' +
-                '<div style="font-size:.6rem;color:#ff3366;margin-top:8px;padding:8px;background:rgba(255,51,102,.1);border-radius:8px;max-width:100%;word-break:break-all;">' +
-                    esc(e.message || 'Error desconocido') +
-                '</div>' +
-            '</div>';
+        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">No se pudieron cargar los canales</div><div style="font-size:.6rem;color:#ff3366;margin-top:8px;padding:8px;background:rgba(255,51,102,.1);border-radius:8px;max-width:100%;word-break:break-all;">' + esc(e.message || 'Error desconocido') + '</div></div>';
     }
 }
 
@@ -1895,40 +1397,24 @@ async function cargarGrupos() {
     if (!await auth()) return;
     lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">◆</div><div class="empty-text">Cargando grupos...</div></div>';
     try {
-        var result = await db.from('grupos_video')
-            .select('*').eq('visibilidad', 'privado').eq('activo', true)
-            .order('created_at', { ascending: false }).limit(50);
+        var result = await db.from('grupos_video').select('*').eq('visibilidad', 'privado').eq('activo', true).order('created_at', { ascending: false }).limit(50);
         if (result.error) throw result.error;
         var grupos = result.data || [];
         var searchInput = document.getElementById('searchGrupos');
         var buscar = searchInput ? (searchInput.value || '').trim().toLowerCase() : '';
         var filtroEstado = document.getElementById('filtroEstadoGrupo');
         var estadoSeleccionado = filtroEstado ? filtroEstado.value : '';
-        if (buscar) {
-            grupos = grupos.filter(function(g) {
-                return (g.nombre || '').toLowerCase().indexOf(buscar) !== -1 ||
-                       (g.descripcion || '').toLowerCase().indexOf(buscar) !== -1;
-            });
-        }
+        if (buscar) grupos = grupos.filter(function(g) { return (g.nombre || '').toLowerCase().indexOf(buscar) !== -1 || (g.descripcion || '').toLowerCase().indexOf(buscar) !== -1; });
         if (estadoSeleccionado) grupos = grupos.filter(function(g) { return g.estado_region === estadoSeleccionado; });
         if (grupos.length === 0) {
-            lista.innerHTML =
-                '<div class="empty-state-small">' +
-                    '<div class="empty-icon">◆</div>' +
-                    '<div class="empty-text">Aún no hay grupos privados</div>' +
-                    '<button class="empty-btn" onclick="abrirModalCrearGrupo()">Crear el primero</button>' +
-                '</div>';
+            lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">◆</div><div class="empty-text">Aún no hay grupos privados</div><button class="empty-btn" onclick="abrirModalCrearGrupo()">Crear el primero</button></div>';
             return;
         }
         lista.innerHTML = grupos.map(function(g) { return renderCanalCard(g, 'grupo'); }).join('');
         actualizarFiltros('grupo', grupos);
     } catch (e) {
         console.error('[Mensajes/Grupos] Error:', e);
-        lista.innerHTML =
-            '<div class="empty-state-small">' +
-                '<div class="empty-icon">!</div>' +
-                '<div class="empty-text">No se pudieron cargar los grupos</div>' +
-            '</div>';
+        lista.innerHTML = '<div class="empty-state-small"><div class="empty-icon">!</div><div class="empty-text">No se pudieron cargar los grupos</div></div>';
     }
 }
 
@@ -2013,28 +1499,14 @@ async function crearCanal() {
     if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
     try {
         var slug = generarSlug(nombre);
-        var result = await db.from('grupos_video').insert({
-            creador_id: user.id, categoria_id: null, nombre: nombre, slug: slug,
-            descripcion: descripcion || null, ciudad: ciudad || null,
-            estado_region: estado || null, municipio: municipio, pais: pais,
-            visibilidad: 'publico', modo_ingreso: 'abierto', precio_usdt: 0,
-            marketplace_activo: false, activo: true,
-            firma_ligera: 'Yo me hago cargo de lo que digo aquí'
-        }).select().single();
+        var result = await db.from('grupos_video').insert({ creador_id: user.id, categoria_id: null, nombre: nombre, slug: slug, descripcion: descripcion || null, ciudad: ciudad || null, estado_region: estado || null, municipio: municipio, pais: pais, visibilidad: 'publico', modo_ingreso: 'abierto', precio_usdt: 0, marketplace_activo: false, activo: true, firma_ligera: 'Yo me hago cargo de lo que digo aquí' }).select().single();
         if (result.error) throw result.error;
         toast('✅ Canal creado correctamente', 'success');
         cerrarModalCrearCanal();
-        ['canalNombre', 'canalDescripcion', 'canalEstado', 'canalMunicipio', 'canalCiudad'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.value = '';
-        });
+        ['canalNombre', 'canalDescripcion', 'canalEstado', 'canalMunicipio', 'canalCiudad'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
         await cargarCanales();
-    } catch (e) {
-        console.error('[Mensajes/Canales] Error creando:', e);
-        toast('❌ Error: ' + (e.message || 'desconocido'), 'error');
-    } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '✦ Crear Canal'; }
-    }
+    } catch (e) { console.error('[Mensajes/Canales] Error creando:', e); toast('❌ Error: ' + (e.message || 'desconocido'), 'error'); }
+    finally { if (btn) { btn.disabled = false; btn.textContent = '✦ Crear Canal'; } }
 }
 
 async function crearGrupo() {
@@ -2051,33 +1523,16 @@ async function crearGrupo() {
     if (btn) { btn.disabled = true; btn.textContent = 'Creando...'; }
     try {
         var slug = generarSlug(nombre);
-        var result = await db.from('grupos_video').insert({
-            creador_id: user.id, categoria_id: null, nombre: nombre, slug: slug,
-            descripcion: descripcion || null, ciudad: ciudad || null,
-            estado_region: estado || null, municipio: municipio, pais: pais,
-            visibilidad: 'privado', modo_ingreso: 'invitacion', precio_usdt: 0,
-            marketplace_activo: false, activo: true,
-            firma_ligera: 'Yo me hago cargo de lo que digo aquí'
-        }).select().single();
+        var result = await db.from('grupos_video').insert({ creador_id: user.id, categoria_id: null, nombre: nombre, slug: slug, descripcion: descripcion || null, ciudad: ciudad || null, estado_region: estado || null, municipio: municipio, pais: pais, visibilidad: 'privado', modo_ingreso: 'invitacion', precio_usdt: 0, marketplace_activo: false, activo: true, firma_ligera: 'Yo me hago cargo de lo que digo aquí' }).select().single();
         if (result.error) throw result.error;
         toast('✅ Grupo creado correctamente', 'success');
         cerrarModalCrearGrupo();
-        ['grupoNombre', 'grupoDescripcion', 'grupoEstado', 'grupoMunicipio', 'grupoCiudad'].forEach(function(id) {
-            var el = document.getElementById(id);
-            if (el) el.value = '';
-        });
+        ['grupoNombre', 'grupoDescripcion', 'grupoEstado', 'grupoMunicipio', 'grupoCiudad'].forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
         await cargarGrupos();
-    } catch (e) {
-        console.error('[Mensajes/Grupos] Error creando:', e);
-        toast('❌ Error: ' + (e.message || 'desconocido'), 'error');
-    } finally {
-        if (btn) { btn.disabled = false; btn.textContent = '◆ Crear Grupo'; }
-    }
+    } catch (e) { console.error('[Mensajes/Grupos] Error creando:', e); toast('❌ Error: ' + (e.message || 'desconocido'), 'error'); }
+    finally { if (btn) { btn.disabled = false; btn.textContent = '◆ Crear Grupo'; } }
 }
 
-// ================================================================
-// LLAMADAS (LiveKit) — SIN CAMBIOS
-// ================================================================
 const LLAMADA_TIMEOUT_MS = 45000;
 const LLAMADA_VIGENCIA_MS = 60000;
 
@@ -2095,11 +1550,7 @@ const MENSAJES_LLAMADA = {
     llamada_no_permitida: 'No puedes llamar a este usuario.'
 };
 
-let llamadaTimeoutTimer = null;
-let ringTimer = null;
-let ringChannel = null;
-let llamadaConectando = false;
-let llamadaAceptando = false;
+let llamadaTimeoutTimer = null, ringTimer = null, ringChannel = null, llamadaConectando = false, llamadaAceptando = false;
 
 function textoErrorLlamada(err) {
     const code = err && (err.code || err.message);
@@ -2108,23 +1559,10 @@ function textoErrorLlamada(err) {
 
 async function llamadaFetch(path, body = {}) {
     const s = await session();
-    if (!s) {
-        const e = new Error('no_autenticado');
-        e.code = 'no_autenticado';
-        throw e;
-    }
-    const r = await fetch(path, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token },
-        body: JSON.stringify(body)
-    });
+    if (!s) { const e = new Error('no_autenticado'); e.code = 'no_autenticado'; throw e; }
+    const r = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token }, body: JSON.stringify(body) });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok || d.success !== true) {
-        const code = d.error || ('http_' + r.status);
-        const err = new Error(code);
-        err.code = code;
-        throw err;
-    }
+    if (!r.ok || d.success !== true) { const code = d.error || ('http_' + r.status); const err = new Error(code); err.code = code; throw err; }
     return d.data || {};
 }
 
@@ -2134,13 +1572,8 @@ async function terminarLlamadaServidor(id, body = {}) {
     catch (e) { console.warn('[Llamadas] terminar:', e.code || e.message); }
 }
 
-function mostrarLlamando(nombre) {
-    $('callInfo').innerHTML = `📞 <strong>Llamando a ${esc(nombre)}…</strong><br><small style="opacity:.7">Esperando respuesta</small>`;
-}
-
-function mostrarEnCurso() {
-    $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>';
-}
+function mostrarLlamando(nombre) { $('callInfo').innerHTML = `📞 <strong>Llamando a ${esc(nombre)}…</strong><br><small style="opacity:.7">Esperando respuesta</small>`; }
+function mostrarEnCurso() { $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>'; }
 
 function crearRoom() {
     const LK = window.LivekitClient;
@@ -2148,20 +1581,9 @@ function crearRoom() {
     const room = new LK.Room();
     room.on(LK.RoomEvent.TrackSubscribed, track => {
         if (track.kind === 'video') track.attach($('remoteVideo'));
-        else if (track.kind === 'audio') {
-            const el = track.attach();
-            el.dataset.lk = '1';
-            el.style.display = 'none';
-            document.body.appendChild(el);
-            el.play?.().catch(() => {});
-        }
+        else if (track.kind === 'audio') { const el = track.attach(); el.dataset.lk = '1'; el.style.display = 'none'; document.body.appendChild(el); el.play?.().catch(() => {}); }
     });
-    room.on(LK.RoomEvent.Disconnected, () => {
-        if (!call.active) return;
-        const id = call.id;
-        finalizarLlamadaLocal();
-        terminarLlamadaServidor(id);
-    });
+    room.on(LK.RoomEvent.Disconnected, () => { if (!call.active) return; const id = call.id; finalizarLlamadaLocal(); terminarLlamadaServidor(id); });
     return room;
 }
 
@@ -2172,24 +1594,12 @@ async function conectarYPublicar(url, token, tipo) {
     let stream = null;
     try {
         await room.connect(url, token);
-        stream = await navigator.mediaDevices.getUserMedia({
-            audio: true,
-            video: tipo === 'video' ? { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } : false
-        });
+        stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: tipo === 'video' ? { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } : false });
         const at = stream.getAudioTracks()[0];
         const vt = stream.getVideoTracks()[0];
-        if (at) {
-            await room.localParticipant.publishTrack(at, { name: 'microphone', source: lkSource('Microphone') });
-            call.audio = at;
-        }
-        if (vt) {
-            await room.localParticipant.publishTrack(vt, { name: 'camera', source: lkSource('Camera') });
-            call.video = vt;
-            $('localVideo').srcObject = new MediaStream([vt]);
-        }
-        call.room = room;
-        call.tipo = tipo;
-        call.active = true;
+        if (at) { await room.localParticipant.publishTrack(at, { name: 'microphone', source: lkSource('Microphone') }); call.audio = at; }
+        if (vt) { await room.localParticipant.publishTrack(vt, { name: 'camera', source: lkSource('Camera') }); call.video = vt; $('localVideo').srcObject = new MediaStream([vt]); }
+        call.room = room; call.tipo = tipo; call.active = true;
     } catch (e) {
         if (stream) stream.getTracks().forEach(t => t.stop());
         try { room.disconnect(); } catch (_) {}
@@ -2199,9 +1609,7 @@ async function conectarYPublicar(url, token, tipo) {
 
 function subscribeCall(llamadaId) {
     if (callChannel) { db.removeChannel(callChannel); callChannel = null; }
-    callChannel = db.channel('call-' + llamadaId).on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'llamadas', filter: 'id=eq.' + llamadaId
-    }, async p => {
+    callChannel = db.channel('call-' + llamadaId).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'llamadas', filter: 'id=eq.' + llamadaId }, async p => {
         if (call.id !== llamadaId) return;
         const estado = p.new?.estado;
         if (estado === 'active') {
@@ -2244,10 +1652,7 @@ async function startCall(tipo = 'video') {
     const nombre = current.profile?.nombre || 'usuario';
     try {
         const d = await llamadaFetch('/api/llamadas/iniciar', { destinatarioId: current.id, tipo });
-        call.id = d.llamadaId;
-        call.roomName = d.roomName;
-        call.tipo = tipo;
-        call.initiator = true;
+        call.id = d.llamadaId; call.roomName = d.roomName; call.tipo = tipo; call.initiator = true;
         subscribeCall(call.id);
         $('callOverlay').classList.add('show');
         mostrarLlamando(nombre);
@@ -2281,24 +1686,13 @@ async function incoming(data) {
     const id = data.id;
     const p = await profile(data.creador_id);
     $('incomingName').textContent = p.nombre || 'Usuario';
-    $('incomingAvatar').innerHTML = p.avatar_url
-        ? `<img src="${esc(p.avatar_url)}" alt="">`
-        : esc((p.nombre || '◈').charAt(0).toUpperCase());
+    $('incomingAvatar').innerHTML = p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || '◈').charAt(0).toUpperCase());
     const halo = $('incomingHalo');
-    if (halo) {
-        halo.innerHTML = p.avatar_url
-            ? `<img src="${esc(p.avatar_url)}" alt="">`
-            : esc((p.nombre || '◈').charAt(0).toUpperCase());
-    }
+    if (halo) { halo.innerHTML = p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || '◈').charAt(0).toUpperCase()); }
     $('incomingOverlay').classList.add('show');
     toast('🔔 ' + (p.nombre || 'Alguien') + ' te está llamando…', 'success');
-    ringChannel = db.channel('ring-' + id).on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'llamadas', filter: 'id=eq.' + id
-    }, p2 => {
-        if (incomingId === id && p2.new?.estado !== 'ringing') {
-            cerrarOverlayEntrante();
-            toast('📞 La llamada ya no está disponible', 'warning');
-        }
+    ringChannel = db.channel('ring-' + id).on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'llamadas', filter: 'id=eq.' + id }, p2 => {
+        if (incomingId === id && p2.new?.estado !== 'ringing') { cerrarOverlayEntrante(); toast('📞 La llamada ya no está disponible', 'warning'); }
     }).subscribe();
     ringTimer = setTimeout(async () => {
         if (incomingId !== id) return;
@@ -2321,10 +1715,7 @@ async function acceptCall() {
     try {
         const d = await llamadaFetch(`/api/llamadas/${encodeURIComponent(id)}/aceptar`, {});
         cerrarOverlayEntrante();
-        call.id = d.llamadaId || id;
-        call.roomName = d.roomName;
-        call.tipo = d.tipo || 'video';
-        call.initiator = false;
+        call.id = d.llamadaId || id; call.roomName = d.roomName; call.tipo = d.tipo || 'video'; call.initiator = false;
         subscribeCall(call.id);
         $('callOverlay').classList.add('show');
         $('callInfo').innerHTML = 'Conectando…';
@@ -2357,12 +1748,10 @@ async function finalizarLlamadaLocal() {
     clearTimeout(llamadaTimeoutTimer);
     llamadaTimeoutTimer = null;
     const room = call.room;
-    call.room = null;
-    call.active = false;
+    call.room = null; call.active = false;
     try { room?.disconnect(); } catch (e) {}
     try { call.audio?.stop(); call.video?.stop(); call.screen?.stop(); } catch (e) {}
-    $('localVideo').srcObject = null;
-    $('remoteVideo').srcObject = null;
+    $('localVideo').srcObject = null; $('remoteVideo').srcObject = null;
     document.querySelectorAll('audio[data-lk="1"]').forEach(el => el.remove());
     if (callChannel) { db.removeChannel(callChannel); callChannel = null; }
     Object.assign(call, { room: null, id: null, active: false, audio: null, video: null, screen: null, roomName: null, initiator: false });
@@ -2378,17 +1767,13 @@ async function cleanupCall() { await finalizarLlamadaLocal(); }
 async function toggleMic() {
     if (!call.audio) return;
     call.audio.enabled = !call.audio.enabled;
-    $('toggleMic').innerHTML = call.audio.enabled
-        ? '<span class="ctrl-icon">🎤</span><span class="ctrl-label">Micrófono</span>'
-        : '<span class="ctrl-icon">🔇</span><span class="ctrl-label">Silenciado</span>';
+    $('toggleMic').innerHTML = call.audio.enabled ? '<span class="ctrl-icon">🎤</span><span class="ctrl-label">Micrófono</span>' : '<span class="ctrl-icon">🔇</span><span class="ctrl-label">Silenciado</span>';
 }
 
 async function toggleCam() {
     if (!call.video) return;
     call.video.enabled = !call.video.enabled;
-    $('toggleCam').innerHTML = call.video.enabled
-        ? '<span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span>'
-        : '<span class="ctrl-icon">📷❌</span><span class="ctrl-label">Sin cámara</span>';
+    $('toggleCam').innerHTML = call.video.enabled ? '<span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span>' : '<span class="ctrl-icon">📷❌</span><span class="ctrl-label">Sin cámara</span>';
 }
 
 async function toggleScreen() {
@@ -2407,22 +1792,17 @@ async function toggleScreen() {
         call.screen = t;
         $('toggleScreen').innerHTML = '<span class="ctrl-icon">🖥️⏹️</span><span class="ctrl-label">Detener</span>';
         t.onended = () => toggleScreen();
-    } catch (e) {
-        if (e.name !== 'NotAllowedError') toast('❌ No se pudo compartir pantalla', 'error');
-    }
+    } catch (e) { if (e.name !== 'NotAllowedError') toast('❌ No se pudo compartir pantalla', 'error'); }
 }
 
 // ================================================================
-// INIT
+// INIT — CON LECTURA DE ?usuario= Y ?accion=llamada
 // ================================================================
 async function init() {
     try { db = await window.supabaseReady; } catch (e) { db = null; }
     if (!db) db = window.supabaseClient;
-    if (!db) {
-        toast('❌ No se pudo conectar a Supabase. Revisa tu conexión.', 'error');
-        console.error('[Mensajes] No hay cliente Supabase disponible.');
-        return;
-    }
+    if (!db) { toast('❌ No se pudo conectar a Supabase. Revisa tu conexión.', 'error'); console.error('[Mensajes] No hay cliente Supabase disponible.'); return; }
+
     try {
         const s = await session();
         if (s?.user) user = s.user;
@@ -2435,7 +1815,6 @@ async function init() {
     await loadConversations();
     await cargarEstados();
 
-    // Parche D: Listener de auth sin repeticiones
     let ultimoUserId = user?.id || null;
     db.auth.onAuthStateChange((event, s) => {
         const nuevoId = s?.user?.id || null;
@@ -2467,11 +1846,7 @@ async function init() {
     $('evClose').onclick = cerrarEstadoViewer;
     $('evPrev').onclick = (e) => { e.stopPropagation(); anteriorEstado(); };
     $('evNext').onclick = (e) => { e.stopPropagation(); siguienteEstado(); };
-    $('evVistas').onclick = (e) => {
-        e.stopPropagation();
-        const estadoId = $('evVistas').dataset.estadoId;
-        if (estadoId) abrirVistasModal(estadoId);
-    };
+    $('evVistas').onclick = (e) => { e.stopPropagation(); const estadoId = $('evVistas').dataset.estadoId; if (estadoId) abrirVistasModal(estadoId); };
 
     const evBody = $('evBody');
     evBody.addEventListener('mousedown', activarPausaEstado);
@@ -2484,8 +1859,7 @@ async function init() {
     document.addEventListener('keydown', e => {
         if (e.key === ' ' && $('estadoViewer').classList.contains('show')) {
             e.preventDefault();
-            if (estadoPausado) desactivarPausaEstado();
-            else activarPausaEstado();
+            if (estadoPausado) desactivarPausaEstado(); else activarPausaEstado();
         }
     });
 
@@ -2498,30 +1872,17 @@ async function init() {
 
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
-            cerrarProfileModal();
-            cerrarPhotoViewer();
-            cerrarEstadoViewer();
-            cerrarModalEstado();
-            cerrarVistasModal();
-            cerrarModalCrearCanal();
-            cerrarModalCrearGrupo();
+            cerrarProfileModal(); cerrarPhotoViewer(); cerrarEstadoViewer(); cerrarModalEstado(); cerrarVistasModal(); cerrarModalCrearCanal(); cerrarModalCrearGrupo();
             $('newModal').classList.remove('show');
         }
     });
 
-    $('composer').addEventListener('submit', e => {
-        e.preventDefault();
-        sendMessage($('messageInput').value);
-    });
-
+    $('composer').addEventListener('submit', e => { e.preventDefault(); sendMessage($('messageInput').value); });
     $('newChat').onclick = onNuevoClick;
     $('closeModal').onclick = () => $('newModal').classList.remove('show');
     $('newModal').addEventListener('click', e => { if (e.target.id === 'newModal') $('newModal').classList.remove('show'); });
     $('userSearch').addEventListener('input', e => searchUsers(e.target.value));
-    $('searchConversations').addEventListener('input', e => {
-        conversationFilter = e.target.value;
-        aplicarFiltroConversaciones();
-    });
+    $('searchConversations').addEventListener('input', e => { conversationFilter = e.target.value; aplicarFiltroConversaciones(); });
 
     $('attach').onclick = () => {
         if (current?.bot) { toast('⚠️ Para Marquinhos usa el botón 🔊', 'error'); return; }
@@ -2547,36 +1908,15 @@ async function init() {
     $('rejectCall').onclick = rejectCall;
 
     $('messages').addEventListener('scroll', detectarSiEstaAbajo);
-    $('messages').addEventListener('click', e => {
-        const img = e.target.closest && e.target.closest('img[data-visor]');
-        if (img) abrirVisorImagen(img.dataset.src, img.dataset.nombre);
-    });
+    $('messages').addEventListener('click', e => { const img = e.target.closest && e.target.closest('img[data-visor]'); if (img) abrirVisorImagen(img.dataset.src, img.dataset.nombre); });
+    $('scrollDownBtn').onclick = () => { isUserAtBottom = true; scrollToBottom(true); actualizarFlecha(); };
 
-    $('scrollDownBtn').onclick = () => {
-        isUserAtBottom = true;
-        scrollToBottom(true);
-        actualizarFlecha();
-    };
-
-    // Búsqueda en conversación: usa NeonModal.prompt
     $('searchChat').onclick = async () => {
         if (!current) { toast('⚠️ Selecciona una conversación', 'error'); return; }
         if (current.bot) { toast('ℹ️ Marquinhos no tiene búsqueda local aún', 'warning'); return; }
-        const q = await NeonModal.prompt({
-            title: 'Buscar en la conversación',
-            message: 'Escribe el texto que quieres encontrar:',
-            icon: '🔍',
-            placeholder: 'Texto a buscar…',
-            confirmText: 'Buscar',
-            cancelText: 'Cancelar'
-        });
+        const q = await NeonModal.prompt({ title: 'Buscar en la conversación', message: 'Escribe el texto que quieres encontrar:', icon: '🔍', placeholder: 'Texto a buscar…', confirmText: 'Buscar', cancelText: 'Cancelar' });
         if (!q || !q.trim()) return;
-        const r = await db.from('mensajes_chat')
-            .select('*')
-            .eq('eliminado', false)
-            .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${current.id}),and(remitente_id.eq.${current.id},destinatario_id.eq.${user.id})`)
-            .ilike('contenido', '%' + q.trim() + '%')
-            .order('created_at', { ascending: true });
+        const r = await db.from('mensajes_chat').select('*').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${current.id}),and(remitente_id.eq.${current.id},destinatario_id.eq.${user.id})`).ilike('contenido', '%' + q.trim() + '%').order('created_at', { ascending: true });
         if (r.error) { toast('❌ Error al buscar', 'error'); return; }
         await renderMessages(r.data || []);
     };
@@ -2586,84 +1926,55 @@ async function init() {
     $('closeModalGrupo')?.addEventListener('click', cerrarModalCrearGrupo);
     $('modalCrearGrupo')?.addEventListener('click', e => { if (e.target.id === 'modalCrearGrupo') cerrarModalCrearGrupo(); });
 
-    db.channel('incoming-calls').on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'llamadas',
-        filter: `destinatario_id=eq.${user.id}`
-    }, p => {
+    db.channel('incoming-calls').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'llamadas', filter: `destinatario_id=eq.${user.id}` }, p => {
         if (user && p.new.estado === 'ringing') incoming(p.new);
     }).subscribe();
 
-    // Parche E: Intervalo de estados con pestaña visible
-    setInterval(() => {
-        if (document.hidden) return;
-        limpiarVistosAntiguos();
-        cargarEstados();
-    }, 10 * 60 * 1000);
+    setInterval(() => { if (document.hidden) return; limpiarVistosAntiguos(); cargarEstados(); }, 10 * 60 * 1000);
 
-    // ============================================================
-    // NUEVO v4.6: INTEGRACIÓN DE PUSH Y ACCIONES DE LLAMADA
-    // ============================================================
-    
-    // 1. Suscripción a Push Notifications
     registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
 
-    // 2. Leer ?llamadaId y ?action de la URL (viene de una notificación Push)
+    // ============================================================
+    // NUEVO v4.7: LEER ?usuario= Y ?accion=llamada DE LA URL
+    // ============================================================
     if (user && user.id) {
-        const mostrarOverlayEntrante = (dataLlamada) => incoming(dataLlamada);
-        
-        const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
         const urlObj = new URL(window.location.href);
-        const llamadaIdParam = urlObj.searchParams.get('llamadaId');
-        const actionParam = urlObj.searchParams.get('action');
-        
-        if (llamadaIdParam && UUID_RE.test(llamadaIdParam)) {
-            // Limpiamos la URL inmediatamente para que no se repita al recargar
-            urlObj.searchParams.delete('llamadaId');
-            urlObj.searchParams.delete('action');
-            window.history.replaceState({}, '', urlObj.pathname + urlObj.search + urlObj.hash);
+        const usuarioParam = urlObj.searchParams.get('usuario');
+        const accionParam = urlObj.searchParams.get('accion');
 
-            db.from('llamadas')
-                .select('*')
-                .eq('id', llamadaIdParam)
-                .maybeSingle()
-                .then(({ data, error }) => {
-                    if (error || !data) return;
-                    if (data.estado !== 'ringing') return;
-                    if (data.destinatario_id !== user.id) return;
-                    if (data.creador_id === user.id) return;
-                    
-                    const edad = Date.now() - new Date(data.creado_at || data.created_at || Date.now()).getTime();
-                    if (edad >= 0 && edad <= LLAMADA_VIGENCIA_MS) {
-                        
-                        // SI EL USUARIO TOCÓ "RECHAZAR" EN LA NOTIFICACIÓN
-                        if (actionParam === 'reject') {
-                            db.from('llamadas').update({ 
-                                estado: 'rejected', 
-                                motivo_fin: 'rechazada_desde_notificacion',
-                                finalizada_at: new Date().toISOString()
-                            }).eq('id', data.id).then(() => {
-                                toast('📵 Llamada rechazada', 'warning');
-                            });
-                            return; // No mostramos el overlay
-                        }
+        if (usuarioParam && usuarioParam.length > 10) {
+            // Abrimos la conversación directa con ese usuario
+            setTimeout(async () => {
+                try {
+                    await openConversation(usuarioParam);
 
-                        // Si no es rechazar, mostramos el overlay
-                        mostrarOverlayEntrante(data);
-                        
-                        // SI EL USUARIO TOCÓ "ACEPTAR" DIRECTAMENTE EN LA NOTIFICACIÓN
-                        if (actionParam === 'accept') {
-                            setTimeout(() => {
-                                if (typeof acceptCall === 'function' && incomingId === data.id) {
-                                    acceptCall();
+                    // Si la URL trae &accion=llamada, iniciamos la llamada
+                    if (accionParam === 'llamada') {
+                        setTimeout(async () => {
+                            if (typeof startCall === 'function') {
+                                try {
+                                    await startCall('video');
+                                } catch (e) {
+                                    console.error('[Llamadas] Error en inicio automático:', e);
                                 }
-                            }, 500); // 500ms para dar tiempo a que cargue el overlay
-                        }
+                            }
+                        }, 1000); // Esperamos 1s para que el chat cargue
                     }
-                })
-                .catch(err => console.error('[Llamadas] Error al validar llamada desde URL:', err));
+                } catch (e) {
+                    console.error('[Mensajes] Error al abrir conversación desde URL:', e);
+                }
+            }, 800); // Esperamos a que init() termine
+        }
+
+        // Limpiar los parámetros de la URL para que no se repita al recargar
+        if (usuarioParam || accionParam) {
+            urlObj.searchParams.delete('usuario');
+            urlObj.searchParams.delete('accion');
+            try {
+                window.history.replaceState({}, '', urlObj.pathname + urlObj.search + urlObj.hash);
+            } catch (e) { console.warn('No se pudo limpiar la URL:', e); }
         }
     }
-    // ============================================================
 
     decorarComposerWeb3();
     decorarSidebarTabsWeb3();
@@ -2677,114 +1988,57 @@ async function init() {
 }
 
 // ================================================================
-// NUEVO: LÓGICA DE PUSH NOTIFICATIONS
+// PUSH NOTIFICATIONS — SIN CAMBIOS
 // ================================================================
 async function registrarPushYServiceWorker() {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.warn('[Push] Este navegador no soporta notificaciones Push.');
-        return;
-    }
-
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     try {
-        // 1. Registrar el Service Worker
         const register = await navigator.serviceWorker.register('/sw.js');
-        console.log('[Push] Service Worker registrado:', register.scope);
-
-        // 2. Verificar permiso de notificaciones
         const permiso = await Notification.requestPermission();
-        if (permiso !== 'granted') {
-            console.warn('[Push] Permiso de notificaciones denegado por el usuario.');
-            return;
-        }
-
-        // 3. Obtener la llave pública VAPID desde tu backend
+        if (permiso !== 'granted') return;
         const resVapid = await fetch('/api/push/vapid-public-key');
         if (!resVapid.ok) throw new Error('No se pudo obtener la llave VAPID');
         const { publicKey } = await resVapid.json();
-
-        // 4. Suscribirse al PushManager
-        const suscripcion = await register.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(publicKey)
-        });
-
-        // 5. Enviar la suscripción a tu backend para guardarla en Supabase
+        const suscripcion = await register.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlBase64ToUint8Array(publicKey) });
         const s = await db.auth.getSession();
         if (!s?.data?.session) throw new Error('No hay sesión activa');
-
         const resSub = await fetch('/api/push/subscribe', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + s.data.session.access_token
-            },
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.data.session.access_token },
             body: JSON.stringify({
                 endpoint: suscripcion.endpoint,
-                keys: {
-                    p256dh: btoa(String.fromCharCode(...new Uint8Array(suscripcion.getKey('p256dh')))),
-                    auth: btoa(String.fromCharCode(...new Uint8Array(suscripcion.getKey('auth'))))
-                },
+                keys: { p256dh: btoa(String.fromCharCode(...new Uint8Array(suscripcion.getKey('p256dh')))), auth: btoa(String.fromCharCode(...new Uint8Array(suscripcion.getKey('auth')))) },
                 device_type: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
             })
         });
-
         const dataSub = await resSub.json();
-        if (dataSub.success) {
-            console.log('[Push] Suscripción guardada en Supabase correctamente ✅');
-        } else {
-            console.warn('[Push] Error guardando suscripción:', dataSub.error);
-        }
-
-    } catch (error) {
-        console.error('[Push] Error en el registro:', error);
-    }
+        if (dataSub.success) console.log('[Push] Suscripción guardada en Supabase correctamente ✅');
+    } catch (error) { console.error('[Push] Error en el registro:', error); }
 }
 
-// Helper para convertir la llave VAPID
 function urlBase64ToUint8Array(base64String) {
     const padding = '='.repeat((4 - base64String.length % 4) % 4);
     const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
     const rawData = window.atob(base64);
     const outputArray = new Uint8Array(rawData.length);
-    for (let i = 0; i < rawData.length; ++i) {
-        outputArray[i] = rawData.charCodeAt(i);
-    }
+    for (let i = 0; i < rawData.length; ++i) { outputArray[i] = rawData.charCodeAt(i); }
     return outputArray;
 }
 
-// ================================================================
-// ESCUCHAR MENSAJES DEL SERVICE WORKER (Botón Aceptar / Rechazar)
-// ================================================================
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         const data = event.data || {};
         if (data.tipo === 'notificacion_click' && data.llamadaId) {
-            
-            // --- RECHAZAR ---
             if (data.accion === 'reject') {
-                console.log('[Push] Botón Rechazar tocado. Avisando al backend...');
-                db.from('llamadas').update({ 
-                    estado: 'rejected', 
-                    motivo_fin: 'rechazada_desde_notificacion',
-                    finalizada_at: new Date().toISOString()
-                }).eq('id', data.llamadaId).then(() => {
-                    toast('📵 Llamada rechazada', 'warning');
-                });
+                db.from('llamadas').update({ estado: 'rejected', motivo_fin: 'rechazada_desde_notificacion', finalizada_at: new Date().toISOString() }).eq('id', data.llamadaId).then(() => { toast('📵 Llamada rechazada', 'warning'); });
                 return;
             }
-
-            // --- ACEPTAR ---
             if (data.accion === 'accept') {
-                console.log('[Push] Botón Aceptar tocado. Conectando...');
                 if (typeof incoming === 'function' && typeof incomingId !== 'undefined' && !call.active) {
                     db.from('llamadas').select('*').eq('id', data.llamadaId).maybeSingle().then(({ data: llamada }) => {
                         if (llamada && llamada.estado === 'ringing') {
                             incoming(llamada);
-                            setTimeout(() => {
-                                if (typeof acceptCall === 'function' && incomingId === llamada.id) {
-                                    acceptCall();
-                                }
-                            }, 500);
+                            setTimeout(() => { if (typeof acceptCall === 'function' && incomingId === llamada.id) acceptCall(); }, 500);
                         }
                     });
                 }
@@ -2793,9 +2047,6 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// ================================================================
-// WEB3 UI DECORATOR
-// ================================================================
 function decorarComposerWeb3() {
     const composer = $('composer');
     if (!composer || composer.dataset.web3decorated) return;
@@ -2803,10 +2054,7 @@ function decorarComposerWeb3() {
     envolverBotonConLabel($('audio'), '🎙️', 'Audio');
     envolverBotonConLabel($('voiceBot'), '🔊', 'Voz');
     const sendBtn = composer.querySelector('button[type="submit"]');
-    if (sendBtn && !sendBtn.classList.contains('composer-send')) {
-        sendBtn.classList.add('composer-send');
-        sendBtn.innerHTML = '<span>Enviar</span><span style="font-size:.9rem;">➤</span>';
-    }
+    if (sendBtn && !sendBtn.classList.contains('composer-send')) { sendBtn.classList.add('composer-send'); sendBtn.innerHTML = '<span>Enviar</span><span style="font-size:.9rem;">➤</span>'; }
     const input = $('messageInput');
     if (!input.placeholder) input.placeholder = 'Escribe un mensaje…';
     composer.dataset.web3decorated = '1';
@@ -2815,33 +2063,24 @@ function decorarComposerWeb3() {
 function envolverBotonConLabel(btn, icono, label) {
     if (!btn || btn.dataset.web3labeled) return;
     btn.classList.add('composer-btn');
-    btn.innerHTML =
-        '<span class="composer-btn-icon">' + icono + '</span>' +
-        '<span class="composer-btn-label">' + label + '</span>';
+    btn.innerHTML = '<span class="composer-btn-icon">' + icono + '</span><span class="composer-btn-label">' + label + '</span>';
     btn.dataset.web3labeled = '1';
     const observer = new MutationObserver(() => {
         const t = btn.textContent.trim();
         if (t === '⏹️' || t === '⏳') {
             const icon = t === '⏹️' ? '⏹️' : '⏳';
             const lbl = t === '⏹️' ? 'Grabando' : 'Procesando';
-            btn.innerHTML =
-                '<span class="composer-btn-icon">' + icon + '</span>' +
-                '<span class="composer-btn-label">' + lbl + '</span>';
+            btn.innerHTML = '<span class="composer-btn-icon">' + icon + '</span><span class="composer-btn-label">' + lbl + '</span>';
         } else if (t === '🎙️' || t === '🔊') {
             if (!btn.querySelector('.composer-btn-icon')) {
-                btn.innerHTML =
-                    '<span class="composer-btn-icon">' + icono + '</span>' +
-                    '<span class="composer-btn-label">' + label + '</span>';
+                btn.innerHTML = '<span class="composer-btn-icon">' + icono + '</span><span class="composer-btn-label">' + label + '</span>';
             }
         }
     });
     observer.observe(btn, { childList: true, subtree: true, characterData: true });
 }
 
-function decorarSidebarTabsWeb3() {
-    const tabs = document.querySelectorAll('.sidebar-tab');
-    tabs.forEach(tab => tab.setAttribute('role', 'tab'));
-}
+function decorarSidebarTabsWeb3() { const tabs = document.querySelectorAll('.sidebar-tab'); tabs.forEach(tab => tab.setAttribute('role', 'tab')); }
 
 function decorarChatActions() {
     const search = $('searchChat');
@@ -2849,13 +2088,7 @@ function decorarChatActions() {
         search.classList.remove('iconbtn');
         search.classList.add('action-labeled');
         search.setAttribute('title', 'Buscar en la conversación');
-        search.innerHTML = `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <line x1="20" y1="20" x2="16.65" y2="16.65"></line>
-            </svg>
-            <span class="action-label">Buscar</span>
-        `;
+        search.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.65" y2="16.65"></line></svg><span class="action-label">Buscar</span>`;
         search.dataset.web3labeled = '1';
     }
     const del = $('deleteChat');
@@ -2863,23 +2096,11 @@ function decorarChatActions() {
         del.classList.remove('iconbtn');
         del.classList.add('action-labeled', 'danger');
         del.setAttribute('title', 'Eliminar chat');
-        del.innerHTML = `
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-                <polyline points="3 6 5 6 21 6"></polyline>
-                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
-                <path d="M10 11v6"></path>
-                <path d="M14 11v6"></path>
-                <path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path>
-            </svg>
-            <span class="action-label">Eliminar chat</span>
-        `;
+        del.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path></svg><span class="action-label">Eliminar chat</span>`;
         del.dataset.web3labeled = '1';
     }
 }
 
-// ================================================================
-// EXPOSICIÓN GLOBAL
-// ================================================================
 window.cambiarPestana = cambiarPestana;
 window.onNuevoClick = onNuevoClick;
 window.buscarCanalesDebounce = buscarCanalesDebounce;
@@ -2895,27 +2116,17 @@ window.cerrarModalCrearGrupo = cerrarModalCrearGrupo;
 window.crearCanal = crearCanal;
 window.crearGrupo = crearGrupo;
 window.generarSlug = generarSlug;
-
-// API pública segura: openConversation puede ser invocado por otros módulos
-// (llamadas-ui.js) sin colisionar con la función local.
 window.openConversation = openConversation;
-
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.6.0',
+    version: '4.7.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
     decorarChatActions: decorarChatActions
 };
 
-// ================================================================
-// ARRANQUE
-// ================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    if (window.supabase?.createClient) {
-        init();
-    } else {
-        toast('❌ No se pudo cargar Supabase', 'error');
-    }
+    if (window.supabase?.createClient) init();
+    else toast('❌ No se pudo cargar Supabase', 'error');
 });
