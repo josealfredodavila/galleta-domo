@@ -34,11 +34,7 @@
             --radius-lg: 16px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         html {
             -webkit-font-smoothing: antialiased;
@@ -69,6 +65,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
         }
 
         .logo {
@@ -101,6 +99,31 @@
             font-size: 12px;
             color: var(--text-muted);
             font-weight: 500;
+        }
+
+        /* ============================================================
+           BOTÓN CENTRO DE AYUDA
+           ============================================================ */
+
+        .btn-centro-ayuda {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 24px;
+            padding: 8px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 0.85rem;
+            transition: all 0.15s ease;
+        }
+        .btn-centro-ayuda:hover {
+            background: var(--surface-2);
+            border-color: var(--text-muted);
+            color: var(--text);
         }
 
         /* ============================================================
@@ -179,18 +202,9 @@
             margin-bottom: 14px;
         }
 
-        .block p:last-child {
-            margin-bottom: 0;
-        }
-
-        .block ul:last-child {
-            margin-bottom: 0;
-        }
-
-        .block strong {
-            color: var(--text);
-            font-weight: 600;
-        }
+        .block p:last-child { margin-bottom: 0; }
+        .block ul:last-child { margin-bottom: 0; }
+        .block strong { color: var(--text); font-weight: 600; }
 
         /* ============================================================
            DELETE PANEL
@@ -216,9 +230,7 @@
             font-weight: 600;
         }
 
-        .delete-panel-body {
-            padding: 22px;
-        }
+        .delete-panel-body { padding: 22px; }
 
         .delete-warning {
             background: var(--surface-2);
@@ -235,9 +247,7 @@
             font-weight: 600;
         }
 
-        .delete-warning ul {
-            margin: 10px 0 0;
-        }
+        .delete-warning ul { margin: 10px 0 0; }
 
         .delete-warning ul li {
             padding: 3px 0 3px 18px;
@@ -253,9 +263,7 @@
            FORM
            ============================================================ */
 
-        .form-field {
-            margin-bottom: 20px;
-        }
+        .form-field { margin-bottom: 20px; }
 
         .form-label {
             display: block;
@@ -300,15 +308,8 @@
             transition: all 0.15s ease;
         }
 
-        .checkbox-row input[type="checkbox"]:hover {
-            border-color: var(--text-muted);
-        }
-
-        .checkbox-row input[type="checkbox"]:checked {
-            background: var(--danger);
-            border-color: var(--danger);
-        }
-
+        .checkbox-row input[type="checkbox"]:hover { border-color: var(--text-muted); }
+        .checkbox-row input[type="checkbox"]:checked { background: var(--danger); border-color: var(--danger); }
         .checkbox-row input[type="checkbox"]:checked::after {
             content: "";
             position: absolute;
@@ -343,15 +344,8 @@
             transition: all 0.15s ease;
         }
 
-        input[type="text"]:focus {
-            border-color: var(--text-muted);
-            background: var(--surface-2);
-        }
-
-        input[type="text"]::placeholder {
-            color: var(--text-muted);
-            letter-spacing: 2px;
-        }
+        input[type="text"]:focus { border-color: var(--text-muted); background: var(--surface-2); }
+        input[type="text"]::placeholder { color: var(--text-muted); letter-spacing: 2px; }
 
         /* ============================================================
            TURNSTILE
@@ -376,27 +370,10 @@
             line-height: 1.5;
         }
 
-        .status.show {
-            display: block;
-        }
-
-        .status.error {
-            background: rgba(255, 59, 48, 0.1);
-            color: #ff6961;
-            border: 1px solid rgba(255, 59, 48, 0.2);
-        }
-
-        .status.success {
-            background: rgba(48, 209, 88, 0.1);
-            color: #4cd964;
-            border: 1px solid rgba(48, 209, 88, 0.2);
-        }
-
-        .status.loading {
-            background: rgba(255, 255, 255, 0.05);
-            color: var(--text-secondary);
-            border: 1px solid var(--border);
-        }
+        .status.show { display: block; }
+        .status.error { background: rgba(255, 59, 48, 0.1); color: #ff6961; border: 1px solid rgba(255, 59, 48, 0.2); }
+        .status.success { background: rgba(48, 209, 88, 0.1); color: #4cd964; border: 1px solid rgba(48, 209, 88, 0.2); }
+        .status.loading { background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border: 1px solid var(--border); }
 
         /* ============================================================
            BUTTONS
@@ -417,20 +394,9 @@
             text-align: center;
         }
 
-        .btn-danger {
-            background: var(--danger);
-            color: #ffffff;
-        }
-
-        .btn-danger:hover:not(:disabled) {
-            background: var(--danger-hover);
-        }
-
-        .btn-danger:disabled {
-            background: var(--surface-2);
-            color: var(--text-muted);
-            cursor: not-allowed;
-        }
+        .btn-danger { background: var(--danger); color: #ffffff; }
+        .btn-danger:hover:not(:disabled) { background: var(--danger-hover); }
+        .btn-danger:disabled { background: var(--surface-2); color: var(--text-muted); cursor: not-allowed; }
 
         .btn-secondary {
             background: var(--surface-2);
@@ -442,10 +408,7 @@
             padding: 12px 24px;
         }
 
-        .btn-secondary:hover {
-            background: #1f1f1f;
-            border-color: var(--text-muted);
-        }
+        .btn-secondary:hover { background: #1f1f1f; border-color: var(--text-muted); }
 
         /* ============================================================
            SUCCESS SCREEN
@@ -457,9 +420,7 @@
             padding: 40px 20px;
         }
 
-        .success-screen.show {
-            display: block;
-        }
+        .success-screen.show { display: block; }
 
         .success-icon {
             width: 56px;
@@ -488,9 +449,7 @@
             margin: 0 auto 12px;
         }
 
-        .success-actions {
-            margin-top: 28px;
-        }
+        .success-actions { margin-top: 28px; }
 
         /* ============================================================
            FOOTER
@@ -506,39 +465,20 @@
             line-height: 1.7;
         }
 
-        .footer a {
-            color: var(--text-secondary);
-            text-decoration: none;
-        }
+        .footer a { color: var(--text-secondary); text-decoration: none; }
+        .footer a:hover { color: var(--text); }
 
-        .footer a:hover {
-            color: var(--text);
-        }
-
-        .hidden {
-            display: none !important;
-        }
+        .hidden { display: none !important; }
 
         /* ============================================================
            RESPONSIVE
            ============================================================ */
 
         @media (max-width: 600px) {
-            .container {
-                padding: 32px 20px 60px;
-            }
-
-            h1 {
-                font-size: 24px;
-            }
-
-            .block {
-                padding: 18px;
-            }
-
-            .delete-panel-body {
-                padding: 18px;
-            }
+            .container { padding: 32px 20px 60px; }
+            h1 { font-size: 24px; }
+            .block { padding: 18px; }
+            .delete-panel-body { padding: 18px; }
         }
     </style>
 </head>
@@ -555,6 +495,11 @@
     </header>
 
     <main class="container">
+
+        <!-- BOTÓN VOLVER AL CENTRO DE AYUDA -->
+        <a href="/features/centro-ayuda/index.html" class="btn-centro-ayuda">
+            ← Volver al Centro de Ayuda
+        </a>
 
         <div id="contentBlock">
 
