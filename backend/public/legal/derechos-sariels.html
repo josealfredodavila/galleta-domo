@@ -1,1060 +1,551 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>◈ Derechos y Usos · Sariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a;
-            --green-deep: #0F2D1A; --green-mid: #1a4a2a; --green-bright: #2a6a3a;
-            --space: #05080f; --text-primary: #f0f4f8; --text-secondary: #c0d8e8; --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55); --glass-border: rgba(212, 175, 55, 0.15);
-            --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-            --radius: 16px; --radius-xl: 24px;
-            --success: #00d68f; --danger: #ff3366; --warning: #f7d44a; --cyan: #00e5ff;
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            background: var(--space);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            background-image:
-                radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-            line-height: 1.7;
-        }
-        .app { max-width: 900px; margin: 0 auto; padding: 20px 16px 40px; position: relative; z-index: 1; }
-        
-        .header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
-            background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100;
-            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-        }
-        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
-        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
-        .logo-text span { color: var(--gold); }
-        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
-        
-        .main-nav {
-            display: flex; gap: 4px; background: rgba(15,45,26,0.3); border-radius: var(--radius);
-            padding: 4px; border: 1px solid var(--glass-border); margin: 16px 0 24px; overflow-x: auto;
-        }
-        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: all 0.3s ease; }
-        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
-        .main-nav .nav-link.active { background: rgba(212,175,55,0.12); color: var(--gold); }
-        
-        .hero {
-            text-align: center;
-            padding: 30px 20px;
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.6), rgba(8, 15, 26, 0.8));
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            margin-bottom: 24px;
-            position: relative;
-            overflow: hidden;
-        }
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 20%;
-            width: 60%; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
-            opacity: 0.5;
-        }
-        .hero .icon-grande { font-size: 3rem; margin-bottom: 12px; font-family: 'Orbitron', monospace; color: var(--gold); filter: drop-shadow(0 0 20px rgba(212,175,55,0.4)); }
-        .hero h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.6rem;
-            background: linear-gradient(135deg, #fff 30%, var(--gold) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 1px;
-            margin-bottom: 8px;
-        }
-        .hero p { color: var(--text-muted); font-size: 0.85rem; }
-        .hero .fecha { color: var(--gold); font-size: 0.65rem; margin-top: 12px; letter-spacing: 1px; font-family: 'Orbitron', monospace; }
-        
-        .resumen-ejecutivo {
-            background: linear-gradient(155deg, rgba(212, 175, 55, 0.08), rgba(15, 45, 26, 0.5));
-            border: 2px solid rgba(212, 175, 55, 0.3);
-            border-radius: var(--radius-xl);
-            padding: 26px 24px;
-            margin-bottom: 24px;
-            position: relative;
-        }
-        .resumen-ejecutivo::before {
-            content: '📋';
-            position: absolute;
-            top: -14px;
-            left: 24px;
-            background: var(--space);
-            padding: 0 10px;
-            font-size: 1.2rem;
-        }
-        .resumen-titulo {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 14px;
-            letter-spacing: 0.5px;
-        }
-        .resumen-intro {
-            color: var(--text-primary);
-            font-size: 0.88rem;
-            margin-bottom: 18px;
-            line-height: 1.6;
-            font-style: italic;
-        }
-        .resumen-item {
-            margin-bottom: 16px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.1);
-        }
-        .resumen-item:last-child { border-bottom: none; padding-bottom: 0; }
-        .resumen-item-titulo {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 0.75rem;
-            font-weight: 700;
-            letter-spacing: 1px;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }
-        .resumen-item-texto {
-            color: var(--text-secondary);
-            font-size: 0.82rem;
-            line-height: 1.65;
-        }
-        .resumen-item-texto strong { color: var(--gold); }
-        .resumen-footer {
-            margin-top: 20px;
-            padding-top: 16px;
-            border-top: 1px dashed rgba(212, 175, 55, 0.25);
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            text-align: center;
-        }
-        
-        .card-algoritmo {
-            background: linear-gradient(155deg, rgba(0, 229, 255, 0.06), rgba(15, 45, 26, 0.6));
-            border: 2px solid rgba(0, 229, 255, 0.3);
-            border-radius: var(--radius-xl);
-            padding: 26px 24px;
-            margin-bottom: 24px;
-            position: relative;
-        }
-        .card-algoritmo::before {
-            content: '🤖';
-            position: absolute;
-            top: -14px;
-            left: 24px;
-            background: var(--space);
-            padding: 0 10px;
-            font-size: 1.2rem;
-        }
-        .card-algoritmo .titulo {
-            font-family: 'Orbitron', monospace;
-            color: var(--cyan);
-            font-size: 1.05rem;
-            font-weight: 700;
-            margin-bottom: 14px;
-            letter-spacing: 0.5px;
-        }
-        .card-algoritmo p {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            margin-bottom: 12px;
-            line-height: 1.65;
-        }
-        .card-algoritmo ul {
-            list-style: none;
-            padding: 0;
-            margin: 14px 0;
-        }
-        .card-algoritmo ul li {
-            color: var(--text-secondary);
-            font-size: 0.83rem;
-            padding: 8px 0 8px 26px;
-            position: relative;
-            line-height: 1.55;
-        }
-        .card-algoritmo ul li::before {
-            content: '◈';
-            color: var(--cyan);
-            position: absolute;
-            left: 0;
-            top: 8px;
-            font-size: 0.75rem;
-        }
-        .card-algoritmo ul li strong { color: var(--cyan); }
-        
-        .frase-clave {
-            background: rgba(0, 229, 255, 0.1);
-            border: 1px dashed rgba(0, 229, 255, 0.4);
-            border-radius: 12px;
-            padding: 16px 18px;
-            margin-top: 16px;
-            font-size: 0.82rem;
-            color: var(--cyan);
-            text-align: center;
-            line-height: 1.6;
-            font-style: italic;
-        }
-        
-        .clausula-legal {
-            background: rgba(0, 214, 143, 0.06);
-            border-left: 4px solid var(--success);
-            border-radius: 12px;
-            padding: 16px 20px;
-            margin-bottom: 24px;
-        }
-        .clausula-legal .titulo {
-            color: var(--success);
-            font-weight: 700;
-            font-size: 0.8rem;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 0.5px;
-        }
-        .clausula-legal p {
-            color: var(--text-secondary);
-            font-size: 0.8rem;
-            margin: 0;
-            line-height: 1.6;
-        }
-        
-        .tabs-container {
-            display: flex;
-            gap: 6px;
-            background: rgba(15,45,26,0.4);
-            border-radius: var(--radius);
-            padding: 6px;
-            border: 1px solid var(--glass-border);
-            margin-bottom: 24px;
-            overflow-x: auto;
-        }
-        .tab-btn {
-            flex: 1;
-            min-width: 140px;
-            padding: 12px 16px;
-            border-radius: 12px;
-            border: none;
-            background: transparent;
-            color: var(--text-muted);
-            font-family: 'Inter', sans-serif;
-            font-size: 0.75rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .tab-btn:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
-        .tab-btn.active {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            box-shadow: 0 4px 20px rgba(212,175,55,0.3);
-        }
-        
-        .seccion {
-            display: none;
-            animation: fadeIn 0.4s ease;
-        }
-        .seccion.active { display: block; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .card {
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            padding: 26px 24px;
-            margin-bottom: 16px;
-            backdrop-filter: blur(12px);
-        }
-        .card-titulo {
-            font-family: 'Orbitron', monospace;
-            color: var(--gold);
-            font-size: 1.05rem;
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            letter-spacing: 0.5px;
-        }
-        .card-titulo::before {
-            content: '◈';
-            color: var(--gold);
-            font-size: 1.2rem;
-        }
-        .card h3 {
-            font-family: 'Orbitron', monospace;
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            margin: 20px 0 10px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .card h3::before {
-            content: '▸';
-            color: var(--gold);
-        }
-        .card p {
-            color: var(--text-secondary);
-            font-size: 0.85rem;
-            margin-bottom: 12px;
-        }
-        .card ul {
-            list-style: none;
-            padding: 0;
-            margin: 10px 0 16px;
-        }
-        .card ul li {
-            color: var(--text-secondary);
-            font-size: 0.83rem;
-            padding: 8px 0 8px 24px;
-            position: relative;
-            line-height: 1.6;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.05);
-        }
-        .card ul li:last-child { border-bottom: none; }
-        .card ul li::before {
-            content: '◈';
-            color: var(--gold);
-            position: absolute;
-            left: 0;
-            top: 8px;
-            font-size: 0.7rem;
-        }
-        .card ul li strong { color: var(--gold); }
-        .card ul li .check { color: var(--success); font-weight: 700; margin-right: 4px; }
-        .card ul li .cross { color: var(--danger); font-weight: 700; margin-right: 4px; }
-        
-        .alerta {
-            background: rgba(255, 51, 102, 0.08);
-            border-left: 3px solid var(--danger);
-            border-radius: 12px;
-            padding: 14px 18px;
-            margin: 16px 0;
-        }
-        .alerta .titulo {
-            color: var(--danger);
-            font-weight: 700;
-            font-size: 0.85rem;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .alerta p { color: var(--text-secondary); font-size: 0.8rem; margin: 0; }
-        
-        .info-box {
-            background: rgba(0, 214, 143, 0.06);
-            border-left: 3px solid var(--success);
-            border-radius: 12px;
-            padding: 14px 18px;
-            margin: 16px 0;
-        }
-        .info-box .titulo {
-            color: var(--success);
-            font-weight: 700;
-            font-size: 0.85rem;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .info-box p { color: var(--text-secondary); font-size: 0.8rem; margin: 0; }
-        
-        .aviso-box {
-            background: rgba(247, 212, 74, 0.06);
-            border-left: 3px solid var(--warning);
-            border-radius: 12px;
-            padding: 14px 18px;
-            margin: 16px 0;
-        }
-        .aviso-box .titulo {
-            color: var(--warning);
-            font-weight: 700;
-            font-size: 0.85rem;
-            margin-bottom: 6px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .aviso-box p { color: var(--text-secondary); font-size: 0.8rem; margin: 0; }
-        
-        .footer {
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 10px;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-        }
-        .footer .brand { color: var(--gold); font-weight: 600; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; transition: all 0.3s ease; }
-        .footer-links a:hover { color: var(--gold); }
-        
-        .btn-volver {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 10px 20px;
-            border-radius: 30px;
-            border: 1px solid var(--glass-border);
-            background: rgba(0,0,0,0.3);
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.75rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 20px;
-        }
-        .btn-volver:hover {
-            border-color: var(--gold);
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.05);
-        }
-        
-        .fecha-version {
-            text-align: center;
-            margin: 20px 0;
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            font-family: 'Space Mono', monospace;
-        }
-        
-        @media (max-width: 640px) {
-            .hero h1 { font-size: 1.2rem; }
-            .hero .icon-grande { font-size: 2.2rem; }
-            .card { padding: 20px 16px; }
-            .card-titulo { font-size: 0.9rem; }
-            .tab-btn { font-size: 0.65rem; padding: 10px 12px; min-width: 110px; }
-            .main-nav .nav-link { font-size: 0.6rem; padding: 6px 10px; }
-            .resumen-ejecutivo { padding: 20px 16px; }
-            .resumen-item-texto { font-size: 0.78rem; }
-            .card-algoritmo { padding: 20px 16px; }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Términos de Uso de Marquinhos · Sariel's</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+    body {
+        background: #05080f;
+        color: #f0f4f8;
+        font-family: -apple-system, BlinkMacSystemFont, 'Inter', system-ui, sans-serif;
+        line-height: 1.7;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 32px 20px 180px;
+    }
+    h1 { color: #D4AF37; font-size: 1.8rem; margin-bottom: 8px; }
+    h2 {
+        color: #D4AF37; font-size: 1.2rem; margin-top: 36px;
+        margin-bottom: 12px; border-bottom: 1px solid rgba(212,175,55,0.2);
+        padding-bottom: 8px;
+    }
+    h3 { color: #e8c84a; font-size: 1rem; margin-top: 24px; margin-bottom: 8px; }
+    p, li { color: #c0d8e8; font-size: 0.95rem; }
+    ul, ol { padding-left: 24px; }
+    li { margin-bottom: 6px; }
+    .fecha { color: #8aa8b8; font-size: 0.85rem; margin-bottom: 32px; }
+    .aviso {
+        background: rgba(212,175,55,0.08);
+        border-left: 4px solid #D4AF37;
+        padding: 16px 20px; border-radius: 8px; margin: 24px 0;
+    }
+    .aviso strong { color: #D4AF37; }
+    a { color: #D4AF37; }
+    strong { color: #f0f4f8; }
+
+    /* ===== BOTÓN CENTRO DE AYUDA ===== */
+    .btn-centro-ayuda {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 24px;
+        padding: 10px 20px;
+        background: rgba(212, 175, 55, 0.08);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        color: #D4AF37;
+        text-decoration: none;
+        border-radius: 40px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    .btn-centro-ayuda:hover {
+        background: rgba(212, 175, 55, 0.15);
+        border-color: #D4AF37;
+    }
+
+    .diagnostico {
+        background: #0b1220;
+        border: 1px solid rgba(138,168,184,0.35);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 0.72rem;
+        color: #8aa8b8;
+        margin-bottom: 20px;
+        white-space: pre-wrap;
+        word-break: break-word;
+    }
+
+    .acciones-terminos {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        background: linear-gradient(to top, #05080f 70%, rgba(5,8,15,0));
+        padding: 24px 20px 28px;
+        display: flex; gap: 12px;
+        justify-content: center;
+        z-index: 100;
+        backdrop-filter: blur(8px);
+    }
+    .btn-aceptar, .btn-rechazar {
+        padding: 14px 28px;
+        border-radius: 99px;
+        border: 0;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        font-family: inherit;
+        min-width: 140px;
+    }
+    .btn-aceptar {
+        background: linear-gradient(135deg, #D4AF37, #b8923a);
+        color: #05080f;
+        box-shadow: 0 8px 24px rgba(212,175,55,0.35);
+    }
+    .btn-rechazar {
+        background: transparent;
+        border: 1px solid rgba(138,168,184,0.4);
+        color: #8aa8b8;
+    }
+    .btn-aceptar:disabled {
+        opacity: 0.6; cursor: default;
+    }
+
+    .estado-toast {
+        position: fixed;
+        top: 16px; left: 50%; transform: translateX(-50%) translateY(-80px);
+        background: rgba(76,175,80,0.15);
+        border: 1px solid #4CAF50;
+        color: #A5D6A7;
+        padding: 12px 22px;
+        border-radius: 99px;
+        font-size: 0.88rem;
+        font-weight: 600;
+        z-index: 200;
+        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+        max-width: calc(100vw - 32px);
+        text-align: center;
+    }
+    .estado-toast.visible { transform: translateX(-50%) translateY(0); }
+    .estado-toast.error { background: rgba(244,67,54,0.15); border-color: #F44336; color: #FFCDD2; }
+    .estado-toast.info { background: rgba(33,150,243,0.15); border-color: #2196F3; color: #BBDEFB; }
+</style>
 </head>
 <body>
-    <div class="app">
-        <header class="header">
-            <a href="/" class="logo">
-                <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ LEGAL</span>
-            </a>
-        </header>
-        
-        <nav class="main-nav">
-            <a href="/" class="nav-link">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
-            <a href="/features/grupos/grupos.html" class="nav-link">◈ Canales</a>
-            <a href="/legal/derechos-sariels.html" class="nav-link active">◈ Derechos y Usos</a>
-        </nav>
 
-        <!-- BOTÓN VOLVER AL CENTRO DE AYUDA -->
-        <a href="/features/centro-ayuda/index.html" class="btn-volver" style="display: inline-flex; margin-bottom: 20px;">
-            ← Volver al Centro de Ayuda
-        </a>
-        
-        <div class="hero">
-            <div class="icon-grande">🦉</div>
-            <h1>Derechos y Usos</h1>
-            <p>Reglas de convivencia, propiedad intelectual y uso del ecosistema Sariel's</p>
-            <div class="fecha">VERSIÓN 1.5 · VIGENTE DESDE SEPTIEMBRE 2026</div>
-        </div>
-        
-        <div class="resumen-ejecutivo">
-            <div class="resumen-titulo">📋 Resumen Ejecutivo</div>
-            <p class="resumen-intro">Antes de utilizar Sariel's, es importante que comprendas lo siguiente:</p>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">1. Naturaleza de la Plataforma</div>
-                <div class="resumen-item-texto">
-                    <strong>Sariel's</strong> es un intermediario tecnológico operado de forma independiente. Facilitamos la interacción entre usuarios, pero no vendemos, poseemos ni garantizamos los productos, servicios o contenidos publicados por terceros.
-                </div>
-            </div>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">2. Independencia de Marcas</div>
-                <div class="resumen-item-texto">
-                    <strong>Sariel's</strong> es la plataforma tecnológica. <strong>Sevillanos</strong> es una marca independiente dedicada a la venta de productos físicos (alimentos, domos, etc.). Los productos físicos son ofrecidos por marcas independientes que utilizan Sariel's como canal de comunicación y son responsabilidad exclusiva de cada vendedor. <strong>La eliminación de una cuenta en Sariel's no afecta, limita ni condiciona la adquisición de productos de Sevillanos u otras marcas independientes.</strong>
-                </div>
-            </div>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">3. Es.stoks</div>
-                <div class="resumen-item-texto">
-                    <strong>Es.stoks</strong> son tokens de utilidad de la marca <strong>Sevillanos</strong> que residen en la wallet externa del usuario en la red Polygon. Son independientes y su tenencia no depende de <strong>Sariel's</strong>, pero su utilidad dentro de <strong>Sariel's</strong> sí está condicionada al cumplimiento de estos términos. Su adquisición es definitiva y no reembolsable.
-                </div>
-            </div>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">4. Edad Mínima</div>
-                <div class="resumen-item-texto">
-                    El acceso está restringido a personas <strong>mayores de 18 años</strong>. Al crear tu cuenta, confirmas que tienes 18 años o más. El acceso a menores de edad no está permitido.
-                </div>
-            </div>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">5. Responsabilidad del Contenido</div>
-                <div class="resumen-item-texto">
-                    Cada usuario es <strong>exclusivamente responsable</strong> del contenido que publica. Ni Sariel's ni los creadores de canales o grupos responden por las publicaciones de terceros.
-                </div>
-            </div>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">6. Contenidos No Permitidos</div>
-                <div class="resumen-item-texto">
-                    Queda prohibido publicar contenido que infrinja la ley, derechos de terceros o estos términos. Categorías restringidas incluyen: <strong>activos digitales no autorizados, artículos regulados por la ley, sustancias controladas, contenido para adultos, documentos oficiales, productos que infrinjan propiedad intelectual, prácticas fraudulentas, datos personales de terceros, contenido que involucre a menores, seres vivos, alcohol, tabaco, y cualquier otra categoría que el algoritmo de Sariel's detecte como infractora de la ley mexicana o de estos términos.</strong>
-                </div>
-            </div>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">7. Obligaciones Fiscales y Comerciales</div>
-                <div class="resumen-item-texto">
-                    Las transacciones entre usuarios son responsabilidad exclusiva de las partes. Cada vendedor es responsable del cumplimiento de sus <strong>obligaciones fiscales ante el SAT</strong> y se reserva el derecho de aceptar o rechazar cualquier transacción por motivos no discriminatorios.
-                </div>
-            </div>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">8. Propiedad Intelectual y Baja de Cuenta</div>
-                <div class="resumen-item-texto">
-                    Operamos bajo el sistema de <strong>aviso y retirada</strong>. Ante tres infracciones comprobadas, la cuenta será eliminada de forma permanente. Los Es.stoks residen en la wallet externa del usuario en la red Polygon, por lo que permanecerán en su blockchain, pero <strong>perderán toda funcionalidad dentro de Sariel's</strong>. Su adquisición es definitiva y no reembolsable. <strong>Ni Sariel's ni Sevillanos pueden recuperar la cuenta eliminada del usuario ni revertir la decisión.</strong>
-                </div>
-            </div>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">9. Cooperación con Autoridades</div>
-                <div class="resumen-item-texto">
-                    Atendemos reportes en un plazo máximo de <strong>72 horas</strong> y colaboramos con las autoridades competentes proporcionando registros de acceso, IP y logs cuando exista un posible delito.
-                </div>
-            </div>
-            
-            <div class="resumen-item">
-                <div class="resumen-item-titulo">10. Aceptación</div>
-                <div class="resumen-item-texto">
-                    Si no estás de acuerdo con estos puntos, te pedimos <strong>no utilizar la plataforma</strong>. El detalle completo se encuentra en las secciones siguientes.
-                </div>
-            </div>
-            
-            <div class="resumen-footer">
-                Esta es la versión corta. El detalle completo está abajo en 3 secciones.
-            </div>
-        </div>
-        
-        <div class="card-algoritmo">
-            <div class="titulo">🤖 Sistema de Detección Automática</div>
-            <p>Sariel's opera con un <strong style="color:var(--cyan);">algoritmo de moderación automática</strong> que analiza cada publicación antes de hacerse visible en la plataforma. Este sistema:</p>
-            <ul>
-                <li><span class="check">✓</span> Detecta <strong>palabras clave, imágenes y patrones</strong> asociados a contenido prohibido</li>
-                <li><span class="check">✓</span> <strong>Bloquea automáticamente</strong> publicaciones que coincidan con categorías restringidas</li>
-                <li><span class="check">✓</span> Marca para <strong>revisión manual</strong> los casos ambiguos</li>
-                <li><span class="check">✓</span> Aprende continuamente de nuevos patrones reportados</li>
-                <li><span class="check">✓</span> Analiza <strong>títulos, descripciones, imágenes y videos</strong></li>
-            </ul>
-            
-            <div class="info-box">
-                <div class="titulo">💡 Transparencia</div>
-                <p>El algoritmo no es perfecto. Si tu publicación fue bloqueada por error, puedes apelar mediante el sistema de reportes. Sariel's revisará tu caso en un plazo máximo de 72 horas.</p>
-            </div>
-            
-            <div class="alerta">
-                <div class="titulo">⚠️ Elusión del sistema</div>
-                <p>Intentar evadir el algoritmo (usando sinónimos, caracteres alterados, imágenes codificadas, etc.) se considera una <strong>infracción agravada</strong> y resultará en <strong>bloqueo permanente inmediato</strong>, sin derecho a apelación.</p>
-            </div>
-            
-            <div class="frase-clave">
-                "Sariel's cuenta con un algoritmo de detección automática que identifica y bloquea cualquier publicación que infrinja estos términos, <strong>incluso si la categoría no está listada explícitamente</strong>."
-            </div>
-        </div>
-        
-        <div class="clausula-legal">
-            <div class="titulo">⚖️ Naturaleza Legal de Sariel's</div>
-            <p>Sariel's actúa exclusivamente como <strong style="color:var(--gold);">intermediario tecnológico</strong> conforme al artículo 89 de la Ley Federal de Protección al Consumidor de los Estados Unidos Mexicanos. No resguarda, posee ni garantiza los productos o servicios publicados por los usuarios. La responsabilidad fiscal, legal y de entrega es exclusiva del vendedor.</p>
-        </div>
-        
-        <div class="tabs-container">
-            <button class="tab-btn active" onclick="cambiarTab('autor')" id="tab-autor">
-                ⚖️ Derechos de Autor
-            </button>
-            <button class="tab-btn" onclick="cambiarTab('uso')" id="tab-uso">
-                📜 Derechos de Uso
-            </button>
-            <button class="tab-btn" onclick="cambiarTab('marketplace')" id="tab-marketplace">
-                🛒 Marketplace
-            </button>
-        </div>
-        
-        <div class="seccion active" id="seccion-autor">
-            <div class="card">
-                <div class="card-titulo">Derechos de Autor · Sariel's</div>
-                <p>Esta sección describe qué contenido está permitido publicar en el ecosistema Sariel's (Muro, Canales/Grupos, Videos, Live, Mensajes) y las responsabilidades de cada usuario sobre el material que comparte.</p>
-            </div>
-            
-            <div class="card">
-                <h3>Contenido permitido</h3>
-                <ul>
-                    <li><span class="check">✓</span> Contenido original creado por ti</li>
-                    <li><span class="check">✓</span> Contenido con licencia libre (Creative Commons, dominio público)</li>
-                    <li><span class="check">✓</span> Contenido propio con música/efectos libres de derechos</li>
-                    <li><span class="check">✓</span> Fotos o videos de <strong>tus productos propios</strong>, siempre que <strong>no infrinjan marcas registradas</strong> ni derechos de terceros</li>
-                    <li><span class="check">✓</span> Contenido educativo, informativo o de entretenimiento propio</li>
-                    <li><span class="check">✓</span> <strong>Memes solo con contenido original o de dominio público.</strong> Si usas imágenes de terceros (personajes, marcas, celebridades), es tu responsabilidad y puede ser retirado por denuncia</li>
-                </ul>
-                
-                <h3>Contenido NO permitido</h3>
-                <p>El <strong style="color:var(--cyan);">algoritmo de Sariel's</strong> detecta y bloquea automáticamente contenido que infrinja derechos de autor o estos términos. Categorías restringidas:</p>
-                <ul>
-                    <li><span class="cross">✕</span> <strong>Contenido con copyright de terceros</strong> sin autorización expresa</li>
-                    <li><span class="cross">✕</span> Películas, series, música o videos completos de otros</li>
-                    <li><span class="cross">✕</span> Contenido descargado de otras plataformas sin permiso</li>
-                    <li><span class="cross">✕</span> <strong>Memes con imágenes de terceros</strong> (personajes, marcas, celebridades)</li>
-                    <li><span class="cross">✕</span> <strong>Contenido para adultos</strong> (sexual explícito, pornografía, nudismo)</li>
-                    <li><span class="cross">✕</span> <strong>Contenido que involucre a menores de edad</strong> en contextos íntimos o delictivos</li>
-                    <li><span class="cross">✕</span> <strong>Contenido íntimo sin consentimiento</strong> (Ley Olimpia en México)</li>
-                    <li><span class="cross">✕</span> Contenido violento, gore o que promueva el odio</li>
-                    <li><span class="cross">✕</span> <strong>Discursos de odio</strong> por género, raza, religión, orientación sexual, discapacidad o nacionalidad</li>
-                    <li><span class="cross">✕</span> <strong>Datos personales de terceros</strong> (doxxing) sin consentimiento</li>
-                    <li><span class="cross">✕</span> Acoso, bullying, amenazas o discriminación</li>
-                    <li><span class="cross">✕</span> <strong>Prácticas fraudulentas</strong> (spam, phishing, malware, estafas)</li>
-                    <li><span class="cross">✕</span> <strong>Activos digitales no autorizados</strong> (cripto, tokens, NFTs)</li>
-                    <li><span class="cross">✕</span> Cualquier otra categoría que el <strong style="color:var(--cyan);">algoritmo detecte como infractora de la ley mexicana o de estos términos</strong></li>
-                </ul>
-                
-                <div class="info-box">
-                    <div class="titulo">🤖 Filtrado automático</div>
-                    <p>El algoritmo de Sariel's revisa cada publicación antes de ser visible. Las categorías no listadas aquí quedan igualmente sujetas a revisión y retiro si infringen la ley mexicana o estos términos.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Tus derechos como creador</div>
-                <p>Cuando subes contenido original a Sariel's, tú conservas los derechos de autor. Solo otorgas a Sariel's una licencia limitada para:</p>
-                <ul>
-                    <li><span class="check">✓</span> Almacenar y mostrar tu contenido en la plataforma</li>
-                    <li><span class="check">✓</span> Permitir que otros usuarios lo vean, comenten y reaccionen</li>
-                    <li><span class="check">✓</span> Aplicar marca de agua de Sariel's (opcional, en el Muro)</li>
-                    <li><span class="check">✓</span> Generar estadísticas anónimas de uso</li>
-                </ul>
-                
-                <div class="info-box">
-                    <div class="titulo">💡 Conservas tus derechos</div>
-                    <p>En cualquier momento puedes eliminar tu contenido. Al hacerlo, Sariel's deja de tener acceso a ese archivo. Los derechos de autor siguen siendo tuyos al 100%.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Sistema de Aviso y Retirada (Notice and Takedown)</div>
-                <p>Sariel's es un <strong style="color:var(--gold);">Proveedor de Servicios en Línea</strong> conforme a la Ley Federal del Derecho de Autor de México. <strong>No monitoreamos previamente el contenido</strong> publicado por los usuarios. Actuamos bajo el sistema de aviso y retirada.</p>
-                
-                <h3>¿Cómo funciona?</h3>
-                <ul>
-                    <li><span class="check">1.</span> Recibimos una denuncia válida (con pruebas de titularidad)</li>
-                    <li><span class="check">2.</span> Retiramos el contenido en un plazo máximo de <strong>72 horas</strong></li>
-                    <li><span class="check">3.</span> Notificamos al usuario que publicó el contenido</li>
-                    <li><span class="check">4.</span> El usuario puede presentar contra-notificación con pruebas</li>
-                    <li><span class="check">5.</span> Sariel's actúa de buena fe y no es responsable del contenido eliminado</li>
-                </ul>
-                
-                <div class="alerta">
-                    <div class="titulo">⚠️ Denuncia de infracción (DMCA / LFDA)</div>
-                    <p>Si eres titular de derechos de autor y consideras que tu obra fue publicada en Sariel's sin autorización, puedes contactarnos vía correo con: 1) Descripción de la obra, 2) URL del contenido infractor, 3) Prueba de titularidad, 4) Declaración de buena fe. Actuaremos en un plazo máximo de 72 horas.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Consecuencias por infracción</div>
-                <p>Si publicas contenido que infringe derechos de autor de terceros:</p>
-                <ul>
-                    <li><span class="cross">1.</span> El contenido será eliminado sin previo aviso</li>
-                    <li><span class="cross">2.</span> Recibirás una advertencia (strike) en tu cuenta</li>
-                    <li><span class="cross">3.</span> <strong>3 strikes = cuenta eliminada permanentemente</strong></li>
-                    <li><span class="cross">4.</span> Sin reembolso de Es.stoks acumulados</li>
-                    <li><span class="cross">5.</span> En casos graves: reporte a las autoridades correspondientes</li>
-                </ul>
-                
-                <div class="alerta">
-                    <div class="titulo">⚠️ Contenido penal</div>
-                    <p>Si detectamos contenido que constituye <strong>delito penal en México</strong>, eliminaremos el contenido inmediatamente, bloquearemos la cuenta y <strong>entregaremos IP, logs y metadatos a las autoridades</strong> sin previo aviso.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Responsabilidad del usuario</div>
-                <p>Al publicar contenido en Sariel's, declaras bajo protesta decir verdad que:</p>
-                <ul>
-                    <li><span class="check">✓</span> Tienes los derechos para publicar ese contenido</li>
-                    <li><span class="check">✓</span> El contenido no infringe derechos de terceros</li>
-                    <li><span class="check">✓</span> <strong>Tienes al menos 18 años cumplidos</strong></li>
-                    <li><span class="check">✓</span> Asumes toda responsabilidad legal derivada del contenido</li>
-                </ul>
-                <p style="margin-top:12px;">Sariel's actúa como <strong style="color:var(--gold);">plataforma técnica</strong> y no se hace responsable del contenido publicado por los usuarios. Cada usuario es 100% responsable de lo que comparte.</p>
-            </div>
-        </div>
-        
-        <div class="seccion" id="seccion-uso">
-            <div class="card">
-                <div class="card-titulo">Derechos de Uso · Sariel's</div>
-                <p>Esta sección describe cómo puedes usar la plataforma, qué límites existen y qué se espera de cada usuario dentro del ecosistema Sariel's.</p>
-            </div>
-            
-            <div class="card">
-                <h3>Uso permitido de la plataforma</h3>
-                <ul>
-                    <li><span class="check">✓</span> Publicar contenido personal, creativo o informativo</li>
-                    <li><span class="check">✓</span> Crear canales/grupos para comunidades legítimas</li>
-                    <li><span class="check">✓</span> Vender productos/servicios lícitos en Marketplace (si está activo)</li>
-                    <li><span class="check">✓</span> Interactuar con otros usuarios mediante comentarios y reacciones</li>
-                    <li><span class="check">✓</span> Transmitir en vivo (Live) contenido propio</li>
-                    <li><span class="check">✓</span> Comprar/vender Es.stoks en el Muro (tokens oficiales del ecosistema)</li>
-                    <li><span class="check">✓</span> Enviar/recibir regalos con USDT/USDC en transmisiones</li>
-                </ul>
-                
-                <h3>Uso NO permitido de la plataforma</h3>
-                <p>El <strong style="color:var(--cyan);">algoritmo de Sariel's</strong> detecta y bloquea automáticamente el uso indebido de la plataforma. Categorías restringidas:</p>
-                <ul>
-                    <li><span class="cross">✕</span> Usar la plataforma para <strong>actividades ilegales</strong></li>
-                    <li><span class="cross">✕</span> Crear <strong>múltiples cuentas</strong> para evadir sanciones</li>
-                    <li><span class="cross">✕</span> <strong>Manipular métricas</strong> (vistas, likes, comentarios, donaciones)</li>
-                    <li><span class="cross">✕</span> <strong>Usar bots, scrapers o automatizaciones</strong> no autorizadas</li>
-                    <li><span class="cross">✕</span> <strong>Intentar vulnerar la plataforma</strong> (hackeo, sobrecarga, exploits)</li>
-                    <li><span class="cross">✕</span> <strong>Activos digitales no autorizados</strong> (cripto, tokens, NFTs)</li>
-                    <li><span class="cross">✕</span> <strong>Suplantar identidad</strong> de otros usuarios</li>
-                    <li><span class="cross">✕</span> <strong>Acosar, amenazar o discriminar</strong></li>
-                    <li><span class="cross">✕</span> <strong>Datos personales de terceros</strong> (doxxing)</li>
-                    <li><span class="cross">✕</span> <strong>Contenido íntimo sin consentimiento</strong> (Ley Olimpia)</li>
-                    <li><span class="cross">✕</span> <strong>Contenido para adultos</strong> sin filtro adecuado</li>
-                    <li><span class="cross">✕</span> Cualquier otra categoría que el <strong style="color:var(--cyan);">algoritmo detecte como infractora de la ley mexicana o de estos términos</strong></li>
-                </ul>
-                
-                <div class="alerta">
-                    <div class="titulo">⚠️ Consecuencias por uso indebido</div>
-                    <p>El uso de <strong>bots, scrapers o automatizaciones no autorizadas</strong> resultará en <strong>bloqueo permanente de la cuenta</strong> y <strong>eliminación del saldo de Es.stoks</strong> sin derecho a reembolso. Lo mismo aplica para manipulación de métricas o intentos de hackeo.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Cuenta de usuario</div>
-                <ul>
-                    <li><span class="check">✓</span> <strong>Debes tener 18 años cumplidos. Sin excepciones.</strong> Al registrarte declaras bajo protesta decir verdad que cumples con este requisito</li>
-                    <li><span class="check">✓</span> Una cuenta por persona (verificada por email)</li>
-                    <li><span class="check">✓</span> Eres responsable de mantener tu contraseña segura</li>
-                    <li><span class="check">✓</span> No puedes compartir tu cuenta con terceros</li>
-                    <li><span class="check">✓</span> Puedes eliminar tu cuenta en cualquier momento</li>
-                </ul>
-                
-                <div class="aviso-box">
-                    <div class="titulo">⚠️ Solo para mayores de edad</div>
-                    <p>Sariel's opera con activos digitales (USDT, USDC, Es.stoks) y por lo tanto <strong>requiere que todos los usuarios sean mayores de 18 años</strong>. No aceptamos autorizaciones de padres o tutores. Si detectamos una cuenta de menor de edad, será eliminada inmediatamente.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Canales / Grupos</div>
-                <p>Al crear un canal/grupo aceptas:</p>
-                <ul>
-                    <li><span class="check">✓</span> Ser responsable de moderar tu comunidad</li>
-                    <li><span class="check">✓</span> Cumplir con los términos de Sariel's</li>
-                    <li><span class="check">✓</span> No permitir contenido ilegal en tu grupo</li>
-                    <li><span class="check">✓</span> Activar/desactivar el Marketplace según tus reglas</li>
-                    <li><span class="check">✓</span> Eliminar contenido inapropiado que se publique</li>
-                </ul>
-                
-                <div class="aviso-box">
-                    <div class="titulo">⚖️ Sobre la responsabilidad del creador</div>
-                    <p>El creador del canal actúa como <strong>facilitador de comunidad</strong>, NO como vendedor ni intermediario. Sariel's y el creador NO son responsables de fraudes, estafas o problemas entre usuarios del grupo. Cada usuario es responsable de sus propias publicaciones y transacciones.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Regalos y donaciones en USDT/USDC</div>
-                <ul>
-                    <li><span class="check">✓</span> Puedes enviar regalos en USDT/USDC durante transmisiones</li>
-                    <li><span class="check">✓</span> Los regalos son <strong>propinas voluntarias</strong> y no reembolsables</li>
-                    <li><span class="check">✓</span> Sariel's cobra una pequeña comisión por procesamiento tecnológico</li>
-                    <li><span class="check">✓</span> El creador recibe el monto menos la comisión</li>
-                    <li><span class="cross">✕</span> No puedes usar los regalos para <strong>lavar dinero</strong></li>
-                    <li><span class="cross">✕</span> No puedes solicitar reembolsos por regalos enviados</li>
-                </ul>
-                
-                <div class="aviso-box">
-                    <div class="titulo">📋 Obligaciones fiscales por regalos</div>
-                    <p>Los regalos en USDT/USDC son <strong>propinas voluntarias</strong>. El creador que las recibe es responsable de declararlas ante el SAT de México. Sariel's actúa como <strong>procesador tecnológico</strong> y retendrá impuestos conforme a la ley mexicana cuando aplique.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Contenido prohibido por ley en México</div>
-                <p>Las siguientes conductas constituyen <strong>delito penal</strong> en México y serán atendidas de inmediato:</p>
-                <ul>
-                    <li><span class="cross">✕</span> <strong>Difundir contenido íntimo sin consentimiento</strong> (Ley Olimpia) — hasta 6 años de prisión</li>
-                    <li><span class="cross">✕</span> <strong>Doxxing</strong> — exponer datos personales con intención de dañar</li>
-                    <li><span class="cross">✕</span> <strong>Discursos de odio</strong> por género, raza, religión, orientación sexual o discapacidad</li>
-                    <li><span class="cross">✕</span> <strong>Contenido que involucre a menores de edad</strong> en contextos íntimos o delictivos</li>
-                    <li><span class="cross">✕</span> <strong>Amenazas graves</strong> o extorsión</li>
-                    <li><span class="cross">✕</span> <strong>Trata de personas</strong> o explotación</li>
-                </ul>
-                
-                <div class="alerta">
-                    <div class="titulo">⚠️ Cooperación con autoridades</div>
-                    <p>Sariel's colaborará con las autoridades mexicanas entregando <strong>IPs, logs, metadatos y cualquier información requerida</strong> en caso de investigación por delito. No avisaremos al usuario antes de hacerlo.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Propiedad intelectual de Sariel's</div>
-                <p>Todo el código, diseño, marca, logo, nombre y sistema de Sariel's es propiedad exclusiva de sus titulares. NO puedes:</p>
-                <ul>
-                    <li><span class="cross">✕</span> Copiar el código o diseño de Sariel's</li>
-                    <li><span class="cross">✕</span> Usar la marca "Sariel's" sin autorización</li>
-                    <li><span class="cross">✕</span> Revender o redistribuir la plataforma</li>
-                    <li><span class="cross">✕</span> Crear clones o versiones no autorizadas</li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="seccion" id="seccion-marketplace">
-            <div class="card">
-                <div class="card-titulo">Marketplace · Sariel's</div>
-                <p>El Marketplace es una función opcional dentro de los Canales/Grupos que permite a los miembros vender productos o servicios lícitos entre ellos. Esta sección define las reglas del Marketplace.</p>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">¿Cómo funciona el Marketplace?</div>
-                <ul>
-                    <li><span class="check">1.</span> El <strong>creador del canal</strong> debe <strong>activar el Marketplace</strong> en la configuración del grupo</li>
-                    <li><span class="check">2.</span> Una vez activado, <strong>cualquier miembro</strong> del grupo puede publicar productos/servicios</li>
-                    <li><span class="check">3.</span> Los visitantes (no miembros) <strong>NO pueden vender</strong></li>
-                    <li><span class="check">4.</span> Las publicaciones deben ser aprobadas o eliminadas por el creador</li>
-                    <li><span class="check">5.</span> El creador puede <strong>desactivar el Marketplace</strong> en cualquier momento</li>
-                </ul>
-                
-                <div class="info-box">
-                    <div class="titulo">💡 Marketplace opcional</div>
-                    <p>Si el creador NO activa el Marketplace, nadie en el grupo puede publicar productos/servicios. Esto es útil para grupos que son solo de comunidad, información o entretenimiento.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <h3>Productos/servicios permitidos</h3>
-                <ul>
-                    <li><span class="check">✓</span> Productos físicos originales (ropa, electrónicos, muebles, etc.) que <strong>no infrinjan marcas registradas</strong></li>
-                    <li><span class="check">✓</span> Servicios personales (plomería, clases, diseño, etc.)</li>
-                    <li><span class="check">✓</span> Servicios profesionales (consultoría, contabilidad, etc.)</li>
-                    <li><span class="check">✓</span> Renta de espacios, autos, herramientas, etc.</li>
-                    <li><span class="check">✓</span> <strong>Objetos personales en buen estado sin costo</strong> (NO seres vivos)</li>
-                    <li><span class="check">✓</span> Productos de tu negocio propio</li>
-                </ul>
-                
-                <h3>Productos/servicios NO permitidos</h3>
-                <p>El <strong style="color:var(--cyan);">algoritmo de Sariel's</strong> detecta y bloquea automáticamente publicaciones relacionadas con:</p>
-                <ul>
-                    <li><span class="cross">✕</span> <strong>Activos digitales no autorizados</strong> (cripto, tokens, NFTs, Es.stoks)</li>
-                    <li><span class="cross">✕</span> <strong>Artículos regulados por la ley</strong> (armas, municiones, explosivos)</li>
-                    <li><span class="cross">✕</span> <strong>Sustancias controladas</strong> (drogas, medicamentos sin receta)</li>
-                    <li><span class="cross">✕</span> <strong>Productos que infrinjan propiedad intelectual</strong> (marcas, patentes, derechos de autor)</li>
-                    <li><span class="cross">✕</span> <strong>Seres vivos</strong> (animales, plantas protegidas)</li>
-                    <li><span class="cross">✕</span> <strong>Documentos oficiales o de identidad</strong></li>
-                    <li><span class="cross">✕</span> <strong>Contenido para adultos</strong> (sexual, pornografía)</li>
-                    <li><span class="cross">✕</span> <strong>Productos falsificados o pirateados</strong></li>
-                    <li><span class="cross">✕</span> <strong>Alcohol y tabaco</strong> — prohibidos en su totalidad</li>
-                    <li><span class="cross">✕</span> <strong>Prácticas fraudulentas</strong> (estafas, engaños)</li>
-                    <li><span class="cross">✕</span> Cualquier otra categoría que el <strong style="color:var(--cyan);">algoritmo detecte como infractora de la ley mexicana o de estos términos</strong></li>
-                </ul>
-                
-                <div class="alerta">
-                    <div class="titulo">⚠️ Bloqueo automático</div>
-                    <p>Sariel's utiliza sistemas automáticos de detección que revisan cada publicación antes de ser visible. Las categorías no listadas aquí quedan igualmente sujetas a revisión y retiro si infringen la ley mexicana o estos términos. Si quieres vender tokens del ecosistema (Es.stoks), usa el <strong>Muro</strong>.</p>
-                </div>
-                
-                <div class="info-box">
-                    <div class="titulo">🤖 Filtrado automático</div>
-                    <p>El algoritmo analiza títulos, descripciones, imágenes y videos antes de publicar. Detecta patrones, sinónimos y variantes para evitar evasión.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Obligaciones fiscales del vendedor</div>
-                <p>Si publicas en el Marketplace, tú eres <strong>100% responsable</strong> de cumplir con tus obligaciones fiscales ante el <strong>Servicio de Administración Tributaria (SAT)</strong>:</p>
-                <ul>
-                    <li><span class="check">✓</span> Declarar los ingresos obtenidos por tus ventas</li>
-                    <li><span class="check">✓</span> Emitir facturas cuando el comprador lo solicite</li>
-                    <li><span class="check">✓</span> Pagar el IVA correspondiente si aplica</li>
-                    <li><span class="check">✓</span> Pagar el ISR correspondiente a tu actividad</li>
-                    <li><span class="check">✓</span> Estar dado de alta en el RFC si es actividad comercial continua</li>
-                </ul>
-                
-                <div class="aviso-box">
-                    <div class="titulo">📋 Importante</div>
-                    <p>Sariel's <strong>NO actúa como intermediario fiscal</strong>. No retiene impuestos por las ventas del Marketplace, no emite facturas y no se responsabiliza por incumplimientos fiscales de los vendedores. La responsabilidad es exclusiva del vendedor.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Responsabilidad del creador del grupo</div>
-                <p><strong style="color:var(--gold);">El creador del grupo NO es responsable</strong> de las transacciones entre usuarios. Actúa solo como facilitador de la comunidad. Sus responsabilidades son:</p>
-                <ul>
-                    <li><span class="check">✓</span> Activar o desactivar el Marketplace</li>
-                    <li><span class="check">✓</span> Eliminar publicaciones inapropiadas o ilegales</li>
-                    <li><span class="check">✓</span> Bloquear usuarios problemáticos</li>
-                    <li><span class="check">✓</span> Reportar casos graves a Sariel's</li>
-                </ul>
-                <p style="margin-top:12px;">El creador NO está obligado a:</p>
-                <ul>
-                    <li><span class="cross">✕</span> Verificar la autenticidad de cada producto</li>
-                    <li><span class="cross">✕</span> Garantizar las transacciones</li>
-                    <li><span class="cross">✕</span> Resolver disputas entre usuarios</li>
-                    <li><span class="cross">✕</span> Reembolsar dinero en caso de fraude</li>
-                </ul>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Responsabilidad del vendedor</div>
-                <p>Si publicas algo en el Marketplace, tú eres el único responsable de:</p>
-                <ul>
-                    <li><span class="cross">✕</span> La autenticidad del producto/servicio</li>
-                    <li><span class="cross">✕</span> El cumplimiento de las leyes locales</li>
-                    <li><span class="cross">✕</span> La entrega del producto/servicio</li>
-                    <li><span class="cross">✕</span> La veracidad de las fotos publicadas</li>
-                    <li><span class="cross">✕</span> El cumplimiento del precio publicado</li>
-                    <li><span class="cross">✕</span> Cualquier problema con el comprador</li>
-                    <li><span class="cross">✕</span> El pago de impuestos correspondientes</li>
-                </ul>
-                
-                <div class="alerta">
-                    <div class="titulo">⚠️ Estafas y fraudes</div>
-                    <p>Si realizas una estafa, fraude o engaño en el Marketplace, tu cuenta será eliminada permanentemente, se eliminarán tus Es.stoks sin reembolso, y serás reportado a las autoridades. Los afectados podrán iniciar acciones legales directas contra ti.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Responsabilidad del comprador</div>
-                <p>Si compras algo en el Marketplace, es tu responsabilidad:</p>
-                <ul>
-                    <li><span class="check">✓</span> Verificar al vendedor antes de pagar</li>
-                    <li><span class="check">✓</span> Revisar el producto/servicio antes de la transacción</li>
-                    <li><span class="check">✓</span> Acordar los términos con el vendedor</li>
-                    <li><span class="check">✓</span> Reportar cualquier fraude que detectes</li>
-                </ul>
-                
-                <div class="info-box">
-                    <div class="titulo">💡 Consejos de seguridad</div>
-                    <p>Recomendamos: 1) Ver el producto en persona cuando sea posible, 2) Preferir pagos seguros, 3) Desconfiar de precios muy por debajo del mercado, 4) Reportar cualquier comportamiento sospechoso.</p>
-                </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-titulo">Sistema de reportes</div>
-                <p>Si encuentras una publicación problemática, puedes:</p>
-                <ul>
-                    <li><span class="check">✓</span> Reportar la publicación directamente (menú "..." → Reportar)</li>
-                    <li><span class="check">✓</span> Reportar al administrador del grupo</li>
-                    <li><span class="check">✓</span> Bloquear al usuario problemático</li>
-                </ul>
-                <p style="margin-top:12px;">Los reportes son revisados por:</p>
-                <ul>
-                    <li><strong style="color:var(--gold);">1ro:</strong> El creador del grupo (máximo 72 horas)</li>
-                    <li><strong style="color:var(--gold);">2do:</strong> El equipo de Sariel's si es necesario</li>
-                </ul>
-            </div>
-        </div>
-        
-        <div class="card" style="margin-top: 24px; background: linear-gradient(155deg, rgba(212, 175, 55, 0.05), rgba(15, 45, 26, 0.5)); border-color: rgba(212, 175, 55, 0.3);">
-            <div class="card-titulo">Cláusulas Finales</div>
-            
-            <h3>Naturaleza legal de Sariel's</h3>
-            <p>Sariel's actúa exclusivamente como <strong style="color:var(--gold);">intermediario tecnológico</strong> conforme al artículo 89 de la Ley Federal de Protección al Consumidor de los Estados Unidos Mexicanos. No resguarda, posee ni garantiza los productos o servicios publicados por los usuarios. La responsabilidad fiscal, legal y de entrega es exclusiva del vendedor.</p>
-            
-            <h3>Independencia de marcas y entidades</h3>
-            <p>Sariel's y Sevillanos son <strong>entidades jurídicamente independientes</strong>, con titulares distintos, términos y condiciones propios, y operaciones separadas. La eliminación, suspensión o cancelación de una cuenta en Sariel's <strong>no genera, implica ni condiciona obligación alguna</strong> respecto a la venta, adquisición o entrega de productos de Sevillanos u otras marcas independientes.</p>
-            <p><strong>Ni Sariel's ni Sevillanos pueden recuperar, restaurar, reactivar o revertir la eliminación de una cuenta de usuario</strong> una vez aplicada la sanción conforme a estos términos. Los Es.stoks asociados a la cuenta permanecerán en la wallet externa del usuario en la red Polygon, pero perderán toda funcionalidad dentro del ecosistema Sariel's.</p>
-            
-            <h3>Sistema de detección automática</h3>
-            <p>Sariel's cuenta con un <strong style="color:var(--cyan);">algoritmo de detección automática</strong> que identifica y bloquea cualquier publicación que infrinja estos términos, <strong>incluso si la categoría no está listada explícitamente</strong>, siempre que el algoritmo la detecte como infractora de la ley mexicana o de estos términos. El algoritmo analiza contenido textual, visual y multimedia antes de su publicación.</p>
-            <p>Intentar evadir el sistema mediante sinónimos, caracteres alterados, imágenes codificadas u otras técnicas constituye una <strong>infracción agravada</strong> y resultará en bloqueo permanente inmediato sin derecho a apelación.</p>
-            
-            <h3>Responsabilidad por servicios de terceros</h3>
-            <p>Sariel's no se responsabiliza por:</p>
-            <ul>
-                <li><span class="cross">✕</span> Enlaces externos a otros sitios web</li>
-                <li><span class="cross">✕</span> Contenido embebido de plataformas externas</li>
-                <li><span class="cross">✕</span> Transacciones realizadas fuera de la plataforma</li>
-                <li><span class="cross">✕</span> Servicios de terceros (NOWPayments, LiveKit, Supabase, Telnyx)</li>
-                <li><span class="cross">✕</span> Cambios en las condiciones de proveedores externos</li>
-            </ul>
-            
-            <h3>Modificaciones a los términos</h3>
-            <p>Sariel's se reserva el derecho de <strong>modificar estos términos sin previo aviso</strong>. Los cambios entran en vigor al momento de su publicación en esta página. El uso continuado de la plataforma constituye <strong>aceptación tácita</strong> de los nuevos términos. Recomendamos revisar esta página periódicamente.</p>
-            
-            <h3>Ley aplicable y jurisdicción</h3>
-            <p>Estos términos se rigen por las leyes de los <strong>Estados Unidos Mexicanos</strong>. Cualquier controversia derivada del uso de la plataforma se resolverá en los <strong>tribunales competentes de Puebla, México</strong>, renunciando las partes a cualquier otro fuero que pudiera corresponderles por razón de su domicilio presente o futuro.</p>
-            
-            <h3>Aceptación de términos</h3>
-            <p>Al registrarte y usar Sariel's, declaras bajo protesta decir verdad que:</p>
-            <ul>
-                <li><span class="check">✓</span> Has leído y comprendido estos términos</li>
-                <li><span class="check">✓</span> <strong>Tienes al menos 18 años cumplidos</strong></li>
-                <li><span class="check">✓</span> Aceptas todas las condiciones aquí descritas</li>
-                <li><span class="check">✓</span> Asumes toda responsabilidad sobre tus publicaciones y transacciones</li>
-                <li><span class="check">✓</span> Eximes a Sariel's de cualquier responsabilidad derivada de tu actividad</li>
-            </ul>
-        </div>
-        
-        <div class="fecha-version">
-            📅 Última actualización: Septiembre 2026 · Versión 1.5
-        </div>
-        
-        <div style="text-align: center;">
-            <a href="/features/centro-ayuda/index.html" class="btn-volver">← Volver al Centro de Ayuda</a>
-        </div>
-        
-        <footer class="footer">
-            <span><span class="brand">◈ Sariel's</span> · Csariels.s ecosystem · WEB3</span>
-            <div class="footer-links">
-                <a href="/legal/mercado-terminos.html">◈ Términos</a>
-                <a href="/legal/mercado-privacidad.html">◈ Privacidad</a>
-                <a href="/cookies.html">◈ Cookies</a>
-                <a href="/live-terminos.html">◈ Live Términos</a>
-                <span style="opacity:0.3;">⚡ Polygon</span>
-            </div>
-        </footer>
-    </div>
-    
-    <script>
-        function cambiarTab(tab) {
-            document.querySelectorAll('.seccion').forEach(function(s) { s.classList.remove('active'); });
-            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
-            
-            document.getElementById('seccion-' + tab).classList.add('active');
-            document.getElementById('tab-' + tab).classList.add('active');
-            
-            document.querySelector('.tabs-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+<div class="estado-toast" id="estadoToast"></div>
+
+<!-- BOTÓN VOLVER AL CENTRO DE AYUDA -->
+<a href="/features/centro-ayuda/index.html" class="btn-centro-ayuda">
+    ← Volver al Centro de Ayuda
+</a>
+
+<div class="diagnostico" id="diagnostico">Diagnóstico: iniciando…</div>
+
+<h1>◈ Términos de Uso de Marquinhos</h1>
+<p class="fecha">Última actualización: 14 de octubre de 2026</p>
+
+<div class="aviso">
+    <strong>Resumen rápido:</strong> Marquinhos es un asistente de inteligencia artificial. No es humano, no es un profesional de salud, no es tu terapeuta, no es tu pareja y no reemplaza a un especialista. Puede cometer errores. Úsalo con responsabilidad.
+</div>
+
+<h2>1. Aceptación de los Términos</h2>
+<p>Al interactuar con <strong>Marquinhos</strong>, la mascota virtual y asistente de inteligencia artificial del ecosistema Sariel's (en adelante, "el Asistente"), aceptas los presentes Términos de Uso en su totalidad. Si no estás de acuerdo con alguna de las condiciones aquí descritas, debes abstenerte de utilizar el Asistente.</p>
+<p>Estos Términos complementan los Términos y Condiciones generales de Sariel's y no los sustituyen. En caso de conflicto, prevalecerán las disposiciones específicas de este documento en lo relativo al uso de la inteligencia artificial.</p>
+
+<h2>2. Naturaleza del Asistente</h2>
+<p>Marquinhos es un <strong>sistema de inteligencia artificial generativa</strong> basado en modelos de lenguaje de gran escala (LLM, por sus siglas en inglés). No es una persona, no tiene conciencia, emociones, voluntad propia ni intenciones.</p>
+<p>Sus respuestas son <strong>generadas automáticamente</strong> a partir de patrones estadísticos aprendidos de grandes volúmenes de texto. Puede producir información imprecisa, desactualizada, incompleta o incluso incorrecta ("alucinaciones"). El usuario es el único responsable de verificar cualquier información antes de tomar decisiones basadas en ella.</p>
+
+<h3>2.1 Lo que Marquinhos NO es:</h3>
+<ul>
+    <li><strong>No es un profesional de la salud.</strong> No sustituye a médicos, psicólogos, psiquiatras ni terapeutas.</li>
+    <li><strong>No es un asesor legal.</strong> No sustituye a abogados ni a profesionales del derecho.</li>
+    <li><strong>No es un asesor financiero.</strong> No sustituye a contadores, asesores fiscales ni expertos en inversiones.</li>
+    <li><strong>No es una pareja romántica.</strong> No simula relaciones afectivas, eróticas ni parasociales. Es un asistente y compañero virtual dentro del ecosistema.</li>
+    <li><strong>No tiene acceso a internet en tiempo real.</strong> Su conocimiento está limitado a la fecha de entrenamiento del modelo.</li>
+    <li><strong>No ejecuta transacciones.</strong> No puede enviar dinero, firmar contratos ni realizar operaciones financieras por ti.</li>
+</ul>
+
+<h2>3. Restricciones de Edad</h2>
+<p>El uso de Marquinhos está permitido únicamente a personas <strong>mayores de 13 años</strong>. Si eres menor de edad, debes contar con la supervisión y autorización de tu padre, madre o tutor legal.</p>
+<p>Está estrictamente prohibido que menores de 13 años interactúen con el Asistente. Si Sariel's detecta que un usuario menor de esa edad está utilizando el Asistente, podrá suspender el acceso de forma inmediata.</p>
+
+<h2>4. Usos Prohibidos</h2>
+<p>El usuario se compromete a <strong>NO utilizar</strong> a Marquinhos para:</p>
+<ul>
+    <li>Solicitar, generar o difundir contenido sexual explícito, pornográfico, erótico detallado, gore o violencia gráfica.</li>
+    <li>Fomentar relaciones parasociales románticas o afectivas con el Asistente.</li>
+    <li>Solicitar instrucciones para fabricar armas, explosivos, drogas, sustancias peligrosas o cometer delitos.</li>
+    <li>Promover, incitar o planear actos de violencia, discriminación, terrorismo o autolesión.</li>
+    <li>Reproducir, distribuir o solicitar contenido protegido por derechos de autor de manera no autorizada.</li>
+    <li>Suplantar la identidad de otras personas o entidades.</li>
+    <li>Intentar burlar, hackear, invertir la ingeniería o manipular las medidas de seguridad del Asistente.</li>
+    <li>Solicitar, compartir o almacenar datos personales sensibles de terceros sin su consentimiento.</li>
+    <li>Realizar actividades ilegales, fraudulentas o contrarias a la moral y buenas costumbres.</li>
+    <li>Automatizar consultas masivas o hacer scraping del sistema.</li>
+    <li>Utilizar el Asistente para fines comerciales no autorizados por Sariel's.</li>
+</ul>
+
+<h2>5. Protocolo de Salud Mental y Prevención de Daño</h2>
+<p>Marquinhos está diseñado para <strong>NO</strong> proporcionar instrucciones, métodos ni consejos que puedan causar daño físico o psicológico a los usuarios o a terceros.</p>
+<p>Si el Asistente detecta expresiones relacionadas con depresión, ideación suicida, autolesión o violencia, activará un <strong>protocolo de apoyo empático</strong> que incluye:</p>
+<ul>
+    <li>Validación del sentimiento del usuario sin juicios.</li>
+    <li>Sugerencia de hablar con un adulto de confianza o profesional de salud mental.</li>
+    <li>Proporcionar líneas de ayuda oficiales:
+        <ul>
+            <li><strong>México:</strong> Línea de la Vida — <strong>800 911 2000</strong></li>
+            <li><strong>Estados Unidos:</strong> Línea de Prevención del Suicidio — <strong>988</strong></li>
+        </ul>
+    </li>
+</ul>
+<p><strong>Importante:</strong> Marquinhos NO reemplaza a un profesional de salud mental. En caso de crisis, el usuario debe buscar ayuda profesional inmediata o llamar a los servicios de emergencia locales.</p>
+
+<h2>6. Propiedad Intelectual y Derechos de Autor</h2>
+<p>Marquinhos respeta los derechos de propiedad intelectual de terceros. En consecuencia:</p>
+<ul>
+    <li><strong>No reproduce</strong> letras completas de canciones, capítulos completos de libros, guiones comerciales ni código propietario de terceros de forma textual.</li>
+    <li>Cuando cita una fuente, se limita a <strong>máximo 90 caracteres continuos</strong> entrecomillados, con fines informativos o de referencia.</li>
+    <li>Ante solicitudes de reproducción de material protegido, ofrece <strong>resúmenes, explicaciones o contenido original</strong> generado con sus propias palabras.</li>
+</ul>
+<p>El usuario se compromete a no solicitar ni distribuir contenido protegido por derechos de autor a través de Marquinhos.</p>
+
+<h2>7. Privacidad y Tratamiento de Datos</h2>
+<p>Marquinhos almacena las conversaciones del usuario para dos propósitos:</p>
+<ol>
+    <li><strong>Memoria contextual:</strong> Recordar preferencias, datos y conversaciones previas para personalizar futuras interacciones.</li>
+    <li><strong>Mejora del servicio:</strong> Análisis interno para mejorar la calidad de las respuestas (sin identificación personal).</li>
+</ol>
+<p><strong>Cada usuario tiene su propia memoria aislada.</strong> Marquinhos NO mezcla información entre usuarios. La información que compartes solo es accesible desde tu propia cuenta.</p>
+<p>El usuario puede solicitar en cualquier momento la eliminación de su memoria a través de la configuración de su cuenta o contactando a soporte. Al eliminar la cuenta, todos los recuerdos asociados se borran automáticamente.</p>
+<p>Para más información sobre el tratamiento de datos, consulta nuestra <a href="/privacidad.html">Política de Privacidad</a>.</p>
+
+<h2>8. Limitación de Responsabilidad</h2>
+<p>Sariel's y Marquinhos <strong>no se hacen responsables</strong> de:</p>
+<ul>
+    <li>Decisiones tomadas por el usuario basadas en las respuestas del Asistente.</li>
+    <li>Errores, imprecisiones u omisiones en la información proporcionada.</li>
+    <li>Consecuencias derivadas del uso indebido del Asistente.</li>
+    <li>Pérdidas económicas, daños emocionales o perjuicios de cualquier naturaleza derivados del uso del Asistente.</li>
+    <li>Interrupciones del servicio, caídas del sistema o pérdida de datos por causas técnicas ajenas a Sariel's.</li>
+    <li>Contenido generado por terceros dentro del ecosistema.</li>
+</ul>
+<p>El uso de Marquinhos es <strong>bajo responsabilidad exclusiva del usuario</strong>.</p>
+
+<h2>9. Modificaciones a los Términos</h2>
+<p>Sariel's se reserva el derecho de modificar, actualizar o sustituir estos Términos de Uso en cualquier momento. Los cambios entrarán en vigor desde su publicación en esta misma página. El uso continuado del Asistente después de la publicación de cambios implica la aceptación de los nuevos Términos.</p>
+<p>Se recomienda al usuario revisar periódicamente esta página.</p>
+
+<h2>10. Suspensión y Terminación</h2>
+<p>Sariel's podrá <strong>suspender o terminar</strong> el acceso de un usuario a Marquinhos, sin previo aviso, en caso de:</p>
+<ul>
+    <li>Violación de estos Términos de Uso.</li>
+    <li>Uso indebido o abusivo del Asistente.</li>
+    <li>Sospecha fundada de actividades ilegales o contrarias a la moral.</li>
+    <li>Intento de vulnerar la seguridad del sistema.</li>
+</ul>
+
+<h2>11. Ley Aplicable y Jurisdicción</h2>
+<p>Estos Términos se rigen por las leyes de los Estados Unidos Mexicanos. Cualquier controversia derivada de su interpretación o cumplimiento será sometida a la jurisdicción de los tribunales competentes de la <strong>Heroica Puebla de Zaragoza, Puebla</strong>, renunciando las partes a cualquier otro fuero que pudiera corresponderles.</p>
+
+<h2>12. Contacto</h2>
+<p>Para dudas, aclaraciones, reportes de abuso o solicitudes relacionadas con estos Términos, puedes contactar a Sariel's a través de:</p>
+<ul>
+    <li>Correo electrónico: <a href="mailto:legal@sariels.app">legal@sariels.app</a></li>
+    <li>Sección de soporte dentro del ecosistema Sariel's</li>
+</ul>
+
+<div class="aviso">
+    <strong>Recuerda:</strong> Marquinhos es un asistente de IA en desarrollo continuo. Puede mejorar, cambiar o presentar comportamientos inesperados. Úsalo con criterio y reporta cualquier comportamiento anómalo.
+</div>
+
+<div class="acciones-terminos">
+    <button class="btn-rechazar" id="btnRechazar" type="button">No acepto</button>
+    <button class="btn-aceptar" id="btnAceptar" type="button" disabled>Cargando…</button>
+</div>
+
+<script>
+    const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+    const SUPABASE_STORAGE_KEY = 'sb-zultnlogdoajehbswlih-auth-token';
+    const TERMINOS_VERSION = '1.1';
+    const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
+    const RUTA_MENSAJES_MARQUINHOS = '/features/mensajes/mensajes.html?chat=marquinhos';
+    const RUTA_RECHAZO = '/';
+
+    let cliente = null;
+    let lineasDiag = [];
+    let estadoUI = 'iniciando';
+
+    function diag(linea) {
+        lineasDiag.push(linea);
+        if (lineasDiag.length > 14) lineasDiag.shift();
+        const el = document.getElementById('diagnostico');
+        if (el) el.textContent = lineasDiag.join('\n');
+    }
+
+    function toast(msg, tipo) {
+        const el = document.getElementById('estadoToast');
+        if (!el) return;
+        el.textContent = msg;
+        el.className = 'estado-toast visible' + (tipo ? ' ' + tipo : '');
+        clearTimeout(el._timer);
+        el._timer = setTimeout(function () { el.classList.remove('visible'); }, 4500);
+    }
+
+    function textoError(e) {
+        if (!e) return 'desconocido';
+        return e.message || e.error_description || e.details || e.hint || (typeof e === 'string' ? e : JSON.stringify(e));
+    }
+
+    function irAMensajesMarquinhos() { window.location.href = RUTA_MENSAJES_MARQUINHOS; }
+
+    function guardarLocal(fecha) {
+        try {
+            localStorage.setItem(TERMINOS_KEY, 'true');
+            localStorage.setItem('marquinhos_terminos_fecha', fecha || new Date().toISOString());
+            localStorage.setItem('marquinhos_terminos_version', TERMINOS_VERSION);
+        } catch (e) {}
+    }
+
+    function borrarLocal() {
+        try {
+            localStorage.removeItem(TERMINOS_KEY);
+            localStorage.removeItem('marquinhos_terminos_fecha');
+            localStorage.removeItem('marquinhos_terminos_version');
+        } catch (e) {}
+    }
+
+    function marcarListo() {
+        estadoUI = 'pendiente';
+        const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
+        btn.textContent = '✅ Acepto los términos';
+        btn.disabled = false;
+    }
+
+    function marcarYaAceptado() {
+        estadoUI = 'aceptado';
+        const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
+        btn.textContent = '💬 Hablar con Marquinhos';
+        btn.disabled = false;
+    }
+
+    function marcarSinSesion() {
+        estadoUI = 'sin_sesion';
+        const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
+        btn.textContent = '🔒 Inicia sesión para aceptar';
+        btn.disabled = false;
+    }
+
+    function marcarError() {
+        estadoUI = 'error';
+        const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
+        btn.textContent = '⚠️ Reintentar';
+        btn.disabled = false;
+    }
+
+    async function obtenerSesion() {
+        if (!cliente) return null;
+        try {
+            const r = await cliente.auth.getSession();
+            return (r && r.data && r.data.session) ? r.data.session : null;
+        } catch (e) {
+            diag('✗ Error leyendo sesión: ' + textoError(e));
+            return null;
         }
-    </script>
+    }
+
+    function interpretarVerificacion(data) {
+        if (data === true) return true;
+        if (data === false || data === null || data === undefined) return false;
+        if (typeof data === 'string') {
+            const s = data.trim().toLowerCase();
+            if (s === 'true') return true;
+            if (s === 'false' || s === '') return false;
+            try { return interpretarVerificacion(JSON.parse(data)); } catch (e) { return false; }
+        }
+        if (typeof data === 'object') {
+            if (data.aceptado === true || data.aceptado === 'true') return true;
+            if (data.aceptado === false || data.aceptado === 'false') return false;
+            if (data.success === true && data.aceptado !== false) return true;
+        }
+        return false;
+    }
+
+    function extraerFechaVerificacion(data) {
+        if (!data) return null;
+        if (typeof data === 'string') {
+            try { return extraerFechaVerificacion(JSON.parse(data)); } catch (e) { return null; }
+        }
+        if (typeof data === 'object') {
+            return data.fecha_aceptacion || data.fecha || null;
+        }
+        return null;
+    }
+
+    function crearCliente() {
+        if (window.supabaseClient && window.supabaseClient.auth) {
+            diag('✓ Reutilizando cliente Supabase de la app');
+            cliente = window.supabaseClient;
+            return cliente;
+        }
+        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+            return null;
+        }
+        cliente = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                persistSession: true,
+                autoRefreshToken: true,
+                detectSessionInUrl: true,
+                storageKey: SUPABASE_STORAGE_KEY,
+                flowType: 'pkce'
+            }
+        });
+        window.supabaseClient = cliente;
+        return cliente;
+    }
+
+    async function refrescarEstado() {
+        try {
+            const sesion = await obtenerSesion();
+            if (!sesion) {
+                diag('✗ Sin sesión: inicia sesión en la app Sariel\'s');
+                marcarSinSesion();
+                return;
+            }
+            diag('✓ Sesión activa (' + (sesion.user && sesion.user.id ? 'user ok' : 'user ?') + ')');
+
+            const r = await cliente.rpc('verificar_aceptacion_terminos', { p_version: TERMINOS_VERSION });
+            if (r.error) {
+                diag('✗ Error RPC verificar: ' + textoError(r.error));
+                marcarError();
+                return;
+            }
+
+            if (interpretarVerificacion(r.data)) {
+                guardarLocal(extraerFechaVerificacion(r.data));
+                diag('✓ Ya aceptaste estos términos (v' + TERMINOS_VERSION + ')');
+                marcarYaAceptado();
+            } else {
+                borrarLocal();
+                diag('• Aún no has aceptado la versión ' + TERMINOS_VERSION);
+                marcarListo();
+            }
+        } catch (e) {
+            diag('✗ Error al refrescar estado: ' + textoError(e));
+            marcarError();
+        }
+    }
+
+    async function init() {
+        try {
+            if (!crearCliente()) {
+                diag('✗ Supabase no cargó desde el CDN');
+                toast('No se cargó la librería de conexión. Revisa tu internet.', 'error');
+                marcarError();
+                return;
+            }
+            diag('✓ Conexión lista');
+
+            try {
+                cliente.auth.onAuthStateChange(function (evento, sesion) {
+                    diag('• auth: ' + evento);
+                    if (evento === 'SIGNED_OUT') {
+                        marcarSinSesion();
+                    } else if (sesion) {
+                        setTimeout(refrescarEstado, 0);
+                    }
+                });
+            } catch (e) {
+                diag('• onAuthStateChange no disponible: ' + textoError(e));
+            }
+
+            await refrescarEstado();
+        } catch (e) {
+            diag('✗ Error en init: ' + textoError(e));
+            marcarError();
+        }
+    }
+
+    async function aceptar() {
+        const btn = document.getElementById('btnAceptar');
+        if (!btn) return;
+
+        if (estadoUI === 'aceptado') {
+            irAMensajesMarquinhos();
+            return;
+        }
+
+        if (estadoUI === 'sin_sesion') {
+            toast('Necesitas iniciar sesión en Sariel\'s antes de aceptar.', 'error');
+            diag('✗ Aceptar bloqueado: sin sesión');
+            return;
+        }
+
+        if (btn.disabled) return;
+        btn.disabled = true;
+        btn.textContent = 'Guardando…';
+        diag('→ Enviando aceptación…');
+
+        try {
+            if (!cliente) throw new Error('la conexión no está lista');
+
+            const sesion = await obtenerSesion();
+            if (!sesion) {
+                diag('✗ Sesión no encontrada al aceptar');
+                toast('Tu sesión no está activa. Inicia sesión de nuevo.', 'error');
+                marcarSinSesion();
+                return;
+            }
+
+            const r = await cliente.rpc('registrar_aceptacion_terminos', {
+                p_version: TERMINOS_VERSION,
+                p_user_agent: navigator.userAgent
+            });
+
+            if (r.error) {
+                diag('✗ Error RPC registrar: ' + textoError(r.error));
+                throw r.error;
+            }
+
+            let data = r.data;
+            if (typeof data === 'string') {
+                try { data = JSON.parse(data); } catch (e) {}
+            }
+
+            const exito = !!(data && (data.success === true || data.success === 'true'));
+            if (!exito) {
+                diag('✗ Servidor no confirmó: ' + JSON.stringify(data));
+                throw new Error('el servidor no confirmó la aceptación');
+            }
+
+            guardarLocal(data.fecha_aceptacion);
+            diag('✓ Aceptación registrada y confirmada por el servidor');
+            toast('✅ Términos aceptados', 'success');
+            marcarYaAceptado();
+            setTimeout(irAMensajesMarquinhos, 900);
+        } catch (e) {
+            diag('✗ No se guardó: ' + textoError(e));
+            toast('No se pudo registrar: ' + textoError(e), 'error');
+            marcarError();
+        }
+    }
+
+    function rechazar() {
+        const ok = confirm('¿Seguro que no aceptas los términos?\n\nSin aceptarlos, no podrás hablar con Marquinhos.');
+        if (!ok) return;
+        borrarLocal();
+        window.location.href = RUTA_RECHAZO;
+    }
+
+    document.getElementById('btnAceptar').addEventListener('click', aceptar);
+    document.getElementById('btnRechazar').addEventListener('click', rechazar);
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+</script>
+
 </body>
 </html>
