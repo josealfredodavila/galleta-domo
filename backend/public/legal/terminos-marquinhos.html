@@ -37,6 +37,27 @@
     a { color: #D4AF37; }
     strong { color: #f0f4f8; }
 
+    /* ===== BOTÓN CENTRO DE AYUDA ===== */
+    .btn-centro-ayuda {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 24px;
+        padding: 10px 20px;
+        background: rgba(212, 175, 55, 0.08);
+        border: 1px solid rgba(212, 175, 55, 0.3);
+        color: #D4AF37;
+        text-decoration: none;
+        border-radius: 40px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    .btn-centro-ayuda:hover {
+        background: rgba(212, 175, 55, 0.15);
+        border-color: #D4AF37;
+    }
+
     .diagnostico {
         background: #0b1220;
         border: 1px solid rgba(138,168,184,0.35);
@@ -107,6 +128,11 @@
 <body>
 
 <div class="estado-toast" id="estadoToast"></div>
+
+<!-- BOTÓN VOLVER AL CENTRO DE AYUDA -->
+<a href="/features/centro-ayuda/index.html" class="btn-centro-ayuda">
+    ← Volver al Centro de Ayuda
+</a>
 
 <div class="diagnostico" id="diagnostico">Diagnóstico: iniciando…</div>
 
@@ -187,7 +213,7 @@
 </ol>
 <p><strong>Cada usuario tiene su propia memoria aislada.</strong> Marquinhos NO mezcla información entre usuarios. La información que compartes solo es accesible desde tu propia cuenta.</p>
 <p>El usuario puede solicitar en cualquier momento la eliminación de su memoria a través de la configuración de su cuenta o contactando a soporte. Al eliminar la cuenta, todos los recuerdos asociados se borran automáticamente.</p>
-<p>Para más información sobre el tratamiento de datos, consulta nuestra <a href="/privacidad">Política de Privacidad</a>.</p>
+<p>Para más información sobre el tratamiento de datos, consulta nuestra <a href="/privacidad.html">Política de Privacidad</a>.</p>
 
 <h2>8. Limitación de Responsabilidad</h2>
 <p>Sariel's y Marquinhos <strong>no se hacen responsables</strong> de:</p>
@@ -239,18 +265,13 @@
     const SUPABASE_STORAGE_KEY = 'sb-zultnlogdoajehbswlih-auth-token';
     const TERMINOS_VERSION = '1.1';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
-
-    // Tras aceptar: chat estático con Marquinhos.
-    // El parámetro ?chat=marquinhos indica a mensajes.html que abra la conversación con Marquinhos.
     const RUTA_MENSAJES_MARQUINHOS = '/features/mensajes/mensajes.html?chat=marquinhos';
-    // Tras rechazar: puerta de entrada pública del ecosistema.
     const RUTA_RECHAZO = '/';
 
     let cliente = null;
     let lineasDiag = [];
-    let estadoUI = 'iniciando'; // iniciando | pendiente | aceptado | sin_sesion | error
+    let estadoUI = 'iniciando';
 
-    // ── Diagnóstico visible en pantalla ─────────────────────────
     function diag(linea) {
         lineasDiag.push(linea);
         if (lineasDiag.length > 14) lineasDiag.shift();
@@ -272,9 +293,7 @@
         return e.message || e.error_description || e.details || e.hint || (typeof e === 'string' ? e : JSON.stringify(e));
     }
 
-    function irAMensajesMarquinhos() {
-        window.location.href = RUTA_MENSAJES_MARQUINHOS;
-    }
+    function irAMensajesMarquinhos() { window.location.href = RUTA_MENSAJES_MARQUINHOS; }
 
     function guardarLocal(fecha) {
         try {
@@ -292,7 +311,6 @@
         } catch (e) {}
     }
 
-    // ── Estados visuales del botón ──────────────────────────────
     function marcarListo() {
         estadoUI = 'pendiente';
         const btn = document.getElementById('btnAceptar');
@@ -301,7 +319,6 @@
         btn.disabled = false;
     }
 
-    // Ya aceptados: el botón sigue activo y lleva al chat con Marquinhos
     function marcarYaAceptado() {
         estadoUI = 'aceptado';
         const btn = document.getElementById('btnAceptar');
@@ -326,7 +343,6 @@
         btn.disabled = false;
     }
 
-    // ── Sesión ──────────────────────────────────────────────────
     async function obtenerSesion() {
         if (!cliente) return null;
         try {
@@ -338,7 +354,6 @@
         }
     }
 
-    // ── Verificación de aceptación (robusta) ────────────────────
     function interpretarVerificacion(data) {
         if (data === true) return true;
         if (data === false || data === null || data === undefined) return false;
@@ -367,19 +382,15 @@
         return null;
     }
 
-    // ── Crear/reutilizar cliente Supabase ───────────────────────
     function crearCliente() {
-        // Reutiliza cliente inyectado por la app si existe
         if (window.supabaseClient && window.supabaseClient.auth) {
             diag('✓ Reutilizando cliente Supabase de la app');
             cliente = window.supabaseClient;
             return cliente;
         }
-
         if (!window.supabase || typeof window.supabase.createClient !== 'function') {
             return null;
         }
-
         cliente = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: {
                 persistSession: true,
@@ -393,7 +404,6 @@
         return cliente;
     }
 
-    // ── Refrescar estado desde el servidor ──────────────────────
     async function refrescarEstado() {
         try {
             const sesion = await obtenerSesion();
@@ -426,7 +436,6 @@
         }
     }
 
-    // ── Inicio ──────────────────────────────────────────────────
     async function init() {
         try {
             if (!crearCliente()) {
@@ -437,14 +446,12 @@
             }
             diag('✓ Conexión lista');
 
-            // Suscripción a cambios de sesión para no dejar la UI bloqueada
             try {
                 cliente.auth.onAuthStateChange(function (evento, sesion) {
                     diag('• auth: ' + evento);
                     if (evento === 'SIGNED_OUT') {
                         marcarSinSesion();
                     } else if (sesion) {
-                        // Re-verificar sin bloquear el hilo actual
                         setTimeout(refrescarEstado, 0);
                     }
                 });
@@ -459,25 +466,21 @@
         }
     }
 
-    // ── Clic en Aceptar / Hablar con Marquinhos ─────────────────
     async function aceptar() {
         const btn = document.getElementById('btnAceptar');
         if (!btn) return;
 
-        // Ya aceptado: solo llevar al chat
         if (estadoUI === 'aceptado') {
             irAMensajesMarquinhos();
             return;
         }
 
-        // Si no hay sesión, avisar y no intentar registrar
         if (estadoUI === 'sin_sesion') {
             toast('Necesitas iniciar sesión en Sariel\'s antes de aceptar.', 'error');
             diag('✗ Aceptar bloqueado: sin sesión');
             return;
         }
 
-        // Evitar dobles clics
         if (btn.disabled) return;
         btn.disabled = true;
         btn.textContent = 'Guardando…';
@@ -504,7 +507,6 @@
                 throw r.error;
             }
 
-            // Interpretar respuesta (jsonb u objeto, o string JSON)
             let data = r.data;
             if (typeof data === 'string') {
                 try { data = JSON.parse(data); } catch (e) {}
@@ -516,7 +518,6 @@
                 throw new Error('el servidor no confirmó la aceptación');
             }
 
-            // Solo ahora guardamos local
             guardarLocal(data.fecha_aceptacion);
             diag('✓ Aceptación registrada y confirmada por el servidor');
             toast('✅ Términos aceptados', 'success');
@@ -525,7 +526,6 @@
         } catch (e) {
             diag('✗ No se guardó: ' + textoError(e));
             toast('No se pudo registrar: ' + textoError(e), 'error');
-            // Restaurar botón para permitir reintento
             marcarError();
         }
     }
