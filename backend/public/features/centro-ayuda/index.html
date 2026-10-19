@@ -225,7 +225,8 @@
 <body>
 
     <header class="help-header">
-        <button class="back-btn" onclick="window.history.back()" aria-label="Volver">
+        <!-- Botón con protección para no salir de la app si no hay historial -->
+        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/'; }" aria-label="Volver">
             <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </button>
         <div class="header-title">Centro de Ayuda</div>
@@ -281,7 +282,7 @@
             </div>
 
             <!-- Categoría 4 -->
-            <div class="category-card" data-search="seguridad prevencion administrar cuenta eliminar desactivar derechos">
+            <div class="category-card" data-search="seguridad prevencion administrar cuenta eliminar desactivar derechos autor usos sariels marketplace legal">
                 <div class="cat-icon">🛡️</div>
                 <div class="cat-title">Seguridad y Cuenta</div>
                 <div class="cat-desc">Gestiona tu identidad y protege tu acceso.</div>
