@@ -1,9 +1,8 @@
 // ================================================================
-// MENSAJES · JS v4.8 · WEB3 NEON UI
-// Cambios v4.8:
-// - Integrado Ringback (tono de espera) al iniciar llamada.
-// - Integrado evento de LiveKit para detener el tono al conectar.
-// - Aviso dinámico en UI si se pierde la conexión durante la llamada.
+// MENSAJES · JS v5.0 · WEB3 NEON UI
+// Cambios v5.0:
+// - Fix definitivo de audio con Web Audio API (sin archivos externos).
+// - El Ringback suena en el que llama y se detiene al conectar.
 // ================================================================
 
 'use strict';
@@ -51,27 +50,75 @@ const call = {
 };
 
 // ============================================================
-// NUEVO v4.8: SISTEMA DE AUDIO DE LLAMADA (RINGBACK)
+// SISTEMA DE AUDIO (WEB AUDIO API - INFALIBLE)
 // ============================================================
-const audioTonoEspera = new Audio('https://actions.google.com/sounds/v1/alarms/phone_ringing.ogg');
-audioTonoEspera.loop = true;
+let audioCtx = null;
+let audioOsciladores = [];
 let tonoReproduciendose = false;
+
+// Desbloquear el motor de audio en el primer toque/click del usuario
+document.addEventListener('click', function desbloquearAudio() {
+    if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) audioCtx = new AudioContext();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+}, { passive: true });
 
 function iniciarTonoEspera() {
     if (tonoReproduciendose) return;
-    if (!navigator.onLine) {
-        mostrarAvisoDesconexion("Sin conexión a internet. Verifica tu red.");
+    
+    if (!audioCtx) {
+        console.warn("AudioContext no inicializado. Requiere interacción del usuario.");
         return;
     }
+    
     tonoReproduciendose = true;
-    audioTonoEspera.play().catch(e => console.warn("Interacción requerida para reproducir audio:", e));
+    const now = audioCtx.currentTime;
+    
+    // Generador de tono "Ring Ring"
+    const osc1 = audioCtx.createOscillator();
+    const osc2 = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+
+    osc1.type = 'sine';
+    osc1.frequency.value = 440;
+    osc2.type = 'sine';
+    osc2.frequency.value = 480;
+
+    osc1.connect(gainNode);
+    osc2.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+
+    // Patrón de intermitencia: 2 segundos sonando, 4 segundos en silencio
+    gainNode.gain.setValueAtTime(0, now);
+    for (let i = 0; i < 50; i++) {
+        const startTime = now + (i * 6);
+        gainNode.gain.setValueAtTime(0.5, startTime); 
+        gainNode.gain.setValueAtTime(0, startTime + 2); 
+    }
+
+    osc1.start();
+    osc2.start();
+    audioOsciladores = [osc1, osc2, gainNode];
 }
 
 function detenerTonoEspera() {
+    if (!tonoReproduciendose) return;
     tonoReproduciendose = false;
-    audioTonoEspera.pause();
-    audioTonoEspera.currentTime = 0;
-    ocultarAvisoDesconexion();
+    
+    if (audioOsciladores.length > 0) {
+        try {
+            const [osc1, osc2, gainNode] = audioOsciladores;
+            gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+            osc1.stop(audioCtx.currentTime + 0.1);
+            osc2.stop(audioCtx.currentTime + 0.1);
+        } catch (e) { console.warn('Error deteniendo osciladores:', e); }
+        audioOsciladores = [];
+    }
 }
 
 function mostrarAvisoDesconexion(mensaje) {
@@ -84,9 +131,7 @@ function mostrarAvisoDesconexion(mensaje) {
 
 function ocultarAvisoDesconexion() {
     const el = $('callInfo');
-    if (el) {
-        el.style.color = ''; 
-    }
+    if (el) el.style.color = ''; 
 }
 
 window.addEventListener('offline', () => {
@@ -1636,14 +1681,17 @@ function crearRoom() {
     const LK = window.LivekitClient;
     if (!LK || !LK.Room || !LK.RoomEvent) throw new Error('LiveKit no está cargado correctamente');
     const room = new LK.Room();
+    
     room.on(LK.RoomEvent.TrackSubscribed, track => {
         if (track.kind === 'video') track.attach($('remoteVideo'));
         else if (track.kind === 'audio') { const el = track.attach(); el.dataset.lk = '1'; el.style.display = 'none'; document.body.appendChild(el); el.play?.().catch(() => {}); }
     });
-    // NUEVO: Detener tono cuando el otro usuario se conecte
+    
+    // ESTO DETIENE EL RINGRING CUANDO EL OTRO CONTESTA
     room.on(LK.RoomEvent.ParticipantConnected, () => {
         detenerTonoEspera();
     });
+    
     room.on(LK.RoomEvent.Disconnected, () => { if (!call.active) return; const id = call.id; finalizarLlamadaLocal(); terminarLlamadaServidor(id); });
     return room;
 }
@@ -1712,7 +1760,7 @@ async function startCall(tipo = 'video') {
     if (!window.LivekitClient) { toast('❌ Las llamadas no están disponibles en este dispositivo. Recarga la página.', 'error'); return; }
     const nombre = current.profile?.nombre || 'usuario';
     try {
-        iniciarTonoEspera(); // Iniciar sonido local al marcar
+        iniciarTonoEspera(); // <--- AQUI SUENA EL TIMBRE
         const d = await llamadaFetch('/api/llamadas/iniciar', { destinatarioId: current.id, tipo });
         call.id = d.llamadaId; call.roomName = d.roomName; call.tipo = tipo; call.initiator = true;
         subscribeCall(call.id);
@@ -1722,7 +1770,7 @@ async function startCall(tipo = 'video') {
         iniciarTimeoutLlamada();
     } catch (e) {
         console.error('[Llamadas] Error al iniciar:', e);
-        detenerTonoEspera(); // Detener sonido si hay error
+        detenerTonoEspera(); // <--- SE APAGA SI HAY ERROR
         toast('❌ No se pudo iniciar la llamada: ' + textoErrorLlamada(e), 'error');
         await finalizarLlamadaLocal();
     }
@@ -1808,7 +1856,7 @@ async function hangup() {
 }
 
 async function finalizarLlamadaLocal() {
-    detenerTonoEspera(); // Detener sonido al colgar/terminar
+    detenerTonoEspera(); // Apagar sonido siempre
     clearTimeout(llamadaTimeoutTimer);
     llamadaTimeoutTimer = null;
     const room = call.room;
@@ -2048,7 +2096,7 @@ async function init() {
 }
 
 // ================================================================
-// PUSH NOTIFICATIONS — SIN CAMBIOS
+// PUSH NOTIFICATIONS
 // ================================================================
 async function registrarPushYServiceWorker() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
@@ -2179,7 +2227,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.8.0',
+    version: '5.0.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
