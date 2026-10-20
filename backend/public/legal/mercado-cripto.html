@@ -1,14 +1,6 @@
-<!-- ================================================================
-     CSARIEL'S ECOSYSTEM
-     Política de Criptomonedas y Pagos Digitales del Mercado
-     Ruta: /backend/public/legal/mercado-cripto.html
-
-     Página pública: no carga auth-global.js y no enlaza al Mercado.
-     Colores: siguen el tema y acento elegido por el usuario
-     (apariencia-global.js), con respaldo en paleta oscura Csariel's.
-     ================================================================ -->
+<!-- backend/public/legal/mercado-cripto.html -->
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-public>
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -620,12 +612,12 @@
             <h1>Política de Criptomonedas y Pagos Digitales</h1>
             <p class="subtitulo">
                 Reglas claras sobre el uso de criptomonedas en el Mercado,
-                procesamiento de pagos y marco regulatorio aplicable.
+                procesamiento de pagos, Es.stoks y marco regulatorio aplicable.
             </p>
             <div class="meta-info">
                 <div>
                     <strong>Versión</strong>
-                    <span>1.0</span>
+                    <span>1.1</span>
                 </div>
                 <div>
                     <strong>Vigente desde</strong>
@@ -655,12 +647,13 @@
                 <li><a href="#art-7">Irreversibilidad de Transacciones</a></li>
                 <li><a href="#art-8">Reembolsos y Conversión a MXN</a></li>
                 <li><a href="#art-9">Fluctuaciones del Tipo de Cambio</a></li>
-                <li><a href="#art-10">Comisiones por Pago Cripto</a></li>
+                <li><a href="#art-10">Comisiones por Pago Cripto y P2P</a></li>
                 <li><a href="#art-11">Retiros y Conversión</a></li>
                 <li><a href="#art-12">Prevención de Lavado de Dinero</a></li>
                 <li><a href="#art-13">Riesgos de las Criptomonedas</a></li>
-                <li><a href="#art-14">Obligaciones Fiscales del Usuario</a></li>
-                <li><a href="#art-15">Contacto y Soporte</a></li>
+                <li><a href="#art-14">Respaldo Físico y Canje de Galletas (Es.stoks)</a></li>
+                <li><a href="#art-15">Obligaciones Fiscales del Usuario</a></li>
+                <li><a href="#art-16">Contacto y Soporte</a></li>
             </ol>
         </div>
 
@@ -695,6 +688,7 @@
                 <li><strong>Balance interno:</strong> Saldo en MXN que el Usuario mantiene en su cuenta de Csariel's.</li>
                 <li><strong>ITF:</strong> Institución de Tecnología Financiera regulada por la CNBV bajo la Ley Fintech.</li>
                 <li><strong>CNBV:</strong> Comisión Nacional Bancaria y de Valores.</li>
+                <li><strong>Es.stok:</strong> Token digital de utilidad emitido en la red Polygon por Csariel's, utilizado exclusivamente para canjes dentro del ecosistema.</li>
             </ul>
         </section>
 
@@ -908,16 +902,17 @@
         </section>
 
         <section class="seccion" id="art-10">
-            <h2><span class="num">10</span> Comisiones por Pago Cripto</h2>
+            <h2><span class="num">10</span> Comisiones por Pago Cripto y P2P</h2>
             <p><strong>10.1.</strong> Los pagos con criptomonedas tienen una comisión adicional del <strong>0.5%</strong> aplicable al Vendedor, en adición a la comisión normal del 7%.</p>
-            <p><strong>10.2.</strong> Este 0.5% adicional cubre:</p>
+            <p><strong>10.2.</strong> Adicionalmente, en las transacciones de compraventa de Es.stoks realizadas en el <strong>Muro P2P</strong> entre usuarios, Csariel's cobrará una <strong>comisión fija del 3%</strong> sobre el valor total de la transacción. Esta comisión cubre los costos de infraestructura tecnológica, mantenimiento de la red Polygon y servicios de custodia digital.</p>
+            <p><strong>10.3.</strong> Este 0.5% adicional cubre:</p>
             <ul>
                 <li>El costo de procesamiento de NOWPayments;</li>
                 <li>La volatilidad del tipo de cambio cripto/MXN;</li>
                 <li>Los costos operativos de conversión a MXN;</li>
                 <li>Los seguros y respaldos regulatorios asociados.</li>
             </ul>
-            <p><strong>10.3.</strong> Resumen de comisiones aplicables:</p>
+            <p><strong>10.4.</strong> Resumen de comisiones aplicables:</p>
 
             <table class="tabla-legal">
                 <thead>
@@ -943,10 +938,15 @@
                         <td><strong>7.5%</strong></td>
                         <td>Pagos con criptomonedas</td>
                     </tr>
+                    <tr>
+                        <td>Comisión P2P (Es.stoks)</td>
+                        <td>3%</td>
+                        <td>Ventas en el Muro P2P</td>
+                    </tr>
                 </tbody>
             </table>
 
-            <p><strong>10.4.</strong> El Comprador no paga comisión adicional por elegir cripto. La comisión es absorbida por el Vendedor.</p>
+            <p><strong>10.5.</strong> El Comprador no paga comisión adicional por elegir cripto. La comisión es absorbida por el Vendedor.</p>
         </section>
 
         <section class="seccion" id="art-11">
@@ -1083,30 +1083,60 @@
         </section>
 
         <section class="seccion" id="art-14">
-            <h2><span class="num">14</span> Obligaciones Fiscales del Usuario</h2>
-            <p><strong>14.1.</strong> El Usuario es <strong>responsable</strong> de cumplir con sus obligaciones fiscales conforme al <strong>Servicio de Administración Tributaria (SAT)</strong>.</p>
-            <p><strong>14.2.</strong> Csariel's no emite facturas (CFDI) por transacciones con criptomonedas, ya que estas no constituyen ingresos directos para Csariel's.</p>
-            <p><strong>14.3.</strong> El Vendedor que reciba pagos en cripto-convertidos a MXN debe:</p>
+            <h2><span class="num">14</span> Respaldo Físico y Canje de Galletas (Es.stoks)</h2>
+            <div class="aviso success">
+                <strong>Naturaleza del Es.stok y respaldo físico</strong>
+                Cada Es.stok emitido en Csariel's está respaldado por la venta y entrega de un producto físico real (domo de galleta). La emisión de nuevos tokens está estrictamente limitada a la compra física del producto.
+            </div>
+            <p><strong>14.1.</strong> Csariel's no emite tokens de la nada ni promete rendimientos financieros. El valor del token en el Muro P2P es meramente referencial y depende de la oferta y demanda de los usuarios, no de una garantía de Csariel's.</p>
+            
+            <h3>Reglas de Canje del NFT</h3>
+            <p><strong>14.2.</strong> Al acumular 12 Es.stoks, el usuario podrá canjearlos por un NFT exclusivo. Este NFT otorga el derecho a recibir un domo de galleta físico. Las reglas son:</p>
+            <ul>
+                <li>El NFT tiene una <strong>vigencia estricta de 30 días naturales</strong> a partir de su emisión para ser canjeado.</li>
+                <li>Una vez expirado el plazo, el NFT pierde su valor de canje y no podrá ser reclamado.</li>
+                <li>El usuario acepta esta vigencia al momento de comprar el domo de galletas.</li>
+                <li>Csariel's no se hace responsable por NFTs no canjeados dentro del plazo.</li>
+            </ul>
+
+            <h3>Transferencia de NFTs</h3>
+            <p><strong>14.3.</strong> Durante los primeros 30 días, el NFT no podrá ser vendido, pero sí regalado a otro usuario. Una vez transcurrido el periodo de promoción (30 días), el NFT perderá su valor de canje y no podrá ser vendido en el Muro P2P. Los Es.stoks, por su parte, podrán ser vendidos en el Muro P2P en cualquier momento.</p>
+
+            <h3>Comisión por Infraestructura en el Muro P2P</h3>
+            <p><strong>14.4.</strong> Csariel's cobra una comisión del <strong>3%</strong> sobre el valor total de cada transacción realizada en el Muro P2P. Esta comisión es por el uso de la infraestructura tecnológica, el mantenimiento de la red y los servicios de custodia digital. La comisión será descontada automáticamente al momento de concretarse la venta.</p>
+
+            <h3>Separación de Responsabilidad</h3>
+            <div class="aviso warning">
+                <strong>Importante</strong>
+                La entrega del domo de galleta físico es responsabilidad exclusiva de la empresa productora y distribuidora de alimentos (en adelante, "La Panadería"). Csariel's actúa únicamente como plataforma tecnológica que facilita la emisión, transferencia y canje de los tokens y NFTs. Csariel's no procesa alimentos ni se hace responsable por alergias, estado del producto o retrasos en la entrega por parte de La Panadería.
+            </div>
+        </section>
+
+        <section class="seccion" id="art-15">
+            <h2><span class="num">15</span> Obligaciones Fiscales del Usuario</h2>
+            <p><strong>15.1.</strong> El Usuario es <strong>responsable</strong> de cumplir con sus obligaciones fiscales conforme al <strong>Servicio de Administración Tributaria (SAT)</strong>.</p>
+            <p><strong>15.2.</strong> Csariel's no emite facturas (CFDI) por transacciones con criptomonedas, ya que estas no constituyen ingresos directos para Csariel's.</p>
+            <p><strong>15.3.</strong> El Vendedor que reciba pagos en cripto-convertidos a MXN debe:</p>
             <ul>
                 <li>Registrar sus ingresos conforme al régimen fiscal aplicable;</li>
                 <li>Emitir CFDI a sus clientes cuando lo requieran;</li>
                 <li>Pagar los impuestos correspondientes;</li>
                 <li>Declarar sus operaciones conforme al SAT.</li>
             </ul>
-            <p><strong>14.4.</strong> Csariel's podrá proporcionar comprobantes internos de las transacciones, pero estos no sustituyen los comprobantes fiscales oficiales.</p>
-            <p><strong>14.5.</strong> Csariel's no se hace responsable por sanciones fiscales derivadas del incumplimiento del Usuario.</p>
+            <p><strong>15.4.</strong> Csariel's podrá proporcionar comprobantes internos de las transacciones, pero estos no sustituyen los comprobantes fiscales oficiales.</p>
+            <p><strong>15.5.</strong> Csariel's no se hace responsable por sanciones fiscales derivadas del incumplimiento del Usuario.</p>
         </section>
 
-        <section class="seccion" id="art-15">
-            <h2><span class="num">15</span> Contacto y Soporte</h2>
-            <p><strong>15.1.</strong> Para dudas sobre pagos con criptomonedas, contacta a:</p>
+        <section class="seccion" id="art-16">
+            <h2><span class="num">16</span> Contacto y Soporte</h2>
+            <p><strong>16.1.</strong> Para dudas sobre pagos con criptomonedas, contacta a:</p>
             <ul>
-                <li>El equipo de soporte de Csariel's (correo indicado abajo);</li>
+                <li>El equipo de soporte de Csariel's: <a href="mailto:soporte@csariels.com">soporte@csariels.com</a>;</li>
                 <li>Desde el panel del Mercado en la sección "Ayuda";</li>
                 <li>Por WhatsApp al número de soporte.</li>
             </ul>
-            <p><strong>15.2.</strong> Si tienes problemas con NOWPayments, puedes contactarlos directamente a través de su sitio oficial.</p>
-            <p><strong>15.3.</strong> Si no estás satisfecho con la respuesta, puedes acudir a:</p>
+            <p><strong>16.2.</strong> Si tienes problemas con NOWPayments, puedes contactarlos directamente a través de su sitio oficial.</p>
+            <p><strong>16.3.</strong> Si no estás satisfecho con la respuesta, puedes acudir a:</p>
             <div class="aviso">
                 <strong>Autoridades competentes</strong>
                 <strong>PROFECO</strong> (consumo): <a href="https://www.gob.mx/profeco" target="_blank" rel="noopener">gob.mx/profeco</a><br>
@@ -1123,7 +1153,7 @@
             </div>
             <div class="fila">
                 <span class="lbl">Correo de soporte</span>
-                <span class="val pendiente">[Pendiente de configuración]</span>
+                <span class="val">soporte@csariels.com</span>
             </div>
             <div class="fila">
                 <span class="lbl">WhatsApp de soporte</span>
