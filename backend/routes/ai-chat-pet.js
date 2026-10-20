@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.5)
+   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v6.0)
    ================================================================
    Endpoint: POST /api/ai/chat-pet
    Modelo:   Groq (openai/gpt-oss-120b)
@@ -9,14 +9,12 @@
    ✅ v5.0 — Búsqueda web en tiempo real
    ✅ v5.1 — System prompt mejorado para búsqueda web
    ✅ v5.2 — Música con Deezer, crisis reforzada, historial
-             combinado, límites por modo, búsqueda solo si aplica.
-   ✅ v5.3 — Regex de música con \b, no borra artículos globales,
-             modo explícito, límites y origen consistentes.
-   ✅ v5.4 — Disparador de música anclado y nota de canción no
-             encontrada.
-   ✅ v5.5 — Música: hasta 3 resultados con enlace a Deezer, sin
-             reproducción de audio dentro de la app. El prompt
-             indica que las canciones se abren en Deezer.
+   ✅ v5.3 — Regex de música con \b
+   ✅ v5.4 — Disparador de música anclado
+   ✅ v5.5 — Música: hasta 3 resultados con enlace a Deezer
+   ✅ v6.0 — Eventos con Ticketmaster Discovery (solo lectura).
+             Tarjetas con enlace oficial. Sin compra, sin QR,
+             sin reventa. La compra ocurre en Ticketmaster.
 ================================================================ */
 
 'use strict';
@@ -34,6 +32,7 @@ const { detectarIntencion } = require('../services/detector-intencion');
 ================================================================ */
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const TICKETMASTER_API_KEY = process.env.TICKETMASTER_API_KEY;
 
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
@@ -50,6 +49,10 @@ const PRESUPUESTO_BUSQUEDA_VOZ_MS = 3500;
 
 const DEEZER_TIMEOUT_MS = 8000;
 const DEEZER_MAX_RESULTADOS = 3;
+
+const TICKETMASTER_ENDPOINT = 'https://app.ticketmaster.com/discovery/v2/events.json';
+const TICKETMASTER_TIMEOUT_MS = 8000;
+const TICKETMASTER_MAX_RESULTADOS = 3;
 
 /* ================================================================
    AUTENTICACIÓN
@@ -152,7 +155,7 @@ SÍ puedes:
 `.trim();
 
 /* ================================================================
-   PERSONALIDAD DE MARQUINHOS — v5.5
+   PERSONALIDAD DE MARQUINHOS — v6.0
 ================================================================ */
 
 const SYSTEM_PROMPT = `
@@ -224,6 +227,14 @@ EJEMPLO MALO (nunca hacer esto):
 Si el usuario te pide música y el sistema te entrega un bloque [MÚSICA ENCONTRADA], responde con naturalidad que encontraste esas canciones y que puede tocar la que quiera para abrirla en Deezer. Por ejemplo: "¡Va! Encontré estas canciones de Bad Bunny. Toca la que quieras para abrirla en Deezer." Nunca digas que estás reproduciendo la música, porque la reproducción ocurre en Deezer, no en Csariel's.
 
 Si recibes el bloque [MÚSICA NO ENCONTRADA], di algo como: "No encontré esa canción, ¿me la repites o me das otro nombre?" No inventes canciones ni artistas.
+
+───────────────────────────────────────────────────────────────
+🎟️ EVENTOS — HABILIDAD ESPECIAL (v6.0)
+───────────────────────────────────────────────────────────────
+
+Si el usuario pregunta por conciertos, deportes o espectáculos y el sistema te entrega un bloque [EVENTOS ENCONTRADOS], responde con naturalidad que encontraste esos eventos y que puede tocar "Ver en Ticketmaster" para revisar fechas, precios y comprar directamente en Ticketmaster. Nunca digas que compraste boletos ni que los reservaste: Csariel's no vende boletos desde el chat.
+
+Si recibes el bloque [EVENTOS NO ENCONTRADOS], di algo como: "No encontré eventos con ese nombre, ¿me das otro artista, equipo o ciudad?" No inventes fechas, lugares ni precios.
 
 FORMATO:
 Texto plano conversacional. Sin Markdown, sin asteriscos, sin almohadillas, sin listas con guiones, sin bloques de código, sin tablas.
@@ -386,8 +397,6 @@ async function cargarHistorial(usuarioId) {
 
 /* ================================================================
    DETECCIÓN DE MÚSICA Y BÚSQUEDA EN DEEZER
-   Devuelve hasta 3 canciones con enlace a Deezer. No se reproduce
-   audio dentro de la app.
 ================================================================ */
 
 async function buscarMusicaDeezer(query) {
@@ -420,10 +429,8 @@ async function buscarMusicaDeezer(query) {
 function detectarMusica(mensaje) {
     const original = String(mensaje || '');
 
-    // a) Si contiene "?" o "¿", no es un comando de música.
     if (/[?¿]/.test(original)) return null;
 
-    // b) Si empieza con una palabra interrogativa, no es un comando de música.
     const normalizado = original
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
@@ -434,7 +441,6 @@ function detectarMusica(mensaje) {
         return null;
     }
 
-    // c) El disparador debe aparecer dentro de las primeras 4 palabras del mensaje.
     const DISPARADORES = [
         'pon musica', 'ponme musica', 'ponme una cancion',
         'pon una cancion', 'pon la cancion', 'ponme una rolita',
@@ -462,6 +468,142 @@ function detectarMusica(mensaje) {
     limpio = limpio.replace(/^(?:de|la)\s+/i, '').trim();
 
     return limpio || null;
+}
+
+/* ================================================================
+   DETECCIÓN DE EVENTOS (CONCIERTOS, DEPORTES, TEATRO)
+   Solo intención de búsqueda. Nunca de compra.
+================================================================ */
+
+const DISPARADORES_EVENTOS = [
+    'buscar evento', 'buscame evento', 'busca evento',
+    'eventos de', 'evento de', 'conciertos de', 'concierto de',
+    'partidos de', 'partido de', 'obras de teatro', 'obra de teatro',
+    'boletos de', 'boleto de', 'funciones de', 'funcion de',
+    'que conciertos', 'que eventos', 'hay conciertos', 'hay eventos',
+    'cuando toca', 'cuando juega', 'cuando se presenta'
+];
+
+const PALABRAS_EVENTO_SUELTAS = /\b(concierto|conciertos|partido|partidos|teatro|obra|funcion|funciones|evento|eventos|boleto|boletos|gira|festival)\b/;
+
+function detectarEvento(mensaje) {
+    const original = String(mensaje || '');
+    const normalizado = original
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!normalizado) return null;
+
+    // Las intenciones de compra, consulta de boletos propios o
+    // cancelación NO se procesan aquí: no existen en Fase 1.
+    if (/\b(comprar|compra|cancelar|cancela|revender|reventa|mis boletos|mis compras|pagar|reservar)\b/.test(normalizado)) {
+        return null;
+    }
+
+    const coincideDisparador = DISPARADORES_EVENTOS.some(d => normalizado.indexOf(d) !== -1);
+    const coincidePalabra = PALABRAS_EVENTO_SUELTAS.test(normalizado);
+
+    if (!coincideDisparador && !coincidePalabra) return null;
+
+    // Extrae el término de búsqueda quitando el disparador y las palabras genéricas.
+    let termino = original
+        .replace(/[¿?¡!]/g, ' ')
+        .replace(/\b(busca|buscame|buscar|quiero|dime|dame|muestrame|hay|que|cuales|cual|son|los|las|el|la|de|del|en|para|evento|eventos|concierto|conciertos|partido|partidos|obra|obras|teatro|funcion|funciones|boleto|boletos|gira|festival|cuando|toca|juega|se|presenta)\b/gi, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    if (!termino || termino.length < 2) return null;
+
+    return termino;
+}
+
+/* ================================================================
+   TICKETMASTER DISCOVERY (SOLO LECTURA)
+   Normaliza los campos y descarta cualquier enlace que no sea
+   de ticketmaster.com. No guarda resultados en la base de datos.
+================================================================ */
+
+function urlOficialSegura(url) {
+    if (typeof url !== 'string') return '';
+    try {
+        const u = new URL(url);
+        const host = u.hostname.toLowerCase();
+        const permitido = host === 'ticketmaster.com' || host.endsWith('.ticketmaster.com');
+        return (u.protocol === 'https:' && permitido) ? u.toString() : '';
+    } catch (e) {
+        return '';
+    }
+}
+
+function imagenSegura(url) {
+    if (typeof url !== 'string') return '';
+    return /^https:\/\//.test(url) ? url : '';
+}
+
+function formatearPrecio(rango) {
+    if (!rango || typeof rango.min !== 'number') return null;
+    const moneda = rango.currency || 'MXN';
+    if (typeof rango.max === 'number' && rango.max !== rango.min) {
+        return `${moneda} ${rango.min} a ${rango.max}`;
+    }
+    return `${moneda} ${rango.min}`;
+}
+
+async function buscarEventosTicketmaster(termino) {
+    if (!TICKETMASTER_API_KEY || !termino) return null;
+
+    try {
+        const resp = await axios.get(TICKETMASTER_ENDPOINT, {
+            timeout: TICKETMASTER_TIMEOUT_MS,
+            params: {
+                apikey: TICKETMASTER_API_KEY,
+                keyword: termino.slice(0, 100),
+                size: TICKETMASTER_MAX_RESULTADOS,
+                sort: 'date,asc',
+                locale: 'es-mx'
+            }
+        });
+
+        const lista = resp.data && resp.data._embedded && Array.isArray(resp.data._embedded.events)
+            ? resp.data._embedded.events
+            : [];
+
+        if (!lista.length) return null;
+
+        const eventos = lista
+            .map(ev => {
+                const enlace = urlOficialSegura(ev.url);
+                if (!enlace) return null;
+
+                const venue = ev._embedded && Array.isArray(ev._embedded.venues) ? ev._embedded.venues[0] : null;
+                const imagen = Array.isArray(ev.images)
+                    ? (ev.images.find(i => i.ratio === '16_9' && i.width >= 500) || ev.images[0])
+                    : null;
+
+                const lugarPartes = [];
+                if (venue && venue.name) lugarPartes.push(venue.name);
+                if (venue && venue.city && venue.city.name) lugarPartes.push(venue.city.name);
+
+                return {
+                    titulo: ev.name || '',
+                    fecha: ev.dates && ev.dates.start ? ev.dates.start.localDate || '' : '',
+                    hora: ev.dates && ev.dates.start ? ev.dates.start.localTime || '' : '',
+                    lugar: lugarPartes.join(', '),
+                    imagen: imagenSegura(imagen ? imagen.url : ''),
+                    precio: formatearPrecio(Array.isArray(ev.priceRanges) ? ev.priceRanges[0] : null),
+                    enlace: enlace
+                };
+            })
+            .filter(Boolean)
+            .filter(ev => ev.titulo);
+
+        return eventos.length ? eventos : null;
+    } catch (e) {
+        console.warn('[chat-pet] Ticketmaster error:', e.message);
+        return null;
+    }
 }
 
 /* ================================================================
@@ -537,7 +679,8 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
                 limitado: true,
                 motivo: permiso.motivo,
                 plan: permiso.plan || null,
-                musica: null
+                musica: null,
+                eventos: null
             });
         }
 
@@ -556,7 +699,8 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
                 plan: permiso.plan || null,
                 restantes: permiso.restantes ?? null,
                 busqueda: 'no_necesaria',
-                musica: null
+                musica: null,
+                eventos: null
             });
         }
 
@@ -576,6 +720,21 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
         }
 
         /* =====================================================
+           EVENTOS: detección + Ticketmaster (solo lectura)
+        ===================================================== */
+        let eventosEncontrados = null;
+        let notaEventosNoEncontrados = null;
+        const terminoEvento = !queryMusica ? detectarEvento(mensajeLimpio) : null;
+
+        if (terminoEvento) {
+            eventosEncontrados = await buscarEventosTicketmaster(terminoEvento);
+            if (!eventosEncontrados) {
+                notaEventosNoEncontrados =
+                    `[EVENTOS NO ENCONTRADOS] El usuario buscó «${terminoEvento}» pero no hay eventos disponibles en este momento. Dilo con naturalidad, sin inventar fechas, lugares ni precios, y pide otro artista, equipo o ciudad.`;
+            }
+        }
+
+        /* =====================================================
            BÚSQUEDA WEB
         ===================================================== */
         const intencion = detectarIntencion(mensajeLimpio);
@@ -588,6 +747,7 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             intencion.tipo !== 'ninguna' &&
             palabras >= 4 &&
             !queryMusica &&
+            !terminoEvento &&
             !esMensajeDeCrisis(mensajeLimpio)
         ) {
             busquedaEjecutada = true;
@@ -688,6 +848,29 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             });
         }
 
+        if (eventosEncontrados) {
+            const lista = eventosEncontrados
+                .map(ev => {
+                    const partes = [ev.titulo];
+                    if (ev.fecha) partes.push(ev.fecha);
+                    if (ev.lugar) partes.push(ev.lugar);
+                    if (ev.precio) partes.push(ev.precio);
+                    return partes.join(' · ');
+                })
+                .join('; ');
+            mensajes.push({
+                role: 'system',
+                content: `[EVENTOS ENCONTRADOS] Resultados: ${lista}. Indica que encontraste estos eventos y que puede tocar "Ver en Ticketmaster" para revisar fechas, precios y comprar directamente allí. No digas que compraste ni reservaste boletos.`
+            });
+        }
+
+        if (notaEventosNoEncontrados) {
+            mensajes.push({
+                role: 'system',
+                content: notaEventosNoEncontrados
+            });
+        }
+
         mensajes.push(...historialFinal);
         mensajes.push({ role: 'user', content: mensajeLimpio });
 
@@ -759,6 +942,7 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             memoria: memoriaLimpia ? 'sí' : 'no',
             modo: origen,
             musica: musicaEncontrada ? musicaEncontrada.length : 0,
+            eventos: eventosEncontrados ? eventosEncontrados.length : 0,
             busqueda: busquedaEjecutada ? (contextoWeb ? 'con_contexto' : 'sin_resultado') : 'no_necesaria'
         });
 
@@ -768,7 +952,8 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             plan: permiso.plan || null,
             restantes: permiso.restantes ?? null,
             busqueda: busquedaEjecutada ? (contextoWeb ? 'ok' : 'sin_resultado') : 'no_necesaria',
-            musica: musicaEncontrada || null
+            musica: musicaEncontrada || null,
+            eventos: eventosEncontrados || null
         });
 
     } catch (error) {
