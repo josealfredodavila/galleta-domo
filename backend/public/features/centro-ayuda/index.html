@@ -7,7 +7,8 @@
     <title>Centro de Ayuda · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230B0F17' stroke='%2322C55E' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%2322C55E' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
-    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+    <!-- CAMBIO: v=7 → v=8 para forzar recarga del script v3.4 -->
+    <script src="/features/shared/js/apariencia-global.js?v=8" defer></script>
     <style>
         :root {
             --bg-main: #000000;
@@ -23,6 +24,7 @@
             --font-title: 'Orbitron', monospace;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
             background-color: var(--bg-main);
             color: var(--text-primary);
@@ -33,6 +35,22 @@
             display: flex;
             flex-direction: column;
         }
+
+        /* ==========================================================
+           REGLA DE SEGURIDAD: Ocultar cualquier mascota inyectada
+           por apariencia-global.js en la vista del Centro de Ayuda
+           ========================================================== */
+        #marquinhos-pet-container, 
+        .marquinhos-pet, 
+        #marquinhos-pet-script,
+        #capitan-maiz-pet-container,
+        #itlasuhua-pet-container { 
+            display: none !important; 
+            visibility: hidden !important; 
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
         .help-header {
             position: sticky;
             top: 0;
