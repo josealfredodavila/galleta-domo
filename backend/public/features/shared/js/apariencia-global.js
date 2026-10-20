@@ -1,5 +1,5 @@
 /* ================================================================
-   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.3
+   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.4
    Archivo: backend/public/features/js/apariencia-global.js
 
    Conserva sin cambios:
@@ -7,6 +7,11 @@
    - Tema, color de acento y tamaño de fuente (80–140 %).
    - window.SarielApariencia y todas sus funciones públicas.
    - Carga exclusiva de la mascota activa.
+
+   v3.4:
+   - Se agregó '/centro-ayuda' a RUTAS_EXCLUIDAS_BASE para evitar
+     que las mascotas (Marquinhos, Maíz, Itlasuhua) se inyecten
+     en la página del Centro de Ayuda.
 
    v3.3:
    - Nuevo cuarto tema "bn" (Blanco y negro, estilo X en negro).
@@ -757,7 +762,8 @@
         '/info',
         '/live-terminos',
         '/eliminar-cuenta',
-        '/actualizar-contrasena'
+        '/actualizar-contrasena',
+        '/centro-ayuda' /* <-- NUEVA RUTA: Evita inyectar mascotas aquí */
     ];
 
     function puedeInyectarMascota(rutaTienda) {
@@ -896,7 +902,7 @@
     })();
 
     console.log(
-        '[Apariencia] Módulo global v3.3 cargado. Mascota activa:',
+        '[Apariencia] Módulo global v3.4 cargado. Mascota activa:',
         getMascotaActiva()
     );
 })();
