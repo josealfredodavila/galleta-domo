@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.3)
+   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.4)
    ================================================================
    Endpoint: POST /api/ai/chat-pet
    Modelo:   Groq (openai/gpt-oss-120b)
@@ -12,6 +12,9 @@
              combinado, límites por modo, búsqueda solo si aplica.
    ✅ v5.3 — Regex de música con \b, no borra artículos globales,
              modo explícito, límites y origen consistentes.
+   ✅ v5.4 — Disparador de música anclado (sin interrogación,
+             sin palabra interrogativa inicial, dentro de las
+             primeras 4 palabras) y nota de canción no encontrada.
 ================================================================ */
 
 'use strict';
@@ -146,7 +149,7 @@ SÍ puedes:
 `.trim();
 
 /* ================================================================
-   PERSONALIDAD DE MARQUINHOS — v5.2
+   PERSONALIDAD DE MARQUINHOS — v5.4
 ================================================================ */
 
 const SYSTEM_PROMPT = `
@@ -212,7 +215,7 @@ EJEMPLO MALO (nunca hacer esto):
 "No tengo acceso a datos en tiempo real ahora mismo."
 
 ───────────────────────────────────────────────────────────────
-🎵 MÚSICA — HABILIDAD ESPECIAL (v5.2)
+🎵 MÚSICA — HABILIDAD ESPECIAL (v5.4)
 ───────────────────────────────────────────────────────────────
 
 Si el usuario te pide poner música, reproducir una canción o escuchar algo, y el sistema te entrega un bloque [MÚSICA REPRODUCIENDO], confirma con alegría y naturalidad que estás reproduciendo esa canción. Por ejemplo: "¡Va! Te pongo algo de Bad Bunny." o "¡Listo! Suena fuerte."
@@ -412,13 +415,22 @@ async function buscarMusicaDeezer(query) {
 
 function detectarMusica(mensaje) {
     const original = String(mensaje || '');
+
+    // a) Si contiene "?" o "¿", no es un comando de música.
+    if (/[?¿]/.test(original)) return null;
+
+    // b) Si empieza con una palabra interrogativa, no es un comando de música.
     const normalizado = original
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .toLowerCase()
         .replace(/\s+/g, ' ')
         .trim();
 
-    // Lista de disparadores con \b al inicio y al final
+    if (/^(como|que|cuando|donde|por|quien|cual)\b/.test(normalizado)) {
+        return null;
+    }
+
+    // c) El disparador debe aparecer dentro de las primeras 4 palabras del mensaje.
     const DISPARADORES = [
         'pon musica', 'ponme musica', 'ponme una cancion',
         'pon una cancion', 'pon la cancion', 'ponme una rolita',
@@ -431,7 +443,11 @@ function detectarMusica(mensaje) {
         .join('|');
 
     const regexDisparo = new RegExp(`\\b(?:${alternativas})\\b`, 'i');
-    if (!regexDisparo.test(normalizado)) return null;
+
+    // Tomamos las primeras 4 palabras del mensaje normalizado para verificar la posición.
+    const primerasPalabras = normalizado.split(' ').slice(0, 4).join(' ');
+
+    if (!regexDisparo.test(primerasPalabras)) return null;
 
     // Quitar el disparador del texto original
     const regexQuitar = new RegExp(`\\b(?:${alternativas})\\b`, 'gi');
@@ -547,10 +563,15 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
            MÚSICA: detección + búsqueda en Deezer
         ===================================================== */
         let musicaReproduciendo = null;
+        let notaMusicaNoEncontrada = null;
         const queryMusica = detectarMusica(mensajeLimpio);
 
         if (queryMusica) {
             musicaReproduciendo = await buscarMusicaDeezer(queryMusica);
+            if (!musicaReproduciendo) {
+                notaMusicaNoEncontrada =
+                    `[MÚSICA NO ENCONTRADA] El usuario pidió «${queryMusica}» pero no se encontró en el catálogo. Dilo con naturalidad, sin inventar canciones ni artistas, y pide otro nombre.`;
+            }
         }
 
         /* =====================================================
@@ -657,6 +678,13 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             mensajes.push({
                 role: 'system',
                 content: `[MÚSICA REPRODUCIENDO] El usuario pidió música y se encontró: ${musicaReproduciendo.titulo} de ${musicaReproduciendo.artista}. Confírmalo con alegría y naturalidad.`
+            });
+        }
+
+        if (notaMusicaNoEncontrada) {
+            mensajes.push({
+                role: 'system',
+                content: notaMusicaNoEncontrada
             });
         }
 
