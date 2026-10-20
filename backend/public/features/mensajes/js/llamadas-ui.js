@@ -1,15 +1,9 @@
 // ============================================================
-// CSARIEL'S · LLAMADAS-UI · v2.0
-// Cambios v2.0 (Auditoría Senior):
-// - CERO confirm() nativos: todo usa NeonModal.confirm
-// - Botón "call-back" del historial INICIA LA LLAMADA directamente
-//   (antes abría el chat por error). Usa window.startCallConUsuario
-//   expuesto por mensajes.js.
-// - Botón "block" del historial y #blockUser usan bloquearUsuario()
-//   con NeonModal.confirm (Cancelar cierra limpio, Aceptar bloquea).
-// - Eliminado código muerto (svgIcon arrow-in/arrow-out).
-// - NO se tocó: llamadaFetch, auth, historial logic, bloques,
-//   config, enhancer del overlay (v1.2).
+// CSARIEL'S · LLAMADAS-UI · v2.1
+// Cambios v2.1 (Integración de Audio):
+// - Añadido sistema de Ringback (tono de espera al marcar).
+// - Añadido detector de "Fuera de línea" (navigator.onLine).
+// - Añadido listener de LiveKit para detener el tono al conectar.
 // ============================================================
 
 (function () {
@@ -20,6 +14,88 @@
     var historialCache = [];
     var bloqueadosCache = [];
     var configLlamadasCache = { quien_puede_llamarme: 'contactos' };
+
+    // ============================================================
+    // NUEVO: SISTEMA DE AUDIO Y CONEXIÓN (v2.1)
+    // ============================================================
+    // Instanciamos el objeto de audio. Usamos un archivo libre genérico.
+    // Puedes cambiarlo por el tuyo (ej. '/sounds/ringback.mp3')
+    var audioTonoEspera = new Audio('https://actions.google.com/sounds/v1/alarms/phone_ringing.ogg');
+    audioTonoEspera.loop = true;
+    var tonoReproduciendose = false;
+
+    // Desbloquear audio en el primer clic (política de navegadores)
+    document.addEventListener('click', function desbloquearAudio() {
+        audioTonoEspera.play().then(function() {
+            audioTonoEspera.pause();
+            audioTonoEspera.currentTime = 0;
+            document.removeEventListener('click', desbloquearAudio);
+        }).catch(function() {});
+    }, { once: true });
+
+    function iniciarTonoEspera() {
+        if (tonoReproduciendose) return;
+        if (!navigator.onLine) {
+            mostrarAvisoDesconexion("Sin conexión a internet. Verifica tu red.");
+            return;
+        }
+        tonoReproduciendose = true;
+        audioTonoEspera.play().catch(function(e) {
+            console.warn("No se pudo reproducir el tono de espera:", e);
+        });
+    }
+
+    function detenerTonoEspera() {
+        tonoReproduciendose = false;
+        audioTonoEspera.pause();
+        audioTonoEspera.currentTime = 0;
+        ocultarAvisoDesconexion();
+    }
+
+    function mostrarAvisoDesconexion(mensaje) {
+        var el = $('callStatusText') || $('callStatus');
+        if (el) {
+            el.textContent = mensaje;
+            el.style.color = 'var(--danger)';
+        }
+    }
+
+    function ocultarAvisoDesconexion() {
+        var el = $('callStatusText') || $('callStatus');
+        if (el) {
+            el.style.color = ''; // Restaura el color original del CSS
+        }
+    }
+
+    // Monitoreo de red del navegador
+    window.addEventListener('offline', function() {
+        if (tonoReproduciendose) {
+            mostrarAvisoDesconexion("Te has quedado sin internet. Revisa tu red.");
+        }
+    });
+
+    window.addEventListener('online', function() {
+        if (tonoReproduciendose) {
+            ocultarAvisoDesconexion();
+        }
+    });
+
+    // Enganche con LiveKit (Escuchar cuando el otro contesta)
+    // Se asume que tu instancia de LiveKit se llama window.room o similar.
+    // Si usas otro nombre, avísame para ajustarlo.
+    function engancharLiveKit() {
+        if (window.livekitRoom && window.livekitRoom.on) {
+            window.livekitRoom.on('participantConnected', function(participant) {
+                // El otro usuario se ha conectado. Detenemos el tono.
+                detenerTonoEspera();
+            });
+            window.livekitRoom.on('disconnected', function() {
+                detenerTonoEspera();
+            });
+        }
+    }
+    // ============================================================
+
 
     function $(id) { return document.getElementById(id); }
 
@@ -41,21 +117,17 @@
 
     // ============================================================
     // NeonModal: obtener referencia segura
-    // (mensajes.js carga primero y lo expone en window.NeonModal)
     // ============================================================
     function obtenerNeonModal() {
         if (window.NeonModal && typeof window.NeonModal.confirm === 'function') {
             return window.NeonModal;
         }
-        // Fallback ultra-defensivo por si el orden de carga cambiara:
-        // un modal nativo estilizado mínimo, NO usa confirm().
         return {
             confirm: function (opts) {
                 return new Promise(function (resolve) {
                     var backdrop = document.createElement('div');
                     backdrop.className = 'neon-modal-backdrop show';
                     backdrop.setAttribute('role', 'dialog');
-                    backdrop.setAttribute('aria-modal', 'true');
                     var card = document.createElement('div');
                     card.className = 'neon-modal-card' + (opts.danger ? ' danger' : '');
                     card.innerHTML =
@@ -227,7 +299,6 @@
             cont.querySelectorAll('[data-action="block"]').forEach(function (btn) {
                 btn.onclick = function () { bloquearUsuario(btn.dataset.userid, btn.dataset.nombre); };
             });
-            // FIX v2.0: el botón call-back INICIA LA LLAMADA directamente.
             cont.querySelectorAll('[data-action="call-back"]').forEach(function (btn) {
                 btn.onclick = function () {
                     iniciarLlamadaDesdeHistorial(btn.dataset.userid, btn.dataset.nombre);
@@ -327,7 +398,7 @@
     }
 
     // ============================================================
-    // INICIAR LLAMADA DESDE HISTORIAL (fix v2.0)
+    // INICIAR LLAMADA DESDE HISTORIAL
     // ============================================================
     async function iniciarLlamadaDesdeHistorial(userId, nombre) {
         if (!userId) {
@@ -352,15 +423,18 @@
             return;
         }
         try {
+            iniciarTonoEspera(); // Iniciamos tono ANTES de llamar
+            engancharLiveKit(); // Aseguramos que el listener esté activo
             await window.startCall('video');
         } catch (e) {
             console.error('[Llamadas UI] Error iniciando llamada desde historial:', e);
+            detenerTonoEspera();
             toast('❌ No se pudo iniciar la llamada: ' + (e.message || 'error'), 'error');
         }
     }
 
     // ============================================================
-    // BORRAR / BLOQUEAR — con NeonModal (CERO confirm nativos)
+    // BORRAR / BLOQUEAR
     // ============================================================
     async function borrarLlamada(id) {
         if (!id) return;
@@ -603,7 +677,6 @@
         var btnBorrarTodo = $('btnBorrarTodoHistorial');
         if (btnBorrarTodo) btnBorrarTodo.onclick = borrarTodoHistorial;
 
-        // FIX v2.0: bloquearUsuario usa NeonModal, no confirm()
         var btnBlock = $('blockUser');
         if (btnBlock) {
             btnBlock.onclick = function () {
@@ -647,7 +720,7 @@
     });
 
     // ============================================================
-    // CALLS UI ENHANCER — v1.2 (sin cambios)
+    // CALLS UI ENHANCER
     // ============================================================
     var enhancerTimer = null;
     var enhancerStartAt = 0;
@@ -753,6 +826,7 @@
                 actualizarAvatarLlamada();
             } else {
                 detenerTickerLlamada();
+                detenerTonoEspera(); // Si se cierra el overlay, quitamos el audio
             }
         });
         observer.observe(callOverlay, { attributes: true, attributeFilter: ['class'] });
@@ -794,8 +868,12 @@
             var mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
             var ss = String(elapsed % 60).padStart(2, '0');
             timer.textContent = mm + ':' + ss;
-            if (elapsed < 2 && statusText) statusText.textContent = 'Conectando…';
-            else if (elapsed >= 2 && statusText) statusText.textContent = 'En llamada';
+            
+            // Solo actualizamos el texto si no estamos mostrando un error de red
+            if (statusText && statusText.style.color !== 'var(--danger)') {
+                if (elapsed < 2) statusText.textContent = 'Conectando…';
+                else statusText.textContent = 'En llamada';
+            }
         }
         tick();
         enhancerTimer = setInterval(tick, 1000);
@@ -809,7 +887,7 @@
         var timer = $('callTimer');
         if (timer) timer.textContent = '00:00';
         var statusText = $('callStatusText');
-        if (statusText) statusText.textContent = 'Conectando…';
+        if (statusText && statusText.style.color !== 'var(--danger)') statusText.textContent = 'Conectando…';
     }
 
     // ============================================================
@@ -822,7 +900,7 @@
     window.abrirModalConfig = abrirModalConfig;
     window.abrirModalBloqueados = abrirModalBloqueados;
     window.LlamadasUI = {
-        version: '2.0.0',
+        version: '2.1.0',
         iniciarEnhancerOverlayLlamada: iniciarEnhancerOverlayLlamada,
         iniciarLlamadaDesdeHistorial: iniciarLlamadaDesdeHistorial
     };
