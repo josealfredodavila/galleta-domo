@@ -66,6 +66,35 @@
     .wallet-switch input:checked + .wallet-switch-slider { background: linear-gradient(135deg, var(--cyan, #00e5ff), var(--purple, #a855f7)); }
     .wallet-switch input:checked + .wallet-switch-slider::after { transform: translateX(24px); }
     .wallet-switch input:disabled + .wallet-switch-slider { opacity: 0.4; }
+
+    /* ================================================================
+       NUEVA SECCIÓN: SOLICITUDES DE AMISTAD (Estilo Facebook adaptado)
+       ================================================================ */
+    .solicitudes-container { margin-bottom: 24px; }
+    .solicitudes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .solicitudes-header h3 { font-size: 1.1rem; color: var(--text-primary); margin: 0; }
+    .solicitudes-header .ver-todas { color: var(--cyan, #00e5ff); font-size: 0.85rem; text-decoration: none; cursor: pointer; background: none; border: none; padding: 0; }
+    
+    .solicitud-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .solicitud-item:last-child { border-bottom: none; }
+    
+    .solicitud-info { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+    .solicitud-avatar { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; border: 2px solid var(--line-black); flex-shrink: 0; }
+    .solicitud-detalles { display: flex; flex-direction: column; overflow: hidden; }
+    .solicitud-nombre { font-weight: 600; font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .solicitud-tiempo { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
+    
+    .solicitud-acciones { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-solicitud { padding: 6px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s; white-space: nowrap; }
+    .btn-confirmar { background: var(--cyan, #00e5ff); color: #000; }
+    .btn-confirmar:hover { background: #00b8d4; }
+    .btn-borrar { background: rgba(255,255,255,0.1); color: var(--text-primary); }
+    .btn-borrar:hover { background: rgba(255,255,255,0.2); }
+    
+    @media (max-width: 480px) {
+        .solicitud-item { flex-direction: column; align-items: flex-start; }
+        .solicitud-acciones { width: 100%; justify-content: flex-end; }
+    }
 </style>
 <style>
     .anuncios-imagen-contenedor img { display: block; width: 100%; max-width: 100%; height: auto; max-height: 260px; object-fit: cover; border-radius: 16px; }
@@ -249,6 +278,49 @@
             </button>
         </div>
     </div>
+
+    <!-- ========================================== -->
+    <!-- NUEVA SECCIÓN: SOLICITUDES DE AMISTAD      -->
+    <!-- ========================================== -->
+    <div class="solicitudes-container" id="solicitudesAmistadSection">
+        <div class="solicitudes-header">
+            <h3>Solicitudes de amistad (<span id="contadorSolicitudes">0</span>)</h3>
+            <button class="ver-todas" onclick="window.verTodasSolicitudes()">Ver todas</button>
+        </div>
+        <div id="listaSolicitudesAmistad">
+            <!-- Aquí se inyectarán las solicitudes con JS. He puesto un ejemplo visual basado en tu captura -->
+            <div class="solicitud-item" id="solicitud-ejemplo-1">
+                <div class="solicitud-info">
+                    <img src="https://ui-avatars.com/api/?name=Camilo+Perez&background=random&color=fff&size=56" alt="Camilo Perez" class="solicitud-avatar">
+                    <div class="solicitud-detalles">
+                        <span class="solicitud-nombre">Camilo Perez</span>
+                        <span class="solicitud-tiempo">1 a</span>
+                    </div>
+                </div>
+                <div class="solicitud-acciones">
+                    <button class="btn-solicitud btn-confirmar" onclick="window.aceptarSolicitud('solicitud-ejemplo-1', 'Camilo Perez')">Confirmar</button>
+                    <button class="btn-solicitud btn-borrar" onclick="window.rechazarSolicitud('solicitud-ejemplo-1')">Borrar</button>
+                </div>
+            </div>
+            
+            <div class="solicitud-item" id="solicitud-ejemplo-2">
+                <div class="solicitud-info">
+                    <img src="https://ui-avatars.com/api/?name=Ulises+Snow&background=random&color=fff&size=56" alt="Ulises Snow" class="solicitud-avatar">
+                    <div class="solicitud-detalles">
+                        <span class="solicitud-nombre">Ulises Snow</span>
+                        <span class="solicitud-tiempo">20 s</span>
+                    </div>
+                </div>
+                <div class="solicitud-acciones">
+                    <button class="btn-solicitud btn-confirmar" onclick="window.aceptarSolicitud('solicitud-ejemplo-2', 'Ulises Snow')">Confirmar</button>
+                    <button class="btn-solicitud btn-borrar" onclick="window.rechazarSolicitud('solicitud-ejemplo-2')">Borrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ========================================== -->
+    <!-- FIN NUEVA SECCIÓN                          -->
+    <!-- ========================================== -->
 
     <div class="repartidor-section" id="repartidorSection" style="display:none;">
         <div class="rep-header">
@@ -867,6 +939,66 @@
         if (typeof window.supabase === 'undefined') {
             mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
         }
+    });
+</script>
+
+<!-- SCRIPT DE LÓGICA PARA LAS SOLICITUDES DE AMISTAD (Visual/Simulado) -->
+<script>
+    // Variables para el contador de solicitudes
+    let contadorSolicitudesGlobal = 2; // Basado en los ejemplos que puse
+
+    window.aceptarSolicitud = function(idSolicitud, nombre) {
+        const elemento = document.getElementById(idSolicitud);
+        if (elemento) {
+            elemento.style.opacity = '0';
+            setTimeout(() => {
+                elemento.remove();
+                actualizarContadorSolicitudes();
+                // Aquí iría tu lógica real para actualizar en la base de datos (Supabase)
+                // Ejemplo: await supabase.from('solicitudes').update({estado: 'aceptada'}).eq('id', idSolicitud);
+                alert(`Has aceptado la solicitud de ${nombre}`);
+            }, 300);
+        }
+    };
+
+    window.rechazarSolicitud = function(idSolicitud) {
+        const elemento = document.getElementById(idSolicitud);
+        if (elemento) {
+            elemento.style.opacity = '0';
+            setTimeout(() => {
+                elemento.remove();
+                actualizarContadorSolicitudes();
+                // Aquí iría tu lógica real para eliminar en la base de datos (Supabase)
+            }, 300);
+        }
+    };
+
+    window.verTodasSolicitudes = function() {
+        // Redirigir a una página de amigos o mostrar todas
+        window.location.href = '/features/mensajes/contactos.html'; // O la ruta de tu módulo de amigos
+    };
+
+    function actualizarContadorSolicitudes() {
+        const lista = document.getElementById('listaSolicitudesAmistad');
+        if (lista) {
+            const items = lista.querySelectorAll('.solicitud-item');
+            const contador = document.getElementById('contadorSolicitudes');
+            if (contador) {
+                contador.textContent = items.length;
+                // Si no hay solicitudes, mostrar un mensaje
+                if (items.length === 0) {
+                    lista.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted); font-size:0.85rem;">
+                        <svg class="icon" viewBox="0 0 24 24" style="width:2rem;height:2rem;color:var(--success);"><polyline points="20 6 9 17 4 12"/></svg>
+                        <p>No tienes solicitudes pendientes</p>
+                    </div>`;
+                }
+            }
+        }
+    }
+
+    // Inicializar contador
+    document.addEventListener('DOMContentLoaded', () => {
+        actualizarContadorSolicitudes();
     });
 </script>
 
