@@ -1,114 +1,133 @@
+<!-- backend/public/legal/itlasuhua.html -->
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-public>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Términos del Rey Itlasuhua · Csariel's</title>
-<style>
-    body {
-        background: #0a0a0a;
-        color: #f0f4f8;
-        font-family: 'Inter', system-ui, sans-serif;
-        padding: 24px;
-        max-width: 720px;
-        margin: 0 auto;
-        line-height: 1.6;
-    }
-    h1 { color: #00D4FF; font-size: 1.5rem; margin-bottom: 8px; }
-    h2 { color: #7C4DFF; font-size: 1.1rem; margin-top: 28px; }
-    p, li { color: #c0d8e8; font-size: 0.92rem; }
-    ul { padding-left: 20px; }
-    a { color: #00D4FF; }
-    .sello {
-        display: inline-block;
-        background: linear-gradient(135deg, #7C4DFF, #00E5FF);
-        color: #fff;
-        padding: 4px 12px;
-        border-radius: 99px;
-        font-size: 0.75rem;
-        font-weight: 700;
-        margin-bottom: 16px;
-    }
-
-    /* ===== BOTÓN CENTRO DE AYUDA ===== */
-    .btn-centro-ayuda {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        margin-bottom: 24px;
-        padding: 10px 20px;
-        background: rgba(0, 212, 255, 0.08);
-        border: 1px solid rgba(0, 212, 255, 0.3);
-        color: #00D4FF;
-        text-decoration: none;
-        border-radius: 40px;
-        font-weight: 600;
-        font-size: 0.9rem;
-        transition: all 0.2s ease;
-    }
-    .btn-centro-ayuda:hover {
-        background: rgba(0, 212, 255, 0.15);
-        border-color: #00D4FF;
-    }
-</style>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Términos del Rey Itlasuhua · Csariel's</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-card: #0B0F17;
+            --green: #22C55E;
+            --cyan: #00E5FF;
+            --text-primary: #F8F9FA;
+            --text-secondary: #8B98A5;
+            --border: rgba(34, 197, 94, 0.18);
+            --font-base: 'Inter', -apple-system, sans-serif;
+            --font-title: 'Orbitron', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-base);
+            line-height: 1.7;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 32px 20px 80px;
+            -webkit-font-smoothing: antialiased;
+        }
+        .legal-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: -32px -20px 24px;
+        }
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            flex-shrink: 0;
+        }
+        .back-btn:hover { background: rgba(34, 197, 94, 0.12); border-color: var(--green); }
+        .back-btn svg { width: 22px; height: 22px; fill: currentColor; }
+        .header-content { display: flex; flex-direction: column; }
+        .header-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+        .header-subtitle { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+        h1 { font-family: var(--font-title); color: var(--green); font-size: 1.6rem; margin-bottom: 8px; text-shadow: 0 0 20px rgba(34, 197, 94, 0.25); }
+        h2 { font-family: var(--font-title); color: var(--green); font-size: 1.1rem; margin-top: 32px; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 6px; letter-spacing: 0.5px; }
+        p, li { color: #D1D5DB; font-size: 0.92rem; }
+        ul { padding-left: 22px; margin-bottom: 12px; }
+        li { margin-bottom: 6px; }
+        a { color: var(--cyan); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        strong { color: var(--text-primary); }
+        .sello { display: inline-block; background: rgba(34, 197, 94, 0.12); color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 99px; font-family: var(--font-title); font-size: 0.72rem; letter-spacing: 1px; margin-bottom: 16px; }
+        .aviso { background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(0, 229, 255, 0.06)); border: 1px solid rgba(34, 197, 94, 0.35); padding: 14px 16px; border-radius: 10px; margin: 18px 0; font-size: 0.88rem; }
+        .aviso strong { color: var(--green); }
+    </style>
 </head>
 <body>
+    <header class="legal-header">
+        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/features/centro-ayuda/index.html'; }" aria-label="Volver">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div class="header-content">
+            <div class="header-title">Términos del Rey Itlasuhua</div>
+            <div class="header-subtitle">Csariel's · Asistente IA</div>
+        </div>
+    </header>
 
-<!-- BOTÓN VOLVER AL CENTRO DE AYUDA CORREGIDO -->
-<a href="/features/centro-ayuda/index.html" class="btn-centro-ayuda">
-    ← Volver al Centro de Ayuda
-</a>
+    <span class="sello">◈ REY ITLASUHUA · SERPIENTE CÓSMICA</span>
 
-<span class="sello">🐍 REY ITLASUHUA · SERPIENTE CÓSMICA</span>
+    <h1>Términos de Uso del Rey Itlasuhua</h1>
+    <p style="color: var(--text-secondary); font-size: 0.8rem; margin-bottom: 24px;">Última actualización: [Pendiente: fecha de publicación]</p>
 
-<h1>Términos de Uso del Rey Itlasuhua</h1>
-<p><em>Última actualización: 2026</em></p>
+    <p>Antes de invocar al guardián cósmico del ecosistema Csariel's, es importante que conozcas las siguientes reglas del equilibrio.</p>
 
-<p>
-    Antes de invocar al guardián cósmico del ecosistema Csariel's, es importante
-    que conozcas las siguientes reglas del equilibrio.
-</p>
+    <h2>◈ Naturaleza del guardián</h2>
+    <ul>
+        <li><strong>Itlasuhua es una IA</strong>, no un ser humano ni un profesional de la salud, legal o financiero.</li>
+        <li><strong>Puede cometer errores.</strong> Verifica siempre la información importante.</li>
+        <li><strong>No reemplaza a un terapeuta, médico o asesor profesional.</strong></li>
+    </ul>
 
-<h2>◈ Naturaleza del guardián</h2>
-<ul>
-    <li><strong>Itlasuhua es una IA</strong>, no un ser humano ni un profesional de la salud, legal o financiero.</li>
-    <li><strong>Puede cometer errores.</strong> Verifica siempre la información importante.</li>
-    <li><strong>No reemplaza a un terapeuta, médico o asesor profesional.</strong></li>
-</ul>
+    <h2>◈ Límites del reino</h2>
+    <ul>
+        <li><strong>No genera contenido sexual, gore ni relaciones románticas.</strong></li>
+        <li><strong>Respeta los derechos de autor</strong> y no reproduce material protegido.</li>
+        <li><strong>Edad mínima: 18 años.</strong></li>
+    </ul>
 
-<h2>◈ Límites del reino</h2>
-<ul>
-    <li><strong>No genera contenido sexual, gore ni relaciones románticas.</strong></li>
-    <li><strong>Respeta los derechos de autor</strong> y no reproduce material protegido.</li>
-    <li><strong>Edad mínima: 13 años.</strong></li>
-</ul>
+    <h2>◈ Memoria y privacidad</h2>
+    <ul>
+        <li><strong>Tu memoria es privada.</strong> Cada viajero tiene su propia burbuja de recuerdos aislada.</li>
+        <li>Las conversaciones se guardan para dar continuidad al diálogo cósmico.</li>
+        <li>Puedes borrar tu historial en cualquier momento desde tu configuración.</li>
+    </ul>
 
-<h2>◈ Memoria y privacidad</h2>
-<ul>
-    <li><strong>Tu memoria es privada.</strong> Cada viajero tiene su propia burbuja de recuerdos aislada.</li>
-    <li>Las conversaciones se guardan para dar continuidad al diálogo cósmico.</li>
-    <li>Puedes borrar tu historial en cualquier momento desde tu configuración.</li>
-</ul>
+    <h2>◈ Protocolo de auxilio</h2>
+    <p>Si en algún momento sientes que el peso del cosmos es demasiado, el rey te ofrecerá canales de auxilio. Recuerda siempre:</p>
+    <ul>
+        <li><strong>México:</strong> Línea de la Vida — 800 911 2000</li>
+        <li><strong>Estados Unidos:</strong> 988</li>
+    </ul>
 
-<h2>◈ Protocolo de auxilio</h2>
-<p>
-    Si en algún momento sientes que el peso del cosmos es demasiado, el rey
-    te ofrecerá canales de auxilio. Recuerda siempre:
-</p>
-<ul>
-    <li><strong>México:</strong> Línea de la Vida — 800 911 2000</li>
-    <li><strong>Estados Unidos:</strong> 988</li>
-</ul>
+    <h2>◈ Aceptación</h2>
+    <p>Al invocar al Rey Itlasuhua, aceptas estos términos y te comprometes al equilibrio cósmico del ecosistema Csariel's.</p>
 
-<h2>◈ Aceptación</h2>
-<p>
-    Al invocar al Rey Itlasuhua, aceptas estos términos y te comprometes al
-    equilibrio cósmico del ecosistema Csariel's.
-</p>
+    <div class="aviso">
+        <strong>Nota:</strong> Este documento complementa los <a href="/legal/terminos-servicio.html">Términos de Servicio Generales de Csariel's</a> y no los sustituye.
+    </div>
 
-<p style="margin-top:32px;color:#8aa8b8;font-size:.82rem;">
-    © Csariel's Ecosystem · WEB3 · Polygon
-</p>
-
+    <p style="margin-top:32px; color: var(--text-secondary); font-size:0.82rem;">© Csariel's Ecosystem · WEB3 · Polygon</p>
 </body>
 </html>
