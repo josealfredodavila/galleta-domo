@@ -1,8 +1,9 @@
 // ================================================================
-// MENSAJES · JS v4.7 · WEB3 NEON UI
-// Cambios v4.7:
-// - Lee ?usuario= para abrir conversación directa.
-// - Lee &accion=llamada para iniciar la llamada automáticamente.
+// MENSAJES · JS v4.8 · WEB3 NEON UI
+// Cambios v4.8:
+// - Integrado Ringback (tono de espera) al iniciar llamada.
+// - Integrado evento de LiveKit para detener el tono al conectar.
+// - Aviso dinámico en UI si se pierde la conexión durante la llamada.
 // ================================================================
 
 'use strict';
@@ -48,6 +49,57 @@ const call = {
     room: null, id: null, active: false, audio: null, video: null,
     screen: null, initiator: false, roomName: null, tipo: 'video'
 };
+
+// ============================================================
+// NUEVO v4.8: SISTEMA DE AUDIO DE LLAMADA (RINGBACK)
+// ============================================================
+const audioTonoEspera = new Audio('https://actions.google.com/sounds/v1/alarms/phone_ringing.ogg');
+audioTonoEspera.loop = true;
+let tonoReproduciendose = false;
+
+function iniciarTonoEspera() {
+    if (tonoReproduciendose) return;
+    if (!navigator.onLine) {
+        mostrarAvisoDesconexion("Sin conexión a internet. Verifica tu red.");
+        return;
+    }
+    tonoReproduciendose = true;
+    audioTonoEspera.play().catch(e => console.warn("Interacción requerida para reproducir audio:", e));
+}
+
+function detenerTonoEspera() {
+    tonoReproduciendose = false;
+    audioTonoEspera.pause();
+    audioTonoEspera.currentTime = 0;
+    ocultarAvisoDesconexion();
+}
+
+function mostrarAvisoDesconexion(mensaje) {
+    const el = $('callInfo');
+    if (el) {
+        el.innerHTML = `⚠️ <strong>${esc(mensaje)}</strong><br><small style="opacity:.7">Revisa tu conexión</small>`;
+        el.style.color = 'var(--danger)';
+    }
+}
+
+function ocultarAvisoDesconexion() {
+    const el = $('callInfo');
+    if (el) {
+        el.style.color = ''; 
+    }
+}
+
+window.addEventListener('offline', () => {
+    if (tonoReproduciendose) mostrarAvisoDesconexion("Te has quedado sin internet.");
+});
+
+window.addEventListener('online', () => {
+    if (tonoReproduciendose) {
+        ocultarAvisoDesconexion();
+        mostrarLlamando(current?.profile?.nombre || 'usuario');
+    }
+});
+// ============================================================
 
 const perfilCache = new Map();
 const TTL_PERFIL_MS = 5 * 60 * 1000;
@@ -1572,8 +1624,13 @@ async function terminarLlamadaServidor(id, body = {}) {
     catch (e) { console.warn('[Llamadas] terminar:', e.code || e.message); }
 }
 
-function mostrarLlamando(nombre) { $('callInfo').innerHTML = `📞 <strong>Llamando a ${esc(nombre)}…</strong><br><small style="opacity:.7">Esperando respuesta</small>`; }
-function mostrarEnCurso() { $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>'; }
+function mostrarLlamando(nombre) { 
+    $('callInfo').innerHTML = `📞 <strong>Llamando a ${esc(nombre)}…</strong><br><small style="opacity:.7">Esperando respuesta</small>`; 
+    $('callInfo').style.color = '';
+}
+function mostrarEnCurso() { 
+    $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>'; 
+}
 
 function crearRoom() {
     const LK = window.LivekitClient;
@@ -1582,6 +1639,10 @@ function crearRoom() {
     room.on(LK.RoomEvent.TrackSubscribed, track => {
         if (track.kind === 'video') track.attach($('remoteVideo'));
         else if (track.kind === 'audio') { const el = track.attach(); el.dataset.lk = '1'; el.style.display = 'none'; document.body.appendChild(el); el.play?.().catch(() => {}); }
+    });
+    // NUEVO: Detener tono cuando el otro usuario se conecte
+    room.on(LK.RoomEvent.ParticipantConnected, () => {
+        detenerTonoEspera();
     });
     room.on(LK.RoomEvent.Disconnected, () => { if (!call.active) return; const id = call.id; finalizarLlamadaLocal(); terminarLlamadaServidor(id); });
     return room;
@@ -1651,6 +1712,7 @@ async function startCall(tipo = 'video') {
     if (!window.LivekitClient) { toast('❌ Las llamadas no están disponibles en este dispositivo. Recarga la página.', 'error'); return; }
     const nombre = current.profile?.nombre || 'usuario';
     try {
+        iniciarTonoEspera(); // Iniciar sonido local al marcar
         const d = await llamadaFetch('/api/llamadas/iniciar', { destinatarioId: current.id, tipo });
         call.id = d.llamadaId; call.roomName = d.roomName; call.tipo = tipo; call.initiator = true;
         subscribeCall(call.id);
@@ -1660,6 +1722,7 @@ async function startCall(tipo = 'video') {
         iniciarTimeoutLlamada();
     } catch (e) {
         console.error('[Llamadas] Error al iniciar:', e);
+        detenerTonoEspera(); // Detener sonido si hay error
         toast('❌ No se pudo iniciar la llamada: ' + textoErrorLlamada(e), 'error');
         await finalizarLlamadaLocal();
     }
@@ -1745,6 +1808,7 @@ async function hangup() {
 }
 
 async function finalizarLlamadaLocal() {
+    detenerTonoEspera(); // Detener sonido al colgar/terminar
     clearTimeout(llamadaTimeoutTimer);
     llamadaTimeoutTimer = null;
     const room = call.room;
@@ -1935,7 +1999,7 @@ async function init() {
     registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
 
     // ============================================================
-    // NUEVO v4.7: LEER ?usuario= Y ?accion=llamada DE LA URL
+    // LECTURA DE ?usuario= Y ?accion=llamada DE LA URL
     // ============================================================
     if (user && user.id) {
         const urlObj = new URL(window.location.href);
@@ -1943,12 +2007,9 @@ async function init() {
         const accionParam = urlObj.searchParams.get('accion');
 
         if (usuarioParam && usuarioParam.length > 10) {
-            // Abrimos la conversación directa con ese usuario
             setTimeout(async () => {
                 try {
                     await openConversation(usuarioParam);
-
-                    // Si la URL trae &accion=llamada, iniciamos la llamada
                     if (accionParam === 'llamada') {
                         setTimeout(async () => {
                             if (typeof startCall === 'function') {
@@ -1958,15 +2019,14 @@ async function init() {
                                     console.error('[Llamadas] Error en inicio automático:', e);
                                 }
                             }
-                        }, 1000); // Esperamos 1s para que el chat cargue
+                        }, 1000);
                     }
                 } catch (e) {
                     console.error('[Mensajes] Error al abrir conversación desde URL:', e);
                 }
-            }, 800); // Esperamos a que init() termine
+            }, 800);
         }
 
-        // Limpiar los parámetros de la URL para que no se repita al recargar
         if (usuarioParam || accionParam) {
             urlObj.searchParams.delete('usuario');
             urlObj.searchParams.delete('accion');
@@ -2119,7 +2179,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.7.0',
+    version: '4.8.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
