@@ -133,7 +133,7 @@
     let supabaseClient = null;
 
     /* ============================================================
-       CONTENIDO DE CADA SECCIÓN (ALINEADO AL CENTRO DE AYUDA)
+       CONTENIDO DE CADA SECCIÓN
        ============================================================ */
 
     const SECCIONES = {
@@ -149,14 +149,12 @@
               href: '/eliminar-cuenta.html' }
         ],
 
-        /* ============================================================
-           ACTUALIZADO: Ahora la seguridad y la cuenta se gestionan 
-           desde el Centro de Ayuda.
-           ============================================================ */
+        /* Seguridad y acceso vive en su propia página dentro de Configuración,
+           porque requiere sesión iniciada. */
         seccionSeguridad: [
-            { icon: 'shield', tk: 'seg_centro_titulo', dk: 'seg_centro_desc',
-              title: 'Seguridad y cuenta', desc: 'Administra la seguridad, privacidad y el estado de tu cuenta',
-              href: '/features/centro-ayuda/index.html' },
+            { icon: 'shield', tk: 'seg_acceso_titulo', dk: 'seg_acceso_desc',
+              title: 'Seguridad y acceso', desc: 'Protege tu cuenta, tus sesiones y las apps conectadas',
+              href: BASE + '/seguridad.html' },
             { icon: 'wallet', tk: 'seg_wallet_titulo', dk: 'seg_wallet_desc',
               title: 'Wallet y Polygon', desc: 'Administra tu wallet conectada',
               href: BASE + '/sariels/wallet.html' }
@@ -210,9 +208,6 @@
               href: BASE + '/accesibilidad/navegacion.html' }
         ],
 
-        /* ============================================================
-           ACTUALIZADO: Se eliminó "Derechos y Usos" de aquí.
-           ============================================================ */
         seccionSariels: [
             { icon: 'crown', tk: 'sar_marquinhos_titulo', dk: 'sar_marquinhos_desc',
               title: 'Marquinhos', desc: 'Modo voz, subtítulos, voz y tienda de accesorios',
@@ -234,9 +229,6 @@
               onclick: function () { abrirPanelRepartidor(); } }
         ],
 
-        /* ============================================================
-           ACTUALIZADO: Sección de Recursos centralizada hacia el Centro de Ayuda
-           ============================================================ */
         seccionRecursos: [
             { icon: 'info', tk: 'rec_centro_ayuda', dk: 'rec_centro_ayuda_desc',
               title: 'Centro de Ayuda y Legal', desc: 'Términos, privacidad, cookies, guías Web3 y soporte',
