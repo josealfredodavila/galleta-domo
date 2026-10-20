@@ -8,8 +8,9 @@
 // - Llamada al proveedor
 // - Registro de uso
 //
-// v1.1: presupuesto total por canal + circuit breaker no cuenta
-//       cortes por presupuesto.
+// v1.2: documenta fail open, registra fallos críticos de
+//       devolución de cuota, valida q antes de buscar,
+//       y aclara el criterio de acierto de caché.
 // ================================================================
 
 'use strict';
@@ -119,6 +120,7 @@ function memoriaSet(clave, resultado, expira) {
     memoriaCache.set(clave, { resultado, expira });
 }
 
+// Solo cuenta como acierto si la entrada es futura (expira_at > ahora).
 async function leerCache(proveedor, hash) {
     const clave = `${proveedor}:${hash}`;
     const enMemoria = memoriaCache.get(clave);
@@ -189,7 +191,9 @@ function registrar({
 
 // ---------- API pública ----------
 
-// Cuenta un mensaje de chat. Si la base falla, deja pasar (fail open).
+// Fail open intencional: si la base de datos falla al contar mensajes,
+// preferimos dejar pasar al usuario antes que bloquearlo por un error
+// transitorio de infraestructura. La cuota se revalida en búsquedas web.
 async function consumirMensaje({ usuarioId, personaje, huella = null }) {
     try {
         return await rpc('consumir_mensaje', {
@@ -262,6 +266,9 @@ async function buscarEnTiempoReal({
             // 4. Llamada al proveedor con presupuesto
             const inicio = Date.now();
             try {
+                // Confirmación explícita: no buscamos con consulta vacía.
+                if (!q) throw new Error('consulta_vacia');
+
                 const respuesta = await conTimeout(
                     api.buscar(q),
                     limiteTotal - Date.now(),
