@@ -1,28 +1,7 @@
 // ================================================================
-// MARQUINHOS · BRAIN v7.0
+// MARQUINHOS · BRAIN v7.1
 // Memoria por usuario (RAG) + filtro de recuerdos + respuestas locales
-// ================================================================
-// Flujo por mensaje:
-//   1. Se genera UN solo embedding del mensaje (se reutiliza para buscar y guardar).
-//   2. BUSCA recuerdos relevantes con la RPC buscar_memoria_marquinhos.
-//   3. Llama a /api/ai/chat-pet (si falla, /api/ai/chat).
-//   4. GUARDA el mensaje del usuario con guardar_memoria_marquinhos,
-//      solo si pasa el filtro esFraseUtil().
-//   5. Si todo falla, responde con la lista local RESPUESTAS_LOCALES.
-//
-// Cambios v7.0:
-//   - Un solo embedding por mensaje (antes se generaba dos veces).
-//   - Respuestas locales alineadas con el ecosistema real.
-//   - Coincidencia por palabra completa (ya no "hola" dentro de "holanda").
-//   - Filtro de recuerdos: no guarda preguntas, comandos, datos sensibles
-//     (correos, teléfonos, tarjetas, contraseñas, salud, autolesiones).
-//   - Umbral RAG un poco más estricto (0.6).
-//   - AbortController por petición (antes una petición nueva cancelaba
-//     la anterior y devolvía "tiempo agotado" por error).
-//   - history solo con roles user/assistant.
-//
-// Nota de seguridad: las RPC deben usar auth.uid() internamente. Este
-// archivo NO envía user_id; el usuario se identifica por el JWT.
+// + SOPORTE DE MÚSICA (Deezer)
 // ================================================================
 
 'use strict';
@@ -30,12 +9,12 @@
 (function () {
     if (window.MarquinhosBrain) return;
 
-    const VERSION = '7.0';
+    const VERSION = '7.1';
     const TIMEOUT_MS = 30000;
     const HISTORIAL_ENVIO = 20;
     const HISTORIAL_CHARS = 2000;
     const MEMORIA_LIMITE = 5;
-    const MEMORIA_UMBRAL = 0.6;          // antes 0.55: menos recuerdos irrelevantes
+    const MEMORIA_UMBRAL = 0.6;
     const MEMORIA_MIN_LONGITUD = 8;
     const MEMORIA_MAX_LONGITUD = 500;
     const EMBEDDINGS_ENDPOINT = '/api/ai/embeddings';
@@ -55,15 +34,12 @@
             .trim();
     }
 
-    // Texto preparado para buscar palabras completas: " hola ", " es.stok ", etc.
     function paraCoincidencia(t) {
         return ' ' + normalizar(t).replace(/[^a-z0-9. ]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
     }
 
     // ============================================================
     // RESPUESTAS LOCALES (fallback sin red)
-    // Orden: lo más específico primero; saludo y generales al final.
-    // Solo afirmaciones que coinciden con la lógica del ecosistema.
     // ============================================================
     const RESPUESTAS_LOCALES = [
         { keys: ['es.stok', 'es.stoks', 'es stok', 'es stoks', 'estok', 'estoks', 'stoks'],
@@ -153,7 +129,6 @@
           r: function (c) { return '¡Hola' + (c && c.nombre ? ' ' + c.nombre : '') + '! ¿En qué te ayudo?'; } }
     ];
 
-    // Compilar las claves una sola vez (normalizadas)
     const RESPUESTAS_COMPILADAS = RESPUESTAS_LOCALES.map(function (item) {
         return {
             keys: item.keys.map(function (k) { return ' ' + normalizar(k) + ' '; }),
@@ -174,37 +149,28 @@
 
     // ============================================================
     // FILTRO DE RECUERDOS
-    // Solo guarda datos personales que el usuario declara sobre sí mismo.
     // ============================================================
-    // Preguntas y órdenes: no son datos del usuario.
     const RE_COMANDO = /^(dime|dame|explica|explicame|muestrame|busca|resume|traduce|escribe|genera|crea|haz|calcula|cuanto|como|que|quien|cuando|donde|cual|por que|ayuda|ayudame)\b/;
     const RE_SALUDO_CORTO = /^(hola|buenas|hey|que tal|gracias|adios|hasta luego|ok|vale|si|no)\b/;
-
-    // Dato personal declarado (texto normalizado, sin acentos)
     const RE_PERSONAL = /\b(me llamo|mi nombre es|soy |tengo |vivo |trabajo |estudio |prefiero |me gusta |me encanta |odio |detesto |mi favorit[oa]|mi cumpleanos|mi edad|mi (esposa|esposo|novia|novio|hijo|hija|mama|papa|perro|gato|mascota|familia|ciudad|empresa|negocio|tienda)|recuerda|recuerdame|guarda|anota|memoriza)/;
-
-    // Nunca se guarda: datos sensibles o de seguridad (texto normalizado)
     const RE_SENSIBLE = [
-        /[\w.+-]+@[\w-]+\.[\w.-]+/,                                       // correos
-        /(?:\d[\s-]?){10,}/,                                              // teléfonos, tarjetas, CLABE
-        /\b(contrasena|password|pass|clave|pin|cvv|cuenta bancaria|clabe|tarjeta)\b/, // credenciales y pagos
-        /(api[ _-]?key|secreto|semilla|seed phrase|frase semilla|llave privada|private key)/, // secretos
-        /(suicid|matarme|quitarme la vida|hacerme dano|autolesi|no quiero vivir)/,              // autolesiones
-        /\b(diagnosticad|diabetes|cancer|embarazad|depresion|ansiedad)\b/                       // salud
+        /[\w.+-]+@[\w-]+\.[\w.-]+/,
+        /(?:\d[\s-]?){10,}/,
+        /\b(contrasena|password|pass|clave|pin|cvv|cuenta bancaria|clabe|tarjeta)\b/,
+        /(api[ _-]?key|secreto|semilla|seed phrase|frase semilla|llave privada|private key)/,
+        /(suicid|matarme|quitarme la vida|hacerme dano|autolesi|no quiero vivir)/,
+        /\b(diagnosticad|diabetes|cancer|embarazad|depresion|ansiedad)\b/
     ];
 
     function esFraseUtil(texto) {
         if (!texto || typeof texto !== 'string') return false;
-
         const original = texto.trim();
         const t = normalizar(original);
-
         if (t.length < MEMORIA_MIN_LONGITUD) return false;
-        if (/[¿?]/.test(original)) return false;                    // preguntas
-        if (RE_COMANDO.test(t)) return false;                       // órdenes / consultas
-        if (RE_SALUDO_CORTO.test(t) && t.length < 25) return false; // saludos y muletillas
+        if (/[¿?]/.test(original)) return false;
+        if (RE_COMANDO.test(t)) return false;
+        if (RE_SALUDO_CORTO.test(t) && t.length < 25) return false;
         if (RE_SENSIBLE.some(function (re) { return re.test(t); })) return false;
-
         return RE_PERSONAL.test(t);
     }
 
@@ -225,7 +191,6 @@
 
     async function obtenerToken() {
         let motivo = '';
-
         if (typeof window.getSupabase === 'function') {
             try {
                 const t = await tokenDesde(await window.getSupabase());
@@ -305,7 +270,6 @@
         }
     }
 
-    // Devuelve [{ contenido, similitud }] o []
     async function buscarRecuerdos(embedding) {
         if (!embedding) return [];
         try {
@@ -363,7 +327,6 @@
     // ============================================================
     // ENDPOINTS DE CHAT
     // ============================================================
-    // Devuelve { ok, reply } o { ok:false, status?, error?, aborted? }
     async function llamarEndpoint(url, payload, token) {
         const ctrl = new AbortController();
         const timer = setTimeout(function () {
@@ -393,9 +356,13 @@
             }
 
             const data = await resp.json();
+            
+            // NUEVO: Capturamos el reply y si hay música
             const reply = data && (data.reply || data.message || data.response);
+            const musica = data && data.musica ? data.musica : null;
+
             if (reply && typeof reply === 'string' && reply.trim()) {
-                return { ok: true, reply: reply.trim() };
+                return { ok: true, reply: reply.trim(), musica: musica };
             }
             return { ok: false, status: resp.status, error: 'respuesta vacía' };
         } catch (e) {
@@ -416,7 +383,6 @@
         return 'sin red' + (r.error ? ' (' + String(r.error).slice(0, 60) + ')' : '');
     }
 
-    // Historial: solo user/assistant, últimos N, recortado
     function construirHistorial(historialLocal, mensajeActual) {
         let hist = Array.isArray(historialLocal) ? historialLocal.slice() : [];
         const ult = hist[hist.length - 1];
@@ -461,17 +427,15 @@
             } else {
                 const token = auth.token;
 
-                // Un solo embedding: sirve para buscar y para guardar
                 const embedding = await generarEmbedding(limpio, token);
-
                 const recuerdos = await buscarRecuerdos(embedding);
+
                 if (recuerdos.length > 0) {
                     contextoMemoria =
                         'Datos que recuerdas de este usuario (úsalos con naturalidad si son relevantes):\n' +
                         recuerdos.map(function (r) { return '- ' + r.contenido; }).join('\n');
                 }
 
-                // Guardar en segundo plano; no bloquea la respuesta
                 guardarRecuerdo(limpio, embedding);
 
                 const payload1 = {
@@ -488,7 +452,15 @@
                     await esperar(600);
                     r1 = await llamarEndpoint(CHAT_PET_ENDPOINT, payload1, token);
                 }
-                if (r1.ok) return r1.reply;
+                
+                // Si la respuesta es exitosa, devolvemos el objeto completo (reply + musica)
+                if (r1.ok) {
+                    // NUEVO: Si hay música, disparamos un evento para que el reproductor visual la capture
+                    if (r1.musica) {
+                        window.dispatchEvent(new CustomEvent('marquinhos-musica', { detail: r1.musica }));
+                    }
+                    return r1.reply;
+                }
 
                 const r2 = await llamarEndpoint(CHAT_ENDPOINT, {
                     message: limpio,
@@ -497,7 +469,13 @@
                     memoria: contextoMemoria,
                     modo: modoEnvio
                 }, token);
-                if (r2.ok) return r2.reply;
+                
+                if (r2.ok) {
+                    if (r2.musica) {
+                        window.dispatchEvent(new CustomEvent('marquinhos-musica', { detail: r2.musica }));
+                    }
+                    return r2.reply;
+                }
 
                 motivoFallo = 'chat-pet: ' + describirFallo(r1) + ' | chat: ' + describirFallo(r2);
             }
@@ -515,5 +493,5 @@
         version: VERSION,
         preguntar: preguntar
     };
-    console.log('[Marquinhos/Brain] ✅ v' + VERSION + ' cargado (memoria con filtro + modo)');
+    console.log('[Marquinhos/Brain] ✅ v' + VERSION + ' cargado (memoria RAG + música)');
 })();
