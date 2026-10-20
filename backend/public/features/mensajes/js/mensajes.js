@@ -1,8 +1,8 @@
 // ================================================================
-// MENSAJES · JS v5.0 · WEB3 NEON UI
-// Cambios v5.0:
-// - Fix definitivo de audio con Web Audio API (sin archivos externos).
-// - El Ringback suena en el que llama y se detiene al conectar.
+// MENSAJES · JS v4.7 · WEB3 NEON UI
+// Cambios v4.7:
+// - Lee ?usuario= para abrir conversación directa.
+// - Lee &accion=llamada para iniciar la llamada automáticamente.
 // ================================================================
 
 'use strict';
@@ -48,103 +48,6 @@ const call = {
     room: null, id: null, active: false, audio: null, video: null,
     screen: null, initiator: false, roomName: null, tipo: 'video'
 };
-
-// ============================================================
-// SISTEMA DE AUDIO (WEB AUDIO API - INFALIBLE)
-// ============================================================
-let audioCtx = null;
-let audioOsciladores = [];
-let tonoReproduciendose = false;
-
-// Desbloquear el motor de audio en el primer toque/click del usuario
-document.addEventListener('click', function desbloquearAudio() {
-    if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) audioCtx = new AudioContext();
-    }
-    if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
-}, { passive: true });
-
-function iniciarTonoEspera() {
-    if (tonoReproduciendose) return;
-    
-    if (!audioCtx) {
-        console.warn("AudioContext no inicializado. Requiere interacción del usuario.");
-        return;
-    }
-    
-    tonoReproduciendose = true;
-    const now = audioCtx.currentTime;
-    
-    // Generador de tono "Ring Ring"
-    const osc1 = audioCtx.createOscillator();
-    const osc2 = audioCtx.createOscillator();
-    const gainNode = audioCtx.createGain();
-
-    osc1.type = 'sine';
-    osc1.frequency.value = 440;
-    osc2.type = 'sine';
-    osc2.frequency.value = 480;
-
-    osc1.connect(gainNode);
-    osc2.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-
-    // Patrón de intermitencia: 2 segundos sonando, 4 segundos en silencio
-    gainNode.gain.setValueAtTime(0, now);
-    for (let i = 0; i < 50; i++) {
-        const startTime = now + (i * 6);
-        gainNode.gain.setValueAtTime(0.5, startTime); 
-        gainNode.gain.setValueAtTime(0, startTime + 2); 
-    }
-
-    osc1.start();
-    osc2.start();
-    audioOsciladores = [osc1, osc2, gainNode];
-}
-
-function detenerTonoEspera() {
-    if (!tonoReproduciendose) return;
-    tonoReproduciendose = false;
-    
-    if (audioOsciladores.length > 0) {
-        try {
-            const [osc1, osc2, gainNode] = audioOsciladores;
-            gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-            gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-            osc1.stop(audioCtx.currentTime + 0.1);
-            osc2.stop(audioCtx.currentTime + 0.1);
-        } catch (e) { console.warn('Error deteniendo osciladores:', e); }
-        audioOsciladores = [];
-    }
-}
-
-function mostrarAvisoDesconexion(mensaje) {
-    const el = $('callInfo');
-    if (el) {
-        el.innerHTML = `⚠️ <strong>${esc(mensaje)}</strong><br><small style="opacity:.7">Revisa tu conexión</small>`;
-        el.style.color = 'var(--danger)';
-    }
-}
-
-function ocultarAvisoDesconexion() {
-    const el = $('callInfo');
-    if (el) el.style.color = ''; 
-}
-
-window.addEventListener('offline', () => {
-    if (tonoReproduciendose) mostrarAvisoDesconexion("Te has quedado sin internet.");
-});
-
-window.addEventListener('online', () => {
-    if (tonoReproduciendose) {
-        ocultarAvisoDesconexion();
-        mostrarLlamando(current?.profile?.nombre || 'usuario');
-    }
-});
-// ============================================================
 
 const perfilCache = new Map();
 const TTL_PERFIL_MS = 5 * 60 * 1000;
@@ -1669,29 +1572,17 @@ async function terminarLlamadaServidor(id, body = {}) {
     catch (e) { console.warn('[Llamadas] terminar:', e.code || e.message); }
 }
 
-function mostrarLlamando(nombre) { 
-    $('callInfo').innerHTML = `📞 <strong>Llamando a ${esc(nombre)}…</strong><br><small style="opacity:.7">Esperando respuesta</small>`; 
-    $('callInfo').style.color = '';
-}
-function mostrarEnCurso() { 
-    $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>'; 
-}
+function mostrarLlamando(nombre) { $('callInfo').innerHTML = `📞 <strong>Llamando a ${esc(nombre)}…</strong><br><small style="opacity:.7">Esperando respuesta</small>`; }
+function mostrarEnCurso() { $('callInfo').innerHTML = '🟢 <strong>Llamada en curso</strong><br><small style="opacity:.7">Presiona ✕ para colgar</small>'; }
 
 function crearRoom() {
     const LK = window.LivekitClient;
     if (!LK || !LK.Room || !LK.RoomEvent) throw new Error('LiveKit no está cargado correctamente');
     const room = new LK.Room();
-    
     room.on(LK.RoomEvent.TrackSubscribed, track => {
         if (track.kind === 'video') track.attach($('remoteVideo'));
         else if (track.kind === 'audio') { const el = track.attach(); el.dataset.lk = '1'; el.style.display = 'none'; document.body.appendChild(el); el.play?.().catch(() => {}); }
     });
-    
-    // ESTO DETIENE EL RINGRING CUANDO EL OTRO CONTESTA
-    room.on(LK.RoomEvent.ParticipantConnected, () => {
-        detenerTonoEspera();
-    });
-    
     room.on(LK.RoomEvent.Disconnected, () => { if (!call.active) return; const id = call.id; finalizarLlamadaLocal(); terminarLlamadaServidor(id); });
     return room;
 }
@@ -1760,7 +1651,6 @@ async function startCall(tipo = 'video') {
     if (!window.LivekitClient) { toast('❌ Las llamadas no están disponibles en este dispositivo. Recarga la página.', 'error'); return; }
     const nombre = current.profile?.nombre || 'usuario';
     try {
-        iniciarTonoEspera(); // <--- AQUI SUENA EL TIMBRE
         const d = await llamadaFetch('/api/llamadas/iniciar', { destinatarioId: current.id, tipo });
         call.id = d.llamadaId; call.roomName = d.roomName; call.tipo = tipo; call.initiator = true;
         subscribeCall(call.id);
@@ -1770,7 +1660,6 @@ async function startCall(tipo = 'video') {
         iniciarTimeoutLlamada();
     } catch (e) {
         console.error('[Llamadas] Error al iniciar:', e);
-        detenerTonoEspera(); // <--- SE APAGA SI HAY ERROR
         toast('❌ No se pudo iniciar la llamada: ' + textoErrorLlamada(e), 'error');
         await finalizarLlamadaLocal();
     }
@@ -1856,7 +1745,6 @@ async function hangup() {
 }
 
 async function finalizarLlamadaLocal() {
-    detenerTonoEspera(); // Apagar sonido siempre
     clearTimeout(llamadaTimeoutTimer);
     llamadaTimeoutTimer = null;
     const room = call.room;
@@ -2047,7 +1935,7 @@ async function init() {
     registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
 
     // ============================================================
-    // LECTURA DE ?usuario= Y ?accion=llamada DE LA URL
+    // NUEVO v4.7: LEER ?usuario= Y ?accion=llamada DE LA URL
     // ============================================================
     if (user && user.id) {
         const urlObj = new URL(window.location.href);
@@ -2055,9 +1943,12 @@ async function init() {
         const accionParam = urlObj.searchParams.get('accion');
 
         if (usuarioParam && usuarioParam.length > 10) {
+            // Abrimos la conversación directa con ese usuario
             setTimeout(async () => {
                 try {
                     await openConversation(usuarioParam);
+
+                    // Si la URL trae &accion=llamada, iniciamos la llamada
                     if (accionParam === 'llamada') {
                         setTimeout(async () => {
                             if (typeof startCall === 'function') {
@@ -2067,14 +1958,15 @@ async function init() {
                                     console.error('[Llamadas] Error en inicio automático:', e);
                                 }
                             }
-                        }, 1000);
+                        }, 1000); // Esperamos 1s para que el chat cargue
                     }
                 } catch (e) {
                     console.error('[Mensajes] Error al abrir conversación desde URL:', e);
                 }
-            }, 800);
+            }, 800); // Esperamos a que init() termine
         }
 
+        // Limpiar los parámetros de la URL para que no se repita al recargar
         if (usuarioParam || accionParam) {
             urlObj.searchParams.delete('usuario');
             urlObj.searchParams.delete('accion');
@@ -2096,7 +1988,7 @@ async function init() {
 }
 
 // ================================================================
-// PUSH NOTIFICATIONS
+// PUSH NOTIFICATIONS — SIN CAMBIOS
 // ================================================================
 async function registrarPushYServiceWorker() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
@@ -2227,7 +2119,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '5.0.0',
+    version: '4.7.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
