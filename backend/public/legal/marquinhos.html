@@ -102,7 +102,7 @@
         </div>
     </header>
 
-    <div class="diagnostico" id="diagnostico">Diagnóstico: iniciando…</div>
+    <div class="diagnostico" id="diagnostico" hidden>Diagnóstico: iniciando…</div>
 
     <h1>◈ Términos de Uso de Marquinhos</h1>
     <p class="fecha">Última actualización: [Pendiente: fecha de publicación]</p>
@@ -220,16 +220,20 @@
         const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
         const RUTA_MENSAJES_MARQUINHOS = '/features/mensajes/mensajes.html?chat=marquinhos';
         const RUTA_RECHAZO = '/';
+        const MODO_DIAGNOSTICO = new URLSearchParams(window.location.search).has('diag');
 
         let cliente = null;
         let lineasDiag = [];
         let estadoUI = 'iniciando';
 
         function diag(linea) {
+            if (!MODO_DIAGNOSTICO) return;
+            const el = document.getElementById('diagnostico');
+            if (!el) return;
+            el.hidden = false;
             lineasDiag.push(linea);
             if (lineasDiag.length > 14) lineasDiag.shift();
-            const el = document.getElementById('diagnostico');
-            if (el) el.textContent = lineasDiag.join('\n');
+            el.textContent = lineasDiag.join('\n');
         }
 
         function toast(msg, tipo) {
@@ -357,34 +361,44 @@
             return cliente;
         }
 
+        /* Comprueba en el servidor si hay sesión y si la versión vigente está aceptada.
+           No confía en localStorage: el acceso al chat siempre se revalida. */
+        async function comprobarAcceso() {
+            const sesion = await obtenerSesion();
+            if (!sesion) return 'sin_sesion';
+
+            const r = await cliente.rpc('verificar_aceptacion_terminos', { p_version: TERMINOS_VERSION });
+            if (r.error) throw r.error;
+
+            if (interpretarVerificacion(r.data)) {
+                guardarLocal(extraerFechaVerificacion(r.data));
+                return 'aceptado';
+            }
+
+            borrarLocal();
+            return 'pendiente';
+        }
+
         async function refrescarEstado() {
             try {
-                const sesion = await obtenerSesion();
-                if (!sesion) {
+                const estado = await comprobarAcceso();
+
+                if (estado === 'sin_sesion') {
                     diag('✗ Sin sesión: inicia sesión en la app Csariel\'s');
                     marcarSinSesion();
                     return;
                 }
-                diag('✓ Sesión activa (' + (sesion.user && sesion.user.id ? 'user ok' : 'user ?') + ')');
 
-                const r = await cliente.rpc('verificar_aceptacion_terminos', { p_version: TERMINOS_VERSION });
-                if (r.error) {
-                    diag('✗ Error RPC verificar: ' + textoError(r.error));
-                    marcarError();
+                if (estado === 'aceptado') {
+                    diag('✓ Ya aceptaste estos términos (v' + TERMINOS_VERSION + ')');
+                    marcarYaAceptado();
                     return;
                 }
 
-                if (interpretarVerificacion(r.data)) {
-                    guardarLocal(extraerFechaVerificacion(r.data));
-                    diag('✓ Ya aceptaste estos términos (v' + TERMINOS_VERSION + ')');
-                    marcarYaAceptado();
-                } else {
-                    borrarLocal();
-                    diag('• Aún no has aceptado la versión ' + TERMINOS_VERSION);
-                    marcarListo();
-                }
+                diag('• Aún no has aceptado la versión ' + TERMINOS_VERSION);
+                marcarListo();
             } catch (e) {
-                diag('✗ Error al refrescar estado: ' + textoError(e));
+                diag('✗ Error al verificar: ' + textoError(e));
                 marcarError();
             }
         }
@@ -421,10 +435,33 @@
 
         async function aceptar() {
             const btn = document.getElementById('btnAceptar');
-            if (!btn) return;
+            if (!btn || btn.disabled) return;
 
+            /* Ir al chat: se revalida sesión y aceptación antes de redirigir. */
             if (estadoUI === 'aceptado') {
-                irAMensajesMarquinhos();
+                btn.disabled = true;
+                btn.textContent = 'Verificando…';
+                try {
+                    const estado = await comprobarAcceso();
+                    if (estado === 'aceptado') {
+                        marcarYaAceptado();
+                        irAMensajesMarquinhos();
+                        return;
+                    }
+                    if (estado === 'sin_sesion') {
+                        diag('✗ Acceso bloqueado: sin sesión');
+                        toast('Tu sesión ya no está activa. Inicia sesión para continuar.', 'error');
+                        marcarSinSesion();
+                        return;
+                    }
+                    diag('✗ Acceso bloqueado: términos no vigentes');
+                    toast('Debes aceptar los términos para continuar.', 'error');
+                    marcarListo();
+                } catch (e) {
+                    diag('✗ Error verificando acceso: ' + textoError(e));
+                    toast('No se pudo verificar tu acceso. Intenta de nuevo.', 'error');
+                    marcarError();
+                }
                 return;
             }
 
@@ -434,7 +471,7 @@
                 return;
             }
 
-            if (btn.disabled) return;
+            /* Aceptar términos. */
             btn.disabled = true;
             btn.textContent = 'Guardando…';
             diag('→ Enviando aceptación…');
