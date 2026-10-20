@@ -1,22 +1,20 @@
 // ================================================================
-// MARQUINHOS · PET v9.8.5 "GALACTIC PRO"
+// MARQUINHOS · PET v9.9.0 "GALACTIC PRO"
 // v9.8.3:
-// - FIX DEFINITIVO: helper obtenerClienteSupabase() que busca el
-//   cliente en window.getSupabase, window.supabaseClient o window.supabase
-// - Eliminadas TODAS las llamadas directas a window.getSupabase()
+// - FIX DEFINITIVO: helper obtenerClienteSupabase()
 // - Fallback de uid leyendo localStorage (sb-*-auth-token)
-// - Los términos ahora funcionan en cualquier página del perfil
 // v9.8.4:
-// - procesarComando pasa 'voz' a MarquinhosBrain.preguntar() para
-//   que el backend clasifique correctamente origen='voice_chat'
-//   en las estadísticas.
+// - procesarComando pasa 'voz' a MarquinhosBrain.preguntar()
 // v9.8.5:
-// - Tarjetas de música (Deezer): renderizarMusica(musica) dibuja un
-//   panel con carátula, título, artista y botón que abre el enlace
-//   en Deezer. Solo acepta enlaces https de deezer.com.
-// - TERMINOS_VERSION alineada a '1.1' con la página de términos.
-// - El modal de términos enlaza a /legal/marquinhos.html.
-// - procesarComando acepta texto o { reply, musica } desde el brain.
+// - Tarjetas de música (Deezer) con enlace oficial.
+// - TERMINOS_VERSION '1.1' y modal enlaza a /legal/marquinhos.html.
+// v9.9.0:
+// - Tarjetas de eventos (Ticketmaster Discovery): imagen, título,
+//   fecha, hora, lugar, precio y botón "Ver en Ticketmaster".
+//   Solo enlaces https de ticketmaster.com. Sin botones de compra:
+//   la compra ocurre en la plataforma oficial.
+// - Escucha 'marquinhos-eventos' y acepta eventos en la respuesta.
+// - Música y eventos no se muestran a la vez (uno reemplaza al otro).
 // ================================================================
 
 'use strict';
@@ -118,7 +116,7 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos v9.8.5]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.9.0]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
@@ -368,6 +366,63 @@
     }
 
     // ============================================================
+    // ESTILOS COMPARTIDOS DE PANELES (música y eventos)
+    // ============================================================
+
+    function asegurarEstilosPaneles() {
+        if (document.getElementById('mq-paneles-estilos')) return;
+        const s = document.createElement('style');
+        s.id = 'mq-paneles-estilos';
+        s.textContent = `
+            .mq-panel{position:fixed;right:16px;bottom:180px;max-width:320px;width:calc(100vw - 32px);
+                max-height:55vh;overflow-y:auto;background:#0a0f1a;border-radius:14px;padding:12px;
+                z-index:2147483640;box-shadow:0 10px 30px rgba(0,0,0,.5);
+                font-family:-apple-system,system-ui,sans-serif;color:#f0f4f8}
+            .mq-panel-musica{border:1px solid rgba(34,197,94,.35)}
+            .mq-panel-eventos{border:1px solid rgba(0,229,255,.35)}
+            .mq-panel-cabecera{display:flex;justify-content:space-between;align-items:center;
+                font-size:.85rem;font-weight:700;margin-bottom:8px}
+            .mq-panel-musica .mq-panel-cabecera{color:#86EFAC}
+            .mq-panel-eventos .mq-panel-cabecera{color:#67E8F9}
+            .mq-panel-cerrar{background:transparent;border:0;color:#8aa8b8;font-size:1.3rem;
+                cursor:pointer;line-height:1;padding:0 4px}
+            .mq-panel-lista{display:flex;flex-direction:column;gap:10px}
+            .mq-tarjeta{display:flex;gap:10px;align-items:center;border-radius:12px;padding:8px}
+            .mq-panel-musica .mq-tarjeta{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.3)}
+            .mq-panel-eventos .mq-tarjeta{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3)}
+            .mq-caratula{width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0}
+            .mq-info{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}
+            .mq-titulo{font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+            .mq-sub{color:#8B98A5;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+            .mq-precio{color:#67E8F9;font-size:.78rem;font-weight:700}
+            .mq-boton{margin-top:4px;align-self:flex-start;text-decoration:none;padding:5px 12px;
+                border-radius:99px;font-size:.75rem;font-weight:700}
+            .mq-panel-musica .mq-boton{color:#04210F;background:#22C55E}
+            .mq-panel-eventos .mq-boton{color:#00121A;background:#00E5FF}
+        `;
+        document.head.appendChild(s);
+    }
+
+    function crearCabeceraPanel(textoTitulo, onCerrar) {
+        const cabecera = document.createElement('div');
+        cabecera.className = 'mq-panel-cabecera';
+
+        const titulo = document.createElement('span');
+        titulo.textContent = textoTitulo;
+
+        const cerrar = document.createElement('button');
+        cerrar.type = 'button';
+        cerrar.className = 'mq-panel-cerrar';
+        cerrar.setAttribute('aria-label', 'Cerrar');
+        cerrar.textContent = '×';
+        cerrar.addEventListener('click', onCerrar);
+
+        cabecera.appendChild(titulo);
+        cabecera.appendChild(cerrar);
+        return cabecera;
+    }
+
+    // ============================================================
     // TARJETAS DE MÚSICA (Deezer)
     // ============================================================
 
@@ -375,43 +430,29 @@
         return typeof url === 'string' && /^https:\/\/(www\.)?deezer\.com\//.test(url);
     }
 
+    function enlaceTicketmasterSeguro(url) {
+        if (typeof url !== 'string') return false;
+        try {
+            const u = new URL(url);
+            const host = u.hostname.toLowerCase();
+            return u.protocol === 'https:' &&
+                (host === 'ticketmaster.com' || host.endsWith('.ticketmaster.com'));
+        } catch (e) {
+            return false;
+        }
+    }
+
     function urlImagenSegura(url) {
         return typeof url === 'string' && /^https:\/\//.test(url);
     }
 
-    function asegurarEstilosMusica() {
-        if (document.getElementById('mq-musica-estilos')) return;
-        const s = document.createElement('style');
-        s.id = 'mq-musica-estilos';
-        s.textContent = `
-            #mq-musica-panel{position:fixed;right:16px;bottom:180px;max-width:300px;width:calc(100vw - 32px);
-                max-height:50vh;overflow-y:auto;background:#0a0f1a;border:1px solid rgba(34,197,94,.35);
-                border-radius:14px;padding:12px;z-index:2147483640;box-shadow:0 10px 30px rgba(0,0,0,.5);
-                font-family:-apple-system,system-ui,sans-serif;color:#f0f4f8}
-            .mq-musica-cabecera{display:flex;justify-content:space-between;align-items:center;
-                font-size:.85rem;font-weight:700;color:#86EFAC;margin-bottom:8px}
-            .mq-musica-cerrar{background:transparent;border:0;color:#8aa8b8;font-size:1.3rem;
-                cursor:pointer;line-height:1;padding:0 4px}
-            .mq-musica-lista{display:flex;flex-direction:column;gap:10px}
-            .mq-musica-tarjeta{display:flex;gap:10px;align-items:center;background:rgba(34,197,94,.08);
-                border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:8px}
-            .mq-musica-caratula{width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0}
-            .mq-musica-info{display:flex;flex-direction:column;gap:2px;min-width:0}
-            .mq-musica-titulo{font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-            .mq-musica-artista{color:#8B98A5;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-            .mq-musica-boton{margin-top:4px;align-self:flex-start;color:#04210F;background:#22C55E;
-                padding:5px 12px;border-radius:99px;font-size:.75rem;font-weight:700;text-decoration:none}
-        `;
-        document.head.appendChild(s);
-    }
-
     function crearTarjetaMusica(cancion) {
         const tarjeta = document.createElement('div');
-        tarjeta.className = 'mq-musica-tarjeta';
+        tarjeta.className = 'mq-tarjeta';
 
         if (urlImagenSegura(cancion.caratula)) {
             const img = document.createElement('img');
-            img.className = 'mq-musica-caratula';
+            img.className = 'mq-caratula';
             img.src = cancion.caratula;
             img.alt = 'Carátula de ' + (cancion.titulo || 'la canción');
             img.loading = 'lazy';
@@ -419,18 +460,18 @@
         }
 
         const info = document.createElement('div');
-        info.className = 'mq-musica-info';
+        info.className = 'mq-info';
 
         const titulo = document.createElement('div');
-        titulo.className = 'mq-musica-titulo';
+        titulo.className = 'mq-titulo';
         titulo.textContent = cancion.titulo || 'Sin título';
 
         const artista = document.createElement('div');
-        artista.className = 'mq-musica-artista';
+        artista.className = 'mq-sub';
         artista.textContent = cancion.artista || '';
 
         const boton = document.createElement('a');
-        boton.className = 'mq-musica-boton';
+        boton.className = 'mq-boton';
         boton.href = cancion.enlace;
         boton.target = '_blank';
         boton.rel = 'noopener noreferrer';
@@ -444,43 +485,122 @@
         return tarjeta;
     }
 
+    // ============================================================
+    // TARJETAS DE EVENTOS (Ticketmaster Discovery)
+    // Solo lectura: no hay botones de compra. El usuario compra en
+    // la página oficial de Ticketmaster.
+    // ============================================================
+
+    function crearTarjetaEvento(ev) {
+        const tarjeta = document.createElement('div');
+        tarjeta.className = 'mq-tarjeta';
+
+        if (urlImagenSegura(ev.imagen)) {
+            const img = document.createElement('img');
+            img.className = 'mq-caratula';
+            img.src = ev.imagen;
+            img.alt = 'Imagen de ' + (ev.titulo || 'el evento');
+            img.loading = 'lazy';
+            tarjeta.appendChild(img);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'mq-info';
+
+        const titulo = document.createElement('div');
+        titulo.className = 'mq-titulo';
+        titulo.textContent = ev.titulo || 'Evento';
+
+        const fechaHora = [ev.fecha, ev.hora].filter(Boolean).join(' · ');
+        const fecha = document.createElement('div');
+        fecha.className = 'mq-sub';
+        fecha.textContent = fechaHora;
+
+        const lugar = document.createElement('div');
+        lugar.className = 'mq-sub';
+        lugar.textContent = ev.lugar || '';
+
+        info.appendChild(titulo);
+        if (fechaHora) info.appendChild(fecha);
+        if (ev.lugar) info.appendChild(lugar);
+
+        if (ev.precio) {
+            const precio = document.createElement('div');
+            precio.className = 'mq-precio';
+            precio.textContent = ev.precio;
+            info.appendChild(precio);
+        }
+
+        const boton = document.createElement('a');
+        boton.className = 'mq-boton';
+        boton.href = ev.enlace;
+        boton.target = '_blank';
+        boton.rel = 'noopener noreferrer';
+        boton.textContent = 'Ver en Ticketmaster';
+        info.appendChild(boton);
+
+        tarjeta.appendChild(info);
+        return tarjeta;
+    }
+
+    // ============================================================
+    // PANELES: música y eventos (uno reemplaza al otro)
+    // ============================================================
+
     function cerrarPanelMusica() {
-        const p = document.getElementById('mq-musica-panel');
+        const p = document.getElementById('mq-panel-musica');
         if (p) p.remove();
     }
 
-    function renderizarMusica(musica) {
+    function cerrarPanelEventos() {
+        const p = document.getElementById('mq-panel-eventos');
+        if (p) p.remove();
+    }
+
+    function cerrarTodosLosPaneles() {
         cerrarPanelMusica();
+        cerrarPanelEventos();
+    }
+
+    function renderizarMusica(musica) {
+        cerrarTodosLosPaneles();
         if (!Array.isArray(musica) || musica.length === 0) return;
 
         const validas = musica.filter(c => c && enlaceDeezerSeguro(c.enlace));
         if (!validas.length) return;
 
-        asegurarEstilosMusica();
+        asegurarEstilosPaneles();
 
         const panel = document.createElement('div');
-        panel.id = 'mq-musica-panel';
-
-        const cabecera = document.createElement('div');
-        cabecera.className = 'mq-musica-cabecera';
-
-        const titulo = document.createElement('span');
-        titulo.textContent = 'Encontré estas canciones';
-
-        const cerrar = document.createElement('button');
-        cerrar.type = 'button';
-        cerrar.className = 'mq-musica-cerrar';
-        cerrar.setAttribute('aria-label', 'Cerrar');
-        cerrar.textContent = '×';
-        cerrar.addEventListener('click', cerrarPanelMusica);
-
-        cabecera.appendChild(titulo);
-        cabecera.appendChild(cerrar);
-        panel.appendChild(cabecera);
+        panel.id = 'mq-panel-musica';
+        panel.className = 'mq-panel mq-panel-musica';
+        panel.appendChild(crearCabeceraPanel('Encontré estas canciones', cerrarPanelMusica));
 
         const lista = document.createElement('div');
-        lista.className = 'mq-musica-lista';
+        lista.className = 'mq-panel-lista';
         validas.forEach(c => lista.appendChild(crearTarjetaMusica(c)));
+        panel.appendChild(lista);
+
+        document.body.appendChild(panel);
+    }
+
+    function renderizarEventos(eventos) {
+        cerrarTodosLosPaneles();
+        if (!Array.isArray(eventos) || eventos.length === 0) return;
+
+        const validos = eventos.filter(ev => ev && ev.titulo && enlaceTicketmasterSeguro(ev.enlace));
+        if (!validos.length) return;
+
+        asegurarEstilosPaneles();
+
+        const panel = document.createElement('div');
+        panel.id = 'mq-panel-eventos';
+        panel.className = 'mq-panel mq-panel-eventos';
+        panel.appendChild(crearCabeceraPanel('Eventos encontrados', cerrarPanelEventos));
+
+        const lista = document.createElement('div');
+        lista.className = 'mq-panel-lista';
+        validos.forEach(ev => lista.appendChild(crearTarjetaEvento(ev)));
         panel.appendChild(lista);
 
         document.body.appendChild(panel);
@@ -1022,7 +1142,7 @@
             }
         }, 500);
 
-        log('Widget v9.8.5 Galactic Pro creado');
+        log('Widget v9.9.0 Galactic Pro creado');
     }
 
     function mostrarDots() {}
@@ -1290,7 +1410,7 @@
         if (!texto) return;
         const miConversacionToken = ++conversationToken;
 
-        cerrarPanelMusica();
+        cerrarTodosLosPaneles();
         procesando = true;
         setEstado('pensando');
         cambiarVisema('M');
@@ -1300,21 +1420,27 @@
 
             let respuesta = '';
             let musica = null;
+            let eventos = null;
 
             if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
                 try {
                     const historialTruncado = historialLocal.slice(-HIST_MAX_ENVIO);
                     window.MarquinhosBrain.ultimaMusica = null;
+                    window.MarquinhosBrain.ultimosEventos = null;
 
                     const resp = await window.MarquinhosBrain.preguntar(texto, historialTruncado, 'voz');
 
                     if (resp && typeof resp === 'object') {
                         respuesta = resp.reply || resp.respuesta || '';
                         musica = Array.isArray(resp.musica) ? resp.musica : null;
+                        eventos = Array.isArray(resp.eventos) ? resp.eventos : null;
                     } else {
                         respuesta = resp || '';
                         musica = Array.isArray(window.MarquinhosBrain.ultimaMusica)
                             ? window.MarquinhosBrain.ultimaMusica
+                            : null;
+                        eventos = Array.isArray(window.MarquinhosBrain.ultimosEventos)
+                            ? window.MarquinhosBrain.ultimosEventos
                             : null;
                     }
                 } catch (e) {
@@ -1334,7 +1460,11 @@
             historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
             guardarHistorial();
 
-            if (musica && musica.length) renderizarMusica(musica);
+            if (eventos && eventos.length) {
+                renderizarEventos(eventos);
+            } else if (musica && musica.length) {
+                renderizarMusica(musica);
+            }
 
             procesando = false;
             const completo = await hablar(respuesta);
@@ -1361,6 +1491,15 @@
         });
     }
 
+    // Eventos que puede disparar el brain (además de la respuesta directa)
+    window.addEventListener('marquinhos-eventos', function(e) {
+        if (Array.isArray(e.detail)) renderizarEventos(e.detail);
+    });
+
+    window.addEventListener('marquinhos-musica', function(e) {
+        if (Array.isArray(e.detail)) renderizarMusica(e.detail);
+    });
+
     window.addEventListener('storage', function(e) {
         if (e.key === 'marquinhos_config') {
             cargarConfig();
@@ -1380,7 +1519,8 @@
         procesar: procesarComando,
         olvidar: olvidarTodo,
         mostrarMusica: renderizarMusica,
-        cerrarMusica: cerrarPanelMusica,
+        mostrarEventos: renderizarEventos,
+        cerrarPaneles: cerrarTodosLosPaneles,
         recargarAccesorios: async function() {
             await cargarAccesorios();
             renderAccesoriosEnAvatar();
@@ -1436,7 +1576,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.8.5 Galactic Pro activo');
+        log('✅ Marquinhos v9.9.0 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
