@@ -1,0 +1,203 @@
+<!-- backend/public/legal/eliminar-cuenta.html -->
+<!DOCTYPE html>
+<html lang="es" data-public>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eliminar mi cuenta · Csariel's</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-card: #0B0F17;
+            --green: #22C55E;
+            --cyan: #00E5FF;
+            --purple: #A855F7;
+            --text-primary: #F8F9FA;
+            --text-secondary: #8B98A5;
+            --border: rgba(34, 197, 94, 0.18);
+            --font-base: 'Inter', -apple-system, sans-serif;
+            --font-title: 'Orbitron', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-base);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .legal-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            flex-shrink: 0;
+        }
+        .back-btn:hover { background: rgba(34, 197, 94, 0.12); border-color: var(--green); }
+        .back-btn svg { width: 22px; height: 22px; fill: currentColor; }
+        .header-content { display: flex; flex-direction: column; }
+        .header-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+        .header-subtitle { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+        .legal-main { max-width: 640px; width: 100%; margin: 0 auto; padding: 28px 20px 60px; flex: 1; }
+        .badge { display: inline-block; font-family: var(--font-title); font-size: 0.68rem; letter-spacing: 2px; color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 999px; margin-bottom: 14px; }
+        h1 { font-family: var(--font-title); font-size: 1.5rem; color: var(--green); margin-bottom: 12px; line-height: 1.25; text-shadow: 0 0 20px rgba(34, 197, 94, 0.25); }
+        p { margin-bottom: 10px; font-size: 0.92rem; color: #D1D5DB; }
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 20px; margin: 18px 0; }
+        .card label { display: block; font-size: 0.8rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .card input[type="email"] {
+            width: 100%;
+            background: #05080E;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .card input[type="email"]:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18); }
+        .card button {
+            margin-top: 14px;
+            width: 100%;
+            background: var(--green);
+            color: #04210F;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: filter 0.2s, transform 0.1s;
+        }
+        .card button:hover { filter: brightness(1.1); }
+        .card button:active { transform: translateY(1px); }
+        .card button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .msg { font-size: 0.88rem; margin-top: 12px; padding: 10px 12px; border-radius: 8px; display: none; }
+        .msg.ok { display: block; background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.4); color: #86EFAC; }
+        .msg.error { display: block; background: rgba(248, 113, 113, 0.1); border: 1px solid rgba(248, 113, 113, 0.4); color: #FCA5A5; }
+        ul, ol { padding-left: 22px; margin-bottom: 12px; }
+        li { font-size: 0.92rem; color: #D1D5DB; margin-bottom: 6px; }
+        .callout { background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(0, 229, 255, 0.06)); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 0.88rem; }
+        .callout strong { color: var(--green); }
+        .contacto { margin-top: 36px; border-top: 1px solid var(--border); padding-top: 18px; font-size: 0.85rem; color: var(--text-secondary); }
+        .contacto a { color: var(--cyan); text-decoration: none; }
+        .contacto a:hover { text-decoration: underline; }
+        .pendiente { color: #FBBF24; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/features/centro-ayuda/index.html'; }" aria-label="Volver">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div class="header-content">
+            <div class="header-title">Eliminar mi cuenta</div>
+            <div class="header-subtitle">Csariel's · Sin iniciar sesión</div>
+        </div>
+    </header>
+    <main class="legal-main">
+        <span class="badge">SOLICITUD DE BAJA</span>
+        <h1>Eliminar mi cuenta de Csariel's</h1>
+        <p>Puedes solicitar la eliminación de tu cuenta <strong>sin necesidad de iniciar sesión en la app</strong>. Solo necesitas acceso al correo con el que te registraste.</p>
+
+        <div class="card">
+            <label for="emailInput">Correo registrado</label>
+            <input type="email" id="emailInput" placeholder="tucorreo@ejemplo.com" autocomplete="email" />
+            <button id="solicitarBtn" type="button">Enviar enlace de confirmación</button>
+            <div id="msg" class="msg" role="status" aria-live="polite"></div>
+        </div>
+
+        <h2 style="font-family: var(--font-title); font-size: 1rem; color: var(--green); margin-top: 24px;">¿Cómo funciona?</h2>
+        <ol>
+            <li>Escribes el correo con el que te registraste.</li>
+            <li>Si el correo está registrado, recibirás un enlace de confirmación en tu bandeja de entrada.</li>
+            <li>Al confirmar, se procesará la eliminación de tu cuenta en un plazo máximo de <strong>30 días naturales</strong>.</li>
+            <li>Recibirás un correo final cuando el proceso concluya.</li>
+        </ol>
+
+        <div class="callout">
+            <strong>Qué se elimina:</strong> perfil, publicaciones del Muro, mensajes en Canales, historial de Live y datos de contacto. <strong>Qué se conserva:</strong> registros de transacciones del Mercado y datos que la ley mexicana exija mantener por obligaciones fiscales o contables, durante el plazo legal aplicable.
+        </div>
+
+        <p>Si no recibes el correo de confirmación en 15 minutos, revisa tu carpeta de spam o escríbenos a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</p>
+
+        <div class="contacto">
+            <p><strong>Responsable:</strong> <span class="pendiente">[Pendiente: razón social]</span></p>
+            <p><strong>Domicilio:</strong> <span class="pendiente">[Pendiente: domicilio]</span></p>
+            <p><strong>Correo oficial:</strong> <a href="mailto:soporte@csariels.com">soporte@csariels.com</a></p>
+            <p><strong>Jurisdicción:</strong> Puebla, México</p>
+            <p><strong>Vigencia:</strong> <span class="pendiente">[Pendiente: fecha de publicación]</span></p>
+        </div>
+    </main>
+
+    <script>
+        // Endpoint esperado en el backend: POST /api/cuenta/solicitar-eliminacion
+        // Body: { email: string }
+        // Respuesta esperada: 200 { ok: true } (siempre responde ok para no revelar existencia de correos)
+        (function() {
+            const btn = document.getElementById('solicitarBtn');
+            const input = document.getElementById('emailInput');
+            const msg = document.getElementById('msg');
+
+            function setMsg(text, type) {
+                msg.className = 'msg ' + type;
+                msg.textContent = text;
+            }
+
+            btn.addEventListener('click', async function() {
+                const email = (input.value || '').trim().toLowerCase();
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    setMsg('Introduce un correo válido.', 'error');
+                    return;
+                }
+                btn.disabled = true;
+                btn.textContent = 'Enviando...';
+                try {
+                    const res = await fetch('/api/cuenta/solicitar-eliminacion', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: email })
+                    });
+                    if (res.ok) {
+                        setMsg('Si el correo está registrado, recibirás un enlace de confirmación en los próximos minutos. Revisa también tu carpeta de spam.', 'ok');
+                        input.value = '';
+                    } else {
+                        setMsg('No pudimos procesar la solicitud. Inténtalo de nuevo más tarde.', 'error');
+                    }
+                } catch (err) {
+                    setMsg('Error de conexión. Revisa tu red e inténtalo de nuevo.', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Enviar enlace de confirmación';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>
