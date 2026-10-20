@@ -1,13 +1,14 @@
 // ================================================================
-// MARQUINHOS · BRAIN v7.3
+// MARQUINHOS · BRAIN v7.4
 // Memoria por usuario (RAG) + filtro de recuerdos + respuestas locales
-// + SOPORTE DE MÚSICA (Deezer: enlace de canción, sin audio)
+// + MÚSICA (Deezer: enlace de canción, sin audio)
+// + EVENTOS (Ticketmaster Discovery: solo lectura, enlace oficial)
 //
-// v7.3 — preguntar() devuelve { reply, musica } cuando el backend
-//        trae canciones; si no, devuelve solo texto (compatibilidad).
-//        Asigna window.MarquinhosBrain.ultimaMusica.
-//        El evento 'marquinhos-musica' valida enlace de Deezer
-//        (ya no audio_preview).
+// v7.4 — preguntar() devuelve { reply, musica, eventos } cuando el
+//        backend trae resultados; si no, devuelve solo texto.
+//        Asigna ultimaMusica y ultimosEventos.
+//        Emite 'marquinhos-musica' y 'marquinhos-eventos'.
+//        Los eventos solo se aceptan con enlace https de ticketmaster.com.
 // ================================================================
 
 'use strict';
@@ -15,7 +16,7 @@
 (function () {
     if (window.MarquinhosBrain) return;
 
-    const VERSION = '7.3';
+    const VERSION = '7.4';
     const TIMEOUT_MS = 30000;
     const HISTORIAL_ENVIO = 20;
     const HISTORIAL_CHARS = 2000;
@@ -358,6 +359,45 @@
     }
 
     // ============================================================
+    // EVENTOS: validación y emisión del evento
+    // Ticketmaster Discovery (solo lectura). Solo enlaces oficiales.
+    // ============================================================
+    function enlaceTicketmasterSeguro(url) {
+        if (typeof url !== 'string') return false;
+        try {
+            const u = new URL(url);
+            const host = u.hostname.toLowerCase();
+            return u.protocol === 'https:' &&
+                (host === 'ticketmaster.com' || host.endsWith('.ticketmaster.com'));
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function eventoValido(ev) {
+        return Boolean(
+            ev && typeof ev === 'object' &&
+            typeof ev.titulo === 'string' && ev.titulo.trim() !== '' &&
+            enlaceTicketmasterSeguro(ev.enlace)
+        );
+    }
+
+    function listaEventosValida(lista) {
+        if (!Array.isArray(lista)) return null;
+        const validos = lista.filter(eventoValido);
+        return validos.length ? validos : null;
+    }
+
+    function emitirEventos(lista) {
+        if (!lista) return;
+        try {
+            window.dispatchEvent(new CustomEvent('marquinhos-eventos', { detail: lista }));
+        } catch (e) {
+            console.warn('[Marquinhos/Brain] No se pudo emitir eventos:', e.message);
+        }
+    }
+
+    // ============================================================
     // ENDPOINTS DE CHAT
     // ============================================================
     async function llamarEndpoint(url, payload, token) {
@@ -391,9 +431,10 @@
             const data = await resp.json();
             const reply = data && (data.reply || data.message || data.response);
             const musica = listaMusicaValida(data && data.musica);
+            const eventos = listaEventosValida(data && data.eventos);
 
             if (reply && typeof reply === 'string' && reply.trim()) {
-                return { ok: true, reply: reply.trim(), musica: musica };
+                return { ok: true, reply: reply.trim(), musica: musica, eventos: eventos };
             }
             return { ok: false, status: resp.status, error: 'respuesta vacía' };
         } catch (e) {
@@ -433,7 +474,7 @@
 
     // ============================================================
     // PREGUNTAR
-    // Devuelve { reply, musica } si hay canciones; si no, texto.
+    // Devuelve { reply, musica, eventos } si hay resultados; si no, texto.
     // ============================================================
     async function preguntar(texto, historialLocal, modo) {
         if (!texto || typeof texto !== 'string') return '';
@@ -441,6 +482,7 @@
         if (!limpio) return '';
 
         window.MarquinhosBrain.ultimaMusica = null;
+        window.MarquinhosBrain.ultimosEventos = null;
 
         const userInfo = window.Marquinhos && window.Marquinhos.getUserInfo
             ? window.Marquinhos.getUserInfo() : null;
@@ -492,7 +534,7 @@
                 }
 
                 if (r1.ok) {
-                    return entregarRespuesta(r1.reply, r1.musica);
+                    return entregarRespuesta(r1.reply, r1.musica, r1.eventos);
                 }
 
                 const r2 = await llamarEndpoint(CHAT_ENDPOINT, {
@@ -504,7 +546,7 @@
                 }, token);
 
                 if (r2.ok) {
-                    return entregarRespuesta(r2.reply, r2.musica);
+                    return entregarRespuesta(r2.reply, r2.musica, r2.eventos);
                 }
 
                 motivoFallo = 'chat-pet: ' + describirFallo(r1) + ' | chat: ' + describirFallo(r2);
@@ -519,13 +561,28 @@
         return 'No pude conectarme ahora (' + motivoFallo.slice(0, 120) + '). Intenta de nuevo.';
     }
 
-    // Une la respuesta con la música (si la hay) y la deja disponible
-    // para el frontend por las dos vías: valor devuelto y ultimaMusica.
-    function entregarRespuesta(reply, musica) {
-        if (musica && musica.length) {
+    // Une la respuesta con música y eventos (si los hay) y los deja
+    // disponibles para el frontend por el valor devuelto y por las
+    // variables ultimaMusica / ultimosEventos.
+    function entregarRespuesta(reply, musica, eventos) {
+        const hayMusica = Array.isArray(musica) && musica.length > 0;
+        const hayEventos = Array.isArray(eventos) && eventos.length > 0;
+
+        if (hayMusica) {
             window.MarquinhosBrain.ultimaMusica = musica;
             emitirMusica(musica);
-            return { reply: reply, musica: musica };
+        }
+        if (hayEventos) {
+            window.MarquinhosBrain.ultimosEventos = eventos;
+            emitirEventos(eventos);
+        }
+
+        if (hayMusica || hayEventos) {
+            return {
+                reply: reply,
+                musica: hayMusica ? musica : null,
+                eventos: hayEventos ? eventos : null
+            };
         }
         return reply;
     }
@@ -533,7 +590,8 @@
     window.MarquinhosBrain = {
         version: VERSION,
         preguntar: preguntar,
-        ultimaMusica: null
+        ultimaMusica: null,
+        ultimosEventos: null
     };
-    console.log('[Marquinhos/Brain] ✅ v' + VERSION + ' cargado (memoria RAG + música)');
+    console.log('[Marquinhos/Brain] ✅ v' + VERSION + ' cargado (memoria RAG + música + eventos)');
 })();
