@@ -5,6 +5,8 @@
 //       Rekognition), Moderar-Texto (OpenAI Moderation API) y
 //       Llamadas mixtas (/api/llamadas: LiveKit hoy, Telnyx después).
 // v3.6: Música (Deezer API sin API Key) agregada.
+// v3.7: CSP de Deezer ampliada a *.dzcdn.net, validación de
+//       /api/music/buscar, timeout a Deezer y limpieza de connectSrc.
 // ================================================================
 
 require('dotenv').config();
@@ -57,6 +59,8 @@ const WEB3_CHAIN_ID = parseInt(process.env.POLYGON_CHAIN_ID, 10) || 80002;
 
 const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || '';
 const TURNSTILE_SITE_KEY = process.env.TURNSTILE_SITE_KEY || '';
+
+const DEEZER_TIMEOUT_MS = 8000;
 
 // ================================================================
 // VALIDACIÓN DE VARIABLES CRÍTICAS
@@ -235,11 +239,9 @@ app.use(
                     "data:"
                 ],
 
-                // NUEVO: MÚSICA DEEZER - Permitir carátulas de Deezer (cdn-images.dzcdn.net)
-                imgSrc: ["'self'", "data:", "blob:", "https:", "https://cdn-images.dzcdn.net"],
-
-                // NUEVO: MÚSICA DEEZER - Permitir reproducción de audio de Deezer (cdns-preview...)
-                mediaSrc: ["'self'", "data:", "blob:", "https:", "https://cdns-preview-d.dzcdn.net"],
+                // MÚSICA DEEZER: carátulas y previews (subdominios dzcdn.net)
+                imgSrc: ["'self'", "data:", "blob:", "https:", "https://*.dzcdn.net"],
+                mediaSrc: ["'self'", "data:", "blob:", "https:", "https://*.dzcdn.net"],
 
                 connectSrc: [
                     "'self'",
@@ -293,8 +295,7 @@ app.use(
                     "https://metamask.app.link",
                     "https://api.metamask.io",
                     "https://cloudflare-eth.com",
-                    "https://eth.llamarpc.com",
-                    "https://api.deezer.com" // NUEVO: MÚSICA DEEZER (Para que el frontend pueda buscar si lo necesitas)
+                    "https://eth.llamarpc.com"
                 ],
 
                 frameSrc: [
@@ -575,41 +576,46 @@ app.post('/api/ai/embeddings', authMiddleware, async (req, res) => {
 console.log('✅ Endpoint /api/ai/embeddings registrado');
 
 // ================================================================
-// NUEVO: MÚSICA DEEZER (Buscador para Marquinhos y el Muro)
+// MÚSICA DEEZER (buscador para Marquinhos y el Muro)
 // ================================================================
 
 app.get('/api/music/buscar', async (req, res) => {
     try {
-        const query = req.query.q;
-        
+        const query = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+
         if (!query) {
             return res.status(400).json({ error: 'Falta el parámetro q (canción)' });
         }
 
+        if (query.length > 100) {
+            return res.status(400).json({ error: 'El parámetro q es demasiado largo (máx 100)' });
+        }
+
         const url = `https://api.deezer.com/search?q=${encodeURIComponent(query)}`;
-        
-        // Usamos axios que ya tienes importado arriba
-        const response = await axios.get(url);
+
+        const response = await axios.get(url, { timeout: DEEZER_TIMEOUT_MS });
         const data = response.data;
 
-        if (data.data && data.data.length > 0) {
-            // Tomamos los primeros 5 resultados para no saturar
-            const canciones = data.data.slice(0, 5).map(c => ({
+        const canciones = (Array.isArray(data?.data) ? data.data : [])
+            .filter(c => c && c.preview && c.artist && c.album)
+            .slice(0, 5)
+            .map(c => ({
                 id: c.id,
-                titulo: c.title,
-                artista: c.artist.name,
-                caratula: c.album.cover_medium,
-                audio_preview: c.preview, // Audio de 30 seg
-                link_deezer: c.link
+                titulo: c.title || '',
+                artista: c.artist.name || '',
+                caratula: c.album.cover_medium || '',
+                audio_preview: c.preview,
+                link_deezer: c.link || ''
             }));
 
-            return res.json({
-                success: true,
-                resultados: canciones
-            });
-        } else {
+        if (canciones.length === 0) {
             return res.json({ success: false, mensaje: 'No se encontraron canciones' });
         }
+
+        return res.json({
+            success: true,
+            resultados: canciones
+        });
     } catch (error) {
         console.error('❌ Error buscando música en Deezer:', error.message);
         return res.status(500).json({ error: 'Error al conectar con Deezer' });
@@ -1141,7 +1147,7 @@ app.listen(PORT, () => {
     );
     console.log(`⛓️ Polygon chainId: ${WEB3_CHAIN_ID}`);
     console.log(`🛡️ Hostname Turnstile esperado: ${PUBLIC_APP_HOSTNAME || '(no disponible)'}`);
-    console.log(`🎵 Música Deezer: ✅ Configurado (/api/music/buscar)`); // NUEVO
+    console.log('🎵 Música Deezer: ✅ Configurado (/api/music/buscar)');
     console.log('================================================');
     console.log('');
 });
