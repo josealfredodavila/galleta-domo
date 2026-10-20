@@ -2,55 +2,39 @@
      CSARIEL'S ECOSYSTEM
      Política de Devoluciones y Reembolsos del Mercado
      Ruta: /backend/public/legal/mercado-devoluciones.html
-     
-     Diseño: Fondo claro legible + branding Csariel's (verde + dorado)
-     Cumple WCAG AAA de contraste
-     Optimizado para impresión
-     
-     Fundamento legal:
-     - Ley Federal de Protección al Consumidor (Art. 76 Bis, 76 Bis 1, 92, 92 Bis)
-     - NOM-024-SCFI-2013
-     - Código de Comercio (Art. 89, 90, 91)
-     - Reglamento de la LFPC
+
+     Página pública: no carga auth-global.js y no enlaza al Mercado.
+     Colores: siguen el tema y acento elegido por el usuario
+     (apariencia-global.js), con respaldo en paleta oscura Csariel's.
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
     <title>Política de Devoluciones · Csariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%239BD62B' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%239BD62B' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
     <style>
-        /* ================================================================
-           VARIABLES · Diseño claro con branding Csariel's
-           Contraste WCAG AAA (>7:1)
-           ================================================================ */
         :root {
-            --gold: #B8923A;
-            --gold-light: #D4AF37;
-            --gold-bg: #FDF9ED;
-            --green-brand: #0F2D1A;
-            --green-bg: #F0F7F2;
+            --lg-bg: var(--cfg-bg, #000000);
+            --lg-card: var(--cfg-card, #050B14);
+            --lg-card-hover: var(--cfg-card-hover, #0A1423);
+            --lg-text: var(--cfg-text, #F8F9FA);
+            --lg-text-soft: var(--cfg-text-soft, #C0D8E8);
+            --lg-text-muted: var(--cfg-text-muted, #8B98A5);
+            --lg-accent: var(--cfg-accent, #9BD62B);
+            --lg-accent-soft: rgba(155, 214, 43, 0.12);
+            --lg-border: var(--cfg-border, rgba(155, 214, 43, 0.25));
+            --lg-border-soft: rgba(255, 255, 255, 0.08);
 
-            --bg: #FEFEFE;
-            --bg-soft: #FAFAF7;
-            --text: #1F2937;
-            --text-soft: #4B5563;
-            --text-muted: #6B7280;
-            --border: #E5E7EB;
-
-            --link: #0052CC;
-            --link-hover: #003D99;
-            --success: #047857;
-            --success-bg: #ECFDF5;
-            --warning: #B45309;
-            --warning-bg: #FFFBEB;
-            --danger: #B91C1C;
-            --danger-bg: #FEF2F2;
-            --info: #1E40AF;
-            --info-bg: #EFF6FF;
+            --lg-info: #60A5FA;
+            --lg-warning: #FBBF24;
+            --lg-danger: #F87171;
+            --lg-success: #34D399;
 
             --radius: 12px;
             --radius-xl: 16px;
@@ -60,8 +44,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: var(--bg);
-            color: var(--text);
+            background: var(--lg-bg);
+            color: var(--lg-text);
             font-family: 'Inter', sans-serif;
             font-size: 16px;
             line-height: 1.7;
@@ -75,14 +59,13 @@
             padding: 0 20px 60px;
         }
 
-        /* Header */
         .header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 16px 0;
-            border-bottom: 2px solid var(--green-brand);
-            background: var(--bg);
+            border-bottom: 2px solid var(--lg-accent);
+            background: var(--lg-bg);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -92,25 +75,25 @@
             align-items: center;
             gap: 10px;
             text-decoration: none;
-            color: var(--green-brand);
+            color: var(--lg-text);
         }
         .logo-hex {
             font-size: 1.7rem;
-            color: var(--gold-light);
+            color: var(--lg-accent);
             font-family: 'Orbitron', monospace;
             line-height: 1;
         }
         .logo-text {
             font-family: 'Orbitron', monospace;
             font-size: 1.15rem;
-            color: var(--green-brand);
+            color: var(--lg-text);
             letter-spacing: 2px;
             font-weight: 700;
         }
-        .logo-text span { color: var(--gold-light); }
+        .logo-text span { color: var(--lg-accent); }
         .logo-badge {
             font-size: 0.55rem;
-            background: var(--green-brand);
+            background: linear-gradient(135deg, #ff2e97, #8b5cf6);
             color: #fff;
             padding: 3px 10px;
             border-radius: 20px;
@@ -118,48 +101,21 @@
             letter-spacing: 1px;
         }
 
-        /* Botón volver */
-        .btn-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-soft);
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-decoration: none;
-            margin: 20px 0;
-            transition: var(--transition);
-            cursor: pointer;
-        }
-        .btn-back .simbolo {
-            color: var(--gold-light);
-            font-family: 'Orbitron', monospace;
-        }
-        .btn-back:hover {
-            border-color: var(--gold-light);
-            color: var(--gold);
-            background: var(--gold-bg);
-        }
-
-        /* Hero */
         .hero {
             text-align: center;
             padding: 30px 20px 24px;
+            margin-top: 20px;
             margin-bottom: 28px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--lg-border-soft);
         }
         .hero .etiqueta {
             display: inline-block;
             font-family: 'Orbitron', monospace;
             font-size: 0.65rem;
             letter-spacing: 2px;
-            color: var(--gold);
-            background: var(--gold-bg);
-            border: 1px solid var(--gold-light);
+            color: var(--lg-accent);
+            background: var(--lg-accent-soft);
+            border: 1px solid var(--lg-border);
             padding: 6px 16px;
             border-radius: 20px;
             margin-bottom: 16px;
@@ -169,14 +125,14 @@
         .hero h1 {
             font-family: 'Orbitron', monospace;
             font-size: 1.7rem;
-            color: var(--green-brand);
+            color: var(--lg-text);
             margin-bottom: 10px;
             line-height: 1.3;
             font-weight: 700;
         }
         .hero .subtitulo {
             font-size: 0.95rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             margin-bottom: 20px;
             max-width: 600px;
             margin-left: auto;
@@ -188,7 +144,7 @@
             flex-wrap: wrap;
             justify-content: center;
             font-size: 0.8rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
         }
         .hero .meta-info > div {
             display: flex;
@@ -196,31 +152,30 @@
             gap: 2px;
         }
         .hero .meta-info strong {
-            color: var(--text-muted);
+            color: var(--lg-text-muted);
             font-size: 0.65rem;
             letter-spacing: 1px;
             text-transform: uppercase;
             font-weight: 700;
         }
         .hero .meta-info span {
-            color: var(--text);
+            color: var(--lg-text);
             font-weight: 600;
         }
 
-        /* Aviso grande */
         .aviso-grande {
-            background: var(--info-bg);
-            border: 1px solid #BFDBFE;
-            border-left: 4px solid var(--info);
+            background: rgba(96, 165, 250, 0.10);
+            border: 1px solid var(--lg-border-soft);
+            border-left: 4px solid var(--lg-info);
             border-radius: var(--radius);
             padding: 20px 24px;
             margin-bottom: 28px;
             font-size: 0.92rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             line-height: 1.7;
         }
         .aviso-grande strong {
-            color: var(--info);
+            color: var(--lg-info);
             display: block;
             margin-bottom: 8px;
             font-weight: 700;
@@ -230,10 +185,9 @@
             text-transform: uppercase;
         }
 
-        /* Índice */
         .indice {
-            background: var(--bg-soft);
-            border: 1px solid var(--border);
+            background: var(--lg-card);
+            border: 1px solid var(--lg-border);
             border-radius: var(--radius-xl);
             padding: 24px 28px;
             margin-bottom: 32px;
@@ -241,7 +195,7 @@
         .indice h2 {
             font-family: 'Orbitron', monospace;
             font-size: 0.85rem;
-            color: var(--green-brand);
+            color: var(--lg-accent);
             margin-bottom: 18px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -252,7 +206,7 @@
         }
         .indice h2::before {
             content: '◈';
-            color: var(--gold-light);
+            color: var(--lg-accent);
             font-size: 1rem;
         }
         .indice ol {
@@ -267,7 +221,7 @@
             font-size: 0.88rem;
         }
         .indice ol li a {
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             text-decoration: none;
             display: flex;
             align-items: center;
@@ -279,20 +233,19 @@
         .indice ol li a::before {
             content: counter(item) ".";
             font-family: 'Orbitron', monospace;
-            color: var(--gold);
+            color: var(--lg-accent);
             font-weight: 700;
             min-width: 24px;
             font-size: 0.85rem;
         }
         .indice ol li a:hover {
-            background: var(--gold-bg);
-            color: var(--green-brand);
+            background: var(--lg-accent-soft);
+            color: var(--lg-text);
         }
 
-        /* Secciones */
         .seccion {
-            background: var(--bg);
-            border: 1px solid var(--border);
+            background: var(--lg-card);
+            border: 1px solid var(--lg-border-soft);
             border-radius: var(--radius-xl);
             padding: 32px 30px;
             margin-bottom: 24px;
@@ -300,15 +253,15 @@
             transition: var(--transition);
         }
         .seccion:hover {
-            border-color: var(--gold-light);
+            border-color: var(--lg-border);
         }
         .seccion h2 {
             font-family: 'Orbitron', monospace;
             font-size: 1.05rem;
-            color: var(--green-brand);
+            color: var(--lg-text);
             margin-bottom: 20px;
             padding-bottom: 14px;
-            border-bottom: 2px solid var(--border);
+            border-bottom: 2px solid var(--lg-border-soft);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -316,8 +269,8 @@
             font-weight: 700;
         }
         .seccion h2 .num {
-            background: var(--gold-light);
-            color: var(--green-brand);
+            background: var(--lg-accent);
+            color: #000;
             padding: 6px 12px;
             border-radius: 8px;
             font-size: 0.9rem;
@@ -330,58 +283,59 @@
             font-family: 'Inter', sans-serif;
             font-size: 1rem;
             font-weight: 700;
-            color: var(--green-brand);
+            color: var(--lg-accent);
             margin: 24px 0 12px;
         }
         .seccion p {
             font-size: 0.95rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             margin-bottom: 14px;
             text-align: justify;
         }
         .seccion p strong {
-            color: var(--text);
+            color: var(--lg-text);
             font-weight: 700;
         }
         .seccion ul, .seccion ol {
             margin: 12px 0 16px 28px;
             font-size: 0.95rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
         }
         .seccion ul li, .seccion ol li {
             margin-bottom: 8px;
             line-height: 1.7;
         }
         .seccion ul li::marker {
-            color: var(--gold);
+            color: var(--lg-accent);
         }
         .seccion ol li::marker {
-            color: var(--gold);
+            color: var(--lg-accent);
             font-weight: 700;
         }
         .seccion a {
-            color: var(--link);
+            color: var(--lg-accent);
             text-decoration: underline;
             font-weight: 500;
         }
         .seccion a:hover {
-            color: var(--link-hover);
+            color: var(--lg-text);
         }
 
-        /* Tablas */
         .tabla-legal {
             width: 100%;
             border-collapse: collapse;
             margin: 20px 0;
             font-size: 0.88rem;
-            background: var(--bg);
-            border: 1px solid var(--border);
+            background: var(--lg-card);
+            border: 1px solid var(--lg-border-soft);
             border-radius: var(--radius);
             overflow: hidden;
+            display: block;
+            overflow-x: auto;
         }
         .tabla-legal th {
-            background: var(--green-brand);
-            color: #fff;
+            background: var(--lg-accent-soft);
+            color: var(--lg-accent);
             padding: 14px 16px;
             text-align: left;
             font-family: 'Orbitron', monospace;
@@ -389,35 +343,34 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 700;
+            white-space: nowrap;
         }
         .tabla-legal td {
             padding: 14px 16px;
-            border-top: 1px solid var(--border);
-            color: var(--text-soft);
+            border-top: 1px solid var(--lg-border-soft);
+            color: var(--lg-text-soft);
             vertical-align: top;
-            background: var(--bg);
         }
         .tabla-legal tr:nth-child(even) td {
-            background: var(--bg-soft);
+            background: rgba(255, 255, 255, 0.02);
         }
         .tabla-legal td strong {
-            color: var(--text);
+            color: var(--lg-text);
             font-weight: 700;
         }
 
-        /* Avisos */
         .aviso {
-            background: var(--info-bg);
-            border-left: 4px solid var(--info);
+            background: rgba(96, 165, 250, 0.10);
+            border-left: 4px solid var(--lg-info);
             border-radius: 8px;
             padding: 16px 20px;
             margin: 20px 0;
             font-size: 0.9rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             line-height: 1.65;
         }
         .aviso strong {
-            color: var(--info);
+            color: var(--lg-info);
             display: block;
             margin-bottom: 8px;
             font-weight: 700;
@@ -426,23 +379,23 @@
             letter-spacing: 0.5px;
             text-transform: uppercase;
         }
+        .aviso a { color: var(--lg-info); }
         .aviso.warning {
-            background: var(--warning-bg);
-            border-left-color: var(--warning);
+            background: rgba(251, 191, 36, 0.10);
+            border-left-color: var(--lg-warning);
         }
-        .aviso.warning strong { color: var(--warning); }
+        .aviso.warning strong { color: var(--lg-warning); }
         .aviso.danger {
-            background: var(--danger-bg);
-            border-left-color: var(--danger);
+            background: rgba(248, 113, 113, 0.10);
+            border-left-color: var(--lg-danger);
         }
-        .aviso.danger strong { color: var(--danger); }
+        .aviso.danger strong { color: var(--lg-danger); }
         .aviso.success {
-            background: var(--success-bg);
-            border-left-color: var(--success);
+            background: rgba(52, 211, 153, 0.10);
+            border-left-color: var(--lg-success);
         }
-        .aviso.success strong { color: var(--success); }
+        .aviso.success strong { color: var(--lg-success); }
 
-        /* Grid de casos */
         .casos-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -452,16 +405,16 @@
         .caso-card {
             border-radius: var(--radius);
             padding: 20px 18px;
-            border: 1px solid var(--border);
-            background: var(--bg-soft);
+            border: 1px solid var(--lg-border-soft);
+            background: var(--lg-card-hover);
         }
         .caso-card.aprobado {
-            background: var(--success-bg);
-            border-color: var(--success);
+            border-color: rgba(52, 211, 153, 0.5);
+            background: rgba(52, 211, 153, 0.08);
         }
         .caso-card.rechazado {
-            background: var(--danger-bg);
-            border-color: var(--danger);
+            border-color: rgba(248, 113, 113, 0.5);
+            background: rgba(248, 113, 113, 0.08);
         }
         .caso-card .icono {
             font-family: 'Orbitron', monospace;
@@ -470,29 +423,28 @@
             margin-bottom: 10px;
             display: block;
         }
-        .caso-card.aprobado .icono { color: var(--success); }
-        .caso-card.rechazado .icono { color: var(--danger); }
+        .caso-card.aprobado .icono { color: var(--lg-success); }
+        .caso-card.rechazado .icono { color: var(--lg-danger); }
         .caso-card .titulo {
             font-size: 0.9rem;
             font-weight: 700;
-            color: var(--text);
+            color: var(--lg-text);
             margin-bottom: 10px;
             font-family: 'Orbitron', monospace;
         }
         .caso-card ul {
             margin: 0 0 0 20px;
             font-size: 0.85rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
         }
         .caso-card ul li {
             margin-bottom: 6px;
             line-height: 1.6;
         }
         .caso-card ul li::marker {
-            color: var(--text-muted);
+            color: var(--lg-text-muted);
         }
 
-        /* Flujo de pasos */
         .flujo {
             display: flex;
             flex-direction: column;
@@ -503,8 +455,8 @@
             display: flex;
             gap: 16px;
             align-items: flex-start;
-            background: var(--bg-soft);
-            border: 1px solid var(--border);
+            background: var(--lg-card-hover);
+            border: 1px solid var(--lg-border-soft);
             border-radius: var(--radius);
             padding: 18px;
         }
@@ -512,8 +464,8 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: var(--green-brand);
-            color: #fff;
+            background: var(--lg-accent);
+            color: #000;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -526,19 +478,18 @@
         .paso-flujo .contenido .titulo-paso {
             font-size: 0.92rem;
             font-weight: 700;
-            color: var(--text);
+            color: var(--lg-text);
             margin-bottom: 4px;
         }
         .paso-flujo .contenido .desc-paso {
             font-size: 0.85rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             line-height: 1.6;
         }
 
-        /* Contacto */
         .contacto {
-            background: var(--green-bg);
-            border: 1px solid var(--green-brand);
+            background: var(--lg-card);
+            border: 1px solid var(--lg-border);
             border-radius: var(--radius-xl);
             padding: 28px 24px;
             margin-top: 32px;
@@ -547,7 +498,7 @@
         .contacto h3 {
             font-family: 'Orbitron', monospace;
             font-size: 0.95rem;
-            color: var(--green-brand);
+            color: var(--lg-accent);
             margin-bottom: 18px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -555,7 +506,6 @@
         }
         .contacto h3::before {
             content: '◈ ';
-            color: var(--gold-light);
         }
         .contacto .fila {
             display: flex;
@@ -563,83 +513,59 @@
             align-items: center;
             padding: 10px 0;
             font-size: 0.9rem;
-            border-bottom: 1px solid rgba(15, 45, 26, 0.1);
+            border-bottom: 1px solid var(--lg-border-soft);
             max-width: 520px;
             margin: 0 auto;
             gap: 16px;
         }
         .contacto .fila:last-child { border-bottom: none; }
         .contacto .lbl {
-            color: var(--text-muted);
+            color: var(--lg-text-muted);
             font-weight: 500;
             text-align: left;
         }
         .contacto .val {
-            color: var(--text);
+            color: var(--lg-text);
             font-weight: 600;
             text-align: right;
         }
         .contacto .val.pendiente {
-            color: var(--warning);
+            color: var(--lg-warning);
             font-style: italic;
             font-size: 0.85rem;
             font-weight: 500;
         }
 
-        /* Footer */
         .footer-legal {
             margin-top: 40px;
             padding-top: 28px;
-            border-top: 2px solid var(--green-brand);
+            border-top: 2px solid var(--lg-accent);
             text-align: center;
             font-size: 0.82rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             line-height: 1.8;
         }
         .footer-legal .marca {
-            color: var(--green-brand);
+            color: var(--lg-accent);
             font-weight: 700;
             font-family: 'Orbitron', monospace;
             font-size: 0.9rem;
         }
-        .footer-legal .marca::before { content: '◈ '; color: var(--gold-light); }
+        .footer-legal .marca::before { content: '◈ '; }
 
-        /* Botón flotante volver */
-        .btn-volver-flotante {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            padding: 14px 24px;
-            background: var(--green-brand);
-            color: #fff;
-            border: none;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.78rem;
-            cursor: pointer;
-            text-decoration: none;
-            box-shadow: 0 8px 24px rgba(15, 45, 26, 0.3);
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 500;
-        }
-        .btn-volver-flotante::before {
-            content: '◈';
-            color: var(--gold-light);
-        }
-        .btn-volver-flotante:hover {
-            transform: translateY(-3px);
-            background: #1a4a2a;
-            box-shadow: 0 12px 32px rgba(15, 45, 26, 0.4);
-        }
-
-        /* Impresión */
         @media print {
+            :root {
+                --lg-bg: #ffffff;
+                --lg-card: #ffffff;
+                --lg-text: #000000;
+                --lg-text-soft: #000000;
+                --lg-text-muted: #333333;
+                --lg-accent: #000000;
+                --lg-border: #999999;
+                --lg-border-soft: #cccccc;
+            }
             body { background: #fff !important; color: #000 !important; font-size: 11pt; }
-            .header, .btn-back, .btn-volver-flotante { display: none !important; }
+            .header { display: none !important; }
             .app { max-width: 100%; padding: 0; }
             .seccion {
                 page-break-inside: avoid;
@@ -664,12 +590,11 @@
             .aviso, .aviso-grande { background: #f5f5f5 !important; border-left: 3px solid #333; }
             .caso-card { background: #fff !important; border: 1px solid #ccc; }
             .paso-flujo { background: #fff !important; border: 1px solid #ccc; }
-            .paso-flujo .numero { background: #333 !important; }
+            .paso-flujo .numero { background: #333 !important; color: #fff !important; }
             a { color: #000 !important; text-decoration: none; }
             a[href]::after { content: " (" attr(href) ")"; font-size: 9pt; color: #666; }
         }
 
-        /* Responsive */
         @media (max-width: 640px) {
             body { font-size: 15px; }
             .app { padding: 0 16px 40px; }
@@ -685,12 +610,6 @@
                 text-align: center;
             }
             .contacto .lbl, .contacto .val { text-align: center; }
-            .btn-volver-flotante {
-                bottom: 16px;
-                right: 16px;
-                padding: 12px 18px;
-                font-size: 0.7rem;
-            }
             .tabla-legal { font-size: 0.8rem; }
             .tabla-legal th, .tabla-legal td { padding: 10px 12px; }
             .casos-grid { grid-template-columns: 1fr; }
@@ -701,7 +620,6 @@
 
     <div class="app">
 
-        <!-- Header -->
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
@@ -710,12 +628,6 @@
             </a>
         </header>
 
-        <!-- Botón volver -->
-        <a href="/features/mercado/index.html" class="btn-back">
-            <span class="simbolo">◈</span> Volver al Mercado
-        </a>
-
-        <!-- Hero -->
         <div class="hero">
             <span class="etiqueta">Documento Legal</span>
             <h1>Política de Devoluciones y Reembolsos</h1>
@@ -739,13 +651,11 @@
             </div>
         </div>
 
-        <!-- Aviso importante -->
         <div class="aviso-grande">
             <strong>◈ Derechos del consumidor</strong>
             Conforme al <strong>artículo 92 de la Ley Federal de Protección al Consumidor</strong>, tienes derecho a la devolución de tu dinero cuando el producto no cumpla con las características ofrecidas, esté defectuoso o no haya sido entregado. Esta política establece los plazos, condiciones y procedimientos para ejercer ese derecho de forma clara y accesible.
         </div>
 
-        <!-- Índice -->
         <div class="indice">
             <h2>Índice de Contenidos</h2>
             <ol>
@@ -767,7 +677,6 @@
             </ol>
         </div>
 
-        <!-- ART 1 -->
         <section class="seccion" id="art-1">
             <h2><span class="num">1</span> Marco Legal Aplicable</h2>
             <p><strong>1.1.</strong> La presente Política de Devoluciones y Reembolsos se fundamenta en las siguientes disposiciones legales mexicanas:</p>
@@ -782,7 +691,6 @@
             <p><strong>1.3.</strong> Los derechos del consumidor reconocidos en la Ley no son excluyentes entre sí ni con los que reconoce el Código Civil Federal, la Ley Federal de Protección de Datos Personales, ni cualquier otra norma aplicable.</p>
         </section>
 
-        <!-- ART 2 -->
         <section class="seccion" id="art-2">
             <h2><span class="num">2</span> Definiciones</h2>
             <p><strong>2.1.</strong> Para efectos de esta Política, se entenderá por:</p>
@@ -798,7 +706,6 @@
             </ul>
         </section>
 
-        <!-- ART 3 -->
         <section class="seccion" id="art-3">
             <h2><span class="num">3</span> Derecho de Cancelación</h2>
             <p><strong>3.1.</strong> El Comprador tiene derecho a cancelar su pedido en cualquier momento antes de que el Vendedor lo acepte, obteniendo el <strong>reembolso total</strong> del monto pagado (producto + servicio). El envío no se cobra.</p>
@@ -813,7 +720,6 @@
             <p><strong>3.5.</strong> <strong>Cancelación por causa de fuerza mayor:</strong> Si el pedido no puede completarse por causas ajenas a las partes (desastres naturales, bloqueos viales, fallas masivas del sistema), Csariel's reembolsará el monto total al Comprador.</p>
         </section>
 
-        <!-- ART 4 -->
         <section class="seccion" id="art-4">
             <h2><span class="num">4</span> Devoluciones Aprobadas</h2>
             <p><strong>4.1.</strong> Conforme al <strong>artículo 92 de la LFPC</strong>, procede la devolución o reembolso en los siguientes casos:</p>
@@ -846,7 +752,6 @@
             <p><strong>4.3.</strong> La decisión final sobre la procedencia del reembolso corresponde a Csariel's, quien actuará como mediador imparcial entre Comprador y Vendedor.</p>
         </section>
 
-        <!-- ART 5 -->
         <section class="seccion" id="art-5">
             <h2><span class="num">5</span> Devoluciones No Aplicables</h2>
             <p><strong>5.1.</strong> No procede devolución ni reembolso en los siguientes casos:</p>
@@ -872,7 +777,6 @@
             </div>
         </section>
 
-        <!-- ART 6 -->
         <section class="seccion" id="art-6">
             <h2><span class="num">6</span> Alimentos Perecederos</h2>
             <p><strong>6.1.</strong> Los alimentos preparados y productos perecederos <strong>no tienen derecho a devolución</strong> por regla general, ya que su naturaleza impide la reutilización o reventa.</p>
@@ -894,7 +798,6 @@
             </ul>
         </section>
 
-        <!-- ART 7 -->
         <section class="seccion" id="art-7">
             <h2><span class="num">7</span> Productos No Perecederos</h2>
             <p><strong>7.1.</strong> Los productos no perecederos (ropa, tecnología, artículos para el hogar, etc.) tienen derecho a devolución dentro de las primeras <strong>24 horas</strong> posteriores a la entrega.</p>
@@ -931,7 +834,6 @@
             <p><strong>7.4.</strong> Una vez recibido el producto en buen estado, Csariel's procesará el reembolso al Comprador en los plazos establecidos en el Artículo 9.</p>
         </section>
 
-        <!-- ART 8 -->
         <section class="seccion" id="art-8">
             <h2><span class="num">8</span> Procedimiento Paso a Paso</h2>
             <p><strong>8.1.</strong> El proceso de reclamación consta de los siguientes pasos:</p>
@@ -994,7 +896,6 @@
             </div>
         </section>
 
-        <!-- ART 9 -->
         <section class="seccion" id="art-9">
             <h2><span class="num">9</span> Plazos del Proceso</h2>
             <p><strong>9.1.</strong> Los plazos máximos para cada etapa del proceso son:</p>
@@ -1034,7 +935,6 @@
             <p><strong>9.3.</strong> En caso de requerir información adicional, Csariel's podrá extender el plazo una sola vez, notificando al Comprador con la debida anticipación.</p>
         </section>
 
-        <!-- ART 10 -->
         <section class="seccion" id="art-10">
             <h2><span class="num">10</span> Formas de Reembolso</h2>
             <p><strong>10.1.</strong> Csariel's ofrece las siguientes formas de reembolso:</p>
@@ -1076,7 +976,6 @@
             <p><strong>10.4.</strong> Los retiros a SPEI u OXXO aplican las reglas de retiro establecidas en los Términos y Condiciones del Mercado (mínimo $500 MXN).</p>
         </section>
 
-        <!-- ART 11 -->
         <section class="seccion" id="art-11">
             <h2><span class="num">11</span> Reembolsos con Criptomonedas</h2>
             <div class="aviso warning">
@@ -1094,7 +993,6 @@
             <p><strong>11.3.</strong> El Comprador acepta que el monto reembolsado puede diferir del monto original en cripto debido a fluctuaciones del mercado.</p>
         </section>
 
-        <!-- ART 12 -->
         <section class="seccion" id="art-12">
             <h2><span class="num">12</span> Responsabilidades de las Partes</h2>
             <p><strong>12.1.</strong> <strong>Responsabilidad del Vendedor:</strong></p>
@@ -1122,7 +1020,6 @@
             </ul>
         </section>
 
-        <!-- ART 13 -->
         <section class="seccion" id="art-13">
             <h2><span class="num">13</span> Reclamos Abusivos o Fraudulentos</h2>
             <p><strong>13.1.</strong> Csariel's se reserva el derecho de <strong>rechazar reclamos</strong> que considere abusivos, fraudulentos o sin fundamento.</p>
@@ -1148,7 +1045,6 @@
             </div>
         </section>
 
-        <!-- ART 14 -->
         <section class="seccion" id="art-14">
             <h2><span class="num">14</span> Contacto y Soporte</h2>
             <p><strong>14.1.</strong> Para reportar un problema, puedes:</p>
@@ -1175,7 +1071,6 @@
             </div>
         </section>
 
-        <!-- ART 15 -->
         <section class="seccion" id="art-15">
             <h2><span class="num">15</span> Modificaciones</h2>
             <p><strong>15.1.</strong> Csariel's podrá modificar esta Política de Devoluciones y Reembolsos en cualquier momento.</p>
@@ -1189,7 +1084,6 @@
             <p><strong>15.4.</strong> El uso continuado de la Plataforma después de la fecha de entrada en vigor implica la <strong>aceptación</strong> de la nueva Política.</p>
         </section>
 
-        <!-- Contacto -->
         <div class="contacto">
             <h3>Contacto de Devoluciones</h3>
             <div class="fila">
@@ -1214,7 +1108,6 @@
             </div>
         </div>
 
-        <!-- Footer -->
         <div class="footer-legal">
             <p>
                 <span class="marca">Csariel's Ecosystem</span><br>
@@ -1222,23 +1115,14 @@
                 Puebla, México.
             </p>
             <p style="margin-top: 12px; font-size: 0.78rem;">
-                Última actualización: <strong style="color: var(--warning);">[Pendiente de configuración]</strong>
+                Última actualización: <strong style="color: var(--lg-warning);">[Pendiente de configuración]</strong>
             </p>
         </div>
 
     </div>
 
-    <!-- Botón flotante volver -->
-    <a href="/features/mercado/index.html" class="btn-volver-flotante">
-        Volver al Mercado
-    </a>
-
 <script>
-// ================================================================
-// INICIALIZACIÓN
-// ================================================================
 document.addEventListener('DOMContentLoaded', function () {
-    // Suavizar scroll en los links del índice
     document.querySelectorAll('.indice ol li a').forEach(function (link) {
         link.addEventListener('click', function (e) {
             e.preventDefault();
@@ -1250,8 +1134,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-
-    console.log('◈ Política de Devoluciones del Mercado cargada (modo claro)');
 });
 </script>
 </body>
