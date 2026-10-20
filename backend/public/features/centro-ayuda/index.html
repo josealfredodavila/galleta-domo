@@ -39,7 +39,6 @@
             flex-direction: column;
         }
 
-        /* Header */
         .help-header {
             position: sticky;
             top: 0;
@@ -68,8 +67,8 @@
             transition: background 0.2s, border-color 0.2s;
             flex-shrink: 0;
         }
-        .back-btn:hover { 
-            background: rgba(255, 255, 255, 0.1); 
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
             border-color: var(--cyan);
         }
         .back-btn svg { width: 22px; height: 22px; fill: currentColor; }
@@ -93,7 +92,6 @@
             margin-top: 2px;
         }
 
-        /* Contenido principal */
         .help-main {
             max-width: 680px;
             width: 100%;
@@ -102,7 +100,6 @@
             flex: 1;
         }
 
-        /* Título y búsqueda */
         .hero-section { text-align: center; margin-bottom: 32px; }
         .hero-title {
             font-family: var(--font-title);
@@ -143,7 +140,6 @@
         }
         .search-input::placeholder { color: var(--text-secondary); }
 
-        /* Grid de categorías */
         .categories-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -223,7 +219,6 @@
         .cat-links a::before { content: '▸'; font-size: 0.7rem; color: var(--purple); }
         .cat-links a:hover { color: #fff; text-decoration: underline; }
 
-        /* Alerta inferior */
         .help-alert {
             margin-top: 40px;
             background: linear-gradient(135deg, rgba(168, 85, 247, 0.1), rgba(0, 229, 255, 0.1));
@@ -240,7 +235,6 @@
 <body>
 
     <header class="help-header">
-        <!-- Botón de regreso: si tiene historial regresa, si no, va al inicio -->
         <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/'; }" aria-label="Volver">
             <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
         </button>
@@ -260,8 +254,7 @@
         </div>
 
         <div class="categories-grid" id="categoriesGrid">
-            
-            <!-- Categoría 1 -->
+
             <div class="category-card" data-search="reglas politicas generales terminos servicio privacidad cookies">
                 <div class="cat-icon">📘</div>
                 <div class="cat-title">Reglas y Políticas Generales</div>
@@ -273,7 +266,6 @@
                 </ul>
             </div>
 
-            <!-- Categoría 2 -->
             <div class="category-card" data-search="mercado web3 estoks membresia pro devoluciones crypto wallet polygon">
                 <div class="cat-icon">🌐</div>
                 <div class="cat-title">Mercado & Web3</div>
@@ -286,7 +278,6 @@
                 </ul>
             </div>
 
-            <!-- Categoría 3 -->
             <div class="category-card" data-search="servicios live ia marquinhos capitan maiz itlasuhua rey serpiente cosmica asistentes inteligencia artificial">
                 <div class="cat-icon">🤖</div>
                 <div class="cat-title">Servicios Live e IA</div>
@@ -299,13 +290,11 @@
                 </ul>
             </div>
 
-            <!-- Categoría 4 -->
-            <div class="category-card" data-search="seguridad prevencion administrar cuenta eliminar desactivar derechos autor usos sariels marketplace legal">
+            <div class="category-card" data-search="seguridad prevencion administrar cuenta derechos autor usos sariels marketplace legal">
                 <div class="cat-icon">🛡️</div>
                 <div class="cat-title">Seguridad y Cuenta</div>
                 <div class="cat-desc">Gestiona tu identidad y protege tu acceso.</div>
                 <ul class="cat-links">
-                    <li><a href="/eliminar-cuenta.html">Eliminar mi cuenta</a></li>
                     <li><a href="/legal/derechos-sariels.html">Derechos y Usos</a></li>
                 </ul>
             </div>
@@ -318,11 +307,10 @@
     </main>
 
     <script>
-        // Lógica simple de filtrado para la barra de búsqueda
         document.getElementById('searchInput').addEventListener('input', function(e) {
             const val = e.target.value.toLowerCase().trim();
             const cards = document.querySelectorAll('.category-card');
-            
+
             cards.forEach(card => {
                 const text = card.getAttribute('data-search') + ' ' + card.innerText.toLowerCase();
                 if (text.includes(val)) {
