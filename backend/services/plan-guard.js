@@ -8,9 +8,9 @@
 // - Llamada al proveedor
 // - Registro de uso
 //
-// v1.2: documenta fail open, registra fallos críticos de
-//       devolución de cuota, valida q antes de buscar,
-//       y aclara el criterio de acierto de caché.
+// v1.3: devolución fallida ahora es visible y crítica;
+//       registrar acepta la marca devolucionFallida;
+//       se elimina la validación redundante de q dentro del try.
 // ================================================================
 
 'use strict';
@@ -167,10 +167,14 @@ async function guardarCache(proveedor, hash, resultado) {
     if (error) log('cache_escritura_error', { codigo: error.code });
 }
 
-// Registro sin bloquear la respuesta al usuario
+// Registro sin bloquear la respuesta al usuario.
+// NOTA: si la columna devolucion_fallida no existe en la tabla ai_busquedas_web,
+// hay que crearla con: ALTER TABLE ai_busquedas_web ADD COLUMN devolucion_fallida boolean default false;
+// El insert no se quita aunque falle; el error se registra en log.
 function registrar({
     usuarioId, personaje, proveedor, hash,
-    costo = 0, latencia = null, exito = true, error = null
+    costo = 0, latencia = null, exito = true, error = null,
+    devolucionFallida = false
 }) {
     supabase
         .from('ai_busquedas_web')
@@ -182,7 +186,8 @@ function registrar({
             costo_usd: costo,
             latencia_ms: latencia,
             exito,
-            error_codigo: error
+            error_codigo: error,
+            devolucion_fallida: devolucionFallida === true
         })
         .then(({ error: e }) => {
             if (e) log('registro_error', { codigo: e.code });
@@ -266,9 +271,6 @@ async function buscarEnTiempoReal({
             // 4. Llamada al proveedor con presupuesto
             const inicio = Date.now();
             try {
-                // Confirmación explícita: no buscamos con consulta vacía.
-                if (!q) throw new Error('consulta_vacia');
-
                 const respuesta = await conTimeout(
                     api.buscar(q),
                     limiteTotal - Date.now(),
@@ -299,18 +301,26 @@ async function buscarEnTiempoReal({
                     codigo: err.codigo || err.code || err.name
                 });
 
+                let devolucionFallida = false;
+
                 await rpc('devolver_consumo', {
                     p_usuario: usuarioId,
                     p_tipo: tipoCuota(proveedor)
-                }).catch((e) => log('devolucion_error', {
-                    codigo: e.code || e.message
-                }));
+                }).catch((e) => {
+                    devolucionFallida = true;
+                    log('devolucion_fallida', {
+                        nivel: 'critico',
+                        proveedor,
+                        codigo: e.code || e.message
+                    });
+                });
 
                 registrar({
                     usuarioId, personaje, proveedor, hash,
                     latencia: Date.now() - inicio,
                     exito: false,
-                    error: err.codigo || err.name
+                    error: err.codigo || err.name,
+                    devolucionFallida
                 });
             }
         }
