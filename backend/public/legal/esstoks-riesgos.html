@@ -1,0 +1,188 @@
+<!-- backend/public/legal/esstoks-riesgos.html -->
+<!DOCTYPE html>
+<html lang="es" data-public>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>¿Qué son los Es.stoks? · Csariel's</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-card: #0B0F17;
+            --green: #22C55E;
+            --cyan: #00E5FF;
+            --purple: #A855F7;
+            --text-primary: #F8F9FA;
+            --text-secondary: #8B98A5;
+            --border: rgba(34, 197, 94, 0.18);
+            --font-base: 'Inter', -apple-system, sans-serif;
+            --font-title: 'Orbitron', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-base);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .legal-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            flex-shrink: 0;
+        }
+        .back-btn:hover { background: rgba(34, 197, 94, 0.12); border-color: var(--green); }
+        .back-btn svg { width: 22px; height: 22px; fill: currentColor; }
+        .header-content { display: flex; flex-direction: column; }
+        .header-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+        .header-subtitle { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+        .legal-main { max-width: 760px; width: 100%; margin: 0 auto; padding: 28px 20px 60px; flex: 1; }
+        .badge { display: inline-block; font-family: var(--font-title); font-size: 0.68rem; letter-spacing: 2px; color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 999px; margin-bottom: 14px; }
+        h1 { font-family: var(--font-title); font-size: 1.5rem; color: var(--green); margin-bottom: 18px; line-height: 1.25; text-shadow: 0 0 20px rgba(34, 197, 94, 0.25); }
+        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; font-size: 0.85rem; }
+        @media (min-width: 600px) { .meta-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .meta-grid div span { display: block; color: var(--text-secondary); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .meta-grid div strong { color: var(--text-primary); font-weight: 600; }
+        .toc { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 12px; padding: 16px 20px; margin-bottom: 28px; }
+        .toc h2 { font-family: var(--font-title); font-size: 0.85rem; color: var(--green); letter-spacing: 1px; margin-bottom: 10px; }
+        .toc ol { list-style: none; counter-reset: toc; }
+        .toc ol li { counter-increment: toc; margin-bottom: 6px; font-size: 0.88rem; }
+        .toc ol li::before { content: counter(toc) ". "; color: var(--purple); font-weight: 700; }
+        .toc a { color: var(--cyan); text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+        section { margin-bottom: 26px; }
+        h2 { font-family: var(--font-title); font-size: 1.05rem; color: var(--green); margin-bottom: 10px; margin-top: 6px; letter-spacing: 0.5px; }
+        h3 { font-size: 0.95rem; color: var(--text-primary); margin: 14px 0 6px; font-weight: 600; }
+        p { margin-bottom: 10px; font-size: 0.92rem; color: #D1D5DB; }
+        ul, ol { padding-left: 22px; margin-bottom: 12px; }
+        li { font-size: 0.92rem; color: #D1D5DB; margin-bottom: 6px; }
+        .callout { background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(0, 229, 255, 0.06)); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 0.88rem; }
+        .callout strong { color: var(--green); }
+        .alerta { background: rgba(248, 113, 113, 0.08); border: 1px solid rgba(248, 113, 113, 0.4); border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 0.9rem; color: #FCA5A5; }
+        .alerta strong { color: #F87171; }
+        .contacto { margin-top: 36px; border-top: 1px solid var(--border); padding-top: 18px; font-size: 0.85rem; color: var(--text-secondary); }
+        .contacto a { color: var(--cyan); text-decoration: none; }
+        .contacto a:hover { text-decoration: underline; }
+        .pendiente { color: #FBBF24; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/features/centro-ayuda/index.html'; }" aria-label="Volver">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div class="header-content">
+            <div class="header-title">¿Qué son los Es.stoks?</div>
+            <div class="header-subtitle">Csariel's · Centro de Ayuda</div>
+        </div>
+    </header>
+    <main class="legal-main">
+        <span class="badge">DOCUMENTO LEGAL</span>
+        <h1>Es.stoks: qué son y cuáles son sus riesgos</h1>
+
+        <div class="meta-grid">
+            <div><span>Versión</span><strong>1.0</strong></div>
+            <div><span>Vigencia</span><strong class="pendiente">[Pendiente: fecha de publicación]</strong></div>
+            <div><span>Jurisdicción</span><strong>Puebla, México</strong></div>
+        </div>
+
+        <nav class="toc" aria-label="Índice de contenidos">
+            <h2>ÍNDICE DE CONTENIDOS</h2>
+            <ol>
+                <li><a href="#que-son">¿Qué son los Es.stoks?</a></li>
+                <li><a href="#no-son">Lo que los Es.stoks NO son</a></li>
+                <li><a href="#riesgos">Riesgos principales</a></li>
+                <li><a href="#legal">Marco legal en México</a></li>
+                <li><a href="#recomendaciones">Recomendaciones</a></li>
+                <li><a href="#contacto">Contacto</a></li>
+            </ol>
+        </nav>
+
+        <section id="que-son">
+            <h2>1. ¿Qué son los Es.stoks?</h2>
+            <p>Los Es.stoks son tokens digitales que se utilizan dentro de Csariel's como parte de la economía de la Plataforma. Su funcionamiento específico (emisión, uso, canje y transferencia) se describe en los términos del Mercado disponibles dentro de la app.</p>
+        </section>
+
+        <section id="no-son">
+            <h2>2. Lo que los Es.stoks NO son</h2>
+            <div class="alerta">
+                <strong>Importante:</strong> los Es.stoks <strong>no son moneda de curso legal</strong>, no cuentan con respaldo del Banco de México, no son depósitos bancarios y <strong>no garantizan rendimiento, valor ni liquidez</strong>.
+            </div>
+            <ul>
+                <li>No son inversión garantizada.</li>
+                <li>No otorgan derechos corporativos sobre Csariel's ni sobre <span class="pendiente">[Pendiente: razón social]</span>.</li>
+                <li>No están asegurados por ninguna institución financiera.</li>
+            </ul>
+        </section>
+
+        <section id="riesgos">
+            <h2>3. Riesgos principales</h2>
+            <ul>
+                <li><strong>Volatilidad:</strong> el valor de un token puede subir o bajar drásticamente, incluso hasta cero.</li>
+                <li><strong>Liquidez:</strong> puede que no exista un mercado donde vender o intercambiar tus Es.stoks.</li>
+                <li><strong>Riesgo tecnológico:</strong> errores de software, vulnerabilidades o pérdida de acceso a la wallet pueden derivar en pérdida total.</li>
+                <li><strong>Riesgo regulatorio:</strong> cambios en la legislación mexicana o extranjera pueden afectar el uso o el valor de los tokens.</li>
+                <li><strong>Riesgo de fraude:</strong> terceros pueden intentar estafarte ofreciendo "rendimientos garantizados" o pidiendo tus claves privadas.</li>
+            </ul>
+            <div class="callout">
+                <strong>Nunca compartas tu clave privada.</strong> Csariel's nunca te pedirá tu clave privada ni tu contraseña por teléfono, mensajería o correo no solicitado.
+            </div>
+        </section>
+
+        <section id="legal">
+            <h2>4. Marco legal en México</h2>
+            <p>En México, los activos virtuales están regulados por la Ley para Regular las Instituciones de Tecnología Financiera (Ley Fintech) y las disposiciones del Banco de México. Si los Es.stoks llegaran a constituir valores conforme a la Ley del Mercado de Valores, su oferta podría requerir autorización de la Comisión Nacional Bancaria y de Valores (CNBV) o la intervención de un intermediario autorizado.</p>
+            <p><strong>Aviso:</strong> este documento es informativo y no constituye asesoría legal ni financiera. Antes de adquirir o usar Es.stoks, consulta a un profesional.</p>
+        </section>
+
+        <section id="recomendaciones">
+            <h2>5. Recomendaciones</h2>
+            <ul>
+                <li>No inviertas dinero que no puedas permitirte perder.</li>
+                <li>Verifica siempre la información oficial dentro de la app.</li>
+                <li>Reporta cualquier intento de fraude a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</li>
+            </ul>
+        </section>
+
+        <section id="contacto">
+            <h2>6. Contacto</h2>
+            <p>Para dudas sobre los Es.stoks, escríbenos a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</p>
+        </section>
+
+        <div class="contacto">
+            <p><strong>Responsable:</strong> <span class="pendiente">[Pendiente: razón social]</span></p>
+            <p><strong>Domicilio:</strong> <span class="pendiente">[Pendiente: domicilio]</span></p>
+            <p><strong>Correo oficial:</strong> <a href="mailto:soporte@csariels.com">soporte@csariels.com</a></p>
+            <p><strong>Jurisdicción:</strong> Puebla, México</p>
+            <p><strong>Vigencia:</strong> <span class="pendiente">[Pendiente: fecha de publicación]</span></p>
+        </div>
+    </main>
+</body>
+</html>
