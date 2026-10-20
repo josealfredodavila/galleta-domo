@@ -156,7 +156,40 @@
             border-color: rgba(34, 197, 94, 0.45);
         }
         .category-card:hover::before { opacity: 1; }
-        .cat-icon { font-size: 2rem; margin-bottom: 12px; filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.4)); }
+        .cat-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.35);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.18);
+            transition: box-shadow 0.25s, border-color 0.25s, background 0.25s;
+            flex-shrink: 0;
+        }
+        .cat-icon svg {
+            width: 22px;
+            height: 22px;
+            stroke: var(--cyan);
+            stroke-width: 1.8;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.7));
+            transition: stroke 0.25s, filter 0.25s;
+        }
+        .category-card:hover .cat-icon {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.55);
+            box-shadow: 0 0 22px rgba(34, 197, 94, 0.3);
+        }
+        .category-card:hover .cat-icon svg {
+            stroke: var(--green);
+            filter: drop-shadow(0 0 5px rgba(34, 197, 94, 0.8));
+        }
         .cat-title {
             font-family: var(--font-title);
             font-size: 1rem;
@@ -212,7 +245,9 @@
 
         <div class="categories-grid" id="categoriesGrid">
             <div class="category-card" data-search="reglas comunidad contenido prohibido muro canales live reportar bloquear suspension apelacion">
-                <div class="cat-icon">📜</div>
+                <div class="cat-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3 7.5-8 9-5-1.5-8-4.5-8-9V6l8-3z"/><path d="M9 12l2 2 4-4"/></svg>
+                </div>
                 <div class="cat-title">Reglas de la Comunidad</div>
                 <div class="cat-desc">Qué está permitido y qué no en Muro, Canales y Live.</div>
                 <ul class="cat-links">
@@ -223,7 +258,9 @@
             </div>
 
             <div class="category-card" data-search="terminos servicio generales cuenta muro canales live condiciones 18 años">
-                <div class="cat-icon">📘</div>
+                <div class="cat-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v4h4"/><path d="M9 12h6"/><path d="M9 16h6"/></svg>
+                </div>
                 <div class="cat-title">Términos y Privacidad</div>
                 <div class="cat-desc">Condiciones generales de uso y tratamiento de tus datos.</div>
                 <ul class="cat-links">
@@ -234,7 +271,9 @@
             </div>
 
             <div class="category-card" data-search="cuenta eliminar baja borrar datos sin sesion correo confirmacion">
-                <div class="cat-icon">🗑️</div>
+                <div class="cat-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+                </div>
                 <div class="cat-title">Mi Cuenta</div>
                 <div class="cat-desc">Elimina tu cuenta sin necesidad de iniciar sesión.</div>
                 <ul class="cat-links">
@@ -244,7 +283,9 @@
             </div>
 
             <div class="category-card" data-search="seguridad robo perdida dispositivo cerrar sesiones verificacion identidad">
-                <div class="cat-icon">🛡️</div>
+                <div class="cat-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3 7.5-8 9-5-1.5-8-4.5-8-9V6l8-3z"/></svg>
+                </div>
                 <div class="cat-title">Seguridad</div>
                 <div class="cat-desc">Protege tu acceso si pierdes o te roban el dispositivo.</div>
                 <ul class="cat-links">
@@ -254,7 +295,9 @@
             </div>
 
             <div class="category-card" data-search="esstoks tokens cripto mercado riesgos valor web3">
-                <div class="cat-icon">🪙</div>
+                <div class="cat-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9-9 9-9-9z"/><path d="M8 12l4-4 4 4-4 4-4-4z"/></svg>
+                </div>
                 <div class="cat-title">Mercado & Es.stoks</div>
                 <div class="cat-desc">Qué son los Es.stoks y cuáles son sus riesgos.</div>
                 <ul class="cat-links">
@@ -265,7 +308,9 @@
             </div>
 
             <div class="category-card" data-search="preguntas frecuentes faq ayuda recuperar cuenta pedidos tokens">
-                <div class="cat-icon">❓</div>
+                <div class="cat-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.5-2.5 2-2.5 3.5"/><path d="M12 17h.01"/></svg>
+                </div>
                 <div class="cat-title">Preguntas Frecuentes</div>
                 <div class="cat-desc">Respuestas rápidas a las dudas más comunes.</div>
                 <ul class="cat-links">
@@ -285,7 +330,7 @@
             const cards = document.querySelectorAll('.category-card');
             cards.forEach(card => {
                 const text = card.getAttribute('data-search') + ' ' + card.innerText.toLowerCase();
-                card.style.display = text.includes(val) ? 'flex' : 'none';
+                card.style.display = text.includes('') && !val ? 'flex' : (text.includes(val) ? 'flex' : 'none');
             });
         });
     </script>
