@@ -50,10 +50,6 @@
             min-height: 100vh;
         }
 
-        /* ============================================================
-           HEADER
-           ============================================================ */
-
         .header {
             border-bottom: 1px solid var(--border-subtle);
             padding: 20px 24px;
@@ -101,10 +97,6 @@
             font-weight: 500;
         }
 
-        /* ============================================================
-           BOTÓN CENTRO DE AYUDA
-           ============================================================ */
-
         .btn-centro-ayuda {
             display: inline-flex;
             align-items: center;
@@ -125,10 +117,6 @@
             border-color: var(--text-muted);
             color: var(--text);
         }
-
-        /* ============================================================
-           LAYOUT
-           ============================================================ */
 
         .container {
             max-width: 640px;
@@ -190,10 +178,6 @@
             background: var(--text-muted);
         }
 
-        /* ============================================================
-           BLOCK
-           ============================================================ */
-
         .block {
             background: var(--surface);
             border: 1px solid var(--border);
@@ -205,10 +189,6 @@
         .block p:last-child { margin-bottom: 0; }
         .block ul:last-child { margin-bottom: 0; }
         .block strong { color: var(--text); font-weight: 600; }
-
-        /* ============================================================
-           DELETE PANEL
-           ============================================================ */
 
         .delete-panel {
             margin-top: 40px;
@@ -258,10 +238,6 @@
             top: 12px;
             background: var(--danger);
         }
-
-        /* ============================================================
-           FORM
-           ============================================================ */
 
         .form-field { margin-bottom: 20px; }
 
@@ -347,19 +323,11 @@
         input[type="text"]:focus { border-color: var(--text-muted); background: var(--surface-2); }
         input[type="text"]::placeholder { color: var(--text-muted); letter-spacing: 2px; }
 
-        /* ============================================================
-           TURNSTILE
-           ============================================================ */
-
         .turnstile-container {
             margin: 22px 0;
             display: flex;
             justify-content: center;
         }
-
-        /* ============================================================
-           STATUS
-           ============================================================ */
 
         .status {
             display: none;
@@ -374,10 +342,6 @@
         .status.error { background: rgba(255, 59, 48, 0.1); color: #ff6961; border: 1px solid rgba(255, 59, 48, 0.2); }
         .status.success { background: rgba(48, 209, 88, 0.1); color: #4cd964; border: 1px solid rgba(48, 209, 88, 0.2); }
         .status.loading { background: rgba(255, 255, 255, 0.05); color: var(--text-secondary); border: 1px solid var(--border); }
-
-        /* ============================================================
-           BUTTONS
-           ============================================================ */
 
         .btn {
             display: block;
@@ -409,10 +373,6 @@
         }
 
         .btn-secondary:hover { background: #1f1f1f; border-color: var(--text-muted); }
-
-        /* ============================================================
-           SUCCESS SCREEN
-           ============================================================ */
 
         .success-screen {
             display: none;
@@ -451,10 +411,6 @@
 
         .success-actions { margin-top: 28px; }
 
-        /* ============================================================
-           FOOTER
-           ============================================================ */
-
         .footer {
             margin-top: 40px;
             padding-top: 24px;
@@ -469,10 +425,6 @@
         .footer a:hover { color: var(--text); }
 
         .hidden { display: none !important; }
-
-        /* ============================================================
-           RESPONSIVE
-           ============================================================ */
 
         @media (max-width: 600px) {
             .container { padding: 32px 20px 60px; }
@@ -496,9 +448,9 @@
 
     <main class="container">
 
-        <!-- BOTÓN VOLVER AL CENTRO DE AYUDA -->
-        <a href="/features/centro-ayuda/index.html" class="btn-centro-ayuda">
-            ← Volver al Centro de Ayuda
+        <!-- Vuelve a Configuración: aquí solo se llega con sesión iniciada -->
+        <a href="/features/perfil/configuracion/index.html" class="btn-centro-ayuda">
+            ← Volver a Configuración
         </a>
 
         <div id="contentBlock">
@@ -648,9 +600,6 @@
         let requestInProgress = false;
         let supabaseClient = null;
 
-        // ============================================================
-        // CLIENTE SUPABASE
-        // ============================================================
         function crearClienteSupabase() {
             if (window.supabaseClient && window.supabaseClient.auth) {
                 return window.supabaseClient;
@@ -740,9 +689,6 @@
             updateButton();
         });
 
-        // ============================================================
-        // VERIFICAR SESIÓN
-        // ============================================================
         async function verificarSesion() {
             supabaseClient = crearClienteSupabase();
 
@@ -765,9 +711,6 @@
             }
         }
 
-        // ============================================================
-        // ELIMINAR
-        // ============================================================
         btnDelete.addEventListener('click', async function () {
             if (!formIsValid()) {
                 updateButton();
