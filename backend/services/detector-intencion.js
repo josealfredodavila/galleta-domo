@@ -8,8 +8,7 @@
 // Devuelve { tipo: 'ninguna' | 'simple' | 'complejo', motivo }.
 // El motivo no contiene el texto del usuario.
 //
-// v2.0: amplía DATOS_VIVOS para capturar mejor "mundo real",
-//       "actualidad", "en vivo", "lo último", etc.
+// v2.1: ajustes finos en DATOS_VIVOS, COMPLEJO, clima y años.
 // ================================================================
 
 'use strict';
@@ -38,38 +37,36 @@ function construirPatron(palabras) {
 const DATOS_VIVOS = construirPatron([
     // 💰 Cripto / finanzas
     'precio', 'cotizacion', 'cuanto vale', 'cuanto cuesta', 'tipo de cambio',
-    'bolsa', 'dolar', 'bitcoin', 'btc', 'ethereum', 'eth', 'polygon', 'pol',
-    'usdt', 'usdc', 'cripto', 'criptomoneda', 'inflacion', 'tasa de interes',
-    'gasolina',
+    'bolsa', 'dolar', 'bitcoin', 'btc', 'ethereum',
+    'polygon', 'usdt', 'usdc', 'cripto', 'criptomoneda',
+    'inflacion', 'tasa de interes', 'gasolina',
 
     // 🌤️ Clima
-    'clima', 'pronostico', 'tiempo en', 'temperatura',
+    'clima', 'pronostico', 'clima en', 'pronostico en', 'temperatura',
 
     // 📰 Noticias
     'noticia', 'noticias', 'ultima hora',
 
     // 🏆 Deportes
-    'resultado', 'marcador', 'partido', 'torneo',
+    'marcador', 'partido', 'torneo',
 
     // 🗳️ Política / eventos
-    'elecciones', 'presidente', 'politica',
+    'elecciones',
 
     // 🌋 Desastres
     'sismo', 'temblor', 'huracan',
 
-    // 🆕 v2.0: actualidad / mundo real
+    // 🆕 Actualidad / mundo real
     'actualidad', 'mundo real', 'en vivo', 'en directo',
     'novedades', 'lo ultimo', 'lo nuevo', 'que hay de nuevo',
-    'que esta pasando', 'que pasa', 'que paso', 'actual', 'reciente',
-    'informacion actual', 'breaking', 'hoy en dia', 'estos dias',
-    'por estos dias', 'lo que pasa en el mundo', 'como esta el mundo',
-    'que se dice', 'que se comenta', 'en el mundo'
+    'informacion actual', 'breaking',
+    'por estos dias', 'lo que pasa en el mundo', 'como esta el mundo'
 ]);
 
 // Señales temporales fuertes: bastan por sí solas
 const TEMPORAL_FUERTE = construirPatron([
     'en vivo', 'ultima hora', 'ultimas noticias', 'esta semana', 'este mes',
-    'actualmente', '2025', '2026'
+    'actualmente'
 ]);
 
 // Señales temporales débiles: solo cuentan si además hay una pregunta compleja
@@ -77,22 +74,39 @@ const TEMPORAL_DEBIL = construirPatron(['hoy', 'ahora mismo']);
 
 // Pide análisis o explicación de un hecho
 const COMPLEJO = construirPatron([
-    'por que', 'que paso', 'que pasa', 'que esta pasando', 'compara', 'comparar',
-    'comparacion', 'diferencia entre', 'versus', 'vs', 'analisis', 'analiza',
-    'impacto', 'consecuencias', 'tendencia', 'pros y contras',
-    'ventajas y desventajas'
+    'por que', 'que paso', 'que esta pasando', 'compara', 'comparar',
+    'comparacion', 'diferencia entre', 'versus',
+    'analisis', 'analiza', 'consecuencias', 'tendencia',
+    'pros y contras', 'ventajas y desventajas'
 ]);
+
+// Regex específicas para "x vs y" y años solo con contexto temporal
+const RE_VS_Y = /\b[a-z0-9]+\s+(?:vs|versus|contra)\s+[a-z0-9]+\b/;
+const RE_ANIO_CONTEXTO = /\b(?:en|del|para|hasta)\s+(?:2025|2026)\b/;
+
+// Palabras sensibles al tiempo que solo cuentan con contexto temporal
+const RE_PALABRAS_TIEMPO_SENSIBLES =
+    /\b(?:resultado|presidente|politica)\b.*\b(?:hoy|ayer|ultimo|actual|en 2025|en 2026)\b/;
 
 function detectarIntencion(mensaje) {
     const t = normalizar(mensaje);
     if (t.length < 3) return { tipo: 'ninguna', motivo: 'mensaje_corto' };
 
-    const esComplejo = COMPLEJO.test(t);
-    const datos = DATOS_VIVOS.test(t);
+    // Complejo: por palabras clave o por patrones específicos
+    const esComplejo = COMPLEJO.test(t) ||
+        RE_VS_Y.test(t);
+
+    // Datos vivos: por palabras clave o por patrones de tiempo sensibles
+    let datos = DATOS_VIVOS.test(t) || RE_PALABRAS_TIEMPO_SENSIBLES.test(t);
+
+    // Temporal: fuerte (incluye años con contexto) o débil + complejo
     const temporal = TEMPORAL_FUERTE.test(t) ||
+        RE_ANIO_CONTEXTO.test(t) ||
         (TEMPORAL_DEBIL.test(t) && esComplejo);
 
-    if (!datos && !temporal) return { tipo: 'ninguna', motivo: 'sin_senal_en_vivo' };
+    if (!datos && !temporal) {
+        return { tipo: 'ninguna', motivo: 'sin_senal_en_vivo' };
+    }
 
     return {
         tipo: esComplejo ? 'complejo' : 'simple',
