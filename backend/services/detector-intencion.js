@@ -8,7 +8,9 @@
 // Devuelve { tipo: 'ninguna' | 'simple' | 'complejo', motivo }.
 // El motivo no contiene el texto del usuario.
 //
-// v2.1: ajustes finos en DATOS_VIVOS, COMPLEJO, clima y años.
+// v2.2: ajustes finos en DATOS_VIVOS (quita "clima" suelto,
+//       "polygon", "ultima hora" y "lo nuevo"), RE_VS_Y (sin
+//       "contra") y COMPLEJO (sin "que paso").
 // ================================================================
 
 'use strict';
@@ -38,14 +40,14 @@ const DATOS_VIVOS = construirPatron([
     // 💰 Cripto / finanzas
     'precio', 'cotizacion', 'cuanto vale', 'cuanto cuesta', 'tipo de cambio',
     'bolsa', 'dolar', 'bitcoin', 'btc', 'ethereum',
-    'polygon', 'usdt', 'usdc', 'cripto', 'criptomoneda',
+    'usdt', 'usdc', 'cripto', 'criptomoneda',
     'inflacion', 'tasa de interes', 'gasolina',
 
     // 🌤️ Clima
-    'clima', 'pronostico', 'clima en', 'pronostico en', 'temperatura',
+    'pronostico', 'clima en', 'pronostico en', 'temperatura',
 
     // 📰 Noticias
-    'noticia', 'noticias', 'ultima hora',
+    'noticia', 'noticias',
 
     // 🏆 Deportes
     'marcador', 'partido', 'torneo',
@@ -58,7 +60,7 @@ const DATOS_VIVOS = construirPatron([
 
     // 🆕 Actualidad / mundo real
     'actualidad', 'mundo real', 'en vivo', 'en directo',
-    'novedades', 'lo ultimo', 'lo nuevo', 'que hay de nuevo',
+    'novedades', 'lo ultimo', 'que hay de nuevo',
     'informacion actual', 'breaking',
     'por estos dias', 'lo que pasa en el mundo', 'como esta el mundo'
 ]);
@@ -74,14 +76,14 @@ const TEMPORAL_DEBIL = construirPatron(['hoy', 'ahora mismo']);
 
 // Pide análisis o explicación de un hecho
 const COMPLEJO = construirPatron([
-    'por que', 'que paso', 'que esta pasando', 'compara', 'comparar',
+    'por que', 'que esta pasando', 'compara', 'comparar',
     'comparacion', 'diferencia entre', 'versus',
     'analisis', 'analiza', 'consecuencias', 'tendencia',
     'pros y contras', 'ventajas y desventajas'
 ]);
 
 // Regex específicas para "x vs y" y años solo con contexto temporal
-const RE_VS_Y = /\b[a-z0-9]+\s+(?:vs|versus|contra)\s+[a-z0-9]+\b/;
+const RE_VS_Y = /\b[a-z0-9]+\s+(?:vs|versus)\s+[a-z0-9]+\b/;
 const RE_ANIO_CONTEXTO = /\b(?:en|del|para|hasta)\s+(?:2025|2026)\b/;
 
 // Palabras sensibles al tiempo que solo cuentan con contexto temporal
