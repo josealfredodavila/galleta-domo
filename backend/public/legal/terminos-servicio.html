@@ -1,0 +1,221 @@
+<!-- backend/public/legal/terminos-servicio.html -->
+<!DOCTYPE html>
+<html lang="es" data-public>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Términos de Servicio · Csariel's</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-card: #0B0F17;
+            --green: #22C55E;
+            --cyan: #00E5FF;
+            --purple: #A855F7;
+            --text-primary: #F8F9FA;
+            --text-secondary: #8B98A5;
+            --border: rgba(34, 197, 94, 0.18);
+            --font-base: 'Inter', -apple-system, sans-serif;
+            --font-title: 'Orbitron', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-base);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .legal-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            flex-shrink: 0;
+        }
+        .back-btn:hover { background: rgba(34, 197, 94, 0.12); border-color: var(--green); }
+        .back-btn svg { width: 22px; height: 22px; fill: currentColor; }
+        .header-content { display: flex; flex-direction: column; }
+        .header-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+        .header-subtitle { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+        .legal-main { max-width: 760px; width: 100%; margin: 0 auto; padding: 28px 20px 60px; flex: 1; }
+        .badge { display: inline-block; font-family: var(--font-title); font-size: 0.68rem; letter-spacing: 2px; color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 999px; margin-bottom: 14px; }
+        h1 { font-family: var(--font-title); font-size: 1.6rem; color: var(--green); margin-bottom: 18px; line-height: 1.25; text-shadow: 0 0 20px rgba(34, 197, 94, 0.25); }
+        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; font-size: 0.85rem; }
+        @media (min-width: 600px) { .meta-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .meta-grid div span { display: block; color: var(--text-secondary); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .meta-grid div strong { color: var(--text-primary); font-weight: 600; }
+        .toc { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 12px; padding: 16px 20px; margin-bottom: 28px; }
+        .toc h2 { font-family: var(--font-title); font-size: 0.85rem; color: var(--green); letter-spacing: 1px; margin-bottom: 10px; }
+        .toc ol { list-style: none; counter-reset: toc; }
+        .toc ol li { counter-increment: toc; margin-bottom: 6px; font-size: 0.88rem; }
+        .toc ol li::before { content: counter(toc) ". "; color: var(--purple); font-weight: 700; }
+        .toc a { color: var(--cyan); text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+        section { margin-bottom: 26px; }
+        h2 { font-family: var(--font-title); font-size: 1.05rem; color: var(--green); margin-bottom: 10px; margin-top: 6px; letter-spacing: 0.5px; }
+        h3 { font-size: 0.95rem; color: var(--text-primary); margin: 14px 0 6px; font-weight: 600; }
+        p { margin-bottom: 10px; font-size: 0.92rem; color: #D1D5DB; }
+        ul, ol { padding-left: 22px; margin-bottom: 12px; }
+        li { font-size: 0.92rem; color: #D1D5DB; margin-bottom: 6px; }
+        .callout { background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(0, 229, 255, 0.06)); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 0.88rem; }
+        .callout strong { color: var(--green); }
+        .contacto { margin-top: 36px; border-top: 1px solid var(--border); padding-top: 18px; font-size: 0.85rem; color: var(--text-secondary); }
+        .contacto a { color: var(--cyan); text-decoration: none; }
+        .contacto a:hover { text-decoration: underline; }
+        .pendiente { color: #FBBF24; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/features/centro-ayuda/index.html'; }" aria-label="Volver">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div class="header-content">
+            <div class="header-title">Términos de Servicio</div>
+            <div class="header-subtitle">Csariel's · Centro de Ayuda</div>
+        </div>
+    </header>
+    <main class="legal-main">
+        <span class="badge">DOCUMENTO LEGAL</span>
+        <h1>Términos de Servicio Generales</h1>
+
+        <div class="meta-grid">
+            <div><span>Versión</span><strong>1.0</strong></div>
+            <div><span>Vigencia</span><strong class="pendiente">[Pendiente: fecha de publicación]</strong></div>
+            <div><span>Jurisdicción</span><strong>Puebla, México</strong></div>
+        </div>
+
+        <nav class="toc" aria-label="Índice de contenidos">
+            <h2>ÍNDICE DE CONTENIDOS</h2>
+            <ol>
+                <li><a href="#aceptacion">Aceptación de los términos</a></li>
+                <li><a href="#elegibilidad">Elegibilidad y edad mínima</a></li>
+                <li><a href="#cuenta">Tu cuenta</a></li>
+                <li><a href="#uso">Uso permitido de la plataforma</a></li>
+                <li><a href="#contenido">Contenido del usuario</a></li>
+                <li><a href="#propiedad">Propiedad intelectual</a></li>
+                <li><a href="#mercado">Mercado, Es.stoks y servicios de terceros</a></li>
+                <li><a href="#suspension">Suspensión y terminación</a></li>
+                <li><a href="#limitacion">Limitación de responsabilidad</a></li>
+                <li><a href="#ley">Ley aplicable y jurisdicción</a></li>
+                <li><a href="#cambios">Cambios a los términos</a></li>
+                <li><a href="#contacto">Contacto</a></li>
+            </ol>
+        </nav>
+
+        <section id="aceptacion">
+            <h2>1. Aceptación de los términos</h2>
+            <p>Al crear una cuenta, acceder o usar Csariel's (en adelante, "la Plataforma"), aceptas estos Términos de Servicio Generales. Si no estás de acuerdo, no uses la Plataforma.</p>
+            <p>Estos términos regulan el uso general de la Plataforma (Muro, Canales, Live, Cuenta). Los servicios específicos del Mercado se rigen además por sus propios términos, que prevalecen en caso de conflicto sobre esa materia.</p>
+        </section>
+
+        <section id="elegibilidad">
+            <h2>2. Elegibilidad y edad mínima</h2>
+            <p><strong>Debes tener al menos 18 años</strong> para registrarte y usar Csariel's. Al crear una cuenta declaras cumplir con este requisito. Si detectamos que un usuario es menor de 18 años, la cuenta será suspendida y el contenido eliminado.</p>
+        </section>
+
+        <section id="cuenta">
+            <h2>3. Tu cuenta</h2>
+            <ul>
+                <li>Eres responsable de la veracidad de los datos que proporcionas al registrarte.</li>
+                <li>Eres responsable de mantener la confidencialidad de tu contraseña y de toda actividad realizada desde tu cuenta.</li>
+                <li>No puedes ceder, vender ni transferir tu cuenta a terceros.</li>
+                <li>Debes notificarnos de inmediato cualquier uso no autorizado de tu cuenta escribiendo a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</li>
+            </ul>
+        </section>
+
+        <section id="uso">
+            <h2>4. Uso permitido de la plataforma</h2>
+            <p>Te comprometes a usar la Plataforma conforme a la ley mexicana y a las <a href="/legal/reglas-comunidad.html" style="color: var(--cyan);">Reglas de la Comunidad</a>. No está permitido:</p>
+            <ul>
+                <li>Publicar contenido prohibido según las Reglas de la Comunidad.</li>
+                <li>Usar la Plataforma para actividades ilegales o fraudulentas.</li>
+                <li>Intentar acceder a cuentas de otros usuarios o a sistemas internos.</li>
+                <li>Automatizar el acceso sin autorización expresa (scraping, bots, etc.).</li>
+                <li>Interferir con el funcionamiento normal de la Plataforma.</li>
+            </ul>
+        </section>
+
+        <section id="contenido">
+            <h2>5. Contenido del usuario</h2>
+            <p>Conservas la titularidad del contenido que publicas. Al publicarlo en Csariel's, otorgas a la Plataforma una licencia mundial, no exclusiva y gratuita para alojar, mostrar, distribuir y moderar ese contenido dentro de la Plataforma.</p>
+            <p>Declaras que tu contenido no infringe derechos de terceros y que cuentas con las autorizaciones necesarias. Csariel's puede eliminar contenido que infrinja estas condiciones o las Reglas de la Comunidad.</p>
+            <div class="callout">
+                <strong>Importante:</strong> el contenido que publicas en el Muro puede ser público. Revisa nuestra <a href="/legal/privacidad.html" style="color: var(--cyan);">Política de Privacidad</a> para saber cómo tratamos tus datos.
+            </div>
+        </section>
+
+        <section id="propiedad">
+            <h2>6. Propiedad intelectual</h2>
+            <p>La marca Csariel's, su logotipo, el diseño de la Plataforma y el código subyacente son propiedad de <span class="pendiente">[Pendiente: razón social]</span> o de sus licenciantes. No puedes copiar, modificar ni distribuir estos elementos sin autorización previa por escrito.</p>
+        </section>
+
+        <section id="mercado">
+            <h2>7. Mercado, Es.stoks y servicios de terceros</h2>
+            <p>El uso del Mercado y de los Es.stoks se rige por los términos específicos del Mercado, disponibles dentro de la Plataforma. Consulta además la página de <a href="/legal/esstoks-riesgos.html" style="color: var(--cyan);">Riesgos de Es.stoks</a>.</p>
+            <p>Csariel's puede integrar servicios de terceros (proveedores de pago, wallets, etc.). No somos responsables del funcionamiento de dichos servicios ni de las decisiones que tomes al usarlos.</p>
+        </section>
+
+        <section id="suspension">
+            <h2>8. Suspensión y terminación</h2>
+            <p>Podemos suspender o cancelar tu cuenta si incumples estos términos o las Reglas de la Comunidad. Puedes apelar siguiendo el procedimiento descrito en las <a href="/legal/reglas-comunidad.html#suspension" style="color: var(--cyan);">Reglas de la Comunidad</a>.</p>
+            <p>También puedes eliminar tu cuenta en cualquier momento desde <a href="/legal/eliminar-cuenta.html" style="color: var(--cyan);">esta página</a>, sin necesidad de iniciar sesión.</p>
+        </section>
+
+        <section id="limitacion">
+            <h2>9. Limitación de responsabilidad</h2>
+            <p>La Plataforma se proporciona "tal cual" y "según disponibilidad". En la medida permitida por la ley mexicana, Csariel's no será responsable por daños indirectos, incidentales o consecuentes derivados del uso o la imposibilidad de uso de la Plataforma.</p>
+            <p>Nada en estos términos limita los derechos que la legislación mexicana de protección al consumidor reconoce a los usuarios.</p>
+        </section>
+
+        <section id="ley">
+            <h2>10. Ley aplicable y jurisdicción</h2>
+            <p>Estos términos se rigen por las leyes de los Estados Unidos Mexicanos. Para cualquier controversia, las partes se someten a los tribunales competentes de <strong>Puebla, México</strong>, renunciando a cualquier otro fuero que pudiera corresponderles.</p>
+        </section>
+
+        <section id="cambios">
+            <h2>11. Cambios a los términos</h2>
+            <p>Podemos actualizar estos términos para reflejar cambios legales o funcionales. Publicaremos la nueva versión en esta misma página con su fecha de vigencia. El uso continuado de la Plataforma después de la publicación implica tu aceptación.</p>
+        </section>
+
+        <section id="contacto">
+            <h2>12. Contacto</h2>
+            <p>Para dudas sobre estos términos, escríbenos a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</p>
+        </section>
+
+        <div class="contacto">
+            <p><strong>Responsable:</strong> <span class="pendiente">[Pendiente: razón social]</span></p>
+            <p><strong>Domicilio:</strong> <span class="pendiente">[Pendiente: domicilio]</span></p>
+            <p><strong>Correo oficial:</strong> <a href="mailto:soporte@csariels.com">soporte@csariels.com</a></p>
+            <p><strong>Jurisdicción:</strong> Puebla, México</p>
+            <p><strong>Vigencia:</strong> <span class="pendiente">[Pendiente: fecha de publicación]</span></p>
+        </div>
+    </main>
+</body>
+</html>
