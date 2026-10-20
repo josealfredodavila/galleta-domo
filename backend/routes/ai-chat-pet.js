@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.2)
+   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.3)
    ================================================================
    Endpoint: POST /api/ai/chat-pet
    Modelo:   Groq (openai/gpt-oss-120b)
@@ -10,6 +10,8 @@
    ✅ v5.1 — System prompt mejorado para búsqueda web
    ✅ v5.2 — Música con Deezer, crisis reforzada, historial
              combinado, límites por modo, búsqueda solo si aplica.
+   ✅ v5.3 — Regex de música con \b, no borra artículos globales,
+             modo explícito, límites y origen consistentes.
 ================================================================ */
 
 'use strict';
@@ -416,25 +418,31 @@ function detectarMusica(mensaje) {
         .replace(/\s+/g, ' ')
         .trim();
 
-    // frases que indican que el usuario quiere música
-    const frases = [
-        'pon musica', 'ponme una cancion', 'pon la cancion',
-        'ponme musica', 'reproduce', 'quiero escuchar',
-        'pon una cancion', 'ponme una rolita', 'ponme algo de'
+    // Lista de disparadores con \b al inicio y al final
+    const DISPARADORES = [
+        'pon musica', 'ponme musica', 'ponme una cancion',
+        'pon una cancion', 'pon la cancion', 'ponme una rolita',
+        'ponme algo de', 'quiero escuchar',
+        'reproduce', 'reproducir'
     ];
 
-    const coincide = frases.some(f => normalizado.includes(f));
-    if (!coincide) return null;
+    const alternativas = DISPARADORES
+        .map(p => p.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+        .join('|');
 
-    // quitar todas las frases con una sola regex (usando la versión normalizada
-    // pero aplicada sobre el texto original respetando mayúsculas y tildes)
-    const regexQuitar = /\b(pon(me)?\s+(una\s+)?(canci[oó]n|m[uú]sica|rolita|algo(\s+de)?)|pon\s+la\s+canci[oó]n|reproduce|quiero\s+escuchar)\b/gi;
+    const regexDisparo = new RegExp(`\\b(?:${alternativas})\\b`, 'i');
+    if (!regexDisparo.test(normalizado)) return null;
 
-    const limpio = original
+    // Quitar el disparador del texto original
+    const regexQuitar = new RegExp(`\\b(?:${alternativas})\\b`, 'gi');
+
+    let limpio = original
         .replace(regexQuitar, ' ')
-        .replace(/\b(de|el|la|los|las)\b/gi, ' ')
         .replace(/\s+/g, ' ')
         .trim();
+
+    // Quitar SOLO un artículo "de " o "la " inicial si queda al principio
+    limpio = limpio.replace(/^(?:de|la)\s+/i, '').trim();
 
     return limpio || null;
 }
@@ -522,8 +530,8 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
         if (esMensajeDeCrisis(mensajeLimpio)) {
             const respuestaCrisis = 'Gracias por confiarme esto, de verdad. No estás solo. Si estás en peligro inmediato llama al 911. También puedes llamar a la Línea de la Vida al 800 911 2000, donde te pueden escuchar y ayudar. Por favor, habla con alguien de confianza: un familiar, un amigo o un profesional. ¿Quieres que sigamos platicando de algo tranquilo para distraernos un poco?';
 
-            const origenCrisis = (modo === 'texto') ? 'texto' : 'voice_chat';
-            guardarMensaje(req.user.id, mensajeLimpio, respuestaCrisis, origenCrisis);
+            const origen = modo === 'texto' ? 'texto' : 'voice_chat';
+            guardarMensaje(req.user.id, mensajeLimpio, respuestaCrisis, origen);
 
             return res.status(200).json({
                 success: true,
@@ -618,7 +626,7 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
         /* =====================================================
            LÍMITES SEGÚN MODO
         ===================================================== */
-        const esVoz = modo !== 'texto';
+        const esVoz = modo === 'voz';
         const limite = esVoz ? LIMITES.voz : LIMITES.texto;
 
         /* =====================================================
@@ -714,7 +722,7 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
         /* =====================================================
            ORIGEN Y GUARDADO
         ===================================================== */
-        const origen = esVoz ? 'voice_chat' : 'texto';
+        const origen = modo === 'texto' ? 'texto' : 'voice_chat';
         guardarMensaje(req.user.id, mensajeLimpio, respuestaTexto, origen);
 
         console.log('✅ Marquinhos-pet respondió:', {
