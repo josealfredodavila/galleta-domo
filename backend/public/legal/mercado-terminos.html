@@ -2,53 +2,44 @@
      CSARIEL'S ECOSYSTEM
      Términos y Condiciones del Mercado
      Ruta: /backend/public/legal/mercado-terminos.html
-     
-     Diseño: Fondo claro legible + branding Csariel's (verde + dorado)
-     Cumple WCAG AAA de contraste
-     Optimizado para impresión
+
+     Página pública: no carga auth-global.js y no enlaza al Mercado.
+     Colores: siguen el tema y acento elegido por el usuario
+     (apariencia-global.js), con respaldo en paleta oscura Csariel's.
      ================================================================ -->
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
     <title>Términos del Mercado · Csariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%239BD62B' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%239BD62B' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
     <style>
         /* ================================================================
-           VARIABLES · Diseño claro con branding Csariel's
-           Contraste WCAG AAA (>7:1)
+           VARIABLES
+           Se leen de la apariencia del usuario si existen; si no, usan
+           la paleta oscura de Csariel's.
            ================================================================ */
         :root {
-            /* Colores de branding Csariel's */
-            --gold: #B8923A;             /* Dorado oscuro legible sobre blanco */
-            --gold-light: #D4AF37;        /* Dorado original para acentos */
-            --gold-bg: #FDF9ED;           /* Fondo dorado muy suave */
-            --green-brand: #0F2D1A;       /* Verde Csariel's para títulos */
-            --green-bg: #F0F7F2;          /* Fondo verde muy suave */
+            --lg-bg: var(--cfg-bg, #000000);
+            --lg-card: var(--cfg-card, #050B14);
+            --lg-card-hover: var(--cfg-card-hover, #0A1423);
+            --lg-text: var(--cfg-text, #F8F9FA);
+            --lg-text-soft: var(--cfg-text-soft, #C0D8E8);
+            --lg-text-muted: var(--cfg-text-muted, #8B98A5);
+            --lg-accent: var(--cfg-accent, #9BD62B);
+            --lg-accent-soft: rgba(155, 214, 43, 0.12);
+            --lg-border: var(--cfg-border, rgba(155, 214, 43, 0.25));
+            --lg-border-soft: rgba(255, 255, 255, 0.08);
 
-            /* Colores de fondo y texto legibles */
-            --bg: #FEFEFE;                /* Blanco limpio */
-            --bg-soft: #FAFAF7;           /* Blanco cálido para cards */
-            --text: #1F2937;              /* Gris oscuro (nunca negro puro) */
-            --text-soft: #4B5563;         /* Gris medio para párrafos */
-            --text-muted: #6B7280;        /* Gris claro para helpers */
-            --border: #E5E7EB;            /* Bordes sutiles */
-            --border-soft: #F3F4F6;
-
-            /* Colores funcionales */
-            --link: #0052CC;              /* Azul universal legible */
-            --link-hover: #003D99;
-            --success: #047857;
-            --success-bg: #ECFDF5;
-            --warning: #B45309;
-            --warning-bg: #FFFBEB;
-            --danger: #B91C1C;
-            --danger-bg: #FEF2F2;
-            --info: #1E40AF;
-            --info-bg: #EFF6FF;
+            --lg-info: #60A5FA;
+            --lg-warning: #FBBF24;
+            --lg-danger: #F87171;
+            --lg-success: #34D399;
 
             --radius: 12px;
             --radius-xl: 16px;
@@ -58,8 +49,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            background: var(--bg);
-            color: var(--text);
+            background: var(--lg-bg);
+            color: var(--lg-text);
             font-family: 'Inter', sans-serif;
             font-size: 16px;
             line-height: 1.7;
@@ -81,8 +72,8 @@
             justify-content: space-between;
             align-items: center;
             padding: 16px 0;
-            border-bottom: 2px solid var(--green-brand);
-            background: var(--bg);
+            border-bottom: 2px solid var(--lg-accent);
+            background: var(--lg-bg);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -92,25 +83,25 @@
             align-items: center;
             gap: 10px;
             text-decoration: none;
-            color: var(--green-brand);
+            color: var(--lg-text);
         }
         .logo-hex {
             font-size: 1.7rem;
-            color: var(--gold-light);
+            color: var(--lg-accent);
             font-family: 'Orbitron', monospace;
             line-height: 1;
         }
         .logo-text {
             font-family: 'Orbitron', monospace;
             font-size: 1.15rem;
-            color: var(--green-brand);
+            color: var(--lg-text);
             letter-spacing: 2px;
             font-weight: 700;
         }
-        .logo-text span { color: var(--gold-light); }
+        .logo-text span { color: var(--lg-accent); }
         .logo-badge {
             font-size: 0.55rem;
-            background: var(--green-brand);
+            background: linear-gradient(135deg, #ff2e97, #8b5cf6);
             color: #fff;
             padding: 3px 10px;
             border-radius: 20px;
@@ -119,51 +110,23 @@
         }
 
         /* ================================================================
-           BOTÓN VOLVER
-           ================================================================ */
-        .btn-back {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--text-soft);
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            text-decoration: none;
-            margin: 20px 0;
-            transition: var(--transition);
-            cursor: pointer;
-        }
-        .btn-back .simbolo {
-            color: var(--gold-light);
-            font-family: 'Orbitron', monospace;
-        }
-        .btn-back:hover {
-            border-color: var(--gold-light);
-            color: var(--gold);
-            background: var(--gold-bg);
-        }
-
-        /* ================================================================
            HERO
            ================================================================ */
         .hero {
             text-align: center;
             padding: 30px 20px 24px;
+            margin-top: 20px;
             margin-bottom: 28px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--lg-border-soft);
         }
         .hero .etiqueta {
             display: inline-block;
             font-family: 'Orbitron', monospace;
             font-size: 0.65rem;
             letter-spacing: 2px;
-            color: var(--gold);
-            background: var(--gold-bg);
-            border: 1px solid var(--gold-light);
+            color: var(--lg-accent);
+            background: var(--lg-accent-soft);
+            border: 1px solid var(--lg-border);
             padding: 6px 16px;
             border-radius: 20px;
             margin-bottom: 16px;
@@ -173,14 +136,14 @@
         .hero h1 {
             font-family: 'Orbitron', monospace;
             font-size: 1.7rem;
-            color: var(--green-brand);
+            color: var(--lg-text);
             margin-bottom: 10px;
             line-height: 1.3;
             font-weight: 700;
         }
         .hero .subtitulo {
             font-size: 0.95rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             margin-bottom: 20px;
             max-width: 600px;
             margin-left: auto;
@@ -192,7 +155,7 @@
             flex-wrap: wrap;
             justify-content: center;
             font-size: 0.8rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
         }
         .hero .meta-info > div {
             display: flex;
@@ -200,14 +163,14 @@
             gap: 2px;
         }
         .hero .meta-info strong {
-            color: var(--text-muted);
+            color: var(--lg-text-muted);
             font-size: 0.65rem;
             letter-spacing: 1px;
             text-transform: uppercase;
             font-weight: 700;
         }
         .hero .meta-info span {
-            color: var(--text);
+            color: var(--lg-text);
             font-weight: 600;
         }
 
@@ -215,8 +178,8 @@
            ÍNDICE
            ================================================================ */
         .indice {
-            background: var(--bg-soft);
-            border: 1px solid var(--border);
+            background: var(--lg-card);
+            border: 1px solid var(--lg-border);
             border-radius: var(--radius-xl);
             padding: 24px 28px;
             margin-bottom: 32px;
@@ -224,7 +187,7 @@
         .indice h2 {
             font-family: 'Orbitron', monospace;
             font-size: 0.85rem;
-            color: var(--green-brand);
+            color: var(--lg-accent);
             margin-bottom: 18px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -235,7 +198,7 @@
         }
         .indice h2::before {
             content: '◈';
-            color: var(--gold-light);
+            color: var(--lg-accent);
             font-size: 1rem;
         }
         .indice ol {
@@ -250,7 +213,7 @@
             font-size: 0.88rem;
         }
         .indice ol li a {
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             text-decoration: none;
             display: flex;
             align-items: center;
@@ -262,22 +225,22 @@
         .indice ol li a::before {
             content: counter(item) ".";
             font-family: 'Orbitron', monospace;
-            color: var(--gold);
+            color: var(--lg-accent);
             font-weight: 700;
             min-width: 24px;
             font-size: 0.85rem;
         }
         .indice ol li a:hover {
-            background: var(--gold-bg);
-            color: var(--green-brand);
+            background: var(--lg-accent-soft);
+            color: var(--lg-text);
         }
 
         /* ================================================================
            SECCIONES
            ================================================================ */
         .seccion {
-            background: var(--bg);
-            border: 1px solid var(--border);
+            background: var(--lg-card);
+            border: 1px solid var(--lg-border-soft);
             border-radius: var(--radius-xl);
             padding: 32px 30px;
             margin-bottom: 24px;
@@ -285,15 +248,15 @@
             transition: var(--transition);
         }
         .seccion:hover {
-            border-color: var(--gold-light);
+            border-color: var(--lg-border);
         }
         .seccion h2 {
             font-family: 'Orbitron', monospace;
             font-size: 1.05rem;
-            color: var(--green-brand);
+            color: var(--lg-text);
             margin-bottom: 20px;
             padding-bottom: 14px;
-            border-bottom: 2px solid var(--border);
+            border-bottom: 2px solid var(--lg-border-soft);
             display: flex;
             align-items: center;
             gap: 12px;
@@ -301,8 +264,8 @@
             font-weight: 700;
         }
         .seccion h2 .num {
-            background: var(--gold-light);
-            color: var(--green-brand);
+            background: var(--lg-accent);
+            color: #000;
             padding: 6px 12px;
             border-radius: 8px;
             font-size: 0.9rem;
@@ -315,42 +278,42 @@
             font-family: 'Inter', sans-serif;
             font-size: 1rem;
             font-weight: 700;
-            color: var(--green-brand);
+            color: var(--lg-accent);
             margin: 24px 0 12px;
         }
         .seccion p {
             font-size: 0.95rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             margin-bottom: 14px;
             text-align: justify;
         }
         .seccion p strong {
-            color: var(--text);
+            color: var(--lg-text);
             font-weight: 700;
         }
         .seccion ul, .seccion ol {
             margin: 12px 0 16px 28px;
             font-size: 0.95rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
         }
         .seccion ul li, .seccion ol li {
             margin-bottom: 8px;
             line-height: 1.7;
         }
         .seccion ul li::marker {
-            color: var(--gold);
+            color: var(--lg-accent);
         }
         .seccion ol li::marker {
-            color: var(--gold);
+            color: var(--lg-accent);
             font-weight: 700;
         }
         .seccion a {
-            color: var(--link);
+            color: var(--lg-accent);
             text-decoration: underline;
             font-weight: 500;
         }
         .seccion a:hover {
-            color: var(--link-hover);
+            color: var(--lg-text);
         }
 
         /* ================================================================
@@ -361,14 +324,16 @@
             border-collapse: collapse;
             margin: 20px 0;
             font-size: 0.88rem;
-            background: var(--bg);
-            border: 1px solid var(--border);
+            background: var(--lg-card);
+            border: 1px solid var(--lg-border-soft);
             border-radius: var(--radius);
             overflow: hidden;
+            display: block;
+            overflow-x: auto;
         }
         .tabla-legal th {
-            background: var(--green-brand);
-            color: #fff;
+            background: var(--lg-accent-soft);
+            color: var(--lg-accent);
             padding: 14px 16px;
             text-align: left;
             font-family: 'Orbitron', monospace;
@@ -376,19 +341,19 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             font-weight: 700;
+            white-space: nowrap;
         }
         .tabla-legal td {
             padding: 14px 16px;
-            border-top: 1px solid var(--border);
-            color: var(--text-soft);
+            border-top: 1px solid var(--lg-border-soft);
+            color: var(--lg-text-soft);
             vertical-align: top;
-            background: var(--bg);
         }
         .tabla-legal tr:nth-child(even) td {
-            background: var(--bg-soft);
+            background: rgba(255, 255, 255, 0.02);
         }
         .tabla-legal td strong {
-            color: var(--text);
+            color: var(--lg-text);
             font-weight: 700;
         }
 
@@ -396,17 +361,17 @@
            AVISOS
            ================================================================ */
         .aviso {
-            background: var(--info-bg);
-            border-left: 4px solid var(--info);
+            background: rgba(96, 165, 250, 0.10);
+            border-left: 4px solid var(--lg-info);
             border-radius: 8px;
             padding: 16px 20px;
             margin: 20px 0;
             font-size: 0.9rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             line-height: 1.65;
         }
         .aviso strong {
-            color: var(--info);
+            color: var(--lg-info);
             display: block;
             margin-bottom: 8px;
             font-weight: 700;
@@ -415,28 +380,29 @@
             letter-spacing: 0.5px;
             text-transform: uppercase;
         }
+        .aviso a { color: var(--lg-info); }
         .aviso.warning {
-            background: var(--warning-bg);
-            border-left-color: var(--warning);
+            background: rgba(251, 191, 36, 0.10);
+            border-left-color: var(--lg-warning);
         }
-        .aviso.warning strong { color: var(--warning); }
+        .aviso.warning strong { color: var(--lg-warning); }
         .aviso.danger {
-            background: var(--danger-bg);
-            border-left-color: var(--danger);
+            background: rgba(248, 113, 113, 0.10);
+            border-left-color: var(--lg-danger);
         }
-        .aviso.danger strong { color: var(--danger); }
+        .aviso.danger strong { color: var(--lg-danger); }
         .aviso.success {
-            background: var(--success-bg);
-            border-left-color: var(--success);
+            background: rgba(52, 211, 153, 0.10);
+            border-left-color: var(--lg-success);
         }
-        .aviso.success strong { color: var(--success); }
+        .aviso.success strong { color: var(--lg-success); }
 
         /* ================================================================
            CONTACTO
            ================================================================ */
         .contacto {
-            background: var(--green-bg);
-            border: 1px solid var(--green-brand);
+            background: var(--lg-card);
+            border: 1px solid var(--lg-border);
             border-radius: var(--radius-xl);
             padding: 28px 24px;
             margin-top: 32px;
@@ -445,7 +411,7 @@
         .contacto h3 {
             font-family: 'Orbitron', monospace;
             font-size: 0.95rem;
-            color: var(--green-brand);
+            color: var(--lg-accent);
             margin-bottom: 18px;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -453,7 +419,6 @@
         }
         .contacto h3::before {
             content: '◈ ';
-            color: var(--gold-light);
         }
         .contacto .fila {
             display: flex;
@@ -461,24 +426,24 @@
             align-items: center;
             padding: 10px 0;
             font-size: 0.9rem;
-            border-bottom: 1px solid rgba(15, 45, 26, 0.1);
+            border-bottom: 1px solid var(--lg-border-soft);
             max-width: 520px;
             margin: 0 auto;
             gap: 16px;
         }
         .contacto .fila:last-child { border-bottom: none; }
         .contacto .lbl {
-            color: var(--text-muted);
+            color: var(--lg-text-muted);
             font-weight: 500;
             text-align: left;
         }
         .contacto .val {
-            color: var(--text);
+            color: var(--lg-text);
             font-weight: 600;
             text-align: right;
         }
         .contacto .val.pendiente {
-            color: var(--warning);
+            color: var(--lg-warning);
             font-style: italic;
             font-size: 0.85rem;
             font-weight: 500;
@@ -490,60 +455,36 @@
         .footer-legal {
             margin-top: 40px;
             padding-top: 28px;
-            border-top: 2px solid var(--green-brand);
+            border-top: 2px solid var(--lg-accent);
             text-align: center;
             font-size: 0.82rem;
-            color: var(--text-soft);
+            color: var(--lg-text-soft);
             line-height: 1.8;
         }
         .footer-legal .marca {
-            color: var(--green-brand);
+            color: var(--lg-accent);
             font-weight: 700;
             font-family: 'Orbitron', monospace;
             font-size: 0.9rem;
         }
-        .footer-legal .marca::before { content: '◈ '; color: var(--gold-light); }
-
-        /* ================================================================
-           BOTÓN FLOTANTE VOLVER
-           ================================================================ */
-        .btn-volver-flotante {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            padding: 14px 24px;
-            background: var(--green-brand);
-            color: #fff;
-            border: none;
-            border-radius: 30px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            font-size: 0.78rem;
-            cursor: pointer;
-            text-decoration: none;
-            box-shadow: 0 8px 24px rgba(15, 45, 26, 0.3);
-            transition: var(--transition);
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 500;
-        }
-        .btn-volver-flotante::before {
-            content: '◈';
-            color: var(--gold-light);
-        }
-        .btn-volver-flotante:hover {
-            transform: translateY(-3px);
-            background: #1a4a2a;
-            box-shadow: 0 12px 32px rgba(15, 45, 26, 0.4);
-        }
+        .footer-legal .marca::before { content: '◈ '; }
 
         /* ================================================================
            IMPRESIÓN
            ================================================================ */
         @media print {
+            :root {
+                --lg-bg: #ffffff;
+                --lg-card: #ffffff;
+                --lg-text: #000000;
+                --lg-text-soft: #000000;
+                --lg-text-muted: #333333;
+                --lg-accent: #000000;
+                --lg-border: #999999;
+                --lg-border-soft: #cccccc;
+            }
             body { background: #fff !important; color: #000 !important; font-size: 11pt; }
-            .header, .btn-back, .btn-volver-flotante { display: none !important; }
+            .header { display: none !important; }
             .app { max-width: 100%; padding: 0; }
             .seccion {
                 page-break-inside: avoid;
@@ -588,12 +529,6 @@
                 text-align: center;
             }
             .contacto .lbl, .contacto .val { text-align: center; }
-            .btn-volver-flotante {
-                bottom: 16px;
-                right: 16px;
-                padding: 12px 18px;
-                font-size: 0.7rem;
-            }
             .tabla-legal { font-size: 0.8rem; }
             .tabla-legal th, .tabla-legal td { padding: 10px 12px; }
         }
@@ -611,11 +546,6 @@
                 <span class="logo-badge">WEB3</span>
             </a>
         </header>
-
-        <!-- Botón volver -->
-        <a href="/features/mercado/index.html" class="btn-back">
-            <span class="simbolo">◈</span> Volver al Mercado
-        </a>
 
         <!-- Hero -->
         <div class="hero">
@@ -698,6 +628,7 @@
                 <li><strong>Membresía:</strong> Plan de suscripción que habilita funcionalidades avanzadas para Vendedores.</li>
                 <li><strong>Comisión:</strong> Porcentaje del monto de la venta que Csariel's retiene por el uso del Mercado.</li>
                 <li><strong>Criptomoneda:</strong> Activos virtuales aceptados como medio de pago (USDT, USDC, BTC, ETH, etc.).</li>
+                <li><strong>Es.stoks:</strong> Tokens de la Plataforma gestionados desde la sección de Es.stoks de la cuenta del Usuario, sujetos a las reglas de uso de la Plataforma.</li>
                 <li><strong>NOWPayments:</strong> Procesador de pagos con criptomonedas autorizado.</li>
                 <li><strong>Csariel's:</strong> Csariel's Ecosystem, nombre comercial de la Plataforma.</li>
             </ul>
@@ -900,7 +831,7 @@
                 <li>Después de 90 días, se eliminarán definitivamente;</li>
                 <li>El balance acumulado se mantendrá disponible por <strong>1 año</strong>.</li>
             </ul>
-            <p><strong>10.6.</strong> Conforme al <strong>artículo 76 Bis de la Ley Federal de Protección al Consumidor</strong> (reformado en 2025), los proveedores deben facilitar la <strong>cancelación de suscripciones y membresías</strong> con cobro recurrente, con un mecanismo visible y accesible en el mismo lugar donde se contrató el servicio.</p>
+            <p><strong>10.6.</strong> Conforme al <strong>artículo 76 Bis de la Ley Federal de Protección al Consumidor</strong>, los proveedores deben facilitar la <strong>cancelación de suscripciones y membresías</strong> con cobro recurrente, con un mecanismo visible y accesible en el mismo lugar donde se contrató el servicio.</p>
         </section>
 
         <!-- ART 11 -->
@@ -1104,16 +1035,11 @@
                 Puebla, México.
             </p>
             <p style="margin-top: 12px; font-size: 0.78rem;">
-                Última actualización: <strong style="color: var(--warning);">[Pendiente de configuración]</strong>
+                Última actualización: <strong style="color: var(--lg-warning);">[Pendiente de configuración]</strong>
             </p>
         </div>
 
     </div>
-
-    <!-- Botón flotante volver -->
-    <a href="/features/mercado/index.html" class="btn-volver-flotante">
-        Volver al Mercado
-    </a>
 
 <script>
 // ================================================================
@@ -1132,8 +1058,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-
-    console.log('◈ Términos del Mercado cargados (modo claro)');
 });
 </script>
 </body>
