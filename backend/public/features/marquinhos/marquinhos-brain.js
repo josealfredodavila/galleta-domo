@@ -1,11 +1,13 @@
 // ================================================================
-// MARQUINHOS · BRAIN v7.2
+// MARQUINHOS · BRAIN v7.3
 // Memoria por usuario (RAG) + filtro de recuerdos + respuestas locales
-// + SOPORTE DE MÚSICA (Deezer, validado)
+// + SOPORTE DE MÚSICA (Deezer: enlace de canción, sin audio)
 //
-// v7.2 — Sin reintento automático sobre el mismo endpoint cuando
-//        el servidor ya respondió (cada llamada consume cuota).
-//        Evento de música solo si el objeto es válido.
+// v7.3 — preguntar() devuelve { reply, musica } cuando el backend
+//        trae canciones; si no, devuelve solo texto (compatibilidad).
+//        Asigna window.MarquinhosBrain.ultimaMusica.
+//        El evento 'marquinhos-musica' valida enlace de Deezer
+//        (ya no audio_preview).
 // ================================================================
 
 'use strict';
@@ -13,7 +15,7 @@
 (function () {
     if (window.MarquinhosBrain) return;
 
-    const VERSION = '7.2';
+    const VERSION = '7.3';
     const TIMEOUT_MS = 30000;
     const HISTORIAL_ENVIO = 20;
     const HISTORIAL_CHARS = 2000;
@@ -330,19 +332,26 @@
 
     // ============================================================
     // MÚSICA: validación y emisión del evento
+    // Deezer devuelve titulo, artista, caratula y enlace (sin audio).
     // ============================================================
     function musicaValida(m) {
         return Boolean(
             m && typeof m === 'object' &&
             typeof m.titulo === 'string' && m.titulo.trim() !== '' &&
-            typeof m.audio_preview === 'string' && /^https:\/\//.test(m.audio_preview)
+            typeof m.enlace === 'string' && /^https:\/\/(www\.)?deezer\.com\//.test(m.enlace)
         );
     }
 
-    function emitirMusica(musica) {
-        if (!musicaValida(musica)) return;
+    function listaMusicaValida(lista) {
+        if (!Array.isArray(lista)) return null;
+        const validas = lista.filter(musicaValida);
+        return validas.length ? validas : null;
+    }
+
+    function emitirMusica(lista) {
+        if (!lista) return;
         try {
-            window.dispatchEvent(new CustomEvent('marquinhos-musica', { detail: musica }));
+            window.dispatchEvent(new CustomEvent('marquinhos-musica', { detail: lista }));
         } catch (e) {
             console.warn('[Marquinhos/Brain] No se pudo emitir música:', e.message);
         }
@@ -381,7 +390,7 @@
 
             const data = await resp.json();
             const reply = data && (data.reply || data.message || data.response);
-            const musica = data && data.musica ? data.musica : null;
+            const musica = listaMusicaValida(data && data.musica);
 
             if (reply && typeof reply === 'string' && reply.trim()) {
                 return { ok: true, reply: reply.trim(), musica: musica };
@@ -424,11 +433,14 @@
 
     // ============================================================
     // PREGUNTAR
+    // Devuelve { reply, musica } si hay canciones; si no, texto.
     // ============================================================
     async function preguntar(texto, historialLocal, modo) {
         if (!texto || typeof texto !== 'string') return '';
         const limpio = texto.trim();
         if (!limpio) return '';
+
+        window.MarquinhosBrain.ultimaMusica = null;
 
         const userInfo = window.Marquinhos && window.Marquinhos.getUserInfo
             ? window.Marquinhos.getUserInfo() : null;
@@ -472,7 +484,7 @@
                 let r1 = await llamarEndpoint(CHAT_PET_ENDPOINT, payload1, token);
 
                 // Reintento solo si la red falló ANTES de llegar al servidor.
-                // Si el servidor respondió con error (5xx), no se reintenta:
+                // Si el servidor respondió con error, no se reintenta:
                 // cada llamada consume un mensaje del plan.
                 if (!r1.ok && !r1.status && !r1.aborted) {
                     await esperar(600);
@@ -480,8 +492,7 @@
                 }
 
                 if (r1.ok) {
-                    emitirMusica(r1.musica);
-                    return r1.reply;
+                    return entregarRespuesta(r1.reply, r1.musica);
                 }
 
                 const r2 = await llamarEndpoint(CHAT_ENDPOINT, {
@@ -493,8 +504,7 @@
                 }, token);
 
                 if (r2.ok) {
-                    emitirMusica(r2.musica);
-                    return r2.reply;
+                    return entregarRespuesta(r2.reply, r2.musica);
                 }
 
                 motivoFallo = 'chat-pet: ' + describirFallo(r1) + ' | chat: ' + describirFallo(r2);
@@ -509,9 +519,21 @@
         return 'No pude conectarme ahora (' + motivoFallo.slice(0, 120) + '). Intenta de nuevo.';
     }
 
+    // Une la respuesta con la música (si la hay) y la deja disponible
+    // para el frontend por las dos vías: valor devuelto y ultimaMusica.
+    function entregarRespuesta(reply, musica) {
+        if (musica && musica.length) {
+            window.MarquinhosBrain.ultimaMusica = musica;
+            emitirMusica(musica);
+            return { reply: reply, musica: musica };
+        }
+        return reply;
+    }
+
     window.MarquinhosBrain = {
         version: VERSION,
-        preguntar: preguntar
+        preguntar: preguntar,
+        ultimaMusica: null
     };
     console.log('[Marquinhos/Brain] ✅ v' + VERSION + ' cargado (memoria RAG + música)');
 })();
