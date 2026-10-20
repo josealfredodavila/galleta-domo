@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.4)
+   routes/ai-chat-pet.js - CHAT DE LA MASCOTA MARQUINHOS (v5.5)
    ================================================================
    Endpoint: POST /api/ai/chat-pet
    Modelo:   Groq (openai/gpt-oss-120b)
@@ -12,9 +12,11 @@
              combinado, límites por modo, búsqueda solo si aplica.
    ✅ v5.3 — Regex de música con \b, no borra artículos globales,
              modo explícito, límites y origen consistentes.
-   ✅ v5.4 — Disparador de música anclado (sin interrogación,
-             sin palabra interrogativa inicial, dentro de las
-             primeras 4 palabras) y nota de canción no encontrada.
+   ✅ v5.4 — Disparador de música anclado y nota de canción no
+             encontrada.
+   ✅ v5.5 — Música: hasta 3 resultados con enlace a Deezer, sin
+             reproducción de audio dentro de la app. El prompt
+             indica que las canciones se abren en Deezer.
 ================================================================ */
 
 'use strict';
@@ -47,6 +49,7 @@ const HISTORIAL_MAX = 20;
 const PRESUPUESTO_BUSQUEDA_VOZ_MS = 3500;
 
 const DEEZER_TIMEOUT_MS = 8000;
+const DEEZER_MAX_RESULTADOS = 3;
 
 /* ================================================================
    AUTENTICACIÓN
@@ -149,7 +152,7 @@ SÍ puedes:
 `.trim();
 
 /* ================================================================
-   PERSONALIDAD DE MARQUINHOS — v5.4
+   PERSONALIDAD DE MARQUINHOS — v5.5
 ================================================================ */
 
 const SYSTEM_PROMPT = `
@@ -215,12 +218,12 @@ EJEMPLO MALO (nunca hacer esto):
 "No tengo acceso a datos en tiempo real ahora mismo."
 
 ───────────────────────────────────────────────────────────────
-🎵 MÚSICA — HABILIDAD ESPECIAL (v5.4)
+🎵 MÚSICA — HABILIDAD ESPECIAL (v5.5)
 ───────────────────────────────────────────────────────────────
 
-Si el usuario te pide poner música, reproducir una canción o escuchar algo, y el sistema te entrega un bloque [MÚSICA REPRODUCIENDO], confirma con alegría y naturalidad que estás reproduciendo esa canción. Por ejemplo: "¡Va! Te pongo algo de Bad Bunny." o "¡Listo! Suena fuerte."
+Si el usuario te pide música y el sistema te entrega un bloque [MÚSICA ENCONTRADA], responde con naturalidad que encontraste esas canciones y que puede tocar la que quiera para abrirla en Deezer. Por ejemplo: "¡Va! Encontré estas canciones de Bad Bunny. Toca la que quieras para abrirla en Deezer." Nunca digas que estás reproduciendo la música, porque la reproducción ocurre en Deezer, no en Csariel's.
 
-Si el usuario pide música pero no recibes el bloque [MÚSICA REPRODUCIENDO], di algo como: "No encontré esa canción, ¿me la repites o me das otro nombre?" No inventes canciones ni artistas.
+Si recibes el bloque [MÚSICA NO ENCONTRADA], di algo como: "No encontré esa canción, ¿me la repites o me das otro nombre?" No inventes canciones ni artistas.
 
 FORMATO:
 Texto plano conversacional. Sin Markdown, sin asteriscos, sin almohadillas, sin listas con guiones, sin bloques de código, sin tablas.
@@ -308,9 +311,7 @@ function limpiarFormato(texto) {
     t = t.replace(/^\s{0,3}[-*_]{3,}\s*$/gm, '');
     t = t.replace(/^\s*\|.*\|\s*$/gm, '');
     t = t.replace(/\|/g, ' ');
-    // quitar símbolos decorativos que se leen mal en voz
     t = t.replace(/[→»➤•◈✦]/g, ' ');
-    // quitar emojis comunes
     t = t.replace(/[\u{1F300}-\u{1FAFF}]/gu, '');
     t = t.replace(/[\u{2600}-\u{27BF}]/gu, '');
     t = t.replace(/[ \t]{2,}/g, ' ');
@@ -334,7 +335,6 @@ function recortarRespuesta(texto, maximo) {
     if (ultimoEspacio > maximo * 0.6) {
         return recorte.slice(0, ultimoEspacio).trim() + '...';
     }
-    // si no hay punto ni espacio útil, corta en el último espacio aunque sea antes del 60 %
     if (ultimoEspacio > 0) {
         return recorte.slice(0, ultimoEspacio).trim() + '...';
     }
@@ -386,6 +386,8 @@ async function cargarHistorial(usuarioId) {
 
 /* ================================================================
    DETECCIÓN DE MÚSICA Y BÚSQUEDA EN DEEZER
+   Devuelve hasta 3 canciones con enlace a Deezer. No se reproduce
+   audio dentro de la app.
 ================================================================ */
 
 async function buscarMusicaDeezer(query) {
@@ -398,15 +400,17 @@ async function buscarMusicaDeezer(query) {
 
         if (!data || !Array.isArray(data.data) || data.data.length === 0) return null;
 
-        const track = data.data[0];
-        if (!track || !track.preview) return null;
+        const resultados = data.data
+            .filter(track => track && track.title && track.link)
+            .slice(0, DEEZER_MAX_RESULTADOS)
+            .map(track => ({
+                titulo: track.title || '',
+                artista: track.artist?.name || '',
+                caratula: track.album?.cover_medium || '',
+                enlace: track.link
+            }));
 
-        return {
-            titulo: track.title || '',
-            artista: track.artist?.name || '',
-            caratula: track.album?.cover_medium || '',
-            audio_preview: track.preview
-        };
+        return resultados.length ? resultados : null;
     } catch (e) {
         console.warn('[chat-pet] Deezer error:', e.message);
         return null;
@@ -444,12 +448,10 @@ function detectarMusica(mensaje) {
 
     const regexDisparo = new RegExp(`\\b(?:${alternativas})\\b`, 'i');
 
-    // Tomamos las primeras 4 palabras del mensaje normalizado para verificar la posición.
     const primerasPalabras = normalizado.split(' ').slice(0, 4).join(' ');
 
     if (!regexDisparo.test(primerasPalabras)) return null;
 
-    // Quitar el disparador del texto original
     const regexQuitar = new RegExp(`\\b(?:${alternativas})\\b`, 'gi');
 
     let limpio = original
@@ -457,7 +459,6 @@ function detectarMusica(mensaje) {
         .replace(/\s+/g, ' ')
         .trim();
 
-    // Quitar SOLO un artículo "de " o "la " inicial si queda al principio
     limpio = limpio.replace(/^(?:de|la)\s+/i, '').trim();
 
     return limpio || null;
@@ -562,13 +563,13 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
         /* =====================================================
            MÚSICA: detección + búsqueda en Deezer
         ===================================================== */
-        let musicaReproduciendo = null;
+        let musicaEncontrada = null;
         let notaMusicaNoEncontrada = null;
         const queryMusica = detectarMusica(mensajeLimpio);
 
         if (queryMusica) {
-            musicaReproduciendo = await buscarMusicaDeezer(queryMusica);
-            if (!musicaReproduciendo) {
+            musicaEncontrada = await buscarMusicaDeezer(queryMusica);
+            if (!musicaEncontrada) {
                 notaMusicaNoEncontrada =
                     `[MÚSICA NO ENCONTRADA] El usuario pidió «${queryMusica}» pero no se encontró en el catálogo. Dilo con naturalidad, sin inventar canciones ni artistas, y pide otro nombre.`;
             }
@@ -583,9 +584,6 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
         let contextoWeb = null;
         let busquedaEjecutada = false;
 
-        // No buscar en saludos ni charla. Solo si hay señales de dato vivo
-        // y el mensaje tiene al menos 4 palabras.
-        // Si el servicio falla, se responde sin contexto (nunca se cae).
         if (
             intencion.tipo !== 'ninguna' &&
             palabras >= 4 &&
@@ -633,7 +631,6 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             )
         ];
 
-        // quitar el mensaje actual si quedó duplicado al final
         while (
             historialCombinado.length > 0 &&
             historialCombinado[historialCombinado.length - 1].role === 'user' &&
@@ -674,10 +671,13 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             });
         }
 
-        if (musicaReproduciendo) {
+        if (musicaEncontrada) {
+            const lista = musicaEncontrada
+                .map(c => `${c.titulo} de ${c.artista}`)
+                .join('; ');
             mensajes.push({
                 role: 'system',
-                content: `[MÚSICA REPRODUCIENDO] El usuario pidió música y se encontró: ${musicaReproduciendo.titulo} de ${musicaReproduciendo.artista}. Confírmalo con alegría y naturalidad.`
+                content: `[MÚSICA ENCONTRADA] Resultados: ${lista}. Indica que encontraste estas canciones y que puede tocar la que quiera para abrirla en Deezer. No digas que la estás reproduciendo.`
             });
         }
 
@@ -758,7 +758,7 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             chars: respuestaTexto.length,
             memoria: memoriaLimpia ? 'sí' : 'no',
             modo: origen,
-            musica: musicaReproduciendo ? 'sí' : 'no',
+            musica: musicaEncontrada ? musicaEncontrada.length : 0,
             busqueda: busquedaEjecutada ? (contextoWeb ? 'con_contexto' : 'sin_resultado') : 'no_necesaria'
         });
 
@@ -768,7 +768,7 @@ router.post(['/', '/chat-pet'], autenticar, async (req, res) => {
             plan: permiso.plan || null,
             restantes: permiso.restantes ?? null,
             busqueda: busquedaEjecutada ? (contextoWeb ? 'ok' : 'sin_resultado') : 'no_necesaria',
-            musica: musicaReproduciendo || null
+            musica: musicaEncontrada || null
         });
 
     } catch (error) {
