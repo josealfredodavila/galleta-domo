@@ -1,5 +1,5 @@
 // ================================================================
-// MARQUINHOS · PET v9.8.4 "GALACTIC PRO"
+// MARQUINHOS · PET v9.8.5 "GALACTIC PRO"
 // v9.8.3:
 // - FIX DEFINITIVO: helper obtenerClienteSupabase() que busca el
 //   cliente en window.getSupabase, window.supabaseClient o window.supabase
@@ -10,6 +10,13 @@
 // - procesarComando pasa 'voz' a MarquinhosBrain.preguntar() para
 //   que el backend clasifique correctamente origen='voice_chat'
 //   en las estadísticas.
+// v9.8.5:
+// - Tarjetas de música (Deezer): renderizarMusica(musica) dibuja un
+//   panel con carátula, título, artista y botón que abre el enlace
+//   en Deezer. Solo acepta enlaces https de deezer.com.
+// - TERMINOS_VERSION alineada a '1.1' con la página de términos.
+// - El modal de términos enlaza a /legal/marquinhos.html.
+// - procesarComando acepta texto o { reply, musica } desde el brain.
 // ================================================================
 
 'use strict';
@@ -58,8 +65,9 @@
     const HIST_KEY = 'marquinhos_hist_';
     const ACC_KEY = 'marquinhos_accesorios_equipados';
 
-    const TERMINOS_VERSION = '1.0';
+    const TERMINOS_VERSION = '1.1';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
+    const TERMINOS_URL = '/legal/marquinhos.html';
 
     const TTS_FALLO_TTL_MS = 2 * 60 * 1000;
     let _ttsBackendFalloEn = 0;
@@ -110,7 +118,7 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos v9.8.4]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.8.5]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
@@ -120,7 +128,6 @@
 
     // ============================================================
     // HELPER ÚNICO para obtener el cliente de Supabase
-    // Busca en window.getSupabase, window.supabaseClient o window.supabase
     // ============================================================
     async function obtenerClienteSupabase() {
         try {
@@ -361,6 +368,125 @@
     }
 
     // ============================================================
+    // TARJETAS DE MÚSICA (Deezer)
+    // ============================================================
+
+    function enlaceDeezerSeguro(url) {
+        return typeof url === 'string' && /^https:\/\/(www\.)?deezer\.com\//.test(url);
+    }
+
+    function urlImagenSegura(url) {
+        return typeof url === 'string' && /^https:\/\//.test(url);
+    }
+
+    function asegurarEstilosMusica() {
+        if (document.getElementById('mq-musica-estilos')) return;
+        const s = document.createElement('style');
+        s.id = 'mq-musica-estilos';
+        s.textContent = `
+            #mq-musica-panel{position:fixed;right:16px;bottom:180px;max-width:300px;width:calc(100vw - 32px);
+                max-height:50vh;overflow-y:auto;background:#0a0f1a;border:1px solid rgba(34,197,94,.35);
+                border-radius:14px;padding:12px;z-index:2147483640;box-shadow:0 10px 30px rgba(0,0,0,.5);
+                font-family:-apple-system,system-ui,sans-serif;color:#f0f4f8}
+            .mq-musica-cabecera{display:flex;justify-content:space-between;align-items:center;
+                font-size:.85rem;font-weight:700;color:#86EFAC;margin-bottom:8px}
+            .mq-musica-cerrar{background:transparent;border:0;color:#8aa8b8;font-size:1.3rem;
+                cursor:pointer;line-height:1;padding:0 4px}
+            .mq-musica-lista{display:flex;flex-direction:column;gap:10px}
+            .mq-musica-tarjeta{display:flex;gap:10px;align-items:center;background:rgba(34,197,94,.08);
+                border:1px solid rgba(34,197,94,.3);border-radius:12px;padding:8px}
+            .mq-musica-caratula{width:52px;height:52px;border-radius:8px;object-fit:cover;flex-shrink:0}
+            .mq-musica-info{display:flex;flex-direction:column;gap:2px;min-width:0}
+            .mq-musica-titulo{font-weight:600;font-size:.88rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+            .mq-musica-artista{color:#8B98A5;font-size:.78rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+            .mq-musica-boton{margin-top:4px;align-self:flex-start;color:#04210F;background:#22C55E;
+                padding:5px 12px;border-radius:99px;font-size:.75rem;font-weight:700;text-decoration:none}
+        `;
+        document.head.appendChild(s);
+    }
+
+    function crearTarjetaMusica(cancion) {
+        const tarjeta = document.createElement('div');
+        tarjeta.className = 'mq-musica-tarjeta';
+
+        if (urlImagenSegura(cancion.caratula)) {
+            const img = document.createElement('img');
+            img.className = 'mq-musica-caratula';
+            img.src = cancion.caratula;
+            img.alt = 'Carátula de ' + (cancion.titulo || 'la canción');
+            img.loading = 'lazy';
+            tarjeta.appendChild(img);
+        }
+
+        const info = document.createElement('div');
+        info.className = 'mq-musica-info';
+
+        const titulo = document.createElement('div');
+        titulo.className = 'mq-musica-titulo';
+        titulo.textContent = cancion.titulo || 'Sin título';
+
+        const artista = document.createElement('div');
+        artista.className = 'mq-musica-artista';
+        artista.textContent = cancion.artista || '';
+
+        const boton = document.createElement('a');
+        boton.className = 'mq-musica-boton';
+        boton.href = cancion.enlace;
+        boton.target = '_blank';
+        boton.rel = 'noopener noreferrer';
+        boton.textContent = 'Abrir en Deezer';
+
+        info.appendChild(titulo);
+        info.appendChild(artista);
+        info.appendChild(boton);
+        tarjeta.appendChild(info);
+
+        return tarjeta;
+    }
+
+    function cerrarPanelMusica() {
+        const p = document.getElementById('mq-musica-panel');
+        if (p) p.remove();
+    }
+
+    function renderizarMusica(musica) {
+        cerrarPanelMusica();
+        if (!Array.isArray(musica) || musica.length === 0) return;
+
+        const validas = musica.filter(c => c && enlaceDeezerSeguro(c.enlace));
+        if (!validas.length) return;
+
+        asegurarEstilosMusica();
+
+        const panel = document.createElement('div');
+        panel.id = 'mq-musica-panel';
+
+        const cabecera = document.createElement('div');
+        cabecera.className = 'mq-musica-cabecera';
+
+        const titulo = document.createElement('span');
+        titulo.textContent = 'Encontré estas canciones';
+
+        const cerrar = document.createElement('button');
+        cerrar.type = 'button';
+        cerrar.className = 'mq-musica-cerrar';
+        cerrar.setAttribute('aria-label', 'Cerrar');
+        cerrar.textContent = '×';
+        cerrar.addEventListener('click', cerrarPanelMusica);
+
+        cabecera.appendChild(titulo);
+        cabecera.appendChild(cerrar);
+        panel.appendChild(cabecera);
+
+        const lista = document.createElement('div');
+        lista.className = 'mq-musica-lista';
+        validas.forEach(c => lista.appendChild(crearTarjetaMusica(c)));
+        panel.appendChild(lista);
+
+        document.body.appendChild(panel);
+    }
+
+    // ============================================================
     // TÉRMINOS
     // ============================================================
 
@@ -402,6 +528,12 @@
         return null;
     }
 
+    function estaAceptado(data) {
+        if (data === true) return true;
+        if (typeof data === 'string') return data.trim().toLowerCase() === 'true';
+        return !!(data && (data.aceptado === true || data.aceptado === 'true'));
+    }
+
     async function verificarTerminos() {
         const uid = await obtenerUidActual();
         if (!uid) {
@@ -417,10 +549,9 @@
             const { data, error } = await sb.rpc('verificar_aceptacion_terminos', {
                 p_version: TERMINOS_VERSION
             });
-            console.log('[Marquinhos] verificar términos →', { data, error });
             if (error) throw error;
 
-            if (data && data.aceptado === true) {
+            if (estaAceptado(data)) {
                 _terminosOkPara = uid;
                 return true;
             }
@@ -442,7 +573,7 @@
                 p_user_agent: navigator.userAgent
             });
             if (error) throw error;
-            return !!(data && data.success === true);
+            return !!(data && (data.success === true || data.success === 'true'));
         } catch (e) {
             console.warn('[Marquinhos] Error registrando términos:', e);
             return false;
@@ -494,7 +625,7 @@
                             <li><strong>Tu memoria es privada.</strong> Cada usuario tiene su propia burbuja de recuerdos aislada.</li>
                             <li><strong>Edad mínima: 13 años.</strong></li>
                         </ul>
-                        <p>Al continuar, aceptas los <a href="/legal/terminos-marquinhos" target="_blank" rel="noopener">Términos de Uso completos</a>.</p>
+                        <p>Al continuar, aceptas los <a href="${TERMINOS_URL}" target="_blank" rel="noopener">Términos de Uso completos</a>.</p>
                     </div>
                     <div class="mq-modal-actions">
                         <button id="mq-btn-aceptar" class="mq-btn-aceptar" type="button">Acepto y continúo</button>
@@ -891,7 +1022,7 @@
             }
         }, 500);
 
-        log('Widget v9.8.4 Galactic Pro creado');
+        log('Widget v9.8.5 Galactic Pro creado');
     }
 
     function mostrarDots() {}
@@ -1159,6 +1290,7 @@
         if (!texto) return;
         const miConversacionToken = ++conversationToken;
 
+        cerrarPanelMusica();
         procesando = true;
         setEstado('pensando');
         cambiarVisema('M');
@@ -1167,11 +1299,24 @@
             historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
 
             let respuesta = '';
+            let musica = null;
+
             if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
                 try {
                     const historialTruncado = historialLocal.slice(-HIST_MAX_ENVIO);
-                    // 🆕 v9.8.4: pasa 'voz' explícito
-                    respuesta = await window.MarquinhosBrain.preguntar(texto, historialTruncado, 'voz');
+                    window.MarquinhosBrain.ultimaMusica = null;
+
+                    const resp = await window.MarquinhosBrain.preguntar(texto, historialTruncado, 'voz');
+
+                    if (resp && typeof resp === 'object') {
+                        respuesta = resp.reply || resp.respuesta || '';
+                        musica = Array.isArray(resp.musica) ? resp.musica : null;
+                    } else {
+                        respuesta = resp || '';
+                        musica = Array.isArray(window.MarquinhosBrain.ultimaMusica)
+                            ? window.MarquinhosBrain.ultimaMusica
+                            : null;
+                    }
                 } catch (e) {
                     respuesta = 'Ups, tuve un problema. ¿Puedes repetir?';
                 }
@@ -1188,6 +1333,8 @@
 
             historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
             guardarHistorial();
+
+            if (musica && musica.length) renderizarMusica(musica);
 
             procesando = false;
             const completo = await hablar(respuesta);
@@ -1232,6 +1379,8 @@
         hablar: hablar,
         procesar: procesarComando,
         olvidar: olvidarTodo,
+        mostrarMusica: renderizarMusica,
+        cerrarMusica: cerrarPanelMusica,
         recargarAccesorios: async function() {
             await cargarAccesorios();
             renderAccesoriosEnAvatar();
@@ -1287,7 +1436,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.8.4 Galactic Pro activo');
+        log('✅ Marquinhos v9.8.5 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
