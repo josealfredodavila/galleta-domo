@@ -1,0 +1,236 @@
+<!-- backend/public/legal/privacidad.html -->
+<!DOCTYPE html>
+<html lang="es" data-public>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Política de Privacidad · Csariel's</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-card: #0B0F17;
+            --green: #22C55E;
+            --cyan: #00E5FF;
+            --purple: #A855F7;
+            --text-primary: #F8F9FA;
+            --text-secondary: #8B98A5;
+            --border: rgba(34, 197, 94, 0.18);
+            --font-base: 'Inter', -apple-system, sans-serif;
+            --font-title: 'Orbitron', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-base);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .legal-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            flex-shrink: 0;
+        }
+        .back-btn:hover { background: rgba(34, 197, 94, 0.12); border-color: var(--green); }
+        .back-btn svg { width: 22px; height: 22px; fill: currentColor; }
+        .header-content { display: flex; flex-direction: column; }
+        .header-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+        .header-subtitle { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+        .legal-main { max-width: 760px; width: 100%; margin: 0 auto; padding: 28px 20px 60px; flex: 1; }
+        .badge { display: inline-block; font-family: var(--font-title); font-size: 0.68rem; letter-spacing: 2px; color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 999px; margin-bottom: 14px; }
+        h1 { font-family: var(--font-title); font-size: 1.6rem; color: var(--green); margin-bottom: 18px; line-height: 1.25; text-shadow: 0 0 20px rgba(34, 197, 94, 0.25); }
+        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; font-size: 0.85rem; }
+        @media (min-width: 600px) { .meta-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .meta-grid div span { display: block; color: var(--text-secondary); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .meta-grid div strong { color: var(--text-primary); font-weight: 600; }
+        .toc { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 12px; padding: 16px 20px; margin-bottom: 28px; }
+        .toc h2 { font-family: var(--font-title); font-size: 0.85rem; color: var(--green); letter-spacing: 1px; margin-bottom: 10px; }
+        .toc ol { list-style: none; counter-reset: toc; }
+        .toc ol li { counter-increment: toc; margin-bottom: 6px; font-size: 0.88rem; }
+        .toc ol li::before { content: counter(toc) ". "; color: var(--purple); font-weight: 700; }
+        .toc a { color: var(--cyan); text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+        section { margin-bottom: 26px; }
+        h2 { font-family: var(--font-title); font-size: 1.05rem; color: var(--green); margin-bottom: 10px; margin-top: 6px; letter-spacing: 0.5px; }
+        h3 { font-size: 0.95rem; color: var(--text-primary); margin: 14px 0 6px; font-weight: 600; }
+        p { margin-bottom: 10px; font-size: 0.92rem; color: #D1D5DB; }
+        ul, ol { padding-left: 22px; margin-bottom: 12px; }
+        li { font-size: 0.92rem; color: #D1D5DB; margin-bottom: 6px; }
+        .callout { background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(0, 229, 255, 0.06)); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 0.88rem; }
+        .callout strong { color: var(--green); }
+        table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 0.85rem; }
+        th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+        th { color: var(--green); font-family: var(--font-title); font-size: 0.75rem; letter-spacing: 1px; }
+        td { color: #D1D5DB; }
+        .contacto { margin-top: 36px; border-top: 1px solid var(--border); padding-top: 18px; font-size: 0.85rem; color: var(--text-secondary); }
+        .contacto a { color: var(--cyan); text-decoration: none; }
+        .contacto a:hover { text-decoration: underline; }
+        .pendiente { color: #FBBF24; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/features/centro-ayuda/index.html'; }" aria-label="Volver">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div class="header-content">
+            <div class="header-title">Política de Privacidad</div>
+            <div class="header-subtitle">Csariel's · Centro de Ayuda</div>
+        </div>
+    </header>
+    <main class="legal-main">
+        <span class="badge">DOCUMENTO LEGAL</span>
+        <h1>Política de Privacidad</h1>
+
+        <div class="meta-grid">
+            <div><span>Versión</span><strong>1.0</strong></div>
+            <div><span>Vigencia</span><strong class="pendiente">[Pendiente: fecha de publicación]</strong></div>
+            <div><span>Jurisdicción</span><strong>Puebla, México</strong></div>
+        </div>
+
+        <nav class="toc" aria-label="Índice de contenidos">
+            <h2>ÍNDICE DE CONTENIDOS</h2>
+            <ol>
+                <li><a href="#responsable">Responsable del tratamiento</a></li>
+                <li><a href="#datos">Datos que recopilamos</a></li>
+                <li><a href="#publicos">Datos que pueden ser públicos</a></li>
+                <li><a href="#finalidades">Finalidades del tratamiento</a></li>
+                <li><a href="#transferencias">Transferencias y terceros</a></li>
+                <li><a href="#conservacion">Conservación de datos</a></li>
+                <li><a href="#arco">Derechos ARCO</a></li>
+                <li><a href="#seguridad">Seguridad</a></li>
+                <li><a href="#menores">Menores de edad</a></li>
+                <li><a href="#cambios">Cambios a esta política</a></li>
+                <li><a href="#contacto">Contacto</a></li>
+            </ol>
+        </nav>
+
+        <section id="responsable">
+            <h2>1. Responsable del tratamiento</h2>
+            <p>El responsable del tratamiento de tus datos personales es <span class="pendiente">[Pendiente: razón social]</span>, con domicilio en <span class="pendiente">[Pendiente: domicilio]</span>, en Puebla, México.</p>
+            <p>Para cualquier asunto relacionado con tus datos personales, escríbenos a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</p>
+        </section>
+
+        <section id="datos">
+            <h2>2. Datos que recopilamos</h2>
+            <table>
+                <thead><tr><th>Categoría</th><th>Ejemplos</th></tr></thead>
+                <tbody>
+                    <tr><td>Datos de registro</td><td>Correo electrónico, nombre de usuario, contraseña cifrada.</td></tr>
+                    <tr><td>Datos de perfil</td><td>Foto, biografía, enlaces que decidas añadir.</td></tr>
+                    <tr><td>Contenido publicado</td><td>Publicaciones del Muro, mensajes en Canales, transmisiones en Live, comentarios.</td></tr>
+                    <tr><td>Datos técnicos</td><td>Dirección IP, tipo de dispositivo, sistema operativo, identificadores de sesión.</td></tr>
+                    <tr><td>Datos del Mercado</td><td>Historial de transacciones, dirección de wallet pública (no claves privadas).</td></tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section id="publicos">
+            <h2>3. Datos que pueden ser públicos</h2>
+            <div class="callout">
+                <strong>Importante:</strong> Csariel's es una red social. Al usar la Plataforma, aceptas que <strong>tu perfil, tu correo electrónico (según tu configuración de privacidad) y tus publicaciones pueden ser visibles públicamente</strong> para otros usuarios y, en el caso del Muro, para cualquier persona con acceso a la Plataforma.
+            </div>
+            <p>Puedes ajustar la visibilidad de algunos datos desde la configuración de tu cuenta. Sin embargo, el contenido publicado en el Muro es público por diseño. No publiques datos personales sensibles que no quieras que otros vean.</p>
+        </section>
+
+        <section id="finalidades">
+            <h2>4. Finalidades del tratamiento</h2>
+            <ul>
+                <li>Crear y gestionar tu cuenta.</li>
+                <li>Mostrar tu perfil y contenido a otros usuarios según tu configuración.</li>
+                <li>Procesar transacciones del Mercado.</li>
+                <li>Moderar contenido y aplicar las Reglas de la Comunidad.</li>
+                <li>Enviarte notificaciones relacionadas con el servicio.</li>
+                <li>Cumplir obligaciones legales aplicables en México.</li>
+                <li>Mejorar la seguridad y el funcionamiento de la Plataforma.</li>
+            </ul>
+            <p>No usamos tus datos para finalidades distintas sin tu consentimiento, salvo las excepciones previstas por la LFPDPPP.</p>
+        </section>
+
+        <section id="transferencias">
+            <h2>5. Transferencias y terceros</h2>
+            <p>Podemos compartir datos con proveedores de servicios que nos ayudan a operar la Plataforma (hosting, procesamiento de pagos, análisis), bajo contratos que los obligan a proteger tu información. No vendemos tus datos personales a terceros.</p>
+            <p>Podemos divulgar datos cuando lo exija una autoridad competente conforme a la ley mexicana.</p>
+        </section>
+
+        <section id="conservacion">
+            <h2>6. Conservación de datos</h2>
+            <p>Conservamos tus datos mientras tu cuenta esté activa o mientras sean necesarios para cumplir obligaciones legales. Al eliminar tu cuenta, borraremos o anonimizaremos tus datos personales, salvo aquellos que debamos conservar por obligaciones fiscales, contables o legales relacionadas con el Mercado.</p>
+        </section>
+
+        <section id="arco">
+            <h2>7. Derechos ARCO</h2>
+            <p>Conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) de México, tienes derecho a:</p>
+            <ul>
+                <li><strong>Acceso:</strong> conocer qué datos personales tenemos sobre ti y cómo los tratamos.</li>
+                <li><strong>Rectificación:</strong> solicitar la corrección de datos inexactos o incompletos.</li>
+                <li><strong>Cancelación:</strong> solicitar la eliminación de tus datos cuando ya no sean necesarios para las finalidades del tratamiento.</li>
+                <li><strong>Oposición:</strong> oponerte al tratamiento de tus datos para finalidades específicas.</li>
+            </ul>
+            <h3>Cómo ejercer tus derechos</h3>
+            <ol>
+                <li>Envía un correo a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a> con el asunto "Derechos ARCO".</li>
+                <li>Incluye tu nombre completo, correo registrado y el derecho que deseas ejercer.</li>
+                <li>Adjunta una copia de una identificación oficial vigente si solicitas acceso o rectificación.</li>
+                <li>Responderemos en un plazo máximo de <strong>20 días hábiles</strong> conforme a la LFPDPPP.</li>
+            </ol>
+            <p>Si consideras que tu solicitud no fue atendida correctamente, puedes acudir al Instituto Nacional de Transparencia, Acceso a la Información y Protección de Datos Personales (INAI).</p>
+        </section>
+
+        <section id="seguridad">
+            <h2>8. Seguridad</h2>
+            <p>Implementamos medidas técnicas y administrativas razonables para proteger tus datos personales, incluyendo cifrado de contraseñas y controles de acceso. Ningún sistema es totalmente infalible; si detectas un incidente de seguridad, repórtalo de inmediato a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</p>
+        </section>
+
+        <section id="menores">
+            <h2>9. Menores de edad</h2>
+            <p><strong>Csariel's está dirigido exclusivamente a personas mayores de 18 años.</strong> No recopilamos conscientemente datos de menores de 18 años. Si detectamos una cuenta de un menor, será suspendida y sus datos eliminados.</p>
+        </section>
+
+        <section id="cambios">
+            <h2>10. Cambios a esta política</h2>
+            <p>Podemos actualizar esta Política de Privacidad para reflejar cambios legales o funcionales. Publicaremos la nueva versión en esta misma página con su fecha de vigencia.</p>
+        </section>
+
+        <section id="contacto">
+            <h2>11. Contacto</h2>
+            <p>Para cualquier duda sobre esta política, escríbenos a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</p>
+        </section>
+
+        <div class="contacto">
+            <p><strong>Responsable:</strong> <span class="pendiente">[Pendiente: razón social]</span></p>
+            <p><strong>Domicilio:</strong> <span class="pendiente">[Pendiente: domicilio]</span></p>
+            <p><strong>Correo oficial:</strong> <a href="mailto:soporte@csariels.com">soporte@csariels.com</a></p>
+            <p><strong>Jurisdicción:</strong> Puebla, México</p>
+            <p><strong>Vigencia:</strong> <span class="pendiente">[Pendiente: fecha de publicación]</span></p>
+        </div>
+    </main>
+</body>
+</html>
