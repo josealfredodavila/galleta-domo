@@ -1,0 +1,271 @@
+<!-- backend/public/legal/reglas-comunidad.html -->
+<!DOCTYPE html>
+<html lang="es" data-public>
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reglas de la Comunidad · Csariel's</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+    <style>
+        :root {
+            --bg-main: #000000;
+            --bg-card: #0B0F17;
+            --green: #22C55E;
+            --cyan: #00E5FF;
+            --purple: #A855F7;
+            --text-primary: #F8F9FA;
+            --text-secondary: #8B98A5;
+            --border: rgba(34, 197, 94, 0.18);
+            --font-base: 'Inter', -apple-system, sans-serif;
+            --font-title: 'Orbitron', monospace;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-primary);
+            font-family: var(--font-base);
+            line-height: 1.65;
+            -webkit-font-smoothing: antialiased;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .legal-header {
+            position: sticky;
+            top: 0;
+            background-color: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .back-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            flex-shrink: 0;
+        }
+        .back-btn:hover { background: rgba(34, 197, 94, 0.12); border-color: var(--green); }
+        .back-btn svg { width: 22px; height: 22px; fill: currentColor; }
+        .header-content { display: flex; flex-direction: column; }
+        .header-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
+        .header-subtitle { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
+        .legal-main {
+            max-width: 760px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+            flex: 1;
+        }
+        .badge {
+            display: inline-block;
+            font-family: var(--font-title);
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            color: var(--green);
+            border: 1px solid var(--green);
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-bottom: 14px;
+        }
+        h1 {
+            font-family: var(--font-title);
+            font-size: 1.6rem;
+            color: var(--green);
+            margin-bottom: 18px;
+            line-height: 1.25;
+            text-shadow: 0 0 20px rgba(34, 197, 94, 0.25);
+        }
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+        }
+        @media (min-width: 600px) { .meta-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .meta-grid div span { display: block; color: var(--text-secondary); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+        .meta-grid div strong { color: var(--text-primary); font-weight: 600; }
+        .toc {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--green);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+        }
+        .toc h2 { font-family: var(--font-title); font-size: 0.85rem; color: var(--green); letter-spacing: 1px; margin-bottom: 10px; }
+        .toc ol { list-style: none; counter-reset: toc; }
+        .toc ol li { counter-increment: toc; margin-bottom: 6px; font-size: 0.88rem; }
+        .toc ol li::before { content: counter(toc) ". "; color: var(--purple); font-weight: 700; }
+        .toc a { color: var(--cyan); text-decoration: none; }
+        .toc a:hover { text-decoration: underline; }
+        section { margin-bottom: 26px; }
+        h2 {
+            font-family: var(--font-title);
+            font-size: 1.05rem;
+            color: var(--green);
+            margin-bottom: 10px;
+            margin-top: 6px;
+            letter-spacing: 0.5px;
+        }
+        h3 { font-size: 0.95rem; color: var(--text-primary); margin: 14px 0 6px; font-weight: 600; }
+        p { margin-bottom: 10px; font-size: 0.92rem; color: #D1D5DB; }
+        ul, ol { padding-left: 22px; margin-bottom: 12px; }
+        li { font-size: 0.92rem; color: #D1D5DB; margin-bottom: 6px; }
+        .prohibido { color: #F87171; font-weight: 600; }
+        .callout {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(0, 229, 255, 0.06));
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin: 14px 0;
+            font-size: 0.88rem;
+        }
+        .callout strong { color: var(--green); }
+        .contacto {
+            margin-top: 36px;
+            border-top: 1px solid var(--border);
+            padding-top: 18px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+        .contacto a { color: var(--cyan); text-decoration: none; }
+        .contacto a:hover { text-decoration: underline; }
+        .pendiente { color: #FBBF24; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header class="legal-header">
+        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/features/centro-ayuda/index.html'; }" aria-label="Volver">
+            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        </button>
+        <div class="header-content">
+            <div class="header-title">Reglas de la Comunidad</div>
+            <div class="header-subtitle">Csariel's · Centro de Ayuda</div>
+        </div>
+    </header>
+    <main class="legal-main">
+        <span class="badge">DOCUMENTO LEGAL</span>
+        <h1>Reglas de la Comunidad</h1>
+
+        <div class="meta-grid">
+            <div><span>Versión</span><strong>1.0</strong></div>
+            <div><span>Vigencia</span><strong class="pendiente">[Pendiente: fecha de publicación]</strong></div>
+            <div><span>Jurisdicción</span><strong>Puebla, México</strong></div>
+        </div>
+
+        <nav class="toc" aria-label="Índice de contenidos">
+            <h2>ÍNDICE DE CONTENIDOS</h2>
+            <ol>
+                <li><a href="#alcance">Alcance y edad mínima</a></li>
+                <li><a href="#prohibido">Contenido prohibido</a></li>
+                <li><a href="#reportar">Cómo reportar contenido y bloquear usuarios</a></li>
+                <li><a href="#suspension">Suspensión y apelación</a></li>
+                <li><a href="#consecuencias">Consecuencias del incumplimiento</a></li>
+                <li><a href="#contacto">Contacto</a></li>
+            </ol>
+        </nav>
+
+        <section id="alcance">
+            <h2>1. Alcance y edad mínima</h2>
+            <p>Estas reglas aplican a todo el contenido y la actividad dentro de Csariel's, incluyendo el Muro público, los Canales, las transmisiones en Live y cualquier interacción con otros usuarios.</p>
+            <p><strong>Debes tener al menos 18 años</strong> para usar Csariel's. Si detectamos que un usuario es menor de 18 años, la cuenta será suspendida y el contenido eliminado.</p>
+        </section>
+
+        <section id="prohibido">
+            <h2>2. Contenido prohibido</h2>
+            <p>No está permitido publicar, transmitir ni compartir en Muro, Canales o Live:</p>
+            <ul>
+                <li><span class="prohibido">Contenido sexual explícito</span> o que involucre a menores de edad en cualquier forma.</li>
+                <li><span class="prohibido">Violencia, amenazas, acoso o incitación al odio</span> por motivos de raza, etnia, género, religión, orientación sexual o discapacidad.</li>
+                <li><span class="prohibido">Acoso dirigido</span> a una persona o grupo, incluyendo doxxing (publicar datos privados de terceros sin consentimiento).</li>
+                <li><span class="prohibido">Suplantación de identidad</span> de personas, marcas o de Csariel's.</li>
+                <li><span class="prohibido">Estafas, fraudes, esquemas piramidales</span> o promesas de rendimientos garantizados sobre Es.stoks u otros activos.</li>
+                <li><span class="prohibido">Contenido ilegal</span> conforme a la legislación mexicana, incluyendo apología del delito y material de abuso infantil.</li>
+                <li><span class="prohibido">Spam, malware o enlaces maliciosos</span>.</li>
+                <li><span class="prohibido">Contenido que infrinja derechos de autor o marcas</span> de terceros.</li>
+                <li><span class="prohibido">Venta de sustancias controladas, armas o documentos falsos</span>.</li>
+            </ul>
+            <div class="callout">
+                <strong>Recuerda:</strong> el contenido que publicas en el Muro puede ser público. No compartas datos personales sensibles (dirección, teléfono, documentos oficiales) que no quieras que otros vean.
+            </div>
+        </section>
+
+        <section id="reportar">
+            <h2>3. Cómo reportar contenido y bloquear usuarios</h2>
+            <h3>Reportar contenido desde el Muro</h3>
+            <ol>
+                <li>Ubica la publicación, comentario o transmisión que deseas reportar.</li>
+                <li>Toca el menú de la publicación (los tres puntos <strong>⋮</strong>).</li>
+                <li>Selecciona <strong>"Reportar"</strong>.</li>
+                <li>Elige el motivo (acoso, spam, contenido sexual, violencia, suplantación, otro).</li>
+                <li>Confirma. Recibirás una notificación cuando el equipo revise el caso.</li>
+            </ol>
+            <h3>Reportar un Canal o un Live</h3>
+            <p>Dentro del Canal o de la transmisión en Live, usa el botón <strong>"Reportar"</strong> en el menú superior derecho. El reporte llega al equipo de moderación con el contexto del contenido.</p>
+            <h3>Bloquear a un usuario</h3>
+            <ol>
+                <li>Abre el perfil del usuario.</li>
+                <li>Toca el menú <strong>⋮</strong> y elige <strong>"Bloquear"</strong>.</li>
+                <li>El usuario bloqueado no podrá ver tu perfil, escribirte ni interactuar contigo en Muro, Canales ni Live.</li>
+            </ol>
+            <p>También puedes reportar directamente a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a> si no puedes usar los botones dentro de la app.</p>
+        </section>
+
+        <section id="suspension">
+            <h2>4. Suspensión y apelación</h2>
+            <p>Cuando se detecta una infracción, Csariel's puede tomar las siguientes medidas, según la gravedad y la reincidencia:</p>
+            <ul>
+                <li><strong>Advertencia:</strong> notificación al usuario con la regla incumplida.</li>
+                <li><strong>Eliminación del contenido:</strong> retiro de la publicación, comentario o transmisión.</li>
+                <li><strong>Suspensión temporal:</strong> bloqueo de la cuenta por un periodo determinado.</li>
+                <li><strong>Suspensión definitiva:</strong> cierre permanente de la cuenta en casos graves o reincidentes.</li>
+            </ul>
+            <h3>Cómo apelar</h3>
+            <ol>
+                <li>Recibirás una notificación con el motivo de la sanción.</li>
+                <li>Responde a esa notificación o escribe a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a> dentro de los <strong>10 días hábiles</strong> siguientes.</li>
+                <li>Incluye tu correo registrado y una explicación breve.</li>
+                <li>El equipo revisará el caso y responderá en un plazo de <strong>10 días hábiles</strong>.</li>
+            </ol>
+            <p>La decisión final sobre la apelación será comunicada por correo electrónico. Las sanciones por contenido ilegal o que involucre a menores de edad no son apelables.</p>
+        </section>
+
+        <section id="consecuencias">
+            <h2>5. Consecuencias del incumplimiento</h2>
+            <p>El incumplimiento de estas reglas puede derivar en la suspensión o eliminación de la cuenta, sin perjuicio de las acciones legales que correspondan conforme a la legislación mexicana.</p>
+        </section>
+
+        <section id="contacto">
+            <h2>6. Contacto</h2>
+            <p>Para dudas sobre estas reglas o para reportar contenido, escríbenos a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</p>
+        </section>
+
+        <div class="contacto">
+            <p><strong>Responsable:</strong> <span class="pendiente">[Pendiente: razón social]</span></p>
+            <p><strong>Domicilio:</strong> <span class="pendiente">[Pendiente: domicilio]</span></p>
+            <p><strong>Correo oficial:</strong> <a href="mailto:soporte@csariels.com">soporte@csariels.com</a></p>
+            <p><strong>Jurisdicción:</strong> Puebla, México</p>
+            <p><strong>Vigencia:</strong> <span class="pendiente">[Pendiente: fecha de publicación]</span></p>
+        </div>
+    </main>
+</body>
+</html>
