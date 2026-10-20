@@ -307,6 +307,19 @@
                 </ul>
             </div>
 
+            <div class="category-card" data-search="asistentes ia marquinhos capitan maiz rey itlasuhua inteligencia artificial chatbot asistente virtual">
+                <div class="cat-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="3"/><circle cx="9" cy="13" r="1.2"/><circle cx="15" cy="13" r="1.2"/><path d="M12 7V4"/><circle cx="12" cy="3" r="1"/><path d="M2 12v2"/><path d="M22 12v2"/></svg>
+                </div>
+                <div class="cat-title">Asistentes e IA</div>
+                <div class="cat-desc">Conoce los términos de nuestros asistentes virtuales.</div>
+                <ul class="cat-links">
+                    <li><a href="/legal/marquinhos.html">Términos de Marquinhos IA</a></li>
+                    <li><a href="/legal/capitan-maiz.html">Términos de Capitán Maíz</a></li>
+                    <li><a href="/legal/itlasuhua.html">Términos del Rey Itlasuhua</a></li>
+                </ul>
+            </div>
+
             <div class="category-card" data-search="preguntas frecuentes faq ayuda recuperar cuenta pedidos tokens">
                 <div class="cat-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 015 0c0 1.5-2.5 2-2.5 3.5"/><path d="M12 17h.01"/></svg>
@@ -330,7 +343,11 @@
             const cards = document.querySelectorAll('.category-card');
             cards.forEach(card => {
                 const text = card.getAttribute('data-search') + ' ' + card.innerText.toLowerCase();
-                card.style.display = text.includes('') && !val ? 'flex' : (text.includes(val) ? 'flex' : 'none');
+                if (val === '') {
+                    card.style.display = 'flex';
+                } else {
+                    card.style.display = text.includes(val) ? 'flex' : 'none';
+                }
             });
         });
     </script>
