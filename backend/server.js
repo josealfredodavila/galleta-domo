@@ -4,6 +4,7 @@
 // v3.5: Wallet (nonce + firma EOA), Media (moderación con AWS
 //       Rekognition), Moderar-Texto (OpenAI Moderation API) y
 //       Llamadas mixtas (/api/llamadas: LiveKit hoy, Telnyx después).
+// v3.6: Música (Deezer API sin API Key) agregada.
 // ================================================================
 
 require('dotenv').config();
@@ -234,9 +235,11 @@ app.use(
                     "data:"
                 ],
 
-                imgSrc: ["'self'", "data:", "blob:", "https:"],
+                // NUEVO: MÚSICA DEEZER - Permitir carátulas de Deezer (cdn-images.dzcdn.net)
+                imgSrc: ["'self'", "data:", "blob:", "https:", "https://cdn-images.dzcdn.net"],
 
-                mediaSrc: ["'self'", "data:", "blob:", "https:"],
+                // NUEVO: MÚSICA DEEZER - Permitir reproducción de audio de Deezer (cdns-preview...)
+                mediaSrc: ["'self'", "data:", "blob:", "https:", "https://cdns-preview-d.dzcdn.net"],
 
                 connectSrc: [
                     "'self'",
@@ -290,7 +293,8 @@ app.use(
                     "https://metamask.app.link",
                     "https://api.metamask.io",
                     "https://cloudflare-eth.com",
-                    "https://eth.llamarpc.com"
+                    "https://eth.llamarpc.com",
+                    "https://api.deezer.com" // NUEVO: MÚSICA DEEZER (Para que el frontend pueda buscar si lo necesitas)
                 ],
 
                 frameSrc: [
@@ -569,6 +573,50 @@ app.post('/api/ai/embeddings', authMiddleware, async (req, res) => {
 });
 
 console.log('✅ Endpoint /api/ai/embeddings registrado');
+
+// ================================================================
+// NUEVO: MÚSICA DEEZER (Buscador para Marquinhos y el Muro)
+// ================================================================
+
+app.get('/api/music/buscar', async (req, res) => {
+    try {
+        const query = req.query.q;
+        
+        if (!query) {
+            return res.status(400).json({ error: 'Falta el parámetro q (canción)' });
+        }
+
+        const url = `https://api.deezer.com/search?q=${encodeURIComponent(query)}`;
+        
+        // Usamos axios que ya tienes importado arriba
+        const response = await axios.get(url);
+        const data = response.data;
+
+        if (data.data && data.data.length > 0) {
+            // Tomamos los primeros 5 resultados para no saturar
+            const canciones = data.data.slice(0, 5).map(c => ({
+                id: c.id,
+                titulo: c.title,
+                artista: c.artist.name,
+                caratula: c.album.cover_medium,
+                audio_preview: c.preview, // Audio de 30 seg
+                link_deezer: c.link
+            }));
+
+            return res.json({
+                success: true,
+                resultados: canciones
+            });
+        } else {
+            return res.json({ success: false, mensaje: 'No se encontraron canciones' });
+        }
+    } catch (error) {
+        console.error('❌ Error buscando música en Deezer:', error.message);
+        return res.status(500).json({ error: 'Error al conectar con Deezer' });
+    }
+});
+
+console.log('✅ Endpoint /api/music/buscar registrado (Deezer)');
 
 // ================================================================
 // TURNSTILE
@@ -1093,6 +1141,7 @@ app.listen(PORT, () => {
     );
     console.log(`⛓️ Polygon chainId: ${WEB3_CHAIN_ID}`);
     console.log(`🛡️ Hostname Turnstile esperado: ${PUBLIC_APP_HOSTNAME || '(no disponible)'}`);
+    console.log(`🎵 Música Deezer: ✅ Configurado (/api/music/buscar)`); // NUEVO
     console.log('================================================');
     console.log('');
 });
