@@ -7,7 +7,6 @@
     <title>Centro de Ayuda · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230B0F17' stroke='%2322C55E' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%2322C55E' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
-    <!-- CAMBIO: v=7 → v=8 para forzar recarga del script v3.4 -->
     <script src="/features/shared/js/apariencia-global.js?v=8" defer></script>
     <style>
         :root {
@@ -24,7 +23,7 @@
             --font-title: 'Orbitron', monospace;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+
         body {
             background-color: var(--bg-main);
             color: var(--text-primary);
@@ -36,17 +35,14 @@
             flex-direction: column;
         }
 
-        /* ==========================================================
-           REGLA DE SEGURIDAD: Ocultar cualquier mascota inyectada
-           por apariencia-global.js en la vista del Centro de Ayuda
-           ========================================================== */
-        #marquinhos-pet-container, 
-        .marquinhos-pet, 
+        /* Oculta cualquier mascota inyectada por apariencia-global.js */
+        #marquinhos-pet-container,
+        .marquinhos-pet,
         #marquinhos-pet-script,
         #capitan-maiz-pet-container,
-        #itlasuhua-pet-container { 
-            display: none !important; 
-            visibility: hidden !important; 
+        #itlasuhua-pet-container {
+            display: none !important;
+            visibility: hidden !important;
             opacity: 0 !important;
             pointer-events: none !important;
         }
@@ -285,17 +281,18 @@
                     <li><a href="/legal/terminos-servicio.html">Términos de Servicio</a></li>
                     <li><a href="/legal/privacidad.html">Política de Privacidad</a></li>
                     <li><a href="/legal/privacidad.html#arco">Derechos ARCO</a></li>
+                    <li><a href="/legal/cookies.html">Política de Cookies</a></li>
                 </ul>
             </div>
 
-            <div class="category-card" data-search="cuenta eliminar baja borrar datos sin sesion correo confirmacion">
+            <div class="category-card" data-search="cuenta eliminar baja borrar datos correo confirmacion recuperar">
                 <div class="cat-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2"/><path d="M6 7l1 13a1 1 0 001 1h8a1 1 0 001-1l1-13"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
                 </div>
                 <div class="cat-title">Mi Cuenta</div>
-                <div class="cat-desc">Elimina tu cuenta sin necesidad de iniciar sesión.</div>
+                <div class="cat-desc">Cómo eliminar o recuperar tu cuenta.</div>
                 <ul class="cat-links">
-                    <li><a href="/legal/eliminar-cuenta.html">Eliminar mi cuenta</a></li>
+                    <li><a href="/legal/faq.html#eliminar-cuenta">Cómo eliminar mi cuenta</a></li>
                     <li><a href="/legal/faq.html#recuperar-cuenta">Recuperar mi cuenta</a></li>
                 </ul>
             </div>
@@ -307,25 +304,27 @@
                 <div class="cat-title">Seguridad</div>
                 <div class="cat-desc">Protege tu acceso si pierdes o te roban el dispositivo.</div>
                 <ul class="cat-links">
-                    <li><a href="/legal/robo-dispositivo.html">Robé o perdí mi dispositivo</a></li>
+                    <li><a href="/legal/faq.html#robo-dispositivo">Me robaron o perdí mi dispositivo</a></li>
                     <li><a href="/legal/faq.html#seguridad">Preguntas de seguridad</a></li>
                 </ul>
             </div>
 
-            <div class="category-card" data-search="esstoks tokens cripto mercado riesgos valor web3 galletas">
+            <div class="category-card" data-search="esstoks tokens cripto mercado riesgos valor web3 galletas domo">
                 <div class="cat-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><path d="M3 12l9-9 9 9-9 9-9-9z"/><path d="M8 12l4-4 4 4-4 4-4-4z"/></svg>
                 </div>
                 <div class="cat-title">Mercado & Es.stoks</div>
-                <div class="cat-desc">Qué son los Es.stoks y cuáles son sus riesgos.</div>
+                <div class="cat-desc">Términos del Mercado, qué son los Es.stoks y sus riesgos.</div>
                 <ul class="cat-links">
+                    <li><a href="/legal/mercado-terminos.html">Términos del Mercado</a></li>
                     <li><a href="/legal/mercado-cripto.html">¿Qué son los Es.stoks?</a></li>
                     <li><a href="/legal/mercado-cripto.html#art-13">Riesgos y advertencias</a></li>
-                    <li><a href="/legal/faq.html#tokens">Preguntas sobre tokens</a></li>
+                    <li><a href="/legal/mercado-membresias.html">Membresías del Mercado</a></li>
+                    <li><a href="/legal/mercado-devoluciones.html">Devoluciones y reembolsos</a></li>
                 </ul>
             </div>
 
-            <div class="category-card" data-search="asistentes ia marquinhos capitan maiz rey itlasuhua inteligencia artificial chatbot asistente virtual">
+            <div class="category-card" data-search="asistentes ia marquinhos capitan maiz itlasuhua inteligencia artificial chatbot asistente virtual">
                 <div class="cat-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24"><rect x="4" y="7" width="16" height="12" rx="3"/><circle cx="9" cy="13" r="1.2"/><circle cx="15" cy="13" r="1.2"/><path d="M12 7V4"/><circle cx="12" cy="3" r="1"/><path d="M2 12v2"/><path d="M22 12v2"/></svg>
                 </div>
