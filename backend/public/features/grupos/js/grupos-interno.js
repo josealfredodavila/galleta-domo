@@ -11,6 +11,12 @@
 // - publicarEnGrupo() y enviarComentarioPublicacion() manejan el
 //   error 'contenido_no_permitido' del trigger de DB.
 // - Cartel amarillo ⚠️ en posts y comentarios con aviso_moderacion.
+//
+// v3.1 (fix):
+// - Las consultas a las vistas grupos_video_publicaciones_publicas y
+//   grupos_video_comentarios_publicos ya NO piden la columna
+//   aviso_moderacion (esas vistas no la tienen; la consulta fallaba y
+//   el feed se quedaba en "Sin publicaciones aún").
 // ================================================================
 
 // ================================================================
@@ -832,12 +838,13 @@ async function guardarEtiquetas() {
 // ================================================================
 // CARGAR PUBLICACIONES DEL GRUPO
 // ================================================================
+// v3.1: se quitó 'aviso_moderacion' del select porque la vista no
+// tiene esa columna; la consulta fallaba y el feed no se mostraba.
 async function cargarPublicacionesGrupo(grupoId) {
     try {
-        // ✅ Se agrega aviso_moderacion al SELECT
         var result = await window.supabaseClient
             .from('grupos_video_publicaciones_publicas')
-            .select('*, aviso_moderacion')
+            .select('*')
             .eq('grupo_id', grupoId)
             .eq('estado', 'publicado')
             .order('created_at', { ascending: false })
@@ -1030,10 +1037,10 @@ async function cargarComentariosPublicacion(publicacionId) {
     var lista = document.getElementById('comentariosLista-' + publicacionId);
     if (!lista) return;
     try {
-        // ✅ Se agrega aviso_moderacion al SELECT
+        // v3.1: sin 'aviso_moderacion' en el select (la vista no tiene esa columna)
         var result = await window.supabaseClient
             .from('grupos_video_comentarios_publicos')
-            .select('*, aviso_moderacion')
+            .select('*')
             .eq('publicacion_id', publicacionId)
             .order('created_at', { ascending: true });
         if (result.error) throw result.error;
@@ -1046,15 +1053,9 @@ async function cargarComentariosPublicacion(publicacionId) {
             var avatar = c.usuario_avatar_url && grpSafeUrl(c.usuario_avatar_url)
                 ? '<img src="' + grpEscapeHTML(grpSafeUrl(c.usuario_avatar_url)) + '">'
                 : '◈';
-            // ✅ Cartel amarillo si hay aviso_moderacion
-            var avisoMini = '';
-            if (c.aviso_moderacion === 'lenguaje_inapropiado') {
-                avisoMini = htmlAvisoModeracionGrupo();
-            }
             return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
                 '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
                 '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + grpEscapeHTML(c.usuario_nombre || 'Usuario') + '</strong> ' + grpEscapeHTML(c.contenido || '') +
-                avisoMini +
                 '<div style="font-size:0.5rem;color:var(--text-muted);">' + new Date(c.created_at).toLocaleString() + '</div></div></div>';
         }).join('');
     } catch (e) {
