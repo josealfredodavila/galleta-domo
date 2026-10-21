@@ -1,9 +1,11 @@
 // ================================================================
-// TIENDA DE MARQUINHOS · v3.8
+// TIENDA DE MARQUINHOS · v3.9
 // - El preview usa el MISMO cuerpo que el pet (marquinhos-accesorios-svg.js)
 // - La ropa se reparte por partes: cabeza, brazos, piernas, torso...
-// - v3.8: las miniaturas de disfraces y piezas nuevas se dibujan en SVG
-//   (IDs hw-, sa-, rm-, rg-, rb-, pack-). Los emojis siguen igual.
+// - Miniaturas SVG para los IDs de la librería (hw-, sa-, rm-, rg-, rb-, pack-)
+// - v3.9: si equipas un paquete, se desequipan las prendas individuales que
+//   ocupen la misma zona del cuerpo (y al revés: equipar una pieza
+//   desequipa el paquete que la ocupe). Evita que se encimen.
 // - Respaldo con emoji si una prenda no tiene SVG
 // ================================================================
 
@@ -21,6 +23,7 @@
 
     // IDs de la librería que se dibujan como SVG (no como emoji)
     const RE_ID_SVG = /^(hw|sa|rm|rg|rb|pack)-/;
+    const RE_PACK = /^pack-/;
 
     function $(id) { return document.getElementById(id); }
 
@@ -44,9 +47,7 @@
     }
 
     // ============================================================
-    // v3.8: miniatura de la tarjeta
-    // Si svg_data es un ID de la librería (hw-, sa-, rm-, rg-, rb-, pack-)
-    // se dibuja la pieza o el paquete en SVG. Si no, va el emoji de siempre.
+    // Miniatura de la tarjeta
     // ============================================================
     function miniaturaHTML(a) {
         const dato = String(a.svg_data || '').trim();
@@ -70,13 +71,68 @@
     }
 
     // ============================================================
+    // Zonas del cuerpo que ocupa una prenda o un paquete
+    // Devuelve un Set con los slots (cabeza, torso, pierna-izq...).
+    // Un paquete se expande en sus piezas antes de leer las zonas.
+    // ============================================================
+    function slotsDeSvg(svgData) {
+        const lib = window.MarquinhosAccesoriosSVG;
+        const zonas = new Set();
+        if (!lib || typeof lib.partes !== 'function') return zonas;
+
+        const dato = String(svgData || '').trim();
+        const piezas = typeof lib.expandir === 'function' ? lib.expandir([dato]) : [dato];
+
+        piezas.forEach(function(p) {
+            const parte = lib.partes(p);
+            if (parte && parte.slots) {
+                Object.keys(parte.slots).forEach(function(k) { zonas.add(k); });
+            }
+        });
+        return zonas;
+    }
+
+    // ============================================================
+    // Desequipa lo que se encime con 'acc' en el cuerpo.
+    // Solo actúa si 'acc' o la prenda equipada es un paquete.
+    // ============================================================
+    async function desequiparSolapados(acc) {
+        const esPackNuevo = RE_PACK.test(String(acc.svg_data || '').trim());
+        const zonasNuevo = slotsDeSvg(acc.svg_data);
+        if (!zonasNuevo.size) return;
+
+        for (const otro of accesorios) {
+            if (otro.id === acc.id) continue;
+
+            const inv = inventario[otro.id];
+            if (!inv || !inv.equipado) continue;
+
+            const otroEsPack = RE_PACK.test(String(otro.svg_data || '').trim());
+            if (!esPackNuevo && !otroEsPack) continue;
+
+            const zonasOtro = slotsDeSvg(otro.svg_data);
+            let solapa = false;
+            zonasOtro.forEach(function(z) { if (zonasNuevo.has(z)) solapa = true; });
+            if (!solapa) continue;
+
+            await supabase
+                .from('marquinhos_inventario')
+                .update({ equipado: false })
+                .eq('usuario_id', userId)
+                .eq('accesorio_id', otro.id);
+
+            inventario[otro.id].equipado = false;
+            repintarTarjeta(otro.id);
+        }
+    }
+
+    // ============================================================
     // v3.7: Cambia el cuerpo viejo del preview por el del pet
     // ============================================================
     function montarCuerpo() {
         const svg = document.querySelector('.preview-svg');
         const lib = window.MarquinhosAccesoriosSVG;
         if (!svg || !lib || typeof lib.cuerpoBase !== 'function') return;
-        // Un poco más de aire arriba para la antena y los sombreros
         svg.setAttribute('viewBox', '0 -22 200 322');
         svg.style.overflow = 'visible';
         svg.innerHTML = lib.cuerpoBase();
@@ -114,9 +170,9 @@
             renderGrid();
             instalarEventos();
 
-            console.log('[Tienda v3.8] ✅ Lista');
+            console.log('[Tienda v3.9] ✅ Lista');
         } catch (e) {
-            console.error('[Tienda v3.8] Error init:', e);
+            console.error('[Tienda v3.9] Error init:', e);
             toast('Error cargando tienda', 'error');
         }
     }
@@ -136,7 +192,7 @@
 
             pintarSaldo();
         } catch (e) {
-            console.warn('[Tienda v3.8] Error saldo:', e);
+            console.warn('[Tienda v3.9] Error saldo:', e);
             $('saldoValor').textContent = '0.00';
         }
     }
@@ -252,7 +308,7 @@
     }
 
     // ============================================================
-    // ✅ v3.7: la ropa se reparte por partes del cuerpo
+    // La ropa se reparte por partes del cuerpo
     // ============================================================
     function renderAccesoriosEquipados() {
         const svg = document.querySelector('.preview-svg');
@@ -353,7 +409,7 @@
             });
 
             if (error) {
-                console.error('[Tienda v3.8] RPC error:', error);
+                console.error('[Tienda v3.9] RPC error:', error);
                 toast('Error al procesar la compra', 'error');
                 return;
             }
@@ -381,7 +437,7 @@
 
             await equipar(acc.id);
         } catch (e) {
-            console.error('[Tienda v3.8] Error comprando:', e);
+            console.error('[Tienda v3.9] Error comprando:', e);
             toast('Error al comprar: ' + (e.message || 'desconocido'), 'error');
         } finally {
             comprasEnVuelo.delete(acc.id);
@@ -419,6 +475,7 @@
 
             limpiarPruebaDe(acc);
 
+            // 1) Misma categoría: solo una prenda por categoría
             const mismaCategoria = accesorios
                 .filter(x => x.categoria === acc.categoria)
                 .map(x => x.id)
@@ -435,6 +492,9 @@
                 inventario[id].equipado = false;
                 repintarTarjeta(id);
             }
+
+            // 2) v3.9: paquetes y piezas que ocupen la misma zona del cuerpo
+            await desequiparSolapados(acc);
 
             const { data: upd, error } = await supabase
                 .from('marquinhos_inventario')
@@ -454,7 +514,7 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.8] Error equipando:', e);
+            console.error('[Tienda v3.9] Error equipando:', e);
             toast('Error al equipar', 'error');
         }
     }
@@ -479,7 +539,7 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.8] Error desequipando:', e);
+            console.error('[Tienda v3.9] Error desequipando:', e);
         }
     }
 
