@@ -1,8 +1,11 @@
 // ================================================================
-// MIDDLEWARE/AUTH.JS — Csariel's Backend
-// verificarToken: valida el JWT con Supabase.
+// MIDDLEWARE/AUTH.JS — Csariel's Backend · v2.0
+// verificarToken: valida el JWT con Supabase (auth.getUser) y bloquea
+//                 cuentas eliminadas o inactivas.
 // verificarRol:   autoriza por app_metadata.role (solo lo escribe el servidor).
 //                 NUNCA user_metadata: el usuario puede cambiarlo.
+// Inyección:      req.usuario y req.user apuntan al mismo objeto;
+//                 req.usuarioId contiene el id.
 // ================================================================
 
 const { supabase, supabaseAdmin } = require('../config/supabase');
@@ -32,8 +35,29 @@ async function verificarToken(req, res, next) {
             return res.status(401).json({ success: false, error: 'Token inválido o expirado' });
         }
 
-        req.usuario = data.user;
-        req.usuarioId = data.user.id;
+        const usuario = data.user;
+
+        // Estado de la cuenta: cuentas en proceso de eliminación o desactivadas
+        const { data: perfil, error: errPerfil } = await cliente
+            .from('usuarios')
+            .select('activo, deleted_at')
+            .eq('id', usuario.id)
+            .maybeSingle();
+
+        if (errPerfil) {
+            logger.error(`[Auth] Error leyendo estado de cuenta: ${errPerfil.message}`);
+            return res.status(500).json({ success: false, error: 'Error de autenticación' });
+        }
+
+        if (perfil && (perfil.deleted_at || perfil.activo === false)) {
+            logger.warn(`[Auth] Acceso bloqueado: cuenta inactiva o eliminada (${usuario.id})`);
+            return res.status(403).json({ success: false, error: 'Cuenta no disponible' });
+        }
+
+        req.usuario = usuario;
+        req.user = usuario;
+        req.usuarioId = usuario.id;
+
         return next();
     } catch (e) {
         logger.error(`Error verificando token: ${e.message}`);
