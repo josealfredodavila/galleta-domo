@@ -7,6 +7,8 @@
 // v3.6: Música (Deezer API sin API Key) agregada.
 // v3.7: CSP de Deezer ampliada a *.dzcdn.net, validación de
 //       /api/music/buscar, timeout a Deezer y limpieza de connectSrc.
+// v3.8: Eliminado el montaje de /api/mensajes (router sin uso; ver
+//       auditoría: C-04). Las llamadas se gestionan solo en /api/llamadas.
 // ================================================================
 
 require('dotenv').config();
@@ -831,7 +833,7 @@ montarRouter('/api/webhook', './routes/webhooks', 'routes/webhooks');
 
 montarRouter('/api/pay', './routes/pay', 'routes/pay');
 
-montarRouter('/api/mensajes', './routes/mensajes', 'routes/mensajes');
+// /api/mensajes: eliminado. Sin uso en el frontend; las llamadas viven en /api/llamadas.
 
 montarRouter('/api/tendencias', './routes/tendencias', 'routes/tendencias');
 
