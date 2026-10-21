@@ -1,7 +1,9 @@
 // ================================================================
-// TIENDA DE MARQUINHOS · v3.7
+// TIENDA DE MARQUINHOS · v3.8
 // - El preview usa el MISMO cuerpo que el pet (marquinhos-accesorios-svg.js)
 // - La ropa se reparte por partes: cabeza, brazos, piernas, torso...
+// - v3.8: las miniaturas de disfraces y piezas nuevas se dibujan en SVG
+//   (IDs hw-, sa-, rm-, rg-, rb-, pack-). Los emojis siguen igual.
 // - Respaldo con emoji si una prenda no tiene SVG
 // ================================================================
 
@@ -16,6 +18,9 @@
     let saldoActual = { usdt: 0, usdc: 0 };
     let comprasEnVuelo = new Set();
     let pruebas = {};
+
+    // IDs de la librería que se dibujan como SVG (no como emoji)
+    const RE_ID_SVG = /^(hw|sa|rm|rg|rb|pack)-/;
 
     function $(id) { return document.getElementById(id); }
 
@@ -36,6 +41,32 @@
 
     function reconectarBotones() {
         document.querySelectorAll('.acc-btn').forEach(instalarListenerBoton);
+    }
+
+    // ============================================================
+    // v3.8: miniatura de la tarjeta
+    // Si svg_data es un ID de la librería (hw-, sa-, rm-, rg-, rb-, pack-)
+    // se dibuja la pieza o el paquete en SVG. Si no, va el emoji de siempre.
+    // ============================================================
+    function miniaturaHTML(a) {
+        const dato = String(a.svg_data || '').trim();
+        const lib = window.MarquinhosAccesoriosSVG;
+
+        if (dato && RE_ID_SVG.test(dato) && lib && typeof lib.render === 'function') {
+            let contenido = null;
+            try { contenido = lib.render(dato); } catch (e) { contenido = null; }
+
+            if (contenido) {
+                return '<svg class="acc-thumb" viewBox="0 0 200 300" ' +
+                    'xmlns="http://www.w3.org/2000/svg" role="img" aria-label="' + esc(a.nombre) + '" ' +
+                    'style="width:84px;height:126px;overflow:visible">' +
+                    '<defs>' + lib.defs() + '</defs>' +
+                    contenido +
+                    '</svg>';
+            }
+        }
+
+        return esc(dato || '❓');
     }
 
     // ============================================================
@@ -83,9 +114,9 @@
             renderGrid();
             instalarEventos();
 
-            console.log('[Tienda v3.7] ✅ Lista');
+            console.log('[Tienda v3.8] ✅ Lista');
         } catch (e) {
-            console.error('[Tienda v3.7] Error init:', e);
+            console.error('[Tienda v3.8] Error init:', e);
             toast('Error cargando tienda', 'error');
         }
     }
@@ -105,7 +136,7 @@
 
             pintarSaldo();
         } catch (e) {
-            console.warn('[Tienda v3.7] Error saldo:', e);
+            console.warn('[Tienda v3.8] Error saldo:', e);
             $('saldoValor').textContent = '0.00';
         }
     }
@@ -211,7 +242,7 @@
         return `
             <div class="acc-card ${equipado ? 'equipado' : ''} ${probando ? 'probando' : ''}">
                 ${badge}
-                <div class="acc-emoji">${esc(a.svg_data || '❓')}</div>
+                <div class="acc-emoji">${miniaturaHTML(a)}</div>
                 <div class="acc-nombre">${esc(a.nombre)}</div>
                 <div class="acc-desc">${esc(a.descripcion || '')}</div>
                 <div class="acc-precio">${precio} ${esc(moneda)}</div>
@@ -322,7 +353,7 @@
             });
 
             if (error) {
-                console.error('[Tienda v3.7] RPC error:', error);
+                console.error('[Tienda v3.8] RPC error:', error);
                 toast('Error al procesar la compra', 'error');
                 return;
             }
@@ -350,7 +381,7 @@
 
             await equipar(acc.id);
         } catch (e) {
-            console.error('[Tienda v3.7] Error comprando:', e);
+            console.error('[Tienda v3.8] Error comprando:', e);
             toast('Error al comprar: ' + (e.message || 'desconocido'), 'error');
         } finally {
             comprasEnVuelo.delete(acc.id);
@@ -423,7 +454,7 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.7] Error equipando:', e);
+            console.error('[Tienda v3.8] Error equipando:', e);
             toast('Error al equipar', 'error');
         }
     }
@@ -448,7 +479,7 @@
                 try { window.Marquinhos.recargarAccesorios(); } catch (e) {}
             }
         } catch (e) {
-            console.error('[Tienda v3.7] Error desequipando:', e);
+            console.error('[Tienda v3.8] Error desequipando:', e);
         }
     }
 
