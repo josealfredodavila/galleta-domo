@@ -1,10 +1,12 @@
 // ================================================================
-// ROUTES/PUSH.JS — Csariel's · v2.5 (Soporte para Llamadas Push)
-// CAMBIOS v2.5:
-// - El payload ahora incluye 'actions' y 'renotify' (antes se descartaban).
-// - /llamada-entrante usa el mismo helper enviarPushLlamadaEntrante.
-// - Logs de envío centralizados en un solo lugar.
-// - Los botones Aceptar/Rechazar los muestra sw.js (showNotification).
+// ROUTES/PUSH.JS — Csariel's · v2.6
+// CAMBIOS v2.6:
+// - /subscribe: un endpoint pertenece al dispositivo. Antes de guardar,
+//   se eliminan filas del mismo endpoint de OTROS usuarios (C-01).
+// - Upsert por (usuario_id, endpoint); requiere el índice único del SQL.
+// - Eliminada POST /llamada-entrante (C-03). llamadas.js /iniciar ya
+//   valida puede_llamar y envía el push. Los helpers siguen exportados.
+// - Limpieza de endpoints expirados acotada a los usuarios notificados.
 // ================================================================
 
 const express = require('express');
@@ -71,6 +73,20 @@ router.post('/subscribe', verificarAutenticacion, async (req, res) => {
             return res.status(400).json({ success: false, error: 'Faltan datos de suscripción' });
         }
 
+        // El endpoint identifica al dispositivo. Si pertenece a otra cuenta
+        // (sesión anterior en el mismo navegador), esa fila se elimina antes
+        // de registrar la nueva, en lugar de reasignarla.
+        const { error: errLimpieza } = await supabaseAdmin
+            .from('push_subscriptions')
+            .delete()
+            .eq('endpoint', endpoint)
+            .neq('usuario_id', req.user.id);
+
+        if (errLimpieza) {
+            console.error('[Push] Error limpiando endpoint ajeno:', errLimpieza.message);
+            return res.status(500).json({ success: false, error: 'Error guardando suscripción' });
+        }
+
         const { error } = await supabaseAdmin
             .from('push_subscriptions')
             .upsert({
@@ -83,7 +99,7 @@ router.post('/subscribe', verificarAutenticacion, async (req, res) => {
                 activo: true,
                 ultima_vez_usado: new Date().toISOString(),
                 updated_at: new Date().toISOString()
-            }, { onConflict: 'endpoint' });
+            }, { onConflict: 'usuario_id,endpoint' });
 
         if (error) {
             console.error('[Push] Error guardando suscripción:', error.message);
@@ -207,51 +223,6 @@ router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
 });
 
 // ================================================================
-// POST /llamada-entrante
-// Usa el mismo helper que llamadas.js para no duplicar lógica.
-// ================================================================
-router.post('/llamada-entrante', verificarAutenticacion, async (req, res) => {
-    try {
-        const { llamadaId, destinatarioId } = req.body || {};
-        if (!llamadaId || !destinatarioId) {
-            return res.status(400).json({ success: false, error: 'Faltan llamadaId o destinatarioId' });
-        }
-
-        const { data: llamada } = await supabaseAdmin
-            .from('llamadas')
-            .select('creador_id, estado')
-            .eq('id', llamadaId)
-            .maybeSingle();
-
-        if (!llamada || llamada.creador_id !== req.user.id || llamada.estado !== 'ringing') {
-            return res.status(403).json({ success: false, error: 'Llamada no válida o no autorizada' });
-        }
-
-        const { data: usuario } = await supabaseAdmin
-            .from('usuarios')
-            .select('nombre, avatar_url')
-            .eq('id', req.user.id)
-            .maybeSingle();
-
-        const resultado = await enviarPushLlamadaEntrante(
-            destinatarioId,
-            usuario?.nombre || 'Alguien',
-            usuario?.avatar_url || null,
-            llamadaId
-        );
-
-        return res.json({
-            success: true,
-            enviados: resultado.enviados,
-            fallidos: resultado.fallidos
-        });
-    } catch (error) {
-        console.error('[Push] Error en /llamada-entrante:', error.message);
-        return res.status(500).json({ success: false, error: 'Error interno' });
-    }
-});
-
-// ================================================================
 // HELPER: push a usuarios específicos
 // ================================================================
 async function enviarPushAUsuarios(usuarioIds, payload) {
@@ -279,8 +250,7 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
         return { enviados: 0, fallidos: 0 };
     }
 
-    // IMPORTANTE: 'actions' ahora viaja en el payload.
-    // El Service Worker es quien pinta los botones con showNotification().
+    // 'actions' viaja en el payload; el Service Worker pinta los botones.
     const payloadString = JSON.stringify({
         title: payload.title || "◈ Csariel's",
         body: payload.body || '',
@@ -324,11 +294,17 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
     }
 
     if (endpointsExpirados.length > 0) {
-        await supabaseAdmin
+        const { error: errDesactiva } = await supabaseAdmin
             .from('push_subscriptions')
-            .update({ activo: false })
-            .in('endpoint', endpointsExpirados);
-        console.log(`[Push] ${endpointsExpirados.length} suscripciones expiradas desactivadas`);
+            .update({ activo: false, updated_at: new Date().toISOString() })
+            .in('endpoint', endpointsExpirados)
+            .in('usuario_id', usuarioIds);
+
+        if (errDesactiva) {
+            console.error('[Push] Error desactivando expirados:', errDesactiva.message);
+        } else {
+            console.log(`[Push] ${endpointsExpirados.length} suscripciones expiradas desactivadas`);
+        }
     }
 
     return { enviados, fallidos };
@@ -360,7 +336,7 @@ async function enviarPushASeguidores(streamerId, payload) {
 }
 
 // ================================================================
-// HELPER: push de llamada entrante (usado por la ruta y por llamadas.js)
+// HELPER: push de llamada entrante (usado por llamadas.js)
 // ================================================================
 async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamadaId) {
     console.log(`[Push] Iniciando envío de Push a ${destinatarioId} para llamada ${llamadaId}`);
