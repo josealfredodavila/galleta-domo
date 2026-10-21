@@ -14,165 +14,8 @@
     <!-- CSS del módulo muro -->
     <link rel="stylesheet" href="/features/muro/css/muro.css">
 
-    <!-- ===== ESTILOS DE LA BARRA DE SECCIONES (MURO) ===== -->
-    <style>
-        /* Barra de navegación de secciones del Muro */
-        .muro-section-nav {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px 10px;
-            margin: 0 0 12px 0;
-            background: rgba(0, 229, 255, 0.04);
-            border: 1px solid rgba(0, 229, 255, 0.12);
-            border-radius: 14px;
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            overflow-x: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            position: sticky;
-            top: 6px;
-            z-index: 40;
-        }
-        .muro-section-nav::-webkit-scrollbar { display: none; }
-
-        .muro-section-nav .sec-tab {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            border-radius: 10px;
-            font-family: 'Inter', system-ui, sans-serif;
-            font-size: 0.78rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            color: rgba(255, 255, 255, 0.62);
-            text-decoration: none;
-            white-space: nowrap;
-            border: 1px solid transparent;
-            background: transparent;
-            cursor: pointer;
-            transition: all 0.22s ease;
-            position: relative;
-        }
-
-        .muro-section-nav .sec-tab svg {
-            width: 14px;
-            height: 14px;
-            stroke: currentColor;
-            fill: none;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            opacity: 0.85;
-        }
-
-        .muro-section-nav .sec-tab:hover {
-            color: #00E5FF;
-            background: rgba(0, 229, 255, 0.08);
-            border-color: rgba(0, 229, 255, 0.25);
-        }
-
-        .muro-section-nav .sec-tab.active {
-            color: #001318;
-            background: linear-gradient(135deg, #00E5FF 0%, #00B8D4 100%);
-            border-color: #00E5FF;
-            font-weight: 700;
-            box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.4),
-                        0 4px 18px rgba(0, 229, 255, 0.35),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.35);
-        }
-
-        .muro-section-nav .sec-tab.active svg {
-            stroke: #001318;
-            opacity: 1;
-        }
-
-        /* Badge Live con punto rojo */
-        .muro-section-nav .sec-tab.live-tab .live-badge {
-            display: inline-block;
-            width: 7px;
-            height: 7px;
-            border-radius: 50%;
-            background: #FF3B5C;
-            box-shadow: 0 0 0 2px rgba(255, 59, 92, 0.25), 0 0 8px rgba(255, 59, 92, 0.9);
-            animation: livePulse 1.6s ease-in-out infinite;
-            margin-left: 2px;
-        }
-        .muro-section-nav .sec-tab.live-tab:hover .live-badge,
-        .muro-section-nav .sec-tab.live-tab.active .live-badge {
-            box-shadow: 0 0 0 2px rgba(255, 59, 92, 0.35), 0 0 10px rgba(255, 59, 92, 1);
-        }
-
-        @keyframes livePulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.55; transform: scale(0.85); }
-        }
-
-        /* Sub-menú de filtros del Muro (Para ti / En vivo / Siguiendo / Explorar / Puebla) */
-        .muro-filter-nav {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 4px 6px;
-            margin: 0 0 14px 0;
-            background: rgba(0, 0, 0, 0.25);
-            border: 1px solid rgba(0, 229, 255, 0.10);
-            border-radius: 12px;
-            overflow-x: auto;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        .muro-filter-nav::-webkit-scrollbar { display: none; }
-
-        .muro-filter-nav .filter-tab {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            padding: 6px 14px;
-            border-radius: 9px;
-            font-family: 'Inter', system-ui, sans-serif;
-            font-size: 0.72rem;
-            font-weight: 600;
-            color: rgba(255, 255, 255, 0.55);
-            text-decoration: none;
-            white-space: nowrap;
-            border: 1px solid transparent;
-            background: transparent;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .muro-filter-nav .filter-tab:hover {
-            color: #00E5FF;
-            background: rgba(0, 229, 255, 0.06);
-            border-color: rgba(0, 229, 255, 0.20);
-        }
-        .muro-filter-nav .filter-tab.active {
-            color: #00E5FF;
-            background: rgba(0, 229, 255, 0.12);
-            border-color: rgba(0, 229, 255, 0.45);
-            box-shadow: 0 0 10px rgba(0, 229, 255, 0.18),
-                        inset 0 1px 0 rgba(255, 255, 255, 0.08);
-            font-weight: 700;
-        }
-        .muro-filter-nav .filter-tab .dot-live {
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: #FF3B5C;
-            box-shadow: 0 0 6px rgba(255, 59, 92, 0.9);
-            animation: livePulse 1.6s ease-in-out infinite;
-        }
-
-        /* Responsive */
-        @media (max-width: 600px) {
-            .muro-section-nav { padding: 5px 6px; gap: 4px; border-radius: 12px; }
-            .muro-section-nav .sec-tab { padding: 7px 11px; font-size: 0.72rem; gap: 4px; }
-            .muro-section-nav .sec-tab svg { width: 12px; height: 12px; }
-            .muro-filter-nav .filter-tab { padding: 5px 11px; font-size: 0.68rem; }
-        }
-    </style>
+    <!-- CSS de la barra de secciones + accesos rápidos sociales + historias -->
+    <link rel="stylesheet" href="/features/muro/css/muro-social-actions.css">
 </head>
 <body>
     <div class="nebula nebula-1" aria-hidden="true"></div>
@@ -210,36 +53,32 @@
             <a href="/features/mercado/index.html" class="nav-link" data-nav="mercado">◆ Mercado</a>
         </nav>
 
-        <!-- ========================================================= -->
-        <!-- BARRA DE SECCIONES DEL MURO (debajo del header y del nav) -->
-        <!-- ========================================================= -->
+        <!-- ===== BARRA DE SECCIONES DEL MURO ===== -->
         <nav class="muro-section-nav" aria-label="Secciones del Muro">
             <a href="/" class="sec-tab" data-sec="inicio">
-                <svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
                 Inicio
             </a>
             <a href="/features/muro/muro.html" class="sec-tab active" data-sec="muro" aria-current="page">
-                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
                 Muro
             </a>
             <a href="/features/perfil/perfil.html" class="sec-tab" data-sec="perfil">
-                <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 Perfil
             </a>
             <a href="/features/mensajes/contactos.html" class="sec-tab" data-sec="contactos">
-                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 Contactos
             </a>
             <a href="/features/live/live.html" class="sec-tab live-tab" data-sec="live">
-                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
                 Live
                 <span class="live-badge" aria-label="En vivo"></span>
             </a>
         </nav>
 
-        <!-- ========================================================= -->
-        <!-- SUB-MENÚ DE FILTROS DEL MURO                               -->
-        <!-- ========================================================= -->
+        <!-- ===== SUB-MENÚ DE FILTROS DEL MURO ===== -->
         <nav class="muro-filter-nav" id="muroFilterNav" aria-label="Filtros del Muro">
             <a href="#" class="filter-tab active" data-filter="parati">✨ Para ti</a>
             <a href="#" class="filter-tab" data-filter="envivo">🔴 En vivo <span class="dot-live"></span></a>
@@ -247,6 +86,71 @@
             <a href="#" class="filter-tab" data-filter="explorar">◈ Explorar</a>
             <a href="#" class="filter-tab" data-filter="puebla">📍 Puebla</a>
         </nav>
+
+        <!-- ===== ACCESOS RÁPIDOS SOCIALES ===== -->
+        <div class="cs-social-section-title">
+            <span>◈ Tu espacio social</span>
+            <small>Conecta · Comparte · Descubre</small>
+        </div>
+
+        <!-- Contenedor dinámico de historias (lo llena muro-historias.js) -->
+        <section class="cs-story-strip" id="csStoryStrip" aria-label="Historias">
+            <button type="button" class="cs-story-item" onclick="crearHistoria()">
+                <span class="cs-story-ring story-add">＋</span>
+                <span>Tu historia</span>
+            </button>
+        </section>
+
+        <section class="cs-social-actions" aria-label="Acciones de la red social">
+            <button type="button" class="social-action social-create" onclick="enfocarPublicacion()">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span>
+                <span class="social-label">Publicar</span>
+            </button>
+            <button type="button" class="social-action" onclick="abrirSelectorImagen()">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg></span>
+                <span class="social-label">Foto</span>
+            </button>
+            <a href="/features/videos/videos.html" class="social-action">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></svg></span>
+                <span class="social-label">Videos</span>
+            </a>
+            <a href="/features/live/live.html" class="social-action social-live">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M5.6 5.6a9 9 0 0 0 0 12.8"/><path d="M18.4 5.6a9 9 0 0 1 0 12.8"/></svg></span>
+                <span class="social-label">Transmitir Live</span>
+            </a>
+            <a href="/features/mensajes/contactos.html" class="social-action social-message">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/></svg></span>
+                <span class="social-label">Mensajes</span>
+            </a>
+            <a href="/features/perfil/perfil.html" class="social-action">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span>
+                <span class="social-label">Mi perfil</span>
+            </a>
+            <a href="/features/grupos/grupos.html" class="social-action">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><path d="m12 3 9 5v8l-9 5-9-5V8z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg></span>
+                <span class="social-label">Canales y grupos</span>
+            </a>
+            <a href="/features/mercado/index.html" class="social-action">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><path d="M3 9h18l-2-6H5z"/><path d="M5 9v12h14V9"/><path d="M9 21v-7h6v7"/></svg></span>
+                <span class="social-label">Mercado</span>
+            </a>
+            <button type="button" class="social-action" onclick="insertarHashtag()">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg></span>
+                <span class="social-label">Hashtag</span>
+            </button>
+            <button type="button" class="social-action" onclick="compartirMuro()">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.7 10.7 6.6-4.4M8.7 13.3l6.6 4.4"/></svg></span>
+                <span class="social-label">Compartir</span>
+            </button>
+            <a href="/features/internet/internet.html" class="social-action">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></span>
+                <span class="social-label">Internet</span>
+            </a>
+            <button type="button" class="social-action" onclick="abrirModalVenta()">
+                <span class="social-icon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg></span>
+                <span class="social-label">Vender Tokens</span>
+            </button>
+        </section>
 
         <div class="valor-mercado" id="valorMercado">
             <div class="info">
@@ -351,7 +255,6 @@
 
         <div id="feedContainer"></div>
 
-        <!-- ===== FOOTER LIMPIO Y ACTUALIZADO ===== -->
         <footer class="footer">
             <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
             <span style="opacity:0.3; display:inline-flex; align-items:center; gap:4px;">
@@ -512,6 +415,9 @@
         </div>
     </div>
 
+    <!-- Visor de historias (lo llena muro-historias.js) -->
+    <div id="csHistoriaVisor"></div>
+
     <!-- Toast -->
     <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
@@ -522,12 +428,9 @@
     </div>
 
     <!-- ================= SCRIPTS ================= -->
-
-    <!-- Librerías externas -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js"></script>
 
-    <!-- Scripts del módulo muro (en orden de dependencia) -->
     <script src="/features/muro/js/muro-config.js"></script>
     <script src="/features/muro/js/muro-utils.js"></script>
     <script src="/features/muro/js/muro-temas.js"></script>
@@ -539,14 +442,14 @@
     <script src="/features/muro/js/muro-ventas.js"></script>
     <script src="/features/muro/js/muro-pagos.js"></script>
     <script src="/features/muro/js/muro-realtime.js"></script>
+    <script src="/features/muro/js/muro-historias.js"></script>
     <script src="/features/muro/js/muro-init.js"></script>
 
-    <!-- Guardia de navegación: restaura los destinos correctos del menú
-         por si algún script, caché o traducción cambió los href. -->
     <script>
     (function () {
         'use strict';
 
+        // Guardia de enlaces principales
         var DESTINOS = {
             inicio:    '/',
             muro:      '/features/muro/muro.html',
@@ -562,14 +465,12 @@
         document.querySelectorAll('.main-nav a[data-nav]').forEach(function (enlace) {
             var clave = enlace.getAttribute('data-nav');
             var destino = DESTINOS[clave];
-
             if (destino && enlace.getAttribute('href') !== destino) {
-                console.warn('[Muro] Corrigiendo enlace de navegación:', clave);
                 enlace.setAttribute('href', destino);
             }
         });
 
-        // Guardia para la barra de secciones del Muro
+        // Guardia de la barra de secciones
         var DESTINOS_SECCIONES = {
             inicio:    '/',
             muro:      '/features/muro/muro.html',
@@ -581,41 +482,67 @@
         document.querySelectorAll('.muro-section-nav a[data-sec]').forEach(function (enlace) {
             var clave = enlace.getAttribute('data-sec');
             var destino = DESTINOS_SECCIONES[clave];
-
             if (destino && enlace.getAttribute('href') !== destino) {
-                console.warn('[Muro] Corrigiendo enlace de sección:', clave);
                 enlace.setAttribute('href', destino);
             }
         });
 
-        // Manejo visual de los filtros del Muro (Para ti / En vivo / Siguiendo / Explorar / Puebla)
+        // Filtros del Muro
         var filterTabs = document.querySelectorAll('.muro-filter-nav .filter-tab');
         filterTabs.forEach(function (tab) {
             tab.addEventListener('click', function (e) {
                 e.preventDefault();
                 filterTabs.forEach(function (t) { t.classList.remove('active'); });
                 tab.classList.add('active');
-
                 var filtro = tab.getAttribute('data-filter');
                 var info = document.getElementById('filtroInfo');
-
-                if (filtro === 'parati') {
-                    if (info) info.textContent = 'Mostrando todo el muro';
-                } else if (filtro === 'envivo') {
-                    if (info) info.textContent = 'Contenido en vivo';
-                } else if (filtro === 'siguiendo') {
-                    if (info) info.textContent = 'Publicaciones de cuentas que sigues';
-                } else if (filtro === 'explorar') {
-                    if (info) info.textContent = 'Explorando todo el contenido';
-                } else if (filtro === 'puebla') {
-                    if (info) info.textContent = 'Contenido de Puebla';
-                }
-                // Nota: la lógica real de filtrado se delega a los módulos existentes del Muro
-                // (muro-busqueda.js / muro-publicaciones.js) para no romper funcionalidad.
+                var mensajes = {
+                    parati:    'Mostrando todo el muro',
+                    envivo:    'Contenido en vivo',
+                    siguiendo: 'Publicaciones de cuentas que sigues',
+                    explorar:  'Explorando todo el contenido',
+                    puebla:    'Contenido de Puebla'
+                };
+                if (info) info.textContent = mensajes[filtro] || 'Mostrando todo el muro';
             });
         });
-    })();
-    </script>
 
+        // Cargar historias cuando el DOM esté listo
+        function arrancarHistorias() {
+            if (typeof cargarHistorias === 'function') {
+                cargarHistorias().catch(function (e) {
+                    console.warn('[Muro] Historias no cargadas:', e);
+                });
+            }
+        }
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', arrancarHistorias);
+        } else {
+            arrancarHistorias();
+        }
+    })();
+
+    // Helpers de accesos rápidos
+    function enfocarPublicacion() {
+        var ta = document.getElementById('postContent');
+        if (!ta) return;
+        ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(function () { ta.focus(); }, 300);
+    }
+
+    function compartirMuro() {
+        var url = window.location.href;
+        var titulo = "Csariel's · Muro WEB3";
+        if (navigator.share) {
+            navigator.share({ title: titulo, url: url }).catch(function () {});
+        } else if (navigator.clipboard) {
+            navigator.clipboard.writeText(url).then(function () {
+                if (typeof showToast === 'function') showToast('Enlace copiado', 'success');
+            }).catch(function () {
+                if (typeof showToast === 'function') showToast('No se pudo copiar el enlace', 'error');
+            });
+        }
+    }
+    </script>
 </body>
 </html>
