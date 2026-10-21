@@ -895,9 +895,17 @@ async function renderMessages(rows) {
     scrollToBottom(true);
 }
 
+function urlSegura(u) {
+    if (typeof u !== 'string' || !u) return null;
+    try {
+        const x = new URL(u, location.href);
+        return (x.protocol === 'https:' || x.protocol === 'blob:') ? x.href : null;
+    } catch (e) { return null; }
+}
+
 function messageHTML(m, sent, signedUrl) {
     let body = esc(limpiarMarkdown(m.contenido || ''));
-    const urlToUse = signedUrl || m.imagen_url;
+    const urlToUse = urlSegura(signedUrl || m.imagen_url);
     if (urlToUse) {
         if (m.tipo === 'imagen') body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy" data-visor="1" data-src="${esc(urlToUse)}" data-nombre="${esc(m.nombre_archivo || 'imagen.jpg')}" style="cursor:zoom-in;">`;
         else if (m.tipo === 'video') body = `<video controls playsinline src="${esc(urlToUse)}"></video>`;
@@ -1948,15 +1956,19 @@ async function init() {
                 try {
                     await openConversation(usuarioParam);
 
-                    // Si la URL trae &accion=llamada, iniciamos la llamada
+                    // Si la URL trae &accion=llamada, pedimos confirmación antes de iniciar
                     if (accionParam === 'llamada') {
                         setTimeout(async () => {
-                            if (typeof startCall === 'function') {
-                                try {
-                                    await startCall('video');
-                                } catch (e) {
-                                    console.error('[Llamadas] Error en inicio automático:', e);
-                                }
+                            const ok = await NeonModal.confirm({
+                                title: 'Iniciar videollamada',
+                                message: '¿Quieres llamar a este usuario ahora?',
+                                icon: '📹',
+                                confirmText: 'Llamar',
+                                cancelText: 'Cancelar'
+                            });
+                            if (ok && typeof startCall === 'function') {
+                                try { await startCall('video'); }
+                                catch (e) { console.error('[Llamadas] Error en inicio automático:', e); }
                             }
                         }, 1000); // Esperamos 1s para que el chat cargue
                     }
@@ -2030,7 +2042,10 @@ if ('serviceWorker' in navigator) {
         const data = event.data || {};
         if (data.tipo === 'notificacion_click' && data.llamadaId) {
             if (data.accion === 'reject') {
-                db.from('llamadas').update({ estado: 'rejected', motivo_fin: 'rechazada_desde_notificacion', finalizada_at: new Date().toISOString() }).eq('id', data.llamadaId).then(() => { toast('📵 Llamada rechazada', 'warning'); });
+                llamadaFetch(`/api/llamadas/${encodeURIComponent(data.llamadaId)}/terminar`,
+                             { motivo: 'rechazada_desde_notificacion' })
+                    .then(() => toast('📵 Llamada rechazada', 'warning'))
+                    .catch(e => console.warn('[Llamadas] rechazo desde notificación:', e.code || e.message));
                 return;
             }
             if (data.accion === 'accept') {
