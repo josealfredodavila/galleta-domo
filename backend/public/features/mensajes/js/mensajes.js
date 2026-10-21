@@ -1591,8 +1591,56 @@ function crearRoom() {
         if (track.kind === 'video') track.attach($('remoteVideo'));
         else if (track.kind === 'audio') { const el = track.attach(); el.dataset.lk = '1'; el.style.display = 'none'; document.body.appendChild(el); el.play?.().catch(() => {}); }
     });
-    room.on(LK.RoomEvent.Disconnected, () => { if (!call.active) return; const id = call.id; finalizarLlamadaLocal(); terminarLlamadaServidor(id); });
+    room.on(LK.RoomEvent.Disconnected, reason => manejarDesconexionLlamada(room, reason));
     return room;
+}
+
+const RECONEXION_MAX_INTENTOS = 2;
+const RECONEXION_ESPERA_MS = 3000;
+let reconectandoLlamada = false;
+
+async function manejarDesconexionLlamada(room, reason) {
+    // Ignora eventos de salas que ya no son la sala activa (por ejemplo, la que falló al reconectar)
+    if (!call.active || room !== call.room) return;
+
+    const LK = window.LivekitClient;
+    const id = call.id;
+    const motivo = String(reason ?? 'desconocida');
+    console.warn('[Llamadas] Desconectado de LiveKit. Motivo:', reason);
+
+    // Colgado intencional: mismo comportamiento de siempre
+    if (LK.DisconnectReason && reason === LK.DisconnectReason.CLIENT_INITIATED) {
+        finalizarLlamadaLocal();
+        terminarLlamadaServidor(id, { motivo: 'colgada' });
+        return;
+    }
+
+    if (reconectandoLlamada) return;
+    reconectandoLlamada = true;
+    try {
+        for (let intento = 1; intento <= RECONEXION_MAX_INTENTOS; intento++) {
+            await new Promise(resolve => setTimeout(resolve, RECONEXION_ESPERA_MS));
+            if (!call.active || call.id !== id) return; // la llamada terminó mientras esperábamos
+
+            try {
+                const t = await llamadaFetch(`/api/llamadas/${encodeURIComponent(id)}/token`, {});
+                try { call.audio?.stop(); call.video?.stop(); } catch (e) {}
+                call.active = false; // conectarYPublicar lo volverá a poner en true si tiene éxito
+                await conectarYPublicar(t.url, t.token, call.tipo);
+                console.info('[Llamadas] Reconectado a la sala en el intento', intento);
+                return;
+            } catch (err) {
+                console.warn(`[Llamadas] Reconexión ${intento} fallida:`, err.code || err.message);
+                call.active = true; // restaura el estado para el siguiente intento o el cierre
+            }
+        }
+
+        // No se pudo reconectar: cerrar en ambos lados con el motivo real
+        finalizarLlamadaLocal();
+        terminarLlamadaServidor(id, { motivo: 'desconexion_' + motivo });
+    } finally {
+        reconectandoLlamada = false;
+    }
 }
 
 async function conectarYPublicar(url, token, tipo) {
