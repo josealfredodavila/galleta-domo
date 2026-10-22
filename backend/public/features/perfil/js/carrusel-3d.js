@@ -1,7 +1,7 @@
 // ============================================
 // CSARIEL'S · CARRUSEL 3D HORIZONTAL
 // Ruta: /features/perfil/js/carrusel-3d.js
-// v10 · NAVEGACIÓN LIMPIA POR URL
+// v11 · ESCAPE SEGURO DE ATRIBUTOS Y VALIDACIÓN DE MEDIA
 // ============================================
 
 (function () {
@@ -21,6 +21,9 @@
     // Rutas
     var URL_ANUNCIO_DETALLE = '/features/anuncios/ver.html';
     var URL_CREAR_ANUNCIO  = '/features/anuncios/anuncios-crear.html';
+
+    // Tipos de media permitidos (lista blanca)
+    var TIPOS_MEDIA = { imagen: true, video: true };
 
     // Paleta de degradados por slot
     var PALETA = [
@@ -138,10 +141,36 @@
         return Array.prototype.slice.call(track.querySelectorAll('.carrusel-3d-card'));
     }
 
+    // Escape para TEXTO dentro de elementos
     function esc(valor) {
         var div = document.createElement('div');
         div.textContent = valor == null ? '' : String(valor);
         return div.innerHTML;
+    }
+
+    // Escape para VALORES DE ATRIBUTO (comillas incluidas)
+    function escAttr(valor) {
+        return String(valor == null ? '' : valor)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    // Solo acepta URLs http(s) bien formadas; devuelve '' si no son válidas
+    function urlSegura(valor) {
+        try {
+            var u = new URL(String(valor || '').trim());
+            return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    function tipoMediaSeguro(valor) {
+        var t = String(valor || 'imagen').toLowerCase();
+        return TIPOS_MEDIA[t] ? t : 'imagen';
     }
 
     function obtenerColores(indice) {
@@ -281,38 +310,39 @@
 
     // --------------------------------------------
     // HTML: ANUNCIO REAL
+    // Todos los valores que vienen de la base se escapan como atributo
+    // o como texto. La media solo se usa si la URL es http(s) válida.
     // --------------------------------------------
     function htmlAnuncioReal(anuncio, indice, total) {
         var titulo = esc(anuncio.titulo || 'Anuncio');
         var texto = esc(anuncio.texto || '');
-        var tipo = String(anuncio.tipo || 'imagen').toLowerCase();
-        var mediaUrl = String(anuncio.media_url || '').trim();
+        var tipo = tipoMediaSeguro(anuncio.tipo);
+        var mediaUrl = urlSegura(anuncio.media_url);
         var par = obtenerColores(indice);
         var media = '';
 
-        if (mediaUrl && /^https?:\/\//i.test(mediaUrl)) {
-            var mediaSegura = esc(mediaUrl);
+        if (mediaUrl) {
             if (tipo === 'video') {
                 media =
                     '<video class="anuncio-video" src="' +
-                    mediaSegura +
+                    escAttr(mediaUrl) +
                     '" muted loop playsinline ' +
                     'preload="none" aria-hidden="true" ' +
                     'data-lazy-video="1"></video>';
             } else {
                 media =
                     '<img class="anuncio-img" src="' +
-                    mediaSegura +
+                    escAttr(mediaUrl) +
                     '" alt="" loading="lazy" decoding="async">';
             }
         }
 
         return (
             '<a class="carrusel-3d-card anuncio-card" ' +
-                'href="' + URL_ANUNCIO_DETALLE + '?id=' +
-                encodeURIComponent(anuncio.id) + '" ' +
-                'data-anuncio-id="' + esc(anuncio.id) + '" ' +
-                'data-tipo="' + esc(tipo) + '" ' +
+                'href="' + escAttr(URL_ANUNCIO_DETALLE) + '?id=' +
+                encodeURIComponent(String(anuncio.id)) + '" ' +
+                'data-anuncio-id="' + escAttr(anuncio.id) + '" ' +
+                'data-tipo="' + escAttr(tipo) + '" ' +
                 'style="--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
                 htmlParticulas() +
                 '<div class="ads-tag">' +
@@ -341,7 +371,7 @@
         var par = obtenerColores(indice);
         return (
             '<a class="carrusel-3d-card anuncio-placeholder" ' +
-                'href="' + URL_CREAR_ANUNCIO + '" ' +
+                'href="' + escAttr(URL_CREAR_ANUNCIO) + '" ' +
                 'data-placeholder="1" ' +
                 'data-slot="' + indice + '" ' +
                 'style="--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
@@ -406,7 +436,7 @@
 
         // Limpieza total del contenedor para evitar tarjetas residuales
         track.innerHTML = html;
-        
+
         activoActual = 0;
         cards = coleccionar();
 
@@ -685,9 +715,7 @@
             return;
         }
 
-        // LIMPIEZA QUIRÚRGICA INICIAL: 
-        // Eliminamos cualquier rastro de HTML viejo (Muro/Perfil) 
-        // antes de que el JS pinte las tarjetas correctas.
+        // Limpieza inicial: elimina HTML viejo antes de pintar las tarjetas correctas
         if (track) track.innerHTML = '';
 
         inicializado = true;
