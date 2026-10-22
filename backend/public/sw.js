@@ -57,7 +57,7 @@ self.addEventListener('push', (event) => {
 
   const opciones = {
     body: data.body || '',
-    icon: data.icon || '/icon-192.png',
+    icon: data.icon || '/icon-512.png',
     badge: data.badge || '/badge-72.png',
     tag: data.tag,
     renotify: !!data.renotify,
