@@ -92,6 +92,106 @@
     #btnCerrarLlamar { border: 1px solid var(--text-muted, #6b7d90); background: transparent; color: var(--text-muted, #6b7d90); }
     #llamarAviso { margin-top: 8px; font-size: 0.65rem; color: var(--danger, #ff3366); min-height: 14px; }
 </style>
+
+<!-- ================================================================
+     CSS DEL PASAPORTE DIGITAL DEL DOMO
+     ================================================================ -->
+<style>
+    #pasaporteDomo { margin: 0 0 16px; }
+    #pasaporteDomo:empty { display: none; }
+
+    .pasaporte-card {
+        position: relative;
+        padding: 20px;
+        border-radius: 20px;
+        background:
+            linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(15, 45, 26, 0.85) 60%, rgba(0, 229, 255, 0.10) 100%);
+        border: 1.5px solid rgba(212, 175, 55, 0.45);
+        box-shadow: 0 8px 32px rgba(212, 175, 55, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        color: var(--text-primary, #f0f4f8);
+        overflow: hidden;
+    }
+    .pasaporte-card::before {
+        content: '';
+        position: absolute;
+        top: -50%; right: -30%;
+        width: 260px; height: 260px;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(0, 229, 255, 0.18) 0%, transparent 70%);
+        pointer-events: none;
+    }
+    .pasaporte-sello {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 99px;
+        background: rgba(212, 175, 55, 0.18);
+        border: 1px solid rgba(212, 175, 55, 0.55);
+        color: var(--gold, #D4AF37);
+        font-family: 'Orbitron', monospace;
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+    .pasaporte-titulo {
+        font-family: 'Orbitron', monospace;
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--text-primary, #fff);
+        margin-bottom: 6px;
+        line-height: 1.3;
+    }
+    .pasaporte-correo {
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: var(--cyan, #00e5ff);
+        margin-bottom: 8px;
+        word-break: break-all;
+    }
+    .pasaporte-meta {
+        font-size: 0.7rem;
+        color: var(--text-muted, #8aa8b8);
+        margin-bottom: 12px;
+    }
+    .pasaporte-token {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 10px;
+        background: rgba(0, 214, 143, 0.12);
+        border: 1px solid rgba(0, 214, 143, 0.4);
+        color: var(--success, #00d68f);
+        font-size: 0.72rem;
+        font-weight: 600;
+        margin-bottom: 12px;
+    }
+    .pasaporte-tx {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        color: var(--cyan, #00e5ff);
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-decoration: none;
+        border-bottom: 1px dashed rgba(0, 229, 255, 0.4);
+        padding-bottom: 1px;
+    }
+    .pasaporte-tx:hover { color: var(--gold, #D4AF37); border-color: rgba(212, 175, 55, 0.6); }
+
+    @keyframes pasaporteIn {
+        from { opacity: 0; transform: translateY(8px) scale(0.98); }
+        to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .pasaporte-anim { animation: pasaporteIn 400ms ease both; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .pasaporte-anim { animation: none !important; }
+    }
+</style>
 </head>
 <body>
 
@@ -249,6 +349,11 @@
             </button>
         </div>
     </div>
+
+    <!-- ============================================================ -->
+    <!-- PASAPORTE DIGITAL DEL DOMO (se llena dinámicamente)          -->
+    <!-- ============================================================ -->
+    <section id="pasaporteDomo" aria-live="polite"></section>
 
     <div class="repartidor-section" id="repartidorSection" style="display:none;">
         <div class="rep-header">
@@ -948,6 +1053,12 @@
 <script src="/features/perfil/js/perfil-internet.js?v=8"></script>
 <script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
+
+<!-- ================================================================ -->
+<!-- PASAPORTE DIGITAL DEL DOMO (después de init para que sessionUser  -->
+<!-- ya esté disponible, y con fallback para reintentar si tarda).     -->
+<!-- ================================================================ -->
+<script src="/features/perfil/js/pasaporte-domo.js?v=1"></script>
 
 <script>
 /* ================================================================
