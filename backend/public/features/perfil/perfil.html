@@ -17,8 +17,6 @@
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
 <!-- CSS del Carrusel 3D (horizontal en el perfil) -->
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
-<!-- CSS del Carrusel 3D FULLSCREEN (overlay infinito) -->
-<link rel="stylesheet" href="/features/perfil/css/carrusel-3d-fullscreen.css">
 <!-- CSS del carrusel de anuncios (imagen) -->
 <link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
 
@@ -69,11 +67,6 @@
 </style>
 <style>
     .anuncios-imagen-contenedor img { display: block; width: 100%; max-width: 100%; height: auto; max-height: 260px; object-fit: cover; border-radius: 16px; }
-</style>
-<style>
-    .carrusel-fullscreen-overlay { display: none; }
-    .carrusel-fullscreen-overlay.is-open, .carrusel-fullscreen-overlay.open, .carrusel-fullscreen-overlay.active, .carrusel-fullscreen-overlay.abierto, .carrusel-fullscreen-overlay.visible { display: flex; flex-direction: column; position: fixed; inset: 0; z-index: 9500; background: rgba(5, 8, 15, 0.97); color: var(--text-primary, #ffffff); padding: 16px; box-sizing: border-box; }
-    #btnAbrirCarruselFullscreen { display: none !important; }
 </style>
 <style>
     /* ================= BOTÓN FLOTANTE DE LLAMADAS (arrastrable) ================= */
@@ -1474,8 +1467,6 @@
 
 <!-- Script del Carrusel 3D horizontal -->
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
-<!-- Script del Carrusel 3D FULLSCREEN infinito -->
-<script src="/features/perfil/js/carrusel-3d-fullscreen.js" defer></script>
 
 </body>
 </html>
