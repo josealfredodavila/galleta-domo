@@ -226,6 +226,17 @@ body {
 .nebula-2 { width:600px; height:600px; background:var(--neon-cyan); bottom:-15%; left:-15%; opacity:.10; }
 .nebula-3 { width:500px; height:500px; background:var(--neon-lime); top:50%; left:50%; transform:translate(-50%,-50%); opacity:.06; }
 
+/* ================= AVISO DE MANTENIMIENTO ================= */
+.mant-overlay { position:fixed; inset:0; background:rgba(5,8,15,.82); backdrop-filter:blur(10px); display:none; align-items:center; justify-content:center; z-index:10000; padding:20px; }
+.mant-overlay.active { display:flex; }
+.mant-box { position:relative; max-width:380px; width:100%; padding:30px 24px 24px; border-radius:24px; text-align:center; background:linear-gradient(160deg, rgba(255,46,151,.18), rgba(5,8,15,.94) 45%, rgba(212,175,55,.16)); border:1px solid rgba(212,175,55,.45); box-shadow:0 20px 60px rgba(255,46,151,.25), inset 0 0 0 1px rgba(255,255,255,.04); animation:mant-entrada .5s ease; }
+@keyframes mant-entrada { from { opacity:0; transform:translateY(16px) scale(.97); } to { opacity:1; transform:none; } }
+.mant-icon { font-family:'Orbitron',monospace; font-size:2rem; color:var(--gold); text-shadow:0 0 24px rgba(212,175,55,.4); margin-bottom:10px; }
+.mant-title { font-family:'Orbitron',monospace; font-size:1rem; letter-spacing:1px; margin-bottom:12px; background:linear-gradient(90deg,var(--neon-pink),var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.mant-text { font-size:.88rem; line-height:1.55; color:var(--text-secondary); }
+.mant-detail { margin-top:12px; font-size:.74rem; color:var(--text-muted); }
+.mant-btn { margin-top:18px; width:100%; padding:13px; border:none; border-radius:12px; background:linear-gradient(135deg,var(--neon-pink),var(--neon-orange) 55%,var(--neon-yellow)); color:#fff; font-weight:800; font-size:.9rem; cursor:pointer; box-shadow:0 8px 28px rgba(255,46,151,.35); }
+
 @media (max-width:768px) {
     .nebula { display:none; }
     .header { flex-direction:column; align-items:flex-start; gap:10px; }
@@ -301,6 +312,18 @@ body {
     <a href="/features/centro-ayuda/index.html" class="help-link">Términos y Privacidad</a>
 </footer>
 </div>
+
+<!-- ================= AVISO DE MANTENIMIENTO (modal) ================= -->
+<div class="mant-overlay" id="mantOverlay" role="dialog" aria-modal="true" aria-labelledby="mantTitulo">
+    <div class="mant-box">
+        <div class="mant-icon">◈</div>
+        <div class="mant-title" id="mantTitulo">MEJORANDO TU EXPERIENCIA</div>
+        <p class="mant-text" id="mantTexto"></p>
+        <p class="mant-detail" id="mantDetalle"></p>
+        <button type="button" class="mant-btn" id="mantCerrar">Entendido</button>
+    </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -317,6 +340,32 @@ function showToast(msg, type, duration) {
     el._timer = setTimeout(function () { el.className = 'toast'; }, duration || 3500);
 }
 window.showToast = showToast;
+
+/* ============== AVISO DE MANTENIMIENTO ============== */
+var MANT_MENSAJE = 'Estamos optimizando el ecosistema de Csariel\'s para ofrecerte una experiencia más fluida. Tus recompensas y beneficios seguirán disponibles cuando el servicio se restablezca.';
+
+function esErrorDeServicio(msg) {
+    var m = String(msg || '').toLowerCase();
+    return m.includes('exceed_cached_egress_quota')
+        || m.includes('restricted due to')
+        || m.includes('spend cap')
+        || m.includes('quota')
+        || m.includes('failed to fetch')
+        || m.includes('networkerror');
+}
+
+function mostrarAvisoMantenimiento() {
+    var overlay = document.getElementById('mantOverlay');
+    if (!overlay) return;
+    document.getElementById('mantTexto').textContent = MANT_MENSAJE;
+    document.getElementById('mantDetalle').textContent = 'El servicio se restablecerá el 27 de octubre de 2026.';
+    overlay.classList.add('active');
+}
+
+function cerrarAvisoMantenimiento() {
+    var overlay = document.getElementById('mantOverlay');
+    if (overlay) overlay.classList.remove('active');
+}
 
 function mostrarLogin() {
     document.documentElement.classList.remove('verificando');
@@ -362,11 +411,16 @@ async function iniciarSesionDesdeIndex() {
         window.location.replace(RUTA_PERFIL);
     } catch (e) {
         var m = (e && e.message) ? e.message : 'Error';
+        console.warn('[Login] Error:', m);
+        if (btn) { btn.disabled = false; btn.textContent = orig; }
+        if (esErrorDeServicio(m)) {
+            mostrarAvisoMantenimiento();
+            return;
+        }
         var lm = m.toLowerCase();
         if (lm.includes('invalid login credentials')) m = 'Correo o contraseña incorrectos.';
         else if (lm.includes('email not confirmed')) m = 'Debes confirmar tu correo antes de iniciar sesión.';
         showToast('❌ ' + m, 'error', 6000);
-        if (btn) { btn.disabled = false; btn.textContent = orig; }
     }
 }
 window.iniciarSesionDesdeIndex = iniciarSesionDesdeIndex;
@@ -748,6 +802,9 @@ document.addEventListener('DOMContentLoaded', function () {
     setTimeout(async function () {
         try { if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas(); } catch (e) {}
     }, 300);
+
+    var btnMant = document.getElementById('mantCerrar');
+    if (btnMant) btnMant.addEventListener('click', cerrarAvisoMantenimiento);
 });
 </script>
 
