@@ -1,7 +1,7 @@
 /* ============================================================
    contactos.js
    Sariel's Ecosystem · Contactos
-   v10 — Sistema de Solicitudes de Amistad (Pendiente -> Aceptar/Rechazar)
+   v11 — Sistema de Solicitudes de Amistad (UI + Lógica)
    ============================================================ */
 
 (() => {
@@ -223,6 +223,7 @@
             return;
         }
         await cargarContactos({ reset: true });
+        await cargarSolicitudesPendientesUI(); // 🔥 NUEVO: Cargar solicitudes pendientes
     }
 
     /* ============================================================
@@ -418,6 +419,71 @@
     }
 
     /* ============================================================
+       CARGAR SOLICITUDES PENDIENTES (UI Dorada)
+       ============================================================ */
+    async function cargarSolicitudesPendientesUI() {
+        const client = sb();
+        const session = await getSession();
+        if (!client || !session) return;
+
+        const contenedor = document.getElementById('solicitudesPendientesLista');
+        const seccion = document.getElementById('solicitudesPendientesSection');
+        const contador = document.getElementById('solicitudesContador');
+        if (!contenedor || !seccion || !contador) return;
+
+        try {
+            // Buscar solicitudes pendientes donde YO soy el destinatario
+            const { data: solicitudes, error } = await client
+                .from(CONFIG.CONTACTOS_TABLE)
+                .select('id, usuario_id, contacto_id, estado')
+                .eq('contacto_id', session.user.id)
+                .eq('estado', 'pendiente');
+
+            if (error) throw error;
+
+            if (!solicitudes || solicitudes.length === 0) {
+                seccion.style.display = 'none';
+                return;
+            }
+
+            // Cargar perfiles de los que me enviaron solicitud
+            const idsRemitentes = solicitudes.map(s => s.usuario_id);
+            await cargarPerfilesEnLote(idsRemitentes);
+
+            seccion.style.display = 'block';
+            contador.textContent = solicitudes.length;
+
+            contenedor.innerHTML = solicitudes.map(s => {
+                const perfil = getPerfilCacheado(s.usuario_id) || { nombre: 'Usuario', handle: null, avatar_url: null };
+                const nombre = perfil.nombre || 'Usuario';
+                const handle = perfil.handle ? '@' + perfil.handle : '';
+                const avatar = perfil.avatar_url 
+                    ? `<img src="${escapeHtml(obtenerAvatarSeguro(perfil.avatar_url))}" alt="">` 
+                    : escapeHtml(nombre.charAt(0).toUpperCase());
+                
+                return `
+                    <div class="solicitud-card">
+                        <div class="avatar">${avatar}</div>
+                        <div class="info">
+                            <div class="nombre">${escapeHtml(nombre)}</div>
+                            <div class="handle">${escapeHtml(handle)}</div>
+                        </div>
+                        <div class="acciones">
+                            <button class="btn-aceptar" onclick="window.aceptarSolicitud('${s.id}', '${s.usuario_id}')">✓ Aceptar</button>
+                            <button class="btn-rechazar" onclick="window.rechazarSolicitud('${s.id}', '${s.usuario_id}')">✕ Rechazar</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (e) {
+            console.error('Error cargando solicitudes pendientes:', e);
+            seccion.style.display = 'none';
+        }
+    }
+    window.cargarSolicitudesPendientesUI = cargarSolicitudesPendientesUI;
+
+    /* ============================================================
        RENDER
        ============================================================ */
     function renderizarContactos() {
@@ -450,7 +516,7 @@
     }
 
     /* ============================================================
-       TARJETA CON BOTONES CLAROS Y LÓGICA DE SOLICITUDES
+       TARJETA CON BOTONES CLAROS
        ============================================================ */
     function renderizarTarjeta(contacto) {
         const inicial = escapeHtml((contacto.nombre || 'U').charAt(0).toUpperCase());
@@ -459,7 +525,7 @@
             : inicial;
 
         let estadoTexto = 'Desconectado';
-        if (contacto.estado === 'pendiente') estadoTexto = 'Solicitud pendiente';
+        if (contacto.estado === 'pendiente') estadoTexto = 'Esperando aceptación';
         else if (contacto.online) estadoTexto = 'En línea';
 
         const handleTexto = contacto.handle ? `@${String(contacto.handle).replace(/^@/, '')}` : '';
@@ -469,15 +535,13 @@
         const contactoIdSeguro = escapeHtml(contacto.contacto_id);
         const filaIdSeguro = escapeHtml(contacto.id);
 
-        // Lógica: Si está pendiente, muestra Aceptar/Rechazar. Si no, muestra Mensaje/Llamar.
-        const esPendiente = contacto.estado === 'pendiente';
-        const botonesAccion = esPendiente 
+        // Si YO envié la solicitud y está pendiente, solo muestro el estado, no los botones (porque yo no puedo aceptarme a mí mismo)
+        const esPendienteEnviada = contacto.estado === 'pendiente';
+        
+        const botonesAccion = esPendienteEnviada 
             ? `
-                <button type="button" class="aceptar" title="Aceptar solicitud" onclick="window.aceptarSolicitud('${filaIdSeguro}', '${contactoIdSeguro}')">
-                    ✓ Aceptar
-                </button>
-                <button type="button" class="rechazar" title="Rechazar solicitud" onclick="window.rechazarSolicitud('${filaIdSeguro}', '${contactoIdSeguro}')">
-                    ✕ Rechazar
+                <button type="button" class="rechazar" title="Cancelar solicitud" onclick="window.rechazarSolicitud('${filaIdSeguro}', '${contactoIdSeguro}')">
+                    ✕ Cancelar solicitud
                 </button>
             `
             : `
@@ -490,7 +554,7 @@
             `;
 
         return `
-            <article class="contacto-card ${esPendiente ? 'pendiente' : ''}" data-contacto-id="${contactoIdSeguro}" onclick="${esPendiente ? '' : `window.abrirMensaje('${contactoIdSeguro}')`}">
+            <article class="contacto-card ${esPendienteEnviada ? 'pendiente' : ''}" data-contacto-id="${contactoIdSeguro}" onclick="${esPendienteEnviada ? '' : `window.abrirMensaje('${contactoIdSeguro}')`}">
                 <div class="contacto-avatar ${contacto.online ? 'online' : ''}">
                     ${avatar}
                     ${contacto.online ? '<span class="online-dot"></span>' : ''}
@@ -503,7 +567,7 @@
                 </div>
                 <div class="contacto-actions" onclick="event.stopPropagation();">
                     ${botonesAccion}
-                    ${!esPendiente ? `
+                    ${!esPendienteEnviada ? `
                         <button type="button" class="favorito ${favorito}" title="Favorito" onclick="window.toggleFavorito('${filaIdSeguro}', ${favoritoNuevo})">
                             ◆ Favorito
                         </button>
@@ -708,7 +772,6 @@
         if (state.idsContactosSet.has(contactoId)) { showToast('⚠️ Ya es tu contacto', 'warning'); return; }
         
         try {
-            // Ahora insertamos con estado 'pendiente'
             const { error } = await withRetry(() =>
                 client.from(CONFIG.CONTACTOS_TABLE).insert({
                     usuario_id: session.user.id, 
@@ -739,18 +802,25 @@
         const session = await getSession();
         if (!client || !session) return;
         try {
-            // 1. Mi fila pasa a 'activo'
+            // 1. Mi fila (la que él me envió) pasa a 'activo'
             await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
-                .update({ estado: 'activo' }).eq('id', contactoRowId), 'aceptar solicitud propia');
+                .update({ estado: 'activo' }).eq('id', contactoRowId), 'aceptar solicitud recibida');
             
-            // 2. La fila del otro usuario también pasa a 'activo'
-            await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
-                .update({ estado: 'activo' })
-                .eq('usuario_id', otroUsuarioId)
-                .eq('contacto_id', session.user.id), 'aceptar solicitud del otro');
+            // 2. Crear o actualizar mi fila hacia él como 'activo'
+            const { data: miFila } = await client.from(CONFIG.CONTACTOS_TABLE)
+                .select('id').eq('usuario_id', session.user.id).eq('contacto_id', otroUsuarioId).maybeSingle();
+            
+            if (miFila) {
+                await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
+                    .update({ estado: 'activo' }).eq('id', miFila.id), 'actualizar mi fila');
+            } else {
+                await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
+                    .insert({ usuario_id: session.user.id, contacto_id: otroUsuarioId, estado: 'activo' }), 'crear mi fila');
+            }
 
             showToast('✅ Amistad aceptada', 'success');
             await cargarContactos({ reset: true });
+            await cargarSolicitudesPendientesUI(); // Recargar las solicitudes
         } catch (e) { console.error('Error aceptando:', e); showToast('❌ Error al aceptar la solicitud', 'error'); }
     }
     window.aceptarSolicitud = aceptarSolicitud;
@@ -762,7 +832,7 @@
         try {
             // 1. Borramos la fila que me envió
             await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
-                .delete().eq('id', contactoRowId), 'rechazar solicitud');
+                .delete().eq('id', contactoRowId), 'rechazar solicitud recibida');
             
             // 2. Borramos la fila que yo le envié (si existe)
             await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
@@ -772,6 +842,7 @@
 
             showToast('❌ Solicitud rechazada', 'info');
             await cargarContactos({ reset: true });
+            await cargarSolicitudesPendientesUI(); // Recargar las solicitudes
         } catch (e) { console.error('Error rechazando:', e); showToast('❌ Error al rechazar la solicitud', 'error'); }
     }
     window.rechazarSolicitud = rechazarSolicitud;
