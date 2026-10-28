@@ -1,28 +1,13 @@
 // ================================================================
 // PERFIL · DATOS DEL USUARIO
 // ================================================================
-// Cargar/actualizar perfil, contadores sociales, avatar, guardar.
-// Depende de: perfil-config.js, perfil-utils.js
-//
-// CAMBIO v5 (moderación):
-// - subirFoto() y subirVideo() ya NO suben directo a Supabase Storage.
-// - Ahora llaman a POST /api/media/upload con multipart/form-data.
-// - El backend modera con AWS Rekognition antes de guardar.
-//
-// CAMBIO v4 (robustez del arranque):
-// - Los auxiliares (conexión, amigos, historialQR, Pro, contadores)
-//   se llaman por separado con su propio catch. Si uno falla, ya no
-//   dispara el toast "Error al cargar perfil" ni tumba al perfil.
-// - El perfil principal (nombre, avatar, badges, stats) se pinta
-//   primero y siempre, aunque algún auxiliar falle.
-//
-// CAMBIO v3 (corrección de carga):
-// - El perfil se lee directamente de la tabla usuarios.
-// - Ya no se fuerza online=true al cargar.
-//
-// CAMBIO v2 (traducciones):
-// - Todos los textos visibles y mensajes usan perfilT(clave, respaldo).
+// CAMBIO v6 (Backend en Railway):
+// - Añadida constante BACKEND_URL.
+// - subirArchivoConModeracion ahora apunta a Railway.
 // ================================================================
+
+// 🔥 IMPORTANTE: PON AQUÍ TU URL DE RAILWAY (Sin la barra final)
+const BACKEND_URL = 'https://tu-proyecto-en-railway.up.railway.app'; 
 
 // ================================================================
 // HELPER — Subida segura con moderación
@@ -33,7 +18,8 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
     fd.append('destino', destino);
     fd.append('tipo', tipo);
 
-    const respuesta = await fetch('/api/media/upload', {
+    // 🔥 CORRECCIÓN: Usamos la URL de Railway
+    const respuesta = await fetch(BACKEND_URL + '/api/media/upload', {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token
@@ -49,9 +35,19 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
     }
 
     if (!respuesta.ok || !data.ok) {
-        const mensaje = data && data.error
-            ? data.error
-            : 'No se pudo subir el archivo';
+        let mensaje = 'No se pudo subir el archivo';
+        
+        // Manejo de errores específicos del backend
+        if (respuesta.status === 422) {
+            mensaje = data.error || 'Contenido no permitido por las normas de la comunidad.';
+        } else if (respuesta.status === 413) {
+            mensaje = data.error || 'El archivo es demasiado grande.';
+        } else if (respuesta.status === 503) {
+            mensaje = 'El servicio de moderación no está disponible. Intenta más tarde.';
+        } else if (data && data.error) {
+            mensaje = data.error;
+        }
+
         const error = new Error(mensaje);
         error.status = respuesta.status;
         throw error;
@@ -97,7 +93,6 @@ async function cargarPerfil(forzarActualizacion = false) {
             return;
         }
 
-        // Fila propia de usuarios (la RLS permite leer tu propia fila)
         let perfil = null;
         try {
             const { data, error } = await window.supabaseClient
@@ -120,30 +115,18 @@ async function cargarPerfil(forzarActualizacion = false) {
         window.perfilCache = perfil;
         ultimaActualizacion = ahora;
 
-        // 1) Pintar el perfil principal SIEMPRE, antes de los auxiliares.
         try {
             actualizarUI(perfil);
         } catch (e) {
             console.warn('[Perfil] Error pintando UI principal:', e);
         }
 
-        // 2) Auxiliares: cada uno con su propio catch.
-        try { cargarEstadoConexion(); }
-        catch (e) { console.warn('[Perfil] conexión:', e); }
+        try { cargarEstadoConexion(); } catch (e) { console.warn('[Perfil] conexión:', e); }
+        try { cargarAmigosEnLinea(); } catch (e) { console.warn('[Perfil] amigos:', e); }
+        try { cargarHistorialQR(); } catch (e) { console.warn('[Perfil] historialQR:', e); }
+        try { cargarEstadoPro(); } catch (e) { console.warn('[Perfil] pro:', e); }
+        try { cargarContadoresSociales(session.user.id); } catch (e) { console.warn('[Perfil] contadores:', e); }
 
-        try { cargarAmigosEnLinea(); }
-        catch (e) { console.warn('[Perfil] amigos:', e); }
-
-        try { cargarHistorialQR(); }
-        catch (e) { console.warn('[Perfil] historialQR:', e); }
-
-        try { cargarEstadoPro(); }
-        catch (e) { console.warn('[Perfil] pro:', e); }
-
-        try { cargarContadoresSociales(session.user.id); }
-        catch (e) { console.warn('[Perfil] contadores:', e); }
-
-        // 3) Aplicar traducciones después de pintar.
         try {
             await aplicarI18NPerfil();
         } catch (e) {
@@ -197,7 +180,8 @@ function actualizarUI(data) {
             escaparHTML(perfilT('perfil_opciones', 'Opciones')) + '">✎</span>';
         if (data.avatar_url) {
             const urlSafe = escaparHTML(data.avatar_url);
-            avatarEl.innerHTML = '<img src="' + urlSafe + '" alt="Avatar">' + toggle;
+            // 🔥 CORRECCIÓN: alt vacío y onerror para no mostrar la palabra "Avatar" si la imagen falla
+            avatarEl.innerHTML = '<img src="' + urlSafe + '" alt="" onerror="this.style.display=\'none\'">' + toggle;
             const img = avatarEl.querySelector('img');
             if (img) img.addEventListener('error', function () { avatarEl.innerHTML = '◈' + toggle; });
         } else {
@@ -205,7 +189,6 @@ function actualizarUI(data) {
         }
     }
 
-    // ---- STATS (tokens, NFTs) ----
     const tokens = Number(data.tokens) || 0;
     const stats = [
         { id: 'statTokens', value: tokens },
@@ -218,7 +201,6 @@ function actualizarUI(data) {
         }
     });
 
-    // ---- PROGRESO NFT ----
     const progreso = Math.min(tokens, 12);
     const puedeCanjear = data.puede_canjear || false;
     const progressFill = document.getElementById('progressFill');
@@ -232,7 +214,6 @@ function actualizarUI(data) {
         progressText.style.color = progreso >= 12 ? 'var(--gold)' : '';
     }
 
-    // ---- TOKENS DETALLE ----
     const tokenTotal = document.getElementById('tokenTotal');
     const tokenDisponibles = document.getElementById('tokenDisponibles');
     const tokenNFTs = document.getElementById('tokenNFTs');
@@ -245,7 +226,6 @@ function actualizarUI(data) {
         tokenVendidos.textContent = Math.max(0, acumulados - tokens);
     }
 
-    // ---- BOTÓN CANJEAR NFT ----
     const btnCanjear = document.getElementById('canjearNft');
     if (btnCanjear) {
         btnCanjear.removeAttribute('data-clave');
@@ -272,7 +252,7 @@ function actualizarUI(data) {
 }
 
 // ================================================================
-// CONTADORES SOCIALES (seguidores, siguiendo)
+// CONTADORES SOCIALES
 // ================================================================
 async function cargarContadoresSociales(usuarioId) {
     try {
@@ -326,7 +306,7 @@ function aplicarContadoresSociales(c) {
 }
 
 // ================================================================
-// GUARDAR PERFIL (nombre, handle, bio)
+// GUARDAR PERFIL
 // ================================================================
 async function guardarPerfil() {
     const session = await getSession();
@@ -361,9 +341,6 @@ async function guardarPerfil() {
     }
 }
 
-// ================================================================
-// EDITAR PERFIL (ir a config)
-// ================================================================
 function editarPerfil() {
     cambiarTab('config');
     setTimeout(() => {
@@ -375,9 +352,6 @@ function editarPerfil() {
     }, 300);
 }
 
-// ================================================================
-// COMPARTIR PERFIL
-// ================================================================
 function compartirPerfil() {
     const nombreCompleto = document.getElementById('perfilNombre')?.textContent || '';
     const nombre = nombreCompleto
@@ -399,9 +373,6 @@ function compartirPerfil() {
     }
 }
 
-// ================================================================
-// GENERAR QR DEL PERFIL
-// ================================================================
 async function generarQRPerfil() {
     try {
         const session = await getSession();
@@ -424,17 +395,11 @@ async function generarQRPerfil() {
     }
 }
 
-// ================================================================
-// ABRIR SELECTOR DE ARCHIVO (avatar)
-// ================================================================
 function abrirSelectorArchivo() {
     const input = document.getElementById('fileInput');
     if (input) input.click();
 }
 
-// ================================================================
-// AVATAR MENU (toggle)
-// ================================================================
 function toggleAvatarMenu(event) {
     if (event) event.stopPropagation();
     var menu = document.getElementById('avatarMenu');
@@ -447,9 +412,6 @@ function cerrarAvatarMenu() {
     if (menu) menu.classList.remove('show');
 }
 
-// ================================================================
-// EXPANDIR AVATAR (lightbox)
-// ================================================================
 function expandirAvatar() {
     const avatarEl = document.getElementById('perfilAvatar');
     if (!avatarEl) return;
@@ -459,11 +421,11 @@ function expandirAvatar() {
 }
 
 function expandirFotoPublicacion(src) {
-    abrirVisorImagen(src, 'Imagen', 'fotoPublicacionModal');
+    abrirVisorImagen(src, 'Foto', 'fotoPublicacionModal');
 }
 
 // ================================================================
-// SUBIR FOTO DE PERFIL — con moderación
+// SUBIR FOTO DE PERFIL
 // ================================================================
 async function subirFoto(event) {
     const file = event.target.files[0];
@@ -495,7 +457,6 @@ async function subirFoto(event) {
             token
         );
 
-        // Agregar cache-buster para que el navegador no muestre la foto vieja
         const publicUrl = resultado.url + '?t=' + Date.now();
 
         const { error: updateError } = await window.supabaseClient
@@ -509,9 +470,7 @@ async function subirFoto(event) {
         event.target.value = '';
         await cargarPerfil(true);
     } catch (error) {
-        const mensaje = error && error.message
-            ? error.message
-            : perfilT('perfil_error_subir', 'Error al subir');
+        const mensaje = error && error.message ? error.message : 'Error al subir';
         showToast('❌ ' + mensaje, 'error');
     }
 }
@@ -546,7 +505,7 @@ async function eliminarFotoPerfil() {
 }
 
 // ================================================================
-// SUBIR VIDEO (para publicaciones) — con moderación
+// SUBIR VIDEO
 // ================================================================
 async function subirVideo(event) {
     const file = event.target.files[0];
@@ -582,15 +541,13 @@ async function subirVideo(event) {
         event.target.value = '';
         return resultado.url;
     } catch (error) {
-        const mensaje = error && error.message
-            ? error.message
-            : perfilT('perfil_error_generico', 'Error');
+        const mensaje = error && error.message ? error.message : 'Error';
         showToast('❌ ' + mensaje, 'error');
     }
 }
 
 // ================================================================
-// ESTADÍSTICAS (para el nivel del usuario)
+// ESTADÍSTICAS
 // ================================================================
 async function obtenerEstadisticas() {
     try {
