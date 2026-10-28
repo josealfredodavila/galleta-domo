@@ -1,25 +1,49 @@
-name: Claude Code Assistant
+name: Claude Code - Csariel's Engineering Agent
 
 on:
   issue_comment:
     types: [created]
-  pull_request:
-    types: [opened, synchronize]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened, assigned]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+  actions: read
 
 jobs:
   claude:
+    name: Claude Code Agent
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      pull-requests: write
-      issues: write
+    timeout-minutes: 30
+
+    if: >-
+      (
+        github.event_name == 'issue_comment' &&
+        contains(github.event.comment.body, '@claude')
+      ) ||
+      (
+        github.event_name == 'issues' &&
+        (
+          contains(github.event.issue.body, '@claude') ||
+          contains(github.event.issue.title, '@claude')
+        )
+      )
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout del repositorio
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Claude Code Action
+      - name: Ejecutar Claude Code oficial
         uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          claude_args: "--model claude-3-5-sonnet-20240620"
+          claude_args: |
+            --max-turns 10
+            --append-system-prompt "Trabaja como ingeniero de software senior de Csariel's. Antes de modificar código, inspecciona la arquitectura, los archivos relacionados y las convenciones existentes. Conserva las funciones que ya operan y evita reescrituras innecesarias. No inventes tablas, columnas, endpoints, variables de entorno ni APIs. No expongas secretos. Prioriza seguridad, accesibilidad, rendimiento, compatibilidad y pruebas. Identifica los riesgos antes de realizar cambios. Nunca afirmes que una prueba, auditoría o despliegue fue exitoso sin evidencia verificable. No modifiques datos reales, saldos, pagos, contratos desplegados ni configuraciones de producción. Si falta información, explica qué necesitas comprobar antes de continuar."
