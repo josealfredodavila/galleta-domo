@@ -1,12 +1,8 @@
 // ================================================================
-// ROUTES/PUSH.JS — Csariel's · v2.6
-// CAMBIOS v2.6:
-// - /subscribe: un endpoint pertenece al dispositivo. Antes de guardar,
-//   se eliminan filas del mismo endpoint de OTROS usuarios (C-01).
-// - Upsert por (usuario_id, endpoint); requiere el índice único del SQL.
-// - Eliminada POST /llamada-entrante (C-03). llamadas.js /iniciar ya
-//   valida puede_llamar y envía el push. Los helpers siguen exportados.
-// - Limpieza de endpoints expirados acotada a los usuarios notificados.
+// ROUTES/PUSH.JS — Csariel's · v2.7
+// CAMBIOS v2.7:
+// - enviarPushLlamadaEntrante: vibración larga y requireInteraction
+//   para despertar la pantalla en llamadas entrantes.
 // ================================================================
 
 const express = require('express');
@@ -73,9 +69,6 @@ router.post('/subscribe', verificarAutenticacion, async (req, res) => {
             return res.status(400).json({ success: false, error: 'Faltan datos de suscripción' });
         }
 
-        // El endpoint identifica al dispositivo. Si pertenece a otra cuenta
-        // (sesión anterior en el mismo navegador), esa fila se elimina antes
-        // de registrar la nueva, en lugar de reasignarla.
         const { error: errLimpieza } = await supabaseAdmin
             .from('push_subscriptions')
             .delete()
@@ -250,7 +243,6 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
         return { enviados: 0, fallidos: 0 };
     }
 
-    // 'actions' viaja en el payload; el Service Worker pinta los botones.
     const payloadString = JSON.stringify({
         title: payload.title || "◈ Csariel's",
         body: payload.body || '',
@@ -348,9 +340,9 @@ async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamada
         badge: '/badge-72.png',
         url: `/features/mensajes/mensajes.html?llamadaId=${llamadaId}`,
         tag: `llamada-${llamadaId}`,
-        requireInteraction: true,
+        requireInteraction: true, // 🔥 Mantiene la notificación fija en pantalla
         renotify: true,
-        vibrate: [500, 200, 500, 200, 500],
+        vibrate: [1000, 500, 1000, 500, 1000], // 🔥 Vibración larga e insistente
         data: { tipo: 'llamada_entrante', llamadaId },
         actions: [
             { action: 'accept', title: '✅ Aceptar' },
