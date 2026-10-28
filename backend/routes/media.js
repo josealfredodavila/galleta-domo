@@ -68,6 +68,7 @@ const DESTINOS = {
 // si no está, el sistema podría borrar un archivo que sigue en uso.
 const COLUMNAS_CON_URL = [
     ['publicaciones', 'media_url'],
+    ['publicaciones_publicas', 'media_url'],
     ['muro_posts', 'imagen_url'],
     ['muro_videos', 'url_video'],
     ['muro_videos', 'miniatura_url'],
@@ -106,6 +107,12 @@ const COLUMNAS_CON_URL = [
     ['marketing_ads', 'video_url'],
     ['nfts_usuario', 'imagen_url'],
     ['media_watermark_records', 'processed_media_url']
+];
+
+// Columnas JSONB o arrays que guardan URLs dentro de un objeto.
+// Se buscan con búsqueda de texto sobre la fila completa.
+const TABLAS_CON_URL_EN_JSON = [
+    'mercado_productos'
 ];
 
 const upload = multer({
@@ -160,7 +167,7 @@ function extraerBucketYRuta(url) {
     }
 }
 
-// Devuelve true si alguna columna de la base referencia la URL.
+// Devuelve true si alguna tabla referencia la URL.
 // Si una consulta falla, lanza error: en ese caso NO se borra nada.
 async function estaReferenciada(url) {
     for (const [tabla, columna] of COLUMNAS_CON_URL) {
@@ -174,6 +181,20 @@ async function estaReferenciada(url) {
         }
         if (count > 0) return true;
     }
+
+    // Búsqueda dentro de columnas JSONB (por ejemplo, fotos de productos)
+    for (const tabla of TABLAS_CON_URL_EN_JSON) {
+        const { count, error } = await supabaseAdmin
+            .from(tabla)
+            .select('*', { count: 'exact', head: true })
+            .like('fotos::text', `%${url}%`);
+
+        if (error) {
+            throw new Error(`Verificación fallida en ${tabla}.fotos: ${error.message}`);
+        }
+        if (count > 0) return true;
+    }
+
     return false;
 }
 
