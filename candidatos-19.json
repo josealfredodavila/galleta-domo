@@ -1,0 +1,25 @@
+[
+  { "bucket": "avatars", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1788376005738.jpg", "created_at": "2026-09-02T19:06:47.213Z" },
+  { "bucket": "avatars", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1788378608646.jpg", "created_at": "2026-09-02T19:50:09.942Z" },
+  { "bucket": "avatars", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1788379385647.png", "created_at": "2026-09-02T20:03:07.954Z" },
+  { "bucket": "avatars", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1788399081985.jpg", "created_at": "2026-09-03T01:31:23.109Z" },
+  { "bucket": "avatars", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1788566527665.jpg", "created_at": "2026-09-05T00:02:10.204Z" },
+
+  { "bucket": "posts", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/post_1789225775440.jpg", "created_at": "2026-09-12T15:09:36.227Z" },
+  { "bucket": "posts", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/post_1789279317673.jpg", "created_at": "2026-09-13T06:01:58.744Z" },
+  { "bucket": "posts", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/post_1789281419949.jpg", "created_at": "2026-09-13T06:37:01.124Z" },
+  { "bucket": "posts", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/post_1789516367414.jpg", "created_at": "2026-09-15T23:52:50.485Z" },
+  { "bucket": "posts", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/post_1789649050819.jpg", "created_at": "2026-09-17T12:44:12.271Z" },
+
+  { "bucket": "publicaciones", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1788421241993.jpg", "created_at": "2026-09-03T07:40:41.681Z" },
+  { "bucket": "publicaciones", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1788994674092.jpg", "created_at": "2026-09-09T22:57:55.650Z" },
+
+  { "bucket": "sariels-avatars", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/avatar.png", "created_at": "2026-09-01T03:03:47.635Z" },
+
+  { "bucket": "muro-imagenes", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1788485207689.jpg", "created_at": "2026-09-04T01:26:48.762Z" },
+  { "bucket": "muro-imagenes", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1789194832572.jpg", "created_at": "2026-09-12T06:33:55.941Z" },
+  { "bucket": "muro-imagenes", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1789283514481.jpg", "created_at": "2026-09-13T07:11:55.629Z" },
+  { "bucket": "muro-imagenes", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1792104798764-p0hdlvdh.jpg", "created_at": "2026-10-15T22:53:20.173Z" },
+  { "bucket": "muro-imagenes", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1792175974000-5ikyqvkg.jpg", "created_at": "2026-10-16T18:39:34.994Z" },
+  { "bucket": "muro-imagenes", "path": "d5a50e00-d315-4b55-8955-052ee0b0726a/1792613787518-w3kspxhm.jpg", "created_at": "2026-10-21T20:16:28.833Z" }
+]
