@@ -185,6 +185,55 @@
         .pasaporte-anim { animation: none !important; }
     }
 </style>
+
+<!-- ================================================================
+     CORRECCIONES DE VISUALIZACIÓN (v3)
+     ================================================================ -->
+<style>
+    /* Overlay de módulos: oculto salvo que tenga una clase de apertura.
+       Si carrusel-3d.js usa otra clase para abrirlo, agrégala aquí. */
+    .carrusel-fullscreen-overlay:not(.open):not(.show):not(.is-open):not(.active):not(.visible) {
+        display: none !important;
+    }
+    .btn-abrir-carrusel-fullscreen { display: none !important; }
+
+    /* Tarjetas de publicación: encabezado en fila (avatar a la izquierda, nombre y fecha a la derecha) */
+    .publicacion-card .header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0;
+        margin-bottom: 10px;
+        background: transparent;
+        border: 0;
+        box-shadow: none;
+    }
+    .publicacion-card .header > .avatar {
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
+        border-radius: 50%;
+        overflow: hidden;
+    }
+    .publicacion-card .header > .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    .publicacion-card .header > div:not(.avatar) {
+        flex: 1;
+        min-width: 0;
+        text-align: left;
+    }
+    .publicacion-card .nombre {
+        white-space: normal;
+        word-break: break-word;
+    }
+    .publicacion-card .fecha {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+    }
+</style>
 </head>
 <body>
 
