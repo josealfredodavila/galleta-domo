@@ -1,8 +1,10 @@
 // ================================================================
-// MURO · HISTORIAS (tabla estados) — v2 con video
+// MURO · HISTORIAS (tabla estados) — v3 con video
 // ================================================================
 // Barra superior de historias, visor a pantalla completa, subida
 // de imágenes y videos, y registro de vistas.
+// v3: destino de subida 'sariels-estados' (bucket que revisa el cron
+//     de limpieza y que media.js permite para imagen y video).
 // Tablas: estados, estados_vistas. RPC: estados_activos_por_usuario().
 // Depende de: muro-config.js (supabaseClient, sessionUser),
 //             muro-utils.js (escapeHTML, showToast).
@@ -194,10 +196,9 @@ async function subirHistoria(event) {
             : null;
         if (!token) throw new Error('Sesión expirada');
 
-        // Ruta de subida existente del proyecto (verificar que siga vigente)
         var fd = new FormData();
         fd.append('file', file);
-        fd.append('destino', 'muro-historias');
+        fd.append('destino', 'sariels-estados');
         fd.append('tipo', tipo);
 
         var resp = await fetch('/api/media/upload', {
