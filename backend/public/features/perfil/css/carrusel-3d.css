@@ -1,7 +1,7 @@
 /* ============================================
    CSARIEL'S · CARRUSEL 3D HORIZONTAL
    Ruta: /features/perfil/css/carrusel-3d.css
-   v8 · DISEÑO VIVO + MODAL FULLSCREEN
+   v9 · CORRECCIÓN DEL MODAL FANTASMA
    ============================================ */
 
 .carrusel-3d-wrapper {
@@ -402,11 +402,12 @@
    MODAL FULLSCREEN (anuncio + invitación)
    ============================================ */
 
+/* CORRECCIÓN: Ocultar por defecto para que no se vean los textos sueltos */
 .ad-modal {
     position: fixed;
     inset: 0;
     z-index: 9999;
-    display: flex;
+    display: none; /* <--- AQUÍ ESTÁ LA MAGIA */
     align-items: stretch;
     justify-content: center;
     background: transparent;
@@ -416,7 +417,10 @@
     font-family: "Inter", "Rajdhani", system-ui, sans-serif;
     color: #fff;
 }
+
+/* CORRECCIÓN: Mostrar solo cuando el JS le ponga la clase .is-open */
 .ad-modal.is-open {
+    display: flex; /* <--- AQUÍ ESTÁ LA MAGIA */
     opacity: 1;
     pointer-events: auto;
 }
