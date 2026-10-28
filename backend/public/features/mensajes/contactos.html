@@ -159,6 +159,82 @@
         .filtros .filtro.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
 
         /* ========================================================
+           SECCIÓN DE SOLICITUDES PENDIENTES (NUEVA)
+        ======================================================== */
+        .solicitudes-section {
+            display: none;
+            margin-bottom: 24px;
+            background: linear-gradient(145deg, rgba(212, 175, 55, 0.12), rgba(15, 45, 26, 0.85));
+            border: 1px solid var(--gold);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.15);
+        }
+        .solicitudes-section .solicitudes-titulo {
+            color: var(--gold);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .solicitudes-section .solicitudes-titulo .contador {
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+        .solicitud-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(212, 175, 55, 0.2);
+            flex-wrap: wrap;
+        }
+        .solicitud-card .avatar {
+            width: 46px; height: 46px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--gold));
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; overflow: hidden; flex-shrink: 0;
+        }
+        .solicitud-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .solicitud-card .info { flex: 1; min-width: 0; }
+        .solicitud-card .nombre { font-weight: 700; color: var(--text-primary); font-size: 0.9rem; }
+        .solicitud-card .handle { font-size: 0.7rem; color: var(--text-muted); }
+        .solicitud-card .acciones { display: flex; gap: 8px; margin-left: auto; }
+        .solicitud-card .acciones button {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.7rem;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+        }
+        .solicitud-card .acciones .btn-aceptar {
+            background: var(--success);
+            color: #05080f;
+        }
+        .solicitud-card .acciones .btn-aceptar:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(0, 214, 143, 0.4); }
+        .solicitud-card .acciones .btn-rechazar {
+            background: rgba(255, 51, 102, 0.15);
+            color: var(--danger-alt);
+            border: 1px solid var(--danger-alt);
+        }
+        .solicitud-card .acciones .btn-rechazar:hover { background: rgba(255, 51, 102, 0.3); }
+
+        /* ========================================================
            LISTA DE CONTACTOS
         ======================================================== */
         .contactos-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
@@ -250,6 +326,26 @@
             background: rgba(0, 214, 143, 0.15);
             border-color: var(--success);
             box-shadow: 0 0 15px rgba(0, 214, 143, 0.3);
+        }
+        /* Botón Aceptar (Verde) */
+        .contacto-card .contacto-actions .aceptar {
+            color: var(--success);
+            border-color: var(--success);
+            background: rgba(0, 214, 143, 0.15);
+        }
+        .contacto-card .contacto-actions .aceptar:hover {
+            background: var(--success);
+            color: var(--space);
+        }
+        /* Botón Rechazar (Rojo) */
+        .contacto-card .contacto-actions .rechazar {
+            color: var(--danger-alt);
+            border-color: var(--danger-alt);
+            background: rgba(255, 77, 109, 0.1);
+        }
+        .contacto-card .contacto-actions .rechazar:hover {
+            background: var(--danger-alt);
+            color: white;
         }
         /* Botón Bloquear / Eliminar (Rojo Alerta) */
         .contacto-card .contacto-actions .bloquear,
@@ -508,6 +604,15 @@
                 <button type="button" class="filtro" data-filtro="recientes" data-clave="contactos_filtro_recientes">⟡ Recientes</button>
             </div>
 
+            <!-- ===== NUEVA SECCIÓN: SOLICITUDES PENDIENTES ===== -->
+            <div class="solicitudes-section" id="solicitudesPendientesSection">
+                <div class="solicitudes-titulo">
+                    <span>✉</span> Solicitudes de Amistad Pendientes
+                    <span class="contador" id="solicitudesContador">0</span>
+                </div>
+                <div id="solicitudesPendientesLista"></div>
+            </div>
+
             <div class="contactos-list" id="contactosList" aria-live="polite" aria-busy="true">
                 <div class="empty-state">
                     <span class="icon">◈</span>
@@ -574,6 +679,6 @@
         </div>
     </div>
 
-    <script src="/features/mensajes/contactos.js?v=7" defer></script>
+    <script src="/features/mensajes/contactos.js?v=8" defer></script>
 </body>
 </html>
