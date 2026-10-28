@@ -3,17 +3,8 @@
 // ================================================================
 // Arranque del módulo, eventos globales, exposición a window y
 // sincronización realtime con Supabase.
-//
-// CAMBIO v5 (robustez):
-// - Cada función se publica solo si existe. Si un módulo no carga
-//   (por ejemplo perfil-amigos.js), el resto del perfil sigue
-//   funcionando en lugar de detenerse por completo.
-// - Las llamadas a módulos opcionales se hacen solo si están definidos.
 // ================================================================
 
-// ================================================================
-// EXPOSICIÓN GLOBAL A WINDOW (segura: no falla si falta alguna función)
-// ================================================================
 function publicarFuncionesGlobales() {
     // Utils
     window.showToast = typeof showToast === 'function' ? showToast : null;
@@ -186,8 +177,9 @@ function actualizarDOMDesdeRealtime(usuario) {
                 '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
 
             if (usuario.avatar_url) {
+                // CORRECCIÓN: alt vacío y onerror para limpiar si la foto falla
                 avatarElement.innerHTML =
-                    '<img src="' + escaparHTML(usuario.avatar_url) + '" alt="Avatar">' + iconoEditar;
+                    '<img src="' + escaparHTML(usuario.avatar_url) + '" alt="" onerror="this.style.display=\'none\'">' + iconoEditar;
             } else {
                 avatarElement.innerHTML = '◈' + iconoEditar;
             }
