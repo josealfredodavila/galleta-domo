@@ -1,7 +1,7 @@
 /* ============================================================
    contactos.js
    Sariel's Ecosystem · Contactos
-   v9 — Botones Mensaje y Llamar con parámetros correctos
+   v10 — Sistema de Solicitudes de Amistad (Pendiente -> Aceptar/Rechazar)
    ============================================================ */
 
 (() => {
@@ -450,7 +450,7 @@
     }
 
     /* ============================================================
-       TARJETA CON BOTONES CLAROS
+       TARJETA CON BOTONES CLAROS Y LÓGICA DE SOLICITUDES
        ============================================================ */
     function renderizarTarjeta(contacto) {
         const inicial = escapeHtml((contacto.nombre || 'U').charAt(0).toUpperCase());
@@ -459,7 +459,7 @@
             : inicial;
 
         let estadoTexto = 'Desconectado';
-        if (contacto.estado === 'pendiente') estadoTexto = 'Pendiente';
+        if (contacto.estado === 'pendiente') estadoTexto = 'Solicitud pendiente';
         else if (contacto.online) estadoTexto = 'En línea';
 
         const handleTexto = contacto.handle ? `@${String(contacto.handle).replace(/^@/, '')}` : '';
@@ -469,8 +469,28 @@
         const contactoIdSeguro = escapeHtml(contacto.contacto_id);
         const filaIdSeguro = escapeHtml(contacto.id);
 
+        // Lógica: Si está pendiente, muestra Aceptar/Rechazar. Si no, muestra Mensaje/Llamar.
+        const esPendiente = contacto.estado === 'pendiente';
+        const botonesAccion = esPendiente 
+            ? `
+                <button type="button" class="aceptar" title="Aceptar solicitud" onclick="window.aceptarSolicitud('${filaIdSeguro}', '${contactoIdSeguro}')">
+                    ✓ Aceptar
+                </button>
+                <button type="button" class="rechazar" title="Rechazar solicitud" onclick="window.rechazarSolicitud('${filaIdSeguro}', '${contactoIdSeguro}')">
+                    ✕ Rechazar
+                </button>
+            `
+            : `
+                <button type="button" class="mensaje" title="Enviar mensaje" onclick="window.abrirMensaje('${contactoIdSeguro}')">
+                    ◈ Mensaje
+                </button>
+                <button type="button" class="llamar" title="Llamar" onclick="window.llamarContacto('${contactoIdSeguro}')">
+                    ☎ Llamar
+                </button>
+            `;
+
         return `
-            <article class="contacto-card" data-contacto-id="${contactoIdSeguro}" onclick="window.abrirMensaje('${contactoIdSeguro}')">
+            <article class="contacto-card ${esPendiente ? 'pendiente' : ''}" data-contacto-id="${contactoIdSeguro}" onclick="${esPendiente ? '' : `window.abrirMensaje('${contactoIdSeguro}')`}">
                 <div class="contacto-avatar ${contacto.online ? 'online' : ''}">
                     ${avatar}
                     ${contacto.online ? '<span class="online-dot"></span>' : ''}
@@ -482,21 +502,18 @@
                     ${handleTexto ? `<div class="contacto-meta">${escapeHtml(handleTexto)}</div>` : ''}
                 </div>
                 <div class="contacto-actions" onclick="event.stopPropagation();">
-                    <button type="button" class="mensaje" title="Enviar mensaje" onclick="window.abrirMensaje('${contactoIdSeguro}')">
-                        ◈ Mensaje
-                    </button>
-                    <button type="button" class="llamar" title="Llamar" onclick="window.llamarContacto('${contactoIdSeguro}')">
-                        ☎ Llamar
-                    </button>
-                    <button type="button" class="favorito ${favorito}" title="Favorito" onclick="window.toggleFavorito('${filaIdSeguro}', ${favoritoNuevo})">
-                        ◆ Favorito
-                    </button>
-                    <button type="button" class="bloquear" title="Bloquear" onclick="window.bloquearContacto('${contactoIdSeguro}')">
-                        ⛔ Bloquear
-                    </button>
-                    <button type="button" class="eliminar" title="Eliminar" onclick="window.eliminarContacto('${filaIdSeguro}')">
-                        ✕ Eliminar
-                    </button>
+                    ${botonesAccion}
+                    ${!esPendiente ? `
+                        <button type="button" class="favorito ${favorito}" title="Favorito" onclick="window.toggleFavorito('${filaIdSeguro}', ${favoritoNuevo})">
+                            ◆ Favorito
+                        </button>
+                        <button type="button" class="bloquear" title="Bloquear" onclick="window.bloquearContacto('${contactoIdSeguro}')">
+                            ⛔ Bloquear
+                        </button>
+                        <button type="button" class="eliminar" title="Eliminar" onclick="window.eliminarContacto('${filaIdSeguro}')">
+                            ✕ Eliminar
+                        </button>
+                    ` : ''}
                 </div>
             </article>
         `;
@@ -680,7 +697,7 @@
     }
 
     /* ============================================================
-       AGREGAR CONTACTO
+       AGREGAR CONTACTO (Envía solicitud pendiente)
        ============================================================ */
     async function agregarContacto(contactoId) {
         const client = sb();
@@ -689,25 +706,75 @@
         if (!contactoId) return;
         if (contactoId === session.user.id) { showToast('⚠️ No puedes agregarte a ti mismo', 'warning'); return; }
         if (state.idsContactosSet.has(contactoId)) { showToast('⚠️ Ya es tu contacto', 'warning'); return; }
+        
         try {
+            // Ahora insertamos con estado 'pendiente'
             const { error } = await withRetry(() =>
                 client.from(CONFIG.CONTACTOS_TABLE).insert({
-                    usuario_id: session.user.id, contacto_id: contactoId, estado: 'activo', es_favorito: false
-                }), 'agregar contacto');
+                    usuario_id: session.user.id, 
+                    contacto_id: contactoId, 
+                    estado: 'pendiente', 
+                    es_favorito: false
+                }), 'enviar solicitud de amistad');
             if (error) {
-                if (error.code === '23505') { showToast('⚠️ Ya es tu contacto', 'warning'); return; }
+                if (error.code === '23505') { showToast('⚠️ Ya enviaste una solicitud a este usuario', 'warning'); return; }
                 throw error;
             }
-            showToast('✅ Contacto agregado', 'success');
+            showToast('✅ Solicitud de amistad enviada', 'success');
             const input = document.getElementById('searchInputModal');
             if (input) input.value = '';
             const resultados = document.getElementById('resultadosBusqueda');
             if (resultados) resultados.innerHTML = '';
             cerrarModalBuscar();
             await cargarContactos({ reset: true });
-        } catch (error) { console.error('Error agregando contacto:', error); showToast('❌ No se pudo agregar el contacto', 'error'); }
+        } catch (error) { console.error('Error agregando contacto:', error); showToast('❌ No se pudo enviar la solicitud', 'error'); }
     }
     window.agregarContacto = agregarContacto;
+
+    /* ============================================================
+       ACEPTAR / RECHAZAR SOLICITUD
+       ============================================================ */
+    async function aceptarSolicitud(contactoRowId, otroUsuarioId) {
+        const client = sb();
+        const session = await getSession();
+        if (!client || !session) return;
+        try {
+            // 1. Mi fila pasa a 'activo'
+            await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
+                .update({ estado: 'activo' }).eq('id', contactoRowId), 'aceptar solicitud propia');
+            
+            // 2. La fila del otro usuario también pasa a 'activo'
+            await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
+                .update({ estado: 'activo' })
+                .eq('usuario_id', otroUsuarioId)
+                .eq('contacto_id', session.user.id), 'aceptar solicitud del otro');
+
+            showToast('✅ Amistad aceptada', 'success');
+            await cargarContactos({ reset: true });
+        } catch (e) { console.error('Error aceptando:', e); showToast('❌ Error al aceptar la solicitud', 'error'); }
+    }
+    window.aceptarSolicitud = aceptarSolicitud;
+
+    async function rechazarSolicitud(contactoRowId, otroUsuarioId) {
+        const client = sb();
+        const session = await getSession();
+        if (!client || !session) return;
+        try {
+            // 1. Borramos la fila que me envió
+            await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
+                .delete().eq('id', contactoRowId), 'rechazar solicitud');
+            
+            // 2. Borramos la fila que yo le envié (si existe)
+            await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
+                .delete()
+                .eq('usuario_id', session.user.id)
+                .eq('contacto_id', otroUsuarioId), 'limpiar solicitud enviada');
+
+            showToast('❌ Solicitud rechazada', 'info');
+            await cargarContactos({ reset: true });
+        } catch (e) { console.error('Error rechazando:', e); showToast('❌ Error al rechazar la solicitud', 'error'); }
+    }
+    window.rechazarSolicitud = rechazarSolicitud;
 
     /* ============================================================
        FAVORITO
