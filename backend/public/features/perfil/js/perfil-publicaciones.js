@@ -1,6 +1,8 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
+// v5.4 (Eliminación sin borrar Storage desde el cliente: el backend
+//       libera el archivo solo si ninguna publicación lo referencia)
 // v5.3 (Emojis de reacción alineados con la base de datos,
 //       reacciones optimizadas, comentarios protegidos contra envíos
 //       repetidos, vista previa segura, medios compatibles con el
@@ -1792,6 +1794,40 @@ async function eliminarComentarioPerfil(comentarioId, publicacionId) {
 // ================================================================
 // ELIMINAR PUBLICACIÓN PROPIA
 // ================================================================
+// Ya no se borra nada de Storage desde el cliente. Después de borrar la
+// fila, se pide al backend (/api/media/liberar) que elimine el archivo
+// solo si ninguna otra publicación lo usa. Si esa llamada falla, la
+// publicación igual queda eliminada: el archivo puede limpiarse después.
+// ================================================================
+
+async function liberarArchivoPublicacion(mediaUrl) {
+    if (!mediaUrl) return;
+
+    try {
+        var client = window.supabaseClient;
+        var sessionResult = await client.auth.getSession();
+        var token = sessionResult.data && sessionResult.data.session
+            ? sessionResult.data.session.access_token
+            : null;
+
+        if (!token) return;
+
+        var respuesta = await fetch('/api/media/liberar', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': 'Bearer ' + token
+            },
+            body: JSON.stringify({ url: mediaUrl })
+        });
+
+        if (!respuesta.ok) {
+            console.warn('No se pudo liberar el archivo:', respuesta.status);
+        }
+    } catch (e) {
+        console.warn('Error liberando archivo:', e);
+    }
+}
 
 var pubEliminacionesEnProceso = {};
 
@@ -1817,38 +1853,21 @@ async function eliminarMiPublicacion(publicacionId, event) {
 
         if (pubRes.error) throw pubRes.error;
 
-        if (pubRes.data && pubRes.data.media_url) {
-            var mediaUrl = pubRes.data.media_url;
-            var marker = '/storage/v1/object/public/muro-videos/';
-            var idx = mediaUrl.indexOf(marker);
-
-            if (idx !== -1) {
-                var filePath = mediaUrl.substring(idx + marker.length);
-                var qIdx = filePath.indexOf('?');
-
-                if (qIdx !== -1) {
-                    filePath = filePath.substring(0, qIdx);
-                }
-
-                try {
-                    var storageResult = await client.storage
-                        .from('muro-videos')
-                        .remove([filePath]);
-
-                    if (storageResult.error) {
-                        console.warn('No se pudo eliminar el archivo multimedia:', storageResult.error);
-                    }
-                } catch (storageErr) {
-                    console.warn('No se pudo eliminar el archivo multimedia:', storageErr);
-                }
-            }
-        }
+        var mediaUrl = pubRes.data ? pubRes.data.media_url : null;
 
         var result = await client.from('publicaciones')
             .delete()
-            .eq('id', publicacionId);
+            .eq('id', publicacionId)
+            .select('id');
 
         if (result.error) throw result.error;
+
+        if (!result.data || result.data.length === 0) {
+            throw new Error('No tienes permiso para eliminar esta publicación.');
+        }
+
+        // La fila ya no existe; el backend decide si el archivo sigue en uso.
+        await liberarArchivoPublicacion(mediaUrl);
 
         if (window.showToast) {
             window.showToast('Publicación eliminada', 'success');
