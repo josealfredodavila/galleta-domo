@@ -9,6 +9,8 @@
 //       /api/music/buscar, timeout a Deezer y limpieza de connectSrc.
 // v3.8: Eliminado el montaje de /api/mensajes (router sin uso; ver
 //       auditoría: C-04). Las llamadas se gestionan solo en /api/llamadas.
+// v3.9: Health check desacoplado de Supabase: /api/health es liveness
+//       (siempre 200) y /api/health/detalle muestra el estado completo.
 // ================================================================
 
 require('dotenv').config();
@@ -873,7 +875,7 @@ montarRouter('/api/live', './routes/live', 'routes/live');
 // Geo
 montarRouter('/api/geo', './routes/geo', 'routes/geo');
 
-// Media (moderación de imagen/video + subida centralizada)
+// Media (moderación de imagen/video + subida centralizada + liberación)
 montarRouter('/api/media', './routes/media', 'routes/media');
 
 // Moderación de texto (OpenAI Moderation API)
@@ -980,8 +982,20 @@ app.get('/legal/terminos-itlasuhua', (req, res) => {
 // ================================================================
 // HEALTH CHECK
 // ================================================================
+// /health y /api/health son liveness: Railway solo necesita saber
+// que el proceso responde. NO dependen de Supabase, así que una
+// restricción de cuota no tumba los deploys.
+// /api/health/detalle sí consulta Supabase, para diagnóstico manual.
 
-async function healthCheck(req, res) {
+function livenessCheck(req, res) {
+    return res.status(200).json({
+        status: 'ok',
+        service: 'galleta-domo',
+        timestamp: new Date().toISOString()
+    });
+}
+
+async function healthCheckDetalle(req, res) {
     let supabaseStatus = 'unknown';
 
     try {
@@ -1007,10 +1021,8 @@ async function healthCheck(req, res) {
 
     const moderacionTextoConfigured = Boolean(process.env.OPENAI_API_KEY);
 
-    const criticalOk = supabaseStatus === 'ok';
-
-    return res.status(criticalOk ? 200 : 503).json({
-        status: criticalOk ? 'ok' : 'degraded',
+    return res.status(200).json({
+        status: supabaseStatus === 'ok' ? 'ok' : 'degraded',
         service: 'galleta-domo',
         environment: process.env.NODE_ENV || 'development',
         timestamp: new Date().toISOString(),
@@ -1032,9 +1044,11 @@ async function healthCheck(req, res) {
     });
 }
 
-app.get('/health', healthCheck);
+app.get('/health', livenessCheck);
 
-app.get('/api/health', healthCheck);
+app.get('/api/health', livenessCheck);
+
+app.get('/api/health/detalle', healthCheckDetalle);
 
 // ================================================================
 // API 404
