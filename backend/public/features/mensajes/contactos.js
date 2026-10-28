@@ -1,7 +1,7 @@
 /* ============================================================
    contactos.js
    Sariel's Ecosystem · Contactos
-   v11 — Sistema de Solicitudes de Amistad (UI + Lógica)
+   v12 — Sugerencias (Personas que quizás conozcas) + Solicitudes
    ============================================================ */
 
 (() => {
@@ -15,6 +15,7 @@
         RPC_INVITACION: 'obtener_o_crear_invitacion',
         PAGE_SIZE: 30,
         MAX_RESULTADOS_BUSQUEDA: 20,
+        MAX_SUGERENCIAS: 10,
         MIN_CHARS_BUSQUEDA: 2,
         MAX_CHARS_BUSQUEDA: 80,
         SESSION_TIMEOUT_MS: 5000,
@@ -32,7 +33,8 @@
         contactos: [], totalContactos: 0, paginaActual: 0, hayMas: true,
         filtroActual: 'todos', textoBusqueda: '',
         busquedaTimer: null, filtroTimer: null, observerScroll: null,
-        perfilCache: new Map(), idsContactosSet: new Set()
+        perfilCache: new Map(), idsContactosSet: new Set(),
+        sugerencias: []
     };
 
     /* ============================================================
@@ -223,7 +225,8 @@
             return;
         }
         await cargarContactos({ reset: true });
-        await cargarSolicitudesPendientesUI(); // 🔥 NUEVO: Cargar solicitudes pendientes
+        await cargarSolicitudesPendientesUI();
+        await cargarSugerenciasUI();
     }
 
     /* ============================================================
@@ -432,7 +435,6 @@
         if (!contenedor || !seccion || !contador) return;
 
         try {
-            // Buscar solicitudes pendientes donde YO soy el destinatario
             const { data: solicitudes, error } = await client
                 .from(CONFIG.CONTACTOS_TABLE)
                 .select('id, usuario_id, contacto_id, estado')
@@ -446,7 +448,6 @@
                 return;
             }
 
-            // Cargar perfiles de los que me enviaron solicitud
             const idsRemitentes = solicitudes.map(s => s.usuario_id);
             await cargarPerfilesEnLote(idsRemitentes);
 
@@ -482,6 +483,88 @@
         }
     }
     window.cargarSolicitudesPendientesUI = cargarSolicitudesPendientesUI;
+
+    /* ============================================================
+       CARGAR SUGERENCIAS (Personas que quizás conozcas)
+       ============================================================ */
+    async function cargarSugerenciasUI() {
+        const client = sb();
+        const session = await getSession();
+        if (!client || !session) return;
+
+        const seccion = document.getElementById('sugerenciasSection');
+        const contenedor = document.getElementById('sugerenciasLista');
+        if (!seccion || !contenedor) return;
+
+        try {
+            // Traer IDs que ya son mis contactos o me enviaron solicitud
+            const { data: existentes, error: errExistentes } = await client
+                .from(CONFIG.CONTACTOS_TABLE)
+                .select('contacto_id, usuario_id')
+                .or(`usuario_id.eq.${session.user.id},contacto_id.eq.${session.user.id}`);
+
+            if (errExistentes) throw errExistentes;
+
+            const idsExcluir = new Set([session.user.id]);
+            (existentes || []).forEach(e => {
+                if (e.usuario_id) idsExcluir.add(e.usuario_id);
+                if (e.contacto_id) idsExcluir.add(e.contacto_id);
+            });
+
+            // Traer bloqueados para excluirlos
+            try {
+                const { data: bloqueados } = await client.from(CONFIG.BLOQUEOS_TABLE).select('bloqueado_id').eq('usuario_id', session.user.id);
+                (bloqueados || []).forEach(b => { if (b.bloqueado_id) idsExcluir.add(b.bloqueado_id); });
+            } catch (e) { console.warn('No se pudo consultar bloqueos:', e); }
+
+            // Traer perfiles sugeridos
+            const { data: perfiles, error: errPerfiles } = await client
+                .from(CONFIG.PERFILES_VISTA)
+                .select(CONFIG.CAMPOS_PUBLICOS)
+                .not('id', 'in', `(${[...idsExcluir].join(',')})`)
+                .order('online', { ascending: false })
+                .limit(CONFIG.MAX_SUGERENCIAS);
+
+            if (errPerfiles) throw errPerfiles;
+
+            if (!perfiles || perfiles.length === 0) {
+                seccion.style.display = 'none';
+                return;
+            }
+
+            // Guardar en caché
+            (perfiles || []).forEach(p => setPerfilCache(p.id, p));
+
+            seccion.style.display = 'block';
+            contenedor.innerHTML = perfiles.map(usuario => {
+                const nombre = usuario.nombre || 'Usuario';
+                const handle = usuario.handle ? '@' + usuario.handle : '';
+                const avatarUrl = obtenerAvatarSeguro(usuario.avatar_url);
+                const avatar = avatarUrl
+                    ? `<img src="${escapeHtml(avatarUrl)}" alt="">`
+                    : escapeHtml(nombre.charAt(0).toUpperCase());
+                const verificado = usuario.verificado ? ' ✓' : '';
+
+                return `
+                    <div class="sugerencia-card">
+                        <div class="avatar">${avatar}</div>
+                        <div class="info">
+                            <div class="nombre">${escapeHtml(nombre)}${verificado}</div>
+                            <div class="handle">${escapeHtml(handle)}</div>
+                        </div>
+                        <div class="acciones">
+                            <button class="btn-agregar-sugerencia" onclick="window.agregarContacto('${usuario.id}')">＋ Agregar a amigos</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+        } catch (e) {
+            console.error('Error cargando sugerencias:', e);
+            seccion.style.display = 'none';
+        }
+    }
+    window.cargarSugerenciasUI = cargarSugerenciasUI;
 
     /* ============================================================
        RENDER
@@ -535,7 +618,6 @@
         const contactoIdSeguro = escapeHtml(contacto.contacto_id);
         const filaIdSeguro = escapeHtml(contacto.id);
 
-        // Si YO envié la solicitud y está pendiente, solo muestro el estado, no los botones (porque yo no puedo aceptarme a mí mismo)
         const esPendienteEnviada = contacto.estado === 'pendiente';
         
         const botonesAccion = esPendienteEnviada 
@@ -790,6 +872,7 @@
             if (resultados) resultados.innerHTML = '';
             cerrarModalBuscar();
             await cargarContactos({ reset: true });
+            await cargarSugerenciasUI();
         } catch (error) { console.error('Error agregando contacto:', error); showToast('❌ No se pudo enviar la solicitud', 'error'); }
     }
     window.agregarContacto = agregarContacto;
@@ -802,11 +885,9 @@
         const session = await getSession();
         if (!client || !session) return;
         try {
-            // 1. Mi fila (la que él me envió) pasa a 'activo'
             await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
                 .update({ estado: 'activo' }).eq('id', contactoRowId), 'aceptar solicitud recibida');
             
-            // 2. Crear o actualizar mi fila hacia él como 'activo'
             const { data: miFila } = await client.from(CONFIG.CONTACTOS_TABLE)
                 .select('id').eq('usuario_id', session.user.id).eq('contacto_id', otroUsuarioId).maybeSingle();
             
@@ -820,7 +901,8 @@
 
             showToast('✅ Amistad aceptada', 'success');
             await cargarContactos({ reset: true });
-            await cargarSolicitudesPendientesUI(); // Recargar las solicitudes
+            await cargarSolicitudesPendientesUI();
+            await cargarSugerenciasUI();
         } catch (e) { console.error('Error aceptando:', e); showToast('❌ Error al aceptar la solicitud', 'error'); }
     }
     window.aceptarSolicitud = aceptarSolicitud;
@@ -830,11 +912,9 @@
         const session = await getSession();
         if (!client || !session) return;
         try {
-            // 1. Borramos la fila que me envió
             await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
                 .delete().eq('id', contactoRowId), 'rechazar solicitud recibida');
             
-            // 2. Borramos la fila que yo le envié (si existe)
             await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
                 .delete()
                 .eq('usuario_id', session.user.id)
@@ -842,7 +922,8 @@
 
             showToast('❌ Solicitud rechazada', 'info');
             await cargarContactos({ reset: true });
-            await cargarSolicitudesPendientesUI(); // Recargar las solicitudes
+            await cargarSolicitudesPendientesUI();
+            await cargarSugerenciasUI();
         } catch (e) { console.error('Error rechazando:', e); showToast('❌ Error al rechazar la solicitud', 'error'); }
     }
     window.rechazarSolicitud = rechazarSolicitud;
@@ -872,7 +953,7 @@
     window.toggleFavorito = toggleFavorito;
 
     /* ============================================================
-       ELIMINAR CONTACTO (modal custom)
+       ELIMINAR CONTACTO
        ============================================================ */
     async function eliminarContacto(contactoRowId) {
         const client = sb();
@@ -906,6 +987,7 @@
                 client.from(CONFIG.CONTACTOS_TABLE).delete().eq('id', contactoRowId).eq('usuario_id', session.user.id), 'eliminar contacto');
             if (error) throw error;
             showToast('✅ Contacto eliminado', 'success');
+            await cargarSugerenciasUI();
         } catch (error) {
             console.error('Error eliminando contacto:', error);
             state.contactos = backup;
@@ -919,7 +1001,7 @@
     window.eliminarContacto = eliminarContacto;
 
     /* ============================================================
-       BLOQUEAR CONTACTO (modal custom)
+       BLOQUEAR CONTACTO
        ============================================================ */
     async function bloquearContacto(contactoId) {
         const client = sb();
@@ -944,12 +1026,13 @@
             if (error) throw error;
             showToast('⛔ Usuario bloqueado', 'success');
             await cargarContactos({ reset: true });
+            await cargarSugerenciasUI();
         } catch (error) { console.error('Error bloqueando contacto:', error); showToast('❌ No se pudo bloquear al usuario', 'error'); }
     }
     window.bloquearContacto = bloquearContacto;
 
     /* ============================================================
-       LLAMAR CONTACTO (con acción)
+       LLAMAR Y MENSAJE
        ============================================================ */
     function llamarContacto(contactoId) {
         if (!contactoId) return;
@@ -957,9 +1040,6 @@
     }
     window.llamarContacto = llamarContacto;
 
-    /* ============================================================
-       MENSAJE (chat directo)
-       ============================================================ */
     function abrirMensaje(contactoId) {
         if (!contactoId) return;
         window.location.href = `/features/mensajes/mensajes.html?usuario=${encodeURIComponent(contactoId)}`;
@@ -991,9 +1071,6 @@
     }
     window.invitarContacto = invitarContacto;
 
-    /* ============================================================
-       COPIAR INVITACIÓN
-       ============================================================ */
     async function copiarCodigoInvitacion() {
         const elemento = document.getElementById('codigoInvitacion');
         if (!elemento) return;
