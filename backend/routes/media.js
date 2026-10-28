@@ -54,7 +54,12 @@ const DESTINOS = {
         limiteMBVideo: LIMITE_VIDEO_MB
     },
     'sariels-avatars': { tipo: 'imagen', limiteMB: LIMITE_AVATAR_MB },
-    'sariels-estados': { tipo: 'imagen', limiteMB: LIMITE_IMAGEN_MB },
+    // Historias: imágenes hasta 10 MB y videos hasta 25 MB (mismos límites que muro-historias.js)
+    'sariels-estados': {
+        tipo: 'auto',
+        limiteMBImagen: 10,
+        limiteMBVideo: 25
+    },
     'chat-attachments': {
         tipo: 'auto',
         limiteMBImagen: LIMITE_IMAGEN_MB,
