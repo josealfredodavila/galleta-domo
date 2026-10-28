@@ -347,3 +347,80 @@ html.tema-dia .toast, html[data-tema="dia"] .toast { background: rgba(255, 255, 
     .emoji-picker .grid { grid-template-columns: repeat(5, 1fr); }
     .emoji-picker .grid button { font-size: 1.2rem; padding: 4px; }
 }
+
+/* ================================================================
+   CORRECCIONES DE VISUALIZACIÓN (v3)
+   ================================================================
+   1) El encabezado de cada publicación usa la clase "header", que
+      también es la barra superior sticky de la página. Aquí se
+      anulan esos estilos solo dentro de las tarjetas de publicación.
+   2) El overlay de módulos (carrusel) queda oculto salvo que esté
+      abierto.
+   ================================================================ */
+
+.publicacion-card .header {
+    position: static !important;
+    top: auto !important;
+    z-index: auto !important;
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    padding: 0 !important;
+    margin: 0 0 10px 0 !important;
+    background: transparent !important;
+    border: 0 !important;
+    border-bottom: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    min-height: 0 !important;
+}
+
+.publicacion-card .header > .avatar {
+    width: 44px !important;
+    height: 44px !important;
+    min-width: 44px !important;
+    flex: 0 0 44px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    font-size: 0.9rem !important;
+    box-shadow: none !important;
+}
+
+.publicacion-card .header > .avatar img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    display: block !important;
+}
+
+.publicacion-card .header > div:not(.avatar) {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    text-align: left !important;
+}
+
+.publicacion-card .header .nombre {
+    display: block !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    font-size: 0.85rem !important;
+    line-height: 1.3 !important;
+}
+
+.publicacion-card .header .fecha {
+    display: block !important;
+    font-size: 0.65rem !important;
+    color: var(--text-muted) !important;
+}
+
+.carrusel-fullscreen-overlay:not(.open):not(.show):not(.is-open):not(.active):not(.visible) {
+    display: none !important;
+}
+
+.btn-abrir-carrusel-fullscreen {
+    display: none !important;
+}
