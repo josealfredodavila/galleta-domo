@@ -67,9 +67,7 @@
 
         .app { width: 100%; max-width: 1100px; margin: 0 auto; padding: 16px 20px 30px; }
 
-        /* ========================================================
-           HEADER
-        ======================================================== */
+        /* HEADER */
         .header {
             display: flex; justify-content: space-between; align-items: center; gap: 16px;
             padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border);
@@ -91,9 +89,7 @@
         }
         .network-badge .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px rgba(0, 214, 143, 0.7); }
 
-        /* ========================================================
-           NAV
-        ======================================================== */
+        /* NAV */
         .main-nav {
             display: flex; gap: 4px; background: rgba(15, 45, 26, 0.3);
             border-radius: var(--radius); padding: 4px; border: 1px solid var(--glass-border);
@@ -109,9 +105,7 @@
 
         .contactos-container { width: 100%; max-width: 900px; margin: 0 auto; }
 
-        /* ========================================================
-           STATS
-        ======================================================== */
+        /* STATS */
         .contactos-stats {
             display: flex; gap: 24px; margin-bottom: 20px; padding: 12px 20px;
             background: var(--glass-bg); border: 1px solid var(--glass-border);
@@ -122,9 +116,7 @@
         .contactos-stats .stat .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
         .contactos-stats .stat .dot.online { background: var(--success); box-shadow: 0 0 7px rgba(0, 214, 143, 0.6); }
 
-        /* ========================================================
-           BUSCADOR Y FILTROS
-        ======================================================== */
+        /* BUSCADOR Y FILTROS */
         .search-bar { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
         .search-bar input {
             flex: 1; padding: 12px 20px; background: rgba(255, 255, 255, 0.04);
@@ -158,9 +150,7 @@
         .filtros .filtro:hover { color: var(--text-primary); }
         .filtros .filtro.active { background: rgba(212, 175, 55, 0.12); color: var(--gold); }
 
-        /* ========================================================
-           SECCIÓN DE SOLICITUDES PENDIENTES (NUEVA)
-        ======================================================== */
+        /* SOLICITUDES */
         .solicitudes-section {
             display: none;
             margin-bottom: 24px;
@@ -214,38 +204,73 @@
         .solicitud-card .handle { font-size: 0.7rem; color: var(--text-muted); }
         .solicitud-card .acciones { display: flex; gap: 8px; margin-left: auto; }
         .solicitud-card .acciones button {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: 700;
-            font-size: 0.7rem;
-            cursor: pointer;
-            border: none;
-            transition: var(--transition);
+            padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.7rem;
+            cursor: pointer; border: none; transition: var(--transition);
         }
-        .solicitud-card .acciones .btn-aceptar {
-            background: var(--success);
-            color: #05080f;
-        }
+        .solicitud-card .acciones .btn-aceptar { background: var(--success); color: #05080f; }
         .solicitud-card .acciones .btn-aceptar:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(0, 214, 143, 0.4); }
         .solicitud-card .acciones .btn-rechazar {
-            background: rgba(255, 51, 102, 0.15);
-            color: var(--danger-alt);
-            border: 1px solid var(--danger-alt);
+            background: rgba(255, 51, 102, 0.15); color: var(--danger-alt); border: 1px solid var(--danger-alt);
         }
         .solicitud-card .acciones .btn-rechazar:hover { background: rgba(255, 51, 102, 0.3); }
 
-        /* ========================================================
-           LISTA DE CONTACTOS
-        ======================================================== */
-        .contactos-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
+        /* SUGERENCIAS (Personas que quizás conozcas) */
+        .sugerencias-section {
+            display: none;
+            margin-bottom: 24px;
+            background: rgba(15, 45, 26, 0.4);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-xl);
+            padding: 20px;
+        }
+        .sugerencias-section .sugerencias-titulo {
+            color: var(--cyan);
+            font-family: 'Orbitron', monospace;
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .sugerencia-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            flex-wrap: wrap;
+        }
+        .sugerencia-card .avatar {
+            width: 46px; height: 46px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--green-deep), var(--cyan));
+            display: flex; align-items: center; justify-content: center;
+            color: white; font-weight: 700; overflow: hidden; flex-shrink: 0;
+        }
+        .sugerencia-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .sugerencia-card .info { flex: 1; min-width: 0; }
+        .sugerencia-card .nombre { font-weight: 700; color: var(--text-primary); font-size: 0.9rem; }
+        .sugerencia-card .handle { font-size: 0.7rem; color: var(--text-muted); }
+        .sugerencia-card .acciones { display: flex; gap: 8px; margin-left: auto; }
+        .sugerencia-card .acciones .btn-agregar-sugerencia {
+            padding: 8px 16px; border-radius: 20px; font-weight: 700; font-size: 0.7rem;
+            cursor: pointer; border: 1px solid var(--cyan); background: rgba(0, 229, 255, 0.1); color: var(--cyan);
+            transition: var(--transition);
+        }
+        .sugerencia-card .acciones .btn-agregar-sugerencia:hover {
+            background: rgba(0, 229, 255, 0.25); box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+        }
 
+        /* LISTA DE CONTACTOS */
+        .contactos-list { display: grid; grid-template-columns: 1fr; gap: 10px; }
         .contacto-card {
             display: flex; align-items: center; gap: 16px; padding: 16px 20px;
             background: var(--glass-bg); border: 1px solid var(--glass-border);
             border-radius: var(--radius); transition: var(--transition); cursor: pointer;
         }
         .contacto-card:hover { border-color: rgba(212, 175, 55, 0.3); transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-
         .contacto-card .contacto-avatar {
             width: 48px; height: 48px; border-radius: 50%;
             background: linear-gradient(135deg, var(--green-deep), var(--gold));
@@ -262,7 +287,6 @@
         .contacto-card .contacto-avatar .favorito-badge {
             position: absolute; top: -2px; right: -2px; font-size: 0.7rem; color: var(--gold);
         }
-
         .contacto-card .contacto-info { flex: 1; min-width: 0; }
         .contacto-card .contacto-info .nombre {
             font-weight: 600; color: var(--text-primary); font-size: 0.95rem;
@@ -275,95 +299,30 @@
         .contacto-card .contacto-info .estado { font-size: 0.65rem; color: var(--text-muted); margin-top: 2px; }
         .contacto-card .contacto-info .estado.online { color: var(--success); }
         .contacto-card .contacto-info .contacto-meta { font-size: 0.55rem; color: var(--text-muted); margin-top: 2px; }
-
-        /* ========================================================
-           ACCIONES (BOTONES)
-        ======================================================== */
-        .contacto-card .contacto-actions {
-            display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end;
-        }
+        .contacto-card .contacto-actions { display: flex; gap: 8px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
         .contacto-card .contacto-actions button {
             display: inline-flex; align-items: center; gap: 6px;
             padding: 8px 14px; border-radius: 12px; font-size: 0.7rem;
             font-weight: 700; cursor: pointer; transition: var(--transition);
-            border: 1px solid transparent; background: transparent;
-            font-family: inherit;
+            border: 1px solid transparent; background: transparent; font-family: inherit;
         }
-        /* Botón Mensaje (Cian) */
-        .contacto-card .contacto-actions .mensaje {
-            color: var(--cyan);
-            border-color: rgba(0, 229, 255, 0.3);
-            background: rgba(0, 229, 255, 0.05);
-        }
-        .contacto-card .contacto-actions .mensaje:hover {
-            background: rgba(0, 229, 255, 0.15);
-            border-color: var(--cyan);
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
-        }
-        /* Botón Favorito (Dorado) */
-        .contacto-card .contacto-actions .favorito {
-            color: var(--gold);
-            border-color: rgba(212, 175, 55, 0.3);
-            background: rgba(212, 175, 55, 0.05);
-        }
-        .contacto-card .contacto-actions .favorito.active {
-            color: var(--gold);
-            background: rgba(212, 175, 55, 0.2);
-            border-color: var(--gold);
-            box-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
-        }
-        .contacto-card .contacto-actions .favorito:hover {
-            background: rgba(212, 175, 55, 0.15);
-            border-color: var(--gold);
-        }
-        /* Botón Llamar (Verde) */
-        .contacto-card .contacto-actions .llamar {
-            color: var(--success);
-            border-color: rgba(0, 214, 143, 0.3);
-            background: rgba(0, 214, 143, 0.05);
-        }
-        .contacto-card .contacto-actions .llamar:hover {
-            background: rgba(0, 214, 143, 0.15);
-            border-color: var(--success);
-            box-shadow: 0 0 15px rgba(0, 214, 143, 0.3);
-        }
-        /* Botón Aceptar (Verde) */
-        .contacto-card .contacto-actions .aceptar {
-            color: var(--success);
-            border-color: var(--success);
-            background: rgba(0, 214, 143, 0.15);
-        }
-        .contacto-card .contacto-actions .aceptar:hover {
-            background: var(--success);
-            color: var(--space);
-        }
-        /* Botón Rechazar (Rojo) */
-        .contacto-card .contacto-actions .rechazar {
-            color: var(--danger-alt);
-            border-color: var(--danger-alt);
-            background: rgba(255, 77, 109, 0.1);
-        }
-        .contacto-card .contacto-actions .rechazar:hover {
-            background: var(--danger-alt);
-            color: white;
-        }
-        /* Botón Bloquear / Eliminar (Rojo Alerta) */
+        .contacto-card .contacto-actions .mensaje { color: var(--cyan); border-color: rgba(0, 229, 255, 0.3); background: rgba(0, 229, 255, 0.05); }
+        .contacto-card .contacto-actions .mensaje:hover { background: rgba(0, 229, 255, 0.15); border-color: var(--cyan); box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); }
+        .contacto-card .contacto-actions .favorito { color: var(--gold); border-color: rgba(212, 175, 55, 0.3); background: rgba(212, 175, 55, 0.05); }
+        .contacto-card .contacto-actions .favorito.active { color: var(--gold); background: rgba(212, 175, 55, 0.2); border-color: var(--gold); box-shadow: 0 0 12px rgba(212, 175, 55, 0.4); }
+        .contacto-card .contacto-actions .favorito:hover { background: rgba(212, 175, 55, 0.15); border-color: var(--gold); }
+        .contacto-card .contacto-actions .llamar { color: var(--success); border-color: rgba(0, 214, 143, 0.3); background: rgba(0, 214, 143, 0.05); }
+        .contacto-card .contacto-actions .llamar:hover { background: rgba(0, 214, 143, 0.15); border-color: var(--success); box-shadow: 0 0 15px rgba(0, 214, 143, 0.3); }
+        .contacto-card .contacto-actions .aceptar { color: var(--success); border-color: var(--success); background: rgba(0, 214, 143, 0.15); }
+        .contacto-card .contacto-actions .aceptar:hover { background: var(--success); color: var(--space); }
+        .contacto-card .contacto-actions .rechazar { color: var(--danger-alt); border-color: var(--danger-alt); background: rgba(255, 77, 109, 0.1); }
+        .contacto-card .contacto-actions .rechazar:hover { background: var(--danger-alt); color: white; }
         .contacto-card .contacto-actions .bloquear,
-        .contacto-card .contacto-actions .eliminar {
-            color: var(--danger-alt);
-            border-color: rgba(255, 77, 109, 0.3);
-            background: rgba(255, 77, 109, 0.05);
-        }
+        .contacto-card .contacto-actions .eliminar { color: var(--danger-alt); border-color: rgba(255, 77, 109, 0.3); background: rgba(255, 77, 109, 0.05); }
         .contacto-card .contacto-actions .bloquear:hover,
-        .contacto-card .contacto-actions .eliminar:hover {
-            background: rgba(255, 77, 109, 0.15);
-            border-color: var(--danger-alt);
-            box-shadow: 0 0 15px rgba(255, 77, 109, 0.3);
-        }
+        .contacto-card .contacto-actions .eliminar:hover { background: rgba(255, 77, 109, 0.15); border-color: var(--danger-alt); box-shadow: 0 0 15px rgba(255, 77, 109, 0.3); }
 
-        /* ========================================================
-           SKELETON LOADER
-        ======================================================== */
+        /* SKELETON LOADER */
         .contacto-card.skeleton { pointer-events: none; opacity: 0.6; cursor: default; }
         .contacto-card.skeleton .contacto-avatar {
             background: linear-gradient(90deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 100%);
@@ -376,9 +335,7 @@
         }
         @keyframes skeleton-shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
 
-        /* ========================================================
-           EMPTY STATE
-        ======================================================== */
+        /* EMPTY STATE */
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); grid-column: 1 / -1; }
         .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.3; font-family: 'Orbitron', monospace; }
         .empty-state h3 { font-size: 0.9rem; font-weight: 600; }
@@ -388,9 +345,7 @@
             font-weight: 700; cursor: pointer; font-size: 0.8rem;
         }
 
-        /* ========================================================
-           MODALES
-        ======================================================== */
+        /* MODALES */
         .modal-overlay {
             position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
             display: flex; align-items: center; justify-content: center;
@@ -455,9 +410,7 @@
         }
         .btn-copiar:hover { background: rgba(212, 175, 55, 0.16); border-color: var(--gold); }
 
-        /* ========================================================
-           MODAL DE CONFIRMACIÓN CUSTOM (Reemplaza confirm nativo)
-        ======================================================== */
+        /* CONFIRM MODAL */
         .confirm-modal-overlay {
             position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85);
             display: flex; align-items: center; justify-content: center;
@@ -485,19 +438,12 @@
             cursor: pointer; border: 1px solid transparent; font-family: inherit;
             transition: var(--transition); min-width: 100px;
         }
-        .confirm-modal-btn.cancel {
-            background: transparent; border-color: rgba(255, 255, 255, 0.2); color: var(--text-muted);
-        }
+        .confirm-modal-btn.cancel { background: transparent; border-color: rgba(255, 255, 255, 0.2); color: var(--text-muted); }
         .confirm-modal-btn.cancel:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
-        .confirm-modal-btn.confirm-danger {
-            background: linear-gradient(135deg, #ff3366, #cc1a4d); color: white;
-            border-color: rgba(255, 77, 109, 0.8);
-        }
+        .confirm-modal-btn.confirm-danger { background: linear-gradient(135deg, #ff3366, #cc1a4d); color: white; border-color: rgba(255, 77, 109, 0.8); }
         .confirm-modal-btn.confirm-danger:hover { box-shadow: 0 0 20px rgba(255, 51, 102, 0.5); transform: translateY(-1px); }
 
-        /* ========================================================
-           TOAST
-        ======================================================== */
+        /* TOAST */
         .toast {
             position: fixed; bottom: 30px; right: 30px;
             background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold);
@@ -510,9 +456,7 @@
         .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
 
-        /* ========================================================
-           FOOTER LIMPIO Y ACTUALIZADO
-        ======================================================== */
+        /* FOOTER */
         .footer {
             max-width: 1100px; margin: 30px auto 0; padding: 20px;
             border-top: 1px solid var(--glass-border); color: var(--text-muted);
@@ -522,31 +466,25 @@
         .footer .brand { color: var(--gold); font-family: 'Orbitron', monospace; }
         .footer .network-tag { font-size: 0.65rem; opacity: 0.5; display: flex; align-items: center; gap: 4px; }
 
-        /* ========================================================
-           TEMA DÍA
-        ======================================================== */
-        html.tema-dia body, html[data-tema="dia"] body {
-            background: #f0f4f8; color: var(--text-primary);
-        }
+        /* TEMA DÍA */
+        html.tema-dia body, html[data-tema="dia"] body { background: #f0f4f8; color: var(--text-primary); }
         html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255, 255, 255, 0.92); }
         html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: #1a202c; }
-        html.tema-dia .contactos-stats, html.tema-dia .contacto-card, html.tema-dia .filtros,
-        html[data-tema="dia"] .contactos-stats, html[data-tema="dia"] .contacto-card, html[data-tema="dia"] .filtros {
-            background: rgba(255, 255, 255, 0.8);
-        }
+        html.tema-dia .contactos-stats, html.tema-dia .contacto-card, html.tema-dia .filtros, html.tema-dia .sugerencias-section,
+        html[data-tema="dia"] .contactos-stats, html[data-tema="dia"] .contacto-card, html[data-tema="dia"] .filtros, html[data-tema="dia"] .sugerencias-section { background: rgba(255, 255, 255, 0.8); }
         html.tema-dia .contacto-card .contacto-info .nombre,
         html[data-tema="dia"] .contacto-card .contacto-info .nombre { color: var(--text-primary) !important; }
         html.tema-dia .search-bar input, html[data-tema="dia"] .search-bar input { background: rgba(0,0,0,0.03) !important; color: var(--text-primary) !important; border-color: rgba(0,0,0,0.15) !important; }
         html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; border-top-color: rgba(0,0,0,0.1) !important; }
 
-        /* ========================================================
-           RESPONSIVE
-        ======================================================== */
+        /* RESPONSIVE */
         @media (max-width: 768px) {
             .app { padding: 12px 14px 24px; }
             .contacto-card { padding: 12px 14px; flex-wrap: wrap; gap: 10px; }
             .contacto-card .contacto-actions { width: 100%; justify-content: flex-end; padding-top: 10px; border-top: 1px solid var(--glass-border); }
             .search-bar .btn-invitar { display: none; }
+            .sugerencia-card { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+            .sugerencia-card .acciones { width: 100%; justify-content: flex-end; padding-top: 8px; border-top: 1px solid var(--glass-border); }
         }
         @media (max-width: 480px) {
             .search-bar { flex-direction: column; }
@@ -604,13 +542,21 @@
                 <button type="button" class="filtro" data-filtro="recientes" data-clave="contactos_filtro_recientes">⟡ Recientes</button>
             </div>
 
-            <!-- ===== NUEVA SECCIÓN: SOLICITUDES PENDIENTES ===== -->
+            <!-- ===== SOLICITUDES PENDIENTES ===== -->
             <div class="solicitudes-section" id="solicitudesPendientesSection">
                 <div class="solicitudes-titulo">
                     <span>✉</span> Solicitudes de Amistad Pendientes
                     <span class="contador" id="solicitudesContador">0</span>
                 </div>
                 <div id="solicitudesPendientesLista"></div>
+            </div>
+
+            <!-- ===== SUGERENCIAS (Personas que quizás conozcas) ===== -->
+            <div class="sugerencias-section" id="sugerenciasSection">
+                <div class="sugerencias-titulo">
+                    <span>✦</span> Personas que quizás conozcas
+                </div>
+                <div id="sugerenciasLista"></div>
             </div>
 
             <div class="contactos-list" id="contactosList" aria-live="polite" aria-busy="true">
@@ -621,7 +567,6 @@
             </div>
         </main>
 
-        <!-- ===== FOOTER LIMPIO Y ACTUALIZADO ===== -->
         <footer class="footer">
             <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
             <span class="network-tag">⚡ Polygon</span>
@@ -666,7 +611,7 @@
         </div>
     </div>
 
-    <!-- Modal: Confirmación Custom (Reemplaza confirm() nativo) -->
+    <!-- Modal: Confirmación Custom -->
     <div class="confirm-modal-overlay" id="confirmModalOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-hidden="true">
         <div class="confirm-modal">
             <div class="confirm-modal-icon" id="confirmModalIcon">⚠️</div>
@@ -679,6 +624,6 @@
         </div>
     </div>
 
-    <script src="/features/mensajes/contactos.js?v=8" defer></script>
+    <script src="/features/mensajes/contactos.js?v=9" defer></script>
 </body>
 </html>
