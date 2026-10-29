@@ -451,9 +451,9 @@
 <div class="toast" id="toast"></div>
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-<script src="/features/mensajes/js/mensajes.js?v=14"></script>
+<script src="/features/mensajes/js/mensajes.js?v=15"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
-<script src="/features/js/teclado-emojis.js"></script>
+<script src="/features/js/teclado-emojis.js?v=2"></script>
 
 <script>
     (function () {
@@ -508,12 +508,6 @@
             setTimeout(intentarAbrir, 300);
         }
     })();
-
-    document.addEventListener('DOMContentLoaded', () => {
-        if (typeof window.inicializarTecladoEmojis === 'function') {
-            window.inicializarTecladoEmojis('messageInput', 'emojiBtn');
-        }
-    });
 </script>
 </body>
 </html>
