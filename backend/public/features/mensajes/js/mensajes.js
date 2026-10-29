@@ -79,6 +79,36 @@ function esErrorContenidoNoPermitido(err) {
     return !!(err && err.message && err.message.indexOf('contenido_no_permitido') !== -1);
 }
 
+const MENSAJES_ENVIO = {
+    nadie: 'Esta persona no acepta mensajes en este momento.',
+    solo_contactos: 'Solo sus contactos pueden enviarle mensajes.',
+    solicitud_rechazada: 'Esta persona ya no acepta mensajes tuyos.',
+    bloqueado: 'No puedes enviar mensajes a esta persona.',
+    solicitud_solo_texto: 'Para tu primer contacto envía solo texto.'
+};
+
+async function enviarMensajeChat(destinatarioId, contenido, tipo = 'texto', imagenUrl = null, nombreArchivo = null) {
+    const { data, error } = await db.rpc('enviar_mensaje_chat', {
+        p_destinatario: destinatarioId,
+        p_contenido: contenido,
+        p_tipo: tipo,
+        p_imagen_url: imagenUrl,
+        p_nombre_archivo: nombreArchivo
+    });
+    if (error) {
+        const msg = error.message || '';
+        if (msg.indexOf('contenido_no_permitido') !== -1) throw error;
+        const m = msg.match(/envio_no_permitido:(\w+)/);
+        if (m) {
+            const e = new Error(MENSAJES_ENVIO[m[1]] || 'No puedes enviar este mensaje.');
+            e.codigoEnvio = m[1];
+            throw e;
+        }
+        throw error;
+    }
+    return data || {};
+}
+
 function limpiarMarkdown(texto) {
     if (typeof texto !== 'string') return '';
     let t = texto;
@@ -966,16 +996,37 @@ async function sendMessage(text) {
         return;
     }
 
-    const r = await db.from('mensajes_chat').insert({ remitente_id: user.id, destinatario_id: current.id, contenido: textoLimpio, tipo: 'texto', leido: false, editado: false, eliminado: false }).select('*').single();
-    if (r.error) {
-        console.error(r.error);
-        if (esErrorContenidoNoPermitido(r.error)) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
-        else toast('❌ Error al enviar mensaje', 'error');
+    let resp;
+    try {
+        resp = await enviarMensajeChat(current.id, textoLimpio, 'texto');
+    } catch (e) {
+        console.error('Error enviando mensaje:', e);
+        if (esErrorContenidoNoPermitido(e)) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
+        else toast('❌ ' + (e.message || 'Error al enviar mensaje'), 'error');
         $('messageInput').value = textoLimpio;
         return;
     }
-    await append(r.data, true);
-    loadConversations();
+
+    if (resp.estado === 'entregado' && resp.mensaje) {
+        await append(resp.mensaje, true);
+        loadConversations();
+        return;
+    }
+    
+    if (resp.estado === 'solicitud') {
+        toast('📥 Tu mensaje se envió como solicitud. Aparecerá cuando la acepte.', 'success');
+        loadConversations();
+        return;
+    }
+    
+    if (resp.estado === 'solicitud_en_espera') {
+        toast('⏳ Ya tienes una solicitud pendiente con esta persona.', 'warning');
+        $('messageInput').value = textoLimpio;
+        return;
+    }
+    
+    toast('⚠️ No se pudo enviar el mensaje.', 'error');
+    $('messageInput').value = textoLimpio;
 }
 
 async function verificarTerminosMarquinhos() {
@@ -1241,15 +1292,21 @@ async function uploadFile(file) {
             storageRef = `bucket://chat-attachments/${d.path}`;
         }
     } catch (e) { console.error('Error subiendo archivo:', e); toast('❌ ' + (e.message || 'No se pudo subir el archivo'), 'error'); return; }
-    const r = await db.from('mensajes_chat').insert({ remitente_id: user.id, destinatario_id: current.id, contenido: file.name, nombre_archivo: file.name, imagen_url: storageRef, tipo: type, leido: false, editado: false, eliminado: false }).select('*').single();
-    if (r.error) {
-        console.error(r.error);
-        if (esErrorContenidoNoPermitido(r.error)) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
-        else toast('❌ No se pudo guardar el archivo', 'error');
+    
+    let resp;
+    try {
+        resp = await enviarMensajeChat(current.id, file.name, type, storageRef, file.name);
+    } catch (e) {
+        console.error('Error enviando archivo:', e);
+        if (esErrorContenidoNoPermitido(e)) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
+        else toast('❌ ' + (e.message || 'No se pudo guardar el archivo'), 'error');
         return;
     }
-    await append(r.data, true);
-    loadConversations();
+    
+    if (resp.estado === 'entregado' && resp.mensaje) {
+        await append(resp.mensaje, true);
+        loadConversations();
+    }
 }
 
 function newConversation() {
