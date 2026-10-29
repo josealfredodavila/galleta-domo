@@ -1,8 +1,11 @@
 /* ============================================================
-   LÓGICA DEL TECLADO DE EMOJIS
+   LÓGICA DEL TECLADO DE EMOJIS · v2 (corregido)
+   Fixes aplicados:
+   1. insertarEmoji ahora sí encuentra #messageInput
+   2. Sin doble binding del botón (bandera dataset.emojiBound)
+   3. Sin onclick inline (delegación con addEventListener)
    ============================================================ */
 
-// Estructura de los emojis según la imagen
 const TECLADO_DATA = {
     generales: [
         { id: 'like', img: '/features/img/emojis/like.png', fallback: '👍' },
@@ -54,14 +57,14 @@ function inicializarTecladoEmojis(inputId, botonId) {
     if (!overlay) {
         overlay = document.createElement('div');
         overlay.className = 'teclado-emojis-overlay';
-        
+
         // Tabs
         const tabs = document.createElement('div');
         tabs.className = 'teclado-emojis-tabs';
         tabs.innerHTML = `
-            <button class="teclado-emojis-tab active" onclick="cambiarTabTeclado('generales')">Emojis</button>
-            <button class="teclado-emojis-tab" onclick="cambiarTabTeclado('competitivos')">Competitivo</button>
-            <button class="teclado-emojis-tab" onclick="cambiarTabTeclado('gestos')">Gestos</button>
+            <button type="button" class="teclado-emojis-tab active" data-tab="generales">Emojis</button>
+            <button type="button" class="teclado-emojis-tab" data-tab="competitivos">Competitivo</button>
+            <button type="button" class="teclado-emojis-tab" data-tab="gestos">Gestos</button>
         `;
         overlay.appendChild(tabs);
 
@@ -71,13 +74,28 @@ function inicializarTecladoEmojis(inputId, botonId) {
         grid.id = 'tecladoEmojisGrid';
         overlay.appendChild(grid);
 
-        // Insertar antes del input (dentro del composer)
+        // Insertar dentro del composer para que position:absolute funcione
         const composer = input.closest('form') || input.parentElement;
         composer.style.position = 'relative';
         composer.appendChild(overlay);
+
+        // Delegación de clicks en tabs (una sola vez)
+        tabs.addEventListener('click', (e) => {
+            const btn = e.target.closest('.teclado-emojis-tab');
+            if (!btn) return;
+            e.preventDefault();
+            cambiarTabTeclado(btn.dataset.tab);
+        });
     }
 
-    // Evento para mostrar/ocultar
+    // Fix 2: no re-bindear si ya se inicializó
+    if (boton.dataset.emojiBound === '1') {
+        if (overlay.classList.contains('show')) renderizarEmojis(tecladoActual);
+        return;
+    }
+    boton.dataset.emojiBound = '1';
+
+    // Mostrar/ocultar
     boton.addEventListener('click', (e) => {
         e.preventDefault();
         overlay.classList.toggle('show');
@@ -96,8 +114,9 @@ function inicializarTecladoEmojis(inputId, botonId) {
 
 function cambiarTabTeclado(tab) {
     tecladoActual = tab;
-    document.querySelectorAll('.teclado-emojis-tab').forEach(t => t.classList.remove('active'));
-    document.querySelector(`.teclado-emojis-tab[onclick*="${tab}"]`).classList.add('active');
+    document.querySelectorAll('.teclado-emojis-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.tab === tab);
+    });
     renderizarEmojis(tab);
 }
 
@@ -106,25 +125,60 @@ function renderizarEmojis(tab) {
     if (!grid) return;
 
     const emojis = TECLADO_DATA[tab] || [];
-    
+    if (!emojis.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8aa8b8;font-size:.75rem;padding:12px;">Sin emojis en esta categoría</div>';
+        return;
+    }
+
+    // Fix 3: sin onclick inline, solo data-attributes
     grid.innerHTML = emojis.map(e => `
-        <div class="emoji-item" onclick="insertarEmoji('${e.fallback}', '${e.img}')" title="${e.id}">
-            <img src="${e.img}" alt="${e.id}" onerror="this.style.display='none'; this.parentElement.innerText='${e.fallback}';">
+        <div class="emoji-item" data-emoji="${e.fallback}" title="${e.id}">
+            <img src="${e.img}" alt="${e.id}" loading="lazy">
         </div>
     `).join('');
+
+    // Fallback si la imagen no carga (delegado, sin inline)
+    grid.querySelectorAll('.emoji-item img').forEach(img => {
+        img.addEventListener('error', () => {
+            const item = img.closest('.emoji-item');
+            if (!item) return;
+            img.remove();
+            item.textContent = item.dataset.emoji || '?';
+        }, { once: true });
+    });
+
+    // Delegación de clicks en emojis (una sola vez por render)
+    grid.querySelectorAll('.emoji-item').forEach(item => {
+        item.addEventListener('click', () => {
+            insertarEmoji(item.dataset.emoji || '');
+        });
+    });
 }
 
-function insertarEmoji(texto, imgPath) {
-    // Buscar el input activo (el que abrió el teclado)
-    const input = document.querySelector('input[type="text"], textarea');
+function insertarEmoji(texto) {
+    if (!texto) return;
+
+    // Fix 1: buscar primero el input real del chat
+    const input = document.getElementById('messageInput')
+               || document.querySelector('textarea')
+               || document.querySelector('input[type="text"]');
     if (!input) return;
 
-    // Insertar el texto en la posición del cursor
-    const start = input.selectionStart || 0;
-    const end = input.selectionEnd || 0;
+    const start = input.selectionStart ?? input.value.length;
+    const end   = input.selectionEnd   ?? input.value.length;
     const value = input.value;
-    
+
     input.value = value.substring(0, start) + texto + value.substring(end);
-    input.selectionStart = input.selectionEnd = start + texto.length;
+    const nuevaPos = start + texto.length;
+    input.setSelectionRange(nuevaPos, nuevaPos);
     input.focus();
+
+    // Avisa a otros listeners (autocompletado, contadores, etc.)
+    input.dispatchEvent(new Event('input', { bubbles: true }));
 }
+
+// Exponer globalmente por compatibilidad
+window.cambiarTabTeclado = cambiarTabTeclado;
+window.renderizarEmojis = renderizarEmojis;
+window.insertarEmoji = insertarEmoji;
+window.inicializarTecladoEmojis = inicializarTecladoEmojis;
