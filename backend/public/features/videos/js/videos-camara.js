@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.7
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.8
    ================================================================
    - MediaPipe Face Mesh se carga dinámicamente desde este archivo
      (no hace falta ningún <script> de MediaPipe en videos.html).
@@ -10,8 +10,9 @@
    - Cerrar la cámara durante una grabación descarta el video.
    - Marquinhos se oculta al abrir la cámara y se restaura al cerrar.
    - v4.7: cada filtro puede tener varias partes con su propia ancla
-     (payaso = peluca + nariz; perro = orejas + hocico). Thug Life
-     corregido: las gafas quedan sobre los ojos, no sobre la frente.
+     (payaso = peluca + nariz; perro = orejas + hocico).
+   - v4.8: rutas de PNG ajustadas a los nombres reales de backend/assets
+     (orejas-gato-3, orejas-burro-2, gafas-2, bigote-2, corona-2).
    ================================================================ */
 
 (function () {
@@ -44,17 +45,17 @@
     const ASSETS = {
         gato: {
             partes: [
-                { src: `${ASSETS_BASE}/orejas-gato-1.png`, scale: 1.0, offsetY: -0.4, ancla: 'frente' }
+                { src: `${ASSETS_BASE}/orejas-gato-3.png`, scale: 1.0, offsetY: -0.4, ancla: 'frente' }
             ]
         },
         burro: {
             partes: [
-                { src: `${ASSETS_BASE}/orejas-burro-1.png`, scale: 1.0, offsetY: -0.4, ancla: 'frente' }
+                { src: `${ASSETS_BASE}/orejas-burro-2.png`, scale: 1.0, offsetY: -0.4, ancla: 'frente' }
             ]
         },
         gafas: {
             partes: [
-                { src: `${ASSETS_BASE}/gafas-1.png`, scale: 1.0, offsetY: 0, ancla: 'ojos' }
+                { src: `${ASSETS_BASE}/gafas-2.png`, scale: 1.0, offsetY: 0, ancla: 'ojos' }
             ]
         },
         // Thug Life: el lente está en la parte superior de la imagen.
@@ -71,12 +72,12 @@
         },
         bigote: {
             partes: [
-                { src: `${ASSETS_BASE}/bigote-1.png`, scale: 0.45, offsetY: 0.5, ancla: 'nariz' }
+                { src: `${ASSETS_BASE}/bigote-2.png`, scale: 0.45, offsetY: 0.5, ancla: 'nariz' }
             ]
         },
         corona: {
             partes: [
-                { src: `${ASSETS_BASE}/corona-1.png`, scale: 0.9, offsetY: -0.5, ancla: 'frente' }
+                { src: `${ASSETS_BASE}/corona-2.png`, scale: 0.9, offsetY: -0.5, ancla: 'frente' }
             ]
         },
         diamante: {
