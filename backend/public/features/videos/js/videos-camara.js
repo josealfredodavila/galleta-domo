@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.2
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.3
    ================================================================
    - MediaPipe Face Mesh se carga dinámicamente desde este archivo
      (no hace falta ningún <script> de MediaPipe en videos.html).
@@ -11,6 +11,7 @@
    - Marquinhos se oculta al abrir la cámara y se restaura al cerrar.
    - v4.1: los filtros se leen desde backend/assets con sufijo -1.
    - v4.2: bigote ajustado (tamaño y posición bajo la nariz).
+   - v4.3: bigote anclado por la parte superior en la base de la nariz.
    ================================================================ */
 
 (function () {
@@ -36,11 +37,12 @@
 
     // scale   = ancho del filtro como múltiplo del ancho de la cara
     // offsetY = desplazamiento vertical como fracción de la altura del filtro
+    //           (0.5 = la parte superior del filtro queda en el punto de anclaje)
     const ASSETS = {
         gato:   { src: `${ASSETS_BASE}/orejas-gato-1.png`,  scale: 1.0,  offsetY: -0.4 },
         burro:  { src: `${ASSETS_BASE}/orejas-burro-1.png`, scale: 1.0,  offsetY: -0.4 },
         gafas:  { src: `${ASSETS_BASE}/gafas-1.png`,        scale: 1.0,  offsetY: 0 },
-        bigote: { src: `${ASSETS_BASE}/bigote-1.png`,       scale: 0.45, offsetY: -0.25 },
+        bigote: { src: `${ASSETS_BASE}/bigote-1.png`,       scale: 0.45, offsetY: 0.5 },
         corona: { src: `${ASSETS_BASE}/corona-1.png`,       scale: 0.9,  offsetY: -0.5 }
     };
 
@@ -450,7 +452,7 @@
         if (state.filtroActual === 'gato' || state.filtroActual === 'burro' || state.filtroActual === 'corona') {
             ay = pt(10).y; // frente
         } else if (state.filtroActual === 'bigote') {
-            ay = pt(2).y; // base de la nariz, más abajo que la punta
+            ay = pt(2).y; // base de la nariz
         }
         ay += alto * cfg.offsetY;
 
