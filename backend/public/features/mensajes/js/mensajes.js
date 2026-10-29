@@ -1,11 +1,14 @@
 // ================================================================
-// MENSAJES · JS v5.5 · WEB3 NEON UI
-// Cambios v5.5:
-// - subscribeMessages con filtro de servidor por remitente_id y destinatario_id
-//   (2 suscripciones en el mismo canal) y sin chequeo de cliente redundante
-// - editarMensaje: eliminada la rama muerta de headerBot (solo edita mensajes
-//   enviados por el usuario); se conserva el header de bot solo en recibidos
-// - Resto de v5.4 sin cambios
+// MENSAJES · JS v5.6 · WEB3 NEON UI
+// Cambios v5.6:
+// - loadConversations usa RPC listar_conversaciones (bandeja server-side)
+// - recargarBandeja = debounce(loadConversations, 300) en eventos; directo
+//   solo en arranque y cambio de sesión
+// - markRead en lote: máximo 1 update por conversación cada 2 s
+// - cargarEstados carga perfiles de autores en una sola consulta
+// - perfilCache limitado a 500 entradas (LRU-ish)
+// - removeChannel con console.warn y msgChannel = null en fallo
+// - Resto de v5.5 sin cambios
 // ================================================================
 
 'use strict';
@@ -14,6 +17,7 @@ const BOT_ID = 'bot-marquinhos';
 const BOT_UUID = '0a000000-0000-4000-8000-000000000001';
 const ESTADOS_BUCKET = 'sariels-estados';
 const BOT_MAX_HISTORY = 6;
+const PERFIL_CACHE_LIMITE = 500;
 
 let db = null;
 let user = null;
@@ -57,9 +61,21 @@ const TTL_PERFIL_MS = 5 * 60 * 1000;
 const signedCache = new Map();
 const TTL_SIGNED_MS = 50 * 60 * 1000;
 
+// Control de markRead en lote (1 vez cada 2s por conversación)
+const markReadTimestamps = new Map();
+const MARK_READ_DEBOUNCE_MS = 2000;
+
 window.__livekitReady = !!window.LivekitClient;
 
 const $ = id => document.getElementById(id);
+
+function debounce(fn, ms) {
+    let timer = null;
+    return function (...args) {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn.apply(this, args), ms);
+    };
+}
 
 function toast(text, type = '') {
     const el = $('toast');
@@ -260,6 +276,10 @@ async function profile(id) {
     if (enCache && Date.now() - enCache.ts < TTL_PERFIL_MS) return enCache.data;
     const r = await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id', id).maybeSingle();
     const data = r.data || { id, nombre: 'Usuario', avatar_url: null, online: false };
+    if (perfilCache.size >= PERFIL_CACHE_LIMITE) {
+        const primera = perfilCache.keys().next().value;
+        if (primera !== undefined) perfilCache.delete(primera);
+    }
     perfilCache.set(id, { ts: Date.now(), data });
     return data;
 }
@@ -384,6 +404,10 @@ function haceTiempo(fecha) {
     if (diffMin < 1440) return `hace ${Math.floor(diffMin / 60)} h`;
     return `hace ${Math.floor(diffMin / 1440)} d`;
 }
+
+/* ============================================================
+   cargarEstados (v5.6): perfiles de autores en una sola consulta
+   ============================================================ */
 async function cargarEstados() {
     const scroll = $('estadosScroll');
     scroll.innerHTML = '';
@@ -399,8 +423,27 @@ async function cargarEstados() {
             scroll.innerHTML = '<div style="color:var(--muted);font-size:.7rem;padding:8px 4px;text-align:center;width:100%;">Sin estados</div>';
             return;
         }
+
         const porUsuario = {};
         estadosCache.forEach(e => { if (!porUsuario[e.usuario_id]) porUsuario[e.usuario_id] = []; porUsuario[e.usuario_id].push(e); });
+
+        // Cargar perfiles en lote de todos los autores (excluyendo al usuario actual)
+        const idsUnicos = Object.keys(porUsuario).filter(uid => uid !== user.id);
+        if (idsUnicos.length > 0) {
+            try {
+                const { data: perfilesEst } = await db.from('perfiles_publicos')
+                    .select('id,nombre,handle,avatar_url')
+                    .in('id', idsUnicos);
+                (perfilesEst || []).forEach(p => {
+                    if (perfilCache.size >= PERFIL_CACHE_LIMITE) {
+                        const primera = perfilCache.keys().next().value;
+                        if (primera !== undefined) perfilCache.delete(primera);
+                    }
+                    perfilCache.set(p.id, { ts: Date.now(), data: p });
+                });
+            } catch (e) { console.warn('Error cargando perfiles de estados en lote:', e); }
+        }
+
         const miEstado = porUsuario[user.id];
         if (miEstado && miEstado.length > 0) {
             const tieneNuevos = miEstado.some(e => estadoEsNuevo(e));
@@ -420,7 +463,8 @@ async function cargarEstados() {
         }
         for (const uid of Object.keys(porUsuario)) {
             if (uid === user.id) continue;
-            const p = await profile(uid);
+            const entrada = perfilCache.get(uid);
+            const p = (entrada && Date.now() - entrada.ts < TTL_PERFIL_MS && entrada.data) || { id: uid, nombre: 'Usuario', handle: 'usuario', avatar_url: null };
             const estadosUsuario = porUsuario[uid];
             const tieneNuevos = estadosUsuario.some(e => estadoEsNuevo(e));
             const html = `
@@ -696,9 +740,18 @@ async function getSignedUrlForMessage(m) {
 
 let conversationFilter = '';
 
+/* ============================================================
+   loadConversations (v5.6): RPC listar_conversaciones
+   Devuelve filas con:
+   otro_id, nombre, handle, avatar_url, online,
+   ultimo_contenido, ultimo_tipo, ultimo_at, no_leidos
+   ============================================================ */
 async function loadConversations() {
     const list = $('conversationList');
+    if (!list) return;
     list.innerHTML = '';
+
+    // Fila fija de Marquinhos
     const botEl = document.createElement('div');
     botEl.className = 'conv conv-bot' + (current?.id === BOT_ID ? ' active' : '');
     botEl.dataset.id = BOT_ID;
@@ -715,6 +768,7 @@ async function loadConversations() {
 
     if (!await auth()) return;
 
+    // Preview y badge de Marquinhos
     try {
         const { data: lastBot } = await db.from('mensajes_chat').select('contenido,tipo,created_at').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`).order('created_at', { ascending: false }).limit(1).maybeSingle();
         if (lastBot) {
@@ -728,56 +782,47 @@ async function loadConversations() {
         }
     } catch (e) { console.warn('Error cargando badge bot:', e); }
 
+    // Bandeja vía RPC
     try {
-        const { data: mensajes, error } = await db.from('mensajes_chat').select('id, remitente_id, destinatario_id, contenido, tipo, leido, created_at').eq('eliminado', false).neq('remitente_id', BOT_UUID).neq('destinatario_id', BOT_UUID).or(`remitente_id.eq.${user.id},destinatario_id.eq.${user.id}`).order('created_at', { ascending: false }).limit(100);
-        if (error) { console.error('Error cargando mensajes:', error); return; }
-        const conversacionesMap = new Map();
-        (mensajes || []).forEach(m => {
-            const otherUserId = (m.remitente_id === user.id) ? m.destinatario_id : m.remitente_id;
-            if (!otherUserId || otherUserId === user.id) return;
-            if (otherUserId === BOT_UUID) return;
-            if (!conversacionesMap.has(otherUserId)) conversacionesMap.set(otherUserId, { otherUserId, lastMsg: m, unread: 0 });
-            if (m.remitente_id === otherUserId && m.destinatario_id === user.id && m.leido === false) conversacionesMap.get(otherUserId).unread++;
-        });
-        try {
-            const { data: contactos } = await db.from('contactos').select('contacto_id').eq('usuario_id', user.id).eq('estado', 'activo');
-            (contactos || []).forEach(c => {
-                if (!c.contacto_id) return;
-                if (c.contacto_id === user.id) return;
-                if (c.contacto_id === BOT_UUID) return;
-                if (!conversacionesMap.has(c.contacto_id)) conversacionesMap.set(c.contacto_id, { otherUserId: c.contacto_id, lastMsg: null, unread: 0 });
-            });
-        } catch (e) { console.warn('No se pudieron cargar contactos extra:', e); }
-
-        const conversaciones = Array.from(conversacionesMap.values());
+        const { data: filas, error } = await db.rpc('listar_conversaciones', { p_limite: 50 });
+        if (error) { console.error('Error listar_conversaciones:', error); return; }
+        const conversaciones = Array.isArray(filas) ? filas : [];
         if (!conversaciones.length) { aplicarFiltroConversaciones(); return; }
-        const otherIds = conversaciones.map(c => c.otherUserId);
-        const { data: perfiles } = await db.from('perfiles_publicos').select('id, nombre, handle, avatar_url, online').in('id', otherIds);
-        const perfilMap = {};
-        (perfiles || []).forEach(p => { perfilMap[p.id] = p; });
-        conversaciones.sort((a, b) => {
-            const aDate = a.lastMsg?.created_at ? new Date(a.lastMsg.created_at).getTime() : 0;
-            const bDate = b.lastMsg?.created_at ? new Date(b.lastMsg.created_at).getTime() : 0;
-            return bDate - aDate;
-        });
+
         conversaciones.forEach(conv => {
-            const otherId = conv.otherUserId;
-            const p = perfilMap[otherId] || { id: otherId, nombre: 'Usuario', handle: 'usuario', avatar_url: null, online: false };
-            const last = conv.lastMsg;
-            const preview = last ? (last.tipo === 'texto' ? (last.contenido || '').slice(0, 60) : ('📎 ' + (last.contenido || last.tipo))) : 'Sin mensajes';
-            const hora = last?.created_at ? new Date(last.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const otherId = conv.otro_id;
+            if (!otherId) return;
+
+            const nombre = conv.nombre || 'Usuario';
+            const handle = conv.handle || 'usuario';
+            const avatarUrl = conv.avatar_url || null;
+            const ultimoTipo = conv.ultimo_tipo;
+            const ultimoContenido = conv.ultimo_contenido;
+            const noLeidos = Number(conv.no_leidos) || 0;
+
+            let preview;
+            if (!ultimoTipo) {
+                preview = 'Sin mensajes';
+            } else if (ultimoTipo === 'texto') {
+                preview = (ultimoContenido || '').slice(0, 60) || 'Sin mensajes';
+            } else {
+                preview = '📎 ' + (ultimoContenido || ultimoTipo);
+            }
+
+            const hora = conv.ultimo_at ? new Date(conv.ultimo_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
             const el = document.createElement('div');
             el.className = 'conv' + (current?.id === otherId ? ' active' : '');
             el.dataset.id = otherId;
-            el.dataset.name = ((p.nombre || '').toLowerCase() + ' ' + (p.handle || '').toLowerCase()).trim();
-            el.innerHTML = avatar(p.nombre, p.avatar_url) + `
+            el.dataset.name = ((nombre || '').toLowerCase() + ' ' + (handle || '').toLowerCase()).trim();
+            el.innerHTML = avatar(nombre, avatarUrl) + `
                 <div class="convinfo">
-                    <div class="convname">${esc(p.nombre || 'Usuario')}</div>
+                    <div class="convname">${esc(nombre)}</div>
                     <div class="convmsg">${esc(preview)}</div>
                 </div>
                 <div class="convtime">
                     ${hora}
-                    ${conv.unread > 0 ? `<span style="display:inline-block;margin-left:6px;background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:99px;min-width:18px;text-align:center;">${conv.unread > 9 ? '9+' : conv.unread}</span>` : ''}
+                    ${noLeidos > 0 ? `<span style="display:inline-block;margin-left:6px;background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:99px;min-width:18px;text-align:center;">${noLeidos > 9 ? '9+' : noLeidos}</span>` : ''}
                 </div>`;
             el.onclick = () => openConversation(otherId);
             list.appendChild(el);
@@ -785,6 +830,9 @@ async function loadConversations() {
         aplicarFiltroConversaciones();
     } catch (e) { console.error('Error en loadConversations:', e); }
 }
+
+// Debounce global para no saturar la bandeja durante ráfagas de eventos
+const recargarBandeja = debounce(loadConversations, 300);
 
 function aplicarFiltroConversaciones() {
     const q = conversationFilter.trim().toLowerCase();
@@ -863,7 +911,11 @@ async function cerrarConversacion() {
     const box = $('messages');
     box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
     document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
-    if (msgChannel) { try { db.removeChannel(msgChannel); } catch (e) {} msgChannel = null; }
+    if (msgChannel) {
+        try { db.removeChannel(msgChannel); }
+        catch (e) { console.warn('[Mensajes] removeChannel msgChannel:', e && e.message ? e.message : e); }
+        msgChannel = null;
+    }
 }
 
 async function abrirConversacionBot() {
@@ -990,7 +1042,7 @@ async function sendMessage(text) {
                 if (!insBot.error) botMsg = { ...insBot.data, es_bot: true };
             } catch (e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
             append(botMsg, false);
-            loadConversations();
+            recargarBandeja();
         } catch (e) {
             quitarTypingBot();
             console.error('Error Marquinhos:', e);
@@ -1012,13 +1064,13 @@ async function sendMessage(text) {
 
     if (resp.estado === 'entregado' && resp.mensaje) {
         await append(resp.mensaje, true);
-        loadConversations();
+        recargarBandeja();
         return;
     }
     
     if (resp.estado === 'solicitud') {
         toast('📥 Tu mensaje se envió como solicitud. Aparecerá cuando la acepte.', 'success');
-        loadConversations();
+        recargarBandeja();
         return;
     }
     
@@ -1144,8 +1196,15 @@ async function append(m, sent) {
     scrollToBottom(true);
 }
 
+/* ============================================================
+   markRead con control de frecuencia (máx. 1 cada 2s por id)
+   ============================================================ */
 async function markRead(id) {
     if (!user || id === BOT_ID) return;
+    const ahora = Date.now();
+    const ultimo = markReadTimestamps.get(id) || 0;
+    if (ahora - ultimo < MARK_READ_DEBOUNCE_MS) return;
+    markReadTimestamps.set(id, ahora);
     await db.from('mensajes_chat').update({ leido: true }).eq('remitente_id', id).eq('destinatario_id', user.id).eq('leido', false).eq('eliminado', false);
 }
 
@@ -1166,31 +1225,30 @@ async function deleteConversation() {
         if (anchor) anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>');
         unreadCount = 0;
         actualizarFlecha();
-        await loadConversations();
+        recargarBandeja();
     } catch (e) { console.error('Error eliminando conversación:', e); toast('❌ No se pudo eliminar la conversación', 'error'); }
 }
 
 /* ============================================================
-   SUSCRIPCIÓN A MENSAJES (v5.5: filtros de servidor)
-   Dos suscripciones en el mismo canal:
-   - UPDATE con filter remitente_id = user.id (mis mensajes editados/eliminados)
-   - UPDATE con filter destinatario_id = user.id (recibidos editados/eliminados)
-   - INSERT con filter remitente_id = id (mensajes nuevos del otro)
-   Sin chequeos de cliente redundantes.
+   Suscripción a mensajes
    ============================================================ */
 function subscribeMessages(id) {
     if (id === BOT_ID) return;
-    if (msgChannel) { try { db.removeChannel(msgChannel); } catch (e) {} msgChannel = null; }
+    if (msgChannel) {
+        try { db.removeChannel(msgChannel); }
+        catch (e) { console.warn('[Mensajes] removeChannel msgChannel (pre-subscribe):', e && e.message ? e.message : e); }
+        msgChannel = null;
+    }
     if (!user || !user.id) return;
 
     const manejarUpdate = (m) => {
         if (!current || !user) return;
         const el = document.querySelector(`.bubblewrap[data-mensaje-id="${m.id}"]`);
-        if (!el) { loadConversations(); return; }
+        if (!el) { recargarBandeja(); return; }
 
         if (m.eliminado === true) {
             el.remove();
-            loadConversations();
+            recargarBandeja();
             return;
         }
 
@@ -1215,7 +1273,7 @@ function subscribeMessages(id) {
             metaEl.textContent = hora + editado + leido;
         }
 
-        loadConversations();
+        recargarBandeja();
     };
 
     msgChannel = db.channel('chat-' + id)
@@ -1316,7 +1374,7 @@ async function enviarVozAlBot(file) {
         observarCargaMultimedia(box);
         scrollToBottom(true);
         if (data.audio_url) { const audio = document.querySelector(`#${botId} audio`); if (audio) audio.play().catch(() => {}); }
-        loadConversations();
+        recargarBandeja();
     } catch (e) {
         console.error('Error voz bot:', e);
         if (e.message.includes('429') || e.message.includes('Too Many Requests') || e.message.includes('saturado')) toast('⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.', 'warning');
@@ -1361,7 +1419,7 @@ async function uploadFile(file) {
     
     if (resp.estado === 'entregado' && resp.mensaje) {
         await append(resp.mensaje, true);
-        loadConversations();
+        recargarBandeja();
     }
 }
 
@@ -1972,7 +2030,7 @@ async function bloquearUsuarioActual() {
         await db.rpc('bloquear_contacto', { p_contacto_id: current.id });
         toast('⛔ Usuario bloqueado', 'success');
         await cerrarConversacion();
-        await loadConversations();
+        recargarBandeja();
     } catch (e) {
         console.error('Error bloqueando:', e);
         toast('❌ No se pudo bloquear al usuario', 'error');
@@ -2078,11 +2136,6 @@ async function mostrarMenuMensaje(bubblewrap, msgId) {
     }, 10);
 }
 
-/* ============================================================
-   editarMensaje (v5.5: sin rama muerta del headerBot)
-   Solo se editan mensajes enviados por el usuario, por lo que
-   el header de bot nunca aplica aquí.
-   ============================================================ */
 async function editarMensaje(msgId, bubblewrap) {
     if (!await auth()) return;
     const bubble = bubblewrap.querySelector('.bubble');
@@ -2133,7 +2186,7 @@ async function editarMensaje(msgId, bubblewrap) {
         }
 
         toast('✎ Mensaje editado', 'success');
-        loadConversations();
+        recargarBandeja();
     } catch (e) {
         console.error('Error editando mensaje:', e);
         toast('❌ No se pudo editar el mensaje', 'error');
@@ -2155,7 +2208,7 @@ async function eliminarMensajeParaMi(msgId, bubblewrap) {
         if (error) throw error;
         bubblewrap.remove();
         toast('✅ Mensaje eliminado para ti', 'success');
-        loadConversations();
+        recargarBandeja();
     } catch (e) {
         console.error('Error eliminando para mí:', e);
         toast('❌ No se pudo eliminar', 'error');
@@ -2177,7 +2230,7 @@ async function eliminarMensajeParaTodos(msgId, bubblewrap) {
         if (error) throw error;
         bubblewrap.remove();
         toast('✅ Mensaje eliminado para todos', 'success');
-        loadConversations();
+        recargarBandeja();
     } catch (e) {
         console.error('Error eliminando para todos:', e);
         toast('❌ No se pudo eliminar', 'error');
@@ -2610,7 +2663,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '5.5.0',
+    version: '5.6.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
