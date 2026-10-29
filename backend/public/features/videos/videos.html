@@ -1804,7 +1804,7 @@
     }
 
     // ================================================================
-    // SUBIR VIDEO
+    // SUBIR VIDEO (CON SONIDO + UBICACIÓN + AUDIOURL)
     // ================================================================
     var subiendoVideo = false;
 
@@ -1840,6 +1840,11 @@
             var session = await getSession();
             if (!session) throw new Error('Inicia sesión');
 
+            // ✅ NUEVO: Leer el estado de VideosPublicar (sonido + ubicación)
+            var pub = (window.VideosPublicar && window.VideosPublicar.getState) ? window.VideosPublicar.getState() : {};
+            var sonido = pub.sonido || null;
+            var ubicacion = pub.ubicacion || null;
+
             if (btn) btn.textContent = 'Subiendo...';
             if (progressEl) progressEl.style.display = 'block';
             if (progressFill) progressFill.style.width = '20%';
@@ -1859,14 +1864,36 @@
             if (progressFill) progressFill.style.width = '60%';
             if (progressText) progressText.textContent = 'Creando registro...';
 
+            // ✅ NUEVO: Incluir sonido y ubicación en el insert
             var ins = await sbVideos.from('videos').insert({
-                usuario_id: session.user.id, titulo: titulo, descripcion: descripcion || null, url_video: videoUrl, estado: 'procesando', duracion: 0, es_borrador: false
+                usuario_id: session.user.id,
+                titulo: titulo,
+                descripcion: descripcion || null,
+                url_video: videoUrl,
+                estado: 'procesando',
+                duracion: 0,
+                es_borrador: false,
+                sonido_id: sonido ? sonido.id : null,
+                sonido_nombre: sonido ? sonido.nombre : null,
+                sonido_url: sonido ? sonido.url : null,
+                ubicacion_nombre: ubicacion ? (ubicacion.nombre + ', ' + ubicacion.pais) : null
             }).select().single();
             if (ins.error) throw ins.error;
             videoId = ins.data.id;
 
             if (progressFill) progressFill.style.width = '85%';
-            var queueResponse = await fetch('/api/video/queue', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token }, body: JSON.stringify({ videoId: videoId, videoUrl: videoUrl, bucket: 'videos', filePath: filePath }) });
+            // ✅ NUEVO: Enviar audioUrl al backend
+            var queueResponse = await fetch('/api/video/queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                body: JSON.stringify({
+                    videoId: videoId,
+                    videoUrl: videoUrl,
+                    bucket: 'videos',
+                    filePath: filePath,
+                    audioUrl: sonido ? sonido.url : null
+                })
+            });
             var queueData = await queueResponse.json();
             if (!queueData.success) throw new Error(queueData.error || 'Error procesando');
             encolado = true;
@@ -1963,7 +1990,6 @@
     window.togglePlayCard = togglePlayCard;
     window.eliminarMiVideo = eliminarMiVideo;
     window.verTokens = verTokens;
-    window.toggleFullscreen = toggleFullscreen;
     window.showToast = showToast;
     window.activarAudioGlobal = activarAudioGlobal;
     </script>
