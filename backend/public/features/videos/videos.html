@@ -879,7 +879,6 @@
                 <div class="form-group">
                     <label data-clave="videos_seleccionar_archivo">Selecciona el archivo de video o grábalo</label>
                     
-                    <!-- ✅ NUEVO BOTÓN DE CÁMARA -->
                     <button type="button" class="btn-camara" id="btnAbrirCamara">
                         🎥 Grabar video con cámara
                     </button>
@@ -931,7 +930,6 @@
             </div>
         </div>
 
-        <!-- ===== FOOTER ACTUALIZADO Y LIMPIO ===== -->
         <footer class="footer">
             <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
             <span class="network-tag">⚡ Polygon</span>
@@ -973,20 +971,17 @@
         <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;" data-clave="error_cerrar">Cerrar</button>
     </div>
 
-    <!-- ✅ NUEVO: MediaPipe Face Mesh + videos-camara.js -->
-    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+    <!-- ✅ IMPORTANTE: MediaPipe ahora se carga DENTRO de videos-camara.js
+         para evitar conflicto de versiones. -->
     <script src="/features/videos/js/videos-camara.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js?v=6"></script>
     <script src="/features/videos/js/videos-publicar.js" defer></script>
     <script>
     // ================================================================
-    // VIDEOS · v15.8 — Fullscreen Pro + Doble Tap + Cámara
+    // VIDEOS · v15.9 — Fullscreen Pro + Doble Tap + Cámara
     // ================================================================
     
-    // ================================================================
-    // CLIENTE SUPABASE PROPIO
-    // ================================================================
     var sbVideos = null;
     (function crearClienteVideos() {
         try {
@@ -1005,45 +1000,25 @@
         }
     })();
 
-    // ================================================================
-    // CONSTANTES
-    // ================================================================
     var REACCIONES = ['❤️', '🔥', '🚀', '😂', '👍'];
     var REACCION_DEFAULT = '❤️';
-    var VISTAS_KEY = 'videos_vistas_sesion';
 
-    // ================================================================
-    // ESTADO GLOBAL
-    // ================================================================
     var sessionUser = null;
     var videoActual = null;
-
     var videosPublicados = [];
     var likeCache = new Map();
     var reaccionesCache = new Map();
-
-    var anuncioActualVideo = null;
-    var adVistaTimerVideo = null;
-    var adSessionIdVideo = null;
     var adCerradoVideo = false;
-
     var observerVideos = null;
     var observerCarga = null;
     var videoPausadoManualmente = null;
-
     var pollingVideoInterval = null;
     var videoEnProcesamiento = null;
-
     var videoIdComentariosActual = null;
     var longPressTimers = {};
-
     var vistasContadas = {};
-
     var audioGlobalActivado = false;
 
-    // ================================================================
-    // HELPERS
-    // ================================================================
     function tr(clave, fallback) {
         if (typeof window.tConFallback === 'function') return window.tConFallback(clave, fallback);
         return fallback !== undefined ? fallback : clave;
@@ -1056,11 +1031,6 @@
         return String(texto)
             .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
             .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-    function esURLValida(url) {
-        if (!url || typeof url !== 'string') return false;
-        try { var u = new URL(url); return u.protocol === 'http:' || u.protocol === 'https:'; }
-        catch (e) { return false; }
     }
     function safeAttr(url) {
         if (!url || typeof url !== 'string') return '#';
@@ -1103,9 +1073,6 @@
         } catch (e) { return null; }
     }
 
-    // ================================================================
-    // ICONOS SVG
-    // ================================================================
     function iconoBasuraSVG() {
         return '<svg viewBox="0 0 24 24" class="ico-premium"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
     }
@@ -1150,9 +1117,6 @@
         return '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
     }
 
-    // ================================================================
-    // AUDIO GLOBAL
-    // ================================================================
     (function detectarPrimerGesto() {
         var eventos = ['click', 'touchstart', 'keydown', 'scroll'];
         var disparado = false;
@@ -1229,9 +1193,6 @@
         }
     }
 
-    // ================================================================
-    // INCREMENTAR VISTA
-    // ================================================================
     async function incrementarVista(videoId) {
         if (!videoId) return;
         var id = String(videoId);
@@ -1249,9 +1210,6 @@
         } catch (e) {}
     }
 
-    // ================================================================
-    // USUARIO ACTUAL
-    // ================================================================
     async function cargarUsuarioActual() {
         try {
             var session = await getSession();
@@ -1268,9 +1226,6 @@
         } catch (e) { return null; }
     }
 
-    // ================================================================
-    // CARGAR VIDEOS
-    // ================================================================
     async function cargarVideos() {
         var container = document.getElementById('videosContainer');
         try {
@@ -1329,9 +1284,6 @@
         } catch (e) {}
     }
 
-    // ================================================================
-    // CREAR CARD DE VIDEO
-    // ================================================================
     function crearVideoCard(v) {
         var autor = v.usuarios || {};
         var vistas = v.reproducciones || 0;
@@ -1451,9 +1403,6 @@
         return card;
     }
 
-    // ================================================================
-    // DOBLE TAP FULLSCREEN
-    // ================================================================
     function configurarDobleTap(card, videoId) {
         var ultimoTap = 0;
         var DOBLE_TAP_MS = 320;
@@ -1487,9 +1436,6 @@
         card.addEventListener('click', manejarTap);
     }
 
-    // ================================================================
-    // LONG PRESS EN LIKE
-    // ================================================================
     function configurarLongPressLike(card, videoId) {
         var btnLike = card.querySelector('.like-btn');
         if (!btnLike) return;
@@ -1539,9 +1485,6 @@
         picker.classList.add('show');
     }
 
-    // ================================================================
-    // ELEGIR REACCIÓN
-    // ================================================================
     async function elegirReaccion(videoId, tipo) {
         if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
         if (!REACCIONES.includes(tipo)) return;
@@ -1590,9 +1533,6 @@
         countEl.textContent = formatContador(total);
     }
 
-    // ================================================================
-    // TOGGLE LIKE
-    // ================================================================
     async function toggleLikeVideo(videoId) {
         var btnLike = document.querySelector('.like-btn[data-video-id="' + videoId + '"]');
         if (btnLike && btnLike.dataset.longPressActivado === 'true') { delete btnLike.dataset.longPressActivado; return; }
@@ -1605,9 +1545,6 @@
         else await elegirReaccion(videoId, REACCION_DEFAULT);
     }
 
-    // ================================================================
-    // COMPARTIR
-    // ================================================================
     async function compartirVideo(videoId) {
         var url = window.location.origin + '/features/videos/videos.html?v=' + videoId;
         try {
@@ -1616,9 +1553,6 @@
         } catch (e) { if (e.name !== 'AbortError') showToast('No se pudo compartir', 'warning'); }
     }
 
-    // ================================================================
-    // BOTTOM SHEET COMENTARIOS
-    // ================================================================
     function abrirComentarios(videoId) {
         videoIdComentariosActual = videoId;
         var sheet = document.getElementById('bottomSheet');
@@ -1727,9 +1661,6 @@
         } catch (e) { showToast('Error al eliminar', 'error'); }
     }
 
-    // ================================================================
-    // TECLADO MÓVIL
-    // ================================================================
     function configurarTecladoMovil() {
         if (!window.visualViewport) return;
         var sheet = document.getElementById('bottomSheet');
@@ -1744,9 +1675,6 @@
         vv.addEventListener('scroll', ajustar);
     }
 
-    // ================================================================
-    // AUTOPLAY SCROLL
-    // ================================================================
     function activarAutoplayScroll() {
         if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
         if (observerCarga) { observerCarga.disconnect(); observerCarga = null; }
@@ -1777,7 +1705,6 @@
                     if (videoActual !== idVisible) {
                         videoActual = idVisible;
                         adCerradoVideo = false;
-                        if (adVistaTimerVideo) { clearTimeout(adVistaTimerVideo); adVistaTimerVideo = null; }
                     }
                     if (videoPausadoManualmente !== idVisible && !card.classList.contains('pantalla-completa')) {
                         reproducirVideoConSonido(video);
@@ -1797,9 +1724,6 @@
         cards.forEach(function(card) { observerCarga.observe(card); observerVideos.observe(card); });
     }
 
-    // ================================================================
-    // TOGGLE PLAY
-    // ================================================================
     function togglePlayCard(event, videoId) {
         if (event) event.stopPropagation();
         var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
@@ -1819,9 +1743,6 @@
         }
     }
 
-    // ================================================================
-    // ELIMINAR VIDEO
-    // ================================================================
     async function eliminarMiVideo(videoId) {
         if (!videoId || !confirm('¿Eliminar este video?')) return;
         var session = await getSession();
@@ -1833,9 +1754,6 @@
         } catch (e) { showToast('Error al eliminar', 'error'); }
     }
 
-    // ================================================================
-    // SUBIR VIDEO (CON SONIDO + UBICACIÓN + AUDIOURL)
-    // ================================================================
     var subiendoVideo = false;
 
     async function subirVideo() {
@@ -1940,9 +1858,6 @@
         }
     }
 
-    // ================================================================
-    // POLLING PROCESAMIENTO
-    // ================================================================
     function iniciarPollingProcesamiento(jobId, videoId) {
         if (pollingVideoInterval) clearInterval(pollingVideoInterval);
         var progressFill = document.getElementById('processingProgressFill');
@@ -1989,9 +1904,6 @@
 
     function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-    // ================================================================
-    // CÁMARA · INTEGRACIÓN
-    // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
         const btnCamara = document.getElementById('btnAbrirCamara');
         if (btnCamara) {
@@ -2014,9 +1926,7 @@
                 const dt = new DataTransfer();
                 dt.items.add(file);
                 input.files = dt.files;
-                
                 input.dispatchEvent(new Event('change', { bubbles: true }));
-                
                 showToast('✅ Video grabado listo para subir', 'success');
             } catch (e) {
                 console.error('Error asignando archivo grabado:', e);
@@ -2025,9 +1935,6 @@
         };
     });
 
-    // ================================================================
-    // INIT
-    // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
         aplicarI18N();
         configurarTecladoMovil();
@@ -2038,9 +1945,6 @@
         });
     });
 
-    // ================================================================
-    // EXPORTS
-    // ================================================================
     window.subirVideo = subirVideo;
     window.cargarVideos = cargarVideos;
     window.toggleLikeVideo = toggleLikeVideo;
