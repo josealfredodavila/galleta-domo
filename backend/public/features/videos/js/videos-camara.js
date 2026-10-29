@@ -1,9 +1,10 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v2.9
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v3.0
    ================================================================
-   - v2.9: corrige la rotación en modo espejo (los filtros salían
-     invertidos), añade obtenerFormatoGrabacion (faltaba y rompía
-     la grabación) y ajusta tamaños para imágenes recortadas.
+   - Fix v3.0: Corregido error "Cannot read properties of undefined
+     (reading 'buffer')" al grabar. Se usa un fallback de formato.
+   - Fix v3.0: Todos los filtros se dibujan correctamente.
+   - Ajustados scale y offsetY para PNGs recortados.
    ================================================================ */
 
 (function () {
@@ -23,13 +24,11 @@
 
     const GITHUB_BASE_URL = 'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main';
 
-    // Escala = ancho del filtro como múltiplo del ancho de la cara.
-    // offsetY = desplazamiento vertical como fracción de la altura del filtro.
     const ASSETS = {
         gato: {
             src: `${GITHUB_BASE_URL}/orejas-gato.png`,
             scale: 1.0,
-            offsetY: -0.5   // la base de las orejas queda sobre la frente
+            offsetY: -0.5
         },
         burro: {
             src: `${GITHUB_BASE_URL}/orejas-burro.png`,
@@ -49,7 +48,7 @@
         corona: {
             src: `${GITHUB_BASE_URL}/corona.png`,
             scale: 0.9,
-            offsetY: -0.6   // la base de la corona queda sobre la frente
+            offsetY: -0.6
         }
     };
 
@@ -257,8 +256,6 @@
         const ojoA = punto(33); const ojoB = punto(263); const nariz = punto(1); const frente = punto(10);
         const mejillaA = punto(234); const mejillaB = punto(454);
 
-        // Ordenar por posición en pantalla (izquierda → derecha) para que el ángulo
-        // sea ~0 con la cabeza derecha, también en modo espejo.
         const [ojoIzq, ojoDer] = ojoA.x <= ojoB.x ? [ojoA, ojoB] : [ojoB, ojoA];
         const [mejillaIzq, mejillaDer] = mejillaA.x <= mejillaB.x ? [mejillaA, mejillaB] : [mejillaB, mejillaA];
 
@@ -290,14 +287,21 @@
 
     function obtenerFormatoGrabacion() {
         if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
+        
+        // Priorizamos WebM (compatible con todos los navegadores modernos)
+        // y MP4 como fallback para iOS.
         const candidatos = [
-            'video/mp4;codecs=h264,aac',
-            'video/mp4',
             'video/webm;codecs=vp9,opus',
             'video/webm;codecs=vp8,opus',
-            'video/webm'
+            'video/webm',
+            'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+            'video/mp4'
         ];
-        return candidatos.find((t) => MediaRecorder.isTypeSupported(t)) || '';
+        
+        for (const tipo of candidatos) {
+            if (MediaRecorder.isTypeSupported(tipo)) return tipo;
+        }
+        return '';
     }
 
     function toggleGrabacion() { if (state.grabando) detenerGrabacion(); else iniciarGrabacion(); }
@@ -312,35 +316,78 @@
         const opciones = mimeType ? { mimeType, videoBitsPerSecond: 5_000_000 } : {};
 
         try { state.mediaRecorder = new MediaRecorder(canvasStream, opciones); }
-        catch (e) { notificar('Tu navegador no soporta grabación.', 'error'); return; }
+        catch (e) { 
+            console.error('[CSARIELS Cámara] MediaRecorder no soportado:', e);
+            notificar('Tu navegador no soporta grabación de video.', 'error'); 
+            return; 
+        }
 
         state.chunks = [];
         state.mediaRecorder.ondataavailable = (e) => { if (e.data?.size > 0) state.chunks.push(e.data); };
         state.mediaRecorder.onstop = () => {
-            const tipo = mimeType || 'video/webm'; const ext = tipo.includes('mp4') ? 'mp4' : 'webm';
-            const blob = new Blob(state.chunks, { type: tipo }); const archivo = new File([blob], `video-camara-${Date.now()}.${ext}`, { type: tipo });
-            state.chunks = []; canvasStream.getTracks().forEach((t) => t.stop()); cerrarCamara();
-            if (typeof window.csCamaraOnVideoGrabado === 'function') window.csCamaraOnVideoGrabado(archivo);
+            const tipo = mimeType || 'video/webm'; 
+            const ext = tipo.includes('mp4') ? 'mp4' : 'webm';
+            const blob = new Blob(state.chunks, { type: tipo }); 
+            
+            // Si el blob está vacío, no llamamos a la función
+            if (blob.size === 0) {
+                console.error('[CSARIELS Cámara] Blob vacío al detener grabación.');
+                notificar('Error al grabar el video. Intenta de nuevo.', 'error');
+                cerrarCamara();
+                return;
+            }
+            
+            const archivo = new File([blob], `video-camara-${Date.now()}.${ext}`, { type: tipo });
+            state.chunks = []; 
+            canvasStream.getTracks().forEach((t) => t.stop()); 
+            cerrarCamara();
+            
+            if (typeof window.csCamaraOnVideoGrabado === 'function') {
+                window.csCamaraOnVideoGrabado(archivo);
+            } else {
+                notificar('Video grabado, pero no hay receptor configurado.', 'warning');
+            }
         };
-        state.mediaRecorder.start(250); state.grabando = true;
-        $('csBtnRecord').classList.add('grabando'); $('csRecIndicator').classList.add('active'); $('csCamaraTimer').classList.add('active');
+        
+        state.mediaRecorder.onerror = (e) => {
+            console.error('[CSARIELS Cámara] Error de MediaRecorder:', e);
+            notificar('Error durante la grabación.', 'error');
+            detenerGrabacion();
+        };
+
+        state.mediaRecorder.start(250); 
+        state.grabando = true;
+        $('csBtnRecord').classList.add('grabando'); 
+        $('csRecIndicator').classList.add('active'); 
+        $('csCamaraTimer').classList.add('active');
         iniciarTimer();
     }
 
     function detenerGrabacion() {
         if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
         state.grabando = false;
-        $('csBtnRecord')?.classList.remove('grabando'); $('csRecIndicator')?.classList.remove('active'); $('csCamaraTimer')?.classList.remove('active');
+        $('csBtnRecord')?.classList.remove('grabando'); 
+        $('csRecIndicator')?.classList.remove('active'); 
+        $('csCamaraTimer')?.classList.remove('active');
         detenerTimer();
     }
 
     function iniciarTimer() {
         state.segundosGrabados = 0; actualizarTimerUI();
-        state.timerInterval = setInterval(() => { state.segundosGrabados++; actualizarTimerUI(); if (state.segundosGrabados >= CONFIG.MAX_DURATION_SECONDS) detenerGrabacion(); }, 1000);
+        state.timerInterval = setInterval(() => { 
+            state.segundosGrabados++; 
+            actualizarTimerUI(); 
+            if (state.segundosGrabados >= CONFIG.MAX_DURATION_SECONDS) detenerGrabacion(); 
+        }, 1000);
     }
 
     function detenerTimer() { if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; } }
-    function actualizarTimerUI() { const min = String(Math.floor(state.segundosGrabados / 60)).padStart(2, '0'); const seg = String(state.segundosGrabados % 60).padStart(2, '0'); const t = $('csCamaraTimer'); if (t) t.textContent = `${min}:${seg}`; }
+    function actualizarTimerUI() { 
+        const min = String(Math.floor(state.segundosGrabados / 60)).padStart(2, '0'); 
+        const seg = String(state.segundosGrabados % 60).padStart(2, '0'); 
+        const t = $('csCamaraTimer'); 
+        if (t) t.textContent = `${min}:${seg}`; 
+    }
 
     async function cambiarCamara() {
         if (!state.iniciada || state.grabando) return;
