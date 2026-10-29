@@ -1,14 +1,9 @@
 // ================================================================
-// MENSAJES · JS v5.6 · WEB3 NEON UI
-// Cambios v5.6:
-// - loadConversations usa RPC listar_conversaciones (bandeja server-side)
-// - recargarBandeja = debounce(loadConversations, 300) en eventos; directo
-//   solo en arranque y cambio de sesión
-// - markRead en lote: máximo 1 update por conversación cada 2 s
-// - cargarEstados carga perfiles de autores en una sola consulta
-// - perfilCache limitado a 500 entradas (LRU-ish)
-// - removeChannel con console.warn y msgChannel = null en fallo
-// - Resto de v5.5 sin cambios
+// MENSAJES · JS v5.7 · WEB3 NEON UI
+// Cambios v5.7:
+// - markRead(id, force): el INSERT entrante con conversación abierta fuerza la lectura
+// - Caché de 30 s para el resumen de Marquinhos (preview y badge) en loadConversations
+// - Resto de v5.6 sin cambios
 // ================================================================
 
 'use strict';
@@ -64,6 +59,10 @@ const TTL_SIGNED_MS = 50 * 60 * 1000;
 // Control de markRead en lote (1 vez cada 2s por conversación)
 const markReadTimestamps = new Map();
 const MARK_READ_DEBOUNCE_MS = 2000;
+
+// Caché del resumen de Marquinhos (último mensaje y badge)
+let botResumenCache = { ts: 0, ultimo: null, noLeidos: 0 };
+const BOT_RESUMEN_TTL_MS = 30000;
 
 window.__livekitReady = !!window.LivekitClient;
 
@@ -405,9 +404,6 @@ function haceTiempo(fecha) {
     return `hace ${Math.floor(diffMin / 1440)} d`;
 }
 
-/* ============================================================
-   cargarEstados (v5.6): perfiles de autores en una sola consulta
-   ============================================================ */
 async function cargarEstados() {
     const scroll = $('estadosScroll');
     scroll.innerHTML = '';
@@ -427,7 +423,6 @@ async function cargarEstados() {
         const porUsuario = {};
         estadosCache.forEach(e => { if (!porUsuario[e.usuario_id]) porUsuario[e.usuario_id] = []; porUsuario[e.usuario_id].push(e); });
 
-        // Cargar perfiles en lote de todos los autores (excluyendo al usuario actual)
         const idsUnicos = Object.keys(porUsuario).filter(uid => uid !== user.id);
         if (idsUnicos.length > 0) {
             try {
@@ -740,12 +735,6 @@ async function getSignedUrlForMessage(m) {
 
 let conversationFilter = '';
 
-/* ============================================================
-   loadConversations (v5.6): RPC listar_conversaciones
-   Devuelve filas con:
-   otro_id, nombre, handle, avatar_url, online,
-   ultimo_contenido, ultimo_tipo, ultimo_at, no_leidos
-   ============================================================ */
 async function loadConversations() {
     const list = $('conversationList');
     if (!list) return;
@@ -768,16 +757,21 @@ async function loadConversations() {
 
     if (!await auth()) return;
 
-    // Preview y badge de Marquinhos
+    // Preview y badge de Marquinhos (caché de 30 s)
     try {
-        const { data: lastBot } = await db.from('mensajes_chat').select('contenido,tipo,created_at').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`).order('created_at', { ascending: false }).limit(1).maybeSingle();
+        const ahora = Date.now();
+        if (ahora - botResumenCache.ts > BOT_RESUMEN_TTL_MS) {
+            const { data: lastBot } = await db.from('mensajes_chat').select('contenido,tipo,created_at').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${BOT_UUID}),and(remitente_id.eq.${BOT_UUID},destinatario_id.eq.${user.id})`).order('created_at', { ascending: false }).limit(1).maybeSingle();
+            const { count: noLeidos } = await db.from('mensajes_chat').select('id', { count: 'exact', head: true }).eq('remitente_id', BOT_UUID).eq('destinatario_id', user.id).eq('leido', false).eq('eliminado', false);
+            botResumenCache = { ts: ahora, ultimo: lastBot, noLeidos: noLeidos || 0 };
+        }
+        const { ultimo: lastBot, noLeidos } = botResumenCache;
         if (lastBot) {
             const preview = $('botLastMsg');
             if (preview) preview.textContent = lastBot.tipo === 'texto' ? (lastBot.contenido || '').slice(0, 60) : ('📎 ' + (lastBot.contenido || lastBot.tipo));
         }
-        const { count: noLeidos } = await db.from('mensajes_chat').select('id', { count: 'exact', head: true }).eq('remitente_id', BOT_UUID).eq('destinatario_id', user.id).eq('leido', false).eq('eliminado', false);
         const badge = $('botBadge');
-        if (badge && noLeidos && noLeidos > 0) {
+        if (badge && noLeidos > 0) {
             badge.innerHTML = `<span style="background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:99px;min-width:20px;text-align:center;display:inline-block;animation:pulse-badge 1.5s infinite;">${noLeidos > 9 ? '9+' : noLeidos}</span>`;
         }
     } catch (e) { console.warn('Error cargando badge bot:', e); }
@@ -884,6 +878,7 @@ async function openConversation(id) {
 
     if (esBot) {
         await db.from('mensajes_chat').update({ leido: true }).eq('remitente_id', BOT_UUID).eq('destinatario_id', user.id).eq('leido', false);
+        botResumenCache.ts = 0;
         const badge = $('botBadge');
         if (badge) { badge.textContent = 'IA'; badge.style.color = 'var(--success)'; }
         await abrirConversacionBot();
@@ -1198,12 +1193,13 @@ async function append(m, sent) {
 
 /* ============================================================
    markRead con control de frecuencia (máx. 1 cada 2s por id)
+   force=true salta el límite (usado en INSERT entrante con chat abierto)
    ============================================================ */
-async function markRead(id) {
+async function markRead(id, force = false) {
     if (!user || id === BOT_ID) return;
     const ahora = Date.now();
     const ultimo = markReadTimestamps.get(id) || 0;
-    if (ahora - ultimo < MARK_READ_DEBOUNCE_MS) return;
+    if (!force && ahora - ultimo < MARK_READ_DEBOUNCE_MS) return;
     markReadTimestamps.set(id, ahora);
     await db.from('mensajes_chat').update({ leido: true }).eq('remitente_id', id).eq('destinatario_id', user.id).eq('leido', false).eq('eliminado', false);
 }
@@ -1279,7 +1275,10 @@ function subscribeMessages(id) {
     msgChannel = db.channel('chat-' + id)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + id }, p => {
             const m = p.new;
-            if (m.destinatario_id === user.id) { append(m, false); markRead(id); }
+            if (m.destinatario_id === user.id) {
+                append(m, false);
+                markRead(id, true);
+            }
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + user.id }, p => {
             manejarUpdate(p.new);
@@ -2663,7 +2662,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '5.6.0',
+    version: '5.7.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
