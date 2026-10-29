@@ -1,8 +1,7 @@
 // ================================================================
-// MENSAJES · JS v4.7 · WEB3 NEON UI
-// Cambios v4.7:
-// - Lee ?usuario= para abrir conversación directa.
-// - Lee &accion=llamada para iniciar la llamada automáticamente.
+// MENSAJES · JS v4.8 · WEB3 NEON UI
+// Cambios v4.8:
+// - Vinculación del botón de emojis (emojiBtn) con el teclado.
 // ================================================================
 
 'use strict';
@@ -1945,6 +1944,19 @@ async function init() {
         $('fileInput').click();
     };
 
+    // 🔥 NUEVO: Vincular el botón de emojis con el teclado
+    const btnEmoji = $('emojiBtn');
+    if (btnEmoji) {
+        btnEmoji.onclick = (e) => {
+            e.preventDefault();
+            if (typeof window.inicializarTecladoEmojis === 'function') {
+                window.inicializarTecladoEmojis('messageInput', 'emojiBtn');
+            }
+            const teclado = document.querySelector('.teclado-emojis-overlay');
+            if (teclado) teclado.classList.toggle('show');
+        };
+    }
+
     $('fileInput').addEventListener('change', async e => {
         for (const f of e.target.files) await uploadFile(f);
         e.target.value = '';
@@ -2182,7 +2194,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.7.0',
+    version: '4.8.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
