@@ -1,11 +1,9 @@
 /* ============================================================
    contactos.js
    Sariel's Ecosystem · Contactos
-   v16 — Favorito en tiempo real (Number id)
-        + Actualización local sin recargar (eliminar/bloquear/aceptar/rechazar)
-        + showConfirm con limpieza explícita de listeners
-        + Contador solo con estado = 'activo'
-        + Toast de rechazo usa clase 'warning'
+   v17 — Bloqueo elimina solicitudes pendientes propias y ajenas
+        + aceptarSolicitud simplificado (RPC + recarga)
+        + resto de v16 conservado
    ============================================================ */
 
 (() => {
@@ -860,48 +858,34 @@
     }
     window.agregarContacto = agregarContacto;
 
+    /* ============================================================
+       ACEPTAR / RECHAZAR SOLICITUD (RPC simplificado)
+       ============================================================ */
     async function aceptarSolicitud(contactoRowId, otroUsuarioId) {
         const client = sb();
         const session = await getSession();
         if (!client || !session) return;
 
-        // Optimista: crear fila local si no existía
-        const yaExistia = state.contactos.some((c) => Number(c.contacto_id) === Number(otroUsuarioId));
-        let filaTemporal = null;
-
-        if (!yaExistia && otroUsuarioId) {
-            const perfil = getPerfilCacheado(otroUsuarioId) || {
-                id: otroUsuarioId, nombre: 'Usuario', handle: null, avatar_url: null,
-                online: false, ultima_conexion: null, verificado: false
-            };
-            filaTemporal = {
-                id: null, usuario_id: session.user.id, contacto_id: otroUsuarioId,
-                es_favorito: false, estado: 'activo', fecha: new Date().toISOString(),
-                created_at: new Date().toISOString(), contacto: perfil
-            };
-            state.contactos.unshift(filaTemporal);
-            state.idsContactosSet.add(otroUsuarioId);
-            renderizarContactos();
-        }
+        // Feedback inmediato del set de ids (sin fila temporal)
+        if (otroUsuarioId) state.idsContactosSet.add(otroUsuarioId);
 
         try {
             const { error } = await client.rpc(CONFIG.RPC_RESPONDER_SOLICITUD, {
                 p_fila_id: Number(contactoRowId),
                 p_aceptar: true
             });
-            if (error) throw error;
+            if (error) {
+                if (otroUsuarioId) state.idsContactosSet.delete(otroUsuarioId);
+                throw error;
+            }
 
             showToast('✅ Amistad aceptada', 'success');
-            await cargarSolicitudesPendientesUI();
             await cargarContactos({ reset: true });
+            await cargarSolicitudesPendientesUI();
             await cargarSugerenciasUI();
         } catch (e) {
             console.error('Error aceptando:', e);
-            if (filaTemporal) {
-                state.contactos = state.contactos.filter((c) => c !== filaTemporal);
-                if (otroUsuarioId) state.idsContactosSet.delete(otroUsuarioId);
-                renderizarContactos();
-            }
+            if (otroUsuarioId) state.idsContactosSet.delete(otroUsuarioId);
             showToast('❌ Error al aceptar la solicitud', 'error');
         }
     }
@@ -1034,6 +1018,9 @@
     }
     window.eliminarContacto = eliminarContacto;
 
+    /* ============================================================
+       BLOQUEAR CONTACTO (elimina solicitudes pendientes primero)
+       ============================================================ */
     async function bloquearContacto(contactoId) {
         const client = sb();
         const session = await getSession();
@@ -1062,11 +1049,33 @@
         recalcularEstadisticas();
 
         try {
+            // 1) Eliminar cualquier solicitud pendiente entre ambos usuarios
+            //    - fila propia con contacto_id = X y estado = 'pendiente'
+            //    - fila con usuario_id = X y contacto_id = yo y estado = 'pendiente'
+            try {
+                await client.from(CONFIG.CONTACTOS_TABLE)
+                    .delete()
+                    .eq('usuario_id', session.user.id)
+                    .eq('contacto_id', contactoId)
+                    .eq('estado', 'pendiente');
+            } catch (e) { console.warn('No se pudo limpiar solicitud pendiente propia:', e); }
+
+            try {
+                await client.from(CONFIG.CONTACTOS_TABLE)
+                    .delete()
+                    .eq('usuario_id', contactoId)
+                    .eq('contacto_id', session.user.id)
+                    .eq('estado', 'pendiente');
+            } catch (e) { console.warn('No se pudo limpiar solicitud pendiente entrante:', e); }
+
+            // 2) Llamar al RPC de bloqueo
             const { error } = await withRetry(() =>
                 client.rpc(CONFIG.RPC_BLOQUEAR, { p_contacto_id: contactoId }), 'bloquear contacto');
             if (error) throw error;
+
             showToast('⛔ Usuario bloqueado', 'success');
             await cargarContactos({ reset: true });
+            await cargarSolicitudesPendientesUI();
             await cargarSugerenciasUI();
         } catch (error) {
             console.error('Error bloqueando contacto:', error);
