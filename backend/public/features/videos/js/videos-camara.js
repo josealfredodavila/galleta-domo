@@ -1,7 +1,9 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v2.8
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v2.9
    ================================================================
-   - Posiciones y tamaños ajustados para que no tapen la cara.
+   - v2.9: corrige la rotación en modo espejo (los filtros salían
+     invertidos), añade obtenerFormatoGrabacion (faltaba y rompía
+     la grabación) y ajusta tamaños para imágenes recortadas.
    ================================================================ */
 
 (function () {
@@ -21,32 +23,33 @@
 
     const GITHUB_BASE_URL = 'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main';
 
-    // ✅ TAMAÑOS Y POSICIONES AJUSTADOS
+    // Escala = ancho del filtro como múltiplo del ancho de la cara.
+    // offsetY = desplazamiento vertical como fracción de la altura del filtro.
     const ASSETS = {
         gato: {
             src: `${GITHUB_BASE_URL}/orejas-gato.png`,
-            scale: 1.1,    // Tamaño moderado
-            offsetY: -0.4  // Arriba de la frente
+            scale: 1.0,
+            offsetY: -0.5   // la base de las orejas queda sobre la frente
         },
         burro: {
             src: `${GITHUB_BASE_URL}/orejas-burro.png`,
-            scale: 1.2,
+            scale: 1.0,
             offsetY: -0.5
         },
         gafas: {
             src: `${GITHUB_BASE_URL}/gafas.png`,
-            scale: 1.0,   // Justo sobre los ojos
+            scale: 1.0,
             offsetY: 0
         },
         bigote: {
             src: `${GITHUB_BASE_URL}/bigote.png`,
-            scale: 0.6,   // Pequeño, bajo la nariz
+            scale: 0.55,
             offsetY: 0.1
         },
         corona: {
             src: `${GITHUB_BASE_URL}/corona.png`,
-            scale: 1.3,
-            offsetY: -0.6  // Arriba de la cabeza
+            scale: 0.9,
+            offsetY: -0.6   // la base de la corona queda sobre la frente
         }
     };
 
@@ -251,11 +254,19 @@
         const w = canvas.width; const h = canvas.height;
         const punto = (i) => { const p = landmarks[i]; return { x: espejado ? (1 - p.x) * w : p.x * w, y: p.y * h }; };
 
-        const ojoIzq = punto(33); const ojoDer = punto(263); const nariz = punto(1); const frente = punto(10); const mejillaIzq = punto(234); const mejillaDer = punto(454);
+        const ojoA = punto(33); const ojoB = punto(263); const nariz = punto(1); const frente = punto(10);
+        const mejillaA = punto(234); const mejillaB = punto(454);
+
+        // Ordenar por posición en pantalla (izquierda → derecha) para que el ángulo
+        // sea ~0 con la cabeza derecha, también en modo espejo.
+        const [ojoIzq, ojoDer] = ojoA.x <= ojoB.x ? [ojoA, ojoB] : [ojoB, ojoA];
+        const [mejillaIzq, mejillaDer] = mejillaA.x <= mejillaB.x ? [mejillaA, mejillaB] : [mejillaB, mejillaA];
+
         const anchoCara = Math.hypot(mejillaDer.x - mejillaIzq.x, mejillaDer.y - mejillaIzq.y);
-        const centroX = (ojoIzq.x + ojoDer.x) / 2; const centroY = (ojoIzq.y + ojoDer.y) / 2;
+        const centroX = (ojoIzq.x + ojoDer.x) / 2;
+        const centroY = (ojoIzq.y + ojoDer.y) / 2;
         const angulo = Math.atan2(ojoDer.y - ojoIzq.y, ojoDer.x - ojoIzq.x);
-        
+
         const tamanoImagen = anchoCara * assetConfig.scale;
         const proporcion = imagen.height / imagen.width;
         const alturaImagen = tamanoImagen * proporcion;
@@ -266,8 +277,6 @@
             anchorY = frente.y;
         } else if (state.filtroActual === 'bigote') {
             anchorY = nariz.y;
-        } else if (state.filtroActual === 'gafas') {
-            anchorY = centroY;
         }
 
         anchorY += alturaImagen * assetConfig.offsetY;
@@ -277,6 +286,18 @@
         ctx.rotate(angulo);
         ctx.drawImage(imagen, -tamanoImagen / 2, -alturaImagen / 2, tamanoImagen, alturaImagen);
         ctx.restore();
+    }
+
+    function obtenerFormatoGrabacion() {
+        if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
+        const candidatos = [
+            'video/mp4;codecs=h264,aac',
+            'video/mp4',
+            'video/webm;codecs=vp9,opus',
+            'video/webm;codecs=vp8,opus',
+            'video/webm'
+        ];
+        return candidatos.find((t) => MediaRecorder.isTypeSupported(t)) || '';
     }
 
     function toggleGrabacion() { if (state.grabando) detenerGrabacion(); else iniciarGrabacion(); }
