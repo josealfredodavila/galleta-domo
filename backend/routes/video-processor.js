@@ -109,7 +109,6 @@ async function autenticar(req, res, next) {
 
 /* ================================================================
    POST /api/video/queue
-   Agrega un video a la cola de procesamiento
 ================================================================ */
 router.post('/queue', autenticar, async (req, res) => {
     try {
@@ -119,7 +118,6 @@ router.post('/queue', autenticar, async (req, res) => {
 
         const { videoId, videoUrl, bucket = 'videos', filePath, audioUrl } = req.body;
 
-        // Validaciones básicas
         if (!videoId || !videoUrl) {
             return res.status(400).json({
                 success: false,
@@ -134,8 +132,6 @@ router.post('/queue', autenticar, async (req, res) => {
             });
         }
 
-        // ✅ FIX SEGURIDAD: validar filePath
-        // Debe empezar con el userId del usuario autenticado y no tener ..
         if (
             !filePath.startsWith(req.user.id + '/') ||
             filePath.includes('..') ||
@@ -147,7 +143,6 @@ router.post('/queue', autenticar, async (req, res) => {
             });
         }
 
-        // ✅ FIX SEGURIDAD (SSRF): validar audioUrl si viene
         if (audioUrl !== null && audioUrl !== undefined && audioUrl !== '') {
             if (typeof audioUrl !== 'string') {
                 return res.status(400).json({
@@ -163,7 +158,6 @@ router.post('/queue', autenticar, async (req, res) => {
             }
         }
 
-        // Verificar que el video pertenece al usuario
         const { data: video, error: videoError } = await supabaseAdmin
             .from('videos')
             .select('id, usuario_id, url_video, estado')
@@ -178,7 +172,6 @@ router.post('/queue', autenticar, async (req, res) => {
             return res.status(403).json({ success: false, error: 'No eres el dueño de este video' });
         }
 
-        // Verificar que no haya un job activo para este video
         const { data: existingJob } = await supabaseAdmin
             .from('video_jobs')
             .select('job_id, estado')
@@ -195,11 +188,8 @@ router.post('/queue', autenticar, async (req, res) => {
             });
         }
 
-        // ✅ FIX 4: jobId estable (sin timestamp)
         const stableJobId = `video_${videoId}`;
 
-        // ✅ FIX SEGURIDAD: usar videoUrl y bucket de la DB, no del body
-        // ✅ FIX v3: pasar audioUrl al job
         const job = await videoQueue.add('process-video', {
             videoId,
             videoUrl: video.url_video,
@@ -216,7 +206,6 @@ router.post('/queue', autenticar, async (req, res) => {
             console.log(`🎵 [QUEUE] Audio de fondo: ${audioUrl}`);
         }
 
-        // Guardar el job en la DB para hacer tracking
         await supabaseAdmin
             .from('video_jobs')
             .insert({
