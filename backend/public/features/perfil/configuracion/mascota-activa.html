@@ -288,14 +288,7 @@ h1 .corn { font-size: 1.5rem; }
 </style>
 </head>
 <body>
-
-<!-- 🛡️ CAPA DE SEGURIDAD (Se muestra mientras verifica la sesión) -->
-<div id="security-shield" style="position:fixed; inset:0; background:#0A0A0A; z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#00D4FF; font-family:'Inter', sans-serif;">
-    <div style="font-size:2rem; margin-bottom:10px; font-family:'Orbitron', monospace;">◈</div>
-    <div style="font-weight:600;">Verificando seguridad...</div>
-</div>
-
-<div class="app" id="app-content" style="display:none;">
+<div class="app">
 
     <a href="/features/perfil/configuracion/index.html" class="btn-back">← Configuración</a>
 
@@ -503,9 +496,10 @@ h1 .corn { font-size: 1.5rem; }
 'use strict';
 
 (function() {
-    let mascotaSeleccionada = 'marquinhos';
-    let supabaseClient = null;
-    let usuarioId = null;
+    const KEY = 'mascota_activa';
+    const DEFAULT_MASCOTA = 'marquinhos';
+
+    let mascotaSeleccionada = DEFAULT_MASCOTA;
 
     function toast(msg) {
         const el = document.getElementById('toast');
@@ -515,81 +509,22 @@ h1 .corn { font-size: 1.5rem; }
         el._timer = setTimeout(() => el.classList.remove('visible'), 3000);
     }
 
-    async function init() {
-        // 1. Buscar el cliente de Supabase con todas las opciones posibles
-        if (window.getSupabase) {
-            try { supabaseClient = await window.getSupabase(); } catch(e) {}
+    function leer() {
+        try {
+            const v = localStorage.getItem(KEY);
+            return v || DEFAULT_MASCOTA;
+        } catch (e) {
+            return DEFAULT_MASCOTA;
         }
-        if (!supabaseClient && window.supabaseClient) supabaseClient = window.supabaseClient;
-        if (!supabaseClient && window.supabase) supabaseClient = window.supabase;
+    }
 
-        // 2. 🛡️ GUARDIA DE SEGURIDAD
-        if (supabaseClient) {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            
-            // Si NO hay sesión, expulsamos al usuario al login
-            if (!session) {
-                window.location.href = '/login';
-                return;
-            }
-
-            // Si hay sesión, guardamos el ID y leemos la mascota
-            usuarioId = session.user.id;
-            const { data } = await supabaseClient
-                .from('usuarios')
-                .select('mascota_activa')
-                .eq('id', usuarioId)
-                .single();
-            
-            if (data && data.mascota_activa) {
-                mascotaSeleccionada = data.mascota_activa;
-            }
-        } else {
-            // Si no hay cliente de Supabase, también expulsamos (medida de seguridad extrema)
-            console.error('[Seguridad] Cliente de Supabase no encontrado.');
-            window.location.href = '/login';
-            return;
+    function guardar(mascota) {
+        try {
+            localStorage.setItem(KEY, mascota);
+            return true;
+        } catch (e) {
+            return false;
         }
-
-        // 3. Si pasamos la seguridad, ocultamos el escudo y mostramos la página
-        document.getElementById('security-shield').style.display = 'none';
-        document.getElementById('app-content').style.display = 'block';
-
-        pintar();
-
-        // 4. Click en las opciones
-        document.querySelectorAll('.mascota-item').forEach(item => {
-            item.addEventListener('click', () => {
-                mascotaSeleccionada = item.dataset.mascota;
-                pintar();
-            });
-        });
-
-        // 5. Botón de Guardar
-        document.getElementById('btnGuardar').addEventListener('click', async () => {
-            const btn = document.getElementById('btnGuardar');
-            btn.disabled = true;
-            btn.textContent = 'Guardando...';
-
-            if (supabaseClient && usuarioId) {
-                const { error } = await supabaseClient
-                    .from('usuarios')
-                    .update({ mascota_activa: mascotaSeleccionada })
-                    .eq('id', usuarioId);
-
-                if (error) {
-                    toast('⚠️ Error al guardar en la nube');
-                } else {
-                    toast('✅ Mascota actualizada');
-                }
-            }
-
-            btn.disabled = false;
-            btn.textContent = '◈ Guardar selección';
-            
-            // Recargar para que se apliquen los cambios
-            setTimeout(() => window.location.reload(), 800);
-        });
     }
 
     function pintar() {
@@ -600,6 +535,42 @@ h1 .corn { font-size: 1.5rem; }
             const tag = item.querySelector('[data-tag]');
             if (tag) tag.hidden = !activa;
         });
+    }
+
+    function init() {
+        mascotaSeleccionada = leer();
+        pintar();
+
+        document.querySelectorAll('.mascota-item').forEach(item => {
+            item.addEventListener('click', () => {
+                mascotaSeleccionada = item.dataset.mascota;
+                pintar();
+            });
+        });
+
+        document.getElementById('btnGuardar').addEventListener('click', () => {
+            const btn = document.getElementById('btnGuardar');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            const ok = guardar(mascotaSeleccionada);
+
+            setTimeout(() => {
+                if (ok) {
+                    toast('✅ Mascota actualizada');
+                } else {
+                    toast('⚠️ No se pudo guardar');
+                }
+                btn.disabled = false;
+                btn.textContent = '◈ Guardar selección';
+
+                setTimeout(() => {
+                    window.location.reload();
+                }, 800);
+            }, 400);
+        });
+
+        console.log('[Mascota Activa] ✅ Cargada. Seleccionada:', mascotaSeleccionada);
     }
 
     if (document.readyState === 'loading') {
