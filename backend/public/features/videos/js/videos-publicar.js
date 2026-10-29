@@ -5,10 +5,11 @@
    FASE 2: Carga modular de archivos (subirMultimedia)
    FASE 3C: (N/A aquí, el INSERT lo hace videos.html)
 
-   Novedades v1.6 (Sonidos Locales + Preview):
-   - SONIDOS_SEED actualizado con 6 audios locales alojados en Supabase.
-   - Previsualización automática de 5 segundos al seleccionar sonido.
-   - getState() exporta correctamente { sonido: { url, nombre } } para videos.html.
+   Novedades v1.6 (Sonidos Locales Reales + Preview):
+   - SONIDOS_SEED con URLs reales, duraciones y créditos.
+   - Previsualización de 5s al seleccionar sonido (con onerror).
+   - catch del play() ignora AbortError (cambio de pista).
+   - getState() exporta sonido, ubicacion y archivoVideo.
    ================================================================ */
 
 (function () {
@@ -44,56 +45,18 @@
     // ============================================================
     // SEMILLA DE SONIDOS (LOCALES EN SUPABASE STORAGE)
     // ============================================================
-    // IMPORTANTE: Reemplaza la URL base por la de tu proyecto Supabase.
-    // Los archivos deben estar en un bucket público llamado 'audios'.
     const SUPABASE_STORAGE_URL = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios';
 
     const SONIDOS_SEED = {
         parati: [
-            {
-                id: 'sd-phonk',
-                nombre: 'Phonk Bass Drop',
-                artista: 'Viral Sounds',
-                url: `${SUPABASE_STORAGE_URL}/phonk-bass.mp3`,
-                duracion: 15
-            },
-            {
-                id: 'sd-suspenso',
-                nombre: 'Suspenso Épico',
-                artista: 'Cinematic Beats',
-                url: `${SUPABASE_STORAGE_URL}/suspenso.mp3`,
-                duracion: 30
-            },
-            {
-                id: 'sd-comedia',
-                nombre: 'Risa y Caos',
-                artista: 'Meme Sounds',
-                url: `${SUPABASE_STORAGE_URL}/comedia.mp3`,
-                duracion: 10
-            }
+            { id: 'sd-phonk', nombre: 'Phonk Bass Drop', artista: 'Echoes of Lumen', url: `${SUPABASE_STORAGE_URL}/echoes_of_lumen-phonk-bass-neon-aura-night-drive-588671.mp3`, duracion: 128 },
+            { id: 'sd-suspenso', nombre: 'Suspenso Épico', artista: 'Absolute Sound', url: `${SUPABASE_STORAGE_URL}/absolutesound-suspense-tense-atmosphere-514617.mp3`, duracion: 137 },
+            { id: 'sd-comedia', nombre: 'Risa y Caos', artista: 'Alex Morgan', url: `${SUPABASE_STORAGE_URL}/alex-morgan-comedy-bgm-funny-background-music-583242.mp3`, duracion: 62 }
         ],
         populares: [
-            {
-                id: 'sd-trend1',
-                nombre: 'Aesthetic Vibes',
-                artista: 'Trending Now',
-                url: `${SUPABASE_STORAGE_URL}/aesthetic.mp3`,
-                duracion: 20
-            },
-            {
-                id: 'sd-trend2',
-                nombre: 'Corrido Bélico (Trap)',
-                artista: 'El Rey',
-                url: `${SUPABASE_STORAGE_URL}/trap-mexicano.mp3`,
-                duracion: 25
-            },
-            {
-                id: 'sd-reward',
-                nombre: 'Gancho de Éxito',
-                artista: 'Focus Music',
-                url: `${SUPABASE_STORAGE_URL}/exito.mp3`,
-                duracion: 5
-            }
+            { id: 'sd-trend1', nombre: 'Aesthetic Vibes', artista: 'Adrihuwu', url: `${SUPABASE_STORAGE_URL}/adrihuwu-adrihuwu-join-my-server-209103.mp3`, duracion: 134 },
+            { id: 'sd-trend2', nombre: 'Corrido Bélico (Trap)', artista: 'LN Plus Music', url: `${SUPABASE_STORAGE_URL}/lnplusmusic-cuban-latin-trap-beat-469610.mp3`, duracion: 127 },
+            { id: 'sd-reward', nombre: 'Gancho de Éxito', artista: 'Freesound Community', url: `${SUPABASE_STORAGE_URL}/freesound_community-victoria_claudia_baja_fidelidad_almacen_exito_cali-79564.mp3`, duracion: 55 }
         ],
         favoritos: []
     };
@@ -265,9 +228,7 @@
         try {
             respuesta = await fetch('/api/media/upload', {
                 method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + token
-                },
+                headers: { 'Authorization': 'Bearer ' + token },
                 body: fd
             });
         } catch (e) {
@@ -276,25 +237,14 @@
         }
 
         let data = null;
-        try {
-            data = await respuesta.json();
-        } catch (e) {
-            data = {};
-        }
+        try { data = await respuesta.json(); } catch (e) { data = {}; }
 
         if (!respuesta.ok || !data.ok) {
-            const mensaje = data && data.error
-                ? data.error
-                : 'No se pudo subir el archivo';
+            const mensaje = data && data.error ? data.error : 'No se pudo subir el archivo';
             return { ok: false, error: mensaje, status: respuesta.status };
         }
 
-        return {
-            ok: true,
-            url: data.url,
-            path: data.path,
-            provider: 'supabase'
-        };
+        return { ok: true, url: data.url, path: data.path, provider: 'supabase' };
     }
 
     async function subirMultimediaR2(archivo, tipo, opts) {
@@ -314,9 +264,7 @@
         if (inputDesc) inputDesc.value = '';
 
         const inputArchivo = document.getElementById('inputArchivoVideo');
-        if (inputArchivo) {
-            try { inputArchivo.value = ''; } catch (e) {}
-        }
+        if (inputArchivo) { try { inputArchivo.value = ''; } catch (e) {} }
 
         const preview = document.getElementById('csPreviewVideo');
         if (preview) {
@@ -698,14 +646,15 @@
             btn.addEventListener('click', () => seleccionarSonido(btn.dataset.sonidoId));
         });
     }
+
     function seleccionarSonido(id) {
         const todas = [].concat(SONIDOS_SEED.parati).concat(SONIDOS_SEED.populares).concat(SONIDOS_SEED.favoritos);
         const s = todas.find(x => x.id === id);
         if (!s) return;
-        
+
         state.sonidoSeleccionado = s;
-        
-        // ✅ NUEVO: Previsualización de audio de 5 segundos
+
+        // ✅ Previsualización con manejo de errores (AbortError ignorado)
         if (s.url) {
             try {
                 if (window._audioPreview) {
@@ -714,9 +663,18 @@
                 }
                 window._audioPreview = new Audio(s.url);
                 window._audioPreview.volume = 0.8;
-                window._audioPreview.play().catch(e => warn('No se pudo previsualizar audio:', e));
-                
-                // Detener después de 5 segundos (suficiente para el "hook")
+
+                window._audioPreview.onerror = () => {
+                    warn('Error cargando audio:', s.url);
+                    csToast('No se pudo cargar el sonido. Revisa que exista en el bucket audios.', 'error', 4000);
+                };
+
+                window._audioPreview.play().catch(e => {
+                    if (e && e.name === 'AbortError') return;
+                    warn('No se pudo previsualizar audio:', e);
+                    csToast('No se pudo reproducir este sonido. Revisa que el archivo exista en el bucket audios.', 'error', 4000);
+                });
+
                 setTimeout(() => {
                     if (window._audioPreview) {
                         window._audioPreview.pause();
@@ -739,6 +697,7 @@
         const btn = $('csBtnConfirmarSonido');
         if (btn) btn.disabled = false;
     }
+
     function confirmarSonido() {
         const s = state.sonidoSeleccionado;
         const preview = $('csPreviewSonido');
@@ -972,7 +931,7 @@
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
-        log('✅ Módulo Publicar v1.6 listo (sonidos locales + preview)');
+        log('✅ Módulo Publicar v1.6 listo (sonidos locales reales + preview)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
