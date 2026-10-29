@@ -1,8 +1,9 @@
 // ================================================================
-// MENSAJES · JS v4.9 · WEB3 NEON UI
-// Cambios v4.9:
-// - Vinculación del botón de emojis (emojiBtn) con el teclado.
-// - Botón de videollamada profesional con SVG.
+// MENSAJES · JS v5.0 · WEB3 NEON UI
+// Cambios v5.0:
+// - Fix doble binding de emojis (binding delegado a teclado-emojis.js)
+// - Bandera __livekitReady para el botón de videollamada
+// - openConversation usa __livekitReady (no re-deshabilita el botón)
 // ================================================================
 
 'use strict';
@@ -53,6 +54,9 @@ const perfilCache = new Map();
 const TTL_PERFIL_MS = 5 * 60 * 1000;
 const signedCache = new Map();
 const TTL_SIGNED_MS = 50 * 60 * 1000;
+
+// Bandera global de LiveKit: se pone en true cuando el SDK está listo
+window.__livekitReady = !!window.LivekitClient;
 
 const $ = id => document.getElementById(id);
 
@@ -785,7 +789,8 @@ async function openConversation(id) {
         } else {
             callBtn.style.display = 'inline-flex';
             callBtn.title = 'Iniciar videollamada con ' + (p.nombre || 'usuario');
-            callBtn.disabled = !window.LivekitClient;
+            // Fix: usa la bandera __livekitReady (no se re-deshabilita si ya cargó)
+            callBtn.disabled = !window.__livekitReady;
         }
     }
 
@@ -1695,7 +1700,7 @@ async function startCall(tipo = 'video') {
     if (current?.bot) { toast('⚠️ Marquinhos no acepta llamadas', 'warning'); return; }
     if (!current) { toast('⚠️ Selecciona una conversación primero', 'error'); return; }
     if (call.active || call.id) { $('callOverlay').classList.add('show'); return; }
-    if (!window.LivekitClient) { toast('❌ Las llamadas no están disponibles en este dispositivo. Recarga la página.', 'error'); return; }
+    if (!window.__livekitReady) { toast('❌ Las llamadas no están disponibles en este dispositivo. Recarga la página.', 'error'); return; }
     const nombre = current.profile?.nombre || 'usuario';
     try {
         const d = await llamadaFetch('/api/llamadas/iniciar', { destinatarioId: current.id, tipo });
@@ -1750,7 +1755,7 @@ async function incoming(data) {
 
 async function acceptCall() {
     if (!incomingId || llamadaAceptando) return;
-    if (!window.LivekitClient) {
+    if (!window.__livekitReady) {
         toast('❌ Las llamadas no están disponibles en este dispositivo. No se puede aceptar.', 'error');
         const id = incomingId;
         cerrarOverlayEntrante();
@@ -1853,7 +1858,7 @@ async function init() {
     } catch (e) { console.warn('Error cargando sesión:', e); }
 
     const callBtn = $('videoCall');
-    if (!window.LivekitClient) { if (callBtn) callBtn.disabled = true; }
+    if (!window.__livekitReady) { if (callBtn) callBtn.disabled = true; }
 
     await cargarFotoHeader();
     await loadConversations();
@@ -1872,8 +1877,13 @@ async function init() {
         }
     });
 
-    window.addEventListener('livekit:ready', () => { if (callBtn) callBtn.disabled = false; });
+    // Fix: bandera __livekitReady
+    window.addEventListener('livekit:ready', () => {
+        window.__livekitReady = true;
+        if (callBtn) callBtn.disabled = false;
+    });
     window.addEventListener('livekit:error', () => {
+        window.__livekitReady = false;
         if (callBtn) callBtn.disabled = true;
         toast('⚠️ Las llamadas no están disponibles en este dispositivo.', 'warning');
     });
@@ -1933,16 +1943,9 @@ async function init() {
         $('fileInput').click();
     };
 
-    const btnEmoji = $('emojiBtn');
-    if (btnEmoji) {
-        btnEmoji.onclick = (e) => {
-            e.preventDefault();
-            if (typeof window.inicializarTecladoEmojis === 'function') {
-                window.inicializarTecladoEmojis('messageInput', 'emojiBtn');
-            }
-            const teclado = document.querySelector('.teclado-emojis-overlay');
-            if (teclado) teclado.classList.toggle('show');
-        };
+    // Fix: binding del teclado delegado a teclado-emojis.js (sin duplicar toggles)
+    if (typeof window.inicializarTecladoEmojis === 'function') {
+        window.inicializarTecladoEmojis('messageInput', 'emojiBtn');
     }
 
     $('fileInput').addEventListener('change', async e => {
@@ -2172,7 +2175,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.9.0',
+    version: '5.0.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
