@@ -1,3 +1,91 @@
+/* ================================================================
+   WORKER.JS - SARIEL'S ECOSYSTEM
+   VERSIÓN v4 - Mezcla de audio de fondo (Phonk, Trap, etc.)
+   ================================================================
+   - Recibe audioUrl del job.
+   - Descarga audio en try/catch independiente (si falla → sin música).
+   - Si el video no tiene audio y sí hay música → solo música.
+   - Si el video tiene audio y sí hay música → original 40% + música 100%.
+   - Sin audio de fondo → comportamiento original (solo marca de agua).
+   ================================================================ */
+
+const { Worker } = require('bullmq');
+const IORedis = require('ioredis');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegPath = require('ffmpeg-static');
+const { createClient } = require('@supabase/supabase-js');
+const fs = require('fs');
+const path = require('path');
+const os = require('os');
+const axios = require('axios');
+require('dotenv').config();
+
+// ================================================================
+// CONFIGURACIÓN DE FFMPEG
+// ================================================================
+ffmpeg.setFfmpegPath(ffmpegPath);
+console.log('🎬 FFmpeg path:', ffmpegPath);
+
+// ================================================================
+// VALIDACIÓN DE VARIABLES DE ENTORNO
+// ================================================================
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const REDIS_URL = process.env.REDIS_URL;
+const PORT = process.env.PORT || 3001;
+
+const faltantes = [];
+if (!SUPABASE_URL) faltantes.push('SUPABASE_URL');
+if (!SUPABASE_SERVICE_ROLE_KEY) faltantes.push('SUPABASE_SERVICE_ROLE_KEY');
+if (!REDIS_URL) faltantes.push('REDIS_URL');
+
+if (faltantes.length > 0) {
+    console.error('❌ Faltan variables de entorno críticas:');
+    faltantes.forEach(v => console.error(`   - ${v}`));
+    console.error('');
+    console.error('👉 En Railway, agrega estas variables al servicio del worker.');
+    process.exit(1);
+}
+
+// ================================================================
+// CONFIGURACIÓN DE SUPABASE
+// ================================================================
+const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false }
+});
+
+// ================================================================
+// CONFIGURACIÓN DE REDIS
+// ================================================================
+console.log('📡 Conectando a Redis...');
+
+const redisConnection = new IORedis(REDIS_URL, {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    family: 0,
+    retryStrategy: (times) => {
+        if (times > 20) {
+            console.error('❌ Redis no responde tras 20 intentos. Abortando.');
+            return null;
+        }
+        const delay = Math.min(times * 500, 10000);
+        console.log(`🔁 Reintentando Redis en ${delay}ms (intento ${times})`);
+        return delay;
+    }
+});
+
+redisConnection.on('connect', () => { console.log('✅ Conectado a Redis'); });
+redisConnection.on('ready', () => { console.log('✅ Redis listo para operar'); });
+redisConnection.on('error', (err) => { console.error('❌ Error de Redis:', err.message); });
+
+// ================================================================
+// CONSTANTES
+// ================================================================
+const COLA_NOMBRE = 'video-processing';
+const TEMP_DIR = os.tmpdir();
+const MAX_CONCURRENT = 1;
+const LOGO_PATH = path.join(__dirname, 'assets', 'sariels_web3.png');
+
 // ================================================================
 // FUNCIÓN PRINCIPAL: PROCESAR VIDEO (CON AUDIO DE FONDO)
 // ================================================================
@@ -40,7 +128,7 @@ async function procesarVideo(job) {
                 const audioResp = await axios.get(audioUrl, {
                     responseType: 'arraybuffer',
                     timeout: 30000,
-                    maxContentLength: 10 * 1024 * 1024,
+                    maxContentLength: 20 * 1024 * 1024,
                     headers: { 'User-Agent': 'Mozilla/5.0' }
                 });
                 fs.writeFileSync(audioPath, Buffer.from(audioResp.data));
@@ -107,21 +195,17 @@ async function procesarVideo(job) {
         let outputMaps = null;
 
         if (tieneAudioExterno) {
-            // CON audio de fondo: mezclar audio original (40%) + música (100%)
             filterComplex = [
                 `[0:v]scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease[scaled]`,
                 `[scaled]pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black[pad]`,
                 `[1:v]scale=${logoW}:${logoH}[logo]`,
                 `[pad][logo]overlay=${xBR}:${yBR}[vout]`,
-                // Mezcla de audio: [0:a] original al 40%, [2:a] música al 100%
                 tieneAudio
                     ? `[0:a]volume=0.4[orig];[2:a]volume=1.0[music];[orig][music]amix=inputs=2:duration=first:dropout_transition=2[aout]`
                     : `[2:a]volume=1.0[aout]`
             ].join(';');
-
             outputMaps = ['-map', '[vout]', '-map', '[aout]'];
         } else {
-            // SIN audio de fondo: comportamiento original
             filterComplex = [
                 `[0:v]scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease[scaled]`,
                 `[scaled]pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black[pad]`,
@@ -140,19 +224,16 @@ async function procesarVideo(job) {
                 .input(inputPath)
                 .input(LOGO_PATH);
 
-            // Tercer input si hay audio de fondo
             if (tieneAudioExterno) {
                 command.input(audioPath);
             }
 
-            // Aplicar filter_complex
             if (tieneAudioExterno) {
                 command.complexFilter(filterComplex);
             } else {
                 command.complexFilter(filterComplex, 'out');
             }
 
-            // Opciones de video
             command.outputOptions([
                 '-c:v libx264',
                 '-preset veryfast',
@@ -164,9 +245,7 @@ async function procesarVideo(job) {
                 '-max_muxing_queue_size 1024'
             ]);
 
-            // Opciones de audio
             if (tieneAudioExterno) {
-                // El filter_complex ya devuelve [vout] y [aout]
                 command.outputOptions(outputMaps);
                 command.outputOptions([
                     '-c:a', 'aac',
@@ -189,7 +268,7 @@ async function procesarVideo(job) {
 
             command
                 .output(outputPath)
-                .on('start', (cmd) => {
+                .on('start', () => {
                     console.log(`▶️ [JOB ${job.id}] FFmpeg iniciado`);
                 })
                 .on('progress', (progress) => {
@@ -324,3 +403,97 @@ async function procesarVideo(job) {
         throw error;
     }
 }
+
+// ================================================================
+// WORKER BULLMQ
+// ================================================================
+const worker = new Worker(COLA_NOMBRE, procesarVideo, {
+    connection: redisConnection,
+    concurrency: MAX_CONCURRENT,
+    limiter: {
+        max: 3,
+        duration: 60000
+    }
+});
+
+worker.on('completed', (job, result) => {
+    console.log(`✅ Worker: Job ${job.id} completado`);
+    console.log(`   URL: ${result.processedUrl}`);
+    console.log(`   Audio original: ${result.tieneAudio ? 'sí' : 'no'}`);
+    console.log(`   Audio externo: ${result.tieneAudioExterno ? 'sí' : 'no'}`);
+});
+
+worker.on('failed', (job, err) => {
+    console.error(`❌ Worker: Job ${job?.id} falló:`, err.message);
+});
+
+worker.on('error', (err) => {
+    console.error('❌ Worker error general:', err.message);
+});
+
+worker.on('ready', () => {
+    console.log('✅ Worker listo, esperando trabajos...');
+});
+
+// ================================================================
+// HEALTH CHECK
+// ================================================================
+const http = require('http');
+
+const healthServer = http.createServer((req, res) => {
+    if (req.url === '/health' || req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+            status: 'ok',
+            service: 'worker-video',
+            redis: redisConnection.status,
+            timestamp: new Date().toISOString()
+        }));
+    } else {
+        res.writeHead(404);
+        res.end('Not found');
+    }
+});
+
+healthServer.listen(PORT, '0.0.0.0', () => {
+    console.log(`🏥 Health check en http://0.0.0.0:${PORT}/health`);
+});
+
+// ================================================================
+// MANEJO DE ERRORES GLOBALES
+// ================================================================
+process.on('uncaughtException', (err) => {
+    console.error('❌ Uncaught exception:', err);
+    console.error('🔴 Cerrando worker para que Railway reinicie el contenedor...');
+    process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('❌ Unhandled rejection en:', promise);
+    console.error('   Razón:', reason);
+});
+
+process.on('SIGTERM', async () => {
+    console.log('🛑 SIGTERM recibido, cerrando worker...');
+    try {
+        await worker.close();
+        await redisConnection.quit();
+    } catch (err) {
+        console.error('⚠️ Error cerrando:', err.message);
+    }
+    healthServer.close(() => {
+        process.exit(0);
+    });
+});
+
+console.log('========================================');
+console.log("🎬 WORKER DE VIDEOS - SARIEL'S v4");
+console.log('========================================');
+console.log('📡 Cola:', COLA_NOMBRE);
+console.log('🔢 Concurrencia:', MAX_CONCURRENT);
+console.log('📁 Temp dir:', TEMP_DIR);
+console.log('🖼️ Logo:', LOGO_PATH);
+console.log('🎵 Audio: mezcla original 40% + fondo 100%');
+console.log('🎯 Limiter: 3 jobs/minuto');
+console.log('🛡️ upsert:true (evita duplicados en reintentos)');
+console.log('========================================');
