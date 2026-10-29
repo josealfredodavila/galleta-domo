@@ -1,15 +1,11 @@
 // ================================================================
-// MENSAJES · JS v5.4 · WEB3 NEON UI
-// Cambios v5.4:
-// - Corregidos IDs en init(): closeModalConfig y closeModalBloqueados
-// - Guards en asignaciones onclick para no romper init si falta un ID
-// - Eliminado selectQuienPuedeLlamarme y btnGuardarConfig del flujo (sin función)
-// - Tiempo real UPDATE en mensajes_chat (ediciones y eliminaciones)
-// - Menú contextual solo en chats de usuarios (no Marquinhos)
-// - Long press corregido con startX/startY y pointermove robusto
-// - Errores de moderación al editar (contenido_no_permitido)
-// - Meta reconstruido tras editar (hora + editado + estado leído)
-// - loadConversations() tras editar/eliminar mensajes
+// MENSAJES · JS v5.5 · WEB3 NEON UI
+// Cambios v5.5:
+// - subscribeMessages con filtro de servidor por remitente_id y destinatario_id
+//   (2 suscripciones en el mismo canal) y sin chequeo de cliente redundante
+// - editarMensaje: eliminada la rama muerta de headerBot (solo edita mensajes
+//   enviados por el usuario); se conserva el header de bot solo en recibidos
+// - Resto de v5.4 sin cambios
 // ================================================================
 
 'use strict';
@@ -1174,52 +1170,64 @@ async function deleteConversation() {
     } catch (e) { console.error('Error eliminando conversación:', e); toast('❌ No se pudo eliminar la conversación', 'error'); }
 }
 
+/* ============================================================
+   SUSCRIPCIÓN A MENSAJES (v5.5: filtros de servidor)
+   Dos suscripciones en el mismo canal:
+   - UPDATE con filter remitente_id = user.id (mis mensajes editados/eliminados)
+   - UPDATE con filter destinatario_id = user.id (recibidos editados/eliminados)
+   - INSERT con filter remitente_id = id (mensajes nuevos del otro)
+   Sin chequeos de cliente redundantes.
+   ============================================================ */
 function subscribeMessages(id) {
     if (id === BOT_ID) return;
     if (msgChannel) { try { db.removeChannel(msgChannel); } catch (e) {} msgChannel = null; }
-    msgChannel = db.channel('chat-' + id)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat' }, p => {
-            const m = p.new;
-            if (current?.id === id && m.remitente_id === id && m.destinatario_id === user.id) { append(m, false); markRead(id); }
-        })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat' }, p => {
-            const m = p.new;
-            if (!current || !user) return;
-            const enEstaConversacion = (m.remitente_id === current.id && m.destinatario_id === user.id)
-                || (m.remitente_id === user.id && m.destinatario_id === current.id);
-            if (!enEstaConversacion) return;
+    if (!user || !user.id) return;
 
-            const el = document.querySelector(`.bubblewrap[data-mensaje-id="${m.id}"]`);
-            if (!el) { loadConversations(); return; }
+    const manejarUpdate = (m) => {
+        if (!current || !user) return;
+        const el = document.querySelector(`.bubblewrap[data-mensaje-id="${m.id}"]`);
+        if (!el) { loadConversations(); return; }
 
-            if (m.eliminado === true) {
-                el.remove();
-                loadConversations();
-                return;
-            }
-
-            const bubble = el.querySelector('.bubble');
-            const metaEl = el.querySelector('.meta');
-            const esSent = el.classList.contains('sent');
-
-            if (bubble && m.tipo === 'texto') {
-                const textoLimpio = limpiarMarkdown(m.contenido || '');
-                const innerHtml = (typeof window.formatearMensajeConEmotes === 'function')
-                    ? window.formatearMensajeConEmotes(textoLimpio)
-                    : esc(textoLimpio);
-                const headerBot = (!esSent && (m.es_bot || m.bot_message)) ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
-                const avisoHTML = m.aviso_moderacion === 'lenguaje_inapropiado' ? '<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(247,212,74,.12);border:1px solid rgba(247,212,74,.4);color:#f7d44a;font-size:.68rem;">⚠️ Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>' : '';
-                bubble.innerHTML = headerBot + innerHtml + avisoHTML;
-            }
-
-            if (metaEl) {
-                const hora = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                const editado = m.editado === true ? ' · editado' : '';
-                const leido = esSent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : '';
-                metaEl.textContent = hora + editado + leido;
-            }
-
+        if (m.eliminado === true) {
+            el.remove();
             loadConversations();
+            return;
+        }
+
+        const bubble = el.querySelector('.bubble');
+        const metaEl = el.querySelector('.meta');
+        const esSent = el.classList.contains('sent');
+
+        if (bubble && m.tipo === 'texto') {
+            const textoLimpio = limpiarMarkdown(m.contenido || '');
+            const innerHtml = (typeof window.formatearMensajeConEmotes === 'function')
+                ? window.formatearMensajeConEmotes(textoLimpio)
+                : esc(textoLimpio);
+            const headerBot = (!esSent && (m.es_bot || m.bot_message)) ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
+            const avisoHTML = m.aviso_moderacion === 'lenguaje_inapropiado' ? '<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(247,212,74,.12);border:1px solid rgba(247,212,74,.4);color:#f7d44a;font-size:.68rem;">⚠️ Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>' : '';
+            bubble.innerHTML = headerBot + innerHtml + avisoHTML;
+        }
+
+        if (metaEl) {
+            const hora = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+            const editado = m.editado === true ? ' · editado' : '';
+            const leido = esSent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : '';
+            metaEl.textContent = hora + editado + leido;
+        }
+
+        loadConversations();
+    };
+
+    msgChannel = db.channel('chat-' + id)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + id }, p => {
+            const m = p.new;
+            if (m.destinatario_id === user.id) { append(m, false); markRead(id); }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + user.id }, p => {
+            manejarUpdate(p.new);
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'destinatario_id=eq.' + user.id }, p => {
+            manejarUpdate(p.new);
         })
         .subscribe();
 }
@@ -2070,6 +2078,11 @@ async function mostrarMenuMensaje(bubblewrap, msgId) {
     }, 10);
 }
 
+/* ============================================================
+   editarMensaje (v5.5: sin rama muerta del headerBot)
+   Solo se editan mensajes enviados por el usuario, por lo que
+   el header de bot nunca aplica aquí.
+   ============================================================ */
 async function editarMensaje(msgId, bubblewrap) {
     if (!await auth()) return;
     const bubble = bubblewrap.querySelector('.bubble');
@@ -2077,8 +2090,6 @@ async function editarMensaje(msgId, bubblewrap) {
     const esSent = bubblewrap.classList.contains('sent');
 
     let contenidoActual = bubble.textContent.trim();
-    const headerBotEl = bubble.querySelector('.bubble-bot-info');
-    if (headerBotEl) contenidoActual = contenidoActual.replace(headerBotEl.textContent, '').trim();
 
     const nuevoTexto = await NeonModal.prompt({
         title: 'Editar mensaje',
@@ -2112,13 +2123,12 @@ async function editarMensaje(msgId, bubblewrap) {
         const innerHtml = (typeof window.formatearMensajeConEmotes === 'function')
             ? window.formatearMensajeConEmotes(textoLimpio)
             : esc(textoLimpio);
-        const headerBot = (!esSent && headerBotEl) ? headerBotEl.outerHTML : '';
-        bubble.innerHTML = headerBot + innerHtml;
+        bubble.innerHTML = innerHtml;
 
         if (metaEl) {
             const horaMatch = metaEl.textContent.match(/^\s*(\d{1,2}:\d{2})/);
             const hora = horaMatch ? horaMatch[1] : '';
-            const leidoEstado = metaEl.textContent.includes('◆◆') ? ' · ◆◆' : (metaEl.textContent.includes('◈◈') ? ' · ◈◈' : '');
+            const leidoEstado = esSent ? (metaEl.textContent.includes('◆◆') ? ' · ◆◆' : ' · ◈◈') : '';
             metaEl.textContent = `${hora} · editado${leidoEstado}`;
         }
 
@@ -2185,7 +2195,6 @@ function configurarLongPressMensajes() {
         if (!bubblewrap) return false;
         if (bubblewrap.querySelector('img, video, audio')) return false;
         if (!bubblewrap.dataset.mensajeId) return false;
-        // Solo chats de usuario (no bot)
         if (!current || current.bot) return false;
         return true;
     };
@@ -2601,7 +2610,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '5.4.0',
+    version: '5.5.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
