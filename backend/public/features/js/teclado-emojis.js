@@ -1,8 +1,9 @@
 /* ============================================================
-   TECLADO DE EMOJIS Y EMOTES · v3 (archivo completo)
+   TECLADO DE EMOJIS Y EMOTES · v3.1 (archivo completo)
    - Inserta códigos :id: en el input (no texto del fallback)
    - formatearMensajeConEmotes() convierte :id: en <img> al mostrar mensajes
    - Categoría "desafio" para emotes tipo Double Kill, POTG, etc.
+   - Categoría "plastilina" para emotes mexicanos (taco, luchador, etc.)
    ============================================================ */
 
 const TECLADO_DATA = {
@@ -50,6 +51,15 @@ const TECLADO_DATA = {
         { id: 'hype', img: '/features/img/emojis/desafio/hype.png', fallback: '⭐', badge: true },
         { id: 'overtime', img: '/features/img/emojis/desafio/overtime.png', fallback: '⏱️', badge: true },
         { id: 'vs', img: '/features/img/emojis/desafio/vs.png', fallback: '🆚', badge: true }
+    ],
+    // NUEVA CATEGORÍA
+    plastilina: [
+        { id: 'luchador', img: '/features/img/emojis-plastilina/luchador.webp', fallback: '🤼' },
+        { id: 'taco', img: '/features/img/emojis-plastilina/taco.webp', fallback: '🌮' },
+        { id: 'pinata', img: '/features/img/emojis-plastilina/pinata.webp', fallback: '🪅' },
+        { id: 'calavera', img: '/features/img/emojis-plastilina/calavera.webp', fallback: '💀' },
+        { id: 'nopal', img: '/features/img/emojis-plastilina/nopal.webp', fallback: '🌵' },
+        { id: 'fuego', img: '/features/img/emojis-plastilina/fuego.webp', fallback: '🔥' }
     ]
 };
 
@@ -57,7 +67,8 @@ const TECLADO_ETIQUETAS = {
     generales: 'Emojis',
     competitivos: 'Competitivo',
     gestos: 'Gestos',
-    desafio: 'Desafío'
+    desafio: 'Desafío',
+    plastilina: 'Mexa' // Etiqueta corta para que quepa en las pestañas
 };
 
 // Mapa rápido id -> item, para renderizar códigos :id: en mensajes
