@@ -1,1018 +1,513 @@
-<!DOCTYPE html>
-<html lang="es">
+<!doctype html>
+<html lang="es" data-require-auth>
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#000000" />
-    <title>Chats · Sariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#05080f">
+<title>◈ Mensajes · Csariel's</title>
 
-    <link rel="stylesheet" href="../../../shared/config-layout.css" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="/features/shared/js/auth-global.js"></script>
+<script src="/features/shared/js/presencia-global.js" defer></script>
+<script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script>
-        (function () {
-            'use strict';
+<script>
+    (function () {
+        var url = 'https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js';
+        var maxIntentos = 3;
+        var intento = 0;
+        var yaCargado = false;
 
-            window.__sarielsAuthenticated = null;
-            window.supabaseClient = window.supabaseClient || null;
-            window.supabaseReady = null;
-
-            window.getSupabaseClient = function () {
-                return window.supabaseReady;
+        function cargarScript() {
+            if (window.LivekitClient) { yaCargado = true; return; }
+            if (intento >= maxIntentos) {
+                console.warn('[LiveKit] No se pudo cargar tras ' + maxIntentos + ' intentos. Las llamadas no estarán disponibles.');
+                window.dispatchEvent(new CustomEvent('livekit:error'));
+                return;
+            }
+            intento++;
+            var s = document.createElement('script');
+            s.src = url;
+            s.async = true;
+            s.onload = function () {
+                if (window.LivekitClient) {
+                    yaCargado = true;
+                    window.dispatchEvent(new CustomEvent('livekit:ready'));
+                } else {
+                    console.warn('[LiveKit] Script cargado pero window.LivekitClient no existe. Reintentando...');
+                    setTimeout(cargarScript, 1500);
+                }
             };
-
-            function esRutaInternaSegura(valor) {
-                if (typeof valor !== 'string') return false;
-                if (!valor.startsWith('/')) return false;
-                if (valor.startsWith('//')) return false;
-                if (valor.startsWith('/\\')) return false;
-                return true;
-            }
-
-            function revelarPagina() {
-                document.documentElement.classList.add('auth-ready');
-            }
-
-            function irAlIndexConReturnTo() {
-                try {
-                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
-                    if (esRutaInternaSegura(returnTo)) {
-                        localStorage.setItem('wallet_returnTo', returnTo);
-                    }
-                    window.location.replace('/');
-                } catch (e) {
-                    window.location.replace('/');
-                }
-            }
-
-            var salvaguarda = setTimeout(function () {
-                console.warn('[Chats] Salvaguarda activada.');
-                revelarPagina();
-            }, 10000);
-
-            async function inicializarSupabase() {
-                try {
-                    if (
-                        !window.supabase ||
-                        typeof window.supabase.createClient !== 'function'
-                    ) {
-                        throw new Error('Supabase SDK no disponible.');
-                    }
-
-                    if (!window.supabaseClient) {
-                        var supabaseUrl = null;
-                        var supabaseAnonKey = null;
-
-                        try {
-                            const response = await fetch('/api/config/public', {
-                                method: 'GET',
-                                credentials: 'same-origin',
-                                cache: 'no-store',
-                                headers: { 'Accept': 'application/json' }
-                            });
-
-                            if (response.ok) {
-                                const config = await response.json();
-                                supabaseUrl = config && config.supabaseUrl;
-                                supabaseAnonKey = config && config.supabaseAnonKey;
-                            }
-                        } catch (fetchErr) {
-                            console.warn('[Chats] fetch /api/config/public falló:', fetchErr);
-                        }
-
-                        if (!supabaseUrl || !supabaseAnonKey) {
-                            throw new Error('Configuración pública de Supabase no disponible.');
-                        }
-
-                        window.SupabaseSDK = window.supabase;
-
-                        window.supabaseClient = window.SupabaseSDK.createClient(
-                            supabaseUrl,
-                            supabaseAnonKey,
-                            {
-                                auth: {
-                                    persistSession: true,
-                                    autoRefreshToken: true,
-                                    detectSessionInUrl: true
-                                }
-                            }
-                        );
-                    }
-
-                    const resultado = await window.supabaseClient.auth.getSession();
-                    const session = resultado && resultado.data ? resultado.data.session : null;
-
-                    window.__sarielsAuthenticated = !!session;
-
-                    clearTimeout(salvaguarda);
-
-                    if (!session) {
-                        irAlIndexConReturnTo();
-                    } else {
-                        revelarPagina();
-                    }
-
-                    return window.supabaseClient;
-                } catch (error) {
-                    console.error('[Chats] Error inicializando Supabase:', error);
-                    window.__sarielsAuthenticated = false;
-                    clearTimeout(salvaguarda);
-                    revelarPagina();
-                    return null;
-                }
-            }
-
-            window.supabaseReady = inicializarSupabase();
-        })();
-    </script>
-
-    <style>
-        html:not(.auth-ready) body {
-            visibility: hidden;
-        }
-        html.auth-ready body {
-            visibility: visible;
+            s.onerror = function () {
+                console.warn('[LiveKit] Error de carga intento ' + intento);
+                setTimeout(cargarScript, 1500);
+            };
+            document.head.appendChild(s);
         }
 
-        .cfg-solicitud-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--cfg-border);
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', cargarScript);
+        } else {
+            cargarScript();
         }
-        .cfg-solicitud-card:last-child {
-            border-bottom: none;
-        }
-        .cfg-solicitud-card .avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: 700;
-            font-size: 1rem;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .cfg-solicitud-card .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .cfg-solicitud-card .info {
-            flex: 1;
-            min-width: 0;
-        }
-        .cfg-solicitud-card .info .nombre {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--cfg-text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .cfg-solicitud-card .info .handle {
-            font-size: 0.68rem;
-            color: var(--cfg-text-muted);
-        }
-        .cfg-solicitud-card .info .mensaje {
-            font-size: 0.75rem;
-            color: var(--cfg-text-muted);
-            margin-top: 4px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .cfg-solicitud-card .acciones {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .cfg-solicitud-card .btn-mini {
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: var(--cfg-transition);
-        }
-        .cfg-solicitud-card .btn-aceptar {
-            background: rgba(0, 214, 143, 0.15);
-            color: var(--cfg-success);
-            border: 1px solid rgba(0, 214, 143, 0.3);
-        }
-        .cfg-solicitud-card .btn-aceptar:hover {
-            background: rgba(0, 214, 143, 0.25);
-        }
-        .cfg-solicitud-card .btn-rechazar {
-            background: rgba(255, 51, 102, 0.1);
-            color: var(--cfg-danger);
-            border: 1px solid rgba(255, 51, 102, 0.3);
-        }
-        .cfg-solicitud-card .btn-rechazar:hover {
-            background: rgba(255, 51, 102, 0.2);
-        }
-        .cfg-empty-solicitudes {
-            padding: 40px 20px;
-            text-align: center;
-            color: var(--cfg-text-muted);
-            font-size: 0.78rem;
-        }
-        .cfg-empty-solicitudes .icon {
-            font-size: 2.5rem;
-            display: block;
-            margin-bottom: 10px;
-            opacity: 0.4;
-        }
-        .cfg-loading-mini {
-            padding: 20px;
-            text-align: center;
-            color: var(--cfg-text-muted);
-            font-size: 0.75rem;
-        }
+    })();
+</script>
 
-        .cfg-search-input {
-            width: 100%;
-            padding: 12px 14px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--cfg-border);
-            border-radius: 10px;
-            color: var(--cfg-text);
-            font-size: 0.85rem;
-            outline: none;
-            font-family: 'Inter', sans-serif;
-            transition: var(--cfg-transition);
-        }
-        .cfg-search-input:focus {
-            border-color: var(--cfg-gold);
-            background: rgba(0,0,0,0.4);
-        }
-        .cfg-search-input::placeholder {
-            color: var(--cfg-text-dim);
-        }
+<link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.2">
+<link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
+<link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
 
-        .cfg-resultado-usuario {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            cursor: pointer;
-            transition: var(--cfg-transition);
-            border-radius: 10px;
-        }
-        .cfg-resultado-usuario:hover {
-            background: rgba(255,255,255,0.04);
-        }
-        .cfg-resultado-usuario .avatar-mini {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: 700;
-            font-size: 0.75rem;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .cfg-resultado-usuario .avatar-mini img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .cfg-resultado-usuario .info {
-            flex: 1;
-            min-width: 0;
-        }
-        .cfg-resultado-usuario .info .nombre {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--cfg-text);
-        }
-        .cfg-resultado-usuario .info .handle {
-            font-size: 0.7rem;
-            color: var(--cfg-text-muted);
-        }
-        .cfg-resultado-usuario .btn-agregar {
-            background: rgba(212, 175, 55, 0.15);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            color: var(--cfg-gold);
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-        .cfg-resultado-usuario .btn-agregar:hover {
-            background: rgba(212, 175, 55, 0.25);
-        }
-        .cfg-resultado-usuario .btn-agregar.agregado {
-            background: rgba(0, 214, 143, 0.15);
-            border-color: rgba(0, 214, 143, 0.3);
-            color: var(--cfg-success);
-        }
-
-        .cfg-contacto-confianza {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--cfg-border);
-        }
-        .cfg-contacto-confianza:last-child {
-            border-bottom: none;
-        }
-        .cfg-contacto-confianza .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: 700;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .cfg-contacto-confianza .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .cfg-contacto-confianza .info {
-            flex: 1;
-            min-width: 0;
-        }
-        .cfg-contacto-confianza .info .nombre {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--cfg-text);
-        }
-        .cfg-contacto-confianza .info .handle {
-            font-size: 0.68rem;
-            color: var(--cfg-text-muted);
-        }
-        .cfg-contacto-confianza .btn-quitar {
-            background: rgba(255, 51, 102, 0.1);
-            border: 1px solid rgba(255, 51, 102, 0.3);
-            color: var(--cfg-danger);
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .cfg-contacto-confianza .btn-quitar:hover {
-            background: rgba(255, 51, 102, 0.2);
-        }
-    </style>
+<style>
+    html:not(.auth-ready) .app { display: none !important; }
+    .chathead { position: relative; z-index: 5; }
+    .chathead .actions { position: relative; z-index: 6; }
+    
+    /* Botón de videollamada profesional */
+    .btn-videollamada {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid var(--cyan, #00e5ff);
+      border-radius: 12px;
+      background: rgba(0, 229, 255, 0.08);
+      color: var(--cyan, #00e5ff);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.75rem;
+    }
+    .btn-videollamada:hover {
+      background: rgba(0, 229, 255, 0.18);
+      border-color: var(--cyan, #00e5ff);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    .btn-videollamada:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: rgba(0, 229, 255, 0.03);
+    }
+    .btn-videollamada svg {
+      flex-shrink: 0;
+    }
+    @media (max-width: 480px) {
+      .btn-videollamada span { display: none; }
+      .btn-videollamada { padding: 8px; }
+    }
+</style>
 </head>
-<body class="cfg-page">
+<body>
+<div class="app">
+<header class="header">
+    <a class="logo" href="/"><b>◈</b><span>Csariel's</span><em class="badge">WEB3</em></a>
+    <div class="header-right">
+        <div class="network"><i></i>Polygon</div>
+        <button class="iconbtn" id="btnConfigLlamadas" title="Configuración de llamadas" style="color:var(--muted);" data-neon="icon">⚙</button>
+        <div class="header-avatar" id="headerAvatar" title="Mi perfil">◈</div>
+        <input type="file" id="avatarInput" hidden accept="image/*">
+    </div>
+</header>
+<nav class="nav">
+    <a href="/">⌂ Inicio</a>
+    <a href="/features/muro/muro.html">◇ Muro</a>
+    <a href="/features/perfil/perfil.html">◆ Perfil</a>
+    <a href="/features/mensajes/contactos.html">◈ Contactos</a>
+    <a class="active" href="/features/mensajes/mensajes.html" data-neon="nav">◈ Mensajes</a>
+    <a href="/features/live/live.html">◉ Live</a>
+</nav>
+<main class="panel" id="panel">
+<aside class="sidebar">
 
-    <div id="cfgHeaderSlot"></div>
+    <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
+        <button class="sidebar-tab active" data-tab="chats" data-neon="tab" role="tab" aria-selected="true" onclick="cambiarPestana('chats')">
+            <span class="tab-icon">◈</span>
+            <span class="tab-label">Chats</span>
+        </button>
+        <button class="sidebar-tab" data-tab="canales" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
+            <span class="tab-icon">⬡</span>
+            <span class="tab-label">Canales</span>
+        </button>
+        <button class="sidebar-tab" data-tab="grupos" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
+            <span class="tab-icon">◆</span>
+            <span class="tab-label">Grupos</span>
+        </button>
+        <button class="sidebar-tab" data-tab="llamadas" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')">
+            <span class="tab-icon">☎</span>
+            <span class="tab-label">Llamadas</span>
+        </button>
+    </div>
 
-    <main class="cfg-content">
-
-        <h2 class="cfg-section-title">Quién puede enviarme mensajes</h2>
-        <div class="cfg-list" id="seccionQuienPuede"></div>
-
-        <h2 class="cfg-section-title">Contactos de confianza</h2>
-        <div class="cfg-list">
-            <div id="contactosConfianzaLista">
-                <div class="cfg-loading-mini">⏳ Cargando contactos...</div>
+    <div class="tab-content" id="tabChats">
+        <div class="sidehead">
+            <span>◈ Conversaciones</span>
+        </div>
+        <div class="searchbox">
+            <input type="text" id="searchConversations" placeholder="◇ Buscar conversación…" autocomplete="off">
+        </div>
+        <div class="estados-bar">
+            <div class="estados-header">
+                <div class="estados-title">◈ ESTADOS</div>
+                <button class="btn-subir-estado" id="btnSubirEstado" title="Subir estado" data-neon="chip">＋ Subir</button>
             </div>
-            <button class="cfg-item" onclick="window.onAgregarContacto()" style="border-top:1px solid var(--cfg-border);">
-                <div class="cfg-item-icon">➕</div>
-                <div class="cfg-item-content">
-                    <div class="cfg-item-title">Añadir contacto de confianza</div>
-                    <div class="cfg-item-desc">Busca usuarios para agregar a tu lista</div>
-                </div>
-                <div class="cfg-item-chevron">›</div>
+            <div class="estados-scroll" id="estadosScroll"></div>
+        </div>
+        <div class="convlist" id="conversationList"></div>
+    </div>
+
+    <div class="tab-content hidden" id="tabCanales">
+        <div class="sidehead">
+            <span>⬡ Canales Públicos</span>
+        </div>
+        <div class="searchbox">
+            <input type="text" id="searchCanales" placeholder="◇ Buscar canal…" autocomplete="off" oninput="buscarCanalesDebounce()">
+        </div>
+        <div class="filtros-canales">
+            <select id="filtroEstadoCanal" onchange="cargarCanales()">
+                <option value="">Todos los estados</option>
+            </select>
+        </div>
+        <div class="canales-lista" id="canalesLista"></div>
+    </div>
+
+    <div class="tab-content hidden" id="tabGrupos">
+        <div class="sidehead">
+            <span>◆ Grupos Privados</span>
+        </div>
+        <div class="searchbox">
+            <input type="text" id="searchGrupos" placeholder="◇ Buscar grupo…" autocomplete="off" oninput="buscarGruposDebounce()">
+        </div>
+        <div class="filtros-canales">
+            <select id="filtroEstadoGrupo" onchange="cargarGrupos()">
+                <option value="">Todos los estados</option>
+            </select>
+        </div>
+        <div class="canales-lista" id="gruposLista"></div>
+    </div>
+
+    <div class="tab-content hidden" id="tabLlamadas">
+        <div class="sidehead">
+            <span>☎ Historial de llamadas</span>
+            <button class="btn-subir-estado" id="btnBorrarTodoHistorial" title="Borrar todo el historial" data-neon="chip-danger" style="background:linear-gradient(135deg,#ff3366,#cc1a4d);color:#fff;">🗑 Todo</button>
+        </div>
+        <div class="filtros-canales" style="padding:0 12px 6px; gap:6px; flex-wrap:wrap;">
+            <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;">
+                <option value="all">Todos los tipos</option>
+                <option value="audio">Solo audio</option>
+                <option value="video">Solo video</option>
+            </select>
+            <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;">
+                <option value="all">Todas</option>
+                <option value="entrante">Entrantes</option>
+                <option value="saliente">Salientes</option>
+            </select>
+        </div>
+        <div class="canales-lista" id="historialLlamadasLista">
+            <div class="empty-state-small">
+                <div class="empty-icon">☎</div>
+                <div class="empty-text">Cargando historial…</div>
+            </div>
+        </div>
+    </div>
+
+    <button class="fab" id="newChat" title="Nueva conversación" data-neon="fab">＋</button>
+</aside>
+<section class="chat">
+    <header class="chathead">
+        <button class="backbtn" id="backBtn" title="Volver" data-neon="icon">←</button>
+        <div class="avatar" id="chatAvatar" title="Ver foto">◈</div>
+        <div>
+            <div class="chatname" id="chatName">Selecciona una conversación</div>
+            <div class="status" id="chatStatus">◈ En espera</div>
+        </div>
+        <div class="actions" id="chatActions" style="display:none;">
+            <button class="iconbtn" id="deleteChat" title="Eliminar conversación" data-neon="icon">◇</button>
+            <button class="iconbtn" id="blockUser" title="Bloquear contacto" data-neon="icon-danger" style="color:#ff3366;">⛔</button>
+            <button class="btn-videollamada" id="videoCall" title="Iniciar videollamada" disabled>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="6" width="12" height="12" rx="3"></rect>
+                    <path d="m15 10 6-3v10l-6-3"></path>
+                </svg>
+                <span>Videollamada</span>
+            </button>
+            <button class="iconbtn" id="searchChat" title="Buscar en la conversación" data-neon="icon">◇</button>
+        </div>
+    </header>
+    <div class="messages" id="messages">
+        <div class="empty" id="emptyState">
+            <strong>◈</strong>
+            <p>Selecciona una conversación</p>
+            <small>Elige un chat de la lista para empezar a hablar</small>
+        </div>
+        <div id="scrollAnchor"></div>
+        <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">
+            ↓
+            <span class="badge-new" id="newMsgBadge" style="display:none;">1</span>
+        </button>
+    </div>
+    <form class="composer" id="composer" style="display:none;">
+        <button type="button" class="btn" id="attach" title="Adjuntar" data-neon="btn">◆</button>
+        <button type="button" class="btn" id="emojiBtn" title="Emojis" data-neon="btn">😀</button>
+        <button type="button" class="btn" id="audio" title="Grabar audio" data-neon="btn">●</button>
+        <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" data-neon="btn-bot" style="display:none;">◉</button>
+        <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje…">
+        <button class="btn send" type="submit" data-neon="send">Enviar</button>
+        <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
+    </form>
+</section>
+</main>
+<footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Csariel's · Sabor al Paladar · WEB3</footer>
+</div>
+
+<div class="modal" id="newModal">
+    <div class="modalbox">
+        <button class="iconbtn" id="closeModal" style="float:right" data-neon="icon">✕</button>
+        <h2>◈ Nueva conversación</h2>
+        <input class="search" id="userSearch" placeholder="Buscar por nombre o usuario…">
+        <div id="userResults" style="margin-top:10px"></div>
+    </div>
+</div>
+
+<div class="modal" id="profileModal">
+    <div class="profile-modal-box">
+        <div class="profile-modal-avatar" id="profileModalAvatar">◈</div>
+        <div class="profile-modal-name" id="profileModalName">Mi Perfil</div>
+        <div class="profile-modal-handle" id="profileModalHandle">@usuario</div>
+        <div class="profile-modal-actions">
+            <button class="profile-modal-btn" id="btnCambiarFoto">
+                <span class="icon">◆</span>
+                <span>Cambiar foto de perfil</span>
             </button>
         </div>
+        <button class="btn" id="btnCerrarProfileModal" style="margin-top:18px;width:100%;" data-neon="btn">Cerrar</button>
+    </div>
+</div>
 
-        <h2 class="cfg-section-title">Solicitudes de mensajes</h2>
-        <div class="cfg-list">
-            <div id="solicitudesContainer">
-                <div class="cfg-loading-mini">⏳ Cargando solicitudes...</div>
-            </div>
+<div class="modal" id="vistasModal">
+    <div class="modalbox" style="max-width:420px;">
+        <button class="iconbtn" id="closeVistasModal" style="float:right" data-neon="icon">✕</button>
+        <h2 style="display:flex;align-items:center;gap:8px;">◉ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
+        <div id="vistasList" style="margin-top:10px;">
+            <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>
         </div>
+    </div>
+</div>
 
-        <h2 class="cfg-section-title">Privacidad de chats</h2>
-        <div class="cfg-list" id="seccionPrivacidad"></div>
-
-        <div class="cfg-aviso">
-            ℹ️ Los cambios se sincronizan en todos tus dispositivos.
+<div class="modal" id="modalCrearCanal">
+    <div class="modalbox" style="max-width:520px;">
+        <button class="iconbtn" id="closeModalCanal" style="float:right" onclick="cerrarModalCrearCanal()" data-neon="icon">✕</button>
+        <h2>⬡ Crear Canal Público</h2>
+        <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">Los canales son públicos: cualquier usuario puede verlos y unirse.</p>
+        <input class="search" id="canalNombre" placeholder="Nombre del canal *" maxlength="80" style="margin-bottom:10px;">
+        <textarea id="canalDescripcion" placeholder="Descripción (opcional)" maxlength="200" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:70px;margin-bottom:10px;"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <input class="search" id="canalEstado" placeholder="Estado (opcional)">
+            <input class="search" id="canalMunicipio" placeholder="Municipio *">
         </div>
-
-        <div class="cfg-footer">
-            <strong>◈ Sariel's</strong> · Privacidad · Chats
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <input class="search" id="canalCiudad" placeholder="Ciudad (opcional)">
+            <input class="search" id="canalPais" placeholder="País" value="México">
         </div>
-    </main>
+        <button class="btn send" id="btnCrearCanal" onclick="crearCanal()" style="width:100%;" data-neon="send">⬡ Crear Canal</button>
+    </div>
+</div>
 
-    <script src="../../../shared/config-icons.js"></script>
-    <script src="../../../shared/config-layout.js"></script>
+<div class="modal" id="modalCrearGrupo">
+    <div class="modalbox" style="max-width:520px;">
+        <button class="iconbtn" id="closeModalGrupo" style="float:right" onclick="cerrarModalCrearGrupo()" data-neon="icon">✕</button>
+        <h2>◆ Crear Grupo Privado</h2>
+        <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">Los grupos son privados: solo por invitación.</p>
+        <input class="search" id="grupoNombre" placeholder="Nombre del grupo *" maxlength="80" style="margin-bottom:10px;">
+        <textarea id="grupoDescripcion" placeholder="Descripción (opcional)" maxlength="200" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:70px;margin-bottom:10px;"></textarea>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
+            <input class="search" id="grupoEstado" placeholder="Estado (opcional)">
+            <input class="search" id="grupoMunicipio" placeholder="Municipio *">
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <input class="search" id="grupoCiudad" placeholder="Ciudad (opcional)">
+            <input class="search" id="grupoPais" placeholder="País" value="México">
+        </div>
+        <button class="btn send" id="btnCrearGrupo" onclick="crearGrupo()" style="width:100%;" data-neon="send">◆ Crear Grupo</button>
+    </div>
+</div>
 
-    <script>
+<div class="modal" id="estadoUploadModal">
+    <div class="modalbox" style="text-align:center;">
+        <button class="iconbtn" id="closeEstadoModal" style="float:right" data-neon="icon">✕</button>
+        <h2>◈ Nuevo Estado</h2>
+        <p style="color:var(--muted);font-size:.8rem;margin-bottom:14px;">Se mostrará 24 horas</p>
+        <div id="estadoPreviewWrap" style="margin:16px 0;display:none;">
+            <img id="estadoPreviewImg" style="max-width:100%;max-height:240px;border-radius:12px;border:2px solid var(--gold);">
+        </div>
+        <input type="file" id="estadoFileInput" accept="image/*" style="display:none;">
+        <button class="btn" id="btnSeleccionarEstado" style="width:100%;margin-bottom:10px;" data-neon="btn">◆ Seleccionar imagen</button>
+        <textarea id="estadoCaption" placeholder="Escribe un mensaje (opcional)" maxlength="120" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:60px;margin-bottom:12px;"></textarea>
+        <button class="btn send" id="btnPublicarEstado" style="width:100%;" disabled data-neon="send">Publicar estado</button>
+    </div>
+</div>
+
+<div class="modal" id="modalConfigLlamadas">
+    <div class="modalbox" style="max-width:480px;">
+        <button class="iconbtn" id="closeModalConfig" style="float:right" data-neon="icon">✕</button>
+        <h2>⚙ Configuración de llamadas</h2>
+
+        <label style="display:block;color:var(--muted);font-size:.75rem;margin-bottom:6px;font-weight:600;">¿Quién puede llamarme?</label>
+        <select id="selectQuienPuedeLlamarme" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;margin-bottom:16px;">
+            <option value="todos">Todos</option>
+            <option value="contactos">Solo mis contactos</option>
+            <option value="nadie">Nadie</option>
+        </select>
+
+        <button class="btn send" id="btnVerBloqueados" style="width:100%;margin-bottom:10px;" data-neon="btn">⛔ Ver usuarios bloqueados (<span id="countBloqueados">0</span>)</button>
+
+        <button class="btn send" id="btnGuardarConfig" style="width:100%;" data-neon="send">Guardar configuración</button>
+    </div>
+</div>
+
+<div class="modal" id="modalBloqueados">
+    <div class="modalbox" style="max-width:480px;">
+        <button class="iconbtn" id="closeModalBloqueados" style="float:right" data-neon="icon">✕</button>
+        <h2>⛔ Usuarios bloqueados</h2>
+        <div id="listaBloqueados" style="margin-top:10px;">
+            <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>
+        </div>
+    </div>
+</div>
+
+<div class="photo-viewer" id="photoViewer">
+    <button class="pv-close" id="pvClose">✕</button>
+    <img id="pvImage" src="" alt="Foto">
+    <div class="pv-name" id="pvName"></div>
+    <div class="pv-handle" id="pvHandle"></div>
+</div>
+
+<div class="estado-viewer" id="estadoViewer">
+    <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
+    <div class="estado-viewer-header">
+        <div class="estado-viewer-avatar" id="evAvatar">◈</div>
+        <div class="estado-viewer-info">
+            <div class="estado-viewer-name" id="evName">Usuario</div>
+            <div class="estado-viewer-time" id="evTime">Hace un momento</div>
+        </div>
+        <button class="estado-viewer-close" id="evClose">✕</button>
+    </div>
+    <div class="estado-viewer-body" id="evBody">
+        <button class="estado-viewer-nav prev" id="evPrev">‹</button>
+        <img class="estado-viewer-img" id="evImage" src="" alt="Estado" draggable="false">
+        <div class="estado-viewer-caption hidden" id="evCaption"></div>
+        <button class="estado-viewer-nav next" id="evNext">›</button>
+    </div>
+    <div class="estado-viewer-vistas hidden" id="evVistas">
+        <div class="estado-viewer-vistas-pill">
+            ◉ <span id="evVistasCount">0</span> vistas
+        </div>
+    </div>
+</div>
+
+<div class="call" id="callOverlay">
+    <div class="videos">
+        <video id="remoteVideo" autoplay playsinline></video>
+        <video id="localVideo" class="local" autoplay playsinline muted></video>
+    </div>
+    <div class="callinfo" id="callInfo">◈ Conectando…</div>
+    <div class="controls">
+        <button id="toggleMic" title="Activar/Silenciar micrófono">
+            <span class="ctrl-icon">🎤</span>
+            <span class="ctrl-label">Micrófono</span>
+        </button>
+        <button id="toggleCam" title="Activar/Desactivar cámara">
+            <span class="ctrl-icon">📷</span>
+            <span class="ctrl-label">Cámara</span>
+        </button>
+        <button id="toggleScreen" title="Compartir pantalla">
+            <span class="ctrl-icon">🖥️</span>
+            <span class="ctrl-label">Pantalla</span>
+        </button>
+        <button class="hang" id="hangup" title="Colgar llamada">
+            <span class="ctrl-icon">📵</span>
+            <span class="ctrl-label">Colgar</span>
+        </button>
+    </div>
+</div>
+
+<div class="call" id="incomingOverlay">
+    <div class="avatar" style="width:80px;height:80px;font-size:2rem" id="incomingAvatar">◈</div>
+    <h2 id="incomingName">Usuario</h2>
+    <div class="callinfo">🔔 <strong>Llamada entrante</strong></div>
+    <div class="controls">
+        <button id="acceptCall" class="accept" title="Aceptar llamada">
+            <span class="ctrl-icon">📹</span>
+            <span class="ctrl-label">Aceptar</span>
+        </button>
+        <button class="hang" id="rejectCall" title="Rechazar llamada">
+            <span class="ctrl-icon">📵</span>
+            <span class="ctrl-label">Rechazar</span>
+        </button>
+    </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="/features/shared/js/idiomas.js?v=9" defer></script>
+<script src="/features/js/teclado-emojis.js?v=4"></script>
+<script src="/features/mensajes/js/mensajes.js?v=17"></script>
+<script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
+
+<script>
     (function () {
-        'use strict';
+        var params = new URLSearchParams(window.location.search);
+        if ((params.get('chat') || '').toLowerCase() !== 'marquinhos') return;
 
-        const $ = (sel) => document.querySelector(sel);
+        var intentos = 0;
+        var maxIntentos = 40;
 
-        async function esperarCliente() {
-            const inicio = Date.now();
-            while (Date.now() - inicio < 10000) {
-                if (window.supabaseClient) return window.supabaseClient;
-                await new Promise(r => setTimeout(r, 100));
+        function limpiarUrl() {
+            try {
+                var u = new URL(window.location.href);
+                u.searchParams.delete('chat');
+                window.history.replaceState({}, '', u.pathname + (u.search || '') + u.hash);
+            } catch (e) {}
+        }
+
+        function buscarFilaMarquinhos() {
+            var lista = document.getElementById('conversationList');
+            if (!lista) return null;
+            var filas = Array.prototype.slice.call(lista.children);
+            for (var i = 0; i < filas.length; i++) {
+                if (/marquinhos/i.test(filas[i].textContent || '')) return filas[i];
             }
             return null;
         }
 
-        cfgInitPage({
-            title: 'Chats',
-            subtitle: '@tu_usuario',
-            backUrl: '/features/perfil/configuracion/index.html',
-        });
-
-        const PREF_KEYS = {
-            quien_puede: 'chats_quien_puede_mensajes',
-            filtro_solicitudes: 'chats_filtro_solicitudes',
-            mostrar_leido: 'chats_mostrar_leido',
-            mostrar_escribiendo: 'chats_mostrar_escribiendo',
-        };
-
-        let solicitudes = [];
-        let contactosConfianza = [];
-
-        async function cargarSolicitudes() {
-            try {
-                const client = await esperarCliente();
-                if (!client) {
-                    mostrarSinSolicitudes();
-                    return;
-                }
-
-                const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData && sessionData.session;
-                if (!session) {
-                    mostrarSinSolicitudes();
-                    return;
-                }
-
-                const { data, error } = await client
-                    .from('mensajes_solicitudes')
-                    .select('id, remitente_id, mensaje_inicial, estado, created_at')
-                    .eq('destinatario_id', session.user.id)
-                    .eq('estado', 'pendiente')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
-
-                if (error) {
-                    console.warn('Error cargando solicitudes:', error.message);
-                    solicitudes = [];
-                    mostrarSinSolicitudes();
-                    return;
-                }
-
-                solicitudes = data || [];
-
-                if (solicitudes.length === 0) {
-                    mostrarSinSolicitudes();
-                    return;
-                }
-
-                const idsRemitentes = [...new Set(solicitudes.map(s => s.remitente_id))];
-                const { data: perfiles } = await client
-                    .from('perfiles_publicos')
-                    .select('id, nombre, handle, avatar_url')
-                    .in('id', idsRemitentes);
-
-                const perfilesMap = {};
-                (perfiles || []).forEach(p => { perfilesMap[p.id] = p; });
-
-                solicitudes = solicitudes.map(s => ({
-                    ...s,
-                    remitente: perfilesMap[s.remitente_id] || null,
-                }));
-
-                renderSolicitudes();
-
-            } catch (e) {
-                console.error('Error cargando solicitudes:', e);
-                mostrarSinSolicitudes();
+        function intentarAbrir() {
+            intentos++;
+            if (typeof window.cambiarPestana === 'function') {
+                try { window.cambiarPestana('chats'); } catch (e) {}
             }
-        }
 
-        function renderSolicitudes() {
-            const container = $('#solicitudesContainer');
-            if (!container) return;
-
-            if (solicitudes.length === 0) {
-                mostrarSinSolicitudes();
+            var fila = buscarFilaMarquinhos();
+            if (fila) {
+                fila.click();
+                limpiarUrl();
                 return;
             }
 
-            container.innerHTML = solicitudes.map(s => {
-                const r = s.remitente || {};
-                const nombre = escapeHtml(r.nombre || 'Usuario');
-                const handle = escapeHtml(r.handle || 'usuario');
-                const avatar = r.avatar_url
-                    ? `<img src="${escapeHtml(r.avatar_url)}" alt="${nombre}">`
-                    : nombre.charAt(0).toUpperCase();
-                const mensaje = escapeHtml(s.mensaje_inicial || '');
-
-                return `
-                    <div class="cfg-solicitud-card">
-                        <div class="avatar">${avatar}</div>
-                        <div class="info">
-                            <div class="nombre">${nombre}</div>
-                            <div class="handle">@${handle}</div>
-                            <div class="mensaje">"${mensaje}"</div>
-                        </div>
-                        <div class="acciones">
-                            <button class="btn-mini btn-aceptar" onclick="window.onAceptarSolicitud('${s.id}')">✓</button>
-                            <button class="btn-mini btn-rechazar" onclick="window.onRechazarSolicitud('${s.id}')">✕</button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function mostrarSinSolicitudes() {
-            const container = $('#solicitudesContainer');
-            if (!container) return;
-            container.innerHTML = `
-                <div class="cfg-empty-solicitudes">
-                    <span class="icon">📭</span>
-                    No tienes solicitudes pendientes
-                </div>
-            `;
-        }
-
-        async function cargarContactosConfianza() {
-            try {
-                const client = await esperarCliente();
-                if (!client) {
-                    mostrarSinContactos();
-                    return;
-                }
-
-                const { data, error } = await client.rpc('listar_contactos_confianza');
-
-                if (error) {
-                    console.warn('Error RPC listar_contactos_confianza:', error.message);
-                    contactosConfianza = [];
-                    mostrarSinContactos();
-                    return;
-                }
-
-                contactosConfianza = data || [];
-
-                if (contactosConfianza.length === 0) {
-                    mostrarSinContactos();
-                    return;
-                }
-
-                renderContactosConfianza();
-
-            } catch (e) {
-                console.warn('Error contactos:', e && e.message);
-                contactosConfianza = [];
-                mostrarSinContactos();
-            }
-        }
-
-        function renderContactosConfianza() {
-            const container = $('#contactosConfianzaLista');
-            if (!container) return;
-
-            if (contactosConfianza.length === 0) {
-                mostrarSinContactos();
+            if (intentos >= maxIntentos) {
+                console.warn('[Mensajes] No se encontró la conversación con Marquinhos en la lista.');
+                limpiarUrl();
                 return;
             }
-
-            container.innerHTML = contactosConfianza.map(c => {
-                const nombre = escapeHtml(c.nombre || 'Usuario');
-                const handle = escapeHtml(c.handle || 'usuario');
-                const avatar = c.avatar_url
-                    ? `<img src="${escapeHtml(c.avatar_url)}" alt="${nombre}">`
-                    : nombre.charAt(0).toUpperCase();
-
-                return `
-                    <div class="cfg-contacto-confianza">
-                        <div class="avatar">${avatar}</div>
-                        <div class="info">
-                            <div class="nombre">${nombre}</div>
-                            <div class="handle">@${handle}</div>
-                        </div>
-                        <button class="btn-quitar" onclick="window.onQuitarContacto('${c.contacto_id}')">✕ Quitar</button>
-                    </div>
-                `;
-            }).join('');
+            setTimeout(intentarAbrir, 200);
         }
 
-        function mostrarSinContactos() {
-            const container = $('#contactosConfianzaLista');
-            if (!container) return;
-            container.innerHTML = `
-                <div class="cfg-empty-solicitudes" style="padding:30px 20px;">
-                    <span class="icon">👥</span>
-                    Sin contactos de confianza
-                </div>
-            `;
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', function () { setTimeout(intentarAbrir, 300); });
+        } else {
+            setTimeout(intentarAbrir, 300);
         }
-
-        function renderSecciones() {
-            const quienPuede = cfgGetPref(PREF_KEYS.quien_puede, 'todos');
-            const textos = {
-                todos: 'Todos pueden enviarme mensajes',
-                contactos: 'Solo mis contactos pueden enviarme mensajes',
-                nadie: 'Nadie puede enviarme mensajes'
-            };
-
-            $('#seccionQuienPuede').innerHTML = [
-                cfgRenderItem({
-                    icon: 'users',
-                    title: 'Configurar quién puede enviarme mensajes',
-                    desc: textos[quienPuede] || 'Todos',
-                    onclick: 'window.onConfigurarQuienPuede()',
-                }),
-            ].join('');
-
-            $('#seccionPrivacidad').innerHTML = [
-                cfgRenderToggle({
-                    id: 'toggleFiltroSolicitudes',
-                    title: 'Filtrar solicitudes de mensajes',
-                    desc: 'Los mensajes de personas que no son tus contactos llegan como solicitud, que tú decides aceptar',
-                    checked: cfgGetPref(PREF_KEYS.filtro_solicitudes, true),
-                    onChange: `window.onToggleFiltro(this.checked)`,
-                }),
-                cfgRenderToggle({
-                    id: 'toggleLeido',
-                    title: 'Mostrar confirmación de leído',
-                    desc: 'La otra persona verá cuando hayas leído su mensaje',
-                    checked: cfgGetPref(PREF_KEYS.mostrar_leido, true),
-                    onChange: `window.onToggleLeido(this.checked)`,
-                }),
-                cfgRenderToggle({
-                    id: 'toggleEscribiendo',
-                    title: 'Mostrar cuando estoy escribiendo',
-                    desc: 'La otra persona verá cuando estás escribiendo un mensaje',
-                    checked: cfgGetPref(PREF_KEYS.mostrar_escribiendo, true),
-                    onChange: `window.onToggleEscribiendo(this.checked)`,
-                }),
-            ].join('');
-        }
-
-        function escapeHtml(texto) {
-            if (!texto) return '';
-            const div = document.createElement('div');
-            div.textContent = texto;
-            return div.innerHTML;
-        }
-
-        window.onAceptarSolicitud = async (solicitudId) => {
-            try {
-                const client = await esperarCliente();
-                if (!client) throw new Error('Supabase no disponible');
-
-                const { error } = await client.rpc('aceptar_solicitud_mensaje', {
-                    p_solicitud_id: solicitudId
-                });
-
-                if (error) throw error;
-
-                cfgToast('✅ Solicitud aceptada. El mensaje ya está en tu chat', 'success');
-                await Promise.all([cargarSolicitudes(), cargarContactosConfianza()]);
-
-            } catch (e) {
-                console.error('Error aceptando:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
-        };
-
-        window.onRechazarSolicitud = async (solicitudId) => {
-            const ok = await cfgConfirm({
-                title: '¿Rechazar solicitud?',
-                text: 'Esta persona ya no podrá enviarte mensajes ni nuevas solicitudes.',
-                confirmText: 'Rechazar',
-                cancelText: 'Cancelar',
-                danger: true,
-            });
-
-            if (!ok) return;
-
-            try {
-                const client = await esperarCliente();
-                if (!client) throw new Error('Supabase no disponible');
-
-                const { error } = await client.rpc('rechazar_solicitud_mensaje', {
-                    p_solicitud_id: solicitudId
-                });
-
-                if (error) throw error;
-
-                cfgToast('🚫 Solicitud rechazada', 'warning');
-                await cargarSolicitudes();
-
-            } catch (e) {
-                console.error('Error rechazando:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
-        };
-
-        window.onConfigurarQuienPuede = async () => {
-            const actual = cfgGetPref(PREF_KEYS.quien_puede, 'todos');
-
-            const overlay = document.createElement('div');
-            overlay.className = 'cfg-modal-overlay';
-
-            const opciones = [
-                { id: 'todos', icon: '🌐', title: 'Todos', desc: 'Cualquier usuario puede enviarme mensajes (las solicitudes dependen del filtro)' },
-                { id: 'contactos', icon: '👥', title: 'Solo contactos', desc: 'Solo tus contactos y contactos de confianza pueden escribirme' },
-                { id: 'nadie', icon: '🚫', title: 'Nadie', desc: 'Nadie puede enviarme mensajes directos' },
-            ];
-
-            const opcionesHtml = opciones.map(opt => `
-                <div class="cfg-radio-item ${opt.id === actual ? 'active' : ''}" data-value="${opt.id}">
-                    <div class="cfg-radio-circle"></div>
-                    <div class="cfg-radio-content">
-                        <div class="cfg-radio-title">${opt.icon} ${opt.title}</div>
-                        <div class="cfg-radio-desc">${opt.desc}</div>
-                    </div>
-                </div>
-            `).join('');
-
-            overlay.innerHTML = `
-                <div class="cfg-modal" style="max-width: 420px;">
-                    <h3 class="cfg-modal-title">Quién puede enviarme mensajes</h3>
-                    <div class="cfg-radio-group" style="padding: 0 0 16px 0;">
-                        ${opcionesHtml}
-                    </div>
-                    <div class="cfg-modal-actions">
-                        <button class="cfg-btn cfg-btn-outline" data-action="cancel">Cancelar</button>
-                        <button class="cfg-btn cfg-btn-primary" data-action="save">Guardar</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            requestAnimationFrame(() => overlay.classList.add('show'));
-
-            let seleccion = actual;
-
-            overlay.querySelectorAll('.cfg-radio-item').forEach(item => {
-                item.addEventListener('click', () => {
-                    overlay.querySelectorAll('.cfg-radio-item').forEach(i => i.classList.remove('active'));
-                    item.classList.add('active');
-                    seleccion = item.getAttribute('data-value');
-                });
-            });
-
-            const close = () => {
-                overlay.classList.remove('show');
-                setTimeout(() => overlay.remove(), 200);
-            };
-
-            overlay.querySelector('[data-action="cancel"]').onclick = close;
-            overlay.onclick = (e) => { if (e.target === overlay) close(); };
-
-            overlay.querySelector('[data-action="save"]').onclick = async () => {
-                const resultado = await cfgSetPref(PREF_KEYS.quien_puede, seleccion);
-                if (resultado && resultado.ok) cfgToast('✅ Preferencia guardada', 'success');
-                else cfgToast('⚠️ Guardada en este dispositivo. Se sincronizará al conectarte', 'warning');
-                close();
-                renderSecciones();
-            };
-        };
-
-        window.onAgregarContacto = () => {
-            const overlay = document.createElement('div');
-            overlay.className = 'cfg-modal-overlay';
-
-            overlay.innerHTML = `
-                <div class="cfg-modal" style="max-width: 440px;">
-                    <h3 class="cfg-modal-title">Añadir contacto de confianza</h3>
-                    <p class="cfg-modal-text" style="text-align:left;margin-bottom:12px;">
-                        Busca usuarios por nombre o @handle para agregarlos.
-                    </p>
-                    <div class="form-group" style="margin-bottom:12px;">
-                        <input type="text" id="buscarUsuarioInput" class="cfg-search-input" placeholder="Buscar por nombre o @handle..." autocomplete="off" />
-                    </div>
-                    <div id="resultadosBusqueda" style="max-height:300px;overflow-y:auto;margin-bottom:16px;"></div>
-                    <div class="cfg-modal-actions">
-                        <button class="cfg-btn cfg-btn-outline cfg-btn-block" data-action="close">Cerrar</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(overlay);
-            requestAnimationFrame(() => overlay.classList.add('show'));
-
-            const input = overlay.querySelector('#buscarUsuarioInput');
-            const resultadosDiv = overlay.querySelector('#resultadosBusqueda');
-            setTimeout(() => input.focus(), 300);
-
-            const close = () => {
-                overlay.classList.remove('show');
-                setTimeout(() => overlay.remove(), 200);
-            };
-
-            overlay.querySelector('[data-action="close"]').onclick = close;
-            overlay.onclick = (e) => { if (e.target === overlay) close(); };
-
-            let timeoutId = null;
-            input.addEventListener('input', () => {
-                clearTimeout(timeoutId);
-                const q = input.value.trim();
-                if (q.length < 2) {
-                    resultadosDiv.innerHTML = '';
-                    return;
-                }
-                timeoutId = setTimeout(() => buscarUsuarios(q, resultadosDiv), 400);
-            });
-        };
-
-        async function buscarUsuarios(q, container) {
-            container.innerHTML = '<div class="cfg-loading-mini">🔍 Buscando...</div>';
-
-            try {
-                const client = await esperarCliente();
-                if (!client) throw new Error('Supabase no disponible');
-
-                const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData && sessionData.session;
-                if (!session) return;
-
-                const termino = q.replace(/[%_,\\]/g, ' ').replace(/\s+/g, ' ').trim();
-
-                const { data, error } = await client
-                    .from('perfiles_publicos')
-                    .select('id, nombre, handle, avatar_url')
-                    .or(`nombre.ilike.%${termino}%,handle.ilike.%${termino}%`)
-                    .neq('id', session.user.id)
-                    .limit(15);
-
-                if (error) throw error;
-
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="cfg-empty-solicitudes" style="padding:20px;"><span class="icon">🔍</span>Sin resultados</div>';
-                    return;
-                }
-
-                const idsActuales = contactosConfianza.map(c => c.contacto_id);
-
-                container.innerHTML = data.map(u => {
-                    const yaAgregado = idsActuales.includes(u.id);
-                    const nombre = escapeHtml(u.nombre || 'Usuario');
-                    const avatar = u.avatar_url
-                        ? `<img src="${escapeHtml(u.avatar_url)}" alt="${nombre}">`
-                        : nombre.charAt(0).toUpperCase();
-
-                    return `
-                        <div class="cfg-resultado-usuario">
-                            <div class="avatar-mini">${avatar}</div>
-                            <div class="info">
-                                <div class="nombre">${nombre}</div>
-                                <div class="handle">@${escapeHtml(u.handle || 'usuario')}</div>
-                            </div>
-                            <button class="btn-agregar ${yaAgregado ? 'agregado' : ''}"
-                                    ${yaAgregado ? 'disabled' : ''}
-                                    onclick="window.onConfirmarAgregarContacto('${u.id}', this)">
-                                ${yaAgregado ? '✓ Agregado' : '+ Agregar'}
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-
-            } catch (e) {
-                console.error('Error buscando:', e);
-                container.innerHTML = '<div class="cfg-empty-solicitudes" style="padding:20px;"><span class="icon">❌</span>Error al buscar</div>';
-            }
-        }
-
-        window.onConfirmarAgregarContacto = async (contactoId, btn) => {
-            try {
-                const client = await esperarCliente();
-                if (!client) throw new Error('Supabase no disponible');
-
-                btn.disabled = true;
-                btn.textContent = '⏳';
-
-                const { error } = await client.rpc('agregar_contacto_confianza', {
-                    p_contacto_id: contactoId
-                });
-
-                if (error) throw error;
-
-                btn.textContent = '✓ Agregado';
-                btn.classList.add('agregado');
-
-                cfgToast('✅ Contacto agregado', 'success');
-
-                await cargarContactosConfianza();
-
-            } catch (e) {
-                console.error('Error agregando contacto:', e);
-                btn.disabled = false;
-                btn.textContent = '+ Agregar';
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
-        };
-
-        window.onQuitarContacto = async (contactoId) => {
-            const ok = await cfgConfirm({
-                title: '¿Quitar de contactos de confianza?',
-                text: 'Esta persona ya no tendrá permisos especiales para escribirte.',
-                confirmText: 'Quitar',
-                cancelText: 'Cancelar',
-                danger: true,
-            });
-
-            if (!ok) return;
-
-            try {
-                const client = await esperarCliente();
-                if (!client) throw new Error('Supabase no disponible');
-
-                const { error } = await client.rpc('quitar_contacto_confianza', {
-                    p_contacto_id: contactoId
-                });
-
-                if (error) throw error;
-
-                cfgToast('✅ Contacto removido', 'success');
-                await cargarContactosConfianza();
-
-            } catch (e) {
-                console.error('Error quitando contacto:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
-        };
-
-        window.onToggleFiltro = async (value) => {
-            await cfgSetPref(PREF_KEYS.filtro_solicitudes, value);
-            cfgToast(
-                value ? '📥 Solicitudes filtradas automáticamente' : '📬 Todos los mensajes llegan directo',
-                value ? 'success' : 'warning'
-            );
-        };
-
-        window.onToggleLeido = async (value) => {
-            await cfgSetPref(PREF_KEYS.mostrar_leido, value);
-            cfgToast(
-                value ? '👁️ Se muestra "leído"' : '👁️‍🗨️ Ya no se muestra "leído"',
-                value ? 'success' : 'warning'
-            );
-        };
-
-        window.onToggleEscribiendo = async (value) => {
-            await cfgSetPref(PREF_KEYS.mostrar_escribiendo, value);
-            cfgToast(
-                value ? '✍️ Se muestra "escribiendo..."' : '✍️ Ya no se muestra "escribiendo..."',
-                value ? 'success' : 'warning'
-            );
-        };
-
-        window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            renderSecciones();
-            await Promise.all([
-                cargarSolicitudes(),
-                cargarContactosConfianza(),
-            ]);
-        });
-
-        // Subtítulo: handle real de la tabla usuarios (no el correo)
-        (async function cargarHandleSubtitulo() {
-            try {
-                const client = await esperarCliente();
-                if (!client) return;
-                const { data } = await client.auth.getSession();
-                const session = data && data.session;
-                if (!session) return;
-                const { data: perfil } = await client
-                    .from('usuarios')
-                    .select('handle, username')
-                    .eq('id', session.user.id)
-                    .maybeSingle();
-                const handle = (perfil && (perfil.handle || perfil.username)) || 'usuario';
-                const subEl = document.querySelector('.cfg-header-subtitle');
-                if (subEl) subEl.textContent = '@' + handle;
-            } catch (e) { /* silencioso */ }
-        })();
-
     })();
-    </script>
+</script>
 </body>
 </html>
