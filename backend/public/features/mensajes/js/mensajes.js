@@ -1,14 +1,15 @@
 // ================================================================
-// MENSAJES · JS v5.3 · WEB3 NEON UI
-// Cambios v5.3:
-// - createConversation ya no inserta en contactos (solo abre la conversación)
-// - loadConversations lee contactos con estado 'activo'
-// - deleteConversation usa RPC ocultar_conversacion
-// - Edición y eliminación de mensajes con menú contextual (long press + clic derecho)
-// - messageHTML muestra "editado" y metadatos de eliminación
-// - Bloqueo desde el chat vía RPC bloquear_contacto
-// - Panel de configuración de llamadas y lista de bloqueados con desbloqueo
-// - Fix livekit:ready race condition en init() (marca bandera si LivekitClient ya existe)
+// MENSAJES · JS v5.4 · WEB3 NEON UI
+// Cambios v5.4:
+// - Corregidos IDs en init(): closeModalConfig y closeModalBloqueados
+// - Guards en asignaciones onclick para no romper init si falta un ID
+// - Eliminado selectQuienPuedeLlamarme y btnGuardarConfig del flujo (sin función)
+// - Tiempo real UPDATE en mensajes_chat (ediciones y eliminaciones)
+// - Menú contextual solo en chats de usuarios (no Marquinhos)
+// - Long press corregido con startX/startY y pointermove robusto
+// - Errores de moderación al editar (contenido_no_permitido)
+// - Meta reconstruido tras editar (hora + editado + estado leído)
+// - loadConversations() tras editar/eliminar mensajes
 // ================================================================
 
 'use strict';
@@ -60,7 +61,6 @@ const TTL_PERFIL_MS = 5 * 60 * 1000;
 const signedCache = new Map();
 const TTL_SIGNED_MS = 50 * 60 * 1000;
 
-// Bandera global de LiveKit: se pone en true cuando el SDK está listo
 window.__livekitReady = !!window.LivekitClient;
 
 const $ = id => document.getElementById(id);
@@ -103,8 +103,6 @@ async function enviarMensajeChat(destinatarioId, contenido, tipo = 'texto', imag
     if (error) {
         const msg = error.message || '';
         if (msg.indexOf('contenido_no_permitido') !== -1) throw error;
-        
-        // CORRECCIÓN: Anthropic configuró el error en mayúsculas (ENVIO_NO_PERMITIDO)
         const m = msg.match(/(?:ENVIO_NO_PERMITIDO|envio_no_permitido):(\w+)/i);
         if (m) {
             const llave = m[1].toLowerCase();
@@ -869,6 +867,7 @@ async function cerrarConversacion() {
     const box = $('messages');
     box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
     document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
+    if (msgChannel) { try { db.removeChannel(msgChannel); } catch (e) {} msgChannel = null; }
 }
 
 async function abrirConversacionBot() {
@@ -1177,11 +1176,52 @@ async function deleteConversation() {
 
 function subscribeMessages(id) {
     if (id === BOT_ID) return;
-    if (msgChannel) db.removeChannel(msgChannel);
-    msgChannel = db.channel('chat-' + id).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat' }, p => {
-        const m = p.new;
-        if (current?.id === id && m.remitente_id === id && m.destinatario_id === user.id) { append(m, false); markRead(id); }
-    }).subscribe();
+    if (msgChannel) { try { db.removeChannel(msgChannel); } catch (e) {} msgChannel = null; }
+    msgChannel = db.channel('chat-' + id)
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat' }, p => {
+            const m = p.new;
+            if (current?.id === id && m.remitente_id === id && m.destinatario_id === user.id) { append(m, false); markRead(id); }
+        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat' }, p => {
+            const m = p.new;
+            if (!current || !user) return;
+            const enEstaConversacion = (m.remitente_id === current.id && m.destinatario_id === user.id)
+                || (m.remitente_id === user.id && m.destinatario_id === current.id);
+            if (!enEstaConversacion) return;
+
+            const el = document.querySelector(`.bubblewrap[data-mensaje-id="${m.id}"]`);
+            if (!el) { loadConversations(); return; }
+
+            if (m.eliminado === true) {
+                el.remove();
+                loadConversations();
+                return;
+            }
+
+            const bubble = el.querySelector('.bubble');
+            const metaEl = el.querySelector('.meta');
+            const esSent = el.classList.contains('sent');
+
+            if (bubble && m.tipo === 'texto') {
+                const textoLimpio = limpiarMarkdown(m.contenido || '');
+                const innerHtml = (typeof window.formatearMensajeConEmotes === 'function')
+                    ? window.formatearMensajeConEmotes(textoLimpio)
+                    : esc(textoLimpio);
+                const headerBot = (!esSent && (m.es_bot || m.bot_message)) ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
+                const avisoHTML = m.aviso_moderacion === 'lenguaje_inapropiado' ? '<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(247,212,74,.12);border:1px solid rgba(247,212,74,.4);color:#f7d44a;font-size:.68rem;">⚠️ Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>' : '';
+                bubble.innerHTML = headerBot + innerHtml + avisoHTML;
+            }
+
+            if (metaEl) {
+                const hora = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                const editado = m.editado === true ? ' · editado' : '';
+                const leido = esSent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : '';
+                metaEl.textContent = hora + editado + leido;
+            }
+
+            loadConversations();
+        })
+        .subscribe();
 }
 
 async function grabarVozParaBot() {
@@ -1932,22 +1972,27 @@ async function bloquearUsuarioActual() {
 }
 
 async function abrirModalConfigLlamadas() {
-    $('modalConfigLlamadas').classList.add('show');
+    const modal = $('modalConfigLlamadas');
+    if (modal) modal.classList.add('show');
 }
 
 async function cerrarModalConfigLlamadas() {
-    $('modalConfigLlamadas').classList.remove('show');
+    const modal = $('modalConfigLlamadas');
+    if (modal) modal.classList.remove('show');
 }
 
 async function abrirListaBloqueados() {
-    $('modalBloqueados').classList.add('show');
+    const modal = $('modalBloqueados');
+    if (modal) modal.classList.add('show');
     const lista = $('listaBloqueados');
+    if (!lista) return;
     lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Cargando…</div>';
     try {
         const { data, error } = await db.rpc('listar_bloqueados');
         if (error) throw error;
         const bloqueados = data || [];
-        $('countBloqueados').textContent = bloqueados.length;
+        const countEl = $('countBloqueados');
+        if (countEl) countEl.textContent = bloqueados.length;
         if (!bloqueados.length) {
             lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No tienes usuarios bloqueados</div>';
             return;
@@ -1968,7 +2013,7 @@ async function abrirListaBloqueados() {
                 try {
                     await db.rpc('desbloquear_contacto', { p_contacto_id: id });
                     toast('✅ Usuario desbloqueado', 'success');
-                    await abrirListaBloqueados(); // recargar
+                    await abrirListaBloqueados();
                 } catch (e) {
                     console.error('Error desbloqueando:', e);
                     toast('❌ No se pudo desbloquear', 'error');
@@ -1982,8 +2027,10 @@ async function abrirListaBloqueados() {
 }
 
 async function mostrarMenuMensaje(bubblewrap, msgId) {
-    // Cerrar menú previo
     document.querySelectorAll('.msg-context-menu').forEach(m => m.remove());
+
+    const esDeUsuario = !!(current && !current.bot);
+    const esSent = bubblewrap.classList.contains('sent');
 
     const menu = document.createElement('div');
     menu.className = 'msg-context-menu';
@@ -1998,12 +2045,11 @@ async function mostrarMenuMensaje(bubblewrap, msgId) {
     menu.style.top = y + 'px';
 
     const opciones = [];
-    // Solo mensajes enviados por mí (sent) y de tipo texto, no bot
-    if (bubblewrap.classList.contains('sent') && !bubblewrap.closest('.conv-bot')) {
+    if (esDeUsuario && esSent) {
         opciones.push({ texto: 'Editar', accion: () => editarMensaje(msgId, bubblewrap) });
     }
     opciones.push({ texto: 'Eliminar para mí', accion: () => eliminarMensajeParaMi(msgId, bubblewrap) });
-    if (bubblewrap.classList.contains('sent') && !bubblewrap.closest('.conv-bot')) {
+    if (esDeUsuario && esSent) {
         opciones.push({ texto: 'Eliminar para todos', accion: () => eliminarMensajeParaTodos(msgId, bubblewrap), danger: true });
     }
 
@@ -2027,13 +2073,13 @@ async function mostrarMenuMensaje(bubblewrap, msgId) {
 async function editarMensaje(msgId, bubblewrap) {
     if (!await auth()) return;
     const bubble = bubblewrap.querySelector('.bubble');
-    let contenidoActual = '';
-    // Obtener texto actual del mensaje (sin html)
     const metaEl = bubblewrap.querySelector('.meta');
-    // Obtener contenido desde el DOM (asumiendo que es texto)
-    contenidoActual = bubble.textContent.trim();
-    // Eliminar posible header de bot
-    if (bubble.querySelector('.bubble-bot-info')) contenidoActual = contenidoActual.replace(bubble.querySelector('.bubble-bot-info').textContent, '').trim();
+    const esSent = bubblewrap.classList.contains('sent');
+
+    let contenidoActual = bubble.textContent.trim();
+    const headerBotEl = bubble.querySelector('.bubble-bot-info');
+    if (headerBotEl) contenidoActual = contenidoActual.replace(headerBotEl.textContent, '').trim();
+
     const nuevoTexto = await NeonModal.prompt({
         title: 'Editar mensaje',
         message: 'Edita tu mensaje (máx. 15 minutos):',
@@ -2044,28 +2090,40 @@ async function editarMensaje(msgId, bubblewrap) {
         cancelText: 'Cancelar'
     });
     if (!nuevoTexto || nuevoTexto === contenidoActual) return;
+
     try {
         const { error } = await db.rpc('editar_mensaje_chat', {
             p_mensaje_id: msgId,
             p_contenido: nuevoTexto
         });
         if (error) {
-            if (error.message && error.message.includes('edicion_expirada')) {
+            const msgErr = error.message || '';
+            if (msgErr.indexOf('contenido_no_permitido') !== -1) {
+                toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
+            } else if (msgErr.indexOf('edicion_expirada') !== -1) {
                 toast('Ya no puedes editar este mensaje (más de 15 minutos)', 'error');
             } else {
-                toast('❌ ' + (error.message || 'No se pudo editar'), 'error');
+                toast('❌ ' + (msgErr || 'No se pudo editar'), 'error');
             }
             return;
         }
-        // Actualizar burbuja en DOM
-        bubble.innerHTML = (typeof window.formatearMensajeConEmotes === 'function')
-            ? window.formatearMensajeConEmotes(nuevoTexto)
-            : esc(nuevoTexto);
-        // Añadir "editado" al meta
-        if (metaEl && !metaEl.textContent.includes('editado')) {
-            metaEl.textContent += ' · editado';
+
+        const textoLimpio = limpiarMarkdown(nuevoTexto);
+        const innerHtml = (typeof window.formatearMensajeConEmotes === 'function')
+            ? window.formatearMensajeConEmotes(textoLimpio)
+            : esc(textoLimpio);
+        const headerBot = (!esSent && headerBotEl) ? headerBotEl.outerHTML : '';
+        bubble.innerHTML = headerBot + innerHtml;
+
+        if (metaEl) {
+            const horaMatch = metaEl.textContent.match(/^\s*(\d{1,2}:\d{2})/);
+            const hora = horaMatch ? horaMatch[1] : '';
+            const leidoEstado = metaEl.textContent.includes('◆◆') ? ' · ◆◆' : (metaEl.textContent.includes('◈◈') ? ' · ◈◈' : '');
+            metaEl.textContent = `${hora} · editado${leidoEstado}`;
         }
+
         toast('✎ Mensaje editado', 'success');
+        loadConversations();
     } catch (e) {
         console.error('Error editando mensaje:', e);
         toast('❌ No se pudo editar el mensaje', 'error');
@@ -2087,6 +2145,7 @@ async function eliminarMensajeParaMi(msgId, bubblewrap) {
         if (error) throw error;
         bubblewrap.remove();
         toast('✅ Mensaje eliminado para ti', 'success');
+        loadConversations();
     } catch (e) {
         console.error('Error eliminando para mí:', e);
         toast('❌ No se pudo eliminar', 'error');
@@ -2108,6 +2167,7 @@ async function eliminarMensajeParaTodos(msgId, bubblewrap) {
         if (error) throw error;
         bubblewrap.remove();
         toast('✅ Mensaje eliminado para todos', 'success');
+        loadConversations();
     } catch (e) {
         console.error('Error eliminando para todos:', e);
         toast('❌ No se pudo eliminar', 'error');
@@ -2119,17 +2179,23 @@ function configurarLongPressMensajes() {
     if (!box || box.dataset.longPressListener) return;
     box.dataset.longPressListener = '1';
     let pressTimer = null;
-    let targetBubble = null;
+    let startX = 0, startY = 0;
+
+    const esMensajeValido = (bubblewrap) => {
+        if (!bubblewrap) return false;
+        if (bubblewrap.querySelector('img, video, audio')) return false;
+        if (!bubblewrap.dataset.mensajeId) return false;
+        // Solo chats de usuario (no bot)
+        if (!current || current.bot) return false;
+        return true;
+    };
 
     box.addEventListener('pointerdown', e => {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
         const bubblewrap = e.target.closest('.bubblewrap');
-        if (!bubblewrap || bubblewrap.classList.contains('received') && !bubblewrap.closest('.conv-bot')) {
-            // Solo mensajes enviados (sent) o recibidos del bot
-            if (!bubblewrap || (!bubblewrap.classList.contains('sent') && !bubblewrap.closest('.conv-bot'))) return;
-        }
-        // Solo tipo texto
-        if (bubblewrap.querySelector('img, video, audio')) return;
-        targetBubble = bubblewrap;
+        if (!esMensajeValido(bubblewrap)) return;
+        startX = e.clientX;
+        startY = e.clientY;
         pressTimer = setTimeout(() => {
             pressTimer = null;
             const msgId = bubblewrap.dataset.mensajeId;
@@ -2137,26 +2203,26 @@ function configurarLongPressMensajes() {
         }, 500);
     });
 
-    box.addEventListener('pointerup', e => {
+    box.addEventListener('pointerup', () => {
         if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     });
 
-    box.addEventListener('pointercancel', e => {
+    box.addEventListener('pointercancel', () => {
         if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
     });
 
     box.addEventListener('pointermove', e => {
-        // Si se mueve mucho, cancelar
-        if (pressTimer && e.movementX && Math.abs(e.movementX) > 5) {
+        if (!pressTimer) return;
+        if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
             clearTimeout(pressTimer);
             pressTimer = null;
         }
     });
 
     box.addEventListener('contextmenu', e => {
+        if (e.pointerType === 'touch') return;
         const bubblewrap = e.target.closest('.bubblewrap');
-        if (!bubblewrap || (!bubblewrap.classList.contains('sent') && !bubblewrap.closest('.conv-bot'))) return;
-        if (bubblewrap.querySelector('img, video, audio')) return;
+        if (!esMensajeValido(bubblewrap)) return;
         e.preventDefault();
         const msgId = bubblewrap.dataset.mensajeId;
         if (msgId) mostrarMenuMensaje(bubblewrap, msgId);
@@ -2205,101 +2271,125 @@ async function init() {
         toast('⚠️ Las llamadas no están disponibles en este dispositivo.', 'warning');
     });
 
-    $('headerAvatar').onclick = abrirProfileModal;
-    $('avatarInput').addEventListener('change', subirFotoHeader);
-    $('btnCambiarFoto').onclick = () => $('avatarInput').click();
-    $('btnCerrarProfileModal').onclick = cerrarProfileModal;
-    $('profileModal').addEventListener('click', e => { if (e.target.id === 'profileModal') cerrarProfileModal(); });
-    $('closeVistasModal').onclick = cerrarVistasModal;
-    $('vistasModal').addEventListener('click', e => { if (e.target.id === 'vistasModal') cerrarVistasModal(); });
-    $('pvClose').onclick = cerrarPhotoViewer;
-    $('photoViewer').addEventListener('click', e => { if (e.target.id === 'photoViewer') cerrarPhotoViewer(); });
-    $('evClose').onclick = cerrarEstadoViewer;
-    $('evPrev').onclick = (e) => { e.stopPropagation(); anteriorEstado(); };
-    $('evNext').onclick = (e) => { e.stopPropagation(); siguienteEstado(); };
-    $('evVistas').onclick = (e) => { e.stopPropagation(); const estadoId = $('evVistas').dataset.estadoId; if (estadoId) abrirVistasModal(estadoId); };
+    const bind = (id, fn, ev = 'onclick') => { const el = $(id); if (el) el[ev] = fn; };
+    const bindChange = (id, fn) => { const el = $(id); if (el) el.addEventListener('change', fn); };
+
+    bind('headerAvatar', abrirProfileModal);
+    bindChange('avatarInput', subirFotoHeader);
+    bind('btnCambiarFoto', () => $('avatarInput')?.click());
+    bind('btnCerrarProfileModal', cerrarProfileModal);
+
+    const profileModalEl = $('profileModal');
+    if (profileModalEl) profileModalEl.addEventListener('click', e => { if (e.target.id === 'profileModal') cerrarProfileModal(); });
+
+    bind('closeVistasModal', cerrarVistasModal);
+    const vistasModalEl = $('vistasModal');
+    if (vistasModalEl) vistasModalEl.addEventListener('click', e => { if (e.target.id === 'vistasModal') cerrarVistasModal(); });
+
+    bind('pvClose', cerrarPhotoViewer);
+    const photoViewerEl = $('photoViewer');
+    if (photoViewerEl) photoViewerEl.addEventListener('click', e => { if (e.target.id === 'photoViewer') cerrarPhotoViewer(); });
+
+    bind('evClose', cerrarEstadoViewer);
+    bind('evPrev', (e) => { if (e) e.stopPropagation(); anteriorEstado(); });
+    bind('evNext', (e) => { if (e) e.stopPropagation(); siguienteEstado(); });
+    bind('evVistas', (e) => { if (e) e.stopPropagation(); const el = $('evVistas'); const estadoId = el?.dataset.estadoId; if (estadoId) abrirVistasModal(estadoId); });
 
     const evBody = $('evBody');
-    evBody.addEventListener('mousedown', activarPausaEstado);
-    evBody.addEventListener('mouseup', desactivarPausaEstado);
-    evBody.addEventListener('mouseleave', desactivarPausaEstado);
-    evBody.addEventListener('touchstart', (e) => { e.preventDefault(); activarPausaEstado(); }, { passive: false });
-    evBody.addEventListener('touchend', (e) => { e.preventDefault(); desactivarPausaEstado(); }, { passive: false });
-    evBody.addEventListener('touchcancel', desactivarPausaEstado);
+    if (evBody) {
+        evBody.addEventListener('mousedown', activarPausaEstado);
+        evBody.addEventListener('mouseup', desactivarPausaEstado);
+        evBody.addEventListener('mouseleave', desactivarPausaEstado);
+        evBody.addEventListener('touchstart', (e) => { e.preventDefault(); activarPausaEstado(); }, { passive: false });
+        evBody.addEventListener('touchend', (e) => { e.preventDefault(); desactivarPausaEstado(); }, { passive: false });
+        evBody.addEventListener('touchcancel', desactivarPausaEstado);
+    }
 
     document.addEventListener('keydown', e => {
-        if (e.key === ' ' && $('estadoViewer').classList.contains('show')) {
+        if (e.key === ' ' && $('estadoViewer')?.classList.contains('show')) {
             e.preventDefault();
             if (estadoPausado) desactivarPausaEstado(); else activarPausaEstado();
         }
     });
 
-    $('btnSubirEstado').onclick = abrirModalEstado;
-    $('closeEstadoModal').onclick = cerrarModalEstado;
-    $('btnSeleccionarEstado').onclick = seleccionarArchivoEstado;
-    $('estadoFileInput').addEventListener('change', previewEstado);
-    $('btnPublicarEstado').onclick = publicarEstado;
-    $('estadoUploadModal').addEventListener('click', e => { if (e.target.id === 'estadoUploadModal') cerrarModalEstado(); });
+    bind('btnSubirEstado', abrirModalEstado);
+    bind('closeEstadoModal', cerrarModalEstado);
+    bind('btnSeleccionarEstado', seleccionarArchivoEstado);
+    bindChange('estadoFileInput', previewEstado);
+    bind('btnPublicarEstado', publicarEstado);
+    const estadoUploadModalEl = $('estadoUploadModal');
+    if (estadoUploadModalEl) estadoUploadModalEl.addEventListener('click', e => { if (e.target.id === 'estadoUploadModal') cerrarModalEstado(); });
 
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
             cerrarProfileModal(); cerrarPhotoViewer(); cerrarEstadoViewer(); cerrarModalEstado(); cerrarVistasModal(); cerrarModalCrearCanal(); cerrarModalCrearGrupo();
-            $('newModal').classList.remove('show');
-            $('modalConfigLlamadas')?.classList.remove('show');
-            $('modalBloqueados')?.classList.remove('show');
+            const nm = $('newModal'); if (nm) nm.classList.remove('show');
+            const mc = $('modalConfigLlamadas'); if (mc) mc.classList.remove('show');
+            const mb = $('modalBloqueados'); if (mb) mb.classList.remove('show');
         }
     });
 
-    $('composer').addEventListener('submit', e => { e.preventDefault(); sendMessage($('messageInput').value); });
-    $('newChat').onclick = onNuevoClick;
-    $('closeModal').onclick = () => $('newModal').classList.remove('show');
-    $('newModal').addEventListener('click', e => { if (e.target.id === 'newModal') $('newModal').classList.remove('show'); });
-    $('userSearch').addEventListener('input', e => searchUsers(e.target.value));
-    $('searchConversations').addEventListener('input', e => { conversationFilter = e.target.value; aplicarFiltroConversaciones(); });
+    const composerEl = $('composer');
+    if (composerEl) composerEl.addEventListener('submit', e => { e.preventDefault(); sendMessage($('messageInput').value); });
 
-    $('attach').onclick = () => {
+    bind('newChat', onNuevoClick);
+    bind('closeModal', () => $('newModal')?.classList.remove('show'));
+    const newModalEl = $('newModal');
+    if (newModalEl) newModalEl.addEventListener('click', e => { if (e.target.id === 'newModal') $('newModal')?.classList.remove('show'); });
+
+    const userSearchEl = $('userSearch');
+    if (userSearchEl) userSearchEl.addEventListener('input', e => searchUsers(e.target.value));
+    const searchConvEl = $('searchConversations');
+    if (searchConvEl) searchConvEl.addEventListener('input', e => { conversationFilter = e.target.value; aplicarFiltroConversaciones(); });
+
+    bind('attach', () => {
         if (current?.bot) { toast('⚠️ Para Marquinhos usa el botón 🔊', 'error'); return; }
-        $('fileInput').click();
-    };
+        $('fileInput')?.click();
+    });
 
     if (typeof window.inicializarTecladoEmojis === 'function') {
         window.inicializarTecladoEmojis('messageInput', 'emojiBtn');
     }
 
-    $('fileInput').addEventListener('change', async e => {
+    const fileInputEl = $('fileInput');
+    if (fileInputEl) fileInputEl.addEventListener('change', async e => {
         for (const f of e.target.files) await uploadFile(f);
         e.target.value = '';
     });
 
-    $('audio').onclick = recordAudioNota;
-    $('voiceBot').onclick = grabarVozParaBot;
-    $('deleteChat').onclick = deleteConversation;
-    $('videoCall').onclick = () => startCall('video');
-    $('backBtn').onclick = cerrarConversacion;
+    bind('audio', recordAudioNota);
+    bind('voiceBot', grabarVozParaBot);
+    bind('deleteChat', deleteConversation);
+    bind('videoCall', () => startCall('video'));
+    bind('backBtn', cerrarConversacion);
 
-    $('hangup').onclick = hangup;
-    $('toggleMic').onclick = toggleMic;
-    $('toggleCam').onclick = toggleCam;
-    $('toggleScreen').onclick = toggleScreen;
-    $('acceptCall').onclick = acceptCall;
-    $('rejectCall').onclick = rejectCall;
+    bind('hangup', hangup);
+    bind('toggleMic', toggleMic);
+    bind('toggleCam', toggleCam);
+    bind('toggleScreen', toggleScreen);
+    bind('acceptCall', acceptCall);
+    bind('rejectCall', rejectCall);
 
-    $('messages').addEventListener('scroll', detectarSiEstaAbajo);
-    $('messages').addEventListener('click', e => { const img = e.target.closest && e.target.closest('img[data-visor]'); if (img) abrirVisorImagen(img.dataset.src, img.dataset.nombre); });
-    $('scrollDownBtn').onclick = () => { isUserAtBottom = true; scrollToBottom(true); actualizarFlecha(); };
+    const messagesEl = $('messages');
+    if (messagesEl) {
+        messagesEl.addEventListener('scroll', detectarSiEstaAbajo);
+        messagesEl.addEventListener('click', e => { const img = e.target.closest && e.target.closest('img[data-visor]'); if (img) abrirVisorImagen(img.dataset.src, img.dataset.nombre); });
+    }
 
-    // Bloquear desde el chat
-    $('blockUser').onclick = bloquearUsuarioActual;
+    bind('scrollDownBtn', () => { isUserAtBottom = true; scrollToBottom(true); actualizarFlecha(); });
+    bind('blockUser', bloquearUsuarioActual);
 
-    // Config llamadas y bloqueados
-    $('btnConfigLlamadas').onclick = abrirModalConfigLlamadas;
-    $('cerrarModalConfigLlamadas').onclick = cerrarModalConfigLlamadas;
-    $('modalConfigLlamadas').addEventListener('click', e => { if (e.target.id === 'modalConfigLlamadas') cerrarModalConfigLlamadas(); });
-    $('btnVerBloqueados').onclick = abrirListaBloqueados;
-    $('cerrarModalBloqueados').onclick = () => $('modalBloqueados').classList.remove('show');
-    $('modalBloqueados').addEventListener('click', e => { if (e.target.id === 'modalBloqueados') $('modalBloqueados').classList.remove('show'); });
+    bind('btnConfigLlamadas', abrirModalConfigLlamadas);
+    bind('closeModalConfig', cerrarModalConfigLlamadas);
+    const modalConfigEl = $('modalConfigLlamadas');
+    if (modalConfigEl) modalConfigEl.addEventListener('click', e => { if (e.target.id === 'modalConfigLlamadas') cerrarModalConfigLlamadas(); });
 
-    $('searchChat').onclick = async () => {
+    bind('btnVerBloqueados', abrirListaBloqueados);
+    bind('closeModalBloqueados', () => { const m = $('modalBloqueados'); if (m) m.classList.remove('show'); });
+    const modalBloqueadosEl = $('modalBloqueados');
+    if (modalBloqueadosEl) modalBloqueadosEl.addEventListener('click', e => { if (e.target.id === 'modalBloqueados') modalBloqueadosEl.classList.remove('show'); });
+
+    bind('searchChat', async () => {
         if (!current) { toast('⚠️ Selecciona una conversación', 'error'); return; }
         if (current.bot) { toast('ℹ️ Marquinhos no tiene búsqueda local aún', 'warning'); return; }
         const q = await NeonModal.prompt({ title: 'Buscar en la conversación', message: 'Escribe el texto que quieres encontrar:', icon: '🔍', placeholder: 'Texto a buscar…', confirmText: 'Buscar', cancelText: 'Cancelar' });
@@ -2307,16 +2397,22 @@ async function init() {
         const r = await db.from('mensajes_chat').select('*').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${current.id}),and(remitente_id.eq.${current.id},destinatario_id.eq.${user.id})`).ilike('contenido', '%' + q.trim() + '%').order('created_at', { ascending: true });
         if (r.error) { toast('❌ Error al buscar', 'error'); return; }
         await renderMessages(r.data || []);
-    };
+    });
 
-    $('closeModalCanal')?.addEventListener('click', cerrarModalCrearCanal);
-    $('modalCrearCanal')?.addEventListener('click', e => { if (e.target.id === 'modalCrearCanal') cerrarModalCrearCanal(); });
-    $('closeModalGrupo')?.addEventListener('click', cerrarModalCrearGrupo);
-    $('modalCrearGrupo')?.addEventListener('click', e => { if (e.target.id === 'modalCrearGrupo') cerrarModalCrearGrupo(); });
+    const closeCanalEl = $('closeModalCanal');
+    if (closeCanalEl) closeCanalEl.addEventListener('click', cerrarModalCrearCanal);
+    const modalCanalEl = $('modalCrearCanal');
+    if (modalCanalEl) modalCanalEl.addEventListener('click', e => { if (e.target.id === 'modalCrearCanal') cerrarModalCrearCanal(); });
+    const closeGrupoEl = $('closeModalGrupo');
+    if (closeGrupoEl) closeGrupoEl.addEventListener('click', cerrarModalCrearGrupo);
+    const modalGrupoEl = $('modalCrearGrupo');
+    if (modalGrupoEl) modalGrupoEl.addEventListener('click', e => { if (e.target.id === 'modalCrearGrupo') cerrarModalCrearGrupo(); });
 
-    db.channel('incoming-calls').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'llamadas', filter: `destinatario_id=eq.${user.id}` }, p => {
-        if (user && p.new.estado === 'ringing') incoming(p.new);
-    }).subscribe();
+    if (user && user.id) {
+        db.channel('incoming-calls').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'llamadas', filter: `destinatario_id=eq.${user.id}` }, p => {
+            if (user && p.new.estado === 'ringing') incoming(p.new);
+        }).subscribe();
+    }
 
     setInterval(() => { if (document.hidden) return; limpiarVistosAntiguos(); cargarEstados(); }, 10 * 60 * 1000);
 
@@ -2442,7 +2538,7 @@ function decorarComposerWeb3() {
     const sendBtn = composer.querySelector('button[type="submit"]');
     if (sendBtn && !sendBtn.classList.contains('composer-send')) { sendBtn.classList.add('composer-send'); sendBtn.innerHTML = '<span>Enviar</span><span style="font-size:.9rem;">➤</span>'; }
     const input = $('messageInput');
-    if (!input.placeholder) input.placeholder = 'Escribe un mensaje…';
+    if (input && !input.placeholder) input.placeholder = 'Escribe un mensaje…';
     composer.dataset.web3decorated = '1';
 }
 
@@ -2505,7 +2601,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '5.3.0',
+    version: '5.4.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
