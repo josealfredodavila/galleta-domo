@@ -56,6 +56,9 @@
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.2">
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 
+<!-- 🔥 NUEVO: Estilos del teclado de emojis -->
+<link rel="stylesheet" href="/features/css/teclado-emojis.css">
+
 <style>
     html:not(.auth-ready) .app { display: none !important; }
     /* Contenedor relativo del header de chat para que las acciones no "floten" */
@@ -210,6 +213,7 @@
     </div>
     <form class="composer" id="composer" style="display:none;">
         <button type="button" class="btn" id="attach" title="Adjuntar" data-neon="btn">◆</button>
+        <button type="button" class="btn" id="emojiBtn" title="Emojis" data-neon="btn">😀</button> <!-- 🔥 NUEVO BOTÓN -->
         <button type="button" class="btn" id="audio" title="Grabar audio" data-neon="btn">●</button>
         <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" data-neon="btn-bot" style="display:none;">◉</button>
         <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje…">
@@ -414,12 +418,12 @@
 <script src="/features/mensajes/js/mensajes.js?v=13"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
 
+<!-- 🔥 NUEVO: Script del teclado de emojis -->
+<script src="/features/js/teclado-emojis.js"></script>
+
 <script>
     /* ============================================================
        Apertura directa del chat con Marquinhos
-       Uso: mensajes.html?chat=marquinhos (destino tras aceptar Términos)
-       Busca la fila "Marquinhos" en la lista de conversaciones, la abre
-       y limpia el parámetro de la URL para que un refresh no la reabra.
        ============================================================ */
     (function () {
         var params = new URLSearchParams(window.location.search);
@@ -448,7 +452,6 @@
 
         function intentarAbrir() {
             intentos++;
-            // Asegura que la pestaña visible sea Chats
             if (typeof window.cambiarPestana === 'function') {
                 try { window.cambiarPestana('chats'); } catch (e) {}
             }
@@ -474,6 +477,13 @@
             setTimeout(intentarAbrir, 300);
         }
     })();
+
+    /* ============================================================
+       🔥 INICIALIZAR EL TECLADO DE EMOJIS
+       ============================================================ */
+    document.addEventListener('DOMContentLoaded', () => {
+        inicializarTecladoEmojis('messageInput', 'emojiBtn');
+    });
 </script>
 </body>
 </html>
