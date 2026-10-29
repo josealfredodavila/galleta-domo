@@ -1,10 +1,10 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v2.5
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v2.6
    ================================================================
-   - Integración de imágenes PNG reales (Orejas, Gafas, Corona, etc.)
-   - Posicionamiento dinámico usando landmarks de MediaPipe
-   - Rotación automática según el ángulo de la cara
-   - Grabación con filtros "quemados" en el pixel
+   - Integración de imágenes PNG reales desde GitHub.
+   - Posicionamiento dinámico usando landmarks de MediaPipe.
+   - Rotación automática según el ángulo de la cara.
+   - Grabación con filtros "quemados" en el pixel.
    ================================================================ */
 
 (function () {
@@ -25,32 +25,32 @@
         MEDIAPIPE_VERSION: '0.4.1633559619'
     });
 
-    // ⚠️ REEMPLAZA ESTAS URLS POR LAS DE TU SUPABASE
-    const SUPABASE_STORAGE_URL = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios';
+    // ✅ RUTA BASE DE GITHUB (Apuntando a la rama 'main' en la raíz)
+    const GITHUB_BASE_URL = 'https://raw.githubusercontent.com/josealfredodavila/galleta-domo/main';
 
     const ASSETS = {
         gato: {
-            src: `${SUPABASE_STORAGE_URL}/orejas-gato.png`,
+            src: `${GITHUB_BASE_URL}/orejas-gato.png`,
             scale: 1.4, // Escala relativa al ancho de la cara
             offsetY: -0.5 // Cuánto subir respecto a la frente (negativo = arriba)
         },
         burro: {
-            src: `${SUPABASE_STORAGE_URL}/orejas-burro.png`,
+            src: `${GITHUB_BASE_URL}/orejas-burro.png`,
             scale: 1.6,
             offsetY: -0.6
         },
         gafas: {
-            src: `${SUPABASE_STORAGE_URL}/gafas.png`,
+            src: `${GITHUB_BASE_URL}/gafas.png`,
             scale: 1.2,
             offsetY: 0
         },
         bigote: {
-            src: `${SUPABASE_STORAGE_URL}/bigote.png`,
+            src: `${GITHUB_BASE_URL}/bigote.png`,
             scale: 0.9,
             offsetY: 0.2 // Positivo = abajo
         },
         corona: {
-            src: `${SUPABASE_STORAGE_URL}/corona.png`,
+            src: `${GITHUB_BASE_URL}/corona.png`,
             scale: 1.8,
             offsetY: -0.7
         }
@@ -74,7 +74,7 @@
         facingMode: 'user',
         timerInterval: null,
         segundosGrabados: 0,
-        imagenesCargadas: {}, // Aquí guardamos las imágenes precargadas
+        imagenesCargadas: {},
         filtrosDisponibles: [
             { id: 'ninguno', nombre: 'Ninguno', icono: '🚫' },
             { id: 'gato', nombre: 'Orejas', icono: '🐱' },
@@ -99,7 +99,7 @@
 
             Object.keys(ASSETS).forEach((key) => {
                 const img = new Image();
-                img.crossOrigin = 'anonymous'; // Para evitar errores de CORS
+                img.crossOrigin = 'anonymous'; 
                 img.onload = () => {
                     cargadas++;
                     if (cargadas === total) {
@@ -296,7 +296,6 @@
             state.canvas = $('csCamaraCanvas');
             state.ctx = state.canvas.getContext('2d', { alpha: false });
 
-            // Precargar imágenes ANTES de abrir la cámara
             await precargarImagenes();
 
             await iniciarStream();
@@ -445,7 +444,6 @@
         const w = canvas.width;
         const h = canvas.height;
 
-        // Convertir landmarks a coordenadas del canvas
         const punto = (indice) => {
             const p = landmarks[indice];
             return {
@@ -454,45 +452,37 @@
             };
         };
 
-        // Puntos clave de la cara
         const ojoIzq = punto(33);
         const ojoDer = punto(263);
         const nariz = punto(1);
         const frente = punto(10);
-        const mejillaIzq = punto(234); // Pómulo izquierdo
-        const mejillaDer = punto(454); // Pómulo derecho
+        const mejillaIzq = punto(234);
+        const mejillaDer = punto(454);
 
-        // Calcular ancho de la cara (distancia entre pómulos)
         const anchoCara = Math.hypot(mejillaDer.x - mejillaIzq.x, mejillaDer.y - mejillaIzq.y);
 
-        // Calcular centro de la cara (promedio de ojos o nariz)
         const centroX = (ojoIzq.x + ojoDer.x) / 2;
         const centroY = (ojoIzq.y + ojoDer.y) / 2;
 
-        // Calcular ángulo de rotación de la cabeza
         const angulo = Math.atan2(ojoDer.y - ojoIzq.y, ojoDer.x - ojoIzq.x);
 
-        // Calcular tamaño final de la imagen
         const tamanoImagen = anchoCara * assetConfig.scale;
         const proporcion = imagen.height / imagen.width;
         const alturaImagen = tamanoImagen * proporcion;
 
-        // Determinar punto de anclaje según el filtro
         let anchorX = centroX;
         let anchorY = centroY;
 
         if (state.filtroActual === 'gato' || state.filtroActual === 'burro' || state.filtroActual === 'corona') {
-            anchorY = frente.y; // Usar la frente para orejas y corona
+            anchorY = frente.y;
         } else if (state.filtroActual === 'bigote') {
-            anchorY = nariz.y; // Usar la nariz para el bigote
+            anchorY = nariz.y;
         } else if (state.filtroActual === 'gafas') {
-            anchorY = centroY; // Usar los ojos para las gafas
+            anchorY = centroY;
         }
 
-        // Aplicar offset vertical
         anchorY += alturaImagen * assetConfig.offsetY;
 
-        // Dibujar con rotación
         ctx.save();
         ctx.translate(anchorX, anchorY);
         ctx.rotate(angulo);
