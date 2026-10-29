@@ -1,10 +1,10 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v3.0
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v3.1
    ================================================================
-   - Fix v3.0: Corregido error "Cannot read properties of undefined
-     (reading 'buffer')" al grabar. Se usa un fallback de formato.
-   - Fix v3.0: Todos los filtros se dibujan correctamente.
-   - Ajustados scale y offsetY para PNGs recortados.
+   - Fix v3.1: Actualizada la versión de MediaPipe para solucionar
+     el error de WebAssembly en móviles.
+   - Fix v3.1: Ocultar a Marquinhos al abrir la cámara.
+   - Fix v3.1: Ajuste de escala de los filtros.
    ================================================================ */
 
 (function () {
@@ -19,37 +19,18 @@
         DETECTION_FPS: 24,
         VIDEO_WIDTH: 1280,
         VIDEO_HEIGHT: 720,
-        MEDIAPIPE_VERSION: '0.4.1633559619'
+        // ✅ NUEVA VERSIÓN DE MEDIAPIPE (Soluciona el error de WASM)
+        MEDIAPIPE_VERSION: '0.4.1675469240'
     });
 
     const GITHUB_BASE_URL = 'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main';
 
     const ASSETS = {
-        gato: {
-            src: `${GITHUB_BASE_URL}/orejas-gato.png`,
-            scale: 1.0,
-            offsetY: -0.5
-        },
-        burro: {
-            src: `${GITHUB_BASE_URL}/orejas-burro.png`,
-            scale: 1.0,
-            offsetY: -0.5
-        },
-        gafas: {
-            src: `${GITHUB_BASE_URL}/gafas.png`,
-            scale: 1.0,
-            offsetY: 0
-        },
-        bigote: {
-            src: `${GITHUB_BASE_URL}/bigote.png`,
-            scale: 0.55,
-            offsetY: 0.1
-        },
-        corona: {
-            src: `${GITHUB_BASE_URL}/corona.png`,
-            scale: 0.9,
-            offsetY: -0.6
-        }
+        gato: { src: `${GITHUB_BASE_URL}/orejas-gato.png`, scale: 1.0, offsetY: -0.4 },
+        burro: { src: `${GITHUB_BASE_URL}/orejas-burro.png`, scale: 1.0, offsetY: -0.4 },
+        gafas: { src: `${GITHUB_BASE_URL}/gafas.png`, scale: 1.0, offsetY: 0 },
+        bigote: { src: `${GITHUB_BASE_URL}/bigote.png`, scale: 0.55, offsetY: 0.1 },
+        corona: { src: `${GITHUB_BASE_URL}/corona.png`, scale: 0.9, offsetY: -0.5 }
     };
 
     const state = {
@@ -69,6 +50,17 @@
     };
 
     const $ = (id) => document.getElementById(id);
+
+    // ✅ NUEVO: Función para ocultar a Marquinhos cuando la cámara está activa
+    function toggleMarquinhos(visible) {
+        const robot = document.querySelector('.marquinhos-robot') || 
+                      document.querySelector('#marquinhos') || 
+                      document.querySelector('[class*="marquinhos"]') ||
+                      document.querySelector('[id*="marquinhos"]');
+        if (robot) {
+            robot.style.display = visible ? 'none' : 'block';
+        }
+    }
 
     function precargarImagenes() {
         return new Promise((resolve) => {
@@ -166,6 +158,7 @@
     async function abrirCamara() {
         inyectarModalCamara();
         $('csModalCamara').classList.add('show');
+        toggleMarquinhos(false); // ✅ Ocultar a Marquinhos
         mostrarCargando(true);
         try {
             state.video = $('csCamaraVideo');
@@ -199,6 +192,8 @@
     async function iniciarMediaPipe() {
         if (state.faceMesh) return;
         if (typeof FaceMesh === 'undefined') throw new Error('MediaPipe Face Mesh no está cargado.');
+        
+        // ✅ Inicialización con la nueva versión
         const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@${CONFIG.MEDIAPIPE_VERSION}/${file}` });
         faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         faceMesh.onResults((results) => { state.lastResults = results; });
@@ -287,17 +282,7 @@
 
     function obtenerFormatoGrabacion() {
         if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) return '';
-        
-        // Priorizamos WebM (compatible con todos los navegadores modernos)
-        // y MP4 como fallback para iOS.
-        const candidatos = [
-            'video/webm;codecs=vp9,opus',
-            'video/webm;codecs=vp8,opus',
-            'video/webm',
-            'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
-            'video/mp4'
-        ];
-        
+        const candidatos = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4'];
         for (const tipo of candidatos) {
             if (MediaRecorder.isTypeSupported(tipo)) return tipo;
         }
@@ -316,78 +301,42 @@
         const opciones = mimeType ? { mimeType, videoBitsPerSecond: 5_000_000 } : {};
 
         try { state.mediaRecorder = new MediaRecorder(canvasStream, opciones); }
-        catch (e) { 
-            console.error('[CSARIELS Cámara] MediaRecorder no soportado:', e);
-            notificar('Tu navegador no soporta grabación de video.', 'error'); 
-            return; 
-        }
+        catch (e) { notificar('Tu navegador no soporta grabación de video.', 'error'); return; }
 
         state.chunks = [];
         state.mediaRecorder.ondataavailable = (e) => { if (e.data?.size > 0) state.chunks.push(e.data); };
         state.mediaRecorder.onstop = () => {
-            const tipo = mimeType || 'video/webm'; 
-            const ext = tipo.includes('mp4') ? 'mp4' : 'webm';
+            const tipo = mimeType || 'video/webm'; const ext = tipo.includes('mp4') ? 'mp4' : 'webm';
             const blob = new Blob(state.chunks, { type: tipo }); 
-            
-            // Si el blob está vacío, no llamamos a la función
             if (blob.size === 0) {
-                console.error('[CSARIELS Cámara] Blob vacío al detener grabación.');
                 notificar('Error al grabar el video. Intenta de nuevo.', 'error');
                 cerrarCamara();
                 return;
             }
-            
             const archivo = new File([blob], `video-camara-${Date.now()}.${ext}`, { type: tipo });
-            state.chunks = []; 
-            canvasStream.getTracks().forEach((t) => t.stop()); 
-            cerrarCamara();
-            
-            if (typeof window.csCamaraOnVideoGrabado === 'function') {
-                window.csCamaraOnVideoGrabado(archivo);
-            } else {
-                notificar('Video grabado, pero no hay receptor configurado.', 'warning');
-            }
+            state.chunks = []; canvasStream.getTracks().forEach((t) => t.stop()); cerrarCamara();
+            if (typeof window.csCamaraOnVideoGrabado === 'function') window.csCamaraOnVideoGrabado(archivo);
         };
         
-        state.mediaRecorder.onerror = (e) => {
-            console.error('[CSARIELS Cámara] Error de MediaRecorder:', e);
-            notificar('Error durante la grabación.', 'error');
-            detenerGrabacion();
-        };
-
-        state.mediaRecorder.start(250); 
-        state.grabando = true;
-        $('csBtnRecord').classList.add('grabando'); 
-        $('csRecIndicator').classList.add('active'); 
-        $('csCamaraTimer').classList.add('active');
+        state.mediaRecorder.start(250); state.grabando = true;
+        $('csBtnRecord').classList.add('grabando'); $('csRecIndicator').classList.add('active'); $('csCamaraTimer').classList.add('active');
         iniciarTimer();
     }
 
     function detenerGrabacion() {
         if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
         state.grabando = false;
-        $('csBtnRecord')?.classList.remove('grabando'); 
-        $('csRecIndicator')?.classList.remove('active'); 
-        $('csCamaraTimer')?.classList.remove('active');
+        $('csBtnRecord')?.classList.remove('grabando'); $('csRecIndicator')?.classList.remove('active'); $('csCamaraTimer')?.classList.remove('active');
         detenerTimer();
     }
 
     function iniciarTimer() {
         state.segundosGrabados = 0; actualizarTimerUI();
-        state.timerInterval = setInterval(() => { 
-            state.segundosGrabados++; 
-            actualizarTimerUI(); 
-            if (state.segundosGrabados >= CONFIG.MAX_DURATION_SECONDS) detenerGrabacion(); 
-        }, 1000);
+        state.timerInterval = setInterval(() => { state.segundosGrabados++; actualizarTimerUI(); if (state.segundosGrabados >= CONFIG.MAX_DURATION_SECONDS) detenerGrabacion(); }, 1000);
     }
 
     function detenerTimer() { if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; } }
-    function actualizarTimerUI() { 
-        const min = String(Math.floor(state.segundosGrabados / 60)).padStart(2, '0'); 
-        const seg = String(state.segundosGrabados % 60).padStart(2, '0'); 
-        const t = $('csCamaraTimer'); 
-        if (t) t.textContent = `${min}:${seg}`; 
-    }
+    function actualizarTimerUI() { const min = String(Math.floor(state.segundosGrabados / 60)).padStart(2, '0'); const seg = String(state.segundosGrabados % 60).padStart(2, '0'); const t = $('csCamaraTimer'); if (t) t.textContent = `${min}:${seg}`; }
 
     async function cambiarCamara() {
         if (!state.iniciada || state.grabando) return;
@@ -406,6 +355,7 @@
         if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
         state.mediaRecorder = null; detenerStream();
         if (state.faceMesh) { try { state.faceMesh.close(); } catch (e) { } state.faceMesh = null; }
+        toggleMarquinhos(true); // ✅ Volver a mostrar a Marquinhos al salir
         $('csModalCamara')?.classList.remove('show'); mostrarCargando(false);
     }
 
