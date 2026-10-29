@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.8
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.8.1
    ================================================================
    - MediaPipe Face Mesh se carga dinámicamente desde este archivo
      (no hace falta ningún <script> de MediaPipe en videos.html).
@@ -13,6 +13,8 @@
      (payaso = peluca + nariz; perro = orejas + hocico).
    - v4.8: rutas de PNG ajustadas a los nombres reales de backend/assets
      (orejas-gato-3, orejas-burro-2, gafas-2, bigote-2, corona-2).
+   - v4.8.1: CORRECCIÓN QUIRÚRGICA DEL FILTRO PAYASO (ajuste de 
+     offsetY y scale para peluca y nariz).
    ================================================================ */
 
 (function () {
@@ -103,10 +105,11 @@
             ]
         },
         // Payaso: peluca sobre la frente y nariz roja sobre la nariz real.
+        // CORRECCIÓN: Se subió la peluca (offsetY negativo) y se achicó la nariz (scale menor).
         payaso: {
             partes: [
-                { src: `${ASSETS_BASE}/payaso-1.png`,       scale: 0.9, offsetY: 0.44,  ancla: 'frente' },
-                { src: `${ASSETS_BASE}/payaso-nariz-1.png`, scale: 0.2, offsetY: -0.15, ancla: 'nariz' }
+                { src: `${ASSETS_BASE}/payaso-1.png`,       scale: 1.1,  offsetY: -0.35, ancla: 'frente' },
+                { src: `${ASSETS_BASE}/payaso-nariz-1.png`, scale: 0.08, offsetY: 0.05,  ancla: 'nariz' }
             ]
         },
         charro: {
