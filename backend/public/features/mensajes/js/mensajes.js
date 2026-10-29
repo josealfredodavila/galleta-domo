@@ -1,7 +1,8 @@
 // ================================================================
-// MENSAJES · JS v4.8 · WEB3 NEON UI
-// Cambios v4.8:
+// MENSAJES · JS v4.9 · WEB3 NEON UI
+// Cambios v4.9:
 // - Vinculación del botón de emojis (emojiBtn) con el teclado.
+// - Botón de videollamada profesional con SVG.
 // ================================================================
 
 'use strict';
@@ -783,7 +784,6 @@ async function openConversation(id) {
             callBtn.style.display = 'none';
         } else {
             callBtn.style.display = 'inline-flex';
-            callBtn.innerHTML = '<span class="call-icon">📹</span><span class="call-label">Llamar</span>';
             callBtn.title = 'Iniciar videollamada con ' + (p.nombre || 'usuario');
             callBtn.disabled = !window.LivekitClient;
         }
@@ -1599,42 +1599,34 @@ const RECONEXION_ESPERA_MS = 3000;
 let reconectandoLlamada = false;
 
 async function manejarDesconexionLlamada(room, reason) {
-    // Ignora eventos de salas que ya no son la sala activa (por ejemplo, la que falló al reconectar)
     if (!call.active || room !== call.room) return;
-
     const LK = window.LivekitClient;
     const id = call.id;
     const motivo = String(reason ?? 'desconocida');
     console.warn('[Llamadas] Desconectado de LiveKit. Motivo:', reason);
-
-    // Colgado intencional: mismo comportamiento de siempre
     if (LK.DisconnectReason && reason === LK.DisconnectReason.CLIENT_INITIATED) {
         finalizarLlamadaLocal();
         terminarLlamadaServidor(id, { motivo: 'colgada' });
         return;
     }
-
     if (reconectandoLlamada) return;
     reconectandoLlamada = true;
     try {
         for (let intento = 1; intento <= RECONEXION_MAX_INTENTOS; intento++) {
             await new Promise(resolve => setTimeout(resolve, RECONEXION_ESPERA_MS));
-            if (!call.active || call.id !== id) return; // la llamada terminó mientras esperábamos
-
+            if (!call.active || call.id !== id) return;
             try {
                 const t = await llamadaFetch(`/api/llamadas/${encodeURIComponent(id)}/token`, {});
                 try { call.audio?.stop(); call.video?.stop(); } catch (e) {}
-                call.active = false; // conectarYPublicar lo volverá a poner en true si tiene éxito
+                call.active = false;
                 await conectarYPublicar(t.url, t.token, call.tipo);
                 console.info('[Llamadas] Reconectado a la sala en el intento', intento);
                 return;
             } catch (err) {
                 console.warn(`[Llamadas] Reconexión ${intento} fallida:`, err.code || err.message);
-                call.active = true; // restaura el estado para el siguiente intento o el cierre
+                call.active = true;
             }
         }
-
-        // No se pudo reconectar: cerrar en ambos lados con el motivo real
         finalizarLlamadaLocal();
         terminarLlamadaServidor(id, { motivo: 'desconexion_' + motivo });
     } finally {
@@ -1850,9 +1842,6 @@ async function toggleScreen() {
     } catch (e) { if (e.name !== 'NotAllowedError') toast('❌ No se pudo compartir pantalla', 'error'); }
 }
 
-// ================================================================
-// INIT — CON LECTURA DE ?usuario= Y ?accion=llamada
-// ================================================================
 async function init() {
     try { db = await window.supabaseReady; } catch (e) { db = null; }
     if (!db) db = window.supabaseClient;
@@ -1944,7 +1933,6 @@ async function init() {
         $('fileInput').click();
     };
 
-    // 🔥 NUEVO: Vincular el botón de emojis con el teclado
     const btnEmoji = $('emojiBtn');
     if (btnEmoji) {
         btnEmoji.onclick = (e) => {
@@ -2002,21 +1990,15 @@ async function init() {
 
     registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
 
-    // ============================================================
-    // NUEVO v4.7: LEER ?usuario= Y ?accion=llamada DE LA URL
-    // ============================================================
     if (user && user.id) {
         const urlObj = new URL(window.location.href);
         const usuarioParam = urlObj.searchParams.get('usuario');
         const accionParam = urlObj.searchParams.get('accion');
 
         if (usuarioParam && usuarioParam.length > 10) {
-            // Abrimos la conversación directa con ese usuario
             setTimeout(async () => {
                 try {
                     await openConversation(usuarioParam);
-
-                    // Si la URL trae &accion=llamada, pedimos confirmación antes de iniciar
                     if (accionParam === 'llamada') {
                         setTimeout(async () => {
                             const ok = await NeonModal.confirm({
@@ -2030,15 +2012,14 @@ async function init() {
                                 try { await startCall('video'); }
                                 catch (e) { console.error('[Llamadas] Error en inicio automático:', e); }
                             }
-                        }, 1000); // Esperamos 1s para que el chat cargue
+                        }, 1000);
                     }
                 } catch (e) {
                     console.error('[Mensajes] Error al abrir conversación desde URL:', e);
                 }
-            }, 800); // Esperamos a que init() termine
+            }, 800);
         }
 
-        // Limpiar los parámetros de la URL para que no se repita al recargar
         if (usuarioParam || accionParam) {
             urlObj.searchParams.delete('usuario');
             urlObj.searchParams.delete('accion');
@@ -2059,9 +2040,6 @@ async function init() {
     }, 500);
 }
 
-// ================================================================
-// PUSH NOTIFICATIONS — SIN CAMBIOS
-// ================================================================
 async function registrarPushYServiceWorker() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     try {
@@ -2194,7 +2172,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '4.8.0',
+    version: '4.9.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
