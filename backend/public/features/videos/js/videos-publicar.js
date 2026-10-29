@@ -1,15 +1,15 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.6
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.7
    ================================================================
    FASE 1: UI de modales (sonidos, ubicación, borradores, preview)
    FASE 2: Carga modular de archivos (subirMultimedia)
    FASE 3C: (N/A aquí, el INSERT lo hace videos.html)
 
-   Novedades v1.6 (Sonidos Locales Reales + Preview):
-   - SONIDOS_SEED con URLs reales, duraciones y créditos.
-   - Previsualización de 5s al seleccionar sonido (con onerror).
-   - catch del play() ignora AbortError (cambio de pista).
-   - getState() exporta sonido, ubicacion y archivoVideo.
+   Novedades v1.7 (Motor de Audio + Autoplay Eficiente):
+   - AudioPreview centralizado: previene cortes y permite Play/Pausa.
+   - Autoplay con MutationObserver (elimina el setInterval de 2s).
+   - Limpieza de audio en reset de formulario y cierre de modales.
+   - Botón Play/Pausa individual en la lista de sonidos.
    ================================================================ */
 
 (function () {
@@ -179,6 +179,144 @@
     window.csConfirm = csConfirm;
 
     // ============================================================
+    // MOTOR DE AUDIO CENTRALIZADO (v1.7)
+    // ============================================================
+    const AudioPreview = (function () {
+        let audio = null;
+        let timerId = null;
+        let generation = 0;
+        let pistaActual = null;
+        let estado = 'idle'; // idle | loading | playing | paused | error
+        const DURACION_PREVIEW_MS = 5000;
+
+        function limpiar() {
+            if (timerId !== null) { clearTimeout(timerId); timerId = null; }
+            if (audio) {
+                try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch (e) {}
+                audio.onerror = null;
+                audio.oncanplay = null;
+                audio = null;
+            }
+            estado = 'idle';
+        }
+
+        function detener() {
+            generation++;
+            limpiar();
+            pistaActual = null;
+        }
+
+        async function reproducir(pista, onEstado) {
+            generation++;
+            const miGeneracion = generation;
+
+            limpiar();
+            pistaActual = pista;
+            estado = 'loading';
+            if (onEstado) onEstado('loading', pista);
+
+            if (!pista || !pista.url) {
+                estado = 'error';
+                if (onEstado) onEstado('error', pista, 'URL vacía');
+                return { ok: false, error: 'URL vacía' };
+            }
+
+            const nuevoAudio = new Audio();
+            nuevoAudio.preload = 'auto';
+            nuevoAudio.volume = 0.8;
+            audio = nuevoAudio;
+
+            const esperaDatos = new Promise((resolve, reject) => {
+                let resuelto = false;
+                const timeout = setTimeout(() => {
+                    if (!resuelto) { resuelto = true; reject(new Error('timeout')); }
+                }, 10000);
+
+                nuevoAudio.oncanplay = () => {
+                    if (!resuelto) { resuelto = true; clearTimeout(timeout); resolve(); }
+                };
+                nuevoAudio.onerror = () => {
+                    if (!resuelto) {
+                        resuelto = true;
+                        clearTimeout(timeout);
+                        const code = nuevoAudio.error ? nuevoAudio.error.code : 0;
+                        reject(new Error('media_error_' + code));
+                    }
+                };
+                nuevoAudio.src = pista.url;
+                nuevoAudio.load();
+            });
+
+            try {
+                await esperaDatos;
+            } catch (e) {
+                if (miGeneracion !== generation) return { ok: false, cancelado: true };
+                limpiar();
+                estado = 'error';
+                if (onEstado) onEstado('error', pista, e.message);
+                return { ok: false, error: e.message };
+            }
+
+            if (miGeneracion !== generation) {
+                try { nuevoAudio.pause(); } catch (e) {}
+                return { ok: false, cancelado: true };
+            }
+
+            try {
+                await nuevoAudio.play();
+            } catch (e) {
+                if (miGeneracion !== generation) return { ok: false, cancelado: true };
+                if (e.name === 'AbortError') return { ok: false, cancelado: true };
+                limpiar();
+                estado = 'error';
+                if (onEstado) onEstado('error', pista, e.name || 'play_error');
+                return { ok: false, error: e.name };
+            }
+
+            if (miGeneracion !== generation) {
+                try { nuevoAudio.pause(); } catch (e) {}
+                return { ok: false, cancelado: true };
+            }
+
+            estado = 'playing';
+            if (onEstado) onEstado('playing', pista);
+
+            timerId = setTimeout(() => {
+                if (miGeneracion !== generation) return;
+                if (audio === nuevoAudio) {
+                    try { nuevoAudio.pause(); } catch (e) {}
+                    estado = 'paused';
+                    if (onEstado) onEstado('paused', pista);
+                }
+                timerId = null;
+            }, DURACION_PREVIEW_MS);
+
+            return { ok: true, generacion: miGeneracion };
+        }
+
+        function pausar() {
+            if (audio && estado === 'playing') {
+                try { audio.pause(); } catch (e) {}
+                estado = 'paused';
+                if (window._audioPreviewOnEstado) window._audioPreviewOnEstado('paused', pistaActual);
+            }
+        }
+
+        function reanudar() {
+            if (audio && estado === 'paused' && pistaActual) {
+                audio.play().then(() => {
+                    estado = 'playing';
+                    if (window._audioPreviewOnEstado) window._audioPreviewOnEstado('playing', pistaActual);
+                }).catch(() => {});
+            }
+        }
+
+        function getEstado() { return { estado, pista: pistaActual }; }
+
+        return { reproducir, detener, pausar, reanudar, getEstado };
+    })();
+
+    // ============================================================
     // FASE 2 · subirMultimedia
     // ============================================================
     async function subirMultimedia(archivo, tipo, opciones) {
@@ -281,12 +419,8 @@
         state.urlVideoSubida = null;
         state.pathVideoSubida = null;
 
-        const btnTxt = document.getElementById('csFileBtnTxt');
-        const btnHint = document.getElementById('csFileBtnHint');
-        const btnWrap = document.querySelector('.cs-file-btn-wrap');
-        if (btnTxt) btnTxt.textContent = vt('videos_elegir_galeria', 'Elegir video de la galería');
-        if (btnHint) btnHint.textContent = vt('videos_archivo_hint', 'MP4 · WebM · MOV · Máx 100 MB');
-        if (btnWrap) btnWrap.classList.remove('cs-file-con-archivo');
+        // ✅ DETENER AUDIO
+        AudioPreview.detener();
 
         state.sonidoSeleccionado = null;
         state.ubicacionSeleccionada = null;
@@ -296,6 +430,13 @@
         if (previewUbic) previewUbic.querySelector('.cs-preview-txt').textContent = vt('videos_preview_sin_ubicacion', 'Sin ubicación');
         const badge = $('csPreviewBadge');
         if (badge) badge.style.display = 'none';
+
+        const btnTxt = document.getElementById('csFileBtnTxt');
+        const btnHint = document.getElementById('csFileBtnHint');
+        const btnWrap = document.querySelector('.cs-file-btn-wrap');
+        if (btnTxt) btnTxt.textContent = vt('videos_elegir_galeria', 'Elegir video de la galería');
+        if (btnHint) btnHint.textContent = vt('videos_archivo_hint', 'MP4 · WebM · MOV · Máx 100 MB');
+        if (btnWrap) btnWrap.classList.remove('cs-file-con-archivo');
 
         const progressEl = document.getElementById('uploadProgress');
         const progressFill = document.getElementById('progressFill');
@@ -327,7 +468,6 @@
                 return;
             }
         } catch (e) { warn('Error llamando cargarVideos:', e); }
-
         dispararEventoRefresh();
     }
 
@@ -363,6 +503,18 @@
                 margin-right: 6px;
             }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
+            .cs-sonido-play {
+                background: transparent;
+                border: 1px solid rgba(212,175,55,0.3);
+                border-radius: 50%;
+                width: 30px; height: 30px;
+                display: flex; align-items: center; justify-content: center;
+                color: #D4AF37;
+                cursor: pointer;
+                margin-right: 8px;
+                transition: all 0.2s;
+            }
+            .cs-sonido-play:hover { background: rgba(212,175,55,0.15); }
         `;
         document.head.appendChild(st);
     }
@@ -614,10 +766,39 @@
         document.body.style.overflow = '';
     }
     function cerrarTodosLosSheets() {
+        // ✅ Detener audio al cerrar
+        const est = AudioPreview.getEstado();
+        if (est.estado === 'playing' || est.estado === 'loading') {
+            AudioPreview.detener();
+        }
+
         cerrarSheet('csModalSonidos', 'csSheetSonidosBackdrop');
         cerrarSheet('csModalUbicacion', 'csSheetUbicacionBackdrop');
         cerrarSheet('csModalBorradores', 'csSheetBorradoresBackdrop');
     }
+
+    function actualizarIndicadorSonido(estado, pista, error) {
+        const items = document.querySelectorAll('.cs-sonido-item');
+        items.forEach(el => {
+            const ico = el.querySelector('.cs-sonido-ico');
+            if (!ico) return;
+            const esActivo = pista && el.dataset.sonidoId === pista.id;
+            if (esActivo && estado === 'loading') ico.textContent = '◌';
+            else if (esActivo && estado === 'playing') ico.textContent = '⏸';
+            else if (esActivo && estado === 'paused') ico.textContent = '▶';
+            else if (esActivo && estado === 'error') ico.textContent = '⚠';
+            else ico.textContent = '▶';
+        });
+
+        if (estado === 'error') {
+            const mensaje = error && error.indexOf('timeout') !== -1
+                ? 'La pista tardó demasiado en cargar.'
+                : 'No se pudo reproducir esta pista.';
+            csToast(mensaje, 'error', 3500);
+        }
+    }
+
+    window._audioPreviewOnEstado = actualizarIndicadorSonido;
 
     function renderSonidos(tab, filtro) {
         state.tabSonidosActiva = tab || 'parati';
@@ -632,9 +813,12 @@
             lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">♪</span><p data-clave="videos_sin_pistas">Sin pistas en esta sección.</p></div>`;
             return;
         }
+        
         lista.innerHTML = arr.map(s => `
             <button type="button" class="cs-sonido-item ${state.sonidoSeleccionado && state.sonidoSeleccionado.id === s.id ? 'activo' : ''}" data-sonido-id="${esc(s.id)}">
-                <span class="cs-sonido-ico">▶</span>
+                <button type="button" class="cs-sonido-play" data-play-id="${esc(s.id)}" aria-label="Reproducir o pausar">
+                    <span class="cs-sonido-ico">▶</span>
+                </button>
                 <span class="cs-sonido-info">
                     <span class="cs-sonido-nombre">${esc(s.nombre)}</span>
                     <span class="cs-sonido-artista">${esc(s.artista)} · ${esc(s.duracion)}s</span>
@@ -642,8 +826,27 @@
                 <span class="cs-sonido-check">◆</span>
             </button>
         `).join('');
+        
+        lista.querySelectorAll('.cs-sonido-play').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.playId;
+                const actual = AudioPreview.getEstado();
+                
+                if (actual.pista && actual.pista.id === id) {
+                    if (actual.estado === 'playing') AudioPreview.pausar();
+                    else if (actual.estado === 'paused') AudioPreview.reanudar();
+                } else {
+                    seleccionarSonido(id);
+                }
+            });
+        });
+        
         lista.querySelectorAll('.cs-sonido-item').forEach(btn => {
-            btn.addEventListener('click', () => seleccionarSonido(btn.dataset.sonidoId));
+            btn.addEventListener('click', (e) => {
+                if (e.target.closest('.cs-sonido-play')) return;
+                seleccionarSonido(btn.dataset.sonidoId);
+            });
         });
     }
 
@@ -654,37 +857,7 @@
 
         state.sonidoSeleccionado = s;
 
-        // ✅ Previsualización con manejo de errores (AbortError ignorado)
-        if (s.url) {
-            try {
-                if (window._audioPreview) {
-                    window._audioPreview.pause();
-                    window._audioPreview.currentTime = 0;
-                }
-                window._audioPreview = new Audio(s.url);
-                window._audioPreview.volume = 0.8;
-
-                window._audioPreview.onerror = () => {
-                    warn('Error cargando audio:', s.url);
-                    csToast('No se pudo cargar el sonido. Revisa que exista en el bucket audios.', 'error', 4000);
-                };
-
-                window._audioPreview.play().catch(e => {
-                    if (e && e.name === 'AbortError') return;
-                    warn('No se pudo previsualizar audio:', e);
-                    csToast('No se pudo reproducir este sonido. Revisa que el archivo exista en el bucket audios.', 'error', 4000);
-                });
-
-                setTimeout(() => {
-                    if (window._audioPreview) {
-                        window._audioPreview.pause();
-                        window._audioPreview.currentTime = 0;
-                    }
-                }, 5000);
-            } catch (e) {
-                warn('Error al previsualizar:', e);
-            }
-        }
+        AudioPreview.reproducir(s, actualizarIndicadorSonido);
 
         document.querySelectorAll('.cs-sonido-item').forEach(el => {
             el.classList.toggle('activo', el.dataset.sonidoId === id);
@@ -822,42 +995,82 @@
     }
 
     // ============================================================
-    // INYECCIÓN DE AUTOPLAY
+    // INYECCIÓN DE AUTOPLAY (MUTATION OBSERVER)
     // ============================================================
+    let _autoplayObserver = null;
+    let _autoplayInterval = null;
+    let _intersectionObserver = null;
+
     function iniciarVigilanteAutoplay() {
+        if (_intersectionObserver) return;
+
         function usuarioQuiereAutoplay() {
             const pref = localStorage.getItem('contenido_auto_reproducir');
             return pref === null || pref === 'true';
         }
 
-        const observer = new IntersectionObserver((entries) => {
+        function esVideoDelFeed(video) {
+            if (!video) return false;
+            if (video.id === 'csPreviewVideo') return false;
+            if (video.closest && video.closest('#csPreviewWrap')) return false;
+            if (video.dataset.csAutoplayIgnorar === 'true') return false;
+            return true;
+        }
+
+        _intersectionObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 const video = entry.target;
-                if (video.id === 'csPreviewVideo') return;
+                if (!esVideoDelFeed(video)) return;
 
                 if (entry.isIntersecting) {
                     if (usuarioQuiereAutoplay()) {
                         video.muted = true;
-                        video.play().catch(e => console.log('Autoplay bloqueado:', e));
+                        video.play().catch(e => {
+                            if (e.name !== 'AbortError') console.log('Autoplay bloqueado:', e.name);
+                        });
                     }
                 } else {
-                    video.pause();
-                    video.currentTime = 0;
+                    try { video.pause(); video.currentTime = 0; } catch (e) {}
                 }
             });
         }, { threshold: 0.5 });
 
-        function engancharVideos() {
-            document.querySelectorAll('video').forEach(video => {
-                if (!video.dataset.autoplayEnganchado) {
-                    video.dataset.autoplayEnganchado = 'true';
-                    observer.observe(video);
-                }
-            });
+        function observarVideo(video) {
+            if (!esVideoDelFeed(video)) return;
+            if (video.dataset.csAutoplayObservado === 'true') return;
+            video.dataset.csAutoplayObservado = 'true';
+            _intersectionObserver.observe(video);
         }
 
-        setInterval(engancharVideos, 2000);
-        window.addEventListener('csariels:videos:refresh', () => setTimeout(engancharVideos, 1000));
+        function observarTodos() {
+            document.querySelectorAll('video').forEach(observarVideo);
+        }
+
+        observarTodos();
+
+        _autoplayObserver = new MutationObserver((mutations) => {
+            mutations.forEach(m => {
+                m.addedNodes.forEach(nodo => {
+                    if (nodo.nodeType !== 1) return;
+                    if (nodo.tagName === 'VIDEO') observarVideo(nodo);
+                    else if (nodo.querySelectorAll) nodo.querySelectorAll('video').forEach(observarVideo);
+                });
+            });
+        });
+        _autoplayObserver.observe(document.body, { childList: true, subtree: true });
+
+        window.addEventListener('csariels:videos:refresh', () => {
+            setTimeout(observarTodos, 300);
+        });
+
+        _autoplayInterval = setInterval(observarTodos, 15000);
+
+        window.addEventListener('beforeunload', () => {
+            if (_autoplayObserver) { _autoplayObserver.disconnect(); _autoplayObserver = null; }
+            if (_autoplayInterval) { clearInterval(_autoplayInterval); _autoplayInterval = null; }
+            if (_intersectionObserver) { _intersectionObserver.disconnect(); _intersectionObserver = null; }
+            AudioPreview.detener();
+        });
     }
 
     // ============================================================
@@ -931,7 +1144,7 @@
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
-        log('✅ Módulo Publicar v1.6 listo (sonidos locales reales + preview)');
+        log('✅ Módulo Publicar v1.7 listo (motor de audio + autoplay eficiente)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
