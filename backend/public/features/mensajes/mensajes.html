@@ -54,7 +54,7 @@
     })();
 </script>
 
-<link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.2">
+<link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.4">
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 <link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
 
@@ -217,7 +217,13 @@
 </aside>
 <section class="chat">
     <header class="chathead">
-        <button class="backbtn" id="backBtn" title="Volver" data-neon="icon">←</button>
+        <!-- ✅ BOTÓN DE REGRESO MEJORADO CON SVG GRANDE -->
+        <button class="backbtn" id="backBtn" title="Volver" data-neon="icon" aria-label="Volver">
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+        </button>
         <div class="avatar" id="chatAvatar" title="Ver foto">◈</div>
         <div>
             <div class="chatname" id="chatName">Selecciona una conversación</div>
