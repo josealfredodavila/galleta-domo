@@ -68,6 +68,27 @@
         .btn-subir-video:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
         .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+        /* BOTÓN DE CÁMARA */
+        .btn-camara {
+            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+            color: var(--space);
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+        .btn-camara:hover { transform: scale(1.02); box-shadow: var(--shadow-gold); }
+
         .processing-state { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 30px 20px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.55), rgba(8, 15, 26, 0.75)); border: 1px solid var(--gold); border-radius: var(--radius-xl); margin-bottom: 20px; text-align: center; }
         .processing-state.visible { display: flex; }
         .processing-state .spinner { width: 60px; height: 60px; border: 4px solid rgba(212, 175, 55, 0.15); border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
@@ -856,7 +877,13 @@
                     <textarea id="inputDescripcionVideo" data-placeholder="videos_descripcion_placeholder" placeholder="Describe tu video..." maxlength="5000"></textarea>
                 </div>
                 <div class="form-group">
-                    <label data-clave="videos_seleccionar_archivo">Selecciona el archivo de video</label>
+                    <label data-clave="videos_seleccionar_archivo">Selecciona el archivo de video o grábalo</label>
+                    
+                    <!-- ✅ NUEVO BOTÓN DE CÁMARA -->
+                    <button type="button" class="btn-camara" id="btnAbrirCamara">
+                        🎥 Grabar video con cámara
+                    </button>
+
                     <div class="file-input-wrapper">
                         <input type="file" id="inputArchivoVideo" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" required />
                         <button type="submit" class="btn-subir-video" id="btnSubirVideo" data-clave="videos_btn_subir">◈ Subir video</button>
@@ -946,12 +973,15 @@
         <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;" data-clave="error_cerrar">Cerrar</button>
     </div>
 
+    <!-- ✅ NUEVO: MediaPipe Face Mesh + videos-camara.js -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="/features/videos/js/videos-camara.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js?v=6"></script>
     <script src="/features/videos/js/videos-publicar.js" defer></script>
     <script>
     // ================================================================
-    // VIDEOS · v15.8 — Fullscreen Pro + Doble Tap
+    // VIDEOS · v15.8 — Fullscreen Pro + Doble Tap + Cámara
     // ================================================================
     
     // ================================================================
@@ -1840,7 +1870,6 @@
             var session = await getSession();
             if (!session) throw new Error('Inicia sesión');
 
-            // ✅ NUEVO: Leer el estado de VideosPublicar (sonido + ubicación)
             var pub = (window.VideosPublicar && window.VideosPublicar.getState) ? window.VideosPublicar.getState() : {};
             var sonido = pub.sonido || null;
             var ubicacion = pub.ubicacion || null;
@@ -1864,7 +1893,6 @@
             if (progressFill) progressFill.style.width = '60%';
             if (progressText) progressText.textContent = 'Creando registro...';
 
-            // ✅ NUEVO: Incluir sonido y ubicación en el insert
             var ins = await sbVideos.from('videos').insert({
                 usuario_id: session.user.id,
                 titulo: titulo,
@@ -1882,7 +1910,6 @@
             videoId = ins.data.id;
 
             if (progressFill) progressFill.style.width = '85%';
-            // ✅ NUEVO: Enviar audioUrl al backend
             var queueResponse = await fetch('/api/video/queue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
@@ -1963,6 +1990,42 @@
     function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
     // ================================================================
+    // CÁMARA · INTEGRACIÓN
+    // ================================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnCamara = document.getElementById('btnAbrirCamara');
+        if (btnCamara) {
+            btnCamara.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (window.VideosCamara) {
+                    window.VideosCamara.abrirCamara();
+                } else {
+                    console.error('Módulo de cámara no cargado');
+                    showToast('El módulo de cámara no está disponible', 'error');
+                }
+            });
+        }
+
+        window.csCamaraOnVideoGrabado = function(file) {
+            const input = document.getElementById('inputArchivoVideo');
+            if (!input) return;
+
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+                
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                
+                showToast('✅ Video grabado listo para subir', 'success');
+            } catch (e) {
+                console.error('Error asignando archivo grabado:', e);
+                showToast('Error al procesar el video grabado', 'error');
+            }
+        };
+    });
+
+    // ================================================================
     // INIT
     // ================================================================
     document.addEventListener('DOMContentLoaded', function() {
@@ -1976,7 +2039,7 @@
     });
 
     // ================================================================
-    // EXPORTS (window.toggleFullscreen eliminado porque no existe)
+    // EXPORTS
     // ================================================================
     window.subirVideo = subirVideo;
     window.cargarVideos = cargarVideos;
