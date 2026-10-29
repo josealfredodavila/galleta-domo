@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.4
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.5
    ================================================================
    - MediaPipe Face Mesh se carga dinámicamente desde este archivo
      (no hace falta ningún <script> de MediaPipe en videos.html).
@@ -9,8 +9,10 @@
    - Envíos a Face Mesh secuenciales (MediaPipe no admite dos a la vez).
    - Cerrar la cámara durante una grabación descarta el video.
    - Marquinhos se oculta al abrir la cámara y se restaura al cerrar.
-   - v4.4: 18 filtros desde backend/assets (sufijo -1). Cada filtro
-     tiene su punto de anclaje: 'frente', 'nariz' u 'ojos'.
+   - v4.4: 18 filtros desde backend/assets (sufijo -1), cada uno con
+     su punto de anclaje: 'frente', 'nariz' u 'ojos'.
+   - v4.5: ajustes de posición y tamaño para ángel, charro, vikingo,
+     león y payaso. El payaso necesita volver a subir payaso-1.png.
    ================================================================ */
 
 (function () {
@@ -36,7 +38,7 @@
 
     // scale   = ancho del filtro como múltiplo del ancho de la cara
     // offsetY = desplazamiento vertical como fracción de la altura del filtro
-    //           (0.5 = la parte superior del filtro queda en el punto de anclaje)
+    //           (negativo = sube, positivo = baja)
     // ancla   = 'frente' (cabeza), 'nariz' (base de la nariz) u 'ojos' (centro de los ojos)
     const ASSETS = {
         gato:     { src: `${ASSETS_BASE}/orejas-gato-1.png`,     scale: 1.0,  offsetY: -0.4,  ancla: 'frente' },
@@ -49,11 +51,11 @@
         diamante: { src: `${ASSETS_BASE}/corona-diamante-1.png`, scale: 0.9,  offsetY: -0.5,  ancla: 'frente' },
         perro:    { src: `${ASSETS_BASE}/perro-1.png`,           scale: 1.3,  offsetY: -0.18, ancla: 'nariz' },
         diablo:   { src: `${ASSETS_BASE}/diablo-1.png`,          scale: 1.0,  offsetY: -0.6,  ancla: 'frente' },
-        angel:    { src: `${ASSETS_BASE}/angel-1.png`,           scale: 1.3,  offsetY: -0.9,  ancla: 'frente' },
-        payaso:   { src: `${ASSETS_BASE}/payaso-1.png`,          scale: 1.1,  offsetY: 0.2,   ancla: 'nariz' },
-        charro:   { src: `${ASSETS_BASE}/charro-1.png`,          scale: 1.6,  offsetY: -0.8,  ancla: 'frente' },
-        vikingo:  { src: `${ASSETS_BASE}/vikingo-1.png`,         scale: 1.2,  offsetY: -0.5,  ancla: 'frente' },
-        leon:     { src: `${ASSETS_BASE}/leon-1.png`,            scale: 1.1,  offsetY: 0,     ancla: 'ojos' },
+        angel:    { src: `${ASSETS_BASE}/angel-1.png`,           scale: 1.1,  offsetY: -0.75, ancla: 'frente' },
+        payaso:   { src: `${ASSETS_BASE}/payaso-1.png`,          scale: 1.1,  offsetY: -0.35, ancla: 'nariz' },
+        charro:   { src: `${ASSETS_BASE}/charro-1.png`,          scale: 1.2,  offsetY: -0.7,  ancla: 'frente' },
+        vikingo:  { src: `${ASSETS_BASE}/vikingo-1.png`,         scale: 1.1,  offsetY: -0.3,  ancla: 'frente' },
+        leon:     { src: `${ASSETS_BASE}/leon-1.png`,            scale: 0.95, offsetY: 0,     ancla: 'ojos' },
         mascara:  { src: `${ASSETS_BASE}/mascara-lucha-1.png`,   scale: 1.0,  offsetY: 0,     ancla: 'ojos' },
         alien:    { src: `${ASSETS_BASE}/antenas-alien-1.png`,   scale: 1.1,  offsetY: -0.27, ancla: 'ojos' }
     };
@@ -474,7 +476,7 @@
         // Punto de anclaje según el filtro
         let ax = centro.x;
         let ay = centro.y;
-        if (cfg.ancla === 'frente') ay = pt(10).y;   // frente
+        if (cfg.ancla === 'frente') ay = pt(10).y;    // frente
         else if (cfg.ancla === 'nariz') ay = pt(2).y; // base de la nariz
         ay += alto * cfg.offsetY;
 
