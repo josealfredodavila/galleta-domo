@@ -1,9 +1,7 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v2.7
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v2.8
    ================================================================
-   - CORRECCIÓN CRÍTICA: CORS solucionado usando jsDelivr (CDN de GitHub).
-   - BLINDAJE: Listener automático para abrir la cámara.
-   - Precarga de imágenes con manejo de errores visible.
+   - Posiciones y tamaños ajustados para que no tapen la cara.
    ================================================================ */
 
 (function () {
@@ -12,9 +10,6 @@
     if (window.__csarielsVideosCamaraLoaded) return;
     window.__csarielsVideosCamaraLoaded = true;
 
-    // ============================================================
-    // CONFIGURACIÓN Y ASSETS
-    // ============================================================
     const CONFIG = Object.freeze({
         MAX_DURATION_SECONDS: 60,
         TARGET_FPS: 30,
@@ -24,56 +19,43 @@
         MEDIAPIPE_VERSION: '0.4.1633559619'
     });
 
-    // ✅ FIX CORS: Usamos jsDelivr (CDN oficial de GitHub) en lugar de raw.githubusercontent.com
     const GITHUB_BASE_URL = 'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main';
 
+    // ✅ TAMAÑOS Y POSICIONES AJUSTADOS
     const ASSETS = {
         gato: {
             src: `${GITHUB_BASE_URL}/orejas-gato.png`,
-            scale: 1.4,
-            offsetY: -0.5
+            scale: 1.1,    // Tamaño moderado
+            offsetY: -0.4  // Arriba de la frente
         },
         burro: {
             src: `${GITHUB_BASE_URL}/orejas-burro.png`,
-            scale: 1.6,
-            offsetY: -0.6
+            scale: 1.2,
+            offsetY: -0.5
         },
         gafas: {
             src: `${GITHUB_BASE_URL}/gafas.png`,
-            scale: 1.2,
+            scale: 1.0,   // Justo sobre los ojos
             offsetY: 0
         },
         bigote: {
             src: `${GITHUB_BASE_URL}/bigote.png`,
-            scale: 0.9,
-            offsetY: 0.2
+            scale: 0.6,   // Pequeño, bajo la nariz
+            offsetY: 0.1
         },
         corona: {
             src: `${GITHUB_BASE_URL}/corona.png`,
-            scale: 1.8,
-            offsetY: -0.7
+            scale: 1.3,
+            offsetY: -0.6  // Arriba de la cabeza
         }
     };
 
     const state = {
-        stream: null,
-        faceMesh: null,
-        canvas: null,
-        ctx: null,
-        video: null,
-        mediaRecorder: null,
-        chunks: [],
-        grabando: false,
-        iniciada: false,
-        filtroActual: 'ninguno',
-        renderFrameId: null,
-        detectionFrameId: null,
-        lastDetectionTime: 0,
-        lastResults: null,
-        facingMode: 'user',
-        timerInterval: null,
-        segundosGrabados: 0,
-        imagenesCargadas: {},
+        stream: null, faceMesh: null, canvas: null, ctx: null, video: null,
+        mediaRecorder: null, chunks: [], grabando: false, iniciada: false,
+        filtroActual: 'ninguno', renderFrameId: null, detectionFrameId: null,
+        lastDetectionTime: 0, lastResults: null, facingMode: 'user',
+        timerInterval: null, segundosGrabados: 0, imagenesCargadas: {},
         filtrosDisponibles: [
             { id: 'ninguno', nombre: 'Ninguno', icono: '🚫' },
             { id: 'gato', nombre: 'Orejas', icono: '🐱' },
@@ -86,65 +68,42 @@
 
     const $ = (id) => document.getElementById(id);
 
-    /* ============================================================
-       PRECARGA DE IMÁGENES (CON LOG DE ERRORES)
-       ============================================================ */
     function precargarImagenes() {
         return new Promise((resolve) => {
             let cargadas = 0;
             const total = Object.keys(ASSETS).length;
-
             if (total === 0) { resolve(); return; }
-
             Object.keys(ASSETS).forEach((key) => {
                 const img = new Image();
-                img.crossOrigin = 'anonymous'; 
-                img.onload = () => {
-                    cargadas++;
-                    console.log(`✅ Filtro cargado: ${key}`);
-                    if (cargadas === total) {
-                        console.log('✅ Todos los filtros AR precargados');
-                        resolve();
-                    }
-                };
-                img.onerror = (e) => {
-                    console.error(`❌ No se pudo cargar el filtro ${key}. URL: ${ASSETS[key].src}`, e);
-                    cargadas++;
-                    if (cargadas === total) resolve();
-                };
+                img.crossOrigin = 'anonymous';
+                img.onload = () => { cargadas++; if (cargadas === total) resolve(); };
+                img.onerror = () => { console.error(`Error cargando ${key}`); cargadas++; if (cargadas === total) resolve(); };
                 img.src = ASSETS[key].src;
                 state.imagenesCargadas[key] = img;
             });
         });
     }
 
-    /* ============================================================
-       MODAL
-       ============================================================ */
     function inyectarModalCamara() {
         if ($('csModalCamara')) return;
-
         const modal = document.createElement('div');
         modal.id = 'csModalCamara';
         modal.className = 'cs-camara-modal';
         modal.innerHTML = `
             <div class="cs-camara-header">
-                <button type="button" class="cs-camara-close" id="csCamaraClose" aria-label="Cerrar cámara">✕</button>
+                <button type="button" class="cs-camara-close" id="csCamaraClose">✕</button>
                 <div class="cs-camara-timer" id="csCamaraTimer">00:00</div>
-                <button type="button" class="cs-camara-flip" id="csCamaraFlip" aria-label="Cambiar cámara">🔄</button>
+                <button type="button" class="cs-camara-flip" id="csCamaraFlip">🔄</button>
             </div>
-
             <div class="cs-camara-viewport">
                 <video id="csCamaraVideo" playsinline autoplay muted></video>
                 <canvas id="csCamaraCanvas"></canvas>
                 <div class="cs-camara-rec-indicator" id="csRecIndicator">● REC</div>
                 <div class="cs-camara-loading" id="csCamaraLoading">Iniciando cámara…</div>
             </div>
-
             <div class="cs-camara-filtros" id="csCamaraFiltros"></div>
-
             <div class="cs-camara-footer">
-                <button type="button" class="cs-camara-record-btn" id="csBtnRecord" aria-label="Grabar"></button>
+                <button type="button" class="cs-camara-record-btn" id="csBtnRecord"></button>
             </div>
         `;
         document.body.appendChild(modal);
@@ -181,7 +140,6 @@
         $('csCamaraClose').addEventListener('click', cerrarCamara);
         $('csCamaraFlip').addEventListener('click', cambiarCamara);
         $('csBtnRecord').addEventListener('click', toggleGrabacion);
-
         document.addEventListener('visibilitychange', onVisibilityChange);
         renderizarFiltros();
     }
@@ -189,14 +147,12 @@
     function renderizarFiltros() {
         const contenedor = $('csCamaraFiltros');
         if (!contenedor) return;
-
         contenedor.innerHTML = state.filtrosDisponibles.map((filtro) => `
             <button type="button" class="cs-filtro-btn ${state.filtroActual === filtro.id ? 'activo' : ''}" data-filtro-id="${filtro.id}">
                 <span class="icono">${filtro.icono}</span>
                 <span>${filtro.nombre}</span>
             </button>
         `).join('');
-
         contenedor.querySelectorAll('.cs-filtro-btn').forEach((btn) => {
             btn.addEventListener('click', () => {
                 state.filtroActual = btn.dataset.filtroId;
@@ -205,26 +161,19 @@
         });
     }
 
-    /* ============================================================
-       CÁMARA
-       ============================================================ */
     async function abrirCamara() {
         inyectarModalCamara();
         $('csModalCamara').classList.add('show');
         mostrarCargando(true);
-
         try {
             state.video = $('csCamaraVideo');
             state.canvas = $('csCamaraCanvas');
             state.ctx = state.canvas.getContext('2d', { alpha: false });
-
             await precargarImagenes();
             await iniciarStream();
             await iniciarMediaPipe();
-
             state.iniciada = true;
             mostrarCargando(false);
-
             iniciarLoopRender();
             iniciarLoopDeteccion();
         } catch (error) {
@@ -237,12 +186,10 @@
     async function iniciarStream() {
         detenerStream();
         if (!navigator.mediaDevices?.getUserMedia) throw new Error('Tu navegador no permite acceder a la cámara.');
-
         state.stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode: { ideal: state.facingMode }, width: { ideal: CONFIG.VIDEO_WIDTH }, height: { ideal: CONFIG.VIDEO_HEIGHT }, frameRate: { ideal: CONFIG.TARGET_FPS } },
             audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
         });
-
         state.video.srcObject = state.stream;
         await state.video.play().catch(() => {});
     }
@@ -250,15 +197,12 @@
     async function iniciarMediaPipe() {
         if (state.faceMesh) return;
         if (typeof FaceMesh === 'undefined') throw new Error('MediaPipe Face Mesh no está cargado.');
-
         const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@${CONFIG.MEDIAPIPE_VERSION}/${file}` });
         faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
-        faceMesh.onResults(onFaceResults);
+        faceMesh.onResults((results) => { state.lastResults = results; });
         await faceMesh.initialize();
         state.faceMesh = faceMesh;
     }
-
-    function onFaceResults(results) { state.lastResults = results; }
 
     function iniciarLoopDeteccion() {
         const intervalo = 1000 / CONFIG.DETECTION_FPS;
@@ -270,7 +214,7 @@
             const ahora = performance.now();
             if (ahora - state.lastDetectionTime >= intervalo) {
                 state.lastDetectionTime = ahora;
-                try { await state.faceMesh.send({ image: state.video }); } catch (error) { console.warn('[CSARIELS Cámara] Detección fallida:', error); }
+                try { await state.faceMesh.send({ image: state.video }); } catch (e) { }
             }
             state.detectionFrameId = requestAnimationFrame(detectar);
         }
@@ -280,22 +224,19 @@
     function iniciarLoopRender() {
         function draw() {
             if (!state.iniciada || !state.stream) return;
-            const video = state.video;
-            const canvas = state.canvas;
-            const ctx = state.ctx;
-
+            const { video, canvas, ctx } = state;
             if (!video.videoWidth || !video.videoHeight) { state.renderFrameId = requestAnimationFrame(draw); return; }
-            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) { canvas.width = video.videoWidth; canvas.height = video.videoHeight; }
-
+            if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+            }
             const espejado = state.facingMode === 'user';
             ctx.save();
             if (espejado) { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             ctx.restore();
-
             const landmarks = state.lastResults?.multiFaceLandmarks?.[0];
             if (landmarks) dibujarFiltro(landmarks, canvas, ctx, espejado);
-
             state.renderFrameId = requestAnimationFrame(draw);
         }
         state.renderFrameId = requestAnimationFrame(draw);
@@ -308,33 +249,37 @@
         if (!assetConfig || !imagen || !imagen.complete) return;
 
         const w = canvas.width; const h = canvas.height;
-        const punto = (indice) => { const p = landmarks[indice]; return { x: espejado ? (1 - p.x) * w : p.x * w, y: p.y * h }; };
+        const punto = (i) => { const p = landmarks[i]; return { x: espejado ? (1 - p.x) * w : p.x * w, y: p.y * h }; };
 
         const ojoIzq = punto(33); const ojoDer = punto(263); const nariz = punto(1); const frente = punto(10); const mejillaIzq = punto(234); const mejillaDer = punto(454);
         const anchoCara = Math.hypot(mejillaDer.x - mejillaIzq.x, mejillaDer.y - mejillaIzq.y);
         const centroX = (ojoIzq.x + ojoDer.x) / 2; const centroY = (ojoIzq.y + ojoDer.y) / 2;
         const angulo = Math.atan2(ojoDer.y - ojoIzq.y, ojoDer.x - ojoIzq.x);
+        
         const tamanoImagen = anchoCara * assetConfig.scale;
-        const proporcion = imagen.height / imagen.width; const alturaImagen = tamanoImagen * proporcion;
+        const proporcion = imagen.height / imagen.width;
+        const alturaImagen = tamanoImagen * proporcion;
 
         let anchorX = centroX; let anchorY = centroY;
-        if (state.filtroActual === 'gato' || state.filtroActual === 'burro' || state.filtroActual === 'corona') anchorY = frente.y;
-        else if (state.filtroActual === 'bigote') anchorY = nariz.y;
-        else if (state.filtroActual === 'gafas') anchorY = centroY;
+
+        if (state.filtroActual === 'gato' || state.filtroActual === 'burro' || state.filtroActual === 'corona') {
+            anchorY = frente.y;
+        } else if (state.filtroActual === 'bigote') {
+            anchorY = nariz.y;
+        } else if (state.filtroActual === 'gafas') {
+            anchorY = centroY;
+        }
+
         anchorY += alturaImagen * assetConfig.offsetY;
 
-        ctx.save(); ctx.translate(anchorX, anchorY); ctx.rotate(angulo);
+        ctx.save();
+        ctx.translate(anchorX, anchorY);
+        ctx.rotate(angulo);
         ctx.drawImage(imagen, -tamanoImagen / 2, -alturaImagen / 2, tamanoImagen, alturaImagen);
         ctx.restore();
     }
 
     function toggleGrabacion() { if (state.grabando) detenerGrabacion(); else iniciarGrabacion(); }
-
-    function obtenerFormatoGrabacion() {
-        const candidatos = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4;codecs=avc1.42E01E,mp4a.40.2', 'video/mp4'];
-        for (const formato of candidatos) { if (window.MediaRecorder?.isTypeSupported?.(formato)) return formato; }
-        return '';
-    }
 
     function iniciarGrabacion() {
         if (!state.iniciada || state.grabando) return;
@@ -346,18 +291,16 @@
         const opciones = mimeType ? { mimeType, videoBitsPerSecond: 5_000_000 } : {};
 
         try { state.mediaRecorder = new MediaRecorder(canvasStream, opciones); }
-        catch (error) { console.error('[CSARIELS Cámara] MediaRecorder no disponible:', error); notificar('Tu navegador no soporta grabación de video.', 'error'); return; }
+        catch (e) { notificar('Tu navegador no soporta grabación.', 'error'); return; }
 
         state.chunks = [];
-        state.mediaRecorder.ondataavailable = (evento) => { if (evento.data?.size > 0) state.chunks.push(evento.data); };
+        state.mediaRecorder.ondataavailable = (e) => { if (e.data?.size > 0) state.chunks.push(e.data); };
         state.mediaRecorder.onstop = () => {
-            const tipo = mimeType || 'video/webm'; const extension = tipo.includes('mp4') ? 'mp4' : 'webm';
-            const blob = new Blob(state.chunks, { type: tipo }); const archivo = new File([blob], `video-camara-${Date.now()}.${extension}`, { type: tipo });
-            state.chunks = []; canvasStream.getTracks().forEach((track) => track.stop()); cerrarCamara();
+            const tipo = mimeType || 'video/webm'; const ext = tipo.includes('mp4') ? 'mp4' : 'webm';
+            const blob = new Blob(state.chunks, { type: tipo }); const archivo = new File([blob], `video-camara-${Date.now()}.${ext}`, { type: tipo });
+            state.chunks = []; canvasStream.getTracks().forEach((t) => t.stop()); cerrarCamara();
             if (typeof window.csCamaraOnVideoGrabado === 'function') window.csCamaraOnVideoGrabado(archivo);
-            else notificar('Video listo, pero no hay receptor configurado.', 'warning');
         };
-        state.mediaRecorder.onerror = (error) => { console.error('[CSARIELS Cámara] Error de grabación:', error); notificar('Ocurrió un error durante la grabación.', 'error'); detenerGrabacion(); };
         state.mediaRecorder.start(250); state.grabando = true;
         $('csBtnRecord').classList.add('grabando'); $('csRecIndicator').classList.add('active'); $('csCamaraTimer').classList.add('active');
         iniciarTimer();
@@ -376,17 +319,17 @@
     }
 
     function detenerTimer() { if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; } }
-    function actualizarTimerUI() { const minutos = String(Math.floor(state.segundosGrabados / 60)).padStart(2, '0'); const segundos = String(state.segundosGrabados % 60).padStart(2, '0'); const timer = $('csCamaraTimer'); if (timer) timer.textContent = `${minutos}:${segundos}`; }
+    function actualizarTimerUI() { const min = String(Math.floor(state.segundosGrabados / 60)).padStart(2, '0'); const seg = String(state.segundosGrabados % 60).padStart(2, '0'); const t = $('csCamaraTimer'); if (t) t.textContent = `${min}:${seg}`; }
 
     async function cambiarCamara() {
         if (!state.iniciada || state.grabando) return;
         const anterior = state.facingMode; state.facingMode = anterior === 'user' ? 'environment' : 'user';
         try { mostrarCargando(true); await iniciarStream(); mostrarCargando(false); }
-        catch (error) { state.facingMode = anterior; mostrarCargando(false); notificar('No se pudo cambiar la cámara.', 'error'); }
+        catch (e) { state.facingMode = anterior; mostrarCargando(false); notificar('No se pudo cambiar la cámara.', 'error'); }
     }
 
     function onVisibilityChange() { if (document.hidden && state.grabando) detenerGrabacion(); }
-    function detenerStream() { if (state.stream) { state.stream.getTracks().forEach((track) => track.stop()); state.stream = null; } if (state.video) state.video.srcObject = null; }
+    function detenerStream() { if (state.stream) { state.stream.getTracks().forEach((t) => t.stop()); state.stream = null; } if (state.video) state.video.srcObject = null; }
 
     function cerrarCamara() {
         detenerTimer(); state.iniciada = false; state.grabando = false; state.lastResults = null;
@@ -394,45 +337,27 @@
         if (state.detectionFrameId) { cancelAnimationFrame(state.detectionFrameId); state.detectionFrameId = null; }
         if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
         state.mediaRecorder = null; detenerStream();
-        if (state.faceMesh) { try { state.faceMesh.close(); } catch (_) {} state.faceMesh = null; }
+        if (state.faceMesh) { try { state.faceMesh.close(); } catch (e) { } state.faceMesh = null; }
         $('csModalCamara')?.classList.remove('show'); mostrarCargando(false);
     }
 
-    function mostrarCargando(visible) { const loader = $('csCamaraLoading'); if (loader) loader.classList.toggle('hidden', !visible); }
-    function notificar(mensaje, tipo = 'info') { if (typeof window.csToast === 'function') window.csToast(mensaje, tipo); else console.log(`[CSARIELS ${tipo.toUpperCase()}] ${mensaje}`); }
-    function obtenerMensajeError(error) {
-        const nombre = error?.name || '';
-        if (nombre === 'NotAllowedError') return 'Debes permitir el acceso a cámara y micrófono.';
-        if (nombre === 'NotFoundError' || nombre === 'OverconstrainedError') return 'No se encontró una cámara compatible.';
-        if (nombre === 'NotReadableError') return 'La cámara está siendo usada por otra aplicación.';
-        return error?.message || 'No se pudo iniciar la cámara.';
+    function mostrarCargando(v) { const l = $('csCamaraLoading'); if (l) l.classList.toggle('hidden', !v); }
+    function notificar(m, t = 'info') { if (typeof window.csToast === 'function') window.csToast(m, t); }
+    function obtenerMensajeError(e) {
+        const n = e?.name || '';
+        if (n === 'NotAllowedError') return 'Debes permitir el acceso a cámara y micrófono.';
+        if (n === 'NotFoundError' || n === 'OverconstrainedError') return 'No se encontró una cámara.';
+        if (n === 'NotReadableError') return 'La cámara está en uso.';
+        return e?.message || 'No se pudo iniciar la cámara.';
     }
 
-    /* ============================================================
-       API PÚBLICA + BLINDAJE DE LISTENERS
-       ============================================================ */
-    window.VideosCamara = {
-        abrirCamara,
-        cerrarCamara,
-        cambiarCamara,
-        estaGrabando: () => state.grabando,
-        setFiltro: (id) => {
-            if (state.filtrosDisponibles.some((f) => f.id === id)) {
-                state.filtroActual = id;
-                renderizarFiltros();
-            }
-        }
-    };
+    window.VideosCamara = { abrirCamara, cerrarCamara, cambiarCamara, setFiltro: (id) => { if (state.filtrosDisponibles.some(f => f.id === id)) { state.filtroActual = id; renderizarFiltros(); } } };
 
-    // ✅ BLINDAJE: Enganchar el botón automáticamente si existe
     document.addEventListener('DOMContentLoaded', function() {
         const btnCamara = document.getElementById('btnAbrirCamara');
         if (btnCamara && !btnCamara.dataset.camaraEnganchada) {
             btnCamara.dataset.camaraEnganchada = '1';
-            btnCamara.addEventListener('click', function(e) {
-                e.preventDefault();
-                window.VideosCamara.abrirCamara();
-            });
+            btnCamara.addEventListener('click', (e) => { e.preventDefault(); window.VideosCamara.abrirCamara(); });
         }
     });
 
