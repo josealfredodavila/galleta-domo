@@ -10,484 +10,94 @@
 <script src="/features/shared/js/apariencia-global.js"></script>
 
 <style>
-:root {
-    --cm-azul: #00D4FF;
-    --cm-azul-soft: rgba(0, 212, 255, 0.5);
-    --cm-azul-bg: rgba(0, 212, 255, 0.08);
-    --cm-azul-border: rgba(0, 212, 255, 0.3);
-    --cm-negro: #0A0A0A;
-    --cm-negro-soft: rgba(10, 10, 10, 0.4);
-    --cm-galaxia: #6B4DBA;
-    --cm-galaxia-soft: rgba(107, 77, 186, 0.3);
-    --cm-dorado: #D4AF37;
-    --cm-dorado-soft: rgba(212, 175, 55, 0.3);
-    --cm-text: #f0f4f8;
-    --cm-muted: #8aa8b8;
-    --cm-danger: #ff3366;
-    --cm-success: #00d68f;
-}
+:root { --cm-azul: #00D4FF; --cm-azul-soft: rgba(0, 212, 255, 0.5); --cm-azul-bg: rgba(0, 212, 255, 0.08); --cm-azul-border: rgba(0, 212, 255, 0.3); --cm-negro: #0A0A0A; --cm-negro-soft: rgba(10, 10, 10, 0.4); --cm-galaxia: #6B4DBA; --cm-galaxia-soft: rgba(107, 77, 186, 0.3); --cm-dorado: #D4AF37; --cm-dorado-soft: rgba(212, 175, 55, 0.3); --cm-text: #f0f4f8; --cm-muted: #8aa8b8; --cm-danger: #ff3366; --cm-success: #00d68f; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-    background: var(--cm-negro);
-    color: var(--cm-text);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
-    padding: 20px;
-    background-image:
-        radial-gradient(ellipse at 20% 20%, rgba(107, 77, 186, 0.2), transparent 55%),
-        radial-gradient(ellipse at 80% 80%, rgba(0, 212, 255, 0.1), transparent 55%);
-}
+body { background: var(--cm-negro); color: var(--cm-text); font-family: 'Inter', sans-serif; min-height: 100vh; padding: 20px; background-image: radial-gradient(ellipse at 20% 20%, rgba(107, 77, 186, 0.2), transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(0, 212, 255, 0.1), transparent 55%); }
 .app { max-width: 640px; margin: 0 auto; }
 h1 { font-size: 1.3rem; color: var(--cm-azul); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
-h1 .hex { font-family: 'Orbitron', monospace; }
-h1 .corn { font-size: 1.5rem; }
+h1 .hex { font-family: 'Orbitron', monospace; } h1 .corn { font-size: 1.5rem; }
 .sub { color: var(--cm-muted); font-size: .8rem; margin-bottom: 24px; }
-
-.btn-back {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--cm-muted);
-    text-decoration: none;
-    font-size: .85rem;
-    margin-bottom: 20px;
-    padding: 8px 14px;
-    border: 1px solid var(--cm-azul-border);
-    border-radius: 99px;
-    transition: all .2s;
-}
+.btn-back { display: inline-flex; align-items: center; gap: 6px; color: var(--cm-muted); text-decoration: none; font-size: .85rem; margin-bottom: 20px; padding: 8px 14px; border: 1px solid var(--cm-azul-border); border-radius: 99px; transition: all .2s; }
 .btn-back:hover { color: var(--cm-azul); border-color: var(--cm-azul); }
-
-.card {
-    background: rgba(10, 10, 10, 0.6);
-    border: 1px solid var(--cm-azul-border);
-    border-radius: 16px;
-    padding: 18px;
-    margin-bottom: 16px;
-    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.05);
-}
-.card h2 {
-    font-size: .95rem;
-    color: var(--cm-azul);
-    margin-bottom: 14px;
-    font-weight: 700;
-    letter-spacing: .5px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
+.card { background: rgba(10, 10, 10, 0.6); border: 1px solid var(--cm-azul-border); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: 0 4px 20px rgba(0, 212, 255, 0.05); }
+.card h2 { font-size: .95rem; color: var(--cm-azul); margin-bottom: 14px; font-weight: 700; letter-spacing: .5px; display: flex; align-items: center; gap: 8px; }
 .card h2 .simbolo { font-family: 'Orbitron', monospace; }
-
-/* LISTA DE MASCOTAS */
-.mascota-item {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    padding: 16px;
-    background: rgba(0, 0, 0, 0.4);
-    border: 2px solid transparent;
-    border-radius: 14px;
-    margin-bottom: 10px;
-    cursor: pointer;
-    transition: all 0.25s ease;
-    position: relative;
-    overflow: hidden;
-}
-.mascota-item:hover {
-    background: rgba(0, 0, 0, 0.55);
-    border-color: var(--cm-azul-border);
-}
-.mascota-item.activa {
-    background: var(--cm-azul-bg);
-    border-color: var(--cm-azul);
-    box-shadow: 0 4px 20px rgba(0, 212, 255, 0.25);
-}
-.mascota-item.activa::after {
-    content: '✓';
-    position: absolute;
-    top: 12px;
-    right: 14px;
-    font-size: 1.1rem;
-    color: var(--cm-success);
-    font-weight: 700;
-}
-
-.mascota-icon {
-    width: 64px;
-    height: 64px;
-    border-radius: 14px;
-    background: rgba(0, 0, 0, 0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    border: 1px solid var(--cm-azul-border);
-    overflow: hidden;
-    position: relative;
-}
-
-.mascota-icon svg {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-
-.mascota-icon[data-mascota="marquinhos"] {
-    background:
-        radial-gradient(circle at 50% 60%, rgba(0, 229, 255, 0.25), transparent 65%),
-        radial-gradient(circle at 50% 30%, rgba(124, 77, 255, 0.25), transparent 65%),
-        rgba(0, 0, 0, 0.55);
-    border-color: rgba(0, 229, 255, 0.4);
-}
-.mascota-icon[data-mascota="capitan-maiz"] {
-    background:
-        radial-gradient(circle at 50% 50%, rgba(255, 200, 60, 0.25), transparent 65%),
-        radial-gradient(circle at 50% 70%, rgba(0, 180, 130, 0.2), transparent 65%),
-        rgba(0, 0, 0, 0.55);
-    border-color: rgba(255, 200, 60, 0.4);
-}
-.mascota-icon[data-mascota="itlasuhua"] {
-    background:
-        radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.25), transparent 65%),
-        radial-gradient(circle at 50% 80%, rgba(107, 77, 186, 0.3), transparent 65%),
-        rgba(0, 0, 0, 0.55);
-    border-color: rgba(0, 212, 255, 0.4);
-}
-.mascota-icon[data-mascota="ninguna"] {
-    background: rgba(0, 0, 0, 0.55);
-    border-color: rgba(138, 168, 184, 0.25);
-}
-
-.mascota-item.activa .mascota-icon {
-    box-shadow:
-        0 0 18px rgba(0, 212, 255, 0.4),
-        inset 0 0 12px rgba(0, 212, 255, 0.15);
-}
-
-.mascota-info {
-    flex: 1;
-    min-width: 0;
-}
-.mascota-nombre {
-    font-weight: 700;
-    font-size: .95rem;
-    color: var(--cm-text);
-    margin-bottom: 3px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.mascota-nombre .tag {
-    font-size: .55rem;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    font-family: 'Orbitron', monospace;
-    text-transform: uppercase;
-}
-.tag-activo {
-    background: rgba(0, 214, 143, 0.2);
-    color: var(--cm-success);
-    border: 1px solid var(--cm-success);
-}
-.mascota-desc {
-    font-size: .75rem;
-    color: var(--cm-muted);
-    line-height: 1.4;
-}
-
-.radio-circulo {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    border: 2px solid var(--cm-muted);
-    background: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.25s ease;
-}
-.mascota-item.activa .radio-circulo {
-    border-color: var(--cm-azul);
-    background: var(--cm-azul);
-}
-.mascota-item.activa .radio-circulo::after {
-    content: '';
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--cm-negro);
-}
-
-.btn-guardar {
-    width: 100%;
-    padding: 12px;
-    border-radius: 12px;
-    border: none;
-    background: linear-gradient(135deg, var(--cm-azul), var(--cm-galaxia));
-    color: var(--cm-negro);
-    font-weight: 700;
-    font-size: .85rem;
-    cursor: pointer;
-    font-family: inherit;
-    transition: all .2s;
-    letter-spacing: 0.3px;
-    margin-top: 8px;
-}
-.btn-guardar:hover {
-    transform: scale(1.02);
-    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
-}
+.mascota-item { display: flex; align-items: center; gap: 14px; padding: 16px; background: rgba(0, 0, 0, 0.4); border: 2px solid transparent; border-radius: 14px; margin-bottom: 10px; cursor: pointer; transition: all 0.25s ease; position: relative; overflow: hidden; }
+.mascota-item:hover { background: rgba(0, 0, 0, 0.55); border-color: var(--cm-azul-border); }
+.mascota-item.activa { background: var(--cm-azul-bg); border-color: var(--cm-azul); box-shadow: 0 4px 20px rgba(0, 212, 255, 0.25); }
+.mascota-item.activa::after { content: '✓'; position: absolute; top: 12px; right: 14px; font-size: 1.1rem; color: var(--cm-success); font-weight: 700; }
+.mascota-icon { width: 64px; height: 64px; border-radius: 14px; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; flex-shrink: 0; border: 1px solid var(--cm-azul-border); overflow: hidden; position: relative; }
+.mascota-icon svg { width: 100%; height: 100%; display: block; }
+.mascota-icon[data-mascota="marquinhos"] { background: radial-gradient(circle at 50% 60%, rgba(0, 229, 255, 0.25), transparent 65%), radial-gradient(circle at 50% 30%, rgba(124, 77, 255, 0.25), transparent 65%), rgba(0, 0, 0, 0.55); border-color: rgba(0, 229, 255, 0.4); }
+.mascota-icon[data-mascota="capitan-maiz"] { background: radial-gradient(circle at 50% 50%, rgba(255, 200, 60, 0.25), transparent 65%), radial-gradient(circle at 50% 70%, rgba(0, 180, 130, 0.2), transparent 65%), rgba(0, 0, 0, 0.55); border-color: rgba(255, 200, 60, 0.4); }
+.mascota-icon[data-mascota="itlasuhua"] { background: radial-gradient(circle at 50% 50%, rgba(0, 212, 255, 0.25), transparent 65%), radial-gradient(circle at 50% 80%, rgba(107, 77, 186, 0.3), transparent 65%), rgba(0, 0, 0, 0.55); border-color: rgba(0, 212, 255, 0.4); }
+.mascota-icon[data-mascota="ninguna"] { background: rgba(0, 0, 0, 0.55); border-color: rgba(138, 168, 184, 0.25); }
+.mascota-item.activa .mascota-icon { box-shadow: 0 0 18px rgba(0, 212, 255, 0.4), inset 0 0 12px rgba(0, 212, 255, 0.15); }
+.mascota-info { flex: 1; min-width: 0; }
+.mascota-nombre { font-weight: 700; font-size: .95rem; color: var(--cm-text); margin-bottom: 3px; display: flex; align-items: center; gap: 8px; }
+.mascota-nombre .tag { font-size: .55rem; padding: 2px 8px; border-radius: 10px; font-weight: 700; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; text-transform: uppercase; }
+.tag-activo { background: rgba(0, 214, 143, 0.2); color: var(--cm-success); border: 1px solid var(--cm-success); }
+.mascota-desc { font-size: .75rem; color: var(--cm-muted); line-height: 1.4; }
+.radio-circulo { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--cm-muted); background: transparent; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.25s ease; }
+.mascota-item.activa .radio-circulo { border-color: var(--cm-azul); background: var(--cm-azul); }
+.mascota-item.activa .radio-circulo::after { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--cm-negro); }
+.btn-guardar { width: 100%; padding: 12px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--cm-azul), var(--cm-galaxia)); color: var(--cm-negro); font-weight: 700; font-size: .85rem; cursor: pointer; font-family: inherit; transition: all .2s; letter-spacing: 0.3px; margin-top: 8px; }
+.btn-guardar:hover { transform: scale(1.02); box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4); }
 .btn-guardar:disabled { opacity: 0.5; cursor: not-allowed; }
-
-/* 🆕 v2.4: botón "Ver mi plan IA" */
-.btn-ver-plan {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    width: 100%;
-    padding: 12px 14px;
-    margin-top: 12px;
-    color: var(--cm-azul);
-    text-decoration: none;
-    font-size: .85rem;
-    font-weight: 600;
-    border: 1px solid var(--cm-azul);
-    border-radius: 12px;
-    background: var(--cm-azul-bg);
-    transition: all .2s;
-    font-family: inherit;
-}
-.btn-ver-plan:hover {
-    background: var(--cm-azul);
-    color: var(--cm-negro);
-    transform: scale(1.02);
-    box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
-}
-
-.toast {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(-80px);
-    background: var(--cm-azul-bg);
-    border: 1px solid var(--cm-azul);
-    color: var(--cm-azul);
-    padding: 12px 22px;
-    border-radius: 99px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    z-index: 9999;
-    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-    box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3);
-}
+.btn-ver-plan { display: inline-flex; align-items: center; justify-content: center; gap: 6px; width: 100%; padding: 12px 14px; margin-top: 12px; color: var(--cm-azul); text-decoration: none; font-size: .85rem; font-weight: 600; border: 1px solid var(--cm-azul); border-radius: 12px; background: var(--cm-azul-bg); transition: all .2s; font-family: inherit; }
+.btn-ver-plan:hover { background: var(--cm-azul); color: var(--cm-negro); transform: scale(1.02); box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4); }
+.toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-80px); background: var(--cm-azul-bg); border: 1px solid var(--cm-azul); color: var(--cm-azul); padding: 12px 22px; border-radius: 99px; font-size: 0.85rem; font-weight: 600; z-index: 9999; transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 8px 30px rgba(0, 212, 255, 0.3); }
 .toast.visible { transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
 <div class="app">
-
     <a href="/features/perfil/configuracion/index.html" class="btn-back">← Configuración</a>
-
     <h1><span class="hex">◈</span> Mascota Activa</h1>
     <p class="sub">Elige UNA sola mascota para que aparezca en la app</p>
 
     <div class="card">
         <h2><span class="simbolo">◈</span> MASCOTAS DISPONIBLES</h2>
-
+        
         <!-- MARQUINHOS -->
         <div class="mascota-item" data-mascota="marquinhos">
             <div class="mascota-icon" data-mascota="marquinhos">
-                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <defs>
-                        <linearGradient id="mq-head" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#FFFFFF"/>
-                            <stop offset="100%" stop-color="#C9D8FF"/>
-                        </linearGradient>
-                        <linearGradient id="mq-body" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stop-color="#B8ECFF"/>
-                            <stop offset="100%" stop-color="#B69CFF"/>
-                        </linearGradient>
-                        <radialGradient id="mq-eye" cx="50%" cy="45%">
-                            <stop offset="0%" stop-color="#C8F4FF"/>
-                            <stop offset="60%" stop-color="#5CCBFF"/>
-                            <stop offset="100%" stop-color="#2E8FE0"/>
-                        </radialGradient>
-                        <radialGradient id="mq-aura" cx="50%" cy="50%">
-                            <stop offset="0%" stop-color="#00E5FF" stop-opacity="0.4"/>
-                            <stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/>
-                        </radialGradient>
-                    </defs>
-                    <ellipse cx="50" cy="55" rx="38" ry="38" fill="url(#mq-aura)"/>
-                    <line x1="50" y1="24" x2="50" y2="14" stroke="#0D47A1" stroke-width="2" stroke-linecap="round"/>
-                    <circle cx="50" cy="11" r="4" fill="#00E5FF"/>
-                    <circle cx="50" cy="11" r="2" fill="#FFFFFF"/>
-                    <rect x="25" y="26" width="50" height="42" rx="12" ry="12" fill="url(#mq-head)" stroke="#0D47A1" stroke-width="2.5"/>
-                    <ellipse cx="38" cy="45" rx="7" ry="7" fill="#1B3A8A"/>
-                    <ellipse cx="38" cy="45" rx="5" ry="5" fill="url(#mq-eye)"/>
-                    <circle cx="40" cy="43" r="1.8" fill="#FFFFFF"/>
-                    <ellipse cx="62" cy="45" rx="7" ry="7" fill="#1B3A8A"/>
-                    <ellipse cx="62" cy="45" rx="5" ry="5" fill="url(#mq-eye)"/>
-                    <circle cx="64" cy="43" r="1.8" fill="#FFFFFF"/>
-                    <path d="M42 58 Q50 64 58 58" fill="none" stroke="#0D47A1" stroke-width="2" stroke-linecap="round"/>
-                    <rect x="32" y="68" width="36" height="20" rx="6" fill="url(#mq-body)" stroke="#0D47A1" stroke-width="2.5"/>
-                    <line x1="32" y1="74" x2="20" y2="82" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/>
-                    <line x1="68" y1="74" x2="80" y2="82" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/>
-                    <line x1="42" y1="88" x2="42" y2="94" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/>
-                    <line x1="58" y1="88" x2="58" y2="94" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/>
-                </svg>
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="mq-head" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#FFFFFF"/><stop offset="100%" stop-color="#C9D8FF"/></linearGradient><linearGradient id="mq-body" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#B8ECFF"/><stop offset="100%" stop-color="#B69CFF"/></linearGradient><radialGradient id="mq-eye" cx="50%" cy="45%"><stop offset="0%" stop-color="#C8F4FF"/><stop offset="60%" stop-color="#5CCBFF"/><stop offset="100%" stop-color="#2E8FE0"/></radialGradient><radialGradient id="mq-aura" cx="50%" cy="50%"><stop offset="0%" stop-color="#00E5FF" stop-opacity="0.4"/><stop offset="100%" stop-color="#00E5FF" stop-opacity="0"/></radialGradient></defs><ellipse cx="50" cy="55" rx="38" ry="38" fill="url(#mq-aura)"/><line x1="50" y1="24" x2="50" y2="14" stroke="#0D47A1" stroke-width="2" stroke-linecap="round"/><circle cx="50" cy="11" r="4" fill="#00E5FF"/><circle cx="50" cy="11" r="2" fill="#FFFFFF"/><rect x="25" y="26" width="50" height="42" rx="12" ry="12" fill="url(#mq-head)" stroke="#0D47A1" stroke-width="2.5"/><ellipse cx="38" cy="45" rx="7" ry="7" fill="#1B3A8A"/><ellipse cx="38" cy="45" rx="5" ry="5" fill="url(#mq-eye)"/><circle cx="40" cy="43" r="1.8" fill="#FFFFFF"/><ellipse cx="62" cy="45" rx="7" ry="7" fill="#1B3A8A"/><ellipse cx="62" cy="45" rx="5" ry="5" fill="url(#mq-eye)"/><circle cx="64" cy="43" r="1.8" fill="#FFFFFF"/><path d="M42 58 Q50 64 58 58" fill="none" stroke="#0D47A1" stroke-width="2" stroke-linecap="round"/><rect x="32" y="68" width="36" height="20" rx="6" fill="url(#mq-body)" stroke="#0D47A1" stroke-width="2.5"/><line x1="32" y1="74" x2="20" y2="82" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/><line x1="68" y1="74" x2="80" y2="82" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/><line x1="42" y1="88" x2="42" y2="94" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/><line x1="58" y1="88" x2="58" y2="94" stroke="#0D47A1" stroke-width="4" stroke-linecap="round"/></svg>
             </div>
-            <div class="mascota-info">
-                <div class="mascota-nombre">
-                    Marquinhos
-                    <span class="tag tag-activo" data-tag="marquinhos" hidden>ACTIVO</span>
-                </div>
-                <div class="mascota-desc">Asistente cercano, cálido y confiable. Ideal para el día a día.</div>
-            </div>
+            <div class="mascota-info"><div class="mascota-nombre">Marquinhos <span class="tag tag-activo" data-tag="marquinhos" hidden>ACTIVO</span></div><div class="mascota-desc">Asistente cercano, cálido y confiable. Ideal para el día a día.</div></div>
             <div class="radio-circulo"></div>
         </div>
-
+        
         <!-- CAPITÁN MAÍZ -->
         <div class="mascota-item" data-mascota="capitan-maiz">
             <div class="mascota-icon" data-mascota="capitan-maiz">
-                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <defs>
-                        <linearGradient id="cm-corn" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#FFE08A"/>
-                            <stop offset="50%" stop-color="#D4AF37"/>
-                            <stop offset="100%" stop-color="#8B6914"/>
-                        </linearGradient>
-                        <linearGradient id="cm-leaf" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#7ED957"/>
-                            <stop offset="100%" stop-color="#1A7A3E"/>
-                        </linearGradient>
-                        <radialGradient id="cm-aura" cx="50%" cy="50%">
-                            <stop offset="0%" stop-color="#FFD700" stop-opacity="0.4"/>
-                            <stop offset="100%" stop-color="#FFD700" stop-opacity="0"/>
-                        </radialGradient>
-                    </defs>
-                    <ellipse cx="50" cy="55" rx="38" ry="38" fill="url(#cm-aura)"/>
-                    <path d="M22 70 Q30 55 42 60 Q35 75 22 70 Z" fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.5"/>
-                    <path d="M78 70 Q70 55 58 60 Q65 75 78 70 Z" fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.5"/>
-                    <path d="M50 18 C40 22 32 30 34 42 L66 42 C68 30 60 22 50 18 Z" fill="url(#cm-corn)" stroke="#6B4513" stroke-width="2"/>
-                    <g fill="#8B6914" opacity="0.65">
-                        <circle cx="42" cy="28" r="1.2"/>
-                        <circle cx="50" cy="26" r="1.2"/>
-                        <circle cx="58" cy="28" r="1.2"/>
-                        <circle cx="38" cy="34" r="1.2"/>
-                        <circle cx="46" cy="32" r="1.2"/>
-                        <circle cx="54" cy="32" r="1.2"/>
-                        <circle cx="62" cy="34" r="1.2"/>
-                        <circle cx="42" cy="38" r="1.2"/>
-                        <circle cx="50" cy="37" r="1.2"/>
-                        <circle cx="58" cy="38" r="1.2"/>
-                    </g>
-                    <ellipse cx="50" cy="55" rx="18" ry="16" fill="#F5DEB3" stroke="#8B6914" stroke-width="2"/>
-                    <ellipse cx="44" cy="53" rx="2.5" ry="3" fill="#2B1810"/>
-                    <ellipse cx="56" cy="53" rx="2.5" ry="3" fill="#2B1810"/>
-                    <circle cx="44.5" cy="52" r="1" fill="#FFFFFF"/>
-                    <circle cx="56.5" cy="52" r="1" fill="#FFFFFF"/>
-                    <path d="M45 62 Q50 66 55 62" fill="none" stroke="#2B1810" stroke-width="1.8" stroke-linecap="round"/>
-                    <rect x="42" y="70" width="16" height="14" rx="4" fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.8"/>
-                </svg>
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="cm-corn" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFE08A"/><stop offset="50%" stop-color="#D4AF37"/><stop offset="100%" stop-color="#8B6914"/></linearGradient><linearGradient id="cm-leaf" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#7ED957"/><stop offset="100%" stop-color="#1A7A3E"/></linearGradient><radialGradient id="cm-aura" cx="50%" cy="50%"><stop offset="0%" stop-color="#FFD700" stop-opacity="0.4"/><stop offset="100%" stop-color="#FFD700" stop-opacity="0"/></radialGradient></defs><ellipse cx="50" cy="55" rx="38" ry="38" fill="url(#cm-aura)"/><path d="M22 70 Q30 55 42 60 Q35 75 22 70 Z" fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.5"/><path d="M78 70 Q70 55 58 60 Q65 75 78 70 Z" fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.5"/><path d="M50 18 C40 22 32 30 34 42 L66 42 C68 30 60 22 50 18 Z" fill="url(#cm-corn)" stroke="#6B4513" stroke-width="2"/><g fill="#8B6914" opacity="0.65"><circle cx="42" cy="28" r="1.2"/><circle cx="50" cy="26" r="1.2"/><circle cx="58" cy="28" r="1.2"/><circle cx="38" cy="34" r="1.2"/><circle cx="46" cy="32" r="1.2"/><circle cx="54" cy="32" r="1.2"/><circle cx="62" cy="34" r="1.2"/><circle cx="42" cy="38" r="1.2"/><circle cx="50" cy="37" r="1.2"/><circle cx="58" cy="38" r="1.2"/></g><ellipse cx="50" cy="55" rx="18" ry="16" fill="#F5DEB3" stroke="#8B6914" stroke-width="2"/><ellipse cx="44" cy="53" rx="2.5" ry="3" fill="#2B1810"/><ellipse cx="56" cy="53" rx="2.5" ry="3" fill="#2B1810"/><circle cx="44.5" cy="52" r="1" fill="#FFFFFF"/><circle cx="56.5" cy="52" r="1" fill="#FFFFFF"/><path d="M45 62 Q50 66 55 62" fill="none" stroke="#2B1810" stroke-width="1.8" stroke-linecap="round"/><rect x="42" y="70" width="16" height="14" rx="4" fill="url(#cm-leaf)" stroke="#0A4A1E" stroke-width="1.8"/></svg>
             </div>
-            <div class="mascota-info">
-                <div class="mascota-nombre">
-                    Capitán Maíz
-                    <span class="tag tag-activo" data-tag="capitan-maiz" hidden>ACTIVO</span>
-                </div>
-                <div class="mascota-desc">Guardián ancestral mexicano. Sabio, cálido y con modismos.</div>
-            </div>
+            <div class="mascota-info"><div class="mascota-nombre">Capitán Maíz <span class="tag tag-activo" data-tag="capitan-maiz" hidden>ACTIVO</span></div><div class="mascota-desc">Guardián ancestral mexicano. Sabio, cálido y con modismos.</div></div>
             <div class="radio-circulo"></div>
         </div>
-
+        
         <!-- REY ITLASUHUA -->
         <div class="mascota-item" data-mascota="itlasuhua">
             <div class="mascota-icon" data-mascota="itlasuhua">
-                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <defs>
-                        <linearGradient id="it-crown" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#FFF3B0"/>
-                            <stop offset="50%" stop-color="#FFD45A"/>
-                            <stop offset="100%" stop-color="#9D641D"/>
-                        </linearGradient>
-                        <linearGradient id="it-body" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stop-color="#123C78"/>
-                            <stop offset="50%" stop-color="#119FA8"/>
-                            <stop offset="100%" stop-color="#28CFC8"/>
-                        </linearGradient>
-                        <radialGradient id="it-eye" cx="50%" cy="45%">
-                            <stop offset="0%" stop-color="#B5FFFF"/>
-                            <stop offset="45%" stop-color="#2EE8DF"/>
-                            <stop offset="100%" stop-color="#081A49"/>
-                        </radialGradient>
-                        <radialGradient id="it-aura" cx="50%" cy="50%">
-                            <stop offset="0%" stop-color="#3CFFE8" stop-opacity="0.45"/>
-                            <stop offset="100%" stop-color="#3CFFE8" stop-opacity="0"/>
-                        </radialGradient>
-                    </defs>
-                    <ellipse cx="50" cy="55" rx="40" ry="40" fill="url(#it-aura)"/>
-                    <ellipse cx="50" cy="80" rx="30" ry="12" fill="none" stroke="url(#it-body)" stroke-width="7"/>
-                    <ellipse cx="50" cy="80" rx="30" ry="12" fill="none" stroke="#3CEFE1" stroke-width="1.5" opacity="0.7"/>
-                    <path d="M50 65 Q50 55 50 45" fill="none" stroke="url(#it-body)" stroke-width="9" stroke-linecap="round"/>
-                    <path d="M50 65 Q50 55 50 45" fill="none" stroke="#3CEFE1" stroke-width="1.5" opacity="0.6"/>
-                    <ellipse cx="50" cy="40" rx="16" ry="14" fill="#E8D8B0" stroke="#2B2038" stroke-width="2"/>
-                    <ellipse cx="43" cy="38" rx="5" ry="5.5" fill="url(#it-eye)"/>
-                    <ellipse cx="57" cy="38" rx="5" ry="5.5" fill="url(#it-eye)"/>
-                    <circle cx="44" cy="36.5" r="1.5" fill="#FFFFFF"/>
-                    <circle cx="58" cy="36.5" r="1.5" fill="#FFFFFF"/>
-                    <ellipse cx="37" cy="45" rx="3" ry="1.5" fill="#FF8FA3" opacity="0.6"/>
-                    <ellipse cx="63" cy="45" rx="3" ry="1.5" fill="#FF8FA3" opacity="0.6"/>
-                    <path d="M45 46 Q50 49 55 46" fill="none" stroke="#3A2030" stroke-width="1.5" stroke-linecap="round"/>
-                    <path d="M36 28 L38 22 L42 26 L46 19 L50 24 L54 19 L58 26 L62 22 L64 28 Z" fill="url(#it-crown)" stroke="#6D421B" stroke-width="1.5"/>
-                    <circle cx="50" cy="24" r="2.5" fill="#1BD8D2" stroke="#6D421B" stroke-width="1"/>
-                    <path d="M42 20 Q40 12 38 6" fill="none" stroke="#FFD45A" stroke-width="1.5" stroke-linecap="round"/>
-                    <path d="M58 20 Q60 12 62 6" fill="none" stroke="#FFD45A" stroke-width="1.5" stroke-linecap="round"/>
-                    <path d="M50 18 Q50 10 50 4" fill="none" stroke="#43E6D6" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs><linearGradient id="it-crown" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#FFF3B0"/><stop offset="50%" stop-color="#FFD45A"/><stop offset="100%" stop-color="#9D641D"/></linearGradient><linearGradient id="it-body" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#123C78"/><stop offset="50%" stop-color="#119FA8"/><stop offset="100%" stop-color="#28CFC8"/></linearGradient><radialGradient id="it-eye" cx="50%" cy="45%"><stop offset="0%" stop-color="#B5FFFF"/><stop offset="45%" stop-color="#2EE8DF"/><stop offset="100%" stop-color="#081A49"/></radialGradient><radialGradient id="it-aura" cx="50%" cy="50%"><stop offset="0%" stop-color="#3CFFE8" stop-opacity="0.45"/><stop offset="100%" stop-color="#3CFFE8" stop-opacity="0"/></radialGradient></defs><ellipse cx="50" cy="55" rx="40" ry="40" fill="url(#it-aura)"/><ellipse cx="50" cy="80" rx="30" ry="12" fill="none" stroke="url(#it-body)" stroke-width="7"/><ellipse cx="50" cy="80" rx="30" ry="12" fill="none" stroke="#3CEFE1" stroke-width="1.5" opacity="0.7"/><path d="M50 65 Q50 55 50 45" fill="none" stroke="url(#it-body)" stroke-width="9" stroke-linecap="round"/><path d="M50 65 Q50 55 50 45" fill="none" stroke="#3CEFE1" stroke-width="1.5" opacity="0.6"/><ellipse cx="50" cy="40" rx="16" ry="14" fill="#E8D8B0" stroke="#2B2038" stroke-width="2"/><ellipse cx="43" cy="38" rx="5" ry="5.5" fill="url(#it-eye)"/><ellipse cx="57" cy="38" rx="5" ry="5.5" fill="url(#it-eye)"/><circle cx="44" cy="36.5" r="1.5" fill="#FFFFFF"/><circle cx="58" cy="36.5" r="1.5" fill="#FFFFFF"/><ellipse cx="37" cy="45" rx="3" ry="1.5" fill="#FF8FA3" opacity="0.6"/><ellipse cx="63" cy="45" rx="3" ry="1.5" fill="#FF8FA3" opacity="0.6"/><path d="M45 46 Q50 49 55 46" fill="none" stroke="#3A2030" stroke-width="1.5" stroke-linecap="round"/><path d="M36 28 L38 22 L42 26 L46 19 L50 24 L54 19 L58 26 L62 22 L64 28 Z" fill="url(#it-crown)" stroke="#6D421B" stroke-width="1.5"/><circle cx="50" cy="24" r="2.5" fill="#1BD8D2" stroke="#6D421B" stroke-width="1"/><path d="M42 20 Q40 12 38 6" fill="none" stroke="#FFD45A" stroke-width="1.5" stroke-linecap="round"/><path d="M58 20 Q60 12 62 6" fill="none" stroke="#FFD45A" stroke-width="1.5" stroke-linecap="round"/><path d="M50 18 Q50 10 50 4" fill="none" stroke="#43E6D6" stroke-width="1.5" stroke-linecap="round"/></svg>
             </div>
-            <div class="mascota-info">
-                <div class="mascota-nombre">
-                    Rey Itlasuhua
-                    <span class="tag tag-activo" data-tag="itlasuhua" hidden>ACTIVO</span>
-                </div>
-                <div class="mascota-desc">Serpiente cósmica ceremonial. Guardián del cosmos.</div>
-            </div>
+            <div class="mascota-info"><div class="mascota-nombre">Rey Itlasuhua <span class="tag tag-activo" data-tag="itlasuhua" hidden>ACTIVO</span></div><div class="mascota-desc">Serpiente cósmica ceremonial. Guardián del cosmos.</div></div>
             <div class="radio-circulo"></div>
         </div>
-
+        
         <!-- SIN MASCOTA -->
         <div class="mascota-item" data-mascota="ninguna">
             <div class="mascota-icon" data-mascota="ninguna">
-                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                    <circle cx="50" cy="50" r="22" fill="none" stroke="#8aa8b8" stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/>
-                    <line x1="36" y1="36" x2="64" y2="64" stroke="#8aa8b8" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
-                    <line x1="64" y1="36" x2="36" y2="64" stroke="#8aa8b8" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
-                </svg>
+                <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="50" cy="50" r="22" fill="none" stroke="#8aa8b8" stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/><line x1="36" y1="36" x2="64" y2="64" stroke="#8aa8b8" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/><line x1="64" y1="36" x2="36" y2="64" stroke="#8aa8b8" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/></svg>
             </div>
-            <div class="mascota-info">
-                <div class="mascota-nombre">
-                    Sin mascota
-                    <span class="tag tag-activo" data-tag="ninguna" hidden>ACTIVO</span>
-                </div>
-                <div class="mascota-desc">No mostrar ninguna mascota flotante en la pantalla.</div>
-            </div>
+            <div class="mascota-info"><div class="mascota-nombre">Sin mascota <span class="tag tag-activo" data-tag="ninguna" hidden>ACTIVO</span></div><div class="mascota-desc">No mostrar ninguna mascota flotante en la pantalla.</div></div>
             <div class="radio-circulo"></div>
         </div>
     </div>
 
-    <button class="btn-guardar" id="btnGuardar" type="button">
-        ◈ Guardar selección
-    </button>
-
-    <!-- 🆕 v2.4: enlace al panel de plan IA -->
-    <a href="/features/perfil/configuracion/mascotas/plan.html" class="btn-ver-plan">
-        ◈ Ver mi plan IA →
-    </a>
-
+    <button class="btn-guardar" id="btnGuardar" type="button">◈ Guardar selección</button>
+    <a href="/features/perfil/configuracion/mascotas/plan.html" class="btn-ver-plan">◈ Ver mi plan IA →</a>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -495,39 +105,87 @@ h1 .corn { font-size: 1.5rem; }
 <script>
 'use strict';
 
-(function() {
-    const KEY = 'mascota_activa';
-    const DEFAULT_MASCOTA = 'marquinhos';
+document.addEventListener('DOMContentLoaded', () => {
+    let mascotaSeleccionada = 'marquinhos';
+    let supabaseClient = null;
+    let usuarioId = null;
 
-    let mascotaSeleccionada = DEFAULT_MASCOTA;
+    const btnGuardar = document.getElementById('btnGuardar');
+    const toastEl = document.getElementById('toast');
 
     function toast(msg) {
-        const el = document.getElementById('toast');
-        el.textContent = msg;
-        el.className = 'toast visible';
-        clearTimeout(el._timer);
-        el._timer = setTimeout(() => el.classList.remove('visible'), 3000);
+        toastEl.textContent = msg;
+        toastEl.className = 'toast visible';
+        setTimeout(() => toastEl.classList.remove('visible'), 3000);
     }
 
-    function leer() {
-        try {
-            const v = localStorage.getItem(KEY);
-            return v || DEFAULT_MASCOTA;
-        } catch (e) {
-            return DEFAULT_MASCOTA;
+    async function init() {
+        // Buscamos la conexión global que YA TIENE tu proyecto configurada
+        if (window.supabaseClient) {
+            supabaseClient = window.supabaseClient;
+        } else if (window.supabase) {
+            supabaseClient = window.supabase;
         }
-    }
 
-    function guardar(mascota) {
-        try {
-            localStorage.setItem(KEY, mascota);
-            return true;
-        } catch (e) {
-            return false;
+        if (!supabaseClient) {
+            toast('⚠️ Error crítico: Sin conexión a la base de datos');
+            return;
         }
+
+        // Validamos la sesión del usuario en el servidor de Supabase
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
+        
+        if (sessionError || !session) {
+            // Si no hay sesión, lo expulsamos al login inmediatamente
+            window.location.href = '/login';
+            return;
+        }
+
+        usuarioId = session.user.id;
+
+        // Leemos la mascota actual de la base de datos
+        const { data, error } = await supabaseClient
+            .from('usuarios')
+            .select('mascota_activa')
+            .eq('id', usuarioId)
+            .single();
+
+        if (!error && data && data.mascota_activa) {
+            mascotaSeleccionada = data.mascota_activa;
+        }
+
+        pintarUI();
+
+        // Eventos de selección
+        document.querySelectorAll('.mascota-item').forEach(item => {
+            item.addEventListener('click', () => {
+                mascotaSeleccionada = item.dataset.mascota;
+                pintarUI();
+            });
+        });
+
+        // Evento de guardado
+        btnGuardar.addEventListener('click', async () => {
+            btnGuardar.disabled = true;
+            btnGuardar.textContent = 'Guardando...';
+
+            const { error: updateError } = await supabaseClient
+                .from('usuarios')
+                .update({ mascota_activa: mascotaSeleccionada })
+                .eq('id', usuarioId);
+
+            if (updateError) {
+                toast('⚠️ Error al guardar. Intenta de nuevo.');
+                btnGuardar.disabled = false;
+                btnGuardar.textContent = '◈ Guardar selección';
+            } else {
+                toast('✅ Mascota actualizada');
+                setTimeout(() => window.location.reload(), 1000);
+            }
+        });
     }
 
-    function pintar() {
+    function pintarUI() {
         document.querySelectorAll('.mascota-item').forEach(item => {
             const m = item.dataset.mascota;
             const activa = m === mascotaSeleccionada;
@@ -537,48 +195,8 @@ h1 .corn { font-size: 1.5rem; }
         });
     }
 
-    function init() {
-        mascotaSeleccionada = leer();
-        pintar();
-
-        document.querySelectorAll('.mascota-item').forEach(item => {
-            item.addEventListener('click', () => {
-                mascotaSeleccionada = item.dataset.mascota;
-                pintar();
-            });
-        });
-
-        document.getElementById('btnGuardar').addEventListener('click', () => {
-            const btn = document.getElementById('btnGuardar');
-            btn.disabled = true;
-            btn.textContent = 'Guardando...';
-
-            const ok = guardar(mascotaSeleccionada);
-
-            setTimeout(() => {
-                if (ok) {
-                    toast('✅ Mascota actualizada');
-                } else {
-                    toast('⚠️ No se pudo guardar');
-                }
-                btn.disabled = false;
-                btn.textContent = '◈ Guardar selección';
-
-                setTimeout(() => {
-                    window.location.reload();
-                }, 800);
-            }, 400);
-        });
-
-        console.log('[Mascota Activa] ✅ Cargada. Seleccionada:', mascotaSeleccionada);
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
-})();
+    init();
+});
 </script>
 </body>
 </html>
