@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.0
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.1
    ================================================================
    - MediaPipe Face Mesh se carga dinámicamente desde este archivo
      (no hace falta ningún <script> de MediaPipe en videos.html).
@@ -9,6 +9,7 @@
    - Envíos a Face Mesh secuenciales (MediaPipe no admite dos a la vez).
    - Cerrar la cámara durante una grabación descarta el video.
    - Marquinhos se oculta al abrir la cámara y se restaura al cerrar.
+   - v4.1: los filtros se leen desde backend/assets con sufijo -1.
    ================================================================ */
 
 (function () {
@@ -29,16 +30,17 @@
         SCRIPT_TIMEOUT_MS: 20000
     });
 
-    const GITHUB_BASE_URL = 'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main';
+    // Carpeta donde están los PNG de los filtros en el repo
+    const ASSETS_BASE = 'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main/backend/assets';
 
     // scale   = ancho del filtro como múltiplo del ancho de la cara
     // offsetY = desplazamiento vertical como fracción de la altura del filtro
     const ASSETS = {
-        gato:   { src: `${GITHUB_BASE_URL}/orejas-gato.png`,  scale: 1.0,  offsetY: -0.4 },
-        burro:  { src: `${GITHUB_BASE_URL}/orejas-burro.png`, scale: 1.0,  offsetY: -0.4 },
-        gafas:  { src: `${GITHUB_BASE_URL}/gafas.png`,        scale: 1.0,  offsetY: 0 },
-        bigote: { src: `${GITHUB_BASE_URL}/bigote.png`,       scale: 0.55, offsetY: 0.1 },
-        corona: { src: `${GITHUB_BASE_URL}/corona.png`,       scale: 0.9,  offsetY: -0.5 }
+        gato:   { src: `${ASSETS_BASE}/orejas-gato-1.png`,  scale: 1.0,  offsetY: -0.4 },
+        burro:  { src: `${ASSETS_BASE}/orejas-burro-1.png`, scale: 1.0,  offsetY: -0.4 },
+        gafas:  { src: `${ASSETS_BASE}/gafas-1.png`,        scale: 1.0,  offsetY: 0 },
+        bigote: { src: `${ASSETS_BASE}/bigote-1.png`,       scale: 0.55, offsetY: 0.1 },
+        corona: { src: `${ASSETS_BASE}/corona-1.png`,       scale: 0.9,  offsetY: -0.5 }
     };
 
     const SELECTORES_MARQUINHOS = [
@@ -244,7 +246,7 @@
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
                 img.onload = terminar;
-                img.onerror = () => { console.error('[CSARIELS Cámara] Error cargando filtro', key); terminar(); };
+                img.onerror = () => { console.error('[CSARIELS Cámara] Error cargando filtro', key, ASSETS[key].src); terminar(); };
                 img.src = ASSETS[key].src;
                 state.imagenesCargadas[key] = img;
             });
