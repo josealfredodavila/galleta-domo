@@ -1,9 +1,8 @@
 /* ============================================================
-   LÓGICA DEL TECLADO DE EMOJIS · v2 (corregido)
-   Fixes aplicados:
-   1. insertarEmoji ahora sí encuentra #messageInput
-   2. Sin doble binding del botón (bandera dataset.emojiBound)
-   3. Sin onclick inline (delegación con addEventListener)
+   TECLADO DE EMOJIS Y EMOTES · v3 (archivo completo)
+   - Inserta códigos :id: en el input (no texto del fallback)
+   - formatearMensajeConEmotes() convierte :id: en <img> al mostrar mensajes
+   - Categoría "desafio" para emotes tipo Double Kill, POTG, etc.
    ============================================================ */
 
 const TECLADO_DATA = {
@@ -42,79 +41,123 @@ const TECLADO_DATA = {
         { id: 'pensando', img: '/features/img/emojis/gestos/pensando.png', fallback: '🤔' },
         { id: 'enojado', img: '/features/img/emojis/gestos/enojado.png', fallback: '😡' },
         { id: 'dormir', img: '/features/img/emojis/gestos/dormir.png', fallback: '😴' }
+    ],
+    desafio: [
+        { id: 'doble_kill', img: '/features/img/emojis/desafio/doble_kill.png', fallback: '⚔️', badge: true },
+        { id: 'triple_kill', img: '/features/img/emojis/desafio/triple_kill.png', fallback: '🔥', badge: true },
+        { id: 'team_kill', img: '/features/img/emojis/desafio/team_kill.png', fallback: '💥', badge: true },
+        { id: 'potg', img: '/features/img/emojis/desafio/potg.png', fallback: '🏅', badge: true },
+        { id: 'hype', img: '/features/img/emojis/desafio/hype.png', fallback: '⭐', badge: true },
+        { id: 'overtime', img: '/features/img/emojis/desafio/overtime.png', fallback: '⏱️', badge: true },
+        { id: 'vs', img: '/features/img/emojis/desafio/vs.png', fallback: '🆚', badge: true }
     ]
 };
 
+const TECLADO_ETIQUETAS = {
+    generales: 'Emojis',
+    competitivos: 'Competitivo',
+    gestos: 'Gestos',
+    desafio: 'Desafío'
+};
+
+// Mapa rápido id -> item, para renderizar códigos :id: en mensajes
+const MAPA_EMOTES = {};
+Object.values(TECLADO_DATA).forEach(lista => {
+    lista.forEach(item => { MAPA_EMOTES[item.id] = item; });
+});
+
 let tecladoActual = 'generales';
+let inputTeclado = null;
+let overlayTeclado = null;
+let botonTeclado = null;
+let listenersGlobalesOk = false;
+
+/* ---------- Inicialización ---------- */
 
 function inicializarTecladoEmojis(inputId, botonId) {
-    const input = document.getElementById(inputId);
-    const boton = document.getElementById(botonId);
-    if (!input || !boton) return;
+    inputTeclado = document.getElementById(inputId);
+    botonTeclado = document.getElementById(botonId);
+    if (!inputTeclado || !botonTeclado) return;
 
-    // Crear el contenedor del teclado si no existe
-    let overlay = document.querySelector('.teclado-emojis-overlay');
-    if (!overlay) {
-        overlay = document.createElement('div');
-        overlay.className = 'teclado-emojis-overlay';
-
-        // Tabs
-        const tabs = document.createElement('div');
-        tabs.className = 'teclado-emojis-tabs';
-        tabs.innerHTML = `
-            <button type="button" class="teclado-emojis-tab active" data-tab="generales">Emojis</button>
-            <button type="button" class="teclado-emojis-tab" data-tab="competitivos">Competitivo</button>
-            <button type="button" class="teclado-emojis-tab" data-tab="gestos">Gestos</button>
-        `;
-        overlay.appendChild(tabs);
-
-        // Grid
-        const grid = document.createElement('div');
-        grid.className = 'teclado-emojis-grid';
-        grid.id = 'tecladoEmojisGrid';
-        overlay.appendChild(grid);
-
-        // Insertar dentro del composer para que position:absolute funcione
-        const composer = input.closest('form') || input.parentElement;
+    if (!overlayTeclado) {
+        overlayTeclado = crearOverlay();
+        const composer = inputTeclado.closest('form') || inputTeclado.parentElement;
         composer.style.position = 'relative';
-        composer.appendChild(overlay);
+        composer.appendChild(overlayTeclado);
+    }
 
-        // Delegación de clicks en tabs (una sola vez)
-        tabs.addEventListener('click', (e) => {
-            const btn = e.target.closest('.teclado-emojis-tab');
-            if (!btn) return;
+    // Evitar doble binding del botón
+    if (botonTeclado.dataset.emojiBound !== '1') {
+        botonTeclado.dataset.emojiBound = '1';
+        botonTeclado.addEventListener('click', (e) => {
             e.preventDefault();
-            cambiarTabTeclado(btn.dataset.tab);
+            overlayTeclado.classList.toggle('show');
+            if (overlayTeclado.classList.contains('show')) {
+                renderizarEmojis(tecladoActual);
+            }
         });
     }
 
-    // Fix 2: no re-bindear si ya se inicializó
-    if (boton.dataset.emojiBound === '1') {
-        if (overlay.classList.contains('show')) renderizarEmojis(tecladoActual);
-        return;
+    if (!listenersGlobalesOk) {
+        listenersGlobalesOk = true;
+
+        // Cerrar al hacer clic fuera
+        document.addEventListener('click', (e) => {
+            if (!overlayTeclado.contains(e.target) && !botonTeclado.contains(e.target)) {
+                overlayTeclado.classList.remove('show');
+            }
+        });
+
+        // Fallback de imágenes rotas (error no burbujea, por eso capture)
+        document.addEventListener('error', (e) => {
+            const img = e.target;
+            if (!img || img.tagName !== 'IMG') return;
+            if (!img.classList.contains('emote-img') && !img.closest('.emoji-item')) return;
+            const texto = img.dataset.fallback || img.alt || '?';
+            img.replaceWith(document.createTextNode(texto));
+        }, true);
     }
-    boton.dataset.emojiBound = '1';
-
-    // Mostrar/ocultar
-    boton.addEventListener('click', (e) => {
-        e.preventDefault();
-        overlay.classList.toggle('show');
-        if (overlay.classList.contains('show')) {
-            renderizarEmojis(tecladoActual);
-        }
-    });
-
-    // Cerrar al hacer clic fuera
-    document.addEventListener('click', (e) => {
-        if (!overlay.contains(e.target) && !boton.contains(e.target)) {
-            overlay.classList.remove('show');
-        }
-    });
 }
 
+function crearOverlay() {
+    const overlay = document.createElement('div');
+    overlay.className = 'teclado-emojis-overlay';
+
+    const tabs = document.createElement('div');
+    tabs.className = 'teclado-emojis-tabs';
+    tabs.innerHTML = Object.keys(TECLADO_DATA).map(tab => `
+        <button type="button" class="teclado-emojis-tab${tab === tecladoActual ? ' active' : ''}" data-tab="${tab}">${TECLADO_ETIQUETAS[tab]}</button>
+    `).join('');
+    overlay.appendChild(tabs);
+
+    const grid = document.createElement('div');
+    grid.className = 'teclado-emojis-grid';
+    grid.id = 'tecladoEmojisGrid';
+    overlay.appendChild(grid);
+
+    tabs.addEventListener('click', (e) => {
+        const btn = e.target.closest('.teclado-emojis-tab');
+        if (!btn) return;
+        e.preventDefault();
+        cambiarTabTeclado(btn.dataset.tab);
+    });
+
+    // Un solo listener para todos los emojis (delegación)
+    grid.addEventListener('click', (e) => {
+        const item = e.target.closest('.emoji-item');
+        if (!item) return;
+        insertarEmoji(item.dataset.id || '');
+    });
+
+    return overlay;
+}
+
+/* ---------- Tabs y render ---------- */
+
 function cambiarTabTeclado(tab) {
+    if (!TECLADO_DATA[tab]) return;
     tecladoActual = tab;
-    document.querySelectorAll('.teclado-emojis-tab').forEach(t => {
+    overlayTeclado?.querySelectorAll('.teclado-emojis-tab').forEach(t => {
         t.classList.toggle('active', t.dataset.tab === tab);
     });
     renderizarEmojis(tab);
@@ -126,59 +169,61 @@ function renderizarEmojis(tab) {
 
     const emojis = TECLADO_DATA[tab] || [];
     if (!emojis.length) {
-        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#8aa8b8;font-size:.75rem;padding:12px;">Sin emojis en esta categoría</div>';
+        grid.innerHTML = '<div class="teclado-emojis-vacio">Sin emojis en esta categoría</div>';
         return;
     }
 
-    // Fix 3: sin onclick inline, solo data-attributes
     grid.innerHTML = emojis.map(e => `
-        <div class="emoji-item" data-emoji="${e.fallback}" title="${e.id}">
-            <img src="${e.img}" alt="${e.id}" loading="lazy">
+        <div class="emoji-item${e.badge ? ' badge' : ''}" data-id="${e.id}" title="${e.id}">
+            <img src="${e.img}" alt="${e.id}" data-fallback="${e.fallback}" loading="lazy">
         </div>
     `).join('');
+}
 
-    // Fallback si la imagen no carga (delegado, sin inline)
-    grid.querySelectorAll('.emoji-item img').forEach(img => {
-        img.addEventListener('error', () => {
-            const item = img.closest('.emoji-item');
-            if (!item) return;
-            img.remove();
-            item.textContent = item.dataset.emoji || '?';
-        }, { once: true });
-    });
+/* ---------- Insertar en el input ---------- */
 
-    // Delegación de clicks en emojis (una sola vez por render)
-    grid.querySelectorAll('.emoji-item').forEach(item => {
-        item.addEventListener('click', () => {
-            insertarEmoji(item.dataset.emoji || '');
-        });
+function insertarEmoji(id) {
+    if (!id || !inputTeclado) return;
+
+    const codigo = `:${id}:`;
+    const start = inputTeclado.selectionStart ?? inputTeclado.value.length;
+    const end = inputTeclado.selectionEnd ?? inputTeclado.value.length;
+    const value = inputTeclado.value;
+
+    inputTeclado.value = value.substring(0, start) + codigo + value.substring(end);
+    const nuevaPos = start + codigo.length;
+    inputTeclado.setSelectionRange(nuevaPos, nuevaPos);
+    inputTeclado.focus();
+
+    // Avisa a otros listeners (contadores, autocompletado, etc.)
+    inputTeclado.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+/* ---------- Render en mensajes del chat ---------- */
+
+function escaparHTML(texto) {
+    return String(texto ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+}
+
+/**
+ * Convierte un mensaje con códigos :id: en HTML seguro con <img>.
+ * Úsalo así:  elemento.innerHTML = formatearMensajeConEmotes(mensaje.texto);
+ * El texto se escapa primero, así que no hay riesgo de inyección.
+ */
+function formatearMensajeConEmotes(texto) {
+    return escaparHTML(texto).replace(/:([a-z0-9_]+):/g, (coincidencia, id) => {
+        const emote = MAPA_EMOTES[id];
+        if (!emote) return coincidencia; // código desconocido: se muestra tal cual
+        const clase = emote.badge ? 'emote-img emote-badge' : 'emote-img';
+        return `<img class="${clase}" src="${emote.img}" alt=":${id}:" title=":${id}:" data-fallback="${escaparHTML(emote.fallback)}" loading="lazy">`;
     });
 }
 
-function insertarEmoji(texto) {
-    if (!texto) return;
-
-    // Fix 1: buscar primero el input real del chat
-    const input = document.getElementById('messageInput')
-               || document.querySelector('textarea')
-               || document.querySelector('input[type="text"]');
-    if (!input) return;
-
-    const start = input.selectionStart ?? input.value.length;
-    const end   = input.selectionEnd   ?? input.value.length;
-    const value = input.value;
-
-    input.value = value.substring(0, start) + texto + value.substring(end);
-    const nuevaPos = start + texto.length;
-    input.setSelectionRange(nuevaPos, nuevaPos);
-    input.focus();
-
-    // Avisa a otros listeners (autocompletado, contadores, etc.)
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-}
-
-// Exponer globalmente por compatibilidad
+// Exponer globalmente
 window.cambiarTabTeclado = cambiarTabTeclado;
 window.renderizarEmojis = renderizarEmojis;
 window.insertarEmoji = insertarEmoji;
 window.inicializarTecladoEmojis = inicializarTecladoEmojis;
+window.formatearMensajeConEmotes = formatearMensajeConEmotes;
