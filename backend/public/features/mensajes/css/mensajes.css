@@ -1,10 +1,9 @@
 /* ================================================================
-   MENSAJES · CSS v3.2 · WEB3 NEON UI KIT
-   Cambios v3.2:
-   - Fix: Bloqueo de menú nativo de selección de texto en móvil.
-   - Fix: Contraste de texto en burbujas enviadas (se veía borroso).
-   - Fix: Contención del botón rojo y capas Z-index.
-   - Fix: Ajuste de tamaño para reproductores de audio.
+   MENSAJES · CSS v3.4 · WEB3 NEON UI KIT
+   Cambios v3.4:
+   - Fix: Bloqueo total del menú nativo de copiado/selección en móvil.
+   - Fix: Selección de texto desactivada en TODAS las burbujas.
+   - Resto de v3.3 sin cambios.
    ================================================================ */
 
 :root {
@@ -431,19 +430,59 @@ button, input, textarea, select { font: inherit; }
 
 .chathead .avatar:hover { transform: scale(1.08); }
 
+/* ================================================================
+   ✅ FIX v3.3: BOTÓN DE REGRESO GRANDE Y PROFESIONAL
+   ================================================================ */
 .backbtn {
     display: none;
-    border: 0;
-    background: transparent;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(var(--neon-gold), .25);
+    background: rgba(212, 175, 55, .06);
     color: var(--gold);
-    font-size: 1.2rem;
+    border-radius: 12px;
     cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 8px;
-    transition: background .18s;
+    padding: 0;
+    margin-right: 4px;
+    transition:
+        background .2s var(--ease-snap),
+        border-color .2s var(--ease-snap),
+        transform .18s var(--ease-snap),
+        box-shadow .22s var(--ease-snap);
+    -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
 }
 
-.backbtn:hover { background: rgba(212, 175, 55, .1); }
+.backbtn svg {
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+    transition: transform .2s var(--ease-snap);
+}
+
+.backbtn:hover,
+.backbtn:focus-visible {
+    background: rgba(var(--neon-gold), .18);
+    border-color: rgba(var(--neon-gold), .7);
+    box-shadow: 0 0 0 1px rgba(var(--neon-gold), .5), 0 0 16px rgba(var(--neon-gold), .35);
+}
+
+.backbtn:hover svg,
+.backbtn:focus-visible svg {
+    transform: translateX(-2px);
+}
+
+.backbtn:active {
+    transform: scale(.94);
+}
 
 .chatname { font-weight: 700; font-size: .92rem; }
 .status { font-size: .63rem; color: var(--muted); }
@@ -601,7 +640,7 @@ button, input, textarea, select { font: inherit; }
 
 .sent .bubble {
     background: linear-gradient(135deg, var(--gold), #b8923a);
-    color: #05080f; /* Fix: Texto oscuro sólido para contraste */
+    color: #05080f;
     font-weight: 600;
     border-radius: 18px 18px 4px 18px;
     box-shadow: 0 2px 10px rgba(var(--neon-gold), .18);
@@ -1853,7 +1892,7 @@ html[data-tema="dia"] .neon-modal-message { color: #4a5568; }
 }
 
 /* ================================================================
-   ACCESIBILIDAD Y FIXES MÓVIL (v3.2)
+   ACCESIBILIDAD Y FIXES MÓVIL (v3.4)
    ================================================================ */
 [data-neon]:focus-visible,
 button:focus-visible,
@@ -1875,14 +1914,29 @@ textarea:focus-visible {
 }
 
 @media (hover: none) {
-    .iconbtn:hover, .composer-btn:hover, .composer .btn:hover, .action-labeled:hover {
+    .iconbtn:hover, .composer-btn:hover, .composer .btn:hover, .action-labeled:hover, .backbtn:hover {
         box-shadow: none;
         transform: none;
     }
 }
 
-/* FIX v3.2: Bloqueo de menú de copiado/selección nativo en móvil */
-.messages, .messages * {
+/* ================================================================
+   FIX v3.4: Bloqueo total del menú nativo de copiado/selección
+   en móvil. Sin selección de texto en NINGUNA burbuja.
+   ================================================================ */
+.messages,
+.messages * {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
+    -webkit-tap-highlight-color: transparent !important;
+}
+
+/* Bloqueo también específicamente en burbujas */
+.bubble,
+.bubble * {
     -webkit-user-select: none !important;
     -moz-user-select: none !important;
     -ms-user-select: none !important;
@@ -1890,13 +1944,15 @@ textarea:focus-visible {
     -webkit-touch-callout: none !important;
 }
 
-/* FIX v3.2: Permitir copiar SOLO el texto de las burbujas */
-.bubble, .bubble * {
-    -webkit-user-select: text !important;
-    -moz-user-select: text !important;
-    -ms-user-select: text !important;
-    user-select: text !important;
+/* El menú contextual personalizado SÍ debe permitir interacción */
+.msg-context-menu,
+.msg-context-menu * {
+    -webkit-user-select: none !important;
+    -moz-user-select: none !important;
+    -ms-user-select: none !important;
+    user-select: none !important;
+    -webkit-touch-callout: none !important;
 }
 
-/* FIX v3.2: Contención del botón rojo flotante en chathead */
+/* FIX v3.4: Contención del botón rojo flotante en chathead */
 .chathead .actions { max-width: calc(100% - 12px); }
