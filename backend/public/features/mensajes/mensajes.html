@@ -19,7 +19,7 @@
         var yaCargado = false;
 
         function cargarScript() {
-            if (window.LivekitClient) { yaCargado = true; return; }
+            if (window.LivekitClient) { yaCargado = true; window.__livekitReady = true; return; }
             if (intento >= maxIntentos) {
                 console.warn('[LiveKit] No se pudo cargar tras ' + maxIntentos + ' intentos. Las llamadas no estarán disponibles.');
                 window.dispatchEvent(new CustomEvent('livekit:error'));
@@ -32,6 +32,7 @@
             s.onload = function () {
                 if (window.LivekitClient) {
                     yaCargado = true;
+                    window.__livekitReady = true;
                     window.dispatchEvent(new CustomEvent('livekit:ready'));
                 } else {
                     console.warn('[LiveKit] Script cargado pero window.LivekitClient no existe. Reintentando...');
