@@ -908,7 +908,10 @@ function urlSegura(u) {
 }
 
 function messageHTML(m, sent, signedUrl) {
-    let body = esc(limpiarMarkdown(m.contenido || ''));
+    const textoLimpio = limpiarMarkdown(m.contenido || '');
+    let body = (typeof window.formatearMensajeConEmotes === 'function')
+        ? window.formatearMensajeConEmotes(textoLimpio)
+        : esc(textoLimpio);
     const urlToUse = urlSegura(signedUrl || m.imagen_url);
     if (urlToUse) {
         if (m.tipo === 'imagen') body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy" data-visor="1" data-src="${esc(urlToUse)}" data-nombre="${esc(m.nombre_archivo || 'imagen.jpg')}" style="cursor:zoom-in;">`;
