@@ -3,21 +3,23 @@
    ================================================================
    Endpoint que recibe el video recién subido y lo pone en cola
    para que el Worker lo procese (eliminar marca externa + poner
-   marca de Sariel's).
+   marca de Sariel's + mezclar audio de fondo si viene).
 
    FLUJO:
    1. Usuario sube video a Supabase Storage (desde el frontend)
-   2. Frontend llama a POST /api/video/queue
+   2. Frontend llama a POST /api/video/queue (con audioUrl opcional)
    3. Este endpoint agrega un job a la cola de Redis
    4. Worker procesa en background
    5. Frontend hace polling a GET /api/video/status/:jobId
    6. Cuando termina, el video procesado reemplaza al original
 
-   FIX v2:
-   - jobId estable por video (sin timestamp) → evita duplicados si
-     el frontend encola el mismo video 2 veces.
-   - Validación de filePath (debe empezar con userId/ y no tener ..)
-   - videoUrl y bucket se toman de la DB, no del body.
+   FIX v3 (audio de fondo + SSRF):
+   - Acepta y valida audioUrl (debe ser del bucket 'audios' de Supabase).
+   - Pasa audioUrl al job de BullMQ.
+   - Guarda audio_url en video_jobs.
+   - Mantiene todas las correcciones de v2: jobId estable, validación
+     de filePath con userId, videoUrl y bucket desde la DB, verificación
+     de dueño, y deduplicación de jobs activos.
    ================================================================ */
 
 const express = require('express');
@@ -44,6 +46,9 @@ const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
 // ================================================================
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const COLA_NOMBRE = 'video-processing';
+
+// Prefijo permitido para audioUrl (protección SSRF)
+const AUDIO_URL_PREFIX = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios/';
 
 const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
@@ -112,9 +117,9 @@ router.post('/queue', autenticar, async (req, res) => {
             return res.status(500).json({ success: false, error: 'Admin no configurado' });
         }
 
-        const { videoId, videoUrl, bucket = 'videos', filePath } = req.body;
+        const { videoId, videoUrl, bucket = 'videos', filePath, audioUrl } = req.body;
 
-        // Validaciones
+        // Validaciones básicas
         if (!videoId || !videoUrl) {
             return res.status(400).json({
                 success: false,
@@ -140,6 +145,22 @@ router.post('/queue', autenticar, async (req, res) => {
                 success: false,
                 error: 'filePath inválido'
             });
+        }
+
+        // ✅ FIX SEGURIDAD (SSRF): validar audioUrl si viene
+        if (audioUrl !== null && audioUrl !== undefined && audioUrl !== '') {
+            if (typeof audioUrl !== 'string') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'audioUrl debe ser string'
+                });
+            }
+            if (!audioUrl.startsWith(AUDIO_URL_PREFIX) || audioUrl.includes('..')) {
+                return res.status(400).json({
+                    success: false,
+                    error: 'audioUrl inválido'
+                });
+            }
         }
 
         // Verificar que el video pertenece al usuario
@@ -175,24 +196,25 @@ router.post('/queue', autenticar, async (req, res) => {
         }
 
         // ✅ FIX 4: jobId estable (sin timestamp)
-        // Mismo video siempre genera el mismo jobId.
-        // Si por error se encola 2 veces, BullMQ ignora el 2do.
-        // Antes: `video_${videoId}_${Date.now()}` → 2 jobs distintos por doble-submit.
-        // Ahora: `video_${videoId}` → BullMQ deduplica.
         const stableJobId = `video_${videoId}`;
 
         // ✅ FIX SEGURIDAD: usar videoUrl y bucket de la DB, no del body
+        // ✅ FIX v3: pasar audioUrl al job
         const job = await videoQueue.add('process-video', {
             videoId,
             videoUrl: video.url_video,
             userId: req.user.id,
             bucket: 'videos',
-            filePath
+            filePath,
+            audioUrl: audioUrl || null
         }, {
             jobId: stableJobId
         });
 
         console.log(`📥 [QUEUE] Job creado: ${job.id} para video: ${videoId}`);
+        if (audioUrl) {
+            console.log(`🎵 [QUEUE] Audio de fondo: ${audioUrl}`);
+        }
 
         // Guardar el job en la DB para hacer tracking
         await supabaseAdmin
@@ -202,6 +224,7 @@ router.post('/queue', autenticar, async (req, res) => {
                 usuario_id: req.user.id,
                 job_id: job.id,
                 estado: 'pendiente',
+                audio_url: audioUrl || null,
                 created_at: new Date().toISOString()
             });
 
