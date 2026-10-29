@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.5
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.6
    ================================================================
    - MediaPipe Face Mesh se carga dinámicamente desde este archivo
      (no hace falta ningún <script> de MediaPipe en videos.html).
@@ -12,7 +12,9 @@
    - v4.4: 18 filtros desde backend/assets (sufijo -1), cada uno con
      su punto de anclaje: 'frente', 'nariz' u 'ojos'.
    - v4.5: ajustes de posición y tamaño para ángel, charro, vikingo,
-     león y payaso. El payaso necesita volver a subir payaso-1.png.
+     león y payaso.
+   - v4.6: emojis del selector corregidos, payaso ajustado para no
+     tapar los ojos, ángel aplanado (horizontal) y pegado a la cabeza.
    ================================================================ */
 
 (function () {
@@ -36,10 +38,11 @@
     // Carpeta donde están los PNG de los filtros en el repo
     const ASSETS_BASE = 'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main/backend/assets';
 
-    // scale   = ancho del filtro como múltiplo del ancho de la cara
-    // offsetY = desplazamiento vertical como fracción de la altura del filtro
-    //           (negativo = sube, positivo = baja)
-    // ancla   = 'frente' (cabeza), 'nariz' (base de la nariz) u 'ojos' (centro de los ojos)
+    // scale    = ancho del filtro como múltiplo del ancho de la cara
+    // offsetY  = desplazamiento vertical como fracción de la altura del filtro
+    //            (negativo = sube, positivo = baja)
+    // ancla    = 'frente' (cabeza), 'nariz' (base de la nariz) u 'ojos' (centro de los ojos)
+    // aplanar  = (opcional) factor para la altura; 1 = proporción original, 0.4 = aplastado
     const ASSETS = {
         gato:     { src: `${ASSETS_BASE}/orejas-gato-1.png`,     scale: 1.0,  offsetY: -0.4,  ancla: 'frente' },
         burro:    { src: `${ASSETS_BASE}/orejas-burro-1.png`,    scale: 1.0,  offsetY: -0.4,  ancla: 'frente' },
@@ -51,8 +54,8 @@
         diamante: { src: `${ASSETS_BASE}/corona-diamante-1.png`, scale: 0.9,  offsetY: -0.5,  ancla: 'frente' },
         perro:    { src: `${ASSETS_BASE}/perro-1.png`,           scale: 1.3,  offsetY: -0.18, ancla: 'nariz' },
         diablo:   { src: `${ASSETS_BASE}/diablo-1.png`,          scale: 1.0,  offsetY: -0.6,  ancla: 'frente' },
-        angel:    { src: `${ASSETS_BASE}/angel-1.png`,           scale: 1.1,  offsetY: -0.75, ancla: 'frente' },
-        payaso:   { src: `${ASSETS_BASE}/payaso-1.png`,          scale: 1.1,  offsetY: -0.35, ancla: 'nariz' },
+        angel:    { src: `${ASSETS_BASE}/angel-1.png`,           scale: 1.0,  offsetY: -0.6,  ancla: 'frente', aplanar: 0.4 },
+        payaso:   { src: `${ASSETS_BASE}/payaso-1.png`,          scale: 0.9,  offsetY: -0.35, ancla: 'nariz' },
         charro:   { src: `${ASSETS_BASE}/charro-1.png`,          scale: 1.2,  offsetY: -0.7,  ancla: 'frente' },
         vikingo:  { src: `${ASSETS_BASE}/vikingo-1.png`,         scale: 1.1,  offsetY: -0.3,  ancla: 'frente' },
         leon:     { src: `${ASSETS_BASE}/leon-1.png`,            scale: 0.95, offsetY: 0,     ancla: 'ojos' },
@@ -103,8 +106,8 @@
             { id: 'angel', nombre: 'Ángel', icono: '👼' },
             { id: 'diablo', nombre: 'Diablo', icono: '😈' },
             { id: 'payaso', nombre: 'Payaso', icono: '🤡' },
-            { id: 'charro', nombre: 'Charro', icono: '🇲🇽' },
-            { id: 'vikingo', nombre: 'Vikingo', icono: '⚔️' },
+            { id: 'charro', nombre: 'Charro', icono: '🤠' },
+            { id: 'vikingo', nombre: 'Vikingo', icono: '🛡️' },
             { id: 'leon', nombre: 'León', icono: '🦁' },
             { id: 'mascara', nombre: 'Lucha', icono: '🤼' },
             { id: 'alien', nombre: 'Alien', icono: '👽' }
@@ -471,7 +474,8 @@
         const centro = { x: (ojoIzq.x + ojoDer.x) / 2, y: (ojoIzq.y + ojoDer.y) / 2 };
 
         const ancho = anchoCara * cfg.scale;
-        const alto = ancho * (img.naturalHeight / img.naturalWidth);
+        const factorAltura = cfg.aplanar ?? 1;
+        const alto = ancho * (img.naturalHeight / img.naturalWidth) * factorAltura;
 
         // Punto de anclaje según el filtro
         let ax = centro.x;
