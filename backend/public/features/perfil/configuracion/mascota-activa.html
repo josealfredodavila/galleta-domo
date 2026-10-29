@@ -496,10 +496,9 @@ h1 .corn { font-size: 1.5rem; }
 'use strict';
 
 (function() {
-    const KEY = 'mascota_activa';
-    const DEFAULT_MASCOTA = 'marquinhos';
-
-    let mascotaSeleccionada = DEFAULT_MASCOTA;
+    let mascotaSeleccionada = 'marquinhos';
+    let supabaseClient = null;
+    let usuarioId = null;
 
     function toast(msg) {
         const el = document.getElementById('toast');
@@ -509,22 +508,68 @@ h1 .corn { font-size: 1.5rem; }
         el._timer = setTimeout(() => el.classList.remove('visible'), 3000);
     }
 
-    function leer() {
-        try {
-            const v = localStorage.getItem(KEY);
-            return v || DEFAULT_MASCOTA;
-        } catch (e) {
-            return DEFAULT_MASCOTA;
+    async function init() {
+        // 1. Conectar con Supabase
+        if (window.getSupabase) {
+            supabaseClient = await window.getSupabase();
+        } else if (window.supabaseClient) {
+            supabaseClient = window.supabaseClient;
         }
-    }
 
-    function guardar(mascota) {
-        try {
-            localStorage.setItem(KEY, mascota);
-            return true;
-        } catch (e) {
-            return false;
+        // 2. Leer la mascota actual desde la Base de Datos
+        if (supabaseClient) {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (session) {
+                usuarioId = session.user.id;
+                const { data } = await supabaseClient
+                    .from('usuarios')
+                    .select('mascota_activa')
+                    .eq('id', usuarioId)
+                    .single();
+                
+                if (data && data.mascota_activa) {
+                    mascotaSeleccionada = data.mascota_activa;
+                }
+            }
         }
+
+        pintar();
+
+        // 3. Click en las opciones
+        document.querySelectorAll('.mascota-item').forEach(item => {
+            item.addEventListener('click', () => {
+                mascotaSeleccionada = item.dataset.mascota;
+                pintar();
+            });
+        });
+
+        // 4. Botón de Guardar
+        document.getElementById('btnGuardar').addEventListener('click', async () => {
+            const btn = document.getElementById('btnGuardar');
+            btn.disabled = true;
+            btn.textContent = 'Guardando...';
+
+            if (supabaseClient && usuarioId) {
+                const { error } = await supabaseClient
+                    .from('usuarios')
+                    .update({ mascota_activa: mascotaSeleccionada })
+                    .eq('id', usuarioId);
+
+                if (error) {
+                    toast('⚠️ Error al guardar en la nube');
+                } else {
+                    toast('✅ Mascota actualizada');
+                }
+            } else {
+                toast('⚠️ No hay sesión activa');
+            }
+
+            btn.disabled = false;
+            btn.textContent = '◈ Guardar selección';
+            
+            // Recargar para que se apliquen los cambios
+            setTimeout(() => window.location.reload(), 800);
+        });
     }
 
     function pintar() {
@@ -535,42 +580,6 @@ h1 .corn { font-size: 1.5rem; }
             const tag = item.querySelector('[data-tag]');
             if (tag) tag.hidden = !activa;
         });
-    }
-
-    function init() {
-        mascotaSeleccionada = leer();
-        pintar();
-
-        document.querySelectorAll('.mascota-item').forEach(item => {
-            item.addEventListener('click', () => {
-                mascotaSeleccionada = item.dataset.mascota;
-                pintar();
-            });
-        });
-
-        document.getElementById('btnGuardar').addEventListener('click', () => {
-            const btn = document.getElementById('btnGuardar');
-            btn.disabled = true;
-            btn.textContent = 'Guardando...';
-
-            const ok = guardar(mascotaSeleccionada);
-
-            setTimeout(() => {
-                if (ok) {
-                    toast('✅ Mascota actualizada');
-                } else {
-                    toast('⚠️ No se pudo guardar');
-                }
-                btn.disabled = false;
-                btn.textContent = '◈ Guardar selección';
-
-                setTimeout(() => {
-                    window.location.reload();
-                }, 800);
-            }, 400);
-        });
-
-        console.log('[Mascota Activa] ✅ Cargada. Seleccionada:', mascotaSeleccionada);
     }
 
     if (document.readyState === 'loading') {
