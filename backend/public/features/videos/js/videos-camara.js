@@ -1,10 +1,9 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v3.1
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v3.2
    ================================================================
-   - Fix v3.1: Actualizada la versión de MediaPipe para solucionar
-     el error de WebAssembly en móviles.
-   - Fix v3.1: Ocultar a Marquinhos al abrir la cámara.
-   - Fix v3.1: Ajuste de escala de los filtros.
+   - Fix v3.2: Oculta a Marquinhos correctamente buscando en el DOM.
+   - Fix v3.2: Ajuste de escala de los filtros.
+   - Fix v3.2: Compatible con MediaPipe 0.4.1675469240.
    ================================================================ */
 
 (function () {
@@ -19,7 +18,6 @@
         DETECTION_FPS: 24,
         VIDEO_WIDTH: 1280,
         VIDEO_HEIGHT: 720,
-        // ✅ NUEVA VERSIÓN DE MEDIAPIPE (Soluciona el error de WASM)
         MEDIAPIPE_VERSION: '0.4.1675469240'
     });
 
@@ -51,14 +49,43 @@
 
     const $ = (id) => document.getElementById(id);
 
-    // ✅ NUEVO: Función para ocultar a Marquinhos cuando la cámara está activa
-    function toggleMarquinhos(visible) {
-        const robot = document.querySelector('.marquinhos-robot') || 
-                      document.querySelector('#marquinhos') || 
-                      document.querySelector('[class*="marquinhos"]') ||
-                      document.querySelector('[id*="marquinhos"]');
-        if (robot) {
-            robot.style.display = visible ? 'none' : 'block';
+    // ✅ NUEVA FUNCIÓN: Busca a Marquinhos en TODO el DOM y lo oculta
+    function ocultarMarquinhos() {
+        // Busca por ID
+        const porId = document.getElementById('marquinhos');
+        if (porId) { porId.style.display = 'none'; return; }
+        
+        // Busca por clase (y variaciones)
+        const selectores = [
+            '.marquinhos', '.marquinhos-robot', '.marquinhos-widget',
+            '[class*="marquinhos"]', '[id*="marquinhos"]'
+        ];
+        for (const sel of selectores) {
+            try {
+                const el = document.querySelector(sel);
+                if (el) { el.style.display = 'none'; return; }
+            } catch (e) {}
+        }
+        
+        // Busca por texto (si el robot tiene un texto dentro)
+        const todos = document.querySelectorAll('div, img, iframe');
+        for (const el of todos) {
+            if (el.textContent && el.textContent.includes('Marquinhos') && el.offsetHeight > 50 && el.offsetHeight < 300) {
+                el.style.display = 'none';
+                return;
+            }
+        }
+    }
+
+    function mostrarMarquinhos() {
+        const porId = document.getElementById('marquinhos');
+        if (porId) { porId.style.display = ''; return; }
+        const selectores = ['.marquinhos', '.marquinhos-robot', '.marquinhos-widget', '[class*="marquinhos"]', '[id*="marquinhos"]'];
+        for (const sel of selectores) {
+            try {
+                const el = document.querySelector(sel);
+                if (el) { el.style.display = ''; return; }
+            } catch (e) {}
         }
     }
 
@@ -158,7 +185,7 @@
     async function abrirCamara() {
         inyectarModalCamara();
         $('csModalCamara').classList.add('show');
-        toggleMarquinhos(false); // ✅ Ocultar a Marquinhos
+        ocultarMarquinhos(); // ✅ Ocultar robot al abrir
         mostrarCargando(true);
         try {
             state.video = $('csCamaraVideo');
@@ -191,9 +218,8 @@
 
     async function iniciarMediaPipe() {
         if (state.faceMesh) return;
-        if (typeof FaceMesh === 'undefined') throw new Error('MediaPipe Face Mesh no está cargado.');
+        if (typeof FaceMesh === 'undefined') throw new Error('MediaPipe no está cargado. Revisa que el <script> en videos.html sea de la versión 0.4.1675469240.');
         
-        // ✅ Inicialización con la nueva versión
         const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@${CONFIG.MEDIAPIPE_VERSION}/${file}` });
         faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         faceMesh.onResults((results) => { state.lastResults = results; });
@@ -355,7 +381,7 @@
         if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
         state.mediaRecorder = null; detenerStream();
         if (state.faceMesh) { try { state.faceMesh.close(); } catch (e) { } state.faceMesh = null; }
-        toggleMarquinhos(true); // ✅ Volver a mostrar a Marquinhos al salir
+        mostrarMarquinhos(); // ✅ Volver a mostrar al salir
         $('csModalCamara')?.classList.remove('show'); mostrarCargando(false);
     }
 
