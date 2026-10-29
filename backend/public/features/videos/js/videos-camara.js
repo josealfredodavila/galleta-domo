@@ -1,9 +1,10 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v3.2
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v3.3
    ================================================================
-   - Fix v3.2: Oculta a Marquinhos correctamente buscando en el DOM.
-   - Fix v3.2: Ajuste de escala de los filtros.
-   - Fix v3.2: Compatible con MediaPipe 0.4.1675469240.
+   - Fix v3.3: Carga dinámica de MediaPipe 0.4.1675469240
+     (evita conflicto con versiones viejas en el HTML).
+   - Fix v3.3: Ocultar Marquinhos al abrir cámara.
+   - Fix v3.3: Ajuste de escala de filtros.
    ================================================================ */
 
 (function () {
@@ -18,7 +19,8 @@
         DETECTION_FPS: 24,
         VIDEO_WIDTH: 1280,
         VIDEO_HEIGHT: 720,
-        MEDIAPIPE_VERSION: '0.4.1675469240'
+        MEDIAPIPE_VERSION: '0.4.1675469240',
+        MEDIAPIPE_CDN: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh'
     });
 
     const GITHUB_BASE_URL = 'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main';
@@ -49,44 +51,62 @@
 
     const $ = (id) => document.getElementById(id);
 
-    // ✅ NUEVA FUNCIÓN: Busca a Marquinhos en TODO el DOM y lo oculta
+    // ============================================================
+    // CARGA DINÁMICA DE MEDIAPIPE
+    // ============================================================
+    function cargarMediaPipe() {
+        return new Promise((resolve, reject) => {
+            if (typeof FaceMesh !== 'undefined') { resolve(); return; }
+
+            const url = `${CONFIG.MEDIAPIPE_CDN}@${CONFIG.MEDIAPIPE_VERSION}/face_mesh.js`;
+            const script = document.createElement('script');
+            script.src = url;
+            script.crossOrigin = 'anonymous';
+            script.onload = () => resolve();
+            script.onerror = () => reject(new Error('No se pudo cargar MediaPipe desde CDN'));
+            document.head.appendChild(script);
+        });
+    }
+
+    // ============================================================
+    // OCULTAR / MOSTRAR MARQUINHOS
+    // ============================================================
+    let marquinhosElementos = [];
+
     function ocultarMarquinhos() {
-        // Busca por ID
-        const porId = document.getElementById('marquinhos');
-        if (porId) { porId.style.display = 'none'; return; }
-        
-        // Busca por clase (y variaciones)
+        marquinhosElementos = [];
         const selectores = [
-            '.marquinhos', '.marquinhos-robot', '.marquinhos-widget',
-            '[class*="marquinhos"]', '[id*="marquinhos"]'
+            '#marquinhos',
+            '.marquinhos',
+            '.marquinhos-robot',
+            '[class*="marquinhos"]',
+            '[id*="marquinhos"]',
+            '[class*="cs-robot"]',
+            '[id*="cs-robot"]'
         ];
-        for (const sel of selectores) {
+        selectores.forEach(sel => {
             try {
-                const el = document.querySelector(sel);
-                if (el) { el.style.display = 'none'; return; }
+                document.querySelectorAll(sel).forEach(el => {
+                    if (el && el.style && el.style.display !== 'none') {
+                        const displayAnterior = el.style.display || '';
+                        el.dataset.marquinhosDisplayAnterior = displayAnterior;
+                        el.style.display = 'none';
+                        marquinhosElementos.push(el);
+                    }
+                });
             } catch (e) {}
-        }
-        
-        // Busca por texto (si el robot tiene un texto dentro)
-        const todos = document.querySelectorAll('div, img, iframe');
-        for (const el of todos) {
-            if (el.textContent && el.textContent.includes('Marquinhos') && el.offsetHeight > 50 && el.offsetHeight < 300) {
-                el.style.display = 'none';
-                return;
-            }
-        }
+        });
     }
 
     function mostrarMarquinhos() {
-        const porId = document.getElementById('marquinhos');
-        if (porId) { porId.style.display = ''; return; }
-        const selectores = ['.marquinhos', '.marquinhos-robot', '.marquinhos-widget', '[class*="marquinhos"]', '[id*="marquinhos"]'];
-        for (const sel of selectores) {
+        marquinhosElementos.forEach(el => {
             try {
-                const el = document.querySelector(sel);
-                if (el) { el.style.display = ''; return; }
+                const displayAnterior = el.dataset.marquinhosDisplayAnterior || '';
+                el.style.display = displayAnterior;
+                delete el.dataset.marquinhosDisplayAnterior;
             } catch (e) {}
-        }
+        });
+        marquinhosElementos = [];
     }
 
     function precargarImagenes() {
@@ -185,15 +205,18 @@
     async function abrirCamara() {
         inyectarModalCamara();
         $('csModalCamara').classList.add('show');
-        ocultarMarquinhos(); // ✅ Ocultar robot al abrir
+        ocultarMarquinhos();
         mostrarCargando(true);
         try {
             state.video = $('csCamaraVideo');
             state.canvas = $('csCamaraCanvas');
             state.ctx = state.canvas.getContext('2d', { alpha: false });
+
+            await cargarMediaPipe();
             await precargarImagenes();
             await iniciarStream();
             await iniciarMediaPipe();
+
             state.iniciada = true;
             mostrarCargando(false);
             iniciarLoopRender();
@@ -218,9 +241,9 @@
 
     async function iniciarMediaPipe() {
         if (state.faceMesh) return;
-        if (typeof FaceMesh === 'undefined') throw new Error('MediaPipe no está cargado. Revisa que el <script> en videos.html sea de la versión 0.4.1675469240.');
+        if (typeof FaceMesh === 'undefined') throw new Error('MediaPipe no se cargó correctamente.');
         
-        const faceMesh = new FaceMesh({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@${CONFIG.MEDIAPIPE_VERSION}/${file}` });
+        const faceMesh = new FaceMesh({ locateFile: (file) => `${CONFIG.MEDIAPIPE_CDN}@${CONFIG.MEDIAPIPE_VERSION}/${file}` });
         faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
         faceMesh.onResults((results) => { state.lastResults = results; });
         await faceMesh.initialize();
@@ -381,7 +404,7 @@
         if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
         state.mediaRecorder = null; detenerStream();
         if (state.faceMesh) { try { state.faceMesh.close(); } catch (e) { } state.faceMesh = null; }
-        mostrarMarquinhos(); // ✅ Volver a mostrar al salir
+        mostrarMarquinhos();
         $('csModalCamara')?.classList.remove('show'); mostrarCargando(false);
     }
 
