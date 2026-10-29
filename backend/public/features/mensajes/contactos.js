@@ -1,7 +1,8 @@
 /* ============================================================
    contactos.js
    Sariel's Ecosystem · Contactos
-   v14 — Iconos SVG Profesionales (Limipios) + Sugerencias + Solicitudes
+   v15 — Aceptar/Rechazar vía RPC + Cancelar solicitud propia
+        + Eliminar amistad vía RPC
    ============================================================ */
 
 (() => {
@@ -13,6 +14,8 @@
         BLOQUEOS_TABLE: 'bloqueos',
         RPC_BLOQUEAR: 'bloquear_contacto',
         RPC_INVITACION: 'obtener_o_crear_invitacion',
+        RPC_RESPONDER_SOLICITUD: 'responder_solicitud_amistad',
+        RPC_ELIMINAR_AMISTAD: 'eliminar_amistad',
         PAGE_SIZE: 30,
         MAX_RESULTADOS_BUSQUEDA: 20,
         MAX_SUGERENCIAS: 10,
@@ -484,10 +487,10 @@
                             <div class="handle">${escapeHtml(handle)}</div>
                         </div>
                         <div class="acciones">
-                            <button class="btn-aceptar" onclick="window.aceptarSolicitud('${s.id}', '${s.usuario_id}')">
+                            <button class="btn-aceptar" onclick="window.aceptarSolicitud('${s.id}')">
                                 ${SVG_ICONS.agregarAmigo} Aceptar
                             </button>
-                            <button class="btn-rechazar" onclick="window.rechazarSolicitud('${s.id}', '${s.usuario_id}')">
+                            <button class="btn-rechazar" onclick="window.rechazarSolicitud('${s.id}')">
                                 ${SVG_ICONS.cancelar} Rechazar
                             </button>
                         </div>
@@ -640,7 +643,7 @@
 
         const botonesAccion = esPendienteEnviada 
             ? `
-                <button type="button" class="rechazar" title="Cancelar solicitud" onclick="window.rechazarSolicitud('${filaIdSeguro}', '${contactoIdSeguro}')">
+                <button type="button" class="rechazar" title="Cancelar solicitud" onclick="window.cancelarSolicitudEnviada('${filaIdSeguro}')">
                     ${SVG_ICONS.cancelar} Cancelar
                 </button>
             `
@@ -674,7 +677,7 @@
                         <button type="button" class="bloquear" title="Bloquear" onclick="window.bloquearContacto('${contactoIdSeguro}')">
                             ${SVG_ICONS.bloquear} Bloquear
                         </button>
-                        <button type="button" class="eliminar" title="Eliminar" onclick="window.eliminarContacto('${filaIdSeguro}')">
+                        <button type="button" class="eliminar" title="Eliminar" onclick="window.eliminarContacto('${contactoIdSeguro}')">
                             ${SVG_ICONS.eliminar} Eliminar
                         </button>
                     ` : ''}
@@ -896,26 +899,18 @@
     window.agregarContacto = agregarContacto;
 
     /* ============================================================
-       ACEPTAR / RECHAZAR SOLICITUD
+       ACEPTAR / RECHAZAR SOLICITUD (RPC)
        ============================================================ */
-    async function aceptarSolicitud(contactoRowId, otroUsuarioId) {
+    async function aceptarSolicitud(contactoRowId) {
         const client = sb();
         const session = await getSession();
         if (!client || !session) return;
         try {
-            await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
-                .update({ estado: 'activo' }).eq('id', contactoRowId), 'aceptar solicitud recibida');
-            
-            const { data: miFila } = await client.from(CONFIG.CONTACTOS_TABLE)
-                .select('id').eq('usuario_id', session.user.id).eq('contacto_id', otroUsuarioId).maybeSingle();
-            
-            if (miFila) {
-                await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
-                    .update({ estado: 'activo' }).eq('id', miFila.id), 'actualizar mi fila');
-            } else {
-                await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
-                    .insert({ usuario_id: session.user.id, contacto_id: otroUsuarioId, estado: 'activo' }), 'crear mi fila');
-            }
+            const { error } = await client.rpc(CONFIG.RPC_RESPONDER_SOLICITUD, {
+                p_fila_id: Number(contactoRowId),
+                p_aceptar: true
+            });
+            if (error) throw error;
 
             showToast('✅ Amistad aceptada', 'success');
             await cargarContactos({ reset: true });
@@ -925,18 +920,16 @@
     }
     window.aceptarSolicitud = aceptarSolicitud;
 
-    async function rechazarSolicitud(contactoRowId, otroUsuarioId) {
+    async function rechazarSolicitud(contactoRowId) {
         const client = sb();
         const session = await getSession();
         if (!client || !session) return;
         try {
-            await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
-                .delete().eq('id', contactoRowId), 'rechazar solicitud recibida');
-            
-            await withRetry(() => client.from(CONFIG.CONTACTOS_TABLE)
-                .delete()
-                .eq('usuario_id', session.user.id)
-                .eq('contacto_id', otroUsuarioId), 'limpiar solicitud enviada');
+            const { error } = await client.rpc(CONFIG.RPC_RESPONDER_SOLICITUD, {
+                p_fila_id: Number(contactoRowId),
+                p_aceptar: false
+            });
+            if (error) throw error;
 
             showToast('❌ Solicitud rechazada', 'info');
             await cargarContactos({ reset: true });
@@ -945,6 +938,34 @@
         } catch (e) { console.error('Error rechazando:', e); showToast('❌ Error al rechazar la solicitud', 'error'); }
     }
     window.rechazarSolicitud = rechazarSolicitud;
+
+    /* ============================================================
+       CANCELAR SOLICITUD ENVIADA
+       ============================================================ */
+    async function cancelarSolicitudEnviada(filaId) {
+        const client = sb();
+        const session = await getSession();
+        if (!client || !session) { showToast('⚠️ Inicia sesión', 'error'); return; }
+        if (!filaId) return;
+
+        try {
+            const { error } = await client
+                .from(CONFIG.CONTACTOS_TABLE)
+                .delete()
+                .eq('id', filaId)
+                .eq('usuario_id', session.user.id);
+            if (error) throw error;
+
+            showToast('✅ Solicitud cancelada', 'success');
+            await cargarContactos({ reset: true });
+            await cargarSolicitudesPendientesUI();
+            await cargarSugerenciasUI();
+        } catch (e) {
+            console.error('Error cancelando solicitud enviada:', e);
+            showToast('❌ No se pudo cancelar la solicitud', 'error');
+        }
+    }
+    window.cancelarSolicitudEnviada = cancelarSolicitudEnviada;
 
     /* ============================================================
        FAVORITO
@@ -971,13 +992,13 @@
     window.toggleFavorito = toggleFavorito;
 
     /* ============================================================
-       ELIMINAR CONTACTO
+       ELIMINAR CONTACTO (RPC eliminar_amistad)
        ============================================================ */
-    async function eliminarContacto(contactoRowId) {
+    async function eliminarContacto(contactoIdDelContacto) {
         const client = sb();
         const session = await getSession();
         if (!client || !session) { showToast('⚠️ Inicia sesión', 'error'); return; }
-        if (!contactoRowId) return;
+        if (!contactoIdDelContacto) return;
 
         const confirmado = await showConfirm({
             title: 'Eliminar contacto',
@@ -993,18 +1014,20 @@
         const backupSet = new Set(state.idsContactosSet);
         const backupTotal = state.totalContactos;
 
-        state.contactos = state.contactos.filter((c) => c.id !== contactoRowId);
-        const eliminado = backup.find((c) => c.id === contactoRowId);
-        if (eliminado?.contacto_id) state.idsContactosSet.delete(eliminado.contacto_id);
+        state.contactos = state.contactos.filter((c) => c.contacto_id !== contactoIdDelContacto);
+        state.idsContactosSet.delete(contactoIdDelContacto);
         state.totalContactos = Math.max(0, state.totalContactos - 1);
         renderizarContactos();
         recalcularEstadisticas();
 
         try {
-            const { error } = await withRetry(() =>
-                client.from(CONFIG.CONTACTOS_TABLE).delete().eq('id', contactoRowId).eq('usuario_id', session.user.id), 'eliminar contacto');
+            const { error } = await client.rpc(CONFIG.RPC_ELIMINAR_AMISTAD, {
+                p_contacto_id: contactoIdDelContacto
+            });
             if (error) throw error;
             showToast('✅ Contacto eliminado', 'success');
+            await cargarContactos({ reset: true });
+            await cargarSolicitudesPendientesUI();
             await cargarSugerenciasUI();
         } catch (error) {
             console.error('Error eliminando contacto:', error);
