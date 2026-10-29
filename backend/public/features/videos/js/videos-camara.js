@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.3
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.4
    ================================================================
    - MediaPipe Face Mesh se carga dinámicamente desde este archivo
      (no hace falta ningún <script> de MediaPipe en videos.html).
@@ -9,9 +9,8 @@
    - Envíos a Face Mesh secuenciales (MediaPipe no admite dos a la vez).
    - Cerrar la cámara durante una grabación descarta el video.
    - Marquinhos se oculta al abrir la cámara y se restaura al cerrar.
-   - v4.1: los filtros se leen desde backend/assets con sufijo -1.
-   - v4.2: bigote ajustado (tamaño y posición bajo la nariz).
-   - v4.3: bigote anclado por la parte superior en la base de la nariz.
+   - v4.4: 18 filtros desde backend/assets (sufijo -1). Cada filtro
+     tiene su punto de anclaje: 'frente', 'nariz' u 'ojos'.
    ================================================================ */
 
 (function () {
@@ -38,12 +37,25 @@
     // scale   = ancho del filtro como múltiplo del ancho de la cara
     // offsetY = desplazamiento vertical como fracción de la altura del filtro
     //           (0.5 = la parte superior del filtro queda en el punto de anclaje)
+    // ancla   = 'frente' (cabeza), 'nariz' (base de la nariz) u 'ojos' (centro de los ojos)
     const ASSETS = {
-        gato:   { src: `${ASSETS_BASE}/orejas-gato-1.png`,  scale: 1.0,  offsetY: -0.4 },
-        burro:  { src: `${ASSETS_BASE}/orejas-burro-1.png`, scale: 1.0,  offsetY: -0.4 },
-        gafas:  { src: `${ASSETS_BASE}/gafas-1.png`,        scale: 1.0,  offsetY: 0 },
-        bigote: { src: `${ASSETS_BASE}/bigote-1.png`,       scale: 0.45, offsetY: 0.5 },
-        corona: { src: `${ASSETS_BASE}/corona-1.png`,       scale: 0.9,  offsetY: -0.5 }
+        gato:     { src: `${ASSETS_BASE}/orejas-gato-1.png`,     scale: 1.0,  offsetY: -0.4,  ancla: 'frente' },
+        burro:    { src: `${ASSETS_BASE}/orejas-burro-1.png`,    scale: 1.0,  offsetY: -0.4,  ancla: 'frente' },
+        gafas:    { src: `${ASSETS_BASE}/gafas-1.png`,           scale: 1.0,  offsetY: 0,     ancla: 'ojos' },
+        thug:     { src: `${ASSETS_BASE}/thug-life-1.png`,       scale: 1.0,  offsetY: -0.28, ancla: 'ojos' },
+        corazon:  { src: `${ASSETS_BASE}/corazon-1.png`,         scale: 0.9,  offsetY: 0,     ancla: 'ojos' },
+        bigote:   { src: `${ASSETS_BASE}/bigote-1.png`,          scale: 0.45, offsetY: 0.5,   ancla: 'nariz' },
+        corona:   { src: `${ASSETS_BASE}/corona-1.png`,          scale: 0.9,  offsetY: -0.5,  ancla: 'frente' },
+        diamante: { src: `${ASSETS_BASE}/corona-diamante-1.png`, scale: 0.9,  offsetY: -0.5,  ancla: 'frente' },
+        perro:    { src: `${ASSETS_BASE}/perro-1.png`,           scale: 1.3,  offsetY: -0.18, ancla: 'nariz' },
+        diablo:   { src: `${ASSETS_BASE}/diablo-1.png`,          scale: 1.0,  offsetY: -0.6,  ancla: 'frente' },
+        angel:    { src: `${ASSETS_BASE}/angel-1.png`,           scale: 1.3,  offsetY: -0.9,  ancla: 'frente' },
+        payaso:   { src: `${ASSETS_BASE}/payaso-1.png`,          scale: 1.1,  offsetY: 0.2,   ancla: 'nariz' },
+        charro:   { src: `${ASSETS_BASE}/charro-1.png`,          scale: 1.6,  offsetY: -0.8,  ancla: 'frente' },
+        vikingo:  { src: `${ASSETS_BASE}/vikingo-1.png`,         scale: 1.2,  offsetY: -0.5,  ancla: 'frente' },
+        leon:     { src: `${ASSETS_BASE}/leon-1.png`,            scale: 1.1,  offsetY: 0,     ancla: 'ojos' },
+        mascara:  { src: `${ASSETS_BASE}/mascara-lucha-1.png`,   scale: 1.0,  offsetY: 0,     ancla: 'ojos' },
+        alien:    { src: `${ASSETS_BASE}/antenas-alien-1.png`,   scale: 1.1,  offsetY: -0.27, ancla: 'ojos' }
     };
 
     const SELECTORES_MARQUINHOS = [
@@ -79,9 +91,21 @@
             { id: 'ninguno', nombre: 'Ninguno', icono: '🚫' },
             { id: 'gato', nombre: 'Orejas', icono: '🐱' },
             { id: 'burro', nombre: 'Burro', icono: '🐴' },
+            { id: 'perro', nombre: 'Perro', icono: '🐶' },
             { id: 'gafas', nombre: 'Gafas', icono: '🕶️' },
+            { id: 'thug', nombre: 'Thug Life', icono: '😎' },
+            { id: 'corazon', nombre: 'Amor', icono: '💖' },
             { id: 'bigote', nombre: 'Bigote', icono: '🥸' },
-            { id: 'corona', nombre: 'Corona', icono: '👑' }
+            { id: 'corona', nombre: 'Corona', icono: '👑' },
+            { id: 'diamante', nombre: 'Diamantes', icono: '💎' },
+            { id: 'angel', nombre: 'Ángel', icono: '👼' },
+            { id: 'diablo', nombre: 'Diablo', icono: '😈' },
+            { id: 'payaso', nombre: 'Payaso', icono: '🤡' },
+            { id: 'charro', nombre: 'Charro', icono: '🇲🇽' },
+            { id: 'vikingo', nombre: 'Vikingo', icono: '⚔️' },
+            { id: 'leon', nombre: 'León', icono: '🦁' },
+            { id: 'mascara', nombre: 'Lucha', icono: '🤼' },
+            { id: 'alien', nombre: 'Alien', icono: '👽' }
         ]
     };
 
@@ -447,13 +471,11 @@
         const ancho = anchoCara * cfg.scale;
         const alto = ancho * (img.naturalHeight / img.naturalWidth);
 
+        // Punto de anclaje según el filtro
         let ax = centro.x;
         let ay = centro.y;
-        if (state.filtroActual === 'gato' || state.filtroActual === 'burro' || state.filtroActual === 'corona') {
-            ay = pt(10).y; // frente
-        } else if (state.filtroActual === 'bigote') {
-            ay = pt(2).y; // base de la nariz
-        }
+        if (cfg.ancla === 'frente') ay = pt(10).y;   // frente
+        else if (cfg.ancla === 'nariz') ay = pt(2).y; // base de la nariz
         ay += alto * cfg.offsetY;
 
         ctx.save();
