@@ -7,21 +7,17 @@
     <title>Chats · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script>
         (function () {
             'use strict';
-
             window.__sarielsAuthenticated = null;
             window.supabaseClient = window.supabaseClient || null;
             window.supabaseReady = null;
-
-            window.getSupabaseClient = function () {
-                return window.supabaseReady;
-            };
+            window.getSupabaseClient = function () { return window.supabaseReady; };
 
             function esRutaInternaSegura(valor) {
                 if (typeof valor !== 'string') return false;
@@ -30,353 +26,97 @@
                 if (valor.startsWith('/\\')) return false;
                 return true;
             }
-
-            function revelarPagina() {
-                document.documentElement.classList.add('auth-ready');
-            }
-
+            function revelarPagina() { document.documentElement.classList.add('auth-ready'); }
             function irAlIndexConReturnTo() {
                 try {
                     var returnTo = window.location.pathname + window.location.search + window.location.hash;
-                    if (esRutaInternaSegura(returnTo)) {
-                        localStorage.setItem('wallet_returnTo', returnTo);
-                    }
+                    if (esRutaInternaSegura(returnTo)) localStorage.setItem('wallet_returnTo', returnTo);
                     window.location.replace('/');
-                } catch (e) {
-                    window.location.replace('/');
-                }
+                } catch (e) { window.location.replace('/'); }
             }
-
-            var salvaguarda = setTimeout(function () {
-                console.warn('[Chats] Salvaguarda activada.');
-                revelarPagina();
-            }, 10000);
+            var salvaguarda = setTimeout(function () { revelarPagina(); }, 10000);
 
             async function inicializarSupabase() {
                 try {
-                    if (
-                        !window.supabase ||
-                        typeof window.supabase.createClient !== 'function'
-                    ) {
-                        throw new Error('Supabase SDK no disponible.');
-                    }
-
+                    if (!window.supabase || typeof window.supabase.createClient !== 'function') throw new Error('Supabase SDK no disponible.');
                     if (!window.supabaseClient) {
                         var supabaseUrl = null;
                         var supabaseAnonKey = null;
-
                         try {
-                            const response = await fetch('/api/config/public', {
-                                method: 'GET',
-                                credentials: 'same-origin',
-                                cache: 'no-store',
-                                headers: { 'Accept': 'application/json' }
-                            });
-
+                            const response = await fetch('/api/config/public', { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' } });
                             if (response.ok) {
                                 const config = await response.json();
                                 supabaseUrl = config && config.supabaseUrl;
                                 supabaseAnonKey = config && config.supabaseAnonKey;
                             }
-                        } catch (fetchErr) {
-                            console.warn('[Chats] fetch /api/config/public falló:', fetchErr);
-                        }
-
-                        if (!supabaseUrl || !supabaseAnonKey) {
-                            throw new Error('Configuración pública de Supabase no disponible.');
-                        }
-
+                        } catch (fetchErr) { console.warn('[Chats] fetch falló:', fetchErr); }
+                        if (!supabaseUrl || !supabaseAnonKey) throw new Error('Configuración pública no disponible.');
                         window.SupabaseSDK = window.supabase;
-
-                        window.supabaseClient = window.SupabaseSDK.createClient(
-                            supabaseUrl,
-                            supabaseAnonKey,
-                            {
-                                auth: {
-                                    persistSession: true,
-                                    autoRefreshToken: true,
-                                    detectSessionInUrl: true
-                                }
-                            }
-                        );
+                        window.supabaseClient = window.SupabaseSDK.createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
                     }
-
                     const resultado = await window.supabaseClient.auth.getSession();
                     const session = resultado && resultado.data ? resultado.data.session : null;
-
                     window.__sarielsAuthenticated = !!session;
-
                     clearTimeout(salvaguarda);
-
-                    if (!session) {
-                        irAlIndexConReturnTo();
-                    } else {
-                        revelarPagina();
-                    }
-
+                    if (!session) { irAlIndexConReturnTo(); } else { revelarPagina(); }
                     return window.supabaseClient;
                 } catch (error) {
-                    console.error('[Chats] Error inicializando Supabase:', error);
                     window.__sarielsAuthenticated = false;
                     clearTimeout(salvaguarda);
                     revelarPagina();
                     return null;
                 }
             }
-
             window.supabaseReady = inicializarSupabase();
         })();
     </script>
 
     <style>
-        html:not(.auth-ready) body {
-            visibility: hidden;
-        }
-        html.auth-ready body {
-            visibility: visible;
-        }
+        html:not(.auth-ready) body { visibility: hidden; }
+        html.auth-ready body { visibility: visible; }
 
-        .cfg-solicitud-card {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--cfg-border);
-        }
-        .cfg-solicitud-card:last-child {
-            border-bottom: none;
-        }
-        .cfg-solicitud-card .avatar {
-            width: 44px;
-            height: 44px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: 700;
-            font-size: 1rem;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .cfg-solicitud-card .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .cfg-solicitud-card .info {
-            flex: 1;
-            min-width: 0;
-        }
-        .cfg-solicitud-card .info .nombre {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--cfg-text);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .cfg-solicitud-card .info .handle {
-            font-size: 0.68rem;
-            color: var(--cfg-text-muted);
-        }
-        .cfg-solicitud-card .info .mensaje {
-            font-size: 0.75rem;
-            color: var(--cfg-text-muted);
-            margin-top: 4px;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-        }
-        .cfg-solicitud-card .acciones {
-            display: flex;
-            gap: 6px;
-            flex-shrink: 0;
-        }
-        .cfg-solicitud-card .btn-mini {
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: var(--cfg-transition);
-        }
-        .cfg-solicitud-card .btn-aceptar {
-            background: rgba(0, 214, 143, 0.15);
-            color: var(--cfg-success);
-            border: 1px solid rgba(0, 214, 143, 0.3);
-        }
-        .cfg-solicitud-card .btn-aceptar:hover {
-            background: rgba(0, 214, 143, 0.25);
-        }
-        .cfg-solicitud-card .btn-rechazar {
-            background: rgba(255, 51, 102, 0.1);
-            color: var(--cfg-danger);
-            border: 1px solid rgba(255, 51, 102, 0.3);
-        }
-        .cfg-solicitud-card .btn-rechazar:hover {
-            background: rgba(255, 51, 102, 0.2);
-        }
-        .cfg-empty-solicitudes {
-            padding: 40px 20px;
-            text-align: center;
-            color: var(--cfg-text-muted);
-            font-size: 0.78rem;
-        }
-        .cfg-empty-solicitudes .icon {
-            font-size: 2.5rem;
-            display: block;
-            margin-bottom: 10px;
-            opacity: 0.4;
-        }
-        .cfg-loading-mini {
-            padding: 20px;
-            text-align: center;
-            color: var(--cfg-text-muted);
-            font-size: 0.75rem;
-        }
-        
-        .cfg-search-input {
-            width: 100%;
-            padding: 12px 14px;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--cfg-border);
-            border-radius: 10px;
-            color: var(--cfg-text);
-            font-size: 0.85rem;
-            outline: none;
-            font-family: 'Inter', sans-serif;
-            transition: var(--cfg-transition);
-        }
-        .cfg-search-input:focus {
-            border-color: var(--cfg-gold);
-            background: rgba(0,0,0,0.4);
-        }
-        .cfg-search-input::placeholder {
-            color: var(--cfg-text-dim);
-        }
-        
-        .cfg-resultado-usuario {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 12px;
-            cursor: pointer;
-            transition: var(--cfg-transition);
-            border-radius: 10px;
-        }
-        .cfg-resultado-usuario:hover {
-            background: rgba(255,255,255,0.04);
-        }
-        .cfg-resultado-usuario .avatar-mini {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: 700;
-            font-size: 0.75rem;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .cfg-resultado-usuario .avatar-mini img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .cfg-resultado-usuario .info {
-            flex: 1;
-            min-width: 0;
-        }
-        .cfg-resultado-usuario .info .nombre {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--cfg-text);
-        }
-        .cfg-resultado-usuario .info .handle {
-            font-size: 0.7rem;
-            color: var(--cfg-text-muted);
-        }
-        .cfg-resultado-usuario .btn-agregar {
-            background: rgba(212, 175, 55, 0.15);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-            color: var(--cfg-gold);
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 0.65rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-        .cfg-resultado-usuario .btn-agregar:hover {
-            background: rgba(212, 175, 55, 0.25);
-        }
-        .cfg-resultado-usuario .btn-agregar.agregado {
-            background: rgba(0, 214, 143, 0.15);
-            border-color: rgba(0, 214, 143, 0.3);
-            color: var(--cfg-success);
-        }
-        
-        .cfg-contacto-confianza {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--cfg-border);
-        }
-        .cfg-contacto-confianza:last-child {
-            border-bottom: none;
-        }
-        .cfg-contacto-confianza .avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: 700;
-            font-size: 0.9rem;
-            flex-shrink: 0;
-            overflow: hidden;
-        }
-        .cfg-contacto-confianza .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        .cfg-contacto-confianza .info {
-            flex: 1;
-            min-width: 0;
-        }
-        .cfg-contacto-confianza .info .nombre {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--cfg-text);
-        }
-        .cfg-contacto-confianza .info .handle {
-            font-size: 0.68rem;
-            color: var(--cfg-text-muted);
-        }
-        .cfg-contacto-confianza .btn-quitar {
-            background: rgba(255, 51, 102, 0.1);
-            border: 1px solid rgba(255, 51, 102, 0.3);
-            color: var(--cfg-danger);
-            padding: 6px 12px;
-            border-radius: 16px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        .cfg-contacto-confianza .btn-quitar:hover {
-            background: rgba(255, 51, 102, 0.2);
-        }
+        .cfg-solicitud-card { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--cfg-border); }
+        .cfg-solicitud-card:last-child { border-bottom: none; }
+        .cfg-solicitud-card .avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #0F2D1A, #D4AF37); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 1rem; flex-shrink: 0; overflow: hidden; }
+        .cfg-solicitud-card .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .cfg-solicitud-card .info { flex: 1; min-width: 0; }
+        .cfg-solicitud-card .info .nombre { font-size: 0.85rem; font-weight: 600; color: var(--cfg-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .cfg-solicitud-card .info .handle { font-size: 0.68rem; color: var(--cfg-text-muted); }
+        .cfg-solicitud-card .info .mensaje { font-size: 0.75rem; color: var(--cfg-text-muted); margin-top: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .cfg-solicitud-card .acciones { display: flex; gap: 6px; flex-shrink: 0; }
+        .cfg-solicitud-card .btn-mini { padding: 6px 12px; border-radius: 16px; font-size: 0.65rem; font-weight: 600; cursor: pointer; border: none; transition: var(--cfg-transition); }
+        .cfg-solicitud-card .btn-aceptar { background: rgba(0, 214, 143, 0.15); color: var(--cfg-success); border: 1px solid rgba(0, 214, 143, 0.3); }
+        .cfg-solicitud-card .btn-aceptar:hover { background: rgba(0, 214, 143, 0.25); }
+        .cfg-solicitud-card .btn-rechazar { background: rgba(255, 51, 102, 0.1); color: var(--cfg-danger); border: 1px solid rgba(255, 51, 102, 0.3); }
+        .cfg-solicitud-card .btn-rechazar:hover { background: rgba(255, 51, 102, 0.2); }
+        .cfg-empty-solicitudes { padding: 40px 20px; text-align: center; color: var(--cfg-text-muted); font-size: 0.78rem; }
+        .cfg-empty-solicitudes .icon { font-size: 2.5rem; display: block; margin-bottom: 10px; opacity: 0.4; }
+        .cfg-loading-mini { padding: 20px; text-align: center; color: var(--cfg-text-muted); font-size: 0.75rem; }
+
+        .cfg-search-input { width: 100%; padding: 12px 14px; background: rgba(0,0,0,0.3); border: 1px solid var(--cfg-border); border-radius: 10px; color: var(--cfg-text); font-size: 0.85rem; outline: none; font-family: 'Inter', sans-serif; transition: var(--cfg-transition); }
+        .cfg-search-input:focus { border-color: var(--cfg-gold); background: rgba(0,0,0,0.4); }
+        .cfg-search-input::placeholder { color: var(--cfg-text-dim); }
+
+        .cfg-resultado-usuario { display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer; transition: var(--cfg-transition); border-radius: 10px; }
+        .cfg-resultado-usuario:hover { background: rgba(255,255,255,0.04); }
+        .cfg-resultado-usuario .avatar-mini { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #0F2D1A, #D4AF37); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.75rem; flex-shrink: 0; overflow: hidden; }
+        .cfg-resultado-usuario .avatar-mini img { width: 100%; height: 100%; object-fit: cover; }
+        .cfg-resultado-usuario .info { flex: 1; min-width: 0; }
+        .cfg-resultado-usuario .info .nombre { font-size: 0.85rem; font-weight: 600; color: var(--cfg-text); }
+        .cfg-resultado-usuario .info .handle { font-size: 0.7rem; color: var(--cfg-text-muted); }
+        .cfg-resultado-usuario .btn-agregar { background: rgba(212, 175, 55, 0.15); border: 1px solid rgba(212, 175, 55, 0.3); color: var(--cfg-gold); padding: 6px 12px; border-radius: 16px; font-size: 0.65rem; font-weight: 700; cursor: pointer; }
+        .cfg-resultado-usuario .btn-agregar:hover { background: rgba(212, 175, 55, 0.25); }
+        .cfg-resultado-usuario .btn-agregar.agregado { background: rgba(0, 214, 143, 0.15); border-color: rgba(0, 214, 143, 0.3); color: var(--cfg-success); }
+
+        .cfg-contacto-confianza { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--cfg-border); }
+        .cfg-contacto-confianza:last-child { border-bottom: none; }
+        .cfg-contacto-confianza .avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #0F2D1A, #D4AF37); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; overflow: hidden; }
+        .cfg-contacto-confianza .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .cfg-contacto-confianza .info { flex: 1; min-width: 0; }
+        .cfg-contacto-confianza .info .nombre { font-size: 0.85rem; font-weight: 600; color: var(--cfg-text); }
+        .cfg-contacto-confianza .info .handle { font-size: 0.68rem; color: var(--cfg-text-muted); }
+        .cfg-contacto-confianza .btn-quitar { background: rgba(255, 51, 102, 0.1); border: 1px solid rgba(255, 51, 102, 0.3); color: var(--cfg-danger); padding: 6px 12px; border-radius: 16px; font-size: 0.65rem; font-weight: 600; cursor: pointer; }
+        .cfg-contacto-confianza .btn-quitar:hover { background: rgba(255, 51, 102, 0.2); }
     </style>
 </head>
 <body class="cfg-page">
@@ -430,10 +170,7 @@
         'use strict';
 
         const $ = (sel) => document.querySelector(sel);
-
-        function sb() {
-            return window.supabaseClient || null;
-        }
+        let miPerfil = { chat_quien_puede: 'todos', chat_filtro_solicitudes: true, chat_mostrar_leido: true, chat_mostrar_escribiendo: true };
 
         async function esperarCliente() {
             const inicio = Date.now();
@@ -450,93 +187,98 @@
             backUrl: '/features/perfil/configuracion/index.html',
         });
 
-        const PREF_KEYS = {
-            quien_puede: 'chats_quien_puede_mensajes',
-            filtro_solicitudes: 'chats_filtro_solicitudes',
-            mostrar_leido: 'chats_mostrar_leido',
-            mostrar_escribiendo: 'chats_mostrar_escribiendo',
-        };
-
         let solicitudes = [];
         let contactosConfianza = [];
+
+        // ============================================================
+        // 1. CARGAR PREFERENCIAS DESDE SUPABASE
+        // ============================================================
+        async function cargarPreferencias() {
+            try {
+                const client = await esperarCliente();
+                if (!client) return;
+                const { data: sessionData } = await client.auth.getSession();
+                if (!sessionData?.session) return;
+
+                const { data } = await client
+                    .from('usuarios')
+                    .select('chat_quien_puede, chat_filtro_solicitudes, chat_mostrar_leido, chat_mostrar_escribiendo')
+                    .eq('id', sessionData.session.user.id)
+                    .maybeSingle();
+
+                if (data) {
+                    miPerfil = { ...miPerfil, ...data };
+                }
+                renderSecciones();
+            } catch (e) {
+                console.warn('Error cargando preferencias:', e);
+                renderSecciones(); // Renderizar con los valores por defecto si falla
+            }
+        }
+
+        // ============================================================
+        // 2. GUARDAR EN SUPABASE
+        // ============================================================
+        async function guardarPreferencia(campo, valor) {
+            try {
+                const client = await esperarCliente();
+                if (!client) throw new Error('Supabase no disponible');
+                
+                const { error } = await client
+                    .from('usuarios')
+                    .update({ [campo]: valor })
+                    .eq('id', (await client.auth.getSession()).data.session.user.id);
+
+                if (error) throw error;
+                miPerfil[campo] = valor;
+                return true;
+            } catch (e) {
+                console.error('Error guardando preferencia:', e);
+                cfgToast('❌ Error al guardar en la nube', 'error');
+                return false;
+            }
+        }
 
         async function cargarSolicitudes() {
             try {
                 const client = await esperarCliente();
-                if (!client) {
-                    mostrarSinSolicitudes();
-                    return;
-                }
-
+                if (!client) { mostrarSinSolicitudes(); return; }
                 const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData && sessionData.session;
-                if (!session) {
-                    mostrarSinSolicitudes();
-                    return;
-                }
+                if (!sessionData?.session) { mostrarSinSolicitudes(); return; }
 
                 const { data, error } = await client
                     .from('mensajes_solicitudes')
                     .select('id, remitente_id, mensaje_inicial, estado, created_at')
-                    .eq('destinatario_id', session.user.id)
+                    .eq('destinatario_id', sessionData.session.user.id)
                     .eq('estado', 'pendiente')
                     .order('created_at', { ascending: false })
                     .limit(50);
 
-                if (error) {
-                    console.warn('Error cargando solicitudes:', error.message);
-                    solicitudes = [];
-                    mostrarSinSolicitudes();
-                    return;
-                }
-
+                if (error) { solicitudes = []; mostrarSinSolicitudes(); return; }
                 solicitudes = data || [];
-
-                if (solicitudes.length === 0) {
-                    mostrarSinSolicitudes();
-                    return;
-                }
+                if (solicitudes.length === 0) { mostrarSinSolicitudes(); return; }
 
                 const idsRemitentes = [...new Set(solicitudes.map(s => s.remitente_id))];
-                const { data: perfiles } = await client
-                    .from('perfiles_publicos')
-                    .select('id, nombre, handle, avatar_url')
-                    .in('id', idsRemitentes);
-
+                const { data: perfiles } = await client.from('perfiles_publicos').select('id, nombre, handle, avatar_url').in('id', idsRemitentes);
                 const perfilesMap = {};
                 (perfiles || []).forEach(p => { perfilesMap[p.id] = p; });
 
-                solicitudes = solicitudes.map(s => ({
-                    ...s,
-                    remitente: perfilesMap[s.remitente_id] || null,
-                }));
-
+                solicitudes = solicitudes.map(s => ({ ...s, remitente: perfilesMap[s.remitente_id] || null }));
                 renderSolicitudes();
-
-            } catch (e) {
-                console.error('Error cargando solicitudes:', e);
-                mostrarSinSolicitudes();
-            }
+            } catch (e) { mostrarSinSolicitudes(); }
         }
 
         function renderSolicitudes() {
             const container = $('#solicitudesContainer');
             if (!container) return;
-
-            if (solicitudes.length === 0) {
-                mostrarSinSolicitudes();
-                return;
-            }
+            if (solicitudes.length === 0) { mostrarSinSolicitudes(); return; }
 
             container.innerHTML = solicitudes.map(s => {
                 const r = s.remitente || {};
                 const nombre = escapeHtml(r.nombre || 'Usuario');
                 const handle = escapeHtml(r.handle || 'usuario');
-                const avatar = r.avatar_url 
-                    ? `<img src="${escapeHtml(r.avatar_url)}" alt="${nombre}">` 
-                    : nombre.charAt(0).toUpperCase();
+                const avatar = r.avatar_url ? `<img src="${escapeHtml(r.avatar_url)}" alt="${nombre}">` : nombre.charAt(0).toUpperCase();
                 const mensaje = escapeHtml(s.mensaje_inicial || '');
-
                 return `
                     <div class="cfg-solicitud-card">
                         <div class="avatar">${avatar}</div>
@@ -557,63 +299,30 @@
         function mostrarSinSolicitudes() {
             const container = $('#solicitudesContainer');
             if (!container) return;
-            container.innerHTML = `
-                <div class="cfg-empty-solicitudes">
-                    <span class="icon">📭</span>
-                    No tienes solicitudes pendientes
-                </div>
-            `;
+            container.innerHTML = `<div class="cfg-empty-solicitudes"><span class="icon">📭</span>No tienes solicitudes pendientes</div>`;
         }
 
         async function cargarContactosConfianza() {
             try {
                 const client = await esperarCliente();
-                if (!client) {
-                    mostrarSinContactos();
-                    return;
-                }
-
+                if (!client) { mostrarSinContactos(); return; }
                 const { data, error } = await client.rpc('listar_contactos_confianza');
-
-                if (error) {
-                    console.warn('Error RPC listar_contactos_confianza:', error.message);
-                    contactosConfianza = [];
-                    mostrarSinContactos();
-                    return;
-                }
-
+                if (error) { contactosConfianza = []; mostrarSinContactos(); return; }
                 contactosConfianza = data || [];
-
-                if (contactosConfianza.length === 0) {
-                    mostrarSinContactos();
-                    return;
-                }
-
+                if (contactosConfianza.length === 0) { mostrarSinContactos(); return; }
                 renderContactosConfianza();
-
-            } catch (e) {
-                console.warn('Error contactos:', e && e.message);
-                contactosConfianza = [];
-                mostrarSinContactos();
-            }
+            } catch (e) { contactosConfianza = []; mostrarSinContactos(); }
         }
 
         function renderContactosConfianza() {
             const container = $('#contactosConfianzaLista');
             if (!container) return;
-
-            if (contactosConfianza.length === 0) {
-                mostrarSinContactos();
-                return;
-            }
+            if (contactosConfianza.length === 0) { mostrarSinContactos(); return; }
 
             container.innerHTML = contactosConfianza.map(c => {
                 const nombre = escapeHtml(c.nombre || 'Usuario');
                 const handle = escapeHtml(c.handle || 'usuario');
-                const avatar = c.avatar_url 
-                    ? `<img src="${escapeHtml(c.avatar_url)}" alt="${nombre}">` 
-                    : nombre.charAt(0).toUpperCase();
-
+                const avatar = c.avatar_url ? `<img src="${escapeHtml(c.avatar_url)}" alt="${nombre}">` : nombre.charAt(0).toUpperCase();
                 return `
                     <div class="cfg-contacto-confianza">
                         <div class="avatar">${avatar}</div>
@@ -630,21 +339,12 @@
         function mostrarSinContactos() {
             const container = $('#contactosConfianzaLista');
             if (!container) return;
-            container.innerHTML = `
-                <div class="cfg-empty-solicitudes" style="padding:30px 20px;">
-                    <span class="icon">👥</span>
-                    Sin contactos de confianza
-                </div>
-            `;
+            container.innerHTML = `<div class="cfg-empty-solicitudes" style="padding:30px 20px;"><span class="icon">👥</span>Sin contactos de confianza</div>`;
         }
 
         function renderSecciones() {
-            const quienPuede = cfgGetPref(PREF_KEYS.quien_puede, 'todos');
-            const textos = {
-                todos: 'Todos pueden enviarme mensajes',
-                contactos: 'Solo mis contactos pueden enviarme mensajes',
-                nadie: 'Nadie puede enviarme mensajes'
-            };
+            const quienPuede = miPerfil.chat_quien_puede || 'todos';
+            const textos = { todos: 'Todos pueden enviarme mensajes', contactos: 'Solo mis contactos pueden enviarme mensajes', nadie: 'Nadie puede enviarme mensajes' };
 
             $('#seccionQuienPuede').innerHTML = [
                 cfgRenderItem({
@@ -660,21 +360,21 @@
                     id: 'toggleFiltroSolicitudes',
                     title: 'Filtrar solicitudes de mensajes',
                     desc: 'Mueve automáticamente a "solicitudes" los mensajes de personas desconocidas',
-                    checked: cfgGetPref(PREF_KEYS.filtro_solicitudes, true),
+                    checked: miPerfil.chat_filtro_solicitudes !== false,
                     onChange: `window.onToggleFiltro(this.checked)`,
                 }),
                 cfgRenderToggle({
                     id: 'toggleLeido',
                     title: 'Mostrar confirmación de leído',
                     desc: 'La otra persona verá cuando hayas leído su mensaje',
-                    checked: cfgGetPref(PREF_KEYS.mostrar_leido, true),
+                    checked: miPerfil.chat_mostrar_leido !== false,
                     onChange: `window.onToggleLeido(this.checked)`,
                 }),
                 cfgRenderToggle({
                     id: 'toggleEscribiendo',
                     title: 'Mostrar cuando estoy escribiendo',
                     desc: 'La otra persona verá cuando estás escribiendo un mensaje',
-                    checked: cfgGetPref(PREF_KEYS.mostrar_escribiendo, true),
+                    checked: miPerfil.chat_mostrar_escribiendo !== false,
                     onChange: `window.onToggleEscribiendo(this.checked)`,
                 }),
             ].join('');
@@ -691,79 +391,49 @@
             try {
                 const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
-
-                const { error } = await client.rpc('aceptar_solicitud_mensaje', {
-                    p_solicitud_id: solicitudId
-                });
-
+                const { error } = await client.rpc('aceptar_solicitud_mensaje', { p_solicitud_id: solicitudId });
                 if (error) throw error;
-
-                cfgToast('✅ Solicitud aceptada', 'success');
-                await cargarSolicitudes();
-
-            } catch (e) {
-                console.error('Error aceptando:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
+                cfgToast('✅ Solicitud aceptada. El mensaje ya está en tu chat', 'success');
+                await Promise.all([cargarSolicitudes(), cargarContactosConfianza()]);
+            } catch (e) { cfgToast('❌ Error: ' + e.message, 'error'); }
         };
 
         window.onRechazarSolicitud = async (solicitudId) => {
-            const ok = await cfgConfirm({
-                title: '¿Rechazar solicitud?',
-                text: 'La persona no podrá enviarte más mensajes hasta que la aceptes.',
-                confirmText: 'Rechazar',
-                cancelText: 'Cancelar',
-                danger: true,
-            });
-
+            const ok = await cfgConfirm({ title: '¿Rechazar solicitud?', text: 'La persona no podrá enviarte más mensajes.', confirmText: 'Rechazar', cancelText: 'Cancelar', danger: true });
             if (!ok) return;
-
             try {
                 const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
-
-                const { error } = await client.rpc('rechazar_solicitud_mensaje', {
-                    p_solicitud_id: solicitudId
-                });
-
+                const { error } = await client.rpc('rechazar_solicitud_mensaje', { p_solicitud_id: solicitudId });
                 if (error) throw error;
-
                 cfgToast('🚫 Solicitud rechazada', 'warning');
                 await cargarSolicitudes();
-
-            } catch (e) {
-                console.error('Error rechazando:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
+            } catch (e) { cfgToast('❌ Error: ' + e.message, 'error'); }
         };
 
         window.onConfigurarQuienPuede = async () => {
-            const actual = cfgGetPref(PREF_KEYS.quien_puede, 'todos');
-
+            const actual = miPerfil.chat_quien_puede || 'todos';
             const overlay = document.createElement('div');
             overlay.className = 'cfg-modal-overlay';
-
             const opciones = [
                 { id: 'todos', icon: '🌐', title: 'Todos', desc: 'Cualquier usuario puede enviarme mensajes' },
                 { id: 'contactos', icon: '👥', title: 'Solo contactos', desc: 'Solo las personas que sigo pueden escribirme' },
                 { id: 'nadie', icon: '🚫', title: 'Nadie', desc: 'Nadie puede enviarme mensajes directos' },
             ];
 
-            const opcionesHtml = opciones.map(opt => `
-                <div class="cfg-radio-item ${opt.id === actual ? 'active' : ''}" data-value="${opt.id}">
-                    <div class="cfg-radio-circle"></div>
-                    <div class="cfg-radio-content">
-                        <div class="cfg-radio-title">${opt.icon} ${opt.title}</div>
-                        <div class="cfg-radio-desc">${opt.desc}</div>
-                    </div>
-                </div>
-            `).join('');
-
             overlay.innerHTML = `
                 <div class="cfg-modal" style="max-width: 420px;">
                     <h3 class="cfg-modal-title">Quién puede enviarme mensajes</h3>
                     <div class="cfg-radio-group" style="padding: 0 0 16px 0;">
-                        ${opcionesHtml}
+                        ${opciones.map(opt => `
+                            <div class="cfg-radio-item ${opt.id === actual ? 'active' : ''}" data-value="${opt.id}">
+                                <div class="cfg-radio-circle"></div>
+                                <div class="cfg-radio-content">
+                                    <div class="cfg-radio-title">${opt.icon} ${opt.title}</div>
+                                    <div class="cfg-radio-desc">${opt.desc}</div>
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
                     <div class="cfg-modal-actions">
                         <button class="cfg-btn cfg-btn-outline" data-action="cancel">Cancelar</button>
@@ -775,7 +445,6 @@
             requestAnimationFrame(() => overlay.classList.add('show'));
 
             let seleccion = actual;
-
             overlay.querySelectorAll('.cfg-radio-item').forEach(item => {
                 item.addEventListener('click', () => {
                     overlay.querySelectorAll('.cfg-radio-item').forEach(i => i.classList.remove('active'));
@@ -784,17 +453,13 @@
                 });
             });
 
-            const close = () => {
-                overlay.classList.remove('show');
-                setTimeout(() => overlay.remove(), 200);
-            };
-
+            const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 200); };
             overlay.querySelector('[data-action="cancel"]').onclick = close;
             overlay.onclick = (e) => { if (e.target === overlay) close(); };
 
             overlay.querySelector('[data-action="save"]').onclick = async () => {
-                await cfgSetPref(PREF_KEYS.quien_puede, seleccion);
-                cfgToast('✅ Preferencia guardada', 'success');
+                const ok = await guardarPreferencia('chat_quien_puede', seleccion);
+                if (ok) cfgToast('✅ Preferencia guardada', 'success');
                 close();
                 renderSecciones();
             };
@@ -803,13 +468,9 @@
         window.onAgregarContacto = () => {
             const overlay = document.createElement('div');
             overlay.className = 'cfg-modal-overlay';
-
             overlay.innerHTML = `
                 <div class="cfg-modal" style="max-width: 440px;">
                     <h3 class="cfg-modal-title">Añadir contacto de confianza</h3>
-                    <p class="cfg-modal-text" style="text-align:left;margin-bottom:12px;">
-                        Busca usuarios por nombre o @handle para agregarlos.
-                    </p>
                     <div class="form-group" style="margin-bottom:12px;">
                         <input type="text" id="buscarUsuarioInput" class="cfg-search-input" placeholder="Buscar por nombre o @handle..." autocomplete="off" />
                     </div>
@@ -825,12 +486,7 @@
             const input = overlay.querySelector('#buscarUsuarioInput');
             const resultadosDiv = overlay.querySelector('#resultadosBusqueda');
             setTimeout(() => input.focus(), 300);
-
-            const close = () => {
-                overlay.classList.remove('show');
-                setTimeout(() => overlay.remove(), 200);
-            };
-
+            const close = () => { overlay.classList.remove('show'); setTimeout(() => overlay.remove(), 200); };
             overlay.querySelector('[data-action="close"]').onclick = close;
             overlay.onclick = (e) => { if (e.target === overlay) close(); };
 
@@ -838,161 +494,95 @@
             input.addEventListener('input', () => {
                 clearTimeout(timeoutId);
                 const q = input.value.trim();
-                if (q.length < 2) {
-                    resultadosDiv.innerHTML = '';
-                    return;
-                }
+                if (q.length < 2) { resultadosDiv.innerHTML = ''; return; }
                 timeoutId = setTimeout(() => buscarUsuarios(q, resultadosDiv), 400);
             });
         };
 
         async function buscarUsuarios(q, container) {
             container.innerHTML = '<div class="cfg-loading-mini">🔍 Buscando...</div>';
-
             try {
                 const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
-
                 const { data: sessionData } = await client.auth.getSession();
-                const session = sessionData && sessionData.session;
-                if (!session) return;
+                if (!sessionData?.session) return;
 
-                const { data, error } = await client
-                    .from('perfiles_publicos')
-                    .select('id, nombre, handle, avatar_url')
-                    .or(`nombre.ilike.%${q}%,handle.ilike.%${q}%`)
-                    .neq('id', session.user.id)
-                    .limit(15);
-
+                const termino = q.replace(/[%_,\\]/g, ' ').replace(/\s+/g, ' ').trim();
+                const { data, error } = await client.from('perfiles_publicos').select('id, nombre, handle, avatar_url').or(`nombre.ilike.%${termino}%,handle.ilike.%${termino}%`).neq('id', sessionData.session.user.id).limit(15);
                 if (error) throw error;
 
-                if (!data || data.length === 0) {
-                    container.innerHTML = '<div class="cfg-empty-solicitudes" style="padding:20px;"><span class="icon">🔍</span>Sin resultados</div>';
-                    return;
-                }
+                if (!data || data.length === 0) { container.innerHTML = '<div class="cfg-empty-solicitudes" style="padding:20px;"><span class="icon">🔍</span>Sin resultados</div>'; return; }
 
                 const idsActuales = contactosConfianza.map(c => c.contacto_id);
-
                 container.innerHTML = data.map(u => {
                     const yaAgregado = idsActuales.includes(u.id);
                     const nombre = escapeHtml(u.nombre || 'Usuario');
-                    const handle = escapeHtml(u.handle || 'usuario');
-                    const avatar = u.avatar_url 
-                        ? `<img src="${escapeHtml(u.avatar_url)}" alt="${nombre}">` 
-                        : nombre.charAt(0).toUpperCase();
-
+                    const avatar = u.avatar_url ? `<img src="${escapeHtml(u.avatar_url)}" alt="${nombre}">` : nombre.charAt(0).toUpperCase();
                     return `
                         <div class="cfg-resultado-usuario">
                             <div class="avatar-mini">${avatar}</div>
                             <div class="info">
                                 <div class="nombre">${nombre}</div>
-                                <div class="handle">@${handle}</div>
+                                <div class="handle">@${escapeHtml(u.handle || 'usuario')}</div>
                             </div>
-                            <button class="btn-agregar ${yaAgregado ? 'agregado' : ''}"
-                                    ${yaAgregado ? 'disabled' : ''}
-                                    onclick="window.onConfirmarAgregarContacto('${u.id}', this)">
+                            <button class="btn-agregar ${yaAgregado ? 'agregado' : ''}" ${yaAgregado ? 'disabled' : ''} onclick="window.onConfirmarAgregarContacto('${u.id}', this)">
                                 ${yaAgregado ? '✓ Agregado' : '+ Agregar'}
                             </button>
                         </div>
                     `;
                 }).join('');
-
-            } catch (e) {
-                console.error('Error buscando:', e);
-                container.innerHTML = '<div class="cfg-empty-solicitudes" style="padding:20px;"><span class="icon">❌</span>Error al buscar</div>';
-            }
+            } catch (e) { container.innerHTML = '<div class="cfg-empty-solicitudes" style="padding:20px;"><span class="icon">❌</span>Error al buscar</div>'; }
         }
 
         window.onConfirmarAgregarContacto = async (contactoId, btn) => {
             try {
                 const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
-
-                btn.disabled = true;
-                btn.textContent = '⏳';
-
-                const { error } = await client.rpc('agregar_contacto_confianza', {
-                    p_contacto_id: contactoId
-                });
-
+                btn.disabled = true; btn.textContent = '⏳';
+                const { error } = await client.rpc('agregar_contacto_confianza', { p_contacto_id: contactoId });
                 if (error) throw error;
-
-                btn.textContent = '✓ Agregado';
-                btn.classList.add('agregado');
-
+                btn.textContent = '✓ Agregado'; btn.classList.add('agregado');
                 cfgToast('✅ Contacto agregado', 'success');
-
                 await cargarContactosConfianza();
-
             } catch (e) {
-                console.error('Error agregando contacto:', e);
-                btn.disabled = false;
-                btn.textContent = '+ Agregar';
+                btn.disabled = false; btn.textContent = '+ Agregar';
                 cfgToast('❌ Error: ' + e.message, 'error');
             }
         };
 
         window.onQuitarContacto = async (contactoId) => {
-            const ok = await cfgConfirm({
-                title: '¿Quitar de contactos de confianza?',
-                text: 'Esta persona ya no tendrá permisos especiales para escribirte.',
-                confirmText: 'Quitar',
-                cancelText: 'Cancelar',
-                danger: true,
-            });
-
+            const ok = await cfgConfirm({ title: '¿Quitar de contactos de confianza?', text: 'Esta persona ya no tendrá permisos especiales para escribirte.', confirmText: 'Quitar', cancelText: 'Cancelar', danger: true });
             if (!ok) return;
-
             try {
                 const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
-
-                const { error } = await client.rpc('quitar_contacto_confianza', {
-                    p_contacto_id: contactoId
-                });
-
+                const { error } = await client.rpc('quitar_contacto_confianza', { p_contacto_id: contactoId });
                 if (error) throw error;
-
                 cfgToast('✅ Contacto removido', 'success');
                 await cargarContactosConfianza();
-
-            } catch (e) {
-                console.error('Error quitando contacto:', e);
-                cfgToast('❌ Error: ' + e.message, 'error');
-            }
+            } catch (e) { cfgToast('❌ Error: ' + e.message, 'error'); }
         };
 
         window.onToggleFiltro = async (value) => {
-            await cfgSetPref(PREF_KEYS.filtro_solicitudes, value);
-            cfgToast(
-                value ? '📥 Solicitudes filtradas automáticamente' : '📬 Todos los mensajes llegan directo',
-                value ? 'success' : 'warning'
-            );
+            const ok = await guardarPreferencia('chat_filtro_solicitudes', value);
+            if (ok) cfgToast(value ? '📥 Solicitudes filtradas automáticamente' : '📬 Todos los mensajes llegan directo', value ? 'success' : 'warning');
         };
 
         window.onToggleLeido = async (value) => {
-            await cfgSetPref(PREF_KEYS.mostrar_leido, value);
-            cfgToast(
-                value ? '👁️ Se muestra "leído"' : '👁️‍🗨️ Ya no se muestra "leído"',
-                value ? 'success' : 'warning'
-            );
+            const ok = await guardarPreferencia('chat_mostrar_leido', value);
+            if (ok) cfgToast(value ? '👁️ Se muestra "leído"' : '👁️‍🗨️ Ya no se muestra "leído"', value ? 'success' : 'warning');
         };
 
         window.onToggleEscribiendo = async (value) => {
-            await cfgSetPref(PREF_KEYS.mostrar_escribiendo, value);
-            cfgToast(
-                value ? '✍️ Se muestra "escribiendo..."' : '✍️ Ya no se muestra "escribiendo..."',
-                value ? 'success' : 'warning'
-            );
+            const ok = await guardarPreferencia('chat_mostrar_escribiendo', value);
+            if (ok) cfgToast(value ? '✍️ Se muestra "escribiendo..."' : '✍️ Ya no se muestra "escribiendo..."', value ? 'success' : 'warning');
         };
 
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
-            renderSecciones();
-            await Promise.all([
-                cargarSolicitudes(),
-                cargarContactosConfianza(),
-            ]);
+            renderSecciones(); // Renderiza rápido con datos por defecto
+            await cargarPreferencias(); // Luego actualiza con los de la base de datos
+            await Promise.all([cargarSolicitudes(), cargarContactosConfianza()]);
         });
 
         (async function cargarHandleSubtitulo() {
@@ -1000,9 +590,9 @@
                 const client = await esperarCliente();
                 if (!client) return;
                 const { data } = await client.auth.getSession();
-                const session = data && data.session;
-                if (!session) return;
-                const handle = session.user.email ? session.user.email.split('@')[0] : 'usuario';
+                if (!data?.session) return;
+                const { data: perfil } = await client.from('usuarios').select('handle, username').eq('id', data.session.user.id).maybeSingle();
+                const handle = (perfil && (perfil.handle || perfil.username)) || 'usuario';
                 const subEl = document.querySelector('.cfg-header-subtitle');
                 if (subEl) subEl.textContent = '@' + handle;
             } catch (e) { /* silencioso */ }
