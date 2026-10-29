@@ -1,8 +1,11 @@
 /* ============================================================
    contactos.js
    Sariel's Ecosystem · Contactos
-   v15 — Aceptar/Rechazar vía RPC + Cancelar solicitud propia
-        + Eliminar amistad vía RPC
+   v16 — Favorito en tiempo real (Number id)
+        + Actualización local sin recargar (eliminar/bloquear/aceptar/rechazar)
+        + showConfirm con limpieza explícita de listeners
+        + Contador solo con estado = 'activo'
+        + Toast de rechazo usa clase 'warning'
    ============================================================ */
 
 (() => {
@@ -40,9 +43,6 @@
         sugerencias: []
     };
 
-    /* ============================================================
-       ICONOS SVG PROFESIONALES
-       ============================================================ */
     const SVG_ICONS = {
         mensaje: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5Z"/><path d="m10 14 1.5-3.5L15 9l-1.5 3.5L10 14Z"/></svg>`,
         llamar: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92Z"/></svg>`,
@@ -54,9 +54,6 @@
         agregarAmigo: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M19 8v6"/><path d="M16 11h6"/></svg>`
     };
 
-    /* ============================================================
-       HELPERS
-       ============================================================ */
     function sb() {
         if (window.supabaseClient && typeof window.supabaseClient.from === 'function') return window.supabaseClient;
         return null;
@@ -109,7 +106,7 @@
     window.showToast = showToast;
 
     /* ============================================================
-       MODAL CUSTOM DE CONFIRMACIÓN
+       MODAL CUSTOM DE CONFIRMACIÓN (con limpieza explícita)
        ============================================================ */
     function showConfirm({ title, message, icon = '⚠️', confirmText = 'Aceptar', cancelText = 'Cancelar', danger = true }) {
         return new Promise((resolve) => {
@@ -120,7 +117,7 @@
             const cancelBtn = document.getElementById('confirmModalCancel');
             const confirmBtn = document.getElementById('confirmModalConfirm');
 
-            if (!overlay) { resolve(false); return; }
+            if (!overlay || !cancelBtn || !confirmBtn) { resolve(false); return; }
 
             iconEl.textContent = icon;
             titleEl.textContent = title;
@@ -141,27 +138,32 @@
             overlay.classList.add('active');
             overlay.setAttribute('aria-hidden', 'false');
 
-            const finish = (value) => {
-                overlay.classList.remove('active');
-                overlay.setAttribute('aria-hidden', 'true');
-                resolve(value);
-            };
-
             const onCancel = () => finish(false);
             const onConfirm = () => finish(true);
             const onOverlayClick = (e) => { if (e.target === overlay) finish(false); };
             const onEsc = (e) => { if (e.key === 'Escape') finish(false); };
 
-            cancelBtn.addEventListener('click', onCancel, { once: true });
-            confirmBtn.addEventListener('click', onConfirm, { once: true });
-            overlay.addEventListener('click', onOverlayClick, { once: true });
-            document.addEventListener('keydown', onEsc, { once: true });
+            function cleanup() {
+                cancelBtn.removeEventListener('click', onCancel);
+                confirmBtn.removeEventListener('click', onConfirm);
+                overlay.removeEventListener('click', onOverlayClick);
+                document.removeEventListener('keydown', onEsc);
+            }
+
+            function finish(value) {
+                cleanup();
+                overlay.classList.remove('active');
+                overlay.setAttribute('aria-hidden', 'true');
+                resolve(value);
+            }
+
+            cancelBtn.addEventListener('click', onCancel);
+            confirmBtn.addEventListener('click', onConfirm);
+            overlay.addEventListener('click', onOverlayClick);
+            document.addEventListener('keydown', onEsc);
         });
     }
 
-    /* ============================================================
-       SESIÓN CACHEADa
-       ============================================================ */
     async function getSession() {
         const ahora = Date.now();
         if (state.session && ahora < state.sessionExpira) return state.session;
@@ -181,9 +183,6 @@
         } catch (error) { console.error('Excepción obteniendo sesión:', error); return null; }
     }
 
-    /* ============================================================
-       RETRY
-       ============================================================ */
     async function withRetry(fn, contexto = 'operación') {
         let ultimoError = null;
         for (let intento = 0; intento < CONFIG.RETRY_MAX; intento++) {
@@ -207,9 +206,6 @@
         throw ultimoError;
     }
 
-    /* ============================================================
-       CACHÉ DE PERFILES
-       ============================================================ */
     function getPerfilCacheado(id) {
         const entry = state.perfilCache.get(id);
         if (!entry) return null;
@@ -227,9 +223,6 @@
         state.perfilCache.set(id, { perfil, expira: Date.now() + CONFIG.PROFILE_CACHE_TTL_MS });
     }
 
-    /* ============================================================
-       INICIALIZACIÓN
-       ============================================================ */
     async function inicializarContactos() {
         if (state.initialized) return;
         state.initialized = true;
@@ -246,9 +239,6 @@
         await cargarSugerenciasUI();
     }
 
-    /* ============================================================
-       EVENTOS
-       ============================================================ */
     function configurarEventos() {
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
@@ -313,14 +303,10 @@
         agregarContacto(boton.dataset.usuarioId || '');
     }
 
-    /* ============================================================
-       CARGAR CONTACTOS
-       ============================================================ */
     async function cargarContactos({ reset = false } = {}) {
         if (state.cargando) return;
         const client = sb();
         const session = await getSession();
-        const lista = document.getElementById('contactosList');
         if (!client || !session) {
             mostrarEstadoVacio('◈', 'Inicia sesión para ver tus contactos.');
             actualizarEstadisticas(0, 0);
@@ -342,7 +328,8 @@
                 const { count } = await withRetry(() =>
                     client.from(CONFIG.CONTACTOS_TABLE)
                         .select('id', { count: 'exact', head: true })
-                        .eq('usuario_id', session.user.id), 'contar contactos');
+                        .eq('usuario_id', session.user.id)
+                        .eq('estado', 'activo'), 'contar contactos activos');
                 state.totalContactos = count || 0;
             }
 
@@ -438,9 +425,6 @@
         };
     }
 
-    /* ============================================================
-       CARGAR SOLICITUDES PENDIENTES (UI Dorada)
-       ============================================================ */
     async function cargarSolicitudesPendientesUI() {
         const client = sb();
         const session = await getSession();
@@ -487,10 +471,10 @@
                             <div class="handle">${escapeHtml(handle)}</div>
                         </div>
                         <div class="acciones">
-                            <button class="btn-aceptar" onclick="window.aceptarSolicitud('${s.id}')">
+                            <button class="btn-aceptar" onclick="window.aceptarSolicitud('${s.id}', '${s.usuario_id}')">
                                 ${SVG_ICONS.agregarAmigo} Aceptar
                             </button>
-                            <button class="btn-rechazar" onclick="window.rechazarSolicitud('${s.id}')">
+                            <button class="btn-rechazar" onclick="window.rechazarSolicitud('${s.id}', '${s.usuario_id}')">
                                 ${SVG_ICONS.cancelar} Rechazar
                             </button>
                         </div>
@@ -505,9 +489,6 @@
     }
     window.cargarSolicitudesPendientesUI = cargarSolicitudesPendientesUI;
 
-    /* ============================================================
-       CARGAR SUGERENCIAS (Personas que quizás conozcas)
-       ============================================================ */
     async function cargarSugerenciasUI() {
         const client = sb();
         const session = await getSession();
@@ -585,9 +566,6 @@
     }
     window.cargarSugerenciasUI = cargarSugerenciasUI;
 
-    /* ============================================================
-       RENDER
-       ============================================================ */
     function renderizarContactos() {
         const lista = document.getElementById('contactosList');
         if (!lista) return;
@@ -617,9 +595,6 @@
         configurarScrollInfinito();
     }
 
-    /* ============================================================
-       TARJETA CON ICONOS SVG PROFESIONALES
-       ============================================================ */
     function renderizarTarjeta(contacto) {
         const inicial = escapeHtml((contacto.nombre || 'U').charAt(0).toUpperCase());
         const avatar = contacto.avatar_url
@@ -636,6 +611,7 @@
         const favoritoNuevo = contacto.es_favorito ? 'false' : 'true';
         const contactoIdSeguro = escapeHtml(contacto.contacto_id);
         const filaIdSeguro = escapeHtml(contacto.id);
+        const filaIdNumber = Number(contacto.id);
 
         const esPendienteEnviada = contacto.estado === 'pendiente';
         
@@ -671,7 +647,7 @@
                 <div class="contacto-actions" onclick="event.stopPropagation();">
                     ${botonesAccion}
                     ${!esPendienteEnviada ? `
-                        <button type="button" class="favorito ${favorito}" title="Favorito" onclick="window.toggleFavorito('${filaIdSeguro}', ${favoritoNuevo})">
+                        <button type="button" class="favorito ${favorito}" title="Favorito" onclick="window.toggleFavorito(${filaIdNumber}, ${favoritoNuevo})">
                             ${iconoFavorito} Favorito
                         </button>
                         <button type="button" class="bloquear" title="Bloquear" onclick="window.bloquearContacto('${contactoIdSeguro}')">
@@ -686,9 +662,6 @@
         `;
     }
 
-    /* ============================================================
-       SCROLL INFINITO
-       ============================================================ */
     function configurarScrollInfinito() {
         if (state.observerScroll) state.observerScroll.disconnect();
         const sentinel = document.getElementById('cargandoMasSentinel');
@@ -701,9 +674,6 @@
         state.observerScroll.observe(sentinel);
     }
 
-    /* ============================================================
-       ESTADOS VISUALES
-       ============================================================ */
     function mostrarCargando() {
         const lista = document.getElementById('contactosList');
         if (!lista) return;
@@ -753,7 +723,8 @@
     }
 
     function recalcularEstadisticas() {
-        const total = state.totalContactos;
+        const activos = state.contactos.filter((c) => (c?.estado || 'activo') === 'activo').length;
+        const total = activos > 0 ? activos : state.totalContactos;
         const online = state.contactos.filter((c) => c?.contacto?.online === true).length;
         actualizarEstadisticas(total, online);
     }
@@ -765,9 +736,6 @@
         if (onlineEl) onlineEl.textContent = String(online);
     }
 
-    /* ============================================================
-       MODALES
-       ============================================================ */
     function abrirAgregarContacto() {
         const modal = document.getElementById('modalBuscarContacto');
         if (!modal) return;
@@ -798,9 +766,6 @@
     }
     window.cerrarModalInvitacion = cerrarModalInvitacion;
 
-    /* ============================================================
-       BUSCAR USUARIOS
-       ============================================================ */
     async function buscarUsuarios(texto) {
         const client = sb();
         const session = await getSession();
@@ -863,9 +828,6 @@
         contenedor.innerHTML = `<div style="padding:20px;text-align:center;color:var(--text-muted);font-size:0.75rem;">${escapeHtml(mensaje)}</div>`;
     }
 
-    /* ============================================================
-       AGREGAR CONTACTO (Envía solicitud pendiente)
-       ============================================================ */
     async function agregarContacto(contactoId) {
         const client = sb();
         const session = await getSession();
@@ -898,13 +860,30 @@
     }
     window.agregarContacto = agregarContacto;
 
-    /* ============================================================
-       ACEPTAR / RECHAZAR SOLICITUD (RPC)
-       ============================================================ */
-    async function aceptarSolicitud(contactoRowId) {
+    async function aceptarSolicitud(contactoRowId, otroUsuarioId) {
         const client = sb();
         const session = await getSession();
         if (!client || !session) return;
+
+        // Optimista: crear fila local si no existía
+        const yaExistia = state.contactos.some((c) => Number(c.contacto_id) === Number(otroUsuarioId));
+        let filaTemporal = null;
+
+        if (!yaExistia && otroUsuarioId) {
+            const perfil = getPerfilCacheado(otroUsuarioId) || {
+                id: otroUsuarioId, nombre: 'Usuario', handle: null, avatar_url: null,
+                online: false, ultima_conexion: null, verificado: false
+            };
+            filaTemporal = {
+                id: null, usuario_id: session.user.id, contacto_id: otroUsuarioId,
+                es_favorito: false, estado: 'activo', fecha: new Date().toISOString(),
+                created_at: new Date().toISOString(), contacto: perfil
+            };
+            state.contactos.unshift(filaTemporal);
+            state.idsContactosSet.add(otroUsuarioId);
+            renderizarContactos();
+        }
+
         try {
             const { error } = await client.rpc(CONFIG.RPC_RESPONDER_SOLICITUD, {
                 p_fila_id: Number(contactoRowId),
@@ -913,10 +892,18 @@
             if (error) throw error;
 
             showToast('✅ Amistad aceptada', 'success');
-            await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
+            await cargarContactos({ reset: true });
             await cargarSugerenciasUI();
-        } catch (e) { console.error('Error aceptando:', e); showToast('❌ Error al aceptar la solicitud', 'error'); }
+        } catch (e) {
+            console.error('Error aceptando:', e);
+            if (filaTemporal) {
+                state.contactos = state.contactos.filter((c) => c !== filaTemporal);
+                if (otroUsuarioId) state.idsContactosSet.delete(otroUsuarioId);
+                renderizarContactos();
+            }
+            showToast('❌ Error al aceptar la solicitud', 'error');
+        }
     }
     window.aceptarSolicitud = aceptarSolicitud;
 
@@ -931,22 +918,27 @@
             });
             if (error) throw error;
 
-            showToast('❌ Solicitud rechazada', 'info');
-            await cargarContactos({ reset: true });
+            showToast('❌ Solicitud rechazada', 'warning');
             await cargarSolicitudesPendientesUI();
+            await cargarContactos({ reset: true });
             await cargarSugerenciasUI();
         } catch (e) { console.error('Error rechazando:', e); showToast('❌ Error al rechazar la solicitud', 'error'); }
     }
     window.rechazarSolicitud = rechazarSolicitud;
 
-    /* ============================================================
-       CANCELAR SOLICITUD ENVIADA
-       ============================================================ */
     async function cancelarSolicitudEnviada(filaId) {
         const client = sb();
         const session = await getSession();
         if (!client || !session) { showToast('⚠️ Inicia sesión', 'error'); return; }
         if (!filaId) return;
+
+        const backup = [...state.contactos];
+        const backupSet = new Set(state.idsContactosSet);
+
+        state.contactos = state.contactos.filter((c) => String(c.id) !== String(filaId));
+        const eliminado = backup.find((c) => String(c.id) === String(filaId));
+        if (eliminado?.contacto_id) state.idsContactosSet.delete(eliminado.contacto_id);
+        renderizarContactos();
 
         try {
             const { error } = await client
@@ -962,38 +954,39 @@
             await cargarSugerenciasUI();
         } catch (e) {
             console.error('Error cancelando solicitud enviada:', e);
+            state.contactos = backup;
+            state.idsContactosSet = backupSet;
+            renderizarContactos();
             showToast('❌ No se pudo cancelar la solicitud', 'error');
         }
     }
     window.cancelarSolicitudEnviada = cancelarSolicitudEnviada;
 
-    /* ============================================================
-       FAVORITO
-       ============================================================ */
     async function toggleFavorito(contactoRowId, nuevoValor) {
         const client = sb();
         const session = await getSession();
         if (!client || !session) { showToast('⚠️ Inicia sesión', 'error'); return; }
         if (!contactoRowId) return;
-        const item = state.contactos.find((c) => c.id === contactoRowId);
+
+        const item = state.contactos.find((c) => Number(c.id) === Number(contactoRowId));
         const valorAnterior = item?.es_favorito;
         if (item) { item.es_favorito = nuevoValor === true; renderizarContactos(); }
+
         try {
             const { error } = await withRetry(() =>
                 client.from(CONFIG.CONTACTOS_TABLE).update({ es_favorito: nuevoValor === true }).eq('id', contactoRowId).eq('usuario_id', session.user.id), 'actualizar favorito');
             if (error) throw error;
             showToast(nuevoValor ? '★ Agregado a favoritos' : '☆ Eliminado de favoritos', 'success');
+            renderizarContactos();
         } catch (error) {
             console.error('Error actualizando favorito:', error);
-            if (item) { item.es_favorito = valorAnterior; renderizarContactos(); }
+            if (item) { item.es_favorito = valorAnterior; }
+            renderizarContactos();
             showToast('❌ No se pudo actualizar favorito', 'error');
         }
     }
     window.toggleFavorito = toggleFavorito;
 
-    /* ============================================================
-       ELIMINAR CONTACTO (RPC eliminar_amistad)
-       ============================================================ */
     async function eliminarContacto(contactoIdDelContacto) {
         const client = sb();
         const session = await getSession();
@@ -1041,9 +1034,6 @@
     }
     window.eliminarContacto = eliminarContacto;
 
-    /* ============================================================
-       BLOQUEAR CONTACTO
-       ============================================================ */
     async function bloquearContacto(contactoId) {
         const client = sb();
         const session = await getSession();
@@ -1061,6 +1051,16 @@
         });
         if (!confirmado) return;
 
+        const backup = [...state.contactos];
+        const backupSet = new Set(state.idsContactosSet);
+        const backupTotal = state.totalContactos;
+
+        state.contactos = state.contactos.filter((c) => c.contacto_id !== contactoId);
+        state.idsContactosSet.delete(contactoId);
+        state.totalContactos = Math.max(0, state.totalContactos - 1);
+        renderizarContactos();
+        recalcularEstadisticas();
+
         try {
             const { error } = await withRetry(() =>
                 client.rpc(CONFIG.RPC_BLOQUEAR, { p_contacto_id: contactoId }), 'bloquear contacto');
@@ -1068,13 +1068,18 @@
             showToast('⛔ Usuario bloqueado', 'success');
             await cargarContactos({ reset: true });
             await cargarSugerenciasUI();
-        } catch (error) { console.error('Error bloqueando contacto:', error); showToast('❌ No se pudo bloquear al usuario', 'error'); }
+        } catch (error) {
+            console.error('Error bloqueando contacto:', error);
+            state.contactos = backup;
+            state.idsContactosSet = backupSet;
+            state.totalContactos = backupTotal;
+            renderizarContactos();
+            recalcularEstadisticas();
+            showToast('❌ No se pudo bloquear al usuario', 'error');
+        }
     }
     window.bloquearContacto = bloquearContacto;
 
-    /* ============================================================
-       LLAMAR Y MENSAJE
-       ============================================================ */
     function llamarContacto(contactoId) {
         if (!contactoId) return;
         window.location.href = `/features/mensajes/mensajes.html?usuario=${encodeURIComponent(contactoId)}&accion=llamada`;
@@ -1087,9 +1092,6 @@
     }
     window.abrirMensaje = abrirMensaje;
 
-    /* ============================================================
-       INVITACIONES
-       ============================================================ */
     async function invitarContacto() {
         const client = sb();
         const session = await getSession();
@@ -1137,9 +1139,6 @@
     }
     window.copiarCodigoInvitacion = copiarCodigoInvitacion;
 
-    /* ============================================================
-       ARRANQUE
-       ============================================================ */
     function esperarSupabase() {
         let intentos = 0;
         const timer = setInterval(async () => {
