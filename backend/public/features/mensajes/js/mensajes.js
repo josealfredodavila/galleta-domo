@@ -1,6 +1,13 @@
 // ================================================================
-// MENSAJES · JS v5.2 · WEB3 NEON UI
-// Cambios v5.2:
+// MENSAJES · JS v5.3 · WEB3 NEON UI
+// Cambios v5.3:
+// - createConversation ya no inserta en contactos (solo abre la conversación)
+// - loadConversations lee contactos con estado 'activo'
+// - deleteConversation usa RPC ocultar_conversacion
+// - Edición y eliminación de mensajes con menú contextual (long press + clic derecho)
+// - messageHTML muestra "editado" y metadatos de eliminación
+// - Bloqueo desde el chat vía RPC bloquear_contacto
+// - Panel de configuración de llamadas y lista de bloqueados con desbloqueo
 // - Fix livekit:ready race condition en init() (marca bandera si LivekitClient ya existe)
 // ================================================================
 
@@ -739,7 +746,7 @@ async function loadConversations() {
             if (m.remitente_id === otherUserId && m.destinatario_id === user.id && m.leido === false) conversacionesMap.get(otherUserId).unread++;
         });
         try {
-            const { data: contactos } = await db.from('contactos').select('contacto_id').eq('usuario_id', user.id).neq('estado', 'bloqueado');
+            const { data: contactos } = await db.from('contactos').select('contacto_id').eq('usuario_id', user.id).eq('estado', 'activo');
             (contactos || []).forEach(c => {
                 if (!c.contacto_id) return;
                 if (c.contacto_id === user.id) return;
@@ -952,9 +959,10 @@ function messageHTML(m, sent, signedUrl) {
     const esBotRecibido = !sent && (m.es_bot || m.bot_message);
     const headerBot = esBotRecibido ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
     const avisoHTML = m.aviso_moderacion === 'lenguaje_inapropiado' ? '<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(247,212,74,.12);border:1px solid rgba(247,212,74,.4);color:#f7d44a;font-size:.68rem;">⚠️ Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>' : '';
-    return `<div class="bubblewrap ${sent ? 'sent' : 'received'}">
+    const editadoHTML = m.editado === true ? ' · editado' : '';
+    return `<div class="bubblewrap ${sent ? 'sent' : 'received'}" data-mensaje-id="${esc(m.id || '')}">
         <div class="bubble">${headerBot}${body}${avisoHTML}</div>
-        <div class="meta">${m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}${sent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : ''}</div>
+        <div class="meta">${m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}${editadoHTML}${sent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : ''}</div>
     </div>`;
 }
 
@@ -1154,7 +1162,7 @@ async function deleteConversation() {
     if (!confirmado) return;
     try {
         const targetId = current.bot ? BOT_UUID : current.id;
-        const { error } = await db.from('mensajes_chat').update({ eliminado: true }).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${targetId}),and(remitente_id.eq.${targetId},destinatario_id.eq.${user.id})`);
+        const { error } = await db.rpc('ocultar_conversacion', { p_otro: targetId });
         if (error) throw error;
         toast('✅ Conversación eliminada correctamente', 'success');
         const box = $('messages');
@@ -1340,12 +1348,6 @@ async function searchUsers(q) {
 
 async function createConversation(id) {
     if (!await auth()) return;
-    const r = await db.from('contactos').select('id').eq('usuario_id', user.id).eq('contacto_id', id).maybeSingle();
-    if (r.error) { toast('❌ Error comprobando contacto', 'error'); return; }
-    if (!r.data) {
-        const ins = await db.from('contactos').insert({ usuario_id: user.id, contacto_id: id, estado: 'activo' });
-        if (ins.error) { console.error(ins.error); toast('❌ No se pudo crear la conversación', 'error'); return; }
-    }
     $('newModal').classList.remove('show');
     await loadConversations();
     await openConversation(id);
@@ -1907,6 +1909,260 @@ async function toggleScreen() {
     } catch (e) { if (e.name !== 'NotAllowedError') toast('❌ No se pudo compartir pantalla', 'error'); }
 }
 
+async function bloquearUsuarioActual() {
+    if (!current || current.bot) { toast('⚠️ No se puede bloquear a Marquinhos', 'warning'); return; }
+    const confirmado = await NeonModal.confirm({
+        title: 'Bloquear usuario',
+        message: `¿Bloquear a ${current.profile.nombre || 'este usuario'}? No podrá llamarte ni tú a él.`,
+        icon: '⛔',
+        confirmText: 'Bloquear',
+        cancelText: 'Cancelar',
+        danger: true
+    });
+    if (!confirmado) return;
+    try {
+        await db.rpc('bloquear_contacto', { p_contacto_id: current.id });
+        toast('⛔ Usuario bloqueado', 'success');
+        await cerrarConversacion();
+        await loadConversations();
+    } catch (e) {
+        console.error('Error bloqueando:', e);
+        toast('❌ No se pudo bloquear al usuario', 'error');
+    }
+}
+
+async function abrirModalConfigLlamadas() {
+    $('modalConfigLlamadas').classList.add('show');
+}
+
+async function cerrarModalConfigLlamadas() {
+    $('modalConfigLlamadas').classList.remove('show');
+}
+
+async function abrirListaBloqueados() {
+    $('modalBloqueados').classList.add('show');
+    const lista = $('listaBloqueados');
+    lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);">Cargando…</div>';
+    try {
+        const { data, error } = await db.rpc('listar_bloqueados');
+        if (error) throw error;
+        const bloqueados = data || [];
+        $('countBloqueados').textContent = bloqueados.length;
+        if (!bloqueados.length) {
+            lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No tienes usuarios bloqueados</div>';
+            return;
+        }
+        lista.innerHTML = bloqueados.map(b => `
+            <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,229,255,.1);" data-id="${esc(b.id)}">
+                <div class="avatar" style="width:36px;height:36px;font-size:.8rem;">${b.avatar_url ? `<img src="${esc(b.avatar_url)}" alt="">` : esc((b.nombre || '◈').charAt(0).toUpperCase())}</div>
+                <div style="flex:1;min-width:0;">
+                    <div style="font-weight:600;color:var(--text-primary);">${esc(b.nombre || 'Usuario')}</div>
+                    ${b.handle ? `<div style="font-size:.65rem;color:var(--muted);">@${esc(b.handle)}</div>` : ''}
+                </div>
+                <button class="btn-desbloquear" data-id="${esc(b.id)}" style="padding:5px 12px;font-size:.7rem;border-radius:99px;border:1px solid var(--gold);background:transparent;color:var(--gold);cursor:pointer;">Desbloquear</button>
+            </div>
+        `).join('');
+        lista.querySelectorAll('.btn-desbloquear').forEach(btn => {
+            btn.onclick = async () => {
+                const id = btn.dataset.id;
+                try {
+                    await db.rpc('desbloquear_contacto', { p_contacto_id: id });
+                    toast('✅ Usuario desbloqueado', 'success');
+                    await abrirListaBloqueados(); // recargar
+                } catch (e) {
+                    console.error('Error desbloqueando:', e);
+                    toast('❌ No se pudo desbloquear', 'error');
+                }
+            };
+        });
+    } catch (e) {
+        console.error('Error listando bloqueados:', e);
+        lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:.8rem;">Error al cargar</div>';
+    }
+}
+
+async function mostrarMenuMensaje(bubblewrap, msgId) {
+    // Cerrar menú previo
+    document.querySelectorAll('.msg-context-menu').forEach(m => m.remove());
+
+    const menu = document.createElement('div');
+    menu.className = 'msg-context-menu';
+    menu.style.cssText = 'position:fixed;z-index:9999;background:var(--panel,#0d1117);border:1px solid rgba(0,229,255,.3);border-radius:12px;padding:8px 0;box-shadow:0 8px 30px rgba(0,0,0,.5);min-width:160px;';
+
+    const rect = bubblewrap.getBoundingClientRect();
+    let x = rect.left + rect.width / 2;
+    let y = rect.bottom + 8;
+    if (x + 80 > window.innerWidth) x = window.innerWidth - 170;
+    if (y + 150 > window.innerHeight) y = rect.top - 150;
+    menu.style.left = x + 'px';
+    menu.style.top = y + 'px';
+
+    const opciones = [];
+    // Solo mensajes enviados por mí (sent) y de tipo texto, no bot
+    if (bubblewrap.classList.contains('sent') && !bubblewrap.closest('.conv-bot')) {
+        opciones.push({ texto: 'Editar', accion: () => editarMensaje(msgId, bubblewrap) });
+    }
+    opciones.push({ texto: 'Eliminar para mí', accion: () => eliminarMensajeParaMi(msgId, bubblewrap) });
+    if (bubblewrap.classList.contains('sent') && !bubblewrap.closest('.conv-bot')) {
+        opciones.push({ texto: 'Eliminar para todos', accion: () => eliminarMensajeParaTodos(msgId, bubblewrap), danger: true });
+    }
+
+    opciones.forEach(op => {
+        const btn = document.createElement('button');
+        btn.textContent = op.texto;
+        btn.style.cssText = `display:block;width:100%;padding:8px 16px;background:none;border:none;text-align:left;color:${op.danger ? '#ff5c7a' : 'var(--text-primary,#e6f1ff)'};font-size:.8rem;cursor:pointer;`;
+        btn.onmouseenter = () => btn.style.background = 'rgba(0,229,255,.08)';
+        btn.onmouseleave = () => btn.style.background = 'none';
+        btn.onclick = () => { menu.remove(); op.accion(); };
+        menu.appendChild(btn);
+    });
+
+    document.body.appendChild(menu);
+    setTimeout(() => {
+        const close = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', close); } };
+        document.addEventListener('click', close);
+    }, 10);
+}
+
+async function editarMensaje(msgId, bubblewrap) {
+    if (!await auth()) return;
+    const bubble = bubblewrap.querySelector('.bubble');
+    let contenidoActual = '';
+    // Obtener texto actual del mensaje (sin html)
+    const metaEl = bubblewrap.querySelector('.meta');
+    // Obtener contenido desde el DOM (asumiendo que es texto)
+    contenidoActual = bubble.textContent.trim();
+    // Eliminar posible header de bot
+    if (bubble.querySelector('.bubble-bot-info')) contenidoActual = contenidoActual.replace(bubble.querySelector('.bubble-bot-info').textContent, '').trim();
+    const nuevoTexto = await NeonModal.prompt({
+        title: 'Editar mensaje',
+        message: 'Edita tu mensaje (máx. 15 minutos):',
+        icon: '✎',
+        placeholder: 'Nuevo texto…',
+        defaultValue: contenidoActual,
+        confirmText: 'Guardar',
+        cancelText: 'Cancelar'
+    });
+    if (!nuevoTexto || nuevoTexto === contenidoActual) return;
+    try {
+        const { error } = await db.rpc('editar_mensaje_chat', {
+            p_mensaje_id: msgId,
+            p_contenido: nuevoTexto
+        });
+        if (error) {
+            if (error.message && error.message.includes('edicion_expirada')) {
+                toast('Ya no puedes editar este mensaje (más de 15 minutos)', 'error');
+            } else {
+                toast('❌ ' + (error.message || 'No se pudo editar'), 'error');
+            }
+            return;
+        }
+        // Actualizar burbuja en DOM
+        bubble.innerHTML = (typeof window.formatearMensajeConEmotes === 'function')
+            ? window.formatearMensajeConEmotes(nuevoTexto)
+            : esc(nuevoTexto);
+        // Añadir "editado" al meta
+        if (metaEl && !metaEl.textContent.includes('editado')) {
+            metaEl.textContent += ' · editado';
+        }
+        toast('✎ Mensaje editado', 'success');
+    } catch (e) {
+        console.error('Error editando mensaje:', e);
+        toast('❌ No se pudo editar el mensaje', 'error');
+    }
+}
+
+async function eliminarMensajeParaMi(msgId, bubblewrap) {
+    const confirmado = await NeonModal.confirm({
+        title: 'Eliminar para mí',
+        message: '¿Eliminar este mensaje solo de tu vista?',
+        icon: '🗑',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        danger: true
+    });
+    if (!confirmado) return;
+    try {
+        const { error } = await db.rpc('eliminar_mensaje_para_mi', { p_mensaje_id: msgId });
+        if (error) throw error;
+        bubblewrap.remove();
+        toast('✅ Mensaje eliminado para ti', 'success');
+    } catch (e) {
+        console.error('Error eliminando para mí:', e);
+        toast('❌ No se pudo eliminar', 'error');
+    }
+}
+
+async function eliminarMensajeParaTodos(msgId, bubblewrap) {
+    const confirmado = await NeonModal.confirm({
+        title: 'Eliminar para todos',
+        message: '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.',
+        icon: '🗑',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        danger: true
+    });
+    if (!confirmado) return;
+    try {
+        const { error } = await db.rpc('eliminar_mensaje_para_todos', { p_mensaje_id: msgId });
+        if (error) throw error;
+        bubblewrap.remove();
+        toast('✅ Mensaje eliminado para todos', 'success');
+    } catch (e) {
+        console.error('Error eliminando para todos:', e);
+        toast('❌ No se pudo eliminar', 'error');
+    }
+}
+
+function configurarLongPressMensajes() {
+    const box = $('messages');
+    if (!box || box.dataset.longPressListener) return;
+    box.dataset.longPressListener = '1';
+    let pressTimer = null;
+    let targetBubble = null;
+
+    box.addEventListener('pointerdown', e => {
+        const bubblewrap = e.target.closest('.bubblewrap');
+        if (!bubblewrap || bubblewrap.classList.contains('received') && !bubblewrap.closest('.conv-bot')) {
+            // Solo mensajes enviados (sent) o recibidos del bot
+            if (!bubblewrap || (!bubblewrap.classList.contains('sent') && !bubblewrap.closest('.conv-bot'))) return;
+        }
+        // Solo tipo texto
+        if (bubblewrap.querySelector('img, video, audio')) return;
+        targetBubble = bubblewrap;
+        pressTimer = setTimeout(() => {
+            pressTimer = null;
+            const msgId = bubblewrap.dataset.mensajeId;
+            if (msgId) mostrarMenuMensaje(bubblewrap, msgId);
+        }, 500);
+    });
+
+    box.addEventListener('pointerup', e => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    });
+
+    box.addEventListener('pointercancel', e => {
+        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    });
+
+    box.addEventListener('pointermove', e => {
+        // Si se mueve mucho, cancelar
+        if (pressTimer && e.movementX && Math.abs(e.movementX) > 5) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+    });
+
+    box.addEventListener('contextmenu', e => {
+        const bubblewrap = e.target.closest('.bubblewrap');
+        if (!bubblewrap || (!bubblewrap.classList.contains('sent') && !bubblewrap.closest('.conv-bot'))) return;
+        if (bubblewrap.querySelector('img, video, audio')) return;
+        e.preventDefault();
+        const msgId = bubblewrap.dataset.mensajeId;
+        if (msgId) mostrarMenuMensaje(bubblewrap, msgId);
+    });
+}
+
 async function init() {
     try { db = await window.supabaseReady; } catch (e) { db = null; }
     if (!db) db = window.supabaseClient;
@@ -1989,6 +2245,8 @@ async function init() {
         if (e.key === 'Escape') {
             cerrarProfileModal(); cerrarPhotoViewer(); cerrarEstadoViewer(); cerrarModalEstado(); cerrarVistasModal(); cerrarModalCrearCanal(); cerrarModalCrearGrupo();
             $('newModal').classList.remove('show');
+            $('modalConfigLlamadas')?.classList.remove('show');
+            $('modalBloqueados')?.classList.remove('show');
         }
     });
 
@@ -2029,6 +2287,17 @@ async function init() {
     $('messages').addEventListener('scroll', detectarSiEstaAbajo);
     $('messages').addEventListener('click', e => { const img = e.target.closest && e.target.closest('img[data-visor]'); if (img) abrirVisorImagen(img.dataset.src, img.dataset.nombre); });
     $('scrollDownBtn').onclick = () => { isUserAtBottom = true; scrollToBottom(true); actualizarFlecha(); };
+
+    // Bloquear desde el chat
+    $('blockUser').onclick = bloquearUsuarioActual;
+
+    // Config llamadas y bloqueados
+    $('btnConfigLlamadas').onclick = abrirModalConfigLlamadas;
+    $('cerrarModalConfigLlamadas').onclick = cerrarModalConfigLlamadas;
+    $('modalConfigLlamadas').addEventListener('click', e => { if (e.target.id === 'modalConfigLlamadas') cerrarModalConfigLlamadas(); });
+    $('btnVerBloqueados').onclick = abrirListaBloqueados;
+    $('cerrarModalBloqueados').onclick = () => $('modalBloqueados').classList.remove('show');
+    $('modalBloqueados').addEventListener('click', e => { if (e.target.id === 'modalBloqueados') $('modalBloqueados').classList.remove('show'); });
 
     $('searchChat').onclick = async () => {
         if (!current) { toast('⚠️ Selecciona una conversación', 'error'); return; }
@@ -2095,6 +2364,7 @@ async function init() {
     decorarComposerWeb3();
     decorarSidebarTabsWeb3();
     decorarChatActions();
+    configurarLongPressMensajes();
 
     setTimeout(async () => {
         try {
@@ -2235,7 +2505,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '5.2.0',
+    version: '5.3.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
