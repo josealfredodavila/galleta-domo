@@ -55,15 +55,48 @@
 
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.2">
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
-
-<!-- 🔥 NUEVO: Estilos del teclado de emojis -->
 <link rel="stylesheet" href="/features/css/teclado-emojis.css">
 
 <style>
     html:not(.auth-ready) .app { display: none !important; }
-    /* Contenedor relativo del header de chat para que las acciones no "floten" */
     .chathead { position: relative; z-index: 5; }
     .chathead .actions { position: relative; z-index: 6; }
+    
+    /* Botón de videollamada profesional */
+    .btn-videollamada {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid var(--cyan, #00e5ff);
+      border-radius: 12px;
+      background: rgba(0, 229, 255, 0.08);
+      color: var(--cyan, #00e5ff);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-size: 0.75rem;
+    }
+    .btn-videollamada:hover {
+      background: rgba(0, 229, 255, 0.18);
+      border-color: var(--cyan, #00e5ff);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
+      transform: translateY(-1px);
+    }
+    .btn-videollamada:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      background: rgba(0, 229, 255, 0.03);
+    }
+    .btn-videollamada svg {
+      flex-shrink: 0;
+    }
+    @media (max-width: 480px) {
+      .btn-videollamada span { display: none; }
+      .btn-videollamada { padding: 8px; }
+    }
 </style>
 </head>
 <body>
@@ -192,9 +225,12 @@
         <div class="actions" id="chatActions" style="display:none;">
             <button class="iconbtn" id="deleteChat" title="Eliminar conversación" data-neon="icon">◇</button>
             <button class="iconbtn" id="blockUser" title="Bloquear contacto" data-neon="icon-danger" style="color:#ff3366;">⛔</button>
-            <button class="iconbtn callbtn" id="videoCall" title="Iniciar videollamada" data-neon="icon-call" disabled>
-                <span class="call-icon">📹</span>
-                <span class="call-label">Llamar</span>
+            <button class="btn-videollamada" id="videoCall" title="Iniciar videollamada" disabled>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="6" width="12" height="12" rx="3"></rect>
+                    <path d="m15 10 6-3v10l-6-3"></path>
+                </svg>
+                <span>Videollamada</span>
             </button>
             <button class="iconbtn" id="searchChat" title="Buscar en la conversación" data-neon="icon">◇</button>
         </div>
@@ -213,7 +249,7 @@
     </div>
     <form class="composer" id="composer" style="display:none;">
         <button type="button" class="btn" id="attach" title="Adjuntar" data-neon="btn">◆</button>
-        <button type="button" class="btn" id="emojiBtn" title="Emojis" data-neon="btn">😀</button> <!-- 🔥 NUEVO BOTÓN -->
+        <button type="button" class="btn" id="emojiBtn" title="Emojis" data-neon="btn">😀</button>
         <button type="button" class="btn" id="audio" title="Grabar audio" data-neon="btn">●</button>
         <button type="button" class="btn" id="voiceBot" title="Hablar con Marquinhos" data-neon="btn-bot" style="display:none;">◉</button>
         <input id="messageInput" autocomplete="off" placeholder="Escribe un mensaje…">
@@ -415,22 +451,17 @@
 <div class="toast" id="toast"></div>
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-<script src="/features/mensajes/js/mensajes.js?v=13"></script>
+<script src="/features/mensajes/js/mensajes.js?v=14"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
-
-<!-- 🔥 NUEVO: Script del teclado de emojis -->
 <script src="/features/js/teclado-emojis.js"></script>
 
 <script>
-    /* ============================================================
-       Apertura directa del chat con Marquinhos
-       ============================================================ */
     (function () {
         var params = new URLSearchParams(window.location.search);
         if ((params.get('chat') || '').toLowerCase() !== 'marquinhos') return;
 
         var intentos = 0;
-        var maxIntentos = 40; // 40 × 200 ms ≈ 8 s
+        var maxIntentos = 40;
 
         function limpiarUrl() {
             try {
@@ -478,11 +509,10 @@
         }
     })();
 
-    /* ============================================================
-       🔥 INICIALIZAR EL TECLADO DE EMOJIS
-       ============================================================ */
     document.addEventListener('DOMContentLoaded', () => {
-        inicializarTecladoEmojis('messageInput', 'emojiBtn');
+        if (typeof window.inicializarTecladoEmojis === 'function') {
+            window.inicializarTecladoEmojis('messageInput', 'emojiBtn');
+        }
     });
 </script>
 </body>
