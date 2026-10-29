@@ -1,9 +1,9 @@
 /* ============================================================
    contactos.js
    Sariel's Ecosystem · Contactos
-   v17 — Bloqueo elimina solicitudes pendientes propias y ajenas
-        + aceptarSolicitud simplificado (RPC + recarga)
-        + resto de v16 conservado
+   v18 — bloquearContacto delega la limpieza de solicitudes al
+        servidor (RPC bloquear_contacto ya borra en ambos sentidos).
+        Se eliminó el doble delete previo. Resto de v17 sin cambios.
    ============================================================ */
 
 (() => {
@@ -1019,7 +1019,9 @@
     window.eliminarContacto = eliminarContacto;
 
     /* ============================================================
-       BLOQUEAR CONTACTO (elimina solicitudes pendientes primero)
+       BLOQUEAR CONTACTO
+       El RPC bloquear_contacto ya elimina la relación en ambos
+       sentidos y limpia solicitudes pendientes en el servidor.
        ============================================================ */
     async function bloquearContacto(contactoId) {
         const client = sb();
@@ -1049,26 +1051,6 @@
         recalcularEstadisticas();
 
         try {
-            // 1) Eliminar cualquier solicitud pendiente entre ambos usuarios
-            //    - fila propia con contacto_id = X y estado = 'pendiente'
-            //    - fila con usuario_id = X y contacto_id = yo y estado = 'pendiente'
-            try {
-                await client.from(CONFIG.CONTACTOS_TABLE)
-                    .delete()
-                    .eq('usuario_id', session.user.id)
-                    .eq('contacto_id', contactoId)
-                    .eq('estado', 'pendiente');
-            } catch (e) { console.warn('No se pudo limpiar solicitud pendiente propia:', e); }
-
-            try {
-                await client.from(CONFIG.CONTACTOS_TABLE)
-                    .delete()
-                    .eq('usuario_id', contactoId)
-                    .eq('contacto_id', session.user.id)
-                    .eq('estado', 'pendiente');
-            } catch (e) { console.warn('No se pudo limpiar solicitud pendiente entrante:', e); }
-
-            // 2) Llamar al RPC de bloqueo
             const { error } = await withRetry(() =>
                 client.rpc(CONFIG.RPC_BLOQUEAR, { p_contacto_id: contactoId }), 'bloquear contacto');
             if (error) throw error;
