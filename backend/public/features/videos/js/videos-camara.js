@@ -1,11 +1,10 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.9.1
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.9.2
    ================================================================
-   CORRECCIÓN QUIRÚRGICA FINAL DEL FILTRO PAYASO:
-   - Se eliminó el efecto de "doble nariz" ajustando el ancla a la 
-     punta exacta (punto 1) y reduciendo la escala.
-   - La peluca ahora escala más (1.35) y baja un poco (-0.05) para 
-     cubrir la cabeza como un payaso real.
+   CORRECCIÓN FINAL BASADA EN ASSETS LIMPIOS:
+   - Se apunta directamente a los archivos limpios del repositorio.
+   - Peluca ancha (1.35) asentada en la frente.
+   - Nariz anclada a la punta exacta (punto 1) y escalada (0.16).
    ================================================================ */
 
 (function () {
@@ -26,171 +25,89 @@
         SCRIPT_TIMEOUT_MS: 20000
     };
 
+    // Apuntando directo a tu repositorio de GitHub
     var ASSETS_BASE =
         'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main/backend/assets';
 
     var ASSETS = {
         gato: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/orejas-gato-3.png',
-                    scale: 1.0,
-                    offsetX: 0,
-                    offsetY: -0.4,
-                    ancla: 'frente'
-                }
+                { src: ASSETS_BASE + '/orejas-gato-3.png', scale: 1.0, offsetX: 0, offsetY: -0.4, ancla: 'frente' }
             ]
         },
-
         burro: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/orejas-burro-2.png',
-                    scale: 1.0,
-                    offsetX: 0,
-                    offsetY: -0.4,
-                    ancla: 'frente'
-                }
+                { src: ASSETS_BASE + '/orejas-burro-2.png', scale: 1.0, offsetX: 0, offsetY: -0.4, ancla: 'frente' }
             ]
         },
-
         gafas: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/gafas-2.png',
-                    scale: 1.0,
-                    offsetX: 0,
-                    offsetY: 0,
-                    ancla: 'ojos'
-                }
+                { src: ASSETS_BASE + '/gafas-2.png', scale: 1.0, offsetX: 0, offsetY: 0, ancla: 'ojos' }
             ]
         },
-
         thug: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/thug-life-1.png',
-                    scale: 1.1,
-                    offsetX: 0,
-                    offsetY: 0.3,
-                    ancla: 'ojos'
-                }
+                { src: ASSETS_BASE + '/thug-life-1.png', scale: 1.1, offsetX: 0, offsetY: 0.3, ancla: 'ojos' }
             ]
         },
-
         corazon: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/corazon-1.png',
-                    scale: 0.9,
-                    offsetX: 0,
-                    offsetY: 0,
-                    ancla: 'ojos'
-                }
+                { src: ASSETS_BASE + '/corazon-1.png', scale: 0.9, offsetX: 0, offsetY: 0, ancla: 'ojos' }
             ]
         },
-
         bigote: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/bigote-2.png',
-                    scale: 0.45,
-                    offsetX: 0,
-                    offsetY: 0.5,
-                    ancla: 'nariz'
-                }
+                { src: ASSETS_BASE + '/bigote-2.png', scale: 0.45, offsetX: 0, offsetY: 0.5, ancla: 'nariz' }
             ]
         },
-
         corona: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/corona-2.png',
-                    scale: 0.9,
-                    offsetX: 0,
-                    offsetY: -0.5,
-                    ancla: 'frente'
-                }
+                { src: ASSETS_BASE + '/corona-2.png', scale: 0.9, offsetX: 0, offsetY: -0.5, ancla: 'frente' }
             ]
         },
-
         diamante: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/corona-diamante-1.png',
-                    scale: 0.9,
-                    offsetX: 0,
-                    offsetY: -0.5,
-                    ancla: 'frente'
-                }
+                { src: ASSETS_BASE + '/corona-diamante-1.png', scale: 0.9, offsetX: 0, offsetY: -0.5, ancla: 'frente' }
             ]
         },
-
         perro: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/perro-orejas-1.png',
-                    scale: 1.6,
-                    offsetX: 0,
-                    offsetY: -0.3,
-                    ancla: 'frente'
-                },
-                {
-                    src: ASSETS_BASE + '/perro-hocico-1.png',
-                    scale: 0.6,
-                    offsetX: 0,
-                    offsetY: 0.1,
-                    ancla: 'nariz'
-                }
+                { src: ASSETS_BASE + '/perro-orejas-1.png', scale: 1.6, offsetX: 0, offsetY: -0.3, ancla: 'frente' },
+                { src: ASSETS_BASE + '/perro-hocico-1.png', scale: 0.6, offsetX: 0, offsetY: 0.1, ancla: 'nariz' }
             ]
         },
-
         diablo: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/diablo-1.png',
-                    scale: 1.0,
-                    offsetX: 0,
-                    offsetY: -0.6,
-                    ancla: 'frente'
-                }
+                { src: ASSETS_BASE + '/diablo-1.png', scale: 1.0, offsetX: 0, offsetY: -0.6, ancla: 'frente' }
             ]
         },
-
         angel: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/angel-1.png',
-                    scale: 1.0,
-                    offsetX: 0,
-                    offsetY: -0.6,
-                    ancla: 'frente',
-                    aplanar: 0.4
-                }
+                { src: ASSETS_BASE + '/angel-1.png', scale: 1.0, offsetX: 0, offsetY: -0.6, ancla: 'frente', aplanar: 0.4 }
             ]
         },
 
-        /*
-         * PAYASO CORREGIDO QUIRÚRGICAMENTE:
-         * - Peluca: Más grande y ancha para cubrir la cabeza.
-         * - Nariz: Anclada a la punta exacta y escalada para que sea una sola bola grande.
+        /* 
+         * PAYASO FINAL (Archivos limpios)
+         * Peluca: Ancha y ajustada a la frente.
+         * Nariz: Grande y en la punta exacta.
          */
         payaso: {
             partes: [
                 {
                     id: 'peluca',
                     src: ASSETS_BASE + '/payaso-1.png',
-                    scale: 1.35,       // Más ancha para cubrir la cabeza
+                    scale: 1.35,       
                     offsetX: 0,
-                    offsetY: -0.05,    // Baja un poco para asentarse en la cabeza
+                    offsetY: -0.15,    
                     ancla: 'frente'
                 },
                 {
                     id: 'nariz',
                     src: ASSETS_BASE + '/payaso-nariz-1.png',
-                    scale: 0.09,       // Tamaño perfecto para una nariz
+                    scale: 0.16,       
                     offsetX: 0,
-                    offsetY: 0.05,     // Ajuste fino para que caiga en la punta
+                    offsetY: 0.05,     
                     ancla: 'nariz'
                 }
             ]
@@ -198,98 +115,44 @@
 
         charro: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/charro-1.png',
-                    scale: 1.2,
-                    offsetX: 0,
-                    offsetY: -0.7,
-                    ancla: 'frente'
-                }
+                { src: ASSETS_BASE + '/charro-1.png', scale: 1.2, offsetX: 0, offsetY: -0.7, ancla: 'frente' }
             ]
         },
-
         vikingo: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/vikingo-1.png',
-                    scale: 1.1,
-                    offsetX: 0,
-                    offsetY: -0.3,
-                    ancla: 'frente'
-                }
+                { src: ASSETS_BASE + '/vikingo-1.png', scale: 1.1, offsetX: 0, offsetY: -0.3, ancla: 'frente' }
             ]
         },
-
         leon: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/leon-1.png',
-                    scale: 0.95,
-                    offsetX: 0,
-                    offsetY: 0,
-                    ancla: 'ojos'
-                }
+                { src: ASSETS_BASE + '/leon-1.png', scale: 0.95, offsetX: 0, offsetY: 0, ancla: 'ojos' }
             ]
         },
-
         mascara: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/mascara-lucha-1.png',
-                    scale: 1.0,
-                    offsetX: 0,
-                    offsetY: 0,
-                    ancla: 'ojos'
-                }
+                { src: ASSETS_BASE + '/mascara-lucha-1.png', scale: 1.0, offsetX: 0, offsetY: 0, ancla: 'ojos' }
             ]
         },
-
         alien: {
             partes: [
-                {
-                    src: ASSETS_BASE + '/antenas-alien-1.png',
-                    scale: 1.1,
-                    offsetX: 0,
-                    offsetY: -0.27,
-                    ancla: 'ojos'
-                }
+                { src: ASSETS_BASE + '/antenas-alien-1.png', scale: 1.1, offsetX: 0, offsetY: -0.27, ancla: 'ojos' }
             ]
         }
     };
 
     var SELECTORES_MARQUINHOS = [
-        '#marquinhos',
-        '.marquinhos',
-        '.marquinhos-robot',
-        '[class*="marquinhos"]',
-        '[id*="marquinhos"]',
-        '[class*="cs-robot"]',
-        '[id*="cs-robot"]'
+        '#marquinhos', '.marquinhos', '.marquinhos-robot',
+        '[class*="marquinhos"]', '[id*="marquinhos"]',
+        '[class*="cs-robot"]', '[id*="cs-robot"]'
     ];
 
     var state = {
-        stream: null,
-        faceMesh: null,
-        video: null,
-        canvas: null,
-        ctx: null,
-        mediaRecorder: null,
-        chunks: [],
-        grabando: false,
-        iniciada: false,
-        abriendo: false,
-        descartar: false,
-        enviando: false,
-        filtroActual: 'ninguno',
-        renderFrameId: null,
-        detectionFrameId: null,
-        lastDetectionTime: 0,
-        lastResults: null,
-        facingMode: 'user',
-        timerInterval: null,
-        segundosGrabados: 0,
-        imagenes: {},
-        ocultos: [],
+        stream: null, faceMesh: null, video: null, canvas: null, ctx: null,
+        mediaRecorder: null, chunks: [], grabando: false, iniciada: false,
+        abriendo: false, descartar: false, enviando: false, filtroActual: 'ninguno',
+        renderFrameId: null, detectionFrameId: null, lastDetectionTime: 0,
+        lastResults: null, facingMode: 'user', timerInterval: null,
+        segundosGrabados: 0, imagenes: {}, ocultos: [],
         filtrosDisponibles: [
             { id: 'ninguno', nombre: 'Ninguno', icono: '🚫' },
             { id: 'gato', nombre: 'Orejas', icono: '🐱' },
@@ -312,19 +175,13 @@
         ]
     };
 
-    function $(id) {
-        return document.getElementById(id);
-    }
+    function $(id) { return document.getElementById(id); }
 
     function notificar(mensaje, tipo) {
         tipo = tipo || 'info';
-        if (typeof window.csToast === 'function') {
-            window.csToast(mensaje, tipo);
-        } else if (typeof window.showToast === 'function') {
-            window.showToast(mensaje, tipo);
-        } else {
-            console.warn('[CSARIELS Cámara]', mensaje);
-        }
+        if (typeof window.csToast === 'function') window.csToast(mensaje, tipo);
+        else if (typeof window.showToast === 'function') window.showToast(mensaje, tipo);
+        else console.warn('[CSARIELS Cámara]', mensaje);
     }
 
     function obtenerMensajeError(error) {
@@ -345,42 +202,26 @@
     function cargarScript(url) {
         return new Promise(function (resolve, reject) {
             var script = document.createElement('script');
-            script.src = url;
-            script.crossOrigin = 'anonymous';
-            script.async = true;
+            script.src = url; script.crossOrigin = 'anonymous'; script.async = true;
             var temporizador = setTimeout(function () {
-                script.remove();
-                reject(new Error('Tiempo agotado cargando ' + url));
+                script.remove(); reject(new Error('Tiempo agotado cargando ' + url));
             }, CONFIG.SCRIPT_TIMEOUT_MS);
-            script.onload = function () {
-                clearTimeout(temporizador);
-                resolve();
-            };
-            script.onerror = function () {
-                clearTimeout(temporizador);
-                script.remove();
-                reject(new Error('No se pudo descargar ' + url));
-            };
+            script.onload = function () { clearTimeout(temporizador); resolve(); };
+            script.onerror = function () { clearTimeout(temporizador); script.remove(); reject(new Error('No se pudo descargar ' + url)); };
             document.head.appendChild(script);
         });
     }
 
     async function cargarMediaPipe() {
-        if (typeof window.FaceMesh === 'function') {
-            return CONFIG.MEDIAPIPE_VERSIONS[0];
-        }
+        if (typeof window.FaceMesh === 'function') return CONFIG.MEDIAPIPE_VERSIONS[0];
         var ultimoError = null;
         for (var i = 0; i < CONFIG.MEDIAPIPE_VERSIONS.length; i++) {
             var version = CONFIG.MEDIAPIPE_VERSIONS[i];
             try {
                 await cargarScript(CONFIG.MEDIAPIPE_CDN + '@' + version + '/face_mesh.js');
-                if (typeof window.FaceMesh === 'function') {
-                    return version;
-                }
+                if (typeof window.FaceMesh === 'function') return version;
                 ultimoError = new Error('MediaPipe no expuso FaceMesh en la versión ' + version);
-            } catch (error) {
-                ultimoError = error;
-            }
+            } catch (error) { ultimoError = error; }
         }
         throw ultimoError || new Error('MediaPipe no disponible.');
     }
@@ -390,19 +231,10 @@
         try {
             var version = await cargarMediaPipe();
             var faceMesh = new window.FaceMesh({
-                locateFile: function (archivo) {
-                    return CONFIG.MEDIAPIPE_CDN + '@' + version + '/' + archivo;
-                }
+                locateFile: function (archivo) { return CONFIG.MEDIAPIPE_CDN + '@' + version + '/' + archivo; }
             });
-            faceMesh.setOptions({
-                maxNumFaces: 1,
-                refineLandmarks: false,
-                minDetectionConfidence: 0.5,
-                minTrackingConfidence: 0.5
-            });
-            faceMesh.onResults(function (resultados) {
-                state.lastResults = resultados;
-            });
+            faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
+            faceMesh.onResults(function (resultados) { state.lastResults = resultados; });
             await faceMesh.initialize();
             state.faceMesh = faceMesh;
             return true;
@@ -422,9 +254,8 @@
         ];
         var ultimoError = null;
         for (var i = 0; i < intentos.length; i++) {
-            try {
-                return await navigator.mediaDevices.getUserMedia(intentos[i]);
-            } catch (error) {
+            try { return await navigator.mediaDevices.getUserMedia(intentos[i]); }
+            catch (error) {
                 ultimoError = error;
                 if (error.name === 'NotAllowedError' || error.name === 'SecurityError') break;
             }
@@ -438,26 +269,18 @@
             var terminado = false;
             function finalizar() {
                 if (terminado) return;
-                terminado = true;
-                clearInterval(intervalo);
-                clearTimeout(limite);
-                resolve();
+                terminado = true; clearInterval(intervalo); clearTimeout(limite); resolve();
             }
-            var intervalo = setInterval(function () {
-                if (video.videoWidth) finalizar();
-            }, 50);
+            var intervalo = setInterval(function () { if (video.videoWidth) finalizar(); }, 50);
             var limite = setTimeout(finalizar, 4000);
         });
     }
 
     async function iniciarStream() {
         detenerStream();
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            throw new Error('Tu navegador no permite acceder a la cámara.');
-        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Tu navegador no permite acceder a la cámara.');
         state.stream = await pedirStream();
-        state.video.muted = true;
-        state.video.srcObject = state.stream;
+        state.video.muted = true; state.video.srcObject = state.stream;
         await state.video.play().catch(function () {});
         await esperarDimensiones(state.video);
     }
@@ -467,7 +290,7 @@
             state.stream.getTracks().forEach(function (track) { track.stop(); });
             state.stream = null;
         }
-        if (state.video) { state.video.srcObject = null; }
+        if (state.video) state.video.srcObject = null;
     }
 
     async function cambiarCamara() {
@@ -477,12 +300,10 @@
         try {
             mostrarCargando(true, 'Cambiando cámara…');
             await iniciarStream();
-            state.lastResults = null;
-            state.lastDetectionTime = 0;
+            state.lastResults = null; state.lastDetectionTime = 0;
             mostrarCargando(false);
         } catch (error) {
-            state.facingMode = anterior;
-            mostrarCargando(false);
+            state.facingMode = anterior; mostrarCargando(false);
             notificar('No se pudo cambiar la cámara.', 'error');
         }
     }
@@ -491,30 +312,19 @@
         return new Promise(function (resolve) {
             var urls = new Set();
             Object.keys(ASSETS).forEach(function (id) {
-                ASSETS[id].partes.forEach(function (parte) {
-                    urls.add(parte.src);
-                });
+                ASSETS[id].partes.forEach(function (parte) { urls.add(parte.src); });
             });
             var pendientes = urls.size;
             if (pendientes === 0) { resolve(); return; }
-            function terminar() {
-                pendientes--;
-                if (pendientes <= 0) resolve();
-            }
+            function terminar() { pendientes--; if (pendientes <= 0) resolve(); }
             urls.forEach(function (url) {
                 var existente = state.imagenes[url];
-                if (existente && existente.complete && existente.naturalWidth > 0) {
-                    terminar(); return;
-                }
+                if (existente && existente.complete && existente.naturalWidth > 0) { terminar(); return; }
                 var imagen = new Image();
                 imagen.crossOrigin = 'anonymous';
                 imagen.onload = terminar;
-                imagen.onerror = function () {
-                    console.error('[CSARIELS Cámara] No se pudo cargar el PNG:', url);
-                    terminar();
-                };
-                state.imagenes[url] = imagen;
-                imagen.src = url;
+                imagen.onerror = function () { console.error('[CSARIELS Cámara] No se pudo cargar el PNG:', url); terminar(); };
+                state.imagenes[url] = imagen; imagen.src = url;
             });
         });
     }
@@ -525,17 +335,12 @@
         SELECTORES_MARQUINHOS.forEach(function (selector) {
             try {
                 document.querySelectorAll(selector).forEach(function (el) {
-                    if (el.closest('#csModalCamara')) return;
-                    elementos.add(el);
+                    if (el.closest('#csModalCamara')) return; elementos.add(el);
                 });
             } catch (error) {}
         });
         elementos.forEach(function (el) {
-            state.ocultos.push({
-                el: el,
-                prev: el.style.getPropertyValue('display'),
-                prioridad: el.style.getPropertyPriority('display')
-            });
+            state.ocultos.push({ el: el, prev: el.style.getPropertyValue('display'), prioridad: el.style.getPropertyPriority('display') });
             el.style.setProperty('display', 'none', 'important');
         });
     }
@@ -543,11 +348,8 @@
     function restaurarMarquinhos() {
         state.ocultos.forEach(function (registro) {
             try {
-                if (registro.prev) {
-                    registro.el.style.setProperty('display', registro.prev, registro.prioridad);
-                } else {
-                    registro.el.style.removeProperty('display');
-                }
+                if (registro.prev) registro.el.style.setProperty('display', registro.prev, registro.prioridad);
+                else registro.el.style.removeProperty('display');
             } catch (error) {}
         });
         state.ocultos = [];
@@ -639,19 +441,12 @@
             if (!state.iniciada) return;
             var ahora = performance.now();
             if (state.faceMesh && !state.enviando && state.video.readyState >= 2 && ahora - state.lastDetectionTime >= intervalo) {
-                state.lastDetectionTime = ahora;
-                state.enviando = true;
-                try {
-                    await state.faceMesh.send({ image: state.video });
-                } catch (error) {
-                    console.warn('[CSARIELS Cámara] Error de detección:', error);
-                } finally {
-                    state.enviando = false;
-                }
+                state.lastDetectionTime = ahora; state.enviando = true;
+                try { await state.faceMesh.send({ image: state.video }); }
+                catch (error) { console.warn('[CSARIELS Cámara] Error de detección:', error); }
+                finally { state.enviando = false; }
             }
-            if (state.iniciada) {
-                state.detectionFrameId = requestAnimationFrame(detectar);
-            }
+            if (state.iniciada) state.detectionFrameId = requestAnimationFrame(detectar);
         }
         state.detectionFrameId = requestAnimationFrame(detectar);
     }
@@ -659,20 +454,14 @@
     function iniciarLoopRender() {
         function dibujar() {
             if (!state.iniciada) return;
-            var video = state.video;
-            var canvas = state.canvas;
-            var ctx = state.ctx;
+            var video = state.video, canvas = state.canvas, ctx = state.ctx;
             if (video.readyState >= 2 && video.videoWidth) {
                 if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
+                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
                 }
                 var espejado = state.facingMode === 'user';
                 ctx.save();
-                if (espejado) {
-                    ctx.translate(canvas.width, 0);
-                    ctx.scale(-1, 1);
-                }
+                if (espejado) { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
                 ctx.restore();
                 var landmarks = state.lastResults && state.lastResults.multiFaceLandmarks && state.lastResults.multiFaceLandmarks[0];
@@ -688,32 +477,25 @@
     function dibujarFiltro(landmarks, canvas, ctx, espejado) {
         var filtro = ASSETS[state.filtroActual];
         if (!filtro) return;
-        var anchoCanvas = canvas.width;
-        var altoCanvas = canvas.height;
+        var anchoCanvas = canvas.width, altoCanvas = canvas.height;
+
         function punto(indice) {
             var p = landmarks[indice];
-            return {
-                x: espejado ? (1 - p.x) * anchoCanvas : p.x * anchoCanvas,
-                y: p.y * altoCanvas
-            };
+            return { x: espejado ? (1 - p.x) * anchoCanvas : p.x * anchoCanvas, y: p.y * altoCanvas };
         }
-        var ojoA = punto(33);
-        var ojoB = punto(263);
+
+        var ojoA = punto(33), ojoB = punto(263);
         var ojoIzq = ojoA.x <= ojoB.x ? ojoA : ojoB;
         var ojoDer = ojoA.x <= ojoB.x ? ojoB : ojoA;
-        var mejillaA = punto(234);
-        var mejillaB = punto(454);
+        var mejillaA = punto(234), mejillaB = punto(454);
         var mejillaIzq = mejillaA.x <= mejillaB.x ? mejillaA : mejillaB;
         var mejillaDer = mejillaA.x <= mejillaB.x ? mejillaB : mejillaA;
         var anchoCara = Math.hypot(mejillaDer.x - mejillaIzq.x, mejillaDer.y - mejillaIzq.y);
         if (!anchoCara || !isFinite(anchoCara)) return;
         var angulo = Math.atan2(ojoDer.y - ojoIzq.y, ojoDer.x - ojoIzq.x);
-        var centroOjos = {
-            x: (ojoIzq.x + ojoDer.x) / 2,
-            y: (ojoIzq.y + ojoDer.y) / 2
-        };
+        var centroOjos = { x: (ojoIzq.x + ojoDer.x) / 2, y: (ojoIzq.y + ojoDer.y) / 2 };
         var frente = punto(10);
-        var puntaNariz = punto(1); // Punto 1 es la punta exacta de la nariz
+        var puntaNariz = punto(1);
 
         filtro.partes.forEach(function (parte) {
             var imagen = state.imagenes[parte.src];
@@ -721,14 +503,7 @@
             var ancho = anchoCara * parte.scale;
             var factorAltura = parte.aplanar || 1;
             var alto = ancho * (imagen.naturalHeight / imagen.naturalWidth) * factorAltura;
-            var ancla;
-            if (parte.ancla === 'frente') {
-                ancla = frente;
-            } else if (parte.ancla === 'nariz') {
-                ancla = puntaNariz;
-            } else {
-                ancla = centroOjos;
-            }
+            var ancla = (parte.ancla === 'frente') ? frente : (parte.ancla === 'nariz') ? puntaNariz : centroOjos;
             var desplazamientoX = (parte.offsetX || 0) * anchoCara;
             var desplazamientoY = (parte.offsetY || 0) * alto;
             var x = ancla.x + desplazamientoX;
@@ -747,39 +522,25 @@
         return candidatos.find(function (tipo) { return MediaRecorder.isTypeSupported(tipo); }) || '';
     }
 
-    function toggleGrabacion() {
-        if (state.grabando) {
-            detenerGrabacion();
-        } else {
-            iniciarGrabacion();
-        }
-    }
+    function toggleGrabacion() { if (state.grabando) detenerGrabacion(); else iniciarGrabacion(); }
 
     function iniciarGrabacion() {
         if (!state.iniciada || state.grabando) return;
         if (typeof state.canvas.captureStream !== 'function') {
-            notificar('Tu navegador no permite grabar desde la cámara.', 'error');
-            return;
+            notificar('Tu navegador no permite grabar desde la cámara.', 'error'); return;
         }
         var canvasStream = state.canvas.captureStream(CONFIG.TARGET_FPS);
-        if (state.stream) {
-            state.stream.getAudioTracks().forEach(function (track) { canvasStream.addTrack(track); });
-        }
+        if (state.stream) state.stream.getAudioTracks().forEach(function (track) { canvasStream.addTrack(track); });
         var mimeType = obtenerFormatoGrabacion();
         var recorder;
         try {
             recorder = new MediaRecorder(canvasStream, mimeType ? { mimeType: mimeType, videoBitsPerSecond: CONFIG.VIDEO_BITRATE } : {});
         } catch (error) {
             canvasStream.getTracks().forEach(function (track) { track.stop(); });
-            notificar('Tu navegador no soporta grabación de video.', 'error');
-            return;
+            notificar('Tu navegador no soporta grabación de video.', 'error'); return;
         }
-        state.mediaRecorder = recorder;
-        state.chunks = [];
-        state.descartar = false;
-        recorder.ondataavailable = function (evento) {
-            if (evento.data && evento.data.size > 0) state.chunks.push(evento.data);
-        };
+        state.mediaRecorder = recorder; state.chunks = []; state.descartar = false;
+        recorder.ondataavailable = function (evento) { if (evento.data && evento.data.size > 0) state.chunks.push(evento.data); };
         recorder.onstop = function () {
             var tipo = recorder.mimeType || mimeType || 'video/webm';
             var extension = tipo.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
@@ -787,28 +548,18 @@
             state.chunks = [];
             canvasStream.getTracks().forEach(function (track) { track.stop(); });
             if (state.descartar) { liberarRecursos(); return; }
-            if (blob.size === 0) {
-                notificar('No se pudo grabar el video. Intenta de nuevo.', 'error');
-                liberarRecursos(); return;
-            }
+            if (blob.size === 0) { notificar('No se pudo grabar el video. Intenta de nuevo.', 'error'); liberarRecursos(); return; }
             var archivo = new File([blob], 'video-camara-' + Date.now() + '.' + extension, { type: tipo });
             liberarRecursos();
-            if (typeof window.csCamaraOnVideoGrabado === 'function') {
-                window.csCamaraOnVideoGrabado(archivo);
-            }
+            if (typeof window.csCamaraOnVideoGrabado === 'function') window.csCamaraOnVideoGrabado(archivo);
         };
-        recorder.start(250);
-        state.grabando = true;
-        $('csBtnRecord').classList.add('grabando');
-        $('csRecIndicator').classList.add('active');
-        $('csCamaraTimer').classList.add('active');
+        recorder.start(250); state.grabando = true;
+        $('csBtnRecord').classList.add('grabando'); $('csRecIndicator').classList.add('active'); $('csCamaraTimer').classList.add('active');
         iniciarTimer();
     }
 
     function detenerGrabacion() {
-        if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
-            state.mediaRecorder.stop();
-        }
+        if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') state.mediaRecorder.stop();
         state.grabando = false;
         if ($('csBtnRecord')) $('csBtnRecord').classList.remove('grabando');
         if ($('csRecIndicator')) $('csRecIndicator').classList.remove('active');
@@ -817,37 +568,26 @@
     }
 
     function iniciarTimer() {
-        state.segundosGrabados = 0;
-        actualizarTimerUI();
+        state.segundosGrabados = 0; actualizarTimerUI();
         state.timerInterval = setInterval(function () {
-            state.segundosGrabados++;
-            actualizarTimerUI();
-            if (state.segundosGrabados >= CONFIG.MAX_DURATION_SECONDS) {
-                detenerGrabacion();
-            }
+            state.segundosGrabados++; actualizarTimerUI();
+            if (state.segundosGrabados >= CONFIG.MAX_DURATION_SECONDS) detenerGrabacion();
         }, 1000);
     }
 
     function detenerTimer() {
-        if (state.timerInterval) {
-            clearInterval(state.timerInterval);
-            state.timerInterval = null;
-        }
+        if (state.timerInterval) { clearInterval(state.timerInterval); state.timerInterval = null; }
     }
 
     function actualizarTimerUI() {
         var minutos = String(Math.floor(state.segundosGrabados / 60)).padStart(2, '0');
         var segundos = String(state.segundosGrabados % 60).padStart(2, '0');
         var temporizador = $('csCamaraTimer');
-        if (temporizador) {
-            temporizador.textContent = minutos + ':' + segundos;
-        }
+        if (temporizador) temporizador.textContent = minutos + ':' + segundos;
     }
 
     function onVisibilityChange() {
-        if (document.hidden && state.grabando) {
-            detenerGrabacion();
-        }
+        if (document.hidden && state.grabando) detenerGrabacion();
     }
 
     async function abrirCamara() {
@@ -864,17 +604,13 @@
             await iniciarStream();
             await precargarImagenes();
             var filtrosListos = await iniciarFaceMesh();
-            if (!filtrosListos) {
-                notificar('Filtros no disponibles. Puedes grabar sin filtro.', 'warning');
-            }
+            if (!filtrosListos) notificar('Filtros no disponibles. Puedes grabar sin filtro.', 'warning');
             state.iniciada = true;
             state.lastDetectionTime = 0;
             state.lastResults = null;
             mostrarCargando(false);
             iniciarLoopRender();
-            if (filtrosListos) {
-                iniciarLoopDeteccion();
-            }
+            if (filtrosListos) iniciarLoopDeteccion();
         } catch (error) {
             console.error('[CSARIELS Cámara] Error al iniciar:', error);
             notificar(obtenerMensajeError(error), 'error');
@@ -887,8 +623,7 @@
     function cerrarCamara() {
         detenerTimer();
         if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
-            state.descartar = true;
-            state.grabando = false;
+            state.descartar = true; state.grabando = false;
             $('csModalCamara').classList.remove('show');
             state.mediaRecorder.stop();
             return;
@@ -897,22 +632,12 @@
     }
 
     function liberarRecursos() {
-        state.iniciada = false;
-        state.grabando = false;
-        state.lastResults = null;
-        state.mediaRecorder = null;
-        state.chunks = [];
-        state.enviando = false;
-        if (state.renderFrameId) {
-            cancelAnimationFrame(state.renderFrameId);
-            state.renderFrameId = null;
-        }
-        if (state.detectionFrameId) {
-            cancelAnimationFrame(state.detectionFrameId);
-            state.detectionFrameId = null;
-        }
-        detenerStream();
-        detenerTimer();
+        state.iniciada = false; state.grabando = false;
+        state.lastResults = null; state.mediaRecorder = null;
+        state.chunks = []; state.enviando = false;
+        if (state.renderFrameId) { cancelAnimationFrame(state.renderFrameId); state.renderFrameId = null; }
+        if (state.detectionFrameId) { cancelAnimationFrame(state.detectionFrameId); state.detectionFrameId = null; }
+        detenerStream(); detenerTimer();
         if ($('csBtnRecord')) $('csBtnRecord').classList.remove('grabando');
         if ($('csRecIndicator')) $('csRecIndicator').classList.remove('active');
         if ($('csCamaraTimer')) $('csCamaraTimer').classList.remove('active');
