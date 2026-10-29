@@ -1,6 +1,7 @@
 /* ============================================================
-   TECLADO DE EMOJIS Y COMPETITIVOS
+   TECLADO DE EMOJIS, EMOTES Y COMPETITIVOS · v3 (archivo completo)
    ============================================================ */
+
 .teclado-emojis-overlay {
     position: absolute;
     bottom: 100%;
@@ -18,6 +19,7 @@
     gap: 8px;
     backdrop-filter: blur(10px);
     margin-bottom: 10px;
+    box-sizing: border-box;
 }
 
 .teclado-emojis-overlay.show {
@@ -26,8 +28,9 @@
 
 .teclado-emojis-tabs {
     display: flex;
+    flex-wrap: wrap;
     gap: 4px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     padding-bottom: 8px;
 }
 
@@ -60,9 +63,18 @@
 .teclado-emojis-grid::-webkit-scrollbar {
     width: 4px;
 }
+
 .teclado-emojis-grid::-webkit-scrollbar-thumb {
     background: var(--cyan, #00E5FF);
     border-radius: 4px;
+}
+
+.teclado-emojis-vacio {
+    grid-column: 1 / -1;
+    text-align: center;
+    color: #8aa8b8;
+    font-size: 0.75rem;
+    padding: 12px;
 }
 
 .emoji-item {
@@ -71,12 +83,12 @@
     justify-content: center;
     width: 100%;
     aspect-ratio: 1;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 8px;
     cursor: pointer;
-    font-size: 1.5rem;
     transition: all 0.2s;
     border: 1px solid transparent;
+    box-sizing: border-box;
 }
 
 .emoji-item:hover {
@@ -89,4 +101,31 @@
     width: 28px;
     height: 28px;
     object-fit: contain;
+}
+
+/* Emotes anchos (desafío): ocupan dos columnas y se ven completos */
+.emoji-item.badge {
+    grid-column: span 2;
+    aspect-ratio: auto;
+    height: 44px;
+    padding: 4px;
+}
+
+.emoji-item.badge img {
+    width: 100%;
+    height: 100%;
+}
+
+/* Render de emotes dentro de los mensajes del chat */
+img.emote-img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    vertical-align: middle;
+}
+
+img.emote-img.emote-badge {
+    width: auto;
+    height: 32px;
+    max-width: 96px;
 }
