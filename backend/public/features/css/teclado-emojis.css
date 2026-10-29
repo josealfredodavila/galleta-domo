@@ -1,0 +1,92 @@
+/* ============================================================
+   TECLADO DE EMOJIS Y COMPETITIVOS
+   ============================================================ */
+.teclado-emojis-overlay {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    max-width: 400px;
+    background: rgba(15, 25, 40, 0.98);
+    border: 1px solid var(--cyan, #00E5FF);
+    border-radius: 16px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    backdrop-filter: blur(10px);
+    margin-bottom: 10px;
+}
+
+.teclado-emojis-overlay.show {
+    display: flex;
+}
+
+.teclado-emojis-tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 8px;
+}
+
+.teclado-emojis-tab {
+    background: transparent;
+    border: none;
+    color: #8aa8b8;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.teclado-emojis-tab.active {
+    background: rgba(0, 229, 255, 0.1);
+    color: var(--cyan, #00E5FF);
+}
+
+.teclado-emojis-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.teclado-emojis-grid::-webkit-scrollbar {
+    width: 4px;
+}
+.teclado-emojis-grid::-webkit-scrollbar-thumb {
+    background: var(--cyan, #00E5FF);
+    border-radius: 4px;
+}
+
+.emoji-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    aspect-ratio: 1;
+    background: rgba(255,255,255,0.05);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.5rem;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.emoji-item:hover {
+    background: rgba(0, 229, 255, 0.15);
+    border-color: var(--cyan, #00E5FF);
+    transform: scale(1.1);
+}
+
+.emoji-item img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
