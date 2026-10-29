@@ -170,7 +170,14 @@
         'use strict';
 
         const $ = (sel) => document.querySelector(sel);
-        let miPerfil = { chat_quien_puede: 'todos', chat_filtro_solicitudes: true, chat_mostrar_leido: true, chat_mostrar_escribiendo: true };
+        
+        // Usamos las llaves exactas que confirmó Anthropic
+        let miPerfil = { 
+            chats_quien_puede_mensajes: 'todos', 
+            chats_filtro_solicitudes: true, 
+            chats_mostrar_leido: true, 
+            chats_mostrar_escribiendo: true 
+        };
 
         async function esperarCliente() {
             const inicio = Date.now();
@@ -191,7 +198,7 @@
         let contactosConfianza = [];
 
         // ============================================================
-        // 1. CARGAR PREFERENCIAS DESDE SUPABASE
+        // 1. CARGAR PREFERENCIAS DESDE SUPABASE (Tabla correcta)
         // ============================================================
         async function cargarPreferencias() {
             try {
@@ -200,37 +207,44 @@
                 const { data: sessionData } = await client.auth.getSession();
                 if (!sessionData?.session) return;
 
+                // Leemos de preferencias_usuario
                 const { data } = await client
-                    .from('usuarios')
-                    .select('chat_quien_puede, chat_filtro_solicitudes, chat_mostrar_leido, chat_mostrar_escribiendo')
-                    .eq('id', sessionData.session.user.id)
+                    .from('preferencias_usuario')
+                    .select('prefs')
+                    .eq('usuario_id', sessionData.session.user.id)
                     .maybeSingle();
 
-                if (data) {
-                    miPerfil = { ...miPerfil, ...data };
+                if (data && data.prefs) {
+                    // Mezclamos lo que hay en la base con los valores por defecto
+                    miPerfil = { ...miPerfil, ...data.prefs };
                 }
                 renderSecciones();
             } catch (e) {
                 console.warn('Error cargando preferencias:', e);
-                renderSecciones(); // Renderizar con los valores por defecto si falla
+                renderSecciones();
             }
         }
 
         // ============================================================
-        // 2. GUARDAR EN SUPABASE
+        // 2. GUARDAR EN SUPABASE USANDO LA FUNCIÓN RPC
         // ============================================================
-        async function guardarPreferencia(campo, valor) {
+        async function guardarPreferencia(clave, valor) {
             try {
                 const client = await esperarCliente();
                 if (!client) throw new Error('Supabase no disponible');
                 
-                const { error } = await client
-                    .from('usuarios')
-                    .update({ [campo]: valor })
-                    .eq('id', (await client.auth.getSession()).data.session.user.id);
+                const sessionRes = await client.auth.getSession();
+                if (!sessionRes.data?.session) throw new Error('Sin sesión');
+
+                // Llamamos a la RPC que creó Anthropic
+                const { error } = await client.rpc('actualizar_preferencia', {
+                    p_clave: clave,
+                    p_valor: valor
+                });
 
                 if (error) throw error;
-                miPerfil[campo] = valor;
+                
+                miPerfil[clave] = valor;
                 return true;
             } catch (e) {
                 console.error('Error guardando preferencia:', e);
@@ -343,7 +357,7 @@
         }
 
         function renderSecciones() {
-            const quienPuede = miPerfil.chat_quien_puede || 'todos';
+            const quienPuede = miPerfil.chats_quien_puede_mensajes || 'todos';
             const textos = { todos: 'Todos pueden enviarme mensajes', contactos: 'Solo mis contactos pueden enviarme mensajes', nadie: 'Nadie puede enviarme mensajes' };
 
             $('#seccionQuienPuede').innerHTML = [
@@ -360,21 +374,21 @@
                     id: 'toggleFiltroSolicitudes',
                     title: 'Filtrar solicitudes de mensajes',
                     desc: 'Mueve automáticamente a "solicitudes" los mensajes de personas desconocidas',
-                    checked: miPerfil.chat_filtro_solicitudes !== false,
+                    checked: miPerfil.chats_filtro_solicitudes !== false,
                     onChange: `window.onToggleFiltro(this.checked)`,
                 }),
                 cfgRenderToggle({
                     id: 'toggleLeido',
                     title: 'Mostrar confirmación de leído',
                     desc: 'La otra persona verá cuando hayas leído su mensaje',
-                    checked: miPerfil.chat_mostrar_leido !== false,
+                    checked: miPerfil.chats_mostrar_leido !== false,
                     onChange: `window.onToggleLeido(this.checked)`,
                 }),
                 cfgRenderToggle({
                     id: 'toggleEscribiendo',
                     title: 'Mostrar cuando estoy escribiendo',
                     desc: 'La otra persona verá cuando estás escribiendo un mensaje',
-                    checked: miPerfil.chat_mostrar_escribiendo !== false,
+                    checked: miPerfil.chats_mostrar_escribiendo !== false,
                     onChange: `window.onToggleEscribiendo(this.checked)`,
                 }),
             ].join('');
@@ -412,7 +426,7 @@
         };
 
         window.onConfigurarQuienPuede = async () => {
-            const actual = miPerfil.chat_quien_puede || 'todos';
+            const actual = miPerfil.chats_quien_puede_mensajes || 'todos';
             const overlay = document.createElement('div');
             overlay.className = 'cfg-modal-overlay';
             const opciones = [
@@ -458,7 +472,7 @@
             overlay.onclick = (e) => { if (e.target === overlay) close(); };
 
             overlay.querySelector('[data-action="save"]').onclick = async () => {
-                const ok = await guardarPreferencia('chat_quien_puede', seleccion);
+                const ok = await guardarPreferencia('chats_quien_puede_mensajes', seleccion);
                 if (ok) cfgToast('✅ Preferencia guardada', 'success');
                 close();
                 renderSecciones();
@@ -564,17 +578,17 @@
         };
 
         window.onToggleFiltro = async (value) => {
-            const ok = await guardarPreferencia('chat_filtro_solicitudes', value);
+            const ok = await guardarPreferencia('chats_filtro_solicitudes', value);
             if (ok) cfgToast(value ? '📥 Solicitudes filtradas automáticamente' : '📬 Todos los mensajes llegan directo', value ? 'success' : 'warning');
         };
 
         window.onToggleLeido = async (value) => {
-            const ok = await guardarPreferencia('chat_mostrar_leido', value);
+            const ok = await guardarPreferencia('chats_mostrar_leido', value);
             if (ok) cfgToast(value ? '👁️ Se muestra "leído"' : '👁️‍🗨️ Ya no se muestra "leído"', value ? 'success' : 'warning');
         };
 
         window.onToggleEscribiendo = async (value) => {
-            const ok = await guardarPreferencia('chat_mostrar_escribiendo', value);
+            const ok = await guardarPreferencia('chats_mostrar_escribiendo', value);
             if (ok) cfgToast(value ? '✍️ Se muestra "escribiendo..."' : '✍️ Ya no se muestra "escribiendo..."', value ? 'success' : 'warning');
         };
 
