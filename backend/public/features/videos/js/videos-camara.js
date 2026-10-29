@@ -1,12 +1,10 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v2.0
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v2.5
    ================================================================
-   - Cámara frontal/trasera con cambio en caliente.
-   - Face Mesh con detección asíncrona y render desacoplado.
-   - Filtros AR estables con espejo correcto.
-   - Grabación del canvas con filtros integrados.
-   - Selección automática de códec: VP9, VP8 o MP4/H.264.
-   - Limpieza total de streams, timers, listeners y MediaPipe.
+   - Integración de imágenes PNG reales (Orejas, Gafas, Corona, etc.)
+   - Posicionamiento dinámico usando landmarks de MediaPipe
+   - Rotación automática según el ángulo de la cara
+   - Grabación con filtros "quemados" en el pixel
    ================================================================ */
 
 (function () {
@@ -15,6 +13,9 @@
     if (window.__csarielsVideosCamaraLoaded) return;
     window.__csarielsVideosCamaraLoaded = true;
 
+    // ============================================================
+    // CONFIGURACIÓN Y ASSETS
+    // ============================================================
     const CONFIG = Object.freeze({
         MAX_DURATION_SECONDS: 60,
         TARGET_FPS: 30,
@@ -23,6 +24,37 @@
         VIDEO_HEIGHT: 720,
         MEDIAPIPE_VERSION: '0.4.1633559619'
     });
+
+    // ⚠️ REEMPLAZA ESTAS URLS POR LAS DE TU SUPABASE
+    const SUPABASE_STORAGE_URL = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios';
+
+    const ASSETS = {
+        gato: {
+            src: `${SUPABASE_STORAGE_URL}/orejas-gato.png`,
+            scale: 1.4, // Escala relativa al ancho de la cara
+            offsetY: -0.5 // Cuánto subir respecto a la frente (negativo = arriba)
+        },
+        burro: {
+            src: `${SUPABASE_STORAGE_URL}/orejas-burro.png`,
+            scale: 1.6,
+            offsetY: -0.6
+        },
+        gafas: {
+            src: `${SUPABASE_STORAGE_URL}/gafas.png`,
+            scale: 1.2,
+            offsetY: 0
+        },
+        bigote: {
+            src: `${SUPABASE_STORAGE_URL}/bigote.png`,
+            scale: 0.9,
+            offsetY: 0.2 // Positivo = abajo
+        },
+        corona: {
+            src: `${SUPABASE_STORAGE_URL}/corona.png`,
+            scale: 1.8,
+            offsetY: -0.7
+        }
+    };
 
     const state = {
         stream: null,
@@ -42,6 +74,7 @@
         facingMode: 'user',
         timerInterval: null,
         segundosGrabados: 0,
+        imagenesCargadas: {}, // Aquí guardamos las imágenes precargadas
         filtrosDisponibles: [
             { id: 'ninguno', nombre: 'Ninguno', icono: '🚫' },
             { id: 'gato', nombre: 'Orejas', icono: '🐱' },
@@ -53,6 +86,37 @@
     };
 
     const $ = (id) => document.getElementById(id);
+
+    /* ============================================================
+       PRECARGA DE IMÁGENES
+       ============================================================ */
+    function precargarImagenes() {
+        return new Promise((resolve) => {
+            let cargadas = 0;
+            const total = Object.keys(ASSETS).length;
+
+            if (total === 0) { resolve(); return; }
+
+            Object.keys(ASSETS).forEach((key) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous'; // Para evitar errores de CORS
+                img.onload = () => {
+                    cargadas++;
+                    if (cargadas === total) {
+                        console.log('✅ Todos los filtros AR precargados');
+                        resolve();
+                    }
+                };
+                img.onerror = () => {
+                    console.warn(`⚠️ No se pudo cargar el filtro: ${ASSETS[key].src}`);
+                    cargadas++;
+                    if (cargadas === total) resolve();
+                };
+                img.src = ASSETS[key].src;
+                state.imagenesCargadas[key] = img;
+            });
+        });
+    }
 
     /* ============================================================
        MODAL
@@ -232,6 +296,9 @@
             state.canvas = $('csCamaraCanvas');
             state.ctx = state.canvas.getContext('2d', { alpha: false });
 
+            // Precargar imágenes ANTES de abrir la cámara
+            await precargarImagenes();
+
             await iniciarStream();
             await iniciarMediaPipe();
 
@@ -365,14 +432,20 @@
     }
 
     /* ============================================================
-       FILTROS AR
+       FILTROS AR CON IMÁGENES REALES
        ============================================================ */
     function dibujarFiltro(landmarks, canvas, ctx, espejado) {
         if (state.filtroActual === 'ninguno') return;
 
+        const assetConfig = ASSETS[state.filtroActual];
+        const imagen = state.imagenesCargadas[state.filtroActual];
+
+        if (!assetConfig || !imagen || !imagen.complete) return;
+
         const w = canvas.width;
         const h = canvas.height;
 
+        // Convertir landmarks a coordenadas del canvas
         const punto = (indice) => {
             const p = landmarks[indice];
             return {
@@ -381,57 +454,55 @@
             };
         };
 
+        // Puntos clave de la cara
         const ojoIzq = punto(33);
         const ojoDer = punto(263);
         const nariz = punto(1);
         const frente = punto(10);
+        const mejillaIzq = punto(234); // Pómulo izquierdo
+        const mejillaDer = punto(454); // Pómulo derecho
 
-        const distancia = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-        const anchoCara = Math.max(distancia(ojoIzq, ojoDer), w * 0.08);
-        const escala = anchoCara * 0.85;
+        // Calcular ancho de la cara (distancia entre pómulos)
+        const anchoCara = Math.hypot(mejillaDer.x - mejillaIzq.x, mejillaDer.y - mejillaIzq.y);
 
-        const centroOjos = {
-            x: (ojoIzq.x + ojoDer.x) / 2,
-            y: (ojoIzq.y + ojoDer.y) / 2
-        };
+        // Calcular centro de la cara (promedio de ojos o nariz)
+        const centroX = (ojoIzq.x + ojoDer.x) / 2;
+        const centroY = (ojoIzq.y + ojoDer.y) / 2;
 
+        // Calcular ángulo de rotación de la cabeza
         const angulo = Math.atan2(ojoDer.y - ojoIzq.y, ojoDer.x - ojoIzq.x);
 
-        ctx.save();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        // Calcular tamaño final de la imagen
+        const tamanoImagen = anchoCara * assetConfig.scale;
+        const proporcion = imagen.height / imagen.width;
+        const alturaImagen = tamanoImagen * proporcion;
 
-        const dibujarEmoji = (emoji, x, y, tamano, rotacion = 0) => {
-            ctx.save();
-            ctx.translate(x, y);
-            ctx.rotate(rotacion);
-            ctx.font = `${tamano}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-            ctx.fillText(emoji, 0, 0);
-            ctx.restore();
-        };
+        // Determinar punto de anclaje según el filtro
+        let anchorX = centroX;
+        let anchorY = centroY;
 
-        switch (state.filtroActual) {
-            case 'gato':
-                dibujarEmoji('🐱', nariz.x, frente.y - escala * 0.45, escala);
-                break;
-
-            case 'burro':
-                dibujarEmoji('🐴', nariz.x, frente.y - escala * 0.45, escala);
-                break;
-
-            case 'gafas':
-                dibujarEmoji('🕶️', centroOjos.x, centroOjos.y, escala * 0.82, angulo);
-                break;
-
-            case 'bigote':
-                dibujarEmoji('🥸', nariz.x, nariz.y + escala * 0.28, escala * 0.62, angulo);
-                break;
-
-            case 'corona':
-                dibujarEmoji('👑', nariz.x, frente.y - escala * 0.62, escala * 0.92, angulo * 0.5);
-                break;
+        if (state.filtroActual === 'gato' || state.filtroActual === 'burro' || state.filtroActual === 'corona') {
+            anchorY = frente.y; // Usar la frente para orejas y corona
+        } else if (state.filtroActual === 'bigote') {
+            anchorY = nariz.y; // Usar la nariz para el bigote
+        } else if (state.filtroActual === 'gafas') {
+            anchorY = centroY; // Usar los ojos para las gafas
         }
 
+        // Aplicar offset vertical
+        anchorY += alturaImagen * assetConfig.offsetY;
+
+        // Dibujar con rotación
+        ctx.save();
+        ctx.translate(anchorX, anchorY);
+        ctx.rotate(angulo);
+        ctx.drawImage(
+            imagen,
+            -tamanoImagen / 2,
+            -alturaImagen / 2,
+            tamanoImagen,
+            alturaImagen
+        );
         ctx.restore();
     }
 
@@ -675,14 +746,7 @@
                 state.filtroActual = id;
                 renderizarFiltros();
             }
-        },
-        setMaxDuration: (segundos) => {
-            if (Number.isFinite(segundos) && segundos > 0) {
-                Object.defineProperty(CONFIG, 'MAX_DURATION_SECONDS', {
-                    value: Math.floor(segundos),
-                    writable: false
-                });
-            }
         }
     };
+
 })();
