@@ -1,9 +1,8 @@
 // ================================================================
-// MENSAJES · JS v5.0 · WEB3 NEON UI
-// Cambios v5.0:
-// - Fix doble binding de emojis (binding delegado a teclado-emojis.js)
-// - Bandera __livekitReady para el botón de videollamada
-// - openConversation usa __livekitReady (no re-deshabilita el botón)
+// MENSAJES · JS v5.1 · WEB3 NEON UI
+// Cambios v5.1:
+// - Corregido el manejo de error ENVIO_NO_PERMITIDO para que coincida con la BD
+// - Integración total con la RPC enviar_mensaje_chat y privacidad de chats
 // ================================================================
 
 'use strict';
@@ -98,10 +97,13 @@ async function enviarMensajeChat(destinatarioId, contenido, tipo = 'texto', imag
     if (error) {
         const msg = error.message || '';
         if (msg.indexOf('contenido_no_permitido') !== -1) throw error;
-        const m = msg.match(/envio_no_permitido:(\w+)/);
+        
+        // CORRECCIÓN: Anthropic configuró el error en mayúsculas (ENVIO_NO_PERMITIDO)
+        const m = msg.match(/(?:ENVIO_NO_PERMITIDO|envio_no_permitido):(\w+)/i);
         if (m) {
-            const e = new Error(MENSAJES_ENVIO[m[1]] || 'No puedes enviar este mensaje.');
-            e.codigoEnvio = m[1];
+            const llave = m[1].toLowerCase();
+            const e = new Error(MENSAJES_ENVIO[llave] || 'No puedes enviar este mensaje.');
+            e.codigoEnvio = llave;
             throw e;
         }
         throw error;
@@ -819,7 +821,6 @@ async function openConversation(id) {
         } else {
             callBtn.style.display = 'inline-flex';
             callBtn.title = 'Iniciar videollamada con ' + (p.nombre || 'usuario');
-            // Fix: usa la bandera __livekitReady (no se re-deshabilita si ya cargó)
             callBtn.disabled = !window.__livekitReady;
         }
     }
@@ -1937,7 +1938,6 @@ async function init() {
         }
     });
 
-    // Fix: bandera __livekitReady
     window.addEventListener('livekit:ready', () => {
         window.__livekitReady = true;
         if (callBtn) callBtn.disabled = false;
@@ -2003,7 +2003,6 @@ async function init() {
         $('fileInput').click();
     };
 
-    // Fix: binding del teclado delegado a teclado-emojis.js (sin duplicar toggles)
     if (typeof window.inicializarTecladoEmojis === 'function') {
         window.inicializarTecladoEmojis('messageInput', 'emojiBtn');
     }
@@ -2235,7 +2234,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '5.0.0',
+    version: '5.1.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
