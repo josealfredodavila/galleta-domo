@@ -1,5 +1,5 @@
 /* ============================================================
-   TECLADO DE EMOJIS, EMOTES Y COMPETITIVOS · v3 (archivo completo)
+   TECLADO DE EMOJIS, EMOTES Y COMPETITIVOS · v3.1
    ============================================================ */
 
 .teclado-emojis-overlay {
@@ -38,12 +38,13 @@
     background: transparent;
     border: none;
     color: #8aa8b8;
-    padding: 6px 12px;
+    padding: 6px 10px;
     border-radius: 8px;
     cursor: pointer;
     font-size: 0.75rem;
     font-weight: 600;
     transition: all 0.2s;
+    white-space: nowrap;
 }
 
 .teclado-emojis-tab.active {
