@@ -1,8 +1,7 @@
 // ================================================================
-// MENSAJES · JS v5.1 · WEB3 NEON UI
-// Cambios v5.1:
-// - Corregido el manejo de error ENVIO_NO_PERMITIDO para que coincida con la BD
-// - Integración total con la RPC enviar_mensaje_chat y privacidad de chats
+// MENSAJES · JS v5.2 · WEB3 NEON UI
+// Cambios v5.2:
+// - Fix livekit:ready race condition en init() (marca bandera si LivekitClient ya existe)
 // ================================================================
 
 'use strict';
@@ -1919,7 +1918,9 @@ async function init() {
     } catch (e) { console.warn('Error cargando sesión:', e); }
 
     const callBtn = $('videoCall');
+    if (!window.__livekitReady && window.LivekitClient) window.__livekitReady = true;
     if (!window.__livekitReady) { if (callBtn) callBtn.disabled = true; }
+    else if (callBtn) callBtn.disabled = false;
 
     await cargarFotoHeader();
     await loadConversations();
@@ -2234,7 +2235,7 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 window.NeonUI = {
-    version: '5.1.0',
+    version: '5.2.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
