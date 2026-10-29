@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.6
+   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.7
    ================================================================
    - MediaPipe Face Mesh se carga dinámicamente desde este archivo
      (no hace falta ningún <script> de MediaPipe en videos.html).
@@ -9,12 +9,9 @@
    - Envíos a Face Mesh secuenciales (MediaPipe no admite dos a la vez).
    - Cerrar la cámara durante una grabación descarta el video.
    - Marquinhos se oculta al abrir la cámara y se restaura al cerrar.
-   - v4.4: 18 filtros desde backend/assets (sufijo -1), cada uno con
-     su punto de anclaje: 'frente', 'nariz' u 'ojos'.
-   - v4.5: ajustes de posición y tamaño para ángel, charro, vikingo,
-     león y payaso.
-   - v4.6: emojis del selector corregidos, payaso ajustado para no
-     tapar los ojos, ángel aplanado (horizontal) y pegado a la cabeza.
+   - v4.7: cada filtro puede tener varias partes con su propia ancla
+     (payaso = peluca + nariz; perro = orejas + hocico). Thug Life
+     corregido: las gafas quedan sobre los ojos, no sobre la frente.
    ================================================================ */
 
 (function () {
@@ -38,29 +35,104 @@
     // Carpeta donde están los PNG de los filtros en el repo
     const ASSETS_BASE = 'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main/backend/assets';
 
-    // scale    = ancho del filtro como múltiplo del ancho de la cara
-    // offsetY  = desplazamiento vertical como fracción de la altura del filtro
+    // Cada filtro tiene una lista de "partes". Cada parte se dibuja por separado.
+    // scale    = ancho de la parte como múltiplo del ancho de la cara
+    // offsetY  = desplazamiento vertical como fracción de la altura de la parte
     //            (negativo = sube, positivo = baja)
     // ancla    = 'frente' (cabeza), 'nariz' (base de la nariz) u 'ojos' (centro de los ojos)
     // aplanar  = (opcional) factor para la altura; 1 = proporción original, 0.4 = aplastado
     const ASSETS = {
-        gato:     { src: `${ASSETS_BASE}/orejas-gato-1.png`,     scale: 1.0,  offsetY: -0.4,  ancla: 'frente' },
-        burro:    { src: `${ASSETS_BASE}/orejas-burro-1.png`,    scale: 1.0,  offsetY: -0.4,  ancla: 'frente' },
-        gafas:    { src: `${ASSETS_BASE}/gafas-1.png`,           scale: 1.0,  offsetY: 0,     ancla: 'ojos' },
-        thug:     { src: `${ASSETS_BASE}/thug-life-1.png`,       scale: 1.0,  offsetY: -0.28, ancla: 'ojos' },
-        corazon:  { src: `${ASSETS_BASE}/corazon-1.png`,         scale: 0.9,  offsetY: 0,     ancla: 'ojos' },
-        bigote:   { src: `${ASSETS_BASE}/bigote-1.png`,          scale: 0.45, offsetY: 0.5,   ancla: 'nariz' },
-        corona:   { src: `${ASSETS_BASE}/corona-1.png`,          scale: 0.9,  offsetY: -0.5,  ancla: 'frente' },
-        diamante: { src: `${ASSETS_BASE}/corona-diamante-1.png`, scale: 0.9,  offsetY: -0.5,  ancla: 'frente' },
-        perro:    { src: `${ASSETS_BASE}/perro-1.png`,           scale: 1.3,  offsetY: -0.18, ancla: 'nariz' },
-        diablo:   { src: `${ASSETS_BASE}/diablo-1.png`,          scale: 1.0,  offsetY: -0.6,  ancla: 'frente' },
-        angel:    { src: `${ASSETS_BASE}/angel-1.png`,           scale: 1.0,  offsetY: -0.6,  ancla: 'frente', aplanar: 0.4 },
-        payaso:   { src: `${ASSETS_BASE}/payaso-1.png`,          scale: 0.9,  offsetY: -0.35, ancla: 'nariz' },
-        charro:   { src: `${ASSETS_BASE}/charro-1.png`,          scale: 1.2,  offsetY: -0.7,  ancla: 'frente' },
-        vikingo:  { src: `${ASSETS_BASE}/vikingo-1.png`,         scale: 1.1,  offsetY: -0.3,  ancla: 'frente' },
-        leon:     { src: `${ASSETS_BASE}/leon-1.png`,            scale: 0.95, offsetY: 0,     ancla: 'ojos' },
-        mascara:  { src: `${ASSETS_BASE}/mascara-lucha-1.png`,   scale: 1.0,  offsetY: 0,     ancla: 'ojos' },
-        alien:    { src: `${ASSETS_BASE}/antenas-alien-1.png`,   scale: 1.1,  offsetY: -0.27, ancla: 'ojos' }
+        gato: {
+            partes: [
+                { src: `${ASSETS_BASE}/orejas-gato-1.png`, scale: 1.0, offsetY: -0.4, ancla: 'frente' }
+            ]
+        },
+        burro: {
+            partes: [
+                { src: `${ASSETS_BASE}/orejas-burro-1.png`, scale: 1.0, offsetY: -0.4, ancla: 'frente' }
+            ]
+        },
+        gafas: {
+            partes: [
+                { src: `${ASSETS_BASE}/gafas-1.png`, scale: 1.0, offsetY: 0, ancla: 'ojos' }
+            ]
+        },
+        // Thug Life: el lente está en la parte superior de la imagen.
+        // offsetY positivo baja la imagen para que los lentes queden sobre los ojos.
+        thug: {
+            partes: [
+                { src: `${ASSETS_BASE}/thug-life-1.png`, scale: 1.1, offsetY: 0.3, ancla: 'ojos' }
+            ]
+        },
+        corazon: {
+            partes: [
+                { src: `${ASSETS_BASE}/corazon-1.png`, scale: 0.9, offsetY: 0, ancla: 'ojos' }
+            ]
+        },
+        bigote: {
+            partes: [
+                { src: `${ASSETS_BASE}/bigote-1.png`, scale: 0.45, offsetY: 0.5, ancla: 'nariz' }
+            ]
+        },
+        corona: {
+            partes: [
+                { src: `${ASSETS_BASE}/corona-1.png`, scale: 0.9, offsetY: -0.5, ancla: 'frente' }
+            ]
+        },
+        diamante: {
+            partes: [
+                { src: `${ASSETS_BASE}/corona-diamante-1.png`, scale: 0.9, offsetY: -0.5, ancla: 'frente' }
+            ]
+        },
+        // Perro: orejas arriba (sobre las cejas) y hocico sobre la nariz.
+        perro: {
+            partes: [
+                { src: `${ASSETS_BASE}/perro-orejas-1.png`, scale: 1.6, offsetY: -0.30, ancla: 'frente' },
+                { src: `${ASSETS_BASE}/perro-hocico-1.png`, scale: 0.6, offsetY: 0.1,   ancla: 'nariz' }
+            ]
+        },
+        diablo: {
+            partes: [
+                { src: `${ASSETS_BASE}/diablo-1.png`, scale: 1.0, offsetY: -0.6, ancla: 'frente' }
+            ]
+        },
+        angel: {
+            partes: [
+                { src: `${ASSETS_BASE}/angel-1.png`, scale: 1.0, offsetY: -0.6, ancla: 'frente', aplanar: 0.4 }
+            ]
+        },
+        // Payaso: peluca sobre la frente y nariz roja sobre la nariz real.
+        payaso: {
+            partes: [
+                { src: `${ASSETS_BASE}/payaso-1.png`,       scale: 0.9, offsetY: 0.44,  ancla: 'frente' },
+                { src: `${ASSETS_BASE}/payaso-nariz-1.png`, scale: 0.2, offsetY: -0.15, ancla: 'nariz' }
+            ]
+        },
+        charro: {
+            partes: [
+                { src: `${ASSETS_BASE}/charro-1.png`, scale: 1.2, offsetY: -0.7, ancla: 'frente' }
+            ]
+        },
+        vikingo: {
+            partes: [
+                { src: `${ASSETS_BASE}/vikingo-1.png`, scale: 1.1, offsetY: -0.3, ancla: 'frente' }
+            ]
+        },
+        leon: {
+            partes: [
+                { src: `${ASSETS_BASE}/leon-1.png`, scale: 0.95, offsetY: 0, ancla: 'ojos' }
+            ]
+        },
+        mascara: {
+            partes: [
+                { src: `${ASSETS_BASE}/mascara-lucha-1.png`, scale: 1.0, offsetY: 0, ancla: 'ojos' }
+            ]
+        },
+        alien: {
+            partes: [
+                { src: `${ASSETS_BASE}/antenas-alien-1.png`, scale: 1.1, offsetY: -0.27, ancla: 'ojos' }
+            ]
+        }
     };
 
     const SELECTORES_MARQUINHOS = [
@@ -90,7 +162,7 @@
         facingMode: 'user',
         timerInterval: null,
         segundosGrabados: 0,
-        imagenesCargadas: {},
+        imagenes: {},          // clave: URL de la imagen
         ocultos: [],
         filtrosDisponibles: [
             { id: 'ninguno', nombre: 'Ninguno', icono: '🚫' },
@@ -267,20 +339,22 @@
     // ============================================================
     // IMÁGENES DE FILTROS
     // ============================================================
+    // Recorre todas las partes de todos los filtros y descarga cada PNG una sola vez.
     function precargarImagenes() {
         return new Promise((resolve) => {
-            const claves = Object.keys(ASSETS);
-            let pendientes = claves.length;
+            const urls = new Set();
+            Object.values(ASSETS).forEach((f) => f.partes.forEach((p) => urls.add(p.src)));
+            let pendientes = urls.size;
             if (pendientes === 0) { resolve(); return; }
             const terminar = () => { pendientes--; if (pendientes === 0) resolve(); };
-            claves.forEach((key) => {
-                if (state.imagenesCargadas[key]?.complete && state.imagenesCargadas[key].naturalWidth) { terminar(); return; }
+            urls.forEach((url) => {
+                if (state.imagenes[url]?.complete && state.imagenes[url].naturalWidth) { terminar(); return; }
                 const img = new Image();
                 img.crossOrigin = 'anonymous';
                 img.onload = terminar;
-                img.onerror = () => { console.error('[CSARIELS Cámara] Error cargando filtro', key, ASSETS[key].src); terminar(); };
-                img.src = ASSETS[key].src;
-                state.imagenesCargadas[key] = img;
+                img.onerror = () => { console.error('[CSARIELS Cámara] Error cargando filtro', url); terminar(); };
+                img.src = url;
+                state.imagenes[url] = img;
             });
         });
     }
@@ -451,10 +525,10 @@
         state.renderFrameId = requestAnimationFrame(draw);
     }
 
+    // Dibuja todas las partes del filtro activo.
     function dibujarFiltro(landmarks, canvas, ctx, espejado) {
-        const cfg = ASSETS[state.filtroActual];
-        const img = state.imagenesCargadas[state.filtroActual];
-        if (!cfg || !img || !img.complete || !img.naturalWidth) return;
+        const filtro = ASSETS[state.filtroActual];
+        if (!filtro) return;
 
         const w = canvas.width;
         const h = canvas.height;
@@ -473,22 +547,26 @@
         const angulo = Math.atan2(ojoDer.y - ojoIzq.y, ojoDer.x - ojoIzq.x);
         const centro = { x: (ojoIzq.x + ojoDer.x) / 2, y: (ojoIzq.y + ojoDer.y) / 2 };
 
-        const ancho = anchoCara * cfg.scale;
-        const factorAltura = cfg.aplanar ?? 1;
-        const alto = ancho * (img.naturalHeight / img.naturalWidth) * factorAltura;
+        filtro.partes.forEach((parte) => {
+            const img = state.imagenes[parte.src];
+            if (!img || !img.complete || !img.naturalWidth) return;
 
-        // Punto de anclaje según el filtro
-        let ax = centro.x;
-        let ay = centro.y;
-        if (cfg.ancla === 'frente') ay = pt(10).y;    // frente
-        else if (cfg.ancla === 'nariz') ay = pt(2).y; // base de la nariz
-        ay += alto * cfg.offsetY;
+            const ancho = anchoCara * parte.scale;
+            const alto = ancho * (img.naturalHeight / img.naturalWidth) * (parte.aplanar ?? 1);
 
-        ctx.save();
-        ctx.translate(ax, ay);
-        ctx.rotate(angulo);
-        ctx.drawImage(img, -ancho / 2, -alto / 2, ancho, alto);
-        ctx.restore();
+            // Punto de anclaje de esta parte
+            let ax = centro.x;
+            let ay = centro.y;
+            if (parte.ancla === 'frente') ay = pt(10).y;    // frente
+            else if (parte.ancla === 'nariz') ay = pt(2).y; // base de la nariz
+            ay += alto * parte.offsetY;
+
+            ctx.save();
+            ctx.translate(ax, ay);
+            ctx.rotate(angulo);
+            ctx.drawImage(img, -ancho / 2, -alto / 2, ancho, alto);
+            ctx.restore();
+        });
     }
 
     // ============================================================
@@ -675,7 +753,7 @@
         cerrarCamara,
         cambiarCamara,
         setFiltro: (id) => {
-            if (state.filtrosDisponibles.some((f) => f.id === id)) {
+            if (ASSETS[id] || id === 'ninguno') {
                 state.filtroActual = id;
                 renderizarFiltros();
             }
