@@ -1,14 +1,14 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.5
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.6
    ================================================================
    FASE 1: UI de modales (sonidos, ubicación, borradores, preview)
    FASE 2: Carga modular de archivos (subirMultimedia)
    FASE 3C: (N/A aquí, el INSERT lo hace videos.html)
 
-   Novedades v1.5 (Autoplay en el mismo archivo):
-   - Se inyectó un IntersectionObserver al final para leer el localStorage.
-   - Ahora este archivo controla que los videos se reproduzcan o pausen 
-     dependiendo de la configuración del usuario.
+   Novedades v1.6 (Sonidos Locales + Preview):
+   - SONIDOS_SEED actualizado con 6 audios locales alojados en Supabase.
+   - Previsualización automática de 5 segundos al seleccionar sonido.
+   - getState() exporta correctamente { sonido: { url, nombre } } para videos.html.
    ================================================================ */
 
 (function () {
@@ -42,24 +42,60 @@
     };
 
     // ============================================================
-    // SEMILLA DE SONIDOS
+    // SEMILLA DE SONIDOS (LOCALES EN SUPABASE STORAGE)
     // ============================================================
+    // IMPORTANTE: Reemplaza la URL base por la de tu proyecto Supabase.
+    // Los archivos deben estar en un bucket público llamado 'audios'.
+    const SUPABASE_STORAGE_URL = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios';
+
     const SONIDOS_SEED = {
         parati: [
-            { id: 'sd-001', nombre: 'Amanecer en Puebla',   artista: 'Csariel Beats',  url: '', duracion: 32 },
-            { id: 'sd-002', nombre: 'Cumbia Galáctica',     artista: 'DJ Maíz',        url: '', duracion: 45 },
-            { id: 'sd-003', nombre: 'Corrido Cyberpunk',    artista: 'Los Charros AI', url: '', duracion: 38 },
-            { id: 'sd-004', nombre: 'Norteño Neón',         artista: 'Sonido Web3',    url: '', duracion: 40 }
+            {
+                id: 'sd-phonk',
+                nombre: 'Phonk Bass Drop',
+                artista: 'Viral Sounds',
+                url: `${SUPABASE_STORAGE_URL}/phonk-bass.mp3`,
+                duracion: 15
+            },
+            {
+                id: 'sd-suspenso',
+                nombre: 'Suspenso Épico',
+                artista: 'Cinematic Beats',
+                url: `${SUPABASE_STORAGE_URL}/suspenso.mp3`,
+                duracion: 30
+            },
+            {
+                id: 'sd-comedia',
+                nombre: 'Risa y Caos',
+                artista: 'Meme Sounds',
+                url: `${SUPABASE_STORAGE_URL}/comedia.mp3`,
+                duracion: 10
+            }
         ],
         populares: [
-            { id: 'sd-101', nombre: 'Sariel Vibes',         artista: 'Csariel Sound',  url: '', duracion: 30 },
-            { id: 'sd-102', nombre: 'Maíz Dorado',          artista: 'El Capitán',     url: '', duracion: 28 },
-            { id: 'sd-103', nombre: 'Noche Estelar',        artista: 'Cosmos MX',      url: '', duracion: 55 },
-            { id: 'sd-104', nombre: 'Perreo Intergaláctico',artista: 'Neón Kings',     url: '', duracion: 47 }
+            {
+                id: 'sd-trend1',
+                nombre: 'Aesthetic Vibes',
+                artista: 'Trending Now',
+                url: `${SUPABASE_STORAGE_URL}/aesthetic.mp3`,
+                duracion: 20
+            },
+            {
+                id: 'sd-trend2',
+                nombre: 'Corrido Bélico (Trap)',
+                artista: 'El Rey',
+                url: `${SUPABASE_STORAGE_URL}/trap-mexicano.mp3`,
+                duracion: 25
+            },
+            {
+                id: 'sd-reward',
+                nombre: 'Gancho de Éxito',
+                artista: 'Focus Music',
+                url: `${SUPABASE_STORAGE_URL}/exito.mp3`,
+                duracion: 5
+            }
         ],
-        favoritos: [
-            { id: 'sd-201', nombre: 'Mi Pista Favorita',    artista: 'Tú',             url: '', duracion: 35 }
-        ]
+        favoritos: []
     };
 
     // ============================================================
@@ -666,7 +702,32 @@
         const todas = [].concat(SONIDOS_SEED.parati).concat(SONIDOS_SEED.populares).concat(SONIDOS_SEED.favoritos);
         const s = todas.find(x => x.id === id);
         if (!s) return;
+        
         state.sonidoSeleccionado = s;
+        
+        // ✅ NUEVO: Previsualización de audio de 5 segundos
+        if (s.url) {
+            try {
+                if (window._audioPreview) {
+                    window._audioPreview.pause();
+                    window._audioPreview.currentTime = 0;
+                }
+                window._audioPreview = new Audio(s.url);
+                window._audioPreview.volume = 0.8;
+                window._audioPreview.play().catch(e => warn('No se pudo previsualizar audio:', e));
+                
+                // Detener después de 5 segundos (suficiente para el "hook")
+                setTimeout(() => {
+                    if (window._audioPreview) {
+                        window._audioPreview.pause();
+                        window._audioPreview.currentTime = 0;
+                    }
+                }, 5000);
+            } catch (e) {
+                warn('Error al previsualizar:', e);
+            }
+        }
+
         document.querySelectorAll('.cs-sonido-item').forEach(el => {
             el.classList.toggle('activo', el.dataset.sonidoId === id);
         });
@@ -802,7 +863,7 @@
     }
 
     // ============================================================
-    // INYECCIÓN DE AUTOPLAY (NUEVO EN v1.5)
+    // INYECCIÓN DE AUTOPLAY
     // ============================================================
     function iniciarVigilanteAutoplay() {
         function usuarioQuiereAutoplay() {
@@ -813,7 +874,6 @@
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 const video = entry.target;
-                // Ignorar el video de preview de subida
                 if (video.id === 'csPreviewVideo') return;
 
                 if (entry.isIntersecting) {
@@ -837,10 +897,7 @@
             });
         }
 
-        // Ejecutar cada 2 segundos para atrapar videos nuevos
         setInterval(engancharVideos, 2000);
-        
-        // Escuchar cuando se recarga el feed
         window.addEventListener('csariels:videos:refresh', () => setTimeout(engancharVideos, 1000));
     }
 
@@ -914,11 +971,8 @@
         engancharInputArchivo();
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
-        
-        // ¡AQUÍ ESTÁ LA MAGIA DEL AUTOPLAY INYECTADA!
-        iniciarVigilanteAutoplay(); 
-        
-        log('✅ Módulo Publicar v1.5 listo (con autoplay integrado)');
+        iniciarVigilanteAutoplay();
+        log('✅ Módulo Publicar v1.6 listo (sonidos locales + preview)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
