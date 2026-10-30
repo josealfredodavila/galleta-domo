@@ -11,6 +11,8 @@
 //       auditoría: C-04). Las llamadas se gestionan solo en /api/llamadas.
 // v3.9: Health check desacoplado de Supabase: /api/health es liveness
 //       (siempre 200) y /api/health/detalle muestra el estado completo.
+// v4.0: Noticias montado en /api/noticias (antes no estaba registrado,
+//       causaba "Endpoint no encontrado") y ruta amigable /noticias.
 // ================================================================
 
 require('dotenv').config();
@@ -872,6 +874,9 @@ montarRouter('/api/mercado/pedidos', './routes/mercado-pedidos', 'routes/mercado
 
 montarRouter('/api/live', './routes/live', 'routes/live');
 
+// Noticias (feed y preguntas con Perplexity, caché Redis, sesión Supabase)
+montarRouter('/api/noticias', './routes/noticias', 'routes/noticias');
+
 // Geo
 montarRouter('/api/geo', './routes/geo', 'routes/geo');
 
@@ -916,7 +921,8 @@ const friendlyRoutes = {
     '/mercado': 'features/mercado/index.html',
     '/muro': 'features/muro/index.html',
     '/videos': 'features/videos/index.html',
-    '/live': 'features/live/live.html'
+    '/live': 'features/live/live.html',
+    '/noticias': 'features/noticias/noticias.html'
 };
 
 for (const [route, file] of Object.entries(friendlyRoutes)) {
