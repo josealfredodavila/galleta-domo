@@ -1,10 +1,12 @@
 const axios = require('axios');
+const crypto = require('crypto');
 const Redis = require('ioredis');
 
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const REDIS_URL = process.env.REDIS_URL;
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 const CACHE_TTL = parseInt(process.env.NOTICIAS_CACHE_TTL_SECONDS || '600', 10);
+const CACHE_TTL_PREGUNTA = parseInt(process.env.NOTICIAS_PREGUNTA_CACHE_TTL_SECONDS || '1800', 10);
 const AGENT_MODEL = process.env.NOTICIAS_AGENT_MODEL || 'openai/gpt-5.6-sol';
 
 const CATEGORIAS_VALIDAS = ['general', 'mexico', 'tecnologia', 'conectividad', 'cripto', 'negocios'];
@@ -27,6 +29,34 @@ function buildCacheKey(categoria, region) {
     return `noticias:${categoria}:${region}`;
 }
 
+function buildPreguntaCacheKey(pregunta) {
+    const hash = crypto
+        .createHash('sha256')
+        .update(pregunta.toLowerCase())
+        .digest('hex');
+    return `noticias:pregunta:${hash}`;
+}
+
+async function leerCache(clave) {
+    if (!redisClient) return null;
+    try {
+        const cached = await redisClient.get(clave);
+        return cached ? JSON.parse(cached) : null;
+    } catch (error) {
+        console.warn('⚠️ Redis noticias get falló:', error.message);
+        return null;
+    }
+}
+
+async function escribirCache(clave, valor, ttl) {
+    if (!redisClient) return;
+    try {
+        await redisClient.setex(clave, ttl, JSON.stringify(valor));
+    } catch (error) {
+        console.warn('⚠️ Redis noticias setex falló:', error.message);
+    }
+}
+
 async function obtenerNoticias(categoria = 'general', region = 'MX') {
     const cat = String(categoria || 'general').trim().toLowerCase();
     const reg = String(region || 'MX').trim().toUpperCase();
@@ -44,17 +74,9 @@ async function obtenerNoticias(categoria = 'general', region = 'MX') {
     }
 
     const cacheKey = buildCacheKey(cat, reg);
-
-    if (redisClient) {
-        try {
-            const cached = await redisClient.get(cacheKey);
-            if (cached) {
-                const parsed = JSON.parse(cached);
-                return { ...parsed, desdeCache: true };
-            }
-        } catch (error) {
-            console.warn('⚠️ Redis noticias get falló:', error.message);
-        }
+    const cached = await leerCache(cacheKey);
+    if (cached) {
+        return { ...cached, desdeCache: true };
     }
 
     if (!PERPLEXITY_API_KEY) {
@@ -101,18 +123,11 @@ async function obtenerNoticias(categoria = 'general', region = 'MX') {
         const resultado = {
             consultadoEn: new Date().toISOString(),
             items,
-            desdeCache: false,
         };
 
-        if (redisClient) {
-            try {
-                await redisClient.setex(cacheKey, CACHE_TTL, JSON.stringify(resultado));
-            } catch (error) {
-                console.warn('⚠️ Redis noticias setex falló:', error.message);
-            }
-        }
+        await escribirCache(cacheKey, resultado, CACHE_TTL);
 
-        return resultado;
+        return { ...resultado, desdeCache: false };
     } catch (error) {
         console.error('❌ Error Search API noticias:', error.message);
 
@@ -135,12 +150,18 @@ async function obtenerNoticias(categoria = 'general', region = 'MX') {
 }
 
 async function preguntarActualidad(pregunta) {
-    const preguntaLimpia = String(pregunta || '').trim();
+    const preguntaLimpia = String(pregunta || '').trim().slice(0, 1000);
 
     if (!preguntaLimpia) {
         const err = new Error('Pregunta requerida');
         err.status = 400;
         throw err;
+    }
+
+    const cacheKey = buildPreguntaCacheKey(preguntaLimpia);
+    const cached = await leerCache(cacheKey);
+    if (cached) {
+        return { ...cached, desdeCache: true };
     }
 
     if (!PERPLEXITY_API_KEY) {
@@ -154,7 +175,7 @@ async function preguntarActualidad(pregunta) {
             'https://api.perplexity.ai/v1/agent',
             {
                 model: AGENT_MODEL,
-                input: preguntaLimpia.slice(0, 1000),
+                input: preguntaLimpia,
                 tools: [{ type: 'web_search' }],
                 instructions: 'Responde con información actualizada. Usa fuentes. No inventes URLs ni datos no verificados.',
             },
@@ -185,7 +206,7 @@ async function preguntarActualidad(pregunta) {
             }
         }
 
-        return {
+        const resultado = {
             consultadoEn: new Date().toISOString(),
             respuesta,
             fuentes: fuentes.filter((f) => {
@@ -197,6 +218,10 @@ async function preguntarActualidad(pregunta) {
                 }
             }),
         };
+
+        await escribirCache(cacheKey, resultado, CACHE_TTL_PREGUNTA);
+
+        return { ...resultado, desdeCache: false };
     } catch (error) {
         console.error('❌ Error Agent API noticias:', error.message);
 
