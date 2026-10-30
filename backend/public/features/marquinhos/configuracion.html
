@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Marquinhos · Configuración</title>
+<meta name="theme-color" content="#05080f">
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/features/shared/js/auth-global.js"></script>
+<script src="/features/shared/js/apariencia-global.js"></script>
+
+<style>
+:root {
+    --gold: #D4AF37;
+    --space: #05080f;
+    --text: #f0f4f8;
+    --muted: #8aa8b8;
+    --border: rgba(212, 175, 55, 0.16);
+    --danger: #ff3366;
+    --success: #00d68f;
+    --verde: #0F2D1A;
+    --whatsapp: #25D366;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    background: var(--space);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+    padding: 20px;
+    background-image:
+        radial-gradient(ellipse at 20% 20%, rgba(42, 106, 58, 0.25), transparent 55%),
+        radial-gradient(ellipse at 80% 80%, rgba(212, 175, 55, 0.06), transparent 55%);
+}
+.app { max-width: 640px; margin: 0 auto; }
+h1 { font-size: 1.3rem; color: var(--gold); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+h1 .hex { font-family: 'Orbitron', monospace; }
+.sub { color: var(--muted); font-size: .8rem; margin-bottom: 24px; }
+.card {
+    background: rgba(15, 45, 26, 0.35);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+}
+.card h2 {
+    font-size: .95rem;
+    color: var(--gold);
+    margin-bottom: 14px;
+    font-weight: 700;
+    letter-spacing: .5px;
+}
+.opcion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.opcion:last-child { border-bottom: 0; }
+.opcion .info { flex: 1; padding-right: 14px; }
+.opcion .titulo { font-weight: 600; font-size: .9rem; margin-bottom: 3px; }
+.opcion .desc { color: var(--muted); font-size: .72rem; line-height: 1.35; }
+.toggle {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.1);
+    cursor: pointer;
+    transition: background .25s;
+    flex-shrink: 0;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+.toggle.activo { background: var(--success); border-color: var(--success); }
+.toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform .25s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.toggle.activo::after { transform: translateX(22px); }
+
+.btn {
+    width: 100%;
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text);
+    font-weight: 700;
+    font-size: .85rem;
+    cursor: pointer;
+    font-family: inherit;
+    margin-top: 8px;
+    transition: all .2s;
+    text-decoration: none;
+    display: block;
+    text-align: center;
+}
+.btn:hover { border-color: var(--gold); color: var(--gold); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn-gold {
+    background: linear-gradient(135deg, var(--gold), #b8923a);
+    color: var(--space);
+    border-color: transparent;
+}
+.btn-gold:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+    color: var(--space);
+}
+.btn-danger { color: var(--danger); border-color: rgba(255,51,102,0.3); }
+.btn-danger:hover { background: rgba(255,51,102,0.1); }
+.btn-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: .85rem;
+    margin-bottom: 20px;
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    border-radius: 99px;
+}
+.btn-back:hover { color: var(--gold); border-color: var(--gold); }
+
+.slider {
+    width: 100%;
+    margin-top: 8px;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.1);
+    outline: none;
+}
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), #b8923a);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), #b8923a);
+    cursor: pointer;
+    border: 0;
+}
+.valor-slider {
+    float: right;
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
+    font-size: .8rem;
+}
+
+/* Preview del tamaño */
+.preview-tamano {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px 0 8px;
+    min-height: 120px;
+}
+.preview-tamano-box {
+    background: rgba(212, 175, 55, 0.08);
+    border: 1px dashed rgba(212, 175, 55, 0.4);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: width 0.2s, height 0.2s;
+    font-size: 0.65rem;
+    color: var(--muted);
+    overflow: hidden;
+}
+
+/* ================= WHATSAPP ================= */
+.wa-texto {
+    color: var(--muted);
+    font-size: .8rem;
+    line-height: 1.5;
+    margin-bottom: 14px;
+}
+.wa-codigo-caja {
+    margin-top: 14px;
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px dashed rgba(37, 211, 102, 0.45);
+    background: rgba(37, 211, 102, 0.06);
+    text-align: center;
+}
+.wa-codigo-caja[hidden] { display: none; }
+.wa-codigo {
+    font-family: 'Orbitron', monospace;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: .4em;
+    color: var(--text);
+    user-select: all;
+    -webkit-user-select: all;
+}
+.wa-vence {
+    margin-top: 8px;
+    font-size: .78rem;
+    color: var(--muted);
+}
+.wa-vence strong { color: var(--whatsapp); font-weight: 700; }
+.wa-vence.vencido strong { color: var(--danger); }
+.wa-copiar {
+    margin-top: 12px;
+    width: auto;
+    display: inline-block;
+    padding: 8px 18px;
+    font-size: .8rem;
+    border-color: rgba(37, 211, 102, 0.4);
+    color: var(--whatsapp);
+}
+.wa-copiar:hover { border-color: var(--whatsapp); color: var(--whatsapp); }
+.wa-estado {
+    margin-top: 10px;
+    font-size: .75rem;
+    min-height: 16px;
+    color: var(--muted);
+    text-align: center;
+}
+.wa-estado.error { color: var(--danger); }
+.wa-estado.ok { color: var(--success); }
+.wa-boton-generar {
+    background: linear-gradient(135deg, var(--whatsapp), #128C7E);
+    color: #04210F;
+    border-color: transparent;
+}
+.wa-boton-generar:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
+    color: #04210F;
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+    <a href="/features/perfil/configuracion/index.html" class="btn-back">← Configuración</a>
+
+    <h1><span class="hex">◈</span> Marquinhos</h1>
+    <p class="sub">Personaliza tu mascota virtual</p>
+
+    <!-- TIENDA -->
+    <div class="card">
+        <h2>TIENDA</h2>
+        <a href="/features/marquinhos/tienda.html" class="btn btn-gold">
+            ◈ Ir a la tienda de accesorios
+        </a>
+        <p style="color:var(--muted);font-size:.72rem;line-height:1.4;margin-top:12px;">
+            Compra sombreros, playeras, zapatos, lentes y más. Paga con USDT/USDC.
+        </p>
+    </div>
+
+    <!-- WHATSAPP DE MARQUINHOS -->
+    <div class="card" id="cardWhatsapp">
+        <h2>WHATSAPP DE MARQUINHOS</h2>
+
+        <p class="wa-texto">
+            Genera tu código aquí y envíalo por WhatsApp al número oficial para vincular tu cuenta.
+        </p>
+
+        <button class="btn wa-boton-generar" id="btnGenerarCodigo" type="button">
+            Generar código de vinculación
+        </button>
+
+        <div class="wa-codigo-caja" id="cajaCodigo" hidden>
+            <div class="wa-codigo" id="waCodigo" aria-live="polite">------</div>
+            <div class="wa-vence" id="waVence">Vence en <strong>10:00</strong></div>
+            <button class="btn wa-copiar" id="btnCopiarCodigo" type="button">Copiar código</button>
+        </div>
+
+        <div class="wa-estado" id="waEstado" role="status" aria-live="polite"></div>
+    </div>
+
+    <!-- ✅ NUEVO: TAMAÑO DEL MUÑECO -->
+    <div class="card">
+        <h2>TAMAÑO DEL MUÑECO</h2>
+
+        <div class="opcion" style="display:block;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Tamaño <span class="valor-slider" id="valTamano">100%</span></div>
+                <div class="desc" style="margin-bottom:8px;">Ajusta qué tan grande se ve tu Marquinhos flotante en las páginas.</div>
+                <input type="range" class="slider" id="sliderTamano" min="60" max="150" step="5" value="100">
+            </div>
+        </div>
+
+        <div class="preview-tamano">
+            <div class="preview-tamano-box" id="previewBox">
+                <span id="previewTexto">90 × 130 px</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODO DE INTERACCIÓN -->
+    <div class="card">
+        <h2>MODO DE INTERACCIÓN</h2>
+
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Modo Solo Voz</div>
+                <div class="desc">Muestra 3 burbujitas animadas y responde por audio. Ideal para móvil, sin saturar la pantalla.</div>
+            </div>
+            <div class="toggle" id="toggleModoVoz"></div>
+        </div>
+
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Modo Subtítulos</div>
+                <div class="desc">Muestra el texto de cada respuesta en un globo. Útil sin auriculares o en lugares ruidosos.</div>
+            </div>
+            <div class="toggle" id="toggleSubtitulos"></div>
+        </div>
+    </div>
+
+    <!-- VOZ -->
+    <div class="card">
+        <h2>VOZ</h2>
+
+        <div class="opcion" style="display:block;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Volumen <span class="valor-slider" id="valVolumen">100%</span></div>
+                <input type="range" class="slider" id="sliderVolumen" min="0" max="100" value="100">
+            </div>
+        </div>
+
+        <div class="opcion" style="display:block;margin-top:10px;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Velocidad <span class="valor-slider" id="valVelocidad">1.00x</span></div>
+                <input type="range" class="slider" id="sliderVelocidad" min="0.7" max="1.5" step="0.05" value="1.0">
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCIONES -->
+    <div class="card">
+        <h2>ACCIONES</h2>
+        <button class="btn" id="btnResetPosicion" type="button">Resetear posición del avatar</button>
+        <button class="btn btn-danger" id="btnLimpiarHistorial" type="button">Borrar historial de conversación</button>
+    </div>
+
+</div>
+
+<script>
+'use strict';
+
+/* ================================================================
+   WHATSAPP · GENERAR CÓDIGO DE VINCULACIÓN
+   POST /api/ai/chat-pet/whatsapp/codigo  (con token de sesión Supabase)
+================================================================ */
+(function () {
+    const ENDPOINT = '/api/ai/chat-pet/whatsapp/codigo';
+    const VIGENCIA_MS = 10 * 60 * 1000;
+
+    const btnGenerar = document.getElementById('btnGenerarCodigo');
+    const caja = document.getElementById('cajaCodigo');
+    const elCodigo = document.getElementById('waCodigo');
+    const elVence = document.getElementById('waVence');
+    const btnCopiar = document.getElementById('btnCopiarCodigo');
+    const elEstado = document.getElementById('waEstado');
+
+    let codigoActual = '';
+    let expiraEnMs = 0;
+    let temporizador = null;
+
+    function estado(texto, tipo) {
+        elEstado.textContent = texto || '';
+        elEstado.className = 'wa-estado' + (tipo ? ' ' + tipo : '');
+    }
+
+    function formatearTiempo(ms) {
+        const total = Math.max(0, Math.floor(ms / 1000));
+        const m = String(Math.floor(total / 60)).padStart(2, '0');
+        const s = String(total % 60).padStart(2, '0');
+        return m + ':' + s;
+    }
+
+    function pintarVence() {
+        const restante = expiraEnMs - Date.now();
+        if (restante <= 0) {
+            elVence.classList.add('vencido');
+            elVence.innerHTML = '<strong>Código vencido</strong>. Genera uno nuevo.';
+            btnCopiar.disabled = true;
+            clearInterval(temporizador);
+            temporizador = null;
+            return;
+        }
+        elVence.classList.remove('vencido');
+        elVence.innerHTML = 'Vence en <strong>' + formatearTiempo(restante) + '</strong>';
+    }
+
+    function mostrarCodigo(codigo, expiraEnIso) {
+        codigoActual = String(codigo || '');
+        expiraEnMs = new Date(expiraEnIso).getTime() || (Date.now() + VIGENCIA_MS);
+
+        elCodigo.textContent = codigoActual.replace(/(\d{3})(\d{3})/, '$1 $2');
+        caja.hidden = false;
+        btnCopiar.disabled = false;
+
+        clearInterval(temporizador);
+        pintarVence();
+        temporizador = setInterval(pintarVence, 1000);
+    }
+
+    async function obtenerToken() {
+        // El cliente de Supabase lo crea auth-global.js; esperamos a que esté listo
+        for (let i = 0; i < 80; i++) {
+            if (window.supabaseClient && window.supabaseClient.auth) break;
+            await new Promise(function (r) { setTimeout(r, 100); });
+        }
+        if (!window.supabaseClient || !window.supabaseClient.auth) return null;
+
+        const { data, error } = await window.supabaseClient.auth.getSession();
+        if (error || !data || !data.session) return null;
+        return data.session.access_token || null;
+    }
+
+    async function generarCodigo() {
+        btnGenerar.disabled = true;
+        btnGenerar.textContent = 'Generando...';
+        estado('');
+
+        try {
+            const token = await obtenerToken();
+            if (!token) {
+                estado('Inicia sesión para generar tu código.', 'error');
+                return;
+            }
+
+            const resp = await fetch(ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({})
+            });
+
+            const datos = await resp.json().catch(function () { return {}; });
+
+            if (!resp.ok || !datos.success) {
+                estado(datos.error || 'No se pudo generar el código. Intenta de nuevo.', 'error');
+                return;
+            }
+
+            mostrarCodigo(datos.codigo, datos.expira_en);
+            estado('Código generado. Envíalo por WhatsApp antes de que venza.', 'ok');
+        } catch (e) {
+            estado('Sin conexión. Revisa tu internet e intenta de nuevo.', 'error');
+        } finally {
+            btnGenerar.disabled = false;
+            btnGenerar.textContent = 'Generar código de vinculación';
+        }
+    }
+
+    async function copiarCodigo() {
+        if (!codigoActual) return;
+        if (expiraEnMs - Date.now() <= 0) {
+            estado('El código ya venció. Genera uno nuevo.', 'error');
+            return;
+        }
+
+        try {
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                await navigator.clipboard.writeText(codigoActual);
+            } else {
+                const area = document.createElement('textarea');
+                area.value = codigoActual;
+                area.style.position = 'fixed';
+                area.style.opacity = '0';
+                document.body.appendChild(area);
+                area.select();
+                document.execCommand('copy');
+                area.remove();
+            }
+            btnCopiar.textContent = '¡Copiado!';
+            estado('Código copiado. Pégalo en WhatsApp.', 'ok');
+            setTimeout(function () { btnCopiar.textContent = 'Copiar código'; }, 2000);
+        } catch (e) {
+            estado('No se pudo copiar. Mantén presionado el código para seleccionarlo.', 'error');
+        }
+    }
+
+    btnGenerar.addEventListener('click', generarCodigo);
+    btnCopiar.addEventListener('click', copiarCodigo);
+})();
+
+/* ================================================================
+   CONFIGURACIÓN DEL PET
+================================================================ */
+(function() {
+    const KEY = 'marquinhos_config';
+    let cfg = {};
+
+    function leer() {
+        try {
+            cfg = JSON.parse(localStorage.getItem(KEY) || '{}') || {};
+        } catch (e) { cfg = {}; }
+    }
+
+    function guardar() {
+        try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {}
+        // Notificar al pet si está abierto
+        if (window.Marquinhos && typeof window.Marquinhos.setConfig === 'function') {
+            try { window.Marquinhos.setConfig(cfg); } catch (e) {}
+        }
+    }
+
+    function pintar() {
+        const toggleVoz = document.getElementById('toggleModoVoz');
+        const toggleSub = document.getElementById('toggleSubtitulos');
+
+        // Lógica: si mostrar_subtitulos = false → modo voz activo
+        const enModoVoz = !cfg.mostrar_subtitulos;
+
+        toggleVoz.classList.toggle('activo', enModoVoz);
+        toggleSub.classList.toggle('activo', !!cfg.mostrar_subtitulos);
+
+        // Tamaño
+        const tamano = cfg.tamano != null ? cfg.tamano : 100;
+        document.getElementById('sliderTamano').value = tamano;
+        document.getElementById('valTamano').textContent = tamano + '%';
+        actualizarPreviewTamano(tamano);
+
+        // Volumen
+        const vol = Math.round((cfg.volumen != null ? cfg.volumen : 1.0) * 100);
+        document.getElementById('sliderVolumen').value = vol;
+        document.getElementById('valVolumen').textContent = vol + '%';
+
+        // Velocidad
+        const vel = cfg.velocidad != null ? cfg.velocidad : 1.0;
+        document.getElementById('sliderVelocidad').value = vel;
+        document.getElementById('valVelocidad').textContent = vel.toFixed(2) + 'x';
+    }
+
+    // Actualizar preview del tamaño
+    function actualizarPreviewTamano(porcentaje) {
+        const baseAncho = 90;
+        const baseAlto = 130;
+        const ancho = Math.round(baseAncho * porcentaje / 100);
+        const alto = Math.round(baseAlto * porcentaje / 100);
+
+        const box = document.getElementById('previewBox');
+        const texto = document.getElementById('previewTexto');
+
+        // Escalar el preview visual (no puede pasar de 120px alto para caber)
+        const escala = Math.min(1, 120 / alto);
+        box.style.width = (ancho * escala) + 'px';
+        box.style.height = (alto * escala) + 'px';
+
+        texto.textContent = ancho + ' × ' + alto + ' px';
+    }
+
+    function init() {
+        leer();
+        pintar();
+
+        // Toggle modo voz ↔ subtítulos
+        document.getElementById('toggleModoVoz').addEventListener('click', function() {
+            leer();
+            cfg.mostrar_subtitulos = false;
+            guardar();
+            pintar();
+        });
+
+        document.getElementById('toggleSubtitulos').addEventListener('click', function() {
+            leer();
+            cfg.mostrar_subtitulos = true;
+            guardar();
+            pintar();
+        });
+
+        // Slider de tamaño
+        document.getElementById('sliderTamano').addEventListener('input', function(e) {
+            leer();
+            cfg.tamano = parseInt(e.target.value, 10);
+            document.getElementById('valTamano').textContent = cfg.tamano + '%';
+            actualizarPreviewTamano(cfg.tamano);
+            guardar();
+        });
+
+        // Volumen
+        document.getElementById('sliderVolumen').addEventListener('input', function(e) {
+            leer();
+            cfg.volumen = parseInt(e.target.value, 10) / 100;
+            document.getElementById('valVolumen').textContent = e.target.value + '%';
+            guardar();
+        });
+
+        // Velocidad
+        document.getElementById('sliderVelocidad').addEventListener('input', function(e) {
+            leer();
+            cfg.velocidad = parseFloat(e.target.value);
+            document.getElementById('valVelocidad').textContent = cfg.velocidad.toFixed(2) + 'x';
+            guardar();
+        });
+
+        // Resetear posición
+        document.getElementById('btnResetPosicion').addEventListener('click', function() {
+            if (window.Marquinhos && typeof window.Marquinhos.resetPosicion === 'function') {
+                window.Marquinhos.resetPosicion();
+            }
+            leer();
+            cfg.posicion_x = null;
+            cfg.posicion_y = null;
+            guardar();
+            alert('Posición reseteada. Recarga la página para ver el cambio.');
+        });
+
+        // Limpiar historial (store persistente de Marquinhos)
+        document.getElementById('btnLimpiarHistorial').addEventListener('click', function() {
+            if (!confirm('¿Borrar todo el historial de conversación con Marquinhos?')) return;
+            if (window.Marquinhos && typeof window.Marquinhos.olvidar === 'function') {
+                window.Marquinhos.olvidar();
+            }
+            // Respaldo: borra la clave del store en este navegador, aunque el widget no esté cargado
+            Object.keys(localStorage)
+                .filter(function (k) { return k.indexOf('marquinhos_store_v1:') === 0; })
+                .forEach(function (k) { localStorage.removeItem(k); });
+            alert('Historial borrado.');
+        });
+
+        console.log('[Config Marquinhos] ✅ Cargada');
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
+})();
+</script>
+</body>
+</html>
