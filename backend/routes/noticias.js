@@ -1,5 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const { createClient } = require('@supabase/supabase-js');
 const {
     obtenerNoticias,
     preguntarActualidad,
@@ -9,6 +10,47 @@ const {
 
 const router = express.Router();
 
+// ================================================================
+// SUPABASE ADMIN (solo para validar tokens de sesión)
+// ================================================================
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
+    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
+        auth: { autoRefreshToken: false, persistSession: false }
+    })
+    : null;
+
+async function autenticar(req, res, next) {
+    try {
+        if (!supabaseAdmin) {
+            return res.status(500).json({ error: 'Autenticación no configurada' });
+        }
+
+        const auth = req.headers.authorization || '';
+        if (!auth.startsWith('Bearer ')) {
+            return res.status(401).json({ error: 'No autenticado' });
+        }
+
+        const token = auth.slice(7).trim();
+        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+        if (error || !user) {
+            return res.status(401).json({ error: 'Token inválido o expirado' });
+        }
+
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error('❌ Error autenticando noticias:', error);
+        return res.status(500).json({ error: 'Error de autenticación' });
+    }
+}
+
+// ================================================================
+// LÍMITE DE CONSULTAS POR USUARIO (solo preguntas, que cuestan dinero)
+// ================================================================
 const noticiasLimiter = rateLimit({
     windowMs: parseInt(process.env.NOTICIAS_RATE_LIMIT_WINDOW_MS || String(15 * 60 * 1000), 10),
     max: parseInt(process.env.NOTICIAS_RATE_LIMIT_MAX || '10', 10),
@@ -22,7 +64,9 @@ const noticiasLimiter = rateLimit({
 
 function handleError(error, res) {
     const status = error.status || 500;
-    const message = error.message || 'Error interno';
+    const message = error.status && error.status < 500
+        ? error.message
+        : 'Error interno al consultar noticias';
 
     if (status >= 500) {
         console.error('❌ Noticias error:', error);
@@ -31,7 +75,7 @@ function handleError(error, res) {
     return res.status(status).json({ error: message });
 }
 
-router.get('/', async (req, res) => {
+router.get('/', autenticar, async (req, res) => {
     try {
         const categoria = String(req.query.categoria || 'general').trim().toLowerCase();
         const region = String(req.query.region || 'MX').trim().toUpperCase();
@@ -51,7 +95,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.post('/preguntar', noticiasLimiter, async (req, res) => {
+router.post('/preguntar', autenticar, noticiasLimiter, async (req, res) => {
     try {
         const pregunta = String(req.body?.pregunta || '').trim();
 
