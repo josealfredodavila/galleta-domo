@@ -1,18 +1,14 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.9
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.0
    ================================================================
-   Cambios respecto a v1.8:
-   - Emite csariels:sonido:seleccionado al confirmar una pista
-     (la cámara v5.0 lo escucha).
-   - Preview: genera miniatura (poster) desde el primer fotograma y
-     fuerza la decodificación para evitar pantalla negra en .webm.
+   Cambios respecto a v1.9:
+   - Preview con imagen fija: usa window.__csMiniaturaCamara (JPEG
+     generado por la cámara) cuando el archivo viene de la cámara.
+     Para archivos de galería se extrae el primer fotograma con canvas.
+   - Ya no depende de currentTime ni de poster para mostrar la portada.
+   - Emite csariels:sonido:seleccionado al confirmar la pista.
    - getState() incluye archivoConAudioMezclado.
-   - Botones de sonido, ubicación y borradores sincronizados con el
-     estado del formulario.
-   - Mantiene API pública: VideosPublicar.{abrirModalSonidos,
-     abrirModalUbicacion, abrirModalBorradores, cerrarTodosLosSheets,
-     subirMultimedia, csToast, csConfirm, resetFormularioPublicacion,
-     refrescarFeedAutomatico, getConfig, setProvider, getState, _seed}.
+   - Mantiene API pública de v1.9.
    ================================================================ */
 
 (function () {
@@ -21,34 +17,21 @@
     if (window.__csarielsVideosPublicarLoaded) return;
     window.__csarielsVideosPublicarLoaded = true;
 
-    // ============================================================
-    // HELPER DE TRADUCCIÓN
-    // ============================================================
     function vt(clave, respaldo) {
-        if (typeof window.tConFallback === 'function') {
-            return window.tConFallback(clave, respaldo);
-        }
+        if (typeof window.tConFallback === 'function') return window.tConFallback(clave, respaldo);
         return respaldo !== undefined ? respaldo : clave;
     }
 
-    // ============================================================
-    // CONFIGURACIÓN
-    // ============================================================
     const CONFIG = {
         PROVIDER: 'supabase',
         BUCKET: 'videos',
-        API_UPLOAD_R2: '/api/storage/r2/sign',
-        API_UPLOAD_S3: '/api/storage/s3/sign',
         MAX_VIDEO_MB: 100,
         MAX_VIDEO_MB_R2: 500,
         VIDEO_TYPES: ['video/mp4', 'video/webm', 'video/quicktime'],
         IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
-        PREVIEW_TIMEOUT_MS: 4000
+        PORTADA_TIMEOUT_MS: 4000
     };
 
-    // ============================================================
-    // SEMILLA DE SONIDOS (BUCKET PÚBLICO "audios" EN SUPABASE)
-    // ============================================================
     const SUPABASE_STORAGE_URL = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios';
 
     const SONIDOS_SEED = {
@@ -73,9 +56,6 @@
         favoritos: []
     };
 
-    // ============================================================
-    // UBICACIONES SEED
-    // ============================================================
     const UBICACIONES_SEED = [
         { id: 'pue-capital',  nombre: 'Puebla Capital',      pais: 'México', lat: 19.0414,  lng: -98.2063 },
         { id: 'pue-cholula',  nombre: 'Cholula',             pais: 'México', lat: 19.0621,  lng: -98.3053 },
@@ -91,25 +71,17 @@
         { id: 'queretaro',    nombre: 'Querétaro',           pais: 'México', lat: 20.5888,  lng: -100.3899 }
     ];
 
-    // ============================================================
-    // ESTADO
-    // ============================================================
     const state = {
         sonidoSeleccionado: null,
         ubicacionSeleccionada: null,
         archivoVideo: null,
         archivoConAudioMezclado: false,
-        urlVideoSubida: null,
-        pathVideoSubida: null,
         previewURL: null,
-        miniaturaBlob: null,
+        portadaURL: null,
         tabSonidosActiva: 'parati',
         sbCliente: null
     };
 
-    // ============================================================
-    // UTILIDADES
-    // ============================================================
     function $(id) { return document.getElementById(id); }
     function esc(v) {
         const d = document.createElement('div');
@@ -134,9 +106,6 @@
         return null;
     }
 
-    // ============================================================
-    // TOAST
-    // ============================================================
     function csToast(mensaje, tipo, duracion) {
         const t = document.createElement('div');
         t.className = 'cs-toast cs-toast-' + (tipo || 'info');
@@ -151,9 +120,6 @@
         }, duracion || 3200);
     }
 
-    // ============================================================
-    // CONFIRM MODAL
-    // ============================================================
     function csConfirm(opts) {
         return new Promise((resolve) => {
             const o = opts || {};
@@ -193,14 +159,14 @@
     window.csConfirm = csConfirm;
 
     // ============================================================
-    // MOTOR DE AUDIO CENTRALIZADO (preview de pistas en el selector)
+    // MOTOR DE PREVIEW DE PISTAS (selector)
     // ============================================================
     const AudioPreview = (function () {
         let audio = null;
         let timerId = null;
         let generation = 0;
         let pistaActual = null;
-        let estado = 'idle'; // idle | loading | playing | paused | error
+        let estado = 'idle';
         const DURACION_PREVIEW_MS = 5000;
 
         function limpiar() {
@@ -223,7 +189,6 @@
         async function reproducir(pista, onEstado) {
             generation++;
             const miGeneracion = generation;
-
             limpiar();
             pistaActual = pista;
             estado = 'loading';
@@ -347,8 +312,8 @@
         }
         try {
             if (CONFIG.PROVIDER === 'supabase') return await subirMultimediaSupabase(archivo, tipo, opts);
-            if (CONFIG.PROVIDER === 'r2') return await subirMultimediaR2(archivo, tipo, opts);
-            if (CONFIG.PROVIDER === 's3') return await subirMultimediaS3(archivo, tipo, opts);
+            if (CONFIG.PROVIDER === 'r2') return await subirMultimediaR2();
+            if (CONFIG.PROVIDER === 's3') return await subirMultimediaS3();
             return { ok: false, error: 'Provider desconocido' };
         } catch (e) {
             warn('Error subiendo:', e);
@@ -356,7 +321,7 @@
         }
     }
 
-    async function subirMultimediaSupabase(archivo, tipo, opts) {
+    async function subirMultimediaSupabase(archivo, tipo) {
         const sb = getSupabaseClient();
         if (!sb) return { ok: false, error: 'Cliente Supabase no disponible' };
 
@@ -403,12 +368,18 @@
     }
 
     // ============================================================
-    // MINIATURA Y PREVIEW (corrige la pantalla negra de .webm)
+    // PORTADA / PREVIEW (imagen fija, sin depender del decodificador)
     // ============================================================
-    // Genera una imagen JPEG desde un fotograma del video. Si el
-    // navegador no puede decodificar el archivo, devuelve null.
-    function generarMiniatura(file) {
+    // Si el archivo viene de la cámara, usa el JPEG que ya generó la cámara.
+    // Si es de galería, extrae el primer fotograma con canvas.
+    function obtenerPortada(file) {
         return new Promise((resolve) => {
+            const desdeCamara = window.__csMiniaturaCamara;
+            if (desdeCamara && window.__csArchivoConAudioMezclado !== undefined && file.name.indexOf('video-camara-') === 0) {
+                resolve(desdeCamara);
+                return;
+            }
+
             const url = URL.createObjectURL(file);
             const v = document.createElement('video');
             v.muted = true;
@@ -417,26 +388,25 @@
             v.src = url;
 
             let terminado = false;
-            function terminar(resultado) {
+            function terminar(blob) {
                 if (terminado) return;
                 terminado = true;
                 try { v.pause(); } catch (e) {}
                 v.removeAttribute('src');
                 try { v.load(); } catch (e) {}
                 URL.revokeObjectURL(url);
-                resolve(resultado);
+                resolve(blob || null);
             }
 
-            const limite = setTimeout(() => terminar(null), CONFIG.PREVIEW_TIMEOUT_MS);
+            const limite = setTimeout(() => terminar(null), CONFIG.PORTADA_TIMEOUT_MS);
 
             v.addEventListener('loadeddata', () => {
-                // Muchos .webm de MediaRecorder reportan duración Infinity;
-                // saltar a un punto pequeño fuerza la decodificación del fotograma.
                 const destino = (isFinite(v.duration) && v.duration > 0.2) ? 0.1 : 0.001;
-                try { v.currentTime = destino; } catch (e) {}
+                try { v.currentTime = destino; } catch (e) { clearTimeout(limite); terminar(null); }
             });
 
             v.addEventListener('seeked', () => {
+                clearTimeout(limite);
                 try {
                     const canvas = document.createElement('canvas');
                     const w = v.videoWidth || 540;
@@ -445,18 +415,32 @@
                     canvas.width = Math.round(w * escala);
                     canvas.height = Math.round(h * escala);
                     canvas.getContext('2d').drawImage(v, 0, 0, canvas.width, canvas.height);
-                    canvas.toBlob((blob) => {
-                        clearTimeout(limite);
-                        terminar(blob || null);
-                    }, 'image/jpeg', 0.85);
-                } catch (e) {
-                    clearTimeout(limite);
-                    terminar(null);
-                }
+                    canvas.toBlob((blob) => terminar(blob), 'image/jpeg', 0.85);
+                } catch (e) { terminar(null); }
             });
 
             v.addEventListener('error', () => { clearTimeout(limite); terminar(null); });
         });
+    }
+
+    function mostrarPortadaEnPreview(blob) {
+        const img = $('csPreviewPortada');
+        const v = $('csPreviewVideo');
+        if (!img || !v) return;
+
+        if (state.portadaURL) {
+            try { URL.revokeObjectURL(state.portadaURL); } catch (e) {}
+            state.portadaURL = null;
+        }
+
+        if (blob) {
+            state.portadaURL = URL.createObjectURL(blob);
+            img.src = state.portadaURL;
+            img.style.display = 'block';
+        } else {
+            img.removeAttribute('src');
+            img.style.display = 'none';
+        }
     }
 
     function mostrarPreviewVideo(file) {
@@ -468,27 +452,14 @@
             state.previewURL = null;
         }
         state.previewURL = URL.createObjectURL(file);
-        v.preload = 'auto';
-        v.muted = true;
-        v.playsInline = true;
         v.src = state.previewURL;
+        v.muted = false;
+        v.playsInline = true;
+        v.controls = true;
         try { v.load(); } catch (e) {}
 
-        // Miniatura de respaldo: si el video no se pinta, se ve la imagen
-        generarMiniatura(file).then((blob) => {
-            if (!blob) return;
-            if (state.miniaturaBlob) state.miniaturaBlob = null;
-            state.miniaturaBlob = blob;
-            const urlMini = URL.createObjectURL(blob);
-            v.poster = urlMini;
-        });
+        obtenerPortada(file).then(mostrarPortadaEnPreview);
 
-        // Evitar que el preview quede negro si el primer fotograma no llega
-        v.addEventListener('loadeddata', function alCargar() {
-            v.removeEventListener('loadeddata', alCargar);
-            const destino = (isFinite(v.duration) && v.duration > 0.2) ? 0.1 : 0.001;
-            try { v.currentTime = destino; } catch (e) {}
-        });
         v.addEventListener('durationchange', function () {
             if (isFinite(v.duration) && v.duration > 0) {
                 const meta = $('csPreviewDuracion');
@@ -513,9 +484,9 @@
         if (preview) {
             try { preview.pause(); } catch (e) {}
             preview.removeAttribute('src');
-            preview.removeAttribute('poster');
             try { preview.load(); } catch (e) {}
         }
+        mostrarPortadaEnPreview(null);
 
         if (state.previewURL) {
             try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
@@ -523,9 +494,8 @@
         }
         state.archivoVideo = null;
         state.archivoConAudioMezclado = false;
-        state.urlVideoSubida = null;
-        state.pathVideoSubida = null;
-        state.miniaturaBlob = null;
+        window.__csMiniaturaCamara = null;
+        window.__csArchivoConAudioMezclado = false;
 
         AudioPreview.detener();
 
@@ -564,9 +534,6 @@
     }
     window.csResetFormularioPublicacion = resetFormularioPublicacion;
 
-    // ============================================================
-    // REFRESCAR FEED
-    // ============================================================
     function refrescarFeedAutomatico() {
         try {
             if (typeof window.cargarVideos === 'function') {
@@ -586,7 +553,6 @@
             window.dispatchEvent(new CustomEvent('csariels:videos:refresh'));
             log('📡 Evento csariels:videos:refresh disparado');
         } catch (e) { warn('No se pudo disparar el evento:', e); }
-
         try {
             const feed = document.getElementById('videosContainer');
             if (feed) feed.scrollTo({ top: 0, behavior: 'smooth' });
@@ -602,31 +568,14 @@
         const st = document.createElement('style');
         st.id = 'cs-videos-publicar-inline';
         st.textContent = `
-            .cs-spinner-inline {
-                display: inline-block;
-                width: 14px; height: 14px;
-                border: 2px solid rgba(212,175,55,0.25);
-                border-top-color: #D4AF37;
-                border-radius: 50%;
-                animation: cs-spin-inline 0.8s linear infinite;
-                vertical-align: middle;
-                margin-right: 6px;
-            }
+            .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(212,175,55,0.25); border-top-color: #D4AF37; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
-            .cs-sonido-play {
-                background: transparent;
-                border: 1px solid rgba(212,175,55,0.3);
-                border-radius: 50%;
-                width: 30px; height: 30px;
-                display: flex; align-items: center; justify-content: center;
-                color: #D4AF37;
-                cursor: pointer;
-                margin-right: 8px;
-                transition: all 0.2s;
-            }
+            .cs-sonido-play { background: transparent; border: 1px solid rgba(212,175,55,0.3); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #D4AF37; cursor: pointer; margin-right: 8px; transition: all 0.2s; }
             .cs-sonido-play:hover { background: rgba(212,175,55,0.15); }
             .cs-btn-header.cs-activo { box-shadow: 0 0 14px rgba(212,175,55,0.45); }
             .cs-preview-duracion { font-size: 0.65rem; color: #8aa8b8; margin-left: auto; font-family: 'Orbitron', monospace; }
+            #csPreviewPortada { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: none; z-index: 2; }
+            .cs-preview-video { position: relative; }
         `;
         document.head.appendChild(st);
     }
@@ -654,7 +603,6 @@
         header.insertBefore(btnUbic, btnSonido.nextSibling);
     }
 
-    // Mantiene los botones del header y el preview en sincronía con el estado
     function actualizarBotonesSonidoUbicacion() {
         const bS = $('csBtnAgregarSonido');
         const bU = $('csBtnUbicacion');
@@ -670,10 +618,7 @@
             <div class="cs-sheet" id="csModalSonidos" role="dialog" aria-modal="true" aria-label="Biblioteca de sonidos">
                 <div class="cs-sheet-handle"></div>
                 <div class="cs-sheet-header">
-                    <div class="cs-sheet-titulo">
-                        <span class="cs-ico">♪</span>
-                        <span data-clave="videos_agregar_sonido">Agregar sonido</span>
-                    </div>
+                    <div class="cs-sheet-titulo"><span class="cs-ico">♪</span><span data-clave="videos_agregar_sonido">Agregar sonido</span></div>
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="sonidos">✕</button>
                 </div>
                 <div class="cs-tabs" role="tablist">
@@ -698,10 +643,7 @@
             <div class="cs-sheet" id="csModalUbicacion" role="dialog" aria-modal="true" aria-label="Seleccionar ubicación">
                 <div class="cs-sheet-handle"></div>
                 <div class="cs-sheet-header">
-                    <div class="cs-sheet-titulo">
-                        <span class="cs-ico">◆</span>
-                        <span data-clave="videos_ubicacion_btn">Ubicación</span>
-                    </div>
+                    <div class="cs-sheet-titulo"><span class="cs-ico">◆</span><span data-clave="videos_ubicacion_btn">Ubicación</span></div>
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="ubicacion">✕</button>
                 </div>
                 <div class="cs-sheet-body">
@@ -721,10 +663,7 @@
             <div class="cs-sheet" id="csModalBorradores" role="dialog" aria-modal="true" aria-label="Borradores">
                 <div class="cs-sheet-handle"></div>
                 <div class="cs-sheet-header">
-                    <div class="cs-sheet-titulo">
-                        <span class="cs-ico">◈</span>
-                        <span data-clave="videos_borradores_titulo">Mis borradores</span>
-                    </div>
+                    <div class="cs-sheet-titulo"><span class="cs-ico">◈</span><span data-clave="videos_borradores_titulo">Mis borradores</span></div>
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="borradores">✕</button>
                 </div>
                 <div class="cs-sheet-body">
@@ -755,6 +694,7 @@
         wrap.className = 'cs-preview-wrap';
         wrap.innerHTML = `
             <div class="cs-preview-video">
+                <img id="csPreviewPortada" alt="Portada del video" />
                 <video id="csPreviewVideo" playsinline muted preload="auto"></video>
                 <div class="cs-preview-badge" id="csPreviewBadge" style="display:none;" data-clave="videos_sonido_video_badge">◆ Sonido + video</div>
             </div>
@@ -811,7 +751,6 @@
                 <span class="cs-file-btn-hint" id="csFileBtnHint" data-clave="videos_archivo_hint">MP4 · WebM · MOV · Máx 100 MB</span>
             </button>
         `;
-
         if (input.parentNode) input.parentNode.insertBefore(btnWrap, input.nextSibling);
 
         const btn = btnWrap.querySelector('#csFileBtnVideo');
@@ -886,7 +825,6 @@
     function cerrarTodosLosSheets() {
         const est = AudioPreview.getEstado();
         if (est.estado === 'playing' || est.estado === 'loading') AudioPreview.detener();
-
         cerrarSheet('csModalSonidos', 'csSheetSonidosBackdrop');
         cerrarSheet('csModalUbicacion', 'csSheetUbicacionBackdrop');
         cerrarSheet('csModalBorradores', 'csSheetBorradoresBackdrop');
@@ -904,7 +842,6 @@
             else if (esActivo && estado === 'error') ico.textContent = '⚠';
             else ico.textContent = '▶';
         });
-
         if (estado === 'error') {
             const mensaje = error && error.indexOf('timeout') !== -1
                 ? 'La pista tardó demasiado en cargar.'
@@ -912,7 +849,6 @@
             csToast(mensaje, 'error', 3500);
         }
     }
-
     window._audioPreviewOnEstado = actualizarIndicadorSonido;
 
     function renderSonidos(tab, filtro) {
@@ -969,18 +905,15 @@
         return todas.find(x => x.id === id) || null;
     }
 
-    // Solo escucha la pista (no la elige)
     function previsualizarSonido(id) {
         const s = buscarSonidoPorId(id);
         if (!s) return;
         AudioPreview.reproducir(s, actualizarIndicadorSonido);
     }
 
-    // Elige la pista: la guarda, la muestra en el sheet y avisa a la cámara
     function seleccionarSonido(id) {
         const s = buscarSonidoPorId(id);
         if (!s) return;
-
         state.sonidoSeleccionado = s;
         AudioPreview.reproducir(s, actualizarIndicadorSonido);
 
@@ -1009,7 +942,6 @@
         actualizarBadgePreview();
         actualizarBotonesSonidoUbicacion();
 
-        // Aviso a la cámara (videos-camara.js v5.0)
         window.dispatchEvent(new CustomEvent('csariels:sonido:seleccionado', {
             detail: s ? { id: s.id, nombre: s.nombre, artista: s.artista, url: s.url, duracion: s.duracion } : null
         }));
@@ -1095,7 +1027,7 @@
     }
 
     // ============================================================
-    // PREVIEW DE VIDEO (input de archivo)
+    // INPUT DE ARCHIVO (galería)
     // ============================================================
     function engancharInputArchivo() {
         const input = document.getElementById('inputArchivoVideo');
@@ -1107,19 +1039,15 @@
             const file = input.files && input.files[0];
             if (!file) return;
             state.archivoVideo = file;
-            // Si el archivo viene de la cámara, la bandera llega desde window
             state.archivoConAudioMezclado = window.__csArchivoConAudioMezclado === true;
             mostrarPreviewVideo(file);
             log('Preview listo para:', file.name);
         });
     }
 
-    // Recibe el archivo grabado por la cámara (csCamaraOnVideoGrabado)
-    // y lo muestra en el preview sin depender del input.
     function engancharEventoPublicacionExitosa() {
         if (window.__csPublicacionListener) return;
         window.__csPublicacionListener = true;
-
         window.addEventListener('csariels:videos:publicado', () => {
             log('✅ Evento publicado recibido — reseteando formulario y refrescando feed');
             resetFormularioPublicacion();
@@ -1154,7 +1082,6 @@
             entries.forEach(entry => {
                 const video = entry.target;
                 if (!esVideoDelFeed(video)) return;
-
                 if (entry.isIntersecting) {
                     if (usuarioQuiereAutoplay()) {
                         video.muted = true;
@@ -1206,9 +1133,6 @@
         });
     }
 
-    // ============================================================
-    // LISTENERS GLOBALES
-    // ============================================================
     function engancharListenersGlobales() {
         if (window.__csVideosPublicarListeners) return;
         window.__csVideosPublicarListeners = true;
@@ -1242,9 +1166,6 @@
         });
     }
 
-    // ============================================================
-    // API PÚBLICA
-    // ============================================================
     window.VideosPublicar = {
         abrirModalSonidos,
         abrirModalUbicacion,
@@ -1255,6 +1176,7 @@
         csConfirm,
         resetFormularioPublicacion,
         refrescarFeedAutomatico,
+        mostrarPreviewVideo,
         getConfig: () => ({ ...CONFIG }),
         setProvider: (p) => { CONFIG.PROVIDER = p; },
         getState: () => ({
@@ -1266,9 +1188,6 @@
         _seed: { SONIDOS_SEED, UBICACIONES_SEED }
     };
 
-    // ============================================================
-    // INIT
-    // ============================================================
     function init() {
         inyectarEstilosExtra();
         inyectarBotonesHeader();
@@ -1279,7 +1198,7 @@
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
         actualizarBotonesSonidoUbicacion();
-        log('✅ Módulo Publicar v1.9 listo');
+        log('✅ Módulo Publicar v2.0 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
