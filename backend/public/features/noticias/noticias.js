@@ -13,6 +13,32 @@
     const consultarBtn = document.getElementById('consultar-btn');
     const respuestaEl = document.getElementById('respuesta');
 
+    function escapeHtml(valor) {
+        return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;',
+        })[c]);
+    }
+
+    function urlSegura(valor) {
+        try {
+            const url = new URL(String(valor || ''));
+            return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '#';
+        } catch (_) {
+            return '#';
+        }
+    }
+
+    function formatearFecha(valor) {
+        if (!valor) return 'Actualidad';
+        const fecha = new Date(valor);
+        if (Number.isNaN(fecha.getTime())) return 'Actualidad';
+        return fecha.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
     async function waitForSupabase() {
         for (let i = 0; i < 80; i++) {
             if (window.supabaseClient) return window.supabaseClient;
@@ -66,7 +92,7 @@
     }
 
     function renderError(message) {
-        gridEl.innerHTML = `<div class="card"><h3>Ocurrió un problema</h3><p class="error">${message}</p></div>`;
+        gridEl.innerHTML = `<div class="card"><h3>Ocurrió un problema</h3><p class="error">${escapeHtml(message)}</p></div>`;
     }
 
     function renderNoticias(items) {
@@ -77,12 +103,12 @@
 
         gridEl.innerHTML = items.map((item) => `
             <article class="card">
-                <div class="meta">${item.publicadoEn ? new Date(item.publicadoEn).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Actualidad'}</div>
-                <h3>${(item.titulo || 'Sin título').slice(0, 140)}</h3>
-                <p>${(item.resumen || 'Sin resumen').slice(0, 220)}</p>
+                <div class="meta">${escapeHtml(formatearFecha(item.publicadoEn))}</div>
+                <h3>${escapeHtml(String(item.titulo || 'Sin título').slice(0, 140))}</h3>
+                <p>${escapeHtml(String(item.resumen || 'Sin resumen').slice(0, 220))}</p>
                 <div class="links">
                     ${(item.fuentes || []).map((fuente) => `
-                        <a href="${fuente.url}" target="_blank" rel="noopener noreferrer">Fuente</a>
+                        <a href="${escapeHtml(urlSegura(fuente.url))}" target="_blank" rel="noopener noreferrer">Fuente</a>
                     `).join('')}
                 </div>
             </article>
@@ -98,23 +124,24 @@
         renderLoading();
 
         try {
-            const response = await fetch(`/api/noticias?categoria=${state.category}&region=MX`, {
+            const params = new URLSearchParams({ categoria: state.category, region: 'MX' });
+            const response = await fetch(`/api/noticias?${params.toString()}`, {
                 method: 'GET',
                 headers: getHeaders(),
             });
 
             if (response.status === 401) {
-                renderError('Token inválido o expirado.');
+                renderError('Token inválido o expirado. Vuelve a iniciar sesión.');
                 return;
             }
 
+            const body = await response.json().catch(() => ({}));
+
             if (!response.ok) {
-                const body = await response.json().catch(() => ({ error: 'Error inesperado' }));
                 throw new Error(body.error || 'No se pudieron cargar las noticias');
             }
 
-            const data = await response.json();
-            renderNoticias(data.items || []);
+            renderNoticias(body.items || []);
         } catch (error) {
             console.error('Error cargando noticias:', error);
             renderError(error.message || 'No se pudieron cargar las noticias.');
@@ -130,6 +157,13 @@
             return;
         }
 
+        if (!state.token) {
+            respuestaEl.style.display = 'block';
+            respuestaEl.className = 'respuesta error';
+            respuestaEl.textContent = 'Sesión no disponible. Vuelve a iniciar sesión.';
+            return;
+        }
+
         respuestaEl.style.display = 'block';
         respuestaEl.className = 'respuesta';
         respuestaEl.textContent = 'Consultando información actualizada…';
@@ -142,23 +176,25 @@
                 body: JSON.stringify({ pregunta }),
             });
 
-            const body = await response.json().catch(() => ({ error: 'Error en la respuesta' }));
+            const body = await response.json().catch(() => ({}));
             if (!response.ok) throw new Error(body.error || 'No se pudo consultar');
 
             respuestaEl.textContent = body.respuesta || 'No hubo respuesta disponible.';
 
-            if (Array.isArray(body.fuentes) && body.fuentes.length > 0) {
-                const links = body.fuentes
-                    .map((f) => `\n- ${f.titulo}: ${f.url}`)
+            const fuentesSeguras = (body.fuentes || []).filter((f) => urlSegura(f.url) !== '#');
+            if (fuentesSeguras.length > 0) {
+                const links = fuentesSeguras
+                    .map((f) => `\n- ${f.titulo}: ${urlSegura(f.url)}`)
                     .join('');
                 respuestaEl.textContent += links;
             }
+
+            preguntaInput.value = '';
         } catch (error) {
             respuestaEl.className = 'respuesta error';
             respuestaEl.textContent = error.message || 'Error al consultar';
         } finally {
             consultarBtn.disabled = false;
-            preguntaInput.value = '';
         }
     }
 
