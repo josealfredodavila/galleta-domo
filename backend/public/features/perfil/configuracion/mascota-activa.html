@@ -498,6 +498,7 @@ h1 .corn { font-size: 1.5rem; }
 (function() {
     const KEY = 'mascota_activa';
     const DEFAULT_MASCOTA = 'marquinhos';
+    const VALIDAS = ['marquinhos', 'capitan-maiz', 'itlasuhua', 'ninguna'];
 
     let mascotaSeleccionada = DEFAULT_MASCOTA;
 
@@ -509,21 +510,12 @@ h1 .corn { font-size: 1.5rem; }
         el._timer = setTimeout(() => el.classList.remove('visible'), 3000);
     }
 
-    function leer() {
+    function leerLocal() {
         try {
             const v = localStorage.getItem(KEY);
-            return v || DEFAULT_MASCOTA;
+            return VALIDAS.includes(v) ? v : DEFAULT_MASCOTA;
         } catch (e) {
             return DEFAULT_MASCOTA;
-        }
-    }
-
-    function guardar(mascota) {
-        try {
-            localStorage.setItem(KEY, mascota);
-            return true;
-        } catch (e) {
-            return false;
         }
     }
 
@@ -537,8 +529,18 @@ h1 .corn { font-size: 1.5rem; }
         });
     }
 
-    function init() {
-        mascotaSeleccionada = leer();
+    async function init() {
+        // Espera a que apariencia-global lea Supabase, así la selección
+        // mostrada es la guardada en la cuenta y no la de otro dispositivo.
+        try {
+            if (window.SarielApariencia && window.SarielApariencia.recargar) {
+                await window.SarielApariencia.recargar();
+            }
+        } catch (e) {
+            console.warn('[Mascota Activa] No se pudo sincronizar:', e);
+        }
+
+        mascotaSeleccionada = leerLocal();
         pintar();
 
         document.querySelectorAll('.mascota-item').forEach(item => {
@@ -548,26 +550,38 @@ h1 .corn { font-size: 1.5rem; }
             });
         });
 
-        document.getElementById('btnGuardar').addEventListener('click', () => {
+        document.getElementById('btnGuardar').addEventListener('click', async () => {
             const btn = document.getElementById('btnGuardar');
             btn.disabled = true;
             btn.textContent = 'Guardando...';
 
-            const ok = guardar(mascotaSeleccionada);
+            let resultado = { local: false, remoto: null };
 
-            setTimeout(() => {
-                if (ok) {
-                    toast('✅ Mascota actualizada');
+            try {
+                if (window.SarielApariencia && window.SarielApariencia.setMascota) {
+                    resultado = await window.SarielApariencia.setMascota(mascotaSeleccionada);
                 } else {
-                    toast('⚠️ No se pudo guardar');
+                    localStorage.setItem(KEY, mascotaSeleccionada);
+                    resultado.local = true;
                 }
+            } catch (e) {
+                console.warn('[Mascota Activa] Error al guardar:', e);
+            }
+
+            if (!resultado.local) {
+                toast('⚠️ No se pudo guardar');
                 btn.disabled = false;
                 btn.textContent = '◈ Guardar selección';
+                return;
+            }
 
-                setTimeout(() => {
-                    window.location.reload();
-                }, 800);
-            }, 400);
+            if (resultado.remoto === false) {
+                toast('⚠️ Guardado solo en este dispositivo');
+            } else {
+                toast('✅ Mascota actualizada');
+            }
+
+            setTimeout(() => window.location.reload(), 1000);
         });
 
         console.log('[Mascota Activa] ✅ Cargada. Seleccionada:', mascotaSeleccionada);
