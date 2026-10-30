@@ -1,10 +1,12 @@
 // backend/routes/telnyx-webhook.js
-// POST /api/telnyx/webhook  — eSIM/datos + Call Control, con firma Ed25519.
+// POST /api/telnyx/webhook — eSIM/datos, Call Control y WhatsApp de Marquinhos.
+// Firma Ed25519 verificada antes de procesar cualquier evento.
 // IMPORTANTE: debe montarse ANTES de express.json() y del rate limit (ver server.js).
 const express = require('express');
 const { verificarFirmaTelnyx } = require('../services/telnyx/firma');
 const { sincronizarPorSimId } = require('../services/telnyx/esim');
 const { manejarEventoLlamada } = require('../services/telnyx/callControl');
+const { esMensajeWhatsApp, manejarMensajeWhatsApp } = require('../services/marquinhos-whatsapp');
 
 const router = express.Router();
 
@@ -30,6 +32,11 @@ router.post('/', express.raw({ type: '*/*', limit: '1mb' }), async (req, res) =>
   try {
     const tipo = String(evento?.data?.event_type || evento?.type || '');
     console.log('[telnyx] evento', tipo);
+
+    // Mensajes entrantes al número de WhatsApp de Marquinhos
+    if (esMensajeWhatsApp(evento)) {
+      return await manejarMensajeWhatsApp(evento);
+    }
 
     if (tipo.startsWith('call.')) return await manejarEventoLlamada(evento);
 
