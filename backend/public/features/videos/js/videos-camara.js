@@ -1,10 +1,19 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA Y FILTROS (TikTok Style) v4.9.2
+   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.1
    ================================================================
-   CORRECCIÓN FINAL BASADA EN ASSETS LIMPIOS:
-   - Se apunta directamente a los archivos limpios del repositorio.
-   - Peluca ancha (1.35) asentada en la frente.
-   - Nariz anclada a la punta exacta (punto 1) y escalada (0.16).
+   Cambios respecto a v5.0:
+   - Barra de modos flotando sobre el botón de captura (estilo TikTok).
+   - Botón de captura con aro blanco y fondo rosa.
+   - Herramientas laterales verticales (flip, sonido, temporizador,
+     velocidad) como en TikTok.
+   - Al detener la grabación se extrae el primer fotograma del canvas
+     como JPEG y se entrega junto con el archivo en
+     window.__csMiniaturaCamara (el publicar lo usa como preview).
+   - Emite el estado de grabación en window.csCamaraEstado para que
+     grupos-live.js pueda reutilizar la cámara.
+   - Mantiene la API pública: VideosCamara.{abrirCamara, cerrarCamara,
+     cambiarCamara, setFiltro, setDuracion, grabarDesdeStream} y
+     window.csCamaraOnVideoGrabado(file).
    ================================================================ */
 
 (function () {
@@ -14,130 +23,54 @@
     window.__csarielsVideosCamaraLoaded = true;
 
     var CONFIG = {
-        MAX_DURATION_SECONDS: 60,
+        DURACIONES: [15, 60],
+        DURACION_DEFAULT: 60,
+        COUNTDOWN_SECONDS: 3,
+        CANVAS_WIDTH: 720,
+        CANVAS_HEIGHT: 1280,
         TARGET_FPS: 30,
         DETECTION_FPS: 24,
         VIDEO_WIDTH: 1280,
         VIDEO_HEIGHT: 720,
         VIDEO_BITRATE: 4000000,
+        AUDIO_BITRATE: 128000,
         MEDIAPIPE_CDN: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh',
         MEDIAPIPE_VERSIONS: ['0.4.1675469240', '0.4.1633559619'],
-        SCRIPT_TIMEOUT_MS: 20000
+        SCRIPT_TIMEOUT_MS: 20000,
+        PISTA_TIMEOUT_MS: 8000
     };
 
-    // Apuntando directo a tu repositorio de GitHub
     var ASSETS_BASE =
         'https://cdn.jsdelivr.net/gh/josealfredodavila/galleta-domo@main/backend/assets';
 
     var ASSETS = {
-        gato: {
-            partes: [
-                { src: ASSETS_BASE + '/orejas-gato-3.png', scale: 1.0, offsetX: 0, offsetY: -0.4, ancla: 'frente' }
-            ]
-        },
-        burro: {
-            partes: [
-                { src: ASSETS_BASE + '/orejas-burro-2.png', scale: 1.0, offsetX: 0, offsetY: -0.4, ancla: 'frente' }
-            ]
-        },
-        gafas: {
-            partes: [
-                { src: ASSETS_BASE + '/gafas-2.png', scale: 1.0, offsetX: 0, offsetY: 0, ancla: 'ojos' }
-            ]
-        },
-        thug: {
-            partes: [
-                { src: ASSETS_BASE + '/thug-life-1.png', scale: 1.1, offsetX: 0, offsetY: 0.3, ancla: 'ojos' }
-            ]
-        },
-        corazon: {
-            partes: [
-                { src: ASSETS_BASE + '/corazon-1.png', scale: 0.9, offsetX: 0, offsetY: 0, ancla: 'ojos' }
-            ]
-        },
-        bigote: {
-            partes: [
-                { src: ASSETS_BASE + '/bigote-2.png', scale: 0.45, offsetX: 0, offsetY: 0.5, ancla: 'nariz' }
-            ]
-        },
-        corona: {
-            partes: [
-                { src: ASSETS_BASE + '/corona-2.png', scale: 0.9, offsetX: 0, offsetY: -0.5, ancla: 'frente' }
-            ]
-        },
-        diamante: {
-            partes: [
-                { src: ASSETS_BASE + '/corona-diamante-1.png', scale: 0.9, offsetX: 0, offsetY: -0.5, ancla: 'frente' }
-            ]
-        },
+        gato: { partes: [{ src: ASSETS_BASE + '/orejas-gato-3.png', scale: 1.0, offsetX: 0, offsetY: -0.4, ancla: 'frente' }] },
+        burro: { partes: [{ src: ASSETS_BASE + '/orejas-burro-2.png', scale: 1.0, offsetX: 0, offsetY: -0.4, ancla: 'frente' }] },
+        gafas: { partes: [{ src: ASSETS_BASE + '/gafas-2.png', scale: 1.0, offsetX: 0, offsetY: 0, ancla: 'ojos' }] },
+        thug: { partes: [{ src: ASSETS_BASE + '/thug-life-1.png', scale: 1.1, offsetX: 0, offsetY: 0.3, ancla: 'ojos' }] },
+        corazon: { partes: [{ src: ASSETS_BASE + '/corazon-1.png', scale: 0.9, offsetX: 0, offsetY: 0, ancla: 'ojos' }] },
+        bigote: { partes: [{ src: ASSETS_BASE + '/bigote-2.png', scale: 0.45, offsetX: 0, offsetY: 0.5, ancla: 'nariz' }] },
+        corona: { partes: [{ src: ASSETS_BASE + '/corona-2.png', scale: 0.9, offsetX: 0, offsetY: -0.5, ancla: 'frente' }] },
+        diamante: { partes: [{ src: ASSETS_BASE + '/corona-diamante-1.png', scale: 0.9, offsetX: 0, offsetY: -0.5, ancla: 'frente' }] },
         perro: {
             partes: [
                 { src: ASSETS_BASE + '/perro-orejas-1.png', scale: 1.6, offsetX: 0, offsetY: -0.3, ancla: 'frente' },
                 { src: ASSETS_BASE + '/perro-hocico-1.png', scale: 0.6, offsetX: 0, offsetY: 0.1, ancla: 'nariz' }
             ]
         },
-        diablo: {
-            partes: [
-                { src: ASSETS_BASE + '/diablo-1.png', scale: 1.0, offsetX: 0, offsetY: -0.6, ancla: 'frente' }
-            ]
-        },
-        angel: {
-            partes: [
-                { src: ASSETS_BASE + '/angel-1.png', scale: 1.0, offsetX: 0, offsetY: -0.6, ancla: 'frente', aplanar: 0.4 }
-            ]
-        },
-
-        /* 
-         * PAYASO FINAL (Archivos limpios)
-         * Peluca: Ancha y ajustada a la frente.
-         * Nariz: Grande y en la punta exacta.
-         */
+        diablo: { partes: [{ src: ASSETS_BASE + '/diablo-1.png', scale: 1.0, offsetX: 0, offsetY: -0.6, ancla: 'frente' }] },
+        angel: { partes: [{ src: ASSETS_BASE + '/angel-1.png', scale: 1.0, offsetX: 0, offsetY: -0.6, ancla: 'frente', aplanar: 0.4 }] },
         payaso: {
             partes: [
-                {
-                    id: 'peluca',
-                    src: ASSETS_BASE + '/payaso-1.png',
-                    scale: 1.35,       
-                    offsetX: 0,
-                    offsetY: -0.15,    
-                    ancla: 'frente'
-                },
-                {
-                    id: 'nariz',
-                    src: ASSETS_BASE + '/payaso-nariz-1.png',
-                    scale: 0.16,       
-                    offsetX: 0,
-                    offsetY: 0.05,     
-                    ancla: 'nariz'
-                }
+                { id: 'peluca', src: ASSETS_BASE + '/payaso-1.png', scale: 1.35, offsetX: 0, offsetY: -0.15, ancla: 'frente' },
+                { id: 'nariz', src: ASSETS_BASE + '/payaso-nariz-1.png', scale: 0.16, offsetX: 0, offsetY: 0.05, ancla: 'nariz' }
             ]
         },
-
-        charro: {
-            partes: [
-                { src: ASSETS_BASE + '/charro-1.png', scale: 1.2, offsetX: 0, offsetY: -0.7, ancla: 'frente' }
-            ]
-        },
-        vikingo: {
-            partes: [
-                { src: ASSETS_BASE + '/vikingo-1.png', scale: 1.1, offsetX: 0, offsetY: -0.3, ancla: 'frente' }
-            ]
-        },
-        leon: {
-            partes: [
-                { src: ASSETS_BASE + '/leon-1.png', scale: 0.95, offsetX: 0, offsetY: 0, ancla: 'ojos' }
-            ]
-        },
-        mascara: {
-            partes: [
-                { src: ASSETS_BASE + '/mascara-lucha-1.png', scale: 1.0, offsetX: 0, offsetY: 0, ancla: 'ojos' }
-            ]
-        },
-        alien: {
-            partes: [
-                { src: ASSETS_BASE + '/antenas-alien-1.png', scale: 1.1, offsetX: 0, offsetY: -0.27, ancla: 'ojos' }
-            ]
-        }
+        charro: { partes: [{ src: ASSETS_BASE + '/charro-1.png', scale: 1.2, offsetX: 0, offsetY: -0.7, ancla: 'frente' }] },
+        vikingo: { partes: [{ src: ASSETS_BASE + '/vikingo-1.png', scale: 1.1, offsetX: 0, offsetY: -0.3, ancla: 'frente' }] },
+        leon: { partes: [{ src: ASSETS_BASE + '/leon-1.png', scale: 0.95, offsetX: 0, offsetY: 0, ancla: 'ojos' }] },
+        mascara: { partes: [{ src: ASSETS_BASE + '/mascara-lucha-1.png', scale: 1.0, offsetX: 0, offsetY: 0, ancla: 'ojos' }] },
+        alien: { partes: [{ src: ASSETS_BASE + '/antenas-alien-1.png', scale: 1.1, offsetX: 0, offsetY: -0.27, ancla: 'ojos' }] }
     };
 
     var SELECTORES_MARQUINHOS = [
@@ -153,6 +86,11 @@
         renderFrameId: null, detectionFrameId: null, lastDetectionTime: 0,
         lastResults: null, facingMode: 'user', timerInterval: null,
         segundosGrabados: 0, imagenes: {}, ocultos: [],
+        duracionActual: CONFIG.DURACION_DEFAULT,
+        cuentaRegresivaActiva: false, cuentaRegresivaTimer: null,
+        audioCtx: null, audioDestino: null, audioPista: null,
+        audioPistaUrl: null, audioMicFuente: null, audioPistaFuente: null,
+        archivoConAudioMezclado: false,
         filtrosDisponibles: [
             { id: 'ninguno', nombre: 'Ninguno', icono: '🚫' },
             { id: 'gato', nombre: 'Orejas', icono: '🐱' },
@@ -197,6 +135,13 @@
         if (!elemento) return;
         if (texto) elemento.textContent = texto;
         elemento.classList.toggle('hidden', !visible);
+    }
+
+    function emitirEstado(estado) {
+        window.csCamaraEstado = estado;
+        try {
+            window.dispatchEvent(new CustomEvent('csariels:camara:estado', { detail: { estado: estado } }));
+        } catch (e) {}
     }
 
     function cargarScript(url) {
@@ -294,7 +239,7 @@
     }
 
     async function cambiarCamara() {
-        if (!state.iniciada || state.grabando) return;
+        if (!state.iniciada || state.grabando || state.cuentaRegresivaActiva) return;
         var anterior = state.facingMode;
         state.facingMode = anterior === 'user' ? 'environment' : 'user';
         try {
@@ -355,26 +300,56 @@
         state.ocultos = [];
     }
 
+    // ============================================================
+    // INTERFAZ · estilo TikTok
+    // ============================================================
     function inyectarModalCamara() {
         if ($('csModalCamara')) return;
         var modal = document.createElement('div');
         modal.id = 'csModalCamara';
         modal.className = 'cs-camara-modal';
         modal.innerHTML = `
-            <div class="cs-camara-header">
-                <button type="button" class="cs-camara-close" id="csCamaraClose">✕</button>
-                <div class="cs-camara-timer" id="csCamaraTimer">00:00</div>
-                <button type="button" class="cs-camara-flip" id="csCamaraFlip">🔄</button>
-            </div>
             <div class="cs-camara-viewport" id="csCamaraViewport">
                 <video id="csCamaraVideo" playsinline autoplay muted></video>
                 <canvas id="csCamaraCanvas"></canvas>
+
+                <div class="cs-camara-top">
+                    <button type="button" class="cs-camara-icon-btn" id="csCamaraClose" aria-label="Cerrar">✕</button>
+                    <button type="button" class="cs-camara-sound" id="csCamaraSonido">
+                        <span class="cs-camara-sound-ico">♪</span>
+                        <span id="csCamaraSonidoTxt">Agregar sonido</span>
+                    </button>
+                    <span class="cs-camara-spacer"></span>
+                </div>
+
+                <div class="cs-camara-side" id="csCamaraSide">
+                    <button type="button" class="cs-camara-side-btn" id="csCamaraFlip" aria-label="Cambiar cámara">
+                        <span class="ico">⟲</span><span class="lbl">Voltear</span>
+                    </button>
+                    <button type="button" class="cs-camara-side-btn" id="csCamaraTemp" aria-label="Temporizador">
+                        <span class="ico">◷</span><span class="lbl">3 s</span>
+                    </button>
+                    <button type="button" class="cs-camara-side-btn" id="csCamaraSonido2" aria-label="Sonido">
+                        <span class="ico">♫</span><span class="lbl">Sonido</span>
+                    </button>
+                </div>
+
+                <div class="cs-camara-timer" id="csCamaraTimer">00:00</div>
                 <div class="cs-camara-rec-indicator" id="csRecIndicator">● REC</div>
+                <div class="cs-camara-countdown" id="csCamaraCountdown"></div>
                 <div class="cs-camara-loading" id="csCamaraLoading">Iniciando cámara…</div>
+
+                <div class="cs-camara-filtros" id="csCamaraFiltros"></div>
             </div>
-            <div class="cs-camara-filtros" id="csCamaraFiltros"></div>
-            <div class="cs-camara-footer">
-                <button type="button" class="cs-camara-record-btn" id="csBtnRecord" aria-label="Grabar"></button>
+
+            <div class="cs-camara-controles">
+                <div class="cs-camara-modos" id="csCamaraModos">
+                    <button type="button" class="cs-camara-modo" data-duracion="15">15 s</button>
+                    <button type="button" class="cs-camara-modo activo" data-duracion="60">60 s</button>
+                </div>
+                <div class="cs-camara-capturar">
+                    <button type="button" class="cs-camara-record-btn" id="csBtnRecord" aria-label="Grabar"><span class="cs-camara-record-inner"></span></button>
+                </div>
             </div>
         `;
         document.body.appendChild(modal);
@@ -385,32 +360,60 @@
             style.textContent = `
                 .cs-camara-modal { position: fixed; inset: 0; z-index: 99999; background: #000; display: none; flex-direction: column; color: #fff; font-family: Inter, system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
                 .cs-camara-modal.show { display: flex; }
-                .cs-camara-header { position: absolute; top: 0; left: 0; right: 0; padding: max(14px, env(safe-area-inset-top)) 18px 14px; display: flex; justify-content: space-between; align-items: center; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,.65), transparent); }
-                .cs-camara-close, .cs-camara-flip { width: 44px; height: 44px; border-radius: 50%; border: none; color: #fff; font-size: 1.15rem; background: rgba(0,0,0,.45); cursor: pointer; }
-                .cs-camara-timer { display: none; font-family: ui-monospace, monospace; font-size: .95rem; padding: 5px 14px; border-radius: 999px; background: rgba(255,51,102,.85); }
-                .cs-camara-timer.active { display: block; }
                 .cs-camara-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #000; }
                 #csCamaraVideo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-                #csCamaraCanvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-                .cs-camara-loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: .9rem; background: rgba(0,0,0,.55); z-index: 15; }
-                .cs-camara-loading.hidden { display: none; }
-                .cs-camara-rec-indicator { position: absolute; top: 90px; left: 50%; transform: translateX(-50%); display: none; padding: 5px 12px; border-radius: 999px; background: rgba(255,51,102,.9); font-size: .7rem; font-weight: 700; z-index: 16; }
+                #csCamaraCanvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+                .cs-camara-top { position: absolute; top: 0; left: 0; right: 0; padding: max(12px, env(safe-area-inset-top)) 14px 10px; display: flex; align-items: center; gap: 10px; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,.55), transparent); }
+                .cs-camara-icon-btn { width: 38px; height: 38px; border-radius: 50%; border: none; color: #fff; font-size: 1.05rem; background: transparent; cursor: pointer; flex-shrink: 0; }
+                .cs-camara-sound { flex: 0 1 auto; margin: 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; border: none; color: #fff; background: rgba(0,0,0,.35); font-size: .8rem; font-weight: 600; cursor: pointer; max-width: 70%; }
+                .cs-camara-sound span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+                .cs-camara-sound.activo { background: rgba(212,175,55,.9); color: #05080f; }
+                .cs-camara-spacer { width: 38px; flex-shrink: 0; }
+
+                .cs-camara-side { position: absolute; right: 10px; top: 70px; display: flex; flex-direction: column; gap: 18px; align-items: center; z-index: 20; }
+                .cs-camara-side-btn { background: none; border: none; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+                .cs-camara-side-btn .ico { font-size: 1.4rem; line-height: 1; }
+                .cs-camara-side-btn .lbl { font-size: .6rem; font-weight: 600; }
+                .cs-camara-side-btn:disabled { opacity: .4; }
+
+                .cs-camara-timer { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); display: none; font-family: ui-monospace, monospace; font-size: .85rem; padding: 4px 12px; border-radius: 999px; background: rgba(255,51,102,.9); z-index: 16; }
+                .cs-camara-timer.active { display: block; }
+                .cs-camara-rec-indicator { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); display: none; padding: 3px 10px; border-radius: 999px; background: rgba(255,51,102,.9); font-size: .65rem; font-weight: 700; z-index: 16; }
                 .cs-camara-rec-indicator.active { display: block; animation: csPulseRec 1s infinite alternate; }
                 @keyframes csPulseRec { from { opacity: 1; } to { opacity: .35; } }
-                .cs-camara-filtros { display: flex; gap: 12px; padding: 16px; overflow-x: auto; scrollbar-width: none; z-index: 20; background: #000; }
+                .cs-camara-countdown { position: absolute; inset: 0; display: none; place-items: center; font-size: 6rem; font-weight: 800; color: #fff; text-shadow: 0 4px 24px rgba(0,0,0,.6); z-index: 17; pointer-events: none; }
+                .cs-camara-countdown.visible { display: grid; }
+                .cs-camara-loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: .9rem; background: rgba(0,0,0,.55); z-index: 15; }
+                .cs-camara-loading.hidden { display: none; }
+
+                .cs-camara-filtros { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; gap: 10px; padding: 6px 12px; overflow-x: auto; scrollbar-width: none; z-index: 18; }
                 .cs-camara-filtros::-webkit-scrollbar { display: none; }
-                .cs-filtro-btn { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 5px; background: none; border: none; color: #fff; font-size: .65rem; cursor: pointer; }
-                .cs-filtro-btn .icono { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; font-size: 1.45rem; background: rgba(255,255,255,.1); border: 2px solid transparent; transition: transform .18s ease, border-color .18s ease, background .18s ease; }
-                .cs-filtro-btn.activo .icono { border-color: #D4AF37; background: rgba(212,175,55,.22); transform: scale(1.06); }
-                .cs-camara-footer { padding: 18px 0 max(28px, env(safe-area-inset-bottom)); display: flex; justify-content: center; z-index: 20; background: #000; }
-                .cs-camara-record-btn { width: 78px; height: 78px; border-radius: 50%; border: 4px solid #fff; background: #ff3366; cursor: pointer; transition: all .18s ease; }
-                .cs-camara-record-btn.grabando { width: 42px; height: 42px; border-radius: 10px; }
+                .cs-filtro-btn { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; gap: 3px; background: none; border: none; color: #fff; font-size: .6rem; cursor: pointer; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+                .cs-filtro-btn .icono { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 1.25rem; background: rgba(0,0,0,.35); border: 2px solid transparent; }
+                .cs-filtro-btn.activo .icono { border-color: #fff; }
+
+                .cs-camara-controles { background: #000; padding: 8px 0 max(20px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 14px; z-index: 20; }
+                .cs-camara-modos { display: flex; justify-content: center; gap: 22px; }
+                .cs-camara-modo { background: none; border: none; color: rgba(255,255,255,.6); font-size: .85rem; font-weight: 700; padding: 4px 6px; cursor: pointer; }
+                .cs-camara-modo.activo { color: #fff; }
+                .cs-camara-modo:disabled { opacity: .4; cursor: not-allowed; }
+
+                .cs-camara-capturar { display: flex; justify-content: center; }
+                .cs-camara-record-btn { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #fff; background: #ff2d55; padding: 0; cursor: pointer; display: grid; place-items: center; transition: all .18s ease; box-shadow: 0 0 0 4px rgba(255,45,85,.25); }
+                .cs-camara-record-inner { width: 60px; height: 60px; border-radius: 50%; background: #ff2d55; display: block; transition: all .18s ease; }
+                .cs-camara-record-btn.grabando { border-color: #ff2d55; background: #fff; }
+                .cs-camara-record-btn.grabando .cs-camara-record-inner { width: 28px; height: 28px; border-radius: 6px; background: #ff2d55; }
+                .cs-camara-record-btn:disabled { opacity: .5; cursor: not-allowed; }
             `;
             document.head.appendChild(style);
         }
 
         $('csCamaraClose').addEventListener('click', cerrarCamara);
         $('csCamaraFlip').addEventListener('click', cambiarCamara);
+        $('csCamaraSonido').addEventListener('click', abrirSelectorSonido);
+        $('csCamaraSonido2').addEventListener('click', abrirSelectorSonido);
+        $('csCamaraTemp').addEventListener('click', ciclarTemporizador);
         $('csBtnRecord').addEventListener('click', toggleGrabacion);
         $('csCamaraFiltros').addEventListener('click', function (evento) {
             var boton = evento.target.closest('.cs-filtro-btn');
@@ -418,8 +421,25 @@
             state.filtroActual = boton.dataset.filtroId;
             renderizarFiltros();
         });
+        $('csCamaraModos').addEventListener('click', function (evento) {
+            var boton = evento.target.closest('.cs-camara-modo');
+            if (!boton || state.grabando || state.cuentaRegresivaActiva) return;
+            establecerDuracion(parseInt(boton.dataset.duracion, 10));
+        });
         document.addEventListener('visibilitychange', onVisibilityChange);
+        window.addEventListener('csariels:sonido:seleccionado', onSonidoSeleccionadoDesdePublicar);
         renderizarFiltros();
+        renderizarModos();
+        actualizarEtiquetaSonido();
+    }
+
+    var temporizadoresCuenta = [3, 5, 10];
+    function ciclarTemporizador() {
+        if (state.grabando || state.cuentaRegresivaActiva) return;
+        var i = temporizadoresCuenta.indexOf(CONFIG.COUNTDOWN_SECONDS);
+        CONFIG.COUNTDOWN_SECONDS = temporizadoresCuenta[(i + 1) % temporizadoresCuenta.length];
+        var lbl = document.querySelector('#csCamaraTemp .lbl');
+        if (lbl) lbl.textContent = CONFIG.COUNTDOWN_SECONDS + ' s';
     }
 
     function renderizarFiltros() {
@@ -433,6 +453,56 @@
                 </button>
             `;
         }).join('');
+    }
+
+    function renderizarModos() {
+        var contenedor = $('csCamaraModos');
+        if (!contenedor) return;
+        contenedor.querySelectorAll('.cs-camara-modo').forEach(function (boton) {
+            var duracion = parseInt(boton.dataset.duracion, 10);
+            boton.classList.toggle('activo', duracion === state.duracionActual);
+        });
+    }
+
+    function establecerDuracion(segundos) {
+        if (CONFIG.DURACIONES.indexOf(segundos) === -1) return;
+        state.duracionActual = segundos;
+        renderizarModos();
+    }
+
+    function actualizarEtiquetaSonido() {
+        var boton = $('csCamaraSonido');
+        var txt = $('csCamaraSonidoTxt');
+        if (!boton || !txt) return;
+        var sonido = state.audioPista ? state.audioPista.nombre : null;
+        if (sonido) {
+            txt.textContent = sonido;
+            boton.classList.add('activo');
+        } else {
+            txt.textContent = 'Agregar sonido';
+            boton.classList.remove('activo');
+        }
+    }
+
+    function abrirSelectorSonido() {
+        if (state.grabando || state.cuentaRegresivaActiva) return;
+        if (window.VideosPublicar && typeof window.VideosPublicar.abrirModalSonidos === 'function') {
+            window.VideosPublicar.abrirModalSonidos();
+        } else {
+            notificar('El selector de sonidos no está disponible.', 'warning');
+        }
+    }
+
+    function onSonidoSeleccionadoDesdePublicar(evento) {
+        var sonido = evento && evento.detail ? evento.detail : null;
+        if (!sonido || !sonido.url) {
+            state.audioPista = null;
+            state.audioPistaUrl = null;
+        } else {
+            state.audioPista = sonido;
+            state.audioPistaUrl = sonido.url;
+        }
+        actualizarEtiquetaSonido();
     }
 
     function iniciarLoopDeteccion() {
@@ -451,19 +521,29 @@
         state.detectionFrameId = requestAnimationFrame(detectar);
     }
 
+    function dibujarVideoCover(video, canvas, ctx, espejado) {
+        var vw = video.videoWidth, vh = video.videoHeight;
+        var cw = canvas.width, ch = canvas.height;
+        var escala = Math.max(cw / vw, ch / vh);
+        var dw = vw * escala, dh = vh * escala;
+        var dx = (cw - dw) / 2, dy = (ch - dh) / 2;
+        ctx.save();
+        if (espejado) { ctx.translate(cw, 0); ctx.scale(-1, 1); }
+        ctx.drawImage(video, dx, dy, dw, dh);
+        ctx.restore();
+    }
+
     function iniciarLoopRender() {
         function dibujar() {
             if (!state.iniciada) return;
             var video = state.video, canvas = state.canvas, ctx = state.ctx;
             if (video.readyState >= 2 && video.videoWidth) {
-                if (canvas.width !== video.videoWidth || canvas.height !== video.videoHeight) {
-                    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+                if (canvas.width !== CONFIG.CANVAS_WIDTH || canvas.height !== CONFIG.CANVAS_HEIGHT) {
+                    canvas.width = CONFIG.CANVAS_WIDTH;
+                    canvas.height = CONFIG.CANVAS_HEIGHT;
                 }
                 var espejado = state.facingMode === 'user';
-                ctx.save();
-                if (espejado) { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                ctx.restore();
+                dibujarVideoCover(video, canvas, ctx, espejado);
                 var landmarks = state.lastResults && state.lastResults.multiFaceLandmarks && state.lastResults.multiFaceLandmarks[0];
                 if (landmarks && landmarks.length > 454) {
                     dibujarFiltro(landmarks, canvas, ctx, espejado);
@@ -477,11 +557,16 @@
     function dibujarFiltro(landmarks, canvas, ctx, espejado) {
         var filtro = ASSETS[state.filtroActual];
         if (!filtro) return;
-        var anchoCanvas = canvas.width, altoCanvas = canvas.height;
+        var video = state.video;
+        var escala = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
+        var offsetX = (canvas.width - video.videoWidth * escala) / 2;
+        var offsetY = (canvas.height - video.videoHeight * escala) / 2;
 
         function punto(indice) {
             var p = landmarks[indice];
-            return { x: espejado ? (1 - p.x) * anchoCanvas : p.x * anchoCanvas, y: p.y * altoCanvas };
+            var xVideo = espejado ? (1 - p.x) * video.videoWidth : p.x * video.videoWidth;
+            var yVideo = p.y * video.videoHeight;
+            return { x: xVideo * escala + offsetX, y: yVideo * escala + offsetY };
         }
 
         var ojoA = punto(33), ojoB = punto(263);
@@ -506,10 +591,8 @@
             var ancla = (parte.ancla === 'frente') ? frente : (parte.ancla === 'nariz') ? puntaNariz : centroOjos;
             var desplazamientoX = (parte.offsetX || 0) * anchoCara;
             var desplazamientoY = (parte.offsetY || 0) * alto;
-            var x = ancla.x + desplazamientoX;
-            var y = ancla.y + desplazamientoY;
             ctx.save();
-            ctx.translate(x, y);
+            ctx.translate(ancla.x + desplazamientoX, ancla.y + desplazamientoY);
             ctx.rotate(angulo);
             ctx.drawImage(imagen, -ancho / 2, -alto / 2, ancho, alto);
             ctx.restore();
@@ -522,39 +605,187 @@
         return candidatos.find(function (tipo) { return MediaRecorder.isTypeSupported(tipo); }) || '';
     }
 
-    function toggleGrabacion() { if (state.grabando) detenerGrabacion(); else iniciarGrabacion(); }
+    // ============================================================
+    // FOTOGRAMA DE PORTADA (JPEG) desde el canvas, sin depender del <video>
+    // ============================================================
+    function capturarFotogramaCanvas() {
+        return new Promise(function (resolve) {
+            try {
+                var c = state.canvas;
+                if (!c || !c.width) { resolve(null); return; }
+                var out = document.createElement('canvas');
+                var escala = Math.min(1, 480 / c.width);
+                out.width = Math.round(c.width * escala);
+                out.height = Math.round(c.height * escala);
+                out.getContext('2d').drawImage(c, 0, 0, out.width, out.height);
+                out.toBlob(function (blob) { resolve(blob || null); }, 'image/jpeg', 0.85);
+            } catch (e) { resolve(null); }
+        });
+    }
 
-    function iniciarGrabacion() {
+    // ============================================================
+    // MEZCLA DE AUDIO (pista de fondo + micrófono) con Web Audio API
+    // ============================================================
+    async function prepararMezclaAudio() {
+        var AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return null;
+
+        var ctx = new AudioCtx();
+        if (ctx.state === 'suspended') {
+            try { await ctx.resume(); } catch (e) {}
+        }
+
+        var destino = ctx.createMediaStreamDestination();
+
+        if (state.stream && state.stream.getAudioTracks().length) {
+            var micStream = new MediaStream(state.stream.getAudioTracks());
+            var micFuente = ctx.createMediaStreamSource(micStream);
+            micFuente.connect(destino);
+            state.audioMicFuente = micFuente;
+        }
+
+        state.audioCtx = ctx;
+        state.audioDestino = destino;
+        return destino;
+    }
+
+    async function conectarPistaDeFondo() {
+        if (!state.audioPistaUrl || !state.audioCtx) return false;
+
+        var audioEl = new Audio();
+        audioEl.crossOrigin = 'anonymous';
+        audioEl.preload = 'auto';
+        audioEl.src = state.audioPistaUrl;
+
+        var cargada = await new Promise(function (resolve) {
+            var timer = setTimeout(function () { resolve(false); }, CONFIG.PISTA_TIMEOUT_MS);
+            audioEl.oncanplaythrough = function () { clearTimeout(timer); resolve(true); };
+            audioEl.onerror = function () { clearTimeout(timer); resolve(false); };
+            audioEl.load();
+        });
+
+        if (!cargada) {
+            notificar('La pista no cargó. Se grabará sin sonido de fondo.', 'warning');
+            return false;
+        }
+
+        try {
+            var fuente = state.audioCtx.createMediaElementSource(audioEl);
+            fuente.connect(state.audioDestino);
+            fuente.connect(state.audioCtx.destination);
+            state.audioPistaFuente = fuente;
+            state.audioPista = state.audioPista || {};
+            state.audioPista.elemento = audioEl;
+            audioEl.currentTime = 0;
+            await audioEl.play().catch(function () {});
+            return true;
+        } catch (error) {
+            console.warn('[CSARIELS Cámara] No se pudo mezclar la pista:', error);
+            return false;
+        }
+    }
+
+    function liberarMezclaAudio() {
+        try {
+            if (state.audioPista && state.audioPista.elemento) {
+                state.audioPista.elemento.pause();
+                state.audioPista.elemento.removeAttribute('src');
+                state.audioPista.elemento.load();
+            }
+        } catch (e) {}
+        try { if (state.audioMicFuente) state.audioMicFuente.disconnect(); } catch (e) {}
+        try { if (state.audioPistaFuente) state.audioPistaFuente.disconnect(); } catch (e) {}
+        try { if (state.audioCtx && state.audioCtx.state !== 'closed') state.audioCtx.close(); } catch (e) {}
+        state.audioCtx = null;
+        state.audioDestino = null;
+        state.audioMicFuente = null;
+        state.audioPistaFuente = null;
+        if (state.audioPista) delete state.audioPista.elemento;
+    }
+
+    function toggleGrabacion() {
+        if (state.cuentaRegresivaActiva) return;
+        if (state.grabando) detenerGrabacion();
+        else iniciarCuentaRegresiva();
+    }
+
+    function iniciarCuentaRegresiva() {
+        if (!state.iniciada || state.grabando) return;
+        state.cuentaRegresivaActiva = true;
+        var numero = CONFIG.COUNTDOWN_SECONDS;
+        var contador = $('csCamaraCountdown');
+        if (contador) { contador.textContent = numero; contador.classList.add('visible'); }
+        state.cuentaRegresivaTimer = setInterval(function () {
+            numero--;
+            if (numero > 0) {
+                if (contador) contador.textContent = numero;
+            } else {
+                clearInterval(state.cuentaRegresivaTimer);
+                state.cuentaRegresivaTimer = null;
+                state.cuentaRegresivaActiva = false;
+                if (contador) contador.classList.remove('visible');
+                iniciarGrabacion();
+            }
+        }, 1000);
+    }
+
+    async function iniciarGrabacion() {
         if (!state.iniciada || state.grabando) return;
         if (typeof state.canvas.captureStream !== 'function') {
             notificar('Tu navegador no permite grabar desde la cámara.', 'error'); return;
         }
+
         var canvasStream = state.canvas.captureStream(CONFIG.TARGET_FPS);
-        if (state.stream) state.stream.getAudioTracks().forEach(function (track) { canvasStream.addTrack(track); });
+        state.archivoConAudioMezclado = false;
+
+        var mezcla = await prepararMezclaAudio();
+        if (mezcla) {
+            if (state.audioPistaUrl) {
+                state.archivoConAudioMezclado = await conectarPistaDeFondo();
+            }
+            mezcla.stream.getAudioTracks().forEach(function (track) { canvasStream.addTrack(track); });
+        } else if (state.stream) {
+            state.stream.getAudioTracks().forEach(function (track) { canvasStream.addTrack(track); });
+        }
+
         var mimeType = obtenerFormatoGrabacion();
         var recorder;
         try {
-            recorder = new MediaRecorder(canvasStream, mimeType ? { mimeType: mimeType, videoBitsPerSecond: CONFIG.VIDEO_BITRATE } : {});
+            recorder = new MediaRecorder(canvasStream, mimeType ? { mimeType: mimeType, videoBitsPerSecond: CONFIG.VIDEO_BITRATE, audioBitsPerSecond: CONFIG.AUDIO_BITRATE } : {});
         } catch (error) {
             canvasStream.getTracks().forEach(function (track) { track.stop(); });
+            liberarMezclaAudio();
             notificar('Tu navegador no soporta grabación de video.', 'error'); return;
         }
+
         state.mediaRecorder = recorder; state.chunks = []; state.descartar = false;
         recorder.ondataavailable = function (evento) { if (evento.data && evento.data.size > 0) state.chunks.push(evento.data); };
-        recorder.onstop = function () {
+        recorder.onstop = async function () {
             var tipo = recorder.mimeType || mimeType || 'video/webm';
             var extension = tipo.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
             var blob = new Blob(state.chunks, { type: tipo });
             state.chunks = [];
             canvasStream.getTracks().forEach(function (track) { track.stop(); });
+            liberarMezclaAudio();
             if (state.descartar) { liberarRecursos(); return; }
             if (blob.size === 0) { notificar('No se pudo grabar el video. Intenta de nuevo.', 'error'); liberarRecursos(); return; }
+
             var archivo = new File([blob], 'video-camara-' + Date.now() + '.' + extension, { type: tipo });
+            // Fotograma de portada ya procesado: el publicar lo muestra sin depender del <video>
+            var portada = await capturarFotogramaCanvas();
+            window.__csMiniaturaCamara = portada;
+            window.__csArchivoConAudioMezclado = state.archivoConAudioMezclado;
             liberarRecursos();
+            emitirEstado('listo');
             if (typeof window.csCamaraOnVideoGrabado === 'function') window.csCamaraOnVideoGrabado(archivo);
         };
-        recorder.start(250); state.grabando = true;
-        $('csBtnRecord').classList.add('grabando'); $('csRecIndicator').classList.add('active'); $('csCamaraTimer').classList.add('active');
+
+        recorder.start(250);
+        state.grabando = true;
+        emitirEstado('grabando');
+        $('csBtnRecord').classList.add('grabando');
+        $('csRecIndicator').classList.add('active');
+        $('csCamaraTimer').classList.add('active');
         iniciarTimer();
     }
 
@@ -571,7 +802,7 @@
         state.segundosGrabados = 0; actualizarTimerUI();
         state.timerInterval = setInterval(function () {
             state.segundosGrabados++; actualizarTimerUI();
-            if (state.segundosGrabados >= CONFIG.MAX_DURATION_SECONDS) detenerGrabacion();
+            if (state.segundosGrabados >= state.duracionActual) detenerGrabacion();
         }, 1000);
     }
 
@@ -611,6 +842,7 @@
             mostrarCargando(false);
             iniciarLoopRender();
             if (filtrosListos) iniciarLoopDeteccion();
+            emitirEstado('abierta');
         } catch (error) {
             console.error('[CSARIELS Cámara] Error al iniciar:', error);
             notificar(obtenerMensajeError(error), 'error');
@@ -622,6 +854,7 @@
 
     function cerrarCamara() {
         detenerTimer();
+        if (state.cuentaRegresivaTimer) { clearInterval(state.cuentaRegresivaTimer); state.cuentaRegresivaTimer = null; state.cuentaRegresivaActiva = false; }
         if (state.mediaRecorder && state.mediaRecorder.state !== 'inactive') {
             state.descartar = true; state.grabando = false;
             $('csModalCamara').classList.remove('show');
@@ -638,12 +871,36 @@
         if (state.renderFrameId) { cancelAnimationFrame(state.renderFrameId); state.renderFrameId = null; }
         if (state.detectionFrameId) { cancelAnimationFrame(state.detectionFrameId); state.detectionFrameId = null; }
         detenerStream(); detenerTimer();
+        liberarMezclaAudio();
         if ($('csBtnRecord')) $('csBtnRecord').classList.remove('grabando');
         if ($('csRecIndicator')) $('csRecIndicator').classList.remove('active');
         if ($('csCamaraTimer')) $('csCamaraTimer').classList.remove('active');
         if ($('csModalCamara')) $('csModalCamara').classList.remove('show');
         mostrarCargando(false);
         restaurarMarquinhos();
+        emitirEstado('cerrada');
+    }
+
+    // Permite a grupos-live.js grabar sin abrir la UI de cámara:
+    // recibe un MediaStream (pantalla o cámara) y devuelve un File.
+    function grabarDesdeStream(stream, duracionSeg) {
+        return new Promise(function (resolve, reject) {
+            try {
+                var mimeType = obtenerFormatoGrabacion();
+                var rec = new MediaRecorder(stream, mimeType ? { mimeType: mimeType, videoBitsPerSecond: CONFIG.VIDEO_BITRATE } : {});
+                var chunks = [];
+                rec.ondataavailable = function (e) { if (e.data && e.data.size > 0) chunks.push(e.data); };
+                rec.onstop = function () {
+                    var tipo = rec.mimeType || mimeType || 'video/webm';
+                    var ext = tipo.indexOf('mp4') !== -1 ? 'mp4' : 'webm';
+                    var blob = new Blob(chunks, { type: tipo });
+                    resolve(new File([blob], 'live-canal-' + Date.now() + '.' + ext, { type: tipo }));
+                };
+                rec.start(250);
+                if (duracionSeg) setTimeout(function () { if (rec.state !== 'inactive') rec.stop(); }, duracionSeg * 1000);
+                window.__csGrabacionStreamStop = function () { if (rec.state !== 'inactive') rec.stop(); };
+            } catch (e) { reject(e); }
+        });
     }
 
     window.VideosCamara = {
@@ -655,7 +912,9 @@
                 state.filtroActual = id;
                 renderizarFiltros();
             }
-        }
+        },
+        setDuracion: establecerDuracion,
+        grabarDesdeStream: grabarDesdeStream
     };
 
     function conectarBotonCamara() {
