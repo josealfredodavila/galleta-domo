@@ -1,19 +1,15 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.1
+   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.2
    ================================================================
-   Cambios respecto a v5.0:
-   - Barra de modos flotando sobre el botón de captura (estilo TikTok).
-   - Botón de captura con aro blanco y fondo rosa.
-   - Herramientas laterales verticales (flip, sonido, temporizador,
-     velocidad) como en TikTok.
-   - Al detener la grabación se extrae el primer fotograma del canvas
-     como JPEG y se entrega junto con el archivo en
-     window.__csMiniaturaCamara (el publicar lo usa como preview).
-   - Emite el estado de grabación en window.csCamaraEstado para que
-     grupos-live.js pueda reutilizar la cámara.
-   - Mantiene la API pública: VideosCamara.{abrirCamara, cerrarCamara,
-     cambiarCamara, setFiltro, setDuracion, grabarDesdeStream} y
-     window.csCamaraOnVideoGrabado(file).
+   Cambios respecto a v5.1:
+   - Capas: la cámara está en z-index 99999; el selector de sonido
+     se eleva a 100001+ antes de abrirse (ver videos-publicar.js v2.1).
+   - El botón de sonido responde al primer toque y no cierra ni
+     reinicia el stream de la cámara.
+   - Si se intenta cambiar el sonido mientras graba, muestra un aviso
+     en vez de no responder.
+   - Botones superiores y laterales con touch-action: manipulation.
+   - Mantiene la API pública de v5.1.
    ================================================================ */
 
 (function () {
@@ -21,6 +17,8 @@
 
     if (window.__csarielsVideosCamaraLoaded) return;
     window.__csarielsVideosCamaraLoaded = true;
+
+    var Z = { CAMARA: 99999, SHEET_BACKDROP: 100000, SHEET: 100001 };
 
     var CONFIG = {
         DURACIONES: [15, 60],
@@ -350,29 +348,29 @@
                 <div class="cs-camara-capturar">
                     <button type="button" class="cs-camara-record-btn" id="csBtnRecord" aria-label="Grabar"><span class="cs-camara-record-inner"></span></button>
                 </div>
-            </div>
-        `;
+            </div>`;
         document.body.appendChild(modal);
 
         if (!$('cs-camara-styles')) {
             var style = document.createElement('style');
             style.id = 'cs-camara-styles';
             style.textContent = `
-                .cs-camara-modal { position: fixed; inset: 0; z-index: 99999; background: #000; display: none; flex-direction: column; color: #fff; font-family: Inter, system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
+                .cs-camara-modal { position: fixed; inset: 0; z-index: ${Z.CAMARA}; background: #000; display: none; flex-direction: column; color: #fff; font-family: Inter, system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
                 .cs-camara-modal.show { display: flex; }
                 .cs-camara-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #000; }
                 #csCamaraVideo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-                #csCamaraCanvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+                #csCamaraCanvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
 
-                .cs-camara-top { position: absolute; top: 0; left: 0; right: 0; padding: max(12px, env(safe-area-inset-top)) 14px 10px; display: flex; align-items: center; gap: 10px; z-index: 20; background: linear-gradient(to bottom, rgba(0,0,0,.55), transparent); }
+                .cs-camara-top, .cs-camara-side, .cs-camara-filtros, .cs-camara-controles, .cs-camara-icon-btn, .cs-camara-sound, .cs-camara-side-btn, .cs-camara-modo, .cs-camara-record-btn, .cs-filtro-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+                .cs-camara-top { position: absolute; top: 0; left: 0; right: 0; padding: max(12px, env(safe-area-inset-top)) 14px 10px; display: flex; align-items: center; gap: 10px; z-index: 30; background: linear-gradient(to bottom, rgba(0,0,0,.55), transparent); pointer-events: auto; }
                 .cs-camara-icon-btn { width: 38px; height: 38px; border-radius: 50%; border: none; color: #fff; font-size: 1.05rem; background: transparent; cursor: pointer; flex-shrink: 0; }
                 .cs-camara-sound { flex: 0 1 auto; margin: 0 auto; display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; border: none; color: #fff; background: rgba(0,0,0,.35); font-size: .8rem; font-weight: 600; cursor: pointer; max-width: 70%; }
                 .cs-camara-sound span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
                 .cs-camara-sound.activo { background: rgba(212,175,55,.9); color: #05080f; }
                 .cs-camara-spacer { width: 38px; flex-shrink: 0; }
 
-                .cs-camara-side { position: absolute; right: 10px; top: 70px; display: flex; flex-direction: column; gap: 18px; align-items: center; z-index: 20; }
-                .cs-camara-side-btn { background: none; border: none; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; text-shadow: 0 1px 4px rgba(0,0,0,.7); }
+                .cs-camara-side { position: absolute; right: 10px; top: 70px; display: flex; flex-direction: column; gap: 18px; align-items: center; z-index: 30; pointer-events: auto; }
+                .cs-camara-side-btn { background: none; border: none; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; text-shadow: 0 1px 4px rgba(0,0,0,.7); padding: 4px; }
                 .cs-camara-side-btn .ico { font-size: 1.4rem; line-height: 1; }
                 .cs-camara-side-btn .lbl { font-size: .6rem; font-weight: 600; }
                 .cs-camara-side-btn:disabled { opacity: .4; }
@@ -384,7 +382,7 @@
                 @keyframes csPulseRec { from { opacity: 1; } to { opacity: .35; } }
                 .cs-camara-countdown { position: absolute; inset: 0; display: none; place-items: center; font-size: 6rem; font-weight: 800; color: #fff; text-shadow: 0 4px 24px rgba(0,0,0,.6); z-index: 17; pointer-events: none; }
                 .cs-camara-countdown.visible { display: grid; }
-                .cs-camara-loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: .9rem; background: rgba(0,0,0,.55); z-index: 15; }
+                .cs-camara-loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: .9rem; background: rgba(0,0,0,.55); z-index: 15; pointer-events: none; }
                 .cs-camara-loading.hidden { display: none; }
 
                 .cs-camara-filtros { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; gap: 10px; padding: 6px 12px; overflow-x: auto; scrollbar-width: none; z-index: 18; }
@@ -393,7 +391,7 @@
                 .cs-filtro-btn .icono { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 1.25rem; background: rgba(0,0,0,.35); border: 2px solid transparent; }
                 .cs-filtro-btn.activo .icono { border-color: #fff; }
 
-                .cs-camara-controles { background: #000; padding: 8px 0 max(20px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 14px; z-index: 20; }
+                .cs-camara-controles { position: relative; z-index: 30; background: #000; padding: 8px 0 max(20px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; align-items: center; gap: 14px; }
                 .cs-camara-modos { display: flex; justify-content: center; gap: 22px; }
                 .cs-camara-modo { background: none; border: none; color: rgba(255,255,255,.6); font-size: .85rem; font-weight: 700; padding: 4px 6px; cursor: pointer; }
                 .cs-camara-modo.activo { color: #fff; }
@@ -423,7 +421,11 @@
         });
         $('csCamaraModos').addEventListener('click', function (evento) {
             var boton = evento.target.closest('.cs-camara-modo');
-            if (!boton || state.grabando || state.cuentaRegresivaActiva) return;
+            if (!boton) return;
+            if (state.grabando || state.cuentaRegresivaActiva) {
+                notificar('Termina la grabación para cambiar la duración.', 'warning');
+                return;
+            }
             establecerDuracion(parseInt(boton.dataset.duracion, 10));
         });
         document.addEventListener('visibilitychange', onVisibilityChange);
@@ -435,7 +437,10 @@
 
     var temporizadoresCuenta = [3, 5, 10];
     function ciclarTemporizador() {
-        if (state.grabando || state.cuentaRegresivaActiva) return;
+        if (state.grabando || state.cuentaRegresivaActiva) {
+            notificar('Termina la grabación para cambiar el temporizador.', 'warning');
+            return;
+        }
         var i = temporizadoresCuenta.indexOf(CONFIG.COUNTDOWN_SECONDS);
         CONFIG.COUNTDOWN_SECONDS = temporizadoresCuenta[(i + 1) % temporizadoresCuenta.length];
         var lbl = document.querySelector('#csCamaraTemp .lbl');
@@ -450,8 +455,7 @@
                 <button type="button" class="cs-filtro-btn ${state.filtroActual === filtro.id ? 'activo' : ''}" data-filtro-id="${filtro.id}">
                     <span class="icono">${filtro.icono}</span>
                     <span>${filtro.nombre}</span>
-                </button>
-            `;
+                </button>`;
         }).join('');
     }
 
@@ -484,13 +488,33 @@
         }
     }
 
-    function abrirSelectorSonido() {
-        if (state.grabando || state.cuentaRegresivaActiva) return;
-        if (window.VideosPublicar && typeof window.VideosPublicar.abrirModalSonidos === 'function') {
-            window.VideosPublicar.abrirModalSonidos();
-        } else {
-            notificar('El selector de sonidos no está disponible.', 'warning');
+    // Eleva el selector de sonido por encima de la cámara, sin tocar el stream.
+    function elevarSelectorSonido() {
+        var ids = [
+            ['csSheetSonidosBackdrop', Z.SHEET_BACKDROP],
+            ['csModalSonidos', Z.SHEET]
+        ];
+        ids.forEach(function (par) {
+            var el = $(par[0]);
+            if (el) el.style.setProperty('z-index', String(par[1]), 'important');
+        });
+    }
+
+    // Abre el selector de forma inmediata, encima de la cámara.
+    // No cierra ni reinicia la cámara ni el stream.
+    function abrirSelectorSonido(evento) {
+        if (evento) { evento.preventDefault(); evento.stopPropagation(); }
+        if (state.grabando || state.cuentaRegresivaActiva) {
+            notificar('Termina la grabación para cambiar el sonido.', 'warning');
+            return;
         }
+        if (!window.VideosPublicar || typeof window.VideosPublicar.abrirModalSonidos !== 'function') {
+            notificar('El selector de sonidos no está disponible.', 'warning');
+            return;
+        }
+        elevarSelectorSonido();
+        window.VideosPublicar.abrirModalSonidos();
+        elevarSelectorSonido();
     }
 
     function onSonidoSeleccionadoDesdePublicar(evento) {
@@ -605,9 +629,6 @@
         return candidatos.find(function (tipo) { return MediaRecorder.isTypeSupported(tipo); }) || '';
     }
 
-    // ============================================================
-    // FOTOGRAMA DE PORTADA (JPEG) desde el canvas, sin depender del <video>
-    // ============================================================
     function capturarFotogramaCanvas() {
         return new Promise(function (resolve) {
             try {
@@ -623,9 +644,6 @@
         });
     }
 
-    // ============================================================
-    // MEZCLA DE AUDIO (pista de fondo + micrófono) con Web Audio API
-    // ============================================================
     async function prepararMezclaAudio() {
         var AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return null;
@@ -771,7 +789,6 @@
             if (blob.size === 0) { notificar('No se pudo grabar el video. Intenta de nuevo.', 'error'); liberarRecursos(); return; }
 
             var archivo = new File([blob], 'video-camara-' + Date.now() + '.' + extension, { type: tipo });
-            // Fotograma de portada ya procesado: el publicar lo muestra sin depender del <video>
             var portada = await capturarFotogramaCanvas();
             window.__csMiniaturaCamara = portada;
             window.__csArchivoConAudioMezclado = state.archivoConAudioMezclado;
@@ -881,8 +898,6 @@
         emitirEstado('cerrada');
     }
 
-    // Permite a grupos-live.js grabar sin abrir la UI de cámara:
-    // recibe un MediaStream (pantalla o cámara) y devuelve un File.
     function grabarDesdeStream(stream, duracionSeg) {
         return new Promise(function (resolve, reject) {
             try {
@@ -914,7 +929,8 @@
             }
         },
         setDuracion: establecerDuracion,
-        grabarDesdeStream: grabarDesdeStream
+        grabarDesdeStream: grabarDesdeStream,
+        abrirSelectorSonido: abrirSelectorSonido
     };
 
     function conectarBotonCamara() {
