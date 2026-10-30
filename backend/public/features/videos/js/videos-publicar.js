@@ -1,15 +1,12 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.1
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.2
    ================================================================
-   Cambios respecto a v2.0:
-   - CORRECCIÓN DE CAPAS: el selector de sonidos, ubicación y
-     borradores ahora se muestran por encima de la cámara
-     (z-index 100000+ con !important; la cámara usa 99999).
-   - Los estilos de capas se inyectan desde JS, así que no dependen
-     del orden de carga de videos-publicar.css.
-   - touch-action: manipulation en botones y hojas para que el primer
-     toque responda sin retraso.
-   - Mantiene la API pública de v2.0.
+   Cambios respecto a v2.1:
+   - Equalizador animado en el botón de reproducción de cada pista.
+     Barras con CSS cuando la pista está activa; con AnalyserNode
+     de Web Audio reaccionan al audio real si el navegador lo permite.
+   - Estado visual claro: cargando, sonando, pausado, error.
+   - Mantiene el resto de la API pública y el flujo de capas (z-index).
    ================================================================ */
 
 (function () {
@@ -18,14 +15,7 @@
     if (window.__csarielsVideosPublicarLoaded) return;
     window.__csarielsVideosPublicarLoaded = true;
 
-    // Capas (ver también videos-camara.js)
-    const Z = {
-        CAMARA: 99999,
-        SHEET_BACKDROP: 100000,
-        SHEET: 100001,
-        CONFIRM: 100010,
-        TOAST: 100020
-    };
+    const Z = { CAMARA: 99999, SHEET_BACKDROP: 100000, SHEET: 100001, CONFIRM: 100010, TOAST: 100020 };
 
     function vt(clave, respaldo) {
         if (typeof window.tConFallback === 'function') return window.tConFallback(clave, respaldo);
@@ -39,7 +29,8 @@
         MAX_VIDEO_MB_R2: 500,
         VIDEO_TYPES: ['video/mp4', 'video/webm', 'video/quicktime'],
         IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
-        PORTADA_TIMEOUT_MS: 4000
+        PORTADA_TIMEOUT_MS: 4000,
+        BARRAS_EQ: 4
     };
 
     const SUPABASE_STORAGE_URL = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios';
@@ -169,6 +160,73 @@
     window.csConfirm = csConfirm;
 
     // ============================================================
+    // ANALIZADOR PARA EL EQUALIZADOR (Web Audio API)
+    // ============================================================
+    const Visualizador = (function () {
+        let ctx = null;
+        let analyser = null;
+        let fuente = null;
+        let datos = null;
+        let rafId = null;
+        let activo = false;
+
+        function asegurarContexto(elemento) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (!AudioCtx) return false;
+            try {
+                if (!ctx) ctx = new AudioCtx();
+                if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+                if (!analyser) {
+                    analyser = ctx.createAnalyser();
+                    analyser.fftSize = 64;
+                    analyser.smoothingTimeConstant = 0.7;
+                    analyser.connect(ctx.destination);
+                    datos = new Uint8Array(analyser.frequencyBinCount);
+                }
+                if (fuente) { try { fuente.disconnect(); } catch (e) {} fuente = null; }
+                fuente = ctx.createMediaElementSource(elemento);
+                fuente.connect(analyser);
+                return true;
+            } catch (e) {
+                // El elemento ya tiene una fuente asociada o el navegador no lo permite
+                return false;
+            }
+        }
+
+        function pintarBarras(barras) {
+            if (!analyser || !datos) return;
+            analyser.getByteFrequencyData(datos);
+            const paso = Math.floor(datos.length / barras.length) || 1;
+            barras.forEach((barra, i) => {
+                const valor = datos[i * paso] || 0;
+                const altura = 4 + (valor / 255) * 16;
+                barra.style.height = altura + 'px';
+            });
+        }
+
+        function iniciar(elementoEq, elementoAudio) {
+            detener();
+            const barras = elementoEq ? Array.from(elementoEq.querySelectorAll('.cs-eq-bar')) : [];
+            const conAnalizador = elementoAudio ? asegurarContexto(elementoAudio) : false;
+            activo = true;
+            function bucle() {
+                if (!activo) return;
+                if (conAnalizador && barras.length) pintarBarras(barras);
+                rafId = requestAnimationFrame(bucle);
+            }
+            bucle();
+        }
+
+        function detener() {
+            activo = false;
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            if (fuente) { try { fuente.disconnect(); } catch (e) {} fuente = null; }
+        }
+
+        return { iniciar, detener };
+    })();
+
+    // ============================================================
     // MOTOR DE PREVIEW DE PISTAS (selector)
     // ============================================================
     const AudioPreview = (function () {
@@ -181,6 +239,7 @@
 
         function limpiar() {
             if (timerId !== null) { clearTimeout(timerId); timerId = null; }
+            Visualizador.detener();
             if (audio) {
                 try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch (e) {}
                 audio.onerror = null;
@@ -213,6 +272,7 @@
             const nuevoAudio = new Audio();
             nuevoAudio.preload = 'auto';
             nuevoAudio.volume = 0.8;
+            nuevoAudio.crossOrigin = 'anonymous';
             audio = nuevoAudio;
 
             const esperaDatos = new Promise((resolve, reject) => {
@@ -269,11 +329,15 @@
             estado = 'playing';
             if (onEstado) onEstado('playing', pista);
 
+            // Conecta el analizador para el equalizador real (si el navegador lo permite)
+            Visualizador.iniciar(document.querySelector(`.cs-sonido-item[data-sonido-id="${pista.id}"] .cs-eq`), nuevoAudio);
+
             timerId = setTimeout(() => {
                 if (miGeneracion !== generation) return;
                 if (audio === nuevoAudio) {
                     try { nuevoAudio.pause(); } catch (e) {}
                     estado = 'paused';
+                    Visualizador.detener();
                     if (onEstado) onEstado('paused', pista);
                 }
                 timerId = null;
@@ -286,6 +350,7 @@
             if (audio && estado === 'playing') {
                 try { audio.pause(); } catch (e) {}
                 estado = 'paused';
+                Visualizador.detener();
                 if (window._audioPreviewOnEstado) window._audioPreviewOnEstado('paused', pistaActual);
             }
         }
@@ -294,6 +359,7 @@
             if (audio && estado === 'paused' && pistaActual) {
                 audio.play().then(() => {
                     estado = 'playing';
+                    Visualizador.iniciar(document.querySelector(`.cs-sonido-item[data-sonido-id="${pistaActual.id}"] .cs-eq`), audio);
                     if (window._audioPreviewOnEstado) window._audioPreviewOnEstado('playing', pistaActual);
                 }).catch(() => {});
             }
@@ -563,14 +629,13 @@
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
     // ============================================================
-    // ESTILOS (capas y UI) · inyectados desde JS
+    // ESTILOS (capas, UI y equalizador)
     // ============================================================
     function inyectarEstilosExtra() {
         if ($('cs-videos-publicar-inline')) return;
         const st = document.createElement('style');
         st.id = 'cs-videos-publicar-inline';
         st.textContent = `
-            /* Capas: el selector va por encima de la cámara (99999) */
             .cs-sheet-backdrop { z-index: ${Z.SHEET_BACKDROP} !important; touch-action: manipulation; }
             .cs-sheet { z-index: ${Z.SHEET} !important; touch-action: manipulation; }
             .cs-confirm-overlay { z-index: ${Z.CONFIRM} !important; }
@@ -585,8 +650,31 @@
 
             .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(212,175,55,0.25); border-top-color: #D4AF37; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
-            .cs-sonido-play { background: transparent; border: 1px solid rgba(212,175,55,0.3); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #D4AF37; cursor: pointer; margin-right: 8px; transition: all 0.2s; }
+
+            /* Botón de reproducción con equalizador */
+            .cs-sonido-play { position: relative; background: transparent; border: 1px solid rgba(212,175,55,0.3); border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: #D4AF37; cursor: pointer; margin-right: 10px; flex-shrink: 0; overflow: hidden; transition: background .2s, border-color .2s, box-shadow .2s; }
             .cs-sonido-play:hover { background: rgba(212,175,55,0.15); }
+            .cs-sonido-ico { position: relative; z-index: 2; font-size: .8rem; }
+            .cs-eq { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; gap: 2px; pointer-events: none; z-index: 1; }
+            .cs-eq-bar { width: 3px; height: 4px; border-radius: 2px; background: #D4AF37; box-shadow: 0 0 6px rgba(212,175,55,.6); transition: height .08s linear; }
+
+            .cs-sonido-item.cs-sonando .cs-sonido-play { border-color: #D4AF37; box-shadow: 0 0 12px rgba(212,175,55,.45); background: rgba(212,175,55,.12); }
+            .cs-sonido-item.cs-sonando .cs-sonido-ico { display: none; }
+            .cs-sonido-item.cs-sonando .cs-eq { display: flex; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar { animation: cs-eq-bounce 0.9s ease-in-out infinite; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(2) { animation-delay: .15s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(3) { animation-delay: .3s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(4) { animation-delay: .45s; }
+            @keyframes cs-eq-bounce { 0%,100% { height: 4px; } 50% { height: 18px; } }
+
+            .cs-sonido-item.cs-cargando .cs-sonido-ico { animation: cs-spin-inline .8s linear infinite; display: inline-block; }
+            .cs-sonido-item.cs-pausado .cs-sonido-play { border-color: rgba(212,175,55,.6); }
+            .cs-sonido-item.cs-error .cs-sonido-play { border-color: #ff3366; color: #ff3366; }
+
+            @media (prefers-reduced-motion: reduce) {
+                .cs-sonido-item.cs-sonando .cs-eq-bar { animation: none; height: 12px; }
+            }
+
             .cs-btn-header.cs-activo { box-shadow: 0 0 14px rgba(212,175,55,0.45); }
             .cs-preview-duracion { font-size: 0.65rem; color: #8aa8b8; margin-left: auto; font-family: 'Orbitron', monospace; }
             #csPreviewPortada { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: none; z-index: 2; }
@@ -819,7 +907,6 @@
         const sheet = $(sheetId);
         const backdrop = $(backdropId);
         if (!sheet || !backdrop) return;
-        // Forzar la capa por encima de la cámara en cada apertura
         backdrop.style.setProperty('z-index', String(Z.SHEET_BACKDROP), 'important');
         sheet.style.setProperty('z-index', String(Z.SHEET), 'important');
         backdrop.classList.add('show');
@@ -844,16 +931,18 @@
         cerrarSheet('csModalBorradores', 'csSheetBorradoresBackdrop');
     }
 
+    // Actualiza el estado visual de cada fila del selector
     function actualizarIndicadorSonido(estado, pista, error) {
         document.querySelectorAll('.cs-sonido-item').forEach(el => {
             const ico = el.querySelector('.cs-sonido-ico');
-            if (!ico) return;
             const esActivo = pista && el.dataset.sonidoId === pista.id;
-            if (esActivo && estado === 'loading') ico.textContent = '◌';
-            else if (esActivo && estado === 'playing') ico.textContent = '⏸';
-            else if (esActivo && estado === 'paused') ico.textContent = '▶';
-            else if (esActivo && estado === 'error') ico.textContent = '⚠';
-            else ico.textContent = '▶';
+            el.classList.remove('cs-sonando', 'cs-cargando', 'cs-pausado', 'cs-error');
+            if (!ico) return;
+            if (!esActivo) { ico.textContent = '▶'; return; }
+            if (estado === 'loading') { ico.textContent = '◌'; el.classList.add('cs-cargando'); }
+            else if (estado === 'playing') { ico.textContent = '⏸'; el.classList.add('cs-sonando'); }
+            else if (estado === 'paused') { ico.textContent = '▶'; el.classList.add('cs-pausado'); }
+            else if (estado === 'error') { ico.textContent = '⚠'; el.classList.add('cs-error'); }
         });
         if (estado === 'error') {
             const mensaje = error && error.indexOf('timeout') !== -1
@@ -863,6 +952,10 @@
         }
     }
     window._audioPreviewOnEstado = actualizarIndicadorSonido;
+
+    function filaEqualizador() {
+        return `<span class="cs-eq" aria-hidden="true"><span class="cs-eq-bar"></span><span class="cs-eq-bar"></span><span class="cs-eq-bar"></span><span class="cs-eq-bar"></span></span>`;
+    }
 
     function renderSonidos(tab, filtro) {
         state.tabSonidosActiva = tab || 'parati';
@@ -882,6 +975,7 @@
             <button type="button" class="cs-sonido-item ${state.sonidoSeleccionado && state.sonidoSeleccionado.id === s.id ? 'activo' : ''}" data-sonido-id="${esc(s.id)}">
                 <span class="cs-sonido-play" data-play-id="${esc(s.id)}" role="button" aria-label="Reproducir o pausar">
                     <span class="cs-sonido-ico">▶</span>
+                    ${filaEqualizador()}
                 </span>
                 <span class="cs-sonido-info">
                     <span class="cs-sonido-nombre">${esc(s.nombre)}</span>
@@ -1211,7 +1305,7 @@
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
         actualizarBotonesSonidoUbicacion();
-        log('✅ Módulo Publicar v2.1 listo');
+        log('✅ Módulo Publicar v2.2 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
