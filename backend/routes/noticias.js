@@ -22,6 +22,14 @@ const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
     })
     : null;
 
+// ================================================================
+// CABECERAS: las respuestas son por usuario, nunca deben cachearse
+// ================================================================
+router.use((req, res, next) => {
+    res.set('Cache-Control', 'private, no-store');
+    next();
+});
+
 async function autenticar(req, res, next) {
     try {
         if (!supabaseAdmin) {
@@ -34,14 +42,18 @@ async function autenticar(req, res, next) {
         }
 
         const token = auth.slice(7).trim();
-        const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+        if (!token) {
+            return res.status(401).json({ error: 'Token no proporcionado' });
+        }
 
-        if (error || !user) {
+        const { data, error } = await supabaseAdmin.auth.getUser(token);
+
+        if (error || !data?.user) {
             return res.status(401).json({ error: 'Token inválido o expirado' });
         }
 
-        req.user = user;
-        next();
+        req.user = data.user;
+        return next();
     } catch (error) {
         console.error('❌ Error autenticando noticias:', error);
         return res.status(500).json({ error: 'Error de autenticación' });
@@ -75,6 +87,9 @@ function handleError(error, res) {
     return res.status(status).json({ error: message });
 }
 
+// ================================================================
+// GET /api/noticias?categoria=general&region=MX
+// ================================================================
 router.get('/', autenticar, async (req, res) => {
     try {
         const categoria = String(req.query.categoria || 'general').trim().toLowerCase();
@@ -95,6 +110,9 @@ router.get('/', autenticar, async (req, res) => {
     }
 });
 
+// ================================================================
+// POST /api/noticias/preguntar  { pregunta }
+// ================================================================
 router.post('/preguntar', autenticar, noticiasLimiter, async (req, res) => {
     try {
         const pregunta = String(req.body?.pregunta || '').trim();
