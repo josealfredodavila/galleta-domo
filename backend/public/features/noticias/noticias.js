@@ -163,9 +163,34 @@
             </div>`;
     }
 
+    /*
+     * Portada: foto del artículo si existe; si no, color por categoría
+     * con la inicial de la fuente. Si la foto falla, se reemplaza por la
+     * portada de respaldo (ver enlazarFotos).
+     */
     function coverHtml(item, cat) {
+        const imagen = urlSegura(item.imagen);
         const fuente = item.fuentes?.[0]?.titulo || hostOf(item.fuentes?.[0]?.url || '');
+
+        if (imagen !== '#') {
+            return `
+                <div class="cover cat-${escapeHtml(cat)}">
+                    <img class="photo" src="${escapeHtml(imagen)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">
+                </div>`;
+        }
+
         return `<div class="cover cat-${escapeHtml(cat)}"><span class="letra">${letraDe(fuente)}</span></div>`;
+    }
+
+    function enlazarFotos() {
+        el.feed.querySelectorAll('img.photo').forEach((img) => {
+            img.addEventListener('error', () => {
+                const portada = img.parentElement;
+                const fuente = portada.closest('[data-index]')?.querySelector('.src')?.textContent || '';
+                img.remove();
+                portada.insertAdjacentHTML('beforeend', `<span class="letra">${letraDe(fuente)}</span>`);
+            }, { once: true });
+        });
     }
 
     function actionsHtml(index, fuenteUrl) {
@@ -185,6 +210,14 @@
             </footer>`;
     }
 
+    function encabezadoHtml(item, cat) {
+        return `
+            <div class="eyebrow">
+                <span class="cat">${escapeHtml(ETIQUETAS[cat] || 'Noticias')}</span>
+                <span>· ${escapeHtml(tiempoRelativo(item.publicadoEn))}</span>
+            </div>`;
+    }
+
     function heroHtml(item, index) {
         const cat = state.category;
         return `
@@ -192,7 +225,7 @@
                 ${coverHtml(item, cat)}
                 <div class="scrim"></div>
                 <div class="content">
-                    <div class="eyebrow">${escapeHtml(ETIQUETAS[cat] || 'Noticias')} <span class="time">· ${escapeHtml(tiempoRelativo(item.publicadoEn))}</span></div>
+                    ${encabezadoHtml(item, cat)}
                     <h2>${escapeHtml(item.titulo)}</h2>
                     <p>${escapeHtml(item.resumen)}</p>
                     ${actionsHtml(index, item.fuentes?.[0]?.url)}
@@ -205,15 +238,13 @@
         return `
             <article class="card" data-index="${index}">
                 ${coverHtml(item, cat)}
-                <div class="content">
-                    <div class="eyebrow">${escapeHtml(ETIQUETAS[cat] || 'Noticias')} <span class="time">· ${escapeHtml(tiempoRelativo(item.publicadoEn))}</span></div>
-                    <h2>${escapeHtml(item.titulo)}</h2>
-                    <div class="summary-wrap">
-                        <p class="summary" data-role="resumen">${escapeHtml(item.resumen)}</p>
-                        <button class="more" type="button" data-action="more">Ver más</button>
-                    </div>
-                    ${actionsHtml(index, item.fuentes?.[0]?.url)}
+                ${encabezadoHtml(item, cat)}
+                <h2>${escapeHtml(item.titulo)}</h2>
+                <div class="summary-wrap">
+                    <p class="summary" data-role="resumen">${escapeHtml(item.resumen)}</p>
+                    <button class="more" type="button" data-action="more">Ver más</button>
                 </div>
+                ${actionsHtml(index, item.fuentes?.[0]?.url)}
             </article>`;
     }
 
@@ -224,6 +255,7 @@
         }
         const [primera, ...resto] = state.items;
         el.feed.innerHTML = heroHtml(primera, 0) + resto.map((item, i) => cardHtml(item, i + 1)).join('');
+        enlazarFotos();
     }
 
     async function loadFeed() {
