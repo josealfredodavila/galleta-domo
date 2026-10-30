@@ -1,15 +1,17 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.2
+   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.3
    ================================================================
-   Cambios respecto a v5.1:
-   - Capas: la cámara está en z-index 99999; el selector de sonido
-     se eleva a 100001+ antes de abrirse (ver videos-publicar.js v2.1).
-   - El botón de sonido responde al primer toque y no cierra ni
-     reinicia el stream de la cámara.
-   - Si se intenta cambiar el sonido mientras graba, muestra un aviso
-     en vez de no responder.
-   - Botones superiores y laterales con touch-action: manipulation.
-   - Mantiene la API pública de v5.1.
+   Cambios respecto a v5.2:
+   - Corrige la vista negra: el <video> de origen se decodifica siempre
+     (tamaño real dentro del viewport, opacidad 0, sin pointer-events).
+   - El render dibuja el video en cuanto hay dimensiones, sin esperar
+     un readyState estricto.
+   - FaceMesh corre en su propio bucle; si falla, la cámara sigue sin
+     filtros y se avisa una sola vez.
+   - Los PNG de filtro se dibujan sobre los landmarks en la misma
+     escala que el video (cover), solo cuando hay resultados válidos.
+   - Se mantienen modos 15 s / 60 s, botón de sonido, temporizador,
+     voltear, grabación con mezcla de audio y API pública.
    ================================================================ */
 
 (function () {
@@ -35,7 +37,8 @@
         MEDIAPIPE_CDN: 'https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh',
         MEDIAPIPE_VERSIONS: ['0.4.1675469240', '0.4.1633559619'],
         SCRIPT_TIMEOUT_MS: 20000,
-        PISTA_TIMEOUT_MS: 8000
+        PISTA_TIMEOUT_MS: 8000,
+        ESPERA_DIMENSIONES_MS: 6000
     };
 
     var ASSETS_BASE =
@@ -78,7 +81,7 @@
     ];
 
     var state = {
-        stream: null, faceMesh: null, video: null, canvas: null, ctx: null,
+        stream: null, faceMesh: null, faceMeshListo: false, video: null, canvas: null, ctx: null,
         mediaRecorder: null, chunks: [], grabando: false, iniciada: false,
         abriendo: false, descartar: false, enviando: false, filtroActual: 'ninguno',
         renderFrameId: null, detectionFrameId: null, lastDetectionTime: 0,
@@ -88,7 +91,7 @@
         cuentaRegresivaActiva: false, cuentaRegresivaTimer: null,
         audioCtx: null, audioDestino: null, audioPista: null,
         audioPistaUrl: null, audioMicFuente: null, audioPistaFuente: null,
-        archivoConAudioMezclado: false,
+        archivoConAudioMezclado: false, avisoFiltrosMostrado: false,
         filtrosDisponibles: [
             { id: 'ninguno', nombre: 'Ninguno', icono: '🚫' },
             { id: 'gato', nombre: 'Orejas', icono: '🐱' },
@@ -169,8 +172,9 @@
         throw ultimoError || new Error('MediaPipe no disponible.');
     }
 
+    // FaceMesh se inicializa una sola vez. Si falla, la cámara sigue sin filtros.
     async function iniciarFaceMesh() {
-        if (state.faceMesh) return true;
+        if (state.faceMeshListo) return true;
         try {
             var version = await cargarMediaPipe();
             var faceMesh = new window.FaceMesh({
@@ -180,9 +184,10 @@
             faceMesh.onResults(function (resultados) { state.lastResults = resultados; });
             await faceMesh.initialize();
             state.faceMesh = faceMesh;
+            state.faceMeshListo = true;
             return true;
         } catch (error) {
-            console.error('[CSARIELS Cámara] MediaPipe no disponible; se grabará sin filtros:', error);
+            console.error('[CSARIELS Cámara] MediaPipe no disponible; la cámara funciona sin filtros:', error);
             return false;
         }
     }
@@ -206,16 +211,15 @@
         throw ultimoError || new Error('No se pudo acceder a la cámara.');
     }
 
+    // Espera a que el video tenga dimensiones reales (hasta ESPERA_DIMENSIONES_MS).
     function esperarDimensiones(video) {
         return new Promise(function (resolve) {
-            if (video.videoWidth) { resolve(); return; }
-            var terminado = false;
-            function finalizar() {
-                if (terminado) return;
-                terminado = true; clearInterval(intervalo); clearTimeout(limite); resolve();
-            }
-            var intervalo = setInterval(function () { if (video.videoWidth) finalizar(); }, 50);
-            var limite = setTimeout(finalizar, 4000);
+            if (video.videoWidth > 0) { resolve(true); return; }
+            var inicio = Date.now();
+            var intervalo = setInterval(function () {
+                if (video.videoWidth > 0) { clearInterval(intervalo); resolve(true); }
+                else if (Date.now() - inicio > CONFIG.ESPERA_DIMENSIONES_MS) { clearInterval(intervalo); resolve(false); }
+            }, 60);
         });
     }
 
@@ -223,9 +227,13 @@
         detenerStream();
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('Tu navegador no permite acceder a la cámara.');
         state.stream = await pedirStream();
-        state.video.muted = true; state.video.srcObject = state.stream;
-        await state.video.play().catch(function () {});
-        await esperarDimensiones(state.video);
+        var video = state.video;
+        video.muted = true;
+        video.setAttribute('playsinline', '');
+        video.srcObject = state.stream;
+        try { await video.play(); } catch (e) {}
+        var listo = await esperarDimensiones(video);
+        if (!listo) throw new Error('La cámara no entregó imagen. Cierra otras apps que la usen e intenta de nuevo.');
     }
 
     function detenerStream() {
@@ -358,8 +366,9 @@
                 .cs-camara-modal { position: fixed; inset: 0; z-index: ${Z.CAMARA}; background: #000; display: none; flex-direction: column; color: #fff; font-family: Inter, system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
                 .cs-camara-modal.show { display: flex; }
                 .cs-camara-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #000; }
-                #csCamaraVideo { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-                #csCamaraCanvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+                /* El video de origen se mantiene con tamaño real para que el navegador lo decodifique. Invisible y sin eventos. */
+                #csCamaraVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: 0; object-fit: cover; }
+                #csCamaraCanvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; z-index: 1; }
 
                 .cs-camara-top, .cs-camara-side, .cs-camara-filtros, .cs-camara-controles, .cs-camara-icon-btn, .cs-camara-sound, .cs-camara-side-btn, .cs-camara-modo, .cs-camara-record-btn, .cs-filtro-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
                 .cs-camara-top { position: absolute; top: 0; left: 0; right: 0; padding: max(12px, env(safe-area-inset-top)) 14px 10px; display: flex; align-items: center; gap: 10px; z-index: 30; background: linear-gradient(to bottom, rgba(0,0,0,.55), transparent); pointer-events: auto; }
@@ -373,7 +382,6 @@
                 .cs-camara-side-btn { background: none; border: none; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; text-shadow: 0 1px 4px rgba(0,0,0,.7); padding: 4px; }
                 .cs-camara-side-btn .ico { font-size: 1.4rem; line-height: 1; }
                 .cs-camara-side-btn .lbl { font-size: .6rem; font-weight: 600; }
-                .cs-camara-side-btn:disabled { opacity: .4; }
 
                 .cs-camara-timer { position: absolute; top: 60px; left: 50%; transform: translateX(-50%); display: none; font-family: ui-monospace, monospace; font-size: .85rem; padding: 4px 12px; border-radius: 999px; background: rgba(255,51,102,.9); z-index: 16; }
                 .cs-camara-timer.active { display: block; }
@@ -395,7 +403,6 @@
                 .cs-camara-modos { display: flex; justify-content: center; gap: 22px; }
                 .cs-camara-modo { background: none; border: none; color: rgba(255,255,255,.6); font-size: .85rem; font-weight: 700; padding: 4px 6px; cursor: pointer; }
                 .cs-camara-modo.activo { color: #fff; }
-                .cs-camara-modo:disabled { opacity: .4; cursor: not-allowed; }
 
                 .cs-camara-capturar { display: flex; justify-content: center; }
                 .cs-camara-record-btn { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #fff; background: #ff2d55; padding: 0; cursor: pointer; display: grid; place-items: center; transition: all .18s ease; box-shadow: 0 0 0 4px rgba(255,45,85,.25); }
@@ -417,6 +424,7 @@
             var boton = evento.target.closest('.cs-filtro-btn');
             if (!boton) return;
             state.filtroActual = boton.dataset.filtroId;
+            state.lastResults = null;
             renderizarFiltros();
         });
         $('csCamaraModos').addEventListener('click', function (evento) {
@@ -488,7 +496,6 @@
         }
     }
 
-    // Eleva el selector de sonido por encima de la cámara, sin tocar el stream.
     function elevarSelectorSonido() {
         var ids = [
             ['csSheetSonidosBackdrop', Z.SHEET_BACKDROP],
@@ -500,8 +507,6 @@
         });
     }
 
-    // Abre el selector de forma inmediata, encima de la cámara.
-    // No cierra ni reinicia la cámara ni el stream.
     function abrirSelectorSonido(evento) {
         if (evento) { evento.preventDefault(); evento.stopPropagation(); }
         if (state.grabando || state.cuentaRegresivaActiva) {
@@ -529,13 +534,18 @@
         actualizarEtiquetaSonido();
     }
 
+    // ============================================================
+    // DETECCIÓN FACIAL · bucle independiente del render
+    // ============================================================
     function iniciarLoopDeteccion() {
         var intervalo = 1000 / CONFIG.DETECTION_FPS;
         async function detectar() {
             if (!state.iniciada) return;
             var ahora = performance.now();
-            if (state.faceMesh && !state.enviando && state.video.readyState >= 2 && ahora - state.lastDetectionTime >= intervalo) {
-                state.lastDetectionTime = ahora; state.enviando = true;
+            if (state.faceMesh && !state.enviando && state.video && state.video.videoWidth > 0 &&
+                ahora - state.lastDetectionTime >= intervalo) {
+                state.lastDetectionTime = ahora;
+                state.enviando = true;
                 try { await state.faceMesh.send({ image: state.video }); }
                 catch (error) { console.warn('[CSARIELS Cámara] Error de detección:', error); }
                 finally { state.enviando = false; }
@@ -545,15 +555,26 @@
         state.detectionFrameId = requestAnimationFrame(detectar);
     }
 
-    function dibujarVideoCover(video, canvas, ctx, espejado) {
+    // ============================================================
+    // RENDER · video + filtro sobre el canvas (escala cover)
+    // ============================================================
+    function calcularCover(video, canvas) {
         var vw = video.videoWidth, vh = video.videoHeight;
         var cw = canvas.width, ch = canvas.height;
         var escala = Math.max(cw / vw, ch / vh);
-        var dw = vw * escala, dh = vh * escala;
-        var dx = (cw - dw) / 2, dy = (ch - dh) / 2;
+        return {
+            escala: escala,
+            dx: (cw - vw * escala) / 2,
+            dy: (ch - vh * escala) / 2,
+            dw: vw * escala,
+            dh: vh * escala
+        };
+    }
+
+    function dibujarVideoCover(video, canvas, ctx, espejado, cover) {
         ctx.save();
-        if (espejado) { ctx.translate(cw, 0); ctx.scale(-1, 1); }
-        ctx.drawImage(video, dx, dy, dw, dh);
+        if (espejado) { ctx.translate(canvas.width, 0); ctx.scale(-1, 1); }
+        ctx.drawImage(video, cover.dx, cover.dy, cover.dw, cover.dh);
         ctx.restore();
     }
 
@@ -561,16 +582,22 @@
         function dibujar() {
             if (!state.iniciada) return;
             var video = state.video, canvas = state.canvas, ctx = state.ctx;
-            if (video.readyState >= 2 && video.videoWidth) {
+
+            if (video && video.videoWidth > 0 && video.videoHeight > 0) {
                 if (canvas.width !== CONFIG.CANVAS_WIDTH || canvas.height !== CONFIG.CANVAS_HEIGHT) {
                     canvas.width = CONFIG.CANVAS_WIDTH;
                     canvas.height = CONFIG.CANVAS_HEIGHT;
                 }
                 var espejado = state.facingMode === 'user';
-                dibujarVideoCover(video, canvas, ctx, espejado);
-                var landmarks = state.lastResults && state.lastResults.multiFaceLandmarks && state.lastResults.multiFaceLandmarks[0];
-                if (landmarks && landmarks.length > 454) {
-                    dibujarFiltro(landmarks, canvas, ctx, espejado);
+                var cover = calcularCover(video, canvas);
+
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                dibujarVideoCover(video, canvas, ctx, espejado, cover);
+
+                var resultados = state.lastResults;
+                var landmarks = resultados && resultados.multiFaceLandmarks && resultados.multiFaceLandmarks[0];
+                if (landmarks && landmarks.length > 454 && state.filtroActual !== 'ninguno') {
+                    dibujarFiltro(landmarks, canvas, ctx, espejado, cover);
                 }
             }
             state.renderFrameId = requestAnimationFrame(dibujar);
@@ -578,19 +605,18 @@
         state.renderFrameId = requestAnimationFrame(dibujar);
     }
 
-    function dibujarFiltro(landmarks, canvas, ctx, espejado) {
+    function dibujarFiltro(landmarks, canvas, ctx, espejado, cover) {
         var filtro = ASSETS[state.filtroActual];
         if (!filtro) return;
-        var video = state.video;
-        var escala = Math.max(canvas.width / video.videoWidth, canvas.height / video.videoHeight);
-        var offsetX = (canvas.width - video.videoWidth * escala) / 2;
-        var offsetY = (canvas.height - video.videoHeight * escala) / 2;
 
+        // Convierte un landmark normalizado (0..1 sobre el video) a coordenadas del canvas.
         function punto(indice) {
             var p = landmarks[indice];
-            var xVideo = espejado ? (1 - p.x) * video.videoWidth : p.x * video.videoWidth;
-            var yVideo = p.y * video.videoHeight;
-            return { x: xVideo * escala + offsetX, y: yVideo * escala + offsetY };
+            var xVideo = espejado ? (1 - p.x) : p.x;
+            return {
+                x: xVideo * state.video.videoWidth * cover.escala + cover.dx,
+                y: p.y * state.video.videoHeight * cover.escala + cover.dy
+            };
         }
 
         var ojoA = punto(33), ojoB = punto(263);
@@ -601,6 +627,7 @@
         var mejillaDer = mejillaA.x <= mejillaB.x ? mejillaB : mejillaA;
         var anchoCara = Math.hypot(mejillaDer.x - mejillaIzq.x, mejillaDer.y - mejillaIzq.y);
         if (!anchoCara || !isFinite(anchoCara)) return;
+
         var angulo = Math.atan2(ojoDer.y - ojoIzq.y, ojoDer.x - ojoIzq.x);
         var centroOjos = { x: (ojoIzq.x + ojoDer.x) / 2, y: (ojoIzq.y + ojoDer.y) / 2 };
         var frente = punto(10);
@@ -838,6 +865,9 @@
         if (document.hidden && state.grabando) detenerGrabacion();
     }
 
+    // ============================================================
+    // ABRIR / CERRAR
+    // ============================================================
     async function abrirCamara() {
         if (state.abriendo || state.iniciada) return;
         state.abriendo = true;
@@ -849,17 +879,27 @@
             state.video = $('csCamaraVideo');
             state.canvas = $('csCamaraCanvas');
             state.ctx = state.canvas.getContext('2d');
+            state.canvas.width = CONFIG.CANVAS_WIDTH;
+            state.canvas.height = CONFIG.CANVAS_HEIGHT;
+
             await iniciarStream();
-            await precargarImagenes();
-            var filtrosListos = await iniciarFaceMesh();
-            if (!filtrosListos) notificar('Filtros no disponibles. Puedes grabar sin filtro.', 'warning');
             state.iniciada = true;
             state.lastDetectionTime = 0;
             state.lastResults = null;
             mostrarCargando(false);
             iniciarLoopRender();
-            if (filtrosListos) iniciarLoopDeteccion();
             emitirEstado('abierta');
+
+            // Los filtros cargan en segundo plano: la cámara ya funciona sin ellos
+            Promise.all([precargarImagenes(), iniciarFaceMesh()]).then(function (resultado) {
+                var faceOk = resultado[1];
+                if (!faceOk && !state.avisoFiltrosMostrado) {
+                    state.avisoFiltrosMostrado = true;
+                    notificar('Filtros no disponibles en este momento. Puedes grabar sin ellos.', 'warning');
+                    return;
+                }
+                if (state.iniciada && faceOk) iniciarLoopDeteccion();
+            });
         } catch (error) {
             console.error('[CSARIELS Cámara] Error al iniciar:', error);
             notificar(obtenerMensajeError(error), 'error');
@@ -925,6 +965,7 @@
         setFiltro: function (id) {
             if (ASSETS[id] || id === 'ninguno') {
                 state.filtroActual = id;
+                state.lastResults = null;
                 renderizarFiltros();
             }
         },
