@@ -7,8 +7,6 @@
 <meta name="theme-color" content="#05080f">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js"></script>
 
 <style>
@@ -21,7 +19,6 @@
     --danger: #ff3366;
     --success: #00d68f;
     --verde: #0F2D1A;
-    --whatsapp: #25D366;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -107,7 +104,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     text-align: center;
 }
 .btn:hover { border-color: var(--gold); color: var(--gold); }
-.btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn-gold {
     background: linear-gradient(135deg, var(--gold), #b8923a);
     color: var(--space);
@@ -189,68 +185,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     color: var(--muted);
     overflow: hidden;
 }
-
-/* ================= WHATSAPP ================= */
-.wa-texto {
-    color: var(--muted);
-    font-size: .8rem;
-    line-height: 1.5;
-    margin-bottom: 14px;
-}
-.wa-codigo-caja {
-    margin-top: 14px;
-    padding: 16px;
-    border-radius: 14px;
-    border: 1px dashed rgba(37, 211, 102, 0.45);
-    background: rgba(37, 211, 102, 0.06);
-    text-align: center;
-}
-.wa-codigo-caja[hidden] { display: none; }
-.wa-codigo {
-    font-family: 'Orbitron', monospace;
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: .4em;
-    color: var(--text);
-    user-select: all;
-    -webkit-user-select: all;
-}
-.wa-vence {
-    margin-top: 8px;
-    font-size: .78rem;
-    color: var(--muted);
-}
-.wa-vence strong { color: var(--whatsapp); font-weight: 700; }
-.wa-vence.vencido strong { color: var(--danger); }
-.wa-copiar {
-    margin-top: 12px;
-    width: auto;
-    display: inline-block;
-    padding: 8px 18px;
-    font-size: .8rem;
-    border-color: rgba(37, 211, 102, 0.4);
-    color: var(--whatsapp);
-}
-.wa-copiar:hover { border-color: var(--whatsapp); color: var(--whatsapp); }
-.wa-estado {
-    margin-top: 10px;
-    font-size: .75rem;
-    min-height: 16px;
-    color: var(--muted);
-    text-align: center;
-}
-.wa-estado.error { color: var(--danger); }
-.wa-estado.ok { color: var(--success); }
-.wa-boton-generar {
-    background: linear-gradient(135deg, var(--whatsapp), #128C7E);
-    color: #04210F;
-    border-color: transparent;
-}
-.wa-boton-generar:hover {
-    transform: scale(1.02);
-    box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
-    color: #04210F;
-}
 </style>
 </head>
 <body>
@@ -270,27 +204,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         <p style="color:var(--muted);font-size:.72rem;line-height:1.4;margin-top:12px;">
             Compra sombreros, playeras, zapatos, lentes y más. Paga con USDT/USDC.
         </p>
-    </div>
-
-    <!-- WHATSAPP DE MARQUINHOS -->
-    <div class="card" id="cardWhatsapp">
-        <h2>WHATSAPP DE MARQUINHOS</h2>
-
-        <p class="wa-texto">
-            Genera tu código aquí y envíalo por WhatsApp al número oficial para vincular tu cuenta.
-        </p>
-
-        <button class="btn wa-boton-generar" id="btnGenerarCodigo" type="button">
-            Generar código de vinculación
-        </button>
-
-        <div class="wa-codigo-caja" id="cajaCodigo" hidden>
-            <div class="wa-codigo" id="waCodigo" aria-live="polite">------</div>
-            <div class="wa-vence" id="waVence">Vence en <strong>10:00</strong></div>
-            <button class="btn wa-copiar" id="btnCopiarCodigo" type="button">Copiar código</button>
-        </div>
-
-        <div class="wa-estado" id="waEstado" role="status" aria-live="polite"></div>
     </div>
 
     <!-- ✅ NUEVO: TAMAÑO DEL MUÑECO -->
@@ -364,150 +277,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 <script>
 'use strict';
 
-/* ================================================================
-   WHATSAPP · GENERAR CÓDIGO DE VINCULACIÓN
-   POST /api/ai/chat-pet/whatsapp/codigo  (con token de sesión Supabase)
-================================================================ */
-(function () {
-    const ENDPOINT = '/api/ai/chat-pet/whatsapp/codigo';
-    const VIGENCIA_MS = 10 * 60 * 1000;
-
-    const btnGenerar = document.getElementById('btnGenerarCodigo');
-    const caja = document.getElementById('cajaCodigo');
-    const elCodigo = document.getElementById('waCodigo');
-    const elVence = document.getElementById('waVence');
-    const btnCopiar = document.getElementById('btnCopiarCodigo');
-    const elEstado = document.getElementById('waEstado');
-
-    let codigoActual = '';
-    let expiraEnMs = 0;
-    let temporizador = null;
-
-    function estado(texto, tipo) {
-        elEstado.textContent = texto || '';
-        elEstado.className = 'wa-estado' + (tipo ? ' ' + tipo : '');
-    }
-
-    function formatearTiempo(ms) {
-        const total = Math.max(0, Math.floor(ms / 1000));
-        const m = String(Math.floor(total / 60)).padStart(2, '0');
-        const s = String(total % 60).padStart(2, '0');
-        return m + ':' + s;
-    }
-
-    function pintarVence() {
-        const restante = expiraEnMs - Date.now();
-        if (restante <= 0) {
-            elVence.classList.add('vencido');
-            elVence.innerHTML = '<strong>Código vencido</strong>. Genera uno nuevo.';
-            btnCopiar.disabled = true;
-            clearInterval(temporizador);
-            temporizador = null;
-            return;
-        }
-        elVence.classList.remove('vencido');
-        elVence.innerHTML = 'Vence en <strong>' + formatearTiempo(restante) + '</strong>';
-    }
-
-    function mostrarCodigo(codigo, expiraEnIso) {
-        codigoActual = String(codigo || '');
-        expiraEnMs = new Date(expiraEnIso).getTime() || (Date.now() + VIGENCIA_MS);
-
-        elCodigo.textContent = codigoActual.replace(/(\d{3})(\d{3})/, '$1 $2');
-        caja.hidden = false;
-        btnCopiar.disabled = false;
-
-        clearInterval(temporizador);
-        pintarVence();
-        temporizador = setInterval(pintarVence, 1000);
-    }
-
-    async function obtenerToken() {
-        // El cliente de Supabase lo crea auth-global.js; esperamos a que esté listo
-        for (let i = 0; i < 80; i++) {
-            if (window.supabaseClient && window.supabaseClient.auth) break;
-            await new Promise(function (r) { setTimeout(r, 100); });
-        }
-        if (!window.supabaseClient || !window.supabaseClient.auth) return null;
-
-        const { data, error } = await window.supabaseClient.auth.getSession();
-        if (error || !data || !data.session) return null;
-        return data.session.access_token || null;
-    }
-
-    async function generarCodigo() {
-        btnGenerar.disabled = true;
-        btnGenerar.textContent = 'Generando...';
-        estado('');
-
-        try {
-            const token = await obtenerToken();
-            if (!token) {
-                estado('Inicia sesión para generar tu código.', 'error');
-                return;
-            }
-
-            const resp = await fetch(ENDPOINT, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify({})
-            });
-
-            const datos = await resp.json().catch(function () { return {}; });
-
-            if (!resp.ok || !datos.success) {
-                estado(datos.error || 'No se pudo generar el código. Intenta de nuevo.', 'error');
-                return;
-            }
-
-            mostrarCodigo(datos.codigo, datos.expira_en);
-            estado('Código generado. Envíalo por WhatsApp antes de que venza.', 'ok');
-        } catch (e) {
-            estado('Sin conexión. Revisa tu internet e intenta de nuevo.', 'error');
-        } finally {
-            btnGenerar.disabled = false;
-            btnGenerar.textContent = 'Generar código de vinculación';
-        }
-    }
-
-    async function copiarCodigo() {
-        if (!codigoActual) return;
-        if (expiraEnMs - Date.now() <= 0) {
-            estado('El código ya venció. Genera uno nuevo.', 'error');
-            return;
-        }
-
-        try {
-            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-                await navigator.clipboard.writeText(codigoActual);
-            } else {
-                const area = document.createElement('textarea');
-                area.value = codigoActual;
-                area.style.position = 'fixed';
-                area.style.opacity = '0';
-                document.body.appendChild(area);
-                area.select();
-                document.execCommand('copy');
-                area.remove();
-            }
-            btnCopiar.textContent = '¡Copiado!';
-            estado('Código copiado. Pégalo en WhatsApp.', 'ok');
-            setTimeout(function () { btnCopiar.textContent = 'Copiar código'; }, 2000);
-        } catch (e) {
-            estado('No se pudo copiar. Mantén presionado el código para seleccionarlo.', 'error');
-        }
-    }
-
-    btnGenerar.addEventListener('click', generarCodigo);
-    btnCopiar.addEventListener('click', copiarCodigo);
-})();
-
-/* ================================================================
-   CONFIGURACIÓN DEL PET
-================================================================ */
 (function() {
     const KEY = 'marquinhos_config';
     let cfg = {};
@@ -536,7 +305,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         toggleVoz.classList.toggle('activo', enModoVoz);
         toggleSub.classList.toggle('activo', !!cfg.mostrar_subtitulos);
 
-        // Tamaño
+        // ✅ NUEVO: Tamaño
         const tamano = cfg.tamano != null ? cfg.tamano : 100;
         document.getElementById('sliderTamano').value = tamano;
         document.getElementById('valTamano').textContent = tamano + '%';
@@ -553,7 +322,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         document.getElementById('valVelocidad').textContent = vel.toFixed(2) + 'x';
     }
 
-    // Actualizar preview del tamaño
+    // ✅ NUEVO: Actualizar preview del tamaño
     function actualizarPreviewTamano(porcentaje) {
         const baseAncho = 90;
         const baseAlto = 130;
@@ -590,7 +359,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             pintar();
         });
 
-        // Slider de tamaño
+        // ✅ NUEVO: Slider de tamaño
         document.getElementById('sliderTamano').addEventListener('input', function(e) {
             leer();
             cfg.tamano = parseInt(e.target.value, 10);
@@ -627,16 +396,16 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             alert('Posición reseteada. Recarga la página para ver el cambio.');
         });
 
-        // Limpiar historial (store persistente de Marquinhos)
+        // Limpiar historial
         document.getElementById('btnLimpiarHistorial').addEventListener('click', function() {
             if (!confirm('¿Borrar todo el historial de conversación con Marquinhos?')) return;
             if (window.Marquinhos && typeof window.Marquinhos.olvidar === 'function') {
                 window.Marquinhos.olvidar();
+            } else {
+                Object.keys(localStorage)
+                    .filter(k => k.indexOf('marquinhos_hist_') === 0)
+                    .forEach(k => localStorage.removeItem(k));
             }
-            // Respaldo: borra la clave del store en este navegador, aunque el widget no esté cargado
-            Object.keys(localStorage)
-                .filter(function (k) { return k.indexOf('marquinhos_store_v1:') === 0; })
-                .forEach(function (k) { localStorage.removeItem(k); });
             alert('Historial borrado.');
         });
 
