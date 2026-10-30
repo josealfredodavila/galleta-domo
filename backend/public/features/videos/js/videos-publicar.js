@@ -1,14 +1,15 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.0
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.1
    ================================================================
-   Cambios respecto a v1.9:
-   - Preview con imagen fija: usa window.__csMiniaturaCamara (JPEG
-     generado por la cámara) cuando el archivo viene de la cámara.
-     Para archivos de galería se extrae el primer fotograma con canvas.
-   - Ya no depende de currentTime ni de poster para mostrar la portada.
-   - Emite csariels:sonido:seleccionado al confirmar la pista.
-   - getState() incluye archivoConAudioMezclado.
-   - Mantiene API pública de v1.9.
+   Cambios respecto a v2.0:
+   - CORRECCIÓN DE CAPAS: el selector de sonidos, ubicación y
+     borradores ahora se muestran por encima de la cámara
+     (z-index 100000+ con !important; la cámara usa 99999).
+   - Los estilos de capas se inyectan desde JS, así que no dependen
+     del orden de carga de videos-publicar.css.
+   - touch-action: manipulation en botones y hojas para que el primer
+     toque responda sin retraso.
+   - Mantiene la API pública de v2.0.
    ================================================================ */
 
 (function () {
@@ -16,6 +17,15 @@
 
     if (window.__csarielsVideosPublicarLoaded) return;
     window.__csarielsVideosPublicarLoaded = true;
+
+    // Capas (ver también videos-camara.js)
+    const Z = {
+        CAMARA: 99999,
+        SHEET_BACKDROP: 100000,
+        SHEET: 100001,
+        CONFIRM: 100010,
+        TOAST: 100020
+    };
 
     function vt(clave, respaldo) {
         if (typeof window.tConFallback === 'function') return window.tConFallback(clave, respaldo);
@@ -110,8 +120,8 @@
         const t = document.createElement('div');
         t.className = 'cs-toast cs-toast-' + (tipo || 'info');
         const iconos = { info: '◈', success: '✓', warning: '⚠', error: '✕' };
-        const icono = iconos[tipo] || iconos.info;
-        t.innerHTML = `<span class="cs-toast-ico">${icono}</span><span class="cs-toast-txt">${esc(mensaje)}</span>`;
+        t.innerHTML = `<span class="cs-toast-ico">${iconos[tipo] || iconos.info}</span><span class="cs-toast-txt">${esc(mensaje)}</span>`;
+        t.style.setProperty('z-index', String(Z.TOAST), 'important');
         document.body.appendChild(t);
         requestAnimationFrame(() => t.classList.add('show'));
         setTimeout(() => {
@@ -125,6 +135,7 @@
             const o = opts || {};
             const overlay = document.createElement('div');
             overlay.className = 'cs-confirm-overlay';
+            overlay.style.setProperty('z-index', String(Z.CONFIRM), 'important');
             overlay.innerHTML = `
                 <div class="cs-confirm-modal" role="dialog" aria-modal="true">
                     <div class="cs-confirm-ico">${o.peligroso ? '⚠' : '◈'}</div>
@@ -134,8 +145,7 @@
                         <button type="button" class="cs-confirm-btn cs-confirm-cancel" data-res="0">${esc(o.textoCancelar || vt('cfg_cancelar', 'Cancelar'))}</button>
                         <button type="button" class="cs-confirm-btn ${o.peligroso ? 'cs-confirm-danger' : 'cs-confirm-ok'}" data-res="1">${esc(o.textoOk || 'Aceptar')}</button>
                     </div>
-                </div>
-            `;
+                </div>`;
             document.body.appendChild(overlay);
             requestAnimationFrame(() => overlay.classList.add('show'));
             function cerrar(res) {
@@ -328,7 +338,6 @@
         const sessionResp = await sb.auth.getSession();
         const session = sessionResp && sessionResp.data && sessionResp.data.session;
         if (!session) return { ok: false, error: 'Sin sesión activa' };
-
         const token = session.access_token;
         if (!token) return { ok: false, error: 'Sin token de sesión' };
 
@@ -356,7 +365,6 @@
             const mensaje = data && data.error ? data.error : 'No se pudo subir el archivo';
             return { ok: false, error: mensaje, status: respuesta.status };
         }
-
         return { ok: true, url: data.url, path: data.path, provider: 'supabase' };
     }
 
@@ -368,14 +376,12 @@
     }
 
     // ============================================================
-    // PORTADA / PREVIEW (imagen fija, sin depender del decodificador)
+    // PORTADA / PREVIEW
     // ============================================================
-    // Si el archivo viene de la cámara, usa el JPEG que ya generó la cámara.
-    // Si es de galería, extrae el primer fotograma con canvas.
     function obtenerPortada(file) {
         return new Promise((resolve) => {
             const desdeCamara = window.__csMiniaturaCamara;
-            if (desdeCamara && window.__csArchivoConAudioMezclado !== undefined && file.name.indexOf('video-camara-') === 0) {
+            if (desdeCamara && file.name.indexOf('video-camara-') === 0) {
                 resolve(desdeCamara);
                 return;
             }
@@ -425,14 +431,11 @@
 
     function mostrarPortadaEnPreview(blob) {
         const img = $('csPreviewPortada');
-        const v = $('csPreviewVideo');
-        if (!img || !v) return;
-
+        if (!img) return;
         if (state.portadaURL) {
             try { URL.revokeObjectURL(state.portadaURL); } catch (e) {}
             state.portadaURL = null;
         }
-
         if (blob) {
             state.portadaURL = URL.createObjectURL(blob);
             img.src = state.portadaURL;
@@ -446,7 +449,6 @@
     function mostrarPreviewVideo(file) {
         const v = $('csPreviewVideo');
         if (!v) return;
-
         if (state.previewURL) {
             try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
             state.previewURL = null;
@@ -469,18 +471,18 @@
     }
 
     // ============================================================
-    // RESET COMPLETO DEL FORMULARIO
+    // RESET DEL FORMULARIO
     // ============================================================
     function resetFormularioPublicacion() {
-        const inputTitulo = document.getElementById('inputTituloVideo');
-        const inputDesc = document.getElementById('inputDescripcionVideo');
+        const inputTitulo = $('inputTituloVideo');
+        const inputDesc = $('inputDescripcionVideo');
         if (inputTitulo) inputTitulo.value = '';
         if (inputDesc) inputDesc.value = '';
 
-        const inputArchivo = document.getElementById('inputArchivoVideo');
+        const inputArchivo = $('inputArchivoVideo');
         if (inputArchivo) { try { inputArchivo.value = ''; } catch (e) {} }
 
-        const preview = document.getElementById('csPreviewVideo');
+        const preview = $('csPreviewVideo');
         if (preview) {
             try { preview.pause(); } catch (e) {}
             preview.removeAttribute('src');
@@ -510,22 +512,22 @@
         const meta = $('csPreviewDuracion');
         if (meta) meta.textContent = '';
 
-        const btnTxt = document.getElementById('csFileBtnTxt');
-        const btnHint = document.getElementById('csFileBtnHint');
+        const btnTxt = $('csFileBtnTxt');
+        const btnHint = $('csFileBtnHint');
         const btnWrap = document.querySelector('.cs-file-btn-wrap');
         if (btnTxt) btnTxt.textContent = vt('videos_elegir_galeria', 'Elegir video de la galería');
         if (btnHint) btnHint.textContent = vt('videos_archivo_hint', 'MP4 · WebM · MOV · Máx 100 MB');
         if (btnWrap) btnWrap.classList.remove('cs-file-con-archivo');
 
-        const progressEl = document.getElementById('uploadProgress');
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
+        const progressEl = $('uploadProgress');
+        const progressFill = $('progressFill');
+        const progressText = $('progressText');
         if (progressEl) progressEl.style.display = 'none';
         if (progressFill) progressFill.style.width = '0%';
         if (progressText) progressText.textContent = '0%';
 
-        const pFill = document.getElementById('processingProgressFill');
-        const pText = document.getElementById('processingProgressText');
+        const pFill = $('processingProgressFill');
+        const pText = $('processingProgressText');
         if (pFill) pFill.style.width = '0%';
         if (pText) pText.textContent = '0%';
 
@@ -554,20 +556,33 @@
             log('📡 Evento csariels:videos:refresh disparado');
         } catch (e) { warn('No se pudo disparar el evento:', e); }
         try {
-            const feed = document.getElementById('videosContainer');
+            const feed = $('videosContainer');
             if (feed) feed.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (e) {}
     }
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
     // ============================================================
-    // UI · ESTILOS Y BOTONES
+    // ESTILOS (capas y UI) · inyectados desde JS
     // ============================================================
     function inyectarEstilosExtra() {
-        if (document.getElementById('cs-videos-publicar-inline')) return;
+        if ($('cs-videos-publicar-inline')) return;
         const st = document.createElement('style');
         st.id = 'cs-videos-publicar-inline';
         st.textContent = `
+            /* Capas: el selector va por encima de la cámara (99999) */
+            .cs-sheet-backdrop { z-index: ${Z.SHEET_BACKDROP} !important; touch-action: manipulation; }
+            .cs-sheet { z-index: ${Z.SHEET} !important; touch-action: manipulation; }
+            .cs-confirm-overlay { z-index: ${Z.CONFIRM} !important; }
+            .cs-toast { z-index: ${Z.TOAST} !important; }
+
+            .cs-sheet button, .cs-sheet [role="button"], .cs-sheet .cs-sonido-item,
+            .cs-sheet .cs-ubicacion-item, .cs-sheet .cs-tab {
+                pointer-events: auto !important;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+            }
+
             .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(212,175,55,0.25); border-top-color: #D4AF37; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
             .cs-sonido-play { background: transparent; border: 1px solid rgba(212,175,55,0.3); border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; color: #D4AF37; cursor: pointer; margin-right: 8px; transition: all 0.2s; }
@@ -583,7 +598,7 @@
     function inyectarBotonesHeader() {
         const header = document.querySelector('.header .header-actions');
         if (!header) { warn('Header no encontrado'); return; }
-        if (document.getElementById('csBtnAgregarSonido')) return;
+        if ($('csBtnAgregarSonido')) return;
 
         const btnSonido = document.createElement('button');
         btnSonido.id = 'csBtnAgregarSonido';
@@ -611,7 +626,7 @@
     }
 
     function inyectarModales() {
-        if (document.getElementById('csModalSonidos')) return;
+        if ($('csModalSonidos')) return;
         const contenedor = document.createElement('div');
         contenedor.innerHTML = `
             <div class="cs-sheet-backdrop" id="csSheetSonidosBackdrop"></div>
@@ -674,15 +689,14 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        `;
+            </div>`;
         while (contenedor.firstChild) document.body.appendChild(contenedor.firstChild);
     }
 
     function inyectarSeccionPreviewEnUpload() {
-        const uploadSection = document.getElementById('uploadSection');
+        const uploadSection = $('uploadSection');
         if (!uploadSection) return;
-        if (document.getElementById('csPreviewWrap')) return;
+        if ($('csPreviewWrap')) return;
 
         const form = uploadSection.querySelector('form');
         if (!form) return;
@@ -716,8 +730,7 @@
                         <span class="cs-ico">◇</span> <span data-clave="videos_guardar_borrador_btn">Guardar borrador</span>
                     </button>
                 </div>
-            </div>
-        `;
+            </div>`;
         const grupos = form.querySelectorAll('.form-group');
         if (grupos.length > 0) form.insertBefore(wrap, grupos[grupos.length - 1]);
         else form.appendChild(wrap);
@@ -727,7 +740,7 @@
     }
 
     function transformarInputArchivo(scope) {
-        const input = scope.querySelector('#inputArchivoVideo') || document.getElementById('inputArchivoVideo');
+        const input = scope.querySelector('#inputArchivoVideo') || $('inputArchivoVideo');
         if (!input) { warn('inputArchivoVideo no encontrado'); return; }
         if (input.dataset.csTransformado === '1') return;
         input.dataset.csTransformado = '1';
@@ -749,12 +762,10 @@
                 <span class="cs-file-btn-ico">▶</span>
                 <span class="cs-file-btn-txt" id="csFileBtnTxt" data-clave="videos_elegir_galeria">Elegir video de la galería</span>
                 <span class="cs-file-btn-hint" id="csFileBtnHint" data-clave="videos_archivo_hint">MP4 · WebM · MOV · Máx 100 MB</span>
-            </button>
-        `;
+            </button>`;
         if (input.parentNode) input.parentNode.insertBefore(btnWrap, input.nextSibling);
 
-        const btn = btnWrap.querySelector('#csFileBtnVideo');
-        btn.addEventListener('click', (e) => {
+        btnWrap.querySelector('#csFileBtnVideo').addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
             input.click();
@@ -762,8 +773,8 @@
 
         input.addEventListener('change', () => {
             const file = input.files && input.files[0];
-            const txt = document.getElementById('csFileBtnTxt');
-            const hint = document.getElementById('csFileBtnHint');
+            const txt = $('csFileBtnTxt');
+            const hint = $('csFileBtnHint');
             if (file) {
                 if (txt) { txt.removeAttribute('data-clave'); txt.textContent = '◈ ' + file.name; }
                 if (hint) {
@@ -808,6 +819,9 @@
         const sheet = $(sheetId);
         const backdrop = $(backdropId);
         if (!sheet || !backdrop) return;
+        // Forzar la capa por encima de la cámara en cada apertura
+        backdrop.style.setProperty('z-index', String(Z.SHEET_BACKDROP), 'important');
+        sheet.style.setProperty('z-index', String(Z.SHEET), 'important');
         backdrop.classList.add('show');
         sheet.classList.add('show');
         document.body.style.overflow = 'hidden';
@@ -831,8 +845,7 @@
     }
 
     function actualizarIndicadorSonido(estado, pista, error) {
-        const items = document.querySelectorAll('.cs-sonido-item');
-        items.forEach(el => {
+        document.querySelectorAll('.cs-sonido-item').forEach(el => {
             const ico = el.querySelector('.cs-sonido-ico');
             if (!ico) return;
             const esActivo = pista && el.dataset.sonidoId === pista.id;
@@ -875,8 +888,7 @@
                     <span class="cs-sonido-artista">${esc(s.artista)} · ${esc(s.duracion)}s</span>
                 </span>
                 <span class="cs-sonido-check">◆</span>
-            </button>
-        `).join('');
+            </button>`).join('');
 
         lista.querySelectorAll('.cs-sonido-play').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -968,8 +980,7 @@
                     <span class="cs-ubicacion-pais">${esc(u.pais)}</span>
                 </span>
                 <span class="cs-ubicacion-check">◆</span>
-            </button>
-        `).join('');
+            </button>`).join('');
         lista.querySelectorAll('.cs-ubicacion-item').forEach(btn => {
             btn.addEventListener('click', () => seleccionarUbicacion(btn.dataset.ubicacionId));
         });
@@ -1030,7 +1041,7 @@
     // INPUT DE ARCHIVO (galería)
     // ============================================================
     function engancharInputArchivo() {
-        const input = document.getElementById('inputArchivoVideo');
+        const input = $('inputArchivoVideo');
         if (!input) return;
         if (input.dataset.csPublicarEnganchado === '1') return;
         input.dataset.csPublicarEnganchado = '1';
@@ -1074,6 +1085,7 @@
             if (!video) return false;
             if (video.id === 'csPreviewVideo') return false;
             if (video.closest && video.closest('#csPreviewWrap')) return false;
+            if (video.closest && video.closest('#csModalCamara')) return false;
             if (video.dataset.csAutoplayIgnorar === 'true') return false;
             return true;
         }
@@ -1185,7 +1197,8 @@
             archivoVideo: state.archivoVideo ? state.archivoVideo.name : null,
             archivoConAudioMezclado: state.archivoConAudioMezclado === true
         }),
-        _seed: { SONIDOS_SEED, UBICACIONES_SEED }
+        _seed: { SONIDOS_SEED, UBICACIONES_SEED },
+        Z
     };
 
     function init() {
@@ -1198,7 +1211,7 @@
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
         actualizarBotonesSonidoUbicacion();
-        log('✅ Módulo Publicar v2.0 listo');
+        log('✅ Módulo Publicar v2.1 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
