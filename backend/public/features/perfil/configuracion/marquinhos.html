@@ -8,6 +8,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- Asegúrate de que esta ruta sea correcta en tu proyecto -->
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js"></script>
 
@@ -34,7 +35,7 @@ body {
         radial-gradient(ellipse at 20% 20%, rgba(42, 106, 58, 0.25), transparent 55%),
         radial-gradient(ellipse at 80% 80%, rgba(212, 175, 55, 0.06), transparent 55%);
 }
-.app { max-width: 640px; margin: 0 auto; }
+.app { max-width: 640px; margin: 0 auto; padding-bottom: 40px;}
 h1 { font-size: 1.3rem; color: var(--gold); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
 h1 .hex { font-family: 'Orbitron', monospace; }
 .sub { color: var(--muted); font-size: .8rem; margin-bottom: 24px; }
@@ -44,6 +45,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     border-radius: 16px;
     padding: 18px;
     margin-bottom: 16px;
+    position: relative; /* Para posicionar al avatar si es necesario */
 }
 .card h2 {
     font-size: .95rem;
@@ -190,7 +192,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     overflow: hidden;
 }
 
-/* ================= WHATSAPP ================= */
+/* ================= WHATSAPP CARD ================= */
 .wa-texto {
     color: var(--muted);
     font-size: .8rem;
@@ -251,6 +253,22 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
     color: #04210F;
 }
+
+/* ================= AVATAR MARQUINHOS ================= */
+.mq-avatar-config {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    width: 90px;
+    height: auto;
+    pointer-events: none;
+    filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.4));
+    animation: flotar 3s ease-in-out infinite;
+}
+@keyframes flotar {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
 </style>
 </head>
 <body>
@@ -293,7 +311,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         <div class="wa-estado" id="waEstado" role="status" aria-live="polite"></div>
     </div>
 
-    <!-- ✅ NUEVO: TAMAÑO DEL MUÑECO -->
+    <!-- TAMAÑO DEL MUÑECO -->
     <div class="card">
         <h2>TAMAÑO DEL MUÑECO</h2>
 
@@ -352,11 +370,15 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         </div>
     </div>
 
-    <!-- ACCIONES -->
+    <!-- ACCIONES (Aquí va el Avatar) -->
     <div class="card">
         <h2>ACCIONES</h2>
         <button class="btn" id="btnResetPosicion" type="button">Resetear posición del avatar</button>
         <button class="btn btn-danger" id="btnLimpiarHistorial" type="button">Borrar historial de conversación</button>
+        
+        <!-- Imagen del avatar flotante para la vista -->
+        <!-- IMPORTANTE: Cambia el 'src' por la ruta real de tu imagen PNG o SVG -->
+        <img src="/features/marquinhos/img/marquinhos-avatar.png" alt="Marquinhos" class="mq-avatar-config" onerror="this.style.display='none'">
     </div>
 
 </div>
@@ -366,7 +388,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 
 /* ================================================================
    WHATSAPP · GENERAR CÓDIGO DE VINCULACIÓN
-   POST /api/ai/chat-pet/whatsapp/codigo  (con token de sesión Supabase)
 ================================================================ */
 (function () {
     const ENDPOINT = '/api/ai/chat-pet/whatsapp/codigo';
@@ -405,7 +426,14 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             temporizador = null;
             return;
         }
-        elVence.classList.remove('vencido');
+        
+        // Si queda menos de 2 minutos, se pone rojo para alertar
+        if (restante < 120000) {
+            elVence.classList.add('vencido');
+        } else {
+            elVence.classList.remove('vencido');
+        }
+        
         elVence.innerHTML = 'Vence en <strong>' + formatearTiempo(restante) + '</strong>';
     }
 
@@ -413,6 +441,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         codigoActual = String(codigo || '');
         expiraEnMs = new Date(expiraEnIso).getTime() || (Date.now() + VIGENCIA_MS);
 
+        // Formatear el código de 6 dígitos a "123 456"
         elCodigo.textContent = codigoActual.replace(/(\d{3})(\d{3})/, '$1 $2');
         caja.hidden = false;
         btnCopiar.disabled = false;
@@ -423,7 +452,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     }
 
     async function obtenerToken() {
-        // El cliente de Supabase lo crea auth-global.js; esperamos a que esté listo
+        // Esperar a que auth-global.js inicialice Supabase
         for (let i = 0; i < 80; i++) {
             if (window.supabaseClient && window.supabaseClient.auth) break;
             await new Promise(function (r) { setTimeout(r, 100); });
@@ -506,7 +535,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 })();
 
 /* ================================================================
-   CONFIGURACIÓN DEL PET
+   CONFIGURACIÓN DEL PET (Sliders, Toggles, etc.)
 ================================================================ */
 (function() {
     const KEY = 'marquinhos_config';
@@ -520,7 +549,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 
     function guardar() {
         try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {}
-        // Notificar al pet si está abierto
+        // Notificar al pet si está abierto en la misma página
         if (window.Marquinhos && typeof window.Marquinhos.setConfig === 'function') {
             try { window.Marquinhos.setConfig(cfg); } catch (e) {}
         }
@@ -627,13 +656,12 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             alert('Posición reseteada. Recarga la página para ver el cambio.');
         });
 
-        // Limpiar historial (store persistente de Marquinhos)
+        // Limpiar historial
         document.getElementById('btnLimpiarHistorial').addEventListener('click', function() {
             if (!confirm('¿Borrar todo el historial de conversación con Marquinhos?')) return;
             if (window.Marquinhos && typeof window.Marquinhos.olvidar === 'function') {
                 window.Marquinhos.olvidar();
             }
-            // Respaldo: borra la clave del store en este navegador, aunque el widget no esté cargado
             Object.keys(localStorage)
                 .filter(function (k) { return k.indexOf('marquinhos_store_v1:') === 0; })
                 .forEach(function (k) { localStorage.removeItem(k); });
