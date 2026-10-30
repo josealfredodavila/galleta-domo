@@ -1,0 +1,220 @@
+/* ================================================================
+   marquinhos-store.js — STORE GLOBAL DE MARQUINHOS (v1.0)
+   ================================================================
+   Historial de chat que sobrevive a la navegación entre páginas
+   (perfil, muro, etc.) y se sincroniza entre pestañas abiertas.
+
+   - Sin dependencias ni bundler: se carga con <script> normal.
+   - Se guarda por usuario (localStorage). El historial de "anon"
+     no se mezcla con el de una cuenta.
+   - TTL de 7 días y máximo de 40 mensajes.
+   - Lo que NO sobrevive a una recarga: el micrófono, la síntesis
+     de voz y la conversación en curso. Eso depende del documento.
+
+   Carga antes de marquinhos-pet.js en cada página:
+     <script src="/features/marquinhos/marquinhos-store.js" defer></script>
+================================================================ */
+
+(function () {
+    'use strict';
+    if (window.MarquinhosStore) return;
+
+    const PREFIJO = 'marquinhos_store_v1:';
+    const TTL_MS = 7 * 24 * 60 * 60 * 1000;
+    const MAX_MENSAJES = 40;
+    const ROLES_VALIDOS = ['user', 'assistant'];
+
+    const listeners = new Set();
+    const canal = ('BroadcastChannel' in window)
+        ? new BroadcastChannel('marquinhos-store')
+        : null;
+
+    let estado = {
+        userId: 'anon',
+        mensajes: [],
+        config: {}
+    };
+
+    /* ============================================================
+       PERSISTENCIA
+    ============================================================ */
+
+    function claveDe(userId) {
+        return PREFIJO + (userId || 'anon');
+    }
+
+    function mensajeValido(m, limite) {
+        return Boolean(
+            m &&
+            ROLES_VALIDOS.indexOf(m.role) !== -1 &&
+            typeof m.content === 'string' &&
+            m.content.trim() !== '' &&
+            typeof m.ts === 'number' &&
+            m.ts > limite
+        );
+    }
+
+    function leerDisco(userId) {
+        try {
+            const raw = localStorage.getItem(claveDe(userId));
+            if (!raw) return { mensajes: [], config: {} };
+
+            const datos = JSON.parse(raw);
+            const limite = Date.now() - TTL_MS;
+
+            const mensajes = (Array.isArray(datos.mensajes) ? datos.mensajes : [])
+                .filter(function (m) { return mensajeValido(m, limite); })
+                .slice(-MAX_MENSAJES);
+
+            return {
+                mensajes: mensajes,
+                config: (datos.config && typeof datos.config === 'object') ? datos.config : {}
+            };
+        } catch (e) {
+            return { mensajes: [], config: {} };
+        }
+    }
+
+    function escribirDisco() {
+        try {
+            localStorage.setItem(claveDe(estado.userId), JSON.stringify({
+                mensajes: estado.mensajes.slice(-MAX_MENSAJES),
+                config: estado.config
+            }));
+        } catch (e) {
+            // Cuota llena o almacenamiento deshabilitado: el store sigue en memoria
+        }
+    }
+
+    /* ============================================================
+       NOTIFICACIONES
+       origen 'local'  → esta pestaña cambió el estado: avisa a otras pestañas
+       origen 'remoto' → otra pestaña cambió el estado: no reenviar (evita bucles)
+    ============================================================ */
+
+    function notificar(origen) {
+        const copia = snapshot();
+
+        listeners.forEach(function (fn) {
+            try { fn(copia); } catch (e) {
+                console.warn('[MarquinhosStore] Listener falló:', e);
+            }
+        });
+
+        if (canal && origen === 'local') {
+            try {
+                canal.postMessage({
+                    tipo: 'estado',
+                    userId: estado.userId,
+                    mensajes: estado.mensajes,
+                    config: estado.config
+                });
+            } catch (e) {}
+        }
+    }
+
+    function snapshot() {
+        return {
+            userId: estado.userId,
+            mensajes: estado.mensajes.slice(),
+            config: Object.assign({}, estado.config)
+        };
+    }
+
+    /* ============================================================
+       API PÚBLICA
+    ============================================================ */
+
+    const api = {
+        getState: snapshot,
+
+        subscribe: function (fn) {
+            if (typeof fn !== 'function') return function () {};
+            listeners.add(fn);
+            return function () { listeners.delete(fn); };
+        },
+
+        // Llamar al terminar de conocer al usuario (cargarUsuario en marquinhos-pet.js)
+        identificarUsuario: function (userId) {
+            const id = userId || 'anon';
+            if (id === estado.userId) return;
+
+            const disco = leerDisco(id);
+            estado = {
+                userId: id,
+                mensajes: disco.mensajes,
+                config: disco.config
+            };
+            notificar('local');
+        },
+
+        agregarMensaje: function (mensaje) {
+            if (!mensaje || ROLES_VALIDOS.indexOf(mensaje.role) === -1) return;
+            const contenido = String(mensaje.content || '').trim();
+            if (!contenido) return;
+
+            estado.mensajes = estado.mensajes
+                .concat([{ role: mensaje.role, content: contenido.slice(0, 4000), ts: Date.now() }])
+                .slice(-MAX_MENSAJES);
+
+            escribirDisco();
+            notificar('local');
+        },
+
+        getMensajesParaEnviar: function (limite) {
+            const n = Math.max(1, Math.min(MAX_MENSAJES, limite || 20));
+            return estado.mensajes.slice(-n).map(function (m) {
+                return { role: m.role, content: m.content };
+            });
+        },
+
+        olvidarTodo: function () {
+            estado.mensajes = [];
+            escribirDisco();
+            notificar('local');
+        },
+
+        setConfig: function (parcial) {
+            estado.config = Object.assign({}, estado.config, parcial || {});
+            escribirDisco();
+            notificar('local');
+        },
+
+        getConfig: function () {
+            return Object.assign({}, estado.config);
+        }
+    };
+
+    /* ============================================================
+       SINCRONIZACIÓN ENTRE PESTAÑAS
+    ============================================================ */
+
+    if (canal) {
+        canal.onmessage = function (ev) {
+            const datos = ev && ev.data;
+            if (!datos || datos.tipo !== 'estado') return;
+            if (datos.userId !== estado.userId) return;
+
+            const limite = Date.now() - TTL_MS;
+            estado = {
+                userId: estado.userId,
+                mensajes: (Array.isArray(datos.mensajes) ? datos.mensajes : [])
+                    .filter(function (m) { return mensajeValido(m, limite); })
+                    .slice(-MAX_MENSAJES),
+                config: (datos.config && typeof datos.config === 'object') ? datos.config : {}
+            };
+            notificar('remoto');
+        };
+    }
+
+    // Respaldo para navegadores sin BroadcastChannel
+    window.addEventListener('storage', function (ev) {
+        if (!ev.key || ev.key !== claveDe(estado.userId)) return;
+        const disco = leerDisco(estado.userId);
+        estado.mensajes = disco.mensajes;
+        estado.config = disco.config;
+        notificar('remoto');
+    });
+
+    window.MarquinhosStore = api;
+})();
