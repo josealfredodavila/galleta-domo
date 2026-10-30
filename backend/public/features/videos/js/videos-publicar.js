@@ -1,14 +1,18 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.8
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.9
    ================================================================
-   FASE 1: UI de modales (sonidos, ubicación, borradores, preview)
-   FASE 2: Carga modular de archivos (subirMultimedia)
-   FASE 3C: (N/A aquí, el INSERT lo hace videos.html)
-
-   Novedades v1.8 (Catálogo de Sonidos Ampliado):
-   - 8 sonidos nuevos integrados (Phonk, House, Trap, etc.).
-   - Total: 14 sonidos disponibles.
-   - Motor de audio centralizado (AudioPreview) y autoplay eficiente.
+   Cambios respecto a v1.8:
+   - Emite csariels:sonido:seleccionado al confirmar una pista
+     (la cámara v5.0 lo escucha).
+   - Preview: genera miniatura (poster) desde el primer fotograma y
+     fuerza la decodificación para evitar pantalla negra en .webm.
+   - getState() incluye archivoConAudioMezclado.
+   - Botones de sonido, ubicación y borradores sincronizados con el
+     estado del formulario.
+   - Mantiene API pública: VideosPublicar.{abrirModalSonidos,
+     abrirModalUbicacion, abrirModalBorradores, cerrarTodosLosSheets,
+     subirMultimedia, csToast, csConfirm, resetFormularioPublicacion,
+     refrescarFeedAutomatico, getConfig, setProvider, getState, _seed}.
    ================================================================ */
 
 (function () {
@@ -38,34 +42,29 @@
         MAX_VIDEO_MB: 100,
         MAX_VIDEO_MB_R2: 500,
         VIDEO_TYPES: ['video/mp4', 'video/webm', 'video/quicktime'],
-        IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp']
+        IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
+        PREVIEW_TIMEOUT_MS: 4000
     };
 
     // ============================================================
-    // SEMILLA DE SONIDOS (LOCALES EN SUPABASE STORAGE)
+    // SEMILLA DE SONIDOS (BUCKET PÚBLICO "audios" EN SUPABASE)
     // ============================================================
     const SUPABASE_STORAGE_URL = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios';
 
     const SONIDOS_SEED = {
         parati: [
-            // Originales
             { id: 'sd-phonk', nombre: 'Phonk Bass Drop', artista: 'Echoes of Lumen', url: `${SUPABASE_STORAGE_URL}/echoes_of_lumen-phonk-bass-neon-aura-night-drive-588671.mp3`, duracion: 128 },
             { id: 'sd-suspenso', nombre: 'Suspenso Épico', artista: 'Absolute Sound', url: `${SUPABASE_STORAGE_URL}/absolutesound-suspense-tense-atmosphere-514617.mp3`, duracion: 137 },
             { id: 'sd-comedia', nombre: 'Risa y Caos', artista: 'Alex Morgan', url: `${SUPABASE_STORAGE_URL}/alex-morgan-comedy-bgm-funny-background-music-583242.mp3`, duracion: 62 },
-            
-            // Nuevos (Para ti)
             { id: 'sd-n1', nombre: 'Brazilian Phonk', artista: 'Sub Clair', url: `${SUPABASE_STORAGE_URL}/sub_clair-brazilian-phonk-instrumental-585588.mp3`, duracion: 120 },
             { id: 'sd-n2', nombre: 'Sosin Phonk Music', artista: 'Sosin', url: `${SUPABASE_STORAGE_URL}/sosin-phonk-phonk-music-621003.mp3`, duracion: 110 },
             { id: 'sd-n3', nombre: 'Phonk No Copyright', artista: 'ARP Media', url: `${SUPABASE_STORAGE_URL}/arpmedia-phonk-no-copyright-music-588451.mp3`, duracion: 95 },
             { id: 'sd-n4', nombre: 'Gym Workout', artista: 'Echoes of Lumen', url: `${SUPABASE_STORAGE_URL}/echoes_of_lumen-sport-phonk-gym-workout-586978.mp3`, duracion: 105 }
         ],
         populares: [
-            // Originales
             { id: 'sd-trend1', nombre: 'Aesthetic Vibes', artista: 'Adrihuwu', url: `${SUPABASE_STORAGE_URL}/adrihuwu-adrihuwu-join-my-server-209103.mp3`, duracion: 134 },
             { id: 'sd-trend2', nombre: 'Corrido Bélico (Trap)', artista: 'LN Plus Music', url: `${SUPABASE_STORAGE_URL}/lnplusmusic-cuban-latin-trap-beat-469610.mp3`, duracion: 127 },
             { id: 'sd-reward', nombre: 'Gancho de Éxito', artista: 'Freesound Community', url: `${SUPABASE_STORAGE_URL}/freesound_community-victoria_claudia_baja_fidelidad_almacen_exito_cali-79564.mp3`, duracion: 55 },
-            
-            // Nuevos (Populares)
             { id: 'sd-n5', nombre: 'Dark Aggressive Bass', artista: 'Watermelon Beats', url: `${SUPABASE_STORAGE_URL}/watermelon_beats-phonk-drift-dark-aggressive-bass-612474.mp3`, duracion: 140 },
             { id: 'sd-n6', nombre: 'House Phonk', artista: 'Alex Zavesa', url: `${SUPABASE_STORAGE_URL}/alexzavesa-house-phonk-short-version-613118.mp3`, duracion: 85 },
             { id: 'sd-n7', nombre: 'Phonk Instrumental', artista: 'Sub Clair', url: `${SUPABASE_STORAGE_URL}/sub_clair-phonk-instrumental-610091.mp3`, duracion: 115 },
@@ -78,18 +77,18 @@
     // UBICACIONES SEED
     // ============================================================
     const UBICACIONES_SEED = [
-        { id: 'pue-capital',    nombre: 'Puebla Capital',    pais: 'México', lat: 19.0414, lng: -98.2063 },
-        { id: 'pue-cholula',    nombre: 'Cholula',           pais: 'México', lat: 19.0621, lng: -98.3053 },
-        { id: 'pue-atlixco',    nombre: 'Atlixco',           pais: 'México', lat: 18.9083, lng: -98.4367 },
-        { id: 'pue-tehuacan',   nombre: 'Tehuacán',          pais: 'México', lat: 18.4611, lng: -97.3928 },
-        { id: 'pue-izucar',     nombre: 'Izúcar de Matamoros', pais: 'México', lat: 18.6017, lng: -98.4646 },
-        { id: 'cdmx-centro',    nombre: 'CDMX · Centro',     pais: 'México', lat: 19.4326, lng: -99.1332 },
-        { id: 'gdl-centro',     nombre: 'Guadalajara',       pais: 'México', lat: 20.6597, lng: -103.3496 },
-        { id: 'mty-centro',     nombre: 'Monterrey',         pais: 'México', lat: 25.6866, lng: -100.3161 },
-        { id: 'cancun',         nombre: 'Cancún',            pais: 'México', lat: 21.1619, lng: -86.8515 },
-        { id: 'veracruz',       nombre: 'Veracruz',          pais: 'México', lat: 19.1738, lng: -96.1342 },
-        { id: 'oaxaca',         nombre: 'Oaxaca de Juárez',  pais: 'México', lat: 17.0732, lng: -96.7266 },
-        { id: 'queretaro',      nombre: 'Querétaro',         pais: 'México', lat: 20.5888, lng: -100.3899 }
+        { id: 'pue-capital',  nombre: 'Puebla Capital',      pais: 'México', lat: 19.0414,  lng: -98.2063 },
+        { id: 'pue-cholula',  nombre: 'Cholula',             pais: 'México', lat: 19.0621,  lng: -98.3053 },
+        { id: 'pue-atlixco',  nombre: 'Atlixco',             pais: 'México', lat: 18.9083,  lng: -98.4367 },
+        { id: 'pue-tehuacan', nombre: 'Tehuacán',            pais: 'México', lat: 18.4611,  lng: -97.3928 },
+        { id: 'pue-izucar',   nombre: 'Izúcar de Matamoros', pais: 'México', lat: 18.6017,  lng: -98.4646 },
+        { id: 'cdmx-centro',  nombre: 'CDMX · Centro',       pais: 'México', lat: 19.4326,  lng: -99.1332 },
+        { id: 'gdl-centro',   nombre: 'Guadalajara',         pais: 'México', lat: 20.6597,  lng: -103.3496 },
+        { id: 'mty-centro',   nombre: 'Monterrey',           pais: 'México', lat: 25.6866,  lng: -100.3161 },
+        { id: 'cancun',       nombre: 'Cancún',              pais: 'México', lat: 21.1619,  lng: -86.8515 },
+        { id: 'veracruz',     nombre: 'Veracruz',            pais: 'México', lat: 19.1738,  lng: -96.1342 },
+        { id: 'oaxaca',       nombre: 'Oaxaca de Juárez',    pais: 'México', lat: 17.0732,  lng: -96.7266 },
+        { id: 'queretaro',    nombre: 'Querétaro',           pais: 'México', lat: 20.5888,  lng: -100.3899 }
     ];
 
     // ============================================================
@@ -99,9 +98,11 @@
         sonidoSeleccionado: null,
         ubicacionSeleccionada: null,
         archivoVideo: null,
+        archivoConAudioMezclado: false,
         urlVideoSubida: null,
         pathVideoSubida: null,
         previewURL: null,
+        miniaturaBlob: null,
         tabSonidosActiva: 'parati',
         sbCliente: null
     };
@@ -192,7 +193,7 @@
     window.csConfirm = csConfirm;
 
     // ============================================================
-    // MOTOR DE AUDIO CENTRALIZADO (v1.7)
+    // MOTOR DE AUDIO CENTRALIZADO (preview de pistas en el selector)
     // ============================================================
     const AudioPreview = (function () {
         let audio = null;
@@ -244,7 +245,6 @@
                 const timeout = setTimeout(() => {
                     if (!resuelto) { resuelto = true; reject(new Error('timeout')); }
                 }, 10000);
-
                 nuevoAudio.oncanplay = () => {
                     if (!resuelto) { resuelto = true; clearTimeout(timeout); resolve(); }
                 };
@@ -330,7 +330,7 @@
     })();
 
     // ============================================================
-    // FASE 2 · subirMultimedia
+    // SUBIDA DE ARCHIVOS
     // ============================================================
     async function subirMultimedia(archivo, tipo, opciones) {
         const opts = opciones || {};
@@ -347,8 +347,8 @@
         }
         try {
             if (CONFIG.PROVIDER === 'supabase') return await subirMultimediaSupabase(archivo, tipo, opts);
-            if (CONFIG.PROVIDER === 'r2')       return await subirMultimediaR2(archivo, tipo, opts);
-            if (CONFIG.PROVIDER === 's3')       return await subirMultimediaS3(archivo, tipo, opts);
+            if (CONFIG.PROVIDER === 'r2') return await subirMultimediaR2(archivo, tipo, opts);
+            if (CONFIG.PROVIDER === 's3') return await subirMultimediaS3(archivo, tipo, opts);
             return { ok: false, error: 'Provider desconocido' };
         } catch (e) {
             warn('Error subiendo:', e);
@@ -356,9 +356,6 @@
         }
     }
 
-    // ============================================================
-    // SUBIR VÍA /api/media/upload (con moderación)
-    // ============================================================
     async function subirMultimediaSupabase(archivo, tipo, opts) {
         const sb = getSupabaseClient();
         if (!sb) return { ok: false, error: 'Cliente Supabase no disponible' };
@@ -398,11 +395,106 @@
         return { ok: true, url: data.url, path: data.path, provider: 'supabase' };
     }
 
-    async function subirMultimediaR2(archivo, tipo, opts) {
+    async function subirMultimediaR2() {
         return { ok: false, error: 'Proveedor R2 aún no habilitado (Fase 3 del proyecto)' };
     }
-    async function subirMultimediaS3(archivo, tipo, opts) {
+    async function subirMultimediaS3() {
         return { ok: false, error: 'Proveedor S3 aún no habilitado (Fase 3 del proyecto)' };
+    }
+
+    // ============================================================
+    // MINIATURA Y PREVIEW (corrige la pantalla negra de .webm)
+    // ============================================================
+    // Genera una imagen JPEG desde un fotograma del video. Si el
+    // navegador no puede decodificar el archivo, devuelve null.
+    function generarMiniatura(file) {
+        return new Promise((resolve) => {
+            const url = URL.createObjectURL(file);
+            const v = document.createElement('video');
+            v.muted = true;
+            v.playsInline = true;
+            v.preload = 'auto';
+            v.src = url;
+
+            let terminado = false;
+            function terminar(resultado) {
+                if (terminado) return;
+                terminado = true;
+                try { v.pause(); } catch (e) {}
+                v.removeAttribute('src');
+                try { v.load(); } catch (e) {}
+                URL.revokeObjectURL(url);
+                resolve(resultado);
+            }
+
+            const limite = setTimeout(() => terminar(null), CONFIG.PREVIEW_TIMEOUT_MS);
+
+            v.addEventListener('loadeddata', () => {
+                // Muchos .webm de MediaRecorder reportan duración Infinity;
+                // saltar a un punto pequeño fuerza la decodificación del fotograma.
+                const destino = (isFinite(v.duration) && v.duration > 0.2) ? 0.1 : 0.001;
+                try { v.currentTime = destino; } catch (e) {}
+            });
+
+            v.addEventListener('seeked', () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    const w = v.videoWidth || 540;
+                    const h = v.videoHeight || 960;
+                    const escala = Math.min(1, 480 / w);
+                    canvas.width = Math.round(w * escala);
+                    canvas.height = Math.round(h * escala);
+                    canvas.getContext('2d').drawImage(v, 0, 0, canvas.width, canvas.height);
+                    canvas.toBlob((blob) => {
+                        clearTimeout(limite);
+                        terminar(blob || null);
+                    }, 'image/jpeg', 0.85);
+                } catch (e) {
+                    clearTimeout(limite);
+                    terminar(null);
+                }
+            });
+
+            v.addEventListener('error', () => { clearTimeout(limite); terminar(null); });
+        });
+    }
+
+    function mostrarPreviewVideo(file) {
+        const v = $('csPreviewVideo');
+        if (!v) return;
+
+        if (state.previewURL) {
+            try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
+            state.previewURL = null;
+        }
+        state.previewURL = URL.createObjectURL(file);
+        v.preload = 'auto';
+        v.muted = true;
+        v.playsInline = true;
+        v.src = state.previewURL;
+        try { v.load(); } catch (e) {}
+
+        // Miniatura de respaldo: si el video no se pinta, se ve la imagen
+        generarMiniatura(file).then((blob) => {
+            if (!blob) return;
+            if (state.miniaturaBlob) state.miniaturaBlob = null;
+            state.miniaturaBlob = blob;
+            const urlMini = URL.createObjectURL(blob);
+            v.poster = urlMini;
+        });
+
+        // Evitar que el preview quede negro si el primer fotograma no llega
+        v.addEventListener('loadeddata', function alCargar() {
+            v.removeEventListener('loadeddata', alCargar);
+            const destino = (isFinite(v.duration) && v.duration > 0.2) ? 0.1 : 0.001;
+            try { v.currentTime = destino; } catch (e) {}
+        });
+        v.addEventListener('durationchange', function () {
+            if (isFinite(v.duration) && v.duration > 0) {
+                const meta = $('csPreviewDuracion');
+                if (meta) meta.textContent = Math.round(v.duration) + ' s';
+            }
+        });
     }
 
     // ============================================================
@@ -421,6 +513,7 @@
         if (preview) {
             try { preview.pause(); } catch (e) {}
             preview.removeAttribute('src');
+            preview.removeAttribute('poster');
             try { preview.load(); } catch (e) {}
         }
 
@@ -429,10 +522,11 @@
             state.previewURL = null;
         }
         state.archivoVideo = null;
+        state.archivoConAudioMezclado = false;
         state.urlVideoSubida = null;
         state.pathVideoSubida = null;
+        state.miniaturaBlob = null;
 
-        // ✅ DETENER AUDIO
         AudioPreview.detener();
 
         state.sonidoSeleccionado = null;
@@ -443,6 +537,8 @@
         if (previewUbic) previewUbic.querySelector('.cs-preview-txt').textContent = vt('videos_preview_sin_ubicacion', 'Sin ubicación');
         const badge = $('csPreviewBadge');
         if (badge) badge.style.display = 'none';
+        const meta = $('csPreviewDuracion');
+        if (meta) meta.textContent = '';
 
         const btnTxt = document.getElementById('csFileBtnTxt');
         const btnHint = document.getElementById('csFileBtnHint');
@@ -463,6 +559,7 @@
         if (pFill) pFill.style.width = '0%';
         if (pText) pText.textContent = '0%';
 
+        actualizarBotonesSonidoUbicacion();
         log('🔄 Formulario reseteado');
     }
     window.csResetFormularioPublicacion = resetFormularioPublicacion;
@@ -498,7 +595,7 @@
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
     // ============================================================
-    // FASE 1 · UI
+    // UI · ESTILOS Y BOTONES
     // ============================================================
     function inyectarEstilosExtra() {
         if (document.getElementById('cs-videos-publicar-inline')) return;
@@ -528,6 +625,8 @@
                 transition: all 0.2s;
             }
             .cs-sonido-play:hover { background: rgba(212,175,55,0.15); }
+            .cs-btn-header.cs-activo { box-shadow: 0 0 14px rgba(212,175,55,0.45); }
+            .cs-preview-duracion { font-size: 0.65rem; color: #8aa8b8; margin-left: auto; font-family: 'Orbitron', monospace; }
         `;
         document.head.appendChild(st);
     }
@@ -553,6 +652,14 @@
 
         header.insertBefore(btnSonido, header.firstChild);
         header.insertBefore(btnUbic, btnSonido.nextSibling);
+    }
+
+    // Mantiene los botones del header y el preview en sincronía con el estado
+    function actualizarBotonesSonidoUbicacion() {
+        const bS = $('csBtnAgregarSonido');
+        const bU = $('csBtnUbicacion');
+        if (bS) bS.classList.toggle('cs-activo', !!state.sonidoSeleccionado);
+        if (bU) bU.classList.toggle('cs-activo', !!state.ubicacionSeleccionada);
     }
 
     function inyectarModales() {
@@ -648,7 +755,7 @@
         wrap.className = 'cs-preview-wrap';
         wrap.innerHTML = `
             <div class="cs-preview-video">
-                <video id="csPreviewVideo" playsinline muted preload="metadata"></video>
+                <video id="csPreviewVideo" playsinline muted preload="auto"></video>
                 <div class="cs-preview-badge" id="csPreviewBadge" style="display:none;" data-clave="videos_sonido_video_badge">◆ Sonido + video</div>
             </div>
             <div class="cs-preview-meta">
@@ -659,6 +766,7 @@
                 <div class="cs-preview-line" id="csPreviewUbicacion">
                     <span class="cs-ico">◆</span>
                     <span class="cs-preview-txt" data-clave="videos_preview_sin_ubicacion">Sin ubicación</span>
+                    <span class="cs-preview-duracion" id="csPreviewDuracion"></span>
                 </div>
                 <div class="cs-preview-actions">
                     <button type="button" class="cs-btn-ghost" id="csBtnVerBorradores">
@@ -704,9 +812,7 @@
             </button>
         `;
 
-        if (input.parentNode) {
-            input.parentNode.insertBefore(btnWrap, input.nextSibling);
-        }
+        if (input.parentNode) input.parentNode.insertBefore(btnWrap, input.nextSibling);
 
         const btn = btnWrap.querySelector('#csFileBtnVideo');
         btn.addEventListener('click', (e) => {
@@ -766,7 +872,6 @@
         backdrop.classList.add('show');
         sheet.classList.add('show');
         document.body.style.overflow = 'hidden';
-
         if (typeof window.aplicarTraducciones === 'function') {
             try { window.aplicarTraducciones(sheet); } catch (e) {}
         }
@@ -779,11 +884,8 @@
         document.body.style.overflow = '';
     }
     function cerrarTodosLosSheets() {
-        // ✅ Detener audio al cerrar
         const est = AudioPreview.getEstado();
-        if (est.estado === 'playing' || est.estado === 'loading') {
-            AudioPreview.detener();
-        }
+        if (est.estado === 'playing' || est.estado === 'loading') AudioPreview.detener();
 
         cerrarSheet('csModalSonidos', 'csSheetSonidosBackdrop');
         cerrarSheet('csModalUbicacion', 'csSheetUbicacionBackdrop');
@@ -826,12 +928,12 @@
             lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">♪</span><p data-clave="videos_sin_pistas">Sin pistas en esta sección.</p></div>`;
             return;
         }
-        
+
         lista.innerHTML = arr.map(s => `
             <button type="button" class="cs-sonido-item ${state.sonidoSeleccionado && state.sonidoSeleccionado.id === s.id ? 'activo' : ''}" data-sonido-id="${esc(s.id)}">
-                <button type="button" class="cs-sonido-play" data-play-id="${esc(s.id)}" aria-label="Reproducir o pausar">
+                <span class="cs-sonido-play" data-play-id="${esc(s.id)}" role="button" aria-label="Reproducir o pausar">
                     <span class="cs-sonido-ico">▶</span>
-                </button>
+                </span>
                 <span class="cs-sonido-info">
                     <span class="cs-sonido-nombre">${esc(s.nombre)}</span>
                     <span class="cs-sonido-artista">${esc(s.artista)} · ${esc(s.duracion)}s</span>
@@ -839,22 +941,21 @@
                 <span class="cs-sonido-check">◆</span>
             </button>
         `).join('');
-        
+
         lista.querySelectorAll('.cs-sonido-play').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const id = btn.dataset.playId;
                 const actual = AudioPreview.getEstado();
-                
                 if (actual.pista && actual.pista.id === id) {
                     if (actual.estado === 'playing') AudioPreview.pausar();
                     else if (actual.estado === 'paused') AudioPreview.reanudar();
                 } else {
-                    seleccionarSonido(id);
+                    previsualizarSonido(id);
                 }
             });
         });
-        
+
         lista.querySelectorAll('.cs-sonido-item').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if (e.target.closest('.cs-sonido-play')) return;
@@ -863,13 +964,24 @@
         });
     }
 
-    function seleccionarSonido(id) {
+    function buscarSonidoPorId(id) {
         const todas = [].concat(SONIDOS_SEED.parati).concat(SONIDOS_SEED.populares).concat(SONIDOS_SEED.favoritos);
-        const s = todas.find(x => x.id === id);
+        return todas.find(x => x.id === id) || null;
+    }
+
+    // Solo escucha la pista (no la elige)
+    function previsualizarSonido(id) {
+        const s = buscarSonidoPorId(id);
+        if (!s) return;
+        AudioPreview.reproducir(s, actualizarIndicadorSonido);
+    }
+
+    // Elige la pista: la guarda, la muestra en el sheet y avisa a la cámara
+    function seleccionarSonido(id) {
+        const s = buscarSonidoPorId(id);
         if (!s) return;
 
         state.sonidoSeleccionado = s;
-
         AudioPreview.reproducir(s, actualizarIndicadorSonido);
 
         document.querySelectorAll('.cs-sonido-item').forEach(el => {
@@ -895,6 +1007,13 @@
             }
         }
         actualizarBadgePreview();
+        actualizarBotonesSonidoUbicacion();
+
+        // Aviso a la cámara (videos-camara.js v5.0)
+        window.dispatchEvent(new CustomEvent('csariels:sonido:seleccionado', {
+            detail: s ? { id: s.id, nombre: s.nombre, artista: s.artista, url: s.url, duracion: s.duracion } : null
+        }));
+
         cerrarTodosLosSheets();
     }
 
@@ -923,6 +1042,7 @@
             btn.addEventListener('click', () => seleccionarUbicacion(btn.dataset.ubicacionId));
         });
     }
+
     function seleccionarUbicacion(id) {
         const u = UBICACIONES_SEED.find(x => x.id === id);
         if (!u) return;
@@ -938,6 +1058,7 @@
         const btn = $('csBtnConfirmarUbicacion');
         if (btn) btn.disabled = false;
     }
+
     function confirmarUbicacion() {
         const u = state.ubicacionSeleccionada;
         const preview = $('csPreviewUbicacion');
@@ -948,6 +1069,7 @@
                 txt.textContent = u ? `${u.nombre}, ${u.pais}` : vt('videos_preview_sin_ubicacion', 'Sin ubicación');
             }
         }
+        actualizarBotonesSonidoUbicacion();
         cerrarTodosLosSheets();
     }
 
@@ -973,7 +1095,7 @@
     }
 
     // ============================================================
-    // PREVIEW DE VIDEO
+    // PREVIEW DE VIDEO (input de archivo)
     // ============================================================
     function engancharInputArchivo() {
         const input = document.getElementById('inputArchivoVideo');
@@ -985,17 +1107,15 @@
             const file = input.files && input.files[0];
             if (!file) return;
             state.archivoVideo = file;
-            if (state.previewURL) {
-                URL.revokeObjectURL(state.previewURL);
-                state.previewURL = null;
-            }
-            state.previewURL = URL.createObjectURL(file);
-            const v = $('csPreviewVideo');
-            if (v) { v.src = state.previewURL; v.load(); }
+            // Si el archivo viene de la cámara, la bandera llega desde window
+            state.archivoConAudioMezclado = window.__csArchivoConAudioMezclado === true;
+            mostrarPreviewVideo(file);
             log('Preview listo para:', file.name);
         });
     }
 
+    // Recibe el archivo grabado por la cámara (csCamaraOnVideoGrabado)
+    // y lo muestra en el preview sin depender del input.
     function engancharEventoPublicacionExitosa() {
         if (window.__csPublicacionListener) return;
         window.__csPublicacionListener = true;
@@ -1008,7 +1128,7 @@
     }
 
     // ============================================================
-    // INYECCIÓN DE AUTOPLAY (MUTATION OBSERVER)
+    // AUTOPLAY DEL FEED
     // ============================================================
     let _autoplayObserver = null;
     let _autoplayInterval = null;
@@ -1140,7 +1260,8 @@
         getState: () => ({
             sonido: state.sonidoSeleccionado,
             ubicacion: state.ubicacionSeleccionada,
-            archivoVideo: state.archivoVideo ? state.archivoVideo.name : null
+            archivoVideo: state.archivoVideo ? state.archivoVideo.name : null,
+            archivoConAudioMezclado: state.archivoConAudioMezclado === true
         }),
         _seed: { SONIDOS_SEED, UBICACIONES_SEED }
     };
@@ -1157,7 +1278,8 @@
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
-        log('✅ Módulo Publicar v1.8 listo (motor de audio + catálogo ampliado)');
+        actualizarBotonesSonidoUbicacion();
+        log('✅ Módulo Publicar v1.9 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
