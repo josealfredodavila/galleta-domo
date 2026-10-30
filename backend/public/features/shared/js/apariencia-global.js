@@ -1,28 +1,27 @@
 /* ================================================================
-   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.4
-   Archivo: backend/public/features/js/apariencia-global.js
+   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.5
+   Archivo: backend/public/features/shared/js/apariencia-global.js
 
    Conserva sin cambios:
    - Preferencias locales y sincronización con Supabase.
    - Tema, color de acento y tamaño de fuente (80–140 %).
    - window.SarielApariencia y todas sus funciones públicas.
-   - Carga exclusiva de la mascota activa.
+
+   v3.5:
+   - La mascota activa se lee desde Supabase (prefs.mascota_activa)
+     antes de inyectarse, para que un cambio hecho en otro dispositivo
+     se respete.
+   - Nueva función guardarMascota() que guarda en local y en Supabase.
+   - Las mascotas se inyectan DESPUÉS de sincronizar, no al cargar el script.
 
    v3.4:
-   - Se agregó '/centro-ayuda' a RUTAS_EXCLUIDAS_BASE para evitar
-     que las mascotas (Marquinhos, Maíz, Itlasuhua) se inyecten
-     en la página del Centro de Ayuda.
+   - Se agregó '/centro-ayuda' a RUTAS_EXCLUIDAS_BASE.
 
    v3.3:
-   - Nuevo cuarto tema "bn" (Blanco y negro, estilo X en negro).
-   - Temas válidos: sistema, dia, noche, bn.
-   - CSS del tema "bn" inyectado una sola vez.
+   - Tema "bn" (Blanco y negro).
 
    v3.2:
-   - Microinteracciones táctiles con transform y brillo (sin tocar layout).
-   - Entrada suave de tarjetas y encabezados (sin ocultar contenido).
-   - CSS inyectado consolidado en una sola lista de selectores.
-   - prefers-reduced-motion respetado en todas las animaciones.
+   - Microinteracciones táctiles y prefers-reduced-motion.
 
    No modifica anchos, alturas, márgenes ni escalas de contenedores.
    ================================================================ */
@@ -44,6 +43,11 @@
 
     // Temas válidos. Si se agrega otro, añadirlo aquí y en aplicarTema().
     const TEMAS_VALIDOS = ['sistema', 'dia', 'noche', 'bn'];
+
+    // Mascotas válidas. 'ninguna' desactiva la mascota flotante.
+    const MASCOTA_KEY = 'mascota_activa';
+    const MASCOTA_DEFAULT = 'marquinhos';
+    const MASCOTAS_VALIDAS = ['marquinhos', 'capitan-maiz', 'itlasuhua', 'ninguna'];
 
     let prefsActuales = { ...DEFAULTS };
     let syncConSupabaseListo = false;
@@ -85,6 +89,12 @@
         return Number.isFinite(numero)
             ? Math.max(80, Math.min(140, numero))
             : DEFAULTS.tamano_fuente;
+    }
+
+    function normalizarMascota(valor) {
+        return MASCOTAS_VALIDAS.includes(valor)
+            ? valor
+            : MASCOTA_DEFAULT;
     }
 
     function normalizarPreferencias(datos) {
@@ -279,6 +289,123 @@
     }
 
     /* ================================================================
+       MASCOTA ACTIVA · LECTURA Y ESCRITURA
+       ================================================================ */
+
+    function getMascotaActiva() {
+        try {
+            return normalizarMascota(
+                localStorage.getItem(MASCOTA_KEY) || MASCOTA_DEFAULT
+            );
+        } catch (_) {
+            return MASCOTA_DEFAULT;
+        }
+    }
+
+    // Lee prefs.mascota_activa de Supabase. Devuelve null si no hay
+    // sesión, no hay fila o no hay valor guardado.
+    async function leerMascotaSupabase() {
+        try {
+            const client = getSupabase();
+            if (!client) return null;
+
+            const sesion = await client.auth.getSession();
+            const usuario = sesion.data?.session?.user;
+            if (!usuario) return null;
+
+            const resultado = await client
+                .from('preferencias_usuario')
+                .select('prefs')
+                .eq('usuario_id', usuario.id)
+                .maybeSingle();
+
+            if (resultado.error) return null;
+
+            const valor = resultado.data?.prefs?.mascota_activa;
+            return MASCOTAS_VALIDAS.includes(valor) ? valor : null;
+        } catch (error) {
+            console.warn(
+                '[Apariencia] No se pudo leer la mascota:',
+                error
+            );
+            return null;
+        }
+    }
+
+    // Si Supabase tiene una mascota guardada, esa manda sobre localStorage.
+    async function sincronizarMascota() {
+        const remota = await leerMascotaSupabase();
+        if (!remota) return;
+
+        try {
+            localStorage.setItem(MASCOTA_KEY, remota);
+        } catch (_) {}
+    }
+
+    // Guarda la mascota en local y en Supabase.
+    // Devuelve { local, remoto }:
+    //   local:  true/false según localStorage
+    //   remoto: true si se guardó en Supabase, false si falló,
+    //           null si no hay sesión (solo queda local)
+    async function guardarMascota(mascota) {
+        const valor = normalizarMascota(mascota);
+        let local = false;
+
+        try {
+            localStorage.setItem(MASCOTA_KEY, valor);
+            local = true;
+        } catch (_) {}
+
+        const client = getSupabase();
+        if (!client) return { local, remoto: null };
+
+        try {
+            const sesion = await client.auth.getSession();
+            const usuario = sesion.data?.session?.user;
+            if (!usuario) return { local, remoto: null };
+
+            const actual = await client
+                .from('preferencias_usuario')
+                .select('prefs')
+                .eq('usuario_id', usuario.id)
+                .maybeSingle();
+
+            if (actual.error) return { local, remoto: false };
+
+            const nuevoPrefs = {
+                ...(actual.data?.prefs || {}),
+                [MASCOTA_KEY]: valor
+            };
+
+            const guardado = await client
+                .from('preferencias_usuario')
+                .upsert(
+                    {
+                        usuario_id: usuario.id,
+                        prefs: nuevoPrefs
+                    },
+                    { onConflict: 'usuario_id' }
+                );
+
+            if (guardado.error) {
+                console.warn(
+                    '[Apariencia] Error guardando mascota:',
+                    guardado.error
+                );
+                return { local, remoto: false };
+            }
+
+            return { local, remoto: true };
+        } catch (error) {
+            console.warn(
+                '[Apariencia] No se pudo guardar la mascota en Supabase:',
+                error
+            );
+            return { local, remoto: false };
+        }
+    }
+
+    /* ================================================================
        COLOR
        ================================================================ */
 
@@ -452,7 +579,6 @@
        márgenes ni escalas de contenedores.
        ================================================================ */
 
-    // Lista única de elementos interactivos (antes estaba repetida)
     // Solo elementos de Configuración: nunca botones ni enlaces globales,
     // para no afectar a la mascota ni al resto de la app.
     const SELECTOR_INTERACTIVO = [
@@ -590,6 +716,9 @@
                 }
             }
 
+            // La mascota también debe venir de Supabase antes de inyectarse
+            await sincronizarMascota();
+
             syncConSupabaseListo = true;
         })();
 
@@ -639,8 +768,6 @@
         );
     }
 
-    inicializar();
-
     /* ================================================================
        API PÚBLICA COMPATIBLE
        ================================================================ */
@@ -653,6 +780,10 @@
         leer: leerDeLocalStorage,
         leerSupabase: leerDeSupabase,
         guardarPref: guardarPref,
+
+        getMascota: getMascotaActiva,
+        leerMascotaSupabase: leerMascotaSupabase,
+        setMascota: guardarMascota,
 
         setTema: function (tema) {
             tema = normalizarTema(tema);
@@ -684,21 +815,14 @@
         recargar: inicializar,
         KEYS: KEYS,
         DEFAULTS: DEFAULTS,
-        TEMAS: TEMAS_VALIDOS.slice()
+        TEMAS: TEMAS_VALIDOS.slice(),
+        MASCOTAS: MASCOTAS_VALIDAS.slice()
     };
 
     /* ================================================================
-       MASCOTA ACTIVA
+       MASCOTA ACTIVA · INYECCIÓN
+       Se ejecuta solo después de sincronizar con Supabase.
        ================================================================ */
-
-    function getMascotaActiva() {
-        try {
-            return localStorage.getItem('mascota_activa') ||
-                'marquinhos';
-        } catch (_) {
-            return 'marquinhos';
-        }
-    }
 
     function rutaExcluida(rutas) {
         const path = window.location.pathname.toLowerCase();
@@ -763,7 +887,7 @@
         '/live-terminos',
         '/eliminar-cuenta',
         '/actualizar-contrasena',
-        '/centro-ayuda' /* <-- NUEVA RUTA: Evita inyectar mascotas aquí */
+        '/centro-ayuda'
     ];
 
     function puedeInyectarMascota(rutaTienda) {
@@ -772,11 +896,9 @@
         );
     }
 
-    /* ================================================================
-       MARQUINHOS
-       ================================================================ */
+    /* ---------------- MARQUINHOS ---------------- */
 
-    (function inyectarMarquinhosPet() {
+    function inyectarMarquinhosPet() {
         if (getMascotaActiva() !== 'marquinhos') return;
         if (!puedeInyectarMascota(['/features/marquinhos/tienda'])) {
             return;
@@ -820,13 +942,11 @@
                 '/features/marquinhos/marquinhos-brain.js'
             );
         });
-    })();
+    }
 
-    /* ================================================================
-       CAPITÁN MAÍZ
-       ================================================================ */
+    /* ---------------- CAPITÁN MAÍZ ---------------- */
 
-    (function inyectarCapitanMaizPet() {
+    function inyectarCapitanMaizPet() {
         if (getMascotaActiva() !== 'capitan-maiz') return;
         if (!puedeInyectarMascota(['/features/capitan-maiz/tienda'])) {
             return;
@@ -855,13 +975,11 @@
                 '/features/capitan-maiz/capitan-maiz-brain.js'
             );
         });
-    })();
+    }
 
-    /* ================================================================
-       ITLASUHUA
-       ================================================================ */
+    /* ---------------- ITLASUHUA ---------------- */
 
-    (function inyectarItlasuhuaPet() {
+    function inyectarItlasuhuaPet() {
         if (getMascotaActiva() !== 'itlasuhua') return;
         if (!puedeInyectarMascota(['/features/itlasuhua/tienda'])) {
             return;
@@ -899,10 +1017,29 @@
                 '/features/itlasuhua/itlasuhua-voice.js'
             );
         });
-    })();
+    }
 
-    console.log(
-        '[Apariencia] Módulo global v3.4 cargado. Mascota activa:',
-        getMascotaActiva()
-    );
+    function inyectarMascotaActiva() {
+        inyectarMarquinhosPet();
+        inyectarCapitanMaizPet();
+        inyectarItlasuhuaPet();
+
+        console.log(
+            '[Apariencia] Módulo global v3.5 cargado. Mascota activa:',
+            getMascotaActiva()
+        );
+    }
+
+    /* ================================================================
+       ARRANQUE
+       Primero sincroniza preferencias y mascota con Supabase;
+       después inyecta la mascota. Si algo falla, igual se inyecta
+       con lo que haya en localStorage.
+       ================================================================ */
+
+    inicializar()
+        .catch(function (error) {
+            console.warn('[Apariencia] Error al iniciar:', error);
+        })
+        .then(inyectarMascotaActiva);
 })();
