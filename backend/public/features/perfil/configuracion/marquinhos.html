@@ -4,24 +4,24 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Marquinhos · Configuración</title>
-<meta name="theme-color" content="#05080f">
+<meta name="theme-color" content="#000000">
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<!-- Asegúrate de que esta ruta sea correcta en tu proyecto -->
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js"></script>
 
 <style>
 :root {
-    --gold: #D4AF37;
-    --space: #05080f;
+    /* Paleta de colores basada en tus capturas */
+    --neon: #00FF88; 
+    --space: #000000;
     --text: #f0f4f8;
     --muted: #8aa8b8;
-    --border: rgba(212, 175, 55, 0.16);
+    --border: rgba(0, 255, 136, 0.15);
     --danger: #ff3366;
-    --success: #00d68f;
-    --verde: #0F2D1A;
+    --success: #00FF88;
+    --card-bg: #0a1c14; /* Verde muy oscuro casi negro */
     --whatsapp: #25D366;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -31,26 +31,24 @@ body {
     font-family: 'Inter', sans-serif;
     min-height: 100vh;
     padding: 20px;
-    background-image:
-        radial-gradient(ellipse at 20% 20%, rgba(42, 106, 58, 0.25), transparent 55%),
-        radial-gradient(ellipse at 80% 80%, rgba(212, 175, 55, 0.06), transparent 55%);
 }
 .app { max-width: 640px; margin: 0 auto; padding-bottom: 40px;}
-h1 { font-size: 1.3rem; color: var(--gold); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+h1 { font-size: 1.3rem; color: var(--neon); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
 h1 .hex { font-family: 'Orbitron', monospace; }
 .sub { color: var(--muted); font-size: .8rem; margin-bottom: 24px; }
 .card {
-    background: rgba(15, 45, 26, 0.35);
+    background: var(--card-bg);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 18px;
+    border-radius: 20px;
+    padding: 20px;
     margin-bottom: 16px;
-    position: relative; /* Para posicionar al avatar si es necesario */
+    position: relative; 
+    overflow: hidden;
 }
 .card h2 {
     font-size: .95rem;
-    color: var(--gold);
-    margin-bottom: 14px;
+    color: var(--neon);
+    margin-bottom: 16px;
     font-weight: 700;
     letter-spacing: .5px;
 }
@@ -58,17 +56,17 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 0;
+    padding: 14px 0;
     border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .opcion:last-child { border-bottom: 0; }
 .opcion .info { flex: 1; padding-right: 14px; }
-.opcion .titulo { font-weight: 600; font-size: .9rem; margin-bottom: 3px; }
-.opcion .desc { color: var(--muted); font-size: .72rem; line-height: 1.35; }
+.opcion .titulo { font-weight: 600; font-size: .9rem; margin-bottom: 4px; }
+.opcion .desc { color: var(--muted); font-size: .75rem; line-height: 1.4; }
 .toggle {
     position: relative;
-    width: 48px;
-    height: 26px;
+    width: 50px;
+    height: 28px;
     border-radius: 99px;
     background: rgba(255,255,255,0.1);
     cursor: pointer;
@@ -82,8 +80,8 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     position: absolute;
     top: 2px;
     left: 2px;
-    width: 20px;
-    height: 20px;
+    width: 22px;
+    height: 22px;
     border-radius: 50%;
     background: #fff;
     transition: transform .25s;
@@ -93,8 +91,8 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 
 .btn {
     width: 100%;
-    padding: 12px;
-    border-radius: 12px;
+    padding: 14px;
+    border-radius: 14px;
     border: 1px solid var(--border);
     background: transparent;
     color: var(--text);
@@ -102,23 +100,23 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     font-size: .85rem;
     cursor: pointer;
     font-family: inherit;
-    margin-top: 8px;
+    margin-top: 10px;
     transition: all .2s;
     text-decoration: none;
     display: block;
     text-align: center;
 }
-.btn:hover { border-color: var(--gold); color: var(--gold); }
+.btn:hover { border-color: var(--neon); color: var(--neon); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btn-gold {
-    background: linear-gradient(135deg, var(--gold), #b8923a);
-    color: var(--space);
+    background: linear-gradient(90deg, #00FF88 0%, #D4AF37 100%);
+    color: #000;
     border-color: transparent;
 }
 .btn-gold:hover {
     transform: scale(1.02);
-    box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
-    color: var(--space);
+    box-shadow: 0 6px 20px rgba(0, 255, 136, 0.2);
+    color: #000;
 }
 .btn-danger { color: var(--danger); border-color: rgba(255,51,102,0.3); }
 .btn-danger:hover { background: rgba(255,51,102,0.1); }
@@ -129,16 +127,16 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     color: var(--muted);
     text-decoration: none;
     font-size: .85rem;
-    margin-bottom: 20px;
-    padding: 8px 14px;
+    margin-bottom: 24px;
+    padding: 8px 16px;
     border: 1px solid var(--border);
     border-radius: 99px;
 }
-.btn-back:hover { color: var(--gold); border-color: var(--gold); }
+.btn-back:hover { color: var(--neon); border-color: var(--neon); }
 
 .slider {
     width: 100%;
-    margin-top: 8px;
+    margin-top: 12px;
     -webkit-appearance: none;
     appearance: none;
     height: 6px;
@@ -149,24 +147,24 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 .slider::-webkit-slider-thumb {
     -webkit-appearance: none;
     appearance: none;
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--gold), #b8923a);
+    background: linear-gradient(135deg, #00FF88, #D4AF37);
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.5);
 }
 .slider::-moz-range-thumb {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--gold), #b8923a);
+    background: linear-gradient(135deg, #00FF88, #D4AF37);
     cursor: pointer;
     border: 0;
 }
 .valor-slider {
     float: right;
-    color: var(--gold);
+    color: var(--neon);
     font-family: 'Orbitron', monospace;
     font-size: .8rem;
 }
@@ -176,18 +174,18 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 16px 0 8px;
+    padding: 20px 0 10px;
     min-height: 120px;
 }
 .preview-tamano-box {
-    background: rgba(212, 175, 55, 0.08);
-    border: 1px dashed rgba(212, 175, 55, 0.4);
-    border-radius: 8px;
+    background: rgba(0, 255, 136, 0.05);
+    border: 1px dashed rgba(0, 255, 136, 0.4);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: width 0.2s, height 0.2s;
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     color: var(--muted);
     overflow: hidden;
 }
@@ -257,17 +255,12 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 /* ================= AVATAR MARQUINHOS ================= */
 .mq-avatar-config {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 90px;
+    bottom: -10px;
+    right: -10px;
+    width: 120px;
     height: auto;
-    pointer-events: none;
-    filter: drop-shadow(0 0 10px rgba(0, 229, 255, 0.4));
-    animation: flotar 3s ease-in-out infinite;
-}
-@keyframes flotar {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
+    pointer-events: none; /* Para que no estorbe los clics */
+    z-index: 10;
 }
 </style>
 </head>
@@ -290,7 +283,76 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         </p>
     </div>
 
-    <!-- WHATSAPP DE MARQUINHOS -->
+    <!-- TAMAÑO DEL MUÑECO (Movido arriba como en tu captura) -->
+    <div class="card">
+        <h2>TAMAÑO DEL MUÑECO</h2>
+
+        <div class="opcion" style="display:block;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Tamaño <span class="valor-slider" id="valTamano">100%</span></div>
+                <div class="desc" style="margin-bottom:8px;">Ajusta qué tan grande se ve tu Marquinhos flotante en las páginas.</div>
+                <input type="range" class="slider" id="sliderTamano" min="60" max="150" step="5" value="100">
+            </div>
+        </div>
+
+        <div class="preview-tamano">
+            <div class="preview-tamano-box" id="previewBox">
+                <span id="previewTexto">104 × 150 px</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODO DE INTERACCIÓN -->
+    <div class="card">
+        <h2>MODO DE INTERACCIÓN</h2>
+
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Modo Solo Voz</div>
+                <div class="desc">Muestra 3 burbujitas animadas y responde por audio. Ideal para móvil, sin saturar la pantalla.</div>
+            </div>
+            <div class="toggle activo" id="toggleModoVoz"></div>
+        </div>
+
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Modo Subtítulos</div>
+                <div class="desc">Muestra el texto de cada respuesta en un globo. Útil sin auriculares o en lugares ruidosos.</div>
+            </div>
+            <div class="toggle" id="toggleSubtitulos"></div>
+        </div>
+    </div>
+
+    <!-- VOZ -->
+    <div class="card">
+        <h2>VOZ</h2>
+
+        <div class="opcion" style="display:block;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Volumen <span class="valor-slider" id="valVolumen">60%</span></div>
+                <input type="range" class="slider" id="sliderVolumen" min="0" max="100" value="60">
+            </div>
+        </div>
+
+        <div class="opcion" style="display:block;margin-top:10px;">
+            <div class="info" style="padding-right:0;">
+                <div class="titulo">Velocidad <span class="valor-slider" id="valVelocidad">1.20x</span></div>
+                <input type="range" class="slider" id="sliderVelocidad" min="0.7" max="1.5" step="0.05" value="1.2">
+            </div>
+        </div>
+    </div>
+
+    <!-- ACCIONES (Con el avatar) -->
+    <div class="card">
+        <h2>ACCIONES</h2>
+        <button class="btn" id="btnResetPosicion" type="button">Resetear posición del avatar</button>
+        <button class="btn btn-danger" id="btnLimpiarHistorial" type="button">Borrar historial de conversación</button>
+        
+        <!-- Imagen del Robot: Cambia el src si tu imagen está en otra ruta -->
+        <img src="/features/marquinhos/marquinhos-avatar.png" alt="Marquinhos" class="mq-avatar-config" onerror="this.src='https://i.ibb.co/6PZ8Z9x/marquinhos-avatar.png';">
+    </div>
+
+    <!-- WHATSAPP DE MARQUINHOS (Aquí está el código que faltaba) -->
     <div class="card" id="cardWhatsapp">
         <h2>WHATSAPP DE MARQUINHOS</h2>
 
@@ -309,76 +371,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         </div>
 
         <div class="wa-estado" id="waEstado" role="status" aria-live="polite"></div>
-    </div>
-
-    <!-- TAMAÑO DEL MUÑECO -->
-    <div class="card">
-        <h2>TAMAÑO DEL MUÑECO</h2>
-
-        <div class="opcion" style="display:block;">
-            <div class="info" style="padding-right:0;">
-                <div class="titulo">Tamaño <span class="valor-slider" id="valTamano">100%</span></div>
-                <div class="desc" style="margin-bottom:8px;">Ajusta qué tan grande se ve tu Marquinhos flotante en las páginas.</div>
-                <input type="range" class="slider" id="sliderTamano" min="60" max="150" step="5" value="100">
-            </div>
-        </div>
-
-        <div class="preview-tamano">
-            <div class="preview-tamano-box" id="previewBox">
-                <span id="previewTexto">90 × 130 px</span>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODO DE INTERACCIÓN -->
-    <div class="card">
-        <h2>MODO DE INTERACCIÓN</h2>
-
-        <div class="opcion">
-            <div class="info">
-                <div class="titulo">Modo Solo Voz</div>
-                <div class="desc">Muestra 3 burbujitas animadas y responde por audio. Ideal para móvil, sin saturar la pantalla.</div>
-            </div>
-            <div class="toggle" id="toggleModoVoz"></div>
-        </div>
-
-        <div class="opcion">
-            <div class="info">
-                <div class="titulo">Modo Subtítulos</div>
-                <div class="desc">Muestra el texto de cada respuesta en un globo. Útil sin auriculares o en lugares ruidosos.</div>
-            </div>
-            <div class="toggle" id="toggleSubtitulos"></div>
-        </div>
-    </div>
-
-    <!-- VOZ -->
-    <div class="card">
-        <h2>VOZ</h2>
-
-        <div class="opcion" style="display:block;">
-            <div class="info" style="padding-right:0;">
-                <div class="titulo">Volumen <span class="valor-slider" id="valVolumen">100%</span></div>
-                <input type="range" class="slider" id="sliderVolumen" min="0" max="100" value="100">
-            </div>
-        </div>
-
-        <div class="opcion" style="display:block;margin-top:10px;">
-            <div class="info" style="padding-right:0;">
-                <div class="titulo">Velocidad <span class="valor-slider" id="valVelocidad">1.00x</span></div>
-                <input type="range" class="slider" id="sliderVelocidad" min="0.7" max="1.5" step="0.05" value="1.0">
-            </div>
-        </div>
-    </div>
-
-    <!-- ACCIONES (Aquí va el Avatar) -->
-    <div class="card">
-        <h2>ACCIONES</h2>
-        <button class="btn" id="btnResetPosicion" type="button">Resetear posición del avatar</button>
-        <button class="btn btn-danger" id="btnLimpiarHistorial" type="button">Borrar historial de conversación</button>
-        
-        <!-- Imagen del avatar flotante para la vista -->
-        <!-- IMPORTANTE: Cambia el 'src' por la ruta real de tu imagen PNG o SVG -->
-        <img src="/features/marquinhos/img/marquinhos-avatar.png" alt="Marquinhos" class="mq-avatar-config" onerror="this.style.display='none'">
     </div>
 
 </div>
@@ -427,7 +419,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             return;
         }
         
-        // Si queda menos de 2 minutos, se pone rojo para alertar
         if (restante < 120000) {
             elVence.classList.add('vencido');
         } else {
@@ -441,7 +432,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         codigoActual = String(codigo || '');
         expiraEnMs = new Date(expiraEnIso).getTime() || (Date.now() + VIGENCIA_MS);
 
-        // Formatear el código de 6 dígitos a "123 456"
         elCodigo.textContent = codigoActual.replace(/(\d{3})(\d{3})/, '$1 $2');
         caja.hidden = false;
         btnCopiar.disabled = false;
@@ -452,7 +442,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     }
 
     async function obtenerToken() {
-        // Esperar a que auth-global.js inicialice Supabase
         for (let i = 0; i < 80; i++) {
             if (window.supabaseClient && window.supabaseClient.auth) break;
             await new Promise(function (r) { setTimeout(r, 100); });
@@ -549,7 +538,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 
     function guardar() {
         try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {}
-        // Notificar al pet si está abierto en la misma página
         if (window.Marquinhos && typeof window.Marquinhos.setConfig === 'function') {
             try { window.Marquinhos.setConfig(cfg); } catch (e) {}
         }
@@ -559,30 +547,25 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         const toggleVoz = document.getElementById('toggleModoVoz');
         const toggleSub = document.getElementById('toggleSubtitulos');
 
-        // Lógica: si mostrar_subtitulos = false → modo voz activo
         const enModoVoz = !cfg.mostrar_subtitulos;
 
         toggleVoz.classList.toggle('activo', enModoVoz);
         toggleSub.classList.toggle('activo', !!cfg.mostrar_subtitulos);
 
-        // Tamaño
         const tamano = cfg.tamano != null ? cfg.tamano : 100;
         document.getElementById('sliderTamano').value = tamano;
         document.getElementById('valTamano').textContent = tamano + '%';
         actualizarPreviewTamano(tamano);
 
-        // Volumen
         const vol = Math.round((cfg.volumen != null ? cfg.volumen : 1.0) * 100);
         document.getElementById('sliderVolumen').value = vol;
         document.getElementById('valVolumen').textContent = vol + '%';
 
-        // Velocidad
         const vel = cfg.velocidad != null ? cfg.velocidad : 1.0;
         document.getElementById('sliderVelocidad').value = vel;
         document.getElementById('valVelocidad').textContent = vel.toFixed(2) + 'x';
     }
 
-    // Actualizar preview del tamaño
     function actualizarPreviewTamano(porcentaje) {
         const baseAncho = 90;
         const baseAlto = 130;
@@ -592,7 +575,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         const box = document.getElementById('previewBox');
         const texto = document.getElementById('previewTexto');
 
-        // Escalar el preview visual (no puede pasar de 120px alto para caber)
         const escala = Math.min(1, 120 / alto);
         box.style.width = (ancho * escala) + 'px';
         box.style.height = (alto * escala) + 'px';
@@ -604,7 +586,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         leer();
         pintar();
 
-        // Toggle modo voz ↔ subtítulos
         document.getElementById('toggleModoVoz').addEventListener('click', function() {
             leer();
             cfg.mostrar_subtitulos = false;
@@ -619,7 +600,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             pintar();
         });
 
-        // Slider de tamaño
         document.getElementById('sliderTamano').addEventListener('input', function(e) {
             leer();
             cfg.tamano = parseInt(e.target.value, 10);
@@ -628,7 +608,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             guardar();
         });
 
-        // Volumen
         document.getElementById('sliderVolumen').addEventListener('input', function(e) {
             leer();
             cfg.volumen = parseInt(e.target.value, 10) / 100;
@@ -636,7 +615,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             guardar();
         });
 
-        // Velocidad
         document.getElementById('sliderVelocidad').addEventListener('input', function(e) {
             leer();
             cfg.velocidad = parseFloat(e.target.value);
@@ -644,7 +622,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             guardar();
         });
 
-        // Resetear posición
         document.getElementById('btnResetPosicion').addEventListener('click', function() {
             if (window.Marquinhos && typeof window.Marquinhos.resetPosicion === 'function') {
                 window.Marquinhos.resetPosicion();
@@ -656,7 +633,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             alert('Posición reseteada. Recarga la página para ver el cambio.');
         });
 
-        // Limpiar historial
         document.getElementById('btnLimpiarHistorial').addEventListener('click', function() {
             if (!confirm('¿Borrar todo el historial de conversación con Marquinhos?')) return;
             if (window.Marquinhos && typeof window.Marquinhos.olvidar === 'function') {
@@ -667,8 +643,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
                 .forEach(function (k) { localStorage.removeItem(k); });
             alert('Historial borrado.');
         });
-
-        console.log('[Config Marquinhos] ✅ Cargada');
     }
 
     if (document.readyState === 'loading') {
