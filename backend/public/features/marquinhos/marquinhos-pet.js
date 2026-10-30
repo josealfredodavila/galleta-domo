@@ -1,5 +1,5 @@
 // ================================================================
-// MARQUINHOS · PET v9.9.0 "GALACTIC PRO"
+// MARQUINHOS · PET v9.10.0 "GALACTIC PRO"
 // v9.8.3:
 // - FIX DEFINITIVO: helper obtenerClienteSupabase()
 // - Fallback de uid leyendo localStorage (sb-*-auth-token)
@@ -11,10 +11,15 @@
 // v9.9.0:
 // - Tarjetas de eventos (Ticketmaster Discovery): imagen, título,
 //   fecha, hora, lugar, precio y botón "Ver en Ticketmaster".
-//   Solo enlaces https de ticketmaster.com. Sin botones de compra:
-//   la compra ocurre en la plataforma oficial.
+//   Solo enlaces https de ticketmaster.com. Sin botones de compra.
 // - Escucha 'marquinhos-eventos' y acepta eventos en la respuesta.
 // - Música y eventos no se muestran a la vez (uno reemplaza al otro).
+// v9.10.0:
+// - Historial vía MarquinhosStore (marquinhos-store.js): sobrevive a
+//   la navegación entre páginas y se sincroniza entre pestañas.
+// - Si el store no carga a tiempo, usa un respaldo en memoria: el
+//   widget nunca deja de funcionar por el orden de carga.
+// - El olvido de la conversación limpia el store, no solo la memoria.
 // ================================================================
 
 'use strict';
@@ -57,11 +62,13 @@
 
     const TONO_PITCH = { grave: 0.85, medio: 1.0, agudo: 1.15 };
 
-    const HIST_MAX = 40;
+    // Mensajes que se envían al cerebro (el store puede guardar más)
     const HIST_MAX_ENVIO = 20;
-    const HIST_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-    const HIST_KEY = 'marquinhos_hist_';
     const ACC_KEY = 'marquinhos_accesorios_equipados';
+
+    // Espera máxima al store antes de usar el respaldo en memoria
+    const STORE_ESPERA_MAX_MS = 3000;
+    const STORE_ESPERA_PASO_MS = 50;
 
     const TERMINOS_VERSION = '1.1';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
@@ -90,7 +97,6 @@
     let recognition = null;
     let recognitionActive = false;
     let audioActual = null;
-    let historialLocal = [];
     let userInfo = null;
     let ttsToken = 0;
     let conversationToken = 0;
@@ -116,12 +122,73 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos v9.9.0]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.10.0]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
         d.textContent = v == null ? '' : String(v);
         return d.innerHTML;
+    }
+
+    /* ============================================================
+       STORE: principal (MarquinhosStore) o respaldo en memoria
+    ============================================================ */
+
+    function crearStoreRespaldo() {
+        let estado = { userId: 'anon', mensajes: [], config: {} };
+        return {
+            getState: function () {
+                return { userId: estado.userId, mensajes: estado.mensajes.slice(), config: { ...estado.config } };
+            },
+            subscribe: function () { return function () {}; },
+            identificarUsuario: function (userId) {
+                const id = userId || 'anon';
+                if (id !== estado.userId) estado = { userId: id, mensajes: [], config: {} };
+            },
+            agregarMensaje: function (m) {
+                if (!m || (m.role !== 'user' && m.role !== 'assistant')) return;
+                const c = String(m.content || '').trim();
+                if (!c) return;
+                estado.mensajes = estado.mensajes.concat([{ role: m.role, content: c.slice(0, 4000), ts: Date.now() }]).slice(-40);
+            },
+            getMensajesParaEnviar: function (limite) {
+                const n = Math.max(1, Math.min(40, limite || 20));
+                return estado.mensajes.slice(-n).map(function (m) { return { role: m.role, content: m.content }; });
+            },
+            olvidarTodo: function () { estado.mensajes = []; },
+            setConfig: function (p) { estado.config = { ...estado.config, ...(p || {}) }; },
+            getConfig: function () { return { ...estado.config }; }
+        };
+    }
+
+    if (!window.MarquinhosStore) {
+        window.__marquinhosStoreRespaldo = crearStoreRespaldo();
+    }
+
+    function obtenerStore() {
+        return window.MarquinhosStore || window.__marquinhosStoreRespaldo;
+    }
+
+    function esperarStore() {
+        return new Promise(function (resolve) {
+            const inicio = Date.now();
+            (function revisar() {
+                if (window.MarquinhosStore) return resolve(true);
+                if (Date.now() - inicio >= STORE_ESPERA_MAX_MS) {
+                    log('MarquinhosStore no cargó a tiempo; usando respaldo en memoria.');
+                    return resolve(false);
+                }
+                setTimeout(revisar, STORE_ESPERA_PASO_MS);
+            })();
+        });
+    }
+
+    function registrarMensaje(role, content) {
+        try {
+            obtenerStore().agregarMensaje({ role: role, content: content });
+        } catch (e) {
+            console.warn('[Marquinhos] No se pudo registrar el mensaje:', e);
+        }
     }
 
     // ============================================================
@@ -178,31 +245,6 @@
         } else {
             container.classList.add('mq-modo-voz');
         }
-    }
-
-    function cargarHistorial() {
-        try {
-            const raw = localStorage.getItem(HIST_KEY + (userInfo ? userInfo.id : 'anon'));
-            if (!raw) { historialLocal = []; return; }
-            const arr = JSON.parse(raw);
-            const limite = Date.now() - HIST_TTL_MS;
-            historialLocal = (Array.isArray(arr) ? arr : [])
-                .filter(m => m && m.content && m.ts && m.ts > limite &&
-                             (m.role === 'user' || m.role === 'assistant'))
-                .slice(-HIST_MAX);
-        } catch (e) { historialLocal = []; }
-    }
-
-    function guardarHistorial() {
-        try {
-            historialLocal = historialLocal.slice(-HIST_MAX);
-            localStorage.setItem(HIST_KEY + (userInfo ? userInfo.id : 'anon'), JSON.stringify(historialLocal));
-        } catch (e) {}
-    }
-
-    function olvidarTodo() {
-        historialLocal = [];
-        try { localStorage.removeItem(HIST_KEY + (userInfo ? userInfo.id : 'anon')); } catch (e) {}
     }
 
     async function cargarUsuario() {
@@ -487,8 +529,7 @@
 
     // ============================================================
     // TARJETAS DE EVENTOS (Ticketmaster Discovery)
-    // Solo lectura: no hay botones de compra. El usuario compra en
-    // la página oficial de Ticketmaster.
+    // Solo lectura: no hay botones de compra.
     // ============================================================
 
     function crearTarjetaEvento(ev) {
@@ -1142,11 +1183,8 @@
             }
         }, 500);
 
-        log('Widget v9.9.0 Galactic Pro creado');
+        log('Widget v9.10.0 Galactic Pro creado');
     }
-
-    function mostrarDots() {}
-    function ocultarDots() {}
 
     function setEstado(e) {
         if (container) container.setAttribute('data-estado', e);
@@ -1350,8 +1388,8 @@
 
                 if (/(adiós|adios|hasta luego|nos vemos|ya no)/.test(lower) && lower.length < 30) {
                     conversacionActiva = false;
-                    historialLocal.push({ role: 'user', content: transcript, ts: Date.now() });
-                    hablar('¡Hasta luego!').then(function() { guardarHistorial(); });
+                    registrarMensaje('user', transcript);
+                    hablar('¡Hasta luego!');
                     return;
                 }
 
@@ -1406,6 +1444,14 @@
         isListening = false;
     }
 
+    /* ============================================================
+       OLVIDAR: limpia el store (historial persistente) y la
+       memoria de la sesión actual.
+    ============================================================ */
+    function olvidarTodo() {
+        try { obtenerStore().olvidarTodo(); } catch (e) {}
+    }
+
     async function procesarComando(texto) {
         if (!texto) return;
         const miConversacionToken = ++conversationToken;
@@ -1416,7 +1462,9 @@
         cambiarVisema('M');
 
         try {
-            historialLocal.push({ role: 'user', content: texto, ts: Date.now() });
+            // Se registra antes de llamar al cerebro. El cerebro quita este
+            // mensaje del historial enviado para no repetirlo.
+            registrarMensaje('user', texto);
 
             let respuesta = '';
             let musica = null;
@@ -1424,7 +1472,7 @@
 
             if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
                 try {
-                    const historialTruncado = historialLocal.slice(-HIST_MAX_ENVIO);
+                    const historialTruncado = obtenerStore().getMensajesParaEnviar(HIST_MAX_ENVIO);
                     window.MarquinhosBrain.ultimaMusica = null;
                     window.MarquinhosBrain.ultimosEventos = null;
 
@@ -1457,8 +1505,7 @@
 
             if (!respuesta) respuesta = 'No supe qué decir.';
 
-            historialLocal.push({ role: 'assistant', content: respuesta, ts: Date.now() });
-            guardarHistorial();
+            registrarMensaje('assistant', respuesta);
 
             if (eventos && eventos.length) {
                 renderizarEventos(eventos);
@@ -1531,7 +1578,7 @@
             aplicarModo();
         },
         getModoSubtitulos: function() { return !!config.mostrar_subtitulos; },
-        getHistorial: function() { return historialLocal.slice(); },
+        getHistorial: function() { return obtenerStore().getState().mensajes; },
         getConfig: function() { return { ...config }; },
         setConfig: function(nuevos) {
             config = { ...config, ...nuevos };
@@ -1572,11 +1619,15 @@
         if (!config.activo) return;
 
         await cargarUsuario();
-        cargarHistorial();
+
+        // El historial depende del usuario: se identifica después de conocerlo
+        await esperarStore();
+        try { obtenerStore().identificarUsuario(userInfo ? userInfo.id : 'anon'); } catch (e) {}
+
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.9.0 Galactic Pro activo');
+        log('✅ Marquinhos v9.10.0 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
