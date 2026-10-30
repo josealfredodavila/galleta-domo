@@ -1,17 +1,15 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.3
+   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.4
    ================================================================
-   Cambios respecto a v5.2:
-   - Corrige la vista negra: el <video> de origen se decodifica siempre
-     (tamaño real dentro del viewport, opacidad 0, sin pointer-events).
-   - El render dibuja el video en cuanto hay dimensiones, sin esperar
-     un readyState estricto.
-   - FaceMesh corre en su propio bucle; si falla, la cámara sigue sin
-     filtros y se avisa una sola vez.
-   - Los PNG de filtro se dibujan sobre los landmarks en la misma
-     escala que el video (cover), solo cuando hay resultados válidos.
-   - Se mantienen modos 15 s / 60 s, botón de sonido, temporizador,
-     voltear, grabación con mezcla de audio y API pública.
+   Cambios respecto a v5.3:
+   - El sonido se elige antes de grabar. Al presionar grabar, la pista
+     se reproduce y se mezcla con el micrófono (Web Audio API) desde el
+     primer fotograma. Sin pista elegida, se graba solo con micrófono.
+   - Durante la grabación el selector de sonido queda fijo: se muestra
+     un aviso breve que indica que la pista ya está fijada. No se
+     bloquea la cámara ni se muestra error.
+   - Se conserva render, filtros FaceMesh, modos 15/60 s, temporizador,
+     voltear y API pública.
    ================================================================ */
 
 (function () {
@@ -172,7 +170,6 @@
         throw ultimoError || new Error('MediaPipe no disponible.');
     }
 
-    // FaceMesh se inicializa una sola vez. Si falla, la cámara sigue sin filtros.
     async function iniciarFaceMesh() {
         if (state.faceMeshListo) return true;
         try {
@@ -211,7 +208,6 @@
         throw ultimoError || new Error('No se pudo acceder a la cámara.');
     }
 
-    // Espera a que el video tenga dimensiones reales (hasta ESPERA_DIMENSIONES_MS).
     function esperarDimensiones(video) {
         return new Promise(function (resolve) {
             if (video.videoWidth > 0) { resolve(true); return; }
@@ -344,6 +340,7 @@
                 <div class="cs-camara-rec-indicator" id="csRecIndicator">● REC</div>
                 <div class="cs-camara-countdown" id="csCamaraCountdown"></div>
                 <div class="cs-camara-loading" id="csCamaraLoading">Iniciando cámara…</div>
+                <div class="cs-camara-aviso" id="csCamaraAviso"></div>
 
                 <div class="cs-camara-filtros" id="csCamaraFiltros"></div>
             </div>
@@ -366,7 +363,6 @@
                 .cs-camara-modal { position: fixed; inset: 0; z-index: ${Z.CAMARA}; background: #000; display: none; flex-direction: column; color: #fff; font-family: Inter, system-ui, sans-serif; user-select: none; -webkit-user-select: none; }
                 .cs-camara-modal.show { display: flex; }
                 .cs-camara-viewport { position: relative; flex: 1; min-height: 0; overflow: hidden; background: #000; }
-                /* El video de origen se mantiene con tamaño real para que el navegador lo decodifique. Invisible y sin eventos. */
                 #csCamaraVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: 0; object-fit: cover; }
                 #csCamaraCanvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; z-index: 1; }
 
@@ -392,6 +388,8 @@
                 .cs-camara-countdown.visible { display: grid; }
                 .cs-camara-loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: .9rem; background: rgba(0,0,0,.55); z-index: 15; pointer-events: none; }
                 .cs-camara-loading.hidden { display: none; }
+                .cs-camara-aviso { position: absolute; left: 50%; transform: translateX(-50%); bottom: 150px; max-width: 80%; padding: 8px 14px; border-radius: 12px; background: rgba(0,0,0,.75); border: 1px solid rgba(212,175,55,.6); color: #D4AF37; font-size: .75rem; text-align: center; z-index: 25; opacity: 0; pointer-events: none; transition: opacity .25s ease; }
+                .cs-camara-aviso.visible { opacity: 1; }
 
                 .cs-camara-filtros { position: absolute; left: 0; right: 0; bottom: 8px; display: flex; gap: 10px; padding: 6px 12px; overflow-x: auto; scrollbar-width: none; z-index: 18; }
                 .cs-camara-filtros::-webkit-scrollbar { display: none; }
@@ -431,7 +429,7 @@
             var boton = evento.target.closest('.cs-camara-modo');
             if (!boton) return;
             if (state.grabando || state.cuentaRegresivaActiva) {
-                notificar('Termina la grabación para cambiar la duración.', 'warning');
+                mostrarAviso('La duración se fija al empezar a grabar.');
                 return;
             }
             establecerDuracion(parseInt(boton.dataset.duracion, 10));
@@ -443,10 +441,20 @@
         actualizarEtiquetaSonido();
     }
 
+    var avisoTimer = null;
+    function mostrarAviso(texto) {
+        var el = $('csCamaraAviso');
+        if (!el) return;
+        el.textContent = texto;
+        el.classList.add('visible');
+        clearTimeout(avisoTimer);
+        avisoTimer = setTimeout(function () { el.classList.remove('visible'); }, 2200);
+    }
+
     var temporizadoresCuenta = [3, 5, 10];
     function ciclarTemporizador() {
         if (state.grabando || state.cuentaRegresivaActiva) {
-            notificar('Termina la grabación para cambiar el temporizador.', 'warning');
+            mostrarAviso('El temporizador se fija al empezar a grabar.');
             return;
         }
         var i = temporizadoresCuenta.indexOf(CONFIG.COUNTDOWN_SECONDS);
@@ -507,10 +515,12 @@
         });
     }
 
+    // Abre el selector en cualquier momento antes de grabar. Durante la
+    // grabación la pista ya está fijada en la mezcla, así que se avisa.
     function abrirSelectorSonido(evento) {
         if (evento) { evento.preventDefault(); evento.stopPropagation(); }
         if (state.grabando || state.cuentaRegresivaActiva) {
-            notificar('Termina la grabación para cambiar el sonido.', 'warning');
+            mostrarAviso('La pista ya suena en la grabación. Podrás cambiarla al terminar.');
             return;
         }
         if (!window.VideosPublicar || typeof window.VideosPublicar.abrirModalSonidos !== 'function') {
@@ -534,9 +544,6 @@
         actualizarEtiquetaSonido();
     }
 
-    // ============================================================
-    // DETECCIÓN FACIAL · bucle independiente del render
-    // ============================================================
     function iniciarLoopDeteccion() {
         var intervalo = 1000 / CONFIG.DETECTION_FPS;
         async function detectar() {
@@ -555,20 +562,11 @@
         state.detectionFrameId = requestAnimationFrame(detectar);
     }
 
-    // ============================================================
-    // RENDER · video + filtro sobre el canvas (escala cover)
-    // ============================================================
     function calcularCover(video, canvas) {
         var vw = video.videoWidth, vh = video.videoHeight;
         var cw = canvas.width, ch = canvas.height;
         var escala = Math.max(cw / vw, ch / vh);
-        return {
-            escala: escala,
-            dx: (cw - vw * escala) / 2,
-            dy: (ch - vh * escala) / 2,
-            dw: vw * escala,
-            dh: vh * escala
-        };
+        return { escala: escala, dx: (cw - vw * escala) / 2, dy: (ch - vh * escala) / 2, dw: vw * escala, dh: vh * escala };
     }
 
     function dibujarVideoCover(video, canvas, ctx, espejado, cover) {
@@ -582,7 +580,6 @@
         function dibujar() {
             if (!state.iniciada) return;
             var video = state.video, canvas = state.canvas, ctx = state.ctx;
-
             if (video && video.videoWidth > 0 && video.videoHeight > 0) {
                 if (canvas.width !== CONFIG.CANVAS_WIDTH || canvas.height !== CONFIG.CANVAS_HEIGHT) {
                     canvas.width = CONFIG.CANVAS_WIDTH;
@@ -590,7 +587,6 @@
                 }
                 var espejado = state.facingMode === 'user';
                 var cover = calcularCover(video, canvas);
-
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
                 dibujarVideoCover(video, canvas, ctx, espejado, cover);
 
@@ -609,7 +605,6 @@
         var filtro = ASSETS[state.filtroActual];
         if (!filtro) return;
 
-        // Convierte un landmark normalizado (0..1 sobre el video) a coordenadas del canvas.
         function punto(indice) {
             var p = landmarks[indice];
             var xVideo = espejado ? (1 - p.x) : p.x;
@@ -671,6 +666,9 @@
         });
     }
 
+    // ============================================================
+    // AUDIO · pista + micrófono en la grabación (Web Audio API)
+    // ============================================================
     async function prepararMezclaAudio() {
         var AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtx) return null;
@@ -710,7 +708,7 @@
         });
 
         if (!cargada) {
-            notificar('La pista no cargó. Se grabará sin sonido de fondo.', 'warning');
+            notificar('La pista no cargó. Se grabará solo con micrófono.', 'warning');
             return false;
         }
 
@@ -783,6 +781,7 @@
         var canvasStream = state.canvas.captureStream(CONFIG.TARGET_FPS);
         state.archivoConAudioMezclado = false;
 
+        // La pista se mezcla desde el primer fotograma. Si no hay pista, solo micrófono.
         var mezcla = await prepararMezclaAudio();
         if (mezcla) {
             if (state.audioPistaUrl) {
@@ -865,9 +864,6 @@
         if (document.hidden && state.grabando) detenerGrabacion();
     }
 
-    // ============================================================
-    // ABRIR / CERRAR
-    // ============================================================
     async function abrirCamara() {
         if (state.abriendo || state.iniciada) return;
         state.abriendo = true;
@@ -890,7 +886,6 @@
             iniciarLoopRender();
             emitirEstado('abierta');
 
-            // Los filtros cargan en segundo plano: la cámara ya funciona sin ellos
             Promise.all([precargarImagenes(), iniciarFaceMesh()]).then(function (resultado) {
                 var faceOk = resultado[1];
                 if (!faceOk && !state.avisoFiltrosMostrado) {
