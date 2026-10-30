@@ -11,8 +11,10 @@
 //       auditoría: C-04). Las llamadas se gestionan solo en /api/llamadas.
 // v3.9: Health check desacoplado de Supabase: /api/health es liveness
 //       (siempre 200) y /api/health/detalle muestra el estado completo.
-// v4.0: Noticias montado en /api/noticias (antes no estaba registrado,
-//       causaba "Endpoint no encontrado") y ruta amigable /noticias.
+// v4.0: Noticias montado en /api/noticias y ruta amigable /noticias.
+// v4.1: Montaje de noticias con diagnóstico: registra la ruta exacta
+//       del archivo, el tipo de export y sus claves. Si el export no
+//       es un router, monta un 503 con el motivo en vez de un 404.
 // ================================================================
 
 require('dotenv').config();
@@ -810,6 +812,78 @@ function montarRouter(mountPath, requirePaths, nombre) {
 }
 
 // ================================================================
+// NOTICIAS · MONTAJE CON DIAGNÓSTICO
+// ================================================================
+// Registra la ruta real del archivo, el tipo de export y sus claves.
+// Si el export no es un router, monta un 503 con el motivo, para que
+// la app muestre la causa y no un 404 genérico.
+
+function registrarFallbackNoticias(motivo) {
+    app.use('/api/noticias', (req, res) => {
+        return res.status(503).json({
+            error: `Servicio de noticias no cargado en el servidor (${motivo}). Revisa los logs de Railway.`
+        });
+    });
+
+    console.warn(`⚠️ [noticias] fallback 503 montado en /api/noticias: ${motivo}`);
+    return false;
+}
+
+function montarNoticias() {
+    let rutaArchivo;
+
+    try {
+        rutaArchivo = require.resolve('./routes/noticias');
+        console.log(`🔎 [noticias] archivo resuelto: ${rutaArchivo}`);
+    } catch (error) {
+        console.error('❌ [noticias] no se encontró backend/routes/noticias.js:', error.message);
+        return registrarFallbackNoticias('archivo no encontrado');
+    }
+
+    let modulo;
+
+    try {
+        modulo = require(rutaArchivo);
+    } catch (error) {
+        console.error('❌ [noticias] el archivo existe pero falló al ejecutarse:');
+        console.error(error.stack || error.message);
+        return registrarFallbackNoticias('error al ejecutar routes/noticias.js');
+    }
+
+    const tipo = typeof modulo;
+    const esArray = Array.isArray(modulo);
+    const constructor = modulo && modulo.constructor ? modulo.constructor.name : 'n/a';
+    const claves = modulo && (tipo === 'object' || tipo === 'function')
+        ? Object.keys(modulo)
+        : [];
+
+    console.log(`🔎 [noticias] typeof export: ${tipo}`);
+    console.log(`🔎 [noticias] es Array: ${esArray} | constructor: ${constructor}`);
+    console.log(`🔎 [noticias] claves exportadas: ${claves.length ? claves.join(', ') : '(ninguna)'}`);
+
+    let router = null;
+
+    if (typeof modulo === 'function') {
+        router = modulo;
+    } else if (modulo && typeof modulo.router === 'function') {
+        router = modulo.router;
+        console.log('ℹ️ [noticias] usando export .router');
+    } else if (modulo && typeof modulo.default === 'function') {
+        router = modulo.default;
+        console.log('ℹ️ [noticias] usando export .default');
+    }
+
+    if (!router) {
+        console.error('❌ [noticias] el archivo no exporta un router. Debe terminar en: module.exports = router;');
+        return registrarFallbackNoticias('export inválido: se esperaba un router y llegó ' + tipo);
+    }
+
+    app.use('/api/noticias', router);
+    console.log(`✅ [noticias] router montado en /api/noticias desde ${rutaArchivo}`);
+    return true;
+}
+
+// ================================================================
 // ROUTERS
 // ================================================================
 
@@ -874,8 +948,8 @@ montarRouter('/api/mercado/pedidos', './routes/mercado-pedidos', 'routes/mercado
 
 montarRouter('/api/live', './routes/live', 'routes/live');
 
-// Noticias (feed y preguntas con Perplexity, caché Redis, sesión Supabase)
-montarRouter('/api/noticias', './routes/noticias', 'routes/noticias');
+// Noticias (feed y preguntas con NewsData, Perplexity, Tavily y OpenAI; caché Redis; sesión Supabase)
+montarNoticias();
 
 // Geo
 montarRouter('/api/geo', './routes/geo', 'routes/geo');
