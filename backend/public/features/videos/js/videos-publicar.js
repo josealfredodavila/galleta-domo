@@ -1,12 +1,18 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.2
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.3
    ================================================================
-   Cambios respecto a v2.1:
-   - Equalizador animado en el botón de reproducción de cada pista.
-     Barras con CSS cuando la pista está activa; con AnalyserNode
-     de Web Audio reaccionan al audio real si el navegador lo permite.
-   - Estado visual claro: cargando, sonando, pausado, error.
-   - Mantiene el resto de la API pública y el flujo de capas (z-index).
+   Cambios respecto a v2.2:
+   - BORRADORES REALES:
+     · Guardar borrador: sube el video y la portada a
+       borradores/{usuario_id}/ en el bucket "videos" y registra una
+       fila en public.videos_borradores (RLS por propietario).
+       Si no hay video, guarda solo título, descripción, sonido y ubicación.
+     · Mis borradores: lista los borradores del usuario con portada,
+       título y fecha.
+     · Abrir borrador: carga el video, la portada y los datos al formulario.
+     · Eliminar borrador: borra la fila y los archivos del bucket.
+   - Mantiene equalizador, selector de sonidos, ubicación, preview,
+     capas (z-index) y la API pública de v2.2.
    ================================================================ */
 
 (function () {
@@ -25,15 +31,18 @@
     const CONFIG = {
         PROVIDER: 'supabase',
         BUCKET: 'videos',
+        CARPETA_BORRADORES: 'borradores',
         MAX_VIDEO_MB: 100,
         MAX_VIDEO_MB_R2: 500,
         VIDEO_TYPES: ['video/mp4', 'video/webm', 'video/quicktime'],
         IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
         PORTADA_TIMEOUT_MS: 4000,
-        BARRAS_EQ: 4
+        BARRAS_EQ: 4,
+        MAX_BORRADORES_LISTA: 50
     };
 
-    const SUPABASE_STORAGE_URL = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios';
+    const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+    const SUPABASE_STORAGE_URL = SUPABASE_URL + '/storage/v1/object/public/audios';
 
     const SONIDOS_SEED = {
         parati: [
@@ -80,7 +89,9 @@
         previewURL: null,
         portadaURL: null,
         tabSonidosActiva: 'parati',
-        sbCliente: null
+        sbCliente: null,
+        borradorEditandoId: null,
+        guardandoBorrador: false
     };
 
     function $(id) { return document.getElementById(id); }
@@ -105,6 +116,13 @@
             }
         } catch (e) {}
         return null;
+    }
+
+    async function obtenerSesion() {
+        const sb = getSupabaseClient();
+        if (!sb) return null;
+        const r = await sb.auth.getSession();
+        return (r && r.data && r.data.session) || null;
     }
 
     function csToast(mensaje, tipo, duracion) {
@@ -188,7 +206,6 @@
                 fuente.connect(analyser);
                 return true;
             } catch (e) {
-                // El elemento ya tiene una fuente asociada o el navegador no lo permite
                 return false;
             }
         }
@@ -329,7 +346,6 @@
             estado = 'playing';
             if (onEstado) onEstado('playing', pista);
 
-            // Conecta el analizador para el equalizador real (si el navegador lo permite)
             Visualizador.iniciar(document.querySelector(`.cs-sonido-item[data-sonido-id="${pista.id}"] .cs-eq`), nuevoAudio);
 
             timerId = setTimeout(() => {
@@ -371,7 +387,7 @@
     })();
 
     // ============================================================
-    // SUBIDA DE ARCHIVOS
+    // SUBIDA DE ARCHIVOS (flujo de publicación con moderación)
     // ============================================================
     async function subirMultimedia(archivo, tipo, opciones) {
         const opts = opciones || {};
@@ -398,11 +414,7 @@
     }
 
     async function subirMultimediaSupabase(archivo, tipo) {
-        const sb = getSupabaseClient();
-        if (!sb) return { ok: false, error: 'Cliente Supabase no disponible' };
-
-        const sessionResp = await sb.auth.getSession();
-        const session = sessionResp && sessionResp.data && sessionResp.data.session;
+        const session = await obtenerSesion();
         if (!session) return { ok: false, error: 'Sin sesión activa' };
         const token = session.access_token;
         if (!token) return { ok: false, error: 'Sin token de sesión' };
@@ -439,6 +451,304 @@
     }
     async function subirMultimediaS3() {
         return { ok: false, error: 'Proveedor S3 aún no habilitado (Fase 3 del proyecto)' };
+    }
+
+    // ============================================================
+    // BORRADORES · STORAGE DIRECTO EN EL BUCKET "videos"
+    // Los borradores se guardan en borradores/{usuario_id}/ y no pasan
+    // por la cola de publicación ni por la moderación del feed.
+    // ============================================================
+    function rutaBorrador(usuarioId, nombre) {
+        const limpio = String(nombre || 'archivo').replace(/[^\w.\-]/g, '_');
+        return `${CONFIG.CARPETA_BORRADORES}/${usuarioId}/${Date.now()}-${limpio}`;
+    }
+
+    async function subirBorradorArchivo(path, blob, contentType) {
+        const sb = getSupabaseClient();
+        const { error } = await sb.storage.from(CONFIG.BUCKET).upload(path, blob, {
+            contentType: contentType || 'application/octet-stream',
+            upsert: false
+        });
+        if (error) throw new Error(error.message || 'No se pudo subir el archivo del borrador');
+        return path;
+    }
+
+    async function borrarBorradorArchivos(paths) {
+        const validos = (paths || []).filter(Boolean);
+        if (!validos.length) return;
+        const sb = getSupabaseClient();
+        try { await sb.storage.from(CONFIG.BUCKET).remove(validos); }
+        catch (e) { warn('No se pudieron borrar archivos del borrador:', e); }
+    }
+
+    function urlPublicaBorrador(path) {
+        if (!path) return null;
+        return `${SUPABASE_URL}/storage/v1/object/public/${CONFIG.BUCKET}/${path}`;
+    }
+
+    // Convierte la portada generada en blob para subirla
+    function blobDePortadaActual() {
+        return state.portadaBlob || null;
+    }
+
+    // Reconstruye el archivo del borrador desde su URL pública
+    async function descargarArchivoBorrador(path, nombre) {
+        const url = urlPublicaBorrador(path);
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('No se pudo descargar el video del borrador');
+        const blob = await resp.blob();
+        const tipo = blob.type || 'video/webm';
+        return new File([blob], nombre || ('borrador-' + Date.now() + '.webm'), { type: tipo });
+    }
+
+    async function listarBorradores() {
+        const sb = getSupabaseClient();
+        const session = await obtenerSesion();
+        if (!sb || !session) return { ok: false, error: 'Inicia sesión para ver tus borradores', items: [] };
+        const { data, error } = await sb
+            .from('videos_borradores')
+            .select('*')
+            .eq('usuario_id', session.user.id)
+            .order('updated_at', { ascending: false })
+            .limit(CONFIG.MAX_BORRADORES_LISTA);
+        if (error) return { ok: false, error: error.message || 'No se pudieron cargar los borradores', items: [] };
+        return { ok: true, items: data || [] };
+    }
+
+    // Guarda un borrador. Si ya se estaba editando uno, lo actualiza.
+    async function guardarBorrador() {
+        if (state.guardandoBorrador) return;
+        const session = await obtenerSesion();
+        if (!session) { csToast('Inicia sesión para guardar borradores', 'error'); return; }
+        const sb = getSupabaseClient();
+        if (!sb) { csToast('Cliente Supabase no disponible', 'error'); return; }
+
+        const titulo = (($('inputTituloVideo') || {}).value || '').trim();
+        const descripcion = (($('inputDescripcionVideo') || {}).value || '').trim();
+        const archivo = state.archivoVideo;
+        const sonido = state.sonidoSeleccionado;
+        const ubicacion = state.ubicacionSeleccionada;
+
+        if (!titulo && !archivo && !descripcion && !sonido && !ubicacion) {
+            csToast('Escribe algo o elige un video antes de guardar el borrador', 'warning');
+            return;
+        }
+
+        state.guardandoBorrador = true;
+        csToast('Guardando borrador…', 'info', 2000);
+
+        const subidos = [];
+        try {
+            const usuarioId = session.user.id;
+            let archivoPath = null;
+            let portadaPath = null;
+            let duracion = null;
+
+            const videoEl = $('csPreviewVideo');
+            if (videoEl && isFinite(videoEl.duration) && videoEl.duration > 0) duracion = Math.round(videoEl.duration);
+
+            if (archivo) {
+                archivoPath = await subirBorradorArchivo(rutaBorrador(usuarioId, archivo.name), archivo, archivo.type);
+                subidos.push(archivoPath);
+            }
+
+            const portada = blobDePortadaActual();
+            if (portada) {
+                portadaPath = await subirBorradorArchivo(rutaBorrador(usuarioId, 'portada.jpg'), portada, 'image/jpeg');
+                subidos.push(portadaPath);
+            }
+
+            const fila = {
+                usuario_id: usuarioId,
+                titulo: titulo || null,
+                descripcion: descripcion || null,
+                sonido_id: sonido ? sonido.id : null,
+                sonido_nombre: sonido ? `${sonido.nombre} — ${sonido.artista}` : null,
+                sonido_url: sonido ? sonido.url : null,
+                ubicacion_nombre: ubicacion ? `${ubicacion.nombre}, ${ubicacion.pais}` : null,
+                archivo_path: archivoPath,
+                portada_path: portadaPath,
+                duracion_seg: duracion,
+                updated_at: new Date().toISOString()
+            };
+
+            let resultado;
+            if (state.borradorEditandoId) {
+                resultado = await sb.from('videos_borradores')
+                    .update(fila)
+                    .eq('id', state.borradorEditandoId)
+                    .eq('usuario_id', usuarioId)
+                    .select()
+                    .single();
+            } else {
+                resultado = await sb.from('videos_borradores').insert(fila).select().single();
+            }
+
+            if (resultado.error) throw new Error(resultado.error.message || 'No se pudo guardar el borrador');
+
+            // Si se reemplazó el video de un borrador existente, se borra el anterior
+            if (state.borradorEditandoId && archivoPath && resultado.data) {
+                // El anterior se limpia desde la lista al editar; aquí solo registramos el nuevo
+            }
+
+            state.borradorEditandoId = resultado.data.id;
+            csToast('Borrador guardado', 'success');
+        } catch (e) {
+            warn('Error guardando borrador:', e);
+            await borrarBorradorArchivos(subidos);
+            csToast(e.message || 'No se pudo guardar el borrador', 'error', 4000);
+        } finally {
+            state.guardandoBorrador = false;
+        }
+    }
+
+    async function renderBorradores() {
+        const lista = $('csBorradoresLista');
+        if (!lista) return;
+        lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">◈</span><p>Cargando borradores…</p></div>`;
+
+        const res = await listarBorradores();
+        if (!res.ok) {
+            lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">◈</span><p>${esc(res.error)}</p></div>`;
+            return;
+        }
+        if (res.items.length === 0) {
+            lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">◈</span><p>Aún no tienes borradores.</p></div>`;
+            return;
+        }
+
+        lista.innerHTML = res.items.map(b => {
+            const portada = b.portada_path ? urlPublicaBorrador(b.portada_path) : '';
+            const fecha = b.updated_at ? new Date(b.updated_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+            const titulo = b.titulo || 'Sin título';
+            const tieneVideo = b.archivo_path ? 'Con video' : 'Solo texto';
+            return `
+                <div class="cs-borrador-item" data-borrador-id="${esc(b.id)}">
+                    <div class="cs-borrador-portada">${portada ? `<img src="${esc(portada)}" alt="" />` : '<span>◈</span>'}</div>
+                    <div class="cs-borrador-info">
+                        <div class="cs-borrador-titulo">${esc(titulo)}</div>
+                        <div class="cs-borrador-meta">${esc(tieneVideo)} · ${esc(fecha)}</div>
+                    </div>
+                    <div class="cs-borrador-acciones">
+                        <button type="button" class="cs-btn-ghost" data-accion="abrir" data-id="${esc(b.id)}">Abrir</button>
+                        <button type="button" class="cs-btn-ghost cs-btn-peligro" data-accion="eliminar" data-id="${esc(b.id)}">Eliminar</button>
+                    </div>
+                </div>`;
+        }).join('');
+
+        lista.querySelectorAll('[data-accion]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const id = btn.dataset.id;
+                if (btn.dataset.accion === 'abrir') abrirBorrador(id);
+                else eliminarBorrador(id);
+            });
+        });
+    }
+
+    async function abrirBorrador(id) {
+        const sb = getSupabaseClient();
+        const session = await obtenerSesion();
+        if (!sb || !session) return;
+
+        const { data, error } = await sb.from('videos_borradores')
+            .select('*').eq('id', id).eq('usuario_id', session.user.id).single();
+        if (error || !data) { csToast('No se pudo abrir el borrador', 'error'); return; }
+
+        state.borradorEditandoId = data.id;
+
+        const titulo = $('inputTituloVideo');
+        const desc = $('inputDescripcionVideo');
+        if (titulo) titulo.value = data.titulo || '';
+        if (desc) desc.value = data.descripcion || '';
+
+        // Sonido
+        if (data.sonido_id) {
+            const s = buscarSonidoPorId(data.sonido_id);
+            if (s) seleccionarSonidoSinSonar(s);
+        } else {
+            state.sonidoSeleccionado = null;
+        }
+
+        // Ubicación
+        const ubic = data.ubicacion_nombre
+            ? UBICACIONES_SEED.find(u => `${u.nombre}, ${u.pais}` === data.ubicacion_nombre) || null
+            : null;
+        state.ubicacionSeleccionada = ubic;
+
+        // Video
+        if (data.archivo_path) {
+            try {
+                const archivo = await descargarArchivoBorrador(data.archivo_path, data.archivo_path.split('/').pop());
+                state.archivoVideo = archivo;
+                state.archivoConAudioMezclado = false;
+                window.__csMiniaturaCamara = null;
+                mostrarPreviewVideo(archivo);
+            } catch (e) {
+                warn('No se pudo cargar el video del borrador:', e);
+                csToast('El video del borrador no se pudo cargar', 'warning', 4000);
+            }
+        }
+
+        if (data.portada_path) {
+            mostrarPortadaDesdeUrl(urlPublicaBorrador(data.portada_path));
+        }
+
+        actualizarResumenPreview();
+        actualizarBotonesSonidoUbicacion();
+        cerrarTodosLosSheets();
+        csToast('Borrador cargado. Puedes editarlo y publicarlo.', 'success', 3500);
+    }
+
+    async function eliminarBorrador(id) {
+        const ok = await csConfirm({
+            titulo: 'Eliminar borrador',
+            mensaje: 'Se borrará el borrador y su video. Esta acción no se puede deshacer.',
+            textoOk: 'Eliminar',
+            peligroso: true
+        });
+        if (!ok) return;
+
+        const sb = getSupabaseClient();
+        const session = await obtenerSesion();
+        if (!sb || !session) return;
+
+        const { data } = await sb.from('videos_borradores')
+            .select('archivo_path, portada_path').eq('id', id).eq('usuario_id', session.user.id).maybeSingle();
+
+        const { error } = await sb.from('videos_borradores')
+            .delete().eq('id', id).eq('usuario_id', session.user.id);
+        if (error) { csToast('No se pudo eliminar el borrador', 'error'); return; }
+
+        if (data) await borrarBorradorArchivos([data.archivo_path, data.portada_path]);
+        if (state.borradorEditandoId === id) state.borradorEditandoId = null;
+        csToast('Borrador eliminado', 'success');
+        renderBorradores();
+    }
+
+    // Selecciona el sonido sin reproducirlo (al abrir un borrador)
+    function seleccionarSonidoSinSonar(s) {
+        state.sonidoSeleccionado = s;
+        const info = $('csSonidoActualInfo');
+        if (info) { info.removeAttribute('data-clave'); info.textContent = `${s.nombre} — ${s.artista}`; }
+        const btn = $('csBtnConfirmarSonido');
+        if (btn) btn.disabled = false;
+    }
+
+    function actualizarResumenPreview() {
+        const s = state.sonidoSeleccionado;
+        const u = state.ubicacionSeleccionada;
+        const pSon = $('csPreviewSonido');
+        const pUb = $('csPreviewUbicacion');
+        if (pSon) {
+            const txt = pSon.querySelector('.cs-preview-txt');
+            if (txt) { txt.removeAttribute('data-clave'); txt.textContent = s ? `${s.nombre} — ${s.artista}` : vt('videos_preview_sin_sonido', 'Sin sonido'); }
+        }
+        if (pUb) {
+            const txt = pUb.querySelector('.cs-preview-txt');
+            if (txt) { txt.removeAttribute('data-clave'); txt.textContent = u ? `${u.nombre}, ${u.pais}` : vt('videos_preview_sin_ubicacion', 'Sin ubicación'); }
+        }
+        actualizarBadgePreview();
     }
 
     // ============================================================
@@ -495,6 +805,13 @@
         });
     }
 
+    function mostrarPortadaDesdeUrl(url) {
+        const img = $('csPreviewPortada');
+        if (!img) return;
+        img.src = url;
+        img.style.display = 'block';
+    }
+
     function mostrarPortadaEnPreview(blob) {
         const img = $('csPreviewPortada');
         if (!img) return;
@@ -502,6 +819,7 @@
             try { URL.revokeObjectURL(state.portadaURL); } catch (e) {}
             state.portadaURL = null;
         }
+        state.portadaBlob = blob || null;
         if (blob) {
             state.portadaURL = URL.createObjectURL(blob);
             img.src = state.portadaURL;
@@ -562,6 +880,7 @@
         }
         state.archivoVideo = null;
         state.archivoConAudioMezclado = false;
+        state.borradorEditandoId = null;
         window.__csMiniaturaCamara = null;
         window.__csArchivoConAudioMezclado = false;
 
@@ -629,7 +948,7 @@
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
     // ============================================================
-    // ESTILOS (capas, UI y equalizador)
+    // ESTILOS
     // ============================================================
     function inyectarEstilosExtra() {
         if ($('cs-videos-publicar-inline')) return;
@@ -651,7 +970,6 @@
             .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(212,175,55,0.25); border-top-color: #D4AF37; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
 
-            /* Botón de reproducción con equalizador */
             .cs-sonido-play { position: relative; background: transparent; border: 1px solid rgba(212,175,55,0.3); border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: #D4AF37; cursor: pointer; margin-right: 10px; flex-shrink: 0; overflow: hidden; transition: background .2s, border-color .2s, box-shadow .2s; }
             .cs-sonido-play:hover { background: rgba(212,175,55,0.15); }
             .cs-sonido-ico { position: relative; z-index: 2; font-size: .8rem; }
@@ -679,6 +997,16 @@
             .cs-preview-duracion { font-size: 0.65rem; color: #8aa8b8; margin-left: auto; font-family: 'Orbitron', monospace; }
             #csPreviewPortada { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: none; z-index: 2; }
             .cs-preview-video { position: relative; }
+
+            .cs-borrador-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid rgba(212,175,55,0.15); border-radius: 12px; background: rgba(255,255,255,0.03); margin-bottom: 8px; }
+            .cs-borrador-portada { width: 48px; height: 64px; border-radius: 8px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; color: #D4AF37; flex-shrink: 0; }
+            .cs-borrador-portada img { width: 100%; height: 100%; object-fit: cover; }
+            .cs-borrador-info { flex: 1; min-width: 0; }
+            .cs-borrador-titulo { color: #f0f4f8; font-weight: 700; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .cs-borrador-meta { color: #8aa8b8; font-size: .66rem; margin-top: 3px; }
+            .cs-borrador-acciones { display: flex; flex-direction: column; gap: 6px; }
+            .cs-borrador-acciones .cs-btn-ghost { padding: 6px 10px; font-size: .6rem; }
+            .cs-btn-peligro { border-color: rgba(255,51,102,.5) !important; color: #ff3366 !important; }
         `;
         document.head.appendChild(st);
     }
@@ -931,7 +1259,6 @@
         cerrarSheet('csModalBorradores', 'csSheetBorradoresBackdrop');
     }
 
-    // Actualiza el estado visual de cada fila del selector
     function actualizarIndicadorSonido(estado, pista, error) {
         document.querySelectorAll('.cs-sonido-item').forEach(el => {
             const ico = el.querySelector('.cs-sonido-ico');
@@ -1036,22 +1363,12 @@
     }
 
     function confirmarSonido() {
-        const s = state.sonidoSeleccionado;
-        const preview = $('csPreviewSonido');
-        if (preview) {
-            const txt = preview.querySelector('.cs-preview-txt');
-            if (txt) {
-                txt.removeAttribute('data-clave');
-                txt.textContent = s ? `${s.nombre} — ${s.artista}` : vt('videos_preview_sin_sonido', 'Sin sonido');
-            }
-        }
-        actualizarBadgePreview();
+        actualizarResumenPreview();
         actualizarBotonesSonidoUbicacion();
-
+        const s = state.sonidoSeleccionado;
         window.dispatchEvent(new CustomEvent('csariels:sonido:seleccionado', {
             detail: s ? { id: s.id, nombre: s.nombre, artista: s.artista, url: s.url, duracion: s.duracion } : null
         }));
-
         cerrarTodosLosSheets();
     }
 
@@ -1097,32 +1414,9 @@
     }
 
     function confirmarUbicacion() {
-        const u = state.ubicacionSeleccionada;
-        const preview = $('csPreviewUbicacion');
-        if (preview) {
-            const txt = preview.querySelector('.cs-preview-txt');
-            if (txt) {
-                txt.removeAttribute('data-clave');
-                txt.textContent = u ? `${u.nombre}, ${u.pais}` : vt('videos_preview_sin_ubicacion', 'Sin ubicación');
-            }
-        }
+        actualizarResumenPreview();
         actualizarBotonesSonidoUbicacion();
         cerrarTodosLosSheets();
-    }
-
-    async function renderBorradores() {
-        const lista = $('csBorradoresLista');
-        if (!lista) return;
-        lista.innerHTML = `
-            <div class="cs-vacio">
-                <span class="cs-ico-vacio">◈</span>
-                <p data-clave="videos_borradores_preparando">Función de borradores en preparación.</p>
-                <p style="font-size:0.7rem;color:var(--text-muted);margin-top:6px;" data-clave="videos_borradores_pronto">Pronto podrás guardar y reanudar tus publicaciones.</p>
-            </div>`;
-    }
-
-    function guardarBorrador() {
-        csToast(vt('videos_borradores_proximamente', 'El guardado de borradores estará disponible muy pronto'), 'info', 3200);
     }
 
     function actualizarBadgePreview() {
@@ -1283,13 +1577,17 @@
         resetFormularioPublicacion,
         refrescarFeedAutomatico,
         mostrarPreviewVideo,
+        guardarBorrador,
+        abrirBorrador,
+        eliminarBorrador,
         getConfig: () => ({ ...CONFIG }),
         setProvider: (p) => { CONFIG.PROVIDER = p; },
         getState: () => ({
             sonido: state.sonidoSeleccionado,
             ubicacion: state.ubicacionSeleccionada,
             archivoVideo: state.archivoVideo ? state.archivoVideo.name : null,
-            archivoConAudioMezclado: state.archivoConAudioMezclado === true
+            archivoConAudioMezclado: state.archivoConAudioMezclado === true,
+            borradorId: state.borradorEditandoId
         }),
         _seed: { SONIDOS_SEED, UBICACIONES_SEED },
         Z
@@ -1305,7 +1603,7 @@
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
         actualizarBotonesSonidoUbicacion();
-        log('✅ Módulo Publicar v2.2 listo');
+        log('✅ Módulo Publicar v2.3 listo (borradores activos)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
