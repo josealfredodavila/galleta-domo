@@ -1,15 +1,13 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.4
+   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.5
    ================================================================
-   Cambios respecto a v5.3:
-   - El sonido se elige antes de grabar. Al presionar grabar, la pista
-     se reproduce y se mezcla con el micrófono (Web Audio API) desde el
-     primer fotograma. Sin pista elegida, se graba solo con micrófono.
-   - Durante la grabación el selector de sonido queda fijo: se muestra
-     un aviso breve que indica que la pista ya está fijada. No se
-     bloquea la cámara ni se muestra error.
-   - Se conserva render, filtros FaceMesh, modos 15/60 s, temporizador,
-     voltear y API pública.
+   Cambios respecto a v5.4:
+   - FaceMesh aislado: la cámara carga su propia copia de MediaPipe y
+     no reutiliza window.FaceMesh de otros scripts (p. ej. Marquinhos),
+     que puede ser de otra versión y dejar la detección sin resultados.
+   - Marquinhos y cualquier mascota o capa flotante se ocultan mientras
+     la cámara está abierta y se restauran al cerrarla.
+   - Se mantienen filtros, sonido, modos 15/60 s, grabación y API pública.
    ================================================================ */
 
 (function () {
@@ -36,7 +34,8 @@
         MEDIAPIPE_VERSIONS: ['0.4.1675469240', '0.4.1633559619'],
         SCRIPT_TIMEOUT_MS: 20000,
         PISTA_TIMEOUT_MS: 8000,
-        ESPERA_DIMENSIONES_MS: 6000
+        ESPERA_DIMENSIONES_MS: 6000,
+        OCULTAR_INTERVALO_MS: 400
     };
 
     var ASSETS_BASE =
@@ -72,11 +71,16 @@
         alien: { partes: [{ src: ASSETS_BASE + '/antenas-alien-1.png', scale: 1.1, offsetX: 0, offsetY: -0.27, ancla: 'ojos' }] }
     };
 
-    var SELECTORES_MARQUINHOS = [
+    // Selectores de la mascota y de cualquier widget flotante ajeno a la cámara
+    var SELECTORES_EXTERNOS = [
         '#marquinhos', '.marquinhos', '.marquinhos-robot',
-        '[class*="marquinhos"]', '[id*="marquinhos"]',
-        '[class*="cs-robot"]', '[id*="cs-robot"]'
+        '[id*="marquinhos" i]', '[class*="marquinhos" i]',
+        '[id*="mascota" i]', '[class*="mascota" i]',
+        '[id*="cs-robot" i]', '[class*="cs-robot" i]',
+        '[id*="pet" i][class*="pet" i]', '[data-mascota]'
     ];
+
+    var FACE_STASH_KEY = '__csFaceMeshCtor';
 
     var state = {
         stream: null, faceMesh: null, faceMeshListo: false, video: null, canvas: null, ctx: null,
@@ -84,7 +88,7 @@
         abriendo: false, descartar: false, enviando: false, filtroActual: 'ninguno',
         renderFrameId: null, detectionFrameId: null, lastDetectionTime: 0,
         lastResults: null, facingMode: 'user', timerInterval: null,
-        segundosGrabados: 0, imagenes: {}, ocultos: [],
+        segundosGrabados: 0, imagenes: {}, externosOcultos: [], ocultarTimer: null,
         duracionActual: CONFIG.DURACION_DEFAULT,
         cuentaRegresivaActiva: false, cuentaRegresivaTimer: null,
         audioCtx: null, audioDestino: null, audioPista: null,
@@ -156,16 +160,34 @@
         });
     }
 
-    async function cargarMediaPipe() {
-        if (typeof window.FaceMesh === 'function') return CONFIG.MEDIAPIPE_VERSIONS[0];
+    // ============================================================
+    // MEDIAPIPE AISLADO
+    // Carga FaceMesh sin usar window.FaceMesh de otros scripts y
+    // guarda el constructor para reutilizarlo. Si otro script ya lo
+    // cargó con otra versión, no se mezcla con esa copia.
+    // ============================================================
+    async function obtenerFaceMeshCtor() {
+        if (window[FACE_STASH_KEY]) return window[FACE_STASH_KEY];
+
         var ultimoError = null;
         for (var i = 0; i < CONFIG.MEDIAPIPE_VERSIONS.length; i++) {
             var version = CONFIG.MEDIAPIPE_VERSIONS[i];
+            var previo = window.FaceMesh;
             try {
+                try { delete window.FaceMesh; } catch (e) { window.FaceMesh = undefined; }
                 await cargarScript(CONFIG.MEDIAPIPE_CDN + '@' + version + '/face_mesh.js');
-                if (typeof window.FaceMesh === 'function') return version;
+                var ctor = window.FaceMesh;
+                if (typeof ctor === 'function') {
+                    window[FACE_STASH_KEY] = { ctor: ctor, version: version };
+                    return window[FACE_STASH_KEY];
+                }
                 ultimoError = new Error('MediaPipe no expuso FaceMesh en la versión ' + version);
-            } catch (error) { ultimoError = error; }
+            } catch (error) {
+                ultimoError = error;
+            } finally {
+                // Devuelve el global original a quien lo tuviera antes
+                window.FaceMesh = previo;
+            }
         }
         throw ultimoError || new Error('MediaPipe no disponible.');
     }
@@ -173,9 +195,9 @@
     async function iniciarFaceMesh() {
         if (state.faceMeshListo) return true;
         try {
-            var version = await cargarMediaPipe();
-            var faceMesh = new window.FaceMesh({
-                locateFile: function (archivo) { return CONFIG.MEDIAPIPE_CDN + '@' + version + '/' + archivo; }
+            var stash = await obtenerFaceMeshCtor();
+            var faceMesh = new stash.ctor({
+                locateFile: function (archivo) { return CONFIG.MEDIAPIPE_CDN + '@' + stash.version + '/' + archivo; }
             });
             faceMesh.setOptions({ maxNumFaces: 1, refineLandmarks: false, minDetectionConfidence: 0.5, minTrackingConfidence: 0.5 });
             faceMesh.onResults(function (resultados) { state.lastResults = resultados; });
@@ -276,30 +298,71 @@
         });
     }
 
-    function ocultarMarquinhos() {
-        state.ocultos = [];
-        var elementos = new Set();
-        SELECTORES_MARQUINHOS.forEach(function (selector) {
+    // ============================================================
+    // OCULTAR MARQUINHOS Y WIDGETS EXTERNOS MIENTRAS LA CÁMARA ESTÁ ABIERTA
+    // ============================================================
+    function esElementoDeCamara(el) {
+        if (!el) return true;
+        if (el.closest && el.closest('#csModalCamara')) return true;
+        if (el.closest && el.closest('.cs-sheet, .cs-sheet-backdrop, .cs-toast, .cs-confirm-overlay')) return true;
+        if (el.id && /^cs(Modal|Sheet)/.test(el.id)) return true;
+        if (el.tagName === 'SCRIPT' || el.tagName === 'STYLE' || el.tagName === 'LINK') return true;
+        return false;
+    }
+
+    function ocultarExternos() {
+        var candidatos = new Set();
+
+        SELECTORES_EXTERNOS.forEach(function (selector) {
             try {
-                document.querySelectorAll(selector).forEach(function (el) {
-                    if (el.closest('#csModalCamara')) return; elementos.add(el);
-                });
-            } catch (error) {}
+                document.querySelectorAll(selector).forEach(function (el) { candidatos.add(el); });
+            } catch (e) {}
         });
-        elementos.forEach(function (el) {
-            state.ocultos.push({ el: el, prev: el.style.getPropertyValue('display'), prioridad: el.style.getPropertyPriority('display') });
+
+        // Capas flotantes (fixed/absolute) de nivel superior que queden por encima de la cámara
+        Array.prototype.forEach.call(document.body.children, function (el) {
+            try {
+                var estilo = getComputedStyle(el);
+                var z = parseInt(estilo.zIndex, 10);
+                if ((estilo.position === 'fixed' || estilo.position === 'absolute') && !isNaN(z) && z >= Z.CAMARA) {
+                    candidatos.add(el);
+                }
+            } catch (e) {}
+        });
+
+        candidatos.forEach(function (el) {
+            if (esElementoDeCamara(el)) return;
+            if (state.externosOcultos.some(function (r) { return r.el === el; })) return;
+            state.externosOcultos.push({
+                el: el,
+                prev: el.style.getPropertyValue('display'),
+                prioridad: el.style.getPropertyPriority('display')
+            });
             el.style.setProperty('display', 'none', 'important');
         });
     }
 
-    function restaurarMarquinhos() {
-        state.ocultos.forEach(function (registro) {
+    function restaurarExternos() {
+        state.externosOcultos.forEach(function (r) {
             try {
-                if (registro.prev) registro.el.style.setProperty('display', registro.prev, registro.prioridad);
-                else registro.el.style.removeProperty('display');
-            } catch (error) {}
+                if (r.prev) r.el.style.setProperty('display', r.prev, r.prioridad);
+                else r.el.style.removeProperty('display');
+            } catch (e) {}
         });
-        state.ocultos = [];
+        state.externosOcultos = [];
+    }
+
+    function iniciarOcultadoExterno() {
+        document.body.classList.add('cs-camara-abierta');
+        ocultarExternos();
+        if (state.ocultarTimer) clearInterval(state.ocultarTimer);
+        state.ocultarTimer = setInterval(ocultarExternos, CONFIG.OCULTAR_INTERVALO_MS);
+    }
+
+    function detenerOcultadoExterno() {
+        if (state.ocultarTimer) { clearInterval(state.ocultarTimer); state.ocultarTimer = null; }
+        document.body.classList.remove('cs-camara-abierta');
+        restaurarExternos();
     }
 
     // ============================================================
@@ -366,6 +429,8 @@
                 #csCamaraVideo { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; pointer-events: none; z-index: 0; object-fit: cover; }
                 #csCamaraCanvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; z-index: 1; }
 
+                body.cs-camara-abierta #csModalCamara ~ * { }
+
                 .cs-camara-top, .cs-camara-side, .cs-camara-filtros, .cs-camara-controles, .cs-camara-icon-btn, .cs-camara-sound, .cs-camara-side-btn, .cs-camara-modo, .cs-camara-record-btn, .cs-filtro-btn { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
                 .cs-camara-top { position: absolute; top: 0; left: 0; right: 0; padding: max(12px, env(safe-area-inset-top)) 14px 10px; display: flex; align-items: center; gap: 10px; z-index: 30; background: linear-gradient(to bottom, rgba(0,0,0,.55), transparent); pointer-events: auto; }
                 .cs-camara-icon-btn { width: 38px; height: 38px; border-radius: 50%; border: none; color: #fff; font-size: 1.05rem; background: transparent; cursor: pointer; flex-shrink: 0; }
@@ -408,6 +473,12 @@
                 .cs-camara-record-btn.grabando { border-color: #ff2d55; background: #fff; }
                 .cs-camara-record-btn.grabando .cs-camara-record-inner { width: 28px; height: 28px; border-radius: 6px; background: #ff2d55; }
                 .cs-camara-record-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+                /* Mientras la cámara está abierta, ninguna mascota puede aparecer encima */
+                body.cs-camara-abierta [id*="marquinhos" i]:not(#csModalCamara *),
+                body.cs-camara-abierta [class*="marquinhos" i]:not(#csModalCamara *),
+                body.cs-camara-abierta [class*="cs-robot" i]:not(#csModalCamara *),
+                body.cs-camara-abierta [data-mascota]:not(#csModalCamara *) { display: none !important; }
             `;
             document.head.appendChild(style);
         }
@@ -515,8 +586,6 @@
         });
     }
 
-    // Abre el selector en cualquier momento antes de grabar. Durante la
-    // grabación la pista ya está fijada en la mezcla, así que se avisa.
     function abrirSelectorSonido(evento) {
         if (evento) { evento.preventDefault(); evento.stopPropagation(); }
         if (state.grabando || state.cuentaRegresivaActiva) {
@@ -544,6 +613,9 @@
         actualizarEtiquetaSonido();
     }
 
+    // ============================================================
+    // DETECCIÓN FACIAL · bucle independiente del render
+    // ============================================================
     function iniciarLoopDeteccion() {
         var intervalo = 1000 / CONFIG.DETECTION_FPS;
         async function detectar() {
@@ -562,6 +634,9 @@
         state.detectionFrameId = requestAnimationFrame(detectar);
     }
 
+    // ============================================================
+    // RENDER · video + filtro sobre el canvas (escala cover)
+    // ============================================================
     function calcularCover(video, canvas) {
         var vw = video.videoWidth, vh = video.videoHeight;
         var cw = canvas.width, ch = canvas.height;
@@ -781,7 +856,6 @@
         var canvasStream = state.canvas.captureStream(CONFIG.TARGET_FPS);
         state.archivoConAudioMezclado = false;
 
-        // La pista se mezcla desde el primer fotograma. Si no hay pista, solo micrófono.
         var mezcla = await prepararMezclaAudio();
         if (mezcla) {
             if (state.audioPistaUrl) {
@@ -864,12 +938,15 @@
         if (document.hidden && state.grabando) detenerGrabacion();
     }
 
+    // ============================================================
+    // ABRIR / CERRAR
+    // ============================================================
     async function abrirCamara() {
         if (state.abriendo || state.iniciada) return;
         state.abriendo = true;
         inyectarModalCamara();
         $('csModalCamara').classList.add('show');
-        ocultarMarquinhos();
+        iniciarOcultadoExterno();
         mostrarCargando(true, 'Iniciando cámara…');
         try {
             state.video = $('csCamaraVideo');
@@ -924,12 +1001,12 @@
         if (state.detectionFrameId) { cancelAnimationFrame(state.detectionFrameId); state.detectionFrameId = null; }
         detenerStream(); detenerTimer();
         liberarMezclaAudio();
+        detenerOcultadoExterno();
         if ($('csBtnRecord')) $('csBtnRecord').classList.remove('grabando');
         if ($('csRecIndicator')) $('csRecIndicator').classList.remove('active');
         if ($('csCamaraTimer')) $('csCamaraTimer').classList.remove('active');
         if ($('csModalCamara')) $('csModalCamara').classList.remove('show');
         mostrarCargando(false);
-        restaurarMarquinhos();
         emitirEstado('cerrada');
     }
 
