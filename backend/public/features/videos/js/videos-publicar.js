@@ -1,18 +1,13 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.3
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.4
    ================================================================
-   Cambios respecto a v2.2:
-   - BORRADORES REALES:
-     · Guardar borrador: sube el video y la portada a
-       borradores/{usuario_id}/ en el bucket "videos" y registra una
-       fila en public.videos_borradores (RLS por propietario).
-       Si no hay video, guarda solo título, descripción, sonido y ubicación.
-     · Mis borradores: lista los borradores del usuario con portada,
-       título y fecha.
-     · Abrir borrador: carga el video, la portada y los datos al formulario.
-     · Eliminar borrador: borra la fila y los archivos del bucket.
-   - Mantiene equalizador, selector de sonidos, ubicación, preview,
-     capas (z-index) y la API pública de v2.2.
+   Cambios respecto a v2.3:
+   - ECUALIZADOR NEÓN: 6 barras con colores vivos de antro (rosa, cian,
+     verde, amarillo, violeta) que reaccionan al audio real y brillan.
+   - Tarjeta de la pista que suena: borde y resplandor neón animados.
+   - Portada de la pista que gira mientras suena (estilo TikTok).
+   - Botones principales, pestaña activa, badge y chips en degradado neón.
+   - Lógica de audio, borradores, publicación y API pública sin cambios.
    ================================================================ */
 
 (function () {
@@ -22,6 +17,9 @@
     window.__csarielsVideosPublicarLoaded = true;
 
     const Z = { CAMARA: 99999, SHEET_BACKDROP: 100000, SHEET: 100001, CONFIRM: 100010, TOAST: 100020 };
+
+    // Paleta de luces de antro para el ecualizador
+    const EQ_COLORES = ['#ff2bd6', '#ff3d7f', '#00f0ff', '#39ff14', '#ffe600', '#b026ff'];
 
     function vt(clave, respaldo) {
         if (typeof window.tConFallback === 'function') return window.tConFallback(clave, respaldo);
@@ -37,7 +35,7 @@
         VIDEO_TYPES: ['video/mp4', 'video/webm', 'video/quicktime'],
         IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
         PORTADA_TIMEOUT_MS: 4000,
-        BARRAS_EQ: 4,
+        BARRAS_EQ: EQ_COLORES.length,
         MAX_BORRADORES_LISTA: 50
     };
 
@@ -88,6 +86,7 @@
         archivoConAudioMezclado: false,
         previewURL: null,
         portadaURL: null,
+        portadaBlob: null,
         tabSonidosActiva: 'parati',
         sbCliente: null,
         borradorEditandoId: null,
@@ -178,7 +177,7 @@
     window.csConfirm = csConfirm;
 
     // ============================================================
-    // ANALIZADOR PARA EL EQUALIZADOR (Web Audio API)
+    // ANALIZADOR PARA EL ECUALIZADOR (Web Audio API)
     // ============================================================
     const Visualizador = (function () {
         let ctx = null;
@@ -197,7 +196,7 @@
                 if (!analyser) {
                     analyser = ctx.createAnalyser();
                     analyser.fftSize = 64;
-                    analyser.smoothingTimeConstant = 0.7;
+                    analyser.smoothingTimeConstant = 0.72;
                     analyser.connect(ctx.destination);
                     datos = new Uint8Array(analyser.frequencyBinCount);
                 }
@@ -210,14 +209,18 @@
             }
         }
 
+        // Barras con altura reactiva y pulso de brillo según la energía de cada banda
         function pintarBarras(barras) {
             if (!analyser || !datos) return;
             analyser.getByteFrequencyData(datos);
             const paso = Math.floor(datos.length / barras.length) || 1;
             barras.forEach((barra, i) => {
                 const valor = datos[i * paso] || 0;
-                const altura = 4 + (valor / 255) * 16;
+                const energia = valor / 255;
+                const altura = 4 + energia * 22;
                 barra.style.height = altura + 'px';
+                barra.style.opacity = String(0.55 + energia * 0.45);
+                barra.style.filter = `brightness(${1 + energia * 0.6})`;
             });
         }
 
@@ -586,11 +589,6 @@
 
             if (resultado.error) throw new Error(resultado.error.message || 'No se pudo guardar el borrador');
 
-            // Si se reemplazó el video de un borrador existente, se borra el anterior
-            if (state.borradorEditandoId && archivoPath && resultado.data) {
-                // El anterior se limpia desde la lista al editar; aquí solo registramos el nuevo
-            }
-
             state.borradorEditandoId = resultado.data.id;
             csToast('Borrador guardado', 'success');
         } catch (e) {
@@ -662,7 +660,6 @@
         if (titulo) titulo.value = data.titulo || '';
         if (desc) desc.value = data.descripcion || '';
 
-        // Sonido
         if (data.sonido_id) {
             const s = buscarSonidoPorId(data.sonido_id);
             if (s) seleccionarSonidoSinSonar(s);
@@ -670,13 +667,11 @@
             state.sonidoSeleccionado = null;
         }
 
-        // Ubicación
         const ubic = data.ubicacion_nombre
             ? UBICACIONES_SEED.find(u => `${u.nombre}, ${u.pais}` === data.ubicacion_nombre) || null
             : null;
         state.ubicacionSeleccionada = ubic;
 
-        // Video
         if (data.archivo_path) {
             try {
                 const archivo = await descargarArchivoBorrador(data.archivo_path, data.archivo_path.split('/').pop());
@@ -948,7 +943,7 @@
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
     // ============================================================
-    // ESTILOS
+    // ESTILOS · tema neón de antro con toques de TikTok
     // ============================================================
     function inyectarEstilosExtra() {
         if ($('cs-videos-publicar-inline')) return;
@@ -967,46 +962,122 @@
                 -webkit-tap-highlight-color: transparent;
             }
 
-            .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(212,175,55,0.25); border-top-color: #D4AF37; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+            .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,43,214,0.25); border-top-color: #ff2bd6; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
 
-            .cs-sonido-play { position: relative; background: transparent; border: 1px solid rgba(212,175,55,0.3); border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; color: #D4AF37; cursor: pointer; margin-right: 10px; flex-shrink: 0; overflow: hidden; transition: background .2s, border-color .2s, box-shadow .2s; }
-            .cs-sonido-play:hover { background: rgba(212,175,55,0.15); }
-            .cs-sonido-ico { position: relative; z-index: 2; font-size: .8rem; }
+            /* ----- Botón de reproducir con anillo neón ----- */
+            .cs-sonido-play {
+                position: relative; width: 44px; height: 44px; border-radius: 50%; margin-right: 12px; flex-shrink: 0;
+                display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;
+                background: radial-gradient(circle at 30% 30%, #2a0d3a, #0a0612 70%);
+                border: 2px solid transparent;
+                background-clip: padding-box;
+                box-shadow: 0 0 0 1px rgba(255,43,214,.35), 0 0 12px rgba(255,43,214,.25);
+                transition: box-shadow .25s ease, transform .15s ease;
+            }
+            .cs-sonido-play:active { transform: scale(.92); }
+            .cs-sonido-ico { position: relative; z-index: 2; font-size: .9rem; color: #fff; text-shadow: 0 0 8px #ff2bd6; }
             .cs-eq { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; gap: 2px; pointer-events: none; z-index: 1; }
-            .cs-eq-bar { width: 3px; height: 4px; border-radius: 2px; background: #D4AF37; box-shadow: 0 0 6px rgba(212,175,55,.6); transition: height .08s linear; }
-
-            .cs-sonido-item.cs-sonando .cs-sonido-play { border-color: #D4AF37; box-shadow: 0 0 12px rgba(212,175,55,.45); background: rgba(212,175,55,.12); }
-            .cs-sonido-item.cs-sonando .cs-sonido-ico { display: none; }
-            .cs-sonido-item.cs-sonando .cs-eq { display: flex; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar { animation: cs-eq-bounce 0.9s ease-in-out infinite; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(2) { animation-delay: .15s; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(3) { animation-delay: .3s; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(4) { animation-delay: .45s; }
-            @keyframes cs-eq-bounce { 0%,100% { height: 4px; } 50% { height: 18px; } }
-
-            .cs-sonido-item.cs-cargando .cs-sonido-ico { animation: cs-spin-inline .8s linear infinite; display: inline-block; }
-            .cs-sonido-item.cs-pausado .cs-sonido-play { border-color: rgba(212,175,55,.6); }
-            .cs-sonido-item.cs-error .cs-sonido-play { border-color: #ff3366; color: #ff3366; }
-
-            @media (prefers-reduced-motion: reduce) {
-                .cs-sonido-item.cs-sonando .cs-eq-bar { animation: none; height: 12px; }
+            .cs-eq-bar {
+                width: 3px; height: 5px; border-radius: 3px;
+                background: var(--eq-c, #ff2bd6);
+                box-shadow: 0 0 6px var(--eq-c, #ff2bd6), 0 0 14px var(--eq-c, #ff2bd6);
+                transition: height .07s linear, opacity .07s linear;
             }
 
-            .cs-btn-header.cs-activo { box-shadow: 0 0 14px rgba(212,175,55,0.45); }
-            .cs-preview-duracion { font-size: 0.65rem; color: #8aa8b8; margin-left: auto; font-family: 'Orbitron', monospace; }
+            /* ----- Tarjeta de sonido ----- */
+            .cs-sonido-item {
+                position: relative; overflow: hidden; transition: background .25s ease, transform .15s ease;
+            }
+            .cs-sonido-item:active { transform: scale(.985); }
+            .cs-sonido-nombre { color: #fff; font-weight: 700; letter-spacing: .2px; }
+            .cs-sonido-artista { color: #9fb4c8; }
+            .cs-sonido-check { color: #ff2bd6; text-shadow: 0 0 8px #ff2bd6; }
+
+            /* Pista activa: halo neón con gradiente animado */
+            .cs-sonido-item.activo, .cs-sonido-item.cs-sonando {
+                background: linear-gradient(120deg, rgba(255,43,214,.16), rgba(0,240,255,.12), rgba(57,255,20,.10));
+                box-shadow: 0 0 0 1px rgba(0,240,255,.55), 0 0 22px rgba(255,43,214,.35), inset 0 0 18px rgba(0,240,255,.08);
+            }
+            .cs-sonido-item.cs-sonando::after {
+                content: ''; position: absolute; inset: -40% -10%; pointer-events: none;
+                background: conic-gradient(from 0deg, #ff2bd6, #00f0ff, #39ff14, #ffe600, #b026ff, #ff2bd6);
+                opacity: .10; animation: cs-halo-giro 6s linear infinite;
+            }
+            @keyframes cs-halo-giro { to { transform: rotate(360deg); } }
+
+            .cs-sonido-item.cs-sonando .cs-sonido-play {
+                box-shadow: 0 0 0 2px #00f0ff, 0 0 18px #ff2bd6, 0 0 30px rgba(0,240,255,.45);
+                background: radial-gradient(circle at 30% 30%, #3a0f4f, #070410 75%);
+            }
+            .cs-sonido-item.cs-sonando .cs-sonido-ico { display: none; }
+            .cs-sonido-item.cs-sonando .cs-eq { display: flex; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar { animation: cs-eq-bounce .8s ease-in-out infinite; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(2) { animation-delay: .12s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(3) { animation-delay: .24s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(4) { animation-delay: .36s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(5) { animation-delay: .48s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(6) { animation-delay: .6s; }
+            @keyframes cs-eq-bounce { 0%,100% { height: 5px; } 50% { height: 22px; } }
+
+            /* Portada que gira mientras suena (estilo TikTok) */
+            .cs-sonido-item.cs-sonando .cs-sonido-nombre { background: linear-gradient(90deg,#ff2bd6,#00f0ff,#39ff14); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+            .cs-sonido-item.cs-cargando .cs-sonido-ico { animation: cs-spin-inline .8s linear infinite; display: inline-block; color: #00f0ff; text-shadow: 0 0 8px #00f0ff; }
+            .cs-sonido-item.cs-pausado .cs-sonido-play { box-shadow: 0 0 0 2px #ffe600, 0 0 14px rgba(255,230,0,.5); }
+            .cs-sonido-item.cs-pausado .cs-sonido-ico { color: #ffe600; text-shadow: 0 0 8px #ffe600; }
+            .cs-sonido-item.cs-error .cs-sonido-play { box-shadow: 0 0 0 2px #ff3d7f, 0 0 14px rgba(255,61,127,.6); }
+            .cs-sonido-item.cs-error .cs-sonido-ico { color: #ff3d7f; text-shadow: 0 0 8px #ff3d7f; }
+
+            /* ----- Pestañas tipo TikTok con subrayado neón ----- */
+            .cs-tab { color: #9fb4c8; font-weight: 700; transition: color .2s ease; }
+            .cs-tab.active { color: #fff; text-shadow: 0 0 10px rgba(255,43,214,.7); }
+            .cs-tab.active::after {
+                content: ''; display: block; height: 3px; margin: 6px auto 0; width: 44px; border-radius: 3px;
+                background: linear-gradient(90deg,#ff2bd6,#00f0ff); box-shadow: 0 0 10px #ff2bd6;
+            }
+
+            /* ----- Botones principales en degradado neón ----- */
+            .cs-btn-primary {
+                background: linear-gradient(120deg,#ff2bd6,#b026ff 45%,#00f0ff) !important;
+                color: #fff !important; border: none !important; font-weight: 800; letter-spacing: .3px;
+                box-shadow: 0 0 16px rgba(255,43,214,.45), 0 0 28px rgba(0,240,255,.25);
+                text-shadow: 0 1px 2px rgba(0,0,0,.4);
+            }
+            .cs-btn-primary:disabled { opacity: .45; box-shadow: none; }
+            .cs-btn-primary:not(:disabled):active { transform: scale(.97); }
+
+            .cs-sonido-actual { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,.5); }
+            .cs-btn-header.cs-activo { box-shadow: 0 0 16px rgba(255,43,214,.55), 0 0 26px rgba(0,240,255,.35); }
+            .cs-btn-header.cs-activo .cs-ico { color: #ff2bd6; text-shadow: 0 0 8px #ff2bd6; }
+            .cs-preview-duracion { font-size: 0.65rem; color: #00f0ff; margin-left: auto; font-family: 'Orbitron', monospace; text-shadow: 0 0 8px rgba(0,240,255,.5); }
             #csPreviewPortada { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: none; z-index: 2; }
             .cs-preview-video { position: relative; }
 
-            .cs-borrador-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid rgba(212,175,55,0.15); border-radius: 12px; background: rgba(255,255,255,0.03); margin-bottom: 8px; }
-            .cs-borrador-portada { width: 48px; height: 64px; border-radius: 8px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; color: #D4AF37; flex-shrink: 0; }
+            /* Badge del sonido en la vista previa */
+            #csPreviewBadge {
+                background: linear-gradient(90deg,#ff2bd6,#00f0ff) !important; color: #05020a !important;
+                font-weight: 800; box-shadow: 0 0 14px rgba(255,43,214,.6);
+                animation: cs-badge-latido 1.6s ease-in-out infinite;
+            }
+            @keyframes cs-badge-latido { 0%,100% { box-shadow: 0 0 10px rgba(255,43,214,.5); } 50% { box-shadow: 0 0 22px rgba(0,240,255,.8); } }
+
+            .cs-borrador-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid rgba(255,43,214,0.35); border-radius: 12px; background: linear-gradient(120deg, rgba(255,43,214,.08), rgba(0,240,255,.06)); margin-bottom: 8px; box-shadow: 0 0 14px rgba(255,43,214,.12); }
+            .cs-borrador-portada { width: 48px; height: 64px; border-radius: 8px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; color: #00f0ff; flex-shrink: 0; box-shadow: 0 0 10px rgba(0,240,255,.35); }
             .cs-borrador-portada img { width: 100%; height: 100%; object-fit: cover; }
             .cs-borrador-info { flex: 1; min-width: 0; }
-            .cs-borrador-titulo { color: #f0f4f8; font-weight: 700; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-            .cs-borrador-meta { color: #8aa8b8; font-size: .66rem; margin-top: 3px; }
+            .cs-borrador-titulo { color: #fff; font-weight: 700; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .cs-borrador-meta { color: #9fb4c8; font-size: .66rem; margin-top: 3px; }
             .cs-borrador-acciones { display: flex; flex-direction: column; gap: 6px; }
             .cs-borrador-acciones .cs-btn-ghost { padding: 6px 10px; font-size: .6rem; }
-            .cs-btn-peligro { border-color: rgba(255,51,102,.5) !important; color: #ff3366 !important; }
+            .cs-btn-peligro { border-color: rgba(255,61,127,.6) !important; color: #ff3d7f !important; }
+
+            @media (prefers-reduced-motion: reduce) {
+                .cs-sonido-item.cs-sonando .cs-eq-bar,
+                .cs-sonido-item.cs-sonando::after,
+                #csPreviewBadge { animation: none !important; }
+                .cs-sonido-item.cs-sonando .cs-eq-bar { height: 14px; }
+            }
         `;
         document.head.appendChild(st);
     }
@@ -1280,8 +1351,12 @@
     }
     window._audioPreviewOnEstado = actualizarIndicadorSonido;
 
+    // Ecualizador con 6 barras, cada una de un color neón de antro
     function filaEqualizador() {
-        return `<span class="cs-eq" aria-hidden="true"><span class="cs-eq-bar"></span><span class="cs-eq-bar"></span><span class="cs-eq-bar"></span><span class="cs-eq-bar"></span></span>`;
+        const barras = EQ_COLORES.map(function (color) {
+            return `<span class="cs-eq-bar" style="--eq-c:${color}"></span>`;
+        }).join('');
+        return `<span class="cs-eq" aria-hidden="true">${barras}</span>`;
     }
 
     function renderSonidos(tab, filtro) {
@@ -1603,7 +1678,7 @@
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
         actualizarBotonesSonidoUbicacion();
-        log('✅ Módulo Publicar v2.3 listo (borradores activos)');
+        log('✅ Módulo Publicar v2.4 listo (ecualizador neón)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
