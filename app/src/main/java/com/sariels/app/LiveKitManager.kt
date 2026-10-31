@@ -7,73 +7,74 @@ import io.livekit.android.room.Room
 import io.livekit.android.room.RoomOptions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import java.net.HttpURLConnection
 import java.net.URL
-import java.net.URLEncoder
 
 object LiveKitManager {
 
     private const val TAG = "LiveKitManager"
     private const val BACKEND_URL = "https://galleta-domo-production.up.railway.app"
-    private const val LIVEKIT_URL = "wss://csariels-domo-57ujk04t.livekit.cloud"
 
     var room: Room? = null
         private set
 
     private var isConnected = false
 
-    fun getLiveKitUrl(): String = LIVEKIT_URL
+    @Serializable
+    private data class TokenRequest(val streamId: Int, val rol: String)
 
-    suspend fun obtenerToken(roomName: String, identity: String): String {
-        val session = SupabaseProvider.client.auth.currentSessionOrNull()
-            ?: throw IllegalStateException("No hay sesión de Supabase activa")
+    @Serializable
+    private data class TokenResponse(val token: String, val url: String? = null, val canPublish: Boolean = false)
 
-        val encodedRoom = URLEncoder.encode(roomName, "UTF-8")
-        val url = URL("$BACKEND_URL/api/token?room=$encodedRoom&identity=$identity")
+    /**
+     * Pide al servidor el token de LiveKit para una transmisión.
+     * El servidor decide la sala y si el usuario puede publicar.
+     */
+    suspend fun obtenerToken(streamId: Int, rol: String = "streamer"): TokenResponse =
+        withContext(Dispatchers.IO) {
+            val session = SupabaseProvider.client.auth.currentSessionOrNull()
+                ?: throw IllegalStateException("No hay sesión de Supabase activa")
 
-        val connection = url.openConnection() as HttpURLConnection
-        try {
-            connection.requestMethod = "GET"
-            connection.setRequestProperty("Authorization", "Bearer ${session.accessToken}")
-            connection.setRequestProperty("Accept", "application/json")
-            connection.connectTimeout = 15000
-            connection.readTimeout = 15000
+            val body = Json.encodeToString(TokenRequest.serializer(), TokenRequest(streamId, rol))
+            val connection = URL("$BACKEND_URL/api/livekit/token").openConnection() as HttpURLConnection
+            try {
+                connection.requestMethod = "POST"
+                connection.doOutput = true
+                connection.setRequestProperty("Content-Type", "application/json")
+                connection.setRequestProperty("Accept", "application/json")
+                connection.setRequestProperty("Authorization", "Bearer ${session.accessToken}")
+                connection.connectTimeout = 15000
+                connection.readTimeout = 15000
+                connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
 
-            val responseCode = connection.responseCode
-            if (responseCode !in 200..299) {
-                val errorText = connection.errorStream?.bufferedReader()?.use { it.readText() }
-                throw IllegalStateException("Backend LiveKit HTTP $responseCode: ${errorText ?: "sin respuesta"}")
+                val code = connection.responseCode
+                if (code !in 200..299) {
+                    val err = connection.errorStream?.bufferedReader()?.use { it.readText() }
+                    throw IllegalStateException("Token LiveKit HTTP $code: ${err ?: "sin respuesta"}")
+                }
+
+                val respuesta = connection.inputStream.bufferedReader().use { it.readText() }
+                val parsed = Json { ignoreUnknownKeys = true }.decodeFromString(TokenResponse.serializer(), respuesta)
+                if (parsed.token.isBlank()) throw IllegalStateException("El servidor no devolvió un token")
+                if (!parsed.canPublish) throw IllegalStateException("El servidor no autorizó transmitir")
+                parsed
+            } finally {
+                connection.disconnect()
             }
-
-            val response = connection.inputStream.bufferedReader().use { it.readText() }
-            val token = Regex("\"token\"\\s*:\\s*\"([^\"]+)\"").find(response)?.groupValues?.getOrNull(1)
-
-            if (token.isNullOrBlank()) {
-                throw IllegalStateException("El backend no devolvió un token LiveKit válido")
-            }
-
-            return token
-        } finally {
-            connection.disconnect()
-        }
-    }
-
-    suspend fun conectar(context: Context, roomName: String, token: String): Boolean {
-        if (isConnected) {
-            Log.d(TAG, "Ya conectado a LiveKit")
-            return true
         }
 
+    /** Conecta la sala usando la URL que devolvió el servidor. */
+    suspend fun conectar(context: Context, url: String, token: String): Boolean {
+        if (isConnected) return true
         return try {
-            Log.d(TAG, "Conectando a LiveKit: $roomName")
-            val options = RoomOptions.Builder()
-                .autoSubscribe(true)
-                .build()
-
-            room = Room(context, options)
-            room?.connect(LIVEKIT_URL, token)
+            val options = RoomOptions.Builder().autoSubscribe(true).build()
+            val nuevaSala = Room(context, options)
+            nuevaSala.connect(url, token)
+            room = nuevaSala
             isConnected = true
-            Log.d(TAG, "✅ Conectado a LiveKit: $roomName")
+            Log.d(TAG, "Conectado a LiveKit")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Error conectando a LiveKit", e)
@@ -85,11 +86,11 @@ object LiveKitManager {
     fun desconectar() {
         try {
             room?.disconnect()
-            room = null
-            isConnected = false
-            Log.d(TAG, "🔌 Desconectado de LiveKit")
         } catch (e: Exception) {
             Log.e(TAG, "Error desconectando LiveKit", e)
+        } finally {
+            room = null
+            isConnected = false
         }
     }
 }
