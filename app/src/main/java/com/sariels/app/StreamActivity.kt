@@ -10,12 +10,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import com.sariels.app.databinding.ActivityStreamBinding
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.rpc
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-import java.time.Instant
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 class StreamActivity : AppCompatActivity() {
 
@@ -23,28 +26,23 @@ class StreamActivity : AppCompatActivity() {
         const val EXTRA_JUEGO_NOMBRE = "juego_nombre"
         const val EXTRA_JUEGO_PACKAGE = "juego_package"
         const val EXTRA_JUEGO_ID = "juego_id"
-        const val EXTRA_TRANSMISION_ID = "transmision_id"
-        const val EXTRA_ROOM_NAME = "room_name"
-        const val EXTRA_TOKEN = "token"
     }
 
     private lateinit var binding: ActivityStreamBinding
-    private var juegoNombre: String = ""
-    private var juegoPackage: String = ""
-    private var juegoId: String = ""
-    private var transmisionId: Int? = null  // ✅ AHORA INT
-    private var roomName: String? = null
-    private var liveKitToken: String? = null
-    private var transmisionIniciada = false
+    private var juegoNombre = ""
+    private var juegoPackage = ""
+    private var juegoId = ""
+    private var transmisionId: Long? = null
     private var finalizando = false
 
     private val screenCaptureLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
-            iniciarTransmisionReal(result.resultCode, result.data!!)
+        val data = result.data
+        if (result.resultCode == Activity.RESULT_OK && data != null) {
+            iniciarTransmision(result.resultCode, data)
         } else {
-            Toast.makeText(this, "❌ Permiso de captura de pantalla denegado", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "Permiso de captura de pantalla denegado", Toast.LENGTH_LONG).show()
             finish()
         }
     }
@@ -58,166 +56,125 @@ class StreamActivity : AppCompatActivity() {
         juegoPackage = intent.getStringExtra(EXTRA_JUEGO_PACKAGE) ?: ""
         juegoId = intent.getStringExtra(EXTRA_JUEGO_ID) ?: ""
 
-        binding.tvTitulo.text = "🎮 Preparando $juegoNombre"
-        binding.tvEstado.text = "🟡 PREPARANDO TRANSMISIÓN"
+        binding.tvTitulo.text = "Preparando $juegoNombre"
+        binding.tvEstado.text = "PREPARANDO TRANSMISIÓN"
         binding.btnFinalizar.setOnClickListener { finalizarTransmision() }
 
-        solicitarCapturaPantalla()
+        lifecycleScope.launch {
+            val pase = verificarLivePass()
+            if (!pase) {
+                Toast.makeText(this@StreamActivity, "Necesitas un Live Pass activo para transmitir.", Toast.LENGTH_LONG).show()
+                finish()
+                return@launch
+            }
+            solicitarCapturaPantalla()
+        }
+    }
+
+    /** Consulta la misma validación que usa la web antes de pedir permisos de captura. */
+    private suspend fun verificarLivePass(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val session = SupabaseProvider.client.auth.currentSessionOrNull() ?: return@withContext false
+            val resultado = SupabaseProvider.client.postgrest.rpc(
+                "puede_transmitir_live",
+                buildJsonObject { put("p_usuario_id", JsonPrimitive(session.user!!.id)) }
+            ).decodeAs<Map<String, kotlinx.serialization.json.JsonElement>>()
+            val puede = resultado["puede"]
+            puede != null && puede.toString() == "true"
+        } catch (e: Exception) {
+            false
+        }
     }
 
     private fun solicitarCapturaPantalla() {
-        val projectionManager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        val captureIntent = projectionManager.createScreenCaptureIntent()
-        screenCaptureLauncher.launch(captureIntent)
+        val manager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
+        screenCaptureLauncher.launch(manager.createScreenCaptureIntent())
     }
 
-    private fun iniciarTransmisionReal(resultCode: Int, data: Intent) {
+    private fun iniciarTransmision(resultCode: Int, data: Intent) {
         lifecycleScope.launch {
             try {
-                binding.tvEstado.text = "🟡 CREANDO TRANSMISIÓN..."
+                binding.tvEstado.text = "CREANDO TRANSMISIÓN…"
 
-                val session = withContext(Dispatchers.IO) {
-                    SupabaseClient.client.auth.currentSessionOrNull()
+                // 1. Crear la transmisión en el servidor (la base decide la sala y valida Live Pass)
+                val id = withContext(Dispatchers.IO) {
+                    SupabaseProvider.client.postgrest.rpc(
+                        "crear_transmision",
+                        buildJsonObject {
+                            put("p_titulo", JsonPrimitive("Jugando $juegoNombre"))
+                            put("p_categoria", JsonPrimitive("gaming"))
+                            put("p_room_name", kotlinx.serialization.json.JsonNull)
+                            put("p_grupo_id", kotlinx.serialization.json.JsonNull)
+                            put("p_precio_acceso", JsonPrimitive(0))
+                        }
+                    ).decodeAs<Long>()
                 }
+                transmisionId = id
 
-                if (session == null) {
-                    Toast.makeText(this@StreamActivity, "⚠️ Debes iniciar sesión para transmitir.", Toast.LENGTH_LONG).show()
-                    finish()
-                    return@launch
-                }
+                // 2. Pedir al servidor el token; el servidor decide sala y permisos
+                val token = LiveKitManager.obtenerToken(streamId = id.toInt(), rol = "streamer")
 
-                val userId = session.user.id
-                val generatedRoomName = "live-$userId-${System.currentTimeMillis()}"
-                val titulo = "🎮 Jugando $juegoNombre"
-
-                // ✅ USAR RPC crear_transmision
-                val transmision = withContext(Dispatchers.IO) {
-                    SupabaseClient.client
-                        .rpc("crear_transmision")
-                        .decodeFrom<TransmisionCreada>(
-                            mapOf(
-                                "p_titulo" to titulo,
-                                "p_categoria" to "gaming",
-                                "p_room_name" to generatedRoomName
-                            )
-                        )
-                }
-
-                transmisionId = transmision.id  // ✅ INT
-                roomName = transmision.roomName
-
-                val token = withContext(Dispatchers.IO) {
-                    LiveKitManager.obtenerToken(roomName = transmision.roomName, identity = userId)
-                }
-                liveKitToken = token
-
+                // 3. Arrancar el servicio de captura con la URL y el token del servidor
                 val serviceIntent = Intent(this@StreamActivity, ScreenCaptureService::class.java).apply {
                     putExtra(ScreenCaptureService.EXTRA_RESULT_CODE, resultCode)
                     putExtra(ScreenCaptureService.EXTRA_DATA, data)
-                    putExtra(ScreenCaptureService.EXTRA_ROOM_NAME, transmision.roomName)
-                    putExtra(ScreenCaptureService.EXTRA_TOKEN, token)
-                    putExtra(ScreenCaptureService.EXTRA_TRANSMISION_ID, transmision.id)  // ✅ INT
+                    putExtra(ScreenCaptureService.EXTRA_LIVEKIT_URL, token.url ?: LiveKitManager.LIVEKIT_URL)
+                    putExtra(ScreenCaptureService.EXTRA_TOKEN, token.token)
+                    putExtra(ScreenCaptureService.EXTRA_TRANSMISION_ID, id)
                     putExtra(ScreenCaptureService.EXTRA_JUEGO_NOMBRE, juegoNombre)
                     putExtra(ScreenCaptureService.EXTRA_JUEGO_PACKAGE, juegoPackage)
                 }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) startForegroundService(serviceIntent)
+                else startService(serviceIntent)
 
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    startForegroundService(serviceIntent)
-                } else {
-                    startService(serviceIntent)
-                }
-
-                transmisionIniciada = true
-                binding.tvTitulo.text = "🎮 Transmitiendo $juegoNombre"
-                binding.tvEstado.text = "🔴 EN VIVO"
-                Toast.makeText(this@StreamActivity, "✅ Transmisión iniciada", Toast.LENGTH_SHORT).show()
-
+                binding.tvTitulo.text = "Transmitiendo $juegoNombre"
+                binding.tvEstado.text = "EN VIVO"
                 abrirJuego()
-
             } catch (e: Exception) {
-                binding.tvEstado.text = "❌ ERROR"
-                Toast.makeText(this@StreamActivity, "❌ Error al iniciar: ${e.message}", Toast.LENGTH_LONG).show()
-                e.printStackTrace()
-                transmisionId?.let { id -> finalizarTransmisionEnSupabase(id) }
+                binding.tvEstado.text = "ERROR"
+                Toast.makeText(this@StreamActivity, "Error al iniciar: ${e.message}", Toast.LENGTH_LONG).show()
+                transmisionId?.let { cerrarEnServidor(it) }
+                transmisionId = null
             }
         }
     }
 
     private fun abrirJuego() {
-        if (juegoPackage.isBlank()) {
-            Toast.makeText(this, "⚠️ El juego no tiene package_name.", Toast.LENGTH_LONG).show()
-            return
-        }
-
-        try {
-            val launchIntent = packageManager.getLaunchIntentForPackage(juegoPackage)
-            if (launchIntent != null) {
-                launchIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(launchIntent)
-            } else {
-                Toast.makeText(this, "⚠️ El juego no está instalado.", Toast.LENGTH_LONG).show()
-            }
-        } catch (e: Exception) {
-            Toast.makeText(this, "No se pudo abrir $juegoNombre: ${e.message}", Toast.LENGTH_LONG).show()
+        if (juegoPackage.isBlank()) return
+        val launch = packageManager.getLaunchIntentForPackage(juegoPackage)
+        if (launch != null) {
+            launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            startActivity(launch)
+        } else {
+            Toast.makeText(this, "El juego no está instalado.", Toast.LENGTH_LONG).show()
         }
     }
 
     private fun finalizarTransmision() {
         if (finalizando) return
         finalizando = true
-
-        val id = transmisionId
-        if (id == null) {
-            stopScreenCaptureService()
-            finish()
-            return
-        }
-
         lifecycleScope.launch {
             try {
-                binding.tvEstado.text = "🟡 FINALIZANDO..."
-                finalizarTransmisionEnSupabase(id)
-                stopScreenCaptureService()
-                transmisionIniciada = false
-                Toast.makeText(this@StreamActivity, "🔴 Transmisión finalizada", Toast.LENGTH_SHORT).show()
+                binding.tvEstado.text = "FINALIZANDO…"
+                transmisionId?.let { cerrarEnServidor(it) }
+                transmisionId = null
+                stopService(Intent(this@StreamActivity, ScreenCaptureService::class.java))
+                Toast.makeText(this@StreamActivity, "Transmisión finalizada", Toast.LENGTH_SHORT).show()
                 finish()
             } catch (e: Exception) {
                 finalizando = false
-                Toast.makeText(this@StreamActivity, "❌ Error al finalizar: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(this@StreamActivity, "No se pudo cerrar en el servidor. Intenta de nuevo.", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    // ✅ RECIBE INT
-    private suspend fun finalizarTransmisionEnSupabase(id: Int) {
+    /** Cierre oficial: la RPC libera el Live Pass y los contadores. No se actualiza la tabla a mano. */
+    private suspend fun cerrarEnServidor(id: Long) {
         withContext(Dispatchers.IO) {
-            SupabaseClient.client
-                .from("transmisiones")
-                .update(
-                    mapOf(
-                        "estado" to "finalizada",
-                        "fecha_fin" to Instant.now().toString()
-                    )
-                ) { filter { eq("id", id) } }
+            SupabaseProvider.client.postgrest.rpc(
+                "finalizar_transmision",
+                buildJsonObject { put("p_transmision_id", JsonPrimitive(id)) }
+            )
         }
-    }
-
-    private fun stopScreenCaptureService() {
-        try {
-            stopService(Intent(this, ScreenCaptureService::class.java))
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
     }
 }
-
-// ✅ ID ES INT
-@Serializable
-private data class TransmisionCreada(
-    val id: Int,  // ✅ INT
-    @SerialName("room_name") val roomName: String
-)
