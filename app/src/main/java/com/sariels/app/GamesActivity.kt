@@ -27,18 +27,13 @@ class GamesActivity : AppCompatActivity() {
         binding = ActivityGamesBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Deep link: sariels://stream?juego_id=...&package_name=...&nombre=...
         intent?.data?.let { uri ->
             val juegoId = uri.getQueryParameter("juego_id")
             val packageName = uri.getQueryParameter("package_name")
             val nombre = uri.getQueryParameter("nombre")
-            
-            if (juegoId != null && packageName != null && packageName.isNotBlank()) {
-                val intent = Intent(this, StreamActivity::class.java).apply {
-                    putExtra(StreamActivity.EXTRA_JUEGO_NOMBRE, nombre ?: "Juego")
-                    putExtra(StreamActivity.EXTRA_JUEGO_PACKAGE, packageName)
-                    putExtra(StreamActivity.EXTRA_JUEGO_ID, juegoId)
-                }
-                startActivity(intent)
+            if (!juegoId.isNullOrBlank() && !packageName.isNullOrBlank()) {
+                abrirStream(nombre ?: "Juego", packageName, juegoId)
                 finish()
                 return
             }
@@ -62,73 +57,51 @@ class GamesActivity : AppCompatActivity() {
                 val juegos = withContext(Dispatchers.IO) {
                     SupabaseProvider.client
                         .from("juegos")
-                        .select {
-                            filter {
-                                eq("activo", true)
-                            }
-                        }
+                        .select { filter { eq("activo", true) } }
                         .decodeList<Juego>()
                 }
-
                 gamesList.clear()
                 gamesList.addAll(juegos)
-                checkInstalledGames()
+                marcarInstalados()
                 gamesAdapter.submitList(gamesList.toList())
-
             } catch (e: Exception) {
-                Toast.makeText(this@GamesActivity, "Error al cargar juegos: ${e.message}", Toast.LENGTH_LONG).show()
-                e.printStackTrace()
+                Toast.makeText(this@GamesActivity, "Error al cargar juegos", Toast.LENGTH_LONG).show()
             }
         }
     }
 
-    private fun checkInstalledGames() {
-        val packageManager = packageManager
+    private fun marcarInstalados() {
         gamesList.forEach { juego ->
-            val packageName = juego.packageName
-            juego.instalado = if (!packageName.isNullOrBlank()) {
-                try {
-                    packageManager.getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(0))
-                    true
-                } catch (_: PackageManager.NameNotFoundException) {
-                    false
-                }
-            } else {
+            val pkg = juego.packageName
+            juego.instalado = !pkg.isNullOrBlank() && try {
+                packageManager.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(0))
+                true
+            } catch (_: PackageManager.NameNotFoundException) {
                 false
             }
         }
-        gamesAdapter.submitList(gamesList.toList())
     }
 
     private fun abrirFlujoTransmision(juego: Juego) {
-        if (juego.packageName.isNullOrBlank()) {
+        val pkg = juego.packageName
+        if (pkg.isNullOrBlank()) {
             Toast.makeText(this, "Este juego no tiene package_name configurado.", Toast.LENGTH_LONG).show()
             return
         }
-
-        val intent = Intent(this, StreamActivity::class.java).apply {
-            putExtra(StreamActivity.EXTRA_JUEGO_NOMBRE, juego.nombre)
-            putExtra(StreamActivity.EXTRA_JUEGO_PACKAGE, juego.packageName)
-            putExtra(StreamActivity.EXTRA_JUEGO_ID, juego.id)
+        if (!juego.instalado) {
+            abrirGooglePlay(pkg)
+            return
         }
-        startActivity(intent)
+        abrirStream(juego.nombre, pkg, juego.id)
     }
 
-    fun abrirJuegoInstalado(packageName: String): Boolean {
-        return try {
-            val intent = packageManager.getLaunchIntentForPackage(packageName)
-            if (intent != null) {
-                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                startActivity(intent)
-                true
-            } else {
-                abrirGooglePlay(packageName)
-                false
-            }
-        } catch (e: Exception) {
-            Toast.makeText(this, "No se pudo abrir el juego: ${e.message}", Toast.LENGTH_LONG).show()
-            false
+    private fun abrirStream(nombre: String, packageName: String, juegoId: String) {
+        val intent = Intent(this, StreamActivity::class.java).apply {
+            putExtra(StreamActivity.EXTRA_JUEGO_NOMBRE, nombre)
+            putExtra(StreamActivity.EXTRA_JUEGO_PACKAGE, packageName)
+            putExtra(StreamActivity.EXTRA_JUEGO_ID, juegoId)
         }
+        startActivity(intent)
     }
 
     private fun abrirGooglePlay(packageName: String) {
@@ -147,8 +120,6 @@ data class Juego(
     val categoria: String? = "gaming",
     val icono: String? = null,
     val activo: Boolean = true,
-    @SerialName("package_name")
-    val packageName: String? = null,
-    @kotlinx.serialization.Transient
-    var instalado: Boolean = false
+    @SerialName("package_name") val packageName: String? = null,
+    @kotlinx.serialization.Transient var instalado: Boolean = false
 )
