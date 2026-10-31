@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
 import android.util.Log
@@ -25,165 +26,128 @@ class ScreenCaptureService : Service() {
         const val NOTIFICATION_ID = 1001
         const val EXTRA_RESULT_CODE = "resultCode"
         const val EXTRA_DATA = "data"
-        const val EXTRA_ROOM_NAME = "roomName"
+        const val EXTRA_LIVEKIT_URL = "livekitUrl"
         const val EXTRA_TOKEN = "token"
-        const val EXTRA_TRANSMISION_ID = "transmisionId"  // ✅ INT
+        const val EXTRA_TRANSMISION_ID = "transmisionId"
         const val EXTRA_JUEGO_NOMBRE = "juegoNombre"
         const val EXTRA_JUEGO_PACKAGE = "juegoPackage"
     }
 
-    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-    private var transmisionId: Int? = null  // ✅ INT
-    private var screenShareActive = false
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private var compartiendo = false
 
     override fun onCreate() {
         super.onCreate()
-        createNotificationChannel()
+        crearCanal()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent == null) {
-            Log.e(TAG, "Servicio iniciado sin Intent.")
-            stopSelf()
-            return START_NOT_STICKY
-        }
+        if (intent == null) { stopSelf(); return START_NOT_STICKY }
 
-        val notification = createNotification(intent.getStringExtra(EXTRA_JUEGO_NOMBRE) ?: "Juego")
+        val juegoNombre = intent.getStringExtra(EXTRA_JUEGO_NOMBRE) ?: "Juego"
+        val notificacion = crearNotificacion(juegoNombre)
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ServiceCompat.startForeground(
-                this,
-                NOTIFICATION_ID,
-                notification,
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION
-            )
+            ServiceCompat.startForeground(this, NOTIFICATION_ID, notificacion, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION)
         } else {
-            startForeground(NOTIFICATION_ID, notification)
+            startForeground(NOTIFICATION_ID, notificacion)
         }
 
         val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, -1)
-        val projectionData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        val projectionData: Intent? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent.getParcelableExtra(EXTRA_DATA, Intent::class.java)
         } else {
             @Suppress("DEPRECATION")
             intent.getParcelableExtra(EXTRA_DATA)
         }
-
-        val roomName = intent.getStringExtra(EXTRA_ROOM_NAME)
+        val url = intent.getStringExtra(EXTRA_LIVEKIT_URL)
         val token = intent.getStringExtra(EXTRA_TOKEN)
-        transmisionId = intent.getIntExtra(EXTRA_TRANSMISION_ID, 0)  // ✅ INT
-        val juegoNombre = intent.getStringExtra(EXTRA_JUEGO_NOMBRE) ?: "Juego"
 
-        if (resultCode == -1 || projectionData == null || roomName.isNullOrBlank() || token.isNullOrBlank()) {
-            Log.e(TAG, "Datos incompletos para iniciar captura.")
+        if (resultCode == -1 || projectionData == null || url.isNullOrBlank() || token.isNullOrBlank()) {
+            Log.e(TAG, "Datos incompletos para iniciar captura")
             stopSelf()
             return START_NOT_STICKY
         }
 
-        if (!screenShareActive) {
-            iniciarLiveKit(resultCode, projectionData, roomName, token, juegoNombre)
-        }
-
+        if (!compartiendo) iniciarCaptura(resultCode, projectionData, url, token, juegoNombre)
         return START_NOT_STICKY
     }
 
-    // ✅ PRIMERO CONECTA, DESPUÉS PUBLICA
-    private fun iniciarLiveKit(resultCode: Int, projectionData: Intent, roomName: String, token: String, juegoNombre: String) {
-        serviceScope.launch {
+    private fun iniciarCaptura(resultCode: Int, projectionData: Intent, url: String, token: String, juegoNombre: String) {
+        scope.launch {
             try {
-                Log.d(TAG, "Conectando a LiveKit...")
-                
-                // 1. CONECTAR Y ESPERAR
-                val conectado = LiveKitManager.conectar(applicationContext, roomName, token)
-                
+                // 1. Conectar primero con la URL que dio el servidor
+                val conectado = LiveKitManager.conectar(applicationContext, url, token)
                 if (!conectado) {
-                    Log.e(TAG, "❌ No se pudo conectar a LiveKit")
-                    stopSelf()
-                    return@launch
-                }
-                
-                Log.d(TAG, "✅ LiveKit conectado.")
-
-                // 2. PUBLICAR SCREEN SHARE
-                val resultado = LiveKitManager.room
-                    ?.localParticipant
-                    ?.setScreenShareEnabled(
-                        true,
-                        ScreenCaptureParams(
-                            mediaProjectionPermissionResultData = projectionData,
-                            notificationId = NOTIFICATION_ID,
-                            notification = createNotification(juegoNombre),
-                            onStop = {
-                                Log.d(TAG, "MediaProjection se detuvo.")
-                                screenShareActive = false
-                                stopSelf()
-                            }
-                        )
-                    ) ?: false
-
-                if (!resultado) {
-                    Log.e(TAG, "LiveKit no pudo activar screen share.")
+                    Log.e(TAG, "No se pudo conectar a LiveKit")
                     stopSelf()
                     return@launch
                 }
 
-                screenShareActive = true
-                Log.d(TAG, "🟢 Screen Share publicado en LiveKit.")
+                // 2. Publicar la pantalla
+                val sala = LiveKitManager.room
+                val publicado = sala?.localParticipant?.setScreenShareEnabled(
+                    true,
+                    ScreenCaptureParams(
+                        mediaProjectionPermissionResultData = projectionData,
+                        notificationId = NOTIFICATION_ID,
+                        notification = crearNotificacion(juegoNombre),
+                        onStop = {
+                            Log.d(TAG, "MediaProjection detenida por el sistema")
+                            compartiendo = false
+                            stopSelf()
+                        }
+                    )
+                ) ?: false
 
+                if (!publicado) {
+                    Log.e(TAG, "LiveKit no activó el screen share")
+                    stopSelf()
+                    return@launch
+                }
+                compartiendo = true
+                Log.d(TAG, "Screen share publicado")
             } catch (e: Exception) {
-                Log.e(TAG, "Error iniciando LiveKit.", e)
-                screenShareActive = false
+                Log.e(TAG, "Error iniciando captura", e)
+                compartiendo = false
                 stopSelf()
             }
         }
     }
 
-    private fun createNotification(juegoNombre: String): Notification {
-        return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("🔴 Sariel's Live")
+    private fun crearNotificacion(juegoNombre: String): Notification =
+        NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle("Sariel's Live")
             .setContentText("Transmitiendo $juegoNombre")
             .setSmallIcon(android.R.drawable.ic_menu_camera)
             .setOngoing(true)
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .build()
-    }
 
-    private fun createNotificationChannel() {
+    private fun crearCanal() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                CHANNEL_ID,
-                "Sariel's Live",
-                NotificationManager.IMPORTANCE_LOW
-            ).apply {
+            val canal = NotificationChannel(CHANNEL_ID, "Sariel's Live", NotificationManager.IMPORTANCE_LOW).apply {
                 description = "Transmisión de juegos en vivo"
                 setShowBadge(false)
             }
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(channel)
+            getSystemService(NotificationManager::class.java).createNotificationChannel(canal)
         }
     }
 
     override fun onDestroy() {
-        Log.d(TAG, "Deteniendo ScreenCaptureService.")
-        // Limpiar antes de cancelar
-        serviceScope.launch {
+        val sala = LiveKitManager.room
+        scope.launch {
             try {
-                if (screenShareActive) {
-                    LiveKitManager.room?.localParticipant?.setScreenShareEnabled(false)
-                }
+                if (compartiendo) sala?.localParticipant?.setScreenShareEnabled(false)
             } catch (e: Exception) {
-                Log.e(TAG, "Error deteniendo screen share.", e)
+                Log.e(TAG, "Error deteniendo screen share", e)
             } finally {
-                try {
-                    LiveKitManager.desconectar()
-                } catch (e: Exception) {
-                    Log.e(TAG, "Error desconectando LiveKit.", e)
-                }
+                LiveKitManager.desconectar()
             }
         }
-        serviceScope.cancel()
-        screenShareActive = false
+        scope.cancel()
+        compartiendo = false
         super.onDestroy()
     }
 
