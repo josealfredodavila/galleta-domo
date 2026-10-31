@@ -1,9 +1,11 @@
 // ================================================================
-// LIVE · JS v4.1 — Csariel's
+// LIVE · JS v4.2 — Csariel's
 // Cliente de transmisión en vivo. El SERVIDOR decide roles, publicación,
 // Live Pass, dueño del live, acceso de pago y autor de los mensajes.
 // Las validaciones del navegador son solo experiencia de usuario.
 // v4.1: donaciones de 20, 50, 100 y 200 USD (mínimo de la pasarela).
+// v4.2: detección móvil (esMovil), compartir pantalla solo en escritorio,
+//       abrirAppJuegos() para lanzar la app Android con sariels://stream.
 // ================================================================
 'use strict';
 
@@ -30,6 +32,9 @@ const RPC = {
     finalizar: 'finalizar_transmision',      // (p_transmision_id integer) → jsonb
     puedeTransmitir: 'puede_transmitir_live' // (p_usuario_id uuid) → jsonb
 };
+
+// Esquema de la app Android para transmitir juegos (ver AndroidManifest.xml)
+const APP_JUEGOS_SCHEME = 'sariels://stream';
 
 // Montos de donación (deben coincidir con MONTOS_DONACION de routes/live.js)
 const DONACIONES = {
@@ -188,9 +193,50 @@ function textoPrecio(precio) {
     return p > 0 ? `${formatoUsd(p)} USD` : 'Gratis';
 }
 
-function esIOS() { return /iPad|iPhone|iPod/i.test(navigator.userAgent); }
+// ---------- DETECCIÓN DE DISPOSITIVO ----------
+// Móvil (Android, iPhone, iPad, iPod). Se usa para ocultar lo que el navegador
+// móvil no soporta: captura de pantalla desde el navegador.
+function esMovil() {
+    return /Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+}
+
+function esIOS() {
+    return /iPad|iPhone|iPod/i.test(navigator.userAgent || '');
+}
+
+// La captura de pantalla solo funciona en escritorio. En móvil se transmite juego desde la app.
 function soportaCompartirPantalla() {
-    return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function');
+    return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function')
+        && !esMovil();
+}
+
+// ---------- APP ANDROID PARA JUEGOS (sariels://stream) ----------
+// Abre la app con el juego elegido. Si no responde en 2 s, probablemente no está instalada.
+function abrirAppJuegos(juegoId, packageName, nombre) {
+    if (!esMovil()) {
+        showToast('⚠️ Para transmitir juegos usa la app Sariel\'s en tu teléfono', 'warning', 6000);
+        return;
+    }
+    if (!juegoId || !packageName) {
+        showToast('⚠️ Elige un juego para transmitir', 'warning');
+        return;
+    }
+
+    const params = new URLSearchParams();
+    params.set('juego_id', String(juegoId));
+    params.set('package_name', String(packageName));
+    if (nombre) params.set('nombre', String(nombre).slice(0, 60));
+    const deepLink = `${APP_JUEGOS_SCHEME}?${params.toString()}`;
+
+    const inicio = Date.now();
+    window.location.href = deepLink;
+
+    setTimeout(() => {
+        // Si la página sigue visible y no cambió en 2 s, la app no abrió
+        if (!document.hidden && Date.now() - inicio < 2500) {
+            showToast('Instala la app Sariel\'s para transmitir juegos', 'warning', 6000);
+        }
+    }, 2000);
 }
 
 function mensajeErrorCamara(e) {
@@ -458,7 +504,7 @@ function pedirDatosTransmision() {
             id: 'inputTituloLive', type: 'text', maxlength: '80',
             value: "Mi live en Csariel's", style: INPUT_STYLE, 'aria-label': 'Título del live'
         });
-        const select = el('select', { id: 'inputCategoriaLive', style: INPUT_STYLE.replace('margin-bottom:14px', 'margin-bottom:14px') },
+        const select = el('select', { id: 'inputCategoriaLive', style: INPUT_STYLE },
             ...CATEGORIAS.map(([v, t]) => el('option', { value: v, text: t })));
         const precioInput = el('input', {
             id: 'inputPrecioLive', type: 'number', min: '0', max: String(PRECIO_MAXIMO_USD), step: '0.01',
@@ -823,10 +869,10 @@ async function iniciarCamara() {
     }
 }
 
-// ---------- COMPARTIR PANTALLA (cámara activa) ----------
+// ---------- COMPARTIR PANTALLA (cámara activa, solo escritorio) ----------
 async function capturarPantalla() {
     if (_rol !== 'streamer' || !liveKitRoom) { showToast('⚠️ No estás transmitiendo', 'warning'); return; }
-    if (!soportaCompartirPantalla() || esIOS()) { showToast('⚠️ Compartir pantalla no disponible aquí', 'warning'); return; }
+    if (!soportaCompartirPantalla()) { showToast('⚠️ Compartir pantalla solo está disponible en computadora', 'warning'); return; }
     if (_pubPantalla) { showToast('⚠️ Ya estás compartiendo pantalla', 'warning'); return; }
 
     // getDisplayMedia debe ser la primera operación asíncrona (gesto del usuario)
@@ -860,10 +906,15 @@ async function capturarPantalla() {
     }
 }
 
-// ---------- TRANSMITIR JUEGO (pantalla completa) ----------
+// ---------- TRANSMITIR JUEGO DESDE ESCRITORIO (pantalla completa) ----------
 async function abrirSelectorJuego() {
-    if (!soportaCompartirPantalla() || esIOS()) {
-        showToast('⚠️ Compartir pantalla no disponible en este dispositivo', 'warning', 6000);
+    if (esMovil()) {
+        // En teléfono el juego se transmite desde la app Android
+        showToast('🎮 En el teléfono, transmite juegos desde la app Sariel\'s', 'warning', 6000);
+        return;
+    }
+    if (!soportaCompartirPantalla()) {
+        showToast('⚠️ Tu navegador no permite compartir pantalla', 'warning', 6000);
         return;
     }
     if (_iniciando || _pendienteFinalizar || _rol !== 'idle') {
@@ -1304,7 +1355,7 @@ function aplicarRolUI(rol) {
     const mostrar = (id, visible) => { const n = $(id); if (n) n.style.display = visible ? '' : 'none'; };
     const esStreamer = rol === 'streamer';
     const esViewer = rol === 'viewer';
-    const puedeCompartir = soportaCompartirPantalla() && !esIOS();
+    const puedeCompartir = soportaCompartirPantalla();
 
     mostrar('btnIniciarLive', rol === 'idle');
     mostrar('muteBtn', esStreamer);
@@ -1793,6 +1844,7 @@ const ACCIONES = new Map([
     ['capturar-pantalla', () => capturarPantalla()],
     ['selector-juego', () => abrirSelectorJuego()],
     ['cerrar-selector-juego', () => cerrarSelectorJuego()],
+    ['abrir-app-juegos', (btn) => abrirAppJuegos(btn.dataset.juegoId, btn.dataset.package, btn.dataset.nombre)],
     ['finalizar-live', () => accionBotonFinal()],
     ['reanudar-remoto', () => reanudarMediaRemota()],
     ['cerrar-anuncio', () => cerrarAnuncio()],
@@ -1869,5 +1921,6 @@ window.LiveApp = {
     showToast,
     mostrarModalLivePass,
     cerrarModalLivePass,
-    abrirMembresiaLive
+    abrirMembresiaLive,
+    abrirAppJuegos
 };
