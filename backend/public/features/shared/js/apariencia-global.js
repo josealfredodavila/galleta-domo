@@ -1,5 +1,5 @@
 /* ================================================================
-   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.5
+   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.6
    Archivo: backend/public/features/shared/js/apariencia-global.js
 
    Conserva sin cambios:
@@ -7,12 +7,16 @@
    - Tema, color de acento y tamaño de fuente (80–140 %).
    - window.SarielApariencia y todas sus funciones públicas.
 
+   v3.6:
+   - '/features/mensajes' agregado a RUTAS_EXCLUIDAS_BASE.
+     La mascota flotante ya no se inyecta en la pantalla de Mensajes.
+     Las demás páginas no cambian.
+
    v3.5:
    - La mascota activa se lee desde Supabase (prefs.mascota_activa)
-     antes de inyectarse, para que un cambio hecho en otro dispositivo
-     se respete.
+     antes de inyectarse.
    - Nueva función guardarMascota() que guarda en local y en Supabase.
-   - Las mascotas se inyectan DESPUÉS de sincronizar, no al cargar el script.
+   - Las mascotas se inyectan DESPUÉS de sincronizar.
 
    v3.4:
    - Se agregó '/centro-ayuda' a RUTAS_EXCLUIDAS_BASE.
@@ -887,7 +891,10 @@
         '/live-terminos',
         '/eliminar-cuenta',
         '/actualizar-contrasena',
-        '/centro-ayuda'
+        '/centro-ayuda',
+        // v3.6: la pantalla de Mensajes tiene su propia interfaz;
+        // la mascota flotante no se muestra allí.
+        '/features/mensajes'
     ];
 
     function puedeInyectarMascota(rutaTienda) {
@@ -1025,7 +1032,7 @@
         inyectarItlasuhuaPet();
 
         console.log(
-            '[Apariencia] Módulo global v3.5 cargado. Mascota activa:',
+            '[Apariencia] Módulo global v3.6 cargado. Mascota activa:',
             getMascotaActiva()
         );
     }
