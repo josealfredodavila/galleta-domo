@@ -2,454 +2,938 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#05060d" />
+    <meta name="description" content="¿Qué es Web3? Explicación de blockchain, wallets, tokens, NFTs y cómo funciona el ecosistema Sariel's en Polygon." />
     <title>◈ ¿Qué es Web3? · Sariel's</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+
     <style>
         :root {
             --gold: #D4AF37;
-            --gold-dark: #b8923a;
-            --gold-light: #e8c84a;
-            --space: #05080f;
-            --text-primary: #f0f4f8;
-            --text-secondary: #c0d8e8;
-            --text-muted: #8aa8b8;
-            --glass-bg: rgba(15, 45, 26, 0.55);
-            --glass-border: rgba(212, 175, 55, 0.2);
-            --radius: 16px;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --gold-light: #f7d44a;
+            --cyan: #00e5ff;
+            --violet: #a855f7;
+            --pink: #ff4dcb;
+            --green: #00d68f;
+            --space: #05060d;
+            --panel: rgba(12, 18, 32, 0.72);
+            --border: rgba(0, 229, 255, 0.18);
+            --text: #f0f4f8;
+            --text-2: #b9c8d8;
+            --muted: #7f93a8;
+            --radius: 20px;
+            --ease: cubic-bezier(0.22, 1, 0.36, 1);
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
 
         body {
-            background: var(--space);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
             min-height: 100vh;
-            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
-            padding: 40px 20px;
+            background: var(--space);
+            color: var(--text);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
         }
 
-        .container {
-            max-width: 800px;
+        /* ===== FONDO: RED ANIMADA ===== */
+        .bg-network {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse at 15% 20%, rgba(0, 229, 255, 0.12), transparent 50%),
+                radial-gradient(ellipse at 85% 30%, rgba(168, 85, 247, 0.14), transparent 50%),
+                radial-gradient(ellipse at 50% 100%, rgba(212, 175, 55, 0.08), transparent 55%);
+        }
+        .bg-grid {
+            position: fixed;
+            inset: -50%;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(0, 229, 255, 0.06) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.06) 1px, transparent 1px);
+            background-size: 48px 48px;
+            transform: perspective(600px) rotateX(60deg);
+            transform-origin: center top;
+            animation: gridMove 14s linear infinite;
+            mask-image: linear-gradient(to bottom, transparent, #000 40%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, #000 40%);
+        }
+        @keyframes gridMove {
+            from { background-position: 0 0; }
+            to { background-position: 0 48px; }
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 980px;
             margin: 0 auto;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 40px;
+            padding: 28px 18px 60px;
         }
 
+        /* ===== NAV ===== */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 36px;
+        }
         .back-link {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            color: var(--gold);
-            text-decoration: none;
-            font-size: 0.85rem;
-            margin-bottom: 24px;
-            transition: var(--transition);
-        }
-        .back-link:hover { transform: translateX(-4px); }
-
-        h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 2rem;
-            color: var(--gold);
-            margin-bottom: 8px;
-        }
-        .subtitle {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            margin-bottom: 30px;
-            border-bottom: 1px solid var(--glass-border);
-            padding-bottom: 16px;
-        }
-
-        .section {
-            margin-bottom: 28px;
-        }
-        .section h2 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.1rem;
-            color: var(--gold);
-            margin-bottom: 8px;
-        }
-        .section p {
-            color: var(--text-secondary);
-            line-height: 1.7;
-            font-size: 0.95rem;
-        }
-        .section ul {
-            list-style: none;
-            padding: 0;
-        }
-        .section ul li {
-            color: var(--text-secondary);
-            padding: 6px 0 6px 24px;
-            position: relative;
-            font-size: 0.9rem;
-            line-height: 1.6;
-        }
-        .section ul li::before {
-            content: "✦";
-            color: var(--gold);
-            position: absolute;
-            left: 0;
-        }
-
-        .highlight-box {
-            background: rgba(212, 175, 55, 0.08);
-            border-left: 3px solid var(--gold);
-            padding: 16px 20px;
-            border-radius: 0 8px 8px 0;
-            margin: 12px 0;
-        }
-        .highlight-box p {
-            color: var(--text-primary);
-            font-size: 0.9rem;
-            line-height: 1.6;
-        }
-        .highlight-box strong {
-            color: var(--gold);
-        }
-
-        .btn-home {
-            display: inline-block;
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            padding: 12px 32px;
+            padding: 9px 16px;
+            border: 1px solid var(--border);
             border-radius: 30px;
+            color: var(--cyan);
             text-decoration: none;
+            font-size: 0.82rem;
             font-weight: 600;
-            margin-top: 20px;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
+            background: rgba(0, 229, 255, 0.05);
+            transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
         }
-        .btn-home:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 32px rgba(212, 175, 55, 0.25);
+        .back-link:hover {
+            transform: translateX(-3px);
+            box-shadow: 0 0 18px rgba(0, 229, 255, 0.25);
         }
-
-        .footer-info {
-            margin-top: 30px;
-            padding-top: 16px;
-            border-top: 1px solid var(--glass-border);
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            text-align: center;
-        }
-
-        .badge-polygon {
-            display: inline-block;
-            background: rgba(212, 175, 55, 0.1);
-            color: var(--gold);
+        .chip {
+            font-family: 'Orbitron', sans-serif;
             font-size: 0.6rem;
-            padding: 2px 12px;
+            letter-spacing: 2px;
+            padding: 6px 12px;
             border-radius: 20px;
-            margin-top: 4px;
-            font-weight: 600;
+            color: var(--space);
+            background: linear-gradient(120deg, var(--cyan), var(--violet));
+            font-weight: 700;
         }
 
-        /* ===== FLUJO VISUAL ===== */
-        .flow-container {
+        /* ===== HERO ===== */
+        .hero {
+            position: relative;
+            text-align: center;
+            padding: 30px 10px 40px;
+        }
+        .hero-visual {
+            width: min(340px, 80vw);
+            height: auto;
+            margin: 0 auto 18px;
+            display: block;
+            filter: drop-shadow(0 0 24px rgba(0, 229, 255, 0.25));
+        }
+        .hero-visual .link {
+            stroke: url(#gradLink);
+            stroke-width: 1.4;
+            fill: none;
+            opacity: 0.55;
+            stroke-dasharray: 6 6;
+            animation: dash 6s linear infinite;
+        }
+        .hero-visual .node-core {
+            fill: url(#gradNode);
+            animation: pulse 3s ease-in-out infinite;
+            transform-origin: center;
+            transform-box: fill-box;
+        }
+        .hero-visual .node {
+            fill: #0b1222;
+            stroke: var(--cyan);
+            stroke-width: 2;
+            animation: pulse 3.6s ease-in-out infinite;
+            transform-origin: center;
+            transform-box: fill-box;
+        }
+        .hero-visual .node:nth-of-type(2n) { animation-delay: 0.8s; stroke: var(--violet); }
+        .hero-visual .node:nth-of-type(3n) { animation-delay: 1.6s; stroke: var(--gold); }
+        @keyframes dash { to { stroke-dashoffset: -120; } }
+        @keyframes pulse {
+            0%, 100% { opacity: 0.85; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.08); }
+        }
+
+        .eyebrow {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 4px;
+            color: var(--cyan);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: clamp(2.2rem, 7vw, 3.6rem);
+            line-height: 1.05;
+            background: linear-gradient(100deg, var(--cyan), var(--violet) 50%, var(--gold));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin-bottom: 14px;
+        }
+        .hero-sub {
+            max-width: 620px;
+            margin: 0 auto 26px;
+            color: var(--text-2);
+            font-size: 1.02rem;
+        }
+        .hero-tags {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+        }
+        .tag {
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 6px 13px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            color: var(--text-2);
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* ===== TARJETAS ===== */
+        .section { margin-top: 44px; }
+        .section-head {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+        .section-head .num {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            color: var(--space);
+            background: linear-gradient(135deg, var(--cyan), var(--violet));
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+        .section-head h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.15rem;
+            color: var(--text);
+            letter-spacing: 0.5px;
+        }
+
+        .card {
+            position: relative;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            transition: transform 0.35s var(--ease), border-color 0.35s, box-shadow 0.35s;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: rgba(0, 229, 255, 0.45);
+            box-shadow: 0 12px 40px rgba(0, 229, 255, 0.12);
+        }
+        .card p { color: var(--text-2); font-size: 0.95rem; }
+        .card p + p { margin-top: 10px; }
+        .card strong { color: var(--text); }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+        }
+
+        .pillar .icon {
+            width: 46px;
+            height: 46px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            font-size: 1.3rem;
+            margin-bottom: 14px;
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.25);
+        }
+        .pillar h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.92rem;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        .pillar p { color: var(--text-2); font-size: 0.88rem; }
+
+        /* ===== WEB2 VS WEB3 ===== */
+        .compare {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .compare .side {
+            border-radius: var(--radius);
+            padding: 22px;
+            border: 1px solid var(--border);
+            background: var(--panel);
+        }
+        .compare .side.web2 { opacity: 0.8; }
+        .compare .side.web3 {
+            border-color: rgba(168, 85, 247, 0.5);
+            background: linear-gradient(160deg, rgba(168, 85, 247, 0.12), rgba(0, 229, 255, 0.06)), var(--panel);
+            box-shadow: 0 0 30px rgba(168, 85, 247, 0.12);
+        }
+        .compare h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 12px;
+        }
+        .compare .web2 h3 { color: var(--muted); }
+        .compare .web3 h3 {
+            background: linear-gradient(100deg, var(--cyan), var(--violet));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .compare ul { list-style: none; }
+        .compare li {
+            position: relative;
+            padding: 7px 0 7px 22px;
+            color: var(--text-2);
+            font-size: 0.88rem;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+        }
+        .compare li:last-child { border-bottom: 0; }
+        .compare .web2 li::before { content: "✕"; color: var(--muted); position: absolute; left: 0; }
+        .compare .web3 li::before { content: "✓"; color: var(--green); position: absolute; left: 0; font-weight: 700; }
+
+        /* ===== LÍNEA DE TIEMPO ===== */
+        .timeline { position: relative; padding-left: 26px; }
+        .timeline::before {
+            content: "";
+            position: absolute;
+            left: 8px;
+            top: 6px;
+            bottom: 6px;
+            width: 2px;
+            background: linear-gradient(to bottom, var(--cyan), var(--violet), var(--gold));
+            opacity: 0.6;
+        }
+        .step {
+            position: relative;
+            margin-bottom: 18px;
+        }
+        .step::before {
+            content: "";
+            position: absolute;
+            left: -23px;
+            top: 6px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--space);
+            border: 2px solid var(--cyan);
+            box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
+        }
+        .step:nth-child(2n)::before { border-color: var(--violet); box-shadow: 0 0 12px rgba(168, 85, 247, 0.6); }
+        .step:nth-child(3n)::before { border-color: var(--gold); box-shadow: 0 0 12px rgba(212, 175, 55, 0.6); }
+        .step h3 {
+            font-size: 0.98rem;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .step p { color: var(--text-2); font-size: 0.9rem; }
+
+        /* ===== FLUJO SARIEL'S ===== */
+        .flow {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 6px;
-            margin: 16px 0 8px 0;
-            padding: 16px 20px;
-            background: rgba(0, 0, 0, 0.25);
-            border-radius: 12px;
-            border: 1px solid var(--glass-border);
+            gap: 10px;
+            padding: 22px;
+            border-radius: var(--radius);
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid var(--border);
         }
         .flow-row {
             display: flex;
             align-items: center;
             justify-content: center;
             flex-wrap: wrap;
-            gap: 8px 4px;
+            gap: 8px;
         }
-        .flow-step {
-            background: rgba(212, 175, 55, 0.12);
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-            color: var(--gold);
-            font-weight: 500;
+        .flow-node {
+            padding: 8px 14px;
+            border-radius: 14px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            background: rgba(0, 229, 255, 0.08);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            color: var(--text);
             white-space: nowrap;
         }
-        .flow-arrow {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            opacity: 0.5;
+        .flow-node.gold {
+            background: rgba(212, 175, 55, 0.12);
+            border-color: rgba(212, 175, 55, 0.5);
+            color: var(--gold-light);
         }
-        .flow-step.highlight {
-            background: rgba(212, 175, 55, 0.25);
-            border: 1px solid var(--gold);
+        .flow-node.violet {
+            background: rgba(168, 85, 247, 0.14);
+            border-color: rgba(168, 85, 247, 0.55);
         }
-        .flow-label {
-            font-size: 0.55rem;
-            color: var(--text-muted);
+        .flow-arrow { color: var(--cyan); opacity: 0.6; font-size: 1rem; }
+        .flow-note {
+            font-size: 0.7rem;
+            color: var(--muted);
             text-align: center;
             margin-top: 4px;
-            letter-spacing: 0.3px;
         }
 
-        @media (max-width: 600px) {
-            .container { padding: 20px; }
-            h1 { font-size: 1.5rem; }
-            .flow-step { font-size: 0.6rem; padding: 3px 8px; }
-            .flow-arrow { font-size: 0.7rem; }
+        /* ===== CALLOUT ===== */
+        .callout {
+            margin-top: 18px;
+            padding: 18px 20px;
+            border-radius: 14px;
+            background: linear-gradient(120deg, rgba(212, 175, 55, 0.1), rgba(0, 229, 255, 0.05));
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            color: var(--text);
+            font-size: 0.92rem;
+        }
+        .callout strong { color: var(--gold-light); }
+
+        /* ===== TABLA ACTIVOS ===== */
+        .assets {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 0.88rem;
+            overflow: hidden;
+            border-radius: 14px;
+            border: 1px solid var(--border);
+        }
+        .assets th, .assets td {
+            padding: 14px 16px;
+            text-align: left;
+            vertical-align: top;
+        }
+        .assets th {
+            background: rgba(0, 229, 255, 0.08);
+            color: var(--cyan);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+        }
+        .assets td {
+            color: var(--text-2);
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(10, 14, 26, 0.6);
+        }
+        .assets td strong { color: var(--text); }
+        .yes { color: var(--green); font-weight: 700; }
+        .no { color: #ff6b8a; font-weight: 700; }
+
+        /* ===== GLOSARIO ===== */
+        .term {
+            padding: 16px 18px;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+        }
+        .term h4 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.8rem;
+            color: var(--gold-light);
+            margin-bottom: 6px;
+            letter-spacing: 0.5px;
+        }
+        .term p { color: var(--text-2); font-size: 0.85rem; }
+
+        /* ===== CTA ===== */
+        .cta {
+            margin-top: 48px;
+            text-align: center;
+            padding: 34px 20px;
+            border-radius: var(--radius);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            background:
+                radial-gradient(ellipse at top, rgba(0, 229, 255, 0.15), transparent 60%),
+                var(--panel);
+        }
+        .cta h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+        }
+        .cta p { color: var(--text-2); margin-bottom: 20px; font-size: 0.92rem; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 26px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--space);
+            background: linear-gradient(120deg, var(--cyan), var(--violet));
+            transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 229, 255, 0.3);
+        }
+
+        .footer {
+            margin-top: 36px;
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.75rem;
+            line-height: 1.8;
+        }
+        .footer .brand {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--cyan);
+            font-weight: 700;
+        }
+        .badge-poly {
+            display: inline-block;
+            margin-top: 6px;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.65rem;
+            color: var(--violet);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            background: rgba(168, 85, 247, 0.08);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 760px) {
+            .grid-3 { grid-template-columns: 1fr 1fr; }
+            .grid-2 { grid-template-columns: 1fr; }
+            .compare { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 520px) {
+            .page { padding: 18px 14px 44px; }
+            .grid-3 { grid-template-columns: 1fr; }
+            .card { padding: 20px; }
+            .flow-node { font-size: 0.72rem; padding: 7px 11px; }
+            .assets th, .assets td { padding: 11px 10px; font-size: 0.8rem; }
+            .assets th:nth-child(2), .assets td:nth-child(2) { display: none; }
+        }
+
+        /* ===== ACCESIBILIDAD ===== */
+        a:focus-visible, .card:focus-visible {
+            outline: 2px solid var(--cyan);
+            outline-offset: 3px;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation: none !important;
+                transition: none !important;
+                scroll-behavior: auto !important;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <a href="/" class="back-link">← Volver a Sariel's</a>
+    <div class="bg-network" aria-hidden="true"></div>
+    <div class="bg-grid" aria-hidden="true"></div>
 
-        <h1>◈ ¿Qué es Web3?</h1>
-        <div class="subtitle">La nueva era de internet descentralizada · Explicación para todos</div>
+    <main class="page">
 
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 1: ¿QUÉ ES WEB3?                                    -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ ¿Qué significa Web3?</h2>
-            <p>
-                <strong>Web3</strong> (o Web 3.0) es la evolución de internet donde <strong>tú eres dueño de tus datos, tu identidad y tus activos digitales</strong>. Todo funciona mediante <strong>blockchain</strong>, una tecnología transparente y segura que elimina intermediarios.
+        <header class="topbar">
+            <a href="/" class="back-link">← Volver a Sariel's</a>
+            <span class="chip">WEB3</span>
+        </header>
+
+        <!-- ========== HERO ========== -->
+        <section class="hero">
+            <svg class="hero-visual" viewBox="0 0 340 260" aria-hidden="true">
+                <defs>
+                    <linearGradient id="gradLink" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#00e5ff" />
+                        <stop offset="100%" stop-color="#a855f7" />
+                    </linearGradient>
+                    <radialGradient id="gradNode" cx="50%" cy="40%" r="60%">
+                        <stop offset="0%" stop-color="#f7d44a" />
+                        <stop offset="100%" stop-color="#b8923a" />
+                    </radialGradient>
+                </defs>
+                <!-- Conexiones -->
+                <path class="link" d="M170 130 L70 60" />
+                <path class="link" d="M170 130 L270 60" />
+                <path class="link" d="M170 130 L60 190" />
+                <path class="link" d="M170 130 L280 190" />
+                <path class="link" d="M170 130 L170 30" />
+                <path class="link" d="M70 60 L170 30" />
+                <path class="link" d="M270 60 L170 30" />
+                <path class="link" d="M60 190 L170 230" />
+                <path class="link" d="M280 190 L170 230" />
+                <!-- Nodos periféricos -->
+                <circle class="node" cx="70" cy="60" r="10" />
+                <circle class="node" cx="270" cy="60" r="10" />
+                <circle class="node" cx="60" cy="190" r="10" />
+                <circle class="node" cx="280" cy="190" r="10" />
+                <circle class="node" cx="170" cy="30" r="9" />
+                <circle class="node" cx="170" cy="230" r="9" />
+                <!-- Nodo central (Polygon / tu wallet) -->
+                <circle class="node-core" cx="170" cy="130" r="26" />
+            </svg>
+
+            <div class="eyebrow">Internet descentralizada</div>
+            <h1>¿Qué es Web3?</h1>
+            <p class="hero-sub">
+                La siguiente etapa de internet, donde <strong>tú controlas tus datos, tu identidad y tus activos digitales</strong>, sin depender de intermediarios.
             </p>
-            <p style="margin-top:8px;">
-                En la Web3, <strong>no necesitas pedir permiso</strong> para participar. La confianza no está en una empresa, sino en el <strong>código y la criptografía</strong>.
-            </p>
-        </div>
+            <div class="hero-tags">
+                <span class="tag">Blockchain</span>
+                <span class="tag">Wallets</span>
+                <span class="tag">Tokens</span>
+                <span class="tag">NFTs</span>
+                <span class="tag">Smart contracts</span>
+                <span class="tag">Descentralización</span>
+            </div>
+        </section>
 
-        <div class="highlight-box">
-            <p>
-                <strong>En pocas palabras:</strong> Web3 es internet donde tú controlas tu información, tus finanzas y tu identidad digital. <strong>El poder está en tus manos</strong>.
-            </p>
-        </div>
+        <!-- ========== 1. DEFINICIÓN ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">01</span>
+                <h2>Definición</h2>
+            </div>
+            <div class="card">
+                <p>
+                    <strong>Web3</strong> es un modelo de internet construido sobre <strong>blockchain</strong>, una red de computadoras que comparten un mismo registro de información. Ese registro no pertenece a una empresa: cualquiera puede verificarlo, y nadie puede alterarlo en secreto.
+                </p>
+                <p>
+                    En Web3, la confianza no depende de una compañía que guarda tus datos. Depende del <strong>código</strong> y de la <strong>criptografía</strong>, que permiten comprobar qué pasó sin pedirle permiso a nadie.
+                </p>
+            </div>
+        </section>
 
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 2: SISTEMA DE LEALTAD DE SARIEL'S                    -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ ¿Cómo funciona Sariel's?</h2>
-            <p>
-                Sariel's utiliza la tecnología Web3 para crear un programa de lealtad con activos digitales reales. El sistema es simple:
-            </p>
-
-            <!-- FLUJO VISUAL -->
-            <div class="flow-container">
-                <div class="flow-row">
-                    <span class="flow-step">🛒 Venta real</span>
-                    <span class="flow-arrow">→</span>
-                    <span class="flow-step">📱 QR escaneado</span>
-                    <span class="flow-arrow">→</span>
-                    <span class="flow-step">🔷 1 ES.TOKS</span>
+        <!-- ========== 2. WEB2 VS WEB3 ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">02</span>
+                <h2>Web2 vs Web3</h2>
+            </div>
+            <div class="compare">
+                <div class="side web2">
+                    <h3>Web2 · Internet actual</h3>
+                    <ul>
+                        <li>Las plataformas guardan tus datos</li>
+                        <li>Una empresa decide las reglas</li>
+                        <li>Tu cuenta puede suspenderse</li>
+                        <li>Los intermediarios cobran comisiones</li>
+                        <li>Tú no eres dueño de lo que creas</li>
+                    </ul>
                 </div>
-                <div class="flow-row">
-                    <span class="flow-arrow">↓</span>
+                <div class="side web3">
+                    <h3>Web3 · Internet descentralizada</h3>
+                    <ul>
+                        <li>Tú controlas tu identidad con tu wallet</li>
+                        <li>Las reglas están escritas en código público</li>
+                        <li>Nadie puede borrar tus registros en secreto</li>
+                        <li>Menos intermediarios, transacciones directas</li>
+                        <li>Puedes demostrar que posees tus activos</li>
+                    </ul>
                 </div>
-                <div class="flow-row">
-                    <span class="flow-step">📦 12 ES.TOKS</span>
-                    <span class="flow-arrow">→</span>
-                    <span class="flow-step highlight">🖼️ NFT Domo</span>
-                    <span class="flow-arrow">→</span>
-                    <span class="flow-step">🍪 1 domo gratis</span>
+            </div>
+        </section>
+
+        <!-- ========== 3. PILARES ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">03</span>
+                <h2>Los 4 pilares</h2>
+            </div>
+            <div class="grid-2">
+                <div class="card pillar">
+                    <div class="icon">🌐</div>
+                    <h3>Descentralización</h3>
+                    <p>La información vive en muchos nodos al mismo tiempo. No hay un único punto de fallo ni un único dueño.</p>
                 </div>
-                <div class="flow-label">o si no se canjea en 30 días → 🎗️ NFT Conmemorativo</div>
+                <div class="card pillar">
+                    <div class="icon">🔑</div>
+                    <h3>Propiedad digital</h3>
+                    <p>Tus tokens y NFTs quedan vinculados a tu wallet. Tú firmas cada operación con tu clave privada.</p>
+                </div>
+                <div class="card pillar">
+                    <div class="icon">🪪</div>
+                    <h3>Identidad propia</h3>
+                    <p>Tu wallet funciona como tu cuenta. No necesitas crear un perfil nuevo en cada plataforma.</p>
+                </div>
+                <div class="card pillar">
+                    <div class="icon">🔍</div>
+                    <h3>Transparencia</h3>
+                    <p>Cualquiera puede consultar las transacciones públicas en un explorador de blockchain, como PolygonScan.</p>
+                </div>
             </div>
+        </section>
 
-            <ul>
-                <li>Compras un domo de galleta en nuestro local en Puebla por <strong>$75 MXN</strong>.</li>
-                <li>Escaneas el <strong>QR de un solo uso</strong> dentro del domo en la terminal autorizada.</li>
-                <li>En <strong>24 horas</strong>, recibes <strong>1 ES.TOKS</strong> en tu wallet de Polygon.</li>
-                <li><strong>ES.TOKS es transferible</strong>: puedes venderlo o comprarlo en el Mercado P2P.</li>
-                <li>Acumula <strong>12 ES.TOKS</strong> y <strong>canjea 1 NFT Domo exclusivo</strong>.</li>
-                <li>El NFT te da derecho a <strong>1 domo gratis en 30 días</strong>, o se convierte en <strong>Conmemorativo 🎗️</strong>.</li>
-            </ul>
-        </div>
+        <!-- ========== 4. CONCEPTOS ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">04</span>
+                <h2>Conceptos clave</h2>
+            </div>
+            <div class="grid-3">
+                <div class="term">
+                    <h4>BLOCKCHAIN</h4>
+                    <p>Una cadena de bloques de información enlazados criptográficamente. Lo que se registra no se puede editar sin que la red lo note.</p>
+                </div>
+                <div class="term">
+                    <h4>WALLET</h4>
+                    <p>Tu cartera digital. Guarda tus tokens y NFTs. Se identifica con una dirección pública; la clave privada nunca se comparte.</p>
+                </div>
+                <div class="term">
+                    <h4>TOKEN</h4>
+                    <p>Unidad digital registrada en blockchain. Puede ser intercambiable (como una moneda) y tener reglas propias.</p>
+                </div>
+                <div class="term">
+                    <h4>NFT</h4>
+                    <p>Token no intercambiable: cada uno es único. Sirve como comprobante de algo, como una entrada, un certificado o un beneficio.</p>
+                </div>
+                <div class="term">
+                    <h4>SMART CONTRACT</h4>
+                    <p>Programa que se ejecuta solo en blockchain cuando se cumplen sus condiciones. No necesita un intermediario para aplicar las reglas.</p>
+                </div>
+                <div class="term">
+                    <h4>GAS FEE</h4>
+                    <p>Pequeña comisión que se paga a la red para procesar una transacción. En Polygon suele ser muy baja.</p>
+                </div>
+                <div class="term">
+                    <h4>QUEMA (BURN)</h4>
+                    <p>Destruir tokens o NFTs de forma permanente. Reduce la cantidad en circulación y deja constancia en la red.</p>
+                </div>
+                <div class="term">
+                    <h4>POLYGON</h4>
+                    <p>Red blockchain compatible con Ethereum, de bajo costo y bajo consumo energético. Es donde vive el ecosistema Sariel's.</p>
+                </div>
+                <div class="term">
+                    <h4>DAPP</h4>
+                    <p>Aplicación descentralizada: una app cuya lógica corre sobre blockchain y se conecta con tu wallet.</p>
+                </div>
+            </div>
+        </section>
 
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 3: ES.TOKS                                           -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ ¿Qué es ES.TOKS?</h2>
-            <p>
-                <strong>ES.TOKS</strong> es un <strong>token de utilidad y fidelización</strong> que representa tu participación en el ecosistema Sariel's.
-            </p>
-            <p style="margin-top:8px;">
-                Su característica más importante es que <strong>solo se genera cuando ocurre una venta real</strong> de un domo de galleta físico. <strong>El token no existe si no hay una venta real.</strong>
-            </p>
-            <ul>
-                <li><strong>Origen vinculado a ventas reales</strong>: cada ES.TOKS emitido está respaldado por una compra física.</li>
-                <li><strong>El Mercado P2P no crea nuevos ES.TOKS</strong>: solo permite transferir los que ya existen.</li>
-                <li><strong>Es transferible</strong>: puedes venderlo o comprarlo en el Mercado P2P al precio que determines.</li>
-                <li><strong>Valor determinado por oferta y demanda</strong>: el precio lo fija el mercado, no Sariel's.</li>
-                <li><strong>Comisión del 2%</strong> por transacción P2P (se cobra en MATIC/POL).</li>
-            </ul>
-            <div class="highlight-box">
+        <!-- ========== 5. ACTIVOS ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">05</span>
+                <h2>Qué tipo de activos existen</h2>
+            </div>
+            <div class="card" style="padding:14px;">
+                <table class="assets">
+                    <thead>
+                        <tr>
+                            <th>Activo</th>
+                            <th>Para qué sirve</th>
+                            <th>Se puede transferir</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Criptomoneda</strong></td>
+                            <td>Moneda de uso general dentro de su red.</td>
+                            <td class="yes">Sí</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Token de utilidad</strong></td>
+                            <td>Da acceso a beneficios o funciones de una plataforma.</td>
+                            <td class="yes">Sí</td>
+                        </tr>
+                        <tr>
+                            <td><strong>NFT</strong></td>
+                            <td>Prueba única de propiedad o de un derecho.</td>
+                            <td>Depende de su diseño</td>
+                        </tr>
+                        <tr>
+                            <td><strong>NFT intransferible</strong></td>
+                            <td>Comprobante ligado a una persona o wallet.</td>
+                            <td class="no">No</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ========== 6. CÓMO FUNCIONA SARIEL'S ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">06</span>
+                <h2>Web3 en Sariel's</h2>
+            </div>
+            <div class="card">
                 <p>
-                    <strong>Dato clave:</strong> Cada domo de galleta cuesta $75 MXN y te da <strong>1 ES.TOKS</strong>. Puedes acumularlos, transferirlos o venderlos en el Mercado P2P. <strong>El valor de ES.TOKS refleja la confianza y actividad del ecosistema.</strong>
+                    Sariel's usa Web3 para crear un programa de lealtad con activos digitales reales. Cada compra física genera un registro en Polygon que tú puedes verificar desde tu wallet.
                 </p>
             </div>
-        </div>
 
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 4: NFT DOMO                                          -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ El NFT Domo</h2>
-            <p>
-                Cuando acumulas <strong>12 ES.TOKS</strong> (ya sea por compras directas o mediante el Mercado P2P), puedes <strong>obtener un NFT Domo</strong>. Los 12 ES.TOKS utilizados se <strong>queman</strong> en el proceso.
-            </p>
-            <p style="margin-top:8px;">
-                El NFT Domo es el <strong>beneficio de canje</strong>. No canjeas directamente los ES.TOKS por el producto físico; primero reúnes 12 ES.TOKS, después obtienes el NFT y finalmente utilizas ese NFT para realizar el canje.
-            </p>
-            <ul>
-                <li><strong>Intransferible (Soulbound)</strong>: no se puede vender, regalar ni listar en ningún mercado.</li>
-                <li><strong>Vinculado permanentemente</strong> a la wallet que lo obtuvo.</li>
-                <li><strong>Minteo interno</strong>: se realiza dentro del ecosistema.</li>
-                <li><strong>Los 12 ES.TOKS se queman (burn)</strong> al obtener el NFT.</li>
-            </ul>
-            <div class="highlight-box">
-                <p>
-                    <strong>Origen del NFT:</strong> Cada NFT se obtiene mediante <strong>12 ES.TOKS cuyo origen está vinculado a ventas reales del ecosistema</strong>. Esto asegura que cada NFT tenga un respaldo en la economía real, independientemente de si los ES.TOKS fueron adquiridos directamente o mediante el Mercado P2P.
-                </p>
+            <div class="flow" style="margin-top:16px;">
+                <div class="flow-row">
+                    <span class="flow-node">🛒 Compras un domo</span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-node">📱 Escaneas el QR</span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-node gold">🔷 Recibes 1 ES.TOKS</span>
+                </div>
+                <div class="flow-row"><span class="flow-arrow">↓</span></div>
+                <div class="flow-row">
+                    <span class="flow-node">📦 12 ES.TOKS</span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-node violet">🖼️ NFT Domo</span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-node gold">🍪 1 domo gratis</span>
+                </div>
+                <div class="flow-note">Si no canjeas el NFT en 30 días → se convierte en NFT Conmemorativo 🎗️</div>
             </div>
-        </div>
 
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 5: REGLA DE LOS 30 DÍAS                              -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ Regla de los 30 Días</h2>
-            <p>
-                El NFT Domo tiene un <strong>período de canje de 30 días</strong> a partir del momento en que se obtiene:
-            </p>
-            <ul>
-                <li><strong>Si lo canjeas</strong> dentro de los 30 días → el NFT se quema (burn) y recibes <strong>1 domo de galleta gratis</strong> en nuestro local de Puebla.</li>
-                <li><strong>Si no lo canjeas</strong> en 30 días → el NFT se convierte automáticamente en un <strong>NFT Conmemorativo 🎗️</strong>.</li>
-            </ul>
-            <div class="highlight-box">
-                <p>
-                    <strong>NFT Conmemorativo:</strong> Es un trofeo digital <strong>permanente e intransferible</strong>. La imagen cambia a un listón conmemorativo 🎗️ y <strong>el derecho a reclamar la galleta se extingue para siempre</strong>.
-                </p>
+            <div class="timeline" style="margin-top:24px;">
+                <div class="step">
+                    <h3>1. Compra en el local</h3>
+                    <p>Compras un domo de galleta en nuestro local de Puebla por $75 MXN.</p>
+                </div>
+                <div class="step">
+                    <h3>2. Escaneas el QR</h3>
+                    <p>El QR es de un solo uso y está dentro del domo. Se escanea en la terminal autorizada.</p>
+                </div>
+                <div class="step">
+                    <h3>3. Recibes ES.TOKS</h3>
+                    <p>En hasta 24 horas, 1 ES.TOKS llega a tu wallet de Polygon.</p>
+                </div>
+                <div class="step">
+                    <h3>4. Acumulas 12 y obtienes el NFT Domo</h3>
+                    <p>Al llegar a 12 ES.TOKS puedes obtener un NFT Domo. Los 12 ES.TOKS se queman en el proceso.</p>
+                </div>
+                <div class="step">
+                    <h3>5. Canjeas tu domo</h3>
+                    <p>Tienes 30 días para canjear el NFT por 1 domo gratis en nuestro local de Puebla.</p>
+                </div>
             </div>
-        </div>
 
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 6: MERCADO P2P                                        -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ Mercado P2P</h2>
-            <p>
-                La plataforma incluye un <strong>mercado secundario</strong> donde los usuarios pueden:
-            </p>
-            <ul>
-                <li><strong>Vender ES.TOKS</strong> en cualquier cantidad (1, 5, 12, etc.) al precio que deseen.</li>
-                <li><strong>Comprar ES.TOKS</strong> para acumular los 12 necesarios para el NFT.</li>
-                <li><strong>Precio libre</strong>: el valor lo determina la oferta y demanda.</li>
-            </ul>
-            <div class="highlight-box">
-                <p>
-                    <strong>Importante:</strong> Los <strong>NFTs Domo NO se venden</strong> en el mercado P2P. Son <strong>completamente intransferibles</strong> por diseño. Solo los ES.TOKS pueden comercializarse. El P2P <strong>no crea nuevos ES.TOKS</strong>, solo permite transferir los que ya existen.
-                </p>
+            <div class="callout">
+                <strong>Dato clave:</strong> el ES.TOKS solo existe cuando hay una venta real. El Mercado P2P no crea tokens nuevos: solo permite transferir los que ya existen.
             </div>
-        </div>
+        </section>
 
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 7: BLOCKCHAIN Y POLYGON                              -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ Blockchain y Polygon</h2>
-            <p>
-                Sariel's utiliza la blockchain de <strong>Polygon</strong> para que tus ES.TOKS no sean únicamente un saldo interno de la plataforma, sino <strong>activos digitales reales que puedes gestionar desde tu wallet</strong>.
-            </p>
-            <ul>
-                <li><strong>Transparencia total</strong>: todas las transacciones son públicas e inmutables.</li>
-                <li><strong>Bajo costo</strong>: Polygon tiene comisiones (gas fees) muy bajas.</li>
-                <li><strong>Sostenible</strong>: Polygon es una red con bajo impacto ambiental.</li>
-                <li><strong>Interoperable</strong>: tus ES.TOKS son visibles en wallets como MetaMask y consultables en exploradores de blockchain como PolygonScan.</li>
-            </ul>
-            <p style="margin-top:8px;">
-                <span class="badge-polygon">🟢 Polygon</span>
-            </p>
-        </div>
-
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 8: CONECTAR UNA WALLET                               -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ ¿Qué significa "conectar una wallet"?</h2>
-            <p>
-                Una <strong>wallet</strong> (cartera digital) es donde guardas tus ES.TOKS y NFTs. En Sariel's:
-            </p>
-            <ul>
-                <li><strong>Conectarla</strong> significa vincular tu wallet para recibir ES.TOKS y NFTs.</li>
-                <li><strong>No compartes tu clave privada</strong> — la app solo ve tu dirección pública.</li>
-                <li><strong>Tú firmas</strong> cada transacción, nunca pierdes el control.</li>
-                <li><strong>Tu wallet es tu identidad</strong> en el ecosistema Web3.</li>
-            </ul>
-            <div class="highlight-box">
-                <p>
-                    <strong>Ejemplo práctico:</strong> Compras un domo de galleta, escaneas el QR, y en 24 horas ves <strong>1 ES.TOKS</strong> en tu wallet. ¡Así de simple!
-                </p>
+        <!-- ========== 7. ES.TOKS ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">07</span>
+                <h2>¿Qué es ES.TOKS?</h2>
             </div>
-        </div>
-
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 9: QUEMA DE ES.TOKS Y NFT                            -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ Quema (Burn) de ES.TOKS y NFTs</h2>
-            <p>
-                La <strong>quema (burn)</strong> es el proceso de destruir tokens o NFTs para reducir la oferta:
-            </p>
-            <ul>
-                <li><strong>12 ES.TOKS</strong> se queman al obtener un NFT Domo.</li>
-                <li><strong>El NFT Domo</strong> se quema al canjearlo por la galleta gratis.</li>
-                <li><strong>Los ES.TOKS quemados</strong> salen de circulación permanentemente.</li>
-                <li><strong>El NFT quemado</strong> deja de existir en la blockchain.</li>
-            </ul>
-            <p style="margin-top:8px;">
-                La quema asegura que el sistema sea sostenible y que cada NFT obtenido represente un consumo real de ES.TOKS dentro del ecosistema.
-            </p>
-        </div>
-
-        <!-- ============================================================ -->
-        <!-- SECCIÓN 10: DIFERENCIA ENTRE ES.TOKS Y NFT                   -->
-        <!-- ============================================================ -->
-        <div class="section">
-            <h2>✦ Diferencia entre ES.TOKS y NFT Domo</h2>
-            <p>
-                Es importante entender la diferencia entre ambos activos:
-            </p>
-            <ul>
-                <li><strong>ES.TOKS</strong> → Token de fidelización y acumulación. <strong>Es transferible</strong>. Se puede comprar, vender y acumular.</li>
-                <li><strong>NFT Domo</strong> → Beneficio de canje. <strong>No es transferible</strong>. Solo se puede utilizar para reclamar el producto físico.</li>
-            </ul>
-            <div class="highlight-box">
+            <div class="card">
                 <p>
-                    <strong>Resumen:</strong> <strong>12 ES.TOKS → 1 NFT Domo → 1 domo gratis</strong>. Los ES.TOKS son acumulables y transferibles; el NFT es el comprobante de canje y es intransferible.
+                    <strong>ES.TOKS</strong> es un token de utilidad y fidelización que representa tu participación en el ecosistema Sariel's. Su origen está ligado a compras reales de domos.
                 </p>
+                <p><strong>Características:</strong></p>
+                <p>• Es transferible: puedes venderlo o comprarlo en el Mercado P2P.</p>
+                <p>• Su valor lo determinan la oferta y la demanda, no Sariel's.</p>
+                <p>• Las transacciones P2P tienen una comisión del 2%, pagada en MATIC/POL.</p>
             </div>
-        </div>
+        </section>
 
-        <!-- ============================================================ -->
-        <!-- BOTÓN DE RETORNO                                             -->
-        <!-- ============================================================ -->
-        <div style="text-align:center; margin-top: 20px;">
-            <a href="/" class="btn-home">← Volver a Sariel's</a>
-        </div>
+        <!-- ========== 8. NFT DOMO ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">08</span>
+                <h2>El NFT Domo</h2>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <p>Es el <strong>beneficio de canje</strong>. Reúnes 12 ES.TOKS, obtienes el NFT y después lo usas para reclamar tu domo.</p>
+                    <p>Los 12 ES.TOKS usados se <strong>queman</strong> al obtenerlo.</p>
+                </div>
+                <div class="card">
+                    <p><strong>Intransferible (soulbound):</strong> no se vende, no se regala y no se lista en ningún mercado.</p>
+                    <p>Queda vinculado permanentemente a la wallet que lo obtuvo.</p>
+                </div>
+            </div>
+        </section>
 
-        <div class="footer-info">
-            <strong>◈ Sariel's</strong> · Sabor al Paladar · WEB3<br />
-            Puebla, México 🇲🇽 · <span class="badge-polygon">🟢 Polygon</span>
-        </div>
-    </div>
+        <!-- ========== 9. REGLA DE 30 DÍAS ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">09</span>
+                <h2>Regla de los 30 días</h2>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <h3 style="font-family:'Orbitron',sans-serif;font-size:0.9rem;color:var(--green);margin-bottom:10px;">✓ Lo canjeas a tiempo</h3>
+                    <p>El NFT se quema y recibes <strong>1 domo gratis</strong> en nuestro local de Puebla.</p>
+                </div>
+                <div class="card">
+                    <h3 style="font-family:'Orbitron',sans-serif;font-size:0.9rem;color:var(--gold-light);margin-bottom:10px;">🎗️ No lo canjeas</h3>
+                    <p>El NFT se convierte en <strong>NFT Conmemorativo</strong>: un trofeo permanente e intransferible. El derecho a reclamar la galleta se extingue.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== 10. MERCADO P2P ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">10</span>
+                <h2>Mercado P2P</h2>
+            </div>
+            <div class="card">
+                <p>Es el mercado secundario de la plataforma. Los usuarios pueden <strong>vender ES.TOKS</strong> en la cantidad que quieran, o <strong>comprarlos</strong> para completar los 12 necesarios para un NFT. El precio lo fija el mercado.</p>
+            </div>
+            <div class="callout">
+                <strong>Importante:</strong> los NFTs Domo <strong>no se venden</strong> en el P2P. Son intransferibles por diseño. Solo los ES.TOKS se comercializan.
+            </div>
+        </section>
+
+        <!-- ========== 11. WALLET Y SEGURIDAD ========== -->
+        <section class="section">
+            <div class="section-head">
+                <span class="num">11</span>
+                <h2>Conectar tu wallet</h2>
+            </div>
+            <div class="grid-2">
+                <div class="card">
+                    <p><strong>Conectar</strong> significa vincular tu wallet para recibir ES.TOKS y NFTs.</p>
+                    <p>La app solo ve tu dirección pública. Nunca te pedimos tu clave privada ni tu frase de recuperación.</p>
+                </div>
+                <div class="card">
+                    <p><strong>Tú firmas cada operación</strong>, así que siempre tienes el control.</p>
+                    <p>Tu wallet es tu identidad dentro del ecosistema Web3.</p>
+                </div>
+            </div>
+            <div class="callout">
+                <strong>Consejo de seguridad:</strong> guarda tu frase de recuperación en papel y en un lugar seguro. Quien la tenga puede mover tus activos, y nadie de Sariel's te la pedirá.
+            </div>
+        </section>
+
+        <!-- ========== CTA ========== -->
+        <section class="cta">
+            <h2>Explora tu wallet en Polygon</h2>
+            <p>Compra un domo, escanea tu QR y observa tu primer ES.TOKS llegar a tu cartera.</p>
+            <a href="/" class="btn">← Volver a Sariel's</a>
+        </section>
+
+        <footer class="footer">
+            <div><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</div>
+            <div>Puebla, México 🇲🇽</div>
+            <span class="badge-poly">🟢 Polygon</span>
+        </footer>
+
+    </main>
 
 </body>
 </html>
