@@ -1,8 +1,14 @@
 // ================================================================
-// CSARIEL'S · NAVEGACIÓN v1.0
+// CSARIEL'S · NAVEGACIÓN v1.1
 // Sin parpadeo blanco, precarga de pestañas y transición suave.
 // No reemplaza páginas ni scripts: solo mejora la carga entre ellas.
 // Cargar SÍNCRONO en el <head>, después de auth-global.js.
+//
+// v1.1:
+// - Detección correcta de transiciones entre documentos (PageSwapEvent).
+//   Antes el fundido de respaldo quedaba desactivado en muchos navegadores.
+// - Soporta .nav y .main-nav (contactos.html usa .main-nav).
+// - El fondo oscuro solo se aplica durante la carga; el tema día no se toca.
 // ================================================================
 (function () {
     'use strict';
@@ -14,14 +20,14 @@
     var reducirMovimiento = window.matchMedia &&
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Transición nativa entre documentos (Chrome/Android modernos)
-    var soportaTransicion = typeof document.startViewTransition === 'function' ||
-        (window.CSS && CSS.supports && CSS.supports('view-transition-name', 'none'));
+    // Transición nativa entre documentos (Chrome/Android modernos).
+    // PageSwapEvent solo existe donde las transiciones entre páginas funcionan.
+    var soportaTransicion = 'PageSwapEvent' in window;
 
-    // Fondo oscuro desde el primer píxel + fundido de entrada
+    // Fondo oscuro mientras carga + fundido de entrada
     var estilo = document.createElement('style');
     estilo.textContent =
-        'html{background:#05080f;}' +
+        'html.nav-in-start{background:#05080f;}' +
         '@view-transition{navigation:auto;}' +
         'html.nav-in-start body{opacity:0;}' +
         'body{transition:opacity .16s ease;}' +
@@ -66,8 +72,11 @@
         document.head.appendChild(l);
     }
 
+    // Acepta la barra de Mensajes (.nav) y la de Contactos (.main-nav)
+    var SELECTOR_NAV = '.nav a, .main-nav a';
+
     function enlaceNav(target) {
-        var a = target && target.closest ? target.closest('.nav a') : null;
+        var a = target && target.closest ? target.closest(SELECTOR_NAV) : null;
         return esEnlaceInterno(a) ? a : null;
     }
 
@@ -85,7 +94,7 @@
     // Precarga todas las pestañas cuando el navegador esté libre
     window.addEventListener('load', function () {
         var iniciar = function () {
-            document.querySelectorAll('.nav a').forEach(function (a) {
+            document.querySelectorAll(SELECTOR_NAV).forEach(function (a) {
                 if (esEnlaceInterno(a)) precargar(a.href);
             });
         };
