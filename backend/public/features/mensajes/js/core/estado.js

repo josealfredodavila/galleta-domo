@@ -1,0 +1,60 @@
+// ================================================================
+// MENSAJES · CORE · ESTADO COMPARTIDO v1.0
+// Punto único para el estado global de Mensajes. Se expone en window.MensajesEstado.
+// Fase 1: solo lectura y utilidades. El mensajes.js actual NO depende de este archivo todavía.
+// ================================================================
+'use strict';
+
+(function () {
+    if (window.MensajesEstado) return;
+
+    const estado = {
+        db: null,
+        user: null,
+        current: null,
+        BOT_ID: 'bot-marquinhos',
+        BOT_UUID: '0a000000-0000-4000-8000-000000000001',
+        ESTADOS_BUCKET: 'sariels-estados'
+    };
+
+    function $(id) {
+        return document.getElementById(id);
+    }
+
+    function esc(v) {
+        const d = document.createElement('div');
+        d.textContent = v ?? '';
+        return d.innerHTML;
+    }
+
+    function toast(text, type) {
+        const el = $('toast');
+        if (!el) return;
+        el.textContent = text;
+        el.className = 'toast show ' + (type || '');
+        clearTimeout(el.t);
+        el.t = setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    function debounce(fn, ms) {
+        let timer = null;
+        return function (...args) {
+            clearTimeout(timer);
+            timer = setTimeout(() => fn.apply(this, args), ms);
+        };
+    }
+
+    window.MensajesEstado = {
+        estado,
+        $,
+        esc,
+        toast,
+        debounce,
+        get db() { return estado.db; },
+        set db(v) { estado.db = v; },
+        get user() { return estado.user; },
+        set user(v) { estado.user = v; },
+        get current() { return estado.current; },
+        set current(v) { estado.current = v; }
+    };
+})();
