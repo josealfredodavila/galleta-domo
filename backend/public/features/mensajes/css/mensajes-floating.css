@@ -1,7 +1,7 @@
 /* ================================================================
-   MENSAJES · FLOTANTES v1.1
-   Panel flotante de contactos, bolita de acceso y ajustes visuales.
-   Solo CSS. Para desactivar: quitar el <link> en mensajes.html.
+   CSARIEL'S · MENSAJES FLOTANTES v1.2
+   Contactos flotantes, panel y ajustes móviles.
+   Solo CSS. No modifica la lógica JavaScript.
    ================================================================ */
 
 :root {
@@ -14,7 +14,7 @@
     --ms-muted: #8e8e93;
 }
 
-/* 1. Ocultar el asistente flotante de Marquinhos (la imagen del robot) */
+/* 1. Ocultar el asistente flotante de Marquinhos en esta pantalla */
 [id*="marquinhos-pet" i],
 [class*="marquinhos-pet" i],
 [id*="marquinhos-flot" i],
@@ -26,12 +26,17 @@
     display: none !important;
 }
 
-/* 2. Ajustes visuales estilo Messenger */
+/* 2. Buscador */
+.searchbox {
+    padding: 4px 12px 10px !important;
+    box-sizing: border-box;
+}
 
-/* Buscador: píldora gris sin borde */
-.searchbox { padding: 4px 12px 10px !important; }
 .searchbox input {
-    height: 38px;
+    width: 100%;
+    min-width: 0;
+    height: 40px;
+    box-sizing: border-box;
     background: var(--ms-surface-2) !important;
     border: 1px solid transparent !important;
     border-radius: 999px !important;
@@ -39,58 +44,115 @@
     font-size: .88rem !important;
     color: var(--ms-text) !important;
 }
-.searchbox input::placeholder { color: var(--ms-muted); }
-.searchbox input:focus {
-    border-color: transparent !important;
-    box-shadow: 0 0 0 2px rgba(168, 85, 247, .35) !important;
+
+.searchbox input::placeholder {
+    color: var(--ms-muted);
 }
 
-/* Lista de chats: sin separadores, espaciado tipo Messenger */
-.convlist { padding: 0 6px 90px !important; }
+.searchbox input:focus-visible {
+    outline: 2px solid var(--ms-accent);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, .2) !important;
+}
+
+/* 3. Lista de conversaciones */
+.convlist {
+    padding: 0 6px 100px !important;
+    box-sizing: border-box;
+}
+
 .conv {
     border-radius: 12px !important;
     margin: 2px 0 !important;
     padding: 9px 10px !important;
-    border-bottom: none !important;
 }
-.conv:hover { background: var(--ms-surface) !important; }
+
+.conv:hover {
+    background: var(--ms-surface) !important;
+}
+
 .conv.active {
     background: var(--ms-surface-2) !important;
     border-left: none !important;
     padding-left: 10px !important;
 }
-.conv .convname { font-size: .94rem !important; font-weight: 700 !important; }
-.conv .convmsg { font-size: .8rem !important; color: var(--ms-muted) !important; }
-.conv .convtime { font-size: .68rem !important; color: var(--ms-muted) !important; }
 
-/* Estados: más discretos */
-.estados-bar { border: none !important; background: transparent !important; }
-.estados-scroll { padding-bottom: 2px !important; }
+.conv .convname {
+    font-size: .94rem !important;
+    font-weight: 700 !important;
+}
 
-/* Botón "+" (nueva conversación): círculo morado plano, esquina inferior derecha */
+.conv .convmsg {
+    font-size: .8rem !important;
+    color: var(--ms-muted) !important;
+}
+
+.conv .convtime {
+    font-size: .68rem !important;
+    color: var(--ms-muted) !important;
+}
+
+/* 4. Estados */
+.estados-bar {
+    border: none !important;
+    background: transparent !important;
+}
+
+.estados-scroll {
+    padding-bottom: 2px !important;
+}
+
+/* 5. Botón para nueva conversación.
+   Se conserva .fab para compatibilidad con el HTML y el JS. */
 .fab {
-    right: 14px !important;
-    bottom: 14px !important;
+    position: fixed !important;
+    right: max(14px, env(safe-area-inset-right, 0px)) !important;
+    bottom: max(14px, env(safe-area-inset-bottom, 0px)) !important;
     width: 52px !important;
     height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    box-sizing: border-box !important;
+    display: grid !important;
+    place-items: center !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 50% !important;
     background: var(--ms-accent) !important;
     color: #fff !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, .45) !important;
     font-size: 1.7rem !important;
     font-weight: 400 !important;
+    line-height: 1 !important;
     z-index: 250 !important;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
-.fab:hover { background: #9333ea !important; box-shadow: 0 6px 18px rgba(0, 0, 0, .5) !important; transform: scale(1.04) !important; }
 
-/* 3. Bolita flotante de contactos: encima del "+" */
+.fab:hover {
+    background: #9333ea !important;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .5) !important;
+}
+
+.fab:focus-visible {
+    outline: 3px solid var(--ms-accent-2) !important;
+    outline-offset: 4px !important;
+}
+
+/* 6. Bolita flotante de contactos */
 #cfBubble {
     position: fixed;
-    right: 18px;
-    bottom: 150px;
+    right: max(18px, env(safe-area-inset-right, 0px));
+    bottom: calc(14px + 52px + 28px + env(safe-area-inset-bottom, 0px));
     width: 52px;
     height: 52px;
-    border-radius: 50%;
+    min-width: 52px;
+    min-height: 52px;
+    box-sizing: border-box;
+    padding: 0;
     border: 0;
+    border-radius: 50%;
     background: var(--ms-accent-2);
     color: #001318;
     display: grid;
@@ -98,19 +160,42 @@
     cursor: pointer;
     z-index: 300;
     box-shadow: 0 4px 14px rgba(0, 0, 0, .5);
-    transition: transform .18s ease, box-shadow .2s ease;
+    transition: background-color .18s ease, box-shadow .18s ease;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
-#cfBubble svg { width: 24px; height: 24px; }
-#cfBubble:hover { transform: scale(1.06); box-shadow: 0 6px 18px rgba(0, 0, 0, .55); }
-#cfBubble[aria-expanded="true"] { background: var(--ms-accent); color: #fff; }
 
-/* Panel flotante, encima de la bolita */
+#cfBubble svg {
+    width: 24px;
+    height: 24px;
+    display: block;
+    pointer-events: none;
+}
+
+#cfBubble:hover {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .55);
+}
+
+#cfBubble[aria-expanded="true"] {
+    background: var(--ms-accent);
+    color: #fff;
+}
+
+#cfBubble:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 4px;
+}
+
+/* 7. Panel de contactos */
 #cfPanel {
     position: fixed;
-    right: 18px;
-    bottom: 214px;
+    right: max(18px, env(safe-area-inset-right, 0px));
+    bottom: calc(14px + 52px + 28px + 52px + 12px + env(safe-area-inset-bottom, 0px));
     width: min(380px, calc(100vw - 24px));
     height: min(560px, 62vh);
+    height: min(560px, 62dvh);
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+    box-sizing: border-box;
     background: #000;
     border: 1px solid var(--ms-border);
     border-radius: 18px;
@@ -120,19 +205,27 @@
     display: flex;
     flex-direction: column;
     opacity: 0;
+    visibility: hidden;
     transform: translateY(12px) scale(.97);
     pointer-events: none;
-    transition: opacity .2s ease, transform .22s ease;
+    transition:
+        opacity .2s ease,
+        transform .22s ease,
+        visibility .2s ease;
 }
+
 #cfPanel.abierto {
     opacity: 1;
-    transform: none;
+    visibility: visible;
+    transform: translateY(0) scale(1);
     pointer-events: auto;
 }
+
 .cf-head {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 10px;
     padding: 10px 14px;
     border-bottom: 1px solid var(--ms-border);
     color: var(--ms-text);
@@ -140,33 +233,85 @@
     font-size: .95rem;
     flex: 0 0 auto;
 }
+
 .cf-close {
-    width: 30px;
-    height: 30px;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     border: 0;
     background: var(--ms-surface-2);
     color: var(--ms-text);
     cursor: pointer;
     font-size: .9rem;
+    touch-action: manipulation;
 }
-.cf-close:hover { background: #2c2c2e; }
+
+.cf-close:hover {
+    background: #2c2c2e;
+}
+
+.cf-close:focus-visible {
+    outline: 2px solid var(--ms-accent-2);
+    outline-offset: 2px;
+}
+
 #cfFrame {
     flex: 1 1 auto;
     width: 100%;
+    min-height: 0;
     border: 0;
     background: #000;
 }
 
-/* Móvil: el panel ocupa casi toda la pantalla y la bolita se oculta con el chat abierto */
+/* 8. Móvil: panel amplio y sin desbordamientos */
 @media (max-width: 760px) {
     #cfPanel {
         right: 0;
         left: 0;
         bottom: 0;
         width: 100%;
+        width: 100vw;
         height: 88vh;
+        height: 88dvh;
+        max-height: 100dvh;
         border-radius: 18px 18px 0 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
     }
-    body:has(.panel.chat-open) #cfBubble { display: none; }
+
+    body:has(.panel.chat-open) #cfBubble {
+        display: none !important;
+    }
+}
+
+/* 9. Pantallas muy pequeñas */
+@media (max-width: 360px) {
+    #cfBubble {
+        right: 12px;
+        width: 48px;
+        height: 48px;
+        min-width: 48px;
+        min-height: 48px;
+    }
+
+    .fab {
+        right: 12px !important;
+        width: 48px !important;
+        height: 48px !important;
+        min-width: 48px !important;
+        min-height: 48px !important;
+    }
+
+    #cfPanel {
+        width: 100%;
+        border-radius: 14px 14px 0 0;
+    }
+}
+
+/* 10. Respeta la preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+    #cfBubble,
+    #cfPanel {
+        transition: none !important;
+    }
 }
