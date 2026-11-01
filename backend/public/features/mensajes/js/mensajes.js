@@ -8,10 +8,6 @@
 
 'use strict';
 
-const toast = (...args) => window.MensajesEstado.toast(...args);
-const esc = (v) => window.MensajesEstado.esc(v);
-const NeonModal = window.NeonModal;
-
 const BOT_ID = 'bot-marquinhos';
 const BOT_UUID = '0a000000-0000-4000-8000-000000000001';
 const ESTADOS_BUCKET = 'sariels-estados';
@@ -80,6 +76,21 @@ function debounce(fn, ms) {
     };
 }
 
+function toast(text, type = '') {
+    const el = $('toast');
+    if (!el) return;
+    el.textContent = text;
+    el.className = 'toast show ' + type;
+    clearTimeout(el.t);
+    el.t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+function esc(v) {
+    const d = document.createElement('div');
+    d.textContent = v ?? '';
+    return d.innerHTML;
+}
+
 function esErrorContenidoNoPermitido(err) {
     return !!(err && err.message && err.message.indexOf('contenido_no_permitido') !== -1);
 }
@@ -138,8 +149,93 @@ function limpiarMarkdown(texto) {
     t = t.replace(/\s+[*#_~]{2,}\s+/g, ' ');
     t = t.replace(/[ \t]{2,}/g, ' ');
     t = t.replace(/\n{3,}/g, '\n\n');
-        return t.trim();
+    return t.trim();
 }
+
+const NeonModal = (function () {
+    let activeBackdrop = null, activeResolve = null, activeEscHandler = null;
+
+    function _cleanup() {
+        if (activeBackdrop && activeBackdrop.parentNode) activeBackdrop.parentNode.removeChild(activeBackdrop);
+        if (activeEscHandler) document.removeEventListener('keydown', activeEscHandler);
+        activeBackdrop = null; activeResolve = null; activeEscHandler = null;
+    }
+
+    function _open(opts, resolveFn) {
+        _cleanup();
+        activeResolve = resolveFn;
+        const backdrop = document.createElement('div');
+        backdrop.className = 'neon-modal-backdrop show';
+        backdrop.setAttribute('role', 'dialog');
+        backdrop.setAttribute('aria-modal', 'true');
+        const danger = !!opts.danger;
+        const card = document.createElement('div');
+        card.className = 'neon-modal-card' + (danger ? ' danger' : '');
+        const iconHtml = opts.icon ? `<div class="neon-modal-icon">${opts.icon}</div>` : '';
+        const titleHtml = opts.title ? `<h3 class="neon-modal-title">${esc(opts.title)}</h3>` : '';
+        const messageHtml = opts.message ? `<p class="neon-modal-message">${esc(opts.message)}</p>` : '';
+        const inputHtml = opts.type === 'prompt' ? `<input class="neon-modal-input" type="text" placeholder="${esc(opts.placeholder || '')}" value="${esc(opts.defaultValue || '')}" maxlength="${opts.maxlength || 200}">` : '';
+        const confirmText = opts.confirmText || 'Aceptar';
+        const cancelText = opts.cancelText || 'Cancelar';
+        const confirmClass = danger ? 'danger' : 'confirm';
+
+        card.innerHTML = `
+            ${iconHtml}
+            ${titleHtml}
+            ${messageHtml}
+            ${inputHtml}
+            <div class="neon-modal-actions">
+                <button type="button" class="neon-modal-btn cancel" data-role="cancel">${esc(cancelText)}</button>
+                <button type="button" class="neon-modal-btn ${confirmClass}" data-role="confirm">${esc(confirmText)}</button>
+            </div>
+        `;
+
+        backdrop.appendChild(card);
+        document.body.appendChild(backdrop);
+        activeBackdrop = backdrop;
+
+        const inputEl = card.querySelector('.neon-modal-input');
+        const btnCancel = card.querySelector('[data-role="cancel"]');
+        const btnConfirm = card.querySelector('[data-role="confirm"]');
+
+        if (inputEl) setTimeout(() => { inputEl.focus(); inputEl.select(); }, 40);
+        else setTimeout(() => btnConfirm && btnConfirm.focus(), 40);
+
+        function finish(value) {
+            const r = activeResolve;
+            _cleanup();
+            if (typeof r === 'function') r(value);
+        }
+
+        btnCancel.addEventListener('click', () => finish(null));
+        btnConfirm.addEventListener('click', () => {
+            if (opts.type === 'prompt') {
+                const v = inputEl ? inputEl.value.trim() : '';
+                finish(v || null);
+            } else finish(true);
+        });
+        backdrop.addEventListener('click', (e) => { if (e.target === backdrop) finish(null); });
+        if (inputEl) inputEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') { e.preventDefault(); const v = inputEl.value.trim(); finish(v || null); }
+        });
+        activeEscHandler = (e) => { if (e.key === 'Escape') { e.preventDefault(); finish(null); } };
+        document.addEventListener('keydown', activeEscHandler);
+    }
+
+    function confirm(opts) {
+        return new Promise((resolve) => {
+            _open({ type: 'confirm', title: opts.title || 'Confirmar', message: opts.message || '', icon: opts.icon || '?', confirmText: opts.confirmText || 'Aceptar', cancelText: opts.cancelText || 'Cancelar', danger: !!opts.danger }, resolve);
+        });
+    }
+
+    function prompt(opts) {
+        return new Promise((resolve) => {
+            _open({ type: 'prompt', title: opts.title || 'Ingresa un valor', message: opts.message || '', icon: opts.icon || '✎', placeholder: opts.placeholder || '', defaultValue: opts.defaultValue || '', maxlength: opts.maxlength || 200, confirmText: opts.confirmText || 'Aceptar', cancelText: opts.cancelText || 'Cancelar', danger: !!opts.danger }, resolve);
+        });
+    }
+
+    return { confirm, prompt };
+})();
 
 async function session() {
     if (!db) return null;
@@ -735,9 +831,9 @@ const recargarBandeja = debounce(loadConversations, 300);
 function aplicarFiltroConversaciones() {
     const q = conversationFilter.trim().toLowerCase();
     document.querySelectorAll('.conv').forEach(el => {
-if (!q || el.dataset.name?.includes(q) || el.querySelector('.convname')?.textContent.toLowerCase().includes(q)) el.style.display = 'flex';
+        if (!q || el.dataset.name?.includes(q) || el.querySelector('.convname')?.textContent.toLowerCase().includes(q)) el.style.display = 'flex';
         else el.style.display = 'none';
-            });
+    });
 }
 
 async function openConversation(id) {
@@ -1189,8 +1285,8 @@ function subscribeMessages(id) {
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'destinatario_id=eq.' + user.id }, p => {
             manejarUpdate(p.new);
-                })
-.subscribe();
+        })
+        .subscribe();
 }
 
 async function grabarVozParaBot() {
@@ -1753,7 +1849,7 @@ function subscribeCall(llamadaId) {
             toast(estado === 'rejected' ? '📵 La llamada fue rechazada' : '📞 La llamada terminó', '');
             await finalizarLlamadaLocal();
         }
-         }).subscribe(); 
+    }).subscribe();
 }
 
 function iniciarTimeoutLlamada() {
