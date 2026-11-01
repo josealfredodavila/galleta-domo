@@ -1,13 +1,13 @@
 /* ================================================================
-   MENSAJES · MESSENGER THEME v1.0
+   MENSAJES · MESSENGER THEME v1.1
    Capa visual encima de mensajes.css y llamadas.css.
    Solo CSS. No cambia IDs, clases usadas por JS ni lógica.
    Para desactivar: quitar el <link> de este archivo en mensajes.html.
    ================================================================ */
 
 :root {
-    --ms-accent: #a855f7;          /* morado Messenger-like */
-    --ms-accent-2: #00e5ff;        /* turquesa: solo estado en línea y llamada */
+    --ms-accent: #a855f7;
+    --ms-accent-2: #00e5ff;
     --ms-bg: #000000;
     --ms-surface: #121212;
     --ms-surface-2: #1c1c1e;
@@ -38,9 +38,9 @@ html.tema-dia body, html[data-tema="dia"] body {
 }
 .logo b { color: var(--ms-accent) !important; }
 .logo span { letter-spacing: .3px !important; font-weight: 800 !important; font-size: 1.1rem; }
-.badge, .logo .badge { display: none !important; }   /* el badge WEB3 se quita */
-.network { display: none !important; }               /* el indicador Polygon se quita */
-#btnConfigLlamadas { display: none !important; }     /* la tuerca se quita de aquí; se usa en Configuración */
+.badge, .logo .badge { display: none !important; }
+.network { display: none !important; }
+#btnConfigLlamadas { display: none !important; }
 .header-avatar { border: none !important; box-shadow: none !important; width: 34px; height: 34px; background: var(--ms-accent) !important; }
 
 /* Navegación: barra discreta */
@@ -141,7 +141,7 @@ html.tema-dia body, html[data-tema="dia"] body {
 .conv.active { background: var(--ms-surface-2) !important; border-left: none !important; padding-left: 14px !important; box-shadow: none !important; }
 .conv.conv-bot { background: transparent !important; border-bottom: none !important; }
 .convname { color: var(--ms-text) !important; font-weight: 700 !important; font-size: .92rem !important; }
-.convname::after { content: none !important; }   /* quita el ✦ del nombre del bot */
+.convname::after { content: none !important; }
 .convmsg { color: var(--ms-muted) !important; font-size: .8rem !important; }
 .convtime { color: var(--ms-muted) !important; font-size: .7rem !important; }
 
@@ -166,14 +166,14 @@ html.tema-dia body, html[data-tema="dia"] body {
 .empty p { color: var(--ms-text) !important; }
 #emptyState strong { display: none !important; }
 
-/* FAB: un solo círculo morado plano */
+/* FAB: un solo círculo morado plano (la posición la fija mensajes-floating.css) */
 .fab {
     background: var(--ms-accent) !important;
     color: #fff !important;
     box-shadow: none !important;
-    width: 56px !important;
-    height: 56px !important;
-    font-size: 1.8rem !important;
+    width: 52px !important;
+    height: 52px !important;
+    font-size: 1.7rem !important;
     font-weight: 400 !important;
 }
 .fab:hover { transform: none !important; box-shadow: none !important; background: #9333ea !important; }
