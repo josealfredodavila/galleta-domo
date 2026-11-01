@@ -1,12 +1,10 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v19
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v19.1
    ============================================================
    - Interfaz de contactos más moderna, inspirada en Messenger.
    - Conserva Supabase, solicitudes, favoritos y bloqueos.
-   - Avatares seguros, estados y búsqueda optimizada.
-   - Corrección para IDs UUID al actualizar favoritos.
-   - Protección frente a resultados antiguos de búsqueda.
-   - Paginación, caché de perfiles y reintentos controlados.
+   - v19.1: aceptar/rechazar solicitudes usan el id tal cual llega
+     del servidor (sin Number()), compatible con UUID o bigint.
    - No crea tablas ni modifica la base de datos.
    ============================================================ */
 
@@ -966,10 +964,6 @@
                 );
             }
 
-            /*
-             * Se conservan los identificadores obtenidos de Supabase.
-             * No se crea ninguna tabla ni se cambia el esquema.
-             */
             var idsExcluirArray = Array.from(idsExcluir);
 
             if (!idsExcluirArray.length) {
@@ -1163,10 +1157,6 @@
             ? '<span class="verified" title="Perfil verificado" aria-label="Verificado">✓</span>'
             : '';
 
-        /*
-         * La tarjeta usa estilos inline complementarios para mejorar
-         * su apariencia incluso si el CSS anterior tiene otros colores.
-         */
         var estilosTarjeta =
             'position:relative;display:flex;align-items:center;gap:13px;' +
             'padding:14px 15px;margin:7px 0;border-radius:17px;' +
@@ -1183,9 +1173,6 @@
             'background:linear-gradient(135deg,#0F2D1A,#137B50,#D4AF37);' +
             'border:2px solid ' + (enLinea ? '#36D66A' : 'rgba(212,175,55,.55)') + ';' +
             'color:#fff;font-size:20px;font-weight:800;';
-
-        var estilosImagen =
-            'width:100%;height:100%;object-fit:cover;border-radius:50%;';
 
         var estilosInfo =
             'flex:1;min-width:0;overflow:hidden;';
@@ -1303,7 +1290,7 @@
 
     /*
      * Delegación de eventos: evita generar funciones onclick dentro
-     * de cada tarjeta y conserva los IDs UUID como texto.
+     * de cada tarjeta y conserva los IDs como texto.
      */
     function configurarEventosTarjetas() {
         var lista = document.getElementById('contactosList');
@@ -1813,6 +1800,7 @@
 
     /* ============================================================
        ACEPTAR Y RECHAZAR SOLICITUDES
+       v19.1: el id se usa tal cual llega (UUID o bigint).
        ============================================================ */
 
     async function aceptarSolicitud(contactoRowId, otroUsuarioId) {
@@ -1821,9 +1809,9 @@
 
         if (!client || !session) return;
 
-        var fila = Number(contactoRowId);
+        var fila = contactoRowId;
 
-        if (!Number.isFinite(fila) || fila <= 0) {
+        if (fila == null || fila === '') {
             showToast('El identificador de la solicitud no es válido.', 'error');
             return;
         }
@@ -1870,9 +1858,9 @@
 
         if (!client || !session) return;
 
-        var fila = Number(contactoRowId);
+        var fila = contactoRowId;
 
-        if (!Number.isFinite(fila) || fila <= 0) {
+        if (fila == null || fila === '') {
             showToast('El identificador de la solicitud no es válido.', 'error');
             return;
         }
