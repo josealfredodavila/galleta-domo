@@ -1,0 +1,151 @@
+// ================================================================
+// MENSAJES · UI · NEON MODAL v1.0
+// Modal de confirmación y prompt con estilo neón. Expuesto en window.NeonModal.
+// Misma API que la versión incluida en mensajes.js: confirm(opts) y prompt(opts).
+// ================================================================
+'use strict';
+
+(function () {
+    if (window.NeonModal) return;
+
+    let activeBackdrop = null;
+    let activeResolve = null;
+    let activeEscHandler = null;
+
+    function escHtml(v) {
+        const d = document.createElement('div');
+        d.textContent = v ?? '';
+        return d.innerHTML;
+    }
+
+    function cleanup() {
+        if (activeBackdrop && activeBackdrop.parentNode) {
+            activeBackdrop.parentNode.removeChild(activeBackdrop);
+        }
+        if (activeEscHandler) {
+            document.removeEventListener('keydown', activeEscHandler);
+        }
+        activeBackdrop = null;
+        activeResolve = null;
+        activeEscHandler = null;
+    }
+
+    function open(opts, resolveFn) {
+        cleanup();
+        activeResolve = resolveFn;
+
+        const backdrop = document.createElement('div');
+        backdrop.className = 'neon-modal-backdrop show';
+        backdrop.setAttribute('role', 'dialog');
+        backdrop.setAttribute('aria-modal', 'true');
+
+        const danger = !!opts.danger;
+        const card = document.createElement('div');
+        card.className = 'neon-modal-card' + (danger ? ' danger' : '');
+
+        const iconHtml = opts.icon ? `<div class="neon-modal-icon">${opts.icon}</div>` : '';
+        const titleHtml = opts.title ? `<h3 class="neon-modal-title">${escHtml(opts.title)}</h3>` : '';
+        const messageHtml = opts.message ? `<p class="neon-modal-message">${escHtml(opts.message)}</p>` : '';
+        const inputHtml = opts.type === 'prompt'
+            ? `<input class="neon-modal-input" type="text" placeholder="${escHtml(opts.placeholder || '')}" value="${escHtml(opts.defaultValue || '')}" maxlength="${opts.maxlength || 200}">`
+            : '';
+        const confirmText = opts.confirmText || 'Aceptar';
+        const cancelText = opts.cancelText || 'Cancelar';
+        const confirmClass = danger ? 'danger' : 'confirm';
+
+        card.innerHTML = `
+            ${iconHtml}
+            ${titleHtml}
+            ${messageHtml}
+            ${inputHtml}
+            <div class="neon-modal-actions">
+                <button type="button" class="neon-modal-btn cancel" data-role="cancel">${escHtml(cancelText)}</button>
+                <button type="button" class="neon-modal-btn ${confirmClass}" data-role="confirm">${escHtml(confirmText)}</button>
+            </div>`;
+
+        backdrop.appendChild(card);
+        document.body.appendChild(backdrop);
+        activeBackdrop = backdrop;
+
+        const inputEl = card.querySelector('.neon-modal-input');
+        const btnCancel = card.querySelector('[data-role="cancel"]');
+        const btnConfirm = card.querySelector('[data-role="confirm"]');
+
+        if (inputEl) {
+            setTimeout(() => { inputEl.focus(); inputEl.select(); }, 40);
+        } else {
+            setTimeout(() => btnConfirm && btnConfirm.focus(), 40);
+        }
+
+        function finish(value) {
+            const r = activeResolve;
+            cleanup();
+            if (typeof r === 'function') r(value);
+        }
+
+        btnCancel.addEventListener('click', () => finish(null));
+        btnConfirm.addEventListener('click', () => {
+            if (opts.type === 'prompt') {
+                const v = inputEl ? inputEl.value.trim() : '';
+                finish(v || null);
+            } else {
+                finish(true);
+            }
+        });
+        backdrop.addEventListener('click', (e) => {
+            if (e.target === backdrop) finish(null);
+        });
+        if (inputEl) {
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const v = inputEl.value.trim();
+                    finish(v || null);
+                }
+            });
+        }
+
+        activeEscHandler = (e) => {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                finish(null);
+            }
+        };
+        document.addEventListener('keydown', activeEscHandler);
+    }
+
+    function confirm(opts) {
+        const o = opts || {};
+        return new Promise((resolve) => {
+            open({
+                type: 'confirm',
+                title: o.title || 'Confirmar',
+                message: o.message || '',
+                icon: o.icon || '?',
+                confirmText: o.confirmText || 'Aceptar',
+                cancelText: o.cancelText || 'Cancelar',
+                danger: !!o.danger
+            }, resolve);
+        });
+    }
+
+    function prompt(opts) {
+        const o = opts || {};
+        return new Promise((resolve) => {
+            open({
+                type: 'prompt',
+                title: o.title || 'Ingresa un valor',
+                message: o.message || '',
+                icon: o.icon || '✎',
+                placeholder: o.placeholder || '',
+                defaultValue: o.defaultValue || '',
+                maxlength: o.maxlength || 200,
+                confirmText: o.confirmText || 'Aceptar',
+                cancelText: o.cancelText || 'Cancelar',
+                danger: !!o.danger
+            }, resolve);
+        });
+    }
+
+    window.NeonModal = { confirm, prompt };
+})();
