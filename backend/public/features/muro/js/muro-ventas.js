@@ -4,6 +4,11 @@
 // Vender tokens (publicar venta), comprar tokens, modal de
 // confirmación de compra.
 // Depende de: muro-config.js, muro-utils.js, muro-publicar.js, muro-pagos.js
+//
+// v2.1:
+// - Sin emojis en comentarios ni en la interfaz (los iconos ya son SVG).
+// - Lógica, IDs y RPC (mi_perfil_privado, publicar_venta_tokens) sin cambios.
+// - Verificado en Supabase: ambas RPC existen con la firma que usa este archivo.
 // ================================================================
 
 // ================================================================
@@ -89,10 +94,10 @@ async function publicarVenta() {
     btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Publicando...';
 
     try {
-        // ✅ SEGURIDAD: Validar tokens con mi_perfil_privado() en lugar de leer la tabla usuarios
+        // Validar tokens con mi_perfil_privado() (no se lee la tabla usuarios directamente)
         var perfilResult = await supabaseClient.rpc('mi_perfil_privado');
         if (perfilResult.error) throw perfilResult.error;
-        
+
         var misDatos = perfilResult.data && perfilResult.data[0];
         var misTokens = misDatos ? (misDatos.tokens || 0) : 0;
 
@@ -103,7 +108,7 @@ async function publicarVenta() {
             return;
         }
 
-        // ✅ SEGURIDAD: Publicar venta vía RPC (elimina el insert directo)
+        // Publicar venta vía RPC (no hay insert directo)
         var result = await supabaseClient.rpc('publicar_venta_tokens', {
             p_cantidad: cantidad,
             p_precio: precio,
@@ -113,7 +118,7 @@ async function publicarVenta() {
         if (result.error) {
             throw result.error;
         }
-        
+
         if (result.data && result.data.success === false) {
             throw new Error(result.data.error || 'Error al publicar venta');
         }
@@ -209,7 +214,7 @@ function actualizarResumenCompra() {
 
     var total = cantidad * precioUnitario;
     var comision = total * COMISION_PORCENTAJE;
-    var vendedorRecibe = total - comision; // ✅ CORREGIDO: vendedorRecibe (antes vendedorRecibidor)
+    var vendedorRecibe = total - comision;
 
     document.getElementById('confirmPrecioUnitario').textContent = '$' + precioUnitario.toFixed(2) + ' MXN';
     document.getElementById('confirmCantidadLabel').textContent = cantidad + ' token' + (cantidad !== 1 ? 's' : '');
