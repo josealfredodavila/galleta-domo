@@ -225,6 +225,24 @@
 
             <textarea id="postContent" data-placeholder="muro_placeholder" placeholder="¿Qué está pasando en tu mundo? #hashtag @mencion"></textarea>
 
+            <!-- ===== NUEVO: PANEL VENTA DE PRODUCTO P2P ===== -->
+            <div id="ventaProductoPanel" class="venta-producto-panel" style="display:none;">
+                <div class="venta-producto-row">
+                    <label for="ventaTitulo" class="venta-label">Producto</label>
+                    <input type="text" id="ventaTitulo" maxlength="120"
+                           placeholder="Nombre del producto"
+                           oninput="actualizarPreviewVenta()" />
+                </div>
+                <div class="venta-producto-row">
+                    <label for="ventaPrecio" class="venta-label">Precio (MXN)</label>
+                    <input type="number" id="ventaPrecio" min="1" step="0.01"
+                           placeholder="0.00"
+                           oninput="actualizarPreviewVenta()" />
+                </div>
+                <div id="ventaPreview" class="venta-preview" style="display:none;"></div>
+            </div>
+            <!-- ===== FIN PANEL VENTA DE PRODUCTO ===== -->
+
             <div class="form-actions">
                 <div class="tools">
                     <button type="button" onclick="insertarHashtag()" data-clave="muro_hashtag">
@@ -238,6 +256,14 @@
                     <button type="button" onclick="abrirSelectorImagen()" data-clave="muro_imagen">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         Imagen
+                    </button>
+                    <!-- NUEVO: botón para activar venta de producto P2P -->
+                    <button type="button" class="venta" id="btnToggleVenta"
+                            onclick="toggleVentaProducto()"
+                            aria-pressed="false"
+                            title="Vender producto P2P">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 8h16l-1.2 11.3A2 2 0 0 1 16.8 21H7.2a2 2 0 0 1-2-1.7L4 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+                        Vender producto
                     </button>
                     <button type="button" class="venta" onclick="abrirModalVenta()" data-clave="muro_vender_tokens">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
@@ -257,7 +283,6 @@
         </div>
 
         <div id="feedContainer"></div>
-
         <footer class="footer">
             <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
             <span class="footer-net">
