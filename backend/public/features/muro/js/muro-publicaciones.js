@@ -4,15 +4,11 @@
 // Cargar feed, renderizar posts, scroll infinito, verificar like.
 // Depende de: muro-config.js, muro-utils.js
 //
-// v2.4 (Mini-Tarjetas de Venta P2P):
-// - Detecta post.metadata_interactiva.tipo === 'venta_producto'
-//   y dibuja una mini-tarjeta de compra con título, precio MXN
-//   y botón "Comprar".
-// - El botón invoca abrirCompraProductoP2P() que conecta con el
-//   flujo de pagos existente (abrirModalConfirmacion / NOWPayments /
-//   Polygon) y aplica la comisión del 3% para Csariel's.
-// - Se conserva la sección legacy de venta de tokens (cantidad_venta).
-// - Todos los textos se escapan y los SVGs mantienen trazo fino.
+// v2.3:
+// - Iconos nuevos para comentar, compartir y eliminar (trazo fino,
+//   estilo moderno). Las funciones, IDs y clases no cambian.
+// - Me gusta, comentar y venta usan la clase .icon-ui para que
+//   muro-acciones.css les dé color y brillo.
 // ================================================================
 
 // ================================================================
@@ -34,23 +30,27 @@ var MURO_PUB_ICON = {
             '<line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' +
         '</svg>',
 
+    // Me gusta (corazón)
     corazon:
         '<svg class="icon-ui" viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M12 20.5s-7.5-4.4-9.4-9.1C1.3 8.3 3.4 4.5 7.2 4.5c2.1 0 3.6 1.2 4.8 2.7 1.2-1.5 2.7-2.7 4.8-2.7 3.8 0 5.9 3.8 4.6 6.9-1.9 4.7-9.4 9.1-9.4 9.1z"/>' +
         '</svg>',
 
+    // Comentar (burbuja con puntos)
     comentar:
         '<svg class="icon-ui" viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M20.5 11.6a8.5 8.5 0 0 1-12.3 7.6L3.5 20.5l1.4-4.4A8.5 8.5 0 1 1 20.5 11.6z"/>' +
             '<path d="M8.5 11.6h.01M12 11.6h.01M15.5 11.6h.01" stroke-width="2.6"/>' +
         '</svg>',
 
+    // Compartir (flecha curva)
     compartir:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M15 14l5-5-5-5"/>' +
             '<path d="M20 9H10.5A6.5 6.5 0 0 0 4 15.5V20"/>' +
         '</svg>',
 
+    // Eliminar (papelera con tapa)
     eliminar:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M4 7h16"/>' +
@@ -59,42 +59,30 @@ var MURO_PUB_ICON = {
             '<path d="M9.5 7V4.8c0-.9.7-1.6 1.6-1.6h1.8c.9 0 1.6.7 1.6 1.6V7"/>' +
         '</svg>',
 
+    // Reportar (bandera)
     reportar:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/>' +
             '<line x1="4" y1="22" x2="4" y2="15"/>' +
         '</svg>',
 
+    // Venta (diamante pequeño)
     venta:
         '<svg class="icon-ui" viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M6 3h12l4 6-10 12L2 9l4-6z"/>' +
-        '</svg>',
-
-    // NUEVO: icono de producto (bolsa de compra, trazo fino)
-    producto:
-        '<svg class="icon-ui icon-sm-ui" viewBox="0 0 24 24" aria-hidden="true">' +
-            '<path d="M4 8h16l-1.2 11.3A2 2 0 0 1 16.8 21H7.2a2 2 0 0 1-2-1.7L4 8z"/>' +
-            '<path d="M9 8V6a3 3 0 0 1 6 0v2"/>' +
-        '</svg>',
-
-    // NUEVO: icono de carrito para el botón Comprar
-    carrito:
-        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
-            '<circle cx="9" cy="20" r="1.4"/>' +
-            '<circle cx="18" cy="20" r="1.4"/>' +
-            '<path d="M2 3h3l2.4 12.2A2 2 0 0 0 9.4 17h8.4a2 2 0 0 0 2-1.6L21 7H6"/>' +
-        '</svg>',
-
-    // NUEVO: candado para indicar pago seguro
-    candado:
-        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
-            '<rect x="4" y="11" width="16" height="10" rx="2"/>' +
-            '<path d="M8 11V8a4 4 0 0 1 8 0v3"/>' +
         '</svg>'
 };
 
 // ================================================================
 // HELPER — Manejo de errores de moderación
+// ================================================================
+// Uso en cualquier archivo del muro que inserte texto:
+//
+//   try {
+//     await supabaseClient.from('muro_comentarios').insert({...});
+//   } catch (e) {
+//     manejarErrorModeracion(e);
+//   }
 // ================================================================
 function manejarErrorModeracion(e) {
     var mensaje = (e && e.message) ? String(e.message) : '';
@@ -133,6 +121,7 @@ async function cargarPublicaciones(reset) {
         var from = currentPage * POSTS_PER_PAGE;
         var to = from + POSTS_PER_PAGE - 1;
 
+        // La vista muro_posts_publicos ya expone aviso_moderacion.
         var query = supabaseClient
             .from('muro_posts_publicos')
             .select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
@@ -176,6 +165,7 @@ async function cargarPublicaciones(reset) {
         currentPage++;
         hasMorePosts = data.length === POSTS_PER_PAGE;
 
+        // Scroll infinito
         if (hasMorePosts && feedContainer) {
             var lastPost = feedContainer.lastElementChild;
             if (lastPost) {
@@ -197,190 +187,6 @@ async function cargarPublicaciones(reset) {
 }
 
 // ================================================================
-// NUEVO — RENDERIZAR MINI-TARJETA DE VENTA DE PRODUCTO
-// ================================================================
-// Devuelve string HTML o '' si no aplica.
-// La tarjeta es un bloque oscuro con borde dorado suave, título,
-// precio en MXN y botón "Comprar" (sin emojis, SVGs en trazo fino).
-// ================================================================
-function renderizarMiniTarjetaVenta(post) {
-    var meta = post && post.metadata_interactiva;
-    if (!meta) return '';
-    if (meta.tipo !== 'venta_producto') return '';
-
-    var titulo = escapeHTML(meta.titulo || 'Producto');
-    var precioRaw = Number(meta.precio_mxn);
-    if (!isFinite(precioRaw) || precioRaw <= 0) return '';
-
-    var precioMXN = precioRaw.toFixed(2);
-    var esMiProducto = sessionUser && post.usuario_id === sessionUser.id;
-
-    // Comisión informativa (3%) — no se cobra aquí, se muestra
-    // para transparencia del comprador. El cálculo real lo hace
-    // el flujo de pago P2P en el backend.
-    var comision = (precioRaw * 0.03).toFixed(2);
-    var netoVendedor = (precioRaw - (precioRaw * 0.03)).toFixed(2);
-
-    var botonHtml;
-    if (esMiProducto) {
-        botonHtml =
-            '<button type="button" class="btn-comprar-p2p" disabled ' +
-                'aria-disabled="true" title="No puedes comprar tu propio producto">' +
-                MURO_PUB_ICON.carrito + ' Tu producto' +
-            '</button>';
-    } else {
-        // Pasamos el ID del post; abrirCompraProductoP2P busca la
-        // metadata en el DOM o en caché para evitar re-consultar.
-        botonHtml =
-            '<button type="button" class="btn-comprar-p2p" ' +
-                'onclick="abrirCompraProductoP2P(\'' + post.id + '\')" ' +
-                'aria-label="Comprar ' + titulo + ' por ' + precioMXN + ' pesos">' +
-                MURO_PUB_ICON.carrito + ' Comprar' +
-            '</button>';
-    }
-
-    return '' +
-        '<div class="mini-tarjeta-venta" data-post-id="' + post.id + '">' +
-            '<div class="mtv-header">' +
-                '<span class="mtv-badge">' +
-                    MURO_PUB_ICON.producto.replace('class="icon-ui icon-sm-ui"', 'class="icon-ui icon-sm-ui" style="width:14px;height:14px;"') +
-                    '<span>Venta P2P</span>' +
-                '</span>' +
-                '<span class="mtv-seguro">' +
-                    MURO_PUB_ICON.candado.replace('class="icon"', 'class="icon" style="width:12px;height:12px;"') +
-                    'Pago seguro' +
-                '</span>' +
-            '</div>' +
-            '<div class="mtv-body">' +
-                '<div class="mtv-titulo">' + titulo + '</div>' +
-                '<div class="mtv-precio">' +
-                    '<span class="mtv-moneda">$</span>' +
-                    '<span class="mtv-monto">' + precioMXN + '</span>' +
-                    '<span class="mtv-currency">MXN</span>' +
-                '</div>' +
-                '<div class="mtv-desglose">' +
-                    '<span>Vendedor recibe: $' + netoVendedor + '</span>' +
-                    '<span class="mtv-comision">Comisión Csariel\'s (3%): $' + comision + '</span>' +
-                '</div>' +
-            '</div>' +
-            '<div class="mtv-footer">' + botonHtml + '</div>' +
-        '</div>';
-}
-
-// ================================================================
-// NUEVO — ABRIR FLUJO DE COMPRA P2P (conexión con pagos)
-// ================================================================
-// Se llama desde el botón "Comprar" de la mini-tarjeta.
-// Reutiliza el flujo existente de abrirModalConfirmacion() y el
-// sistema de pagos (NOWPayments / Polygon) dividiendo el pago con
-// la comisión del 3% para Csariel's.
-// ================================================================
-window.abrirCompraProductoP2P = async function(postId) {
-    try {
-        if (!sessionUser) {
-            if (typeof showToast === 'function') showToast('Inicia sesión para comprar', 'error');
-            return;
-        }
-
-        // 1) Recuperar metadata de la tarjeta en el DOM
-        var tarjeta = document.querySelector('.mini-tarjeta-venta[data-post-id="' + postId + '"]');
-        if (!tarjeta) {
-            if (typeof showToast === 'function') showToast('Producto no encontrado', 'error');
-            return;
-        }
-
-        // 2) Buscar el post en caché local si existe (evita un fetch)
-        var postEnCache = null;
-        if (typeof postsCache !== 'undefined' && Array.isArray(postsCache)) {
-            postEnCache = postsCache.find(function(p) { return String(p.id) === String(postId); });
-        }
-
-        var meta = postEnCache && postEnCache.metadata_interactiva
-            ? postEnCache.metadata_interactiva
-            : null;
-
-        // 3) Fallback: consultar a Supabase si no hay caché
-        if (!meta) {
-            var result = await supabaseClient
-                .from('muro_posts')
-                .select('id, usuario_id, metadata_interactiva')
-                .eq('id', postId)
-                .single();
-            if (result.error) throw result.error;
-            meta = result.data.metadata_interactiva;
-            postEnCache = result.data;
-        }
-
-        if (!meta || meta.tipo !== 'venta_producto') {
-            if (typeof showToast === 'function') showToast('Este producto ya no está disponible', 'error');
-            return;
-        }
-
-        var precioMXN = Number(meta.precio_mxn);
-        if (!isFinite(precioMXN) || precioMXN <= 0) {
-            if (typeof showToast === 'function') showToast('Precio inválido', 'error');
-            return;
-        }
-
-        // 4) Desglose de comisión (3% Csariel's)
-        //    Si el flujo de pagos existente ya calcula la comisión,
-        //    estos valores se envían como referencia y el backend
-        //    hace el cálculo autoritativo.
-        var COMISION_PCT = 0.03;
-        var comisionCsariel = Number((precioMXN * COMISION_PCT).toFixed(2));
-        var montoVendedor = Number((precioMXN - comisionCsariel).toFixed(2));
-
-        var payloadCompra = {
-            tipo: 'venta_producto_p2p',
-            post_id: postId,
-            vendedor_id: postEnCache.usuario_id || meta.vendedor_id || null,
-            comprador_id: sessionUser.id,
-            titulo: meta.titulo || 'Producto',
-            moneda: 'MXN',
-            precio_total_mxn: Number(precioMXN.toFixed(2)),
-            comision_pct: COMISION_PCT,
-            comision_mxn: comisionCsariel,
-            monto_vendedor_mxn: montoVendedor,
-            metadata_interactiva: meta
-        };
-
-        // 5) Invocar el flujo de pago existente
-        //    Prioridad: abrirModalConfirmacion() (si existe) →
-        //    procesarPagoP2P() → abrirModalCompra() (legacy tokens)
-        if (typeof window.abrirModalConfirmacion === 'function') {
-            // Firma esperada: abrirModalConfirmacion(payload)
-            // Si tu función tiene otra firma, adapta esta llamada.
-            await window.abrirModalConfirmacion(payloadCompra);
-            return;
-        }
-
-        if (typeof window.procesarPagoP2P === 'function') {
-            await window.procesarPagoP2P(payloadCompra);
-            return;
-        }
-
-        // Legacy: si el proyecto todavía usa el modal de tokens,
-        // lo usamos como fallback genérico.
-        if (typeof window.abrirModalCompra === 'function') {
-            window.abrirModalCompra(postId);
-            return;
-        }
-
-        // Último recurso: avisar que falta el módulo de pagos
-        if (typeof showToast === 'function') {
-            showToast('Módulo de pagos no disponible. Contacta a soporte.', 'error', 6000);
-        }
-        console.warn('No se encontró abrirModalConfirmacion / procesarPagoP2P / abrirModalCompra. Payload:', payloadCompra);
-
-    } catch (e) {
-        console.error('Error al iniciar compra P2P:', e);
-        if (typeof showToast === 'function') {
-            showToast('No se pudo iniciar la compra: ' + (e.message || 'error'), 'error');
-        }
-    }
-};
-
-// ================================================================
 // RENDERIZAR POST (HTML)
 // ================================================================
 function renderizarPost(post) {
@@ -395,6 +201,7 @@ function renderizarPost(post) {
     var comentariosCount = (post.muro_comentarios && post.muro_comentarios[0]) ? post.muro_comentarios[0].count || 0 : 0;
     var contenidoSanitizado = sanitizarHTML(post.contenido || '');
 
+    // Enlace al perfil del autor
     var esMiPost = sessionUser && post.usuario_id === sessionUser.id;
     var perfilHref = null;
     if (esMiPost) {
@@ -419,7 +226,7 @@ function renderizarPost(post) {
         }
     }
 
-    // Aviso de moderación
+    // Aviso de lenguaje inapropiado
     var avisoBadge = '';
     if (post.aviso_moderacion === 'lenguaje_inapropiado') {
         avisoBadge =
@@ -438,10 +245,7 @@ function renderizarPost(post) {
             '</div>';
     }
 
-    // === NUEVO: Mini-tarjeta de venta P2P de producto ===
-    var tarjetaVentaProducto = renderizarMiniTarjetaVenta(post);
-
-    // Sección legacy de venta de tokens (se conserva)
+    // Sección de venta de tokens
     var seccionVenta = '';
     if (post.cantidad_venta && post.cantidad_venta > 0 && post.precio_venta) {
         var precioPorToken = parseFloat(post.precio_venta).toFixed(2);
@@ -482,7 +286,6 @@ function renderizarPost(post) {
         avisoBadge +
         '<div class="post-content">' + contenidoSanitizado + '</div>' +
         imagenHtml +
-        tarjetaVentaProducto +   /* NUEVO: mini-tarjeta P2P */
         seccionVenta +
         '<div class="post-stats">' +
             '<span class="like-btn" onclick="toggleLike(\'' + post.id + '\')" data-liked="false" role="button" aria-label="Me gusta">' +
@@ -503,6 +306,7 @@ function renderizarPost(post) {
             '</div>' +
         '</div>';
 
+    // Verificar like en paralelo
     if (sessionUser) {
         verificarLike(post.id).then(function(liked) {
             var likeBtn = div.querySelector('.like-btn');
