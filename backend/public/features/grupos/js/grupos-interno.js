@@ -3,7 +3,8 @@
 // ================================================================
 // Abrir grupo, membresía, feed de publicaciones, interacciones,
 // reportes, etiquetas, comentarios, reacciones y acciones del canal.
-// Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js
+// Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js,
+//             grupos-marketplace.js (mkTarjetaCompraHTML)
 //
 // v3 (moderación):
 // - subirFotoGrupo, subirVideoGrupo, cambiarAvatarGrupo y
@@ -17,6 +18,11 @@
 //   grupos_video_comentarios_publicos ya NO piden la columna
 //   aviso_moderacion (esas vistas no la tienen; la consulta fallaba y
 //   el feed se quedaba en "Sin publicaciones aún").
+//
+// v3.2 (marketplace de canales):
+// - La tarjeta de compra (precio, stock y botón "Comprar") se inserta
+//   en cada publicación de marketplace con mkTarjetaCompraHTML(p).
+// - Se muestra la descripción guardada del producto.
 // ================================================================
 
 // ================================================================
@@ -453,9 +459,17 @@ function renderizarPublicacionHTML(p) {
         }
         var contactoDiv = contactoHTML ? '<div class="contacto">' + contactoHTML + '</div>' : '';
 
+        var descripcionHTML = p.descripcion
+            ? '<div class="mk-descripcion" style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5;margin:6px 0;">' + grpEscapeHTML(p.descripcion) + '</div>'
+            : '';
+
         mkHTML = '<div class="marketplace-info">' +
             '<div class="titulo-mk"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' + tipoLabel + '</div>' +
+            descripcionHTML +
             '<div>' + precioHTML + '</div>' + ubicacionHTML + contactoDiv + '</div>';
+
+        // Tarjeta de compra (precio, stock y botón "Comprar"). Vacío si no hay precio.
+        mkHTML += mkTarjetaCompraHTML(p);
     }
 
     var claseMK = p.tipo_marketplace ? ' marketplace ' + p.tipo_marketplace : '';
@@ -840,6 +854,7 @@ async function guardarEtiquetas() {
 // ================================================================
 // v3.1: se quitó 'aviso_moderacion' del select porque la vista no
 // tiene esa columna; la consulta fallaba y el feed no se mostraba.
+// v3.2: la vista ya expone stock y descripcion (migración aplicada).
 async function cargarPublicacionesGrupo(grupoId) {
     try {
         var result = await window.supabaseClient
