@@ -1,103 +1,123 @@
 /* ================================================================
-   MURO · ACCIONES DE PUBLICACIÓN v1
-   Me gusta, comentar, compartir, eliminar y reportar con iconos
-   vectoriales y contador. Sin emojis.
-   Se carga DESPUÉS de muro.css para sobrescribir sus estilos.
+   MURO · ACCIONES DE PUBLICACIÓN v2
+   Me gusta, comentar, compartir, eliminar y reportar.
+   Cada acción tiene su color (variable --ac) y brillo al tocarla.
+   Se carga DESPUÉS de muro.css.
    ================================================================ */
 
-/* ---------- Barra de estadísticas (me gusta, comentarios) ---------- */
+/* ---------- Barra de estadísticas (me gusta, comentarios, venta) ---------- */
 .post-card .post-stats {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    padding: 10px 0 2px;
-    border-top: 1px solid var(--glass-border);
+    padding: 12px 0 2px;
     margin-top: 6px;
+    border-top: 1px solid var(--glass-border);
 }
 
 .post-card .post-stats > span {
+    --ac: 139, 168, 184;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 12px;
+    gap: 7px;
+    height: 34px;
+    padding: 0 14px 0 11px;
     border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.03);
-    color: var(--text-muted);
-    font-size: 0.72rem;
-    font-weight: 600;
+    border: 1px solid rgba(var(--ac), 0.28);
+    background: linear-gradient(135deg, rgba(var(--ac), 0.10), rgba(255, 255, 255, 0.02));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    color: rgb(var(--ac));
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.2px;
     cursor: pointer;
     user-select: none;
-    transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+    transition: transform 0.18s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+}
+
+.post-card .post-stats > span .count {
+    font-variant-numeric: tabular-nums;
 }
 
 .post-card .post-stats > span:hover {
-    color: var(--gold);
-    background: rgba(212, 175, 55, 0.08);
-    border-color: rgba(212, 175, 55, 0.25);
+    transform: translateY(-1px);
+    border-color: rgba(var(--ac), 0.6);
+    box-shadow: 0 0 0 1px rgba(var(--ac), 0.2), 0 0 16px rgba(var(--ac), 0.28);
 }
 
 .post-card .post-stats > span:active {
     transform: scale(0.96);
 }
 
+/* Comentar: cian */
+.post-card .post-stats .comment-btn {
+    --ac: 0, 229, 255;
+}
+
+/* Me gusta: rosa */
+.post-card .post-stats .like-btn {
+    --ac: 255, 77, 109;
+}
+
+.post-card .post-stats .like-btn[data-liked="true"] {
+    background: linear-gradient(135deg, rgba(var(--ac), 0.22), rgba(var(--ac), 0.06));
+    border-color: rgba(var(--ac), 0.6);
+}
+
+.post-card .post-stats .like-btn[data-liked="true"] .icon-ui {
+    fill: rgb(var(--ac));
+}
+
+/* Venta activa: dorado, sin acción al tocar */
+.post-card .post-stats .venta-activa {
+    --ac: 212, 175, 55;
+    cursor: default;
+}
+
+.post-card .post-stats .venta-activa:hover {
+    transform: none;
+}
+
+/* Iconos de estadísticas */
 .post-card .post-stats .icon-ui {
     width: 17px;
     height: 17px;
     stroke: currentColor;
     fill: none;
-    stroke-width: 1.9;
+    stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
     flex-shrink: 0;
+    filter: drop-shadow(0 0 4px rgba(var(--ac), 0.55));
 }
 
-/* Me gusta: corazón relleno y rojo cuando está activo */
-.post-card .post-stats .like-btn:hover {
-    color: #ff4d6d;
-    background: rgba(255, 77, 109, 0.08);
-    border-color: rgba(255, 77, 109, 0.3);
+.post-card .post-stats .icon-sm-ui {
+    width: 14px;
+    height: 14px;
 }
 
-.post-card .post-stats .like-btn[data-liked="true"] {
-    color: #ff4d6d;
-    background: rgba(255, 77, 109, 0.12);
-    border-color: rgba(255, 77, 109, 0.4);
-}
-
-.post-card .post-stats .like-btn[data-liked="true"] .icon-ui {
-    fill: currentColor;
-}
-
-/* Etiqueta de venta activa */
-.post-card .post-stats > span.venta-activa {
-    color: var(--gold);
-    background: rgba(212, 175, 55, 0.08);
-    border-color: rgba(212, 175, 55, 0.3);
-    cursor: default;
-}
-
-/* ---------- Acciones del encabezado (eliminar, compartir, reportar) ---------- */
+/* ---------- Acciones del encabezado (compartir, eliminar, reportar) ---------- */
 .post-card .post-actions-header {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 6px;
     margin-left: auto;
 }
 
 .post-card .post-actions-header button {
+    --ac: 139, 168, 184;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    width: 36px;
+    height: 36px;
     padding: 0;
-    border-radius: 50%;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--text-muted);
+    border-radius: 12px;
+    border: 1px solid rgba(var(--ac), 0.25);
+    background: linear-gradient(135deg, rgba(var(--ac), 0.10), rgba(255, 255, 255, 0.02));
+    color: rgb(var(--ac));
     cursor: pointer;
-    transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+    transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .post-card .post-actions-header button svg {
@@ -105,40 +125,49 @@
     height: 17px;
     stroke: currentColor;
     fill: none;
-    stroke-width: 1.9;
+    stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
+    filter: drop-shadow(0 0 3px rgba(var(--ac), 0.5));
 }
 
-.post-card .post-actions-header .btn-share:hover {
-    color: var(--cyan);
-    background: rgba(0, 229, 255, 0.08);
-    border-color: rgba(0, 229, 255, 0.25);
+.post-card .post-actions-header button:hover {
+    transform: translateY(-1px);
+    border-color: rgba(var(--ac), 0.6);
+    box-shadow: 0 0 0 1px rgba(var(--ac), 0.2), 0 0 14px rgba(var(--ac), 0.3);
 }
 
-.post-card .post-actions-header .btn-report:hover {
-    color: var(--warning);
-    background: rgba(247, 212, 74, 0.08);
-    border-color: rgba(247, 212, 74, 0.25);
-}
-
-.post-card .post-actions-header .btn-delete:hover {
-    color: #ff4d6d;
-    background: rgba(255, 77, 109, 0.1);
-    border-color: rgba(255, 77, 109, 0.3);
+.post-card .post-actions-header button:active {
+    transform: scale(0.94);
 }
 
 .post-card .post-actions-header button:focus-visible {
-    outline: 2px solid var(--cyan);
+    outline: 2px solid rgb(var(--ac));
     outline-offset: 2px;
 }
 
-/* ---------- Pastillas de la barra de herramientas del compositor ---------- */
+/* Compartir: violeta */
+.post-card .post-actions-header .btn-share {
+    --ac: 168, 85, 247;
+}
+
+/* Eliminar: rosa */
+.post-card .post-actions-header .btn-delete {
+    --ac: 255, 77, 109;
+}
+
+/* Reportar: dorado */
+.post-card .post-actions-header .btn-report {
+    --ac: 247, 212, 74;
+}
+
+/* ---------- Barra de herramientas del compositor ---------- */
 .post-form .form-actions .tools button {
     border: 1px solid transparent;
     border-radius: 999px;
     padding: 6px 11px;
     color: var(--text-muted);
+    transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
 }
 
 .post-form .form-actions .tools button svg {
@@ -146,19 +175,20 @@
     height: 15px;
     stroke: currentColor;
     fill: none;
-    stroke-width: 1.9;
+    stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
 }
 
 .post-form .form-actions .tools button:hover {
-    color: var(--gold);
-    border-color: rgba(212, 175, 55, 0.22);
+    color: var(--cyan);
+    border-color: rgba(0, 229, 255, 0.25);
+    background: rgba(0, 229, 255, 0.06);
 }
 
-/* ---------- Iconos de cabecera y filtros (sin emojis) ---------- */
-.filter-tab .icon-sm,
-.muro-filter-nav .filter-tab svg {
+/* ---------- Iconos de cabecera, filtros y navegación ---------- */
+.muro-filter-nav .filter-tab svg,
+.filter-tab .icon-sm {
     width: 14px;
     height: 14px;
     stroke: currentColor;
@@ -184,6 +214,7 @@
     width: 8px;
     height: 8px;
     fill: currentColor;
+    stroke: none;
     vertical-align: 0;
     margin-right: 3px;
 }
@@ -202,7 +233,6 @@
     stroke: none;
 }
 
-/* Iconos de historias y botón de la barra de secciones */
 .cs-story-ring .icon {
     width: 22px;
     height: 22px;
@@ -216,21 +246,31 @@
 /* ---------- Móvil ---------- */
 @media (max-width: 480px) {
     .post-card .post-stats > span {
-        padding: 5px 10px;
-        font-size: 0.68rem;
+        height: 32px;
+        padding: 0 11px 0 9px;
+        font-size: 0.7rem;
+    }
+
+    .post-card .post-actions-header {
+        gap: 4px;
     }
 
     .post-card .post-actions-header button {
-        width: 30px;
-        height: 30px;
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
     }
 }
 
 /* ---------- Tema día ---------- */
 html.tema-dia .post-card .post-stats > span,
 html[data-tema="dia"] .post-card .post-stats > span {
-    border-color: rgba(0, 0, 0, 0.08);
-    background: rgba(0, 0, 0, 0.03);
+    background: rgba(255, 255, 255, 0.7);
+}
+
+html.tema-dia .post-card .post-actions-header button,
+html[data-tema="dia"] .post-card .post-actions-header button {
+    background: rgba(255, 255, 255, 0.7);
 }
 
 /* ---------- Movimiento reducido ---------- */
