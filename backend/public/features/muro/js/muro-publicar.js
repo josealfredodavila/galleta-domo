@@ -1,18 +1,14 @@
 // ================================================================
 // MURO · PUBLICAR
 // ================================================================
-// Crear publicaciones (texto + imagen + venta P2P de producto),
-// emoji picker, hashtags.
+// Crear publicaciones (texto + imagen), emoji picker, hashtags.
 // Depende de: muro-config.js, muro-utils.js, muro-publicaciones.js
 //
-// v3.1 (Venta P2P de productos):
-// - Nuevo bloque "Vender producto" en el compositor. Al activarlo
-//   se piden título y precio en MXN. Se guarda en la columna
-//   metadata_interactiva (jsonb) de muro_posts con el formato:
-//     { tipo: 'venta_producto', titulo: string, precio_mxn: number,
-//       vendedor_id: uuid, moneda: 'MXN', creado_at: ISO }
-// - Se valida que el precio sea un número > 0 y el título no vacío.
-// - El trigger de moderación de texto sigue aplicando al contenido.
+// v3 (moderación completa):
+// - Texto: el trigger de la base rechaza frases bloqueadas
+//   ('contenido_no_permitido') y manejarErrorModeracion() lo muestra.
+// - Imagen: se sube a través de /api/media/upload, que la revisa con
+//   Rekognition antes de guardarla. Ya no se sube directo a Storage.
 // ================================================================
 
 // ================================================================
@@ -22,125 +18,6 @@ async function obtenerTokenMuro() {
     var resultado = await supabaseClient.auth.getSession();
     var session = resultado && resultado.data ? resultado.data.session : null;
     return session ? session.access_token : null;
-}
-
-// ================================================================
-// ESTADO DEL COMPOSITOR DE VENTA
-// ================================================================
-// Se declara aquí para que el HTML del compositor pueda leerlo
-// sin depender del orden de carga de scripts.
-if (typeof window.muroVentaEstado === 'undefined') {
-    window.muroVentaEstado = {
-        activa: false,
-        titulo: '',
-        precio_mxn: 0
-    };
-}
-
-// ================================================================
-// TOGGLE "VENDER PRODUCTO"
-// ================================================================
-// El botón del compositor llama a esta función. Muestra/oculta
-// los campos de título y precio.
-// ================================================================
-function toggleVentaProducto() {
-    var estado = window.muroVentaEstado;
-    estado.activa = !estado.activa;
-
-    var panel = document.getElementById('ventaProductoPanel');
-    var btn = document.getElementById('btnToggleVenta');
-
-    if (panel) {
-        panel.style.display = estado.activa ? 'block' : 'none';
-    }
-
-    if (btn) {
-        if (estado.activa) {
-            btn.classList.add('activo');
-            btn.setAttribute('aria-pressed', 'true');
-        } else {
-            btn.classList.remove('activo');
-            btn.setAttribute('aria-pressed', 'false');
-            // Limpiamos los campos al desactivar
-            var inputTitulo = document.getElementById('ventaTitulo');
-            var inputPrecio = document.getElementById('ventaPrecio');
-            if (inputTitulo) inputTitulo.value = '';
-            if (inputPrecio) inputPrecio.value = '';
-            estado.titulo = '';
-            estado.precio_mxn = 0;
-            actualizarPreviewVenta();
-        }
-    }
-}
-
-// ================================================================
-// ACTUALIZAR PREVIEW / CAPTURAR DATOS
-// ================================================================
-// Llamado por oninput en los campos de título y precio.
-// ================================================================
-function actualizarPreviewVenta() {
-    var estado = window.muroVentaEstado;
-    var inputTitulo = document.getElementById('ventaTitulo');
-    var inputPrecio = document.getElementById('ventaPrecio');
-    var preview = document.getElementById('ventaPreview');
-
-    estado.titulo = inputTitulo ? inputTitulo.value.trim() : '';
-
-    var precioRaw = inputPrecio ? inputPrecio.value.trim() : '';
-    var precioNum = parseFloat(precioRaw);
-    estado.precio_mxn = isFinite(precioNum) && precioNum > 0 ? precioNum : 0;
-
-    if (preview) {
-        if (estado.titulo && estado.precio_mxn > 0) {
-            var mxn = estado.precio_mxn.toFixed(2);
-            preview.innerHTML =
-                '<span class="preview-label">Vista previa</span>' +
-                '<span class="preview-titulo">' + escapeHTML(estado.titulo) + '</span>' +
-                '<span class="preview-precio">$' + mxn + ' MXN</span>';
-            preview.style.display = 'flex';
-        } else {
-            preview.style.display = 'none';
-        }
-    }
-}
-
-// ================================================================
-// VALIDAR DATOS DE VENTA
-// ================================================================
-function validarVentaProducto() {
-    var estado = window.muroVentaEstado;
-    if (!estado.activa) return { ok: true };
-
-    if (!estado.titulo || estado.titulo.length < 3) {
-        return { ok: false, error: 'El título debe tener al menos 3 caracteres' };
-    }
-    if (estado.titulo.length > 120) {
-        return { ok: false, error: 'El título es demasiado largo (máx. 120)' };
-    }
-    if (!isFinite(estado.precio_mxn) || estado.precio_mxn <= 0) {
-        return { ok: false, error: 'Ingresa un precio válido en MXN' };
-    }
-    if (estado.precio_mxn > 1000000) {
-        return { ok: false, error: 'El precio máximo es $1,000,000 MXN' };
-    }
-    return { ok: true };
-}
-
-// ================================================================
-// CONSTRUIR METADATA INTERACTIVA
-// ================================================================
-function construirMetadataInteractiva() {
-    var estado = window.muroVentaEstado;
-    if (!estado.activa) return null;
-
-    return {
-        tipo: 'venta_producto',
-        titulo: estado.titulo,
-        precio_mxn: Number(estado.precio_mxn.toFixed(2)),
-        moneda: 'MXN',
-        vendedor_id: sessionUser ? sessionUser.id : null,
-        creado_at: new Date().toISOString()
-    };
 }
 
 // ================================================================
@@ -155,17 +32,7 @@ async function publicar() {
     var btnPublicar = document.getElementById('btnPublicar');
     var contenido = postContent ? postContent.value.trim() : '';
 
-    // Validación de venta P2P
-    var validacionVenta = validarVentaProducto();
-    if (!validacionVenta.ok) {
-        showToast(validacionVenta.error, 'error');
-        return;
-    }
-
-    // Si hay venta activa, permitimos publicar incluso sin texto
-    // (el título/precio describen el producto).
-    var ventaActiva = window.muroVentaEstado.activa;
-    if (!contenido && !ventaActiva) {
+    if (!contenido) {
         showToast('Escribe algo para publicar', 'error');
         return;
     }
@@ -188,12 +55,6 @@ async function publicar() {
         var insertData = { usuario_id: sessionUser.id, contenido: contenido };
         if (temaSeleccionado) insertData.tema_id = temaSeleccionado;
 
-        // === NUEVO: metadata de venta de producto ===
-        var metadata = construirMetadataInteractiva();
-        if (metadata) {
-            insertData.metadata_interactiva = metadata;
-        }
-
         var result = await supabaseClient
             .from('muro_posts')
             .insert(insertData)
@@ -201,20 +62,10 @@ async function publicar() {
             .single();
         if (result.error) throw result.error;
 
-        // Limpiar compositor
         postContent.value = '';
         temaSeleccionado = null;
         seleccionarTema(null);
-
-        // Resetear estado de venta
-        if (window.muroVentaEstado.activa) {
-            toggleVentaProducto();
-        }
-
-        showToast(
-            metadata ? 'Producto publicado' : 'Publicación creada',
-            'success'
-        );
+        showToast('Publicación creada', 'success');
 
         await cargarPublicaciones(true);
         await cargarTendencias();
@@ -299,6 +150,9 @@ function abrirSelectorImagen() {
 // ================================================================
 // SUBIR IMAGEN AL MURO (con moderación en el backend)
 // ================================================================
+// El archivo pasa por /api/media/upload. Si Rekognition lo rechaza,
+// el backend responde 422 y no se guarda nada en Storage.
+// ================================================================
 async function subirImagenMuro(event) {
     var file = event.target.files[0];
     if (!file) return;
@@ -335,6 +189,7 @@ async function subirImagenMuro(event) {
         var data = await respuesta.json().catch(function() { return {}; });
 
         if (!respuesta.ok || !data.ok) {
+            // 422 = contenido rechazado por la moderación de imagen
             throw new Error(data.error || 'No se pudo subir la imagen');
         }
 
@@ -346,14 +201,6 @@ async function subirImagenMuro(event) {
         };
         if (temaSeleccionado) insertData.tema_id = temaSeleccionado;
 
-        // Permitir venta de producto también con imagen
-        var validacionVenta = validarVentaProducto();
-        if (!validacionVenta.ok) {
-            throw new Error(validacionVenta.error);
-        }
-        var metadata = construirMetadataInteractiva();
-        if (metadata) insertData.metadata_interactiva = metadata;
-
         var insertResult = await supabaseClient.from('muro_posts').insert(insertData);
         if (insertResult.error) throw insertResult.error;
 
@@ -361,12 +208,7 @@ async function subirImagenMuro(event) {
         temaSeleccionado = null;
         seleccionarTema(null);
 
-        // Resetear estado de venta
-        if (window.muroVentaEstado.activa) {
-            toggleVentaProducto();
-        }
-
-        showToast('Publicación creada', 'success');
+        showToast('Publicación con imagen creada', 'success');
         event.target.value = '';
 
         await cargarPublicaciones(true);
@@ -383,7 +225,3 @@ async function subirImagenMuro(event) {
         event.target.value = '';
     }
 }
-
-// Exponer funciones usadas desde el HTML
-window.toggleVentaProducto = toggleVentaProducto;
-window.actualizarPreviewVenta = actualizarPreviewVenta;
