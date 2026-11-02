@@ -2,34 +2,25 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#000000" />
     <title>◈ Muro · Csariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='10' width='80' height='80' rx='16' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/%3E%3Ctext x='50' y='68' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'%3E%E2%97%88%3C/text%3E%3C/svg%3E" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
     <!-- Apariencia global -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
     <!-- CSS del módulo muro -->
     <link rel="stylesheet" href="/features/muro/css/muro.css">
-
-    <!-- CSS de la barra de secciones + accesos rápidos sociales + historias -->
     <link rel="stylesheet" href="/features/muro/css/muro-social-actions.css">
+    <!-- Acciones de publicación (me gusta, comentar, compartir, eliminar) -->
+    <link rel="stylesheet" href="/features/muro/css/muro-acciones.css">
 
-    <!-- 🔥 CORRECCIÓN: Ocultar la barra de secciones duplicada y dar espacio a los filtros -->
     <style>
-        .muro-section-nav {
-            display: none !important;
-        }
-        .muro-filter-nav {
-            margin-top: 16px !important;
-        }
-        
-        /* 🔥 NUEVA CORRECCIÓN: Ocultar la cuadrícula de accesos rápidos para que no ocupe espacio */
-        .cs-social-actions {
-            display: none !important;
-        }
+        .muro-section-nav { display: none !important; }
+        .muro-filter-nav { margin-top: 16px !important; }
+        .cs-social-actions { display: none !important; }
     </style>
 </head>
 <body>
@@ -42,7 +33,10 @@
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Csariel<span>'s</span></span>
-                <span class="logo-badge">◇ WEB3</span>
+                <span class="logo-badge">
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2 22 12 12 22 2 12z"/></svg>
+                    WEB3
+                </span>
             </a>
             <div class="header-actions">
                 <span class="network-badge">
@@ -57,15 +51,42 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-            <a href="/" class="nav-link" data-nav="inicio">⌂ Inicio</a>
-            <a href="/features/muro/muro.html" class="nav-link active" data-nav="muro" aria-current="page">◇ Muro</a>
-            <a href="/features/perfil/perfil.html" class="nav-link" data-nav="perfil">◆ Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link" data-nav="contactos">◈ Contactos</a>
-            <a href="/features/live/live.html" class="nav-link live" data-nav="live">◉ Live</a>
-            <a href="/features/internet/internet.html" class="nav-link" data-nav="internet">◈ Internet</a>
-            <a href="/features/videos/videos.html" class="nav-link" data-nav="videos">▣ Videos</a>
-            <a href="/features/grupos/grupos.html" class="nav-link" data-nav="grupos">⬡ Canales</a>
-            <a href="/features/mercado/index.html" class="nav-link" data-nav="mercado">◆ Mercado</a>
+            <a href="/" class="nav-link" data-nav="inicio">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
+                Inicio
+            </a>
+            <a href="/features/muro/muro.html" class="nav-link active" data-nav="muro" aria-current="page">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                Muro
+            </a>
+            <a href="/features/perfil/perfil.html" class="nav-link" data-nav="perfil">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                Perfil
+            </a>
+            <a href="/features/mensajes/contactos.html" class="nav-link" data-nav="contactos">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>
+                Contactos
+            </a>
+            <a href="/features/live/live.html" class="nav-link live" data-nav="live">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+                Live
+            </a>
+            <a href="/features/internet/internet.html" class="nav-link" data-nav="internet">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+                Internet
+            </a>
+            <a href="/features/videos/videos.html" class="nav-link" data-nav="videos">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><polygon points="10 9 15 12 10 15 10 9"/></svg>
+                Videos
+            </a>
+            <a href="/features/grupos/grupos.html" class="nav-link" data-nav="grupos">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/></svg>
+                Canales
+            </a>
+            <a href="/features/mercado/index.html" class="nav-link" data-nav="mercado">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                Mercado
+            </a>
         </nav>
 
         <!-- ===== BARRA DE SECCIONES DEL MURO (OCULTA CON CSS) ===== -->
@@ -93,39 +114,53 @@
             </a>
         </nav>
 
-        <!-- ===== SUB-MENÚ DE FILTROS DEL MURO ===== -->
+        <!-- ===== FILTROS DEL MURO ===== -->
         <nav class="muro-filter-nav" id="muroFilterNav" aria-label="Filtros del Muro">
-            <a href="#" class="filter-tab active" data-filter="parati">✨ Para ti</a>
-            <a href="#" class="filter-tab" data-filter="envivo">🔴 En vivo <span class="dot-live"></span></a>
-            <a href="#" class="filter-tab" data-filter="siguiendo">◎ Siguiendo</a>
-            <a href="#" class="filter-tab" data-filter="explorar">◈ Explorar</a>
-            <a href="#" class="filter-tab" data-filter="puebla">📍 Puebla</a>
+            <a href="#" class="filter-tab active" data-filter="parati">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>
+                Para ti
+            </a>
+            <a href="#" class="filter-tab" data-filter="envivo">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49"/></svg>
+                En vivo <span class="dot-live"></span>
+            </a>
+            <a href="#" class="filter-tab" data-filter="siguiendo">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M18 8v6M15 11h6"/></svg>
+                Siguiendo
+            </a>
+            <a href="#" class="filter-tab" data-filter="explorar">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>
+                Explorar
+            </a>
+            <a href="#" class="filter-tab" data-filter="puebla">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                Puebla
+            </a>
         </nav>
 
-        <!-- ===== ACCESOS RÁPIDOS SOCIALES ===== -->
+        <!-- ===== ESPACIO SOCIAL ===== -->
         <div class="cs-social-section-title">
-            <span>◈ Tu espacio social</span>
+            <span>Tu espacio social</span>
             <small>Conecta · Comparte · Descubre</small>
         </div>
 
-        <!-- Contenedor dinámico de historias (lo llena muro-historias.js) -->
         <section class="cs-story-strip" id="csStoryStrip" aria-label="Historias">
             <button type="button" class="cs-story-item" onclick="crearHistoria()">
-                <span class="cs-story-ring story-add">＋</span>
+                <span class="cs-story-ring story-add">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                </span>
                 <span>Tu historia</span>
             </button>
         </section>
 
-        <!-- 🔥 AQUÍ ESTABA LA CUADRÍCULA QUE MARCARON EN ROJO, YA LA ELIMINAMOS 🔥 -->
-
         <div class="valor-mercado" id="valorMercado">
             <div class="info">
-                <div class="titulo" data-clave="muro_valor_mercado">◈ Valor de Mercado Csariel's</div>
+                <div class="titulo" data-clave="muro_valor_mercado">Valor de mercado Csariel's</div>
                 <div class="precio" id="precioToken">4.50 <span class="moneda">MXN</span></div>
                 <div class="detalles">
-                    <span><span data-clave="muro_oferta">◈ Oferta:</span> <strong id="ofertaTotal">0</strong> tokens</span>
-                    <span><span data-clave="muro_demanda">◉ Demanda:</span> <strong id="demandaTotal">0</strong></span>
-                    <span><span data-clave="muro_tendencia">⟡ Tendencia:</span> <strong id="tendenciaValor" style="color:var(--text-muted);">Estable</strong></span>
+                    <span><span data-clave="muro_oferta">Oferta:</span> <strong id="ofertaTotal">0</strong> tokens</span>
+                    <span><span data-clave="muro_demanda">Demanda:</span> <strong id="demandaTotal">0</strong></span>
+                    <span><span data-clave="muro_tendencia">Tendencia:</span> <strong id="tendenciaValor" style="color:var(--text-muted);">Estable</strong></span>
                 </div>
             </div>
             <button class="btn-vender-token" onclick="abrirModalVenta()" data-clave="muro_vender_tokens">
@@ -166,6 +201,7 @@
             <span class="info" id="filtroInfo">Mostrando todo el muro</span>
         </div>
 
+        <!-- ===== COMPOSITOR ===== -->
         <div class="post-form">
             <div class="form-header">
                 <div class="avatar" id="userAvatar">◈</div>
@@ -177,7 +213,7 @@
 
             <div class="tema-selector">
                 <label>
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                     Tema (opcional):
                 </label>
                 <button type="button" class="btn-tema" id="btnTemaSelector" onclick="toggleTemaDropdown()">
@@ -188,26 +224,27 @@
             </div>
 
             <textarea id="postContent" data-placeholder="muro_placeholder" placeholder="¿Qué está pasando en tu mundo? #hashtag @mencion"></textarea>
+
             <div class="form-actions">
                 <div class="tools">
-                    <button onclick="insertarHashtag()" data-clave="muro_hashtag">
+                    <button type="button" onclick="insertarHashtag()" data-clave="muro_hashtag">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
                         Hashtag
                     </button>
-                    <button onclick="toggleEmojiPicker()" id="btnEmoji" data-clave="muro_emoji">
+                    <button type="button" onclick="toggleEmojiPicker()" id="btnEmoji" data-clave="muro_emoji">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                         Emoji
                     </button>
-                    <button onclick="abrirSelectorImagen()" data-clave="muro_imagen">
+                    <button type="button" onclick="abrirSelectorImagen()" data-clave="muro_imagen">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         Imagen
                     </button>
-                    <button class="venta" onclick="abrirModalVenta()" data-clave="muro_vender_tokens">
+                    <button type="button" class="venta" onclick="abrirModalVenta()" data-clave="muro_vender_tokens">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
                         Vender tokens
                     </button>
                     <div class="emoji-picker" id="emojiPicker">
-                        <div class="titulo" data-clave="muro_elige_emoji">◇ Elige tu emoji</div>
+                        <div class="titulo" data-clave="muro_elige_emoji">Elige tu emoji</div>
                         <div class="grid" id="emojiGrid"></div>
                     </div>
                 </div>
@@ -223,7 +260,7 @@
 
         <footer class="footer">
             <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
-            <span style="opacity:0.3; display:inline-flex; align-items:center; gap:4px;">
+            <span class="footer-net">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
                 Polygon
             </span>
@@ -238,7 +275,9 @@
                     <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
                     Vender Es.stoks
                 </h2>
-                <button class="btn-cerrar" onclick="cerrarModalVenta()">✕</button>
+                <button type="button" class="btn-cerrar" onclick="cerrarModalVenta()" aria-label="Cerrar">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
             </div>
             <div class="form-group">
                 <label data-clave="muro_cantidad">Cantidad de tokens</label>
@@ -276,7 +315,9 @@
                     <svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     Confirmar compra
                 </h2>
-                <button class="btn-cerrar" onclick="cerrarModalConfirmacion()">✕</button>
+                <button type="button" class="btn-cerrar" onclick="cerrarModalConfirmacion()" aria-label="Cerrar">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
             </div>
             <div class="modal-body">
                 <div class="form-group" style="text-align:left;">
@@ -328,8 +369,8 @@
                     <span style="font-size:0.65rem;color:var(--text-muted);">Tendrás <strong style="color:var(--gold);">30 minutos</strong> para pagar.</span>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:16px;">
-                    <button class="btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
-                    <button class="btn-confirmar" onclick="confirmarCompraCrypto()" id="btnConfirmarCompra">
+                    <button type="button" class="btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
+                    <button type="button" class="btn-confirmar" onclick="confirmarCompraCrypto()" id="btnConfirmarCompra">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                         Ir a pagar
                     </button>
@@ -346,7 +387,9 @@
                     <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                     Pagar con USDT/USDC
                 </h2>
-                <button class="btn-cerrar" onclick="cerrarModalPago()">✕</button>
+                <button type="button" class="btn-cerrar" onclick="cerrarModalPago()" aria-label="Cerrar">
+                    <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
             </div>
             <div style="text-align:center;">
                 <div class="contador-pago" id="contadorPago">
@@ -367,11 +410,11 @@
                 </div>
                 <div class="monto-final"><span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span></div>
                 <div class="actions">
-                    <button onclick="copiarDireccionCrypto()" style="background:transparent;color:var(--text-secondary);border:1px solid var(--glass-border);padding:8px 16px;border-radius:30px;font-size:0.65rem;cursor:pointer;">
+                    <button type="button" onclick="copiarDireccionCrypto()" style="background:transparent;color:var(--text-secondary);border:1px solid var(--glass-border);padding:8px 16px;border-radius:30px;font-size:0.65rem;cursor:pointer;">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         Copiar dirección
                     </button>
-                    <button class="btn-gold" onclick="verificarPagoCrypto()" id="btnVerificarPago">
+                    <button type="button" class="btn-gold" onclick="verificarPagoCrypto()" id="btnVerificarPago">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                         Verificar pago
                     </button>
@@ -389,8 +432,8 @@
 
     <!-- Banner de errores -->
     <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word;">
-        <strong>◇ Error detectado:</strong> <span id="errorBannerText"></span>
-        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
+        <strong>Error:</strong> <span id="errorBannerText"></span>
+        <button type="button" onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
     </div>
 
     <!-- ================= SCRIPTS ================= -->
@@ -429,14 +472,13 @@
         };
 
         document.querySelectorAll('.main-nav a[data-nav]').forEach(function (enlace) {
-            var clave = enlace.getAttribute('data-nav');
-            var destino = DESTINOS[clave];
+            var destino = DESTINOS[enlace.getAttribute('data-nav')];
             if (destino && enlace.getAttribute('href') !== destino) {
                 enlace.setAttribute('href', destino);
             }
         });
 
-        // Guardia de la barra de secciones (aunque está oculta, no estorba)
+        // Guardia de la barra de secciones (oculta, pero con enlaces correctos)
         var DESTINOS_SECCIONES = {
             inicio:    '/',
             muro:      '/features/muro/muro.html',
@@ -446,8 +488,7 @@
         };
 
         document.querySelectorAll('.muro-section-nav a[data-sec]').forEach(function (enlace) {
-            var clave = enlace.getAttribute('data-sec');
-            var destino = DESTINOS_SECCIONES[clave];
+            var destino = DESTINOS_SECCIONES[enlace.getAttribute('data-sec')];
             if (destino && enlace.getAttribute('href') !== destino) {
                 enlace.setAttribute('href', destino);
             }
@@ -458,8 +499,13 @@
         filterTabs.forEach(function (tab) {
             tab.addEventListener('click', function (e) {
                 e.preventDefault();
-                filterTabs.forEach(function (t) { t.classList.remove('active'); });
+                filterTabs.forEach(function (t) {
+                    t.classList.remove('active');
+                    t.removeAttribute('aria-current');
+                });
                 tab.classList.add('active');
+                tab.setAttribute('aria-current', 'true');
+
                 var filtro = tab.getAttribute('data-filter');
                 var info = document.getElementById('filtroInfo');
                 var mensajes = {
