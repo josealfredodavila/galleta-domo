@@ -2,14 +2,14 @@
 <html lang="es" data-public class="verificando">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>◈ Csariel's · Ecosistema WEB3</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Csariel's · Ecosistema WEB3</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='10' width='80' height='80' rx='16' fill='%230b3d2e' stroke='%2337f5a1' stroke-width='4'/%3E%3Cpath d='M50 26 70 38v24L50 74 30 62V38z' fill='none' stroke='%2337f5a1' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E" />
 
-<!-- ✅ PWA -->
+<!-- PWA -->
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#05080f">
+<meta name="theme-color" content="#07110d">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Csariel's">
@@ -100,69 +100,122 @@
 </script>
 <style>
 :root {
-    --gold:#D4AF37; --gold-dark:#b8923a; --gold-light:#e8c84a;
-    --space:#05080f;
-    --text-primary:#f0f4f8; --text-secondary:#c0d8e8; --text-muted:#8aa8b8;
-    --glass-bg:rgba(15,45,26,0.55); --glass-border:rgba(212,175,55,0.2);
-    --shadow-gold:0 8px 32px rgba(212,175,55,0.25);
-    --radius:16px; --transition:all .3s cubic-bezier(.4,0,.2,1);
+    color-scheme: dark;
+    --bg:#07110d; --bg-2:#0a1711;
+    --panel:rgba(15,32,24,.78);
+    --green:#37f5a1; --green-dark:#0b3d2e;
+    --gold:#d4af37; --gold-light:#f7d44a; --gold-dark:#b8923a;
+    --cyan:#35e8ff; --violet:#a78bfa; --pink:#ff59c7; --orange:#ff9e59;
+    --text:#f2fff8; --text-primary:#f2fff8; --secondary:#b0c8bb; --text-secondary:#b0c8bb; --muted:#789385; --text-muted:#789385;
+    --border:rgba(115,244,184,.16); --glass-border:rgba(115,244,184,.18); --glass-bg:rgba(15,32,24,.72);
+    --radius:22px;
+    --space:#07110d;
     --success:#00d68f; --danger:#ff3366; --warning:#f7d44a; --live-red:#ff0044;
-    /* Paleta vibrante (neón) */
+    /* Colores neón usados por el carrusel (sin cambios) */
     --neon-pink:#ff2e97; --neon-cyan:#00f0ff; --neon-lime:#b6ff00;
     --neon-violet:#8b5cf6; --neon-orange:#ff7a00; --neon-yellow:#ffd60a;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
 body {
-    background:var(--space); color:var(--text-primary); font-family:'Inter',sans-serif; min-height:100vh;
-    background-image:
-        radial-gradient(ellipse at 15% 40%, rgba(255,46,151,.22) 0%, transparent 55%),
-        radial-gradient(ellipse at 85% 60%, rgba(0,240,255,.18) 0%, transparent 55%),
-        radial-gradient(ellipse at 50% 100%, rgba(182,255,0,.10) 0%, transparent 60%);
+    min-height:100vh; color:var(--text); font-family:Inter,system-ui,sans-serif; line-height:1.6; overflow-x:hidden;
+    background:
+        radial-gradient(ellipse at 8% 10%, rgba(55,245,161,.10), transparent 35%),
+        radial-gradient(ellipse at 95% 22%, rgba(167,139,250,.10), transparent 32%),
+        radial-gradient(ellipse at 50% 75%, rgba(53,232,255,.055), transparent 40%),
+        var(--bg);
 }
-.app { position:relative; z-index:1; max-width:1280px; margin:0 auto; padding:20px 24px 30px; }
 .verificando .app { visibility:hidden; }
-#pantallaCarga { display:none; position:fixed; inset:0; z-index:5000; background:var(--space); align-items:center; justify-content:center; }
-.verificando #pantallaCarga { display:flex; }
-#pantallaCarga .hex { font-size:2.6rem; color:var(--gold); font-family:'Orbitron',monospace; text-shadow:0 0 30px rgba(212,175,55,.3); animation:pulse-live 1.4s infinite; }
+button, a { -webkit-tap-highlight-color:transparent; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline:2px solid var(--green); outline-offset:3px; }
 
-.header { display:flex; justify-content:space-between; align-items:center; padding:12px 0 16px; border-bottom:2px solid var(--glass-border); background:rgba(5,8,15,.9); position:sticky; top:0; z-index:100; box-shadow:0 4px 30px rgba(0,0,0,.3); border-radius:var(--radius) var(--radius) 0 0; gap:12px; flex-wrap:wrap; }
-.logo { display:flex; align-items:center; gap:12px; }
-.logo-main { display:flex; align-items:center; gap:12px; text-decoration:none; }
-.logo-hex { font-size:2rem; color:var(--gold); font-family:'Orbitron',monospace; text-shadow:0 0 30px rgba(212,175,55,.3); }
-.logo-text { font-family:'Orbitron',monospace; font-size:1.3rem; color:var(--text-primary); letter-spacing:2px; }
-.logo-text span { color:var(--gold); }
-.logo-badge { font-size:.5rem; background:linear-gradient(135deg,var(--neon-pink),var(--neon-violet)); color:#fff; padding:2px 12px; border-radius:20px; font-weight:700; text-decoration:none; }
+.icon { width:22px; height:22px; display:block; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.icon-sm { width:16px; height:16px; }
+
+/* Fondo Web3 */
+.background-effects { position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
+.grid-bg {
+    position:absolute; inset:0; opacity:.2;
+    background-image:
+        linear-gradient(rgba(55,245,161,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(55,245,161,.045) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:linear-gradient(to bottom, black, transparent 80%);
+}
+.orb { position:absolute; width:300px; height:300px; border-radius:50%; filter:blur(95px); opacity:.11; animation:float 13s ease-in-out infinite alternate; }
+.orb-a { background:var(--green); left:-180px; top:20%; }
+.orb-b { background:var(--violet); right:-190px; top:42%; animation-delay:-5s; }
+.orb-c { background:var(--cyan); left:35%; bottom:-240px; animation-delay:-8s; }
+@keyframes float { from { transform:translate3d(0,-15px,0) scale(.9); } to { transform:translate3d(35px,35px,0) scale(1.15); } }
+
+.app { position:relative; z-index:1; width:min(1100px,100%); margin:0 auto; padding:22px 22px 30px; }
+
+/* Barra superior */
+.topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:6px 0 18px; border-bottom:1px solid rgba(255,255,255,.07); }
+.brand { display:inline-flex; align-items:center; gap:10px; text-decoration:none; font-weight:800; }
+.brand-mark { width:38px; height:38px; display:grid; place-items:center; color:var(--green); border:1px solid rgba(55,245,161,.45); border-radius:12px; background:rgba(55,245,161,.08); box-shadow:inset 0 0 18px rgba(55,245,161,.05); }
+.brand-mark .icon { width:24px; height:24px; }
+.brand-name { font-family:Orbitron,sans-serif; font-size:.9rem; letter-spacing:1px; color:var(--text); }
 .header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.network-badge { display:flex; align-items:center; gap:6px; font-size:.65rem; color:var(--neon-cyan); background:rgba(0,240,255,.08); border:1px solid rgba(0,240,255,.25); padding:4px 14px; border-radius:20px; text-decoration:none; }
-.network-badge .dot { display:inline-block; width:6px; height:6px; background:var(--neon-cyan); border-radius:50%; box-shadow:0 0 8px var(--neon-cyan); }
+.chip { min-height:36px; display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border-radius:12px; font-size:.72rem; font-weight:700; text-decoration:none; }
+.chip-web3 { color:var(--violet); border:1px solid rgba(167,139,250,.35); background:rgba(167,139,250,.08); font-family:Orbitron,sans-serif; font-size:.62rem; letter-spacing:1px; }
+.chip-polygon { color:var(--green); border:1px solid rgba(55,245,161,.3); background:rgba(55,245,161,.07); font-family:Orbitron,sans-serif; font-size:.62rem; letter-spacing:1px; }
+.net-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 12px var(--green); animation:pulse-live 2s infinite; }
 
-.login-wrap { max-width:420px; margin:40px auto 30px; padding:0 8px; }
-.login-card { background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:var(--radius); padding:32px 26px 26px; backdrop-filter:blur(14px); box-shadow:0 20px 60px rgba(0,0,0,.35),inset 0 0 0 1px rgba(212,175,55,.08); }
-.login-logo { display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:26px; }
-.login-logo .logo-hex { font-size:2.4rem; }
-.login-logo .logo-text { font-size:1.5rem; }
-.login-card input { width:100%; padding:14px 16px; background:rgba(0,0,0,.35); border:1px solid var(--glass-border); border-radius:10px; color:var(--text-primary); font-size:.9rem; margin-bottom:12px; outline:none; }
-.login-card input:focus { border-color:var(--neon-cyan); background:rgba(0,0,0,.5); box-shadow:0 0 0 3px rgba(0,240,255,.15); }
-.login-btn { width:100%; padding:14px; background:linear-gradient(135deg,var(--neon-pink),var(--neon-orange) 55%,var(--neon-yellow)); color:#fff; border:none; border-radius:10px; font-weight:800; font-size:.95rem; cursor:pointer; margin-top:6px; box-shadow:0 8px 28px rgba(255,46,151,.35); }
-.login-btn:disabled { opacity:.55; cursor:not-allowed; }
-.login-olvide { display:block; text-align:center; color:var(--text-secondary); font-size:.8rem; margin-top:16px; background:none; border:none; cursor:pointer; width:100%; font-family:'Inter',sans-serif; }
-.login-olvide:hover { color:var(--neon-cyan); }
-.login-divider { height:1px; background:linear-gradient(to right,transparent,var(--glass-border),transparent); margin:22px 0; }
-.crear-cuenta-btn { display:block; width:100%; padding:13px; background:transparent; border:2px solid var(--neon-cyan); color:var(--neon-cyan); border-radius:10px; font-weight:700; font-size:.85rem; text-align:center; text-decoration:none; cursor:pointer; box-shadow:0 0 18px rgba(0,240,255,.2); }
-.crear-cuenta-btn:hover { background:rgba(0,240,255,.12); }
+/* Acceso */
+.login-wrap { max-width:430px; margin:40px auto 30px; padding:0 8px; }
+.login-card {
+    position:relative; overflow:hidden;
+    background:linear-gradient(145deg, rgba(19,40,29,.9), rgba(8,19,14,.9));
+    border:1px solid var(--border); border-radius:var(--radius); padding:32px 26px 26px;
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    box-shadow:0 20px 60px rgba(0,0,0,.35), inset 0 0 0 1px rgba(55,245,161,.05);
+}
+.login-card::before {
+    content:""; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, transparent, var(--green), var(--cyan), transparent);
+}
+.login-logo { display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:24px; }
+.login-logo .brand-mark { width:44px; height:44px; }
+.login-logo .brand-mark .icon { width:28px; height:28px; }
+.login-logo .brand-name { font-size:1rem; }
+.login-card input {
+    width:100%; padding:14px 16px; background:rgba(0,0,0,.35); border:1px solid var(--border);
+    border-radius:12px; color:var(--text); font-size:.9rem; margin-bottom:12px; outline:none;
+}
+.login-card input:focus { border-color:var(--cyan); background:rgba(0,0,0,.5); box-shadow:0 0 0 3px rgba(53,232,255,.14); }
+.login-btn {
+    width:100%; min-height:48px; padding:13px; margin-top:6px; display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    color:#04120b; border:1px solid rgba(255,255,255,.16); border-radius:13px;
+    background:linear-gradient(110deg, var(--green), #8af7c7);
+    box-shadow:0 6px 24px rgba(55,245,161,.16); font-weight:800; font-size:.92rem; cursor:pointer;
+    transition:transform .2s, box-shadow .2s;
+}
+.login-btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(55,245,161,.26); }
+.login-btn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
+.login-olvide { display:block; width:100%; margin-top:16px; background:none; border:none; cursor:pointer; color:var(--secondary); font-size:.8rem; font-family:Inter,sans-serif; }
+.login-olvide:hover { color:var(--cyan); }
+.login-divider { height:1px; background:linear-gradient(to right, transparent, var(--border), transparent); margin:22px 0; }
+.crear-cuenta-btn {
+    display:flex; align-items:center; justify-content:center; width:100%; min-height:46px; padding:12px;
+    background:transparent; border:1px solid rgba(53,232,255,.55); color:var(--cyan); border-radius:13px;
+    font-weight:700; font-size:.85rem; text-align:center; text-decoration:none; cursor:pointer;
+}
+.crear-cuenta-btn:hover { background:rgba(53,232,255,.08); box-shadow:0 0 18px rgba(53,232,255,.16); }
 
+/* Modal recuperar */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px; }
 .modal-overlay.active { display:flex; }
-.modal-box { background:var(--glass-bg); border:1px solid var(--glass-border); border-radius:var(--radius); padding:28px 24px; max-width:400px; width:100%; }
-.modal-box h3 { font-family:'Orbitron',monospace; color:var(--gold); font-size:1.05rem; margin-bottom:8px; text-align:center; }
-.modal-box p { color:var(--text-muted); font-size:.8rem; text-align:center; margin-bottom:18px; }
-.modal-box input { width:100%; padding:14px 16px; background:rgba(0,0,0,.35); border:1px solid var(--glass-border); border-radius:10px; color:var(--text-primary); font-size:.9rem; margin-bottom:14px; outline:none; }
-.modal-box .modal-btn { width:100%; padding:13px; background:linear-gradient(135deg,var(--gold),var(--gold-dark)); color:var(--space); border:none; border-radius:10px; font-weight:700; font-size:.9rem; cursor:pointer; }
+.modal-box { background:linear-gradient(145deg, rgba(19,40,29,.97), rgba(8,19,14,.97)); border:1px solid var(--border); border-radius:var(--radius); padding:28px 24px; max-width:400px; width:100%; }
+.modal-box h3 { font-family:Orbitron,monospace; color:var(--green); font-size:1rem; margin-bottom:8px; text-align:center; }
+.modal-box p { color:var(--muted); font-size:.8rem; text-align:center; margin-bottom:18px; }
+.modal-box input { width:100%; padding:14px 16px; background:rgba(0,0,0,.35); border:1px solid var(--border); border-radius:12px; color:var(--text); font-size:.9rem; margin-bottom:14px; outline:none; }
+.modal-box .modal-btn { width:100%; min-height:46px; padding:12px; background:linear-gradient(110deg, var(--green), #8af7c7); color:#04120b; border:none; border-radius:12px; font-weight:800; font-size:.9rem; cursor:pointer; }
 .modal-box .modal-btn:disabled { opacity:.55; }
-.modal-box .modal-cerrar { display:block; width:100%; margin-top:10px; padding:10px; background:transparent; border:1px solid var(--text-muted); color:var(--text-muted); border-radius:10px; font-weight:600; font-size:.8rem; cursor:pointer; }
-.modal-box .modal-cerrar:hover { border-color:var(--gold); color:var(--gold); }
+.modal-box .modal-cerrar { display:block; width:100%; margin-top:10px; padding:10px; background:transparent; border:1px solid var(--muted); color:var(--muted); border-radius:12px; font-weight:600; font-size:.8rem; cursor:pointer; }
+.modal-box .modal-cerrar:hover { border-color:var(--green); color:var(--green); }
 
-/* ================= CARRUSEL ================= */
+/* ================= CARRUSEL (sin cambios) ================= */
 .carrusel-wrapper { position:relative; width:100%; margin-top:30px; border-radius:24px; overflow:hidden; border:1px solid rgba(255,255,255,.18); box-shadow:0 20px 70px rgba(255,46,151,.28), 0 0 0 1px rgba(0,240,255,.12); background:#000; }
 .carrusel-cabecera { position:absolute; top:0; left:0; right:0; z-index:5; display:flex; justify-content:space-between; align-items:center; padding:14px 18px; background:linear-gradient(to bottom, rgba(0,0,0,.65), transparent); pointer-events:none; }
 .carrusel-titulo { font-family:'Orbitron',monospace; color:#fff; font-size:.75rem; letter-spacing:1.5px; display:flex; align-items:center; gap:8px; text-shadow:0 2px 10px rgba(0,0,0,.6); }
@@ -206,74 +259,104 @@ body {
 .carrusel-barra > i.corre { animation:llenar var(--dur,6s) linear forwards; }
 @keyframes llenar { from{width:0%} to{width:100%} }
 
-/* ================= FOOTER LIMPIO Y ACTUALIZADO ================= */
-.footer { 
-    margin-top:30px; padding-top:16px; border-top:1px solid var(--glass-border); 
-    display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center;
-    font-size:.7rem; color:var(--text-muted); 
-}
-.footer .brand { color:var(--gold); font-weight:600; }
-.footer .help-link { color:var(--neon-cyan); text-decoration:none; opacity:0.8; transition:all .3s; font-size:0.65rem; }
+/* Footer */
+.footer { margin-top:30px; padding-top:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; font-size:.7rem; color:var(--muted); }
+.footer .brand-foot { color:var(--text); font-family:Orbitron,sans-serif; font-size:.7rem; font-weight:700; letter-spacing:.6px; }
+.footer .brand-foot span { color:var(--green); }
+.footer .help-link { color:var(--cyan); text-decoration:none; opacity:.8; transition:opacity .3s; font-size:.66rem; }
 .footer .help-link:hover { opacity:1; text-decoration:underline; }
 
-.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:rgba(5,8,15,.95); border:1px solid var(--glass-border); padding:12px 24px; border-radius:30px; color:var(--text-primary); font-size:.85rem; z-index:99999; opacity:0; pointer-events:none; max-width:90vw; transition:all .4s; }
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:rgba(7,17,13,.96); border:1px solid var(--border); padding:12px 24px; border-radius:30px; color:var(--text); font-size:.85rem; z-index:99999; opacity:0; pointer-events:none; max-width:90vw; transition:all .4s; }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 .toast.error { border-color:var(--danger); color:var(--danger); }
 .toast.warning { border-color:var(--warning); color:var(--warning); }
 .toast.success { border-color:var(--success); color:var(--success); }
-.nebula { position:fixed; border-radius:50%; filter:blur(120px); pointer-events:none; z-index:0; }
-.nebula-1 { width:700px; height:700px; background:var(--neon-pink); top:-15%; right:-15%; opacity:.14; }
-.nebula-2 { width:600px; height:600px; background:var(--neon-cyan); bottom:-15%; left:-15%; opacity:.10; }
-.nebula-3 { width:500px; height:500px; background:var(--neon-lime); top:50%; left:50%; transform:translate(-50%,-50%); opacity:.06; }
 
-/* ================= AVISO DE MANTENIMIENTO ================= */
-.mant-overlay { position:fixed; inset:0; background:rgba(5,8,15,.82); backdrop-filter:blur(10px); display:none; align-items:center; justify-content:center; z-index:10000; padding:20px; }
+/* Mantenimiento */
+.mant-overlay { position:fixed; inset:0; background:rgba(7,17,13,.84); backdrop-filter:blur(10px); display:none; align-items:center; justify-content:center; z-index:10000; padding:20px; }
 .mant-overlay.active { display:flex; }
-.mant-box { position:relative; max-width:380px; width:100%; padding:30px 24px 24px; border-radius:24px; text-align:center; background:linear-gradient(160deg, rgba(255,46,151,.18), rgba(5,8,15,.94) 45%, rgba(212,175,55,.16)); border:1px solid rgba(212,175,55,.45); box-shadow:0 20px 60px rgba(255,46,151,.25), inset 0 0 0 1px rgba(255,255,255,.04); animation:mant-entrada .5s ease; }
+.mant-box { position:relative; max-width:380px; width:100%; padding:30px 24px 24px; border-radius:24px; text-align:center; background:linear-gradient(160deg, rgba(55,245,161,.12), rgba(7,17,13,.96) 50%, rgba(167,139,250,.12)); border:1px solid rgba(55,245,161,.35); box-shadow:0 20px 60px rgba(0,0,0,.4); animation:mant-entrada .5s ease; }
 @keyframes mant-entrada { from { opacity:0; transform:translateY(16px) scale(.97); } to { opacity:1; transform:none; } }
-.mant-icon { font-family:'Orbitron',monospace; font-size:2rem; color:var(--gold); text-shadow:0 0 24px rgba(212,175,55,.4); margin-bottom:10px; }
-.mant-title { font-family:'Orbitron',monospace; font-size:1rem; letter-spacing:1px; margin-bottom:12px; background:linear-gradient(90deg,var(--neon-pink),var(--gold)); -webkit-background-clip:text; background-clip:text; color:transparent; }
-.mant-text { font-size:.88rem; line-height:1.55; color:var(--text-secondary); }
-.mant-detail { margin-top:12px; font-size:.74rem; color:var(--text-muted); }
-.mant-btn { margin-top:18px; width:100%; padding:13px; border:none; border-radius:12px; background:linear-gradient(135deg,var(--neon-pink),var(--neon-orange) 55%,var(--neon-yellow)); color:#fff; font-weight:800; font-size:.9rem; cursor:pointer; box-shadow:0 8px 28px rgba(255,46,151,.35); }
+.mant-icon { width:56px; height:56px; margin:0 auto 12px; display:grid; place-items:center; color:var(--green); border:1px solid rgba(55,245,161,.4); border-radius:16px; background:rgba(55,245,161,.08); }
+.mant-icon .icon { width:28px; height:28px; }
+.mant-title { font-family:Orbitron,monospace; font-size:.95rem; letter-spacing:1px; margin-bottom:12px; color:var(--green); }
+.mant-text { font-size:.88rem; line-height:1.55; color:var(--secondary); }
+.mant-detail { margin-top:12px; font-size:.74rem; color:var(--muted); }
+.mant-btn { margin-top:18px; width:100%; min-height:46px; padding:12px; border:none; border-radius:12px; background:linear-gradient(110deg, var(--green), #8af7c7); color:#04120b; font-weight:800; font-size:.9rem; cursor:pointer; }
 
 @media (max-width:768px) {
-    .nebula { display:none; }
-    .header { flex-direction:column; align-items:flex-start; gap:10px; }
-    .header-actions { width:100%; flex-wrap:wrap; }
+    .app { padding:16px 16px 26px; }
     .login-card { padding:26px 20px 22px; }
     .carrusel-viewport { height:320px; }
     .slide { padding:22px 18px 56px; }
     .carrusel-flecha { display:none; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .slide, .slide::before, .carrusel-titulo .dot, .slide-badge .pt { animation:none !important; transition:none !important; }
+    .slide, .slide::before, .carrusel-titulo .dot, .slide-badge .pt, .net-dot, .orb { animation:none !important; transition:none !important; }
 }
 </style>
 </head>
 <body>
-<div id="pantallaCarga"><span class="hex">◈</span></div>
-<div class="nebula nebula-1"></div>
-<div class="nebula nebula-2"></div>
-<div class="nebula nebula-3"></div>
+
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <symbol id="i-network" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3"/>
+        <circle cx="5" cy="5" r="2"/>
+        <circle cx="19" cy="5" r="2"/>
+        <circle cx="5" cy="19" r="2"/>
+        <circle cx="19" cy="19" r="2"/>
+        <path d="m10 10-3.5-3.5M14 10l3.5-3.5M10 14l-3.5 3.5M14 14l3.5 3.5"/>
+    </symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+    </symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24">
+        <rect x="3" y="6" width="18" height="15" rx="3"/>
+        <path d="M3 9V5a2 2 0 0 1 2-2h13"/>
+        <path d="M16 13h5M17 13v.01"/>
+    </symbol>
+    <symbol id="i-mail" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="18" height="14" rx="3"/>
+        <path d="m4 7 8 6 8-6"/>
+    </symbol>
+</svg>
+
+<div id="pantallaCarga" style="display:none;position:fixed;inset:0;z-index:5000;background:#07110d;align-items:center;justify-content:center;">
+    <span class="brand-mark"><svg class="icon"><use href="#i-network"/></svg></span>
+</div>
+
+<div class="background-effects" aria-hidden="true">
+    <div class="grid-bg"></div>
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="orb orb-c"></div>
+</div>
+
 <div class="app">
-<header class="header">
-    <div class="logo">
-        <a href="/" class="logo-main"><span class="logo-hex">◈</span><span class="logo-text">Csariel<span>'s</span></span></a>
-        <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">✦ WEB3</a>
-    </div>
+<header class="topbar">
+    <a class="brand" href="/" aria-label="Csariel's, página principal">
+        <span class="brand-mark"><svg class="icon"><use href="#i-network"/></svg></span>
+        <span class="brand-name">CSARIEL'S</span>
+    </a>
     <div class="header-actions">
-        <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge"><span class="dot"></span> Polygon</a>
+        <a href="/info/web3.html" class="chip chip-web3" target="_blank" rel="noopener noreferrer">WEB3</a>
+        <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="chip chip-polygon"><span class="net-dot"></span>Polygon</a>
     </div>
 </header>
 
 <section class="login-wrap" id="login">
     <div class="login-card">
-        <div class="login-logo"><span class="logo-hex">◈</span><span class="logo-text">Csariel<span>'s</span></span></div>
+        <div class="login-logo">
+            <span class="brand-mark"><svg class="icon"><use href="#i-network"/></svg></span>
+            <span class="brand-name">CSARIEL'S</span>
+        </div>
         <form id="loginForm">
             <input type="email" id="loginEmail" placeholder="Correo electrónico" autocomplete="email" inputmode="email" required />
             <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password" required />
-            <button type="submit" class="login-btn" id="loginBtn">◈ Iniciar sesión</button>
+            <button type="submit" class="login-btn" id="loginBtn">
+                <svg class="icon icon-sm"><use href="#i-wallet"/></svg>
+                Iniciar sesión
+            </button>
         </form>
         <button type="button" class="login-olvide" id="btnOlvidePass">¿Olvidaste tu contraseña?</button>
         <div class="login-divider"></div>
@@ -283,7 +366,7 @@ body {
 
 <div class="modal-overlay" id="modalRecuperar">
     <div class="modal-box">
-        <h3>◈ Recuperar contraseña</h3>
+        <h3>Recuperar contraseña</h3>
         <p>Escribe tu correo y te enviaremos un enlace para restablecer tu contraseña.</p>
         <form id="formRecuperar">
             <input type="email" id="recuperarEmail" placeholder="Tu correo electrónico" autocomplete="email" inputmode="email" required />
@@ -293,7 +376,7 @@ body {
     </div>
 </div>
 
-<!-- ================= CARRUSEL: EN VIVO / INVITACIÓN ================= -->
+<!-- ================= CARRUSEL: EN VIVO / INVITACIÓN (sin cambios) ================= -->
 <section class="carrusel-wrapper" id="carruselEnVivo" aria-roledescription="carrusel" aria-label="Lo que está pasando en Csariel's">
     <div class="carrusel-cabecera">
         <div class="carrusel-titulo"><span class="dot" id="carruselDot"></span><span id="carruselEtiqueta">CARGANDO</span></div>
@@ -306,17 +389,17 @@ body {
     <div class="carrusel-barra"><i id="carruselBarra"></i></div>
 </section>
 
-<!-- ================= FOOTER PÚBLICO LIMPIO ================= -->
 <footer class="footer">
-    <span><span class="brand">© Csariel's ecosystem</span> · Sabor al Paladar · WEB3</span>
+    <div class="brand-foot">CSARIEL'S / WEB3</div>
+    <span>Sabor al Paladar · Infraestructura digital · Polygon</span>
     <a href="/features/centro-ayuda/index.html" class="help-link">Términos y Privacidad</a>
 </footer>
 </div>
 
-<!-- ================= AVISO DE MANTENIMIENTO (modal) ================= -->
+<!-- Aviso de mantenimiento -->
 <div class="mant-overlay" id="mantOverlay" role="dialog" aria-modal="true" aria-labelledby="mantTitulo">
     <div class="mant-box">
-        <div class="mant-icon">◈</div>
+        <div class="mant-icon"><svg class="icon"><use href="#i-network"/></svg></div>
         <div class="mant-title" id="mantTitulo">MEJORANDO TU EXPERIENCIA</div>
         <p class="mant-text" id="mantTexto"></p>
         <p class="mant-detail" id="mantDetalle"></p>
@@ -398,9 +481,9 @@ async function iniciarSesionDesdeIndex() {
     if (!emailEl || !passEl) return;
     const email = emailEl.value.trim();
     const password = passEl.value;
-    if (!email || !password) { showToast('⚠️ Completa correo y contraseña', 'warning'); return; }
-    const orig = btn ? btn.textContent : '◈ Iniciar sesión';
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Entrando...'; }
+    if (!email || !password) { showToast('Completa correo y contraseña', 'warning'); return; }
+    const orig = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Entrando...'; }
     try {
         const client = window.getSupabase();
         if (!client) throw new Error('Supabase no disponible.');
@@ -412,7 +495,7 @@ async function iniciarSesionDesdeIndex() {
     } catch (e) {
         var m = (e && e.message) ? e.message : 'Error';
         console.warn('[Login] Error:', m);
-        if (btn) { btn.disabled = false; btn.textContent = orig; }
+        if (btn) { btn.disabled = false; btn.innerHTML = orig; }
         if (esErrorDeServicio(m)) {
             mostrarAvisoMantenimiento();
             return;
@@ -420,7 +503,7 @@ async function iniciarSesionDesdeIndex() {
         var lm = m.toLowerCase();
         if (lm.includes('invalid login credentials')) m = 'Correo o contraseña incorrectos.';
         else if (lm.includes('email not confirmed')) m = 'Debes confirmar tu correo antes de iniciar sesión.';
-        showToast('❌ ' + m, 'error', 6000);
+        showToast(m, 'error', 6000);
     }
 }
 window.iniciarSesionDesdeIndex = iniciarSesionDesdeIndex;
@@ -447,20 +530,20 @@ async function enviarRecuperacion() {
     const btn = document.getElementById('recuperarBtn');
     if (!emailEl) return;
     const email = emailEl.value.trim();
-    if (!email) { showToast('⚠️ Escribe tu correo', 'warning'); return; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('⚠️ Correo inválido', 'warning'); return; }
+    if (!email) { showToast('Escribe tu correo', 'warning'); return; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showToast('Correo inválido', 'warning'); return; }
     const orig = btn ? btn.textContent : 'Enviar enlace';
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ Enviando...'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Enviando...'; }
     try {
         const client = window.getSupabase();
         if (!client) throw new Error('Sin conexión');
         var redirectTo = window.location.origin + RUTA_ACTUALIZAR_CONTRASENA;
         const r = await client.auth.resetPasswordForEmail(email, { redirectTo: redirectTo });
         if (r && r.error) throw new Error(r.error.message);
-        showToast('✅ Revisa tu correo. Te enviamos un enlace.', 'success', 6000);
+        showToast('Revisa tu correo. Te enviamos un enlace.', 'success', 6000);
         cerrarModalRecuperar();
     } catch (e) {
-        showToast('❌ ' + (e && e.message ? e.message : 'Error'), 'error', 5000);
+        showToast(e && e.message ? e.message : 'Error', 'error', 5000);
     } finally {
         if (btn) { btn.disabled = false; btn.textContent = orig; }
     }
@@ -468,12 +551,7 @@ async function enviarRecuperacion() {
 window.enviarRecuperacion = enviarRecuperacion;
 
 /* ============================================================
-   CARRUSEL
-   - Con lives activos: muestra quién está transmitiendo ahora
-     (lives normales y canales públicos).
-   - Sin lives: muestra invitaciones a unirse al ecosistema.
-   Los datos vienen de /api/livekit/streams (público, sin sesión).
-   Todo texto se inserta con textContent: nunca HTML desde el servidor.
+   CARRUSEL (lógica sin cambios)
    ============================================================ */
 var CARRUSEL_DURACION_MS = 6500;
 var CARRUSEL_REFRESCO_MS = 30000;
@@ -713,7 +791,6 @@ function iniciarCarrusel() {
     var cont = document.getElementById('carruselEnVivo');
     if (!cont) return;
 
-    // Carga inicial con las invitaciones para que nunca quede vacío
     renderCarrusel(INVITACIONES.map(slideDeInvitacion), 'invitacion');
     cargarEnVivoCarrusel();
 
@@ -731,12 +808,10 @@ function iniciarCarrusel() {
         irA((carrusel.idx + 1) % carrusel.slides.length);
     });
 
-    // Pausa al pasar el cursor o tocar el carrusel
     cont.addEventListener('mouseenter', function () { carrusel.pausado = true; pararTimer(); });
     cont.addEventListener('mouseleave', function () { carrusel.pausado = false; programarSiguiente(); });
     cont.addEventListener('touchstart', function () { carrusel.pausado = true; pararTimer(); }, { passive: true });
 
-    // Deslizar con el dedo (móvil)
     var inicioX = null;
     cont.addEventListener('touchstart', function (e) { inicioX = e.touches[0].clientX; }, { passive: true });
     cont.addEventListener('touchend', function (e) {
@@ -750,7 +825,6 @@ function iniciarCarrusel() {
         programarSiguiente();
     }, { passive: true });
 
-    // Teclado: flechas izquierda/derecha cuando el carrusel tiene el foco
     cont.addEventListener('keydown', function (e) {
         if (e.key === 'ArrowRight') irA((carrusel.idx + 1) % carrusel.slides.length);
         if (e.key === 'ArrowLeft') irA((carrusel.idx - 1 + carrusel.slides.length) % carrusel.slides.length);
@@ -808,7 +882,6 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
-<!-- ✅ Push Notifications -->
 <script src="/js/push-client.js" defer></script>
 </body>
 </html>
