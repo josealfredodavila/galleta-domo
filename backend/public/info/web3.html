@@ -1,939 +1,1700 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#05060d" />
-    <meta name="description" content="¿Qué es Web3? Explicación de blockchain, wallets, tokens, NFTs y cómo funciona el ecosistema Sariel's en Polygon." />
-    <title>◈ ¿Qué es Web3? · Sariel's</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#07110d">
+    <meta name="description" content="Descubre Web3 en Csariel's: blockchain, wallets, ES.TOKS, NFT Domo, Polygon y propiedad digital.">
+    <title>Web3 Protocol | Csariel's</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
         :root {
-            --gold: #D4AF37;
+            color-scheme: dark;
+            --bg: #07110d;
+            --bg-2: #0a1711;
+            --panel: rgba(15, 32, 24, .78);
+            --panel-2: rgba(18, 40, 30, .72);
+            --green: #37f5a1;
+            --green-dark: #0b3d2e;
+            --gold: #d4af37;
             --gold-light: #f7d44a;
-            --cyan: #00e5ff;
-            --violet: #a855f7;
-            --pink: #ff4dcb;
-            --green: #00d68f;
-            --space: #05060d;
-            --panel: rgba(12, 18, 32, 0.72);
-            --border: rgba(0, 229, 255, 0.18);
-            --text: #f0f4f8;
-            --text-2: #b9c8d8;
-            --muted: #7f93a8;
-            --radius: 20px;
-            --ease: cubic-bezier(0.22, 1, 0.36, 1);
+            --cyan: #35e8ff;
+            --violet: #a78bfa;
+            --pink: #ff59c7;
+            --orange: #ff9e59;
+            --text: #f2fff8;
+            --secondary: #b0c8bb;
+            --muted: #789385;
+            --border: rgba(115, 244, 184, .16);
+            --radius: 22px;
+            --ease: cubic-bezier(.2, .8, .2, 1);
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        html { scroll-behavior: smooth; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+            scroll-padding-top: 24px;
+        }
 
         body {
             min-height: 100vh;
-            background: var(--space);
-            color: var(--text);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            line-height: 1.6;
             overflow-x: hidden;
+            color: var(--text);
+            background:
+                radial-gradient(ellipse at 8% 10%, rgba(55,245,161,.10), transparent 35%),
+                radial-gradient(ellipse at 95% 22%, rgba(167,139,250,.10), transparent 32%),
+                radial-gradient(ellipse at 50% 75%, rgba(53,232,255,.055), transparent 40%),
+                var(--bg);
+            font-family: Inter, system-ui, sans-serif;
+            line-height: 1.7;
         }
 
-        /* ===== FONDO: RED ANIMADA ===== */
-        .bg-network {
+        a {
+            color: inherit;
+        }
+
+        button, a {
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        a:focus-visible,
+        button:focus-visible {
+            outline: 2px solid var(--green);
+            outline-offset: 4px;
+        }
+
+        .icon {
+            width: 25px;
+            height: 25px;
+            display: block;
+            flex-shrink: 0;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 1.65;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .icon-lg {
+            width: 34px;
+            height: 34px;
+        }
+
+        .icon-sm {
+            width: 18px;
+            height: 18px;
+        }
+
+        .background-effects {
             position: fixed;
             inset: 0;
-            z-index: 0;
+            z-index: -1;
+            overflow: hidden;
             pointer-events: none;
-            background:
-                radial-gradient(ellipse at 15% 20%, rgba(0, 229, 255, 0.12), transparent 50%),
-                radial-gradient(ellipse at 85% 30%, rgba(168, 85, 247, 0.14), transparent 50%),
-                radial-gradient(ellipse at 50% 100%, rgba(212, 175, 55, 0.08), transparent 55%);
         }
-        .bg-grid {
-            position: fixed;
-            inset: -50%;
-            z-index: 0;
-            pointer-events: none;
+
+        .orb {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            filter: blur(95px);
+            opacity: .11;
+            animation: float 13s ease-in-out infinite alternate;
+        }
+
+        .orb-a {
+            background: var(--green);
+            left: -180px;
+            top: 20%;
+        }
+
+        .orb-b {
+            background: var(--violet);
+            right: -190px;
+            top: 42%;
+            animation-delay: -5s;
+        }
+
+        .orb-c {
+            background: var(--cyan);
+            left: 35%;
+            bottom: -240px;
+            animation-delay: -8s;
+        }
+
+        .grid-bg {
+            position: absolute;
+            inset: 0;
+            opacity: .20;
             background-image:
-                linear-gradient(rgba(0, 229, 255, 0.06) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 229, 255, 0.06) 1px, transparent 1px);
-            background-size: 48px 48px;
-            transform: perspective(600px) rotateX(60deg);
-            transform-origin: center top;
-            animation: gridMove 14s linear infinite;
-            mask-image: linear-gradient(to bottom, transparent, #000 40%);
-            -webkit-mask-image: linear-gradient(to bottom, transparent, #000 40%);
+                linear-gradient(rgba(55,245,161,.045) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(55,245,161,.045) 1px, transparent 1px);
+            background-size: 44px 44px;
+            mask-image: linear-gradient(to bottom, black, transparent 80%);
         }
-        @keyframes gridMove {
-            from { background-position: 0 0; }
-            to { background-position: 0 48px; }
+
+        @keyframes float {
+            from { transform: translate3d(0, -15px, 0) scale(.9); }
+            to { transform: translate3d(35px, 35px, 0) scale(1.15); }
+        }
+
+        @keyframes glow {
+            0%, 100% { opacity: .65; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes rotate {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes dash {
+            to { stroke-dashoffset: -100; }
         }
 
         .page {
-            position: relative;
-            z-index: 1;
-            max-width: 980px;
-            margin: 0 auto;
-            padding: 28px 18px 60px;
+            width: min(1060px, 100%);
+            margin: auto;
+            padding: 24px 22px 64px;
         }
 
-        /* ===== NAV ===== */
+        /* NAVEGACIÓN */
+
         .topbar {
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 36px;
-        }
-        .back-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 9px 16px;
-            border: 1px solid var(--border);
-            border-radius: 30px;
-            color: var(--cyan);
-            text-decoration: none;
-            font-size: 0.82rem;
-            font-weight: 600;
-            background: rgba(0, 229, 255, 0.05);
-            transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
-        }
-        .back-link:hover {
-            transform: translateX(-3px);
-            box-shadow: 0 0 18px rgba(0, 229, 255, 0.25);
-        }
-        .chip {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.6rem;
-            letter-spacing: 2px;
-            padding: 6px 12px;
-            border-radius: 20px;
-            color: var(--space);
-            background: linear-gradient(120deg, var(--cyan), var(--violet));
-            font-weight: 700;
+            gap: 14px;
+            padding: 5px 0 20px;
+            border-bottom: 1px solid rgba(255,255,255,.07);
         }
 
-        /* ===== HERO ===== */
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            font-weight: 800;
+            letter-spacing: -.5px;
+        }
+
+        .brand-mark {
+            width: 38px;
+            height: 38px;
+            display: grid;
+            place-items: center;
+            color: var(--green);
+            border: 1px solid rgba(55,245,161,.45);
+            border-radius: 12px;
+            background: rgba(55,245,161,.08);
+            box-shadow: inset 0 0 18px rgba(55,245,161,.05);
+        }
+
+        .brand-mark .icon {
+            width: 24px;
+            height: 24px;
+        }
+
+        .brand-name {
+            font-family: Orbitron, sans-serif;
+            font-size: .88rem;
+            letter-spacing: 1px;
+        }
+
+        .brand-name span {
+            color: var(--green);
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-link,
+        .network-chip {
+            min-height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 12px;
+            padding: 8px 12px;
+            font-size: .77rem;
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .back-link {
+            color: var(--secondary);
+            border: 1px solid var(--border);
+            background: rgba(255,255,255,.025);
+            transition: color .2s, border-color .2s, transform .2s;
+        }
+
+        .back-link:hover {
+            color: var(--green);
+            border-color: var(--green);
+            transform: translateY(-2px);
+        }
+
+        .network-chip {
+            color: var(--green);
+            border: 1px solid rgba(55,245,161,.3);
+            background: rgba(55,245,161,.07);
+            font-family: Orbitron, sans-serif;
+            font-size: .65rem;
+            letter-spacing: 1px;
+        }
+
+        .network-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 12px var(--green);
+            animation: glow 2s infinite;
+        }
+
+        /* HERO */
+
         .hero {
             position: relative;
+            padding: 64px 12px 44px;
             text-align: center;
-            padding: 30px 10px 40px;
-        }
-        .hero-visual {
-            width: min(340px, 80vw);
-            height: auto;
-            margin: 0 auto 18px;
-            display: block;
-            filter: drop-shadow(0 0 24px rgba(0, 229, 255, 0.25));
-        }
-        .hero-visual .link {
-            stroke: url(#gradLink);
-            stroke-width: 1.4;
-            fill: none;
-            opacity: 0.55;
-            stroke-dasharray: 6 6;
-            animation: dash 6s linear infinite;
-        }
-        .hero-visual .node-core {
-            fill: url(#gradNode);
-            animation: pulse 3s ease-in-out infinite;
-            transform-origin: center;
-            transform-box: fill-box;
-        }
-        .hero-visual .node {
-            fill: #0b1222;
-            stroke: var(--cyan);
-            stroke-width: 2;
-            animation: pulse 3.6s ease-in-out infinite;
-            transform-origin: center;
-            transform-box: fill-box;
-        }
-        .hero-visual .node:nth-of-type(2n) { animation-delay: 0.8s; stroke: var(--violet); }
-        .hero-visual .node:nth-of-type(3n) { animation-delay: 1.6s; stroke: var(--gold); }
-        @keyframes dash { to { stroke-dashoffset: -120; } }
-        @keyframes pulse {
-            0%, 100% { opacity: 0.85; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.08); }
         }
 
         .eyebrow {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
-            letter-spacing: 4px;
-            color: var(--cyan);
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            margin-bottom: 19px;
+            padding: 8px 13px;
+            border: 1px solid rgba(55,245,161,.23);
+            border-radius: 30px;
+            color: var(--green);
+            background: rgba(55,245,161,.055);
+            font-family: Orbitron, sans-serif;
+            font-size: .63rem;
+            letter-spacing: 2px;
             text-transform: uppercase;
-            margin-bottom: 12px;
         }
+
+        .eyebrow-line {
+            width: 20px;
+            height: 1px;
+            background: var(--green);
+        }
+
+        .hero-visual {
+            display: block;
+            width: min(330px, 83vw);
+            height: auto;
+            margin: 0 auto 20px;
+            overflow: visible;
+            filter: drop-shadow(0 0 20px rgba(55,245,161,.10));
+        }
+
+        .hero-visual .connection {
+            fill: none;
+            stroke: url(#networkGradient);
+            stroke-width: 1.2;
+            stroke-dasharray: 5 7;
+            opacity: .65;
+            animation: dash 8s linear infinite;
+        }
+
+        .hero-visual .outer-ring {
+            fill: none;
+            stroke: url(#networkGradient);
+            stroke-width: 1;
+            stroke-dasharray: 4 8;
+            transform-origin: 160px 130px;
+            animation: rotate 28s linear infinite;
+        }
+
+        .hero-visual .node {
+            fill: #0c2016;
+            stroke: var(--green);
+            stroke-width: 1.8;
+        }
+
+        .hero-visual .core {
+            fill: url(#coreGradient);
+            stroke: rgba(255,255,255,.8);
+            stroke-width: .7;
+        }
+
+        .hero-visual .core-inner {
+            fill: #07110d;
+            stroke: var(--green);
+            stroke-width: 1.4;
+        }
+
         h1 {
-            font-family: 'Orbitron', sans-serif;
-            font-weight: 900;
-            font-size: clamp(2.2rem, 7vw, 3.6rem);
-            line-height: 1.05;
-            background: linear-gradient(100deg, var(--cyan), var(--violet) 50%, var(--gold));
+            margin-bottom: 20px;
+            font-family: Orbitron, sans-serif;
+            font-size: clamp(2.3rem, 7.5vw, 4.7rem);
+            font-weight: 800;
+            line-height: 1.15;
+            letter-spacing: -2px;
+        }
+
+        .gradient-text {
+            color: var(--green);
+            background: linear-gradient(100deg, var(--green), var(--cyan) 38%, var(--violet) 72%, var(--gold-light));
             -webkit-background-clip: text;
             background-clip: text;
-            color: transparent;
-            margin-bottom: 14px;
+            -webkit-text-fill-color: transparent;
         }
+
         .hero-sub {
-            max-width: 620px;
+            max-width: 690px;
             margin: 0 auto 26px;
-            color: var(--text-2);
-            font-size: 1.02rem;
+            color: var(--secondary);
+            font-size: clamp(.95rem, 2vw, 1.08rem);
         }
+
+        .hero-sub strong {
+            color: var(--text);
+        }
+
         .hero-tags {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
-            gap: 8px;
-        }
-        .tag {
-            font-size: 0.72rem;
-            font-weight: 600;
-            padding: 6px 13px;
-            border-radius: 20px;
-            border: 1px solid var(--border);
-            color: var(--text-2);
-            background: rgba(255, 255, 255, 0.03);
+            gap: 9px;
         }
 
-        /* ===== TARJETAS ===== */
-        .section { margin-top: 44px; }
+        .tag {
+            padding: 7px 12px;
+            color: var(--secondary);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            background: rgba(255,255,255,.025);
+            font-size: .73rem;
+            font-weight: 600;
+        }
+
+        .tag:nth-child(3n + 1) { border-color: rgba(55,245,161,.23); }
+        .tag:nth-child(3n + 2) { border-color: rgba(167,139,250,.24); }
+        .tag:nth-child(3n) { border-color: rgba(53,232,255,.24); }
+
+        /* SECCIONES */
+
+        .section {
+            margin-top: 45px;
+        }
+
         .section-head {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 18px;
+            gap: 14px;
+            margin-bottom: 17px;
         }
-        .section-head .num {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.75rem;
-            color: var(--space);
-            background: linear-gradient(135deg, var(--cyan), var(--violet));
-            width: 34px;
-            height: 34px;
-            border-radius: 10px;
+
+        .section-number {
+            width: 42px;
+            height: 42px;
             display: grid;
-            place-items: center;
             flex-shrink: 0;
+            place-items: center;
+            color: var(--green);
+            border: 1px solid rgba(55,245,161,.33);
+            border-radius: 13px;
+            background: linear-gradient(145deg, rgba(55,245,161,.12), rgba(53,232,255,.035));
+            font-family: Orbitron, sans-serif;
+            font-size: .73rem;
             font-weight: 700;
         }
+
         .section-head h2 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.15rem;
-            color: var(--text);
-            letter-spacing: 0.5px;
+            font-family: Orbitron, sans-serif;
+            font-size: clamp(.96rem, 3vw, 1.24rem);
+            font-weight: 600;
+            letter-spacing: -.3px;
+        }
+
+        .section-head p {
+            color: var(--muted);
+            font-size: .77rem;
         }
 
         .card {
-            position: relative;
-            background: var(--panel);
+            min-width: 0;
+            padding: 24px;
             border: 1px solid var(--border);
             border-radius: var(--radius);
-            padding: 24px;
-            backdrop-filter: blur(14px);
-            -webkit-backdrop-filter: blur(14px);
-            transition: transform 0.35s var(--ease), border-color 0.35s, box-shadow 0.35s;
+            background: linear-gradient(145deg, rgba(19,40,29,.84), rgba(8,19,14,.84));
+            box-shadow: 0 12px 38px rgba(0,0,0,.10);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            transition: transform .25s var(--ease), border-color .25s, box-shadow .25s;
         }
+
         .card:hover {
             transform: translateY(-3px);
-            border-color: rgba(0, 229, 255, 0.45);
-            box-shadow: 0 12px 40px rgba(0, 229, 255, 0.12);
+            border-color: rgba(55,245,161,.32);
+            box-shadow: 0 15px 42px rgba(0,0,0,.18);
         }
-        .card p { color: var(--text-2); font-size: 0.95rem; }
-        .card p + p { margin-top: 10px; }
-        .card strong { color: var(--text); }
 
-        .grid-2 {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
+        .card p {
+            color: var(--secondary);
+            font-size: .92rem;
         }
+
+        .card p + p {
+            margin-top: 12px;
+        }
+
+        .card strong {
+            color: var(--text);
+        }
+
+        .grid-2,
         .grid-3 {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
         }
 
-        .pillar .icon {
-            width: 46px;
-            height: 46px;
-            border-radius: 14px;
+        .grid-3 {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+
+        /* PILARES */
+
+        .pillar {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pillar::after {
+            content: "";
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            right: -70px;
+            bottom: -70px;
+            border-radius: 50%;
+            background: var(--pillar-color, var(--green));
+            filter: blur(55px);
+            opacity: .12;
+            pointer-events: none;
+        }
+
+        .pillar:nth-child(2) { --pillar-color: var(--violet); }
+        .pillar:nth-child(3) { --pillar-color: var(--cyan); }
+        .pillar:nth-child(4) { --pillar-color: var(--gold); }
+
+        .pillar-icon {
+            width: 52px;
+            height: 52px;
             display: grid;
             place-items: center;
-            font-size: 1.3rem;
-            margin-bottom: 14px;
-            background: rgba(0, 229, 255, 0.08);
-            border: 1px solid rgba(0, 229, 255, 0.25);
+            margin-bottom: 18px;
+            color: var(--pillar-color, var(--green));
+            border: 1px solid color-mix(in srgb, var(--pillar-color, var(--green)) 38%, transparent);
+            border-radius: 16px;
+            background: color-mix(in srgb, var(--pillar-color, var(--green)) 9%, transparent);
         }
-        .pillar h3 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.92rem;
-            margin-bottom: 8px;
-            color: var(--text);
-        }
-        .pillar p { color: var(--text-2); font-size: 0.88rem; }
 
-        /* ===== WEB2 VS WEB3 ===== */
+        .pillar h3,
+        .compare h3 {
+            margin-bottom: 9px;
+            font-family: Orbitron, sans-serif;
+            font-size: .85rem;
+            font-weight: 600;
+        }
+
+        .pillar p {
+            font-size: .85rem;
+        }
+
+        /* WEB2 VS WEB3 */
+
         .compare {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 15px;
         }
-        .compare .side {
-            border-radius: var(--radius);
-            padding: 22px;
+
+        .compare-side {
+            min-width: 0;
+            padding: 23px;
             border: 1px solid var(--border);
+            border-radius: var(--radius);
             background: var(--panel);
         }
-        .compare .side.web2 { opacity: 0.8; }
-        .compare .side.web3 {
-            border-color: rgba(168, 85, 247, 0.5);
-            background: linear-gradient(160deg, rgba(168, 85, 247, 0.12), rgba(0, 229, 255, 0.06)), var(--panel);
-            box-shadow: 0 0 30px rgba(168, 85, 247, 0.12);
+
+        .compare-side.web2 {
+            border-color: rgba(120,147,133,.2);
         }
-        .compare h3 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1rem;
-            margin-bottom: 12px;
+
+        .compare-side.web3 {
+            border-color: rgba(55,245,161,.32);
+            background:
+                radial-gradient(ellipse at top right, rgba(55,245,161,.09), transparent 65%),
+                var(--panel);
         }
-        .compare .web2 h3 { color: var(--muted); }
-        .compare .web3 h3 {
-            background: linear-gradient(100deg, var(--cyan), var(--violet));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+
+        .compare-side.web2 h3 { color: var(--muted); }
+        .compare-side.web3 h3 { color: var(--green); }
+
+        .compare ul {
+            list-style: none;
         }
-        .compare ul { list-style: none; }
+
         .compare li {
             position: relative;
-            padding: 7px 0 7px 22px;
-            color: var(--text-2);
-            font-size: 0.88rem;
-            border-bottom: 1px dashed rgba(255, 255, 255, 0.06);
+            padding: 9px 0 9px 23px;
+            border-bottom: 1px solid rgba(255,255,255,.045);
+            color: var(--secondary);
+            font-size: .83rem;
         }
+
         .compare li:last-child { border-bottom: 0; }
-        .compare .web2 li::before { content: "✕"; color: var(--muted); position: absolute; left: 0; }
-        .compare .web3 li::before { content: "✓"; color: var(--green); position: absolute; left: 0; font-weight: 700; }
 
-        /* ===== LÍNEA DE TIEMPO ===== */
-        .timeline { position: relative; padding-left: 26px; }
-        .timeline::before {
-            content: "";
+        .compare-side.web2 li::before,
+        .compare-side.web3 li::before {
             position: absolute;
-            left: 8px;
-            top: 6px;
-            bottom: 6px;
-            width: 2px;
-            background: linear-gradient(to bottom, var(--cyan), var(--violet), var(--gold));
-            opacity: 0.6;
+            left: 0;
+            top: 10px;
+            font-size: .83rem;
+            font-weight: 800;
         }
-        .step {
-            position: relative;
-            margin-bottom: 18px;
-        }
-        .step::before {
-            content: "";
-            position: absolute;
-            left: -23px;
-            top: 6px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--space);
-            border: 2px solid var(--cyan);
-            box-shadow: 0 0 12px rgba(0, 229, 255, 0.6);
-        }
-        .step:nth-child(2n)::before { border-color: var(--violet); box-shadow: 0 0 12px rgba(168, 85, 247, 0.6); }
-        .step:nth-child(3n)::before { border-color: var(--gold); box-shadow: 0 0 12px rgba(212, 175, 55, 0.6); }
-        .step h3 {
-            font-size: 0.98rem;
-            color: var(--text);
-            margin-bottom: 4px;
-        }
-        .step p { color: var(--text-2); font-size: 0.9rem; }
 
-        /* ===== FLUJO SARIEL'S ===== */
+        .compare-side.web2 li::before {
+            content: "−";
+            color: #a1aab1;
+        }
+
+        .compare-side.web3 li::before {
+            content: "+";
+            color: var(--green);
+        }
+
+        /* GLOSARIO */
+
+        .term {
+            padding: 19px;
+            border: 1px solid rgba(255,255,255,.075);
+            border-radius: 17px;
+            background: rgba(255,255,255,.025);
+            transition: border-color .2s, background .2s;
+        }
+
+        .term:hover {
+            border-color: rgba(167,139,250,.35);
+            background: rgba(167,139,250,.045);
+        }
+
+        .term h3 {
+            margin-bottom: 8px;
+            color: var(--violet);
+            font-family: Orbitron, sans-serif;
+            font-size: .73rem;
+            letter-spacing: .5px;
+        }
+
+        .term p {
+            color: var(--secondary);
+            font-size: .81rem;
+            line-height: 1.7;
+        }
+
+        /* FLUJO */
+
         .flow {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 10px;
-            padding: 22px;
-            border-radius: var(--radius);
-            background: rgba(0, 0, 0, 0.35);
+            gap: 14px;
+            padding: 25px 16px;
             border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background:
+                radial-gradient(ellipse at center, rgba(55,245,161,.055), transparent 70%),
+                rgba(0,0,0,.15);
         }
+
         .flow-row {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             justify-content: center;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-        .flow-node {
-            padding: 8px 14px;
-            border-radius: 14px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            background: rgba(0, 229, 255, 0.08);
-            border: 1px solid rgba(0, 229, 255, 0.3);
-            color: var(--text);
-            white-space: nowrap;
-        }
-        .flow-node.gold {
-            background: rgba(212, 175, 55, 0.12);
-            border-color: rgba(212, 175, 55, 0.5);
-            color: var(--gold-light);
-        }
-        .flow-node.violet {
-            background: rgba(168, 85, 247, 0.14);
-            border-color: rgba(168, 85, 247, 0.55);
-        }
-        .flow-arrow { color: var(--cyan); opacity: 0.6; font-size: 1rem; }
-        .flow-note {
-            font-size: 0.7rem;
-            color: var(--muted);
-            text-align: center;
-            margin-top: 4px;
+            gap: 9px;
+            width: 100%;
         }
 
-        /* ===== CALLOUT ===== */
-        .callout {
-            margin-top: 18px;
-            padding: 18px 20px;
-            border-radius: 14px;
-            background: linear-gradient(120deg, rgba(212, 175, 55, 0.1), rgba(0, 229, 255, 0.05));
-            border: 1px solid rgba(212, 175, 55, 0.35);
+        .flow-node {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 13px;
             color: var(--text);
-            font-size: 0.92rem;
+            border: 1px solid rgba(53,232,255,.25);
+            border-radius: 12px;
+            background: rgba(53,232,255,.055);
+            font-size: .76rem;
+            font-weight: 600;
+            text-align: center;
         }
+
+        .flow-node .icon {
+            width: 19px;
+            height: 19px;
+            color: var(--cyan);
+        }
+
+        .flow-node.gold {
+            border-color: rgba(212,175,55,.45);
+            background: rgba(212,175,55,.08);
+        }
+
+        .flow-node.gold .icon { color: var(--gold-light); }
+
+        .flow-node.violet {
+            border-color: rgba(167,139,250,.4);
+            background: rgba(167,139,250,.08);
+        }
+
+        .flow-node.violet .icon { color: var(--violet); }
+
+        .flow-arrow {
+            color: var(--green);
+            font-size: 1.15rem;
+            font-weight: 700;
+        }
+
+        .flow-note {
+            max-width: 600px;
+            color: var(--muted);
+            font-size: .76rem;
+            text-align: center;
+        }
+
+        /* TIMELINE */
+
+        .timeline {
+            position: relative;
+            margin: 26px 0 0 8px;
+            padding-left: 30px;
+        }
+
+        .timeline::before {
+            position: absolute;
+            content: "";
+            left: 5px;
+            top: 8px;
+            bottom: 15px;
+            width: 1px;
+            background: linear-gradient(to bottom, var(--green), var(--cyan), var(--violet), var(--gold));
+            opacity: .65;
+        }
+
+        .step {
+            position: relative;
+            padding: 0 0 23px;
+        }
+
+        .step:last-child { padding-bottom: 0; }
+
+        .step::before {
+            content: "";
+            position: absolute;
+            left: -30px;
+            top: 7px;
+            width: 10px;
+            height: 10px;
+            border: 2px solid var(--green);
+            border-radius: 50%;
+            background: var(--bg);
+            box-shadow: 0 0 12px rgba(55,245,161,.28);
+        }
+
+        .step:nth-child(2)::before { border-color: var(--cyan); }
+        .step:nth-child(3)::before { border-color: var(--violet); }
+        .step:nth-child(4)::before { border-color: var(--gold); }
+        .step:nth-child(5)::before { border-color: var(--pink); }
+
+        .step h3 {
+            margin-bottom: 5px;
+            font-size: .92rem;
+            font-weight: 700;
+        }
+
+        .step p {
+            color: var(--secondary);
+            font-size: .86rem;
+        }
+
+        /* CALLOUT */
+
+        .callout {
+            margin-top: 17px;
+            padding: 19px 21px;
+            border: 1px solid rgba(212,175,55,.32);
+            border-left: 3px solid var(--gold);
+            border-radius: 13px;
+            background: linear-gradient(110deg, rgba(212,175,55,.08), rgba(55,245,161,.025));
+            color: var(--secondary);
+            font-size: .87rem;
+        }
+
         .callout strong { color: var(--gold-light); }
 
-        /* ===== TABLA ACTIVOS ===== */
+        /* TABLA */
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 15px;
+        }
+
         .assets {
             width: 100%;
-            border-collapse: separate;
-            border-spacing: 0;
-            font-size: 0.88rem;
-            overflow: hidden;
-            border-radius: 14px;
-            border: 1px solid var(--border);
+            border-collapse: collapse;
+            font-size: .82rem;
         }
-        .assets th, .assets td {
-            padding: 14px 16px;
+
+        .assets th,
+        .assets td {
+            padding: 15px;
             text-align: left;
             vertical-align: top;
         }
+
         .assets th {
-            background: rgba(0, 229, 255, 0.08);
-            color: var(--cyan);
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-            font-weight: 700;
+            color: var(--green);
+            background: rgba(55,245,161,.065);
+            font-family: Orbitron, sans-serif;
+            font-size: .66rem;
+            letter-spacing: .6px;
         }
+
         .assets td {
-            color: var(--text-2);
-            border-top: 1px solid rgba(255, 255, 255, 0.05);
-            background: rgba(10, 14, 26, 0.6);
+            color: var(--secondary);
+            border-top: 1px solid rgba(255,255,255,.06);
+            background: rgba(9,20,14,.5);
         }
+
         .assets td strong { color: var(--text); }
         .yes { color: var(--green); font-weight: 700; }
-        .no { color: #ff6b8a; font-weight: 700; }
+        .no { color: #ff819e; font-weight: 700; }
 
-        /* ===== GLOSARIO ===== */
-        .term {
-            padding: 16px 18px;
-            border-radius: 14px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.07);
-        }
-        .term h4 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 0.8rem;
-            color: var(--gold-light);
-            margin-bottom: 6px;
-            letter-spacing: 0.5px;
-        }
-        .term p { color: var(--text-2); font-size: 0.85rem; }
+        /* CTA */
 
-        /* ===== CTA ===== */
         .cta {
-            margin-top: 48px;
+            position: relative;
+            overflow: hidden;
+            margin-top: 50px;
+            padding: 38px 23px;
             text-align: center;
-            padding: 34px 20px;
-            border-radius: var(--radius);
-            border: 1px solid rgba(0, 229, 255, 0.3);
+            border: 1px solid rgba(55,245,161,.3);
+            border-radius: 26px;
             background:
-                radial-gradient(ellipse at top, rgba(0, 229, 255, 0.15), transparent 60%),
+                radial-gradient(ellipse at 10% 0%, rgba(55,245,161,.12), transparent 55%),
+                radial-gradient(ellipse at 100% 100%, rgba(167,139,250,.12), transparent 55%),
                 var(--panel);
         }
+
         .cta h2 {
-            font-family: 'Orbitron', sans-serif;
-            font-size: 1.2rem;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+            font-family: Orbitron, sans-serif;
+            font-size: clamp(1rem, 3vw, 1.4rem);
         }
-        .cta p { color: var(--text-2); margin-bottom: 20px; font-size: 0.92rem; }
+
+        .cta p {
+            max-width: 580px;
+            margin: 0 auto 23px;
+            color: var(--secondary);
+            font-size: .89rem;
+        }
+
         .btn {
+            min-height: 48px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 12px 22px;
+            color: #04120b;
+            border: 1px solid rgba(255,255,255,.16);
+            border-radius: 13px;
+            background: linear-gradient(110deg, var(--green), #8af7c7);
+            box-shadow: 0 5px 22px rgba(55,245,161,.13);
+            font-size: .86rem;
+            font-weight: 800;
+            text-decoration: none;
+            transition: transform .2s, box-shadow .2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(55,245,161,.25);
+        }
+
+        .btn .icon { width: 19px; height: 19px; }
+
+        /* FOOTER */
+
+        .footer {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 9px;
+            margin-top: 34px;
+            color: var(--muted);
+            font-size: .74rem;
+            text-align: center;
+        }
+
+        .footer-brand {
+            color: var(--text);
+            font-family: Orbitron, sans-serif;
+            font-size: .76rem;
+            font-weight: 700;
+            letter-spacing: .6px;
+        }
+
+        .footer-brand span { color: var(--green); }
+
+        .polygon-badge {
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 13px 26px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.9rem;
-            color: var(--space);
-            background: linear-gradient(120deg, var(--cyan), var(--violet));
-            transition: transform 0.25s var(--ease), box-shadow 0.25s var(--ease);
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(0, 229, 255, 0.3);
-        }
-
-        .footer {
-            margin-top: 36px;
-            text-align: center;
-            color: var(--muted);
-            font-size: 0.75rem;
-            line-height: 1.8;
-        }
-        .footer .brand {
-            font-family: 'Orbitron', sans-serif;
-            color: var(--cyan);
+            padding: 6px 12px;
+            color: #c5a8ff;
+            border: 1px solid rgba(167,139,250,.28);
+            border-radius: 10px;
+            background: rgba(167,139,250,.06);
+            font-size: .7rem;
             font-weight: 700;
         }
-        .badge-poly {
-            display: inline-block;
-            margin-top: 6px;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.65rem;
-            color: var(--violet);
-            border: 1px solid rgba(168, 85, 247, 0.4);
-            background: rgba(168, 85, 247, 0.08);
+
+        .polygon-symbol {
+            width: 9px;
+            height: 9px;
+            border: 2px solid #a78bfa;
+            border-radius: 3px;
+            transform: rotate(45deg);
         }
 
-        /* ===== RESPONSIVE ===== */
+        /* RESPONSIVE */
+
         @media (max-width: 760px) {
-            .grid-3 { grid-template-columns: 1fr 1fr; }
-            .grid-2 { grid-template-columns: 1fr; }
-            .compare { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 520px) {
-            .page { padding: 18px 14px 44px; }
-            .grid-3 { grid-template-columns: 1fr; }
-            .card { padding: 20px; }
-            .flow-node { font-size: 0.72rem; padding: 7px 11px; }
-            .assets th, .assets td { padding: 11px 10px; font-size: 0.8rem; }
-            .assets th:nth-child(2), .assets td:nth-child(2) { display: none; }
+            .page { padding: 18px 17px 45px; }
+            .hero { padding-top: 43px; }
+            .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid-2, .compare { grid-template-columns: 1fr; }
+            .card { padding: 21px; }
+            .pillar { min-height: 0; }
         }
 
-        /* ===== ACCESIBILIDAD ===== */
-        a:focus-visible, .card:focus-visible {
-            outline: 2px solid var(--cyan);
-            outline-offset: 3px;
+        @media (max-width: 480px) {
+            .page { padding: 14px 13px 36px; }
+            .topbar { gap: 8px; }
+            .brand { gap: 7px; }
+            .brand-mark { width: 33px; height: 33px; }
+            .brand-name { font-size: .72rem; }
+            .nav-right { gap: 6px; }
+            .back-link, .network-chip { padding: 7px 9px; font-size: .66rem; }
+            .back-link .icon { width: 15px; height: 15px; }
+            .network-chip { letter-spacing: .4px; }
+            .hero { padding: 39px 2px 26px; }
+            .hero-visual { width: min(275px, 80vw); }
+            h1 { letter-spacing: -1.2px; }
+            .hero-sub { font-size: .9rem; }
+            .hero-tags { gap: 7px; }
+            .tag { padding: 6px 9px; font-size: .68rem; }
+            .section { margin-top: 34px; }
+            .section-head { gap: 10px; }
+            .section-number { width: 36px; height: 36px; }
+            .section-head h2 { font-size: .91rem; }
+            .card { padding: 18px; border-radius: 18px; }
+            .grid-3 { grid-template-columns: 1fr; }
+            .term { padding: 17px; }
+            .compare-side { padding: 19px; }
+            .flow { padding: 19px 10px; }
+            .flow-row { gap: 7px; }
+            .flow-node { padding: 8px 9px; font-size: .69rem; }
+            .flow-node .icon { width: 16px; height: 16px; }
+            .flow-arrow { font-size: .9rem; }
+            .assets { min-width: 440px; }
+            .assets th, .assets td { padding: 12px 10px; }
+            .cta { padding: 30px 17px; }
         }
+
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
-                animation: none !important;
-                transition: none !important;
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
                 scroll-behavior: auto !important;
+                transition-duration: .01ms !important;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="bg-network" aria-hidden="true"></div>
-    <div class="bg-grid" aria-hidden="true"></div>
+    <!-- ICONOGRAFÍA SVG: SIN EMOJIS -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+        <symbol id="i-arrow-left" viewBox="0 0 24 24">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </symbol>
+        <symbol id="i-network" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="3"/>
+            <circle cx="5" cy="5" r="2"/>
+            <circle cx="19" cy="5" r="2"/>
+            <circle cx="5" cy="19" r="2"/>
+            <circle cx="19" cy="19" r="2"/>
+            <path d="m10 10-3.5-3.5M14 10l3.5-3.5M10 14l-3.5 3.5M14 14l3.5 3.5"/>
+        </symbol>
+        <symbol id="i-wallet" viewBox="0 0 24 24">
+            <rect x="3" y="6" width="18" height="15" rx="3"/>
+            <path d="M3 9V5a2 2 0 0 1 2-2h13"/>
+            <path d="M16 13h5M17 13v.01"/>
+        </symbol>
+        <symbol id="i-shield" viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11Z"/>
+            <path d="m9 12 2 2 4-4"/>
+        </symbol>
+        <symbol id="i-id" viewBox="0 0 24 24">
+            <rect x="3" y="4" width="18" height="16" rx="3"/>
+            <circle cx="9" cy="10" r="2.5"/>
+            <path d="M5.5 16a4 4 0 0 1 7 0M15 9h3M15 13h3M15 16h3"/>
+        </symbol>
+        <symbol id="i-search" viewBox="0 0 24 24">
+            <circle cx="10.8" cy="10.8" r="7"/>
+            <path d="m16 16 5 5"/>
+        </symbol>
+        <symbol id="i-cube" viewBox="0 0 24 24">
+            <path d="m12 2 9 5-9 5-9-5 9-5Z"/>
+            <path d="m3 7 9 5 9-5M3 7v10l9 5 9-5V7M12 12v10"/>
+        </symbol>
+        <symbol id="i-qr" viewBox="0 0 24 24">
+            <path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3z"/>
+            <path d="M14 14h3v3h-3zM20 14v3M17 20h4M20 20v1"/>
+        </symbol>
+        <symbol id="i-token" viewBox="0 0 24 24">
+            <path d="M12 2 21 7v10l-9 5-9-5V7l9-5Z"/>
+            <path d="m8 9 4-2 4 2v6l-4 2-4-2V9Z"/>
+        </symbol>
+        <symbol id="i-gift" viewBox="0 0 24 24">
+            <path d="M3 10h18v11H3zM2 6h20v4H2zM12 6v15"/>
+            <path d="M12 6H7a2.5 2.5 0 1 1 2.5-2.5C9.5 5 12 6 12 6ZM12 6h5a2.5 2.5 0 1 0-2.5-2.5C14.5 5 12 6 12 6Z"/>
+        </symbol>
+        <symbol id="i-contract" viewBox="0 0 24 24">
+            <path d="M7 3h8l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/>
+            <path d="M15 3v5h5M9 13h6M9 17h6"/>
+            <path d="m2 9 2 2-2 2"/>
+        </symbol>
+        <symbol id="i-link" viewBox="0 0 24 24">
+            <path d="M10 13a5 5 0 0 0 7.1 0l3-3A5 5 0 0 0 13 2.9l-1.7 1.7"/>
+            <path d="M14 11a5 5 0 0 0-7.1 0l-3 3A5 5 0 0 0 11 21.1l1.7-1.7"/>
+        </symbol>
+        <symbol id="i-chart" viewBox="0 0 24 24">
+            <path d="M3 3v18h18"/>
+            <path d="m7 14 4-4 4 3 6-7"/>
+        </symbol>
+        <symbol id="i-cookie" viewBox="0 0 24 24">
+            <path d="M20 13a8 8 0 1 1-9-9 4 4 0 0 0 9 9Z"/>
+            <path d="M8 9h.01M14 16h.01M9 16h.01M14 7h.01"/>
+        </symbol>
+        <symbol id="i-arrow-right" viewBox="0 0 24 24">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+        </symbol>
+        <symbol id="i-globe" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/>
+        </symbol>
+        <symbol id="i-coin" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="9"/>
+            <path d="M15 8.5c-.7-.7-1.7-1-3-1-1.7 0-3 .9-3 2.2s1.2 2 3 2.3 3 .9 3 2.3-1.3 2.2-3 2.2c-1.3 0-2.3-.4-3-1M12 5.5v13"/>
+        </symbol>
+    </svg>
+
+    <div class="background-effects" aria-hidden="true">
+        <div class="grid-bg"></div>
+        <div class="orb orb-a"></div>
+        <div class="orb orb-b"></div>
+        <div class="orb orb-c"></div>
+    </div>
 
     <main class="page">
 
         <header class="topbar">
-            <a href="/" class="back-link">← Volver a Sariel's</a>
-            <span class="chip">WEB3</span>
+            <a class="brand" href="/" aria-label="Csariel's, página principal">
+                <span class="brand-mark">
+                    <svg class="icon"><use href="#i-network"/></svg>
+                </span>
+                <span class="brand-name">CSARIEL'S<span>®</span></span>
+            </a>
+
+            <div class="nav-right">
+                <a class="back-link" href="/">
+                    <svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>
+                    Volver
+                </a>
+                <span class="network-chip">
+                    <span class="network-dot"></span>
+                    WEB3
+                </span>
+            </div>
         </header>
 
-        <!-- ========== HERO ========== -->
+        <!-- HERO -->
+
         <section class="hero">
-            <svg class="hero-visual" viewBox="0 0 340 260" aria-hidden="true">
+            <svg class="hero-visual" viewBox="0 0 320 255" role="img" aria-label="Visualización vectorial de una red blockchain descentralizada">
                 <defs>
-                    <linearGradient id="gradLink" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stop-color="#00e5ff" />
-                        <stop offset="100%" stop-color="#a855f7" />
+                    <linearGradient id="networkGradient" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#37f5a1"/>
+                        <stop offset="48%" stop-color="#35e8ff"/>
+                        <stop offset="100%" stop-color="#a78bfa"/>
                     </linearGradient>
-                    <radialGradient id="gradNode" cx="50%" cy="40%" r="60%">
-                        <stop offset="0%" stop-color="#f7d44a" />
-                        <stop offset="100%" stop-color="#b8923a" />
-                    </radialGradient>
+                    <linearGradient id="coreGradient" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stop-color="#37f5a1"/>
+                        <stop offset="55%" stop-color="#35e8ff"/>
+                        <stop offset="100%" stop-color="#a78bfa"/>
+                    </linearGradient>
                 </defs>
-                <!-- Conexiones -->
-                <path class="link" d="M170 130 L70 60" />
-                <path class="link" d="M170 130 L270 60" />
-                <path class="link" d="M170 130 L60 190" />
-                <path class="link" d="M170 130 L280 190" />
-                <path class="link" d="M170 130 L170 30" />
-                <path class="link" d="M70 60 L170 30" />
-                <path class="link" d="M270 60 L170 30" />
-                <path class="link" d="M60 190 L170 230" />
-                <path class="link" d="M280 190 L170 230" />
-                <!-- Nodos periféricos -->
-                <circle class="node" cx="70" cy="60" r="10" />
-                <circle class="node" cx="270" cy="60" r="10" />
-                <circle class="node" cx="60" cy="190" r="10" />
-                <circle class="node" cx="280" cy="190" r="10" />
-                <circle class="node" cx="170" cy="30" r="9" />
-                <circle class="node" cx="170" cy="230" r="9" />
-                <!-- Nodo central (Polygon / tu wallet) -->
-                <circle class="node-core" cx="170" cy="130" r="26" />
+
+                <circle class="outer-ring" cx="160" cy="130" r="88"/>
+                <circle class="outer-ring" cx="160" cy="130" r="108" style="animation-direction:reverse;animation-duration:36s"/>
+
+                <g class="connection">
+                    <path d="M160 130 60 65M160 130 260 65M160 130 45 155M160 130 275 165M160 130 100 225M160 130 225 220M160 130 160 25"/>
+                    <path d="M60 65 160 25 260 65M45 155 100 225 225 220 275 165"/>
+                    <path d="M60 65 45 155M260 65 275 165M100 225 160 130 225 220"/>
+                </g>
+
+                <g>
+                    <circle class="node" cx="60" cy="65" r="9"/>
+                    <circle class="node" cx="260" cy="65" r="9" style="stroke:#a78bfa"/>
+                    <circle class="node" cx="45" cy="155" r="8" style="stroke:#35e8ff"/>
+                    <circle class="node" cx="275" cy="165" r="8" style="stroke:#d4af37"/>
+                    <circle class="node" cx="100" cy="225" r="8" style="stroke:#a78bfa"/>
+                    <circle class="node" cx="225" cy="220" r="8" style="stroke:#ff59c7"/>
+                    <circle class="node" cx="160" cy="25" r="7" style="stroke:#35e8ff"/>
+                </g>
+
+                <circle cx="160" cy="130" r="37" fill="rgba(55,245,161,.055)" stroke="url(#networkGradient)" stroke-width="1.2"/>
+                <circle class="core" cx="160" cy="130" r="26"/>
+                <circle class="core-inner" cx="160" cy="130" r="19"/>
+                <g transform="translate(148 118)" stroke="#37f5a1" fill="none" stroke-width="1.7" stroke-linejoin="round">
+                    <path d="m12 0 12 7v14l-12 7L0 21V7Z" transform="scale(.95) translate(-.6 -1.5)"/>
+                    <path d="m7 9 5-3 5 3v6l-5 3-5-3Z" transform="scale(.8) translate(3 2)"/>
+                </g>
             </svg>
 
-            <div class="eyebrow">Internet descentralizada</div>
-            <h1>¿Qué es Web3?</h1>
+            <div class="eyebrow">
+                <span class="eyebrow-line"></span>
+                Internet descentralizada
+                <span class="eyebrow-line"></span>
+            </div>
+
+            <h1>El futuro es <span class="gradient-text">Web3</span></h1>
+
             <p class="hero-sub">
-                La siguiente etapa de internet, donde <strong>tú controlas tus datos, tu identidad y tus activos digitales</strong>, sin depender de intermediarios.
+                Una nueva arquitectura digital para interactuar con
+                <strong>identidad propia, activos verificables y redes blockchain</strong>.
+                Descubre cómo funciona dentro de Csariel's.
             </p>
+
             <div class="hero-tags">
                 <span class="tag">Blockchain</span>
                 <span class="tag">Wallets</span>
+                <span class="tag">Smart contracts</span>
                 <span class="tag">Tokens</span>
                 <span class="tag">NFTs</span>
-                <span class="tag">Smart contracts</span>
-                <span class="tag">Descentralización</span>
+                <span class="tag">Apps Web3</span>
             </div>
         </section>
 
-        <!-- ========== 1. DEFINICIÓN ========== -->
+        <!-- 01 DEFINICIÓN -->
+
         <section class="section">
             <div class="section-head">
-                <span class="num">01</span>
-                <h2>Definición</h2>
+                <span class="section-number">01</span>
+                <div>
+                    <h2>La arquitectura Web3</h2>
+                    <p>Qué es y cómo funciona</p>
+                </div>
             </div>
-            <div class="card">
+
+            <article class="card">
                 <p>
-                    <strong>Web3</strong> es un modelo de internet construido sobre <strong>blockchain</strong>, una red de computadoras que comparten un mismo registro de información. Ese registro no pertenece a una empresa: cualquiera puede verificarlo, y nadie puede alterarlo en secreto.
+                    <strong>Web3</strong> es un conjunto de tecnologías y aplicaciones que utilizan blockchain,
+                    criptografía y contratos inteligentes para permitir interacciones digitales verificables.
                 </p>
                 <p>
-                    En Web3, la confianza no depende de una compañía que guarda tus datos. Depende del <strong>código</strong> y de la <strong>criptografía</strong>, que permiten comprobar qué pasó sin pedirle permiso a nadie.
+                    En lugar de depender exclusivamente de las bases de datos de una plataforma,
+                    ciertas operaciones pueden registrarse en una red compartida y comprobarse públicamente.
+                    Una wallet permite gestionar claves y autorizar operaciones con activos digitales.
                 </p>
-            </div>
+                <p>
+                    <strong>Importante:</strong> Web3 no significa que toda la información sea descentralizada.
+                    Las aplicaciones pueden combinar blockchain con servidores, bases de datos y servicios
+                    convencionales. El nivel de descentralización depende de su arquitectura.
+                </p>
+            </article>
         </section>
 
-        <!-- ========== 2. WEB2 VS WEB3 ========== -->
+        <!-- 02 COMPARACIÓN -->
+
         <section class="section">
             <div class="section-head">
-                <span class="num">02</span>
-                <h2>Web2 vs Web3</h2>
+                <span class="section-number">02</span>
+                <div>
+                    <h2>Web2 vs. Web3</h2>
+                    <p>Dos modelos tecnológicos que pueden complementarse</p>
+                </div>
             </div>
+
             <div class="compare">
-                <div class="side web2">
-                    <h3>Web2 · Internet actual</h3>
+                <article class="compare-side web2">
+                    <h3>WEB2 / Internet tradicional</h3>
                     <ul>
-                        <li>Las plataformas guardan tus datos</li>
-                        <li>Una empresa decide las reglas</li>
-                        <li>Tu cuenta puede suspenderse</li>
-                        <li>Los intermediarios cobran comisiones</li>
-                        <li>Tú no eres dueño de lo que creas</li>
+                        <li>Las plataformas administran sus cuentas y bases de datos.</li>
+                        <li>Los servicios definen sus propias reglas.</li>
+                        <li>El acceso depende de cada proveedor.</li>
+                        <li>Los pagos pueden requerir intermediarios.</li>
+                        <li>Los datos y contenidos pueden depender de la plataforma.</li>
                     </ul>
-                </div>
-                <div class="side web3">
-                    <h3>Web3 · Internet descentralizada</h3>
+                </article>
+
+                <article class="compare-side web3">
+                    <h3>WEB3 / Infraestructura blockchain</h3>
                     <ul>
-                        <li>Tú controlas tu identidad con tu wallet</li>
-                        <li>Las reglas están escritas en código público</li>
-                        <li>Nadie puede borrar tus registros en secreto</li>
-                        <li>Menos intermediarios, transacciones directas</li>
-                        <li>Puedes demostrar que posees tus activos</li>
+                        <li>Una wallet permite gestionar claves y firmar operaciones.</li>
+                        <li>Los contratos inteligentes ejecutan reglas programadas.</li>
+                        <li>Las transacciones públicas pueden verificarse en la red.</li>
+                        <li>Los activos compatibles pueden transferirse entre wallets.</li>
+                        <li>La propiedad digital depende de las reglas y claves del activo.</li>
                     </ul>
-                </div>
+                </article>
             </div>
         </section>
 
-        <!-- ========== 3. PILARES ========== -->
+        <!-- 03 PILARES -->
+
         <section class="section">
             <div class="section-head">
-                <span class="num">03</span>
-                <h2>Los 4 pilares</h2>
+                <span class="section-number">03</span>
+                <div>
+                    <h2>Los cuatro pilares</h2>
+                    <p>Los fundamentos de una experiencia Web3</p>
+                </div>
             </div>
+
             <div class="grid-2">
-                <div class="card pillar">
-                    <div class="icon">🌐</div>
+                <article class="card pillar">
+                    <div class="pillar-icon">
+                        <svg class="icon icon-lg"><use href="#i-network"/></svg>
+                    </div>
                     <h3>Descentralización</h3>
-                    <p>La información vive en muchos nodos al mismo tiempo. No hay un único punto de fallo ni un único dueño.</p>
-                </div>
-                <div class="card pillar">
-                    <div class="icon">🔑</div>
+                    <p>Las redes blockchain distribuyen la validación entre participantes según el protocolo. El grado de descentralización varía entre redes.</p>
+                </article>
+
+                <article class="card pillar">
+                    <div class="pillar-icon">
+                        <svg class="icon icon-lg"><use href="#i-wallet"/></svg>
+                    </div>
                     <h3>Propiedad digital</h3>
-                    <p>Tus tokens y NFTs quedan vinculados a tu wallet. Tú firmas cada operación con tu clave privada.</p>
-                </div>
-                <div class="card pillar">
-                    <div class="icon">🪪</div>
-                    <h3>Identidad propia</h3>
-                    <p>Tu wallet funciona como tu cuenta. No necesitas crear un perfil nuevo en cada plataforma.</p>
-                </div>
-                <div class="card pillar">
-                    <div class="icon">🔍</div>
-                    <h3>Transparencia</h3>
-                    <p>Cualquiera puede consultar las transacciones públicas en un explorador de blockchain, como PolygonScan.</p>
-                </div>
+                    <p>Una wallet permite controlar las claves que autorizan operaciones con los activos vinculados a su dirección.</p>
+                </article>
+
+                <article class="card pillar">
+                    <div class="pillar-icon">
+                        <svg class="icon icon-lg"><use href="#i-id"/></svg>
+                    </div>
+                    <h3>Identidad digital</h3>
+                    <p>Una misma wallet puede utilizarse en diferentes aplicaciones compatibles, sin que eso elimine la necesidad de otros sistemas de acceso.</p>
+                </article>
+
+                <article class="card pillar">
+                    <div class="pillar-icon">
+                        <svg class="icon icon-lg"><use href="#i-search"/></svg>
+                    </div>
+                    <h3>Transparencia verificable</h3>
+                    <p>Los registros públicos pueden consultarse mediante exploradores como PolygonScan, según la red y la información registrada.</p>
+                </article>
             </div>
         </section>
 
-        <!-- ========== 4. CONCEPTOS ========== -->
+        <!-- 04 GLOSARIO -->
+
         <section class="section">
             <div class="section-head">
-                <span class="num">04</span>
-                <h2>Conceptos clave</h2>
+                <span class="section-number">04</span>
+                <div>
+                    <h2>Lenguaje del ecosistema</h2>
+                    <p>Conceptos esenciales de Web3</p>
+                </div>
             </div>
+
             <div class="grid-3">
-                <div class="term">
-                    <h4>BLOCKCHAIN</h4>
-                    <p>Una cadena de bloques de información enlazados criptográficamente. Lo que se registra no se puede editar sin que la red lo note.</p>
-                </div>
-                <div class="term">
-                    <h4>WALLET</h4>
-                    <p>Tu cartera digital. Guarda tus tokens y NFTs. Se identifica con una dirección pública; la clave privada nunca se comparte.</p>
-                </div>
-                <div class="term">
-                    <h4>TOKEN</h4>
-                    <p>Unidad digital registrada en blockchain. Puede ser intercambiable (como una moneda) y tener reglas propias.</p>
-                </div>
-                <div class="term">
-                    <h4>NFT</h4>
-                    <p>Token no intercambiable: cada uno es único. Sirve como comprobante de algo, como una entrada, un certificado o un beneficio.</p>
-                </div>
-                <div class="term">
-                    <h4>SMART CONTRACT</h4>
-                    <p>Programa que se ejecuta solo en blockchain cuando se cumplen sus condiciones. No necesita un intermediario para aplicar las reglas.</p>
-                </div>
-                <div class="term">
-                    <h4>GAS FEE</h4>
-                    <p>Pequeña comisión que se paga a la red para procesar una transacción. En Polygon suele ser muy baja.</p>
-                </div>
-                <div class="term">
-                    <h4>QUEMA (BURN)</h4>
-                    <p>Destruir tokens o NFTs de forma permanente. Reduce la cantidad en circulación y deja constancia en la red.</p>
-                </div>
-                <div class="term">
-                    <h4>POLYGON</h4>
-                    <p>Red blockchain compatible con Ethereum, de bajo costo y bajo consumo energético. Es donde vive el ecosistema Sariel's.</p>
-                </div>
-                <div class="term">
-                    <h4>DAPP</h4>
-                    <p>Aplicación descentralizada: una app cuya lógica corre sobre blockchain y se conecta con tu wallet.</p>
-                </div>
+                <article class="term">
+                    <h3>BLOCKCHAIN</h3>
+                    <p>Registro distribuido donde las transacciones se agrupan en bloques enlazados criptográficamente y validados según las reglas de la red.</p>
+                </article>
+
+                <article class="term">
+                    <h3>WALLET</h3>
+                    <p>Herramienta para gestionar claves criptográficas, consultar activos y firmar transacciones. La dirección pública se puede compartir; la clave privada no.</p>
+                </article>
+
+                <article class="term">
+                    <h3>TOKEN</h3>
+                    <p>Activo digital emitido mediante un contrato o protocolo. Sus funciones, transferencias y restricciones dependen de su implementación.</p>
+                </article>
+
+                <article class="term">
+                    <h3>NFT</h3>
+                    <p>Token no fungible que se distingue de otros tokens. Puede representar un coleccionable, un certificado o un beneficio definido por sus condiciones.</p>
+                </article>
+
+                <article class="term">
+                    <h3>SMART CONTRACT</h3>
+                    <p>Programa desplegado en blockchain que ejecuta operaciones cuando se cumplen las condiciones establecidas en su código.</p>
+                </article>
+
+                <article class="term">
+                    <h3>GAS FEE</h3>
+                    <p>Coste de procesamiento de una operación en la red. El importe varía según la blockchain, la actividad y el tipo de transacción.</p>
+                </article>
+
+                <article class="term">
+                    <h3>BURN / QUEMA</h3>
+                    <p>Operación que elimina tokens de la circulación según las reglas del contrato. La reversibilidad depende del diseño y de los permisos existentes.</p>
+                </article>
+
+                <article class="term">
+                    <h3>POLYGON</h3>
+                    <p>Conjunto de tecnologías y redes blockchain relacionadas con Ethereum. Las redes y sus activos tienen identificadores y condiciones específicos.</p>
+                </article>
+
+                <article class="term">
+                    <h3>DAPP</h3>
+                    <p>Aplicación descentralizada que utiliza contratos inteligentes u otros componentes blockchain, habitualmente junto con una interfaz web.</p>
+                </article>
             </div>
         </section>
 
-        <!-- ========== 5. ACTIVOS ========== -->
-        <section class="section">
-            <div class="section-head">
-                <span class="num">05</span>
-                <h2>Qué tipo de activos existen</h2>
-            </div>
-            <div class="card" style="padding:14px;">
-                <table class="assets">
-                    <thead>
-                        <tr>
-                            <th>Activo</th>
-                            <th>Para qué sirve</th>
-                            <th>Se puede transferir</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><strong>Criptomoneda</strong></td>
-                            <td>Moneda de uso general dentro de su red.</td>
-                            <td class="yes">Sí</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Token de utilidad</strong></td>
-                            <td>Da acceso a beneficios o funciones de una plataforma.</td>
-                            <td class="yes">Sí</td>
-                        </tr>
-                        <tr>
-                            <td><strong>NFT</strong></td>
-                            <td>Prueba única de propiedad o de un derecho.</td>
-                            <td>Depende de su diseño</td>
-                        </tr>
-                        <tr>
-                            <td><strong>NFT intransferible</strong></td>
-                            <td>Comprobante ligado a una persona o wallet.</td>
-                            <td class="no">No</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </section>
+        <!-- 05 ACTIVOS -->
 
-        <!-- ========== 6. CÓMO FUNCIONA SARIEL'S ========== -->
         <section class="section">
             <div class="section-head">
-                <span class="num">06</span>
-                <h2>Web3 en Sariel's</h2>
+                <span class="section-number">05</span>
+                <div>
+                    <h2>Activos digitales</h2>
+                    <p>Funciones y posibilidades de transferencia</p>
+                </div>
             </div>
+
             <div class="card">
+                <div class="table-wrap">
+                    <table class="assets">
+                        <thead>
+                            <tr>
+                                <th>TIPO</th>
+                                <th>FUNCIÓN</th>
+                                <th>TRANSFERENCIA</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Criptomoneda</strong></td>
+                                <td>Activo nativo utilizado en una red.</td>
+                                <td class="yes">Según protocolo</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Token de utilidad</strong></td>
+                                <td>Acceso a funciones o beneficios definidos.</td>
+                                <td class="yes">Según contrato</td>
+                            </tr>
+                            <tr>
+                                <td><strong>NFT</strong></td>
+                                <td>Representación digital única.</td>
+                                <td>Según contrato</td>
+                            </tr>
+                            <tr>
+                                <td><strong>NFT intransferible</strong></td>
+                                <td>Registro vinculado a una dirección.</td>
+                                <td class="no">Restringida por diseño, si está implementado correctamente</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- 06 FLUJO CSARIEL'S -->
+
+        <section class="section">
+            <div class="section-head">
+                <span class="section-number">06</span>
+                <div>
+                    <h2>Web3 dentro de Csariel's</h2>
+                    <p>Un modelo de fidelización conectado con blockchain</p>
+                </div>
+            </div>
+
+            <article class="card">
                 <p>
-                    Sariel's usa Web3 para crear un programa de lealtad con activos digitales reales. Cada compra física genera un registro en Polygon que tú puedes verificar desde tu wallet.
+                    Csariel's plantea una experiencia que conecta compras físicas, recompensas digitales
+                    y registros verificables en Polygon. La emisión y el canje deben estar respaldados
+                    por los contratos, los controles del sistema y las condiciones publicadas del programa.
+                </p>
+            </article>
+
+            <div class="flow" style="margin-top:16px">
+                <div class="flow-row">
+                    <span class="flow-node">
+                        <svg class="icon"><use href="#i-cookie"/></svg>
+                        Compra del domo
+                    </span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-node">
+                        <svg class="icon"><use href="#i-qr"/></svg>
+                        Escaneo QR
+                    </span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-node gold">
+                        <svg class="icon"><use href="#i-token"/></svg>
+                        1 ES.TOKS
+                    </span>
+                </div>
+
+                <div class="flow-arrow" aria-hidden="true">↓</div>
+
+                <div class="flow-row">
+                    <span class="flow-node">
+                        <svg class="icon"><use href="#i-coin"/></svg>
+                        12 ES.TOKS
+                    </span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-node violet">
+                        <svg class="icon"><use href="#i-cube"/></svg>
+                        NFT Domo
+                    </span>
+                    <span class="flow-arrow">→</span>
+                    <span class="flow-node gold">
+                        <svg class="icon"><use href="#i-gift"/></svg>
+                        Beneficio de canje
+                    </span>
+                </div>
+
+                <p class="flow-note">
+                    Modelo ilustrativo del programa. La disponibilidad de cada recompensa depende
+                    de las reglas vigentes y de la correcta ejecución del sistema.
                 </p>
             </div>
 
-            <div class="flow" style="margin-top:16px;">
-                <div class="flow-row">
-                    <span class="flow-node">🛒 Compras un domo</span>
-                    <span class="flow-arrow">→</span>
-                    <span class="flow-node">📱 Escaneas el QR</span>
-                    <span class="flow-arrow">→</span>
-                    <span class="flow-node gold">🔷 Recibes 1 ES.TOKS</span>
+            <div class="timeline">
+                <div class="step">
+                    <h3>01. Compra en el establecimiento</h3>
+                    <p>El cliente compra un domo de galleta por $75 MXN, según el precio previsto para el programa.</p>
                 </div>
-                <div class="flow-row"><span class="flow-arrow">↓</span></div>
-                <div class="flow-row">
-                    <span class="flow-node">📦 12 ES.TOKS</span>
-                    <span class="flow-arrow">→</span>
-                    <span class="flow-node violet">🖼️ NFT Domo</span>
-                    <span class="flow-arrow">→</span>
-                    <span class="flow-node gold">🍪 1 domo gratis</span>
-                </div>
-                <div class="flow-note">Si no canjeas el NFT en 30 días → se convierte en NFT Conmemorativo 🎗️</div>
-            </div>
 
-            <div class="timeline" style="margin-top:24px;">
                 <div class="step">
-                    <h3>1. Compra en el local</h3>
-                    <p>Compras un domo de galleta en nuestro local de Puebla por $75 MXN.</p>
+                    <h3>02. Validación del código QR</h3>
+                    <p>El código se valida conforme a los controles del sistema para evitar reutilizaciones y reclamaciones duplicadas.</p>
                 </div>
+
                 <div class="step">
-                    <h3>2. Escaneas el QR</h3>
-                    <p>El QR es de un solo uso y está dentro del domo. Se escanea en la terminal autorizada.</p>
+                    <h3>03. Registro de ES.TOKS</h3>
+                    <p>El programa contempla una recompensa de 1 ES.TOKS. Su entrega depende de que la operación sea autorizada y procesada correctamente.</p>
                 </div>
+
                 <div class="step">
-                    <h3>3. Recibes ES.TOKS</h3>
-                    <p>En hasta 24 horas, 1 ES.TOKS llega a tu wallet de Polygon.</p>
+                    <h3>04. Acumulación y NFT Domo</h3>
+                    <p>Al reunir 12 ES.TOKS, el usuario puede solicitar el NFT Domo conforme a las condiciones del programa. La quema de tokens debe confirmarse en el contrato.</p>
                 </div>
+
                 <div class="step">
-                    <h3>4. Acumulas 12 y obtienes el NFT Domo</h3>
-                    <p>Al llegar a 12 ES.TOKS puedes obtener un NFT Domo. Los 12 ES.TOKS se queman en el proceso.</p>
-                </div>
-                <div class="step">
-                    <h3>5. Canjeas tu domo</h3>
-                    <p>Tienes 30 días para canjear el NFT por 1 domo gratis en nuestro local de Puebla.</p>
+                    <h3>05. Canje del beneficio</h3>
+                    <p>El programa contempla un plazo de 30 días para reclamar un domo en el establecimiento participante de Puebla, sujeto a las condiciones publicadas.</p>
                 </div>
             </div>
 
             <div class="callout">
-                <strong>Dato clave:</strong> el ES.TOKS solo existe cuando hay una venta real. El Mercado P2P no crea tokens nuevos: solo permite transferir los que ya existen.
+                <strong>Transparencia:</strong> el QR, los registros de compra y la emisión del token
+                deben validarse para impedir duplicaciones. La blockchain permite verificar operaciones
+                registradas, pero por sí sola no demuestra que una venta física haya ocurrido.
             </div>
         </section>
 
-        <!-- ========== 7. ES.TOKS ========== -->
+        <!-- 07 ES.TOKS -->
+
         <section class="section">
             <div class="section-head">
-                <span class="num">07</span>
-                <h2>¿Qué es ES.TOKS?</h2>
+                <span class="section-number">07</span>
+                <div>
+                    <h2>ES.TOKS</h2>
+                    <p>El componente de fidelización digital</p>
+                </div>
             </div>
-            <div class="card">
+
+            <article class="card">
                 <p>
-                    <strong>ES.TOKS</strong> es un token de utilidad y fidelización que representa tu participación en el ecosistema Sariel's. Su origen está ligado a compras reales de domos.
+                    <strong>ES.TOKS</strong> se plantea como un token de utilidad y fidelización
+                    del ecosistema Csariel's, asociado al programa de recompensas por compras reales.
                 </p>
-                <p><strong>Características:</strong></p>
-                <p>• Es transferible: puedes venderlo o comprarlo en el Mercado P2P.</p>
-                <p>• Su valor lo determinan la oferta y la demanda, no Sariel's.</p>
-                <p>• Las transacciones P2P tienen una comisión del 2%, pagada en MATIC/POL.</p>
-            </div>
+                <p>
+                    <strong>Transferibilidad:</strong> si el contrato permite transferencias, los usuarios
+                    pueden realizar las operaciones autorizadas entre direcciones compatibles.
+                </p>
+                <p>
+                    <strong>Mercado P2P:</strong> el precio de una operación entre particulares depende
+                    de las condiciones pactadas, la oferta, la demanda y las restricciones de la plataforma.
+                </p>
+                <p>
+                    <strong>Comisiones:</strong> la comisión prevista para las operaciones P2P debe
+                    mostrarse antes de confirmar la transacción. Si se cobra en POL u otro activo,
+                    debe indicarse claramente.
+                </p>
+                <div class="callout">
+                    ES.TOKS no debe presentarse como inversión, depósito remunerado ni activo con
+                    rentabilidad garantizada. Los derechos y usos dependen de las condiciones
+                    oficiales del programa y del contrato desplegado.
+                </div>
+            </article>
         </section>
 
-        <!-- ========== 8. NFT DOMO ========== -->
+        <!-- 08 NFT DOMO -->
+
         <section class="section">
             <div class="section-head">
-                <span class="num">08</span>
-                <h2>El NFT Domo</h2>
+                <span class="section-number">08</span>
+                <div>
+                    <h2>NFT Domo</h2>
+                    <p>Un comprobante digital de recompensa</p>
+                </div>
             </div>
+
             <div class="grid-2">
-                <div class="card">
-                    <p>Es el <strong>beneficio de canje</strong>. Reúnes 12 ES.TOKS, obtienes el NFT y después lo usas para reclamar tu domo.</p>
-                    <p>Los 12 ES.TOKS usados se <strong>queman</strong> al obtenerlo.</p>
-                </div>
-                <div class="card">
-                    <p><strong>Intransferible (soulbound):</strong> no se vende, no se regala y no se lista en ningún mercado.</p>
-                    <p>Queda vinculado permanentemente a la wallet que lo obtuvo.</p>
-                </div>
+                <article class="card">
+                    <div class="pillar-icon" style="--pillar-color:var(--violet)">
+                        <svg class="icon icon-lg"><use href="#i-cube"/></svg>
+                    </div>
+                    <p>
+                        El NFT Domo representa el beneficio de canje definido por el programa.
+                        El modelo contempla acumular 12 ES.TOKS para solicitarlo.
+                    </p>
+                    <p>
+                        La quema de los 12 tokens debe estar configurada y verificada en la
+                        lógica de emisión correspondiente.
+                    </p>
+                </article>
+
+                <article class="card">
+                    <div class="pillar-icon" style="--pillar-color:var(--cyan)">
+                        <svg class="icon icon-lg"><use href="#i-shield"/></svg>
+                    </div>
+                    <p>
+                        <strong>Diseño intransferible:</strong> el NFT puede configurarse para impedir
+                        transferencias, ventas o regalos mediante las reglas del contrato.
+                    </p>
+                    <p>
+                        La restricción debe comprobarse en el contrato real; no basta con anunciarla
+                        en la interfaz.
+                    </p>
+                </article>
             </div>
         </section>
 
-        <!-- ========== 9. REGLA DE 30 DÍAS ========== -->
+        <!-- 09 VENCIMIENTO -->
+
         <section class="section">
             <div class="section-head">
-                <span class="num">09</span>
-                <h2>Regla de los 30 días</h2>
+                <span class="section-number">09</span>
+                <div>
+                    <h2>Ventana de canje</h2>
+                    <p>El plazo previsto de 30 días</p>
+                </div>
             </div>
+
             <div class="grid-2">
-                <div class="card">
-                    <h3 style="font-family:'Orbitron',sans-serif;font-size:0.9rem;color:var(--green);margin-bottom:10px;">✓ Lo canjeas a tiempo</h3>
-                    <p>El NFT se quema y recibes <strong>1 domo gratis</strong> en nuestro local de Puebla.</p>
-                </div>
-                <div class="card">
-                    <h3 style="font-family:'Orbitron',sans-serif;font-size:0.9rem;color:var(--gold-light);margin-bottom:10px;">🎗️ No lo canjeas</h3>
-                    <p>El NFT se convierte en <strong>NFT Conmemorativo</strong>: un trofeo permanente e intransferible. El derecho a reclamar la galleta se extingue.</p>
-                </div>
+                <article class="card">
+                    <div class="pillar-icon" style="--pillar-color:var(--green)">
+                        <svg class="icon icon-lg"><use href="#i-shield"/></svg>
+                    </div>
+                    <h3 style="font-family:Orbitron,sans-serif;font-size:.85rem;margin-bottom:10px;color:var(--green)">
+                        Canje dentro del plazo
+                    </h3>
+                    <p>
+                        Si se cumplen las condiciones, el usuario puede reclamar 1 domo conforme
+                        a las reglas del programa. La gestión del NFT tras el canje debe estar
+                        definida por el contrato.
+                    </p>
+                </article>
+
+                <article class="card">
+                    <div class="pillar-icon" style="--pillar-color:var(--gold)">
+                        <svg class="icon icon-lg"><use href="#i-contract"/></svg>
+                    </div>
+                    <h3 style="font-family:Orbitron,sans-serif;font-size:.85rem;margin-bottom:10px;color:var(--gold-light)">
+                        Fin del plazo
+                    </h3>
+                    <p>
+                        El modelo contempla transformar el beneficio en un NFT conmemorativo
+                        intransferible. Esta transformación y la extinción del derecho de canje
+                        deben estar definidas en las condiciones y respaldadas por la implementación.
+                    </p>
+                </article>
             </div>
         </section>
 
-        <!-- ========== 10. MERCADO P2P ========== -->
+        <!-- 10 P2P -->
+
         <section class="section">
             <div class="section-head">
-                <span class="num">10</span>
-                <h2>Mercado P2P</h2>
+                <span class="section-number">10</span>
+                <div>
+                    <h2>Mercado P2P</h2>
+                    <p>Intercambio entre usuarios</p>
+                </div>
             </div>
-            <div class="card">
-                <p>Es el mercado secundario de la plataforma. Los usuarios pueden <strong>vender ES.TOKS</strong> en la cantidad que quieran, o <strong>comprarlos</strong> para completar los 12 necesarios para un NFT. El precio lo fija el mercado.</p>
-            </div>
+
+            <article class="card">
+                <p>
+                    El mercado entre particulares permite publicar ofertas de compra o venta de
+                    ES.TOKS, siempre que la plataforma y el contrato permitan esas operaciones.
+                </p>
+                <p>
+                    El precio final depende de las condiciones acordadas. La interfaz debe mostrar
+                    la cantidad, el precio, la comisión y el total antes de confirmar.
+                </p>
+            </article>
+
             <div class="callout">
-                <strong>Importante:</strong> los NFTs Domo <strong>no se venden</strong> en el P2P. Son intransferibles por diseño. Solo los ES.TOKS se comercializan.
+                <strong>Separación de activos:</strong> el diseño del programa contempla que ES.TOKS
+                pueda negociarse y que el NFT Domo permanezca intransferible. Esto solo queda
+                garantizado si los contratos y las reglas del mercado lo aplican correctamente.
             </div>
         </section>
 
-        <!-- ========== 11. WALLET Y SEGURIDAD ========== -->
+        <!-- 11 WALLET -->
+
         <section class="section">
             <div class="section-head">
-                <span class="num">11</span>
-                <h2>Conectar tu wallet</h2>
+                <span class="section-number">11</span>
+                <div>
+                    <h2>Wallet y seguridad</h2>
+                    <p>Control de claves y operaciones</p>
+                </div>
             </div>
+
             <div class="grid-2">
-                <div class="card">
-                    <p><strong>Conectar</strong> significa vincular tu wallet para recibir ES.TOKS y NFTs.</p>
-                    <p>La app solo ve tu dirección pública. Nunca te pedimos tu clave privada ni tu frase de recuperación.</p>
-                </div>
-                <div class="card">
-                    <p><strong>Tú firmas cada operación</strong>, así que siempre tienes el control.</p>
-                    <p>Tu wallet es tu identidad dentro del ecosistema Web3.</p>
-                </div>
+                <article class="card">
+                    <div class="pillar-icon">
+                        <svg class="icon icon-lg"><use href="#i-wallet"/></svg>
+                    </div>
+                    <p>
+                        <strong>Conectar una wallet</strong> permite vincular una dirección pública
+                        con una aplicación compatible. La conexión no implica que la app pueda
+                        acceder a las claves privadas.
+                    </p>
+                    <p>
+                        Antes de firmar, revisa qué operación solicita la aplicación y en qué red.
+                    </p>
+                </article>
+
+                <article class="card">
+                    <div class="pillar-icon" style="--pillar-color:var(--gold)">
+                        <svg class="icon icon-lg"><use href="#i-shield"/></svg>
+                    </div>
+                    <p>
+                        <strong>Protege tus claves.</strong> No compartas tu frase de recuperación,
+                        clave privada ni códigos de autorización.
+                    </p>
+                    <p>
+                        Una transacción firmada puede ser irreversible. Verifica la dirección
+                        de destino, el importe y las comisiones antes de confirmar.
+                    </p>
+                </article>
             </div>
+
             <div class="callout">
-                <strong>Consejo de seguridad:</strong> guarda tu frase de recuperación en papel y en un lugar seguro. Quien la tenga puede mover tus activos, y nadie de Sariel's te la pedirá.
+                <strong>Regla esencial:</strong> ningún representante de Csariel's debe pedirte
+                la frase de recuperación de tu wallet. Desconfía de enlaces desconocidos,
+                solicitudes inesperadas de firma y promesas de beneficios garantizados.
             </div>
         </section>
 
-        <!-- ========== CTA ========== -->
+        <!-- CTA -->
+
         <section class="cta">
-            <h2>Explora tu wallet en Polygon</h2>
-            <p>Compra un domo, escanea tu QR y observa tu primer ES.TOKS llegar a tu cartera.</p>
-            <a href="/" class="btn">← Volver a Sariel's</a>
+            <h2>Tu acceso al ecosistema <span class="gradient-text">Web3</span></h2>
+            <p>
+                Conoce las funciones de Csariel's, aprende a proteger tu wallet y descubre
+                cómo los activos digitales pueden conectar experiencias físicas y digitales.
+            </p>
+            <a href="/" class="btn">
+                Explorar Csariel's
+                <svg class="icon"><use href="#i-arrow-right"/></svg>
+            </a>
         </section>
 
         <footer class="footer">
-            <div><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</div>
-            <div>Puebla, México 🇲🇽</div>
-            <span class="badge-poly">🟢 Polygon</span>
+            <div class="footer-brand">CSARIEL'S<span>®</span> / WEB3</div>
+            <div>Infraestructura digital · Comunidad · Innovación</div>
+            <span class="polygon-badge">
+                <span class="polygon-symbol" aria-hidden="true"></span>
+                Polygon ecosystem
+            </span>
+            <div>© <span id="year">2026</span> Csariel's. Todos los derechos reservados.</div>
         </footer>
 
     </main>
+
+    <script>
+        (function () {
+            var year = document.getElementById('year');
+
+            if (year) {
+                year.textContent = new Date().getFullYear();
+            }
+
+            var links = document.querySelectorAll('a[href^="#"]');
+
+            for (var i = 0; i < links.length; i++) {
+                links[i].addEventListener('click', function (event) {
+                    var targetId = this.getAttribute('href');
+
+                    if (!targetId || targetId === '#') {
+                        return;
+                    }
+
+                    var target = document.querySelector(targetId);
+
+                    if (target) {
+                        event.preventDefault();
+                        target.scrollIntoView({
+                            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                                ? 'auto'
+                                : 'smooth',
+                            block: 'start'
+                        });
+                    }
+                });
+            }
+        })();
+    </script>
 
 </body>
 </html>
