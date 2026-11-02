@@ -7,6 +7,7 @@
 //       TRX-    → accesos de pago a lives (pagos_transmision)
 //       muro_   → ventas P2P del Muro (muro_ventas_tokens)
 //       MKT-    → pagos de campañas de marketing (marketing_pagos)
+//       MKC-    → compras del Marketplace de canales (grupos_marketplace_compras)
 //       NET-    → paquetes de Internet (ordenes_internet)
 //       PRO-    → membresía PRO
 //       resto   → membresía de Mercado (por payment_id)
@@ -23,6 +24,7 @@ const router = express.Router();
 const { verificarFirmaNowPayments } = require('../utils/nowpayments-sig');
 const nowpayments = require('./webhooks/nowpayments');
 const ventas = require('./webhooks/nowpayments-ventas');
+const marketplaceCanal = require('./webhooks/nowpayments-marketplace');
 const { handleWebhookMembresia } = require('./membresia-webhook-handler');
 const { handleWebhookInternet } = require('./webhooks/nowpayments-internet');
 
@@ -73,6 +75,9 @@ router.post('/nowpayments', async (req, res) => {
         }
         if (orderUpper.startsWith('MKT-')) {
             return ventas.procesarPagoMarketing(orderId.slice(4), npStatus, data, res);
+        }
+        if (orderUpper.startsWith('MKC-')) {
+            return marketplaceCanal.procesarCompraMarketplace(orderId, npStatus, data, res);
         }
         if (orderUpper.startsWith('NET-')) {
             return handleWebhookInternet(req, res);
