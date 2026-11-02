@@ -15,6 +15,7 @@
 // v4.1: Montaje de noticias con diagnóstico: registra la ruta exacta
 //       del archivo, el tipo de export y sus claves. Si el export no
 //       es un router, monta un 503 con el motivo en vez de un 404.
+// v4.2: Montaje de /api/marketplace (compras del Marketplace de canales).
 // ================================================================
 
 require('dotenv').config();
@@ -947,6 +948,9 @@ montarRouter('/api/mercado', './routes/mercado', 'routes/mercado');
 montarRouter('/api/mercado/pedidos', './routes/mercado-pedidos', 'routes/mercado-pedidos');
 
 montarRouter('/api/live', './routes/live', 'routes/live');
+
+// Compras del Marketplace de canales (crear pago NOWPayments)
+montarRouter('/api/marketplace', './routes/marketplace-canal', 'routes/marketplace-canal');
 
 // Noticias (feed y preguntas con NewsData, Perplexity, Tavily y OpenAI; caché Redis; sesión Supabase)
 montarNoticias();
