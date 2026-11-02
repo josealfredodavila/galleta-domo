@@ -4,13 +4,30 @@
 // Cargar feed, renderizar posts, scroll infinito, verificar like.
 // Depende de: muro-config.js, muro-utils.js
 //
-// v2.1:
-// - Se quitó aviso_moderacion del SELECT explícito: la vista
-//   muro_posts_publicos aún no tiene esa columna y la consulta fallaba.
-// - El cartel de aviso ya está programado y se activará cuando la
-//   vista exponga aviso_moderacion.
-// - Helper manejarErrorModeracion() para los archivos que insertan texto.
+// v2.2:
+// - Sin emojis: avatar de respaldo, verificado, alerta de moderación
+//   y toasts usan SVG o texto.
+// - aviso_moderacion ya existe en muro_posts_publicos (verificado en
+//   Supabase), así que el aviso de lenguaje inapropiado ya se muestra.
 // ================================================================
+
+// ================================================================
+// ICONOS (SVG, sin emojis)
+// ================================================================
+var MURO_PUB_ICON = {
+    diamante:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 22 12 12 22 2 12z"/></svg>',
+    verificado:
+        '<svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true">' +
+            '<path d="M12 2l2.4 3.2 3.9-.6.6 3.9L22 12l-3.1 2.5.6 3.9-3.9.6L12 22l-2.4-3.2-3.9.6-.6-3.9L2 12l3.1-2.5-.6-3.9 3.9-.6z"/>' +
+            '<polyline points="8.5 12.5 11 15 16 9.5"/>' +
+        '</svg>',
+    alerta:
+        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
+            '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>' +
+            '<line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' +
+        '</svg>'
+};
 
 // ================================================================
 // HELPER — Manejo de errores de moderación
@@ -28,7 +45,7 @@ function manejarErrorModeracion(e) {
 
     if (mensaje.indexOf('contenido_no_permitido') !== -1) {
         if (typeof showToast === 'function') {
-            showToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
+            showToast('Contenido no permitido por las normas de la comunidad', 'error', 6000);
         } else {
             alert('Contenido no permitido por las normas de la comunidad');
         }
@@ -60,8 +77,7 @@ async function cargarPublicaciones(reset) {
         var from = currentPage * POSTS_PER_PAGE;
         var to = from + POSTS_PER_PAGE - 1;
 
-        // El SELECT trae todas las columnas de la vista. Cuando la vista
-        // exponga aviso_moderacion, llega automáticamente con el '*'.
+        // La vista muro_posts_publicos ya expone aviso_moderacion.
         var query = supabaseClient
             .from('muro_posts_publicos')
             .select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
@@ -80,8 +96,11 @@ async function cargarPublicaciones(reset) {
             hasMorePosts = false;
             if (currentPage === 0 && feedContainer) {
                 var emptyMsg = filtroTemasActivo
-                    ? '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24" style="width:2.5rem;height:2.5rem;margin:0 auto 16px;color:var(--gold);opacity:0.4;display:block;"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg><h3>Sin publicaciones con tus temas</h3><p>Prueba a explorar todo el muro</p><button onclick="toggleFiltroTemas()" class="btn-gold" style="margin-top:12px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Explorar todo</button></div>'
-                    : '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24" style="width:2.5rem;height:2.5rem;margin:0 auto 16px;color:var(--gold);opacity:0.4;display:block;"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg><h3>Sin publicaciones</h3><p>Sé el primero en compartir algo.</p></div>';
+                    ? '<div class="empty-state">' + MURO_PUB_ICON.diamante.replace('class="icon"', 'class="icon" style="width:2.5rem;height:2.5rem;margin:0 auto 16px;color:var(--gold);opacity:0.4;display:block;"') +
+                      '<h3>Sin publicaciones con tus temas</h3><p>Prueba a explorar todo el muro</p>' +
+                      '<button onclick="toggleFiltroTemas()" class="btn-gold" style="margin-top:12px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> Explorar todo</button></div>'
+                    : '<div class="empty-state">' + MURO_PUB_ICON.diamante.replace('class="icon"', 'class="icon" style="width:2.5rem;height:2.5rem;margin:0 auto 16px;color:var(--gold);opacity:0.4;display:block;"') +
+                      '<h3>Sin publicaciones</h3><p>Sé el primero en compartir algo.</p></div>';
                 feedContainer.innerHTML = emptyMsg;
             }
             isLoading = false;
@@ -128,7 +147,7 @@ function renderizarPost(post) {
     div.dataset.postId = post.id;
 
     var avatarUrl = post.usuario_avatar_url;
-    var avatar = avatarUrl ? '<img src="' + escapeHTML(avatarUrl) + '">' : '◈';
+    var avatar = avatarUrl ? '<img src="' + escapeHTML(avatarUrl) + '" alt="">' : MURO_PUB_ICON.diamante;
     var nombre = escapeHTML(post.usuario_nombre || 'Explorador');
     var likesCount = (post.muro_likes && post.muro_likes[0]) ? post.muro_likes[0].count || 0 : 0;
     var comentariosCount = (post.muro_comentarios && post.muro_comentarios[0]) ? post.muro_comentarios[0].count || 0 : 0;
@@ -159,7 +178,7 @@ function renderizarPost(post) {
         }
     }
 
-    // Cartel de aviso inapropiado (se activa cuando la vista expone aviso_moderacion)
+    // Aviso de lenguaje inapropiado
     var avisoBadge = '';
     if (post.aviso_moderacion === 'lenguaje_inapropiado') {
         avisoBadge =
@@ -170,7 +189,9 @@ function renderizarPost(post) {
                 'border:1px solid rgba(247,212,74,0.4);' +
                 'color:#f7d44a;font-size:0.72rem;' +
             '">' +
-                '<span style="font-size:1rem;">⚠️</span>' +
+                '<span style="display:inline-flex;width:16px;height:16px;flex-shrink:0;">' +
+                    MURO_PUB_ICON.alerta.replace('class="icon"', 'class="icon" style="width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;"') +
+                '</span>' +
                 '<span>Este mensaje contiene lenguaje inapropiado. ' +
                     'Considera expresarte con respeto.</span>' +
             '</div>';
@@ -197,20 +218,20 @@ function renderizarPost(post) {
     }
 
     var fecha = new Date(post.created_at).toLocaleString();
-    var imagenHtml = post.imagen_url ? '<img class="post-imagen" src="' + escapeHTML(post.imagen_url) + '" />' : '';
+    var imagenHtml = post.imagen_url ? '<img class="post-imagen" src="' + escapeHTML(post.imagen_url) + '" alt="" />' : '';
 
     div.innerHTML =
         '<div class="post-header">' +
             '<div class="post-avatar">' + avatarHtml + '</div>' +
             '<div>' +
-                '<div class="post-author">' + nombreHtml + ' <span class="badge-verificado">✦ Verificado</span></div>' +
+                '<div class="post-author">' + nombreHtml + ' <span class="badge-verificado">' + MURO_PUB_ICON.verificado + ' Verificado</span></div>' +
                 '<div class="post-date">' + fecha + '</div>' +
             '</div>' +
             '<div class="post-actions-header">' +
                 (esMiPost
-                    ? '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar"><svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>'
-                    : '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar"><svg class="icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>') +
-                '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir"><svg class="icon" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button>' +
+                    ? '<button class="btn-delete" onclick="eliminarPublicacion(\'' + post.id + '\')" title="Eliminar" aria-label="Eliminar publicación"><svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>'
+                    : '<button class="btn-report" onclick="reportarPublicacion(\'' + post.id + '\')" title="Reportar" aria-label="Reportar publicación"><svg class="icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg></button>') +
+                '<button class="btn-share" onclick="compartirPublicacion(\'' + post.id + '\')" title="Compartir" aria-label="Compartir publicación"><svg class="icon" viewBox="0 0 24 24"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg></button>' +
             '</div>' +
         '</div>' +
         temaBadge +
