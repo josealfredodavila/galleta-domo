@@ -6,8 +6,8 @@
 // - subirArchivoConModeracion ahora apunta a Railway.
 // ================================================================
 
-// 🔥 IMPORTANTE: PON AQUÍ TU URL DE RAILWAY (Sin la barra final)
-const BACKEND_URL = 'https://tu-proyecto-en-railway.up.railway.app'; 
+// 
+'https://tu-proyecto-en-railway.up.railway.app'; 
 
 // ================================================================
 // HELPER — Subida segura con moderación
