@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -612,6 +613,372 @@
             line-height: 1.7;
         }
 
+        /* =====================================================
+           CSARIEL'S WEB3 · RULETA INTERACTIVA
+           Compatible con tacto, mouse y pantallas móviles.
+        ===================================================== */
+
+        .web3-wheel-section {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .wheel-intro {
+            max-width: 680px;
+            margin-bottom: 24px;
+            color: var(--secondary);
+            font-size: .9rem;
+        }
+
+        .wheel-panel {
+            position: relative;
+            overflow: hidden;
+            padding: 27px 16px 25px;
+            border: 1px solid rgba(167,139,250,.28);
+            border-radius: 25px;
+            background:
+                radial-gradient(ellipse at 50% 35%, rgba(167,139,250,.12), transparent 48%),
+                radial-gradient(ellipse at 10% 90%, rgba(55,245,161,.09), transparent 45%),
+                radial-gradient(ellipse at 95% 85%, rgba(255,89,199,.08), transparent 45%),
+                rgba(7,17,13,.88);
+            box-shadow: 0 15px 50px rgba(0,0,0,.22);
+            text-align: center;
+        }
+
+        .wheel-status {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 17px;
+            padding: 7px 12px;
+            border: 1px solid rgba(55,245,161,.25);
+            border-radius: 30px;
+            background: rgba(55,245,161,.06);
+            color: var(--green);
+            font-family: Orbitron, sans-serif;
+            font-size: .63rem;
+            letter-spacing: 1px;
+        }
+
+        .wheel-status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 12px var(--green);
+        }
+
+        .wheel-status.is-spinning .wheel-status-dot {
+            background: var(--pink);
+            box-shadow: 0 0 12px var(--pink);
+            animation: glow .45s infinite;
+        }
+
+        .wheel-stage {
+            position: relative;
+            width: min(340px, 84vw);
+            aspect-ratio: 1;
+            margin: 8px auto 21px;
+            isolation: isolate;
+        }
+
+        .wheel-aura {
+            position: absolute;
+            inset: -12px;
+            z-index: -1;
+            border-radius: 50%;
+            background: conic-gradient(
+                #37f5a1,
+                #35e8ff,
+                #a78bfa,
+                #ff59c7,
+                #ff9e59,
+                #f7d44a,
+                #37f5a1
+            );
+            filter: blur(19px);
+            opacity: .38;
+            animation: rotate 12s linear infinite;
+        }
+
+        .wheel-border {
+            position: absolute;
+            inset: 0;
+            padding: 5px;
+            border-radius: 50%;
+            background: conic-gradient(
+                #37f5a1,
+                #35e8ff,
+                #a78bfa,
+                #ff59c7,
+                #ff9e59,
+                #f7d44a,
+                #37f5a1
+            );
+            box-shadow:
+                0 0 22px rgba(53,232,255,.16),
+                0 0 35px rgba(255,89,199,.12);
+        }
+
+        .web3-wheel {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            border: 4px solid #101b19;
+            border-radius: 50%;
+            background: conic-gradient(
+                from -15deg,
+                #0d684c 0deg 30deg,
+                #164f8b 30deg 60deg,
+                #57358f 60deg 90deg,
+                #922c75 90deg 120deg,
+                #9a4b25 120deg 150deg,
+                #8a6c18 150deg 180deg,
+                #147b76 180deg 210deg,
+                #3453a5 210deg 240deg,
+                #6b3b9c 240deg 270deg,
+                #a33362 270deg 300deg,
+                #a05a22 300deg 330deg,
+                #237b48 330deg 360deg
+            );
+            box-shadow: inset 0 0 30px rgba(0,0,0,.65);
+            transform: rotate(0deg);
+            transition: transform 4s cubic-bezier(.12,.78,.12,1);
+            will-change: transform;
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        .web3-wheel.is-dragging {
+            cursor: grabbing;
+            transition: none !important;
+        }
+
+        .wheel-divider {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 50%;
+            background: rgba(255,255,255,.38);
+            transform-origin: bottom center;
+            pointer-events: none;
+        }
+
+        .wheel-divider:nth-child(1) { transform: rotate(0deg); }
+        .wheel-divider:nth-child(2) { transform: rotate(30deg); }
+        .wheel-divider:nth-child(3) { transform: rotate(60deg); }
+        .wheel-divider:nth-child(4) { transform: rotate(90deg); }
+        .wheel-divider:nth-child(5) { transform: rotate(120deg); }
+        .wheel-divider:nth-child(6) { transform: rotate(150deg); }
+        .wheel-divider:nth-child(7) { transform: rotate(180deg); }
+        .wheel-divider:nth-child(8) { transform: rotate(210deg); }
+        .wheel-divider:nth-child(9) { transform: rotate(240deg); }
+        .wheel-divider:nth-child(10) { transform: rotate(270deg); }
+        .wheel-divider:nth-child(11) { transform: rotate(300deg); }
+        .wheel-divider:nth-child(12) { transform: rotate(330deg); }
+
+        .wheel-label {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 75px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-family: Orbitron, sans-serif;
+            font-size: clamp(.48rem, 1.8vw, .58rem);
+            font-weight: 800;
+            letter-spacing: -.3px;
+            line-height: 1.05;
+            text-align: center;
+            text-shadow: 0 2px 5px rgba(0,0,0,.85);
+            pointer-events: none;
+        }
+
+        .wheel-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            z-index: 5;
+            width: 76px;
+            height: 76px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            border: 3px solid rgba(255,255,255,.75);
+            border-radius: 50%;
+            background: radial-gradient(circle at 35% 30%, #173c32, #07110d 72%);
+            box-shadow:
+                0 0 0 5px rgba(255,255,255,.08),
+                0 0 25px rgba(55,245,161,.27);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        .wheel-center strong {
+            color: var(--green);
+            font-family: Orbitron, sans-serif;
+            font-size: .63rem;
+            letter-spacing: 1px;
+        }
+
+        .wheel-center span {
+            color: var(--secondary);
+            font-size: .48rem;
+            font-weight: 700;
+        }
+
+        .wheel-pointer {
+            position: absolute;
+            z-index: 8;
+            top: -12px;
+            left: 50%;
+            width: 30px;
+            height: 43px;
+            transform: translateX(-50%);
+            filter: drop-shadow(0 3px 5px rgba(0,0,0,.65));
+            pointer-events: none;
+        }
+
+        .wheel-pointer svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .wheel-instruction {
+            margin: 4px 0 18px;
+            color: var(--secondary);
+            font-size: .78rem;
+        }
+
+        .wheel-instruction strong {
+            color: var(--cyan);
+        }
+
+        .wheel-controls {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .wheel-button {
+            min-height: 49px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            padding: 12px 22px;
+            border: 1px solid rgba(255,255,255,.18);
+            border-radius: 14px;
+            color: #07110d;
+            background: linear-gradient(110deg, #37f5a1, #35e8ff, #a78bfa);
+            box-shadow: 0 5px 25px rgba(53,232,255,.15);
+            font-family: Inter, sans-serif;
+            font-size: .84rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: transform .2s, filter .2s, opacity .2s;
+        }
+
+        .wheel-button:hover:not(:disabled) {
+            transform: translateY(-3px);
+            filter: brightness(1.12);
+        }
+
+        .wheel-button:active:not(:disabled) {
+            transform: scale(.96);
+        }
+
+        .wheel-button:disabled {
+            opacity: .45;
+            cursor: not-allowed;
+        }
+
+        .wheel-button.secondary {
+            color: var(--secondary);
+            border-color: rgba(255,255,255,.12);
+            background: rgba(255,255,255,.045);
+            box-shadow: none;
+        }
+
+        .wheel-button svg {
+            width: 19px;
+            height: 19px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .wheel-result {
+            max-width: 600px;
+            min-height: 150px;
+            margin: 23px auto 0;
+            padding: 22px 19px;
+            border: 1px solid rgba(55,245,161,.22);
+            border-radius: 18px;
+            background:
+                radial-gradient(ellipse at top right, rgba(53,232,255,.08), transparent 60%),
+                rgba(255,255,255,.025);
+            text-align: left;
+            transition: border-color .3s, background .3s;
+        }
+
+        .wheel-result.has-result {
+            border-color: rgba(255,89,199,.48);
+            background:
+                radial-gradient(ellipse at top right, rgba(255,89,199,.11), transparent 60%),
+                rgba(255,255,255,.035);
+        }
+
+        .wheel-result-label {
+            display: block;
+            margin-bottom: 7px;
+            color: var(--green);
+            font-family: Orbitron, sans-serif;
+            font-size: .59rem;
+            letter-spacing: 1.5px;
+        }
+
+        .wheel-result h3 {
+            margin-bottom: 9px;
+            color: var(--cyan);
+            font-family: Orbitron, sans-serif;
+            font-size: 1.05rem;
+        }
+
+        .wheel-result p {
+            color: var(--secondary);
+            font-size: .85rem;
+            line-height: 1.75;
+        }
+
+        .wheel-result .wheel-hint {
+            color: var(--muted);
+            font-size: .77rem;
+        }
+
+        .wheel-disclaimer {
+            max-width: 600px;
+            margin: 16px auto 0;
+            color: var(--muted);
+            font-size: .7rem;
+            line-height: 1.6;
+        }
+
         /* FLUJO */
 
         .flow {
@@ -934,6 +1301,33 @@
             .assets { min-width: 440px; }
             .assets th, .assets td { padding: 12px 10px; }
             .cta { padding: 30px 17px; }
+
+            .wheel-panel {
+                padding: 22px 10px;
+            }
+
+            .wheel-stage {
+                width: min(310px, 83vw);
+            }
+
+            .wheel-center {
+                width: 66px;
+                height: 66px;
+            }
+
+            .wheel-label {
+                width: 68px;
+                font-size: .49rem;
+            }
+
+            .wheel-button {
+                width: 100%;
+                max-width: 280px;
+            }
+
+            .wheel-result {
+                padding: 19px 15px;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -1290,6 +1684,145 @@
                     <h3>DAPP</h3>
                     <p>Aplicación descentralizada que utiliza contratos inteligentes u otros componentes blockchain, habitualmente junto con una interfaz web.</p>
                 </article>
+            </div>
+        </section>
+
+        <!-- 04.1 RULETA DE CURIOSIDAD WEB3 -->
+
+        <section class="section web3-wheel-section" id="ruleta-web3">
+            <div class="section-head">
+                <span class="section-number">✦</span>
+                <div>
+                    <h2>Ruleta de curiosidad Web3</h2>
+                    <p>Gira, descubre y aprende algo nuevo</p>
+                </div>
+            </div>
+
+            <p class="wheel-intro">
+                ¿Tienes curiosidad por el mundo blockchain?
+                Dale un giro a la rueda y descubre un concepto diferente
+                del universo Web3. Cada parada tiene algo nuevo que enseñarte.
+            </p>
+
+            <div class="wheel-panel">
+
+                <div class="wheel-status" id="wheelStatus" aria-live="polite">
+                    <span class="wheel-status-dot"></span>
+                    <span id="wheelStatusText">SISTEMA LISTO · WEB3</span>
+                </div>
+
+                <div class="wheel-stage">
+
+                    <div class="wheel-aura"></div>
+
+                    <div class="wheel-pointer" aria-hidden="true">
+                        <svg viewBox="0 0 30 43">
+                            <path d="M15 42 L2 5 Q15 -3 28 5 Z"
+                                fill="#f7d44a"
+                                stroke="#ffffff"
+                                stroke-width="1.5"/>
+                            <circle cx="15" cy="9" r="4"
+                                fill="#ffffff"/>
+                        </svg>
+                    </div>
+
+                    <div class="wheel-border">
+
+                        <div
+                            class="web3-wheel"
+                            id="web3Wheel"
+                            role="img"
+                            aria-label="Rueda interactiva de conceptos Web3. Arrastra para girar."
+                        >
+
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+                            <div class="wheel-divider"></div>
+
+                            <div class="wheel-label" data-wheel-label="0">BLOCKCHAIN</div>
+                            <div class="wheel-label" data-wheel-label="1">POLYGON</div>
+                            <div class="wheel-label" data-wheel-label="2">ETHEREUM</div>
+                            <div class="wheel-label" data-wheel-label="3">BITCOIN</div>
+                            <div class="wheel-label" data-wheel-label="4">WALLET</div>
+                            <div class="wheel-label" data-wheel-label="5">NFT</div>
+                            <div class="wheel-label" data-wheel-label="6">DEFI</div>
+                            <div class="wheel-label" data-wheel-label="7">TOKEN</div>
+                            <div class="wheel-label" data-wheel-label="8">DAO</div>
+                            <div class="wheel-label" data-wheel-label="9">GAS FEES</div>
+                            <div class="wheel-label" data-wheel-label="10">DAPP</div>
+                            <div class="wheel-label" data-wheel-label="11">WEB3</div>
+
+                        </div>
+                    </div>
+
+                    <div class="wheel-center">
+                        <strong>WEB3</strong>
+                        <span>CSARIEL'S</span>
+                    </div>
+                </div>
+
+                <p class="wheel-instruction">
+                    <strong>Desliza tu dedo</strong> sobre la rueda para hacerla girar.
+                    También puedes utilizar el botón.
+                </p>
+
+                <div class="wheel-controls">
+
+                    <button
+                        type="button"
+                        class="wheel-button"
+                        id="wheelSpinButton"
+                    >
+                        <svg viewBox="0 0 24 24">
+                            <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+                            <path d="M21 3v6h-6"/>
+                        </svg>
+                        GIRAR LA RULETA
+                    </button>
+
+                    <button
+                        type="button"
+                        class="wheel-button secondary"
+                        id="wheelResetButton"
+                    >
+                        Reiniciar
+                    </button>
+
+                </div>
+
+                <div
+                    class="wheel-result"
+                    id="wheelResult"
+                    aria-live="polite"
+                    aria-atomic="true"
+                >
+                    <span class="wheel-result-label">DESCUBRIMIENTO WEB3</span>
+
+                    <h3 id="wheelResultTitle">
+                        ¿Qué descubrirás hoy?
+                    </h3>
+
+                    <p id="wheelResultDescription" class="wheel-hint">
+                        Gira la rueda para descubrir un concepto del universo
+                        blockchain y conocer qué significa.
+                    </p>
+                </div>
+
+                <p class="wheel-disclaimer">
+                    Esta ruleta es una experiencia educativa y recreativa.
+                    Los resultados son conceptos informativos y no representan
+                    recomendaciones de inversión ni promesas de rentabilidad.
+                </p>
+
             </div>
         </section>
 
@@ -1663,11 +2196,21 @@
 
     <script>
         (function () {
+            'use strict';
+
+            /* ==================================================
+               AÑO AUTOMÁTICO
+            ================================================== */
+
             var year = document.getElementById('year');
 
             if (year) {
                 year.textContent = new Date().getFullYear();
             }
+
+            /* ==================================================
+               NAVEGACIÓN
+            ================================================== */
 
             var links = document.querySelectorAll('a[href^="#"]');
 
@@ -1692,6 +2235,547 @@
                     }
                 });
             }
+
+            /* ==================================================
+               CSARIEL'S · RULETA DE CURIOSIDAD WEB3
+
+               - Giro mediante dedo o mouse.
+               - Inercia y frenado automático.
+               - Giro mediante botón.
+               - Resultado educativo aleatorio.
+               - Bloqueo de interacciones durante el giro.
+               - Compatible con móviles y computadoras.
+            ================================================== */
+
+            var wheel = document.getElementById('web3Wheel');
+            var spinButton = document.getElementById('wheelSpinButton');
+            var resetButton = document.getElementById('wheelResetButton');
+
+            var wheelStatus = document.getElementById('wheelStatus');
+            var wheelStatusText = document.getElementById('wheelStatusText');
+
+            var resultBox = document.getElementById('wheelResult');
+            var resultTitle = document.getElementById('wheelResultTitle');
+            var resultDescription = document.getElementById('wheelResultDescription');
+
+            if (wheel && spinButton && resetButton) {
+
+                var concepts = [
+                    {
+                        name: 'BLOCKCHAIN',
+                        description: 'Es una tecnología de registro distribuido. Las operaciones se organizan en bloques enlazados criptográficamente y se validan mediante las reglas de una red. Es una de las bases de muchas experiencias Web3.'
+                    },
+                    {
+                        name: 'POLYGON',
+                        description: 'Es un ecosistema de tecnologías blockchain relacionado con Ethereum. Sus redes permiten desarrollar aplicaciones, utilizar activos digitales y ejecutar contratos inteligentes.'
+                    },
+                    {
+                        name: 'ETHEREUM',
+                        description: 'Es una plataforma blockchain que permite ejecutar contratos inteligentes y aplicaciones descentralizadas. Su criptomoneda nativa es Ether, conocida como ETH.'
+                    },
+                    {
+                        name: 'BITCOIN',
+                        description: 'Es una red de dinero digital descentralizada. Permite transferir bitcoin entre direcciones sin depender de una entidad central que administre todas las operaciones.'
+                    },
+                    {
+                        name: 'WALLET',
+                        description: 'Es una herramienta para administrar claves criptográficas. Permite consultar direcciones y activos digitales, además de autorizar operaciones mediante firmas. Nunca compartas tu frase de recuperación.'
+                    },
+                    {
+                        name: 'NFT',
+                        description: 'Es un token no fungible. Cada unidad puede tener una identificación diferenciada y representar un coleccionable, un certificado o un beneficio digital, según las condiciones de su contrato.'
+                    },
+                    {
+                        name: 'DEFI',
+                        description: 'Significa finanzas descentralizadas. Describe aplicaciones que utilizan contratos inteligentes para ofrecer servicios financieros sin depender necesariamente de una institución financiera tradicional.'
+                    },
+                    {
+                        name: 'TOKEN',
+                        description: 'Es una representación digital creada mediante un contrato o protocolo. Puede utilizarse para identificar activos, habilitar funciones o gestionar derechos específicos dentro de una aplicación.'
+                    },
+                    {
+                        name: 'DAO',
+                        description: 'Es una organización autónoma descentralizada. Utiliza reglas digitales y mecanismos de participación para coordinar decisiones entre sus miembros. Su funcionamiento depende de su diseño.'
+                    },
+                    {
+                        name: 'GAS FEES',
+                        description: 'Son los costes asociados al procesamiento de operaciones en una blockchain. Pueden variar según la red, la congestión y la complejidad de la operación.'
+                    },
+                    {
+                        name: 'DAPP',
+                        description: 'Es una aplicación descentralizada. Puede combinar una interfaz convencional con contratos inteligentes para ejecutar determinadas funciones en una red blockchain.'
+                    },
+                    {
+                        name: 'WEB3',
+                        description: 'Es una evolución del ecosistema de aplicaciones digitales que incorpora tecnologías como blockchain, wallets, criptografía y contratos inteligentes para ofrecer nuevas formas de interacción y propiedad digital.'
+                    }
+                ];
+
+                var currentRotation = 0;
+                var isSpinning = false;
+                var isDragging = false;
+                var pointerId = null;
+
+                var dragStartAngle = 0;
+                var dragStartRotation = 0;
+                var dragLastAngle = 0;
+                var dragLastTime = 0;
+                var dragVelocity = 0;
+
+                var spinTimeout = null;
+                var resultTimeout = null;
+                var lastResultIndex = -1;
+
+                var reducedMotion = window.matchMedia &&
+                    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+                var wheelLabels = wheel.querySelectorAll('.wheel-label');
+
+                /* Posicionamiento de los conceptos en círculo */
+
+                function positionLabels() {
+                    var radius = wheel.clientWidth * 0.365;
+
+                    for (var i = 0; i < wheelLabels.length; i++) {
+                        var angle = i * 30;
+
+                        wheelLabels[i].style.transform =
+                            'translate(-50%, -50%) rotate(' + angle + 'deg) translateY(-' +
+                            radius + 'px) rotate(-' + angle + 'deg)';
+                    }
+                }
+
+                positionLabels();
+
+                if (window.ResizeObserver) {
+                    var wheelObserver = new ResizeObserver(function () {
+                        positionLabels();
+                    });
+
+                    wheelObserver.observe(wheel);
+                } else {
+                    window.addEventListener('resize', positionLabels);
+                }
+
+                /* Normalización de ángulos */
+
+                function normalizeAngle(angle) {
+                    return ((angle % 360) + 360) % 360;
+                }
+
+                /* Estado visual */
+
+                function setWheelStatus(spinning, message) {
+                    if (spinning) {
+                        wheelStatus.classList.add('is-spinning');
+                    } else {
+                        wheelStatus.classList.remove('is-spinning');
+                    }
+
+                    wheelStatusText.textContent = message;
+                }
+
+                /* Selección del concepto que queda bajo el indicador */
+
+                function getSelectedIndex(rotation) {
+                    var normalized = normalizeAngle(rotation);
+
+                    var index = Math.round(
+                        normalizeAngle(360 - normalized) / 30
+                    ) % concepts.length;
+
+                    return index;
+                }
+
+                /* Elegir un resultado distinto al anterior cuando sea posible */
+
+                function getRandomIndex() {
+                    if (concepts.length <= 1) {
+                        return 0;
+                    }
+
+                    var index = Math.floor(Math.random() * concepts.length);
+
+                    if (index === lastResultIndex) {
+                        index = (index + 1 + Math.floor(Math.random() * (concepts.length - 1))) % concepts.length;
+                    }
+
+                    return index;
+                }
+
+                /* Mostrar el descubrimiento */
+
+                function showResult(index) {
+                    var concept = concepts[index];
+
+                    if (!concept) {
+                        return;
+                    }
+
+                    lastResultIndex = index;
+
+                    resultTitle.textContent = concept.name;
+                    resultDescription.textContent = concept.description;
+
+                    resultBox.classList.add('has-result');
+
+                    setWheelStatus(false, 'DESCUBRIMIENTO COMPLETADO');
+
+                    spinButton.disabled = false;
+                    resetButton.disabled = false;
+
+                    spinButton.innerHTML =
+                        '<svg viewBox="0 0 24 24">' +
+                        '<path d="M21 12a9 9 0 1 1-2.64-6.36"/>' +
+                        '<path d="M21 3v6h-6"/>' +
+                        '</svg> GIRAR OTRA VEZ';
+                }
+
+                /* Limpiar temporizadores */
+
+                function clearWheelTimers() {
+                    if (spinTimeout) {
+                        clearTimeout(spinTimeout);
+                        spinTimeout = null;
+                    }
+
+                    if (resultTimeout) {
+                        clearTimeout(resultTimeout);
+                        resultTimeout = null;
+                    }
+                }
+
+                /* Bloquear controles */
+
+                function lockWheel() {
+                    isSpinning = true;
+                    spinButton.disabled = true;
+                    resetButton.disabled = true;
+
+                    setWheelStatus(true, 'GIRANDO · DESCUBRIENDO WEB3');
+
+                    resultBox.classList.remove('has-result');
+
+                    resultTitle.textContent = 'La rueda está girando...';
+                    resultDescription.textContent =
+                        'Espera unos segundos. Tu próximo descubrimiento Web3 está en camino.';
+                }
+
+                /* Finalizar giro */
+
+                function finishWheel() {
+                    if (!isSpinning) {
+                        return;
+                    }
+
+                    isSpinning = false;
+
+                    wheel.style.transition = 'none';
+
+                    currentRotation = normalizeAngle(currentRotation);
+
+                    wheel.style.transform =
+                        'rotate(' + currentRotation + 'deg)';
+
+                    var selected = getSelectedIndex(currentRotation);
+
+                    showResult(selected);
+                }
+
+                /* Giro automático con destino calculado */
+
+                function spinToIndex(index, extraTurns, duration) {
+                    if (isSpinning || isDragging) {
+                        return;
+                    }
+
+                    clearWheelTimers();
+
+                    lockWheel();
+
+                    var currentNormalized = normalizeAngle(currentRotation);
+
+                    var desiredAngle = normalizeAngle(360 - index * 30);
+
+                    var distance = normalizeAngle(
+                        desiredAngle - currentNormalized
+                    );
+
+                    var turns = extraTurns || 5;
+
+                    if (reducedMotion) {
+                        turns = 1;
+                        duration = 900;
+                    }
+
+                    var destination =
+                        currentRotation + (turns * 360) + distance;
+
+                    currentRotation = destination;
+
+                    wheel.style.transition =
+                        'transform ' + duration + 'ms cubic-bezier(.12,.78,.12,1)';
+
+                    wheel.style.transform =
+                        'rotate(' + destination + 'deg)';
+
+                    spinTimeout = setTimeout(function () {
+                        finishWheel();
+                    }, duration + 100);
+                }
+
+                /* Giro aleatorio con el botón */
+
+                function spinRandom() {
+                    if (isSpinning || isDragging) {
+                        return;
+                    }
+
+                    var index = getRandomIndex();
+
+                    spinToIndex(index, 5 + Math.floor(Math.random() * 3), reducedMotion ? 900 : 4200);
+                }
+
+                spinButton.addEventListener('click', function () {
+                    spinRandom();
+                });
+
+                /* Coordenadas y ángulo del puntero */
+
+                function getPointerAngle(event) {
+                    var rect = wheel.getBoundingClientRect();
+
+                    var centerX = rect.left + rect.width / 2;
+                    var centerY = rect.top + rect.height / 2;
+
+                    return Math.atan2(
+                        event.clientY - centerY,
+                        event.clientX - centerX
+                    ) * 180 / Math.PI;
+                }
+
+                /* Inicio del arrastre */
+
+                wheel.addEventListener('pointerdown', function (event) {
+                    if (isSpinning || isDragging) {
+                        return;
+                    }
+
+                    if (event.pointerType === 'mouse' && event.button !== 0) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    clearWheelTimers();
+
+                    isDragging = true;
+                    pointerId = event.pointerId;
+
+                    dragStartAngle = getPointerAngle(event);
+                    dragLastAngle = dragStartAngle;
+                    dragStartRotation = currentRotation;
+
+                    dragLastTime = performance.now();
+                    dragVelocity = 0;
+
+                    wheel.classList.add('is-dragging');
+
+                    wheel.style.transition = 'none';
+
+                    wheel.setPointerCapture(event.pointerId);
+
+                    spinButton.disabled = true;
+                    resetButton.disabled = true;
+
+                    setWheelStatus(false, 'DESLIZA PARA GIRAR');
+
+                    resultTitle.textContent = '¡Sigue girando!';
+                    resultDescription.textContent =
+                        'Suelta la rueda para dejar que continúe girando y descubra tu concepto Web3.';
+                });
+
+                /* Movimiento del dedo o mouse */
+
+                wheel.addEventListener('pointermove', function (event) {
+                    if (!isDragging || event.pointerId !== pointerId) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    var currentAngle = getPointerAngle(event);
+
+                    var delta = currentAngle - dragLastAngle;
+
+                    if (delta > 180) {
+                        delta -= 360;
+                    } else if (delta < -180) {
+                        delta += 360;
+                    }
+
+                    currentRotation += delta;
+
+                    wheel.style.transform =
+                        'rotate(' + currentRotation + 'deg)';
+
+                    var now = performance.now();
+                    var elapsed = Math.max(1, now - dragLastTime);
+
+                    dragVelocity = delta / elapsed;
+
+                    dragLastAngle = currentAngle;
+                    dragLastTime = now;
+                });
+
+                /* Soltar la rueda: inercia y parada automática */
+
+                function releaseWheel(event) {
+                    if (!isDragging) {
+                        return;
+                    }
+
+                    if (event && pointerId !== null && event.pointerId !== pointerId) {
+                        return;
+                    }
+
+                    isDragging = false;
+
+                    wheel.classList.remove('is-dragging');
+
+                    if (pointerId !== null && wheel.hasPointerCapture(pointerId)) {
+                        wheel.releasePointerCapture(pointerId);
+                    }
+
+                    pointerId = null;
+
+                    var velocity = dragVelocity;
+
+                    var direction = velocity >= 0 ? 1 : -1;
+
+                    var momentumTurns = Math.min(
+                        7,
+                        Math.max(3, Math.ceil(Math.abs(velocity) * 12))
+                    );
+
+                    if (reducedMotion) {
+                        momentumTurns = 1;
+                    }
+
+                    var randomIndex = getRandomIndex();
+
+                    /*
+                       El resultado elegido se alinea con el indicador.
+                       Se añade recorrido suficiente para una animación
+                       natural antes de detenerse.
+                    */
+
+                    var currentNormalized = normalizeAngle(currentRotation);
+
+                    var desiredAngle = normalizeAngle(360 - randomIndex * 30);
+
+                    var distance;
+
+                    if (direction > 0) {
+                        distance = normalizeAngle(
+                            desiredAngle - currentNormalized
+                        );
+                    } else {
+                        distance = -normalizeAngle(
+                            currentNormalized - desiredAngle
+                        );
+                    }
+
+                    var extraRotation = direction * momentumTurns * 360;
+
+                    var destination =
+                        currentRotation + extraRotation + distance;
+
+                    var duration = reducedMotion ? 900 : 3900;
+
+                    clearWheelTimers();
+
+                    isSpinning = true;
+
+                    spinButton.disabled = true;
+                    resetButton.disabled = true;
+
+                    setWheelStatus(true, 'GIRO EN CURSO · WEB3');
+
+                    resultTitle.textContent = '¡Preparando tu descubrimiento!';
+                    resultDescription.textContent =
+                        'La rueda está perdiendo velocidad. Pronto conocerás el concepto seleccionado.';
+
+                    currentRotation = destination;
+
+                    wheel.style.transition =
+                        'transform ' + duration + 'ms cubic-bezier(.12,.78,.12,1)';
+
+                    wheel.style.transform =
+                        'rotate(' + destination + 'deg)';
+
+                    spinTimeout = setTimeout(function () {
+                        finishWheel();
+                    }, duration + 100);
+                }
+
+                wheel.addEventListener('pointerup', releaseWheel);
+                wheel.addEventListener('pointercancel', releaseWheel);
+
+                wheel.addEventListener('lostpointercapture', function () {
+                    if (isDragging) {
+                        releaseWheel();
+                    }
+                });
+
+                /* Reinicio */
+
+                resetButton.addEventListener('click', function () {
+                    if (isSpinning || isDragging) {
+                        return;
+                    }
+
+                    clearWheelTimers();
+
+                    currentRotation = 0;
+                    lastResultIndex = -1;
+
+                    wheel.style.transition = 'transform .6s ease';
+                    wheel.style.transform = 'rotate(0deg)';
+
+                    resultTitle.textContent = '¿Qué descubrirás hoy?';
+
+                    resultDescription.textContent =
+                        'Gira la rueda para descubrir un concepto del universo blockchain y conocer qué significa.';
+
+                    resultBox.classList.remove('has-result');
+
+                    setWheelStatus(false, 'SISTEMA LISTO · WEB3');
+
+                    spinButton.disabled = false;
+                    resetButton.disabled = false;
+
+                    spinButton.innerHTML =
+                        '<svg viewBox="0 0 24 24">' +
+                        '<path d="M21 12a9 9 0 1 1-2.64-6.36"/>' +
+                        '<path d="M21 3v6h-6"/>' +
+                        '</svg> GIRAR LA RULETA';
+                });
+
+                /* Accesibilidad */
+
+                wheel.setAttribute('tabindex', '0');
+
+                wheel.setAttribute(
+                    'aria-label',
+                    'Rueda Web3 interactiva. Utiliza el botón para girar o arrastra con tu dedo.'
+                );
+
+                /* Estado inicial */
+
+                setWheelStatus(false, 'SISTEMA LISTO · WEB3');
+            }
+
         })();
     </script>
 
