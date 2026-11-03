@@ -1,6 +1,7 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
+// v5.7 (Sistema de menciones con @: texto azul y notificación en BD)
 // v5.6 (Nombre, handle y avatar de cada publicación enlazan al perfil
 //       del autor. Si es tu propia publicación, abre tu perfil.)
 // v5.5 (Diseño tipo Facebook: publicaciones sin tarjeta ni bordes,
@@ -132,9 +133,6 @@ function pubCodigoIdioma() {
 // ================================================================
 // ENLACE AL PERFIL DEL AUTOR
 // ================================================================
-// Devuelve la URL del perfil del autor. Si el autor es el usuario
-// en sesión, abre su propio perfil.
-// ================================================================
 
 function pubUrlPerfilAutor(usuarioId, miId) {
     if (!usuarioId) return null;
@@ -144,6 +142,25 @@ function pubUrlPerfilAutor(usuarioId, miId) {
     }
 
     return PUB_RUTA_PERFIL_PUBLICO + '?id=' + encodeURIComponent(usuarioId);
+}
+
+// ================================================================
+// NUEVA FUNCIÓN: FORMATEAR MENCIONES (@) EN EL TEXTO
+// ================================================================
+// Convierte los @usuario en enlaces azules clicables.
+// ================================================================
+
+function formatearTextoConMenciones(texto) {
+    if (!texto) return '';
+    var textoLimpio = pubEscapeHtml(texto);
+    // Expresión regular para detectar @palabra
+    var regex = /@([a-zA-Z0-9_]+)/g;
+    
+    return textoLimpio.replace(regex, function(match, username) {
+        // Asumimos que el usuario usa ?u= en el perfil público
+        var urlPerfil = '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(username);
+        return '<a href="' + urlPerfil + '" style="color: #00e5ff; font-weight: 700; text-decoration: none;">@' + username + '</a>';
+    });
 }
 
 // ================================================================
@@ -940,6 +957,62 @@ async function publicarDesdePerfil() {
         if (inputVideo) inputVideo.value = '';
 
         renderizarPreviewPerfil();
+
+        // =========================================================
+        // LÓGICA DE NOTIFICACIÓN PARA MENCIONES (@) [NUEVO]
+        // =========================================================
+        if (contenido) {
+            var regex = /@([a-zA-Z0-9_]+)/g;
+            var matches = contenido.match(regex);
+            
+            if (matches) {
+                // Limpiamos los @ para quedarnos solo con el nombre
+                var handlesMencionados = matches.map(function(m) { return m.replace('@', ''); });
+                
+                // Buscamos a esos usuarios en la tabla de perfiles
+                var resUsuarios = await client.from('perfiles_publicos')
+                    .select('id, handle')
+                    .in('handle', handlesMencionados);
+                    
+                if (resUsuarios.data && resUsuarios.data.length > 0) {
+                    for (var i = 0; i < resUsuarios.data.length; i++) {
+                        var usuario = resUsuarios.data[i];
+                        
+                        // No notificar al mismo usuario que publica
+                        if (usuario.id === session.user.id) continue; 
+                        
+                        // Revisar preferencia del usuario (si apagó el switch de menciones)
+                        var prefRes = await client.from('preferencias_usuario')
+                            .select('prefs')
+                            .eq('usuario_id', usuario.id)
+                            .maybeSingle();
+                            
+                        var quiereMenciones = true; // Por defecto encendido
+                        if (prefRes.data && prefRes.data.prefs && prefRes.data.prefs.notif_menciones === false) {
+                            quiereMenciones = false;
+                        }
+                        
+                        if (quiereMenciones) {
+                            // Insertar notificación (usando las columnas de TU tabla)
+                            await client.from('notificaciones').insert({
+                                user_id: usuario.id,
+                                emisor_id: session.user.id,
+                                tipo: 'mencion',
+                                mensaje: 'Te mencionó en una publicación.',
+                                metadata: { 
+                                    enlace: '/features/muro/muro.html',
+                                    handle_emisor: session.user.user_metadata?.handle || 'Alguien'
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        // =========================================================
+        // FIN DE LÓGICA DE MENCIONES
+        // =========================================================
+
         await cargarMisPublicaciones(true);
     } catch (error) {
         console.error('Error publicando:', error);
@@ -1151,7 +1224,8 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             if (p.contenido) {
                 var texto = document.createElement('div');
-                texto.textContent = p.contenido;
+                // [NUEVO] Usar la función para pintar los @menciones en azul
+                texto.innerHTML = formatearTextoConMenciones(p.contenido); 
                 contenido.appendChild(texto);
             }
 
@@ -1929,9 +2003,6 @@ async function eliminarComentarioPerfil(comentarioId, publicacionId) {
 
 // ================================================================
 // ELIMINAR PUBLICACIÓN PROPIA
-// ================================================================
-// Después de borrar la fila, se pide al backend (/api/media/liberar)
-// que elimine el archivo solo si ninguna otra publicación lo usa.
 // ================================================================
 
 async function liberarArchivoPublicacion(mediaUrl) {
