@@ -2,417 +2,232 @@
 <html lang="es" data-public>
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>◈ Crear cuenta · Sariel's</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Crear cuenta · Csariel's</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='10' width='80' height='80' rx='16' fill='%230b3d2e' stroke='%2337f5a1' stroke-width='4'/%3E%3Cpath d='M50 26 70 38v24L50 74 30 62V38z' fill='none' stroke='%2337f5a1' stroke-width='4' stroke-linejoin='round'/%3E%3C/svg%3E" />
 
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet" />
-
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+<meta name="theme-color" content="#07110d">
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
 
 <script>
-    (function () {
-        'use strict';
+(function () {
+    'use strict';
 
-        var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
-        var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+    var SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+    var SUPABASE_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
 
-        window.__sarielsAuthenticated = null;
-        window.supabaseClient = window.supabaseClient || null;
-        window.__sarielsSupabaseSingleton = window.__sarielsSupabaseSingleton || null;
-        window.supabaseReady = null;
-        window.supabaseError = null;
+    window.__sarielsAuthenticated = null;
+    window.supabaseClient = window.supabaseClient || null;
+    window.__sarielsSupabaseSingleton = window.__sarielsSupabaseSingleton || null;
+    window.supabaseReady = null;
+    window.supabaseError = null;
 
-        function getSupabase() {
-            if (window.__sarielsSupabaseSingleton) return window.__sarielsSupabaseSingleton;
-            if (window.supabaseClient) {
-                window.__sarielsSupabaseSingleton = window.supabaseClient;
-                return window.supabaseClient;
-            }
-            var SDK = window.SupabaseSDK || window.supabase;
-            if (!SDK || typeof SDK.createClient !== 'function') {
-                throw new Error('Supabase SDK no disponible.');
-            }
-            var c = SDK.createClient(SUPABASE_URL, SUPABASE_KEY, {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                    detectSessionInUrl: true
-                }
-            });
-            window.supabaseClient = c;
-            window.__sarielsSupabaseSingleton = c;
-            return c;
+    function getSupabase() {
+        if (window.__sarielsSupabaseSingleton) return window.__sarielsSupabaseSingleton;
+        if (window.supabaseClient) {
+            window.__sarielsSupabaseSingleton = window.supabaseClient;
+            return window.supabaseClient;
         }
+        var SDK = window.SupabaseSDK || window.supabase;
+        if (!SDK || typeof SDK.createClient !== 'function') throw new Error('Supabase SDK no disponible.');
+        var c = SDK.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+        });
+        window.supabaseClient = c;
+        window.__sarielsSupabaseSingleton = c;
+        return c;
+    }
+    window.getSupabase = getSupabase;
+    window.getSupabaseClient = function () { return window.supabaseReady; };
 
-        window.getSupabase = getSupabase;
-
-        window.getSupabaseClient = function () {
-            return window.supabaseReady;
-        };
-
-        async function inicializarSupabase() {
-            try {
-                var client = getSupabase();
-
-                var resultado = await client.auth.getSession();
-                var session = resultado && resultado.data ? resultado.data.session : null;
-
-                window.__sarielsAuthenticated = !!session;
-
-                client.auth.onAuthStateChange(function (_event, sessionActual) {
-                    window.__sarielsAuthenticated = !!sessionActual;
-                });
-
-                return client;
-            } catch (error) {
-                console.error('[Registro] Error inicializando Supabase:', error);
-                window.__sarielsAuthenticated = false;
-                window.supabaseError = error;
-                return null;
-            }
+    async function inicializarSupabase() {
+        try {
+            var client = getSupabase();
+            var r = await client.auth.getSession();
+            var session = r && r.data ? r.data.session : null;
+            window.__sarielsAuthenticated = !!session;
+            client.auth.onAuthStateChange(function (_e, s) { window.__sarielsAuthenticated = !!s; });
+            return client;
+        } catch (e) {
+            console.error('[Registro] Error inicializando Supabase:', e);
+            window.__sarielsAuthenticated = false;
+            window.supabaseError = e;
+            return null;
         }
-
-        window.supabaseReady = inicializarSupabase();
-    })();
+    }
+    window.supabaseReady = inicializarSupabase();
+})();
 </script>
 
 <style>
 :root {
-    --gold: #D4AF37;
-    --gold-dark: #b8923a;
-    --gold-light: #e8c84a;
-    --gold-bright: #f0d060;
-    --green-deep: #0F2D1A;
-    --green-mid: #1a4a2a;
-    --green-bright: #2a6a3a;
-    --space: #05080f;
-    --text-primary: #f0f4f8;
-    --text-secondary: #c0d8e8;
-    --text-muted: #8aa8b8;
-    --glass-bg: rgba(15, 45, 26, 0.55);
-    --glass-border: rgba(212, 175, 55, 0.2);
-    --shadow-gold: 0 8px 32px rgba(212, 175, 55, 0.25);
-    --radius: 16px;
-    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --success: #00d68f;
-    --danger: #ff3366;
-    --warning: #f7d44a;
+    color-scheme: dark;
+    --bg:#07110d;
+    --panel:rgba(15,32,24,.78);
+    --green:#37f5a1; --green-dark:#0b3d2e;
+    --gold:#d4af37; --gold-light:#f7d44a;
+    --cyan:#35e8ff; --violet:#a78bfa;
+    --text:#f2fff8; --secondary:#b0c8bb; --muted:#789385;
+    --border:rgba(115,244,184,.16);
+    --radius:22px;
+    --success:#00d68f; --danger:#ff3366; --warning:#f7d44a;
 }
-
-* { margin: 0; padding: 0; box-sizing: border-box; }
-
+* { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
 body {
-    background: var(--space);
-    color: var(--text-primary);
-    font-family: 'Inter', sans-serif;
-    min-height: 100vh;
+    min-height:100vh; color:var(--text); font-family:Inter,system-ui,sans-serif; line-height:1.6; overflow-x:hidden;
+    background:
+        radial-gradient(ellipse at 8% 10%, rgba(55,245,161,.10), transparent 35%),
+        radial-gradient(ellipse at 95% 22%, rgba(167,139,250,.10), transparent 32%),
+        radial-gradient(ellipse at 50% 75%, rgba(53,232,255,.055), transparent 40%),
+        var(--bg);
+}
+button, a { -webkit-tap-highlight-color:transparent; }
+a:focus-visible, button:focus-visible, input:focus-visible { outline:2px solid var(--green); outline-offset:3px; }
+
+.icon { width:22px; height:22px; display:block; flex-shrink:0; fill:none; stroke:currentColor; stroke-width:1.7; stroke-linecap:round; stroke-linejoin:round; }
+.icon-sm { width:16px; height:16px; }
+
+.background-effects { position:fixed; inset:0; z-index:-1; overflow:hidden; pointer-events:none; }
+.grid-bg {
+    position:absolute; inset:0; opacity:.2;
     background-image:
-        radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%),
-        radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+        linear-gradient(rgba(55,245,161,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(55,245,161,.045) 1px, transparent 1px);
+    background-size:44px 44px;
+    mask-image:linear-gradient(to bottom, black, transparent 80%);
 }
+.orb { position:absolute; width:300px; height:300px; border-radius:50%; filter:blur(95px); opacity:.11; animation:float 13s ease-in-out infinite alternate; }
+.orb-a { background:var(--green); left:-180px; top:20%; }
+.orb-b { background:var(--violet); right:-190px; top:42%; animation-delay:-5s; }
+.orb-c { background:var(--cyan); left:35%; bottom:-240px; animation-delay:-8s; }
+@keyframes float { from { transform:translate3d(0,-15px,0) scale(.9); } to { transform:translate3d(35px,35px,0) scale(1.15); } }
+@keyframes pulse-live { 0%,100%{opacity:1; transform:scale(1)} 50%{opacity:.5; transform:scale(.85)} }
 
-.app {
-    position: relative;
-    z-index: 1;
-    max-width: 1280px;
-    margin: 0 auto;
-    padding: 20px 24px 30px;
-}
+.app { position:relative; z-index:1; width:min(1100px,100%); margin:0 auto; padding:22px 22px 30px; }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 0 16px;
-    border-bottom: 2px solid var(--glass-border);
-    background: rgba(5, 8, 15, 0.9);
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
-    border-radius: var(--radius) var(--radius) 0 0;
-    gap: 12px;
-    flex-wrap: wrap;
-}
+.topbar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; padding:6px 0 18px; border-bottom:1px solid rgba(255,255,255,.07); }
+.brand { display:inline-flex; align-items:center; gap:10px; text-decoration:none; font-weight:800; }
+.brand-mark { width:38px; height:38px; display:grid; place-items:center; color:var(--green); border:1px solid rgba(55,245,161,.45); border-radius:12px; background:rgba(55,245,161,.08); box-shadow:inset 0 0 18px rgba(55,245,161,.05); }
+.brand-mark .icon { width:24px; height:24px; }
+.brand-name { font-family:Orbitron,sans-serif; font-size:.9rem; letter-spacing:1px; color:var(--text); }
+.header-actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.chip { min-height:36px; display:inline-flex; align-items:center; gap:8px; padding:7px 12px; border-radius:12px; font-size:.72rem; font-weight:700; text-decoration:none; }
+.chip-web3 { color:var(--violet); border:1px solid rgba(167,139,250,.35); background:rgba(167,139,250,.08); font-family:Orbitron,sans-serif; font-size:.62rem; letter-spacing:1px; }
+.chip-polygon { color:var(--green); border:1px solid rgba(55,245,161,.3); background:rgba(55,245,161,.07); font-family:Orbitron,sans-serif; font-size:.62rem; letter-spacing:1px; }
+.net-dot { width:7px; height:7px; border-radius:50%; background:var(--green); box-shadow:0 0 12px var(--green); animation:pulse-live 2s infinite; }
 
-.logo { display: flex; align-items: center; gap: 12px; }
-.logo-main { display: flex; align-items: center; gap: 12px; text-decoration: none; }
-.logo-hex {
-    font-size: 2rem;
-    color: var(--gold);
-    font-family: 'Orbitron', monospace;
-    text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
-}
-.logo-text {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.3rem;
-    color: var(--text-primary);
-    letter-spacing: 2px;
-}
-.logo-text span { color: var(--gold); }
-.logo-badge {
-    font-size: 0.5rem;
-    background: linear-gradient(135deg, var(--gold), var(--gold-light));
-    color: var(--space);
-    padding: 2px 12px;
-    border-radius: 20px;
-    font-weight: 700;
-    text-decoration: none;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.logo-badge:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
-}
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-.network-badge {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 0.65rem;
-    color: var(--gold);
-    background: rgba(212, 175, 55, 0.1);
-    padding: 4px 14px;
-    border-radius: 20px;
-    text-decoration: none;
-    cursor: pointer;
-    transition: var(--transition);
-}
-.network-badge:hover { background: rgba(212, 175, 55, 0.2); transform: scale(1.02); }
-.network-badge .dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    background: var(--gold);
-    border-radius: 50%;
-}
-
-.register-wrap {
-    max-width: 460px;
-    margin: 40px auto 30px;
-    padding: 0 8px;
-}
+.register-wrap { max-width:430px; margin:40px auto 30px; padding:0 8px; }
 .register-card {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius);
-    padding: 32px 26px 26px;
-    backdrop-filter: blur(14px);
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(212, 175, 55, 0.08);
+    position:relative; overflow:hidden;
+    background:linear-gradient(145deg, rgba(19,40,29,.9), rgba(8,19,14,.9));
+    border:1px solid var(--border); border-radius:var(--radius); padding:32px 26px 26px;
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    box-shadow:0 20px 60px rgba(0,0,0,.35), inset 0 0 0 1px rgba(55,245,161,.05);
 }
-.register-logo {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
+.register-card::before {
+    content:""; position:absolute; top:0; left:0; right:0; height:2px;
+    background:linear-gradient(90deg, transparent, var(--green), var(--cyan), transparent);
 }
-.register-logo .logo-hex {
-    font-size: 2.4rem;
-    color: var(--gold);
-    font-family: 'Orbitron', monospace;
-    text-shadow: 0 0 40px rgba(212, 175, 55, 0.45);
-}
-.register-logo .logo-text {
-    font-family: 'Orbitron', monospace;
-    font-size: 1.5rem;
-    color: var(--text-primary);
-    letter-spacing: 2px;
-}
-.register-logo .logo-text span { color: var(--gold); }
+.register-logo { display:flex; justify-content:center; align-items:center; gap:10px; margin-bottom:22px; }
+.register-logo .brand-mark { width:44px; height:44px; }
+.register-logo .brand-mark .icon { width:28px; height:28px; }
+.register-logo .brand-name { font-size:1rem; }
 
-.register-title {
-    text-align: center;
-    font-family: 'Orbitron', monospace;
-    color: var(--gold);
-    font-size: 1rem;
-    margin-bottom: 6px;
-    letter-spacing: 1px;
-}
-.register-sub {
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.75rem;
-    margin-bottom: 22px;
-}
+.register-title { text-align:center; font-family:Orbitron,sans-serif; font-size:1rem; letter-spacing:1px; color:var(--green); margin-bottom:6px; }
+.register-sub { text-align:center; color:var(--muted); font-size:.8rem; margin-bottom:22px; }
 
 .register-card input {
-    width: 100%;
-    padding: 14px 16px;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-    margin-bottom: 12px;
-    font-family: 'Inter', sans-serif;
-    outline: none;
-    transition: var(--transition);
+    width:100%; padding:14px 16px; background:rgba(0,0,0,.35); border:1px solid var(--border);
+    border-radius:12px; color:var(--text); font-size:.9rem; margin-bottom:12px; outline:none;
+    font-family:Inter,sans-serif;
 }
-.register-card input::placeholder { color: var(--text-muted); }
-.register-card input:focus {
-    border-color: var(--gold);
-    background: rgba(0, 0, 0, 0.5);
-    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.1);
-}
+.register-card input::placeholder { color:var(--muted); }
+.register-card input:focus { border-color:var(--cyan); background:rgba(0,0,0,.5); box-shadow:0 0 0 3px rgba(53,232,255,.14); }
+
+.turnstile-wrap { display:flex; justify-content:center; min-height:0; margin:6px 0 10px; }
+.turnstile-wrap:empty { display:none; }
 
 .register-btn {
-    width: 100%;
-    padding: 14px;
-    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-    color: var(--space);
-    border: none;
-    border-radius: 10px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 0.95rem;
-    cursor: pointer;
-    transition: var(--transition);
-    margin-top: 6px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
+    width:100%; min-height:48px; padding:13px; margin-top:6px; display:inline-flex; align-items:center; justify-content:center; gap:10px;
+    color:#04120b; border:1px solid rgba(255,255,255,.16); border-radius:13px;
+    background:linear-gradient(110deg, var(--green), #8af7c7);
+    box-shadow:0 6px 24px rgba(55,245,161,.16); font-weight:800; font-size:.92rem; cursor:pointer;
+    transition:transform .2s, box-shadow .2s;
+    font-family:Inter,sans-serif;
 }
-.register-btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-gold); }
-.register-btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.register-btn:hover { transform:translateY(-2px); box-shadow:0 10px 30px rgba(55,245,161,.26); }
+.register-btn:disabled { opacity:.55; cursor:not-allowed; transform:none; }
 
-.register-divider {
-    height: 1px;
-    background: linear-gradient(to right, transparent, var(--glass-border), transparent);
-    margin: 22px 0;
-}
+.register-divider { height:1px; background:linear-gradient(to right, transparent, var(--border), transparent); margin:22px 0; }
 
 .login-link {
-    display: block;
-    width: 100%;
-    padding: 13px;
-    background: transparent;
-    border: 2px solid var(--gold);
-    color: var(--gold);
-    border-radius: 10px;
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    font-size: 0.85rem;
-    text-align: center;
-    text-decoration: none;
-    transition: var(--transition);
-    cursor: pointer;
+    display:flex; align-items:center; justify-content:center; width:100%; min-height:46px; padding:12px;
+    background:transparent; border:1px solid rgba(53,232,255,.55); color:var(--cyan); border-radius:13px;
+    font-weight:700; font-size:.85rem; text-align:center; text-decoration:none; cursor:pointer;
 }
-.login-link:hover {
-    background: rgba(212, 175, 55, 0.12);
-    box-shadow: 0 0 30px rgba(212, 175, 55, 0.15);
-    transform: translateY(-2px);
-}
+.login-link:hover { background:rgba(53,232,255,.08); box-shadow:0 0 18px rgba(53,232,255,.16); }
 
-.terminos-text {
-    font-size: 0.65rem;
-    color: var(--text-muted);
-    text-align: center;
-    margin-top: 18px;
-    line-height: 1.5;
-}
-.terminos-text a {
-    color: var(--gold);
-    text-decoration: none;
-}
-.terminos-text a:hover { text-decoration: underline; }
+.terminos-text { margin-top:16px; text-align:center; font-size:.7rem; line-height:1.5; color:var(--muted); }
+.terminos-text a { color:var(--cyan); text-decoration:none; }
+.terminos-text a:hover { text-decoration:underline; }
 
-.footer {
-    margin-top: 30px;
-    padding-top: 16px;
-    border-top: 1px solid var(--glass-border);
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    flex-wrap: wrap;
-    gap: 10px;
-}
-.footer .brand { color: var(--gold); font-weight: 600; }
-.footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-.footer-links a { color: var(--text-muted); text-decoration: none; transition: var(--transition); }
-.footer-links a:hover { color: var(--gold); }
+.footer { margin-top:30px; padding-top:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; font-size:.7rem; color:var(--muted); }
+.footer .brand-foot { color:var(--text); font-family:Orbitron,sans-serif; font-size:.7rem; font-weight:700; letter-spacing:.6px; }
+.footer .brand-foot span { color:var(--green); }
 
-.toast {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%) translateY(80px);
-    background: rgba(5,8,15,0.95);
-    border: 1px solid var(--glass-border);
-    padding: 12px 24px;
-    border-radius: 30px;
-    color: var(--text-primary);
-    font-size: 0.85rem;
-    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
-    backdrop-filter: blur(12px);
-    transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
-    z-index: 99999;
-    opacity: 0;
-    pointer-events: none;
-    max-width: 90vw;
-}
-.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-.toast.error { border-color: var(--danger); color: var(--danger); }
-.toast.warning { border-color: var(--warning); color: var(--warning); }
-.toast.success { border-color: var(--success); color: var(--success); }
+.toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:rgba(7,17,13,.96); border:1px solid var(--border); padding:12px 24px; border-radius:30px; color:var(--text); font-size:.85rem; z-index:99999; opacity:0; pointer-events:none; max-width:90vw; transition:all .4s; }
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.error { border-color:var(--danger); color:var(--danger); }
+.toast.warning { border-color:var(--warning); color:var(--warning); }
+.toast.success { border-color:var(--success); color:var(--success); }
 
-.nebula {
-    position: fixed;
-    border-radius: 50%;
-    filter: blur(120px);
-    pointer-events: none;
-    z-index: 0;
-    animation: nebula-drift 25s ease-in-out infinite alternate;
+@media (max-width:768px) {
+    .app { padding:16px 16px 26px; }
+    .register-card { padding:26px 20px 22px; }
 }
-.nebula-1 { width: 700px; height: 700px; background: #0B3D2E; top: -15%; right: -15%; opacity: .10; }
-.nebula-2 { width: 600px; height: 600px; background: var(--gold); bottom: -15%; left: -15%; opacity: .05; animation-delay: -8s; }
-.nebula-3 { width: 500px; height: 500px; background: #00e5ff; top: 50%; left: 50%; transform: translate(-50%, -50%); opacity: .04; animation-delay: -15s; }
-@keyframes nebula-drift {
-    0% { transform: translate(0, 0) scale(1); }
-    100% { transform: translate(40px, -30px) scale(1.15); }
-}
-@media (max-width: 768px) {
-    .nebula { display: none; }
-    .header { flex-direction: column; align-items: flex-start; gap: 10px; }
-    .header-actions { width: 100%; flex-wrap: wrap; }
-    .register-card { padding: 26px 20px 22px; }
+@media (prefers-reduced-motion: reduce) {
+    .orb, .net-dot { animation:none !important; }
 }
 </style>
 </head>
-
 <body>
 
-<div class="nebula nebula-1"></div>
-<div class="nebula nebula-2"></div>
-<div class="nebula nebula-3"></div>
+<svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
+    <symbol id="i-network" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="3"/>
+        <circle cx="5" cy="5" r="2"/>
+        <circle cx="19" cy="5" r="2"/>
+        <circle cx="5" cy="19" r="2"/>
+        <circle cx="19" cy="19" r="2"/>
+        <path d="m10 10-3.5-3.5M14 10l3.5-3.5M10 14l-3.5 3.5M14 14l3.5 3.5"/>
+    </symbol>
+    <symbol id="i-user-plus" viewBox="0 0 24 24">
+        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M19 8v6M22 11h-6"/>
+    </symbol>
+</svg>
+
+<div class="background-effects" aria-hidden="true">
+    <div class="grid-bg"></div>
+    <div class="orb orb-a"></div>
+    <div class="orb orb-b"></div>
+    <div class="orb orb-c"></div>
+</div>
 
 <div class="app">
-
-<header class="header">
-    <div class="logo">
-        <a href="/" class="logo-main" aria-label="Ir al inicio">
-            <span class="logo-hex">◈</span>
-            <span class="logo-text">Sariel<span>'s</span></span>
-        </a>
-        <a href="/info/web3.html" class="logo-badge" target="_blank" rel="noopener noreferrer">
-            ✦ WEB3
-        </a>
-    </div>
+<header class="topbar">
+    <a class="brand" href="/" aria-label="Csariel's, página principal">
+        <span class="brand-mark"><svg class="icon"><use href="#i-network"/></svg></span>
+        <span class="brand-name">CSARIEL'S</span>
+    </a>
     <div class="header-actions">
-        <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="network-badge">
-            <span class="dot"></span>
-            Polygon
-        </a>
+        <a href="/info/web3.html" class="chip chip-web3" target="_blank" rel="noopener noreferrer">WEB3</a>
+        <a href="https://polygon.technology/" target="_blank" rel="noopener noreferrer" class="chip chip-polygon"><span class="net-dot"></span>Polygon</a>
     </div>
 </header>
 
@@ -420,290 +235,197 @@ body {
     <div class="register-card">
 
         <div class="register-logo">
-            <span class="logo-hex">◈</span>
-            <span class="logo-text">Sariel<span>'s</span></span>
+            <span class="brand-mark"><svg class="icon"><use href="#i-network"/></svg></span>
+            <span class="brand-name">CSARIEL'S</span>
         </div>
 
-        <h1 class="register-title">Crear cuenta</h1>
+        <h1 class="register-title">CREAR CUENTA</h1>
         <p class="register-sub">Es rápido y gratis</p>
 
-        <form id="registerForm" onsubmit="event.preventDefault(); registrarDesdeRegistro();">
-            <input
-                type="email"
-                id="regEmail"
-                placeholder="Correo electrónico"
-                autocomplete="email"
-                inputmode="email"
-                required
-            />
-            <input
-                type="password"
-                id="regPassword"
-                placeholder="Contraseña (mínimo 6 caracteres)"
-                autocomplete="new-password"
-                minlength="6"
-                required
-            />
-            <input
-                type="text"
-                id="regName"
-                placeholder="Nombre (opcional)"
-                autocomplete="name"
-            />
+        <form id="registerForm">
+            <input type="email" id="regEmail" placeholder="Correo electrónico" autocomplete="email" inputmode="email" required />
+            <input type="password" id="regPassword" placeholder="Contraseña (mínimo 6 caracteres)" autocomplete="new-password" minlength="6" required />
+            <input type="text" id="regName" placeholder="Nombre (opcional)" autocomplete="name" />
+
+            <!-- Verificación anti-bot (Cloudflare Turnstile). Activa poniendo la clave del sitio en TURNSTILE_SITE_KEY. -->
+            <div class="turnstile-wrap" id="turnstileWrap"></div>
+
             <button type="submit" class="register-btn" id="registerBtn">
-                ⟡ Crear cuenta
+                <svg class="icon icon-sm"><use href="#i-user-plus"/></svg>
+                Crear cuenta
             </button>
         </form>
 
         <p class="terminos-text">
-            Al registrarte aceptas nuestros
-            <a href="/terminos" target="_blank" rel="noopener">Términos</a>
-            y
-            <a href="/privacidad" target="_blank" rel="noopener">Política de privacidad</a>.
+            Al crear tu cuenta aceptas nuestros <a href="/features/centro-ayuda/index.html">Términos y Privacidad</a>.
         </p>
 
         <div class="register-divider"></div>
 
-        <a href="/index.html" class="login-link">
-            Ya tengo cuenta · Iniciar sesión
-        </a>
+        <a href="/index.html" class="login-link">Ya tengo cuenta · Iniciar sesión</a>
 
     </div>
 </section>
 
 <footer class="footer">
-    <span>
-        <span class="brand">◈ Sariel's</span>
-        · Sabor al Paladar · WEB3
-    </span>
-    <div class="footer-links">
-        <a href="/terminos">◈ Términos</a>
-        <a href="/privacidad">◈ Privacidad</a>
-        <a href="/cookies">◈ Cookies</a>
-        <a href="/eliminar-cuenta.html">◈ Eliminar cuenta</a>
-        <a href="/live-terminos">◉ Live Términos</a>
-        <span style="opacity:0.3;">⚡ Polygon</span>
-    </div>
+    <div class="brand-foot">CSARIEL'S / WEB3</div>
+    <span>Sabor al Paladar · Infraestructura digital · Polygon</span>
 </footer>
-
 </div>
 
 <div class="toast" id="toast"></div>
 
-<div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
-    <strong>⚠️ Error detectado:</strong>
-    <span id="errorBannerText"></span>
-    <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">
-        Cerrar
-    </button>
-</div>
-
 <script>
 'use strict';
 
+/* ================= CONFIGURACIÓN ================= */
 var RUTA_PERFIL = '/features/perfil/perfil.html';
+var TURNSTILE_SITE_KEY = ''; // Pon aquí la clave del sitio de Cloudflare Turnstile
+
+var turnstileWidgetId = null;
 
 function showToast(msg, type, duration) {
     var el = document.getElementById('toast');
     if (!el) return;
-
     el.textContent = msg;
     el.className = 'toast show' + (type ? ' ' + type : '');
-
     clearTimeout(el._timer);
-    el._timer = setTimeout(function () {
-        el.className = 'toast';
-    }, duration || 3500);
+    el._timer = setTimeout(function () { el.className = 'toast'; }, duration || 3500);
 }
 window.showToast = showToast;
 
-function mostrarErrorEnPantalla(mensaje) {
-    const banner = document.getElementById('errorBanner');
-    const texto = document.getElementById('errorBannerText');
-    if (banner && texto) {
-        texto.textContent = mensaje;
-        banner.style.display = 'block';
-    }
-}
-
-window.addEventListener('error', function (event) {
-    mostrarErrorEnPantalla(
-        (event.message || 'Error desconocido') +
-        ' — línea ' + event.lineno
-    );
-});
-
-window.addEventListener('unhandledrejection', function (event) {
-    mostrarErrorEnPantalla(
-        'Promesa rechazada: ' +
-        (event.reason?.message || event.reason)
-    );
-});
-
 function traducirErrorSupabase(mensaje) {
-    if (!mensaje || typeof mensaje !== 'string') {
-        return 'Error desconocido';
-    }
-
+    if (!mensaje || typeof mensaje !== 'string') return 'Error desconocido';
     var m = mensaje.toLowerCase();
-
-    if (m.includes('user already registered') || m.includes('already registered')) {
-        return 'Ese correo ya está registrado. Inicia sesión en su lugar.';
-    }
-    if (m.includes('password should be at least')) {
-        return 'La contraseña es muy corta. Usa al menos 6 caracteres.';
-    }
-    if (m.includes('invalid email')) {
-        return 'El correo no tiene un formato válido.';
-    }
-    if (m.includes('signup is disabled')) {
-        return 'El registro está temporalmente deshabilitado.';
-    }
-    if (m.includes('too many requests') || m.includes('rate limit')) {
-        return 'Demasiados intentos. Espera unos minutos.';
-    }
-    if (m.includes('network') || m.includes('failed to fetch')) {
-        return 'Sin conexión con el servidor. Revisa tu internet.';
-    }
-
+    if (m.includes('user already registered') || m.includes('already registered')) return 'Ese correo ya está registrado. Inicia sesión en su lugar.';
+    if (m.includes('password should be at least')) return 'La contraseña es muy corta. Usa al menos 6 caracteres.';
+    if (m.includes('invalid email')) return 'El correo no tiene un formato válido.';
+    if (m.includes('signup is disabled')) return 'El registro está temporalmente deshabilitado.';
+    if (m.includes('too many requests') || m.includes('rate limit')) return 'Demasiados intentos. Espera unos minutos.';
+    if (m.includes('captcha')) return 'No pudimos verificar que eres una persona. Intenta de nuevo.';
+    if (m.includes('network') || m.includes('failed to fetch')) return 'Sin conexión con el servidor. Revisa tu internet.';
     return mensaje;
 }
 
+/* ================= TURNSTILE ================= */
+function montarTurnstile() {
+    var wrap = document.getElementById('turnstileWrap');
+    if (!wrap || !TURNSTILE_SITE_KEY) return;
+    if (!window.turnstile || typeof window.turnstile.render !== 'function') {
+        setTimeout(montarTurnstile, 300);
+        return;
+    }
+    if (turnstileWidgetId !== null) return;
+    turnstileWidgetId = window.turnstile.render(wrap, {
+        sitekey: TURNSTILE_SITE_KEY,
+        theme: 'dark',
+        size: 'flexible'
+    });
+}
+
+function obtenerTokenTurnstile() {
+    if (!TURNSTILE_SITE_KEY) return '';
+    if (!window.turnstile || turnstileWidgetId === null) return '';
+    return window.turnstile.getResponse(turnstileWidgetId) || '';
+}
+
+function reiniciarTurnstile() {
+    if (window.turnstile && turnstileWidgetId !== null) {
+        window.turnstile.reset(turnstileWidgetId);
+    }
+}
+
+/* ================= SESIÓN ================= */
 async function redirigirSiYaHaySesion() {
     try {
-        const client = window.getSupabase ? window.getSupabase() : null;
+        var client = window.getSupabase ? window.getSupabase() : null;
         if (!client || !client.auth) return;
-
-        const resultado = await client.auth.getSession();
-        const session = resultado && resultado.data ? resultado.data.session : null;
-
-        if (session) {
-            window.location.replace(RUTA_PERFIL);
-        }
+        var r = await client.auth.getSession();
+        var s = r && r.data ? r.data.session : null;
+        if (s) window.location.replace(RUTA_PERFIL);
     } catch (e) {
         console.warn('[Registro] No se pudo verificar sesión:', e);
     }
 }
 
+/* ================= REGISTRO ================= */
 async function registrarDesdeRegistro() {
-    const emailEl = document.getElementById('regEmail');
-    const passEl = document.getElementById('regPassword');
-    const nameEl = document.getElementById('regName');
-    const btn = document.getElementById('registerBtn');
-
+    var emailEl = document.getElementById('regEmail');
+    var passEl = document.getElementById('regPassword');
+    var nameEl = document.getElementById('regName');
+    var btn = document.getElementById('registerBtn');
     if (!emailEl || !passEl) return;
 
-    const email = emailEl.value.trim();
-    const password = passEl.value;
-    const name = nameEl ? nameEl.value.trim() : '';
+    var email = emailEl.value.trim();
+    var password = passEl.value;
+    var name = nameEl ? nameEl.value.trim() : '';
 
-    if (!email || !password) {
-        showToast('⚠️ Completa correo y contraseña', 'warning');
+    if (!email || !password) { showToast('Completa correo y contraseña', 'warning'); return; }
+    if (password.length < 6) { showToast('La contraseña debe tener al menos 6 caracteres', 'warning'); return; }
+
+    var tokenTurnstile = obtenerTokenTurnstile();
+    if (TURNSTILE_SITE_KEY && !tokenTurnstile) {
+        showToast('Confirma que no eres un robot', 'warning');
         return;
     }
 
-    if (password.length < 6) {
-        showToast('⚠️ La contraseña debe tener al menos 6 caracteres', 'warning');
-        return;
-    }
-
-    const originalText = btn ? btn.textContent : '⟡ Crear cuenta';
-    if (btn) {
-        btn.disabled = true;
-        btn.textContent = '⏳ Creando cuenta...';
-    }
+    var textoOriginal = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Creando cuenta...'; }
 
     try {
-        const client = window.getSupabase();
+        var client = window.getSupabase();
+        if (!client) throw new Error('No hay conexión con el servidor. Recarga la página.');
 
-        if (!client) {
-            throw new Error('No hay conexión con el servidor. Recarga la página.');
-        }
+        var opciones = {
+            data: { nombre: name || email.split('@')[0] },
+            emailRedirectTo: window.location.origin + RUTA_PERFIL
+        };
+        if (tokenTurnstile) opciones.captchaToken = tokenTurnstile;
 
-        if (window.app && typeof window.app.registrarUsuario === 'function') {
-            await window.app.registrarUsuario(email, password, name);
+        var resultado = await client.auth.signUp({ email: email, password: password, options: opciones });
+        var data = resultado ? resultado.data : null;
+        var error = resultado ? resultado.error : null;
 
-            emailEl.value = '';
-            passEl.value = '';
-            if (nameEl) nameEl.value = '';
-
-            window.location.replace(RUTA_PERFIL);
-            return;
-        }
-
-        const emailRedirectTo = window.location.origin + RUTA_PERFIL;
-
-        const resultado = await client.auth.signUp({
-            email: email,
-            password: password,
-            options: {
-                data: {
-                    nombre: name || email.split('@')[0]
-                },
-                emailRedirectTo: emailRedirectTo
-            }
-        });
-
-        const data = resultado ? resultado.data : null;
-        const error = resultado ? resultado.error : null;
-
-        if (error) {
-            throw new Error(error.message || 'No se pudo crear la cuenta');
-        }
-
-        if (!data || !data.user) {
-            throw new Error('No se pudo crear la cuenta');
-        }
+        if (error) throw new Error(error.message || 'No se pudo crear la cuenta');
+        if (!data || !data.user) throw new Error('No se pudo crear la cuenta');
 
         if (!data.session) {
-            showToast(
-                '✅ Cuenta creada. Revisa tu correo para confirmar.',
-                'success',
-                6000
-            );
-
-            if (btn) {
-                btn.disabled = false;
-                btn.textContent = originalText;
-            }
-
+            showToast('Cuenta creada. Revisa tu correo para confirmarla.', 'success', 6000);
+            emailEl.value = ''; passEl.value = ''; if (nameEl) nameEl.value = '';
+            reiniciarTurnstile();
+            if (btn) { btn.disabled = false; btn.innerHTML = textoOriginal; }
             return;
         }
 
-        emailEl.value = '';
-        passEl.value = '';
-        if (nameEl) nameEl.value = '';
-
+        emailEl.value = ''; passEl.value = ''; if (nameEl) nameEl.value = '';
         window.location.replace(RUTA_PERFIL);
-
     } catch (e) {
         console.error('[Registro] Error:', e);
-
-        var mensajeAmigable = traducirErrorSupabase(
-            e && e.message ? e.message : ''
-        );
-
-        showToast('❌ ' + mensajeAmigable, 'error', 5000);
-
-        if (btn) {
-            btn.disabled = false;
-            btn.textContent = originalText;
-        }
+        showToast(traducirErrorSupabase(e && e.message ? e.message : ''), 'error', 5000);
+        reiniciarTurnstile();
+        if (btn) { btn.disabled = false; btn.innerHTML = textoOriginal; }
     }
 }
 window.registrarDesdeRegistro = registrarDesdeRegistro;
 
+/* ================= ARRANQUE ================= */
 document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('registerForm');
+    if (form) {
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            registrarDesdeRegistro();
+        });
+    }
 
     redirigirSiYaHaySesion();
+    montarTurnstile();
 
     setTimeout(async function () {
         try {
-            if (typeof window.inicializarIdiomas === 'function') {
-                await window.inicializarIdiomas();
-            }
-        } catch (error) {
-            console.error('Error inicializando idiomas:', error);
+            if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas();
+        } catch (e) {
+            console.error('Error inicializando idiomas:', e);
         }
     }, 300);
 });
