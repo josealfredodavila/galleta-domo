@@ -26,11 +26,11 @@
 
 <style>
     /* ================================================================
-       PERFIL · MICROINTERACCIONES Y TRANSICIONES (v2)
+       PERFIL · MICROINTERACCIONES (v3, plano)
        ================================================================ */
     .btn, .btn-estado, .btn-conexion, .accion-btn, .tab-btn, .btn-publicar, .config-btn, .rep-btn, .pro-btn, .internet-filter, .nav-link, .avatar-menu button {
         -webkit-tap-highlight-color: transparent;
-        transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 160ms ease, background-color 180ms ease, border-color 180ms ease, color 160ms ease, box-shadow 200ms ease, opacity 160ms ease;
+        transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 160ms ease, background-color 180ms ease, border-color 180ms ease, color 160ms ease, opacity 160ms ease;
     }
     .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active {
         transform: scale(0.97);
@@ -43,27 +43,6 @@
         .btn, .btn-estado, .btn-conexion, .accion-btn, .tab-btn, .btn-publicar, .config-btn, .rep-btn, .pro-btn, .internet-filter, .nav-link, .avatar-menu button, .tab-content.active { transition: none !important; animation: none !important; }
         .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active { transform: none !important; }
     }
-
-    /* Sección de wallet (Polygon) */
-    .wallet-section { margin: 0 0 16px; padding: 14px; border-radius: 16px; border: 2px solid var(--line-black); background: rgba(0,0,0,0.35); }
-    .wallet-header { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-    .wallet-header h3 { font-size: 0.9rem; font-weight: 700; color: var(--cyan, #00e5ff); }
-    .wallet-estado { font-size: 0.65rem; padding: 3px 10px; border-radius: 99px; border: 1px solid var(--text-muted); color: var(--text-muted); }
-    .wallet-estado.conectada { border-color: var(--success); color: var(--success); }
-    .wallet-direccion { margin: 10px 0; font-family: monospace; font-size: 0.8rem; color: var(--text-secondary); word-break: break-all; }
-    .wallet-acciones { display: flex; gap: 8px; flex-wrap: wrap; }
-    .wallet-acciones .btn { flex: 1; justify-content: center; }
-    .wallet-visible { display: flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 0.75rem; color: var(--text-secondary); }
-    .wallet-hint { margin-top: 8px; font-size: 0.65rem; color: var(--text-muted); }
-    .wallet-switch { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; padding: 12px; border-radius: 14px; border: 1px solid var(--line-black); background: rgba(0,0,0,0.25); cursor: pointer; }
-    .wallet-switch-texto strong { display: block; font-size: 0.8rem; color: var(--text-primary); }
-    .wallet-switch-texto small { display: block; margin-top: 3px; font-size: 0.65rem; color: var(--text-muted); line-height: 1.4; }
-    .wallet-switch input { position: absolute; opacity: 0; width: 0; height: 0; }
-    .wallet-switch-slider { position: relative; flex-shrink: 0; width: 52px; height: 28px; border-radius: 99px; background: rgba(255,255,255,0.15); transition: background 0.2s ease; }
-    .wallet-switch-slider::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; transition: transform 0.2s ease; }
-    .wallet-switch input:checked + .wallet-switch-slider { background: linear-gradient(135deg, var(--cyan, #00e5ff), var(--purple, #a855f7)); }
-    .wallet-switch input:checked + .wallet-switch-slider::after { transform: translateX(24px); }
-    .wallet-switch input:disabled + .wallet-switch-slider { opacity: 0.4; }
 </style>
 <style>
     .anuncios-imagen-contenedor img { display: block; width: 100%; max-width: 100%; height: auto; max-height: 260px; object-fit: cover; border-radius: 16px; }
@@ -90,40 +69,31 @@
      CSS DEL PASAPORTE DIGITAL DEL DOMO
      ================================================================ -->
 <style>
-    #pasaporteDomo { margin: 0 0 16px; }
+    #pasaporteDomo { margin: 0 0 12px; }
     #pasaporteDomo:empty { display: none; }
 
     .pasaporte-card {
         position: relative;
-        padding: 20px;
-        border-radius: 20px;
-        background:
-            linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(15, 45, 26, 0.85) 60%, rgba(0, 229, 255, 0.10) 100%);
-        border: 1.5px solid rgba(212, 175, 55, 0.45);
-        box-shadow: 0 8px 32px rgba(212, 175, 55, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        padding: 18px 4px;
+        border-radius: 0;
+        background: transparent;
+        border: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
         color: var(--text-primary, #f0f4f8);
         overflow: hidden;
     }
-    .pasaporte-card::before {
-        content: '';
-        position: absolute;
-        top: -50%; right: -30%;
-        width: 260px; height: 260px;
-        border-radius: 50%;
-        background: radial-gradient(circle, rgba(0, 229, 255, 0.18) 0%, transparent 70%);
-        pointer-events: none;
-    }
+    .pasaporte-card::before { display: none; }
     .pasaporte-sello {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 4px 12px;
+        padding: 2px 10px;
         border-radius: 99px;
-        background: rgba(212, 175, 55, 0.18);
-        border: 1px solid rgba(212, 175, 55, 0.55);
+        background: transparent;
+        border: 1px solid rgba(212, 175, 55, 0.5);
         color: var(--gold, #D4AF37);
         font-family: 'Orbitron', monospace;
-        font-size: 0.65rem;
+        font-size: 0.6rem;
         font-weight: 700;
         letter-spacing: 1px;
         text-transform: uppercase;
@@ -131,53 +101,33 @@
     }
     .pasaporte-titulo {
         font-family: 'Orbitron', monospace;
-        font-size: 1.05rem;
+        font-size: 1rem;
         font-weight: 700;
         color: var(--text-primary, #fff);
         margin-bottom: 6px;
         line-height: 1.3;
     }
-    .pasaporte-correo {
-        font-family: monospace;
-        font-size: 0.8rem;
-        color: var(--cyan, #00e5ff);
-        margin-bottom: 8px;
-        word-break: break-all;
-    }
-    .pasaporte-meta {
-        font-size: 0.7rem;
-        color: var(--text-muted, #8aa8b8);
-        margin-bottom: 12px;
-    }
+    .pasaporte-correo { font-family: monospace; font-size: 0.8rem; color: var(--cyan, #00e5ff); margin-bottom: 8px; word-break: break-all; }
+    .pasaporte-meta { font-size: 0.7rem; color: var(--text-muted, #8aa8b8); margin-bottom: 12px; }
     .pasaporte-token {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        padding: 6px 12px;
+        padding: 4px 10px;
         border-radius: 10px;
-        background: rgba(0, 214, 143, 0.12);
+        background: transparent;
         border: 1px solid rgba(0, 214, 143, 0.4);
         color: var(--success, #00d68f);
         font-size: 0.72rem;
         font-weight: 600;
         margin-bottom: 12px;
     }
-    .pasaporte-tx {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        color: var(--cyan, #00e5ff);
-        font-size: 0.72rem;
-        font-weight: 600;
-        text-decoration: none;
-        border-bottom: 1px dashed rgba(0, 229, 255, 0.4);
-        padding-bottom: 1px;
-    }
+    .pasaporte-tx { display: inline-flex; align-items: center; gap: 4px; color: var(--cyan, #00e5ff); font-size: 0.72rem; font-weight: 600; text-decoration: none; border-bottom: 1px dashed rgba(0, 229, 255, 0.4); padding-bottom: 1px; }
     .pasaporte-tx:hover { color: var(--gold, #D4AF37); border-color: rgba(212, 175, 55, 0.6); }
 
     @keyframes pasaporteIn {
-        from { opacity: 0; transform: translateY(8px) scale(0.98); }
-        to { opacity: 1; transform: translateY(0) scale(1); }
+        from { opacity: 0; transform: translateY(6px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     .pasaporte-anim { animation: pasaporteIn 400ms ease both; }
 
@@ -187,51 +137,7 @@
 </style>
 
 <!-- ================================================================
-     CORRECCIONES DE VISUALIZACIÓN (v3)
-     ================================================================ -->
-<style>
-    /* Tarjetas de publicación: encabezado en fila (avatar a la izquierda, nombre y fecha a la derecha) */
-    .publicacion-card .header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 0;
-        margin-bottom: 10px;
-        background: transparent;
-        border: 0;
-        box-shadow: none;
-    }
-    .publicacion-card .header > .avatar {
-        width: 44px;
-        height: 44px;
-        flex: 0 0 44px;
-        border-radius: 50%;
-        overflow: hidden;
-    }
-    .publicacion-card .header > .avatar img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-    .publicacion-card .header > div:not(.avatar) {
-        flex: 1;
-        min-width: 0;
-        text-align: left;
-    }
-    .publicacion-card .nombre {
-        white-space: normal;
-        word-break: break-word;
-    }
-    .publicacion-card .fecha {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-    }
-</style>
-
-<!-- ================================================================
      MENÚ DE FOTO DE PERFIL · HOJA INFERIOR (v2)
-     El menú se mueve a <body> al cargar, para que ningún contenedor
-     con overflow o backdrop-filter lo recorte.
      ================================================================ -->
 <style>
     .perfil-header .avatar { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
@@ -247,42 +153,33 @@
         min-width: 0 !important;
         margin: 0 !important;
         padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
-        border-radius: 22px 22px 0 0 !important;
-        border: 2px solid var(--line-black, #000) !important;
+        border-radius: 18px 18px 0 0 !important;
+        border: 1px solid rgba(255, 255, 255, 0.09) !important;
         border-bottom: 0 !important;
-        background: rgba(10, 14, 20, 0.98) !important;
-        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--gold, #D4AF37) !important;
+        background: #0b1410 !important;
+        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6) !important;
         z-index: 10050 !important;
         transform: translateY(105%);
         visibility: hidden;
         transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.25s;
         animation: none !important;
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
         max-height: 80vh;
         overflow-y: auto;
     }
     .avatar-menu.open { transform: translateY(0); visibility: visible; }
 
-    .avatar-menu .avatar-menu-titulo {
-        text-align: center;
-        font-family: 'Orbitron', monospace;
-        font-size: 0.7rem;
-        color: var(--text-muted, #8aa8b8);
-        letter-spacing: 1px;
-        padding: 6px 0 10px;
-    }
     .avatar-menu .avatar-menu-item {
         display: flex !important;
         align-items: center;
         gap: 12px;
         width: 100%;
-        min-height: 52px;
-        padding: 12px 14px !important;
-        margin: 4px 0;
-        background: rgba(255, 255, 255, 0.04) !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
-        border-radius: 14px !important;
+        min-height: 50px;
+        padding: 12px 6px !important;
+        margin: 0;
+        background: transparent !important;
+        border: 0 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
+        border-radius: 0 !important;
         color: var(--text-secondary, #c0d8e8) !important;
         font-size: 0.9rem !important;
         font-weight: 600 !important;
@@ -290,11 +187,12 @@
         cursor: pointer;
         font-family: 'Inter', sans-serif;
     }
-    .avatar-menu .avatar-menu-item:active { transform: scale(0.98); background: rgba(212, 175, 55, 0.12) !important; }
+    .avatar-menu .avatar-menu-item:active { background: rgba(212, 175, 55, 0.08) !important; }
     .avatar-menu .avatar-menu-item .icon-sm { width: 20px; height: 20px; flex-shrink: 0; }
     .avatar-menu .avatar-menu-item.danger { color: var(--danger, #ff3366) !important; }
-    .avatar-menu .avatar-menu-item.cancel { justify-content: center; color: var(--text-muted, #8aa8b8) !important; margin-top: 8px; }
-    .avatar-menu .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 6px 0; }
+    .avatar-menu .avatar-menu-item.cancel { justify-content: center; color: var(--text-muted, #8aa8b8) !important; border-bottom: 0 !important; margin-top: 6px; }
+    .avatar-menu .divider { display: none; }
+    .avatar-menu .avatar-menu-titulo { display: none; }
 
     .avatar-menu-backdrop {
         position: fixed;
@@ -368,7 +266,7 @@
 <!-- ============ FIN DEL CARRUSEL 3D HORIZONTAL ============ -->
 
 <div class="anuncios-crear-acceso" style="max-width:720px;margin:12px auto 0;padding:0 16px;box-sizing:border-box;display:flex;justify-content:flex-end;">
-    <a href="/features/anuncios/anuncios-crear.html" style="display:inline-flex;align-items:center;gap:8px;padding:9px 16px;border-radius:99px;border:1px solid var(--gold,#D4AF37);color:var(--gold,#D4AF37);text-decoration:none;font-size:.78rem;font-weight:700;letter-spacing:.5px;background:rgba(212,175,55,.08);">
+    <a href="/features/anuncios/anuncios-crear.html" style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:99px;border:1px solid var(--gold,#D4AF37);color:var(--gold,#D4AF37);text-decoration:none;font-size:.78rem;font-weight:700;letter-spacing:.5px;background:transparent;">
         📢 Crear anuncio
     </a>
 </div>
@@ -389,12 +287,10 @@
 
             <!-- Hoja de opciones: se mueve a <body> al cargar -->
             <div class="avatar-menu" id="avatarMenu" role="menu" aria-label="Opciones de foto de perfil">
-                <div class="avatar-menu-titulo">FOTO DE PERFIL</div>
                 <button type="button" class="avatar-menu-item" role="menuitem" data-accion="cambiar">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     <span data-clave="perfil_cambiar_foto">Cambiar foto</span>
                 </button>
-                <div class="divider"></div>
                 <button type="button" class="avatar-menu-item danger" role="menuitem" data-accion="eliminar">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                     <span data-clave="perfil_eliminar_foto">Eliminar foto</span>
@@ -406,6 +302,7 @@
 
             <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="if (typeof window.subirFoto === 'function') { window.subirFoto(event); } else if (window.showToast) { window.showToast('No se pudo subir la foto. Recarga la página.', 'error'); }" />
         </div>
+
         <div class="info">
             <div class="nombre" id="perfilNombre">
                 <span data-clave="perfil_nombre_usuario">Explorador</span>
@@ -429,57 +326,39 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
                     WEB3
                 </span>
-                <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:rgba(168,85,247,0.05);">
+                <span class="badge" id="nivelUsuario" style="border-color:var(--purple);color:var(--purple);background:transparent;">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
                     <span data-clave="perfil_nivel_explorador">Explorador</span>
                 </span>
             </div>
         </div>
+
         <div class="stats">
             <div class="stat">
                 <div class="number" id="statTokens">0</div>
-                <div class="label" data-clave="perfil_stat_tokens">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
-                    Tokens
-                </div>
+                <div class="label" data-clave="perfil_stat_tokens">Tokens</div>
             </div>
             <div class="stat">
                 <div class="number" id="statNFTS">0</div>
-                <div class="label" data-clave="perfil_stat_nfts">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
-                    NFTs
-                </div>
+                <div class="label" data-clave="perfil_stat_nfts">NFTs</div>
             </div>
             <div class="stat">
                 <div class="number" id="statSeguidores">0</div>
-                <div class="label" data-clave="perfil_stat_seguidores">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                    Seguidores
-                </div>
+                <div class="label" data-clave="perfil_stat_seguidores">Seguidores</div>
             </div>
             <div class="stat">
                 <div class="number" id="statSiguiendo">0</div>
-                <div class="label" data-clave="perfil_stat_siguiendo">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
-                    Siguiendo
-                </div>
+                <div class="label" data-clave="perfil_stat_siguiendo">Siguiendo</div>
             </div>
         </div>
+
         <div class="acciones">
-            <button class="btn btn-outline btn-sm" onclick="window.compartirPerfil()" data-clave="perfil_compartir">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-                Compartir
-            </button>
-            <button class="btn btn-outline btn-sm" onclick="window.generarQRPerfil()" data-clave="perfil_compartir_qr">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
-                Compartir QR
-            </button>
+            <button class="btn btn-outline btn-sm" onclick="window.compartirPerfil()" data-clave="perfil_compartir">Compartir</button>
+            <button class="btn btn-outline btn-sm" onclick="window.generarQRPerfil()" data-clave="perfil_compartir_qr">Compartir QR</button>
         </div>
     </div>
 
-    <!-- ============================================================ -->
-    <!-- PASAPORTE DIGITAL DEL DOMO (se llena dinámicamente)          -->
-    <!-- ============================================================ -->
+    <!-- PASAPORTE DIGITAL DEL DOMO (se llena dinámicamente) -->
     <section id="pasaporteDomo" aria-live="polite"></section>
 
     <div class="repartidor-section" id="repartidorSection" style="display:none;">
@@ -490,12 +369,8 @@
             </h3>
             <span class="rep-badge" id="repBadge" data-clave="perfil_cargando">Cargando...</span>
         </div>
-        <div class="rep-info" id="repInfo" data-clave="perfil_cargando_info">
-            Cargando información...
-        </div>
-        <button class="rep-btn" id="repBtn" onclick="window.irARepartidorDesdePerfil()" data-clave="perfil_cargando">
-            Cargando...
-        </button>
+        <div class="rep-info" id="repInfo" data-clave="perfil_cargando_info">Cargando información...</div>
+        <button class="rep-btn" id="repBtn" onclick="window.irARepartidorDesdePerfil()" data-clave="perfil_cargando">Cargando...</button>
     </div>
 
     <div class="estado-section">
@@ -508,26 +383,18 @@
                 <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> <span data-clave="perfil_amigos_en_linea">amigos en línea</span></span>
             </div>
             <div class="estado-buttons">
-                <button class="btn-estado online" onclick="window.cambiarEstado(true)" data-clave="perfil_btn_activo">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/></svg>
-                    Activo
-                </button>
-                <button class="btn-estado offline" onclick="window.cambiarEstado(false)" data-clave="perfil_btn_inactivo">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
-                    Inactivo
-                </button>
+                <button class="btn-estado online" onclick="window.cambiarEstado(true)" data-clave="perfil_btn_activo">Activo</button>
+                <button class="btn-estado offline" onclick="window.cambiarEstado(false)" data-clave="perfil_btn_inactivo">Inactivo</button>
             </div>
         </div>
 
         <div id="solicitudesSection">
             <h4>
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
                 <span data-clave="perfil_solicitudes_pendientes">Solicitudes pendientes</span>
                 <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span>
             </h4>
             <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
                 <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.7rem;">
-                    <svg class="icon" viewBox="0 0 24 24" style="color:var(--success);width:1.5rem;height:1.5rem;"><polyline points="20 6 9 17 4 12"/></svg>
                     <p data-clave="perfil_sin_solicitudes">No tienes solicitudes pendientes</p>
                 </div>
             </div>
@@ -570,16 +437,12 @@
                     Conservación ampliada · 5 GB
                 </div>
                 <button class="btn btn-gold pro-btn" onclick="window.contratarPro()" id="btnContratarPro" data-clave="perfil_pro_contratar">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>
                     Contratar Pro por $300 MXN
                 </button>
             </div>
 
             <div class="pro-active-info" id="proActiveInfo" style="display:none;">
-                <div class="pro-active-badge" data-clave="perfil_pro_activo">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    PRO ACTIVO
-                </div>
+                <div class="pro-active-badge" data-clave="perfil_pro_activo">PRO ACTIVO</div>
                 <div class="pro-active-expira">
                     <span data-clave="perfil_pro_expira">Expira:</span> <span id="proExpira">--</span>
                 </div>
@@ -621,71 +484,35 @@
     <div class="conexion-section">
         <div class="conexion-header">
             <div class="conexion-info">
-                <span class="status" id="conexionStatus" data-clave="perfil_conexion_wifi">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-                    WiFi
-                </span>
+                <span class="status" id="conexionStatus" data-clave="perfil_conexion_wifi">WiFi</span>
                 <span class="velocidad" id="conexionVelocidad" data-no-traducir="1">0 Mbps</span>
                 <span class="señal" id="conexionSeñal" data-no-traducir="1" style="color:var(--success);">████</span>
             </div>
             <div class="conexion-buttons">
-                <button class="btn-conexion wifi active" id="btnWifi" onclick="window.cambiarConexion('wifi')" data-clave="perfil_conexion_wifi">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-                    WiFi
-                </button>
-                <button class="btn-conexion datos" id="btnDatos" onclick="window.cambiarConexion('datos')" data-clave="perfil_conexion_datos">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
-                    Datos
-                </button>
+                <button class="btn-conexion wifi active" id="btnWifi" onclick="window.cambiarConexion('wifi')" data-clave="perfil_conexion_wifi">WiFi</button>
+                <button class="btn-conexion datos" id="btnDatos" onclick="window.cambiarConexion('datos')" data-clave="perfil_conexion_datos">Datos</button>
             </div>
         </div>
         <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
-            <span data-clave="perfil_conexion">Conexión:</span> <span id="conexionTipo">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0 1 14.08 0M1.42 9a16 16 0 0 1 21.16 0M8.53 16.11a6 6 0 0 1 6.95 0"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
-                WiFi
-            </span>
+            <span data-clave="perfil_conexion">Conexión:</span> <span id="conexionTipo">WiFi</span>
             · <span data-clave="perfil_operador">Operador:</span> <span id="conexionOperador" data-no-traducir="1">Csariel's Net</span>
         </div>
     </div>
 
     <div class="perfil-tabs">
-        <button class="tab-btn active" onclick="window.cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            Mis Publicaciones
-        </button>
-        <button class="tab-btn" onclick="window.cambiarTab('actividad')" data-clave="perfil_tab_actividad">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-            Actividad
-        </button>
-        <button class="tab-btn" onclick="window.cambiarTab('tokens')" data-clave="perfil_tab_tokens">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
-            Tokens
-        </button>
-        <button class="tab-btn" onclick="window.cambiarTab('esim')" data-clave="perfil_tab_esim">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-            eSIM
-        </button>
-        <button class="tab-btn" onclick="window.cambiarTab('qr')" data-clave="perfil_tab_qr">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
-            Escanear QR
-        </button>
-        <button class="tab-btn" onclick="window.cambiarTab('internet')" data-clave="perfil_tab_internet">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
-            Internet
-        </button>
-        <button class="tab-btn" id="tabBtnCompras" onclick="window.cambiarTab('compras'); window.cargarComprasMarketplace && window.cargarComprasMarketplace();">
-            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-            Compras
-        </button>
+        <button class="tab-btn active" onclick="window.cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">Mis Publicaciones</button>
+        <button class="tab-btn" onclick="window.cambiarTab('actividad')" data-clave="perfil_tab_actividad">Actividad</button>
+        <button class="tab-btn" onclick="window.cambiarTab('tokens')" data-clave="perfil_tab_tokens">Tokens</button>
+        <button class="tab-btn" onclick="window.cambiarTab('esim')" data-clave="perfil_tab_esim">eSIM</button>
+        <button class="tab-btn" onclick="window.cambiarTab('qr')" data-clave="perfil_tab_qr">Escanear QR</button>
+        <button class="tab-btn" onclick="window.cambiarTab('internet')" data-clave="perfil_tab_internet">Internet</button>
+        <button class="tab-btn" id="tabBtnCompras" onclick="window.cambiarTab('compras'); window.cargarComprasMarketplace && window.cargarComprasMarketplace();">Compras</button>
     </div>
 
 <div id="tab-mis-publicaciones" class="tab-content active">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_crear_publicacion">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                Crear publicación
-            </h3>
+            <h3 data-clave="perfil_crear_publicacion">Crear publicación</h3>
             <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
         </div>
         <div class="panel-body">
@@ -693,33 +520,18 @@
                 <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
 
                 <div class="acciones">
-                    <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                        Emoji
-                    </button>
-                    <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
-                        Hashtag
-                    </button>
-                    <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        Foto
-                    </button>
-                    <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                        Video
-                    </button>
+                    <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">Emoji</button>
+                    <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">Hashtag</button>
+                    <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">Foto</button>
+                    <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">Video</button>
 
                     <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
                     <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
 
-                    <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                        Publicar
-                    </button>
+                    <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">Publicar</button>
 
                     <div class="emoji-picker" id="emojiPickerPerfil">
-                        <div class="titulo" data-clave="perfil_elige_emoji">✦ Elige tu emoji</div>
+                        <div class="titulo" data-clave="perfil_elige_emoji">Elige tu emoji</div>
                         <div class="grid" id="emojiGridPerfil"></div>
                     </div>
                 </div>
@@ -731,16 +543,12 @@
 
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_mis_publicaciones">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                Mis publicaciones
-            </h3>
+            <h3 data-clave="perfil_mis_publicaciones">Mis publicaciones</h3>
             <span class="panel-badge" id="misPostsCount">0</span>
         </div>
         <div class="panel-body">
             <div id="misPublicacionesList">
                 <div class="empty-state">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
                     <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4>
                     <p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p>
                 </div>
@@ -752,15 +560,11 @@
 <div id="tab-actividad" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_seccion_ultima_actividad">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                Última actividad
-            </h3>
+            <h3 data-clave="perfil_seccion_ultima_actividad">Última actividad</h3>
             <span class="panel-badge" data-clave="perfil_tiempo_real">En tiempo real</span>
         </div>
         <div class="panel-body" id="actividadList">
             <div class="empty-state">
-                <svg class="icon" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                 <h4 data-clave="perfil_sin_actividad">Sin actividad reciente</h4>
                 <p data-clave="perfil_comienza_muro">Comienza a interactuar en el Muro</p>
             </div>
@@ -768,15 +572,11 @@
     </div>
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_seccion_historial_tx">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-                Historial de transacciones
-            </h3>
+            <h3 data-clave="perfil_seccion_historial_tx">Historial de transacciones</h3>
             <span class="panel-badge" id="historialCount">0</span>
         </div>
         <div class="panel-body" id="historialList">
             <div class="empty-state">
-                <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
                 <h4 data-clave="perfil_sin_transacciones">Sin transacciones</h4>
                 <p data-clave="perfil_compra_domos_tokens">Compra domos para acumular tokens</p>
             </div>
@@ -787,41 +587,26 @@
 <div id="tab-tokens" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_seccion_estado_tokens">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
-                Estado de tokens
-            </h3>
+            <h3 data-clave="perfil_seccion_estado_tokens">Estado de tokens</h3>
             <span class="panel-badge" data-clave="perfil_actualizado">Actualizado</span>
         </div>
         <div class="panel-body">
             <div class="token-status">
                 <div class="item">
                     <div class="value" id="tokenTotal">0</div>
-                    <div class="label" data-clave="perfil_balance_tokens">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
-                        Total tokens
-                    </div>
+                    <div class="label" data-clave="perfil_balance_tokens">Total tokens</div>
                 </div>
                 <div class="item">
                     <div class="value" id="tokenDisponibles">0</div>
-                    <div class="label" data-clave="perfil_disponibles">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                        Disponibles
-                    </div>
+                    <div class="label" data-clave="perfil_disponibles">Disponibles</div>
                 </div>
                 <div class="item">
                     <div class="value" id="tokenVendidos">0</div>
-                    <div class="label" data-clave="perfil_vendidos">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg>
-                        Vendidos
-                    </div>
+                    <div class="label" data-clave="perfil_vendidos">Vendidos</div>
                 </div>
                 <div class="item">
                     <div class="value" id="tokenNFTs">0</div>
-                    <div class="label" data-clave="perfil_nfts_info">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>
-                        NFTs
-                    </div>
+                    <div class="label" data-clave="perfil_nfts_info">NFTs</div>
                 </div>
             </div>
 
@@ -836,16 +621,10 @@
             </div>
 
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                    CANJEAR NFT
-                </button>
+                <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">CANJEAR NFT</button>
             </div>
 
-            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.irAMuro()" data-clave="perfil_ir_muro">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                Ir al Muro
-            </button>
+            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.irAMuro()" data-clave="perfil_ir_muro">Ir al Muro</button>
         </div>
     </div>
 </div>
@@ -853,73 +632,60 @@
 <div id="tab-esim" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_telnyx">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-                Mi eSIM
-            </h3>
+            <h3 data-clave="perfil_telnyx">Mi eSIM</h3>
             <span class="panel-badge" data-no-traducir="1">Telnyx</span>
         </div>
         <div class="panel-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid rgba(255,255,255,0.09);border-left:1px solid rgba(255,255,255,0.09);">
+                <div style="padding:10px;border-right:1px solid rgba(255,255,255,0.09);border-bottom:1px solid rgba(255,255,255,0.09);">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_esim_estado">ESTADO</span>
                     <div id="esimStatus" data-clave="perfil_esim_cargando" style="font-weight:600;font-size:0.9rem;">Cargando…</div>
                 </div>
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                <div style="padding:10px;border-right:1px solid rgba(255,255,255,0.09);border-bottom:1px solid rgba(255,255,255,0.09);">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS USADOS</span>
                     <div id="esimDataUsed" data-no-traducir="1" style="font-weight:600;font-size:0.9rem;">0 GB</div>
                 </div>
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                <div style="padding:10px;border-right:1px solid rgba(255,255,255,0.09);border-bottom:1px solid rgba(255,255,255,0.09);">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_limite_plan">LÍMITE</span>
                     <div id="esimDataLimit" data-no-traducir="1" style="font-weight:600;font-size:0.9rem;">0 GB</div>
                 </div>
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);">
+                <div style="padding:10px;border-right:1px solid rgba(255,255,255,0.09);border-bottom:1px solid rgba(255,255,255,0.09);">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_restantes">RESTANTE</span>
                     <div id="esimDataRestante" data-no-traducir="1" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
                 </div>
-                <div style="background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;border:2px solid var(--line-black);grid-column:span 2;">
+                <div style="padding:10px;grid-column:span 2;border-right:1px solid rgba(255,255,255,0.09);border-bottom:1px solid rgba(255,255,255,0.09);">
                     <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID</span>
                     <div id="esimIccid" data-no-traducir="1" style="font-weight:600;font-size:0.8rem;font-family:monospace;">—</div>
                 </div>
             </div>
 
             <div style="margin-top:10px;">
-                <div style="background:rgba(0,0,0,0.6);border:1px solid var(--line-black);border-radius:10px;height:8px;overflow:hidden;">
+                <div style="background:rgba(255,255,255,0.08);border-radius:10px;height:6px;overflow:hidden;">
                     <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
                 </div>
             </div>
 
-            <div id="esimAvisoSinSaldo" style="display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,51,102,0.12);border:1px solid var(--danger);color:var(--danger);font-size:0.75rem;" data-clave="perfil_esim_sin_datos">
+            <div id="esimAvisoSinSaldo" style="display:none;margin-top:12px;padding:10px 0;color:var(--danger);font-size:0.75rem;" data-clave="perfil_esim_sin_datos">
                 Se acabaron tus datos. Recarga y tu eSIM se reactiva sola.
             </div>
 
             <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
                 <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarEsim" onclick="window.irAComprarInternet()">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
                     <span id="btnComprarEsimTxt" data-clave="perfil_esim_comprar">Comprar eSIM</span>
                 </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="window.verQREsimNuevo()" data-clave="perfil_obtener_qr">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/></svg>
-                    QR Activación
-                </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnSyncEsim" onclick="window.sincronizarEsimNuevo()" data-clave="perfil_sincronizar">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                    Sincronizar
-                </button>
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="window.verQREsimNuevo()" data-clave="perfil_obtener_qr">QR Activación</button>
+                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnSyncEsim" onclick="window.sincronizarEsimNuevo()" data-clave="perfil_sincronizar">Sincronizar</button>
             </div>
 
             <div style="margin-top:12px;">
-                <a href="/features/internet/internet.html" class="btn btn-outline btn-sm" style="border-color:var(--cyan);color:var(--cyan);" data-clave="perfil_cambiar_celular">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><path d="M12 18h.01"/></svg>
-                    Cambiar de celular
-                </a>
+                <a href="/features/internet/internet.html" class="btn btn-outline btn-sm" style="border-color:var(--cyan);color:var(--cyan);" data-clave="perfil_cambiar_celular">Cambiar de celular</a>
             </div>
 
             <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
                 <span data-clave="perfil_apn_requerido">APN:</span> <span id="esimApn" data-no-traducir="1" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
             </div>
 
-            <div id="esimError" style="display:none;margin-top:12px;padding:10px;border-radius:10px;background:rgba(255,51,102,0.12);border:1px solid var(--danger);color:var(--danger);font-size:0.75rem;"></div>
+            <div id="esimError" style="display:none;margin-top:12px;padding:10px 0;color:var(--danger);font-size:0.75rem;"></div>
         </div>
     </div>
 </div>
@@ -927,10 +693,7 @@
 <div id="tab-qr" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_escanear_qr">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><line x1="14" y1="14" x2="14" y2="17"/><line x1="17" y1="14" x2="21" y2="14"/><line x1="14" y1="21" x2="21" y2="21"/><line x1="17" y1="17" x2="21" y2="21"/></svg>
-                Escanear QR
-            </h3>
+            <h3 data-clave="perfil_escanear_qr">Escanear QR</h3>
             <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
         </div>
         <div class="panel-body">
@@ -938,43 +701,30 @@
                 <label data-clave="perfil_codigo_qr">Código del QR (escanea o escribe)</label>
                 <div style="display:flex;gap:8px;flex-wrap:wrap;">
                     <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123"
-                           style="flex:1;padding:10px 14px;background:rgba(0,0,0,0.5);border:2px solid var(--line-black);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
-                    <button class="btn btn-gold" onclick="window.escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                        Escanear QR
-                    </button>
+                           style="flex:1;padding:10px 2px;background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,0.09);color:var(--text-primary);font-size:0.85rem;outline:none;">
+                    <button class="btn btn-gold" onclick="window.escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">Escanear QR</button>
                 </div>
-                <div class="hint" data-clave="perfil_escanea_qr_hint">⚡ Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
+                <div class="hint" data-clave="perfil_escanea_qr_hint">Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
             </div>
 
-            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.abrirCamaraQR()" data-clave="perfil_abrir_camara">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                Escanear con cámara
-            </button>
+            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.abrirCamaraQR()" data-clave="perfil_abrir_camara">Escanear con cámara</button>
 
             <div id="qrReaderContainer">
                 <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
                 <canvas id="qrCanvas" style="display:none;"></canvas>
-                <button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    Cerrar cámara
-                </button>
+                <button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">Cerrar cámara</button>
                 <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
             </div>
 
             <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
 
-            <div style="margin-top:16px;border-top:1px solid var(--line-black-soft);padding-top:12px;">
+            <div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.09);padding-top:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
-                    <span data-clave="perfil_historial">
-                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                        Últimos escaneos
-                    </span>
+                    <span data-clave="perfil_historial">Últimos escaneos</span>
                     <span id="qrHistorialCount">0</span>
                 </div>
                 <div id="qrHistorialList" style="margin-top:8px;">
                     <div class="empty-state" style="padding:10px;">
-                        <svg class="icon" viewBox="0 0 24 24" style="width:1.5rem;height:1.5rem;"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/></svg>
                         <p style="font-size:0.7rem;" data-clave="perfil_sin_escaneos">Sin escaneos recientes</p>
                     </div>
                 </div>
@@ -986,36 +736,20 @@
 <div id="tab-internet" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3 data-clave="perfil_mis_compras_internet">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
-                Mis compras de Internet
-            </h3>
+            <h3 data-clave="perfil_mis_compras_internet">Mis compras de Internet</h3>
             <span class="panel-badge" id="internetOrdenesCount">0</span>
         </div>
         <div class="panel-body">
             <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
                 <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="window.filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="window.filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                    Activas
-                </button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="pendiente" onclick="window.filtrarOrdenesInternet('pendiente')" data-clave="perfil_filtro_pendientes">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    Pendientes
-                </button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="window.filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    Canceladas
-                </button>
-                <button class="btn btn-outline btn-sm" onclick="window.cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                    Refrescar
-                </button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="window.filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">Activas</button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="pendiente" onclick="window.filtrarOrdenesInternet('pendiente')" data-clave="perfil_filtro_pendientes">Pendientes</button>
+                <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="window.filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">Canceladas</button>
+                <button class="btn btn-outline btn-sm" onclick="window.cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">Refrescar</button>
             </div>
 
             <div id="ordenesInternetList">
                 <div class="empty-state">
-                    <svg class="icon" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
                     <h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4>
                 </div>
             </div>
@@ -1023,20 +757,12 @@
     </div>
 </div>
 
-<!-- ================================================================ -->
-<!-- NUEVA PESTAÑA: COMPRAS Y VENTAS DEL MARKETPLACE DE CANALES        -->
-<!-- ================================================================ -->
+<!-- NUEVA PESTAÑA: COMPRAS Y VENTAS DEL MARKETPLACE DE CANALES -->
 <div id="tab-compras" class="tab-content">
     <div class="panel">
         <div class="panel-header">
-            <h3>
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                Compras y ventas · Marketplace
-            </h3>
-            <button class="btn btn-outline btn-sm" type="button" onclick="window.cargarComprasMarketplace()">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-                Actualizar
-            </button>
+            <h3>Compras y ventas · Marketplace</h3>
+            <button class="btn btn-outline btn-sm" type="button" onclick="window.cargarComprasMarketplace()">Actualizar</button>
         </div>
         <div class="panel-body">
             <div id="comprasMarketplaceList" class="mk-compras-lista">
@@ -1051,7 +777,6 @@
 <footer class="footer" style="text-align: center;">
     <span data-no-traducir="1"><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
     <div style="margin-top: 8px; font-size: 0.75rem; opacity: 0.6; display: flex; justify-content: center; align-items: center; gap: 6px;" data-no-traducir="1">
-        <svg class="icon icon-sm" viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2;"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
         Polygon
     </div>
 </footer>
@@ -1072,7 +797,7 @@
     <input id="llamarNumero" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. +52 55 1234 5678" />
     <div id="llamarAviso"></div>
     <div class="llamar-acciones">
-        <button id="btnHacerLlamada" type="button">📞 Llamar</button>
+        <button id="btnHacerLlamada" type="button">Llamar</button>
         <button id="btnCerrarLlamar" type="button">Cerrar</button>
     </div>
 </div>
@@ -1080,7 +805,7 @@
 <div class="toast" id="toast"></div>
 
 <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
-    <strong data-clave="perfil_error_detectado">⚠️ Error detectado:</strong>
+    <strong data-clave="perfil_error_detectado">Error detectado:</strong>
     <span id="errorBannerText"></span>
     <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;" data-clave="perfil_cerrar">Cerrar</button>
 </div>
@@ -1189,10 +914,7 @@
 <script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
 <script src="/features/perfil/js/perfil-init.js?v=8"></script>
 
-<!-- ================================================================ -->
-<!-- PASAPORTE DIGITAL DEL DOMO (después de init para que sessionUser  -->
-<!-- ya esté disponible, y con fallback para reintentar si tarda).     -->
-<!-- ================================================================ -->
+<!-- PASAPORTE DIGITAL DEL DOMO (después de init) -->
 <script src="/features/perfil/js/pasaporte-domo.js?v=1"></script>
 
 <script>
@@ -1519,7 +1241,6 @@
                 return;
             }
 
-            // Títulos de los productos (vista pública, sin wallet)
             var ids = compras.map(function (c) { return c.publicacion_id; });
             var titulosRes = await client
                 .from('grupos_video_publicaciones_publicas')
@@ -1738,8 +1459,6 @@
 
 <!-- ================================================================ -->
 <!-- MENÚ DE FOTO DE PERFIL · CONTROLADOR ÚNICO (v2)                   -->
-<!-- Se ejecuta al final, así que sobrescribe cualquier versión previa -->
-<!-- de toggleAvatarMenu / cerrarAvatarMenu cargada por perfil-init.js -->
 <!-- ================================================================ -->
 <script>
 (function () {
@@ -1750,7 +1469,6 @@
     var fileInput = document.getElementById('fileInput');
     if (!avatar || !menu) return;
 
-    // Mover menú y fondo a <body> para que ningún contenedor lo recorte
     var backdrop = document.createElement('div');
     backdrop.id = 'avatarMenuBackdrop';
     backdrop.className = 'avatar-menu-backdrop';
@@ -1783,14 +1501,11 @@
         if (abierto) cerrar(); else abrir();
     }
 
-    // Expuestas globalmente para compatibilidad con código existente
     window.toggleAvatarMenu = alternar;
     window.cerrarAvatarMenu = cerrar;
     window.abrirAvatarMenu = abrir;
-    // Guarda que lee perfil-init.js para no volver a sobrescribir este controlador
     window.__avatarMenuControlador = true;
 
-    // Foto y lápiz: un solo manejador
     avatar.addEventListener('click', alternar);
     avatar.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -1799,14 +1514,12 @@
         }
     });
 
-    // Cerrar al tocar el fondo, con Escape, o al tocar dentro del menú (sin propagar)
     backdrop.addEventListener('click', cerrar);
     menu.addEventListener('click', function (e) { e.stopPropagation(); });
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && abierto) cerrar();
     });
 
-    // Acciones del menú: el selector se abre dentro del mismo toque (requisito de iOS)
     menu.addEventListener('click', function (e) {
         var boton = e.target.closest('[data-accion]');
         if (!boton) return;
