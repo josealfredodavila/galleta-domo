@@ -2,7 +2,6 @@
 // PERFIL · VISOR DE MULTIMEDIA (Fotos y Videos)
 // ================================================================
 // Maneja el modal a pantalla completa, botón de descarga y swipe táctil.
-// v3.2 (Soporte para abrir imágenes directas por URL, ej. Avatar)
 // v3.1 (Soporte para Autoplay configurable por el usuario)
 // ================================================================
 
@@ -184,9 +183,6 @@
         }
     }
 
-    // ================================================================
-    // FUNCIÓN 1: Para abrir una foto/video de una publicación (por índice)
-    // ================================================================
     window.expandirFotoPublicacion = function(index) {
         initVisor();
         indiceActual = index;
@@ -199,20 +195,25 @@
     };
 
     // ================================================================
-    // FUNCIÓN 2 (NUEVA): Para abrir una imagen directa por su URL 
-    // (Ideal para el Avatar del perfil o fotos individuales)
+    // 🔥 NUEVA FUNCIÓN: Abrir imagen directa (Avatar) sin abrir menú
     // ================================================================
     window.abrirVisorImagen = function(url, titulo, idModal) {
+        // DETENER PROPAGACIÓN: Evita que se abra el menú de cambiar foto
+        if (window.event) {
+            window.event.stopPropagation();
+            window.event.preventDefault();
+        }
+
         initVisor();
         
-        // Guardamos temporalmente la lista actual para no perder las publicaciones
+        // Guardamos temporalmente la lista actual
         const listaGuardada = window.listaMultimediaPerfil;
         
-        // Creamos una lista temporal de 1 solo elemento con la foto que queremos ver
+        // Creamos una lista temporal de 1 solo elemento
         window.listaMultimediaPerfil = [{
             url: url,
-            tipo: 'imagen', // Asumimos que es imagen
-            permiteDescarga: true // Permitimos descargar la foto de perfil
+            tipo: 'imagen',
+            permiteDescarga: true
         }];
         
         indiceActual = 0;
@@ -222,7 +223,7 @@
         modal.classList.add('show');
         document.body.style.overflow = 'hidden';
 
-        // Cuando se cierre el visor, restauramos la lista original de publicaciones
+        // Al cerrar, restauramos la lista original
         const alCerrar = function() {
             window.listaMultimediaPerfil = listaGuardada;
             document.removeEventListener('visorCerrado', alCerrar);
@@ -230,9 +231,6 @@
         document.addEventListener('visorCerrado', alCerrar);
     };
 
-    // ================================================================
-    // CERRAR VISOR
-    // ================================================================
     window.cerrarVisorModal = function() {
         const modal = document.getElementById('visorMediaModal');
         if (modal) {
@@ -247,7 +245,7 @@
                 if (img) img.src = '';
             }, 300);
 
-            // Disparamos un evento para avisar que el visor se cerró
+            // Disparamos el evento para restaurar la lista original
             document.dispatchEvent(new Event('visorCerrado'));
         }
     };
