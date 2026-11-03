@@ -1,15 +1,12 @@
 // ================================================================
 // PERFIL · DATOS DEL USUARIO
 // ================================================================
-// CAMBIO v6.1 (Backend en Railway + Exportación de funciones):
-// - Añadida constante BACKEND_URL (ajusta tu URL real).
-// - subirArchivoConModeracion ahora apunta a Railway.
-// - EXPORTACIÓN A WINDOW: Se agregaron las funciones al final para
-//   que el perfil.html pueda encontrarlas (subirFoto, etc).
+// CAMBIO v6.2 (Visor de Avatar Integrado):
+// - Se agregó la función window.abrirVisorImagen en el evento onclick
+//   del avatar para que la foto se abra a pantalla completa al tocarla.
 // ================================================================
 
 // 🔥 IMPORTANTE: PON AQUÍ TU URL DE RAILWAY (Sin la barra final)
-// Ejemplo: 'https://galleta-domo-production.up.railway.app'
 const BACKEND_URL = 'https://tu-proyecto-en-railway.up.railway.app'; 
 
 // ================================================================
@@ -187,8 +184,9 @@ function actualizarUI(data) {
             escaparHTML(perfilT('perfil_opciones', 'Opciones')) + '">✎</span>';
         if (data.avatar_url) {
             const urlSafe = escaparHTML(data.avatar_url);
-            // 🔥 CORRECCIÓN: alt vacío y onerror para no mostrar la palabra "Avatar" si la imagen falla
-            avatarEl.innerHTML = '<img src="' + urlSafe + '" alt="" onerror="this.style.display=\'none\'">' + toggle;
+            // 🔥 AQUÍ ESTÁ LA MAGIA: Agregamos el onclick para abrir el visor
+            avatarEl.innerHTML = '<img src="' + urlSafe + '" alt="" style="cursor: zoom-in;" onclick="window.abrirVisorImagen(\'' + urlSafe + '\', \'Foto de perfil\', \'perfilAvatarModal\')" onerror="this.style.display=\'none\'">' + toggle;
+            
             const img = avatarEl.querySelector('img');
             if (img) img.addEventListener('error', function () { avatarEl.innerHTML = '◈' + toggle; });
         } else {
