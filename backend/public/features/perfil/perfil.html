@@ -32,7 +32,7 @@
         -webkit-tap-highlight-color: transparent;
         transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 160ms ease, background-color 180ms ease, border-color 180ms ease, color 160ms ease, box-shadow 200ms ease, opacity 160ms ease;
     }
-    .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active, .avatar-menu button:active {
+    .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active {
         transform: scale(0.97);
         filter: brightness(1.08);
     }
@@ -41,7 +41,7 @@
     .tab-content.active { animation: perfilTabIn 240ms ease both; }
     @media (prefers-reduced-motion: reduce) {
         .btn, .btn-estado, .btn-conexion, .accion-btn, .tab-btn, .btn-publicar, .config-btn, .rep-btn, .pro-btn, .internet-filter, .nav-link, .avatar-menu button, .tab-content.active { transition: none !important; animation: none !important; }
-        .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active, .avatar-menu button:active { transform: none !important; }
+        .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active { transform: none !important; }
     }
 
     /* Sección de wallet (Polygon) */
@@ -227,6 +227,88 @@
         color: var(--text-muted);
     }
 </style>
+
+<!-- ================================================================
+     MENÚ DE FOTO DE PERFIL · HOJA INFERIOR (v2)
+     El menú se mueve a <body> al cargar, para que ningún contenedor
+     con overflow o backdrop-filter lo recorte.
+     ================================================================ -->
+<style>
+    .perfil-header .avatar { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+    .avatar-menu {
+        display: block !important;
+        position: fixed !important;
+        top: auto !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        min-width: 0 !important;
+        margin: 0 !important;
+        padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+        border-radius: 22px 22px 0 0 !important;
+        border: 2px solid var(--line-black, #000) !important;
+        border-bottom: 0 !important;
+        background: rgba(10, 14, 20, 0.98) !important;
+        box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--gold, #D4AF37) !important;
+        z-index: 10050 !important;
+        transform: translateY(105%);
+        visibility: hidden;
+        transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.25s;
+        animation: none !important;
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    .avatar-menu.open { transform: translateY(0); visibility: visible; }
+
+    .avatar-menu .avatar-menu-titulo {
+        text-align: center;
+        font-family: 'Orbitron', monospace;
+        font-size: 0.7rem;
+        color: var(--text-muted, #8aa8b8);
+        letter-spacing: 1px;
+        padding: 6px 0 10px;
+    }
+    .avatar-menu .avatar-menu-item {
+        display: flex !important;
+        align-items: center;
+        gap: 12px;
+        width: 100%;
+        min-height: 52px;
+        padding: 12px 14px !important;
+        margin: 4px 0;
+        background: rgba(255, 255, 255, 0.04) !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        border-radius: 14px !important;
+        color: var(--text-secondary, #c0d8e8) !important;
+        font-size: 0.9rem !important;
+        font-weight: 600 !important;
+        text-align: left;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+    }
+    .avatar-menu .avatar-menu-item:active { transform: scale(0.98); background: rgba(212, 175, 55, 0.12) !important; }
+    .avatar-menu .avatar-menu-item .icon-sm { width: 20px; height: 20px; flex-shrink: 0; }
+    .avatar-menu .avatar-menu-item.danger { color: var(--danger, #ff3366) !important; }
+    .avatar-menu .avatar-menu-item.cancel { justify-content: center; color: var(--text-muted, #8aa8b8) !important; margin-top: 8px; }
+    .avatar-menu .divider { height: 1px; background: rgba(255, 255, 255, 0.08); margin: 6px 0; }
+
+    .avatar-menu-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        z-index: 10040;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+    }
+    .avatar-menu-backdrop.open { opacity: 1; pointer-events: auto; }
+
+    #perfilAvatar:focus-visible { outline: 2px solid var(--gold, #D4AF37); outline-offset: 3px; }
+</style>
 </head>
 <body>
 
@@ -299,23 +381,30 @@
         </a>
 
         <div class="avatar-container" style="position:relative;">
-            <div class="avatar" id="perfilAvatar" onclick="window.toggleAvatarMenu(event)">
+            <div class="avatar" id="perfilAvatar" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-label="Opciones de foto de perfil">
                 <span class="avatar-menu-toggle" data-clave-title="perfil_titulo_opciones_foto" title="Opciones de foto">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
                 </span>
             </div>
-            <div class="avatar-menu" id="avatarMenu" role="menu">
-                <button type="button" onclick="event.stopPropagation(); window.abrirSelectorArchivo(); window.cerrarAvatarMenu();">
+
+            <!-- Hoja de opciones: se mueve a <body> al cargar -->
+            <div class="avatar-menu" id="avatarMenu" role="menu" aria-label="Opciones de foto de perfil">
+                <div class="avatar-menu-titulo">FOTO DE PERFIL</div>
+                <button type="button" class="avatar-menu-item" role="menuitem" data-accion="cambiar">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
                     <span data-clave="perfil_cambiar_foto">Cambiar foto</span>
                 </button>
                 <div class="divider"></div>
-                <button type="button" class="danger" onclick="event.stopPropagation(); window.eliminarFotoPerfil(); window.cerrarAvatarMenu();">
+                <button type="button" class="avatar-menu-item danger" role="menuitem" data-accion="eliminar">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                     <span data-clave="perfil_eliminar_foto">Eliminar foto</span>
                 </button>
+                <button type="button" class="avatar-menu-item cancel" data-accion="cerrar">
+                    <span data-clave="perfil_cancelar">Cancelar</span>
+                </button>
             </div>
-            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="window.subirFoto(event)" />
+
+            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="if (typeof window.subirFoto === 'function') { window.subirFoto(event); } else if (window.showToast) { window.showToast('No se pudo subir la foto. Recarga la página.', 'error'); }" />
         </div>
         <div class="info">
             <div class="nombre" id="perfilNombre">
@@ -1644,6 +1733,108 @@
     });
 
     restaurarPosicion();
+})();
+</script>
+
+<!-- ================================================================ -->
+<!-- MENÚ DE FOTO DE PERFIL · CONTROLADOR ÚNICO (v2)                   -->
+<!-- Se ejecuta al final, así que sobrescribe cualquier versión previa -->
+<!-- de toggleAvatarMenu / cerrarAvatarMenu cargada por perfil-init.js -->
+<!-- ================================================================ -->
+<script>
+(function () {
+    'use strict';
+
+    var avatar = document.getElementById('perfilAvatar');
+    var menu = document.getElementById('avatarMenu');
+    var fileInput = document.getElementById('fileInput');
+    if (!avatar || !menu) return;
+
+    // Mover menú y fondo a <body> para que ningún contenedor lo recorte
+    var backdrop = document.createElement('div');
+    backdrop.id = 'avatarMenuBackdrop';
+    backdrop.className = 'avatar-menu-backdrop';
+    document.body.appendChild(backdrop);
+    document.body.appendChild(menu);
+
+    var abierto = false;
+    var timerCierre = null;
+
+    function abrir() {
+        if (timerCierre) { clearTimeout(timerCierre); timerCierre = null; }
+        abierto = true;
+        menu.classList.add('show', 'open');
+        backdrop.classList.add('open');
+        avatar.setAttribute('aria-expanded', 'true');
+    }
+
+    function cerrar() {
+        abierto = false;
+        menu.classList.remove('open');
+        backdrop.classList.remove('open');
+        avatar.setAttribute('aria-expanded', 'false');
+        timerCierre = setTimeout(function () {
+            if (!abierto) menu.classList.remove('show');
+        }, 260);
+    }
+
+    function alternar(e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        if (abierto) cerrar(); else abrir();
+    }
+
+    // Expuestas globalmente para compatibilidad con código existente
+    window.toggleAvatarMenu = alternar;
+    window.cerrarAvatarMenu = cerrar;
+    window.abrirAvatarMenu = abrir;
+
+    // Foto y lápiz: un solo manejador
+    avatar.addEventListener('click', alternar);
+    avatar.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            alternar(e);
+        }
+    });
+
+    // Cerrar al tocar el fondo, con Escape, o al tocar dentro del menú (sin propagar)
+    backdrop.addEventListener('click', cerrar);
+    menu.addEventListener('click', function (e) { e.stopPropagation(); });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && abierto) cerrar();
+    });
+
+    // Acciones del menú: el selector se abre dentro del mismo toque (requisito de iOS)
+    menu.addEventListener('click', function (e) {
+        var boton = e.target.closest('[data-accion]');
+        if (!boton) return;
+
+        var accion = boton.getAttribute('data-accion');
+
+        if (accion === 'cambiar') {
+            if (typeof window.abrirSelectorArchivo === 'function') {
+                window.abrirSelectorArchivo();
+            } else if (fileInput) {
+                fileInput.click();
+            }
+            cerrar();
+            return;
+        }
+
+        if (accion === 'eliminar') {
+            cerrar();
+            if (typeof window.eliminarFotoPerfil === 'function') {
+                window.eliminarFotoPerfil();
+            } else if (window.showToast) {
+                window.showToast('No se pudo eliminar la foto. Recarga la página.', 'error');
+            }
+            return;
+        }
+
+        if (accion === 'cerrar') {
+            cerrar();
+        }
+    });
 })();
 </script>
 
