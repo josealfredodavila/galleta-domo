@@ -1,13 +1,16 @@
 // ================================================================
 // PERFIL · DATOS DEL USUARIO
 // ================================================================
-// CAMBIO v6 (Backend en Railway):
-// - Añadida constante BACKEND_URL.
+// CAMBIO v6.1 (Backend en Railway + Exportación de funciones):
+// - Añadida constante BACKEND_URL (ajusta tu URL real).
 // - subirArchivoConModeracion ahora apunta a Railway.
+// - EXPORTACIÓN A WINDOW: Se agregaron las funciones al final para
+//   que el perfil.html pueda encontrarlas (subirFoto, etc).
 // ================================================================
 
-// 
-'https://tu-proyecto-en-railway.up.railway.app'; 
+// 🔥 IMPORTANTE: PON AQUÍ TU URL DE RAILWAY (Sin la barra final)
+// Ejemplo: 'https://galleta-domo-production.up.railway.app'
+const BACKEND_URL = 'https://tu-proyecto-en-railway.up.railway.app'; 
 
 // ================================================================
 // HELPER — Subida segura con moderación
@@ -18,8 +21,12 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
     fd.append('destino', destino);
     fd.append('tipo', tipo);
 
-    // 🔥 CORRECCIÓN: Usamos la URL de Railway
-    const respuesta = await fetch(BACKEND_URL + '/api/media/upload', {
+    // Si BACKEND_URL tiene la URL real, úsala. Si no, usa ruta relativa.
+    const urlDestino = (BACKEND_URL && BACKEND_URL.includes('railway.app')) 
+        ? BACKEND_URL + '/api/media/upload' 
+        : '/api/media/upload';
+
+    const respuesta = await fetch(urlDestino, {
         method: 'POST',
         headers: {
             'Authorization': 'Bearer ' + token
@@ -585,3 +592,26 @@ async function cerrarSesion() {
 function irAMuro() {
     window.location.href = '/features/muro/muro.html';
 }
+
+// ================================================================
+// EXPORTACIONES A WINDOW (🔥 ESTO ES LO QUE FALTABA)
+// ================================================================
+// Hacemos que el HTML pueda encontrar estas funciones
+// para que no salga el error de "No se pudo subir la foto".
+
+window.subirFoto = subirFoto;
+window.eliminarFotoPerfil = eliminarFotoPerfil;
+window.subirVideo = subirVideo;
+window.abrirSelectorArchivo = abrirSelectorArchivo;
+window.toggleAvatarMenu = toggleAvatarMenu;
+window.cerrarAvatarMenu = cerrarAvatarMenu;
+window.expandirAvatar = expandirAvatar;
+window.expandirFotoPublicacion = expandirFotoPublicacion;
+window.guardarPerfil = guardarPerfil;
+window.editarPerfil = editarPerfil;
+window.compartirPerfil = compartirPerfil;
+window.generarQRPerfil = generarQRPerfil;
+window.cerrarSesion = cerrarSesion;
+window.irAMuro = irAMuro;
+window.cargarPerfil = cargarPerfil;
+window.obtenerEstadisticas = obtenerEstadisticas;
