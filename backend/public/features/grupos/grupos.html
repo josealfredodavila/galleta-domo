@@ -446,26 +446,32 @@
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
                         <span data-clave="grupos_hashtag">Hashtag</span>
                     </button>
-                    <button onclick="subirFotoGrupo()">
+                    <button onclick="subirFotoGrupo()" title="Publica una foto como contenido normal del canal">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                        <span data-clave="grupos_foto">Foto</span>
+                        <span>Foto del canal</span>
                     </button>
-                    <button onclick="subirVideoGrupo()">
+                    <button onclick="subirVideoGrupo()" title="Publica un video como contenido normal del canal">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                        <span data-clave="grupos_video">Video</span>
+                        <span>Video del canal</span>
                     </button>
-                    <button class="btn-mk" onclick="abrirModalMarketplace()" id="btnMarketplace">
+                    <button class="btn-mk" onclick="abrirModalMarketplace()" id="btnMarketplace" title="Vende un producto o servicio con precio, stock y wallet de cobro">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-                        <span data-clave="grupos_marketplace">Marketplace</span>
+                        <span>Vender producto</span>
+                        <span class="mk-tag-venta" style="margin-left:4px;padding:1px 6px;border-radius:999px;font-size:0.55rem;font-weight:800;letter-spacing:.5px;background:rgba(0,0,0,.25);">VENTA</span>
                     </button>
-                    <button class="btn-publicar" onclick="publicarEnGrupo()">
+                    <button class="btn-publicar" onclick="publicarEnGrupo()" title="Publica un mensaje de texto en el canal">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                        <span data-clave="grupos_subir_al_canal">Subir al Canal</span>
+                        <span>Publicar en el canal</span>
                     </button>
                     <div class="emoji-picker" id="emojiPickerGrupo">
                         <div class="titulo" data-clave="grupos_elige_emoji">◇ Elige tu emoji</div>
                         <div class="grid" id="emojiGridGrupo"></div>
                     </div>
+                </div>
+                <div style="margin-top:10px;padding:8px 10px;border-radius:10px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.06);font-size:0.62rem;line-height:1.5;color:var(--text-muted);">
+                    <strong style="color:var(--text-secondary);">Foto y Video</strong> publican contenido normal.
+                    <strong style="color:var(--text-secondary);">Vender producto</strong> crea una publicación de venta con precio, stock y wallet de cobro.
+                    <strong style="color:var(--text-secondary);">Publicar en el canal</strong> envía solo texto.
                 </div>
             </div>
 
