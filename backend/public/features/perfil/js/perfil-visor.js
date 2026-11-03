@@ -2,6 +2,7 @@
 // PERFIL · VISOR DE MULTIMEDIA (Fotos y Videos)
 // ================================================================
 // Maneja el modal a pantalla completa, botón de descarga y swipe táctil.
+// v3.2 (Soporte para abrir imágenes directas por URL, ej. Avatar)
 // v3.1 (Soporte para Autoplay configurable por el usuario)
 // ================================================================
 
@@ -183,6 +184,9 @@
         }
     }
 
+    // ================================================================
+    // FUNCIÓN 1: Para abrir una foto/video de una publicación (por índice)
+    // ================================================================
     window.expandirFotoPublicacion = function(index) {
         initVisor();
         indiceActual = index;
@@ -194,6 +198,41 @@
         document.body.style.overflow = 'hidden';
     };
 
+    // ================================================================
+    // FUNCIÓN 2 (NUEVA): Para abrir una imagen directa por su URL 
+    // (Ideal para el Avatar del perfil o fotos individuales)
+    // ================================================================
+    window.abrirVisorImagen = function(url, titulo, idModal) {
+        initVisor();
+        
+        // Guardamos temporalmente la lista actual para no perder las publicaciones
+        const listaGuardada = window.listaMultimediaPerfil;
+        
+        // Creamos una lista temporal de 1 solo elemento con la foto que queremos ver
+        window.listaMultimediaPerfil = [{
+            url: url,
+            tipo: 'imagen', // Asumimos que es imagen
+            permiteDescarga: true // Permitimos descargar la foto de perfil
+        }];
+        
+        indiceActual = 0;
+        const modal = document.getElementById('visorMediaModal');
+        actualizarVisor();
+        
+        modal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+
+        // Cuando se cierre el visor, restauramos la lista original de publicaciones
+        const alCerrar = function() {
+            window.listaMultimediaPerfil = listaGuardada;
+            document.removeEventListener('visorCerrado', alCerrar);
+        };
+        document.addEventListener('visorCerrado', alCerrar);
+    };
+
+    // ================================================================
+    // CERRAR VISOR
+    // ================================================================
     window.cerrarVisorModal = function() {
         const modal = document.getElementById('visorMediaModal');
         if (modal) {
@@ -207,6 +246,9 @@
                 const img = document.getElementById('visorMediaContenido');
                 if (img) img.src = '';
             }, 300);
+
+            // Disparamos un evento para avisar que el visor se cerró
+            document.dispatchEvent(new Event('visorCerrado'));
         }
     };
 
