@@ -1,15 +1,18 @@
 // ================================================================
 // GRUPOS · MARKETPLACE, COMPRAS Y DONACIONES
 // ================================================================
-// v4:
-// - Publicar: guarda la descripción (antes se perdía), stock opcional
-//   (vacío = sin límite) y wallet_cobro (0x…, validada).
-// - Compra de producto con pasarela NOWPayments en Polygon (USDT/USDC):
+// v5:
+// - Modal de venta claramente distinto de una publicación normal:
+//   título "Vender producto", aviso superior, botón "Crear venta en el canal"
+//   y mensaje de éxito "Venta creada".
+// - Publicar: guarda la descripción, stock opcional (vacío = sin límite)
+//   y wallet_cobro (0x…, validada).
+// - Compra de producto con NOWPayments en Polygon (USDT/USDC):
 //     1) RPC crear_compra_marketplace (valida stock, precio y wallet)
 //     2) POST /api/marketplace/canal/pago (backend) → enlace de pago
 //     3) El backend confirma con confirmar_compra_marketplace (baja stock)
 // - Tarjeta de compra: mkTarjetaCompraHTML(p) y clic delegado en
-//   [data-mk-comprar]. El feed (grupos-interno.js) la incluye en v4.
+//   [data-mk-comprar].
 // - Donaciones: sin cambios.
 // Depende de: grupos-config.js, grupos-utils.js, grupos-interno.js
 // ================================================================
@@ -26,6 +29,7 @@ var MK_PAY_REDES = [
 var MK_POLL_INTERVAL_MS = 5000;
 var MK_POLL_TIMEOUT_MS = 30 * 60 * 1000;
 var MK_ICON_CARRITO = '<svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
+var MK_ICON_ETIQUETA = '<svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>';
 
 var _mkCompra = null;          // { pub, moneda, red }
 var _mkCompraId = null;
@@ -68,7 +72,15 @@ function mkInyectarEstilos() {
         '.mk-resumen div{display:flex;justify-content:space-between;gap:10px;}' +
         '.mk-resumen strong{color:#f7d44a;font-family:Orbitron,monospace;}' +
         '.mk-status{margin-top:10px;font-size:.7rem;text-align:center;color:#9fb3a8;min-height:1em;}' +
-        '.mk-campo-extra{margin-bottom:12px;}';
+        '.mk-campo-extra{margin-bottom:12px;}' +
+        '.mk-aviso-venta{display:flex;gap:10px;align-items:flex-start;margin:0 0 14px;padding:10px 12px;' +
+            'border-radius:12px;background:linear-gradient(135deg,rgba(255,122,0,.14),rgba(212,175,55,.06));' +
+            'border:1px solid rgba(255,122,0,.45);color:#ffd9b0;font-size:.68rem;line-height:1.5;}' +
+        '.mk-aviso-venta strong{color:#f7d44a;}' +
+        '.mk-aviso-venta .mk-aviso-icono{flex-shrink:0;width:18px;height:18px;color:#ff9e4a;}' +
+        '.mk-badge-venta{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;' +
+            'font-size:.55rem;font-weight:800;letter-spacing:.6px;background:#ff7a00;color:#0b0f0c;vertical-align:middle;}' +
+        '.mk-btn-venta{background:linear-gradient(135deg,#ff7a00 0%,#f7d44a 100%) !important;color:#0b0f0c !important;}';
     document.head.appendChild(st);
 }
 
@@ -91,7 +103,7 @@ function mkTarjetaCompraHTML(p) {
 
     var esMio = !!(sessionUser && p.usuario_id === sessionUser.id);
     var deshabilitado = agotado || esMio;
-    var etiqueta = esMio ? 'Tu publicación' : (agotado ? 'Agotado' : 'Comprar');
+    var etiqueta = esMio ? 'Tu venta' : (agotado ? 'Agotado' : 'Comprar');
 
     return '<div class="mk-compra-card">' +
         '<div class="mk-compra-info">' +
@@ -193,7 +205,7 @@ function abrirCompraMarketplace(publicacionId) {
     var pub = (typeof publicacionesCache !== 'undefined' && publicacionesCache || [])
         .find(function(p) { return String(p.id) === String(publicacionId); });
     if (!pub || !pub.tipo_marketplace) { grpShowToast('Publicación no disponible', 'error'); return; }
-    if (pub.usuario_id === sessionUser.id) { grpShowToast('No puedes comprar tu propia publicación', 'warning'); return; }
+    if (pub.usuario_id === sessionUser.id) { grpShowToast('No puedes comprar tu propia venta', 'warning'); return; }
 
     mkInyectarEstilos();
     mkAsegurarModalCompra();
@@ -201,7 +213,7 @@ function abrirCompraMarketplace(publicacionId) {
     var monedas = [];
     if (Number(pub.precio_mxn) > 0) monedas.push({ id: 'MXN', label: 'MXN', precio: Number(pub.precio_mxn) });
     if (Number(pub.precio_usdt) > 0) monedas.push({ id: 'USDT', label: 'USDT', precio: Number(pub.precio_usdt) });
-    if (monedas.length === 0) { grpShowToast('Este producto no tiene precio de venta', 'warning'); return; }
+    if (monedas.length === 0) { grpShowToast('Esta venta no tiene precio', 'warning'); return; }
 
     _mkCompra = { pub: pub, monedas: monedas, moneda: null, red: null };
 
@@ -270,9 +282,9 @@ function mkActualizarResumen() {
 function mkMensajeErrorCompra(msg) {
     var m = String(msg || '');
     if (m.indexOf('sin_stock') !== -1) return 'Ya no hay stock disponible.';
-    if (m.indexOf('publicacion_no_disponible') !== -1) return 'La publicación ya no está disponible.';
+    if (m.indexOf('publicacion_no_disponible') !== -1) return 'La venta ya no está disponible.';
     if (m.indexOf('marketplace_no_activo') !== -1) return 'El Marketplace de este canal no está activo.';
-    if (m.indexOf('no_puedes_comprarte') !== -1) return 'No puedes comprar tu propia publicación.';
+    if (m.indexOf('no_puedes_comprarte') !== -1) return 'No puedes comprar tu propia venta.';
     if (m.indexOf('sin_wallet_cobro') !== -1) return 'El vendedor aún no configuró su wallet de cobro.';
     if (m.indexOf('precio_no_definido') !== -1) return 'La moneda elegida no tiene precio.';
     if (m.indexOf('no_autenticado') !== -1) return 'Inicia sesión para comprar.';
@@ -397,13 +409,29 @@ function cerrarCompraMarketplace() {
 }
 
 // ================================================================
-// ABRIR / CERRAR MODAL MARKETPLACE (publicar)
+// MODAL DE VENTA (publicar) — claramente distinto de una publicación normal
 // ================================================================
-// Agrega stock y wallet al formulario de publicación sin tocar el HTML.
+// Agrega stock y wallet al formulario sin tocar el HTML, y deja claro
+// que esto crea una VENTA (no una publicación común).
 function mkAsegurarCamposPublicar() {
     if (document.getElementById('inputStockMarketplace')) return;
     var btn = document.getElementById('btnPublicarMarketplace');
     if (!btn || !btn.parentNode) return;
+
+    // Aviso superior: distingue la venta de una publicación normal
+    var modal = btn.closest('.modal');
+    if (modal && !document.getElementById('mkAvisoVenta')) {
+        var aviso = mkEl('div', { class: 'mk-aviso-venta', id: 'mkAvisoVenta' });
+        aviso.innerHTML =
+            '<svg class="mk-aviso-icono" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' +
+            '<span><strong>Esto NO es una publicación normal.</strong> Crea una <strong>venta</strong> con precio, stock y wallet de cobro. Para compartir algo sin vender, usa <strong>Publicar en el canal</strong>.</span>';
+        var encabezado = modal.querySelector('.modal-header');
+        if (encabezado && encabezado.nextSibling) {
+            modal.insertBefore(aviso, encabezado.nextSibling);
+        } else {
+            modal.insertBefore(aviso, modal.firstChild);
+        }
+    }
 
     var grupoStock = mkEl('div', { class: 'form-group mk-campo-extra' });
     grupoStock.appendChild(mkEl('label', { for: 'inputStockMarketplace' }, 'Stock disponible (opcional, vacío = sin límite)'));
@@ -415,6 +443,15 @@ function mkAsegurarCamposPublicar() {
 
     btn.parentNode.insertBefore(grupoStock, btn);
     btn.parentNode.insertBefore(grupoWallet, btn);
+
+    // Título del modal y botón de envío: "venta", no "publicación"
+    var titulo = modal ? modal.querySelector('.modal-header h2 span') : null;
+    if (titulo) titulo.textContent = 'Vender producto';
+    btn.classList.add('mk-btn-venta');
+    var etiquetaBtn = btn.querySelector('span');
+    if (etiquetaBtn) etiquetaBtn.textContent = 'Crear venta en el canal';
+    var iconoBtn = btn.querySelector('svg');
+    if (iconoBtn) iconoBtn.outerHTML = MK_ICON_ETIQUETA;
 }
 
 function abrirModalMarketplace() {
@@ -492,7 +529,7 @@ async function subirMediaMarketplace(archivo, tipo) {
 }
 
 // ================================================================
-// PUBLICAR EN MARKETPLACE
+// CREAR VENTA EN EL CANAL
 // ================================================================
 async function publicarMarketplace() {
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
@@ -522,12 +559,15 @@ async function publicarMarketplace() {
         statusEl.style.color = 'var(--warning)';
     }
 
-    if (!tipo) return error('Selecciona el tipo');
-    if (!titulo) return error('Escribe un título');
+    if (!tipo) return error('Selecciona el tipo de venta');
+    if (!titulo) return error('Escribe el nombre del producto');
     if (!descripcion) return error('Escribe una descripción');
     if (!municipio) return error('Escribe el municipio');
     if ((precioMxn !== null && precioMxn < 0) || (precioUsdt !== null && precioUsdt < 0)) {
         return error('Los precios no pueden ser negativos');
+    }
+    if (!precioMxn && !precioUsdt) {
+        return error('Una venta necesita al menos un precio (MXN o USDT)');
     }
 
     var stock = null;
@@ -536,10 +576,9 @@ async function publicarMarketplace() {
         if (!Number.isInteger(stock) || stock < 0) return error('Stock inválido');
     }
 
-    var tienePrecio = !!(precioMxn || precioUsdt);
     var wallet = walletRaw || null;
-    if (tienePrecio && !wallet) return error('Escribe la wallet de cobro (0x…) para vender con precio');
-    if (wallet && !MK_WALLET_REGEX.test(wallet)) return error('Wallet inválida: debe empezar con 0x y tener 40 caracteres hexadecimales');
+    if (!wallet) return error('Escribe la wallet de cobro (0x…) para recibir pagos');
+    if (!MK_WALLET_REGEX.test(wallet)) return error('Wallet inválida: debe empezar con 0x y tener 40 caracteres hexadecimales');
 
     var infTitulo = detectarInfraccion(titulo);
     if (infTitulo.bloqueado) {
@@ -555,7 +594,7 @@ async function publicarMarketplace() {
     }
 
     btn.disabled = true;
-    btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Publicando...';
+    btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Creando venta...';
     statusEl.textContent = 'Revisando y subiendo...';
     statusEl.style.color = 'var(--text-muted)';
 
@@ -598,9 +637,9 @@ async function publicarMarketplace() {
 
         if (result.error) throw result.error;
 
-        statusEl.textContent = 'Publicado';
+        statusEl.textContent = 'Venta creada';
         statusEl.style.color = 'var(--success)';
-        grpShowToast('Publicación creada', 'success');
+        grpShowToast('Venta creada en el canal', 'success');
 
         setTimeout(function() {
             cerrarModalMarketplace();
@@ -611,7 +650,8 @@ async function publicarMarketplace() {
         statusEl.style.color = 'var(--danger)';
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg> Publicar en Marketplace';
+        btn.classList.add('mk-btn-venta');
+        btn.innerHTML = MK_ICON_ETIQUETA + ' <span>Crear venta en el canal</span>';
     }
 }
 
