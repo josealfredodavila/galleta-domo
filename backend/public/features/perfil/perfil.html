@@ -1787,6 +1787,8 @@
     window.toggleAvatarMenu = alternar;
     window.cerrarAvatarMenu = cerrar;
     window.abrirAvatarMenu = abrir;
+    // Guarda que lee perfil-init.js para no volver a sobrescribir este controlador
+    window.__avatarMenuControlador = true;
 
     // Foto y lápiz: un solo manejador
     avatar.addEventListener('click', alternar);
