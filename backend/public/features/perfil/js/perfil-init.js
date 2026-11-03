@@ -3,13 +3,22 @@
 // ================================================================
 // Arranque del módulo, eventos globales, exposición a window y
 // sincronización realtime con Supabase.
+//
+// v2 (menú de foto):
+// - No sobrescribe toggleAvatarMenu / cerrarAvatarMenu si el controlador
+//   del HTML (window.__avatarMenuControlador) ya las definió.
+// - El listener de clic global cierra la hoja quitando show y open.
+// - La actualización realtime solo cambia la imagen del avatar y
+//   conserva el botón de lápiz y el menú, para no romper el controlador.
 // ================================================================
 
 function publicarFuncionesGlobales() {
     // Utils
     window.showToast = typeof showToast === 'function' ? showToast : null;
-    window.toggleAvatarMenu = typeof toggleAvatarMenu === 'function' ? toggleAvatarMenu : null;
-    window.cerrarAvatarMenu = typeof cerrarAvatarMenu === 'function' ? cerrarAvatarMenu : null;
+    if (!window.__avatarMenuControlador) {
+        window.toggleAvatarMenu = typeof toggleAvatarMenu === 'function' ? toggleAvatarMenu : null;
+        window.cerrarAvatarMenu = typeof cerrarAvatarMenu === 'function' ? cerrarAvatarMenu : null;
+    }
     window.escapeHtmlPerfil = typeof escapeHtmlPerfil === 'function' ? escapeHtmlPerfil : null;
 
     // Datos
@@ -168,28 +177,27 @@ function actualizarDOMDesdeRealtime(usuario) {
             handleElement.textContent = usuario.handle ? '@' + usuario.handle : '@explorador';
         }
 
+        // Solo se cambia la imagen. El botón de lápiz y el menú de foto
+        // se conservan tal cual, para no romper el controlador del HTML.
         var avatarElement = document.querySelector('#perfilAvatar');
         if (avatarElement) {
-            var tituloOpciones = escaparHTML(perfilT('perfil_titulo_opciones_foto', 'Opciones de foto'));
-            var iconoEditar =
-                '<span class="avatar-menu-toggle" title="' + tituloOpciones + '">' +
-                '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">' +
-                '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg></span>';
+            var imgActual = avatarElement.querySelector('img');
 
             if (usuario.avatar_url) {
-                // CORRECCIÓN: alt vacío y onerror para limpiar si la foto falla
-                avatarElement.innerHTML =
-                    '<img src="' + escaparHTML(usuario.avatar_url) + '" alt="" onerror="this.style.display=\'none\'">' + iconoEditar;
-            } else {
-                avatarElement.innerHTML = '◈' + iconoEditar;
-            }
-
-            var toggle = avatarElement.querySelector('.avatar-menu-toggle');
-            if (toggle) {
-                toggle.onclick = function (ev) {
-                    ev.stopPropagation();
-                    if (typeof window.toggleAvatarMenu === 'function') window.toggleAvatarMenu(ev);
-                };
+                if (imgActual) {
+                    if (imgActual.getAttribute('src') !== usuario.avatar_url) {
+                        imgActual.src = usuario.avatar_url;
+                    }
+                    imgActual.style.display = '';
+                } else {
+                    var nueva = document.createElement('img');
+                    nueva.src = usuario.avatar_url;
+                    nueva.alt = '';
+                    nueva.onerror = function () { this.style.display = 'none'; };
+                    avatarElement.insertBefore(nueva, avatarElement.firstChild);
+                }
+            } else if (imgActual) {
+                imgActual.remove();
             }
         }
     } catch (error) {
@@ -396,20 +404,26 @@ window.addEventListener('focus', function () {
     recargarPerfilRealtime(true);
 });
 
+// Cierre de menús al tocar fuera. El menú de foto lo gestiona el controlador
+// del HTML; aquí solo se cierra la hoja si el controlador no existe.
 document.addEventListener('click', function (e) {
-    var menu = document.getElementById('avatarMenu');
-    var avatar = document.getElementById('perfilAvatar');
-    if (menu && menu.classList.contains('show')) {
-        if (!menu.contains(e.target) && avatar && !avatar.contains(e.target)) {
-            menu.classList.remove('show');
+    if (!window.__avatarMenuControlador) {
+        var menu = document.getElementById('avatarMenu');
+        var avatar = document.getElementById('perfilAvatar');
+        if (menu && menu.classList.contains('show')) {
+            if (!menu.contains(e.target) && avatar && !avatar.contains(e.target)) {
+                menu.classList.remove('show', 'open');
+            }
         }
     }
+
     var picker = document.getElementById('emojiPickerPerfil');
     if (picker && picker.classList.contains('show')) {
         if (!picker.contains(e.target) && e.target.id !== 'btnEmojiPerfil') {
             picker.classList.remove('show');
         }
     }
+
     var rd = document.querySelectorAll('.reaccion-dropdown.show');
     rd.forEach(function (dd) {
         if (!dd.contains(e.target) && !dd.parentElement.contains(e.target)) {
