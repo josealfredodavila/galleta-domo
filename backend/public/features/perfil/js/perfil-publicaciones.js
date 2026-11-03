@@ -1,6 +1,8 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
+// v5.5 (Diseño tipo Facebook: publicaciones sin tarjeta ni bordes,
+//       medios a todo el ancho, barra de acciones plana)
 // v5.4 (Eliminación sin borrar Storage desde el cliente: el backend
 //       libera el archivo solo si ninguna publicación lo referencia)
 // v5.3 (Emojis de reacción alineados con la base de datos,
@@ -122,7 +124,7 @@ function pubCodigoIdioma() {
 }
 
 // ================================================================
-// ESTILOS
+// ESTILOS (diseño plano tipo Facebook)
 // ================================================================
 
 (function inyectarEstilosReaccionesPerfil() {
@@ -132,11 +134,132 @@ function pubCodigoIdioma() {
     style.id = 'perfil-reacciones-fb-styles';
 
     style.appendChild(document.createTextNode(`
+        /* ---------- Publicación: sin tarjeta, separador fino ---------- */
+        #misPublicacionesList .publicacion-card {
+            background: transparent !important;
+            border: 0 !important;
+            border-bottom: 1px solid rgba(255,255,255,.09) !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 14px 0 12px !important;
+            margin: 0 !important;
+            width: 100%;
+        }
+        #misPublicacionesList .publicacion-card:hover {
+            background: transparent !important;
+            border-color: rgba(255,255,255,.09) !important;
+            box-shadow: none !important;
+        }
+
+        /* ---------- Encabezado tipo Facebook ---------- */
+        #misPublicacionesList .publicacion-card .header {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            gap: 10px !important;
+            padding: 0 !important;
+            margin: 0 0 10px 0 !important;
+            background: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+        }
+        #misPublicacionesList .publicacion-card .header > .avatar {
+            width: 40px !important;
+            height: 40px !important;
+            min-width: 40px !important;
+            flex: 0 0 40px !important;
+            border: 0 !important;
+            border-radius: 50% !important;
+            box-shadow: none !important;
+            overflow: hidden !important;
+        }
+        #misPublicacionesList .publicacion-card .header > div:not(.avatar) {
+            flex: 1 1 auto !important;
+            min-width: 0 !important;
+            text-align: left !important;
+            line-height: 1.25 !important;
+        }
+        #misPublicacionesList .publicacion-card .nombre {
+            font-weight: 700 !important;
+            font-size: .92rem !important;
+            color: var(--text-primary, #f0f4f8) !important;
+            white-space: normal !important;
+            word-break: break-word !important;
+        }
+        #misPublicacionesList .publicacion-card .fecha {
+            font-size: .72rem !important;
+            color: var(--text-muted, #8aa8b8) !important;
+            margin-top: 2px !important;
+        }
+
+        /* ---------- Contenido y medios a todo el ancho ---------- */
+        .publicacion-card .contenido {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            color: var(--text-secondary, #c0d8e8);
+            font-size: .95rem;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+            margin: 0 !important;
+        }
+        .publicacion-card .contenido img,
+        .publicacion-card .contenido video {
+            display: block;
+            width: calc(100% + 0px);
+            max-width: 100%;
+            height: auto;
+            max-height: 620px;
+            object-fit: contain;
+            background: #000;
+            border: 0 !important;
+            border-radius: 0 !important;
+            margin: 6px 0 0 0 !important;
+            cursor: pointer;
+        }
+
+        /* ---------- Aviso de moderación más discreto ---------- */
+        .perfil-aviso-moderacion {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 0;
+            margin: 4px 0;
+            background: transparent;
+            border: 0;
+            color: #f7d44a;
+            font-size: .72rem;
+        }
+        .perfil-aviso-moderacion-icono { font-size: .95rem; flex: 0 0 auto; }
+
+        /* ---------- Barra de acciones plana ---------- */
         .reaccion-wrap {
             position: relative;
             display: inline-block;
-            margin-top: 10px;
+            margin: 8px 0 0 0;
+            padding: 0;
         }
+        .reaccion-trigger {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 8px;
+            border: 0;
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-muted, #8aa8b8);
+            font-size: .82rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .reaccion-trigger:hover { background: rgba(255,255,255,.05); }
+        .reaccion-trigger.activa { color: #3b82f6; }
+        .reaccion-trigger .emoji-actual { font-size: 1.05rem; line-height: 1; }
+        .reaccion-trigger .count { font-size: .78rem; font-weight: 500; }
 
         .reaccion-dropdown {
             position: absolute;
@@ -150,12 +273,10 @@ function pubCodigoIdioma() {
             gap: 4px;
             max-width: min(280px, calc(100vw - 32px));
             padding: 6px 10px;
-            background: rgba(20,20,20,.96);
-            border: 1px solid rgba(255,255,255,.12);
+            background: #1c1f24;
+            border: 0;
             border-radius: 24px;
-            box-shadow: 0 6px 16px rgba(0,0,0,.4);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 6px 18px rgba(0,0,0,.5);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
@@ -164,14 +285,12 @@ function pubCodigoIdioma() {
             transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
             z-index: 100;
         }
-
         .reaccion-dropdown.show {
             opacity: 1;
             visibility: visible;
             pointer-events: auto;
             transform: translateY(0) scale(1);
         }
-
         .reaccion-dropdown button {
             position: relative;
             display: flex;
@@ -188,18 +307,9 @@ function pubCodigoIdioma() {
             touch-action: manipulation;
             transition: transform .15s ease, background .15s ease;
         }
-
         .reaccion-dropdown button:hover,
-        .reaccion-dropdown button:focus-visible {
-            transform: scale(1.15);
-            background: rgba(255,255,255,.12);
-        }
-
-        .reaccion-dropdown button.activa {
-            background: rgba(59,130,246,.28);
-            outline: 1px solid rgba(59,130,246,.5);
-        }
-
+        .reaccion-dropdown button:focus-visible { transform: scale(1.15); background: rgba(255,255,255,.1); }
+        .reaccion-dropdown button.activa { background: rgba(59,130,246,.28); }
         .reaccion-dropdown .mini-count {
             position: absolute;
             bottom: -3px;
@@ -213,81 +323,55 @@ function pubCodigoIdioma() {
             line-height: 1.2;
         }
 
-        .reaccion-trigger {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            padding: 8px 12px;
-            border: 0;
-            border-radius: 8px;
-            background: transparent;
-            color: var(--text-muted, #a1a1aa);
-            font-size: .8rem;
-            font-weight: 600;
-            cursor: pointer;
-            user-select: none;
-            touch-action: manipulation;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        .reaccion-trigger:hover {
-            background: rgba(255,255,255,.06);
-        }
-
-        .reaccion-trigger.activa {
-            color: #3b82f6;
-        }
-
-        .reaccion-trigger .emoji-actual {
-            font-size: 1.1rem;
-            line-height: 1;
-        }
-
-        .reaccion-trigger .count {
-            font-size: .75rem;
-            font-weight: 500;
-        }
-
-        .preview-item {
-            position: relative;
-        }
-
-        .preview-item img,
-        .preview-item video {
-            display: block;
-            width: 100%;
-            max-height: 280px;
-            object-fit: contain;
-            border-radius: 10px;
-        }
-
-        .preview-download-control {
+        .publicacion-card .stats {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
+            margin: 2px 0 0 0 !important;
+            padding: 6px 0 0 0 !important;
+            border-top: 1px solid rgba(255,255,255,.09);
+            flex-wrap: wrap;
+        }
+        .btn-accion-pub {
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 6px !important;
+            padding: 6px 10px !important;
+            color: var(--text-muted, #8aa8b8) !important;
+            font-size: .82rem !important;
+            font-weight: 600 !important;
+            box-shadow: none !important;
+        }
+        .btn-accion-pub:hover { background: rgba(255,255,255,.05) !important; color: var(--text-primary, #f0f4f8) !important; }
+        .btn-accion-pub.danger { color: var(--danger, #ff3366) !important; }
+        .btn-accion-pub.danger:hover { background: rgba(255,51,102,.08) !important; }
+
+        /* ---------- Comentarios planos ---------- */
+        .comentarios-container {
+            display: none;
             margin-top: 8px;
-            padding: 8px;
-            border-radius: 8px;
-            background: rgba(255,255,255,.05);
-            color: var(--text-muted, #a1a1aa);
-            font-size: .8rem;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,.09);
         }
-
-        .preview-download-control input {
-            width: 16px;
-            height: 16px;
-            accent-color: #3b82f6;
+        .comentarios-container.show { display: block; }
+        .comentario-item { border-bottom: 0; padding: 6px 0; }
+        .comentario-input-row input {
+            background: transparent !important;
+            border: 0 !important;
+            border-bottom: 1px solid rgba(255,255,255,.12) !important;
+            border-radius: 0 !important;
+            padding: 6px 2px !important;
         }
-
-        .preview-download-control label {
-            cursor: pointer;
+        .comentario-input-row button {
+            background: transparent !important;
+            color: var(--gold, #D4AF37) !important;
+            border: 0 !important;
+            font-weight: 700 !important;
         }
-
         .comentario-eliminar {
             display: inline-block;
-            margin-top: 4px;
-            padding: 4px 0;
+            margin-top: 2px;
+            padding: 2px 0;
             border: 0;
             background: transparent;
             color: var(--danger, #ff3366);
@@ -296,40 +380,24 @@ function pubCodigoIdioma() {
             cursor: pointer;
         }
 
-        .publicacion-card .contenido {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            overflow-wrap: anywhere;
-        }
-
-        .publicacion-card .contenido img,
-        .publicacion-card .contenido video {
+        .preview-item { position: relative; }
+        .preview-item img, .preview-item video {
             display: block;
             width: 100%;
-            height: auto;
-            max-height: 600px;
+            max-height: 280px;
             object-fit: contain;
-            border-radius: 12px;
+            border-radius: 8px;
         }
-
-        .perfil-aviso-moderacion {
+        .preview-download-control {
             display: flex;
             align-items: center;
             gap: 8px;
-            padding: 8px 12px;
-            margin: 8px 0;
-            border-radius: 10px;
-            background: rgba(247,212,74,.12);
-            border: 1px solid rgba(247,212,74,.4);
-            color: #f7d44a;
-            font-size: .72rem;
+            margin-top: 8px;
+            font-size: .8rem;
+            color: var(--text-muted, #8aa8b8);
         }
-
-        .perfil-aviso-moderacion-icono {
-            font-size: 1rem;
-            flex: 0 0 auto;
-        }
+        .preview-download-control input { width: 16px; height: 16px; accent-color: #3b82f6; }
+        .preview-download-control label { cursor: pointer; }
 
         .avatar-placeholder {
             display: flex;
@@ -344,7 +412,7 @@ function pubCodigoIdioma() {
             overflow: hidden;
         }
 
-        .publicacion-card button:focus-visible,
+        #misPublicacionesList .publicacion-card button:focus-visible,
         .comentarios-container input:focus-visible {
             outline: 2px solid #3b82f6;
             outline-offset: 2px;
@@ -1016,7 +1084,12 @@ async function cargarMisPublicaciones(forzarRefresco) {
             var contenido = document.createElement('div');
             contenido.className = 'contenido';
             contenido.setAttribute('data-no-traducir', '1');
-            contenido.appendChild(document.createTextNode(p.contenido || ''));
+
+            if (p.contenido) {
+                var texto = document.createElement('div');
+                texto.textContent = p.contenido;
+                contenido.appendChild(texto);
+            }
 
             if (pubEsUrlSegura(p.media_url)) {
                 var permiteDescarga = p.permitir_descarga !== false;
@@ -1037,7 +1110,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         video.preload = 'metadata';
                         video.src = p.media_url;
                         video.playsInline = true;
-                        video.style.cursor = 'pointer';
 
                         var autoplayInicial = 'true';
 
@@ -1065,7 +1137,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         img.alt = pubPerfilT('perfil_imagen', 'Imagen');
                         img.loading = 'lazy';
                         img.decoding = 'async';
-                        img.style.cursor = 'pointer';
 
                         img.addEventListener('click', function () {
                             if (typeof window.expandirFotoPublicacion === 'function') {
@@ -1215,15 +1286,16 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             wrap.appendChild(dropdown);
             wrap.appendChild(trigger);
-            card.appendChild(wrap);
 
             // --------------------------------------------------------
-            // ACCIONES DE LA PUBLICACIÓN
+            // ACCIONES DE LA PUBLICACIÓN (fila plana)
             // --------------------------------------------------------
 
             var stats = document.createElement('div');
             stats.className = 'stats';
             stats.setAttribute('data-no-traducir', '1');
+
+            stats.appendChild(wrap);
 
             var btnComentarios = document.createElement('button');
             btnComentarios.type = 'button';
@@ -1794,10 +1866,8 @@ async function eliminarComentarioPerfil(comentarioId, publicacionId) {
 // ================================================================
 // ELIMINAR PUBLICACIÓN PROPIA
 // ================================================================
-// Ya no se borra nada de Storage desde el cliente. Después de borrar la
-// fila, se pide al backend (/api/media/liberar) que elimine el archivo
-// solo si ninguna otra publicación lo usa. Si esa llamada falla, la
-// publicación igual queda eliminada: el archivo puede limpiarse después.
+// Después de borrar la fila, se pide al backend (/api/media/liberar)
+// que elimine el archivo solo si ninguna otra publicación lo usa.
 // ================================================================
 
 async function liberarArchivoPublicacion(mediaUrl) {
