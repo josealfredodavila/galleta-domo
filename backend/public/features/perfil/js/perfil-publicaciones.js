@@ -1,6 +1,8 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
+// v5.6 (Nombre, handle y avatar de cada publicación enlazan al perfil
+//       del autor. Si es tu propia publicación, abre tu perfil.)
 // v5.5 (Diseño tipo Facebook: publicaciones sin tarjeta ni bordes,
 //       medios a todo el ancho, barra de acciones plana)
 // v5.4 (Eliminación sin borrar Storage desde el cliente: el backend
@@ -12,6 +14,10 @@
 // ================================================================
 
 window.listaMultimediaPerfil = [];
+
+// Página de perfil de otros usuarios (ajusta aquí si cambia el nombre).
+var PUB_RUTA_PERFIL_PUBLICO = '/features/perfil/perfil-publico.html';
+var PUB_RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html';
 
 // Solo los emojis que acepta la restricción de publicaciones_reacciones.
 var PUB_EMOJIS_REACCION_DEFAULT = ['❤️', '😊', '👏', '😍', '😂', '🔥', '🎉', '🤩', '💎'];
@@ -124,6 +130,23 @@ function pubCodigoIdioma() {
 }
 
 // ================================================================
+// ENLACE AL PERFIL DEL AUTOR
+// ================================================================
+// Devuelve la URL del perfil del autor. Si el autor es el usuario
+// en sesión, abre su propio perfil.
+// ================================================================
+
+function pubUrlPerfilAutor(usuarioId, miId) {
+    if (!usuarioId) return null;
+
+    if (miId && String(usuarioId) === String(miId)) {
+        return PUB_RUTA_PERFIL_PROPIO;
+    }
+
+    return PUB_RUTA_PERFIL_PUBLICO + '?id=' + encodeURIComponent(usuarioId);
+}
+
+// ================================================================
 // ESTILOS (diseño plano tipo Facebook)
 // ================================================================
 
@@ -190,6 +213,31 @@ function pubCodigoIdioma() {
             font-size: .72rem !important;
             color: var(--text-muted, #8aa8b8) !important;
             margin-top: 2px !important;
+        }
+
+        /* ---------- Enlaces al perfil del autor (nombre, handle, avatar) ---------- */
+        .pub-autor-enlace {
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .pub-autor-enlace:hover .pub-autor-nombre,
+        .pub-autor-enlace:focus-visible .pub-autor-nombre {
+            text-decoration: underline;
+        }
+        .pub-autor-enlace:focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+            border-radius: 4px;
+        }
+        .pub-autor-avatar-enlace {
+            display: block;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex: 0 0 40px;
+            cursor: pointer;
         }
 
         /* ---------- Contenido y medios a todo el ancho ---------- */
@@ -1047,9 +1095,12 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
         if (versionActual !== pubVersionRender) return;
 
+        var miId = session.user.id;
+
         publicaciones.forEach(function (p) {
             var nombreReal = pubEscapeHtml(p.usuario_nombre || 'Explorador');
             var handleReal = p.usuario_handle ? '@' + pubEscapeHtml(p.usuario_handle) : '';
+            var urlAutor = pubUrlPerfilAutor(p.usuario_id, miId);
 
             var card = document.createElement('div');
             card.className = 'publicacion-card';
@@ -1058,18 +1109,31 @@ async function cargarMisPublicaciones(forzarRefresco) {
             var header = document.createElement('div');
             header.className = 'header';
 
-            var avatarBox = document.createElement('div');
-            avatarBox.className = 'avatar';
+            // Avatar: enlaza al perfil del autor
+            var avatarBox = document.createElement(urlAutor ? 'a' : 'div');
+            avatarBox.className = 'avatar' + (urlAutor ? ' pub-autor-avatar-enlace' : '');
+            if (urlAutor) {
+                avatarBox.href = urlAutor;
+                avatarBox.setAttribute('aria-label', 'Ver perfil de ' + (p.usuario_nombre || 'Explorador'));
+            }
             avatarBox.appendChild(pubCrearAvatar(p.usuario_nombre, p.usuario_avatar_url));
             header.appendChild(avatarBox);
 
+            // Nombre y handle: enlazan al perfil del autor
             var headerMeta = document.createElement('div');
 
-            headerMeta.innerHTML =
-                '<div class="nombre" data-no-traducir="1">' +
-                nombreReal +
+            var nombreHtml =
+                '<span class="nombre" data-no-traducir="1">' +
+                '<span class="pub-autor-nombre">' + nombreReal + '</span>' +
                 (handleReal ? ' <span style="color:var(--text-muted);font-weight:400;font-size:.75rem;">' + handleReal + '</span>' : '') +
-                '</div>' +
+                '</span>';
+
+            var nombreBloque = urlAutor
+                ? '<a class="pub-autor-enlace" href="' + pubEscapeHtml(urlAutor) + '" aria-label="Ver perfil de ' + pubEscapeHtml(p.usuario_nombre || 'Explorador') + '">' + nombreHtml + '</a>'
+                : '<div class="nombre" data-no-traducir="1">' + nombreReal + (handleReal ? ' <span style="color:var(--text-muted);font-weight:400;font-size:.75rem;">' + handleReal + '</span>' : '') + '</div>';
+
+            headerMeta.innerHTML =
+                nombreBloque +
                 '<div class="fecha" data-no-traducir="1">' +
                 (p.created_at ? pubEscaparHTML(new Date(p.created_at).toLocaleString(pubCodigoIdioma())) : '') +
                 '</div>';
@@ -1973,3 +2037,4 @@ window.cargarMisPublicaciones = cargarMisPublicaciones;
 window.reaccionarPublicacionPerfil = reaccionarPublicacionPerfil;
 window.toggleComentariosPerfil = toggleComentariosPerfil;
 window.enviarComentarioPerfil = enviarComentarioPerfil;
+window.pubUrlPerfilAutor = pubUrlPerfilAutor;
