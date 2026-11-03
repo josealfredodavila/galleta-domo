@@ -202,6 +202,9 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline:2px solid v
     font-weight:700; font-size:.85rem; text-align:center; text-decoration:none; cursor:pointer;
 }
 .crear-cuenta-btn:hover { background:rgba(53,232,255,.08); box-shadow:0 0 18px rgba(53,232,255,.16); }
+.login-legal { margin-top:18px; text-align:center; font-size:.7rem; line-height:1.5; color:var(--muted); }
+.login-legal a { color:var(--cyan); text-decoration:none; }
+.login-legal a:hover { text-decoration:underline; }
 
 /* Modal recuperar */
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.75); backdrop-filter:blur(8px); display:none; align-items:center; justify-content:center; z-index:9999; padding:20px; }
@@ -263,8 +266,6 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline:2px solid v
 .footer { margin-top:30px; padding-top:16px; border-top:1px solid var(--border); display:flex; flex-direction:column; align-items:center; gap:8px; text-align:center; font-size:.7rem; color:var(--muted); }
 .footer .brand-foot { color:var(--text); font-family:Orbitron,sans-serif; font-size:.7rem; font-weight:700; letter-spacing:.6px; }
 .footer .brand-foot span { color:var(--green); }
-.footer .help-link { color:var(--cyan); text-decoration:none; opacity:.8; transition:opacity .3s; font-size:.66rem; }
-.footer .help-link:hover { opacity:1; text-decoration:underline; }
 
 .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:rgba(7,17,13,.96); border:1px solid var(--border); padding:12px 24px; border-radius:30px; color:var(--text); font-size:.85rem; z-index:99999; opacity:0; pointer-events:none; max-width:90vw; transition:all .4s; }
 .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
@@ -361,6 +362,7 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline:2px solid v
         <button type="button" class="login-olvide" id="btnOlvidePass">¿Olvidaste tu contraseña?</button>
         <div class="login-divider"></div>
         <a href="/registro.html" class="crear-cuenta-btn">Crear cuenta nueva</a>
+        <p class="login-legal">Al entrar o crear tu cuenta aceptas nuestros <a href="/features/centro-ayuda/index.html">Términos y Privacidad</a>.</p>
     </div>
 </section>
 
@@ -392,7 +394,6 @@ a:focus-visible, button:focus-visible, input:focus-visible { outline:2px solid v
 <footer class="footer">
     <div class="brand-foot">CSARIEL'S / WEB3</div>
     <span>Sabor al Paladar · Infraestructura digital · Polygon</span>
-    <a href="/features/centro-ayuda/index.html" class="help-link">Términos y Privacidad</a>
 </footer>
 </div>
 
@@ -441,7 +442,7 @@ function mostrarAvisoMantenimiento() {
     var overlay = document.getElementById('mantOverlay');
     if (!overlay) return;
     document.getElementById('mantTexto').textContent = MANT_MENSAJE;
-    document.getElementById('mantDetalle').textContent = 'El servicio se restablecerá el 27 de octubre de 2026.';
+    document.getElementById('mantDetalle').textContent = '';
     overlay.classList.add('active');
 }
 
