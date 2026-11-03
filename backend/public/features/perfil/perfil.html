@@ -584,6 +584,10 @@
             <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
             Internet
         </button>
+        <button class="tab-btn" id="tabBtnCompras" onclick="window.cambiarTab('compras'); window.cargarComprasMarketplace && window.cargarComprasMarketplace();">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+            Compras
+        </button>
     </div>
 
 <div id="tab-mis-publicaciones" class="tab-content active">
@@ -930,6 +934,29 @@
     </div>
 </div>
 
+<!-- ================================================================ -->
+<!-- NUEVA PESTAÑA: COMPRAS Y VENTAS DEL MARKETPLACE DE CANALES        -->
+<!-- ================================================================ -->
+<div id="tab-compras" class="tab-content">
+    <div class="panel">
+        <div class="panel-header">
+            <h3>
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+                Compras y ventas · Marketplace
+            </h3>
+            <button class="btn btn-outline btn-sm" type="button" onclick="window.cargarComprasMarketplace()">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                Actualizar
+            </button>
+        </div>
+        <div class="panel-body">
+            <div id="comprasMarketplaceList" class="mk-compras-lista">
+                <div class="mk-compra-vacia">Abre esta pestaña para ver tus compras y ventas.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
 </div>
 
 <footer class="footer" style="text-align: center;">
@@ -1082,6 +1109,8 @@
 <script>
 /* ================================================================
    WALLET · INTEGRACIÓN CON EL PERFIL (v4)
+   Este script solo PINTA la sección. Las acciones (conectar,
+   desconectar, cambiar de red) viven en perfil-wallet.js.
    ================================================================ */
 (function () {
     'use strict';
@@ -1320,6 +1349,136 @@
     } else {
         iniciar();
     }
+})();
+</script>
+
+<!-- ================================================================ -->
+<!-- MARKETPLACE DE CANALES · COMPRAS Y VENTAS (lectura por RLS)       -->
+<!-- ================================================================ -->
+<script>
+(function () {
+    'use strict';
+
+    var ESTADO_TXT = {
+        pendiente: 'Pendiente de pago',
+        pagada: 'Pagada',
+        sin_stock: 'Sin stock · reembolso manual',
+        fallida: 'No completada',
+        cancelada: 'Cancelada'
+    };
+
+    var PAYOUT_TXT = {
+        pendiente_manual: 'Pago al vendedor: pendiente manual',
+        procesando: 'Pago al vendedor: procesando',
+        enviado: 'Pago al vendedor: enviado',
+        fallido: 'Pago al vendedor: fallido'
+    };
+
+    function esc(valor) {
+        return String(valor == null ? '' : valor).replace(/[&<>"']/g, function (c) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+    }
+
+    function formatoMonto(valor, moneda) {
+        var n = Number(valor);
+        if (!Number.isFinite(n)) return '—';
+        return '$' + n.toFixed(2) + ' ' + (moneda || '');
+    }
+
+    async function esperarCliente() {
+        for (var i = 0; i < 100 && !window.supabaseClient; i++) {
+            await new Promise(function (r) { setTimeout(r, 100); });
+        }
+        return window.supabaseClient || null;
+    }
+
+    function pintarVacio(cont, texto) {
+        cont.innerHTML = '<div class="mk-compra-vacia">' + esc(texto) + '</div>';
+    }
+
+    async function cargarComprasMarketplace() {
+        var cont = document.getElementById('comprasMarketplaceList');
+        if (!cont) return;
+
+        cont.innerHTML = '<div class="mk-compra-vacia">Cargando…</div>';
+
+        try {
+            var client = await esperarCliente();
+            if (!client) throw new Error('Sin conexión');
+
+            var sesion = await client.auth.getSession();
+            var uid = sesion.data && sesion.data.session ? sesion.data.session.user.id : null;
+
+            if (!uid) {
+                pintarVacio(cont, 'Inicia sesión para ver tus compras y ventas.');
+                return;
+            }
+
+            var r = await client
+                .from('grupos_marketplace_compras')
+                .select('id, publicacion_id, comprador_id, vendedor_id, cantidad, total, monto_vendedor, moneda, estado, payout_estado, payout_error, created_at')
+                .or('comprador_id.eq.' + uid + ',vendedor_id.eq.' + uid)
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            if (r.error) throw r.error;
+
+            var compras = r.data || [];
+            if (compras.length === 0) {
+                pintarVacio(cont, 'Aún no tienes compras ni ventas en el Marketplace de canales.');
+                return;
+            }
+
+            // Títulos de los productos (vista pública, sin wallet)
+            var ids = compras.map(function (c) { return c.publicacion_id; });
+            var titulosRes = await client
+                .from('grupos_video_publicaciones_publicas')
+                .select('id, contenido')
+                .in('id', ids);
+
+            var titulos = {};
+            (titulosRes.data || []).forEach(function (p) { titulos[p.id] = p.contenido; });
+
+            cont.innerHTML = compras.map(function (c) {
+                var soyVendedor = c.vendedor_id === uid && c.comprador_id !== uid;
+                var rol = soyVendedor ? 'Venta' : 'Compra';
+                var titulo = titulos[c.publicacion_id] || 'Producto';
+                var fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-MX') : '';
+
+                var montoPrincipal = soyVendedor
+                    ? formatoMonto(c.monto_vendedor, c.moneda) + ' neto'
+                    : formatoMonto(c.total, c.moneda);
+
+                var chips = '<span class="mk-compra-estado ' + esc(c.estado) + '">' +
+                    esc(ESTADO_TXT[c.estado] || c.estado) + '</span>';
+
+                var nota = '';
+                if (soyVendedor && c.estado === 'pagada' && c.payout_estado && PAYOUT_TXT[c.payout_estado]) {
+                    chips += '<span class="mk-compra-estado ' + esc(c.payout_estado) + '">' +
+                        esc(PAYOUT_TXT[c.payout_estado]) + '</span>';
+                }
+                if (c.estado === 'sin_stock') {
+                    nota = '<div class="mk-compra-nota">Se agotó el stock antes de confirmar. El reembolso lo gestiona Csariel\'s.</div>';
+                }
+
+                return '<div class="mk-compra-item">' +
+                    '<div>' +
+                        '<div class="mk-compra-titulo">' + esc(rol) + ' · ' + esc(titulo) + '</div>' +
+                        '<div class="mk-compra-meta">' + esc(c.cantidad) + ' × · ' + esc(fecha) + '</div>' +
+                    '</div>' +
+                    '<div class="mk-compra-monto">' + esc(montoPrincipal) + '</div>' +
+                    chips +
+                    nota +
+                '</div>';
+            }).join('');
+        } catch (e) {
+            console.warn('[Perfil] Compras Marketplace:', e);
+            pintarVacio(cont, 'No se pudieron cargar las compras. Intenta de nuevo.');
+        }
+    }
+
+    window.cargarComprasMarketplace = cargarComprasMarketplace;
 })();
 </script>
 
