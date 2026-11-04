@@ -1,11 +1,11 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.5
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.6
    ================================================================
-   Cambios respecto a v2.4:
-   - Diseño plano: se eliminaron estilos en línea que creaban cajas
-     (tipo lego) en el formulario.
-   - Corrección de video en negro: se agregó controls, muted y se
-     ajustó el contenedor para que la vista previa se reproduzca.
+   Cambios respecto a v2.5:
+   - Diseño plano: se eliminaron estilos en línea (cajas, fondos,
+     bordes gruesos) inyectados desde el JS.
+   - El botón de "Elegir video" ahora es un diseño minimalista.
+   - El contenedor de la vista previa es transparente.
    - La lógica de audio, borradores, publicación y API no cambia.
    ================================================================ */
 
@@ -1691,7 +1691,7 @@
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
         actualizarBotonesSonidoUbicacion();
-        log('✅ Módulo Publicar v2.5 listo (diseño plano y video corregido)');
+        log('✅ Módulo Publicar v2.6 listo (diseño plano y video corregido)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
