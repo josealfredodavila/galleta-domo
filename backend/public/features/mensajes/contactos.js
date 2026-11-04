@@ -1,7 +1,9 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v19
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v20
    ============================================================
-   - Interfaz de contactos más moderna, inspirada en Messenger.
+   - Diseño plano controlado desde el CSS de la página.
+   - Sin bordes, fondos, sombras ni radios inyectados
+     mediante estilos inline en las tarjetas.
    - Conserva Supabase, solicitudes, favoritos y bloqueos.
    - Avatares seguros, estados y búsqueda optimizada.
    - Corrección para IDs UUID al actualizar favoritos.
@@ -410,7 +412,6 @@
             return null;
         }
 
-        // Actualiza el orden para conservar los perfiles usados recientemente.
         state.perfilCache.delete(id);
         state.perfilCache.set(id, entry);
 
@@ -584,7 +585,6 @@
 
         window.addEventListener('beforeunload', cleanup);
 
-        // Actualiza la sesión cuando Supabase informa un cambio de autenticación.
         var client = sb();
 
         if (client && client.auth && client.auth.onAuthStateChange) {
@@ -966,10 +966,6 @@
                 );
             }
 
-            /*
-             * Se conservan los identificadores obtenidos de Supabase.
-             * No se crea ninguna tabla ni se cambia el esquema.
-             */
             var idsExcluirArray = Array.from(idsExcluir);
 
             if (!idsExcluirArray.length) {
@@ -1059,7 +1055,7 @@
     window.cargarSugerenciasUI = cargarSugerenciasUI;
 
     /* ============================================================
-       LISTA PRINCIPAL · EXPERIENCIA TIPO MESSENGER
+       LISTA PRINCIPAL · DISEÑO PLANO
        ============================================================ */
 
     function renderizarContactos() {
@@ -1119,27 +1115,35 @@
 
         lista.innerHTML = listaContactos.map(renderizarTarjeta).join('') +
             (state.hayMas && !state.textoBusqueda
-                ? '<div id="cargandoMasSentinel" style="height:1px;"></div>'
+                ? '<div id="cargandoMasSentinel" class="contactos-sentinel"></div>'
                 : '');
 
         configurarScrollInfinito();
     }
+
+    /* ============================================================
+       RENDERIZAR TARJETA
+       Sin estilos inline.
+       El CSS de la página controla toda la presentación.
+       ============================================================ */
 
     function renderizarTarjeta(contacto) {
         var inicial = escapeHtml(obtenerInicial(contacto.nombre));
         var avatarUrl = obtenerAvatarSeguro(contacto.avatar_url);
 
         var avatar = avatarUrl
-            ? '<img src="' + escapeHtml(avatarUrl) +
+            ? '<img class="contacto-avatar-img" src="' +
+              escapeHtml(avatarUrl) +
               '" alt="' + escapeHtml(contacto.nombre) +
               '" loading="lazy" referrerpolicy="no-referrer" ' +
-              'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
-              '<span class="avatar-fallback" style="display:none">' +
+              'onerror="this.classList.add(\'avatar-image-error\')">' +
+              '<span class="avatar-fallback avatar-fallback-hidden">' +
               inicial + '</span>'
             : '<span class="avatar-fallback">' + inicial + '</span>';
 
         var pendiente = contacto.estado === 'pendiente';
         var enLinea = contacto.online === true;
+
         var handle = contacto.handle
             ? '@' + String(contacto.handle).replace(/^@/, '')
             : '';
@@ -1151,10 +1155,12 @@
                 : 'Desconectado';
 
         var estadoClase = enLinea ? 'online' : 'offline';
+
         var filaId = escapeHtml(contacto.id);
         var contactoId = escapeHtml(contacto.contacto_id);
 
         var favoritoClase = contacto.es_favorito ? 'active' : '';
+
         var favoritoIcono = contacto.es_favorito
             ? SVG_ICONS.favorito
             : SVG_ICONS.favoritoOutline;
@@ -1163,94 +1169,49 @@
             ? '<span class="verified" title="Perfil verificado" aria-label="Verificado">✓</span>'
             : '';
 
-        /*
-         * La tarjeta usa estilos inline complementarios para mejorar
-         * su apariencia incluso si el CSS anterior tiene otros colores.
-         */
-        var estilosTarjeta =
-            'position:relative;display:flex;align-items:center;gap:13px;' +
-            'padding:14px 15px;margin:7px 0;border-radius:17px;' +
-            'border:1px solid rgba(212,175,55,.15);' +
-            'background:linear-gradient(120deg,rgba(15,45,26,.96),rgba(12,22,18,.98));' +
-            'box-shadow:0 4px 16px rgba(0,0,0,.12);' +
-            'transition:transform .18s ease,border-color .18s ease;' +
-            'cursor:pointer;min-width:0;';
-
-        var estilosAvatar =
-            'position:relative;flex:0 0 55px;width:55px;height:55px;' +
-            'border-radius:50%;overflow:hidden;display:flex;' +
-            'align-items:center;justify-content:center;' +
-            'background:linear-gradient(135deg,#0F2D1A,#137B50,#D4AF37);' +
-            'border:2px solid ' + (enLinea ? '#36D66A' : 'rgba(212,175,55,.55)') + ';' +
-            'color:#fff;font-size:20px;font-weight:800;';
-
-        var estilosImagen =
-            'width:100%;height:100%;object-fit:cover;border-radius:50%;';
-
-        var estilosInfo =
-            'flex:1;min-width:0;overflow:hidden;';
-
-        var estilosNombre =
-            'display:flex;align-items:center;gap:5px;flex-wrap:wrap;' +
-            'color:#fff;font-size:15px;font-weight:700;line-height:1.3;' +
-            'overflow-wrap:anywhere;';
-
-        var estilosEstado =
-            'display:flex;align-items:center;gap:5px;margin-top:5px;' +
-            'font-size:12px;color:' + (enLinea ? '#56E68A' : '#A0ADA4') + ';';
-
-        var estilosHandle =
-            'display:block;margin-top:4px;font-size:11px;' +
-            'color:#A8B7AD;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;';
-
-        var estilosAcciones =
-            'display:flex;align-items:center;justify-content:flex-end;' +
-            'gap:6px;flex-wrap:wrap;max-width:100%;';
-
         var botonMensaje = pendiente ? '' :
             '<button type="button" class="mensaje" ' +
-            'data-accion="mensaje" title="Enviar mensaje" aria-label="Enviar mensaje" ' +
-            'style="display:inline-flex;align-items:center;justify-content:center;gap:6px;' +
-            'padding:9px 11px;border-radius:12px;border:1px solid rgba(72,160,255,.38);' +
-            'background:rgba(32,126,230,.14);color:#75B8FF;font-size:12px;font-weight:700;">' +
-            SVG_ICONS.mensaje + '<span>Mensaje</span></button>';
+            'data-accion="mensaje" title="Enviar mensaje" ' +
+            'aria-label="Enviar mensaje">' +
+            SVG_ICONS.mensaje +
+            '<span>Mensaje</span></button>';
 
         var botonLlamar = pendiente ? '' :
             '<button type="button" class="llamar" ' +
-            'data-accion="llamar" title="Llamar" aria-label="Llamar" ' +
-            'style="display:inline-flex;align-items:center;justify-content:center;' +
-            'padding:9px;border-radius:12px;border:1px solid rgba(212,175,55,.25);' +
-            'background:rgba(212,175,55,.08);color:#D4AF37;">' +
-            SVG_ICONS.llamar + '</button>';
+            'data-accion="llamar" title="Llamar" ' +
+            'aria-label="Llamar">' +
+            SVG_ICONS.llamar +
+            '</button>';
 
         var botonFavorito = pendiente ? '' :
             '<button type="button" class="favorito ' + favoritoClase + '" ' +
             'data-accion="favorito" title="' +
-            (contacto.es_favorito ? 'Quitar de favoritos' : 'Agregar a favoritos') +
-            '" aria-label="Cambiar favorito" ' +
-            'style="display:inline-flex;align-items:center;justify-content:center;' +
-            'padding:9px;border-radius:12px;border:1px solid rgba(212,175,55,.2);' +
-            'background:' + (contacto.es_favorito
-                ? 'rgba(212,175,55,.2)'
-                : 'rgba(255,255,255,.04)') +
-            ';color:#D4AF37;">' + favoritoIcono + '</button>';
+            (contacto.es_favorito
+                ? 'Quitar de favoritos'
+                : 'Agregar a favoritos') +
+            '" aria-label="Cambiar favorito">' +
+            favoritoIcono +
+            '</button>';
 
         var botonesExtra = pendiente
-            ? '<button type="button" class="rechazar" data-accion="cancelar" ' +
-              'title="Cancelar solicitud" aria-label="Cancelar solicitud" ' +
-              'style="padding:8px 10px;border-radius:10px;border:1px solid rgba(255,100,100,.25);' +
-              'background:rgba(255,80,80,.08);color:#FF9292;font-size:11px;">' +
-              SVG_ICONS.cancelar + '</button>'
-            : '<button type="button" class="bloquear" data-accion="bloquear" ' +
-              'title="Bloquear usuario" aria-label="Bloquear usuario" ' +
-              'style="padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,.08);' +
-              'background:rgba(255,255,255,.03);color:#AAB6AE;">' +
-              SVG_ICONS.bloquear + '</button>' +
-              '<button type="button" class="eliminar" data-accion="eliminar" ' +
-              'title="Eliminar contacto" aria-label="Eliminar contacto" ' +
-              'style="padding:8px;border-radius:10px;border:1px solid rgba(255,100,100,.15);' +
-              'background:rgba(255,80,80,.04);color:#E88C8C;">' +
-              SVG_ICONS.eliminar + '</button>';
+            ? '<button type="button" class="rechazar" ' +
+              'data-accion="cancelar" ' +
+              'title="Cancelar solicitud" ' +
+              'aria-label="Cancelar solicitud">' +
+              SVG_ICONS.cancelar +
+              '</button>'
+            : '<button type="button" class="bloquear" ' +
+              'data-accion="bloquear" ' +
+              'title="Bloquear usuario" ' +
+              'aria-label="Bloquear usuario">' +
+              SVG_ICONS.bloquear +
+              '</button>' +
+              '<button type="button" class="eliminar" ' +
+              'data-accion="eliminar" ' +
+              'title="Eliminar contacto" ' +
+              'aria-label="Eliminar contacto">' +
+              SVG_ICONS.eliminar +
+              '</button>';
 
         return `
             <article class="contacto-card ${pendiente ? 'pendiente' : ''}"
@@ -1258,40 +1219,37 @@
                 data-fila-id="${filaId}"
                 tabindex="0"
                 role="button"
-                aria-label="Abrir conversación con ${escapeHtml(contacto.nombre)}"
-                style="${estilosTarjeta}">
+                aria-label="Abrir conversación con ${escapeHtml(contacto.nombre)}">
 
-                <div class="contacto-avatar ${enLinea ? 'online' : ''}"
-                    style="${estilosAvatar}">
+                <div class="contacto-avatar ${enLinea ? 'online' : 'offline'}">
                     ${avatar}
-                    <span class="online-dot"
-                        style="position:absolute;right:0;bottom:1px;width:13px;height:13px;
-                        border-radius:50%;background:${enLinea ? '#36D66A' : '#7D8981'};
-                        border:2px solid #0F2D1A;${enLinea ? '' : 'display:none;'}"></span>
+
+                    <span class="online-dot ${enLinea ? 'visible' : 'hidden'}"></span>
+
                     ${contacto.es_favorito
-                        ? '<span class="favorito-badge" style="position:absolute;top:-2px;left:-2px;color:#D4AF37;font-size:13px;">★</span>'
+                        ? '<span class="favorito-badge">★</span>'
                         : ''}
                 </div>
 
-                <div class="contacto-info" style="${estilosInfo}">
-                    <div class="nombre" style="${estilosNombre}">
+                <div class="contacto-info">
+                    <div class="nombre">
                         ${escapeHtml(contacto.nombre)}
                         ${verificado}
                     </div>
 
-                    <div class="estado ${estadoClase}" style="${estilosEstado}">
-                        <span style="width:7px;height:7px;flex:0 0 7px;border-radius:50%;
-                            background:${enLinea ? '#36D66A' : '#849088'};"></span>
+                    <div class="estado ${estadoClase}">
+                        <span class="estado-indicador"></span>
                         ${escapeHtml(estadoTexto)}
                     </div>
 
                     ${handle
-                        ? '<div class="contacto-meta" style="' + estilosHandle + '">' +
-                          escapeHtml(handle) + '</div>'
+                        ? '<div class="contacto-meta">' +
+                          escapeHtml(handle) +
+                          '</div>'
                         : ''}
                 </div>
 
-                <div class="contacto-actions" style="${estilosAcciones}">
+                <div class="contacto-actions">
                     ${botonMensaje}
                     ${botonLlamar}
                     ${botonFavorito}
@@ -1301,10 +1259,10 @@
         `;
     }
 
-    /*
-     * Delegación de eventos: evita generar funciones onclick dentro
-     * de cada tarjeta y conserva los IDs UUID como texto.
-     */
+    /* ============================================================
+       DELEGACIÓN DE EVENTOS DE TARJETAS
+       ============================================================ */
+
     function configurarEventosTarjetas() {
         var lista = document.getElementById('contactosList');
 
@@ -1395,6 +1353,10 @@
         state.observerScroll.observe(sentinel);
     }
 
+    /* ============================================================
+       CARGA VISUAL · SKELETON PLANO
+       ============================================================ */
+
     function mostrarCargando() {
         var lista = document.getElementById('contactosList');
 
@@ -1404,21 +1366,11 @@
 
         lista.innerHTML = Array(4).fill('').map(function () {
             return `
-                <div class="contacto-card skeleton"
-                    style="display:flex;align-items:center;gap:13px;padding:14px;
-                    margin:7px 0;border-radius:17px;background:rgba(255,255,255,.025);
-                    border:1px solid rgba(212,175,55,.1);">
-                    <div class="contacto-avatar"
-                        style="width:55px;height:55px;flex:0 0 55px;border-radius:50%;
-                        background:linear-gradient(90deg,#16241B,#26362B,#16241B);
-                        background-size:200% 100%;"></div>
-                    <div class="contacto-info" style="flex:1;">
-                        <div class="skeleton-line"
-                            style="height:12px;width:55%;border-radius:8px;
-                            background:rgba(255,255,255,.08);margin-bottom:10px;"></div>
-                        <div class="skeleton-line"
-                            style="height:9px;width:35%;border-radius:8px;
-                            background:rgba(255,255,255,.05);"></div>
+                <div class="contacto-card skeleton">
+                    <div class="contacto-avatar skeleton-avatar"></div>
+                    <div class="contacto-info skeleton-info">
+                        <div class="skeleton-line skeleton-line-name"></div>
+                        <div class="skeleton-line skeleton-line-meta"></div>
                     </div>
                 </div>
             `;
@@ -1433,8 +1385,7 @@
         var div = document.createElement('div');
 
         div.id = 'cargandoMasIndicador';
-        div.style.cssText =
-            'text-align:center;padding:16px;color:var(--text-muted);font-size:.8rem;';
+        div.className = 'contactos-loading-more';
         div.textContent = 'Cargando más contactos…';
 
         lista.appendChild(div);
@@ -1450,6 +1401,11 @@
         if (lista) lista.setAttribute('aria-busy', 'false');
     }
 
+    /* ============================================================
+       ESTADO VACÍO · DISEÑO PLANO
+       Sin bordes, fondos ni sombras inline.
+       ============================================================ */
+
     function mostrarEstadoVacio(icono, mensaje) {
         var lista = document.getElementById('contactosList');
 
@@ -1458,27 +1414,31 @@
         lista.setAttribute('aria-busy', 'false');
 
         lista.innerHTML = `
-            <div class="empty-state" style="padding:35px 18px;text-align:center;
-                border-radius:20px;border:1px dashed rgba(212,175,55,.25);
-                background:linear-gradient(145deg,rgba(15,45,26,.4),rgba(255,255,255,.015));">
-                <div class="icon" style="font-size:36px;color:#D4AF37;margin-bottom:12px;">
+            <div class="empty-state">
+                <div class="icon">
                     ${escapeHtml(icono)}
                 </div>
-                <h3 style="font-size:14px;line-height:1.6;color:var(--text-primary,#fff);
-                    margin:0 0 16px;">${escapeHtml(mensaje)}</h3>
+
+                <h3>${escapeHtml(mensaje)}</h3>
+
                 ${state.contactos.length === 0
-                    ? '<button type="button" class="btn-accion" data-contactos-action="agregar" ' +
-                      'style="padding:11px 18px;border-radius:12px;background:#0F2D1A;' +
-                      'border:1px solid #D4AF37;color:#fff;font-weight:700;">' +
-                      SVG_ICONS.agregarAmigo + ' Agregar contacto</button>'
+                    ? '<button type="button" class="btn-accion" data-contactos-action="agregar">' +
+                      SVG_ICONS.agregarAmigo +
+                      ' Agregar contacto</button>'
                     : ''}
             </div>
         `;
 
-        var boton = lista.querySelector('[data-contactos-action="agregar"]');
+        var boton = lista.querySelector(
+            '[data-contactos-action="agregar"]'
+        );
 
         if (boton) {
-            boton.addEventListener('click', abrirAgregarContacto, { once: true });
+            boton.addEventListener(
+                'click',
+                abrirAgregarContacto,
+                { once: true }
+            );
         }
     }
 
@@ -1533,8 +1493,9 @@
 
         if (resultados) {
             resultados.innerHTML =
-                '<div style="padding:24px;text-align:center;color:var(--text-muted);">' +
-                'Busca por nombre o nombre de usuario.</div>';
+                '<div class="busqueda-mensaje">' +
+                'Busca por nombre o nombre de usuario.' +
+                '</div>';
         }
     }
 
@@ -1604,7 +1565,6 @@
                 }, 'buscar por usuario')
             ]);
 
-            // Descarta resultados antiguos si el usuario siguió escribiendo.
             if (version !== state.busquedaVersion) return;
 
             var error = resultados.find(function (resultado) {
@@ -1670,6 +1630,11 @@
         }
     }
 
+    /* ============================================================
+       RESULTADOS DE BÚSQUEDA
+       Sin estilos inline.
+       ============================================================ */
+
     function renderizarResultadosBusqueda(usuarios) {
         var contenedor = document.getElementById('resultadosBusqueda');
 
@@ -1677,6 +1642,7 @@
 
         contenedor.innerHTML = usuarios.map(function (usuario) {
             var nombre = usuario.nombre || usuario.handle || 'Usuario';
+
             var handle = usuario.handle
                 ? '@' + String(usuario.handle).replace(/^@/, '')
                 : '';
@@ -1684,42 +1650,38 @@
             var avatarUrl = obtenerAvatarSeguro(usuario.avatar_url);
 
             var avatar = avatarUrl
-                ? '<img src="' + escapeHtml(avatarUrl) +
+                ? '<img class="resultado-avatar-img" src="' +
+                  escapeHtml(avatarUrl) +
                   '" alt="" loading="lazy" ' +
-                  'style="width:48px;height:48px;border-radius:50%;object-fit:cover;" ' +
-                  'onerror="this.style.display=\'none\'">'
-                : '<div style="width:48px;height:48px;flex:0 0 48px;border-radius:50%;' +
-                  'display:flex;align-items:center;justify-content:center;' +
-                  'background:linear-gradient(135deg,#0F2D1A,#147A4B,#D4AF37);' +
-                  'color:white;font-weight:800;font-size:18px;">' +
-                  escapeHtml(obtenerInicial(nombre)) + '</div>';
+                  'onerror="this.classList.add(\'avatar-image-error\')">'
+                : '<div class="resultado-avatar-fallback">' +
+                  escapeHtml(obtenerInicial(nombre)) +
+                  '</div>';
 
             return `
-                <div style="display:flex;align-items:center;gap:12px;padding:13px;
-                    border-bottom:1px solid rgba(212,175,55,.12);">
+                <div class="resultado-usuario">
                     ${avatar}
-                    <div style="flex:1;min-width:0;">
-                        <div style="font-weight:700;color:var(--text-primary,#fff);
-                            font-size:14px;overflow-wrap:anywhere;">
+
+                    <div class="resultado-info">
+                        <div class="resultado-nombre">
                             ${escapeHtml(nombre)}
                             ${usuario.verificado
-                                ? '<span style="color:#D4AF37;">✓</span>'
+                                ? '<span class="verified">✓</span>'
                                 : ''}
                         </div>
-                        <div style="color:var(--text-muted,#9BA89F);font-size:12px;margin-top:4px;">
+
+                        <div class="resultado-handle">
                             ${escapeHtml(handle)}
                         </div>
-                        <div style="color:${usuario.online ? '#56E68A' : '#9BA89F'};
-                            font-size:11px;margin-top:4px;">
+
+                        <div class="resultado-estado ${usuario.online ? 'online' : 'offline'}">
                             ${usuario.online ? '● En línea' : 'Desconectado'}
                         </div>
                     </div>
+
                     <button type="button" class="btn-agregar"
                         data-action="agregar"
-                        data-usuario-id="${escapeHtml(usuario.id)}"
-                        style="display:inline-flex;align-items:center;gap:5px;
-                        padding:9px 12px;border-radius:11px;border:1px solid #D4AF37;
-                        background:#0F2D1A;color:#fff;font-weight:700;font-size:12px;">
+                        data-usuario-id="${escapeHtml(usuario.id)}">
                         ${SVG_ICONS.agregarAmigo} Agregar
                     </button>
                 </div>
@@ -1733,8 +1695,7 @@
         if (!contenedor) return;
 
         contenedor.innerHTML =
-            '<div style="padding:24px;text-align:center;color:var(--text-muted,#A0ADA4);' +
-            'font-size:13px;line-height:1.6;">' +
+            '<div class="busqueda-mensaje">' +
             escapeHtml(mensaje) +
             '</div>';
     }
@@ -1995,7 +1956,6 @@
 
         state.operacionEnCurso.add(clave);
 
-        // Actualización optimista para que la interfaz responda de inmediato.
         item.es_favorito = valorNuevo;
         renderizarContactos();
 
@@ -2114,7 +2074,6 @@
 
     /* ============================================================
        BLOQUEAR CONTACTO
-       El servidor conserva la responsabilidad de limpiar la relación.
        ============================================================ */
 
     async function bloquearContacto(contactoId) {
@@ -2336,6 +2295,7 @@
 
     function esperarSupabase() {
         var intentos = 0;
+
         var timer = setInterval(async function () {
             intentos++;
 
@@ -2374,4 +2334,5 @@
     } else {
         esperarSupabase();
     }
+
 })();
