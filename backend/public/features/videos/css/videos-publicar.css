@@ -1,11 +1,12 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.3 (Diseño Plano)
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.4 (Diseño Plano y Video Ancho)
    ================================================================
    Cambios:
    - Eliminado el botón punteado tipo "lego".
    - Eliminadas las cajas de "Sin sonido", "Sin ubicación", etc.
    - Eliminado el fondo pesado del contenedor de preview.
    - Todo basado en líneas divisorias finas.
+   - El video de vista previa ahora ocupa todo el ancho disponible.
    ================================================================ */
 
 /* ----------------------------------------------------------------
@@ -87,7 +88,8 @@ input#inputArchivoVideo[type="file"] {
     gap: 8px;
     padding: 16px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    /* Aquí quitamos el punteado y lo dejamos con una línea sólida fina */
+    border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     color: var(--text-muted);
     font-family: 'Inter', sans-serif;
@@ -98,7 +100,7 @@ input#inputArchivoVideo[type="file"] {
 }
 
 .cs-file-btn:hover {
-    border-color: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.35);
     background: rgba(255, 255, 255, 0.02);
 }
 .cs-file-btn:active { transform: scale(0.99); }
@@ -499,7 +501,7 @@ input#inputArchivoVideo[type="file"] {
 .cs-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ----------------------------------------------------------------
-   PREVIEW EN UPLOAD (DISEÑO PLANO)
+   PREVIEW EN UPLOAD (DISEÑO PLANO Y VIDEO ANCHO)
    ---------------------------------------------------------------- */
 .cs-preview-wrap {
     display: flex;
@@ -511,21 +513,30 @@ input#inputArchivoVideo[type="file"] {
     margin-top: 16px;
     margin-bottom: 12px;
 }
+
+/* El contenedor del video ocupa todo el ancho */
 .cs-preview-video {
     position: relative;
     border-radius: 8px;
     overflow: hidden;
     background: #000;
-    aspect-ratio: 9 / 16;
-    max-height: 240px;
+    width: 100%;
+    /* Quitamos la restricción vertical para que aproveche todo el espacio */
+    max-height: 400px; 
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
+
 .cs-preview-video video {
     width: 100%;
     height: 100%;
+    max-height: 400px;
     object-fit: contain;
     background: #000;
     display: block;
 }
+
 .cs-preview-badge {
     position: absolute;
     top: 8px;
@@ -588,7 +599,7 @@ input#inputArchivoVideo[type="file"] {
    ---------------------------------------------------------------- */
 @media (min-width: 640px) {
     .cs-preview-wrap { flex-direction: row; align-items: flex-start; }
-    .cs-preview-video { width: 200px; flex-shrink: 0; max-height: 350px; }
+    .cs-preview-video { width: 100%; max-height: 400px; } /* Ancho completo en desktop también */
     .cs-preview-meta { flex: 1; }
 }
 @media (max-width: 480px) {
