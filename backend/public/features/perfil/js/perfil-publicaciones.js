@@ -1,6 +1,10 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
+// v5.8 (Visor propio a pantalla completa para fotos y videos de
+//       "Mis publicaciones". Cada medio tiene botón ⛶. Flechas,
+//       deslizar, descarga y cierre con ×, Escape o tocando el fondo.
+//       Ya no depende de perfil-visor.js.)
 // v5.7 (El enlace al autor usa ?u=<handle>, que es lo que lee
 //       perfil-publico.html. El @handle se muestra en azul y es
 //       clicable, igual que el nombre y el avatar.)
@@ -147,7 +151,160 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
 }
 
 // ================================================================
-// ESTILOS (diseño plano tipo Facebook)
+// VISOR PROPIO A PANTALLA COMPLETA (fotos y videos de la lista)
+// ================================================================
+// No depende de perfil-visor.js. Usa window.listaMultimediaPerfil,
+// que se llena al pintar cada publicación.
+// ================================================================
+
+var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0 };
+
+function pubVisorEl() {
+    var el = document.getElementById('pubVisorFull');
+    if (el) return el;
+
+    el = document.createElement('div');
+    el.id = 'pubVisorFull';
+    el.className = 'pub-vf';
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    el.setAttribute('aria-label', 'Vista de publicación');
+    el.innerHTML =
+        '<button type="button" class="pub-vf-cerrar" aria-label="Cerrar">×</button>' +
+        '<button type="button" class="pub-vf-nav pub-vf-prev" aria-label="Anterior">‹</button>' +
+        '<div class="pub-vf-media"></div>' +
+        '<button type="button" class="pub-vf-nav pub-vf-next" aria-label="Siguiente">›</button>' +
+        '<button type="button" class="pub-vf-descargar">Descargar</button>';
+
+    document.body.appendChild(el);
+
+    el.querySelector('.pub-vf-cerrar').addEventListener('click', function (e) {
+        e.stopPropagation();
+        pubCerrarVisor();
+    });
+
+    el.querySelector('.pub-vf-prev').addEventListener('click', function (e) {
+        e.stopPropagation();
+        pubNavegar(-1);
+    });
+
+    el.querySelector('.pub-vf-next').addEventListener('click', function (e) {
+        e.stopPropagation();
+        pubNavegar(1);
+    });
+
+    el.querySelector('.pub-vf-descargar').addEventListener('click', function (e) {
+        e.stopPropagation();
+        var item = pubVisor.items[pubVisor.index];
+        if (item && typeof window.descargarArchivoForzado === 'function') {
+            window.descargarArchivoForzado(item.url);
+        }
+    });
+
+    // Tocar el fondo (no la foto ni el video) cierra el visor
+    el.querySelector('.pub-vf-media').addEventListener('click', function (e) {
+        if (e.target === e.currentTarget) pubCerrarVisor();
+    });
+
+    el.addEventListener('touchstart', function (e) {
+        pubVisor.tocoX = e.changedTouches[0].clientX;
+        pubVisor.tocoY = e.changedTouches[0].clientY;
+    }, { passive: true });
+
+    el.addEventListener('touchend', function (e) {
+        var dx = e.changedTouches[0].clientX - pubVisor.tocoX;
+        var dy = e.changedTouches[0].clientY - pubVisor.tocoY;
+
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) {
+            pubNavegar(dx < 0 ? 1 : -1);
+        } else if (dy > 110 && Math.abs(dy) > Math.abs(dx)) {
+            pubCerrarVisor();
+        }
+    }, { passive: true });
+
+    return el;
+}
+
+function pubMostrarItem() {
+    var el = pubVisorEl();
+    var caja = el.querySelector('.pub-vf-media');
+    var item = pubVisor.items[pubVisor.index];
+    if (!item) return;
+
+    caja.innerHTML = '';
+
+    if (item.tipo === 'video') {
+        var video = document.createElement('video');
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = 'auto';
+        video.src = item.url;
+        caja.appendChild(video);
+
+        var reproduccion = video.play();
+        if (reproduccion && typeof reproduccion.catch === 'function') {
+            reproduccion.catch(function () {});
+        }
+    } else {
+        var imagen = document.createElement('img');
+        imagen.alt = 'Publicación';
+        imagen.src = item.url;
+        caja.appendChild(imagen);
+    }
+
+    var hayVarios = pubVisor.items.length > 1;
+    el.querySelector('.pub-vf-prev').style.display = hayVarios && pubVisor.index > 0 ? '' : 'none';
+    el.querySelector('.pub-vf-next').style.display = hayVarios && pubVisor.index < pubVisor.items.length - 1 ? '' : 'none';
+    el.querySelector('.pub-vf-descargar').style.display = item.permiteDescarga ? '' : 'none';
+}
+
+function pubNavegar(direccion) {
+    var nuevo = pubVisor.index + direccion;
+    if (nuevo < 0 || nuevo >= pubVisor.items.length) return;
+
+    pubVisor.index = nuevo;
+    pubMostrarItem();
+}
+
+function pubAbrirVisor(indice) {
+    var lista = Array.isArray(window.listaMultimediaPerfil) ? window.listaMultimediaPerfil : [];
+    if (!lista[indice]) return;
+
+    pubVisor.items = lista.slice();
+    pubVisor.index = indice;
+    pubMostrarItem();
+
+    pubVisorEl().classList.add('show');
+    document.body.style.overflow = 'hidden';
+}
+
+function pubCerrarVisor() {
+    var el = document.getElementById('pubVisorFull');
+    if (!el) return;
+
+    var video = el.querySelector('video');
+    if (video) {
+        video.pause();
+        video.removeAttribute('src');
+        video.load();
+    }
+
+    el.querySelector('.pub-vf-media').innerHTML = '';
+    el.classList.remove('show');
+    document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', function (e) {
+    var el = document.getElementById('pubVisorFull');
+    if (!el || !el.classList.contains('show')) return;
+
+    if (e.key === 'Escape') pubCerrarVisor();
+    if (e.key === 'ArrowLeft') pubNavegar(-1);
+    if (e.key === 'ArrowRight') pubNavegar(1);
+});
+
+// ================================================================
+// ESTILOS (diseño plano tipo Facebook + visor)
 // ================================================================
 
 (function inyectarEstilosReaccionesPerfil() {
@@ -213,7 +370,6 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
             margin-top: 2px !important;
         }
 
-        /* Enlaces al perfil del autor */
         .pub-autor-enlace {
             color: inherit;
             text-decoration: none;
@@ -253,10 +409,15 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
             overflow-wrap: anywhere;
             margin: 0 !important;
         }
-        .publicacion-card .contenido img,
-        .publicacion-card .contenido video {
+
+        .pub-media-wrap {
+            position: relative;
+            margin-top: 6px;
+        }
+        .pub-media-wrap img,
+        .pub-media-wrap video {
             display: block;
-            width: calc(100% + 0px);
+            width: 100%;
             max-width: 100%;
             height: auto;
             max-height: 620px;
@@ -264,8 +425,102 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
             background: #000;
             border: 0 !important;
             border-radius: 0 !important;
-            margin: 6px 0 0 0 !important;
+            margin: 0 !important;
             cursor: pointer;
+        }
+        .pub-expand {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: 0;
+            background: rgba(0,0,0,.6);
+            color: #fff;
+            font-size: 16px;
+            line-height: 1;
+            cursor: pointer;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pub-vf {
+            position: fixed;
+            inset: 0;
+            z-index: 100060;
+            background: rgba(0,0,0,.96);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+        .pub-vf.show { display: flex; }
+        .pub-vf-media {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 56px 12px 84px;
+            box-sizing: border-box;
+        }
+        .pub-vf-media img,
+        .pub-vf-media video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            user-select: none;
+        }
+        .pub-vf-cerrar {
+            position: absolute;
+            top: calc(12px + env(safe-area-inset-top, 0px));
+            right: 12px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 0;
+            background: rgba(255,255,255,.14);
+            color: #fff;
+            font-size: 26px;
+            line-height: 1;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .pub-vf-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 0;
+            background: rgba(255,255,255,.14);
+            color: #fff;
+            font-size: 28px;
+            line-height: 1;
+            cursor: pointer;
+            z-index: 2;
+        }
+        .pub-vf-prev { left: 10px; }
+        .pub-vf-next { right: 10px; }
+        .pub-vf-descargar {
+            position: absolute;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 22px;
+            border-radius: 24px;
+            border: 1px solid #ff7a1a;
+            background: rgba(20,20,20,.9);
+            color: #ff7a1a;
+            font-weight: 700;
+            font-size: .85rem;
+            cursor: pointer;
+            z-index: 2;
         }
 
         .perfil-aviso-moderacion {
@@ -959,7 +1214,7 @@ async function publicarDesdePerfil() {
 }
 
 // ================================================================
-// REPRODUCCIÓN DE VIDEO
+// REPRODUCCIÓN DE VIDEO (autoplay al entrar en pantalla)
 // ================================================================
 
 var videoObserverPerfil = null;
@@ -1168,12 +1423,17 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         permiteDescarga: permiteDescarga
                     });
 
+                    var wrapMedia = document.createElement('div');
+                    wrapMedia.className = 'pub-media-wrap';
+
+                    var mediaEl;
+
                     if (tipoMedia === 'video') {
-                        var video = document.createElement('video');
-                        video.controls = true;
-                        video.preload = 'metadata';
-                        video.src = p.media_url;
-                        video.playsInline = true;
+                        mediaEl = document.createElement('video');
+                        mediaEl.controls = true;
+                        mediaEl.preload = 'metadata';
+                        mediaEl.src = p.media_url;
+                        mediaEl.playsInline = true;
 
                         var autoplayInicial = 'true';
 
@@ -1181,36 +1441,39 @@ async function cargarMisPublicaciones(forzarRefresco) {
                             autoplayInicial = localStorage.getItem('contenido_auto_reproducir');
                         } catch (e) {}
 
-                        video.muted = autoplayInicial !== 'false';
+                        mediaEl.muted = autoplayInicial !== 'false';
 
                         if (videoObserverPerfil) {
-                            videoObserverPerfil.observe(video);
+                            videoObserverPerfil.observe(mediaEl);
                         }
-
-                        video.addEventListener('click', function (e) {
-                            if (e.target.tagName !== 'VIDEO') return;
-
-                            if (typeof window.expandirFotoPublicacion === 'function') {
-                                window.expandirFotoPublicacion(indexEnLista);
-                            }
-                        });
-
-                        contenido.appendChild(video);
                     } else {
-                        var img = document.createElement('img');
-                        img.alt = pubPerfilT('perfil_imagen', 'Imagen');
-                        img.loading = 'lazy';
-                        img.decoding = 'async';
+                        mediaEl = document.createElement('img');
+                        mediaEl.alt = pubPerfilT('perfil_imagen', 'Imagen');
+                        mediaEl.loading = 'lazy';
+                        mediaEl.decoding = 'async';
+                        mediaEl.src = p.media_url;
 
-                        img.addEventListener('click', function () {
-                            if (typeof window.expandirFotoPublicacion === 'function') {
-                                window.expandirFotoPublicacion(indexEnLista);
-                            }
+                        mediaEl.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            pubAbrirVisor(indexEnLista);
                         });
-
-                        img.src = p.media_url;
-                        contenido.appendChild(img);
                     }
+
+                    var btnExpandir = document.createElement('button');
+                    btnExpandir.type = 'button';
+                    btnExpandir.className = 'pub-expand';
+                    btnExpandir.setAttribute('aria-label', 'Ver en pantalla completa');
+                    btnExpandir.title = 'Pantalla completa';
+                    btnExpandir.textContent = '⛶';
+
+                    btnExpandir.addEventListener('click', function (e) {
+                        e.stopPropagation();
+                        pubAbrirVisor(indexEnLista);
+                    });
+
+                    wrapMedia.appendChild(mediaEl);
+                    wrapMedia.appendChild(btnExpandir);
+                    contenido.appendChild(wrapMedia);
                 }
             }
 
@@ -2019,3 +2282,5 @@ window.reaccionarPublicacionPerfil = reaccionarPublicacionPerfil;
 window.toggleComentariosPerfil = toggleComentariosPerfil;
 window.enviarComentarioPerfil = enviarComentarioPerfil;
 window.pubUrlPerfilAutor = pubUrlPerfilAutor;
+window.pubAbrirVisor = pubAbrirVisor;
+window.pubCerrarVisor = pubCerrarVisor;
