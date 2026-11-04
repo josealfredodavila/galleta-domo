@@ -1,38 +1,36 @@
 /* ================================================================
-   MURO · ACCIONES DE PUBLICACIÓN v2
+   MURO · ACCIONES DE PUBLICACIÓN v3 (plano tipo Facebook)
    Me gusta, comentar, compartir, eliminar y reportar.
-   Cada acción tiene su color (variable --ac) y brillo al tocarla.
-   Se carga DESPUÉS de muro.css.
+   Sin pastillas ni brillos: icono + texto con su color, y fondo
+   sutil solo al tocar. Se carga DESPUÉS de muro.css.
    ================================================================ */
 
 /* ---------- Barra de estadísticas (me gusta, comentarios, venta) ---------- */
 .post-card .post-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 12px 0 2px;
+    gap: 4px;
+    padding: 8px 0 0;
     margin-top: 6px;
-    border-top: 1px solid var(--glass-border);
+    border-top: 1px solid var(--flat-line, rgba(255,255,255,0.09));
 }
 
 .post-card .post-stats > span {
     --ac: 139, 168, 184;
     display: inline-flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
     height: 34px;
-    padding: 0 14px 0 11px;
-    border-radius: 999px;
-    border: 1px solid rgba(var(--ac), 0.28);
-    background: linear-gradient(135deg, rgba(var(--ac), 0.10), rgba(255, 255, 255, 0.02));
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    padding: 0 10px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
     color: rgb(var(--ac));
-    font-size: 0.74rem;
-    font-weight: 700;
-    letter-spacing: 0.2px;
+    font-size: 0.78rem;
+    font-weight: 600;
     cursor: pointer;
     user-select: none;
-    transition: transform 0.18s ease, box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    transition: background 0.18s ease, color 0.18s ease;
 }
 
 .post-card .post-stats > span .count {
@@ -40,30 +38,20 @@
 }
 
 .post-card .post-stats > span:hover {
-    transform: translateY(-1px);
-    border-color: rgba(var(--ac), 0.6);
-    box-shadow: 0 0 0 1px rgba(var(--ac), 0.2), 0 0 16px rgba(var(--ac), 0.28);
+    background: rgba(255, 255, 255, 0.05);
 }
 
 .post-card .post-stats > span:active {
-    transform: scale(0.96);
+    background: rgba(255, 255, 255, 0.09);
 }
 
 /* Comentar: cian */
-.post-card .post-stats .comment-btn {
-    --ac: 0, 229, 255;
-}
+.post-card .post-stats .comment-btn { --ac: 0, 229, 255; }
 
 /* Me gusta: rosa */
-.post-card .post-stats .like-btn {
-    --ac: 255, 77, 109;
-}
+.post-card .post-stats .like-btn { --ac: 255, 77, 109; }
 
-.post-card .post-stats .like-btn[data-liked="true"] {
-    background: linear-gradient(135deg, rgba(var(--ac), 0.22), rgba(var(--ac), 0.06));
-    border-color: rgba(var(--ac), 0.6);
-}
-
+/* Me gusta activo: se rellena el corazón, sin caja */
 .post-card .post-stats .like-btn[data-liked="true"] .icon-ui {
     fill: rgb(var(--ac));
 }
@@ -74,8 +62,9 @@
     cursor: default;
 }
 
-.post-card .post-stats .venta-activa:hover {
-    transform: none;
+.post-card .post-stats .venta-activa:hover,
+.post-card .post-stats .venta-activa:active {
+    background: transparent;
 }
 
 /* Iconos de estadísticas */
@@ -88,7 +77,6 @@
     stroke-linecap: round;
     stroke-linejoin: round;
     flex-shrink: 0;
-    filter: drop-shadow(0 0 4px rgba(var(--ac), 0.55));
 }
 
 .post-card .post-stats .icon-sm-ui {
@@ -100,7 +88,7 @@
 .post-card .post-actions-header {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 2px;
     margin-left: auto;
 }
 
@@ -109,15 +97,15 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     padding: 0;
-    border-radius: 12px;
-    border: 1px solid rgba(var(--ac), 0.25);
-    background: linear-gradient(135deg, rgba(var(--ac), 0.10), rgba(255, 255, 255, 0.02));
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
     color: rgb(var(--ac));
     cursor: pointer;
-    transition: transform 0.18s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+    transition: background 0.18s ease;
 }
 
 .post-card .post-actions-header button svg {
@@ -128,17 +116,11 @@
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
-    filter: drop-shadow(0 0 3px rgba(var(--ac), 0.5));
 }
 
-.post-card .post-actions-header button:hover {
-    transform: translateY(-1px);
-    border-color: rgba(var(--ac), 0.6);
-    box-shadow: 0 0 0 1px rgba(var(--ac), 0.2), 0 0 14px rgba(var(--ac), 0.3);
-}
-
+.post-card .post-actions-header button:hover,
 .post-card .post-actions-header button:active {
-    transform: scale(0.94);
+    background: rgba(255, 255, 255, 0.06);
 }
 
 .post-card .post-actions-header button:focus-visible {
@@ -147,27 +129,22 @@
 }
 
 /* Compartir: violeta */
-.post-card .post-actions-header .btn-share {
-    --ac: 168, 85, 247;
-}
+.post-card .post-actions-header .btn-share { --ac: 168, 85, 247; }
 
 /* Eliminar: rosa */
-.post-card .post-actions-header .btn-delete {
-    --ac: 255, 77, 109;
-}
+.post-card .post-actions-header .btn-delete { --ac: 255, 77, 109; }
 
 /* Reportar: dorado */
-.post-card .post-actions-header .btn-report {
-    --ac: 247, 212, 74;
-}
+.post-card .post-actions-header .btn-report { --ac: 247, 212, 74; }
 
-/* ---------- Barra de herramientas del compositor ---------- */
+/* ---------- Herramientas del compositor ---------- */
 .post-form .form-actions .tools button {
-    border: 1px solid transparent;
-    border-radius: 999px;
-    padding: 6px 11px;
-    color: var(--text-muted);
-    transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    border: 0;
+    border-radius: 8px;
+    padding: 6px 9px;
+    color: var(--text-muted, #8aa8b8);
+    background: transparent;
+    transition: color 0.18s ease, background 0.18s ease;
 }
 
 .post-form .form-actions .tools button svg {
@@ -181,12 +158,11 @@
 }
 
 .post-form .form-actions .tools button:hover {
-    color: var(--cyan);
-    border-color: rgba(0, 229, 255, 0.25);
+    color: var(--cyan, #00e5ff);
     background: rgba(0, 229, 255, 0.06);
 }
 
-/* ---------- Iconos de cabecera, filtros y navegación ---------- */
+/* ---------- Iconos de filtros y navegación ---------- */
 .muro-filter-nav .filter-tab svg,
 .filter-tab .icon-sm {
     width: 14px;
@@ -247,30 +223,26 @@
 @media (max-width: 480px) {
     .post-card .post-stats > span {
         height: 32px;
-        padding: 0 11px 0 9px;
-        font-size: 0.7rem;
+        padding: 0 8px;
+        font-size: 0.74rem;
     }
 
     .post-card .post-actions-header {
-        gap: 4px;
+        gap: 0;
     }
 
     .post-card .post-actions-header button {
         width: 32px;
         height: 32px;
-        border-radius: 10px;
     }
 }
 
 /* ---------- Tema día ---------- */
-html.tema-dia .post-card .post-stats > span,
-html[data-tema="dia"] .post-card .post-stats > span {
-    background: rgba(255, 255, 255, 0.7);
-}
-
-html.tema-dia .post-card .post-actions-header button,
-html[data-tema="dia"] .post-card .post-actions-header button {
-    background: rgba(255, 255, 255, 0.7);
+html.tema-dia .post-card .post-stats > span:hover,
+html[data-tema="dia"] .post-card .post-stats > span:hover,
+html.tema-dia .post-card .post-actions-header button:hover,
+html[data-tema="dia"] .post-card .post-actions-header button:hover {
+    background: rgba(0, 0, 0, 0.05);
 }
 
 /* ---------- Movimiento reducido ---------- */
