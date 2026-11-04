@@ -1,13 +1,12 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.4
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.5
    ================================================================
-   Cambios respecto a v2.3:
-   - ECUALIZADOR NEÓN: 6 barras con colores vivos de antro (rosa, cian,
-     verde, amarillo, violeta) que reaccionan al audio real y brillan.
-   - Tarjeta de la pista que suena: borde y resplandor neón animados.
-   - Portada de la pista que gira mientras suena (estilo TikTok).
-   - Botones principales, pestaña activa, badge y chips en degradado neón.
-   - Lógica de audio, borradores, publicación y API pública sin cambios.
+   Cambios respecto a v2.4:
+   - Diseño plano: se eliminaron estilos en línea que creaban cajas
+     (tipo lego) en el formulario.
+   - Corrección de video en negro: se agregó controls, muted y se
+     ajustó el contenedor para que la vista previa se reproduzca.
+   - La lógica de audio, borradores, publicación y API no cambia.
    ================================================================ */
 
 (function () {
@@ -18,7 +17,6 @@
 
     const Z = { CAMARA: 99999, SHEET_BACKDROP: 100000, SHEET: 100001, CONFIRM: 100010, TOAST: 100020 };
 
-    // Paleta de luces de antro para el ecualizador
     const EQ_COLORES = ['#ff2bd6', '#ff3d7f', '#00f0ff', '#39ff14', '#ffe600', '#b026ff'];
 
     function vt(clave, respaldo) {
@@ -209,7 +207,6 @@
             }
         }
 
-        // Barras con altura reactiva y pulso de brillo según la energía de cada banda
         function pintarBarras(barras) {
             if (!analyser || !datos) return;
             analyser.getByteFrequencyData(datos);
@@ -458,8 +455,6 @@
 
     // ============================================================
     // BORRADORES · STORAGE DIRECTO EN EL BUCKET "videos"
-    // Los borradores se guardan en borradores/{usuario_id}/ y no pasan
-    // por la cola de publicación ni por la moderación del feed.
     // ============================================================
     function rutaBorrador(usuarioId, nombre) {
         const limpio = String(nombre || 'archivo').replace(/[^\w.\-]/g, '_');
@@ -489,12 +484,10 @@
         return `${SUPABASE_URL}/storage/v1/object/public/${CONFIG.BUCKET}/${path}`;
     }
 
-    // Convierte la portada generada en blob para subirla
     function blobDePortadaActual() {
         return state.portadaBlob || null;
     }
 
-    // Reconstruye el archivo del borrador desde su URL pública
     async function descargarArchivoBorrador(path, nombre) {
         const url = urlPublicaBorrador(path);
         const resp = await fetch(url);
@@ -518,7 +511,6 @@
         return { ok: true, items: data || [] };
     }
 
-    // Guarda un borrador. Si ya se estaba editando uno, lo actualiza.
     async function guardarBorrador() {
         if (state.guardandoBorrador) return;
         const session = await obtenerSesion();
@@ -721,7 +713,6 @@
         renderBorradores();
     }
 
-    // Selecciona el sonido sin reproducirlo (al abrir un borrador)
     function seleccionarSonidoSinSonar(s) {
         state.sonidoSeleccionado = s;
         const info = $('csSonidoActualInfo');
@@ -825,18 +816,28 @@
         }
     }
 
+    // 🔥 CORRECCIÓN CLAVE: Función de preview de video
     function mostrarPreviewVideo(file) {
         const v = $('csPreviewVideo');
+        const wrap = $('csPreviewWrap');
         if (!v) return;
+        
+        // Mostramos el contenedor
+        if (wrap) wrap.style.display = 'block';
+
         if (state.previewURL) {
             try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
             state.previewURL = null;
         }
         state.previewURL = URL.createObjectURL(file);
+        
+        // 🔥 AQUÍ ESTABA EL ERROR: Agregamos controls, preload y aseguramos que no esté oculto
         v.src = state.previewURL;
         v.muted = false;
         v.playsInline = true;
-        v.controls = true;
+        v.controls = true; // <-- Esto hace que aparezcan los botones de play
+        v.preload = 'metadata';
+        v.style.display = 'block'; // <-- Aseguramos que se vea
         try { v.load(); } catch (e) {}
 
         obtenerPortada(file).then(mostrarPortadaEnPreview);
@@ -867,6 +868,10 @@
             preview.removeAttribute('src');
             try { preview.load(); } catch (e) {}
         }
+        
+        const wrap = $('csPreviewWrap');
+        if (wrap) wrap.style.display = 'none'; // Ocultamos el contenedor al resetear
+
         mostrarPortadaEnPreview(null);
 
         if (state.previewURL) {
@@ -949,6 +954,7 @@
         if ($('cs-videos-publicar-inline')) return;
         const st = document.createElement('style');
         st.id = 'cs-videos-publicar-inline';
+        // 🔥 AQUÍ QUITAMOS EL DISEÑO "LEGO" DE LAS CAJAS DEL FORMULARIO
         st.textContent = `
             .cs-sheet-backdrop { z-index: ${Z.SHEET_BACKDROP} !important; touch-action: manipulation; }
             .cs-sheet { z-index: ${Z.SHEET} !important; touch-action: manipulation; }
@@ -1193,10 +1199,11 @@
         const wrap = document.createElement('div');
         wrap.id = 'csPreviewWrap';
         wrap.className = 'cs-preview-wrap';
+        // 🔥 AQUÍ ESTÁ LA CORRECCIÓN DEL VIDEO EN NEGRO (Etiqueta video con controls y sin fondo bloqueado)
         wrap.innerHTML = `
             <div class="cs-preview-video">
                 <img id="csPreviewPortada" alt="Portada del video" />
-                <video id="csPreviewVideo" playsinline muted preload="auto"></video>
+                <video id="csPreviewVideo" controls playsinline preload="metadata" style="width:100%; display:block;"></video>
                 <div class="cs-preview-badge" id="csPreviewBadge" style="display:none;" data-clave="videos_sonido_video_badge">◆ Sonido + video</div>
             </div>
             <div class="cs-preview-meta">
@@ -1222,6 +1229,9 @@
         if (grupos.length > 0) form.insertBefore(wrap, grupos[grupos.length - 1]);
         else form.appendChild(wrap);
 
+        // Ocultamos el contenedor al principio
+        wrap.style.display = 'none';
+
         $('csBtnVerBorradores').addEventListener('click', abrirModalBorradores);
         $('csBtnGuardarBorrador').addEventListener('click', guardarBorrador);
     }
@@ -1244,11 +1254,12 @@
 
         const btnWrap = document.createElement('div');
         btnWrap.className = 'cs-file-btn-wrap';
+        // Quitamos la caja pesada de aquí y dejamos un diseño plano
         btnWrap.innerHTML = `
-            <button type="button" class="cs-file-btn" id="csFileBtnVideo" aria-label="Elegir video de la galería">
-                <span class="cs-file-btn-ico">▶</span>
-                <span class="cs-file-btn-txt" id="csFileBtnTxt" data-clave="videos_elegir_galeria">Elegir video de la galería</span>
-                <span class="cs-file-btn-hint" id="csFileBtnHint" data-clave="videos_archivo_hint">MP4 · WebM · MOV · Máx 100 MB</span>
+            <button type="button" class="cs-file-btn" id="csFileBtnVideo" aria-label="Elegir video de la galería" style="border:1px dashed rgba(255,255,255,0.2); background:transparent; border-radius:8px; padding:20px; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--text-muted); cursor:pointer;">
+                <span class="cs-file-btn-ico" style="font-size:1.5rem;">▶</span>
+                <span class="cs-file-btn-txt" id="csFileBtnTxt" data-clave="videos_elegir_galeria" style="font-weight:600; font-size:0.85rem;">Elegir video de la galería</span>
+                <span class="cs-file-btn-hint" id="csFileBtnHint" data-clave="videos_archivo_hint" style="font-size:0.7rem; opacity:0.7;">MP4 · WebM · MOV · Máx 100 MB</span>
             </button>`;
         if (input.parentNode) input.parentNode.insertBefore(btnWrap, input.nextSibling);
 
@@ -1270,6 +1281,9 @@
                     hint.textContent = mb + ' MB · Listo para subir';
                 }
                 btnWrap.classList.add('cs-file-con-archivo');
+                // Mostramos el contenedor de preview
+                const pWrap = $('csPreviewWrap');
+                if (pWrap) pWrap.style.display = 'block';
             } else {
                 if (txt) {
                     txt.setAttribute('data-clave', 'videos_elegir_galeria');
@@ -1283,7 +1297,7 @@
             }
         });
 
-        log('✅ Input file transformado en botón estilizado');
+        log('✅ Input file transformado en botón plano');
     }
 
     // ============================================================
@@ -1351,7 +1365,6 @@
     }
     window._audioPreviewOnEstado = actualizarIndicadorSonido;
 
-    // Ecualizador con 6 barras, cada una de un color neón de antro
     function filaEqualizador() {
         const barras = EQ_COLORES.map(function (color) {
             return `<span class="cs-eq-bar" style="--eq-c:${color}"></span>`;
@@ -1678,7 +1691,7 @@
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
         actualizarBotonesSonidoUbicacion();
-        log('✅ Módulo Publicar v2.4 listo (ecualizador neón)');
+        log('✅ Módulo Publicar v2.5 listo (diseño plano y video corregido)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
