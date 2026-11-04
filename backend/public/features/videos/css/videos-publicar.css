@@ -1,12 +1,11 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.2
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.3 (Diseño Plano)
    ================================================================
-   Novedades v1.2:
-   - Input file 100% oculto (display:none !important)
-   - Botón de archivo con diseño ciberpunk reforzado
-   - Preview se limpia tras publicación
-   - Mejor espaciado en header móvil
-   - Chips de sonido/ubicación en las cards
+   Cambios:
+   - Eliminado el botón punteado tipo "lego".
+   - Eliminadas las cajas de "Sin sonido", "Sin ubicación", etc.
+   - Eliminado el fondo pesado del contenedor de preview.
+   - Todo basado en líneas divisorias finas.
    ================================================================ */
 
 /* ----------------------------------------------------------------
@@ -25,8 +24,8 @@
     align-items: center;
     gap: 6px;
     padding: 6px 14px;
-    background: rgba(212, 175, 55, 0.08);
-    border: 1px solid rgba(212, 175, 55, 0.35);
+    background: transparent;
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
     color: #D4AF37;
     font-family: 'Orbitron', monospace;
@@ -34,32 +33,27 @@
     font-weight: 700;
     letter-spacing: 0.5px;
     cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.25s ease;
     -webkit-tap-highlight-color: transparent;
     white-space: nowrap;
 }
 .cs-btn-header:hover {
-    background: rgba(212, 175, 55, 0.18);
+    background: rgba(212, 175, 55, 0.05);
     border-color: #D4AF37;
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.35);
-    transform: translateY(-1px);
 }
 .cs-btn-header:active { transform: scale(0.96); }
 .cs-btn-header .cs-ico {
     font-size: 0.9rem;
     line-height: 1;
-    filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.6));
 }
-.cs-btn-sonido { border-color: rgba(212, 175, 55, 0.55); }
+.cs-btn-sonido { border-color: rgba(212, 175, 55, 0.3); }
 .cs-btn-ubicacion {
-    border-color: rgba(0, 229, 255, 0.4);
+    border-color: rgba(0, 229, 255, 0.3);
     color: #00E5FF;
-    background: rgba(0, 229, 255, 0.06);
 }
 .cs-btn-ubicacion:hover {
-    background: rgba(0, 229, 255, 0.12);
+    background: rgba(0, 229, 255, 0.05);
     border-color: #00E5FF;
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
 }
 
 @media (max-width: 640px) {
@@ -71,24 +65,12 @@
 }
 
 /* ----------------------------------------------------------------
-   BOTÓN DE ARCHIVO ESTILIZADO
+   BOTÓN DE ARCHIVO PLANO (ADIÓS AL BORDE AMARILLO PUNTEADO)
    ---------------------------------------------------------------- */
 #inputArchivoVideo,
 input#inputArchivoVideo[type="file"] {
     display: none !important;
     visibility: hidden !important;
-    position: absolute !important;
-    width: 0 !important;
-    height: 0 !important;
-    opacity: 0 !important;
-    pointer-events: none !important;
-    overflow: hidden !important;
-    clip: rect(0 0 0 0) !important;
-    clip-path: inset(50%) !important;
-    white-space: nowrap !important;
-    border: 0 !important;
-    padding: 0 !important;
-    margin: 0 !important;
 }
 
 .cs-file-btn-wrap {
@@ -102,86 +84,48 @@ input#inputArchivoVideo[type="file"] {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    padding: 22px 18px;
-    background:
-        linear-gradient(155deg, rgba(15, 45, 26, 0.65), rgba(8, 15, 26, 0.85)),
-        radial-gradient(circle at center, rgba(212, 175, 55, 0.05), transparent 70%);
-    border: 2px dashed rgba(212, 175, 55, 0.5);
-    border-radius: 16px;
-    color: #D4AF37;
+    gap: 8px;
+    padding: 16px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: var(--text-muted);
     font-family: 'Inter', sans-serif;
     cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.2s ease;
     -webkit-tap-highlight-color: transparent;
-    position: relative;
-    overflow: hidden;
     text-align: center;
 }
-.cs-file-btn::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(circle at center, rgba(212, 175, 55, 0.15), transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
+
 .cs-file-btn:hover {
-    border-color: #D4AF37;
-    box-shadow: 0 0 30px rgba(212, 175, 55, 0.3), inset 0 0 20px rgba(212, 175, 55, 0.05);
-    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.02);
 }
-.cs-file-btn:hover::before { opacity: 1; }
-.cs-file-btn:active { transform: scale(0.98); }
+.cs-file-btn:active { transform: scale(0.99); }
 
 .cs-file-btn-ico {
-    font-size: 2rem;
+    font-size: 1.5rem;
     line-height: 1;
-    color: #D4AF37;
-    filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.8));
+    color: var(--gold);
     margin-bottom: 2px;
-    transition: transform 0.3s ease;
-}
-.cs-file-btn:hover .cs-file-btn-ico {
-    transform: scale(1.1);
 }
 .cs-file-btn-txt {
-    font-family: 'Orbitron', monospace;
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    color: #f0f4f8;
-    text-align: center;
-    word-break: break-word;
-    max-width: 100%;
-    line-height: 1.3;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 .cs-file-btn-hint {
-    font-size: 0.62rem;
-    color: #8aa8b8;
-    letter-spacing: 0.5px;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    opacity: 0.7;
 }
 
 .cs-file-con-archivo .cs-file-btn {
-    border-style: solid;
-    border-color: rgba(0, 214, 143, 0.7);
-    background: linear-gradient(155deg, rgba(0, 214, 143, 0.12), rgba(15, 45, 26, 0.7));
-    box-shadow: 0 0 30px rgba(0, 214, 143, 0.25), inset 0 0 15px rgba(0, 214, 143, 0.05);
+    border-color: var(--success);
 }
-.cs-file-con-archivo .cs-file-btn-ico {
-    color: #00d68f;
-    filter: drop-shadow(0 0 12px rgba(0, 214, 143, 0.8));
-}
-.cs-file-con-archivo .cs-file-btn-txt { color: #00d68f; }
-.cs-file-con-archivo .cs-file-btn-hint { color: #00d68f; }
-
-@media (max-width: 480px) {
-    .cs-file-btn { padding: 18px 14px; }
-    .cs-file-btn-ico { font-size: 1.6rem; }
-    .cs-file-btn-txt { font-size: 0.72rem; }
-    .cs-file-btn-hint { font-size: 0.58rem; }
-}
+.cs-file-con-archivo .cs-file-btn-ico { color: var(--success); }
+.cs-file-con-archivo .cs-file-btn-txt { color: var(--success); }
+.cs-file-con-archivo .cs-file-btn-hint { color: var(--success); }
 
 /* ----------------------------------------------------------------
    CHIPS DE METADATA EN LAS CARDS
@@ -201,25 +145,17 @@ input#inputArchivoVideo[type="file"] {
     font-size: 0.62rem;
     font-weight: 600;
     font-family: 'Orbitron', monospace;
-    letter-spacing: 0.3px;
     white-space: nowrap;
-    max-width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
 }
 .video-chip-sonido {
     background: rgba(212, 175, 55, 0.2);
     border: 1px solid rgba(212, 175, 55, 0.55);
     color: #D4AF37;
-    box-shadow: 0 0 12px rgba(212, 175, 55, 0.25);
 }
 .video-chip-ubicacion {
     background: rgba(0, 229, 255, 0.15);
     border: 1px solid rgba(0, 229, 255, 0.5);
     color: #00E5FF;
-    box-shadow: 0 0 12px rgba(0, 229, 255, 0.2);
 }
 
 /* ----------------------------------------------------------------
@@ -234,21 +170,19 @@ input#inputArchivoVideo[type="file"] {
     align-items: center;
     gap: 10px;
     padding: 12px 22px;
-    background: linear-gradient(135deg, rgba(15, 45, 26, 0.98), rgba(5, 8, 15, 0.98));
-    border: 1px solid rgba(212, 175, 55, 0.6);
+    background: var(--green-deep);
+    border: 1px solid var(--gold);
     border-radius: 14px;
-    color: #D4AF37;
+    color: var(--gold);
     font-family: 'Inter', sans-serif;
     font-size: 0.82rem;
     font-weight: 600;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(212, 175, 55, 0.2);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
     z-index: 99999;
     opacity: 0;
     transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s ease;
     pointer-events: none;
     max-width: min(92vw, 420px);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
 }
 .cs-toast.show {
     transform: translateX(-50%) translateY(0);
@@ -263,31 +197,13 @@ input#inputArchivoVideo[type="file"] {
     flex-shrink: 0;
     font-family: 'Orbitron', monospace;
     font-weight: 900;
-    font-size: 0.85rem;
-    filter: drop-shadow(0 0 6px currentColor);
 }
 .cs-toast-txt { flex: 1; min-width: 0; word-wrap: break-word; }
 
-.cs-toast-info {
-    border-color: rgba(0, 229, 255, 0.6);
-    color: #00E5FF;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 229, 255, 0.25);
-}
-.cs-toast-success {
-    border-color: rgba(0, 214, 143, 0.7);
-    color: #00d68f;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 214, 143, 0.3);
-}
-.cs-toast-warning {
-    border-color: rgba(247, 212, 74, 0.7);
-    color: #f7d44a;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(247, 212, 74, 0.3);
-}
-.cs-toast-error {
-    border-color: rgba(255, 51, 102, 0.7);
-    color: #ff3366;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6), 0 0 30px rgba(255, 51, 102, 0.3);
-}
+.cs-toast-info { border-color: var(--cyan); color: var(--cyan); }
+.cs-toast-success { border-color: var(--success); color: var(--success); }
+.cs-toast-warning { border-color: var(--warning); color: var(--warning); }
+.cs-toast-error { border-color: var(--danger); color: var(--danger); }
 
 /* ----------------------------------------------------------------
    CONFIRM MODAL
@@ -297,7 +213,6 @@ input#inputArchivoVideo[type="file"] {
     inset: 0;
     background: rgba(0, 0, 0, 0.72);
     backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
     z-index: 99998;
     display: flex;
     align-items: center;
@@ -311,15 +226,15 @@ input#inputArchivoVideo[type="file"] {
 
 .cs-confirm-modal {
     width: min(100%, 420px);
-    background: linear-gradient(145deg, rgba(15, 45, 26, 0.98), rgba(5, 8, 15, 0.98));
-    border: 1px solid rgba(212, 175, 55, 0.5);
+    background: var(--green-deep);
+    border: 1px solid var(--gold);
     border-radius: 20px;
     padding: 24px 22px 20px;
     text-align: center;
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.15);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.7);
     transform: scale(0.92);
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-    color: #f0f4f8;
+    color: var(--text-primary);
     font-family: 'Inter', sans-serif;
 }
 .cs-confirm-overlay.show .cs-confirm-modal { transform: scale(1); }
@@ -332,33 +247,25 @@ input#inputArchivoVideo[type="file"] {
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background: rgba(212, 175, 55, 0.12);
-    border: 1px solid rgba(212, 175, 55, 0.35);
-    color: #D4AF37;
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--gold);
     font-family: 'Orbitron', monospace;
     font-size: 1.4rem;
-    font-weight: 900;
-    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.5));
 }
 .cs-confirm-titulo {
     font-family: 'Orbitron', monospace;
     font-size: 0.95rem;
     font-weight: 700;
-    color: #D4AF37;
-    letter-spacing: 0.5px;
+    color: var(--gold);
     margin-bottom: 8px;
 }
 .cs-confirm-mensaje {
     font-size: 0.82rem;
     line-height: 1.5;
-    color: #c0d8e8;
+    color: var(--text-secondary);
     margin-bottom: 20px;
-    word-wrap: break-word;
 }
-.cs-confirm-acciones {
-    display: flex;
-    gap: 8px;
-}
+.cs-confirm-acciones { display: flex; gap: 8px; }
 .cs-confirm-btn {
     flex: 1;
     padding: 11px 16px;
@@ -367,35 +274,24 @@ input#inputArchivoVideo[type="file"] {
     font-size: 0.72rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
     border: none;
 }
 .cs-confirm-cancel {
     background: transparent;
-    border: 1px solid rgba(138, 168, 184, 0.35);
-    color: #8aa8b8;
+    border: 1px solid var(--glass-border);
+    color: var(--text-muted);
 }
 .cs-confirm-cancel:hover {
-    border-color: #8aa8b8;
-    color: #c0d8e8;
-    background: rgba(138, 168, 184, 0.08);
+    border-color: var(--text-muted);
+    color: var(--text-primary);
 }
 .cs-confirm-ok {
-    background: linear-gradient(135deg, #D4AF37, #b8923a);
-    color: #05080f;
-}
-.cs-confirm-ok:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 24px rgba(212, 175, 55, 0.5);
+    background: var(--gold);
+    color: var(--space);
 }
 .cs-confirm-danger {
-    background: linear-gradient(135deg, #ff3366, #cc1144);
+    background: var(--danger);
     color: #fff;
-}
-.cs-confirm-danger:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 24px rgba(255, 51, 102, 0.5);
 }
 
 /* ----------------------------------------------------------------
@@ -406,7 +302,6 @@ input#inputArchivoVideo[type="file"] {
     inset: 0;
     background: rgba(0, 0, 0, 0.55);
     backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
     z-index: 9500;
     opacity: 0;
     visibility: hidden;
@@ -421,20 +316,16 @@ input#inputArchivoVideo[type="file"] {
     bottom: 0;
     z-index: 9501;
     max-height: 80vh;
-    background: rgba(15, 15, 15, 0.96);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    background: #0b1410;
     border-top-left-radius: 22px;
     border-top-right-radius: 22px;
-    border: 1px solid rgba(212, 175, 55, 0.25);
+    border: 1px solid var(--glass-border);
     border-bottom: none;
     display: flex;
     flex-direction: column;
     transform: translateY(100%);
     transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 -10px 50px rgba(0, 0, 0, 0.7), 0 0 40px rgba(212, 175, 55, 0.08);
-    will-change: transform;
-    color: #f0f4f8;
+    color: var(--text-primary);
     font-family: 'Inter', sans-serif;
 }
 .cs-sheet.show { transform: translateY(0); }
@@ -449,7 +340,7 @@ input#inputArchivoVideo[type="file"] {
     content: '';
     width: 42px;
     height: 4px;
-    background: rgba(212, 175, 55, 0.35);
+    background: rgba(255, 255, 255, 0.2);
     border-radius: 4px;
 }
 .cs-sheet-header {
@@ -457,7 +348,7 @@ input#inputArchivoVideo[type="file"] {
     justify-content: space-between;
     align-items: center;
     padding: 4px 16px 12px;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+    border-bottom: 1px solid var(--glass-border);
     flex-shrink: 0;
 }
 .cs-sheet-titulo {
@@ -467,40 +358,23 @@ input#inputArchivoVideo[type="file"] {
     font-family: 'Orbitron', monospace;
     font-size: 0.9rem;
     font-weight: 700;
-    color: #D4AF37;
-    letter-spacing: 0.5px;
-}
-.cs-sheet-titulo .cs-ico {
-    font-size: 1rem;
-    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.7));
+    color: var(--gold);
 }
 .cs-sheet-close {
     background: transparent;
-    border: 1px solid rgba(212, 175, 55, 0.2);
-    color: #8aa8b8;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-    transition: all 0.2s ease;
-    padding: 0;
-    line-height: 1;
+    padding: 4px;
 }
-.cs-sheet-close:hover {
-    color: #ff3366;
-    border-color: #ff3366;
-    transform: scale(1.05);
-}
+.cs-sheet-close:hover { color: var(--danger); }
 
 .cs-tabs {
     display: flex;
     gap: 4px;
     padding: 10px 14px 0;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+    border-bottom: 1px solid var(--glass-border);
     flex-shrink: 0;
 }
 .cs-tab {
@@ -509,211 +383,137 @@ input#inputArchivoVideo[type="file"] {
     background: transparent;
     border: none;
     border-bottom: 2px solid transparent;
-    color: #8aa8b8;
+    color: var(--text-muted);
     font-family: 'Inter', sans-serif;
     font-size: 0.72rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
 }
-.cs-tab:hover { color: #f0f4f8; }
 .cs-tab.active {
-    color: #D4AF37;
-    border-bottom-color: #D4AF37;
-    text-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+    color: var(--gold);
+    border-bottom-color: var(--gold);
 }
 
 .cs-sheet-body {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
     padding: 12px 14px;
 }
-.cs-sheet-body::-webkit-scrollbar { width: 4px; }
-.cs-sheet-body::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 4px; }
-
 .cs-buscar-wrap {
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    border-radius: 24px;
-    padding: 8px 14px;
+    background: transparent;
+    border-bottom: 1px solid var(--glass-border);
+    padding: 8px 0;
     margin-bottom: 12px;
 }
-.cs-buscar-wrap .cs-ico-buscar {
-    color: #D4AF37;
-    font-size: 0.9rem;
-    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.4));
-}
+.cs-buscar-wrap .cs-ico-buscar { color: var(--text-muted); }
 .cs-buscar-wrap input {
     flex: 1;
     background: transparent;
     border: none;
     outline: none;
-    color: #f0f4f8;
+    color: var(--text-primary);
     font-size: 0.85rem;
-    font-family: inherit;
 }
-.cs-buscar-wrap input::placeholder { color: #8aa8b8; }
 
-.cs-sonidos-lista { display: flex; flex-direction: column; gap: 6px; }
+/* Listas de sonidos y ubicaciones planas */
+.cs-sonidos-lista { display: flex; flex-direction: column; }
 .cs-sonido-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(212, 175, 55, 0.1);
-    border-radius: 12px;
+    padding: 12px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
     text-align: left;
-    color: #f0f4f8;
-    font-family: inherit;
-    transition: all 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
+    color: var(--text-primary);
+    transition: background 0.2s ease;
 }
-.cs-sonido-item:hover {
-    background: rgba(212, 175, 55, 0.06);
-    border-color: rgba(212, 175, 55, 0.35);
-    transform: translateX(2px);
-}
-.cs-sonido-item.activo {
-    background: rgba(212, 175, 55, 0.12);
-    border-color: #D4AF37;
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
-}
-.cs-sonido-ico {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.05));
-    color: #D4AF37;
-    font-size: 0.75rem;
-    flex-shrink: 0;
-    filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4));
-}
+.cs-sonido-item:hover { background: rgba(255, 255, 255, 0.02); }
+.cs-sonido-item.activo { background: rgba(212, 175, 55, 0.05); }
+.cs-sonido-ico { font-size: 0.8rem; color: var(--gold); }
 .cs-sonido-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.cs-sonido-nombre {
-    color: #f0f4f8;
-    font-weight: 700;
-    font-size: 0.82rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.cs-sonido-artista { color: #8aa8b8; font-size: 0.68rem; margin-top: 2px; }
-.cs-sonido-check { color: #D4AF37; font-size: 0.9rem; opacity: 0; transition: opacity 0.2s ease; }
+.cs-sonido-nombre { color: var(--text-primary); font-weight: 600; font-size: 0.85rem; }
+.cs-sonido-artista { color: var(--text-muted); font-size: 0.7rem; }
+.cs-sonido-check { color: var(--gold); font-size: 0.9rem; opacity: 0; }
 .cs-sonido-item.activo .cs-sonido-check { opacity: 1; }
 
-.cs-ubicaciones-lista { display: flex; flex-direction: column; gap: 6px; }
+.cs-ubicaciones-lista { display: flex; flex-direction: column; }
 .cs-ubicacion-item {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 10px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(0, 229, 255, 0.1);
-    border-radius: 12px;
+    padding: 12px 0;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     cursor: pointer;
     text-align: left;
-    color: #f0f4f8;
-    font-family: inherit;
-    transition: all 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
+    color: var(--text-primary);
 }
-.cs-ubicacion-item:hover {
-    background: rgba(0, 229, 255, 0.06);
-    border-color: rgba(0, 229, 255, 0.4);
-    transform: translateX(2px);
-}
-.cs-ubicacion-item.activo {
-    background: rgba(0, 229, 255, 0.12);
-    border-color: #00E5FF;
-    box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
-}
-.cs-ubicacion-ico {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(0, 229, 255, 0.05));
-    color: #00E5FF;
-    font-size: 0.85rem;
-    flex-shrink: 0;
-    filter: drop-shadow(0 0 4px rgba(0, 229, 255, 0.4));
-}
+.cs-ubicacion-item:hover { background: rgba(255, 255, 255, 0.02); }
+.cs-ubicacion-item.activo { background: rgba(0, 229, 255, 0.05); }
+.cs-ubicacion-ico { font-size: 0.8rem; color: var(--cyan); }
 .cs-ubicacion-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.cs-ubicacion-nombre { color: #f0f4f8; font-weight: 700; font-size: 0.82rem; }
-.cs-ubicacion-pais { color: #8aa8b8; font-size: 0.68rem; margin-top: 2px; }
-.cs-ubicacion-check { color: #00E5FF; font-size: 0.9rem; opacity: 0; transition: opacity 0.2s ease; }
+.cs-ubicacion-nombre { color: var(--text-primary); font-weight: 600; font-size: 0.85rem; }
+.cs-ubicacion-pais { color: var(--text-muted); font-size: 0.7rem; }
+.cs-ubicacion-check { color: var(--cyan); font-size: 0.9rem; opacity: 0; }
 .cs-ubicacion-item.activo .cs-ubicacion-check { opacity: 1; }
 
 .cs-sheet-footer {
     flex-shrink: 0;
     padding: 12px 16px;
     padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid rgba(212, 175, 55, 0.12);
-    background: rgba(0, 0, 0, 0.35);
+    border-top: 1px solid var(--glass-border);
     display: flex;
     align-items: center;
     gap: 12px;
     justify-content: space-between;
 }
-.cs-sonido-actual,
-.cs-ubicacion-actual {
+.cs-sonido-actual, .cs-ubicacion-actual {
     flex: 1;
     min-width: 0;
     font-size: 0.75rem;
-    color: #8aa8b8;
+    color: var(--text-muted);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 .cs-btn-primary {
     padding: 10px 22px;
-    background: linear-gradient(135deg, #D4AF37, #b8923a);
-    color: #05080f;
+    background: var(--gold);
+    color: var(--space);
     border: none;
     border-radius: 24px;
     font-family: 'Orbitron', monospace;
     font-size: 0.72rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.25s ease;
-    -webkit-tap-highlight-color: transparent;
-    white-space: nowrap;
-}
-.cs-btn-primary:hover:not(:disabled) {
-    transform: scale(1.03);
-    box-shadow: 0 0 24px rgba(212, 175, 55, 0.5);
 }
 .cs-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ----------------------------------------------------------------
-   PREVIEW EN UPLOAD
+   PREVIEW EN UPLOAD (DISEÑO PLANO)
    ---------------------------------------------------------------- */
 .cs-preview-wrap {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 12px;
-    padding: 12px;
-    background: rgba(0, 0, 0, 0.35);
-    border: 1px solid rgba(212, 175, 55, 0.15);
-    border-radius: 14px;
+    padding: 16px 0;
+    background: transparent;
+    border-top: 1px solid var(--glass-border);
+    margin-top: 16px;
     margin-bottom: 12px;
 }
 .cs-preview-video {
     position: relative;
-    border-radius: 10px;
+    border-radius: 8px;
     overflow: hidden;
     background: #000;
     aspect-ratio: 9 / 16;
@@ -730,9 +530,6 @@ input#inputArchivoVideo[type="file"] {
     position: absolute;
     top: 8px;
     left: 8px;
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
     padding: 3px 10px;
     background: rgba(212, 175, 55, 0.9);
     color: #05080f;
@@ -740,33 +537,27 @@ input#inputArchivoVideo[type="file"] {
     font-size: 0.55rem;
     font-weight: 700;
     border-radius: 12px;
-    box-shadow: 0 0 12px rgba(212, 175, 55, 0.5);
 }
-.cs-preview-meta { display: flex; flex-direction: column; gap: 8px; }
+.cs-preview-meta { display: flex; flex-direction: column; gap: 4px; }
 .cs-preview-line {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(212, 175, 55, 0.1);
-    border-radius: 10px;
+    padding: 8px 0;
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     font-size: 0.75rem;
 }
-.cs-preview-line .cs-ico {
-    color: #D4AF37;
-    font-size: 0.85rem;
-    filter: drop-shadow(0 0 4px rgba(212, 175, 55, 0.4));
-}
+.cs-preview-line .cs-ico { color: var(--text-muted); }
 .cs-preview-txt {
-    color: #c0d8e8;
+    color: var(--text-primary);
     flex: 1;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
-.cs-preview-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.cs-preview-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .cs-btn-ghost {
     flex: 1;
     display: inline-flex;
@@ -775,60 +566,37 @@ input#inputArchivoVideo[type="file"] {
     gap: 6px;
     padding: 9px 14px;
     background: transparent;
-    border: 1px solid rgba(212, 175, 55, 0.3);
+    border: 1px solid var(--glass-border);
     border-radius: 20px;
-    color: #D4AF37;
-    font-family: 'Orbitron', monospace;
-    font-size: 0.65rem;
-    font-weight: 700;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
-    -webkit-tap-highlight-color: transparent;
 }
 .cs-btn-ghost:hover {
-    background: rgba(212, 175, 55, 0.08);
-    border-color: #D4AF37;
-    box-shadow: 0 0 14px rgba(212, 175, 55, 0.25);
+    border-color: var(--text-muted);
+    color: var(--text-primary);
 }
 
-.cs-vacio {
-    text-align: center;
-    padding: 30px 20px;
-    color: #8aa8b8;
-}
-.cs-vacio .cs-ico-vacio {
-    display: block;
-    font-size: 2rem;
-    color: #D4AF37;
-    opacity: 0.35;
-    margin-bottom: 10px;
-    font-family: 'Orbitron', monospace;
-}
+.cs-vacio { text-align: center; padding: 30px 20px; color: var(--text-muted); }
+.cs-vacio .cs-ico-vacio { display: block; font-size: 2rem; color: var(--gold); opacity: 0.3; margin-bottom: 10px; }
 .cs-vacio p { font-size: 0.8rem; margin: 0; }
-
 .cs-borradores-lista { display: flex; flex-direction: column; gap: 10px; }
 
 /* ----------------------------------------------------------------
    RESPONSIVE
    ---------------------------------------------------------------- */
 @media (min-width: 640px) {
-    .cs-preview-wrap { grid-template-columns: 200px 1fr; }
+    .cs-preview-wrap { flex-direction: row; align-items: flex-start; }
+    .cs-preview-video { width: 200px; flex-shrink: 0; max-height: 350px; }
+    .cs-preview-meta { flex: 1; }
 }
 @media (max-width: 480px) {
     .cs-sheet { max-height: 86vh; }
     .cs-sheet-header { padding: 4px 12px 10px; }
-    .cs-sheet-titulo { font-size: 0.8rem; }
     .cs-sheet-body { padding: 10px 12px; }
-    .cs-sheet-footer {
-        padding: 10px 12px;
-        padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-    }
+    .cs-sheet-footer { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     .cs-btn-primary { padding: 9px 16px; font-size: 0.65rem; }
-    .cs-toast {
-        bottom: 20px;
-        font-size: 0.75rem;
-        padding: 10px 18px;
-    }
 }
 
 /* ----------------------------------------------------------------
