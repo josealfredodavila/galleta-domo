@@ -1,18 +1,20 @@
 /* ================================================================
-   MURO · ACCIONES DE PUBLICACIÓN v3 (plano tipo Facebook)
-   Me gusta, comentar, compartir, eliminar y reportar.
-   Sin pastillas ni brillos: icono + texto con su color, y fondo
-   sutil solo al tocar. Se carga DESPUÉS de muro.css.
+   MURO · ACCIONES DE PUBLICACIÓN v4 (sin cajas)
+   Me gusta, comentar, tokens en venta, compartir, eliminar y reportar.
+   Solo icono + número/texto con su color. Sin bordes ni fondos fijos;
+   un leve fondo aparece únicamente al tocar.
+   Se carga DESPUÉS de muro.css.
    ================================================================ */
 
-/* ---------- Barra de estadísticas (me gusta, comentarios, venta) ---------- */
+/* ---------- Barra de estadísticas ---------- */
 .post-card .post-stats {
     display: flex;
     flex-wrap: wrap;
-    gap: 4px;
-    padding: 8px 0 0;
-    margin-top: 6px;
-    border-top: 1px solid var(--flat-line, rgba(255,255,255,0.09));
+    align-items: center;
+    gap: 18px;
+    padding: 10px 0 0;
+    margin-top: 4px;
+    border: 0;
 }
 
 .post-card .post-stats > span {
@@ -20,11 +22,12 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    height: 34px;
-    padding: 0 10px;
+    height: 30px;
+    padding: 0 4px;
     border: 0;
     border-radius: 8px;
     background: transparent;
+    box-shadow: none;
     color: rgb(var(--ac));
     font-size: 0.78rem;
     font-weight: 600;
@@ -51,12 +54,12 @@
 /* Me gusta: rosa */
 .post-card .post-stats .like-btn { --ac: 255, 77, 109; }
 
-/* Me gusta activo: se rellena el corazón, sin caja */
+/* Me gusta activo: el corazón se rellena */
 .post-card .post-stats .like-btn[data-liked="true"] .icon-ui {
     fill: rgb(var(--ac));
 }
 
-/* Venta activa: dorado, sin acción al tocar */
+/* Venta activa: dorado, informativo (no clicable) */
 .post-card .post-stats .venta-activa {
     --ac: 212, 175, 55;
     cursor: default;
@@ -67,10 +70,9 @@
     background: transparent;
 }
 
-/* Iconos de estadísticas */
 .post-card .post-stats .icon-ui {
-    width: 17px;
-    height: 17px;
+    width: 18px;
+    height: 18px;
     stroke: currentColor;
     fill: none;
     stroke-width: 1.8;
@@ -88,7 +90,7 @@
 .post-card .post-actions-header {
     display: flex;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
     margin-left: auto;
 }
 
@@ -97,12 +99,13 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     padding: 0;
     border: 0;
     border-radius: 50%;
     background: transparent;
+    box-shadow: none;
     color: rgb(var(--ac));
     cursor: pointer;
     transition: background 0.18s ease;
@@ -221,19 +224,18 @@
 
 /* ---------- Móvil ---------- */
 @media (max-width: 480px) {
+    .post-card .post-stats { gap: 14px; }
+
     .post-card .post-stats > span {
-        height: 32px;
-        padding: 0 8px;
+        height: 28px;
         font-size: 0.74rem;
     }
 
-    .post-card .post-actions-header {
-        gap: 0;
-    }
+    .post-card .post-actions-header { gap: 2px; }
 
     .post-card .post-actions-header button {
-        width: 32px;
-        height: 32px;
+        width: 30px;
+        height: 30px;
     }
 }
 
