@@ -1,25 +1,24 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
+// v5.7 (El enlace al autor usa ?u=<handle>, que es lo que lee
+//       perfil-publico.html. El @handle se muestra en azul y es
+//       clicable, igual que el nombre y el avatar.)
 // v5.6 (Nombre, handle y avatar de cada publicación enlazan al perfil
 //       del autor. Si es tu propia publicación, abre tu perfil.)
 // v5.5 (Diseño tipo Facebook: publicaciones sin tarjeta ni bordes,
 //       medios a todo el ancho, barra de acciones plana)
-// v5.4 (Eliminación sin borrar Storage desde el cliente: el backend
-//       libera el archivo solo si ninguna publicación lo referencia)
+// v5.4 (Eliminación sin borrar Storage desde el cliente)
 // v5.3 (Emojis de reacción alineados con la base de datos,
 //       reacciones optimizadas, comentarios protegidos contra envíos
-//       repetidos, vista previa segura, medios compatibles con el
-//       esquema actual y mejor manejo de errores)
+//       repetidos, vista previa segura, medios compatibles)
 // ================================================================
 
 window.listaMultimediaPerfil = [];
 
-// Página de perfil de otros usuarios (ajusta aquí si cambia el nombre).
 var PUB_RUTA_PERFIL_PUBLICO = '/features/perfil/perfil-publico.html';
 var PUB_RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html';
 
-// Solo los emojis que acepta la restricción de publicaciones_reacciones.
 var PUB_EMOJIS_REACCION_DEFAULT = ['❤️', '😊', '👏', '😍', '😂', '🔥', '🎉', '🤩', '💎'];
 
 var PUB_EMOJIS_PICKER_DEFAULT = [
@@ -30,7 +29,6 @@ var PUB_EMOJIS_PICKER_DEFAULT = [
     '☕','🍕','🍔','🌮','🍩','🎵','🎶','🐶','🐱','🌹','🌈','☀️','🌙','⚡','💰','🚀','📸'
 ];
 
-// Compatibilidad con páginas que ya declaran estas variables.
 if (typeof window.archivosSeleccionados === 'undefined') {
     window.archivosSeleccionados = { imagen: null, video: null };
 }
@@ -132,18 +130,20 @@ function pubCodigoIdioma() {
 // ================================================================
 // ENLACE AL PERFIL DEL AUTOR
 // ================================================================
-// Devuelve la URL del perfil del autor. Si el autor es el usuario
-// en sesión, abre su propio perfil.
+// Usa ?u=<handle>, el parámetro que lee perfil-publico.html.
+// Si el autor es el usuario en sesión, abre su propio perfil.
 // ================================================================
 
-function pubUrlPerfilAutor(usuarioId, miId) {
-    if (!usuarioId) return null;
-
-    if (miId && String(usuarioId) === String(miId)) {
+function pubUrlPerfilAutor(handle, usuarioId, miId) {
+    if (miId && usuarioId && String(usuarioId) === String(miId)) {
         return PUB_RUTA_PERFIL_PROPIO;
     }
 
-    return PUB_RUTA_PERFIL_PUBLICO + '?id=' + encodeURIComponent(usuarioId);
+    var h = String(handle || '').trim();
+
+    if (!/^[A-Za-z0-9_]{1,40}$/.test(h)) return null;
+
+    return PUB_RUTA_PERFIL_PUBLICO + '?u=' + encodeURIComponent(h);
 }
 
 // ================================================================
@@ -157,7 +157,6 @@ function pubUrlPerfilAutor(usuarioId, miId) {
     style.id = 'perfil-reacciones-fb-styles';
 
     style.appendChild(document.createTextNode(`
-        /* ---------- Publicación: sin tarjeta, separador fino ---------- */
         #misPublicacionesList .publicacion-card {
             background: transparent !important;
             border: 0 !important;
@@ -174,7 +173,6 @@ function pubUrlPerfilAutor(usuarioId, miId) {
             box-shadow: none !important;
         }
 
-        /* ---------- Encabezado tipo Facebook ---------- */
         #misPublicacionesList .publicacion-card .header {
             display: flex !important;
             flex-direction: row !important;
@@ -215,7 +213,7 @@ function pubUrlPerfilAutor(usuarioId, miId) {
             margin-top: 2px !important;
         }
 
-        /* ---------- Enlaces al perfil del autor (nombre, handle, avatar) ---------- */
+        /* Enlaces al perfil del autor */
         .pub-autor-enlace {
             color: inherit;
             text-decoration: none;
@@ -231,6 +229,11 @@ function pubUrlPerfilAutor(usuarioId, miId) {
             outline-offset: 2px;
             border-radius: 4px;
         }
+        .pub-autor-handle {
+            color: #3b82f6 !important;
+            font-weight: 500 !important;
+            font-size: .75rem !important;
+        }
         .pub-autor-avatar-enlace {
             display: block;
             width: 40px;
@@ -240,7 +243,6 @@ function pubUrlPerfilAutor(usuarioId, miId) {
             cursor: pointer;
         }
 
-        /* ---------- Contenido y medios a todo el ancho ---------- */
         .publicacion-card .contenido {
             display: flex;
             flex-direction: column;
@@ -266,7 +268,6 @@ function pubUrlPerfilAutor(usuarioId, miId) {
             cursor: pointer;
         }
 
-        /* ---------- Aviso de moderación más discreto ---------- */
         .perfil-aviso-moderacion {
             display: flex;
             align-items: center;
@@ -280,7 +281,6 @@ function pubUrlPerfilAutor(usuarioId, miId) {
         }
         .perfil-aviso-moderacion-icono { font-size: .95rem; flex: 0 0 auto; }
 
-        /* ---------- Barra de acciones plana ---------- */
         .reaccion-wrap {
             position: relative;
             display: inline-block;
@@ -394,7 +394,6 @@ function pubUrlPerfilAutor(usuarioId, miId) {
         .btn-accion-pub.danger { color: var(--danger, #ff3366) !important; }
         .btn-accion-pub.danger:hover { background: rgba(255,51,102,.08) !important; }
 
-        /* ---------- Comentarios planos ---------- */
         .comentarios-container {
             display: none;
             margin-top: 8px;
@@ -694,7 +693,6 @@ function seleccionarArchivoPerfil(event, tipo) {
         return;
     }
 
-    // La tabla actual guarda un solo media_url y un solo media_type por publicación.
     var otroTipo = tipo === 'imagen' ? 'video' : 'imagen';
 
     if (archivosSeleccionados[otroTipo]) {
@@ -1041,7 +1039,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
         if (result.error) throw result.error;
 
-        // Evita que una carga anterior sobrescriba una más reciente.
         if (versionActual !== pubVersionRender) return;
 
         var publicaciones = result.data || [];
@@ -1065,7 +1062,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
             return id !== null && id !== undefined;
         });
 
-        // Solo consulta las reacciones correspondientes a las publicaciones visibles.
         if (idsPublicaciones.length > 0) {
             try {
                 var reaccResult = await client.from('publicaciones_reacciones')
@@ -1099,8 +1095,8 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
         publicaciones.forEach(function (p) {
             var nombreReal = pubEscapeHtml(p.usuario_nombre || 'Explorador');
-            var handleReal = p.usuario_handle ? '@' + pubEscapeHtml(p.usuario_handle) : '';
-            var urlAutor = pubUrlPerfilAutor(p.usuario_id, miId);
+            var handleSeguro = pubEscapeHtml(p.usuario_handle || '');
+            var urlAutor = pubUrlPerfilAutor(p.usuario_handle, p.usuario_id, miId);
 
             var card = document.createElement('div');
             card.className = 'publicacion-card';
@@ -1119,18 +1115,22 @@ async function cargarMisPublicaciones(forzarRefresco) {
             avatarBox.appendChild(pubCrearAvatar(p.usuario_nombre, p.usuario_avatar_url));
             header.appendChild(avatarBox);
 
-            // Nombre y handle: enlazan al perfil del autor
+            // Nombre y @handle: enlazan al perfil del autor
             var headerMeta = document.createElement('div');
+
+            var handleHtml = handleSeguro
+                ? ' <span class="pub-autor-handle">@' + handleSeguro + '</span>'
+                : '';
 
             var nombreHtml =
                 '<span class="nombre" data-no-traducir="1">' +
                 '<span class="pub-autor-nombre">' + nombreReal + '</span>' +
-                (handleReal ? ' <span style="color:var(--text-muted);font-weight:400;font-size:.75rem;">' + handleReal + '</span>' : '') +
+                handleHtml +
                 '</span>';
 
             var nombreBloque = urlAutor
                 ? '<a class="pub-autor-enlace" href="' + pubEscapeHtml(urlAutor) + '" aria-label="Ver perfil de ' + pubEscapeHtml(p.usuario_nombre || 'Explorador') + '">' + nombreHtml + '</a>'
-                : '<div class="nombre" data-no-traducir="1">' + nombreReal + (handleReal ? ' <span style="color:var(--text-muted);font-weight:400;font-size:.75rem;">' + handleReal + '</span>' : '') + '</div>';
+                : '<div class="nombre" data-no-traducir="1">' + nombreReal + handleHtml + '</div>';
 
             headerMeta.innerHTML =
                 nombreBloque +
@@ -1216,10 +1216,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             card.appendChild(contenido);
 
-            // --------------------------------------------------------
             // REACCIONES
-            // --------------------------------------------------------
-
             var reaccionUsuario = reaccionesUsuario[p.id] || null;
             var conteos = conteosReacciones[p.id] || {};
             var totalReacciones = 0;
@@ -1289,7 +1286,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
             trigger.appendChild(emojiActual);
             trigger.appendChild(countActual);
 
-            // Un solo sistema de eventos evita duplicar acciones en móvil.
             var pressTimer = null;
             var longPressTriggered = false;
             var pointerStartX = 0;
@@ -1351,10 +1347,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
             wrap.appendChild(dropdown);
             wrap.appendChild(trigger);
 
-            // --------------------------------------------------------
-            // ACCIONES DE LA PUBLICACIÓN (fila plana)
-            // --------------------------------------------------------
-
+            // ACCIONES
             var stats = document.createElement('div');
             stats.className = 'stats';
             stats.setAttribute('data-no-traducir', '1');
@@ -1387,10 +1380,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
             stats.appendChild(btnEliminar);
             card.appendChild(stats);
 
-            // --------------------------------------------------------
             // COMENTARIOS
-            // --------------------------------------------------------
-
             var comentariosContainer = document.createElement('div');
             comentariosContainer.className = 'comentarios-container';
             comentariosContainer.id = 'comentarios-container-' + p.id;
@@ -1636,14 +1626,12 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
         if (existing.error) throw existing.error;
 
         if (existing.data && existing.data.tipo === emoji) {
-            // Tocar la misma reacción la elimina.
             var del = await client.from('publicaciones_reacciones')
                 .delete()
                 .eq('id', existing.data.id);
 
             if (del.error) throw del.error;
         } else if (existing.data) {
-            // Cambiar emoji actualiza la reacción existente.
             var upd = await client.from('publicaciones_reacciones')
                 .update({ tipo: emoji })
                 .eq('id', existing.data.id);
@@ -1659,12 +1647,10 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
             if (ins.error) throw ins.error;
         }
 
-        // Actualiza solo la publicación afectada, sin recargar todo el feed.
         await refrescarReaccionesPublicacion(postId);
     } catch (error) {
         console.error('Error reaccionando:', error);
 
-        // Si falla el guardado, recupera el aspecto anterior del botón.
         if (trigger && estadoAnterior) {
             trigger.innerHTML = estadoAnterior.html;
             trigger.classList.toggle('activa', estadoAnterior.activa);
@@ -1770,7 +1756,6 @@ async function cargarComentariosPerfil(publicacionId) {
 
             contenidoDiv.appendChild(fechaDiv);
 
-            // El autor del comentario o el dueño de la publicación pueden eliminarlo.
             var puedeEliminar = Boolean(uid && (c.usuario_id === uid || soyDueno));
 
             if (puedeEliminar) {
@@ -1930,9 +1915,6 @@ async function eliminarComentarioPerfil(comentarioId, publicacionId) {
 // ================================================================
 // ELIMINAR PUBLICACIÓN PROPIA
 // ================================================================
-// Después de borrar la fila, se pide al backend (/api/media/liberar)
-// que elimine el archivo solo si ninguna otra publicación lo usa.
-// ================================================================
 
 async function liberarArchivoPublicacion(mediaUrl) {
     if (!mediaUrl) return;
@@ -2000,7 +1982,6 @@ async function eliminarMiPublicacion(publicacionId, event) {
             throw new Error('No tienes permiso para eliminar esta publicación.');
         }
 
-        // La fila ya no existe; el backend decide si el archivo sigue en uso.
         await liberarArchivoPublicacion(mediaUrl);
 
         if (window.showToast) {
