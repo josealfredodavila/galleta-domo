@@ -17,9 +17,12 @@
 //   GET  /api/pay/retiros                          (privado)
 //   GET  /api/pay/retiros/:id                      (privado)
 //
-// REGLA CRÍTICA:
-//   POST /api/pay/retiros requiere token_verificacion emitido después
-//   de una verificación biométrica exitosa. El token es de un solo uso.
+// REGLAS DE VERIFICACIÓN:
+//   - Huella (WebAuthn): validada por la firma criptográfica del
+//     dispositivo. NO requiere liveness facial.
+//   - Rostro: requiere liveness reciente y, en su momento, la
+//     validación del proveedor Incode. Hasta entonces responde 503.
+//   - POST /api/pay/retiros requiere token_verificacion de un solo uso.
 //
 // Métodos activos en esta fase: spei y crypto.
 // Retiro por tarjeta (Stripe Connect) queda fuera de esta fase.
@@ -28,6 +31,7 @@
 'use strict';
 
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 
 const { supabaseAdmin } = require('../../config/supabase');
@@ -53,7 +57,7 @@ const PROVEEDOR_POR_METODO = {
 };
 
 // Módulo que implementa crearPayout para cada proveedor.
-// IMPORTANTE: nowpayments usa nowpayments-payout.js, no nowpayments.js.
+// nowpayments usa nowpayments-payout.js (no nowpayments.js).
 const MODULO_PAYOUT_POR_PROVEEDOR = {
     fintoc: '../../services/pay/providers/fintoc-payout',
     nowpayments: '../../services/pay/providers/nowpayments-payout'
@@ -123,8 +127,8 @@ function adapterPayoutImplementado(proveedor) {
 }
 
 /**
- * Valida el destino del retiro en la ruta, antes de llamar al servicio,
- * para responder 400 con mensaje claro sin consumir el token.
+ * Valida el destino del retiro antes de llamar al servicio, para
+ * responder 400 con mensaje claro sin consumir el token.
  */
 function validarCamposDestino(metodo, body) {
     if (metodo === 'spei') {
@@ -375,6 +379,10 @@ router.post(
 // ================================================================
 // POST /api/pay/retiros/webauthn/validar
 // ================================================================
+// La huella se valida con la firma criptográfica del dispositivo
+// (WebAuthn, userVerification required). NO requiere liveness facial.
+// El token se emite con metodoBiometrico 'huella' y livenessVerificado false.
+// ================================================================
 
 router.post(
     '/webauthn/validar',
@@ -400,16 +408,6 @@ router.post(
                 user_handle: body.user_handle
             });
 
-            // Exigir liveness reciente antes de emitir el token
-            const verificacionLiveness = liveness.obtenerUltimaVerificacionExitosa(usuarioId);
-
-            if (!verificacionLiveness) {
-                return res.status(403).json({
-                    success: false,
-                    error: 'Debes completar la verificación de liveness antes de retirar'
-                });
-            }
-
             const monto = Number(body.monto_autorizado);
             const metodo = String(body.metodo_autorizado || '').toLowerCase();
 
@@ -432,12 +430,10 @@ router.post(
                 montoMaximo: monto,
                 metodo: metodo,
                 metodoBiometrico: 'huella',
-                livenessVerificado: true,
+                livenessVerificado: false,
                 metadata: {
                     ip: req.headers['x-forwarded-for'] || req.ip,
-                    user_agent: req.headers['user-agent'] || null,
-                    liveness_edad_ms: verificacionLiveness.edad_ms,
-                    liveness_score: verificacionLiveness.score
+                    user_agent: req.headers['user-agent'] || null
                 }
             });
 
@@ -484,8 +480,9 @@ router.post(
 // ================================================================
 // POST /api/pay/retiros/facial/validar
 // ================================================================
-// Ver nota en biometria.js: esta ruta queda en espera de la
-// integración con Incode. Hasta entonces responde 503 sin simular.
+// Rostro: exige liveness reciente. La validación de identidad se
+// hará con Incode; mientras tanto biometria.validarRespuestaFacial
+// responde 503 sin simular nada.
 // ================================================================
 
 router.post(
@@ -770,8 +767,7 @@ router.post(
 
             logger.info(
                 `[Pay Retiros] Retiro ${retiro.id} solicitado por ${usuarioId} ` +
-                `(${metodo}, $${retiro.monto_mxn} MXN → ${retiro.estado}) ` +
-                `[verificado biométricamente]`
+                `(${metodo}, $${retiro.monto_mxn} MXN → ${retiro.estado})`
             );
 
             return res.status(201).json({
