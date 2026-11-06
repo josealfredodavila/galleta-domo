@@ -2,28 +2,25 @@
 // SERVICES/PAY/VERIFICACION-TOKENS.JS
 // CSARIEL'S PAY - TOKENS DE VERIFICACIÓN
 // ================================================================
-// Los tokens de verificación son "boletos de acceso" que el usuario
-// obtiene después de pasar por:
-//   1. Liveness (que sea persona real).
-//   2. Biometría (huella o rostro).
-//
-// El retiro solo se puede crear si el usuario presenta un token válido.
+// Los tokens son "boletos de acceso" de un solo uso que el usuario
+// obtiene después de verificar su identidad:
+//   - Huella (WebAuthn): validada por el dispositivo. NO requiere liveness.
+//   - Rostro: requiere liveness reciente (y, cuando esté integrado,
+//     la validación del proveedor Incode).
 //
 // Características:
 //   - Un solo uso.
 //   - TTL de 5 minutos.
-//   - Vinculado a usuario, monto y método.
+//   - Vinculado a usuario, monto máximo, método y tipo biométrico.
 //   - Firmado con HMAC (no falsificable).
-//   - Auditoría completa.
+//   - Auditoría en logs.
 //
-// Flujo:
-//   1. Usuario verifica identidad (huella o rostro).
-//   2. Backend genera token vinculado a usuario+monto+método.
-//   3. Usuario crea retiro presentando el token.
-//   4. Backend valida el token y consume (marca como usado).
-//   5. Retiro se crea.
-//
-// Si el token expira o se usa dos veces, el retiro se rechaza.
+// NOTA DE ALCANCE:
+//   Los tokens se guardan en memoria del proceso. Si Railway reinicia
+//   o escala a más de una instancia, los tokens activos se pierden o
+//   no se encuentran. El usuario debe repetir la verificación. Esto es
+//   aceptable para la fase actual; la migración a pay_tokens_verificacion
+//   (tabla existente) queda pendiente de decisión.
 // ================================================================
 
 'use strict';
@@ -44,9 +41,13 @@ const TOKEN_SECRET =
 // TTL del token: 5 minutos
 const TOKEN_TTL_MS = 5 * 60 * 1000;
 
-// Almacenamiento en memoria de tokens activos
-// NOTA: si Railway reinicia, se pierden. Los usuarios deben repetir el proceso.
-const tokensActivos = new Map(); // token -> { usuarioId, montoMaximo, metodo, metodoBiometrico, expiraEn, usado, creadoEn, metadata }
+const METODOS_VALIDOS = ['spei', 'crypto'];
+const BIOMETRICOS_VALIDOS = ['huella', 'rostro'];
+
+// Almacenamiento en memoria de tokens activos.
+// token -> { usuarioId, montoMaximo, metodo, metodoBiometrico,
+//            livenessVerificado, expiraEn, usado, creadoEn, metadata }
+const tokensActivos = new Map();
 
 // ================================================================
 // VERIFICAR CONFIGURACIÓN
@@ -59,6 +60,17 @@ function verificarConfiguracion() {
             'El sistema de tokens no está configurado correctamente'
         );
     }
+}
+
+// ================================================================
+// REGLA DE LIVENESS
+// ================================================================
+// Solo el método facial exige liveness. La huella se valida con la
+// firma criptográfica del dispositivo (WebAuthn).
+// ================================================================
+
+function requiereLiveness(metodoBiometrico) {
+    return metodoBiometrico === 'rostro';
 }
 
 // ================================================================
@@ -80,22 +92,35 @@ function generarTokenVerificacion(datos) {
         throw errors.errorMontoInvalido();
     }
 
-    const metodo = d.metodo;
+    const metodo = String(d.metodo || '').toLowerCase();
 
-    if (!metodo || !['spei', 'crypto', 'tarjeta'].includes(metodo)) {
-        throw errors.errorMetodoInvalido(metodo);
+    if (!METODOS_VALIDOS.includes(metodo)) {
+        throw errors.errorMetodoInvalido(d.metodo);
     }
 
     const metodoBiometrico = d.metodoBiometrico;
 
-    if (!metodoBiometrico || !['huella', 'rostro'].includes(metodoBiometrico)) {
+    if (!BIOMETRICOS_VALIDOS.includes(metodoBiometrico)) {
         throw errors.errorParametroRequerido('metodoBiometrico (huella|rostro)');
+    }
+
+    const livenessVerificado = d.livenessVerificado === true;
+
+    // Un token facial sin liveness no se emite.
+    if (requiereLiveness(metodoBiometrico) && !livenessVerificado) {
+        throw new errors.ErrorAutorizacion(
+            'TOKEN_SIN_LIVENESS',
+            'La verificación facial requiere detección de liveness'
+        );
     }
 
     const tokenAleatorio = crypto.randomBytes(32).toString('base64url');
     const timestamp = Date.now();
 
-    const contenido = `${d.usuarioId}:${montoMaximo}:${metodo}:${metodoBiometrico}:${timestamp}:${tokenAleatorio}`;
+    const contenido =
+        `${d.usuarioId}:${montoMaximo}:${metodo}:${metodoBiometrico}:` +
+        `${livenessVerificado}:${timestamp}:${tokenAleatorio}`;
+
     const firma = crypto
         .createHmac('sha256', TOKEN_SECRET)
         .update(contenido)
@@ -108,7 +133,7 @@ function generarTokenVerificacion(datos) {
         montoMaximo: montoMaximo,
         metodo: metodo,
         metodoBiometrico: metodoBiometrico,
-        livenessVerificado: d.livenessVerificado === true,
+        livenessVerificado: livenessVerificado,
         expiraEn: timestamp + TOKEN_TTL_MS,
         usado: false,
         creadoEn: timestamp,
@@ -117,7 +142,8 @@ function generarTokenVerificacion(datos) {
 
     logger.info(
         `[VerifTokens] Token generado: usuario=${d.usuarioId} ` +
-        `monto_max=${montoMaximo} metodo=${metodo} bio=${metodoBiometrico}`
+        `monto_max=${montoMaximo} metodo=${metodo} bio=${metodoBiometrico} ` +
+        `liveness=${livenessVerificado}`
     );
 
     return {
@@ -130,7 +156,7 @@ function generarTokenVerificacion(datos) {
 }
 
 // ================================================================
-// VALIDAR TOKEN
+// VALIDAR Y CONSUMIR TOKEN
 // ================================================================
 
 async function validarYConsumirToken(datos) {
@@ -155,7 +181,9 @@ async function validarYConsumirToken(datos) {
         throw errors.errorMontoInvalido();
     }
 
-    if (!d.metodo) {
+    const metodo = String(d.metodo || '').toLowerCase();
+
+    if (!METODOS_VALIDOS.includes(metodo)) {
         throw errors.errorMetodoInvalido(d.metodo);
     }
 
@@ -170,7 +198,7 @@ async function validarYConsumirToken(datos) {
 
     if (registro.usuarioId !== d.usuarioId) {
         tokensActivos.delete(d.token);
-        logger.warning(
+        logger.warn(
             `[VerifTokens] Usuario ${d.usuarioId} intentó usar token de ${registro.usuarioId}`
         );
         throw new errors.ErrorAutorizacion(
@@ -189,26 +217,25 @@ async function validarYConsumirToken(datos) {
 
     if (registro.usado) {
         tokensActivos.delete(d.token);
-        logger.warning(`[VerifTokens] Token ya usado por usuario ${d.usuarioId}`);
+        logger.warn(`[VerifTokens] Token ya usado por usuario ${d.usuarioId}`);
         throw new errors.ErrorAutorizacion(
             'TOKEN_YA_USADO',
             'Esta verificación ya fue utilizada. Genera una nueva.'
         );
     }
 
-    if (registro.metodo !== d.metodo) {
-        logger.warning(
-            `[VerifTokens] Método no coincide: ` +
-            `token=${registro.metodo} solicitud=${d.metodo}`
+    if (registro.metodo !== metodo) {
+        logger.warn(
+            `[VerifTokens] Método no coincide: token=${registro.metodo} solicitud=${metodo}`
         );
         throw new errors.ErrorAutorizacion(
             'TOKEN_METODO_NO_COINCIDE',
-            `La verificación fue autorizada para ${registro.metodo}, no para ${d.metodo}`
+            `La verificación fue autorizada para ${registro.metodo}, no para ${metodo}`
         );
     }
 
     if (monto > registro.montoMaximo) {
-        logger.warning(
+        logger.warn(
             `[VerifTokens] Monto supera el autorizado: ` +
             `autorizado=${registro.montoMaximo} solicitado=${monto}`
         );
@@ -219,16 +246,18 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    if (!registro.livenessVerificado) {
+    // Liveness: solo para rostro.
+    if (requiereLiveness(registro.metodoBiometrico) && !registro.livenessVerificado) {
+        tokensActivos.delete(d.token);
         throw new errors.ErrorAutorizacion(
             'TOKEN_SIN_LIVENESS',
-            'La verificación no incluye detección de liveness'
+            'La verificación facial no incluye detección de liveness'
         );
     }
 
-    const tokenPartes = d.token.split('.');
+    const partes = d.token.split('.');
 
-    if (tokenPartes.length !== 2) {
+    if (partes.length !== 2) {
         tokensActivos.delete(d.token);
         throw new errors.ErrorAutorizacion(
             'TOKEN_FORMATO_INVALIDO',
@@ -236,60 +265,49 @@ async function validarYConsumirToken(datos) {
         );
     }
 
-    const [firmaRecibida, tokenAleatorio] = tokenPartes;
+    const [firmaRecibida, tokenAleatorio] = partes;
 
-    const contenido = `${registro.usuarioId}:${registro.montoMaximo}:${registro.metodo}:${registro.metodoBiometrico}:${registro.creadoEn}:${tokenAleatorio}`;
+    const contenido =
+        `${registro.usuarioId}:${registro.montoMaximo}:${registro.metodo}:` +
+        `${registro.metodoBiometrico}:${registro.livenessVerificado}:` +
+        `${registro.creadoEn}:${tokenAleatorio}`;
+
     const firmaEsperada = crypto
         .createHmac('sha256', TOKEN_SECRET)
         .update(contenido)
         .digest('hex');
 
-    try {
-        const bufEsperado = Buffer.from(firmaEsperada, 'hex');
-        const bufRecibido = Buffer.from(firmaRecibida, 'hex');
+    const bufEsperado = Buffer.from(firmaEsperada, 'hex');
+    const bufRecibido = Buffer.from(firmaRecibida, 'hex');
 
-        if (bufEsperado.length !== bufRecibido.length) {
-            tokensActivos.delete(d.token);
-            throw new errors.ErrorAutorizacion(
-                'TOKEN_FIRMA_INVALIDA',
-                'El token de verificación es inválido'
-            );
-        }
+    const firmaValida =
+        bufEsperado.length === bufRecibido.length &&
+        crypto.timingSafeEqual(bufEsperado, bufRecibido);
 
-        const firmaValida = crypto.timingSafeEqual(bufEsperado, bufRecibido);
-
-        if (!firmaValida) {
-            tokensActivos.delete(d.token);
-            logger.warning(`[VerifTokens] Firma inválida para usuario ${d.usuarioId}`);
-            throw new errors.ErrorAutorizacion(
-                'TOKEN_FIRMA_INVALIDA',
-                'El token de verificación es inválido'
-            );
-        }
-    } catch (err) {
-        if (err && err.code === 'TOKEN_FIRMA_INVALIDA') {
-            throw err;
-        }
+    if (!firmaValida) {
         tokensActivos.delete(d.token);
-        logger.error(`[VerifTokens] Error validando firma: ${err.message}`);
+        logger.warn(`[VerifTokens] Firma inválida para usuario ${d.usuarioId}`);
         throw new errors.ErrorAutorizacion(
-            'TOKEN_FIRMA_ERROR',
+            'TOKEN_FIRMA_INVALIDA',
             'El token de verificación es inválido'
         );
     }
 
+    // Consumo: marcar como usado ANTES de devolver, para que un segundo
+    // uso concurrente falle.
     registro.usado = true;
+    tokensActivos.delete(d.token);
 
     logger.info(
         `[VerifTokens] Token validado y consumido: usuario=${d.usuarioId} ` +
-        `monto=${monto} metodo=${d.metodo} bio=${registro.metodoBiometrico}`
+        `monto=${monto} metodo=${metodo} bio=${registro.metodoBiometrico}`
     );
 
     return {
         valido: true,
         usuario_id: d.usuarioId,
         monto: monto,
-        metodo: d.metodo,
+        metodo: metodo,
         metodo_biometrico: registro.metodoBiometrico,
         metadata: registro.metadata
     };
@@ -345,7 +363,7 @@ function invalidarToken(token, usuarioId) {
     if (!registro) return false;
 
     if (registro.usuarioId !== usuarioId) {
-        logger.warning(`[VerifTokens] Usuario ${usuarioId} intentó invalidar token de otro`);
+        logger.warn(`[VerifTokens] Usuario ${usuarioId} intentó invalidar token de otro`);
         return false;
     }
 
@@ -409,9 +427,8 @@ function obtenerEstadisticas() {
 // ================================================================
 // LIMPIEZA AUTOMÁTICA
 // ================================================================
-// Cada minuto, limpia tokens expirados o usados.
-// .unref() evita que el timer mantenga el proceso vivo si todo lo
-// demás ha terminado (tests, shutdown, scripts CLI).
+// Cada minuto elimina tokens expirados o usados.
+// .unref() evita que el timer mantenga vivo el proceso.
 // ================================================================
 
 const cleanupInterval = setInterval(function () {
@@ -445,6 +462,7 @@ module.exports = {
     invalidarToken: invalidarToken,
     invalidarTokensDeUsuario: invalidarTokensDeUsuario,
     obtenerEstadisticas: obtenerEstadisticas,
+    requiereLiveness: requiereLiveness,
 
     TOKEN_TTL_MS: TOKEN_TTL_MS
 };
