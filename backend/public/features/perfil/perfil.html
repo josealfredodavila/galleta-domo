@@ -1,1563 +1,1889 @@
 <!DOCTYPE html>
-<html lang="es" data-require-auth>
+<html lang="es">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title data-clave="perfil_titulo_pagina">◈ Perfil · Csariel's</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title data-clave="videos_titulo_pagina">◈ Videos · Csariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/features/videos/css/videos-publicar.css">
+    <script src="/features/shared/js/apariencia-global.js"></script>
+    <style>
+        :root {
+            --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #e8c84a;
+            --green-deep: #0F2D1A; --green-mid: #1a4a2a;
+            --space: #05080f; --text-primary: #f0f4f8; --text-secondary: #c0d8e8; --text-muted: #8aa8b8;
+            --glass-bg: transparent; --glass-border: rgba(255, 255, 255, 0.09);
+            --shadow-gold: none;
+            --radius: 16px; --radius-xl: 24px; --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --success: #00d68f; --danger: #ff3366; --warning: #f7d44a; --cyan: #00e5ff;
+            --purple: #a855f7;
+            --line-black: #000000;
+            --line-black-soft: rgba(0, 0, 0, 0.85);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { overscroll-behavior-y: auto; }
+        body {
+            overscroll-behavior-y: auto;
+            background: var(--space);
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            min-height: 100vh;
+            background-image: radial-gradient(ellipse at 20% 50%, rgba(26, 74, 42, 0.4) 0%, transparent 60%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 60%);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .nebula { position: fixed; border-radius: 50%; filter: blur(120px); opacity: 0.12; pointer-events: none; z-index: 0; animation: nebula-drift 25s ease-in-out infinite alternate; }
+        .nebula-1 { width: 700px; height: 700px; background: #2a6a3a; top: -15%; right: -15%; }
+        .nebula-2 { width: 600px; height: 600px; background: var(--gold-light); bottom: -15%; left: -15%; animation-delay: -8s; opacity: 0.06; }
+        .nebula-3 { width: 500px; height: 500px; background: var(--purple); top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -15s; opacity: 0.04; }
+        @keyframes nebula-drift { 0% { transform: translate(0,0) scale(1); } 100% { transform: translate(40px,-30px) scale(1.15); } }
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="/features/shared/js/auth-global.js"></script>
-<script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+        .app { position: relative; z-index: 1; max-width: 100%; width: 100%; margin: 0 auto; padding: 12px 16px 30px; }
 
-<!-- CSS del módulo perfil -->
-<link rel="stylesheet" href="/features/perfil/css/perfil.css">
-<!-- CSS del Carrusel 3D (horizontal en el perfil) -->
-<link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
-<!-- CSS del carrusel de anuncios (imagen) -->
-<link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 14px; border-bottom: 1px solid var(--glass-border); background: rgba(5, 8, 15, 0.92); position: sticky; top: 0; z-index: 100; }
+        .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
+        .logo-text span { color: var(--gold); }
+        .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
+        .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); background: transparent; padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212,175,55,0.2); }
+        .token-badge { display: flex; align-items: center; gap: 6px; background: transparent; border: 1px solid rgba(212,175,55,0.25); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
+        .main-nav { display: flex; gap: 4px; background: transparent; border-radius: var(--radius); padding: 4px; border-bottom: 1px solid var(--glass-border); margin: 16px 0 20px; overflow-x: auto; }
+        .main-nav .nav-link { padding: 8px 16px; border-radius: 12px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; white-space: nowrap; transition: var(--transition); }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212,175,55,0.05); }
+        .main-nav .nav-link.active { background: transparent; color: var(--gold); border-bottom: 2px solid var(--gold); border-radius: 0; }
+        .main-nav .nav-link.live { color: var(--danger); }
 
-<style>
-    html:not(.auth-ready) .app { display: none !important; }
-</style>
+        .upload-section { background: transparent; border: none; border-bottom: 1px solid var(--glass-border); border-radius: 0; padding: 16px 0 24px 0; margin-bottom: 20px; }
+        .upload-section h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 0.9rem; margin-bottom: 14px; }
+        .upload-section .form-group { margin-bottom: 14px; }
+        .upload-section .form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; }
+        .upload-section .form-group input,
+        .upload-section .form-group textarea { width: 100%; padding: 10px 0; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,0.15); border-radius: 0; color: var(--text-primary); font-size: 0.9rem; outline: none; font-family: inherit; transition: border-color 0.2s; }
+        .upload-section .form-group input:focus,
+        .upload-section .form-group textarea:focus { border-bottom-color: var(--gold); }
+        .upload-section .form-group textarea { resize: vertical; min-height: 60px; }
+        .upload-section .form-group .file-input-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .btn-subir-video { background: var(--gold); color: var(--space); border: none; padding: 10px 24px; border-radius: 8px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: var(--transition); }
+        .btn-subir-video:hover { background: var(--gold-light); }
+        .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; }
 
-<style>
-    /* ================================================================
-       PERFIL · MICROINTERACCIONES (v4, plano)
-       ================================================================ */
-    .btn, .btn-estado, .btn-conexion, .accion-btn, .tab-btn, .btn-publicar, .config-btn, .rep-btn, .pro-btn, .internet-filter, .nav-link, .avatar-menu button {
-        -webkit-tap-highlight-color: transparent;
-        transition: transform 140ms cubic-bezier(0.2, 0.8, 0.2, 1), filter 160ms ease, background-color 180ms ease, color 160ms ease, opacity 160ms ease;
-    }
-    .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active {
-        transform: scale(0.97);
-        filter: brightness(1.08);
-    }
-    .nav-link:active { opacity: 0.8; }
-    @keyframes perfilTabIn { from { opacity: 0; } to { opacity: 1; } }
-    .tab-content.active { animation: perfilTabIn 240ms ease both; }
-    @media (prefers-reduced-motion: reduce) {
-        .btn, .btn-estado, .btn-conexion, .accion-btn, .tab-btn, .btn-publicar, .config-btn, .rep-btn, .pro-btn, .internet-filter, .nav-link, .avatar-menu button, .tab-content.active { transition: none !important; animation: none !important; }
-        .btn:active, .btn-estado:active, .btn-conexion:active, .accion-btn:active, .tab-btn:active, .btn-publicar:active, .config-btn:active, .rep-btn:active, .pro-btn:active, .internet-filter:active { transform: none !important; }
-    }
-</style>
-<style>
-    .anuncios-imagen-contenedor img { display: block; width: 100%; max-width: 100%; height: auto; max-height: 260px; object-fit: cover; border-radius: 16px; }
-</style>
-<style>
-    /* ================= BOTÓN FLOTANTE DE LLAMADAS (arrastrable) ================= */
-    #btnLlamarFlotante { position: fixed; left: calc(100vw - 72px); top: calc(100vh - 150px); width: 56px; height: 56px; border-radius: 50%; border: 2px solid var(--cyan, #1de9b6); background: rgba(5, 8, 15, 0.92); color: var(--cyan, #1de9b6); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 18px rgba(29, 233, 182, 0.35); z-index: 9000; cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; padding: 0; }
-    #btnLlamarFlotante.arrastrando { cursor: grabbing; transform: scale(1.06); box-shadow: 0 0 26px rgba(29, 233, 182, 0.55); }
-    #btnLlamarFlotante svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
-    /* ================= PANEL DE LLAMADA ================= */
-    #panelLlamar { position: fixed; left: 50%; bottom: 16px; transform: translate(-50%, 140%); width: min(92vw, 380px); padding: 18px; border-radius: 18px; background: rgba(5, 8, 15, 0.97); border: 1px solid var(--cyan, #1de9b6); box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6); z-index: 9100; transition: transform 0.25s ease; box-sizing: border-box; }
-    #panelLlamar.abierto { transform: translate(-50%, 0); }
-    #panelLlamar .llamar-titulo { font-family: Orbitron, monospace; font-size: 0.85rem; color: var(--cyan, #1de9b6); margin-bottom: 4px; }
-    #panelLlamar .llamar-sub { font-size: 0.68rem; color: var(--text-secondary, #9fb3c8); margin-bottom: 12px; line-height: 1.4; }
-    #llamarNumero { width: 100%; padding: 10px 12px; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border, #2a3a4a); border-radius: 10px; color: white; outline: none; font-size: 0.9rem; font-family: 'Inter', sans-serif; box-sizing: border-box; }
-    #panelLlamar .llamar-acciones { display: flex; gap: 8px; margin-top: 12px; }
-    #panelLlamar .llamar-acciones button { flex: 1; text-align: center; padding: 10px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; box-sizing: border-box; }
-    #btnHacerLlamada { border: 1px solid var(--cyan, #1de9b6); background: linear-gradient(135deg, rgba(29, 233, 182, 0.25), rgba(29, 233, 182, 0.08)); color: var(--cyan, #1de9b6); }
-    #btnCerrarLlamar { border: 1px solid var(--text-muted, #6b7d90); background: transparent; color: var(--text-muted, #6b7d90); }
-    #llamarAviso { margin-top: 8px; font-size: 0.65rem; color: var(--danger, #ff3366); min-height: 14px; }
-</style>
+        /* BOTÓN DE CÁMARA PLANO */
+        .btn-camara {
+            background: transparent;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: var(--transition);
+        }
+        .btn-camara:hover { background: rgba(212,175,55,0.08); }
 
-<!-- ================================================================
-     CSS DEL PASAPORTE DIGITAL DEL DOMO (plano)
-     ================================================================ -->
-<style>
-    #pasaporteDomo { margin: 0 0 12px; }
-    #pasaporteDomo:empty { display: none; }
+        .processing-state { display: none; flex-direction: column; align-items: center; gap: 12px; padding: 30px 20px; background: transparent; border-bottom: 1px solid var(--gold); margin-bottom: 20px; text-align: center; }
+        .processing-state.visible { display: flex; }
+        .processing-state .spinner { width: 60px; height: 60px; border: 4px solid rgba(212, 175, 55, 0.15); border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .processing-state h3 { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem; }
+        .processing-state p { font-size: 0.75rem; color: var(--text-secondary); }
+        .processing-state .progress-bar-big { width: 100%; max-width: 400px; height: 4px; background: rgba(255,255,255,0.05); border-radius: 4px; overflow: hidden; margin-top: 8px; }
+        .processing-state .progress-bar-big .fill { height: 100%; background: var(--gold); border-radius: 4px; transition: width 0.5s ease; width: 0%; }
+        .processing-state .progress-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--gold); font-weight: 700; }
 
-    .pasaporte-card {
-        position: relative;
-        padding: 18px 0;
-        border-radius: 0;
-        background: transparent;
-        border: 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
-        color: var(--text-primary, #f0f4f8);
-        overflow: hidden;
-    }
-    .pasaporte-card::before { display: none; }
-    .pasaporte-sello {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 2px 10px;
-        border-radius: 99px;
-        background: transparent;
-        border: 0;
-        color: var(--gold, #D4AF37);
-        font-family: 'Orbitron', monospace;
-        font-size: 0.6rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        margin-bottom: 10px;
-    }
-    .pasaporte-titulo {
-        font-family: 'Orbitron', monospace;
-        font-size: 1rem;
-        font-weight: 700;
-        color: var(--text-primary, #fff);
-        margin-bottom: 6px;
-        line-height: 1.3;
-    }
-    .pasaporte-correo { font-family: monospace; font-size: 0.8rem; color: var(--cyan, #00e5ff); margin-bottom: 8px; word-break: break-all; }
-    .pasaporte-meta { font-size: 0.7rem; color: var(--text-muted, #8aa8b8); margin-bottom: 12px; }
-    .pasaporte-token {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 0;
-        background: transparent;
-        border: 0;
-        color: var(--success, #00d68f);
-        font-size: 0.72rem;
-        font-weight: 600;
-        margin-bottom: 12px;
-    }
-    .pasaporte-tx { display: inline-flex; align-items: center; gap: 4px; color: var(--cyan, #00e5ff); font-size: 0.72rem; font-weight: 600; text-decoration: none; border-bottom: 1px dashed rgba(0, 229, 255, 0.4); padding-bottom: 1px; }
-    .pasaporte-tx:hover { color: var(--gold, #D4AF37); border-color: rgba(212, 175, 55, 0.6); }
+        .marketing-ad-container { display: none; margin-bottom: 20px; background: transparent; border: none; border-bottom: 1px solid rgba(212, 175, 55, 0.25); border-radius: 0; overflow: hidden; }
+        .marketing-ad-container.visible { display: block; animation: adFadeIn 0.5s ease; }
+        @keyframes adFadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .marketing-ad-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(212, 175, 55, 0.1); }
+        .marketing-ad-label { font-family: 'Orbitron', monospace; font-size: 0.55rem; color: var(--gold); letter-spacing: 3px; text-transform: uppercase; opacity: 0.85; }
+        .marketing-ad-close { background: transparent; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px 8px; display: flex; align-items: center; justify-content: center; }
+        .marketing-ad-body { display: flex; gap: 14px; padding: 14px 0 16px; align-items: flex-start; }
+        .marketing-ad-media { width: 96px; height: 96px; border-radius: 8px; overflow: hidden; flex-shrink: 0; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.5rem; }
+        .marketing-ad-media img, .marketing-ad-media video { width: 100%; height: 100%; object-fit: cover; }
+        .marketing-ad-content { flex: 1; min-width: 0; }
+        .marketing-ad-title { font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; margin-bottom: 6px; }
+        .marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
+        .marketing-ad-cta { display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 8px; background: var(--gold); color: var(--space); font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; text-transform: uppercase; }
+        @media (max-width: 480px) { .marketing-ad-body { flex-direction: column; } .marketing-ad-media { width: 100%; height: 140px; } }
 
-    @keyframes pasaporteIn {
-        from { opacity: 0; transform: translateY(6px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .pasaporte-anim { animation: pasaporteIn 400ms ease both; }
+        #videosContainer.videos-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 20px;
+            scroll-snap-type: y mandatory;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding-bottom: 20px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior-y: auto;
+        }
+        #videosContainer.videos-grid::-webkit-scrollbar { width: 4px; }
+        #videosContainer.videos-grid::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 4px; }
 
-    @media (prefers-reduced-motion: reduce) {
-        .pasaporte-anim { animation: none !important; }
-    }
-</style>
+        .video-card {
+            position: relative;
+            background: #000;
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            transition: border-radius 0.35s ease, min-height 0.35s ease, max-height 0.35s ease;
+            scroll-snap-align: center;
+            scroll-snap-stop: always;
+            min-height: 78vh;
+            max-height: 78vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: none;
+        }
+        .video-card.visible { box-shadow: none; }
 
-<!-- ================================================================
-     MENÚ DE FOTO DE PERFIL · HOJA INFERIOR (v2)
-     ================================================================ -->
-<style>
-    .perfil-header .avatar { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+        .video-card .thumbnail {
+            position: relative;
+            width: 100%;
+            flex: 1;
+            min-height: 0;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .video-card .thumbnail video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+            display: block;
+            transition: object-fit 0.35s ease, transform 0.35s ease;
+        }
+        .video-card .thumbnail .play-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 70px;
+            height: 70px;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(8px);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #D4AF37;
+            cursor: pointer;
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            z-index: 3;
+            transition: var(--transition);
+        }
+        .video-card .thumbnail .play-btn svg {
+            width: 30px;
+            height: 30px;
+            stroke: currentColor;
+            fill: currentColor;
+            margin-left: 4px;
+        }
+        .video-card .thumbnail .play-btn:hover { transform: translate(-50%, -50%) scale(1.05); background: rgba(0,0,0,0.75); border-color: #D4AF37; }
+        .video-card.playing .thumbnail .play-btn { display: none; }
 
-    .avatar-menu {
-        display: block !important;
-        position: fixed !important;
-        top: auto !important;
-        left: 0 !important;
-        right: 0 !important;
-        bottom: 0 !important;
-        width: 100% !important;
-        min-width: 0 !important;
-        margin: 0 !important;
-        padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px)) !important;
-        border-radius: 18px 18px 0 0 !important;
-        border: 0 !important;
-        background: #0b1410 !important;
-        box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.6) !important;
-        z-index: 10050 !important;
-        transform: translateY(105%);
-        visibility: hidden;
-        transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0.25s;
-        animation: none !important;
-        max-height: 80vh;
-        overflow-y: auto;
-    }
-    .avatar-menu.open { transform: translateY(0); visibility: visible; }
+        .video-card .btn-eliminar-card {
+            position: absolute; top: 12px; right: 12px; z-index: 5;
+            width: 38px; height: 38px; border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 51, 102, 0.5); color: #ff3366;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0; line-height: 1;
+            transition: opacity 0.3s ease;
+        }
 
-    .avatar-menu .avatar-menu-item {
-        display: flex !important;
-        align-items: center;
-        gap: 12px;
-        width: 100%;
-        min-height: 50px;
-        padding: 12px 6px !important;
-        margin: 0;
-        background: transparent !important;
-        border: 0 !important;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.09) !important;
-        border-radius: 0 !important;
-        color: var(--text-secondary, #c0d8e8) !important;
-        font-size: 0.9rem !important;
-        font-weight: 600 !important;
-        text-align: left;
-        cursor: pointer;
-        font-family: 'Inter', sans-serif;
-    }
-    .avatar-menu .avatar-menu-item:active { background: rgba(212, 175, 55, 0.08) !important; }
-    .avatar-menu .avatar-menu-item .icon-sm { width: 20px; height: 20px; flex-shrink: 0; }
-    .avatar-menu .avatar-menu-item.danger { color: var(--danger, #ff3366) !important; }
-    .avatar-menu .avatar-menu-item.cancel { justify-content: center; color: var(--text-muted, #8aa8b8) !important; border-bottom: 0 !important; margin-top: 6px; }
-    .avatar-menu .divider { display: none; }
-    .avatar-menu .avatar-menu-titulo { display: none; }
+        .video-card .overlay-info {
+            position: absolute;
+            left: 14px;
+            bottom: 90px;
+            right: 90px;
+            z-index: 4;
+            pointer-events: none;
+            text-shadow: 0 2px 8px rgba(0,0,0,0.9);
+            transition: opacity 0.3s ease;
+        }
+        .video-card .overlay-info .autor-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            pointer-events: auto;
+        }
+        .video-card .overlay-info .autor-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1px solid var(--gold);
+            background: var(--green-deep);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.75rem; font-weight: 700; color: #fff;
+            flex-shrink: 0;
+        }
+        .video-card .overlay-info .autor-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .video-card .overlay-info .autor-nombre { font-weight: 700; font-size: 0.85rem; color: #fff; }
+        .video-card .overlay-info .titulo { font-size: 0.8rem; color: rgba(255,255,255,0.92); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
+        .video-card .overlay-info .descripcion-corta { font-size: 0.7rem; color: rgba(255,255,255,0.72); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-    .avatar-menu-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 10040;
-        opacity: 0;
-        pointer-events: none;
-        transition: opacity 0.25s ease;
-    }
-    .avatar-menu-backdrop.open { opacity: 1; pointer-events: auto; }
+        .video-card .sidebar-acciones {
+            position: absolute;
+            right: 10px;
+            bottom: 90px;
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            align-items: center;
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+        .sidebar-btn {
+            width: 48px;
+            height: 48px;
+            background: rgba(0, 0, 0, 0.45);
+            border: none;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            position: relative;
+            padding: 0;
+            color: #fff;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .sidebar-btn:active { transform: scale(0.85); }
+        .sidebar-btn:hover { background: rgba(0, 0, 0, 0.7); transform: scale(1.04); }
+        .sidebar-btn .icono { display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; line-height: 1; }
+        .sidebar-btn .contador {
+            position: absolute;
+            bottom: -6px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.85);
+            color: #fff;
+            font-size: 0.6rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 12px;
+            min-width: 22px;
+            text-align: center;
+            white-space: nowrap;
+        }
+        .sidebar-btn.liked {
+            background: rgba(212, 175, 55, 0.18);
+            border: 1px solid rgba(212, 175, 55, 0.6);
+        }
+        .sidebar-btn.liked .contador {
+            background: var(--gold);
+            color: #05080f;
+            font-weight: 800;
+        }
 
-    #perfilAvatar:focus-visible { outline: 2px solid var(--gold, #D4AF37); outline-offset: 3px; }
-</style>
+        .sidebar-btn svg.icono-svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .sidebar-btn:hover svg.icono-svg { transform: scale(1.1); }
+
+        .ico-premium {
+            width: 22px;
+            height: 22px;
+            stroke: #D4AF37;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+            transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+            vertical-align: middle;
+            display: inline-block;
+        }
+
+        .sidebar-btn .ico-premium { width: 22px; height: 22px; }
+        .sidebar-btn:hover .ico-premium { transform: scale(1.1); }
+        .sidebar-btn.liked .ico-premium {
+            stroke: #D4AF37;
+            fill: rgba(212, 175, 55, 0.3);
+        }
+
+        .btn-eliminar-card .ico-premium {
+            width: 18px;
+            height: 18px;
+            stroke: #ff3366;
+        }
+        .btn-eliminar-card:hover .ico-premium { transform: scale(1.1); }
+
+        .btn-eliminar-comentario .ico-premium {
+            width: 14px;
+            height: 14px;
+            stroke: #ff3366;
+        }
+
+        .sheet-close .ico-premium,
+        .marketing-ad-close .ico-premium {
+            width: 20px;
+            height: 20px;
+            stroke: #D4AF37;
+        }
+
+        .bottom-sheet .sheet-input button .ico-premium {
+            width: 20px;
+            height: 20px;
+            stroke: #05080f;
+            fill: #05080f;
+        }
+
+        .badge-verif .ico-premium {
+            width: 10px;
+            height: 10px;
+            stroke: #D4AF37;
+            fill: #D4AF37;
+            vertical-align: middle;
+        }
+
+        .btn-audio-global .ico-premium {
+            width: 20px;
+            height: 20px;
+            stroke: #D4AF37;
+        }
+
+        .reaccion-opcion .ico-premium {
+            width: 26px;
+            height: 26px;
+            stroke-width: 2;
+        }
+        .reaccion-opcion:hover .ico-premium { transform: scale(1.1); }
+        .reaccion-opcion.activa .ico-premium {
+            stroke: #D4AF37;
+            fill: rgba(212, 175, 55, 0.4);
+        }
+
+        .sidebar-btn.btn-compartir-premium {
+            background: rgba(0, 0, 0, 0.45);
+            border: 1px solid #D4AF37;
+            animation: none;
+        }
+        .sidebar-btn.btn-compartir-premium:hover {
+            background: rgba(212, 175, 55, 0.15);
+            transform: scale(1.04);
+        }
+
+        @keyframes likePop {
+            0% { transform: scale(1); }
+            40% { transform: scale(1.2); }
+            70% { transform: scale(0.95); }
+            100% { transform: scale(1); }
+        }
+        .sidebar-btn.like-pop .icono { animation: likePop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+        .reaccion-picker {
+            position: absolute;
+            right: 60px;
+            bottom: 0;
+            display: none;
+            gap: 4px;
+            padding: 6px 8px;
+            background: rgba(15, 15, 15, 0.95);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 30px;
+            z-index: 8;
+            white-space: nowrap;
+        }
+        .reaccion-picker.show { display: flex; animation: pickerIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        @keyframes pickerIn { from { opacity: 0; transform: translateX(10px) scale(0.85); } to { opacity: 1; transform: translateX(0) scale(1); } }
+        .reaccion-picker .reaccion-opcion {
+            width: 42px; height: 42px;
+            background: transparent; border: none;
+            cursor: pointer;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s ease;
+            padding: 0; line-height: 1;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .reaccion-picker .reaccion-opcion:hover { background: rgba(255, 255, 255, 0.1); }
+        .reaccion-picker .reaccion-opcion.activa { background: rgba(212, 175, 55, 0.2); }
+
+        .video-card .barra-inferior {
+            position: absolute;
+            left: 0; right: 0; bottom: 0;
+            z-index: 6;
+            padding: 8px 12px 10px;
+            background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%);
+            pointer-events: auto;
+            transition: opacity 0.3s ease;
+        }
+        .video-card .barra-inferior .fila-tiempo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.65rem;
+            font-family: 'Orbitron', monospace;
+            color: #fff;
+            margin-bottom: 4px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+        }
+        .video-card .barra-inferior .barra-progreso-card {
+            width: 100%; height: 2px;
+            background: rgba(255, 255, 255, 0.2);
+            overflow: hidden;
+        }
+        .video-card .barra-inferior .barra-progreso-card .fill {
+            height: 100%; width: 0%;
+            background: var(--gold);
+            transition: width 0.15s linear;
+        }
+
+        .btn-fullscreen { display: none !important; }
+
+        .video-card.pantalla-completa {
+            border-radius: 0;
+            min-height: 100vh;
+            max-height: 100vh;
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            width: 100vw;
+            height: 100vh;
+        }
+        .video-card.pantalla-completa .thumbnail video {
+            object-fit: contain;
+            width: 100%;
+            height: 100%;
+        }
+
+        .doble-tap-hint {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(212, 175, 55, 0.5);
+            border-radius: 50%;
+            width: 90px;
+            height: 90px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #D4AF37;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 10;
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .doble-tap-hint.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .doble-tap-hint svg {
+            width: 36px;
+            height: 36px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .btn-audio-global {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 9998;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 18px;
+            background: rgba(0, 0, 0, 0.85);
+            border: 1px solid #D4AF37;
+            border-radius: 8px;
+            color: #D4AF37;
+            font-family: 'Orbitron', monospace;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-audio-global.visible { display: flex; }
+        .btn-audio-global:hover { background: rgba(212, 175, 55, 0.12); }
+        .btn-audio-global .ico { display: flex; align-items: center; justify-content: center; line-height: 1; }
+        .btn-audio-global.activo {
+            background: rgba(212, 175, 55, 0.15);
+            border-color: #D4AF37;
+        }
+
+        @media (max-width: 480px) {
+            .btn-audio-global { bottom: 14px; left: 14px; padding: 8px 14px; font-size: 0.65rem; }
+        }
+
+        .comentario-burbuja .burbuja .btn-eliminar-comentario {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: transparent;
+            border: 1px solid rgba(255, 51, 102, 0.35);
+            color: #ff3366;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+            opacity: 0;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .comentario-burbuja:hover .burbuja .btn-eliminar-comentario,
+        .comentario-burbuja.touch-activo .burbuja .btn-eliminar-comentario {
+            opacity: 1;
+        }
+        .comentario-burbuja .burbuja .btn-eliminar-comentario:hover {
+            background: rgba(255, 51, 102, 0.2);
+            border-color: #ff3366;
+        }
+        .comentario-burbuja .burbuja .btn-eliminar-comentario:active {
+            transform: scale(0.9);
+        }
+        @media (max-width: 768px) {
+            .comentario-burbuja .burbuja .btn-eliminar-comentario { opacity: 0.7; }
+            .comentario-burbuja .burbuja .btn-eliminar-comentario:active { opacity: 1; }
+        }
+        .comentario-burbuja .burbuja .nombre { padding-right: 32px; }
+
+        .bottom-sheet-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+        .bottom-sheet-backdrop.show { opacity: 1; visibility: visible; }
+        .bottom-sheet {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 9001;
+            height: auto;
+            max-height: 70vh;
+            background: #0b1410;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            border-top-left-radius: 22px;
+            border-top-right-radius: 22px;
+            border-bottom: none;
+            display: flex;
+            flex-direction: column;
+            transform: translateY(100%);
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
+        .bottom-sheet.show { transform: translateY(0); }
+        .bottom-sheet .sheet-handle { padding: 8px 0 4px; display: flex; justify-content: center; flex-shrink: 0; }
+        .bottom-sheet .sheet-handle::before { content: ''; width: 40px; height: 4px; background: rgba(255, 255, 255, 0.25); border-radius: 4px; }
+        .bottom-sheet .sheet-header { display: flex; justify-content: space-between; align-items: center; padding: 4px 16px 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); flex-shrink: 0; }
+        .bottom-sheet .sheet-titulo { font-family: 'Orbitron', monospace; font-size: 0.9rem; font-weight: 700; color: var(--gold); display: flex; align-items: center; gap: 8px; }
+        .bottom-sheet .sheet-contador { font-size: 0.7rem; color: var(--text-muted); padding: 2px 10px; font-family: 'Inter', sans-serif; font-weight: 500; }
+        .bottom-sheet .sheet-close { background: transparent; border: none; color: var(--text-muted); cursor: pointer; padding: 0 4px; line-height: 1; display: flex; align-items: center; justify-content: center; }
+
+        .bottom-sheet .comentarios-lista {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .bottom-sheet .comentarios-lista::-webkit-scrollbar { width: 3px; }
+        .bottom-sheet .comentarios-lista::-webkit-scrollbar-thumb { background: var(--gold); border-radius: 3px; }
+
+        .comentario-burbuja { display: flex; gap: 10px; align-items: flex-start; }
+        .comentario-burbuja .avatar {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            overflow: hidden;
+            flex-shrink: 0;
+            background: var(--green-deep);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 700; color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .comentario-burbuja .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .comentario-burbuja .burbuja {
+            flex: 1; min-width: 0;
+            background: transparent;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 8px 0 10px;
+            position: relative;
+        }
+        .comentario-burbuja .burbuja .nombre {
+            color: var(--gold);
+            font-size: 0.78rem;
+            font-weight: 700;
+            margin-bottom: 3px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .comentario-burbuja .burbuja .badge-verif {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2px 5px;
+        }
+        .comentario-burbuja .burbuja .texto { font-size: 0.82rem; color: var(--text-primary); line-height: 1.45; word-wrap: break-word; }
+        .comentario-burbuja .burbuja .fecha { font-size: 0.6rem; color: var(--text-muted); margin-top: 5px; }
+
+        .bottom-sheet .sheet-input {
+            flex-shrink: 0;
+            padding: 10px 12px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            background: transparent;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .bottom-sheet .sheet-input input {
+            flex: 1;
+            padding: 11px 0;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 0;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            outline: none;
+            font-family: inherit;
+        }
+        .bottom-sheet .sheet-input input:focus { border-bottom-color: var(--gold); }
+        .bottom-sheet .sheet-input input::placeholder { color: var(--text-muted); }
+        .bottom-sheet .sheet-input button {
+            width: 42px; height: 42px;
+            border-radius: 50%;
+            background: var(--gold);
+            color: var(--space);
+            border: none;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            padding: 0;
+        }
+        .bottom-sheet .sheet-input button:active { transform: scale(0.92); }
+        .bottom-sheet .sheet-input button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        body.teclado-abierto .bottom-sheet { max-height: 80vh; }
+
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state .icon { font-size: 3rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.3; }
+        .empty-state h3 { font-family: 'Orbitron', monospace; color: var(--text-secondary); font-size: 1rem; margin-bottom: 8px; }
+
+        .toast { position: fixed; bottom: 30px; right: 30px; background: var(--green-deep); border: 1px solid var(--gold); color: var(--gold); padding: 14px 28px; border-radius: 14px; font-size: 0.8rem; transform: translateY(100px); opacity: 0; transition: all 0.5s ease; z-index: 99999; max-width: 400px; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast.error { border-color: var(--danger); color: var(--danger); }
+        .toast.warning { border-color: var(--warning); color: var(--warning); }
+        .toast.success { border-color: var(--success); color: var(--success); }
+
+        .toast-siguiente { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.85); color: var(--gold); padding: 14px 28px; border-radius: 30px; font-family: 'Orbitron', monospace; font-size: 0.9rem; z-index: 100000; opacity: 0; transition: opacity 0.3s ease; pointer-events: none; border: 1px solid rgba(212, 175, 55, 0.5); }
+        .toast-siguiente.visible { opacity: 1; }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-align: center;
+        }
+        .footer .brand { color: var(--gold); font-weight: 600; }
+        .footer .network-tag { font-size: 0.65rem; opacity: 0.5; display: flex; align-items: center; gap: 4px; }
+
+        html.tema-dia, html[data-tema="dia"] {
+            --space: #f5f7fa; --glass-bg: transparent; --glass-border: rgba(0, 0, 0, 0.1);
+            --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
+            --line-black: rgba(0, 0, 0, 0.15);
+        }
+        html.tema-dia body, html[data-tema="dia"] body { background: #f5f7fa !important; color: var(--text-primary) !important; }
+        html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(255,255,255,0.95) !important; }
+        html.tema-dia .main-nav, html[data-tema="dia"] .main-nav { background: transparent !important; }
+        html.tema-dia .upload-section, html[data-tema="dia"] .upload-section { background: transparent !important; }
+        html.tema-dia .nebula, html[data-tema="dia"] .nebula { display: none !important; }
+        html.tema-dia .toast, html[data-tema="dia"] .toast { background: rgba(255,255,255,0.98) !important; }
+
+        @media (max-width: 768px) {
+            .app { padding: 12px 14px; }
+            .video-card { min-height: 72vh; max-height: 72vh; }
+        }
+        @media (max-width: 480px) {
+            .video-card { min-height: 68vh; max-height: 68vh; }
+            .video-card .btn-eliminar-card { width: 34px; height: 34px; }
+            .sidebar-btn { width: 44px; height: 44px; }
+            .sidebar-btn .ico-premium { width: 20px; height: 20px; }
+            .sidebar-btn .contador { font-size: 0.55rem; padding: 1px 6px; min-width: 20px; }
+            .video-card .overlay-info { right: 80px; bottom: 80px; }
+            .reaccion-opcion .ico-premium { width: 22px; height: 22px; }
+        }
+    </style>
 </head>
 <body>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
 
-<canvas id="stars-canvas"></canvas>
-<div class="nebula nebula-1"></div>
-<div class="nebula nebula-2"></div>
-<div class="nebula nebula-3"></div>
-
-<div class="app">
-
-<header class="header">
-    <a href="/" class="logo">
-        <span class="logo-hex">◈</span>
-        <span class="logo-text">Csariel<span>'s</span></span>
-        <span class="logo-badge">✦ WEB3</span>
-    </a>
-    <div class="header-actions">
-        <span class="network-badge" data-no-traducir="1"><span class="dot"></span> Polygon</span>
-    </div>
-</header>
-
-<nav class="main-nav">
-    <a href="/" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        <span data-clave="nav_inicio">Inicio</span>
-    </a>
-    <a href="/features/muro/muro.html" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        <span data-clave="nav_muro">Muro</span>
-    </a>
-    <a href="/features/noticias/noticias.html" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0V8"/><line x1="12" y1="6" x2="18" y2="6"/><line x1="12" y1="10" x2="18" y2="10"/><line x1="12" y1="14" x2="16" y2="14"/></svg>
-        <span data-clave="nav_noticias">Noticias</span>
-    </a>
-    <a href="/features/perfil/perfil.html" class="nav-link active">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        <span data-clave="nav_perfil">Perfil</span>
-    </a>
-    <a href="/features/mensajes/contactos.html" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        <span data-clave="nav_contactos">Contactos</span>
-    </a>
-    <a href="/features/live/live.html" class="nav-link live">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
-        <span data-clave="nav_live">Live</span>
-    </a>
-    <a href="/features/internet/internet.html" class="nav-link">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
-        <span data-clave="nav_internet">Internet</span>
-    </a>
-</nav>
-
-<!-- ============ CARRUSEL 3D HORIZONTAL ============ -->
-<div class="carrusel-3d-wrapper">
-    <div class="carrusel-3d-track"></div>
-</div>
-<!-- ============ FIN DEL CARRUSEL 3D HORIZONTAL ============ -->
-
-<div class="anuncios-crear-acceso" style="max-width:720px;margin:12px auto 0;padding:0 16px;box-sizing:border-box;display:flex;justify-content:flex-end;">
-    <a href="/features/anuncios/anuncios-crear.html" style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:99px;color:var(--gold,#D4AF37);text-decoration:none;font-size:.78rem;font-weight:700;letter-spacing:.5px;background:transparent;">
-        📢 Crear anuncio
-    </a>
-</div>
-
-<div class="perfil-container">
-
-    <div class="perfil-header" id="perfilHeader">
-        <a href="/features/perfil/configuracion/index.html" class="config-btn" data-clave-title="perfil_titulo_config" title="Configuración">
-            <svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </a>
-
-        <div class="avatar-container" style="position:relative;">
-            <div class="avatar" id="perfilAvatar" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-label="Opciones de foto de perfil">
-                <span class="avatar-menu-toggle" data-clave-title="perfil_titulo_opciones_foto" title="Opciones de foto">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/></svg>
-                </span>
-            </div>
-
-            <!-- Hoja de opciones: se mueve a <body> al cargar -->
-            <div class="avatar-menu" id="avatarMenu" role="menu" aria-label="Opciones de foto de perfil">
-                <button type="button" class="avatar-menu-item" role="menuitem" data-accion="cambiar">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                    <span data-clave="perfil_cambiar_foto">Cambiar foto</span>
-                </button>
-                <button type="button" class="avatar-menu-item danger" role="menuitem" data-accion="eliminar">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                    <span data-clave="perfil_eliminar_foto">Eliminar foto</span>
-                </button>
-                <button type="button" class="avatar-menu-item cancel" data-accion="cerrar">
-                    <span data-clave="perfil_cancelar">Cancelar</span>
-                </button>
-            </div>
-
-            <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="if (typeof window.subirFoto === 'function') { window.subirFoto(event); } else if (window.showToast) { window.showToast('No se pudo subir la foto. Recarga la página.', 'error'); }" />
-        </div>
-
-        <div class="info">
-            <div class="nombre" id="perfilNombre">
-                <span data-clave="perfil_nombre_usuario">Explorador</span>
-                <span class="verified" data-clave="perfil_badge_verificado">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    VERIFICADO
-                </span>
-            </div>
-            <div class="handle" id="perfilHandle">@explorador</div>
-            <div class="bio" id="perfilBio" data-clave="perfil_biografia_default">Explorando el ecosistema Csariel's · WEB3 · Comunidad</div>
-            <div class="badges">
-                <span class="badge gold" data-clave="perfil_badge_miembro">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    MIEMBRO
-                </span>
-                <span class="badge success" data-clave="perfil_badge_activo">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/></svg>
-                    ACTIVO
-                </span>
-                <span class="badge" data-clave="perfil_badge_web3">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
-                    WEB3
-                </span>
-                <span class="badge" id="nivelUsuario" style="color:var(--purple);background:transparent;">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    <span data-clave="perfil_nivel_explorador">Explorador</span>
-                </span>
-            </div>
-        </div>
-
-        <div class="stats">
-            <div class="stat">
-                <div class="number" id="statTokens">0</div>
-                <div class="label" data-clave="perfil_stat_tokens">Tokens</div>
-            </div>
-            <div class="stat">
-                <div class="number" id="statNFTS">0</div>
-                <div class="label" data-clave="perfil_stat_nfts">NFTs</div>
-            </div>
-            <div class="stat">
-                <div class="number" id="statSeguidores">0</div>
-                <div class="label" data-clave="perfil_stat_seguidores">Seguidores</div>
-            </div>
-            <div class="stat">
-                <div class="number" id="statSiguiendo">0</div>
-                <div class="label" data-clave="perfil_stat_siguiendo">Siguiendo</div>
-            </div>
-        </div>
-
-        <div class="acciones">
-            <button class="btn btn-outline btn-sm" onclick="window.compartirPerfil()" data-clave="perfil_compartir">Compartir</button>
-            <button class="btn btn-outline btn-sm" onclick="window.generarQRPerfil()" data-clave="perfil_compartir_qr">Compartir QR</button>
-        </div>
-    </div>
-
-    <!-- PASAPORTE DIGITAL DEL DOMO (se llena dinámicamente) -->
-    <section id="pasaporteDomo" aria-live="polite"></section>
-
-    <div class="repartidor-section" id="repartidorSection" style="display:none;">
-        <div class="rep-header">
-            <h3>
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="18.5" cy="17.5" r="3.5"/><path d="M15 6a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM15 6l-3 6h-3l-3 6M12 12h5l1.5 5.5"/></svg>
-                <span data-clave="perfil_gana_dinero">Gana dinero con Csariel's</span>
-            </h3>
-            <span class="rep-badge" id="repBadge" data-clave="perfil_cargando">Cargando...</span>
-        </div>
-        <div class="rep-info" id="repInfo" data-clave="perfil_cargando_info">Cargando información...</div>
-        <button class="rep-btn" id="repBtn" onclick="window.irARepartidorDesdePerfil()" data-clave="perfil_cargando">Cargando...</button>
-    </div>
-
-    <div class="estado-section">
-        <div class="estado-header">
-            <div class="estado-info">
-                <span class="badge" id="estadoBadge">
-                    <svg class="icon" viewBox="0 0 24 24" style="color:var(--success);"><circle cx="12" cy="12" r="8" fill="currentColor" stroke="none"/></svg>
-                </span>
-                <span class="texto" id="estadoTexto" style="color:var(--success);" data-clave="perfil_activo_ahora">Activo ahora</span>
-                <span class="amigos-online">· <span id="amigosEnLineaContador">0</span> <span data-clave="perfil_amigos_en_linea">amigos en línea</span></span>
-            </div>
-            <div class="estado-buttons">
-                <button class="btn-estado online" onclick="window.cambiarEstado(true)" data-clave="perfil_btn_activo">Activo</button>
-                <button class="btn-estado offline" onclick="window.cambiarEstado(false)" data-clave="perfil_btn_inactivo">Inactivo</button>
-            </div>
-        </div>
-
-        <div id="solicitudesSection">
-            <h4>
-                <span data-clave="perfil_solicitudes_pendientes">Solicitudes pendientes</span>
-                <span id="solicitudesContador" style="font-size:0.7rem;color:var(--warning);">0</span>
-            </h4>
-            <div id="solicitudesContainer" style="max-height: 200px; overflow-y: auto;">
-                <div style="text-align:center; padding:10px; color:var(--text-muted); font-size:0.7rem;">
-                    <p data-clave="perfil_sin_solicitudes">No tienes solicitudes pendientes</p>
-                </div>
-            </div>
-        </div>
-
-        <div id="amigosContainer"></div>
-    </div>
-
-    <div class="pro-section" id="proSection">
-        <div class="pro-header">
-            <h3>
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                <span data-no-traducir="1">Csariel's Pro</span>
-            </h3>
-            <span class="pro-badge" data-clave="perfil_pro_membresia">MEMBRESÍA</span>
-        </div>
-        <div class="pro-body">
-            <div class="pro-current">
-                <div>
-                    <span class="pro-label" data-clave="perfil_pro_plan_actual">Plan actual:</span>
-                    <span class="pro-value" id="planActual" data-clave="perfil_pro_gratis">Gratis</span>
-                </div>
-                <div>
-                    <span class="pro-meta" id="planMeta">1 GB · 90 días</span>
-                </div>
-            </div>
-
-            <div class="pro-upgrade" id="proUpgradeCard">
-                <div class="pro-upgrade-title">
-                    <span class="pro-upgrade-icon">
-                        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
-                    </span>
-                    <span class="pro-upgrade-name" data-no-traducir="1">Csariel's Pro</span>
-                </div>
-                <div class="pro-upgrade-price">
-                    <span id="proPrecio" data-no-traducir="1">$300 MXN</span>
-                    <span class="pro-upgrade-period" data-clave="perfil_pro_periodo">/ 30 días</span>
-                </div>
-                <div class="pro-upgrade-features" id="proFeatures" data-clave="perfil_pro_features">
-                    Conservación ampliada · 5 GB
-                </div>
-                <button class="btn btn-gold pro-btn" onclick="window.contratarPro()" id="btnContratarPro" data-clave="perfil_pro_contratar">
-                    Contratar Pro por $300 MXN
-                </button>
-            </div>
-
-            <div class="pro-active-info" id="proActiveInfo" style="display:none;">
-                <div class="pro-active-badge" data-clave="perfil_pro_activo">PRO ACTIVO</div>
-                <div class="pro-active-expira">
-                    <span data-clave="perfil_pro_expira">Expira:</span> <span id="proExpira">--</span>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="wallet-section" id="walletSection">
-        <div class="wallet-header">
-            <h3>Wallet · Polygon</h3>
-            <span class="wallet-estado" id="walletEstado">Cargando…</span>
-        </div>
-        <div class="wallet-direccion" id="walletDireccion">—</div>
-        <div class="wallet-acciones">
-            <button class="btn btn-gold" id="btnConectarWallet" type="button" onclick="window.conectarWalletPerfil()" style="display:none;">
-                Conectar wallet
-            </button>
-            <button class="btn btn-outline" id="btnDesconectarWallet" type="button" style="display:none;" onclick="window.desconectarWalletPerfil()">
-                Desconectar
-            </button>
-            <button class="btn btn-outline btn-sm" id="btnCopiarWallet" type="button" style="display:none;" onclick="window.copiarWalletPerfil()">
-                Copiar dirección
-            </button>
-            <a class="btn btn-outline btn-sm" id="linkPolygonScan" href="#" target="_blank" rel="noopener noreferrer" style="display:none;">
-                Ver en PolygonScan
+    <div class="app">
+        <header class="header">
+            <a href="/" class="logo">
+                <span class="logo-hex">◈</span>
+                <span class="logo-text">Csariel<span>'s</span></span>
+                <span class="logo-badge">✦ WEB3</span>
             </a>
-        </div>
-        <label class="wallet-switch" for="walletVisible">
-            <span class="wallet-switch-texto">
-                <strong>Mostrar dirección en mi perfil</strong>
-                <small id="walletVisibleTexto">Oculta: solo tú puedes ver tu dirección.</small>
-            </span>
-            <input type="checkbox" id="walletVisible" disabled />
-            <span class="wallet-switch-slider"></span>
-        </label>
-        <div class="wallet-hint" id="walletHint"></div>
-    </div>
-
-    <div class="conexion-section">
-        <div class="conexion-header">
-            <div class="conexion-info">
-                <span class="status" id="conexionStatus" data-clave="perfil_conexion_wifi">WiFi</span>
-                <span class="velocidad" id="conexionVelocidad" data-no-traducir="1">0 Mbps</span>
-                <span class="señal" id="conexionSeñal" data-no-traducir="1" style="color:var(--success);">████</span>
+            <div class="header-actions">
+                <span class="network-badge"><span class="dot"></span> Polygon</span>
+                <span class="token-badge" id="tokenBadge" onclick="verTokens()">◈ <span id="tokenBadgeCantidad">0</span> Es.stoks</span>
             </div>
-            <div class="conexion-buttons">
-                <button class="btn-conexion wifi active" id="btnWifi" onclick="window.cambiarConexion('wifi')" data-clave="perfil_conexion_wifi">WiFi</button>
-                <button class="btn-conexion datos" id="btnDatos" onclick="window.cambiarConexion('datos')" data-clave="perfil_conexion_datos">Datos</button>
-            </div>
-        </div>
-        <div style="font-size:0.6rem;color:var(--text-muted);margin-top:6px;">
-            <span data-clave="perfil_conexion">Conexión:</span> <span id="conexionTipo">WiFi</span>
-            · <span data-clave="perfil_operador">Operador:</span> <span id="conexionOperador" data-no-traducir="1">Csariel's Net</span>
-        </div>
-    </div>
+        </header>
 
-    <div class="perfil-tabs">
-        <button class="tab-btn active" onclick="window.cambiarTab('mis-publicaciones')" data-clave="perfil_mis_publicaciones">Mis Publicaciones</button>
-        <button class="tab-btn" onclick="window.cambiarTab('actividad')" data-clave="perfil_tab_actividad">Actividad</button>
-        <button class="tab-btn" onclick="window.cambiarTab('tokens')" data-clave="perfil_tab_tokens">Tokens</button>
-        <button class="tab-btn" onclick="window.cambiarTab('esim')" data-clave="perfil_tab_esim">eSIM</button>
-        <button class="tab-btn" onclick="window.cambiarTab('qr')" data-clave="perfil_tab_qr">Escanear QR</button>
-        <button class="tab-btn" onclick="window.cambiarTab('internet')" data-clave="perfil_tab_internet">Internet</button>
-        <button class="tab-btn" id="tabBtnCompras" onclick="window.cambiarTab('compras'); window.cargarComprasMarketplace && window.cargarComprasMarketplace();">Compras</button>
-    </div>
+        <nav class="main-nav">
+            <a href="/" class="nav-link">⌂ Inicio</a>
+            <a href="/features/muro/muro.html" class="nav-link">◇ Muro</a>
+            <a href="/features/perfil/perfil.html" class="nav-link">◆ Perfil</a>
+            <a href="/features/mensajes/contactos.html" class="nav-link">◈ Contactos</a>
+            <a href="/features/live/live.html" class="nav-link live">◉ Live</a>
+            <a href="/features/internet/internet.html" class="nav-link">◈ Internet</a>
+            <a href="/features/videos/videos.html" class="nav-link active">▶ Videos</a>
+            <a href="/features/grupos/grupos.html" class="nav-link">◇ Grupos</a>
+            <a href="/marketing/marketing.html" class="nav-link">◈ Marketing</a>
+        </nav>
 
-<div id="tab-mis-publicaciones" class="tab-content active">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_crear_publicacion">Crear publicación</h3>
-            <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
-        </div>
-        <div class="panel-body">
-            <div class="form-publicacion">
-                <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
+        <div class="upload-section" id="uploadSection">
+            <h3 data-clave="videos_subir_nuevo">◈ Subir nuevo video</h3>
+            <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();">
+                <div class="form-group">
+                    <label data-clave="videos_titulo_video">Título del video</label>
+                    <input type="text" id="inputTituloVideo" data-placeholder="videos_titulo_placeholder" placeholder="Ej: Mi primer video en Csariel's" required maxlength="200" />
+                </div>
+                <div class="form-group">
+                    <label data-clave="videos_descripcion">Descripción</label>
+                    <textarea id="inputDescripcionVideo" data-placeholder="videos_descripcion_placeholder" placeholder="Describe tu video..." maxlength="5000"></textarea>
+                </div>
+                <div class="form-group">
+                    <label data-clave="videos_seleccionar_archivo">Selecciona el archivo de video o grábalo</label>
 
-                <div class="acciones">
-                    <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">Emoji</button>
-                    <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">Hashtag</button>
-                    <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">Foto</button>
-                    <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">Video</button>
+                    <button type="button" class="btn-camara" id="btnAbrirCamara">
+                        🎥 Grabar video con cámara
+                    </button>
 
-                    <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
-                    <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
-
-                    <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">Publicar</button>
-
-                    <div class="emoji-picker" id="emojiPickerPerfil">
-                        <div class="titulo" data-clave="perfil_elige_emoji">Elige tu emoji</div>
-                        <div class="grid" id="emojiGridPerfil"></div>
+                    <div class="file-input-wrapper">
+                        <input type="file" id="inputArchivoVideo" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" required />
+                        <button type="submit" class="btn-subir-video" id="btnSubirVideo" data-clave="videos_btn_subir">◈ Subir video</button>
                     </div>
+                    <div style="font-size:0.55rem;color:var(--text-muted);margin-top:4px;" data-clave="videos_formatos">Formatos: MP4, WebM, MOV · Máx 100 MB · Full HD</div>
                 </div>
-
-                <div id="previewArchivosPerfil" class="preview-archivos"></div>
-            </div>
-        </div>
-    </div>
-
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_mis_publicaciones">Mis publicaciones</h3>
-            <span class="panel-badge" id="misPostsCount">0</span>
-        </div>
-        <div class="panel-body">
-            <div id="misPublicacionesList">
-                <div class="empty-state">
-                    <h4 data-clave="perfil_sin_publicaciones">Sin publicaciones aún</h4>
-                    <p data-clave="perfil_crea_primera">Publica algo para verlo aquí</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="tab-actividad" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_seccion_ultima_actividad">Última actividad</h3>
-            <span class="panel-badge" data-clave="perfil_tiempo_real">En tiempo real</span>
-        </div>
-        <div class="panel-body" id="actividadList">
-            <div class="empty-state">
-                <h4 data-clave="perfil_sin_actividad">Sin actividad reciente</h4>
-                <p data-clave="perfil_comienza_muro">Comienza a interactuar en el Muro</p>
-            </div>
-        </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_seccion_historial_tx">Historial de transacciones</h3>
-            <span class="panel-badge" id="historialCount">0</span>
-        </div>
-        <div class="panel-body" id="historialList">
-            <div class="empty-state">
-                <h4 data-clave="perfil_sin_transacciones">Sin transacciones</h4>
-                <p data-clave="perfil_compra_domos_tokens">Compra domos para acumular tokens</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="tab-tokens" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_seccion_estado_tokens">Estado de tokens</h3>
-            <span class="panel-badge" data-clave="perfil_actualizado">Actualizado</span>
-        </div>
-        <div class="panel-body">
-            <div class="token-status">
-                <div class="item">
-                    <div class="value" id="tokenTotal">0</div>
-                    <div class="label" data-clave="perfil_balance_tokens">Total tokens</div>
-                </div>
-                <div class="item">
-                    <div class="value" id="tokenDisponibles">0</div>
-                    <div class="label" data-clave="perfil_disponibles">Disponibles</div>
-                </div>
-                <div class="item">
-                    <div class="value" id="tokenVendidos">0</div>
-                    <div class="label" data-clave="perfil_vendidos">Vendidos</div>
-                </div>
-                <div class="item">
-                    <div class="value" id="tokenNFTs">0</div>
-                    <div class="label" data-clave="perfil_nfts_info">NFTs</div>
-                </div>
-            </div>
-
-            <div class="progress-bar-container">
-                <div class="bar">
-                    <div class="fill" id="progressFill" style="width: 0%;"></div>
-                </div>
-                <div class="label">
-                    <span data-clave="perfil_progreso_meta">Progreso NFT</span>
-                    <span id="progressText">0 / 12</span>
-                </div>
-            </div>
-
-            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;" id="canjearNft" onclick="window.canjearNFT()" disabled data-clave="perfil_canjear_nft">CANJEAR NFT</button>
-            </div>
-
-            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.irAMuro()" data-clave="perfil_ir_muro">Ir al Muro</button>
-        </div>
-    </div>
-</div>
-
-<div id="tab-esim" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_telnyx">Mi eSIM</h3>
-            <span class="panel-badge" data-no-traducir="1">Telnyx</span>
-        </div>
-        <div class="panel-body">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid rgba(255,255,255,0.09);">
-                <div style="padding:10px 10px 10px 0;border-bottom:1px solid rgba(255,255,255,0.09);">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_esim_estado">ESTADO</span>
-                    <div id="esimStatus" data-clave="perfil_esim_cargando" style="font-weight:600;font-size:0.9rem;">Cargando…</div>
-                </div>
-                <div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.09);">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_consumidos">DATOS USADOS</span>
-                    <div id="esimDataUsed" data-no-traducir="1" style="font-weight:600;font-size:0.9rem;">0 GB</div>
-                </div>
-                <div style="padding:10px 10px 10px 0;border-bottom:1px solid rgba(255,255,255,0.09);">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_limite_plan">LÍMITE</span>
-                    <div id="esimDataLimit" data-no-traducir="1" style="font-weight:600;font-size:0.9rem;">0 GB</div>
-                </div>
-                <div style="padding:10px;border-bottom:1px solid rgba(255,255,255,0.09);">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_datos_restantes">RESTANTE</span>
-                    <div id="esimDataRestante" data-no-traducir="1" style="font-weight:600;font-size:0.9rem;color:var(--success);">0 GB</div>
-                </div>
-                <div style="padding:10px 0;grid-column:span 2;border-bottom:1px solid rgba(255,255,255,0.09);">
-                    <span style="color:var(--text-muted);font-size:0.6rem;" data-clave="perfil_iccid">ICCID</span>
-                    <div id="esimIccid" data-no-traducir="1" style="font-weight:600;font-size:0.8rem;font-family:monospace;">—</div>
-                </div>
-            </div>
-
-            <div style="margin-top:10px;">
-                <div style="background:rgba(255,255,255,0.08);border-radius:10px;height:6px;overflow:hidden;">
-                    <div id="esimDataProgress" style="height:100%;width:0%;background:var(--success);transition:width 0.8s;"></div>
-                </div>
-            </div>
-
-            <div id="esimAvisoSinSaldo" style="display:none;margin-top:12px;padding:10px 0;color:var(--danger);font-size:0.75rem;" data-clave="perfil_esim_sin_datos">
-                Se acabaron tus datos. Recarga y tu eSIM se reactiva sola.
-            </div>
-
-            <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
-                <button class="btn btn-gold" style="flex:1;justify-content:center;padding:10px;" id="btnComprarEsim" onclick="window.irAComprarInternet()">
-                    <span id="btnComprarEsimTxt" data-clave="perfil_esim_comprar">Comprar eSIM</span>
-                </button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnQrEsim" onclick="window.verQREsimNuevo()" data-clave="perfil_obtener_qr">QR Activación</button>
-                <button class="btn btn-outline" style="flex:1;justify-content:center;padding:10px;" id="btnSyncEsim" onclick="window.sincronizarEsimNuevo()" data-clave="perfil_sincronizar">Sincronizar</button>
-            </div>
-
-            <div style="margin-top:12px;">
-                <a href="/features/internet/internet.html" class="btn btn-outline btn-sm" style="color:var(--cyan);" data-clave="perfil_cambiar_celular">Cambiar de celular</a>
-            </div>
-
-            <div style="margin-top:10px;font-size:0.6rem;color:var(--text-muted);">
-                <span data-clave="perfil_apn_requerido">APN:</span> <span id="esimApn" data-no-traducir="1" style="font-family:monospace;color:var(--text-secondary);">data00.telnyx</span>
-            </div>
-
-            <div id="esimError" style="display:none;margin-top:12px;padding:10px 0;color:var(--danger);font-size:0.75rem;"></div>
-        </div>
-    </div>
-</div>
-
-<div id="tab-qr" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_escanear_qr">Escanear QR</h3>
-            <span class="panel-badge" data-clave="perfil_recibe_estoks">Recibe Es.stoks</span>
-        </div>
-        <div class="panel-body">
-            <div class="config-group">
-                <label data-clave="perfil_codigo_qr">Código del QR (escanea o escribe)</label>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <input type="text" id="qrInput" data-placeholder="perfil_ejemplo_codigo_qr" placeholder="Ej: DOMO-2025-ABC123"
-                           style="flex:1;padding:10px 2px;background:transparent;border:0;border-bottom:1px solid rgba(255,255,255,0.09);color:var(--text-primary);font-size:0.85rem;outline:none;">
-                    <button class="btn btn-gold" onclick="window.escanearQR()" id="btnEscanearQR" data-clave="perfil_validar_codigo">Escanear QR</button>
-                </div>
-                <div class="hint" data-clave="perfil_escanea_qr_hint">Escanea el QR de tu domo físico para recibir 1 Es.stok</div>
-            </div>
-
-            <button class="btn btn-outline" style="width:100%;justify-content:center;margin-top:8px;" onclick="window.abrirCamaraQR()" data-clave="perfil_abrir_camara">Escanear con cámara</button>
-
-            <div id="qrReaderContainer">
-                <video id="qrVideo" style="width:100%;max-width:300px;border-radius:10px;background:black;"></video>
-                <canvas id="qrCanvas" style="display:none;"></canvas>
-                <button class="btn btn-danger btn-sm" onclick="window.cerrarCamaraQR()" style="margin-top:8px;" data-clave="perfil_cerrar_camara">Cerrar cámara</button>
-                <div id="qrCamaraStatus" style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;"></div>
-            </div>
-
-            <div id="qrStatus" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);min-height:24px;text-align:center;"></div>
-
-            <div style="margin-top:16px;border-top:1px solid rgba(255,255,255,0.09);padding-top:12px;">
-                <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--text-muted);">
-                    <span data-clave="perfil_historial">Últimos escaneos</span>
-                    <span id="qrHistorialCount">0</span>
-                </div>
-                <div id="qrHistorialList" style="margin-top:8px;">
-                    <div class="empty-state" style="padding:10px;">
-                        <p style="font-size:0.7rem;" data-clave="perfil_sin_escaneos">Sin escaneos recientes</p>
+                <div id="uploadProgress" style="display:none;margin-top:8px;">
+                    <div style="background:rgba(255,255,255,0.05);border-radius:4px;height:4px;overflow:hidden;">
+                        <div id="progressFill" style="height:100%;width:0%;background:var(--gold);border-radius:4px;transition:width 0.3s;"></div>
                     </div>
+                    <div style="font-size:0.6rem;color:var(--text-muted);margin-top:4px;text-align:center;" id="progressText">0%</div>
+                </div>
+            </form>
+        </div>
+
+        <div class="processing-state" id="processingState">
+            <div class="spinner"></div>
+            <h3 data-clave="videos_procesando_titulo">◈ Procesando video</h3>
+            <p id="processingMessage" data-clave="videos_procesando_desc">Eliminando marca de agua externa y aplicando marca de Csariel's...</p>
+            <div class="progress-bar-big"><div class="fill" id="processingProgressFill"></div></div>
+            <div class="progress-text" id="processingProgressText">0%</div>
+            <p style="font-size:0.6rem;color:var(--text-muted);" data-clave="videos_procesando_tiempo">Este proceso puede tardar entre 30 y 90 segundos</p>
+        </div>
+
+        <div class="marketing-ad-container" id="marketingAdContainer">
+            <div class="marketing-ad-header">
+                <span class="marketing-ad-label" data-clave="videos_patrocinado">Patrocinado</span>
+                <button class="marketing-ad-close" onclick="cerrarAnuncioVideo()" aria-label="Cerrar"><svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+            </div>
+            <div class="marketing-ad-body">
+                <div class="marketing-ad-media" id="marketingAdMediaVideo"><span>◈</span></div>
+                <div class="marketing-ad-content">
+                    <div class="marketing-ad-title" id="marketingAdTitleVideo" data-clave="videos_cargando_anuncio">Cargando anuncio...</div>
+                    <div class="marketing-ad-desc" id="marketingAdDescVideo"></div>
+                    <button class="marketing-ad-cta" id="marketingAdCtaVideo" onclick="registrarClicAnuncioVideo()" data-clave="videos_ver_mas">Ver más</button>
                 </div>
             </div>
         </div>
-    </div>
-</div>
 
-<div id="tab-internet" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_mis_compras_internet">Mis compras de Internet</h3>
-            <span class="panel-badge" id="internetOrdenesCount">0</span>
-        </div>
-        <div class="panel-body">
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
-                <button class="btn btn-outline btn-sm internet-filter active" data-filter="all" onclick="window.filtrarOrdenesInternet('all')" data-clave="perfil_filtro_todas">Todas</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="activa" onclick="window.filtrarOrdenesInternet('activa')" data-clave="perfil_filtro_activas">Activas</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="pendiente" onclick="window.filtrarOrdenesInternet('pendiente')" data-clave="perfil_filtro_pendientes">Pendientes</button>
-                <button class="btn btn-outline btn-sm internet-filter" data-filter="cancelada" onclick="window.filtrarOrdenesInternet('cancelada')" data-clave="perfil_filtro_canceladas">Canceladas</button>
-                <button class="btn btn-outline btn-sm" onclick="window.cargarOrdenesInternet()" style="margin-left:auto;" data-clave="perfil_refrescar">Refrescar</button>
-            </div>
-
-            <div id="ordenesInternetList">
-                <div class="empty-state">
-                    <h4 data-clave="perfil_cargando_ordenes">Cargando órdenes...</h4>
-                </div>
+        <div id="videosContainer">
+            <div class="empty-state">
+                <span class="icon">◈</span>
+                <h3 data-clave="videos_sin_videos">No hay videos aún</h3>
+                <p data-clave="videos_se_el_primero">Sé el primero en compartir un video en Csariel's.</p>
             </div>
         </div>
-    </div>
-</div>
 
-<!-- NUEVA PESTAÑA: COMPRAS Y VENTAS DEL MARKETPLACE DE CANALES -->
-<div id="tab-compras" class="tab-content">
-    <div class="panel">
-        <div class="panel-header">
-            <h3>Compras y ventas · Marketplace</h3>
-            <button class="btn btn-outline btn-sm" type="button" onclick="window.cargarComprasMarketplace()">Actualizar</button>
-        </div>
-        <div class="panel-body">
-            <div id="comprasMarketplaceList" class="mk-compras-lista">
-                <div class="mk-compra-vacia">Abre esta pestaña para ver tus compras y ventas.</div>
+        <footer class="footer">
+            <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
+            <span class="network-tag">⚡ Polygon</span>
+        </footer>
+    </div>
+
+    <div class="bottom-sheet-backdrop" id="sheetBackdrop" onclick="cerrarBottomSheet()"></div>
+
+    <div class="bottom-sheet" id="bottomSheet" role="dialog" aria-modal="true">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+            <div class="sheet-titulo">
+                <svg viewBox="0 0 24 24" class="ico-premium" style="width:18px;height:18px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span data-clave="videos_comentarios_titulo">Comentarios</span>
+                <span class="sheet-contador" id="sheetContador">0</span>
             </div>
+            <button class="sheet-close" onclick="cerrarBottomSheet()" aria-label="Cerrar"><svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+        </div>
+        <div class="comentarios-lista" id="comentariosLista">
+            <div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;" data-clave="videos_sin_comentarios">Sin comentarios. ¡Sé el primero!</div>
+        </div>
+        <div class="sheet-input">
+            <input type="text" id="inputComentarioSheet" data-placeholder="videos_escribe_comentario" placeholder="Escribe un comentario..." maxlength="2000" autocomplete="off" />
+            <button id="btnEnviarComentarioSheet" onclick="enviarComentarioSheet()" aria-label="Enviar"><svg viewBox="0 0 24 24" class="ico-premium"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
         </div>
     </div>
-</div>
 
-</div>
+    <button class="btn-audio-global" id="btnAudioGlobal" onclick="activarAudioGlobal()" data-clave-title="videos_activar_sonido" title="Activar sonido">
+        <span class="ico"><svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg></span>
+        <span class="txt" data-clave="videos_activar_sonido_txt">Activar sonido</span>
+    </button>
 
-<footer class="footer" style="text-align: center;">
-    <span data-no-traducir="1"><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
-    <div style="margin-top: 8px; font-size: 0.75rem; opacity: 0.6; display: flex; justify-content: center; align-items: center; gap: 6px;" data-no-traducir="1">
-        Polygon
+    <div class="toast" id="toast"></div>
+    <div class="toast-siguiente" id="toastSiguiente"></div>
+
+    <div id="errorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:12px 16px;font-family:monospace;font-size:0.75rem;word-break:break-word;">
+        <strong data-clave="error_detectado_titulo">◈ Error detectado:</strong>
+        <span id="errorBannerText"></span>
+        <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;" data-clave="error_cerrar">Cerrar</button>
     </div>
-</footer>
 
-</div>
+    <!-- ✅ IMPORTANTE: MediaPipe ahora se carga DENTRO de videos-camara.js
+         para evitar conflicto de versiones. -->
+    <script src="/features/videos/js/videos-camara.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/js/idiomas.js?v=6"></script>
+    <script src="/features/videos/js/videos-publicar.js" defer></script>
+    <script>
+    // ================================================================
+    // VIDEOS · v15.9 — Fullscreen Pro + Doble Tap + Cámara
+    // ================================================================
 
-<!-- ============ BOTÓN FLOTANTE DE LLAMADAS (arrastrable) ============ -->
-<button id="btnLlamarFlotante" type="button" aria-label="Llamar o comprar eSIM" title="Llamar">
-    <svg viewBox="0 0 24 24">
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
-    </svg>
-</button>
-
-<!-- Panel que se abre al tocar el botón flotante -->
-<div id="panelLlamar" role="dialog" aria-modal="false" aria-label="Llamar">
-    <div class="llamar-titulo">◈ Llamar</div>
-    <div class="llamar-sub">Escribe el número al que quieres llamar. Se abrirá la app de teléfono de tu celular.</div>
-    <input id="llamarNumero" type="tel" inputmode="tel" autocomplete="tel" placeholder="Ej. +52 55 1234 5678" />
-    <div id="llamarAviso"></div>
-    <div class="llamar-acciones">
-        <button id="btnHacerLlamada" type="button">Llamar</button>
-        <button id="btnCerrarLlamar" type="button">Cerrar</button>
-    </div>
-</div>
-
-<div class="toast" id="toast"></div>
-
-<div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
-    <strong data-clave="perfil_error_detectado">Error detectado:</strong>
-    <span id="errorBannerText"></span>
-    <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;" data-clave="perfil_cerrar">Cerrar</button>
-</div>
-
-<script>
-    var DEBUG_MODE = (function () {
-        try { return new URLSearchParams(window.location.search).get('debug') === '1'; }
-        catch (e) { return false; }
+    var sbVideos = null;
+    (function crearClienteVideos() {
+        try {
+            var SDK = window.supabase;
+            if (!SDK || typeof SDK.createClient !== 'function') {
+                console.error('[Videos] SDK no disponible.');
+                return;
+            }
+            sbVideos = SDK.createClient(
+                'https://zultnlogdoajehbswlih.supabase.co',
+                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
+                { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+            );
+        } catch (e) {
+            console.error('[Videos] Error creando cliente:', e);
+        }
     })();
-    function mostrarErrorEnPantalla(mensaje) {
-        if (!DEBUG_MODE) { console.error('[Perfil]', mensaje); return; }
-        const banner = document.getElementById('errorBanner');
-        const texto = document.getElementById('errorBannerText');
-        if (banner && texto) { texto.textContent = mensaje; banner.style.display = 'block'; }
-    }
-    window.mostrarErrorEnPantalla = mostrarErrorEnPantalla;
-    window.addEventListener('error', function (event) {
-        mostrarErrorEnPantalla((event.message || 'Error desconocido') + ' — línea ' + event.lineno + ' de ' + (event.filename || 'este archivo'));
-    });
-    window.addEventListener('unhandledrejection', function (event) {
-        mostrarErrorEnPantalla('Promesa rechazada: ' + (event.reason?.message || event.reason));
-    });
-    window.addEventListener('load', function () {
-        if (typeof window.supabase === 'undefined') {
-            mostrarErrorEnPantalla('No se pudo cargar la conexión a la base de datos (Supabase). Revisa tu internet o si algo está bloqueando cdn.jsdelivr.net.');
-        }
-    });
-</script>
 
-<script>
-/* INICIALIZACIÓN DE IDIOMAS — UNA SOLA VEZ */
-(function() {
-    'use strict';
-    var intentos = 0;
-    function intentar() {
-        if (typeof window.inicializarIdiomas === 'function') {
-            try {
-                Promise.resolve(window.inicializarIdiomas()).catch(function(e) {
-                    console.warn('[Perfil] Error inicializando idiomas (ignorado):', e);
-                });
-                return;
-            } catch (e) {
-                console.warn('[Perfil] Excepción inicializando idiomas:', e);
+    var REACCIONES = ['❤️', '🔥', '🚀', '😂', '👍'];
+    var REACCION_DEFAULT = '❤️';
+
+    var sessionUser = null;
+    var videoActual = null;
+    var videosPublicados = [];
+    var likeCache = new Map();
+    var reaccionesCache = new Map();
+    var adCerradoVideo = false;
+    var observerVideos = null;
+    var observerCarga = null;
+    var videoPausadoManualmente = null;
+    var pollingVideoInterval = null;
+    var videoEnProcesamiento = null;
+    var videoIdComentariosActual = null;
+    var longPressTimers = {};
+    var vistasContadas = {};
+    var audioGlobalActivado = false;
+
+    function tr(clave, fallback) {
+        if (typeof window.tConFallback === 'function') return window.tConFallback(clave, fallback);
+        return fallback !== undefined ? fallback : clave;
+    }
+    function aplicarI18N(raiz) {
+        try { if (typeof window.aplicarTraducciones === 'function') window.aplicarTraducciones(raiz || document); } catch (e) {}
+    }
+    function escapeHTML(texto) {
+        if (texto === null || texto === undefined) return '';
+        return String(texto)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+    function safeAttr(url) {
+        if (!url || typeof url !== 'string') return '#';
+        if (!url.startsWith('https://')) return '#';
+        return url;
+    }
+    function formatearTiempo(seg) {
+        if (!seg || !isFinite(seg)) return '0:00';
+        var m = Math.floor(seg / 60);
+        var s = Math.floor(seg % 60);
+        if (s < 10) s = '0' + s;
+        return m + ':' + s;
+    }
+    function formatContador(n) {
+        if (!n || n === 0) return '0';
+        if (n >= 1000000) return (n / 1000000).toFixed(1).replace('.0', '') + 'M';
+        if (n >= 1000) return (n / 1000).toFixed(1).replace('.0', '') + 'K';
+        return String(n);
+    }
+    function vibrar(ms) {
+        try { if (navigator.vibrate) navigator.vibrate(ms || 15); } catch (e) {}
+    }
+    function showToast(msg, type, duration) {
+        var t = document.getElementById('toast');
+        if (!t) return;
+        t.textContent = msg;
+        t.className = 'toast show';
+        if (type === 'error') t.classList.add('error');
+        else if (type === 'warning') t.classList.add('warning');
+        else if (type === 'success') t.classList.add('success');
+        var dur = (typeof duration === 'number' && duration > 0) ? duration : 3500;
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(function() { t.classList.remove('show'); }, dur);
+    }
+    async function getSession() {
+        try {
+            if (!sbVideos) return null;
+            var r = await sbVideos.auth.getSession();
+            return r.data.session;
+        } catch (e) { return null; }
+    }
+
+    function iconoBasuraSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+    }
+    function iconoComentarioSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    }
+    function iconoCerrarSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    }
+    function iconoVerificadoSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><polyline points="20 6 9 17 4 12"/></svg>';
+    }
+    function iconoAudioOnSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>';
+    }
+    function iconoAudioOffSVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>';
+    }
+    function iconoPlaySVG() {
+        return '<svg viewBox="0 0 24 24" class="ico-premium" style="width:30px;height:30px;fill:#D4AF37;stroke:#D4AF37;margin-left:4px;"><polygon points="6 4 20 12 6 20 6 4"/></svg>';
+    }
+    function iconoReaccionSVG(tipo) {
+        var iconos = {
+            '❤️': '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+            '🔥': '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M12 2c1 3 4 5 4 9a4 4 0 0 1-8 0c0-2 1-3 1-5-2 2-4 4-4 7a6 6 0 0 0 12 0c0-5-3-8-5-11z"/></svg>',
+            '🚀': '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91 0z"/><path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/></svg>',
+            '😂': '<svg viewBox="0 0 24 24" class="ico-premium"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>',
+            '👍': '<svg viewBox="0 0 24 24" class="ico-premium"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>'
+        };
+        return iconos[tipo] || iconos['❤️'];
+    }
+    function getIconoCompartirSVG() {
+        return '<svg class="icono-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor">' +
+            '<circle cx="18" cy="5" r="2.5"/>' +
+            '<circle cx="6" cy="12" r="2.5"/>' +
+            '<circle cx="18" cy="19" r="2.5"/>' +
+            '<path d="M8.2 10.8 L15.8 6.2"/>' +
+            '<path d="M8.2 13.2 L15.8 17.8"/>' +
+            '</svg>';
+    }
+    function getIconoFullscreenSVG() {
+        return '<svg viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>';
+    }
+
+    (function detectarPrimerGesto() {
+        var eventos = ['click', 'touchstart', 'keydown', 'scroll'];
+        var disparado = false;
+        function onGesto() {
+            if (disparado) return;
+            disparado = true;
+            audioGlobalActivado = true;
+            document.querySelectorAll('.video-card video').forEach(function(v) {
+                v.muted = false;
+                v.volume = 1;
+                v.removeAttribute('muted');
+            });
+            var btn = document.getElementById('btnAudioGlobal');
+            if (btn) {
+                btn.classList.add('activo');
+                var txt = btn.querySelector('.txt');
+                var ico = btn.querySelector('.ico');
+                if (txt) txt.textContent = 'Sonido activo';
+                if (ico) ico.innerHTML = iconoAudioOnSVG();
+                setTimeout(function() { btn.classList.remove('visible'); }, 2000);
+            }
+            eventos.forEach(function(ev) { document.removeEventListener(ev, onGesto, true); });
+        }
+        eventos.forEach(function(ev) { document.addEventListener(ev, onGesto, { capture: true, passive: true }); });
+    })();
+
+    function mostrarBotonAudioGlobal() {
+        if (audioGlobalActivado) return;
+        var btn = document.getElementById('btnAudioGlobal');
+        if (btn) btn.classList.add('visible');
+    }
+
+    function activarAudioGlobal() {
+        audioGlobalActivado = true;
+        document.querySelectorAll('.video-card video').forEach(function(v) {
+            v.muted = false;
+            v.volume = 1;
+            v.removeAttribute('muted');
+            var card = v.closest('.video-card');
+            if (card && card.classList.contains('visible')) {
+                v.play().catch(function() {});
+            }
+        });
+        var btn = document.getElementById('btnAudioGlobal');
+        if (btn) {
+            btn.classList.add('activo');
+            var txt = btn.querySelector('.txt');
+            var ico = btn.querySelector('.ico');
+            if (txt) txt.textContent = 'Sonido activo';
+            if (ico) ico.innerHTML = iconoAudioOnSVG();
+            setTimeout(function() { btn.classList.remove('visible'); }, 2000);
+        }
+        showToast('◈ Sonido activado', 'success', 2000);
+    }
+
+    function reproducirVideoConSonido(video) {
+        if (!video) return;
+        if (!video.getAttribute('src') && video.dataset.src) {
+            video.src = video.dataset.src;
+            video.load();
+        }
+        video.muted = false;
+        video.volume = 1;
+        video.removeAttribute('muted');
+        var promesa = video.play();
+        if (promesa && typeof promesa.then === 'function') {
+            promesa.catch(function(err) {
+                if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
+                    video.muted = true;
+                    video.play().catch(function() {});
+                    mostrarBotonAudioGlobal();
+                }
+            });
+        }
+    }
+
+    async function incrementarVista(videoId) {
+        if (!videoId) return;
+        var id = String(videoId);
+        if (vistasContadas[id]) return;
+        vistasContadas[id] = true;
+        var vistasInfo = document.querySelector('.video-card[data-video-id="' + id + '"] .vistas-info');
+        if (vistasInfo) {
+            var texto = vistasInfo.textContent || '';
+            var num = parseInt(texto.replace(/[^\d]/g, ''), 10) || 0;
+            vistasInfo.textContent = '◈ ' + formatContador(num + 1) + ' vistas';
+        }
+        try {
+            if (!sbVideos) return;
+            await sbVideos.rpc('incrementar_reproducciones', { video_id: id });
+        } catch (e) {}
+    }
+
+    async function cargarUsuarioActual() {
+        try {
+            var session = await getSession();
+            if (!session) { sessionUser = null; return null; }
+            sessionUser = session.user;
+            var result = await sbVideos.rpc('mi_perfil_privado');
+            if (result.error) throw result.error;
+            var datos = result.data && result.data[0];
+            if (datos) {
+                var badgeCant = document.getElementById('tokenBadgeCantidad');
+                if (badgeCant) badgeCant.textContent = datos.tokens || 0;
+            }
+            return datos || null;
+        } catch (e) { return null; }
+    }
+
+    async function cargarVideos() {
+        var container = document.getElementById('videosContainer');
+        try {
+            if (!sbVideos) throw new Error('Cliente Supabase no disponible');
+            var result = await sbVideos
+                .from('videos')
+                .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, sonido_id, sonido_nombre, ubicacion_nombre, usuarios:usuario_id (id, nombre, handle, avatar_url)')
+                .eq('estado', 'publicado')
+                .eq('es_borrador', false)
+                .order('created_at', { ascending: false })
+                .limit(20);
+
+            var data = result.error ? (await sbVideos.from('videos').select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at').eq('estado', 'publicado').order('created_at', { ascending: false }).limit(20)).data : result.data;
+
+            videosPublicados = data || [];
+
+            if (videosPublicados.length === 0) {
+                container.className = '';
+                container.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3 data-clave="videos_sin_videos">No hay videos aún</h3><p data-clave="videos_se_el_primero">Sé el primero en compartir un video.</p></div>';
+                aplicarI18N(container);
                 return;
             }
-        }
-        if (intentos++ >= 25) return;
-        setTimeout(intentar, 200);
-    }
-    intentar();
-})();
-</script>
 
-<script>
-/* PRECIO DE PRO — se toma de planes_membresia (fuente de verdad) */
-(function () {
-    'use strict';
-    function aplicarPrecio(precio) {
-        var el = document.getElementById('proPrecio');
-        if (el && Number.isFinite(Number(precio))) {
-            el.textContent = '$' + Number(precio).toFixed(0) + ' MXN';
-        }
-    }
-    async function cargarPrecioPro() {
-        for (var i = 0; i < 100 && !window.supabaseClient; i++) {
-            await new Promise(function (r) { setTimeout(r, 100); });
-        }
-        if (!window.supabaseClient) return;
-        try {
-            var r = await window.supabaseClient
-                .from('planes_membresia')
-                .select('precio_mxn')
-                .eq('id', 'pro')
-                .eq('activo', true)
-                .maybeSingle();
-            if (!r.error && r.data) aplicarPrecio(r.data.precio_mxn);
+            await cargarReaccionesDeVideos(videosPublicados.map(function(v){ return v.id; }));
+
+            container.className = 'videos-grid';
+            container.innerHTML = '';
+
+            videosPublicados.forEach(function(v) {
+                var card = crearVideoCard(v);
+                container.appendChild(card);
+            });
+
+            aplicarI18N(container);
+            activarAutoplayScroll();
         } catch (e) {
-            console.warn('[Perfil] No se pudo cargar el precio de Pro:', e);
+            console.error('[Videos] ❌ Error al cargar:', e);
         }
     }
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', cargarPrecioPro, { once: true });
-    } else {
-        cargarPrecioPro();
-    }
-})();
-</script>
+    window.cargarVideos = cargarVideos;
 
-<script src="/features/shared/js/idiomas.js?v=9" defer></script>
-
-<!-- Scripts del módulo perfil (en orden de dependencia) -->
-<script src="/features/perfil/js/perfil-config.js?v=8"></script>
-<script src="/features/perfil/js/perfil-utils.js?v=8"></script>
-<script src="/features/perfil/js/perfil-datos.js?v=8"></script>
-<script src="/features/perfil/js/perfil-estado.js?v=8"></script>
-<script src="/features/perfil/js/perfil-amigos.js?v=8"></script>
-<script src="/features/perfil/js/perfil-conexion.js?v=8"></script>
-<script src="/features/perfil/js/perfil-tokens.js?v=8"></script>
-<script src="/features/perfil/js/perfil-qr.js?v=8"></script>
-<script src="/features/perfil/js/perfil-esim.js?v=8"></script>
-<script src="/features/perfil/js/perfil-wallet.js?v=8"></script>
-<script src="/features/perfil/js/perfil-publicaciones.js?v=8"></script>
-<!-- VISOR MODAL NUEVO -->
-<script src="/features/perfil/js/perfil-visor.js?v=1"></script>
-<script src="/features/perfil/js/perfil-internet.js?v=8"></script>
-<script src="/features/perfil/js/perfil-repartidor.js?v=8"></script>
-<script src="/features/perfil/js/perfil-init.js?v=8"></script>
-<!-- FOTO DE PERFIL A PANTALLA COMPLETA (tocar la foto abre el visor, el lápiz abre el menú) -->
-<script src="/features/perfil/js/perfil-avatar-visor.js?v=1"></script>
-
-<!-- PASAPORTE DIGITAL DEL DOMO (después de init) -->
-<script src="/features/perfil/js/pasaporte-domo.js?v=1"></script>
-
-<script>
-/* ================================================================
-   WALLET · INTEGRACIÓN CON EL PERFIL (v4)
-   Este script solo PINTA la sección. Las acciones (conectar,
-   desconectar, cambiar de red) viven en perfil-wallet.js.
-   ================================================================ */
-(function () {
-    'use strict';
-
-    var refrescando = false;
-    var pendiente = false;
-
-    function $w(id) { return document.getElementById(id); }
-
-    function acortar(direccion) {
-        if (!direccion) return '';
-        return direccion.slice(0, 6) + '…' + direccion.slice(-4);
+    async function cargarReaccionesDeVideos(videoIds) {
+        if (!videoIds || videoIds.length === 0) return;
+        try {
+            if (!sbVideos) return;
+            var result = await sbVideos.from('videos_likes').select('video_id, usuario_id, tipo').in('video_id', videoIds);
+            if (result.error) return;
+            (result.data || []).forEach(function(r) {
+                var tipo = r.tipo || REACCION_DEFAULT;
+                var key = r.video_id + '_' + r.usuario_id;
+                likeCache.set(key, tipo);
+                if (!reaccionesCache.has(r.video_id)) reaccionesCache.set(r.video_id, { tipo: REACCION_DEFAULT, totales: {} });
+                var obj = reaccionesCache.get(r.video_id);
+                obj.totales[tipo] = (obj.totales[tipo] || 0) + 1;
+            });
+        } catch (e) {}
     }
 
-    function esperar(ms) {
-        return new Promise(function (r) { setTimeout(r, ms); });
-    }
-
-    async function esperarCliente() {
-        for (var i = 0; i < 150; i++) {
-            if (window.supabaseClient) return window.supabaseClient;
-            await esperar(100);
-        }
-        return null;
-    }
-
-    async function obtenerUsuario(client) {
-        for (var i = 0; i < 20; i++) {
-            try {
-                var r = await client.auth.getSession();
-                if (r && r.data && r.data.session) return r.data.session.user;
-            } catch (e) { /* reintenta */ }
-            await esperar(150);
-        }
-        return null;
-    }
-
-    function pintarWallet(data) {
-        var conectada = Boolean(data && data.wallet_address);
-        var visibleDireccion = conectada && Boolean(data.wallet_visible);
-
-        $w('walletSection').style.display = '';
-
-        $w('walletEstado').textContent = conectada ? 'Conectada' : 'Sin conectar';
-        $w('walletEstado').classList.toggle('conectada', conectada);
-
-        if (!conectada) {
-            $w('walletDireccion').textContent = 'Aún no tienes una wallet vinculada.';
-        } else if (visibleDireccion) {
-            $w('walletDireccion').textContent = data.wallet_address;
+    function crearVideoCard(v) {
+        var autor = v.usuarios || {};
+        var vistas = v.reproducciones || 0;
+        var tipoMiReaccion = null;
+        if (sessionUser) tipoMiReaccion = likeCache.get(v.id + '_' + sessionUser.id);
+        var totalReacciones = 0;
+        var iconoMostrar = REACCION_DEFAULT;
+        if (reaccionesCache.has(v.id)) {
+            var obj = reaccionesCache.get(v.id);
+            Object.keys(obj.totales).forEach(function(k) { totalReacciones += obj.totales[k]; });
+            var mayor = 0;
+            Object.keys(obj.totales).forEach(function(k) { if (obj.totales[k] > mayor) { mayor = obj.totales[k]; iconoMostrar = k; } });
         } else {
-            $w('walletDireccion').textContent = acortar(data.wallet_address);
+            totalReacciones = v.likes || 0;
+        }
+        var iconoFinal = tipoMiReaccion || iconoMostrar;
+        var videoUrl = escapeHTML(safeAttr(v.url_video));
+        var posterUrl = (v.url_miniatura && typeof v.url_miniatura === 'string' && v.url_miniatura.startsWith('https://')) ? escapeHTML(v.url_miniatura) : '';
+        var esMio = !!(sessionUser && v.usuario_id === sessionUser.id);
+        var autorNombre = escapeHTML(autor.nombre || 'Usuario');
+        var autorHandle = escapeHTML(autor.handle || 'usuario');
+        var autorAvatar = autor.avatar_url ? safeAttr(autor.avatar_url) : null;
+        var titulo = escapeHTML(v.titulo || '');
+        var descripcion = escapeHTML((v.descripcion || '').substring(0, 140));
+        var sonidoNombre = v.sonido_nombre ? escapeHTML(v.sonido_nombre) : null;
+        var ubicacionNombre = v.ubicacion_nombre ? escapeHTML(v.ubicacion_nombre) : null;
+
+        var card = document.createElement('div');
+        card.className = 'video-card';
+        card.dataset.videoId = v.id;
+
+        var html = '';
+
+        if (esMio) {
+            html += '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="Eliminar">' + iconoBasuraSVG() + '</button>';
         }
 
-        $w('walletDireccion').dataset.full = conectada ? data.wallet_address : '';
-        $w('walletDireccion').style.cursor = visibleDireccion ? 'pointer' : 'default';
+        html += '<div class="thumbnail">';
+        html += '<video preload="auto" playsinline webkit-playsinline crossorigin="anonymous" data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>';
+        html += '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">' + iconoPlaySVG() + '</div>';
+        html += '</div>';
 
-        $w('btnConectarWallet').style.display = conectada ? 'none' : '';
-        $w('btnDesconectarWallet').style.display = conectada ? '' : 'none';
-        $w('btnCopiarWallet').style.display = visibleDireccion ? '' : 'none';
-        $w('linkPolygonScan').style.display = conectada ? '' : 'none';
-        if (conectada) {
-            $w('linkPolygonScan').href = 'https://amoy.polygonscan.com/address/' + data.wallet_address;
+        var avatarHTML = autorAvatar ? '<img src="' + autorAvatar + '" alt="">' : escapeHTML((autorNombre.charAt(0) || '◈').toUpperCase());
+        html += '<div class="overlay-info">';
+        html += '<div class="autor-row">';
+        html += '<div class="autor-avatar">' + avatarHTML + '</div>';
+        html += '<div class="autor-nombre">@' + autorHandle + '</div>';
+        html += '</div>';
+        if (titulo) html += '<div class="titulo">' + titulo + '</div>';
+        if (descripcion) html += '<div class="descripcion-corta">' + descripcion + '</div>';
+
+        if (sonidoNombre || ubicacionNombre) {
+            html += '<div class="video-meta-chips">';
+            if (sonidoNombre) html += '<span class="video-chip video-chip-sonido">♪ ' + sonidoNombre + '</span>';
+            if (ubicacionNombre) html += '<span class="video-chip video-chip-ubicacion">◆ ' + ubicacionNombre + '</span>';
+            html += '</div>';
         }
+        html += '</div>';
 
-        var visible = $w('walletVisible');
-        visible.checked = Boolean(data && data.wallet_visible);
-        visible.disabled = !conectada;
-        $w('walletVisibleTexto').textContent = visible.checked
-            ? 'Visible: otros usuarios pueden ver tu dirección en tu perfil.'
-            : 'Oculta: solo tú puedes ver tu dirección.';
+        var claseLiked = tipoMiReaccion ? ' liked' : '';
+        html += '<div class="sidebar-acciones">';
+        html += '<button class="sidebar-btn like-btn' + claseLiked + '" data-video-id="' + v.id + '" onclick="event.stopPropagation(); toggleLikeVideo(\'' + v.id + '\')">';
+        html += '<span class="icono">' + iconoReaccionSVG(iconoFinal) + '</span>';
+        html += '<span class="contador" id="likeCount-' + v.id + '">' + formatContador(totalReacciones) + '</span>';
+        html += '</button>';
+        html += '<button class="sidebar-btn" onclick="event.stopPropagation(); abrirComentarios(\'' + v.id + '\')">';
+        html += '<span class="icono">' + iconoComentarioSVG() + '</span>';
+        html += '<span class="contador" id="comentCount-' + v.id + '">' + formatContador(v.comentarios || 0) + '</span>';
+        html += '</button>';
+        html += '<button class="sidebar-btn btn-compartir-premium" onclick="event.stopPropagation(); compartirVideo(\'' + v.id + '\')" title="Compartir">';
+        html += getIconoCompartirSVG();
+        html += '</button>';
+        html += '<div class="reaccion-picker" id="picker-' + v.id + '">';
+        REACCIONES.forEach(function(re) {
+            html += '<button class="reaccion-opcion" data-reaccion="' + re + '" onclick="event.stopPropagation(); elegirReaccion(\'' + v.id + '\', \'' + re + '\')">' + iconoReaccionSVG(re) + '</button>';
+        });
+        html += '</div>';
+        html += '</div>';
 
-        $w('walletHint').textContent = conectada
-            ? 'Vinculada en Polygon (' + acortar(data.wallet_address) + ').'
-            : 'Necesitas MetaMask para vincular tu wallet.';
+        html += '<div class="barra-inferior">';
+        html += '<div class="fila-tiempo">';
+        html += '<span class="tiempo-actual-card">0:00</span>';
+        html += '<span class="vistas-info">◈ ' + formatContador(vistas) + ' vistas</span>';
+        html += '<span class="tiempo-total-card">0:00</span>';
+        html += '</div>';
+        html += '<div class="barra-progreso-card"><div class="fill"></div></div>';
+        html += '</div>';
+
+        card.innerHTML = html;
+
+        var hintEl = document.createElement('div');
+        hintEl.className = 'doble-tap-hint';
+        hintEl.innerHTML = getIconoFullscreenSVG();
+        card.appendChild(hintEl);
+
+        configurarDobleTap(card, v.id);
+        configurarLongPressLike(card, v.id);
+
+        var videoEl = card.querySelector('video');
+        videoEl.muted = false;
+        videoEl.volume = 1;
+        videoEl.removeAttribute('muted');
+
+        videoEl.addEventListener('timeupdate', function() {
+            if (!videoEl.duration) return;
+            var pct = (videoEl.currentTime / videoEl.duration) * 100;
+            var fill = card.querySelector('.barra-progreso-card .fill');
+            if (fill) fill.style.width = pct + '%';
+            var tActual = card.querySelector('.tiempo-actual-card');
+            if (tActual) tActual.textContent = formatearTiempo(videoEl.currentTime);
+        });
+        videoEl.addEventListener('loadedmetadata', function() {
+            var tTotal = card.querySelector('.tiempo-total-card');
+            if (tTotal) tTotal.textContent = formatearTiempo(videoEl.duration);
+        });
+
+        return card;
     }
 
-    function mostrarErrorWallet(texto) {
-        $w('walletSection').style.display = '';
-        $w('walletEstado').textContent = 'Sin conexión';
-        $w('walletEstado').classList.remove('conectada');
-        $w('walletHint').textContent = texto;
+    function configurarDobleTap(card, videoId) {
+        var ultimoTap = 0;
+        var DOBLE_TAP_MS = 320;
+
+        function manejarTap(e) {
+            if (e.target.closest('.sidebar-btn') || e.target.closest('.play-btn') || e.target.closest('.btn-eliminar-card') || e.target.closest('.barra-inferior') || e.target.closest('.reaccion-picker') || e.target.closest('.overlay-info')) {
+                return;
+            }
+            var video = card.querySelector('video');
+            if (!video) return;
+            if (e.target !== video) return;
+
+            var ahora = Date.now();
+            var diff = ahora - ultimoTap;
+
+            if (diff < DOBLE_TAP_MS) {
+                if (card.classList.contains('pantalla-completa')) {
+                    card.classList.remove('pantalla-completa');
+                    vibrar(15);
+                    showToast('◈ Modo normal', 'success', 1500);
+                } else {
+                    card.classList.add('pantalla-completa');
+                    vibrar(20);
+                    showToast('◈ Pantalla completa', 'success', 1500);
+                }
+                ultimoTap = 0;
+            } else {
+                ultimoTap = ahora;
+            }
+        }
+        card.addEventListener('click', manejarTap);
     }
 
-    async function refrescarWallet() {
-        if (refrescando) { pendiente = true; return; }
-        refrescando = true;
+    function configurarLongPressLike(card, videoId) {
+        var btnLike = card.querySelector('.like-btn');
+        if (!btnLike) return;
+        var startX = 0, startY = 0;
+        var LONG_PRESS_MS = 450;
+
+        function iniciarLongPress(e) {
+            if (e.type === 'touchstart') { var t = e.touches[0]; startX = t.clientX; startY = t.clientY; }
+            else { startX = e.clientX; startY = e.clientY; }
+            if (longPressTimers[videoId]) clearTimeout(longPressTimers[videoId]);
+            longPressTimers[videoId] = setTimeout(function() {
+                vibrar(20);
+                mostrarPickerReacciones(videoId);
+                btnLike.dataset.longPressActivado = 'true';
+                longPressTimers[videoId] = null;
+            }, LONG_PRESS_MS);
+        }
+        function cancelarLongPress(e) {
+            if (e && e.type === 'touchmove') {
+                var t = e.touches[0];
+                if (Math.abs(t.clientX - startX) > 10 || Math.abs(t.clientY - startY) > 10) {
+                    if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; }
+                }
+            }
+            if (e && e.type === 'touchend') {
+                if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; }
+            }
+        }
+        btnLike.addEventListener('touchstart', iniciarLongPress, { passive: true });
+        btnLike.addEventListener('touchend', cancelarLongPress, { passive: true });
+        btnLike.addEventListener('touchcancel', cancelarLongPress, { passive: true });
+        btnLike.addEventListener('touchmove', cancelarLongPress, { passive: true });
+        btnLike.addEventListener('mousedown', iniciarLongPress);
+        btnLike.addEventListener('mouseup', function() { if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; } });
+        btnLike.addEventListener('mouseleave', function() { if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; } });
+    }
+
+    function mostrarPickerReacciones(videoId) {
+        document.querySelectorAll('.reaccion-picker.show').forEach(function(p) { p.classList.remove('show'); });
+        var picker = document.getElementById('picker-' + videoId);
+        if (!picker) return;
+        var tipoActual = sessionUser ? likeCache.get(videoId + '_' + sessionUser.id) : null;
+        picker.querySelectorAll('.reaccion-opcion').forEach(function(b) {
+            if (b.dataset.reaccion === tipoActual) b.classList.add('activa');
+            else b.classList.remove('activa');
+        });
+        picker.classList.add('show');
+    }
+
+    async function elegirReaccion(videoId, tipo) {
+        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        if (!REACCIONES.includes(tipo)) return;
+        var picker = document.getElementById('picker-' + videoId);
+        if (picker) picker.classList.remove('show');
+        var btnLike = document.querySelector('.like-btn[data-video-id="' + videoId + '"]');
+        var key = videoId + '_' + sessionUser.id;
+        var tipoPrevio = likeCache.get(key);
         try {
-            var client = await esperarCliente();
-            if (!client) {
-                mostrarErrorWallet('No se pudo conectar con la base de datos. Intenta recargar.');
+            if (!sbVideos) throw new Error('Cliente no disponible');
+            if (tipoPrevio === tipo) {
+                await sbVideos.from('videos_likes').delete().eq('video_id', videoId).eq('usuario_id', sessionUser.id);
+                likeCache.delete(key);
+                var obj = reaccionesCache.get(videoId);
+                if (obj) obj.totales[tipo] = Math.max(0, (obj.totales[tipo] || 0) - 1);
+                actualizarUIContadorReaccion(videoId);
+                if (btnLike) { btnLike.classList.remove('liked'); btnLike.querySelector('.icono').innerHTML = iconoReaccionSVG(REACCION_DEFAULT); }
+            } else if (tipoPrevio) {
+                await sbVideos.from('videos_likes').update({ tipo: tipo }).eq('video_id', videoId).eq('usuario_id', sessionUser.id);
+                var obj2 = reaccionesCache.get(videoId);
+                if (obj2) { obj2.totales[tipoPrevio] = Math.max(0, (obj2.totales[tipoPrevio] || 0) - 1); obj2.totales[tipo] = (obj2.totales[tipo] || 0) + 1; }
+                likeCache.set(key, tipo);
+                actualizarUIContadorReaccion(videoId);
+                if (btnLike) { btnLike.classList.add('liked'); btnLike.querySelector('.icono').innerHTML = iconoReaccionSVG(tipo); btnLike.classList.remove('like-pop'); void btnLike.offsetWidth; btnLike.classList.add('like-pop'); }
+            } else {
+                await sbVideos.from('videos_likes').insert({ video_id: videoId, usuario_id: sessionUser.id, tipo: tipo });
+                likeCache.set(key, tipo);
+                if (!reaccionesCache.has(videoId)) reaccionesCache.set(videoId, { tipo: tipo, totales: {} });
+                var obj3 = reaccionesCache.get(videoId);
+                obj3.totales[tipo] = (obj3.totales[tipo] || 0) + 1;
+                actualizarUIContadorReaccion(videoId);
+                if (btnLike) { btnLike.classList.add('liked'); btnLike.querySelector('.icono').innerHTML = iconoReaccionSVG(tipo); btnLike.classList.remove('like-pop'); void btnLike.offsetWidth; btnLike.classList.add('like-pop'); }
+                vibrar(15);
+            }
+        } catch (err) { showToast('Error al reaccionar', 'error'); }
+    }
+
+    function actualizarUIContadorReaccion(videoId) {
+        var countEl = document.getElementById('likeCount-' + videoId);
+        if (!countEl) return;
+        var total = 0;
+        if (reaccionesCache.has(videoId)) {
+            var obj = reaccionesCache.get(videoId);
+            Object.keys(obj.totales).forEach(function(k) { total += obj.totales[k]; });
+        }
+        countEl.textContent = formatContador(total);
+    }
+
+    async function toggleLikeVideo(videoId) {
+        var btnLike = document.querySelector('.like-btn[data-video-id="' + videoId + '"]');
+        if (btnLike && btnLike.dataset.longPressActivado === 'true') { delete btnLike.dataset.longPressActivado; return; }
+        if (longPressTimers[videoId]) { clearTimeout(longPressTimers[videoId]); longPressTimers[videoId] = null; }
+        var picker = document.getElementById('picker-' + videoId);
+        if (picker && picker.classList.contains('show')) return;
+        if (!sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        var tipoPrevio = likeCache.get(videoId + '_' + sessionUser.id);
+        if (tipoPrevio) await elegirReaccion(videoId, tipoPrevio);
+        else await elegirReaccion(videoId, REACCION_DEFAULT);
+    }
+
+    async function compartirVideo(videoId) {
+        var url = window.location.origin + '/features/videos/videos.html?v=' + videoId;
+        try {
+            if (navigator.share) await navigator.share({ title: "Csariel's Video", url: url });
+            else { await navigator.clipboard.writeText(url); showToast('◈ Enlace copiado', 'success'); }
+        } catch (e) { if (e.name !== 'AbortError') showToast('No se pudo compartir', 'warning'); }
+    }
+
+    function abrirComentarios(videoId) {
+        videoIdComentariosActual = videoId;
+        var sheet = document.getElementById('bottomSheet');
+        var backdrop = document.getElementById('sheetBackdrop');
+        if (!sheet || !backdrop) return;
+        var lista = document.getElementById('comentariosLista');
+        if (lista) lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.8rem;padding:20px;text-align:center;">Cargando...</div>';
+        var contadorEl = document.getElementById('sheetContador');
+        if (contadorEl) contadorEl.textContent = '0';
+        backdrop.classList.add('show');
+        sheet.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        cargarComentariosSheet(videoId);
+    }
+
+    function cerrarBottomSheet() {
+        var sheet = document.getElementById('bottomSheet');
+        var backdrop = document.getElementById('sheetBackdrop');
+        if (sheet) sheet.classList.remove('show');
+        if (backdrop) backdrop.classList.remove('show');
+        document.body.style.overflow = '';
+        videoIdComentariosActual = null;
+        var input = document.getElementById('inputComentarioSheet');
+        if (input) { input.value = ''; input.blur(); }
+    }
+
+    async function cargarComentariosSheet(videoId) {
+        var lista = document.getElementById('comentariosLista');
+        if (!lista) return;
+        try {
+            if (!sbVideos) throw new Error('Cliente no disponible');
+            var result = await sbVideos.from('videos_comentarios').select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)').eq('video_id', videoId).order('created_at', { ascending: true });
+            if (result.error) throw result.error;
+            var data = result.data || [];
+            var contadorEl = document.getElementById('sheetContador');
+            if (contadorEl) contadorEl.textContent = data.length;
+            if (data.length === 0) {
+                lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:30px 20px;text-align:center;">Sin comentarios todavía. ¡Sé el primero! ◈</div>';
                 return;
             }
+            var html = '';
+            data.forEach(function(c) {
+                var u = c.usuarios || {};
+                var avatarHTML = u.avatar_url ? '<img src="' + safeAttr(u.avatar_url) + '" alt="">' : escapeHTML((u.nombre || 'U').charAt(0).toUpperCase());
+                var nombre = escapeHTML(u.nombre || 'Usuario');
+                var handle = u.handle ? '@' + escapeHTML(u.handle) : '';
+                var contenido = escapeHTML(c.contenido || '');
+                var fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
+                var soyAutorComentario = !!(sessionUser && c.usuario_id === sessionUser.id);
+                var videoData = videosPublicados.find(function(v) { return v.id === videoId; });
+                var soyDuenoVideo = !!(sessionUser && videoData && videoData.usuario_id === sessionUser.id);
+                var puedoEliminar = soyAutorComentario || soyDuenoVideo;
+                html += '<div class="comentario-burbuja">';
+                html += '<div class="avatar">' + avatarHTML + '</div>';
+                html += '<div class="burbuja">';
+                if (puedoEliminar) html += '<button class="btn-eliminar-comentario" onclick="eliminarComentario(\'' + c.id + '\', \'' + videoId + '\', event)" title="Eliminar">' + iconoCerrarSVG() + '</button>';
+                html += '<div class="nombre">' + nombre;
+                if (u.verificado) html += ' <span class="badge-verif">' + iconoVerificadoSVG() + '</span>';
+                if (handle) html += ' <span style="color:var(--text-muted);font-weight:400;font-size:0.7rem;">' + handle + '</span>';
+                html += '</div>';
+                html += '<div class="texto">' + contenido + '</div>';
+                html += '<div class="fecha">' + fecha + '</div>';
+                html += '</div></div>';
+            });
+            lista.innerHTML = html;
+            setTimeout(function(){ lista.scrollTop = lista.scrollHeight; }, 100);
+        } catch (e) { lista.innerHTML = '<div style="color:var(--danger);font-size:0.8rem;padding:20px;text-align:center;">Error al cargar</div>'; }
+    }
 
-            var user = await obtenerUsuario(client);
-            if (!user) {
-                mostrarErrorWallet('Inicia sesión para ver tu wallet.');
-                return;
-            }
+    async function enviarComentarioSheet() {
+        if (!videoIdComentariosActual || !sessionUser) { showToast('Inicia sesión', 'error'); return; }
+        var input = document.getElementById('inputComentarioSheet');
+        var btn = document.getElementById('btnEnviarComentarioSheet');
+        if (!input) return;
+        var texto = input.value.trim();
+        if (!texto) return;
+        if (btn) btn.disabled = true;
+        try {
+            await sbVideos.from('videos_comentarios').insert({ video_id: videoIdComentariosActual, usuario_id: sessionUser.id, contenido: texto });
+            input.value = '';
+            var contEl = document.getElementById('comentCount-' + videoIdComentariosActual);
+            if (contEl) contEl.textContent = formatContador((parseInt(contEl.textContent.replace(/[^\d]/g, '')) || 0) + 1);
+            await cargarComentariosSheet(videoIdComentariosActual);
+            vibrar(10);
+        } catch (e) { showToast('Error al enviar', 'error'); }
+        finally { if (btn) btn.disabled = false; }
+    }
 
-            var r = await client
-                .from('usuarios')
-                .select('wallet_address, wallet_visible')
-                .eq('id', user.id)
-                .maybeSingle();
+    async function eliminarComentario(comentarioId, videoId, event) {
+        if (event) event.stopPropagation();
+        if (!sessionUser) return;
+        if (!confirm('¿Eliminar este comentario?')) return;
+        try {
+            var comentarioResp = await sbVideos.from('videos_comentarios').select('usuario_id, video_id').eq('id', comentarioId).maybeSingle();
+            if (!comentarioResp.data) return;
+            var videoResp = await sbVideos.from('videos').select('usuario_id').eq('id', comentarioResp.data.video_id).maybeSingle();
+            var soyAutor = (comentarioResp.data.usuario_id === sessionUser.id);
+            var soyDueno = (!videoResp.error && videoResp.data && videoResp.data.usuario_id === sessionUser.id);
+            if (!soyAutor && !soyDueno) { showToast('Sin permiso', 'error'); return; }
+            await sbVideos.from('videos_comentarios').delete().eq('id', comentarioId);
+            var contEl = document.getElementById('comentCount-' + videoId);
+            if (contEl) contEl.textContent = formatContador(Math.max(0, (parseInt(contEl.textContent.replace(/[^\d]/g, '')) || 0) - 1));
+            await cargarComentariosSheet(videoId);
+            vibrar(15);
+            showToast('◈ Comentario eliminado', 'success');
+        } catch (e) { showToast('Error al eliminar', 'error'); }
+    }
 
-            if (r.error) {
-                mostrarErrorWallet('No se pudo leer tu wallet.');
-                return;
-            }
+    function configurarTecladoMovil() {
+        if (!window.visualViewport) return;
+        var sheet = document.getElementById('bottomSheet');
+        if (!sheet) return;
+        var vv = window.visualViewport;
+        function ajustar() {
+            var diff = window.innerHeight - vv.height;
+            if (diff > 150) { document.body.classList.add('teclado-abierto'); sheet.style.maxHeight = (vv.height - 40) + 'px'; }
+            else { document.body.classList.remove('teclado-abierto'); sheet.style.maxHeight = ''; }
+        }
+        vv.addEventListener('resize', ajustar);
+        vv.addEventListener('scroll', ajustar);
+    }
 
-            pintarWallet(r.data);
-        } catch (e) {
-            console.warn('[Perfil] Error refrescando wallet:', e);
-            mostrarErrorWallet('No se pudo leer tu wallet.');
-        } finally {
-            refrescando = false;
-            if (pendiente) {
-                pendiente = false;
-                refrescarWallet();
-            }
+    function activarAutoplayScroll() {
+        if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
+        if (observerCarga) { observerCarga.disconnect(); observerCarga = null; }
+        var contenedor = document.getElementById('videosContainer');
+        var cards = document.querySelectorAll('.video-card');
+
+        function asegurarSrc(video) {
+            if (video && !video.getAttribute('src') && video.dataset.src) { video.preload = 'auto'; video.src = video.dataset.src; video.load(); }
+        }
+
+        observerCarga = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                if (!entry.isIntersecting) return;
+                asegurarSrc(entry.target.querySelector('video'));
+                observerCarga.unobserve(entry.target);
+            });
+        }, { root: contenedor, rootMargin: '200px 0px', threshold: 0.01 });
+
+        observerVideos = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                var card = entry.target;
+                var video = card.querySelector('video');
+                if (!video) return;
+                if (entry.isIntersecting && entry.intersectionRatio >= 0.6) {
+                    card.classList.add('visible');
+                    asegurarSrc(video);
+                    var idVisible = card.dataset.videoId;
+                    if (videoActual !== idVisible) {
+                        videoActual = idVisible;
+                        adCerradoVideo = false;
+                    }
+                    if (videoPausadoManualmente !== idVisible && !card.classList.contains('pantalla-completa')) {
+                        reproducirVideoConSonido(video);
+                        card.classList.add('playing');
+                        incrementarVista(idVisible);
+                    }
+                } else {
+                    card.classList.remove('visible');
+                    if (!card.classList.contains('pantalla-completa')) {
+                        video.pause();
+                        card.classList.remove('playing');
+                    }
+                }
+            });
+        }, { threshold: [0.3, 0.6, 0.9], rootMargin: '-10% 0px -10% 0px' });
+
+        cards.forEach(function(card) { observerCarga.observe(card); observerVideos.observe(card); });
+    }
+
+    function togglePlayCard(event, videoId) {
+        if (event) event.stopPropagation();
+        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
+        if (!card) return;
+        var video = card.querySelector('video');
+        if (!video) return;
+        if (!video.getAttribute('src') && video.dataset.src) { video.preload = 'auto'; video.src = video.dataset.src; video.load(); }
+        if (video.paused) {
+            reproducirVideoConSonido(video);
+            card.classList.add('playing');
+            videoPausadoManualmente = null;
+            incrementarVista(videoId);
+        } else {
+            video.pause();
+            card.classList.remove('playing');
+            videoPausadoManualmente = videoId;
         }
     }
 
-    window.refrescarWalletPerfil = refrescarWallet;
+    async function eliminarMiVideo(videoId) {
+        if (!videoId || !confirm('¿Eliminar este video?')) return;
+        var session = await getSession();
+        if (!session) { showToast('Inicia sesión', 'error'); return; }
+        try {
+            await sbVideos.from('videos').delete().eq('id', videoId);
+            showToast('◈ Video eliminado', 'success');
+            await cargarVideos();
+        } catch (e) { showToast('Error al eliminar', 'error'); }
+    }
 
-    function vigilarWallet() {
-        setInterval(function () {
-            if (document.hidden) return;
-            var sec = $w('walletSection');
-            var estado = $w('walletEstado');
-            if (!sec || !estado) return;
+    var subiendoVideo = false;
 
-            var oculta = sec.style.display === 'none' || sec.offsetParent === null && sec.getClientRects().length === 0;
-            var atascada = estado.textContent.trim() === 'Cargando…';
+    async function subirVideo() {
+        if (subiendoVideo) return;
+        subiendoVideo = true;
+        var btn = document.getElementById('btnSubirVideo');
+        var fileInput = document.getElementById('inputArchivoVideo');
+        var progressEl = document.getElementById('uploadProgress');
+        var progressFill = document.getElementById('progressFill');
+        var progressText = document.getElementById('progressText');
+        var filePath = null;
+        var videoId = null;
+        var encolado = false;
 
-            if (oculta || atascada) refrescarWallet();
+        function liberar() {
+            subiendoVideo = false;
+            if (btn) { btn.disabled = false; btn.textContent = '◈ Subir video'; }
+            if (progressEl) progressEl.style.display = 'none';
+            if (progressFill) progressFill.style.width = '0%';
+            if (fileInput) { try { fileInput.value = ''; } catch (e) {} }
+        }
+
+        if (btn) btn.disabled = true;
+        try {
+            if (!sbVideos) throw new Error('Cliente no disponible');
+            var titulo = document.getElementById('inputTituloVideo').value.trim();
+            var descripcion = document.getElementById('inputDescripcionVideo').value.trim();
+            if (!titulo) throw new Error('Escribe un título');
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) throw new Error('Selecciona un video');
+            var file = fileInput.files[0];
+            if (file.size > 100 * 1024 * 1024) throw new Error('Video muy grande (máx 100 MB)');
+            var session = await getSession();
+            if (!session) throw new Error('Inicia sesión');
+
+            var pub = (window.VideosPublicar && window.VideosPublicar.getState) ? window.VideosPublicar.getState() : {};
+            var sonido = pub.sonido || null;
+            var ubicacion = pub.ubicacion || null;
+
+            if (btn) btn.textContent = 'Subiendo...';
+            if (progressEl) progressEl.style.display = 'block';
+            if (progressFill) progressFill.style.width = '20%';
+            if (progressText) progressText.textContent = 'Subiendo y moderando...';
+
+            var fd = new FormData();
+            fd.append('file', file);
+            fd.append('destino', 'videos');
+            fd.append('tipo', 'video');
+            var subidaResp = await fetch('/api/media/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + session.access_token }, body: fd });
+            var subidaJson = await subidaResp.json();
+            if (!subidaResp.ok || !subidaJson.ok) throw new Error(subidaJson.error || 'Error subiendo');
+
+            var videoUrl = subidaJson.url;
+            filePath = subidaJson.path;
+
+            if (progressFill) progressFill.style.width = '60%';
+            if (progressText) progressText.textContent = 'Creando registro...';
+
+            var ins = await sbVideos.from('videos').insert({
+                usuario_id: session.user.id,
+                titulo: titulo,
+                descripcion: descripcion || null,
+                url_video: videoUrl,
+                estado: 'procesando',
+                duracion: 0,
+                es_borrador: false,
+                sonido_id: sonido ? sonido.id : null,
+                sonido_nombre: sonido ? sonido.nombre : null,
+                sonido_url: sonido ? sonido.url : null,
+                ubicacion_nombre: ubicacion ? (ubicacion.nombre + ', ' + ubicacion.pais) : null
+            }).select().single();
+            if (ins.error) throw ins.error;
+            videoId = ins.data.id;
+
+            if (progressFill) progressFill.style.width = '85%';
+            var queueResponse = await fetch('/api/video/queue', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                body: JSON.stringify({
+                    videoId: videoId,
+                    videoUrl: videoUrl,
+                    bucket: 'videos',
+                    filePath: filePath,
+                    audioUrl: sonido ? sonido.url : null
+                })
+            });
+            var queueData = await queueResponse.json();
+            if (!queueData.success) throw new Error(queueData.error || 'Error procesando');
+            encolado = true;
+
+            document.getElementById('uploadSection').style.display = 'none';
+            document.getElementById('processingState').classList.add('visible');
+            showToast('◈ Procesando video', 'success', 3000);
+            document.getElementById('inputTituloVideo').value = '';
+            document.getElementById('inputDescripcionVideo').value = '';
+            if (fileInput) { try { fileInput.value = ''; } catch (e) {} }
+            if (progressEl) progressEl.style.display = 'none';
+            subiendoVideo = false;
+            iniciarPollingProcesamiento(queueData.jobId, videoId);
+        } catch (e) {
+            showToast('◈ ' + (e.message || 'Error'), 'error');
+            liberar();
+        }
+    }
+
+    function iniciarPollingProcesamiento(jobId, videoId) {
+        if (pollingVideoInterval) clearInterval(pollingVideoInterval);
+        var progressFill = document.getElementById('processingProgressFill');
+        var progressText = document.getElementById('processingProgressText');
+        var intentos = 0;
+        pollingVideoInterval = setInterval(async function() {
+            intentos++;
+            if (intentos > 120) { clearInterval(pollingVideoInterval); pollingVideoInterval = null; mostrarErrorProcesamiento('Tardando demasiado'); return; }
+            try {
+                var session = await getSession();
+                if (!session) return;
+                var response = await fetch('/api/video/status/' + jobId, { headers: { 'Authorization': 'Bearer ' + session.access_token } });
+                var data = await response.json();
+                if (!data.success) return;
+                var progreso = data.progreso || 0;
+                if (progressFill) progressFill.style.width = progreso + '%';
+                if (progressText) progressText.textContent = progreso + '%';
+                if (data.estado === 'completado') {
+                    clearInterval(pollingVideoInterval); pollingVideoInterval = null;
+                    showToast('◈ ¡Video publicado!', 'success', 4000);
+                    setTimeout(function() {
+                        document.getElementById('processingState').classList.remove('visible');
+                        document.getElementById('uploadSection').style.display = 'block';
+                        document.getElementById('btnSubirVideo').disabled = false;
+                        document.getElementById('btnSubirVideo').textContent = '◈ Subir video';
+                        videoEnProcesamiento = null;
+                        if (window.csResetFormularioPublicacion) window.csResetFormularioPublicacion();
+                        window.dispatchEvent(new CustomEvent('csariels:videos:publicado'));
+                        cargarVideos();
+                    }, 1500);
+                }
+                if (data.estado === 'fallido') { clearInterval(pollingVideoInterval); pollingVideoInterval = null; mostrarErrorProcesamiento(data.error || 'Error'); }
+            } catch (error) {}
         }, 3000);
     }
-
-    window.copiarWalletPerfil = async function () {
-        var direccion = ($w('walletDireccion').dataset.full || '').trim();
-        if (!direccion || direccion.indexOf('0x') !== 0) return;
-        try {
-            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-                await navigator.clipboard.writeText(direccion);
-            } else {
-                var area = document.createElement('textarea');
-                area.value = direccion;
-                area.style.position = 'fixed';
-                area.style.opacity = '0';
-                document.body.appendChild(area);
-                area.select();
-                document.execCommand('copy');
-                area.remove();
-            }
-            if (typeof window.showToast === 'function') {
-                window.showToast('✅ Dirección copiada', 'success');
-            }
-        } catch (e) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('❌ No se pudo copiar la dirección', 'error');
-            }
-        }
-    };
-
-    window.conectarWalletPerfil = async function () {
-        if (typeof window.conectarWallet !== 'function') return;
-        await window.conectarWallet();
-        await refrescarWallet();
-        setTimeout(refrescarWallet, 1500);
-    };
-
-    window.desconectarWalletPerfil = async function () {
-        if (typeof window.desconectarWallet !== 'function') return;
-        var ok = window.confirm('¿Seguro que quieres desvincular tu wallet?');
-        if (!ok) return;
-        await window.desconectarWallet();
-        await refrescarWallet();
-        setTimeout(refrescarWallet, 1500);
-    };
-
-    async function guardarVisibilidad(valor) {
-        var client = await esperarCliente();
-        var user = client ? await obtenerUsuario(client) : null;
-        if (!client || !user) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
-            }
-            refrescarWallet();
-            return;
-        }
-
-        var r = await client
-            .from('usuarios')
-            .update({ wallet_visible: valor })
-            .eq('id', user.id);
-
-        if (r.error) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
-            }
-        }
-        refrescarWallet();
+    function mostrarErrorProcesamiento(msg) {
+        document.getElementById('processingState').classList.remove('visible');
+        document.getElementById('uploadSection').style.display = 'block';
+        document.getElementById('btnSubirVideo').disabled = false;
+        document.getElementById('btnSubirVideo').textContent = '◈ Subir video';
+        videoEnProcesamiento = null;
+        showToast('◈ ' + msg, 'error', 6000);
     }
 
-    function iniciar() {
-        var visible = $w('walletVisible');
-        if (visible) {
-            visible.addEventListener('change', function () {
-                guardarVisibilidad(visible.checked);
-            });
-        }
+    function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-        var direccionEl = $w('walletDireccion');
-        if (direccionEl) {
-            direccionEl.addEventListener('click', function () {
-                if (direccionEl.dataset.full && $w('btnCopiarWallet').style.display !== 'none') {
-                    window.copiarWalletPerfil();
+    document.addEventListener('DOMContentLoaded', function() {
+        const btnCamara = document.getElementById('btnAbrirCamara');
+        if (btnCamara) {
+            btnCamara.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (window.VideosCamara) {
+                    window.VideosCamara.abrirCamara();
+                } else {
+                    console.error('Módulo de cámara no cargado');
+                    showToast('El módulo de cámara no está disponible', 'error');
                 }
             });
         }
 
-        window.addEventListener('wallet:actualizada', refrescarWallet);
-        window.addEventListener('pageshow', function () { refrescarWallet(); });
-        document.addEventListener('visibilitychange', function () {
-            if (!document.hidden) refrescarWallet();
+        window.csCamaraOnVideoGrabado = function(file) {
+            const input = document.getElementById('inputArchivoVideo');
+            if (!input) return;
+
+            try {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                input.files = dt.files;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+                showToast('✅ Video grabado listo para subir', 'success');
+            } catch (e) {
+                console.error('Error asignando archivo grabado:', e);
+                showToast('Error al procesar el video grabado', 'error');
+            }
+        };
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        aplicarI18N();
+        configurarTecladoMovil();
+        cargarUsuarioActual().then(async function() {
+            try { if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas(); } catch (err) {}
+            aplicarI18N();
+            await cargarVideos();
         });
-
-        vigilarWallet();
-        refrescarWallet();
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', iniciar, { once: true });
-    } else {
-        iniciar();
-    }
-})();
-</script>
-
-<!-- ================================================================ -->
-<!-- MARKETPLACE DE CANALES · COMPRAS Y VENTAS (lectura por RLS)       -->
-<!-- ================================================================ -->
-<script>
-(function () {
-    'use strict';
-
-    var ESTADO_TXT = {
-        pendiente: 'Pendiente de pago',
-        pagada: 'Pagada',
-        sin_stock: 'Sin stock · reembolso manual',
-        fallida: 'No completada',
-        cancelada: 'Cancelada'
-    };
-
-    var PAYOUT_TXT = {
-        pendiente_manual: 'Pago al vendedor: pendiente manual',
-        procesando: 'Pago al vendedor: procesando',
-        enviado: 'Pago al vendedor: enviado',
-        fallido: 'Pago al vendedor: fallido'
-    };
-
-    function esc(valor) {
-        return String(valor == null ? '' : valor).replace(/[&<>"']/g, function (c) {
-            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
-        });
-    }
-
-    function formatoMonto(valor, moneda) {
-        var n = Number(valor);
-        if (!Number.isFinite(n)) return '—';
-        return '$' + n.toFixed(2) + ' ' + (moneda || '');
-    }
-
-    async function esperarCliente() {
-        for (var i = 0; i < 100 && !window.supabaseClient; i++) {
-            await new Promise(function (r) { setTimeout(r, 100); });
-        }
-        return window.supabaseClient || null;
-    }
-
-    function pintarVacio(cont, texto) {
-        cont.innerHTML = '<div class="mk-compra-vacia">' + esc(texto) + '</div>';
-    }
-
-    async function cargarComprasMarketplace() {
-        var cont = document.getElementById('comprasMarketplaceList');
-        if (!cont) return;
-
-        cont.innerHTML = '<div class="mk-compra-vacia">Cargando…</div>';
-
-        try {
-            var client = await esperarCliente();
-            if (!client) throw new Error('Sin conexión');
-
-            var sesion = await client.auth.getSession();
-            var uid = sesion.data && sesion.data.session ? sesion.data.session.user.id : null;
-
-            if (!uid) {
-                pintarVacio(cont, 'Inicia sesión para ver tus compras y ventas.');
-                return;
-            }
-
-            var r = await client
-                .from('grupos_marketplace_compras')
-                .select('id, publicacion_id, comprador_id, vendedor_id, cantidad, total, monto_vendedor, moneda, estado, payout_estado, payout_error, created_at')
-                .or('comprador_id.eq.' + uid + ',vendedor_id.eq.' + uid)
-                .order('created_at', { ascending: false })
-                .limit(50);
-
-            if (r.error) throw r.error;
-
-            var compras = r.data || [];
-            if (compras.length === 0) {
-                pintarVacio(cont, 'Aún no tienes compras ni ventas en el Marketplace de canales.');
-                return;
-            }
-
-            var ids = compras.map(function (c) { return c.publicacion_id; });
-            var titulosRes = await client
-                .from('grupos_video_publicaciones_publicas')
-                .select('id, contenido')
-                .in('id', ids);
-
-            var titulos = {};
-            (titulosRes.data || []).forEach(function (p) { titulos[p.id] = p.contenido; });
-
-            cont.innerHTML = compras.map(function (c) {
-                var soyVendedor = c.vendedor_id === uid && c.comprador_id !== uid;
-                var rol = soyVendedor ? 'Venta' : 'Compra';
-                var titulo = titulos[c.publicacion_id] || 'Producto';
-                var fecha = c.created_at ? new Date(c.created_at).toLocaleString('es-MX') : '';
-
-                var montoPrincipal = soyVendedor
-                    ? formatoMonto(c.monto_vendedor, c.moneda) + ' neto'
-                    : formatoMonto(c.total, c.moneda);
-
-                var chips = '<span class="mk-compra-estado ' + esc(c.estado) + '">' +
-                    esc(ESTADO_TXT[c.estado] || c.estado) + '</span>';
-
-                var nota = '';
-                if (soyVendedor && c.estado === 'pagada' && c.payout_estado && PAYOUT_TXT[c.payout_estado]) {
-                    chips += '<span class="mk-compra-estado ' + esc(c.payout_estado) + '">' +
-                        esc(PAYOUT_TXT[c.payout_estado]) + '</span>';
-                }
-                if (c.estado === 'sin_stock') {
-                    nota = '<div class="mk-compra-nota">Se agotó el stock antes de confirmar. El reembolso lo gestiona Csariel\'s.</div>';
-                }
-
-                return '<div class="mk-compra-item">' +
-                    '<div>' +
-                        '<div class="mk-compra-titulo">' + esc(rol) + ' · ' + esc(titulo) + '</div>' +
-                        '<div class="mk-compra-meta">' + esc(c.cantidad) + ' × · ' + esc(fecha) + '</div>' +
-                    '</div>' +
-                    '<div class="mk-compra-monto">' + esc(montoPrincipal) + '</div>' +
-                    chips +
-                    nota +
-                '</div>';
-            }).join('');
-        } catch (e) {
-            console.warn('[Perfil] Compras Marketplace:', e);
-            pintarVacio(cont, 'No se pudieron cargar las compras. Intenta de nuevo.');
-        }
-    }
-
-    window.cargarComprasMarketplace = cargarComprasMarketplace;
-})();
-</script>
-
-<!-- ============ LÓGICA DEL BOTÓN FLOTANTE DE LLAMADAS (arrastrable) ============ -->
-<script>
-(function () {
-    'use strict';
-    var CLAVE_POS = 'sariels_llamar_pos';
-    var UMBRAL_TAP = 6;
-    var MARGEN = 4;
-
-    var btn = document.getElementById('btnLlamarFlotante');
-    var panel = document.getElementById('panelLlamar');
-    var input = document.getElementById('llamarNumero');
-    var aviso = document.getElementById('llamarAviso');
-    var btnLlamar = document.getElementById('btnHacerLlamada');
-    var btnCerrar = document.getElementById('btnCerrarLlamar');
-
-    if (!btn || !panel) return;
-
-    var pid = null;
-    var inicioX = 0, inicioY = 0;
-    var origenLeft = 0, origenTop = 0;
-    var seMovio = false;
-
-    function limitar(valor, min, max) {
-        return Math.min(Math.max(valor, min), max);
-    }
-
-    function aplicarPosicion(left, top) {
-        var w = btn.offsetWidth || 56;
-        var h = btn.offsetHeight || 56;
-        var maxLeft = window.innerWidth - w - MARGEN;
-        var maxTop = window.innerHeight - h - MARGEN;
-        btn.style.left = limitar(left, MARGEN, Math.max(MARGEN, maxLeft)) + 'px';
-        btn.style.top = limitar(top, MARGEN, Math.max(MARGEN, maxTop)) + 'px';
-        btn.style.right = 'auto';
-        btn.style.bottom = 'auto';
-    }
-
-    function guardarPosicion() {
-        try {
-            localStorage.setItem(CLAVE_POS, JSON.stringify({
-                left: parseFloat(btn.style.left),
-                top: parseFloat(btn.style.top)
-            }));
-        } catch (e) { /* almacenamiento no disponible */ }
-    }
-
-    function restaurarPosicion() {
-        try {
-            var guardada = JSON.parse(localStorage.getItem(CLAVE_POS) || 'null');
-            if (guardada && Number.isFinite(guardada.left) && Number.isFinite(guardada.top)) {
-                aplicarPosicion(guardada.left, guardada.top);
-                return;
-            }
-        } catch (e) { /* ignorar */ }
-        aplicarPosicion(window.innerWidth - 72, window.innerHeight - 150);
-    }
-
-    function abrirPanel() {
-        panel.classList.add('abierto');
-        aviso.textContent = '';
-        setTimeout(function () { input.focus(); }, 260);
-    }
-
-    function cerrarPanel() {
-        panel.classList.remove('abierto');
-        aviso.textContent = '';
-        input.blur();
-    }
-
-    function alternarPanel() {
-        if (panel.classList.contains('abierto')) cerrarPanel();
-        else abrirPanel();
-    }
-
-    btn.addEventListener('pointerdown', function (e) {
-        if (pid !== null) return;
-        pid = e.pointerId;
-        inicioX = e.clientX;
-        inicioY = e.clientY;
-        var rect = btn.getBoundingClientRect();
-        origenLeft = rect.left;
-        origenTop = rect.top;
-        seMovio = false;
-        try { btn.setPointerCapture(pid); } catch (err) { /* ignorar */ }
     });
 
-    btn.addEventListener('pointermove', function (e) {
-        if (e.pointerId !== pid) return;
-        var dx = e.clientX - inicioX;
-        var dy = e.clientY - inicioY;
-
-        if (!seMovio && Math.hypot(dx, dy) > UMBRAL_TAP) {
-            seMovio = true;
-            btn.classList.add('arrastrando');
-            cerrarPanel();
-        }
-        if (seMovio) {
-            e.preventDefault();
-            aplicarPosicion(origenLeft + dx, origenTop + dy);
-        }
-    });
-
-    function terminarArrastre(e, cancelado) {
-        if (e.pointerId !== pid) return;
-        try { btn.releasePointerCapture(pid); } catch (err) { /* ignorar */ }
-        pid = null;
-        btn.classList.remove('arrastrando');
-
-        if (cancelado) return;
-
-        if (seMovio) {
-            guardarPosicion();
-        } else {
-            alternarPanel();
-        }
-    }
-
-    btn.addEventListener('pointerup', function (e) { terminarArrastre(e, false); });
-    btn.addEventListener('pointercancel', function (e) { terminarArrastre(e, true); });
-
-    btn.addEventListener('touchmove', function (e) {
-        if (seMovio) e.preventDefault();
-    }, { passive: false });
-
-    window.addEventListener('resize', function () {
-        var rect = btn.getBoundingClientRect();
-        aplicarPosicion(rect.left, rect.top);
-        guardarPosicion();
-    });
-
-    function limpiarNumero(valor) {
-        var limpio = String(valor || '').trim();
-        var signo = limpio.charAt(0) === '+' ? '+' : '';
-        return signo + limpio.replace(/\D/g, '');
-    }
-
-    function llamar() {
-        var numero = limpiarNumero(input.value);
-        if (numero.replace(/\D/g, '').length < 7) {
-            aviso.textContent = 'Escribe un número válido (mínimo 7 dígitos).';
-            input.focus();
-            return;
-        }
-        aviso.textContent = '';
-        window.location.href = 'tel:' + numero;
-    }
-
-    btnLlamar.addEventListener('click', llamar);
-    btnCerrar.addEventListener('click', cerrarPanel);
-
-    input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') llamar();
-        if (e.key === 'Escape') cerrarPanel();
-    });
-
-    document.addEventListener('pointerdown', function (e) {
-        if (!panel.classList.contains('abierto')) return;
-        if (panel.contains(e.target) || btn.contains(e.target)) return;
-        cerrarPanel();
-    });
-
-    restaurarPosicion();
-})();
-</script>
-
-<!-- ================================================================ -->
-<!-- MENÚ DE FOTO DE PERFIL · CONTROLADOR ÚNICO (v2)                   -->
-<!-- ================================================================ -->
-<script>
-(function () {
-    'use strict';
-
-    var avatar = document.getElementById('perfilAvatar');
-    var menu = document.getElementById('avatarMenu');
-    var fileInput = document.getElementById('fileInput');
-    if (!avatar || !menu) return;
-
-    var backdrop = document.createElement('div');
-    backdrop.id = 'avatarMenuBackdrop';
-    backdrop.className = 'avatar-menu-backdrop';
-    document.body.appendChild(backdrop);
-    document.body.appendChild(menu);
-
-    var abierto = false;
-    var timerCierre = null;
-
-    function abrir() {
-        if (timerCierre) { clearTimeout(timerCierre); timerCierre = null; }
-        abierto = true;
-        menu.classList.add('show', 'open');
-        backdrop.classList.add('open');
-        avatar.setAttribute('aria-expanded', 'true');
-    }
-
-    function cerrar() {
-        abierto = false;
-        menu.classList.remove('open');
-        backdrop.classList.remove('open');
-        avatar.setAttribute('aria-expanded', 'false');
-        timerCierre = setTimeout(function () {
-            if (!abierto) menu.classList.remove('show');
-        }, 260);
-    }
-
-    function alternar(e) {
-        if (e) { e.preventDefault(); e.stopPropagation(); }
-        if (abierto) cerrar(); else abrir();
-    }
-
-    window.toggleAvatarMenu = alternar;
-    window.cerrarAvatarMenu = cerrar;
-    window.abrirAvatarMenu = abrir;
-    window.__avatarMenuControlador = true;
-
-    avatar.addEventListener('click', alternar);
-    avatar.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            alternar(e);
-        }
-    });
-
-    backdrop.addEventListener('click', cerrar);
-    menu.addEventListener('click', function (e) { e.stopPropagation(); });
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && abierto) cerrar();
-    });
-
-    menu.addEventListener('click', function (e) {
-        var boton = e.target.closest('[data-accion]');
-        if (!boton) return;
-
-        var accion = boton.getAttribute('data-accion');
-
-        if (accion === 'cambiar') {
-            if (typeof window.abrirSelectorArchivo === 'function') {
-                window.abrirSelectorArchivo();
-            } else if (fileInput) {
-                fileInput.click();
-            }
-            cerrar();
-            return;
-        }
-
-        if (accion === 'eliminar') {
-            cerrar();
-            if (typeof window.eliminarFotoPerfil === 'function') {
-                window.eliminarFotoPerfil();
-            } else if (window.showToast) {
-                window.showToast('No se pudo eliminar la foto. Recarga la página.', 'error');
-            }
-            return;
-        }
-
-        if (accion === 'cerrar') {
-            cerrar();
-        }
-    });
-})();
-</script>
-
-<!-- Script del carrusel de anuncios (imagen) -->
-<script src="/features/anuncios/anuncios-carrusel.js" defer></script>
-
-<!-- Script del Carrusel 3D horizontal -->
-<script src="/features/perfil/js/carrusel-3d.js" defer></script>
+    window.subirVideo = subirVideo;
+    window.cargarVideos = cargarVideos;
+    window.toggleLikeVideo = toggleLikeVideo;
+    window.elegirReaccion = elegirReaccion;
+    window.abrirComentarios = abrirComentarios;
+    window.cerrarBottomSheet = cerrarBottomSheet;
+    window.enviarComentarioSheet = enviarComentarioSheet;
+    window.eliminarComentario = eliminarComentario;
+    window.compartirVideo = compartirVideo;
+    window.togglePlayCard = togglePlayCard;
+    window.eliminarMiVideo = eliminarMiVideo;
+    window.verTokens = verTokens;
+    window.showToast = showToast;
+    window.activarAudioGlobal = activarAudioGlobal;
+    </script>
 
 </body>
 </html>
