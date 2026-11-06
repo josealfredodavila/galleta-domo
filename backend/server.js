@@ -16,6 +16,8 @@
 //       del archivo, el tipo de export y sus claves. Si el export no
 //       es un router, monta un 503 con el motivo en vez de un 404.
 // v4.2: Montaje de /api/marketplace (compras del Marketplace de canales).
+// v4.3: Csariel's Pay: webhooks de Pay fuera del rate limit, polling
+//       público exento, ruta /pay/cobrar/:token y redirección de /pay.
 // ================================================================
 
 require('dotenv').config();
@@ -133,6 +135,22 @@ if (!process.env.NODE_ENV) console.warn('⚠️ NODE_ENV no está definido');
 
 if (process.env.TELNYX_CALLS_ENABLED !== 'true') {
     console.log('ℹ️ Llamadas a números externos (Telnyx) desactivadas');
+}
+
+// Variables de Csariel's Pay: solo advertencias, para no tumbar el resto del backend.
+const VARIABLES_PAY = [
+    'STRIPE_SECRET_KEY',
+    'STRIPE_WEBHOOK_SECRET',
+    'FINTOC_SECRET_KEY',
+    'FINTOC_WEBHOOK_SECRET',
+    'FINTOC_SOURCE_ACCOUNT_ID',
+    'NOWPAYMENTS_API_KEY',
+    'NOWPAYMENTS_IPN_SECRET',
+    'BIOMETRIA_SECRET'
+];
+
+for (const nombre of VARIABLES_PAY) {
+    if (!process.env[nombre]) console.warn(`⚠️ Falta ${nombre} (Csariel's Pay: funcionalidad deshabilitada)`);
 }
 
 // ================================================================
@@ -372,7 +390,9 @@ app.use(
             'x-client-info',
             'x-requested-with',
             'x-nowpayments-sig',
-            'x-signature'
+            'x-signature',
+            'Fintoc-Signature',
+            'stripe-signature'
         ],
 
         exposedHeaders: ['Content-Length', 'X-Requested-With'],
@@ -391,11 +411,16 @@ app.use('/api/telnyx/webhook', require('./routes/telnyx-webhook'));
 // ================================================================
 // RATE LIMIT GENERAL
 // ================================================================
+// Webhooks: sin límite. Los proveedores reintentan, y un 429 haría
+// que se pierdan eventos (IPN de NOWPayments, transfers de Fintoc).
+// Polling público de intenciones (GET): exento; el frontend consulta
+// cada pocos segundos y no debe bloquearse por la cuota compartida de IP.
 
 const RUTAS_WEBHOOK_SIN_LIMITE = [
     '/api/webhook/',
     '/api/webhooks/',
-    '/api/mercado/webhook-nowpayments'
+    '/api/mercado/webhook-nowpayments',
+    '/api/pay/webhooks/'
 ];
 
 const apiLimiter = rateLimit({
@@ -407,7 +432,8 @@ const apiLimiter = rateLimit({
         error: 'Demasiadas solicitudes. Intenta nuevamente más tarde.'
     },
     skip: (req) =>
-        RUTAS_WEBHOOK_SIN_LIMITE.some((ruta) => req.originalUrl.startsWith(ruta))
+        RUTAS_WEBHOOK_SIN_LIMITE.some((ruta) => req.originalUrl.startsWith(ruta)) ||
+        (req.method === 'GET' && req.originalUrl.startsWith('/api/pay/intenciones/'))
 });
 
 app.use('/api/', apiLimiter);
@@ -415,6 +441,8 @@ app.use('/api/', apiLimiter);
 // ================================================================
 // BODY PARSERS
 // ================================================================
+// rawBody se conserva para verificar firmas de webhooks (Stripe,
+// Fintoc, NOWPayments). Todos los webhooks de Pay llegan como JSON.
 
 app.use(
     express.json({
@@ -910,6 +938,7 @@ montarRouter(
 
 montarRouter('/api/webhook', './routes/webhooks', 'routes/webhooks');
 
+// Csariel's Pay: intenciones, cuentas, retiros, stripe-connect y webhooks (routes/pay/index.js)
 montarRouter('/api/pay', './routes/pay', 'routes/pay');
 
 // /api/mensajes: eliminado. Sin uso en el frontend; las llamadas viven en /api/llamadas.
@@ -1016,12 +1045,38 @@ for (const [route, file] of Object.entries(friendlyRoutes)) {
 }
 
 // ================================================================
-// CSARIEL PAY
+// CSARIEL PAY · PÁGINAS PÚBLICAS
 // ================================================================
 
-app.get('/pay', (req, res) => res.sendFile(path.join(publicPath, 'pay.html')));
+// /pay no tiene página propia: el punto de entrada es el panel (requiere sesión).
+app.get('/pay', (req, res) => res.redirect(302, '/features/pay/panel.html'));
 
-app.get('/csariel-pay', (req, res) => res.sendFile(path.join(publicPath, 'pay.html')));
+app.get('/csariel-pay', (req, res) => res.redirect(302, '/features/pay/panel.html'));
+
+// Link público de cobro generado por cobrar.html: /pay/cobrar/<public_token>
+// La página pagar.html lee el token desde la ruta.
+app.get('/pay/cobrar/:token([A-Za-z0-9_-]+)', (req, res) => {
+    const filePath = path.join(publicPath, 'features', 'pay', 'pagar.html');
+
+    if (!fs.existsSync(filePath)) {
+        console.error(`❌ Archivo no encontrado: ${filePath}`);
+        return res.status(404).send('Página de pago no disponible');
+    }
+
+    return res.sendFile(filePath);
+});
+
+// Términos enlazados desde las páginas de Pay
+app.get('/terminos-csariels-pay.html', (req, res) => {
+    const filePath = path.join(publicPath, 'features', 'pay', 'terminos-csariels-pay.html');
+
+    if (!fs.existsSync(filePath)) {
+        console.error(`❌ Archivo no encontrado: ${filePath}`);
+        return res.status(404).send('Términos no disponibles');
+    }
+
+    return res.sendFile(filePath);
+});
 
 // ================================================================
 // OTRAS PÁGINAS
@@ -1119,6 +1174,12 @@ async function healthCheckDetalle(req, res) {
         push: { configured: pushConfigured },
         moderacion: { configured: moderacionImagenConfigured },
         moderacion_texto: { configured: moderacionTextoConfigured },
+        pay: {
+            stripe: Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET),
+            fintoc: Boolean(process.env.FINTOC_SECRET_KEY && process.env.FINTOC_WEBHOOK_SECRET && process.env.FINTOC_SOURCE_ACCOUNT_ID),
+            nowpayments: Boolean(process.env.NOWPAYMENTS_API_KEY && process.env.NOWPAYMENTS_IPN_SECRET),
+            biometria: Boolean(process.env.BIOMETRIA_SECRET)
+        },
         web3: {
             walletconnect_configured: Boolean(WALLETCONNECT_PROJECT_ID),
             public_url: PUBLIC_APP_URL,
