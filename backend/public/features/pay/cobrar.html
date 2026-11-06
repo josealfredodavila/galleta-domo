@@ -395,8 +395,9 @@
 // CSARIEL'S PAY - COBRAR CON QR
 // ================================================================
 // - Los métodos se resuelven contra GET /api/pay/metodos-disponibles.
-//   Un método no disponible queda deshabilitado; "Cualquiera" elige el
-//   primero disponible según prioridad. Nunca se fuerza tarjeta.
+//   Un método no disponible queda deshabilitado.
+// - "Cualquiera" envía TODOS los métodos disponibles como aceptados:
+//   el comprador elige el que prefiera. Un método concreto envía solo ese.
 // - El monto siempre es MXN. El proveedor calcula la cripto.
 // - El link del QR es /pay/cobrar/<public_token>.
 // ================================================================
@@ -566,7 +567,7 @@ function obtenerMetodoSeleccionado() {
     return activo ? activo.getAttribute('data-metodo') : 'cualquiera';
 }
 
-// Devuelve el método real a enviar al servidor, o null si no hay ninguno disponible.
+// Método principal a enviar al servidor, o null si no hay ninguno disponible.
 function resolverMetodoCobro() {
     var elegido = obtenerMetodoSeleccionado();
 
@@ -578,6 +579,15 @@ function resolverMetodoCobro() {
     }
 
     return metodoEstaDisponible(elegido) ? elegido : null;
+}
+
+// Métodos que el vendedor acepta para este cobro:
+// "Cualquiera" -> todos los disponibles; un método concreto -> solo ese.
+function metodosAceptadosParaCobro(metodoPrincipal) {
+    if (obtenerMetodoSeleccionado() === 'cualquiera') {
+        return METODOS_DISPONIBLES.slice();
+    }
+    return [metodoPrincipal];
 }
 
 // ================================================================
@@ -650,7 +660,7 @@ async function cancelarCobroPendiente() {
             method: 'POST'
         });
     } catch (err) {
-        // 409 si ya se pagó: no es un error para el usuario.
+        // 409 si ya se pagó o está en proceso: no es un error para el usuario.
         console.warn('No se pudo cancelar el cobro anterior:', err.message);
     }
 }
@@ -686,6 +696,7 @@ async function generarQR() {
     }
 
     var descripcion = inpDesc.value ? inpDesc.value.trim() : '';
+    var metodosAceptados = metodosAceptadosParaCobro(metodo);
 
     var idempotencyKey = 'qrcobro_' + Date.now() + '_' +
         Math.random().toString(36).substring(2, 10);
@@ -699,6 +710,7 @@ async function generarQR() {
             body: {
                 monto: monto,
                 metodo: metodo,
+                metodosAceptados: metodosAceptados,
                 descripcion: descripcion,
                 idempotencyKey: idempotencyKey
             }
@@ -873,14 +885,14 @@ function copiarLink() {
         navigator.clipboard.writeText(texto).then(function () {
             showToast('✔ Link copiado', 'success');
         }).catch(function () {
-            copiarFallback(texto);
+            copiarFallback();
         });
     } else {
-        copiarFallback(texto);
+        copiarFallback();
     }
 }
 
-function copiarFallback(texto) {
+function copiarFallback() {
     var input = document.getElementById('linkInput');
     input.select();
     input.setSelectionRange(0, 99999);
