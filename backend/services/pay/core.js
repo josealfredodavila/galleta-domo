@@ -2,6 +2,16 @@
 // SERVICES/PAY/CORE.JS
 // CSARIEL'S PAY - PAYMENT CORE
 // ================================================================
+// Cambios de esta versión:
+//   - Confirmación idempotente: si pay_confirmar_intencion responde
+//     idempotent=true, NO se reporta 'intencion_confirmada', así que
+//     webhooks.js no vuelve a liberar saldo (evita doble liberación).
+//   - Retiros: los webhooks de payout (transfer.outbound.*) cierran el
+//     retiro con retirosService.cerrarRetiro. 'succeeded' -> completed;
+//     'failed'/'rejected' -> failed (devuelve saldo, idempotente).
+//   - Moneda de la intención fija en MXN (el monto siempre es MXN; la
+//     conversión a cripto la hace el proveedor).
+// ================================================================
 
 'use strict';
 
@@ -12,12 +22,11 @@ const logger = require('../../utils/logger');
 
 const paises = require('./geo/paises');
 const errors = require('./errors');
+const retirosService = require('./retiros');
 
 // ================================================================
 // VALIDACIÓN DE DEPENDENCIAS AL ARRANQUE
 // ================================================================
-// Verificamos que paises.js exponga todo lo que necesitamos.
-// Si falta algo crítico, mejor saberlo aquí que en runtime.
 
 (function validarDependenciasPaises() {
     const requeridosFunciones = [
@@ -53,9 +62,7 @@ const errors = require('./errors');
     }
 
     if (faltantes.length > 0) {
-        logger.error(
-            '[Pay Core] ❌ Faltan dependencias en services/pay/geo/paises.js:'
-        );
+        logger.error('[Pay Core] ❌ Faltan dependencias en services/pay/geo/paises.js:');
         faltantes.forEach(f => logger.error(`   - ${f}`));
     }
 })();
@@ -64,15 +71,20 @@ const errors = require('./errors');
 // CONSTANTES
 // ================================================================
 
-const ESTADOS_INTENCION_FINALES = ['paid', 'failed', 'expired', 'cancelled', 'refunded'];
 const ESTADOS_CUENTA_ACTIVA = ['activa'];
-const MONEDAS_VALIDAS = ['MXN', 'USDT', 'USDC'];
+
+// El monto de una intención siempre está en MXN. Para cripto el proveedor
+// calcula la cantidad en USDT/USDC con su propio tipo de cambio.
+const MONEDA_INTENCION = 'MXN';
+
+// Se conserva por compatibilidad con otros módulos que lo importen.
 const MONEDA_POR_METODO = {
     tarjeta: 'MXN',
     spei: 'MXN',
-    usdt: 'USDT',
-    usdc: 'USDC'
+    usdt: 'MXN',
+    usdc: 'MXN'
 };
+
 const EXPIRACION_INTENCION_MS = 30 * 60 * 1000;
 
 // ================================================================
@@ -105,12 +117,6 @@ function normalizarMetodo(metodo) {
     }
     const m = metodo.trim().toLowerCase();
     return paises.METODOS_VALIDOS_GLOBAL.includes(m) ? m : null;
-}
-
-function normalizarMoneda(moneda) {
-    if (!moneda || typeof moneda !== 'string') return null;
-    const m = moneda.trim().toUpperCase();
-    return MONEDAS_VALIDAS.includes(m) ? m : null;
 }
 
 function validarIdempotencyKey(key) {
@@ -329,11 +335,6 @@ async function crearIntencion(datos) {
         throw errors.errorMetodoNoDisponibleEnPais(metodo, codigoPais);
     }
 
-    const moneda = normalizarMoneda(d.moneda) || MONEDA_POR_METODO[metodo];
-    if (!moneda) {
-        throw errors.errorMonedaInvalida(d.moneda);
-    }
-
     const idempotencyKey = validarIdempotencyKey(d.idempotencyKey);
     if (!idempotencyKey) {
         throw errors.errorIdempotencyKeyFaltante();
@@ -404,7 +405,7 @@ async function crearIntencion(datos) {
         cuenta_receptora_id: d.cuentaReceptoraId,
         comprador_id: d.compradorId || null,
         monto: monto,
-        moneda: moneda,
+        moneda: MONEDA_INTENCION,
         metodo_pago: metodo,
         proveedor: proveedor,
         estado: 'pending',
@@ -442,7 +443,7 @@ async function crearIntencion(datos) {
 
     logger.info(
         `[Pay Core] Intención creada: ${creada.id} ` +
-        `(${metodo}/${proveedor}/${codigoPais}) monto=${monto} ${moneda}`
+        `(${metodo}/${proveedor}/${codigoPais}) monto=${monto} ${MONEDA_INTENCION}`
     );
 
     return creada;
@@ -544,7 +545,6 @@ async function procesarWebhook(proveedor, req) {
         throw errors.errorWebhookPayloadInvalido(proveedor, 'adapter no devolvió resultado válido');
     }
 
-    // Verificar firma
     if (!resultado.firma_valida) {
         throw errors.errorFirmaInvalida(proveedor);
     }
@@ -553,7 +553,7 @@ async function procesarWebhook(proveedor, req) {
         throw errors.errorWebhookPayloadInvalido(proveedor, 'sin event_id');
     }
 
-    // Registrar evento (idempotencia)
+    // Registrar evento (idempotencia por proveedor + event_id)
     const { data: registro, error: errReg } = await supabaseAdmin.rpc(
         'pay_registrar_webhook_evento',
         {
@@ -570,6 +570,9 @@ async function procesarWebhook(proveedor, req) {
         throw new errors.ErrorInterno('ERROR_REGISTRANDO_WEBHOOK', errReg.message);
     }
 
+    // Evento ya procesado con éxito: no se vuelve a ejecutar nada.
+    // Si está insertado pero sin procesar (reintento tras un fallo o
+    // entrega concurrente), se procesa de nuevo: las RPC son idempotentes.
     if (registro && registro.insertado === false && registro.duplicado === true && registro.procesado === true) {
         logger.info(`[Pay Core] Webhook duplicado ignorado: ${proveedor}/${resultado.event_id}`);
         return {
@@ -579,12 +582,12 @@ async function procesarWebhook(proveedor, req) {
         };
     }
 
-    // Ejecutar la acción
     let accionEjecutada = 'ninguna';
     let cuentaReceptoraId = null;
     let montoConfirmado = null;
 
     try {
+        // ---------- COBRO ----------
         if (resultado.accion === 'confirmar_intencion' && resultado.intencion_id) {
             const { data: intencion, error: errInt } = await supabaseAdmin
                 .from('pay_intenciones')
@@ -598,7 +601,7 @@ async function procesarWebhook(proveedor, req) {
 
             if (!intencion) {
                 logger.warn(`[Pay Core] Webhook apunta a intención inexistente: ${resultado.intencion_id}`);
-                await marcarWebhookProcesado(proveedor, resultado.event_id, 'intencion_inexistente');
+                await marcarWebhookProcesado(proveedor, resultado.event_id, null);
                 return {
                     status: 'ignorado',
                     motivo: 'intencion_inexistente',
@@ -616,8 +619,7 @@ async function procesarWebhook(proveedor, req) {
                 };
             }
 
-            // Confirmar intención vía RPC
-            const { error: errConf } = await supabaseAdmin.rpc(
+            const { data: rpcData, error: errConf } = await supabaseAdmin.rpc(
                 'pay_confirmar_intencion',
                 {
                     p_intencion_id: resultado.intencion_id,
@@ -635,38 +637,81 @@ async function procesarWebhook(proveedor, req) {
                 throw new errors.ErrorInterno('ERROR_CONFIRMANDO_INTENCION', errConf.message);
             }
 
-            accionEjecutada = 'intencion_confirmada';
-
-            // Recuperar datos para liberar saldo
-            const { data: intencionActualizada } = await supabaseAdmin
-                .from('pay_intenciones')
-                .select('id, cuenta_receptora_id, monto, paid_at')
-                .eq('id', resultado.intencion_id)
-                .maybeSingle();
-
-            if (intencionActualizada) {
-                cuentaReceptoraId = intencionActualizada.cuenta_receptora_id;
-                montoConfirmado = Number(intencionActualizada.monto) || null;
+            if (rpcData && rpcData.idempotent === true) {
+                // Otra entrega ya confirmó esta intención dentro del lock de la RPC.
+                // NO se reporta 'intencion_confirmada': así webhooks.js no libera saldo otra vez.
+                accionEjecutada = 'intencion_ya_confirmada';
+                logger.info(
+                    `[Pay Core] Confirmación idempotente, no se libera saldo de nuevo: ` +
+                    `${resultado.intencion_id}`
+                );
             } else {
-                cuentaReceptoraId = intencion.cuenta_receptora_id;
-                montoConfirmado = Number(intencion.monto) || null;
+                accionEjecutada = 'intencion_confirmada';
+
+                const { data: intencionActualizada } = await supabaseAdmin
+                    .from('pay_intenciones')
+                    .select('id, cuenta_receptora_id, monto, paid_at')
+                    .eq('id', resultado.intencion_id)
+                    .maybeSingle();
+
+                const fuente = intencionActualizada || intencion;
+                cuentaReceptoraId = fuente.cuenta_receptora_id;
+                montoConfirmado = Number(fuente.monto) || null;
+
+                logger.info(
+                    `[Pay Core] Intención confirmada: ${resultado.intencion_id} ` +
+                    `(${proveedor}/${resultado.provider_transaction_id || 'sin_tx_id'}) ` +
+                    `cuenta=${cuentaReceptoraId} monto=${montoConfirmado} ${MONEDA_INTENCION}`
+                );
             }
 
-            logger.info(
-                `[Pay Core] Intención confirmada: ${resultado.intencion_id} ` +
-                `(${proveedor}/${resultado.provider_transaction_id || 'sin_tx_id'}) ` +
-                `cuenta=${cuentaReceptoraId} monto=${montoConfirmado}`
-            );
-
+        // ---------- PAYOUT (RETIRO) ----------
         } else if (resultado.accion === 'cerrar_retiro' && resultado.retiro_id) {
-            logger.info(`[Pay Core] Webhook de retiro recibido: ${resultado.retiro_id}`);
-            accionEjecutada = 'retiro_pendiente_de_implementar';
+            const estadoFinal = resultado.provider_status === 'succeeded' ? 'completed' : 'failed';
+
+            let cierre;
+            try {
+                cierre = await retirosService.cerrarRetiro(resultado.retiro_id, estadoFinal, {
+                    provider_transfer_id: resultado.provider_transaction_id || null,
+                    provider_status: resultado.provider_status || null,
+                    error_code: estadoFinal === 'failed' ? 'PROVEEDOR_PAYOUT_FALLIDO' : null,
+                    error_message: estadoFinal === 'failed'
+                        ? `El proveedor reportó ${resultado.provider_status}`
+                        : null,
+                    metadata: { evento_proveedor: resultado.tipo_evento || null }
+                });
+            } catch (errCierre) {
+                if (String(errCierre && errCierre.message).includes('PAY_RETIRO_NOT_FOUND')) {
+                    logger.error(
+                        `[Pay Core] Payout ${resultado.event_id} apunta a retiro inexistente: ${resultado.retiro_id}`
+                    );
+                    await marcarWebhookProcesado(proveedor, resultado.event_id, 'retiro_inexistente');
+                    return {
+                        status: 'ignorado',
+                        motivo: 'retiro_inexistente',
+                        event_id: resultado.event_id
+                    };
+                }
+                throw errCierre;
+            }
+
+            if (cierre && cierre.already_processed) {
+                logger.warn(
+                    `[Pay Core] Payout ${resultado.event_id} (${resultado.tipo_evento}) llegó para retiro ` +
+                    `${resultado.retiro_id} ya cerrado como ${cierre.estado_final}. Sin cambios en base.`
+                );
+                accionEjecutada = 'retiro_ya_cerrado';
+            } else {
+                accionEjecutada = estadoFinal === 'completed'
+                    ? 'retiro_completado'
+                    : 'retiro_fallido_saldo_devuelto';
+                logger.info(`[Pay Core] Retiro ${resultado.retiro_id} cerrado como ${estadoFinal}`);
+            }
 
         } else {
             accionEjecutada = 'ignorada';
         }
 
-        // Marcar evento como procesado
         await marcarWebhookProcesado(proveedor, resultado.event_id, null);
 
         return {
@@ -680,10 +725,11 @@ async function procesarWebhook(proveedor, req) {
         };
 
     } catch (errProceso) {
+        // Queda procesado=false: el proveedor reintentará y se volverá a ejecutar.
         await marcarWebhookProcesado(
             proveedor,
             resultado.event_id,
-            errProceso.message || 'error desconocido',
+            (errProceso && errProceso.message) || 'error desconocido',
             false
         );
 
