@@ -18,6 +18,9 @@
 // v4.2: Montaje de /api/marketplace (compras del Marketplace de canales).
 // v4.3: Csariel's Pay: webhooks de Pay fuera del rate limit, polling
 //       público exento, ruta /pay/cobrar/:token y redirección de /pay.
+// v4.4: Telnyx: webhook montado con montarRouter (no tumba el arranque
+//       si falta el archivo), excluido del rate limit, y ciclo de
+//       mantenimiento de eSIM cada 5 minutos con require protegido.
 // ================================================================
 
 require('dotenv').config();
@@ -135,6 +138,14 @@ if (!process.env.NODE_ENV) console.warn('⚠️ NODE_ENV no está definido');
 
 if (process.env.TELNYX_CALLS_ENABLED !== 'true') {
     console.log('ℹ️ Llamadas a números externos (Telnyx) desactivadas');
+}
+
+if (process.env.TELNYX_ESIM_ENABLED !== 'true') {
+    console.log('ℹ️ eSIM Telnyx desactivada (TELNYX_ESIM_ENABLED no es true)');
+}
+
+if (!process.env.TELNYX_PUBLIC_KEY) {
+    console.warn('⚠️ Falta TELNYX_PUBLIC_KEY (los webhooks de Telnyx responderán 500 hasta configurarla)');
 }
 
 // Variables de Csariel's Pay: solo advertencias, para no tumbar el resto del backend.
@@ -392,7 +403,9 @@ app.use(
             'x-nowpayments-sig',
             'x-signature',
             'Fintoc-Signature',
-            'stripe-signature'
+            'stripe-signature',
+            'telnyx-signature-ed25519',
+            'telnyx-timestamp'
         ],
 
         exposedHeaders: ['Content-Length', 'X-Requested-With'],
@@ -405,22 +418,27 @@ app.use(
 // ================================================================
 // WEBHOOK TELNYX
 // ================================================================
+// Va ANTES de express.json() y del rate limit: necesita el cuerpo
+// crudo para verificar la firma Ed25519. Se monta con montarRouter
+// (ver helpers más abajo) para que un archivo faltante no tumbe el arranque.
 
-app.use('/api/telnyx/webhook', require('./routes/telnyx-webhook'));
+const RUTA_WEBHOOK_TELNYX = '/api/telnyx/webhook';
 
 // ================================================================
 // RATE LIMIT GENERAL
 // ================================================================
 // Webhooks: sin límite. Los proveedores reintentan, y un 429 haría
-// que se pierdan eventos (IPN de NOWPayments, transfers de Fintoc).
-// Polling público de intenciones (GET): exento; el frontend consulta
-// cada pocos segundos y no debe bloquearse por la cuota compartida de IP.
+// que se pierdan eventos (IPN de NOWPayments, transfers de Fintoc,
+// eventos de Telnyx). Polling público de intenciones (GET): exento;
+// el frontend consulta cada pocos segundos y no debe bloquearse por
+// la cuota compartida de IP.
 
 const RUTAS_WEBHOOK_SIN_LIMITE = [
     '/api/webhook/',
     '/api/webhooks/',
     '/api/mercado/webhook-nowpayments',
-    '/api/pay/webhooks/'
+    '/api/pay/webhooks/',
+    RUTA_WEBHOOK_TELNYX
 ];
 
 const apiLimiter = rateLimit({
@@ -916,6 +934,10 @@ function montarNoticias() {
 // ROUTERS
 // ================================================================
 
+// Webhook de Telnyx (eSIM, llamadas, WhatsApp). Montado aquí, antes de
+// cualquier parser que altere el cuerpo, para verificar la firma Ed25519.
+montarRouter(RUTA_WEBHOOK_TELNYX, './routes/telnyx-webhook', 'routes/telnyx-webhook');
+
 // LiveKit
 montarRouter('/api/livekit', './routes/livekit', 'routes/livekit');
 
@@ -963,6 +985,7 @@ montarRouter('/api/ai/tts-itlasuhua', './routes/ai-tts-itlasuhua', 'routes/ai-tt
 montarRouter('/api/ai/chat-itlasuhua', './routes/ai-chat-itlasuhua', 'routes/ai-chat-itlasuhua');
 montarRouter('/api/ai/voice-itlasuhua', './routes/ai-voice-itlasuhua', 'routes/ai-voice-itlasuhua');
 
+// Telnyx: rutas autenticadas de eSIM (/esim/mia, /esim/sync, /esim/reemplazar)
 montarRouter('/api/telnyx', './routes/telnyx', 'routes/telnyx');
 
 montarRouter('/api/ai/plan', './routes/ia-plan', 'routes/ia-plan');
@@ -1171,6 +1194,10 @@ async function healthCheckDetalle(req, res) {
             motor_livekit: livekitConfigured,
             telefonia_externa: process.env.TELNYX_CALLS_ENABLED === 'true'
         },
+        esim: {
+            habilitada: process.env.TELNYX_ESIM_ENABLED === 'true',
+            webhook_firma_configurada: Boolean(process.env.TELNYX_PUBLIC_KEY)
+        },
         push: { configured: pushConfigured },
         moderacion: { configured: moderacionImagenConfigured },
         moderacion_texto: { configured: moderacionTextoConfigured },
@@ -1372,13 +1399,25 @@ setTimeout(ejecutarLimpiezaCuentas, 5 * 60 * 1000);
 setInterval(ejecutarLimpiezaCuentas, 24 * 60 * 60 * 1000);
 
 // ================================================================
-// CRON — Mantenimiento eSIMs Telnyx
+// CRON — Mantenimiento eSIMs Telnyx (cada 5 minutos)
 // ================================================================
+// require protegido: si services/telnyx/esim.js no existe, el servidor
+// arranca igual y solo se registra el aviso. El ciclo también revisa
+// TELNYX_ESIM_ENABLED y no hace nada si está desactivado.
 
-const { cicloMantenimientoEsims } = require('./services/telnyx/esim');
+let cicloMantenimientoEsims = null;
 
-setTimeout(cicloMantenimientoEsims, 2 * 60 * 1000);
-setInterval(cicloMantenimientoEsims, 10 * 60 * 1000);
+try {
+    ({ cicloMantenimientoEsims } = require('./services/telnyx/esim'));
+} catch (error) {
+    console.error('❌ Ciclo eSIM no cargado (services/telnyx/esim.js):', error.message);
+}
+
+if (typeof cicloMantenimientoEsims === 'function') {
+    const CICLO_ESIM_MS = 5 * 60 * 1000;
+    setTimeout(cicloMantenimientoEsims, 2 * 60 * 1000);
+    setInterval(cicloMantenimientoEsims, CICLO_ESIM_MS);
+}
 
 // ================================================================
 // EXPORT
