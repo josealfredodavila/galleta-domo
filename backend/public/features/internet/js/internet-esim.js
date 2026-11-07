@@ -41,15 +41,16 @@ async function abrirMiEsim() {
 function renderEsim(esim) {
     esimActual = esim;
 
-    // ---- BADGE DE ESTADO ----
-    var badge = document.getElementById('esimEstadoBadge');
     var estado = esim.estado || 'pendiente';
 
+    // ---- BADGE DE ESTADO ----
+    var badge = document.getElementById('esimEstadoBadge');
     if (badge) {
         var map = {
             'activa': { txt: '◈ ACTIVA', cls: 'activa' },
             'sin_saldo': { txt: '◈ SIN SALDO', cls: 'sin_saldo' },
             'pendiente': { txt: '◈ PENDIENTE', cls: 'pendiente' },
+            'pendiente_codigo': { txt: '◈ PREPARANDO', cls: 'aprovisionando' },
             'aprovisionando': { txt: '◈ PREPARANDO', cls: 'aprovisionando' },
             'reemplazando': { txt: '◈ CAMBIANDO', cls: 'aprovisionando' }
         };
@@ -92,6 +93,9 @@ function renderEsim(esim) {
         } else if (estado === 'activa' && pct >= 80) {
             aviso.textContent = 'Te queda poco saldo. Puedes recargar cuando quieras; los gigas se suman a tu eSIM.';
             aviso.classList.add('show', 'poco');
+        } else if (estado === 'pendiente_codigo') {
+            aviso.textContent = 'Tu eSIM se está preparando. El código de instalación aparecerá en unos minutos.';
+            aviso.classList.add('show', 'poco');
         }
     }
 
@@ -106,7 +110,7 @@ function renderEsim(esim) {
             width: 220,
             margin: 1,
             color: { dark: '#05080f', light: '#ffffff' }
-        }, function(err) {
+        }, function (err) {
             if (err) console.error('Error generando QR:', err);
         });
     } else if (qrCanvas) {
@@ -118,7 +122,10 @@ function renderEsim(esim) {
         ctx.fillStyle = '#D4AF37';
         ctx.font = '14px Inter, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(code ? 'Usa el código de abajo' : 'QR no disponible', 110, 110);
+        var mensajeQr = code
+            ? 'Usa el código de abajo'
+            : (estado === 'pendiente_codigo' ? 'Preparando tu código…' : 'QR no disponible');
+        ctx.fillText(mensajeQr, 110, 110);
     }
 
     if (code) {
@@ -141,12 +148,18 @@ function renderEsim(esim) {
     // ---- BOTÓN "CAMBIAR DE CELULAR" ----
     var btnCambiar = document.getElementById('btnCambiarCelular');
     if (btnCambiar) {
-        var bloqueado = !esim.puede_reemplazar || estado === 'reemplazando' || estado === 'aprovisionando';
+        var enProceso = estado === 'reemplazando' || estado === 'aprovisionando' || estado === 'pendiente_codigo';
+        var bloqueado = !esim.puede_reemplazar || enProceso;
         btnCambiar.disabled = bloqueado;
+
         var desde = esim.reemplazo_disponible_desde ? new Date(esim.reemplazo_disponible_desde) : null;
-        btnCambiar.title = bloqueado && desde
-            ? 'Disponible desde ' + desde.toLocaleDateString('es-MX')
-            : 'Pasar tu eSIM a otro celular';
+        if (enProceso) {
+            btnCambiar.title = 'Tu eSIM se está preparando';
+        } else if (!esim.puede_reemplazar && desde) {
+            btnCambiar.title = 'Disponible desde ' + desde.toLocaleDateString('es-MX');
+        } else {
+            btnCambiar.title = 'Pasar tu eSIM a otro celular';
+        }
     }
 }
 
@@ -164,7 +177,12 @@ async function sincronizarEsim() {
             return;
         }
         renderEsim(r.data.data);
-        showToast('◈ Datos actualizados', 'success');
+
+        if (r.data.cooldown) {
+            showToast('◈ Ya se actualizó hace un momento', 'warning');
+        } else {
+            showToast('◈ Datos actualizados', 'success');
+        }
     } catch (error) {
         showToast('✕ ' + error.message, 'error');
     } finally {
