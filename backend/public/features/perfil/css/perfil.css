@@ -1,8 +1,9 @@
 /* ================================================================
    PERFIL · CSS
-   v4: diseño plano tipo Facebook/X. Sin cajas con borde grueso,
+   v5: diseño plano tipo Facebook/X. Sin cajas con borde grueso,
        sin sombras de tarjeta. Separadores de 1px. Medios a todo
-       el ancho. Conserva todas las clases e IDs de los scripts.
+       el ancho. Estadísticas limpias: solo número y etiqueta.
+       Conserva todas las clases e IDs de los scripts.
    ================================================================ */
 
 :root {
@@ -78,10 +79,33 @@ body { background: var(--space); color: var(--text-primary); font-family: 'Inter
 .perfil-header .info .badges .badge { font-size: 0.55rem; padding: 2px 10px; border-radius: 20px; font-family: 'Orbitron', monospace; border: 1px solid var(--flat-line); color: var(--text-muted); background: transparent; display: inline-flex; align-items: center; gap: 4px; }
 .perfil-header .info .badges .badge.gold { border-color: rgba(212, 175, 55, 0.5); color: var(--gold); }
 .perfil-header .info .badges .badge.success { border-color: rgba(0, 214, 143, 0.5); color: var(--success); }
+
+/* Estadísticas: solo número y etiqueta */
 .perfil-header .stats { display: flex; gap: 22px; flex-wrap: wrap; width: 100%; padding-top: 14px; border-top: 1px solid var(--flat-line); margin-top: 6px; }
-.perfil-header .stats .stat { text-align: left; padding: 0; border: 0; background: transparent; }
-.perfil-header .stats .stat .number { font-family: 'Orbitron', monospace; font-size: 1.05rem; font-weight: 700; color: var(--text-primary); }
-.perfil-header .stats .stat .label { font-size: 0.55rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-family: 'Orbitron', monospace; display: inline-flex; align-items: center; gap: 3px; }
+.perfil-header .stats .stat { text-align: left; padding: 0; border: 0; background: transparent; min-width: 64px; }
+.perfil-header .stats .stat .number {
+    display: block;
+    font-family: 'Orbitron', 'Inter', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+}
+.perfil-header .stats .stat .label {
+    display: block;
+    margin-top: 2px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+}
+/* Cualquier elemento extra que un script inyecte dentro de una estadística
+   (los cuadritos) se oculta: solo deben verse el número y la etiqueta. */
+.perfil-header .stats .stat > *:not(.number):not(.label) { display: none !important; }
+
 .perfil-header .acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-left: auto; align-self: flex-start; }
 .config-btn { position: absolute; top: 16px; right: 4px; z-index: 20; width: 38px; height: 38px; border-radius: 50%; background: transparent; border: 0; color: var(--gold); display: flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; transition: var(--transition); }
 .config-btn:hover, .config-btn:active { background: rgba(212, 175, 55, 0.12); transform: rotate(90deg); }
