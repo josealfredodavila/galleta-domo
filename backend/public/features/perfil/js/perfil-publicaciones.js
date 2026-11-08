@@ -1,21 +1,16 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v5.8 (Visor propio a pantalla completa para fotos y videos de
-//       "Mis publicaciones". Cada medio tiene botón ⛶. Flechas,
-//       deslizar, descarga y cierre con ×, Escape o tocando el fondo.
-//       Ya no depende de perfil-visor.js.)
-// v5.7 (El enlace al autor usa ?u=<handle>, que es lo que lee
-//       perfil-publico.html. El @handle se muestra en azul y es
-//       clicable, igual que el nombre y el avatar.)
-// v5.6 (Nombre, handle y avatar de cada publicación enlazan al perfil
-//       del autor. Si es tu propia publicación, abre tu perfil.)
-// v5.5 (Diseño tipo Facebook: publicaciones sin tarjeta ni bordes,
-//       medios a todo el ancho, barra de acciones plana)
-// v5.4 (Eliminación sin borrar Storage desde el cliente)
-// v5.3 (Emojis de reacción alineados con la base de datos,
-//       reacciones optimizadas, comentarios protegidos contra envíos
-//       repetidos, vista previa segura, medios compatibles)
+// v5.9 INSTAGRAM EXPERIENCE
+// - Feed centrado con ancho máximo de 650px.
+// - Diseño moderno, limpio y responsivo.
+// - Publicaciones con bordes redondeados.
+// - Multimedia adaptable.
+// - Avatares circulares.
+// - Creador de publicaciones modernizado.
+// - Botón Publicar naranja.
+// - Reacciones, comentarios y acciones conservados.
+// - Visor propio a pantalla completa.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -105,10 +100,6 @@ function pubCrearAvatar(nombre, url) {
         imagen.src = url;
         imagen.alt = '';
         imagen.loading = 'lazy';
-        imagen.style.width = '100%';
-        imagen.style.height = '100%';
-        imagen.style.objectFit = 'cover';
-        imagen.style.borderRadius = '50%';
         imagen.onerror = function () {
             if (imagen.parentNode) {
                 imagen.parentNode.removeChild(imagen);
@@ -134,9 +125,6 @@ function pubCodigoIdioma() {
 // ================================================================
 // ENLACE AL PERFIL DEL AUTOR
 // ================================================================
-// Usa ?u=<handle>, el parámetro que lee perfil-publico.html.
-// Si el autor es el usuario en sesión, abre su propio perfil.
-// ================================================================
 
 function pubUrlPerfilAutor(handle, usuarioId, miId) {
     if (miId && usuarioId && String(usuarioId) === String(miId)) {
@@ -151,10 +139,7 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
 }
 
 // ================================================================
-// VISOR PROPIO A PANTALLA COMPLETA (fotos y videos de la lista)
-// ================================================================
-// No depende de perfil-visor.js. Usa window.listaMultimediaPerfil,
-// que se llena al pintar cada publicación.
+// VISOR PROPIO A PANTALLA COMPLETA
 // ================================================================
 
 var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0 };
@@ -169,6 +154,7 @@ function pubVisorEl() {
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-modal', 'true');
     el.setAttribute('aria-label', 'Vista de publicación');
+
     el.innerHTML =
         '<button type="button" class="pub-vf-cerrar" aria-label="Cerrar">×</button>' +
         '<button type="button" class="pub-vf-nav pub-vf-prev" aria-label="Anterior">‹</button>' +
@@ -196,12 +182,12 @@ function pubVisorEl() {
     el.querySelector('.pub-vf-descargar').addEventListener('click', function (e) {
         e.stopPropagation();
         var item = pubVisor.items[pubVisor.index];
+
         if (item && typeof window.descargarArchivoForzado === 'function') {
             window.descargarArchivoForzado(item.url);
         }
     });
 
-    // Tocar el fondo (no la foto ni el video) cierra el visor
     el.querySelector('.pub-vf-media').addEventListener('click', function (e) {
         if (e.target === e.currentTarget) pubCerrarVisor();
     });
@@ -229,6 +215,7 @@ function pubMostrarItem() {
     var el = pubVisorEl();
     var caja = el.querySelector('.pub-vf-media');
     var item = pubVisor.items[pubVisor.index];
+
     if (!item) return;
 
     caja.innerHTML = '';
@@ -242,6 +229,7 @@ function pubMostrarItem() {
         caja.appendChild(video);
 
         var reproduccion = video.play();
+
         if (reproduccion && typeof reproduccion.catch === 'function') {
             reproduccion.catch(function () {});
         }
@@ -253,13 +241,20 @@ function pubMostrarItem() {
     }
 
     var hayVarios = pubVisor.items.length > 1;
-    el.querySelector('.pub-vf-prev').style.display = hayVarios && pubVisor.index > 0 ? '' : 'none';
-    el.querySelector('.pub-vf-next').style.display = hayVarios && pubVisor.index < pubVisor.items.length - 1 ? '' : 'none';
-    el.querySelector('.pub-vf-descargar').style.display = item.permiteDescarga ? '' : 'none';
+
+    el.querySelector('.pub-vf-prev').style.display =
+        hayVarios && pubVisor.index > 0 ? '' : 'none';
+
+    el.querySelector('.pub-vf-next').style.display =
+        hayVarios && pubVisor.index < pubVisor.items.length - 1 ? '' : 'none';
+
+    el.querySelector('.pub-vf-descargar').style.display =
+        item.permiteDescarga ? '' : 'none';
 }
 
 function pubNavegar(direccion) {
     var nuevo = pubVisor.index + direccion;
+
     if (nuevo < 0 || nuevo >= pubVisor.items.length) return;
 
     pubVisor.index = nuevo;
@@ -267,13 +262,16 @@ function pubNavegar(direccion) {
 }
 
 function pubAbrirVisor(indice) {
-    var lista = Array.isArray(window.listaMultimediaPerfil) ? window.listaMultimediaPerfil : [];
+    var lista = Array.isArray(window.listaMultimediaPerfil)
+        ? window.listaMultimediaPerfil
+        : [];
+
     if (!lista[indice]) return;
 
     pubVisor.items = lista.slice();
     pubVisor.index = indice;
-    pubMostrarItem();
 
+    pubMostrarItem();
     pubVisorEl().classList.add('show');
     document.body.style.overflow = 'hidden';
 }
@@ -283,6 +281,7 @@ function pubCerrarVisor() {
     if (!el) return;
 
     var video = el.querySelector('video');
+
     if (video) {
         video.pause();
         video.removeAttribute('src');
@@ -296,6 +295,7 @@ function pubCerrarVisor() {
 
 document.addEventListener('keydown', function (e) {
     var el = document.getElementById('pubVisorFull');
+
     if (!el || !el.classList.contains('show')) return;
 
     if (e.key === 'Escape') pubCerrarVisor();
@@ -304,70 +304,145 @@ document.addEventListener('keydown', function (e) {
 });
 
 // ================================================================
-// ESTILOS (diseño plano tipo Facebook + visor)
+// ESTILOS · INSTAGRAM EXPERIENCE
 // ================================================================
 
 (function inyectarEstilosReaccionesPerfil() {
-    if (document.getElementById('perfil-reacciones-fb-styles')) return;
+    var styleId = 'perfil-reacciones-fb-styles';
+    var anterior = document.getElementById(styleId);
+
+    if (anterior) anterior.remove();
 
     var style = document.createElement('style');
-    style.id = 'perfil-reacciones-fb-styles';
+    style.id = styleId;
 
     style.appendChild(document.createTextNode(`
+
+        /* ========================================================
+           CONTENEDOR PRINCIPAL DEL FEED
+        ======================================================== */
+
+        #misPublicacionesList {
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            width: 100% !important;
+            max-width: 650px !important;
+            margin: 0 auto !important;
+            padding: 10px 14px 30px !important;
+            box-sizing: border-box !important;
+            overflow: visible !important;
+            min-width: 0 !important;
+        }
+
+        #misPublicacionesList *,
+        #misPublicacionesList *::before,
+        #misPublicacionesList *::after {
+            box-sizing: border-box;
+        }
+
+        /* ========================================================
+           PUBLICACIONES
+        ======================================================== */
+
         #misPublicacionesList .publicacion-card {
-            background: transparent !important;
-            border: 0 !important;
-            border-bottom: 1px solid rgba(255,255,255,.09) !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-            padding: 14px 0 12px !important;
-            margin: 0 !important;
-            width: 100%;
+            display: flex !important;
+            flex-direction: column !important;
+            width: 100% !important;
+            max-width: 650px !important;
+            min-width: 0 !important;
+            margin: 0 auto 20px !important;
+            padding: 16px !important;
+
+            background: var(--card-bg, #17191d) !important;
+            border: 1px solid rgba(255,255,255,.08) !important;
+            border-radius: 18px !important;
+            box-shadow: 0 4px 18px rgba(0,0,0,.12) !important;
+
+            overflow: visible !important;
+            transition: border-color .2s ease, box-shadow .2s ease;
         }
+
         #misPublicacionesList .publicacion-card:hover {
-            background: transparent !important;
-            border-color: rgba(255,255,255,.09) !important;
-            box-shadow: none !important;
+            border-color: rgba(255,255,255,.14) !important;
+            box-shadow: 0 6px 22px rgba(0,0,0,.17) !important;
         }
+
+        /* ========================================================
+           ENCABEZADO Y AVATARES
+        ======================================================== */
 
         #misPublicacionesList .publicacion-card .header {
             display: flex !important;
             flex-direction: row !important;
             align-items: center !important;
-            gap: 10px !important;
+            gap: 11px !important;
+            width: 100% !important;
+            min-width: 0 !important;
             padding: 0 !important;
-            margin: 0 0 10px 0 !important;
+            margin: 0 0 14px !important;
             background: transparent !important;
             border: 0 !important;
             box-shadow: none !important;
         }
-        #misPublicacionesList .publicacion-card .header > .avatar {
-            width: 40px !important;
-            height: 40px !important;
-            min-width: 40px !important;
-            flex: 0 0 40px !important;
-            border: 0 !important;
+
+        #misPublicacionesList .publicacion-card .header > .avatar,
+        #misPublicacionesList .pub-autor-avatar-enlace {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 44px !important;
+            height: 44px !important;
+            min-width: 44px !important;
+            flex: 0 0 44px !important;
             border-radius: 50% !important;
-            box-shadow: none !important;
             overflow: hidden !important;
+            background: #252a32 !important;
+            border: 2px solid rgba(255,255,255,.12) !important;
+            padding: 0 !important;
         }
+
+        #misPublicacionesList .avatar-placeholder {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            width: 100% !important;
+            height: 100% !important;
+            border-radius: 50% !important;
+            overflow: hidden !important;
+            background: #3b82f6 !important;
+            color: white !important;
+            font-weight: 700 !important;
+        }
+
+        #misPublicacionesList .avatar-placeholder img,
+        #misPublicacionesList .header .avatar img {
+            display: block !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 50% !important;
+        }
+
         #misPublicacionesList .publicacion-card .header > div:not(.avatar) {
             flex: 1 1 auto !important;
             min-width: 0 !important;
             text-align: left !important;
-            line-height: 1.25 !important;
+            line-height: 1.35 !important;
         }
+
         #misPublicacionesList .publicacion-card .nombre {
+            display: block;
+            font-size: .94rem !important;
             font-weight: 700 !important;
-            font-size: .92rem !important;
             color: var(--text-primary, #f0f4f8) !important;
-            white-space: normal !important;
-            word-break: break-word !important;
+            overflow-wrap: anywhere;
         }
+
         #misPublicacionesList .publicacion-card .fecha {
-            font-size: .72rem !important;
-            color: var(--text-muted, #8aa8b8) !important;
-            margin-top: 2px !important;
+            font-size: .73rem !important;
+            color: var(--text-muted, #8b929e) !important;
+            margin-top: 4px !important;
         }
 
         .pub-autor-enlace {
@@ -376,210 +451,190 @@ document.addEventListener('keydown', function (e) {
             cursor: pointer;
             -webkit-tap-highlight-color: transparent;
         }
+
         .pub-autor-enlace:hover .pub-autor-nombre,
         .pub-autor-enlace:focus-visible .pub-autor-nombre {
             text-decoration: underline;
         }
+
         .pub-autor-enlace:focus-visible {
             outline: 2px solid #3b82f6;
-            outline-offset: 2px;
-            border-radius: 4px;
+            outline-offset: 3px;
+            border-radius: 5px;
         }
+
         .pub-autor-handle {
             color: #3b82f6 !important;
             font-weight: 500 !important;
-            font-size: .75rem !important;
-        }
-        .pub-autor-avatar-enlace {
-            display: block;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            flex: 0 0 40px;
-            cursor: pointer;
+            font-size: .76rem !important;
         }
 
-        .publicacion-card .contenido {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            color: var(--text-secondary, #c0d8e8);
-            font-size: .95rem;
-            line-height: 1.5;
-            overflow-wrap: anywhere;
+        /* ========================================================
+           TEXTO DE LAS PUBLICACIONES
+        ======================================================== */
+
+        #misPublicacionesList .publicacion-card .contenido {
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 11px !important;
+            width: 100% !important;
+            min-width: 0 !important;
             margin: 0 !important;
+            padding: 0 !important;
+
+            color: var(--text-secondary, #d0d5dc) !important;
+            font-size: .94rem !important;
+            line-height: 1.6 !important;
+            overflow-wrap: anywhere !important;
+            word-break: break-word !important;
         }
 
-        .pub-media-wrap {
-            position: relative;
-            margin-top: 6px;
+        /* ========================================================
+           IMÁGENES Y VIDEOS
+        ======================================================== */
+
+        #misPublicacionesList .pub-media-wrap {
+            position: relative !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 7px 0 2px !important;
+            overflow: hidden !important;
+            border-radius: 14px !important;
+            background: #08090b !important;
+            isolation: isolate;
         }
-        .pub-media-wrap img,
-        .pub-media-wrap video {
-            display: block;
-            width: 100%;
-            max-width: 100%;
-            height: auto;
-            max-height: 620px;
-            object-fit: contain;
-            background: #000;
+
+        #misPublicacionesList .pub-media-wrap img,
+        #misPublicacionesList .pub-media-wrap video {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            max-height: 620px !important;
+            min-height: 0 !important;
+            object-fit: contain !important;
+            object-position: center !important;
+            background: #08090b !important;
             border: 0 !important;
-            border-radius: 0 !important;
+            border-radius: 14px !important;
             margin: 0 !important;
             cursor: pointer;
         }
-        .pub-expand {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
-            border: 0;
-            background: rgba(0,0,0,.6);
-            color: #fff;
-            font-size: 16px;
-            line-height: 1;
-            cursor: pointer;
-            z-index: 2;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+
+        #misPublicacionesList .pub-media-wrap video {
+            cursor: default;
         }
 
-        .pub-vf {
-            position: fixed;
-            inset: 0;
-            z-index: 100060;
-            background: rgba(0,0,0,.96);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            touch-action: manipulation;
-        }
-        .pub-vf.show { display: flex; }
-        .pub-vf-media {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 56px 12px 84px;
-            box-sizing: border-box;
-        }
-        .pub-vf-media img,
-        .pub-vf-media video {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-            border-radius: 8px;
-            user-select: none;
-        }
-        .pub-vf-cerrar {
-            position: absolute;
-            top: calc(12px + env(safe-area-inset-top, 0px));
-            right: 12px;
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            border: 0;
-            background: rgba(255,255,255,.14);
-            color: #fff;
-            font-size: 26px;
-            line-height: 1;
-            cursor: pointer;
+        .pub-expand {
+            position: absolute !important;
+            top: 11px !important;
+            right: 11px !important;
+            width: 36px !important;
+            height: 36px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            border-radius: 50% !important;
+            border: 1px solid rgba(255,255,255,.2) !important;
+            background: rgba(0,0,0,.65) !important;
+            color: #fff !important;
+            font-size: 19px !important;
+            cursor: pointer !important;
             z-index: 2;
+            backdrop-filter: blur(8px);
         }
-        .pub-vf-nav {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 42px;
-            height: 42px;
-            border-radius: 50%;
-            border: 0;
-            background: rgba(255,255,255,.14);
-            color: #fff;
-            font-size: 28px;
-            line-height: 1;
-            cursor: pointer;
-            z-index: 2;
+
+        .pub-expand:hover {
+            background: rgba(0,0,0,.85) !important;
         }
-        .pub-vf-prev { left: 10px; }
-        .pub-vf-next { right: 10px; }
-        .pub-vf-descargar {
-            position: absolute;
-            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 10px 22px;
-            border-radius: 24px;
-            border: 1px solid #ff7a1a;
-            background: rgba(20,20,20,.9);
-            color: #ff7a1a;
-            font-weight: 700;
-            font-size: .85rem;
-            cursor: pointer;
-            z-index: 2;
-        }
+
+        /* ========================================================
+           AVISO DE MODERACIÓN
+        ======================================================== */
 
         .perfil-aviso-moderacion {
             display: flex;
             align-items: center;
-            gap: 8px;
-            padding: 6px 0;
-            margin: 4px 0;
-            background: transparent;
-            border: 0;
+            gap: 9px;
+            padding: 9px 11px;
+            margin: 5px 0 10px;
+            background: rgba(247,212,74,.07);
+            border: 1px solid rgba(247,212,74,.16);
+            border-radius: 10px;
             color: #f7d44a;
-            font-size: .72rem;
+            font-size: .76rem;
         }
-        .perfil-aviso-moderacion-icono { font-size: .95rem; flex: 0 0 auto; }
 
-        .reaccion-wrap {
+        .perfil-aviso-moderacion-icono {
+            font-size: 1rem;
+            flex: 0 0 auto;
+        }
+
+        /* ========================================================
+           REACCIONES
+        ======================================================== */
+
+        #misPublicacionesList .reaccion-wrap {
             position: relative;
-            display: inline-block;
-            margin: 8px 0 0 0;
+            display: inline-flex;
+            margin: 0;
             padding: 0;
         }
-        .reaccion-trigger {
+
+        #misPublicacionesList .reaccion-trigger {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
-            padding: 6px 8px;
-            border: 0;
-            border-radius: 6px;
+            gap: 7px;
+            min-height: 38px;
+            padding: 7px 11px;
+            border: 1px solid transparent;
+            border-radius: 10px;
             background: transparent;
-            color: var(--text-muted, #8aa8b8);
-            font-size: .82rem;
+            color: var(--text-muted, #a0a8b3);
+            font-size: .84rem;
             font-weight: 600;
             cursor: pointer;
             user-select: none;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
-        .reaccion-trigger:hover { background: rgba(255,255,255,.05); }
-        .reaccion-trigger.activa { color: #3b82f6; }
-        .reaccion-trigger .emoji-actual { font-size: 1.05rem; line-height: 1; }
-        .reaccion-trigger .count { font-size: .78rem; font-weight: 500; }
+
+        #misPublicacionesList .reaccion-trigger:hover {
+            background: rgba(255,255,255,.07);
+        }
+
+        #misPublicacionesList .reaccion-trigger.activa {
+            color: #ff5575;
+        }
+
+        #misPublicacionesList .reaccion-trigger .emoji-actual {
+            font-size: 1.18rem;
+            line-height: 1;
+        }
+
+        #misPublicacionesList .reaccion-trigger .count {
+            font-size: .78rem;
+            font-weight: 600;
+        }
 
         .reaccion-dropdown {
             position: absolute;
             bottom: 100%;
             left: 0;
-            margin-bottom: 8px;
+            margin-bottom: 9px;
             display: flex;
             flex-direction: row;
             flex-wrap: wrap;
             align-items: center;
             gap: 4px;
-            max-width: min(280px, calc(100vw - 32px));
-            padding: 6px 10px;
-            background: #1c1f24;
-            border: 0;
-            border-radius: 24px;
-            box-shadow: 0 6px 18px rgba(0,0,0,.5);
+            width: max-content;
+            max-width: min(290px, calc(100vw - 32px));
+            padding: 7px 10px;
+            background: #202329;
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,.4);
             opacity: 0;
             visibility: hidden;
             pointer-events: none;
@@ -588,12 +643,14 @@ document.addEventListener('keydown', function (e) {
             transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
             z-index: 100;
         }
+
         .reaccion-dropdown.show {
             opacity: 1;
             visibility: visible;
             pointer-events: auto;
             transform: translateY(0) scale(1);
         }
+
         .reaccion-dropdown button {
             position: relative;
             display: flex;
@@ -605,14 +662,22 @@ document.addEventListener('keydown', function (e) {
             border: 0;
             border-radius: 50%;
             background: transparent;
-            font-size: 1.55rem;
+            font-size: 1.5rem;
             cursor: pointer;
             touch-action: manipulation;
             transition: transform .15s ease, background .15s ease;
         }
+
         .reaccion-dropdown button:hover,
-        .reaccion-dropdown button:focus-visible { transform: scale(1.15); background: rgba(255,255,255,.1); }
-        .reaccion-dropdown button.activa { background: rgba(59,130,246,.28); }
+        .reaccion-dropdown button:focus-visible {
+            transform: scale(1.15);
+            background: rgba(255,255,255,.1);
+        }
+
+        .reaccion-dropdown button.activa {
+            background: rgba(59,130,246,.28);
+        }
+
         .reaccion-dropdown .mini-count {
             position: absolute;
             bottom: -3px;
@@ -626,107 +691,531 @@ document.addEventListener('keydown', function (e) {
             line-height: 1.2;
         }
 
-        .publicacion-card .stats {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin: 2px 0 0 0 !important;
-            padding: 6px 0 0 0 !important;
-            border-top: 1px solid rgba(255,255,255,.09);
-            flex-wrap: wrap;
+        /* ========================================================
+           BARRA DE ACCIONES
+        ======================================================== */
+
+        #misPublicacionesList .publicacion-card .stats {
+            display: flex !important;
+            align-items: center !important;
+            flex-wrap: wrap !important;
+            gap: 5px !important;
+            width: 100% !important;
+            margin: 13px 0 0 !important;
+            padding: 10px 0 0 !important;
+            border-top: 1px solid rgba(255,255,255,.09) !important;
         }
-        .btn-accion-pub {
+
+        #misPublicacionesList .btn-accion-pub {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 36px !important;
+            padding: 7px 11px !important;
             background: transparent !important;
             border: 0 !important;
-            border-radius: 6px !important;
-            padding: 6px 10px !important;
-            color: var(--text-muted, #8aa8b8) !important;
-            font-size: .82rem !important;
+            border-radius: 9px !important;
+            color: var(--text-muted, #a0a8b3) !important;
+            font-size: .81rem !important;
             font-weight: 600 !important;
             box-shadow: none !important;
+            cursor: pointer !important;
+            transition: background .18s ease, color .18s ease;
         }
-        .btn-accion-pub:hover { background: rgba(255,255,255,.05) !important; color: var(--text-primary, #f0f4f8) !important; }
-        .btn-accion-pub.danger { color: var(--danger, #ff3366) !important; }
-        .btn-accion-pub.danger:hover { background: rgba(255,51,102,.08) !important; }
 
-        .comentarios-container {
+        #misPublicacionesList .btn-accion-pub:hover {
+            background: rgba(255,255,255,.07) !important;
+            color: var(--text-primary, #fff) !important;
+        }
+
+        #misPublicacionesList .btn-accion-pub.danger {
+            color: #ff5575 !important;
+        }
+
+        #misPublicacionesList .btn-accion-pub.danger:hover {
+            background: rgba(255,85,117,.1) !important;
+        }
+
+        /* ========================================================
+           COMENTARIOS
+        ======================================================== */
+
+        #misPublicacionesList .comentarios-container {
             display: none;
-            margin-top: 8px;
-            padding-top: 8px;
+            width: 100%;
+            margin-top: 12px;
+            padding-top: 12px;
             border-top: 1px solid rgba(255,255,255,.09);
         }
-        .comentarios-container.show { display: block; }
-        .comentario-item { border-bottom: 0; padding: 6px 0; }
-        .comentario-input-row input {
-            background: transparent !important;
-            border: 0 !important;
-            border-bottom: 1px solid rgba(255,255,255,.12) !important;
-            border-radius: 0 !important;
-            padding: 6px 2px !important;
+
+        #misPublicacionesList .comentarios-container.show {
+            display: block;
         }
-        .comentario-input-row button {
+
+        #misPublicacionesList .comentario-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 9px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,.05);
+        }
+
+        #misPublicacionesList .comentario-item .avatar-mini {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            overflow: hidden;
+            border-radius: 50%;
+        }
+
+        #misPublicacionesList .comentario-item .avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+        }
+
+        #misPublicacionesList .contenido-comentario {
+            flex: 1;
+            min-width: 0;
+            overflow-wrap: anywhere;
+        }
+
+        #misPublicacionesList .contenido-comentario .nombre {
+            font-size: .82rem !important;
+            font-weight: 700 !important;
+        }
+
+        #misPublicacionesList .contenido-comentario .texto {
+            margin-top: 4px;
+            font-size: .85rem;
+            line-height: 1.5;
+            color: var(--text-secondary, #d0d5dc);
+        }
+
+        #misPublicacionesList .contenido-comentario .fecha {
+            font-size: .68rem !important;
+            margin-top: 5px !important;
+        }
+
+        #misPublicacionesList .comentario-input-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            width: 100%;
+            margin-top: 12px;
+        }
+
+        #misPublicacionesList .comentario-input-row input {
+            flex: 1;
+            min-width: 0;
+            height: 42px;
+            padding: 0 12px !important;
+            background: rgba(255,255,255,.04) !important;
+            border: 1px solid rgba(255,255,255,.1) !important;
+            border-radius: 12px !important;
+            color: var(--text-primary, #fff) !important;
+            outline: none;
+        }
+
+        #misPublicacionesList .comentario-input-row input:focus {
+            border-color: #3b82f6 !important;
+        }
+
+        #misPublicacionesList .comentario-input-row button {
+            min-height: 40px;
+            padding: 0 13px;
             background: transparent !important;
             color: var(--gold, #D4AF37) !important;
             border: 0 !important;
             font-weight: 700 !important;
+            cursor: pointer;
         }
-        .comentario-eliminar {
+
+        #misPublicacionesList .comentario-eliminar {
             display: inline-block;
-            margin-top: 2px;
-            padding: 2px 0;
+            margin-top: 5px;
+            padding: 3px 0;
             border: 0;
             background: transparent;
-            color: var(--danger, #ff3366);
+            color: #ff5575;
             font-size: .7rem;
             font-weight: 700;
             cursor: pointer;
         }
 
-        .preview-item { position: relative; }
-        .preview-item img, .preview-item video {
+        /* ========================================================
+           CREADOR DE PUBLICACIONES
+           Se conservan los identificadores originales.
+        ======================================================== */
+
+        #inputNuevaPublicacion {
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 0 !important;
+            min-height: 105px !important;
+            padding: 15px !important;
+            box-sizing: border-box !important;
+
+            background: var(--card-bg, #17191d) !important;
+            color: var(--text-primary, #f0f4f8) !important;
+
+            border: 1px solid rgba(255,255,255,.12) !important;
+            border-radius: 15px !important;
+            outline: none !important;
+
+            font-size: .95rem !important;
+            line-height: 1.55 !important;
+            resize: vertical !important;
+            transition: border-color .2s ease, box-shadow .2s ease;
+        }
+
+        #inputNuevaPublicacion::placeholder {
+            color: var(--text-muted, #9299a5) !important;
+        }
+
+        #inputNuevaPublicacion:focus {
+            border-color: #3b82f6 !important;
+            box-shadow: 0 0 0 3px rgba(59,130,246,.1) !important;
+        }
+
+        #btnPublicarPerfil {
+            display: inline-flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            min-height: 43px !important;
+            min-width: 115px !important;
+            padding: 10px 23px !important;
+
+            background: linear-gradient(135deg, #ff9a35, #ff6b35) !important;
+            color: #fff !important;
+
+            border: 0 !important;
+            border-radius: 12px !important;
+            box-shadow: 0 4px 12px rgba(255,122,26,.2) !important;
+
+            font-size: .9rem !important;
+            font-weight: 700 !important;
+            letter-spacing: .1px !important;
+
+            cursor: pointer !important;
+            transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
+        }
+
+        #btnPublicarPerfil:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 17px rgba(255,122,26,.3) !important;
+        }
+
+        #btnPublicarPerfil:active:not(:disabled) {
+            transform: scale(.97);
+        }
+
+        #btnPublicarPerfil:disabled {
+            opacity: .6 !important;
+            cursor: not-allowed !important;
+        }
+
+        /* Vista previa del creador */
+
+        #previewArchivosPerfil {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            margin-top: 12px;
+        }
+
+        #previewArchivosPerfil .preview-item {
+            position: relative;
+            width: 100%;
+            margin-bottom: 10px;
+            overflow: hidden;
+            border-radius: 14px;
+            background: #08090b;
+        }
+
+        #previewArchivosPerfil .preview-item img,
+        #previewArchivosPerfil .preview-item video {
             display: block;
             width: 100%;
-            max-height: 280px;
+            max-width: 100%;
+            max-height: 350px;
             object-fit: contain;
-            border-radius: 8px;
+            border-radius: 14px;
         }
-        .preview-download-control {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 8px;
-            font-size: .8rem;
-            color: var(--text-muted, #8aa8b8);
-        }
-        .preview-download-control input { width: 16px; height: 16px; accent-color: #3b82f6; }
-        .preview-download-control label { cursor: pointer; }
 
-        .avatar-placeholder {
+        #previewArchivosPerfil .preview-item .remove-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 35px;
+            height: 35px;
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 100%;
-            height: 100%;
+            border: 0;
             border-radius: 50%;
-            background: #3b82f6;
+            background: rgba(0,0,0,.75);
             color: #fff;
-            font-weight: 600;
-            overflow: hidden;
+            font-size: 22px;
+            cursor: pointer;
         }
 
-        #misPublicacionesList .publicacion-card button:focus-visible,
-        .comentarios-container input:focus-visible {
+        #previewArchivosPerfil .preview-download-control {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 10px;
+            background: rgba(255,255,255,.04);
+            color: var(--text-muted, #a0a8b3);
+            font-size: .79rem;
+        }
+
+        #previewArchivosPerfil .preview-download-control input {
+            width: 17px;
+            height: 17px;
+            accent-color: #ff842b;
+        }
+
+        /* ========================================================
+           VISOR DE PANTALLA COMPLETA
+        ======================================================== */
+
+        .pub-vf {
+            position: fixed;
+            inset: 0;
+            z-index: 100060;
+            background: rgba(0,0,0,.97);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            touch-action: manipulation;
+        }
+
+        .pub-vf.show {
+            display: flex;
+        }
+
+        .pub-vf-media {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 56px 12px 84px;
+            box-sizing: border-box;
+        }
+
+        .pub-vf-media img,
+        .pub-vf-media video {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 10px;
+            user-select: none;
+        }
+
+        .pub-vf-cerrar {
+            position: absolute;
+            top: calc(12px + env(safe-area-inset-top, 0px));
+            right: 12px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 0;
+            background: rgba(255,255,255,.14);
+            color: #fff;
+            font-size: 26px;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .pub-vf-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 0;
+            background: rgba(255,255,255,.14);
+            color: #fff;
+            font-size: 28px;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        .pub-vf-prev {
+            left: 10px;
+        }
+
+        .pub-vf-next {
+            right: 10px;
+        }
+
+        .pub-vf-descargar {
+            position: absolute;
+            bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 11px 23px;
+            border-radius: 25px;
+            border: 1px solid #ff842b;
+            background: rgba(20,20,20,.95);
+            color: #ff842b;
+            font-weight: 700;
+            font-size: .85rem;
+            cursor: pointer;
+            z-index: 2;
+        }
+
+        /* ========================================================
+           ESTADOS VACÍOS
+        ======================================================== */
+
+        #misPublicacionesList .empty-state {
+            width: 100%;
+            max-width: 100%;
+            padding: 35px 18px;
+            margin: 12px auto;
+            text-align: center;
+            background: var(--card-bg, #17191d);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 17px;
+            color: var(--text-primary, #fff);
+        }
+
+        #misPublicacionesList .empty-state h4 {
+            margin: 0 0 8px;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        #misPublicacionesList .empty-state p {
+            margin: 0;
+            color: var(--text-muted, #9299a5);
+            font-size: .85rem;
+        }
+
+        /* ========================================================
+           ACCESIBILIDAD
+        ======================================================== */
+
+        #misPublicacionesList button:focus-visible,
+        #btnPublicarPerfil:focus-visible,
+        #inputNuevaPublicacion:focus-visible {
             outline: 2px solid #3b82f6;
-            outline-offset: 2px;
+            outline-offset: 3px;
+        }
+
+        /* ========================================================
+           RESPONSIVE · TABLETS Y ESCRITORIO
+        ======================================================== */
+
+        @media (min-width: 768px) {
+            #misPublicacionesList {
+                max-width: 650px !important;
+                padding: 16px !important;
+            }
+
+            #misPublicacionesList .publicacion-card {
+                padding: 19px !important;
+                margin-bottom: 22px !important;
+            }
+        }
+
+        /* ========================================================
+           RESPONSIVE · MÓVILES
+        ======================================================== */
+
+        @media (max-width: 600px) {
+
+            #misPublicacionesList {
+                width: 100% !important;
+                max-width: 650px !important;
+                padding: 8px 10px 24px !important;
+                margin: 0 auto !important;
+            }
+
+            #misPublicacionesList .publicacion-card {
+                width: 100% !important;
+                padding: 13px !important;
+                margin-bottom: 14px !important;
+                border-radius: 15px !important;
+            }
+
+            #misPublicacionesList .publicacion-card .header {
+                gap: 9px !important;
+                margin-bottom: 11px !important;
+            }
+
+            #misPublicacionesList .publicacion-card .header > .avatar,
+            #misPublicacionesList .pub-autor-avatar-enlace {
+                width: 40px !important;
+                height: 40px !important;
+                min-width: 40px !important;
+                flex-basis: 40px !important;
+            }
+
+            #misPublicacionesList .publicacion-card .contenido {
+                font-size: .9rem !important;
+            }
+
+            #misPublicacionesList .pub-media-wrap,
+            #misPublicacionesList .pub-media-wrap img,
+            #misPublicacionesList .pub-media-wrap video {
+                border-radius: 11px !important;
+            }
+
+            #misPublicacionesList .publicacion-card .stats {
+                gap: 2px !important;
+            }
+
+            #misPublicacionesList .btn-accion-pub {
+                padding: 7px 8px !important;
+                font-size: .76rem !important;
+            }
+
+            #inputNuevaPublicacion {
+                min-height: 95px !important;
+                font-size: .9rem !important;
+            }
+
+            #btnPublicarPerfil {
+                min-height: 41px !important;
+                padding: 9px 18px !important;
+            }
+        }
+
+        @media (max-width: 360px) {
+            #misPublicacionesList {
+                padding-left: 7px !important;
+                padding-right: 7px !important;
+            }
+
+            #misPublicacionesList .publicacion-card {
+                padding: 11px !important;
+            }
+
+            #misPublicacionesList .btn-accion-pub {
+                font-size: .72rem !important;
+                padding: 6px !important;
+            }
         }
 
         @media (prefers-reduced-motion: reduce) {
             .reaccion-dropdown,
             .reaccion-dropdown button,
-            .reaccion-trigger {
+            .reaccion-trigger,
+            #btnPublicarPerfil,
+            #misPublicacionesList .publicacion-card {
                 transition: none !important;
             }
         }
+
     `));
 
     document.head.appendChild(style);
@@ -738,6 +1227,7 @@ document.addEventListener('keydown', function (e) {
 
 function esErrorModeracionPerfil(error) {
     var msg = '';
+
     if (error) {
         msg = String(error.message || '') + ' ' + String(error.code || '');
     }
@@ -1214,7 +1704,7 @@ async function publicarDesdePerfil() {
 }
 
 // ================================================================
-// REPRODUCCIÓN DE VIDEO (autoplay al entrar en pantalla)
+// REPRODUCCIÓN DE VIDEO
 // ================================================================
 
 var videoObserverPerfil = null;
@@ -1311,6 +1801,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
         var reaccionesUsuario = {};
         var conteosReacciones = {};
+
         var idsPublicaciones = publicaciones.map(function (p) {
             return p.id;
         }).filter(function (id) {
@@ -1360,17 +1851,17 @@ async function cargarMisPublicaciones(forzarRefresco) {
             var header = document.createElement('div');
             header.className = 'header';
 
-            // Avatar: enlaza al perfil del autor
             var avatarBox = document.createElement(urlAutor ? 'a' : 'div');
             avatarBox.className = 'avatar' + (urlAutor ? ' pub-autor-avatar-enlace' : '');
+
             if (urlAutor) {
                 avatarBox.href = urlAutor;
                 avatarBox.setAttribute('aria-label', 'Ver perfil de ' + (p.usuario_nombre || 'Explorador'));
             }
+
             avatarBox.appendChild(pubCrearAvatar(p.usuario_nombre, p.usuario_avatar_url));
             header.appendChild(avatarBox);
 
-            // Nombre y @handle: enlazan al perfil del autor
             var headerMeta = document.createElement('div');
 
             var handleHtml = handleSeguro
@@ -1479,7 +1970,10 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             card.appendChild(contenido);
 
+            // ====================================================
             // REACCIONES
+            // ====================================================
+
             var reaccionUsuario = reaccionesUsuario[p.id] || null;
             var conteos = conteosReacciones[p.id] || {};
             var totalReacciones = 0;
@@ -1610,7 +2104,10 @@ async function cargarMisPublicaciones(forzarRefresco) {
             wrap.appendChild(dropdown);
             wrap.appendChild(trigger);
 
+            // ====================================================
             // ACCIONES
+            // ====================================================
+
             var stats = document.createElement('div');
             stats.className = 'stats';
             stats.setAttribute('data-no-traducir', '1');
@@ -1643,7 +2140,10 @@ async function cargarMisPublicaciones(forzarRefresco) {
             stats.appendChild(btnEliminar);
             card.appendChild(stats);
 
+            // ====================================================
             // COMENTARIOS
+            // ====================================================
+
             var comentariosContainer = document.createElement('div');
             comentariosContainer.className = 'comentarios-container';
             comentariosContainer.id = 'comentarios-container-' + p.id;
@@ -1717,6 +2217,7 @@ function toggleReaccionDropdown(postId, forzarApertura) {
         el.classList.remove('show');
 
         var wrap = el.closest('.reaccion-wrap');
+
         if (wrap) {
             var trigger = wrap.querySelector('.reaccion-trigger');
             if (trigger) trigger.setAttribute('aria-expanded', 'false');
@@ -1740,6 +2241,7 @@ document.addEventListener('click', function (e) {
             el.classList.remove('show');
 
             var wrap = el.closest('.reaccion-wrap');
+
             if (wrap) {
                 var trigger = wrap.querySelector('.reaccion-trigger');
                 if (trigger) trigger.setAttribute('aria-expanded', 'false');
@@ -1863,6 +2365,7 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
             html: trigger.innerHTML,
             activa: trigger.classList.contains('activa')
         };
+
         trigger.disabled = true;
     }
 
@@ -2184,7 +2687,9 @@ async function liberarArchivoPublicacion(mediaUrl) {
 
     try {
         var client = window.supabaseClient;
+
         var sessionResult = await client.auth.getSession();
+
         var token = sessionResult.data && sessionResult.data.session
             ? sessionResult.data.session.access_token
             : null;
@@ -2284,3 +2789,7 @@ window.enviarComentarioPerfil = enviarComentarioPerfil;
 window.pubUrlPerfilAutor = pubUrlPerfilAutor;
 window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
+
+// ================================================================
+// FIN · PERFIL PUBLICACIONES v5.9 INSTAGRAM EXPERIENCE
+// ================================================================
