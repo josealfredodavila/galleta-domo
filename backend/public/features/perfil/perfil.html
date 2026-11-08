@@ -205,6 +205,56 @@
 
     #perfilAvatar:focus-visible { outline: 2px solid var(--gold, #D4AF37); outline-offset: 3px; }
 </style>
+
+<!-- ================================================================
+     @HANDLE WEB3 · MENCIONES EN PUBLICACIONES (v1)
+     Píldora azul con borde luminoso, destello ⚡ y halo que pulsa.
+     Va después de perfil-publicaciones.js y con mayor especificidad
+     para sobrescribir sus estilos inyectados.
+     ================================================================ -->
+<style>
+    #misPublicacionesList .pub-autor-handle {
+        display: inline-flex !important;
+        align-items: center;
+        gap: 4px;
+        margin-left: 4px;
+        padding: 1px 8px 1px 6px;
+        border-radius: 999px;
+        color: #5cc8ff !important;
+        font-weight: 600 !important;
+        font-size: .74rem !important;
+        line-height: 1.5;
+        background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16)) !important;
+        border: 1px solid rgba(0, 229, 255, .35) !important;
+        text-shadow: 0 0 8px rgba(0, 229, 255, .55);
+        animation: handleWeb3Halo 2.4s ease-in-out infinite;
+        white-space: nowrap;
+    }
+    #misPublicacionesList .pub-autor-handle::before {
+        content: '⚡';
+        font-size: .68rem;
+        line-height: 1;
+        filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
+        animation: handleWeb3Destello 1.8s steps(2, end) infinite;
+    }
+    #misPublicacionesList .pub-autor-enlace:hover .pub-autor-handle,
+    #misPublicacionesList .pub-autor-enlace:focus-visible .pub-autor-handle {
+        border-color: rgba(0, 229, 255, .75) !important;
+        color: #b8f0ff !important;
+    }
+    @keyframes handleWeb3Halo {
+        0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
+        50%      { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
+    }
+    @keyframes handleWeb3Destello {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: .35; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        #misPublicacionesList .pub-autor-handle,
+        #misPublicacionesList .pub-autor-handle::before { animation: none !important; }
+    }
+</style>
 </head>
 <body>
 
@@ -356,7 +406,7 @@
         </div>
     </div>
 
-    <!-- PASAPORTE DIGITAL DEL DOMO (se llena dinámicamente) -->
+    <!-- PASAPORTE DIGITAL DEL DOMO (se llena dinámicamente por pasaporte-domo.js) -->
     <section id="pasaporteDomo" aria-live="polite"></section>
 
     <div class="repartidor-section" id="repartidorSection" style="display:none;">
