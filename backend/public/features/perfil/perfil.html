@@ -894,6 +894,9 @@
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 
+<!-- WALLET: lógica compartida de conexión (SarWallet). Debe cargar antes de perfil-wallet.js e integración -->
+<script src="/features/perfil/shared/js/wallet-connect.js?v=20261107-1"></script>
+
 <!-- Scripts del módulo perfil (en orden de dependencia) -->
 <script src="/features/perfil/js/perfil-config.js?v=8"></script>
 <script src="/features/perfil/js/perfil-utils.js?v=8"></script>
@@ -919,15 +922,21 @@
 
 <script>
 /* ================================================================
-   WALLET · INTEGRACIÓN CON EL PERFIL (v4)
-   Este script solo PINTA la sección. Las acciones (conectar,
-   desconectar, cambiar de red) viven en perfil-wallet.js.
+   WALLET · INTEGRACIÓN CON EL PERFIL (v5)
+   - Pinta la sección de wallet leyendo la tabla usuarios.
+   - Conectar: usa SarWallet (wallet-connect.js), pide nonce, firma
+     con el proveedor activo y vincula en /api/wallet/link.
+     Es el mismo flujo que ya funciona en wallet.html.
+   - Desconectar: usa window.desconectarWallet de perfil-wallet.js si
+     existe; si no, hace la misma operación aquí.
    ================================================================ */
 (function () {
     'use strict';
 
     var refrescando = false;
     var pendiente = false;
+    var conectando = false;
+    var SUPABASE_TIMEOUT_MS = 10000;
 
     function $w(id) { return document.getElementById(id); }
 
@@ -938,6 +947,19 @@
 
     function esperar(ms) {
         return new Promise(function (r) { setTimeout(r, ms); });
+    }
+
+    function conTimeout(promise, ms, mensaje) {
+        var id;
+        var t = new Promise(function (_, rej) {
+            id = setTimeout(function () { rej(new Error(mensaje)); }, ms);
+        });
+        return Promise.race([Promise.resolve(promise), t]).finally(function () { clearTimeout(id); });
+    }
+
+    function avisar(texto, tipo) {
+        if (typeof window.showToast === 'function') window.showToast(texto, tipo || 'success');
+        else alert(texto);
     }
 
     async function esperarCliente() {
@@ -957,6 +979,29 @@
             await esperar(150);
         }
         return null;
+    }
+
+    async function obtenerToken(client) {
+        var r = await conTimeout(client.auth.getSession(), SUPABASE_TIMEOUT_MS, 'SUPABASE_SESSION_TIMEOUT');
+        var s = r && r.data && r.data.session;
+        if (!s || !s.access_token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+        return s.access_token;
+    }
+
+    async function esperarSarWallet() {
+        for (var i = 0; i < 100; i++) {
+            if (window.SarWallet && typeof window.SarWallet.seleccionarConexion === 'function') return true;
+            await esperar(50);
+        }
+        return false;
+    }
+
+    function normalizarChainId(c) {
+        if (typeof c === 'string' && (c.indexOf('0x') === 0 || c.indexOf('0X') === 0)) {
+            return parseInt(c, 16);
+        }
+        var n = Number(c);
+        return Number.isFinite(n) && n > 0 ? n : 80002;
     }
 
     function pintarWallet(data) {
@@ -995,8 +1040,8 @@
             : 'Oculta: solo tú puedes ver tu dirección.';
 
         $w('walletHint').textContent = conectada
-            ? 'Vinculada en Polygon (' + acortar(data.wallet_address) + ').'
-            : 'Necesitas MetaMask para vincular tu wallet.';
+            ? 'Vinculada en Polygon Amoy (' + acortar(data.wallet_address) + ').'
+            : 'Conecta MetaMask, WalletConnect u otra wallet compatible.';
     }
 
     function mostrarErrorWallet(texto) {
@@ -1055,7 +1100,7 @@
             var estado = $w('walletEstado');
             if (!sec || !estado) return;
 
-            var oculta = sec.style.display === 'none' || sec.offsetParent === null && sec.getClientRects().length === 0;
+            var oculta = sec.style.display === 'none' || (sec.offsetParent === null && sec.getClientRects().length === 0);
             var atascada = estado.textContent.trim() === 'Cargando…';
 
             if (oculta || atascada) refrescarWallet();
@@ -1078,28 +1123,151 @@
                 document.execCommand('copy');
                 area.remove();
             }
-            if (typeof window.showToast === 'function') {
-                window.showToast('✅ Dirección copiada', 'success');
-            }
+            avisar('✅ Dirección copiada', 'success');
         } catch (e) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('❌ No se pudo copiar la dirección', 'error');
-            }
+            avisar('❌ No se pudo copiar la dirección', 'error');
         }
     };
 
+    /* ----------------------------------------------------------------
+       CONECTAR: el mismo flujo que wallet.html
+       1) elegir wallet (SarWallet.seleccionarConexion)
+       2) pedir nonce al backend
+       3) firmar el mensaje con el proveedor activo
+       4) vincular en /api/wallet/link
+       ---------------------------------------------------------------- */
+    async function vincularWallet(address, chainId) {
+        var client = await esperarCliente();
+        if (!client) throw new Error('No se pudo conectar con la base de datos. Recarga la página.');
+
+        var token = await obtenerToken(client);
+
+        var nonceResp = await conTimeout(
+            fetch('/api/wallet/nonce', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+            }),
+            SUPABASE_TIMEOUT_MS,
+            'WALLET_NONCE_TIMEOUT'
+        );
+        var nonceJson = await nonceResp.json().catch(function () { return {}; });
+        if (!nonceResp.ok || !nonceJson.nonce) {
+            throw new Error(nonceJson.error || 'No se pudo iniciar la vinculación. Intenta de nuevo.');
+        }
+        var nonce = nonceJson.nonce;
+
+        var mensaje = "Csariel's: vincular wallet\n" +
+                      "Nonce: " + nonce + "\n" +
+                      "Dirección: " + address;
+
+        var firma;
+        try {
+            firma = await window.SarWallet.firmarMensaje(mensaje, address);
+        } catch (e) {
+            if (e && e.message === 'USER_CANCELLED') throw e;
+            throw new Error('No se pudo firmar el mensaje. Vuelve a intentarlo.');
+        }
+
+        var linkResp = await conTimeout(
+            fetch('/api/wallet/link', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    address: address,
+                    nonce: nonce,
+                    signature: firma,
+                    chain_id: String(normalizarChainId(chainId)),
+                    network_name: 'polygon-amoy'
+                })
+            }),
+            SUPABASE_TIMEOUT_MS,
+            'WALLET_LINK_TIMEOUT'
+        );
+        var linkJson = await linkResp.json().catch(function () { return {}; });
+
+        if (!linkResp.ok || !linkJson.success) {
+            if (linkResp.status === 409) throw new Error('Esta wallet ya está vinculada a otra cuenta.');
+            if (linkResp.status === 401) throw new Error('Firma inválida. Vuelve a intentarlo.');
+            throw new Error(linkJson.error || 'No se pudo vincular la wallet.');
+        }
+    }
+
     window.conectarWalletPerfil = async function () {
-        if (typeof window.conectarWallet !== 'function') return;
-        await window.conectarWallet();
-        await refrescarWallet();
-        setTimeout(refrescarWallet, 1500);
+        if (conectando) return;
+        conectando = true;
+
+        var btn = $w('btnConectarWallet');
+        if (btn) { btn.disabled = true; btn.textContent = 'Abriendo wallet…'; }
+
+        try {
+            var listo = await esperarSarWallet();
+            if (!listo) throw new Error('El módulo de wallets no cargó. Recarga la página.');
+
+            var result = await window.SarWallet.seleccionarConexion();
+
+            // Rainbow en móvil abre su propia app; no hay dirección que vincular aquí.
+            if (result && result.openedApp) return;
+
+            if (!result || !result.address) throw new Error('La wallet no devolvió una dirección.');
+
+            await vincularWallet(result.address, result.chainId);
+
+            avisar('✅ Wallet conectada correctamente', 'success');
+            await refrescarWallet();
+            setTimeout(refrescarWallet, 1500);
+        } catch (e) {
+            if (e && e.message === 'USER_CANCELLED') return;
+            console.error('[Perfil] Error conectando wallet:', e);
+            avisar('⚠️ ' + ((e && e.message) || 'No se pudo conectar la wallet.'), 'error');
+        } finally {
+            conectando = false;
+            if (btn) { btn.disabled = false; btn.textContent = 'Conectar wallet'; }
+        }
     };
 
+    /* ----------------------------------------------------------------
+       DESCONECTAR: usa perfil-wallet.js si está disponible.
+       Respaldo: cierra la sesión local y desvincula en el servidor.
+       ---------------------------------------------------------------- */
+    async function desconectarRespaldo() {
+        try {
+            if (window.SarWallet && typeof window.SarWallet.desconectar === 'function') {
+                await window.SarWallet.desconectar();
+            }
+        } catch (_) { /* la sesión local se limpia igual */ }
+
+        var client = await esperarCliente();
+        if (!client) throw new Error('No se pudo conectar con la base de datos.');
+        var token = await obtenerToken(client);
+
+        var resp = await conTimeout(
+            fetch('/api/wallet/unlink', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+            }),
+            SUPABASE_TIMEOUT_MS,
+            'WALLET_UNLINK_TIMEOUT'
+        );
+        var json = await resp.json().catch(function () { return {}; });
+        if (!resp.ok) throw new Error(json.error || 'No se pudo desvincular la wallet.');
+    }
+
     window.desconectarWalletPerfil = async function () {
-        if (typeof window.desconectarWallet !== 'function') return;
         var ok = window.confirm('¿Seguro que quieres desvincular tu wallet?');
         if (!ok) return;
-        await window.desconectarWallet();
+
+        try {
+            if (typeof window.desconectarWallet === 'function') {
+                await window.desconectarWallet();
+            } else {
+                await desconectarRespaldo();
+            }
+        } catch (e) {
+            console.error('[Perfil] Error desconectando wallet:', e);
+            avisar('❌ ' + ((e && e.message) || 'No se pudo desconectar la wallet.'), 'error');
+            return;
+        }
+
         await refrescarWallet();
         setTimeout(refrescarWallet, 1500);
     };
@@ -1108,9 +1276,7 @@
         var client = await esperarCliente();
         var user = client ? await obtenerUsuario(client) : null;
         if (!client || !user) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
-            }
+            avisar('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
             refrescarWallet();
             return;
         }
@@ -1121,9 +1287,7 @@
             .eq('id', user.id);
 
         if (r.error) {
-            if (typeof window.showToast === 'function') {
-                window.showToast('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
-            }
+            avisar('❌ No se pudo cambiar la visibilidad de tu wallet', 'error');
         }
         refrescarWallet();
     }
@@ -1146,6 +1310,7 @@
         }
 
         window.addEventListener('wallet:actualizada', refrescarWallet);
+        window.addEventListener('sar:wallet:disconnected', refrescarWallet);
         window.addEventListener('pageshow', function () { refrescarWallet(); });
         document.addEventListener('visibilitychange', function () {
             if (!document.hidden) refrescarWallet();
