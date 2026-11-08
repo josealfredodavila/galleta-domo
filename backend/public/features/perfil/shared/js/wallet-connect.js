@@ -1,8 +1,11 @@
 /* ================================================================
  * WALLET CONNECT - Sariel's Ecosystem
  * ================================================================
- * v3.1.0 - Eventos de desconexión con motivo explícito.
- *   - 'sar:wallet:disconnected' ahora incluye detail.motivo:
+ * v3.2.0 - Firma de mensajes con el proveedor activo.
+ *   - Nuevo SarWallet.firmarMensaje(mensaje, address): firma con el
+ *     proveedor inyectado o con WalletConnect, según cómo se conectó.
+ *     Ya no depende de window.ethereum (que no existe en Chrome Android).
+ *   - 'sar:wallet:disconnected' incluye detail.motivo:
  *       · 'usuario_desconecto_en_navegador'  → botón/llamada desconectar()
  *       · 'wallet_se_desconecto'             → la wallet cerró la sesión
  *   - Desconectar en el navegador NO desvincula la wallet de la base.
@@ -370,7 +373,7 @@
         if (EthereumProviderPromise) return EthereumProviderPromise;
 
         EthereumProviderPromise = (async function () {
-            console.log('[SarWallet] Cargando WalletConnect SDK (v3.1)...');
+            console.log('[SarWallet] Cargando WalletConnect SDK (v3.2)...');
 
             const urls = [
                 'https://esm.sh/@walletconnect/ethereum-provider@2.17.0',
@@ -686,6 +689,7 @@
             NO_ACCOUNTS_RETURNED: 'La wallet no devolvió ninguna cuenta.',
             INVALID_WALLET_ADDRESS: 'La wallet devolvió una dirección inválida.',
             INJECTED_NOT_AVAILABLE: 'No se encontró una wallet instalada en este navegador.',
+            WALLET_NOT_CONNECTED: 'La wallet no está conectada. Vuelve a intentarlo.',
             WRONG_NETWORK: 'La wallet debe estar conectada a Polygon Amoy.',
             USER_REJECTED: 'Cancelaste la solicitud desde la wallet.',
             USER_CANCELLED: 'Cancelaste la conexión.',
@@ -790,6 +794,34 @@
         return null;
     }
 
+    /* Firma un mensaje con el proveedor de la conexión activa.
+       Funciona en Chrome Android (WalletConnect) y en navegadores con wallet inyectada.
+       Lanza USER_CANCELLED si el usuario rechaza la firma. */
+    async function firmarMensaje(mensaje, address) {
+        const direccion = normalizarAddress(address);
+        if (!esAddressValida(direccion)) throw new Error('INVALID_WALLET_ADDRESS');
+
+        let provider = null;
+        if (currentProviderType === 'injected') provider = obtenerInjectedProvider();
+        else if (currentProviderType === 'walletconnect') provider = wcProvider;
+
+        if (!provider || typeof provider.request !== 'function') {
+            throw new Error('WALLET_NOT_CONNECTED');
+        }
+
+        try {
+            return await provider.request({
+                method: 'personal_sign',
+                params: [String(mensaje), direccion]
+            });
+        } catch (error) {
+            if (errorUsuarioCancelo(error)) {
+                const e = new Error('USER_CANCELLED'); e.cause = error; throw e;
+            }
+            throw error;
+        }
+    }
+
     function obtenerCuenta() { return currentAccount; }
     function obtenerTipoProvider() { return currentProviderType; }
 
@@ -812,6 +844,7 @@
         conectar,
         seleccionarConexion,
         desconectar,
+        firmarMensaje,
         obtenerProvider,
         obtenerCuenta,
         obtenerTipoProvider,
@@ -830,5 +863,5 @@
         redActual
     };
 
-    console.log('[SarWallet] cargado v3.1', '| red:', RED_ACTIVA, '| chainId:', CHAIN_ID_OBJETIVO, '| móvil:', esMovil(), '| injected:', tieneInjectedProvider());
+    console.log('[SarWallet] cargado v3.2', '| red:', RED_ACTIVA, '| chainId:', CHAIN_ID_OBJETIVO, '| móvil:', esMovil(), '| injected:', tieneInjectedProvider());
 })();
