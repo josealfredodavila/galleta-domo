@@ -29,6 +29,43 @@ html:not(.auth-ready) .app{display:none!important}
 .pp-mensaje .btn{margin-top:14px}
 
 /* =====================================
+   @HANDLE WEB3 · MISMO ESTILO QUE EN PUBLICACIONES
+===================================== */
+.perfil-header .handle{
+ display:inline-flex;
+ align-items:center;
+ gap:4px;
+ padding:2px 10px 2px 8px;
+ border-radius:999px;
+ color:#5cc8ff;
+ font-weight:600;
+ font-size:.8rem;
+ background:linear-gradient(135deg,rgba(0,229,255,.12),rgba(139,92,246,.16));
+ border:1px solid rgba(0,229,255,.35);
+ text-shadow:0 0 8px rgba(0,229,255,.55);
+ animation:ppHandleHalo 2.4s ease-in-out infinite;
+}
+.perfil-header .handle::before{
+ content:'⚡';
+ font-size:.7rem;
+ line-height:1;
+ filter:drop-shadow(0 0 4px rgba(0,229,255,.9));
+ animation:ppHandleDestello 1.8s steps(2,end) infinite;
+}
+@keyframes ppHandleHalo{
+ 0%,100%{box-shadow:0 0 6px rgba(0,229,255,.15)}
+ 50%{box-shadow:0 0 14px rgba(0,229,255,.45),0 0 22px rgba(139,92,246,.25)}
+}
+@keyframes ppHandleDestello{
+ 0%,100%{opacity:1}
+ 50%{opacity:.35}
+}
+@media (prefers-reduced-motion: reduce){
+ .perfil-header .handle,
+ .perfil-header .handle::before{animation:none!important}
+}
+
+/* =====================================
    CARRUSEL MI ECOSISTEMA · CSARIEL'S
 ===================================== */
 
@@ -416,7 +453,125 @@ html:not(.auth-ready) .app{display:none!important}
 </nav>
 
 <!-- =====================================
-     CARRUSEL INTERACTIVO DE MI ECOSISTEMA
+     PERFIL PÚBLICO (primero: lo importante es la persona)
+====================================== -->
+
+<div class="perfil-container">
+
+ <div id="pantallaCargando" class="panel">
+  <div class="panel-body">
+   <div class="empty-state">
+    <svg class="icon" viewBox="0 0 24 24">
+     <path d="M6 3h12l4 6-10 12L2 9l4-6z"/>
+     <path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/>
+    </svg>
+    <h4 data-clave="perfil_publico_cargando">Cargando perfil...</h4>
+   </div>
+  </div>
+ </div>
+
+ <div id="pantallaNoEncontrado" class="panel" hidden>
+  <div class="panel-body pp-mensaje">
+   <h4 data-clave="perfil_publico_no_encontrado">Perfil no encontrado</h4>
+   <p data-clave="perfil_publico_no_encontrado_desc">
+    No existe ningún usuario con ese nombre de usuario.
+   </p>
+   <a href="/features/muro/muro.html"
+      class="btn btn-outline btn-sm"
+      data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
+  </div>
+ </div>
+
+ <div id="pantallaError" class="panel" hidden>
+  <div class="panel-body pp-mensaje">
+   <p data-clave="perfil_publico_error_cargar">
+    No pudimos cargar este perfil. Intenta de nuevo.
+   </p>
+   <button type="button" id="btnReintentar"
+           class="btn btn-outline btn-sm"
+           data-clave="perfil_publico_reintentar">Reintentar</button>
+  </div>
+ </div>
+
+ <div id="pantallaPerfil" class="perfil-header" hidden>
+
+  <div class="avatar-container">
+   <div class="avatar" id="pubAvatar">◈</div>
+  </div>
+
+  <div class="info">
+
+   <div class="nombre">
+    <span id="pubNombre" data-no-traducir="1"></span>
+    <span class="verified" id="pubVerificado"
+          data-clave="perfil_publico_verificado" hidden>✦ VERIFICADO</span>
+   </div>
+
+   <div class="handle" id="pubHandle"></div>
+
+   <div class="pp-estado" id="pubEstado" hidden>
+    <span class="pp-dot" id="pubEstadoDot"></span>
+    <span id="pubEstadoTexto"></span>
+   </div>
+
+   <div class="badges">
+    <button type="button" class="badge pp-wallet" id="walletChip" hidden>
+     <span data-clave="perfil_publico_wallet_publica">Wallet pública</span>:
+     <span id="walletDir" data-no-traducir="1"></span>
+    </button>
+
+    <span class="badge" data-no-traducir="1">WEB3</span>
+   </div>
+
+  </div>
+
+  <div class="stats">
+
+   <div class="stat">
+    <div class="number" id="pubSeguidores">0</div>
+    <div class="label" data-clave="perfil_publico_seguidores">Seguidores</div>
+   </div>
+
+   <div class="stat">
+    <div class="number" id="pubSiguiendo">0</div>
+    <div class="label" data-clave="perfil_publico_siguiendo">Siguiendo</div>
+   </div>
+
+  </div>
+
+  <div class="acciones">
+   <button type="button" class="btn btn-outline btn-sm" id="btnCompartir">
+    <svg class="icon icon-sm" viewBox="0 0 24 24">
+     <circle cx="18" cy="5" r="3"/>
+     <circle cx="6" cy="12" r="3"/>
+     <circle cx="18" cy="19" r="3"/>
+     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+    </svg>
+    <span id="btnCompartirTxt" data-clave="perfil_publico_compartir">Compartir</span>
+   </button>
+  </div>
+
+  <div class="pp-acciones-sociales">
+   <a id="linkWhatsapp" class="btn btn-outline btn-sm"
+      target="_blank" rel="noopener" data-no-traducir="1">WhatsApp</a>
+
+   <a id="linkX" class="btn btn-outline btn-sm"
+      target="_blank" rel="noopener" data-no-traducir="1">X</a>
+
+   <a id="linkTelegram" class="btn btn-outline btn-sm"
+      target="_blank" rel="noopener" data-no-traducir="1">Telegram</a>
+  </div>
+
+  <a href="/features/muro/muro.html"
+     class="btn btn-outline pp-volver"
+     data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
+
+ </div>
+</div>
+
+<!-- =====================================
+     CARRUSEL MI ECOSISTEMA (después del perfil)
 ====================================== -->
 
 <section class="ecosistema" aria-labelledby="ecoTitle">
@@ -649,124 +804,6 @@ html:not(.auth-ready) .app{display:none!important}
 
 </section>
 
-<!-- =====================================
-     PERFIL PÚBLICO
-====================================== -->
-
-<div class="perfil-container">
-
- <div id="pantallaCargando" class="panel">
-  <div class="panel-body">
-   <div class="empty-state">
-    <svg class="icon" viewBox="0 0 24 24">
-     <path d="M6 3h12l4 6-10 12L2 9l4-6z"/>
-     <path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/>
-    </svg>
-    <h4 data-clave="perfil_publico_cargando">Cargando perfil...</h4>
-   </div>
-  </div>
- </div>
-
- <div id="pantallaNoEncontrado" class="panel" hidden>
-  <div class="panel-body pp-mensaje">
-   <h4 data-clave="perfil_publico_no_encontrado">Perfil no encontrado</h4>
-   <p data-clave="perfil_publico_no_encontrado_desc">
-    No existe ningún usuario con ese nombre de usuario.
-   </p>
-   <a href="/features/muro/muro.html"
-      class="btn btn-outline btn-sm"
-      data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
-  </div>
- </div>
-
- <div id="pantallaError" class="panel" hidden>
-  <div class="panel-body pp-mensaje">
-   <p data-clave="perfil_publico_error_cargar">
-    No pudimos cargar este perfil. Intenta de nuevo.
-   </p>
-   <button type="button" id="btnReintentar"
-           class="btn btn-outline btn-sm"
-           data-clave="perfil_publico_reintentar">Reintentar</button>
-  </div>
- </div>
-
- <div id="pantallaPerfil" class="perfil-header" hidden>
-
-  <div class="avatar-container">
-   <div class="avatar" id="pubAvatar">◈</div>
-  </div>
-
-  <div class="info">
-
-   <div class="nombre">
-    <span id="pubNombre" data-no-traducir="1"></span>
-    <span class="verified" id="pubVerificado"
-          data-clave="perfil_publico_verificado" hidden>✦ VERIFICADO</span>
-   </div>
-
-   <div class="handle" id="pubHandle"></div>
-
-   <div class="pp-estado" id="pubEstado" hidden>
-    <span class="pp-dot" id="pubEstadoDot"></span>
-    <span id="pubEstadoTexto"></span>
-   </div>
-
-   <div class="badges">
-    <button type="button" class="badge pp-wallet" id="walletChip" hidden>
-     <span data-clave="perfil_publico_wallet_publica">Wallet pública</span>:
-     <span id="walletDir" data-no-traducir="1"></span>
-    </button>
-
-    <span class="badge" data-no-traducir="1">WEB3</span>
-   </div>
-
-  </div>
-
-  <div class="stats">
-
-   <div class="stat">
-    <div class="number" id="pubSeguidores">0</div>
-    <div class="label" data-clave="perfil_publico_seguidores">Seguidores</div>
-   </div>
-
-   <div class="stat">
-    <div class="number" id="pubSiguiendo">0</div>
-    <div class="label" data-clave="perfil_publico_siguiendo">Siguiendo</div>
-   </div>
-
-  </div>
-
-  <div class="acciones">
-   <button type="button" class="btn btn-outline btn-sm" id="btnCompartir">
-    <svg class="icon icon-sm" viewBox="0 0 24 24">
-     <circle cx="18" cy="5" r="3"/>
-     <circle cx="6" cy="12" r="3"/>
-     <circle cx="18" cy="19" r="3"/>
-     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-    </svg>
-    <span id="btnCompartirTxt" data-clave="perfil_publico_compartir">Compartir</span>
-   </button>
-  </div>
-
-  <div class="pp-acciones-sociales">
-   <a id="linkWhatsapp" class="btn btn-outline btn-sm"
-      target="_blank" rel="noopener" data-no-traducir="1">WhatsApp</a>
-
-   <a id="linkX" class="btn btn-outline btn-sm"
-      target="_blank" rel="noopener" data-no-traducir="1">X</a>
-
-   <a id="linkTelegram" class="btn btn-outline btn-sm"
-      target="_blank" rel="noopener" data-no-traducir="1">Telegram</a>
-  </div>
-
-  <a href="/features/muro/muro.html"
-     class="btn btn-outline pp-volver"
-     data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
-
- </div>
-</div>
-
 <footer class="footer">
  <span data-no-traducir="1">
   <span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3
@@ -918,7 +955,7 @@ html:not(.auth-ready) .app{display:none!important}
 })();
 
 /* =====================================
-   LÓGICA ORIGINAL DEL PERFIL PÚBLICO
+   LÓGICA DEL PERFIL PÚBLICO
 ===================================== */
 (function(){
  'use strict';
@@ -1176,7 +1213,8 @@ html:not(.auth-ready) .app{display:none!important}
   el.linkWa.href='https://wa.me/?text='+
    encodeURIComponent(texto+' '+url);
 
-  el.linkX.href='https://twitter.com/intent/tweet?text='+
+  // X: intent oficial de publicación (x.com; twitter.com redirige aquí)
+  el.linkX.href='https://x.com/intent/post?text='+
    encodeURIComponent(texto)+
    '&url='+encodeURIComponent(url);
 
