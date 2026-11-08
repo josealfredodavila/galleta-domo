@@ -602,7 +602,7 @@
     <script src="../../../shared/config-icons.js"></script>
     <script src="../../../shared/config-layout.js"></script>
 
-    <script src="../../shared/js/wallet-connect.js?v=20260928-3"></script>
+    <script src="../../shared/js/wallet-connect.js?v=20261107-1"></script>
 
     <script>
 
@@ -919,6 +919,8 @@
 
                 if (error && error.message === 'WALLET_MODULE_NOT_LOADED') {
                     mensaje = 'No se pudo cargar el módulo de wallets. Recarga la página.';
+                } else if (error && error.message === 'WALLET_NOT_CONNECTED') {
+                    mensaje = 'La wallet no está conectada. Vuelve a intentarlo.';
                 } else if (error && error.message) {
                     mensaje = error.message;
                 }
@@ -953,6 +955,8 @@
 
         // ========================================================
         // GUARDAR WALLET — flujo seguro con nonce + firma
+        // La firma se pide al proveedor activo de SarWallet
+        // (WalletConnect en Chrome Android, inyectado en escritorio).
         // ========================================================
         async function guardarWalletEnSupabase(address, chainId) {
             const client = await esperarSupabase();
@@ -985,25 +989,26 @@
 
             const nonce = nonceJson.nonce;
 
-            // 2) Firmar mensaje EXACTO
+            // 2) Firmar mensaje EXACTO con el proveedor de la conexión activa
             const mensaje = "Csariel's: vincular wallet\n" +
                             "Nonce: " + nonce + "\n" +
                             "Dirección: " + address;
 
+            if (!window.SarWallet || typeof window.SarWallet.firmarMensaje !== 'function') {
+                throw new Error('WALLET_SIGN_NOT_AVAILABLE');
+            }
+
             let signature;
             try {
-                signature = await window.ethereum.request({
-                    method: 'personal_sign',
-                    params: [mensaje, address]
-                });
+                signature = await window.SarWallet.firmarMensaje(mensaje, address);
             } catch (signErr) {
-                if (signErr && signErr.code === 4001) {
+                if (signErr && signErr.message === 'USER_CANCELLED') {
                     throw new Error('USER_CANCELLED');
                 }
                 throw signErr;
             }
 
-            // 3) Normalizar chainId (fix hex vs decimal)
+            // 3) Normalizar chainId (hex vs decimal)
             const chainIdDecimal = String(normalizarChainId(chainId));
 
             const linkResp = await conTimeout(
