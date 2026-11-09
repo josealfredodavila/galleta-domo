@@ -63,10 +63,26 @@
         .upload-section .form-group input:focus,
         .upload-section .form-group textarea:focus { border-bottom-color: var(--gold); }
         .upload-section .form-group textarea { resize: vertical; min-height: 60px; }
-        .upload-section .form-group .file-input-wrapper { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-        .btn-subir-video { background: var(--gold); color: var(--space); border: none; padding: 10px 24px; border-radius: 8px; font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: var(--transition); }
-        .btn-subir-video:hover { background: var(--gold-light); }
-        .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; }
+        .upload-section .form-group .file-input-wrapper { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        
+        /* Ajuste del botón de subir video para que no se encime */
+        .btn-subir-video { 
+            background: var(--gold); 
+            color: var(--space); 
+            border: none; 
+            padding: 14px 24px; 
+            border-radius: 8px; 
+            font-family: 'Inter', sans-serif; 
+            font-weight: 700; 
+            font-size: 0.9rem; 
+            cursor: pointer; 
+            transition: var(--transition); 
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+            margin-top: 15px;
+        }
+        .btn-subir-video:hover { background: var(--gold-light); transform: translateY(-1px); }
+        .btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         /* BOTÓN DE CÁMARA PLANO */
         .btn-camara {
@@ -808,10 +824,14 @@
                     </button>
 
                     <div class="file-input-wrapper">
+                        <!-- Input oculto: el JS inyectará el botón de "Elegir video" aquí -->
                         <input type="file" id="inputArchivoVideo" accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov" required style="display:none;" />
+                        
+                        <!-- Botón de subir video, ahora separado y grande -->
                         <button type="submit" class="btn-subir-video" id="btnSubirVideo" data-clave="videos_btn_subir">◈ Subir video</button>
                     </div>
                 </div>
+                
                 <div id="uploadProgress" style="display:none;margin-top:8px;">
                     <div style="background:rgba(255,255,255,0.05);border-radius:4px;height:4px;overflow:hidden;">
                         <div id="progressFill" style="height:100%;width:0%;background:var(--gold);border-radius:4px;transition:width 0.3s;"></div>
