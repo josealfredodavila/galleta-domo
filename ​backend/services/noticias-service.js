@@ -10,20 +10,24 @@ const NEWSDATA_API_KEY = process.env.NEWSDATA_API_KEY;
 const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY;
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 const REDIS_URL = process.env.REDIS_URL;
 const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 
 const CACHE_TTL = parseInt(process.env.NOTICIAS_CACHE_TTL_SECONDS || '600', 10);
 const CACHE_TTL_PREGUNTA = parseInt(process.env.NOTICIAS_PREGUNTA_CACHE_TTL_SECONDS || '1800', 10);
+const CACHE_TTL_RESUMEN = 300; // los resúmenes sin IA se guardan poco tiempo
+const COOLDOWN_CREDITOS = 6 * 3600; // pausa de 6 horas para proveedores sin saldo
 
-// Modelo del agente de Perplexity: configurable. Verifica el nombre exacto en la documentación.
+// Modelos configurables
 const PERPLEXITY_AGENT_MODEL = process.env.NOTICIAS_AGENT_MODEL || 'openai/gpt-5.6-sol';
 const OPENAI_MODEL_RESPALDO = process.env.NOTICIAS_OPENAI_MODEL || 'gpt-4o-mini';
+const GROQ_MODEL = process.env.NOTICIAS_GROQ_MODEL || 'llama-3.3-70b-versatile';
 
 // Versiones de caché: súbelas cuando cambie la forma o la calidad de los datos guardados
 const VERSION_CACHE_FEED = 'v4';
-const VERSION_CACHE_PREGUNTA = 'v3';
+const VERSION_CACHE_PREGUNTA = 'v4';
 
 const CATEGORIAS_VALIDAS = ['general', 'mexico', 'tecnologia', 'conectividad', 'cripto', 'negocios'];
 const REGIONES_VALIDAS = ['MX', 'US', 'ES', 'AR', 'CO', 'CL'];
@@ -100,8 +104,8 @@ function hostOf(valor) {
 }
 
 /*
- * Limpia textos que llegan con formato de markdown o con una fecha
- * pegada al inicio (ocurre en algunas respuestas de Perplexity).
+ * Limpia textos con formato de markdown o con una fecha pegada al inicio
+ * (ocurre en algunas respuestas de Perplexity).
  */
 function limpiarTexto(valor, max = 400) {
     let texto = String(valor || '');
@@ -154,30 +158,26 @@ function registrarErrorProveedor(proveedor, error) {
     console.error(
         `❌ [noticias] ${proveedor} falló — HTTP ${status} — cuerpo: ${resumirCuerpo(error.response.data)}`
     );
-
-    if (status === 403) {
-        console.error(
-            `ℹ️ [noticias] 403 en ${proveedor}: revisa saldo/créditos y permisos de la clave ` +
-            `en el panel del proveedor (Billing y API Keys / Permissions).`
-        );
-    }
-
-    if (status === 401) {
-        console.error(`ℹ️ [noticias] 401 en ${proveedor}: la clave no es válida o no está bien copiada.`);
-    }
-
-    if (status === 400) {
-        console.error(`ℹ️ [noticias] 400 en ${proveedor}: revisa el nombre del modelo o los parámetros enviados.`);
-    }
-
-    if (status === 429) {
-        console.error(`ℹ️ [noticias] 429 en ${proveedor}: límite de peticiones o cuota diaria alcanzada.`);
-    }
 }
 
 function esContenidoBloqueado(...textos) {
     return textos.some((t) => PATRON_BLOQUEADO.test(String(t || '')));
 }
+
+/*
+ * Detecta si el proveedor respondió por falta de saldo o cuota.
+ * Perplexity responde 403 "requires paid credits"; OpenAI responde 429 "insufficient_quota".
+ */
+function esFaltaDeCreditos(error) {
+    const status = error.response?.status;
+    const cuerpo = JSON.stringify(error.response?.data || '');
+    return (status === 403 || status === 429) &&
+        /credit|quota|paid|billing|insufficient/i.test(cuerpo);
+}
+
+// ================================================================
+// REDIS: CACHÉ Y PAUSAS POR CRÉDITO
+// ================================================================
 
 async function leerCache(clave) {
     if (!redisClient) return null;
@@ -197,6 +197,22 @@ async function escribirCache(clave, valor, ttl) {
     } catch (error) {
         console.warn('⚠️ Redis noticias setex falló:', error.message);
     }
+}
+
+async function estaEnEnfriamiento(proveedor) {
+    if (!redisClient) return false;
+    try {
+        return (await redisClient.exists(`noticias:cooldown:${proveedor}`)) === 1;
+    } catch (_) {
+        return false;
+    }
+}
+
+async function ponerEnEnfriamiento(proveedor) {
+    if (!redisClient) return;
+    try {
+        await redisClient.setex(`noticias:cooldown:${proveedor}`, COOLDOWN_CREDITOS, '1');
+    } catch (_) { /* sin Redis no se guarda la pausa */ }
 }
 
 // ================================================================
@@ -312,11 +328,17 @@ async function obtenerNoticias(categoria = 'general', region = 'MX') {
     }
 
     const proveedores = [
-        ['newsdata', () => consultarNewsData(cat, reg)],
-        ['perplexity-search', () => consultarPerplexitySearch(cat, reg)],
+        ['newsdata', () => consultarNewsData(cat, reg), NEWSDATA_API_KEY],
+        ['perplexity-search', () => consultarPerplexitySearch(cat, reg), PERPLEXITY_API_KEY],
     ];
 
-    for (const [nombre, consultar] of proveedores) {
+    for (const [nombre, consultar, clave] of proveedores) {
+        if (!clave) continue;
+        if (await estaEnEnfriamiento(nombre)) {
+            console.info(`⏸️ [noticias] ${nombre} en pausa por créditos, se omite`);
+            continue;
+        }
+
         try {
             const items = await consultar();
 
@@ -334,6 +356,10 @@ async function obtenerNoticias(categoria = 'general', region = 'MX') {
             await escribirCache(cacheKey, resultado, CACHE_TTL);
             return { ...resultado, desdeCache: false };
         } catch (error) {
+            if (esFaltaDeCreditos(error)) {
+                await ponerEnEnfriamiento(nombre);
+                console.warn(`💤 [noticias] ${nombre} sin créditos, en pausa 6 h`);
+            }
             registrarErrorProveedor(nombre, error);
         }
     }
@@ -342,14 +368,10 @@ async function obtenerNoticias(categoria = 'general', region = 'MX') {
 }
 
 // ================================================================
-// PREGUNTAS · PERPLEXITY AGENT (principal)
+// PREGUNTAS · PERPLEXITY AGENT (redacta, requiere créditos)
 // ================================================================
 
 async function consultarPerplexityAgent(pregunta) {
-    if (!PERPLEXITY_API_KEY) {
-        throw crearError(503, 'Perplexity no configurado');
-    }
-
     const response = await axios.post(
         'https://api.perplexity.ai/v1/agent',
         {
@@ -395,14 +417,10 @@ async function consultarPerplexityAgent(pregunta) {
 }
 
 // ================================================================
-// PREGUNTAS · TAVILY + OPENAI gpt-4o-mini (respaldo 1)
+// PREGUNTAS · TAVILY (búsqueda compartida por los respaldos que redactan)
 // ================================================================
 
-async function consultarTavilyOpenAI(pregunta) {
-    if (!TAVILY_API_KEY || !OPENAI_API_KEY) {
-        throw crearError(503, 'Tavily u OpenAI no configurados');
-    }
-
+async function buscarTavily(pregunta) {
     const busqueda = await axios.post(
         'https://api.tavily.com/search',
         {
@@ -429,14 +447,19 @@ async function consultarTavilyOpenAI(pregunta) {
         throw crearError(502, 'Tavily no devolvió resultados');
     }
 
+    return fuentesCrudas;
+}
+
+// Redacta una respuesta con un modelo compatible con OpenAI, usando solo las fuentes dadas
+async function redactarConFuentes({ url, clave, modelo, pregunta, fuentesCrudas }) {
     const contexto = fuentesCrudas
         .map((f, i) => `[${i + 1}] ${f.title || 'Fuente'}\n${urlSegura(f.url)}\n${String(f.content || '').slice(0, 1200)}`)
         .join('\n\n');
 
     const completado = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
+        url,
         {
-            model: OPENAI_MODEL_RESPALDO,
+            model: modelo,
             temperature: 0.2,
             messages: [
                 {
@@ -454,7 +477,7 @@ async function consultarTavilyOpenAI(pregunta) {
         },
         {
             headers: {
-                Authorization: `Bearer ${OPENAI_API_KEY}`,
+                Authorization: `Bearer ${clave}`,
                 'Content-Type': 'application/json',
             },
             timeout: 30000,
@@ -462,9 +485,8 @@ async function consultarTavilyOpenAI(pregunta) {
     );
 
     const respuesta = (completado.data?.choices?.[0]?.message?.content || '').trim();
-
     if (!respuesta) {
-        throw crearError(502, 'OpenAI devolvió una respuesta vacía');
+        throw crearError(502, 'El modelo devolvió una respuesta vacía');
     }
 
     return {
@@ -478,20 +500,47 @@ async function consultarTavilyOpenAI(pregunta) {
 }
 
 // ================================================================
-// PREGUNTAS · PERPLEXITY SEARCH (respaldo 2, solo fuentes)
-// Ya no pega snippets como respuesta: devuelve un aviso corto y las fuentes aparte.
+// PREGUNTAS · GROQ + TAVILY (respaldo gratuito, si hay GROQ_API_KEY)
 // ================================================================
 
-async function consultarPerplexitySearchPregunta(pregunta) {
-    if (!PERPLEXITY_API_KEY) {
-        throw crearError(503, 'Perplexity no configurado');
-    }
+async function consultarGroqTavily(pregunta) {
+    const fuentesCrudas = await buscarTavily(pregunta);
+    return redactarConFuentes({
+        url: 'https://api.groq.com/openai/v1/chat/completions',
+        clave: GROQ_API_KEY,
+        modelo: GROQ_MODEL,
+        pregunta,
+        fuentesCrudas,
+    });
+}
 
+// ================================================================
+// PREGUNTAS · TAVILY + OPENAI (respaldo, requiere saldo en OpenAI)
+// ================================================================
+
+async function consultarTavilyOpenAI(pregunta) {
+    const fuentesCrudas = await buscarTavily(pregunta);
+    return redactarConFuentes({
+        url: 'https://api.openai.com/v1/chat/completions',
+        clave: OPENAI_API_KEY,
+        modelo: OPENAI_MODEL_RESPALDO,
+        pregunta,
+        fuentesCrudas,
+    });
+}
+
+// ================================================================
+// PREGUNTAS · RESUMEN SIN IA (último respaldo, no requiere créditos de IA)
+// Arma un resumen con los fragmentos de Perplexity Search, filtrados a México.
+// ================================================================
+
+async function consultarResumenSinIA(pregunta) {
     const response = await axios.post(
         'https://api.perplexity.ai/search',
         {
             query: pregunta,
             max_results: 5,
+            country: 'MX',
             search_type: 'fast',
         },
         {
@@ -511,18 +560,30 @@ async function consultarPerplexitySearchPregunta(pregunta) {
         throw crearError(502, 'Perplexity Search no devolvió resultados');
     }
 
+    const fragmentos = resultados
+        .slice(0, 3)
+        .map((r) => limpiarTexto(r.snippet, 300))
+        .filter(Boolean);
+
+    const respuesta = fragmentos.length
+        ? `Esto reportan las fuentes encontradas (resumen automático, sin redacción de IA):\n\n${fragmentos.map((f) => `• ${f}`).join('\n\n')}`
+        : 'Encontré fuentes relacionadas con tu pregunta, pero sin un resumen disponible.';
+
     return {
-        respuesta: 'No pude redactar una respuesta completa, pero encontré estas fuentes relacionadas con tu pregunta:',
+        respuesta,
         fuentes: resultados.map((r) => ({
             id: hashId(r.url),
             titulo: limpiarTexto(r.title || 'Fuente', 120),
             url: urlSegura(r.url),
         })),
+        ttl: CACHE_TTL_RESUMEN,
     };
 }
 
 // ================================================================
 // PREGUNTAS · ORQUESTACIÓN
+// Orden: Perplexity Agent → Groq+Tavily → Tavily+OpenAI → resumen sin IA.
+// Los proveedores sin clave se omiten, y los que están sin saldo se pausan 6 h.
 // ================================================================
 
 async function preguntarActualidad(pregunta) {
@@ -550,14 +611,24 @@ async function preguntarActualidad(pregunta) {
     }
 
     const proveedores = [
-        ['perplexity-agent', consultarPerplexityAgent],
-        ['tavily+openai', consultarTavilyOpenAI],
-        ['perplexity-search', consultarPerplexitySearchPregunta],
+        ['perplexity-agent', () => consultarPerplexityAgent(preguntaLimpia), PERPLEXITY_API_KEY],
+        ['groq+tavily', () => consultarGroqTavily(preguntaLimpia), GROQ_API_KEY && TAVILY_API_KEY],
+        ['tavily+openai', () => consultarTavilyOpenAI(preguntaLimpia), TAVILY_API_KEY && OPENAI_API_KEY],
+        ['resumen-sin-ia', () => consultarResumenSinIA(preguntaLimpia), PERPLEXITY_API_KEY],
     ];
 
-    for (const [nombre, consultar] of proveedores) {
+    for (const [nombre, consultar, clave] of proveedores) {
+        if (!clave) continue;
+
+        // El resumen sin IA usa Perplexity Search: si Perplexity está en pausa, este también
+        const proveedorReal = nombre === 'resumen-sin-ia' ? 'perplexity-search' : nombre;
+        if (await estaEnEnfriamiento(proveedorReal)) {
+            console.info(`⏸️ [noticias] ${proveedorReal} en pausa por créditos, se omite`);
+            continue;
+        }
+
         try {
-            const { respuesta, fuentes } = await consultar(preguntaLimpia);
+            const { respuesta, fuentes, ttl } = await consultar();
 
             const resultado = {
                 consultadoEn: new Date().toISOString(),
@@ -568,9 +639,13 @@ async function preguntarActualidad(pregunta) {
 
             console.info(`✅ [noticias] pregunta respondida por ${nombre}`);
 
-            await escribirCache(cacheKey, resultado, CACHE_TTL_PREGUNTA);
+            await escribirCache(cacheKey, resultado, ttl || CACHE_TTL_PREGUNTA);
             return { ...resultado, desdeCache: false };
         } catch (error) {
+            if (esFaltaDeCreditos(error)) {
+                await ponerEnEnfriamiento(proveedorReal);
+                console.warn(`💤 [noticias] ${proveedorReal} sin créditos, en pausa 6 h`);
+            }
             registrarErrorProveedor(nombre, error);
             console.warn(`⚠️ [noticias] pasando al siguiente proveedor tras fallar ${nombre}`);
         }
