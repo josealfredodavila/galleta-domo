@@ -1,12 +1,10 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.4 (Diseño Plano y Video Ancho)
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.5 (Diseño Plano y Video Ancho)
    ================================================================
-   Cambios:
-   - Eliminado el botón punteado tipo "lego".
-   - Eliminadas las cajas de "Sin sonido", "Sin ubicación", etc.
-   - Eliminado el fondo pesado del contenedor de preview.
-   - Todo basado en líneas divisorias finas.
-   - El video de vista previa ahora ocupa todo el ancho disponible.
+   Cambios quirúrgicos:
+   - Ajuste del botón de subir video para que no se encime.
+   - Eliminación de los textos de "MB" y "formatos" desde el CSS.
+   - Ajuste del contenedor del botón de archivo para que fluya bien.
    ================================================================ */
 
 /* ----------------------------------------------------------------
@@ -66,7 +64,7 @@
 }
 
 /* ----------------------------------------------------------------
-   BOTÓN DE ARCHIVO PLANO (ADIÓS AL BORDE AMARILLO PUNTEADO)
+   BOTÓN DE ARCHIVO PLANO Y BOTÓN DE SUBIR
    ---------------------------------------------------------------- */
 #inputArchivoVideo,
 input#inputArchivoVideo[type="file"] {
@@ -75,7 +73,7 @@ input#inputArchivoVideo[type="file"] {
 }
 
 .cs-file-btn-wrap {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     display: block;
 }
 
@@ -88,7 +86,6 @@ input#inputArchivoVideo[type="file"] {
     gap: 8px;
     padding: 16px;
     background: transparent;
-    /* Aquí quitamos el punteado y lo dejamos con una línea sólida fina */
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     color: var(--text-muted);
@@ -116,10 +113,9 @@ input#inputArchivoVideo[type="file"] {
     font-weight: 600;
     color: var(--text-primary);
 }
+/* Ocultamos cualquier texto de hint (MB) que intente inyectar el JS */
 .cs-file-btn-hint {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    opacity: 0.7;
+    display: none !important;
 }
 
 .cs-file-con-archivo .cs-file-btn {
@@ -127,7 +123,26 @@ input#inputArchivoVideo[type="file"] {
 }
 .cs-file-con-archivo .cs-file-btn-ico { color: var(--success); }
 .cs-file-con-archivo .cs-file-btn-txt { color: var(--success); }
-.cs-file-con-archivo .cs-file-btn-hint { color: var(--success); }
+
+/* Botón de Subir Video grande, limpio y abajo del todo */
+.btn-subir-video {
+    width: 100%;
+    background: var(--gold);
+    color: var(--space);
+    border: none;
+    padding: 14px 24px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
+    margin-top: 10px;
+    display: block;
+}
+.btn-subir-video:hover { background: var(--gold-light); transform: translateY(-1px); }
+.btn-subir-video:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 /* ----------------------------------------------------------------
    CHIPS DE METADATA EN LAS CARDS
@@ -521,7 +536,6 @@ input#inputArchivoVideo[type="file"] {
     overflow: hidden;
     background: #000;
     width: 100%;
-    /* Quitamos la restricción vertical para que aproveche todo el espacio */
     max-height: 400px; 
     display: flex;
     align-items: center;
@@ -599,7 +613,7 @@ input#inputArchivoVideo[type="file"] {
    ---------------------------------------------------------------- */
 @media (min-width: 640px) {
     .cs-preview-wrap { flex-direction: row; align-items: flex-start; }
-    .cs-preview-video { width: 100%; max-height: 400px; } /* Ancho completo en desktop también */
+    .cs-preview-video { width: 100%; max-height: 400px; }
     .cs-preview-meta { flex: 1; }
 }
 @media (max-width: 480px) {
