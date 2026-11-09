@@ -4,6 +4,10 @@
     const SAVED_KEY = 'sariels_noticias_guardadas';
     const REGION = 'MX';
 
+    // Saludos: no consumen búsquedas en el servidor
+    const SALUDOS = /^(hola|buenas|buenos d[ií]as|buenas tardes|buenas noches|hey|hi|hello|qu[eé] onda|qu[eé] tal)[\s!¡?.,]*$/i;
+    const RESPUESTA_SALUDO = '¡Hola! Pregúntame algo de la actualidad, por ejemplo: "¿Qué pasa hoy en México?"';
+
     const state = {
         category: 'general',
         token: null,
@@ -398,12 +402,21 @@
     }
 
     async function preguntar(texto) {
-        const SALUDOS = /^(hola|buenas|buenos días|buenas tardes|buenas noches|hey|hi|hello)[\s!¡?.,]*$/i;
-if (SALUDOS.test(pregunta) || pregunta.length < 6) {
-    mostrarRespuesta('¡Hola! Pregúntame algo de la actualidad, por ejemplo: "¿Qué pasa hoy en México?"', false);
-    return;
-}
+        const pregunta = String(texto || '').trim();
+
+        if (!pregunta) {
+            mostrarRespuesta('Escribe una pregunta antes de consultar.', true);
+            return;
         }
+
+        // Saludos y preguntas muy cortas: respuesta local, sin consultar al servidor
+        if (SALUDOS.test(pregunta) || pregunta.length < 6) {
+            mostrarRespuesta(RESPUESTA_SALUDO, false);
+            el.answerSrc.innerHTML = '';
+            el.input.value = '';
+            return;
+        }
+
         if (!state.token) {
             mostrarRespuesta('Sesión no disponible. Vuelve a iniciar sesión.', true);
             return;
