@@ -1,5 +1,4 @@
 /login                       /features/perfil/login.html                    200
-/registro                    /registro.html                                 200
 /perfil                      /features/perfil/perfil.html                   200
 /configuracion               /features/perfil/configuracion/index.html      200
 /mensajes                    /features/mensajes/mensajes.html               200
@@ -12,10 +11,6 @@
 /csariel-pay                 /features/pay/panel.html                       302
 /pay/cobrar/*                /features/pay/pagar.html                       200
 /terminos-csariels-pay.html  /features/pay/terminos-csariels-pay.html       200
-/terminos                    /terminos.html                                 200
-/privacidad                  /privacidad.html                               200
-/eliminar-cuenta             /eliminar-cuenta.html                          200
-/actualizar-contrasena       /actualizar-contrasena.html                    200
 /legal/terminos-marquinhos   /legal/marquinhos.html                         200
 /legal/terminos-itlasuhua    /legal/itlasuhua.html                          200
 /legal/*                     /legal/:splat                                  200
