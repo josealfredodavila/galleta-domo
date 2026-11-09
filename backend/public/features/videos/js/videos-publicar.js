@@ -2,10 +2,12 @@
    CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.8
    ================================================================
    Cambios respecto a v2.7:
-   - Se ocultaron los nombres de archivo (números de serie) al elegir video.
-   - Se ocultaron los textos de megabytes (MB) y duración en la vista previa.
-   - Se ajustó el video para que llene el recuadro disponible (object-fit: cover).
-   - Se ajustó el botón de subir para evitar encimamientos.
+   - Se quitaron los números de tamaño (MB) y duración (s) de la
+     vista previa; ahora aparece "Video seleccionado · Listo para subir".
+   - El video de vista previa ocupa todo el espacio disponible sin
+     importar su proporción (object-fit: cover).
+   - La etiqueta "Sonido + video" flota sobre el video.
+   - La lógica de audio, borradores, publicación y API no cambia.
    ================================================================ */
 
 (function () {
@@ -815,13 +817,11 @@
         }
     }
 
-    // 🔥 CORRECCIÓN CLAVE: Función de preview de video
     function mostrarPreviewVideo(file) {
         const v = $('csPreviewVideo');
         const wrap = $('csPreviewWrap');
         if (!v) return;
-        
-        // Mostramos el contenedor
+
         if (wrap) wrap.style.display = 'block';
 
         if (state.previewURL) {
@@ -829,7 +829,7 @@
             state.previewURL = null;
         }
         state.previewURL = URL.createObjectURL(file);
-        
+
         v.src = state.previewURL;
         v.muted = false;
         v.playsInline = true;
@@ -838,26 +838,7 @@
         v.style.display = 'block';
         try { v.load(); } catch (e) {}
 
-        // 🔥 FORZAMOS A QUE EL VIDEO LLENE TODO EL CUADRO
-        v.style.setProperty('width', '100%', 'important');
-        v.style.setProperty('height', '100%', 'important');
-        v.style.setProperty('max-height', 'none', 'important');
-        v.style.setProperty('object-fit', 'contain', 'important'); 
-        
-        if (v.parentElement) {
-            v.parentElement.style.setProperty('height', 'auto', 'important');
-            v.parentElement.style.setProperty('min-height', '250px', 'important');
-            v.parentElement.style.setProperty('max-height', '500px', 'important');
-        }
-
         obtenerPortada(file).then(mostrarPortadaEnPreview);
-
-        v.addEventListener('durationchange', function () {
-            if (isFinite(v.duration) && v.duration > 0) {
-                const meta = $('csPreviewDuracion');
-                if (meta) meta.textContent = ''; // Ocultamos la duración
-            }
-        });
     }
 
     // ============================================================
@@ -878,7 +859,7 @@
             preview.removeAttribute('src');
             try { preview.load(); } catch (e) {}
         }
-        
+
         const wrap = $('csPreviewWrap');
         if (wrap) wrap.style.display = 'none';
 
@@ -904,8 +885,6 @@
         if (previewUbic) previewUbic.querySelector('.cs-preview-txt').textContent = vt('videos_preview_sin_ubicacion', 'Sin ubicación');
         const badge = $('csPreviewBadge');
         if (badge) badge.style.display = 'none';
-        const meta = $('csPreviewDuracion');
-        if (meta) meta.textContent = '';
 
         const btnTxt = $('csFileBtnTxt');
         const btnHint = $('csFileBtnHint');
@@ -980,6 +959,29 @@
             .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,43,214,0.25); border-top-color: #ff2bd6; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
 
+            /* ----- Vista previa del video: ocupa todo el espacio ----- */
+            .cs-preview-video {
+                position: relative; width: 100%; height: min(78vh, 720px);
+                background: #000; border-radius: 14px; overflow: hidden;
+                box-shadow: 0 0 18px rgba(255,43,214,.18);
+            }
+            #csPreviewVideo {
+                position: absolute; inset: 0; width: 100%; height: 100%;
+                object-fit: cover; background: #000; display: block; z-index: 1;
+            }
+            #csPreviewPortada {
+                position: absolute; inset: 0; width: 100%; height: 100%;
+                object-fit: cover; background: #000; display: none; z-index: 2; pointer-events: none;
+            }
+            #csPreviewBadge {
+                position: absolute; top: 12px; left: 12px; z-index: 3;
+                background: linear-gradient(90deg,#ff2bd6,#00f0ff) !important; color: #05020a !important;
+                font-weight: 800; box-shadow: 0 0 14px rgba(255,43,214,.6);
+                padding: 5px 10px; border-radius: 999px; font-size: .7rem;
+                animation: cs-badge-latido 1.6s ease-in-out infinite;
+            }
+            @keyframes cs-badge-latido { 0%,100% { box-shadow: 0 0 10px rgba(255,43,214,.5); } 50% { box-shadow: 0 0 22px rgba(0,240,255,.8); } }
+
             /* ----- Botón de reproducir con anillo neón ----- */
             .cs-sonido-play {
                 position: relative; width: 44px; height: 44px; border-radius: 50%; margin-right: 12px; flex-shrink: 0;
@@ -1009,7 +1011,6 @@
             .cs-sonido-artista { color: #9fb4c8; }
             .cs-sonido-check { color: #ff2bd6; text-shadow: 0 0 8px #ff2bd6; }
 
-            /* Pista activa: halo neón con gradiente animado */
             .cs-sonido-item.activo, .cs-sonido-item.cs-sonando {
                 background: linear-gradient(120deg, rgba(255,43,214,.16), rgba(0,240,255,.12), rgba(57,255,20,.10));
                 box-shadow: 0 0 0 1px rgba(0,240,255,.55), 0 0 22px rgba(255,43,214,.35), inset 0 0 18px rgba(0,240,255,.08);
@@ -1035,7 +1036,6 @@
             .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(6) { animation-delay: .6s; }
             @keyframes cs-eq-bounce { 0%,100% { height: 5px; } 50% { height: 22px; } }
 
-            /* Portada que gira mientras suena (estilo TikTok) */
             .cs-sonido-item.cs-sonando .cs-sonido-nombre { background: linear-gradient(90deg,#ff2bd6,#00f0ff,#39ff14); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
             .cs-sonido-item.cs-cargando .cs-sonido-ico { animation: cs-spin-inline .8s linear infinite; display: inline-block; color: #00f0ff; text-shadow: 0 0 8px #00f0ff; }
@@ -1065,17 +1065,6 @@
             .cs-sonido-actual { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,.5); }
             .cs-btn-header.cs-activo { box-shadow: 0 0 16px rgba(255,43,214,.55), 0 0 26px rgba(0,240,255,.35); }
             .cs-btn-header.cs-activo .cs-ico { color: #ff2bd6; text-shadow: 0 0 8px #ff2bd6; }
-            .cs-preview-duracion { display: none !important; }
-            #csPreviewPortada { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: none; z-index: 2; }
-            .cs-preview-video { position: relative; }
-
-            /* Badge del sonido en la vista previa */
-            #csPreviewBadge {
-                background: linear-gradient(90deg,#ff2bd6,#00f0ff) !important; color: #05020a !important;
-                font-weight: 800; box-shadow: 0 0 14px rgba(255,43,214,.6);
-                animation: cs-badge-latido 1.6s ease-in-out infinite;
-            }
-            @keyframes cs-badge-latido { 0%,100% { box-shadow: 0 0 10px rgba(255,43,214,.5); } 50% { box-shadow: 0 0 22px rgba(0,240,255,.8); } }
 
             .cs-borrador-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid rgba(255,43,214,0.35); border-radius: 12px; background: linear-gradient(120deg, rgba(255,43,214,.08), rgba(0,240,255,.06)); margin-bottom: 8px; box-shadow: 0 0 14px rgba(255,43,214,.12); }
             .cs-borrador-portada { width: 48px; height: 64px; border-radius: 8px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; color: #00f0ff; flex-shrink: 0; box-shadow: 0 0 10px rgba(0,240,255,.35); }
@@ -1211,7 +1200,7 @@
         wrap.innerHTML = `
             <div class="cs-preview-video">
                 <img id="csPreviewPortada" alt="Portada del video" />
-                <video id="csPreviewVideo" controls playsinline preload="metadata" style="width:100%; display:block;"></video>
+                <video id="csPreviewVideo" controls playsinline preload="metadata"></video>
                 <div class="cs-preview-badge" id="csPreviewBadge" style="display:none;" data-clave="videos_sonido_video_badge">◆ Sonido + video</div>
             </div>
             <div class="cs-preview-meta">
@@ -1222,7 +1211,6 @@
                 <div class="cs-preview-line" id="csPreviewUbicacion">
                     <span class="cs-ico">◆</span>
                     <span class="cs-preview-txt" data-clave="videos_preview_sin_ubicacion">Sin ubicación</span>
-                    <span class="cs-preview-duracion" id="csPreviewDuracion"></span>
                 </div>
                 <div class="cs-preview-actions">
                     <button type="button" class="cs-btn-ghost" id="csBtnVerBorradores">
@@ -1280,17 +1268,8 @@
             const txt = $('csFileBtnTxt');
             const hint = $('csFileBtnHint');
             if (file) {
-                if (txt) { 
-                    txt.removeAttribute('data-clave'); 
-                    // 🔥 ADIÓS A LOS NÚMEROS DE SERIE (video-camara-1794...mp4)
-                    // Ahora mostramos un texto limpio y profesional
-                    txt.textContent = '◈ Video seleccionado'; 
-                }
-                if (hint) {
-                    hint.removeAttribute('data-clave');
-                    // 🔥 ADIÓS A LOS MEGABYTES, AHORA DICE ALGO LIMPIO
-                    hint.textContent = 'Listo para publicar';
-                }
+                if (txt) { txt.removeAttribute('data-clave'); txt.textContent = 'Video seleccionado'; }
+                if (hint) { hint.removeAttribute('data-clave'); hint.textContent = 'Listo para subir'; }
                 btnWrap.classList.add('cs-file-con-archivo');
                 const pWrap = $('csPreviewWrap');
                 if (pWrap) pWrap.style.display = 'block';
@@ -1701,7 +1680,7 @@
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
         actualizarBotonesSonidoUbicacion();
-        log('✅ Módulo Publicar v2.8 listo (diseño plano y video corregido)');
+        log('✅ Módulo Publicar v2.8 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
