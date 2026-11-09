@@ -1,10 +1,11 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.9 (Ajuste Quirúrgico)
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.8
    ================================================================
-   Cambios:
-   - Inyección de estilos para forzar que el video llene el cuadro.
-   - Ajuste para que el botón naranja no se encime con el muñeco.
-   - Eliminación de textos residuales (MB).
+   Cambios respecto a v2.7:
+   - Se ocultaron los nombres de archivo (números de serie) al elegir video.
+   - Se ocultaron los textos de megabytes (MB) y duración en la vista previa.
+   - Se ajustó el video para que llene el recuadro disponible (object-fit: cover).
+   - Se ajustó el botón de subir para evitar encimamientos.
    ================================================================ */
 
 (function () {
@@ -819,7 +820,7 @@
         const v = $('csPreviewVideo');
         const wrap = $('csPreviewWrap');
         if (!v) return;
-
+        
         // Mostramos el contenedor
         if (wrap) wrap.style.display = 'block';
 
@@ -828,7 +829,7 @@
             state.previewURL = null;
         }
         state.previewURL = URL.createObjectURL(file);
-
+        
         v.src = state.previewURL;
         v.muted = false;
         v.playsInline = true;
@@ -837,20 +838,26 @@
         v.style.display = 'block';
         try { v.load(); } catch (e) {}
 
-        // 🔥 AQUÍ FORZAMOS A QUE EL VIDEO LLENE TODO EL CUADRO Y NO SE VEA CHIQUITO
+        // 🔥 FORZAMOS A QUE EL VIDEO LLENE TODO EL CUADRO
         v.style.setProperty('width', '100%', 'important');
         v.style.setProperty('height', '100%', 'important');
         v.style.setProperty('max-height', 'none', 'important');
-        v.style.setProperty('object-fit', 'cover', 'important'); // 'cover' llena todo, si es horizontal se ajusta bonito
+        v.style.setProperty('object-fit', 'contain', 'important'); 
         
-        // Ajustamos también su contenedor padre por si las dudas
         if (v.parentElement) {
             v.parentElement.style.setProperty('height', 'auto', 'important');
-            v.parentElement.style.setProperty('min-height', '300px', 'important');
+            v.parentElement.style.setProperty('min-height', '250px', 'important');
             v.parentElement.style.setProperty('max-height', '500px', 'important');
         }
 
         obtenerPortada(file).then(mostrarPortadaEnPreview);
+
+        v.addEventListener('durationchange', function () {
+            if (isFinite(v.duration) && v.duration > 0) {
+                const meta = $('csPreviewDuracion');
+                if (meta) meta.textContent = ''; // Ocultamos la duración
+            }
+        });
     }
 
     // ============================================================
@@ -871,7 +878,7 @@
             preview.removeAttribute('src');
             try { preview.load(); } catch (e) {}
         }
-
+        
         const wrap = $('csPreviewWrap');
         if (wrap) wrap.style.display = 'none';
 
@@ -963,24 +970,128 @@
             .cs-confirm-overlay { z-index: ${Z.CONFIRM} !important; }
             .cs-toast { z-index: ${Z.TOAST} !important; }
 
-            /* 🔥 FIX QUIRÚRGICO PARA EL BOTÓN NARANJA Y EL MUÑECO */
-            /* Forzamos a que el botón se vaya hasta abajo y no se encime */
-            .btn-subir-video {
-                display: block !important;
-                margin-top: 20px !important;
-                position: relative !important;
-                z-index: 10 !important;
-                width: 100% !important;
-                clear: both !important;
-            }
-            /* Ocultamos los textos que sobran */
-            .cs-file-btn-hint { display: none !important; }
-
             .cs-sheet button, .cs-sheet [role="button"], .cs-sheet .cs-sonido-item,
             .cs-sheet .cs-ubicacion-item, .cs-sheet .cs-tab {
                 pointer-events: auto !important;
                 touch-action: manipulation;
                 -webkit-tap-highlight-color: transparent;
+            }
+
+            .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,43,214,0.25); border-top-color: #ff2bd6; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+            @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
+
+            /* ----- Botón de reproducir con anillo neón ----- */
+            .cs-sonido-play {
+                position: relative; width: 44px; height: 44px; border-radius: 50%; margin-right: 12px; flex-shrink: 0;
+                display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;
+                background: radial-gradient(circle at 30% 30%, #2a0d3a, #0a0612 70%);
+                border: 2px solid transparent;
+                background-clip: padding-box;
+                box-shadow: 0 0 0 1px rgba(255,43,214,.35), 0 0 12px rgba(255,43,214,.25);
+                transition: box-shadow .25s ease, transform .15s ease;
+            }
+            .cs-sonido-play:active { transform: scale(.92); }
+            .cs-sonido-ico { position: relative; z-index: 2; font-size: .9rem; color: #fff; text-shadow: 0 0 8px #ff2bd6; }
+            .cs-eq { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; gap: 2px; pointer-events: none; z-index: 1; }
+            .cs-eq-bar {
+                width: 3px; height: 5px; border-radius: 3px;
+                background: var(--eq-c, #ff2bd6);
+                box-shadow: 0 0 6px var(--eq-c, #ff2bd6), 0 0 14px var(--eq-c, #ff2bd6);
+                transition: height .07s linear, opacity .07s linear;
+            }
+
+            /* ----- Tarjeta de sonido ----- */
+            .cs-sonido-item {
+                position: relative; overflow: hidden; transition: background .25s ease, transform .15s ease;
+            }
+            .cs-sonido-item:active { transform: scale(.985); }
+            .cs-sonido-nombre { color: #fff; font-weight: 700; letter-spacing: .2px; }
+            .cs-sonido-artista { color: #9fb4c8; }
+            .cs-sonido-check { color: #ff2bd6; text-shadow: 0 0 8px #ff2bd6; }
+
+            /* Pista activa: halo neón con gradiente animado */
+            .cs-sonido-item.activo, .cs-sonido-item.cs-sonando {
+                background: linear-gradient(120deg, rgba(255,43,214,.16), rgba(0,240,255,.12), rgba(57,255,20,.10));
+                box-shadow: 0 0 0 1px rgba(0,240,255,.55), 0 0 22px rgba(255,43,214,.35), inset 0 0 18px rgba(0,240,255,.08);
+            }
+            .cs-sonido-item.cs-sonando::after {
+                content: ''; position: absolute; inset: -40% -10%; pointer-events: none;
+                background: conic-gradient(from 0deg, #ff2bd6, #00f0ff, #39ff14, #ffe600, #b026ff, #ff2bd6);
+                opacity: .10; animation: cs-halo-giro 6s linear infinite;
+            }
+            @keyframes cs-halo-giro { to { transform: rotate(360deg); } }
+
+            .cs-sonido-item.cs-sonando .cs-sonido-play {
+                box-shadow: 0 0 0 2px #00f0ff, 0 0 18px #ff2bd6, 0 0 30px rgba(0,240,255,.45);
+                background: radial-gradient(circle at 30% 30%, #3a0f4f, #070410 75%);
+            }
+            .cs-sonido-item.cs-sonando .cs-sonido-ico { display: none; }
+            .cs-sonido-item.cs-sonando .cs-eq { display: flex; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar { animation: cs-eq-bounce .8s ease-in-out infinite; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(2) { animation-delay: .12s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(3) { animation-delay: .24s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(4) { animation-delay: .36s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(5) { animation-delay: .48s; }
+            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(6) { animation-delay: .6s; }
+            @keyframes cs-eq-bounce { 0%,100% { height: 5px; } 50% { height: 22px; } }
+
+            /* Portada que gira mientras suena (estilo TikTok) */
+            .cs-sonido-item.cs-sonando .cs-sonido-nombre { background: linear-gradient(90deg,#ff2bd6,#00f0ff,#39ff14); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+            .cs-sonido-item.cs-cargando .cs-sonido-ico { animation: cs-spin-inline .8s linear infinite; display: inline-block; color: #00f0ff; text-shadow: 0 0 8px #00f0ff; }
+            .cs-sonido-item.cs-pausado .cs-sonido-play { box-shadow: 0 0 0 2px #ffe600, 0 0 14px rgba(255,230,0,.5); }
+            .cs-sonido-item.cs-pausado .cs-sonido-ico { color: #ffe600; text-shadow: 0 0 8px #ffe600; }
+            .cs-sonido-item.cs-error .cs-sonido-play { box-shadow: 0 0 0 2px #ff3d7f, 0 0 14px rgba(255,61,127,.6); }
+            .cs-sonido-item.cs-error .cs-sonido-ico { color: #ff3d7f; text-shadow: 0 0 8px #ff3d7f; }
+
+            /* ----- Pestañas tipo TikTok con subrayado neón ----- */
+            .cs-tab { color: #9fb4c8; font-weight: 700; transition: color .2s ease; }
+            .cs-tab.active { color: #fff; text-shadow: 0 0 10px rgba(255,43,214,.7); }
+            .cs-tab.active::after {
+                content: ''; display: block; height: 3px; margin: 6px auto 0; width: 44px; border-radius: 3px;
+                background: linear-gradient(90deg,#ff2bd6,#00f0ff); box-shadow: 0 0 10px #ff2bd6;
+            }
+
+            /* ----- Botones principales en degradado neón ----- */
+            .cs-btn-primary {
+                background: linear-gradient(120deg,#ff2bd6,#b026ff 45%,#00f0ff) !important;
+                color: #fff !important; border: none !important; font-weight: 800; letter-spacing: .3px;
+                box-shadow: 0 0 16px rgba(255,43,214,.45), 0 0 28px rgba(0,240,255,.25);
+                text-shadow: 0 1px 2px rgba(0,0,0,.4);
+            }
+            .cs-btn-primary:disabled { opacity: .45; box-shadow: none; }
+            .cs-btn-primary:not(:disabled):active { transform: scale(.97); }
+
+            .cs-sonido-actual { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,.5); }
+            .cs-btn-header.cs-activo { box-shadow: 0 0 16px rgba(255,43,214,.55), 0 0 26px rgba(0,240,255,.35); }
+            .cs-btn-header.cs-activo .cs-ico { color: #ff2bd6; text-shadow: 0 0 8px #ff2bd6; }
+            .cs-preview-duracion { display: none !important; }
+            #csPreviewPortada { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; display: none; z-index: 2; }
+            .cs-preview-video { position: relative; }
+
+            /* Badge del sonido en la vista previa */
+            #csPreviewBadge {
+                background: linear-gradient(90deg,#ff2bd6,#00f0ff) !important; color: #05020a !important;
+                font-weight: 800; box-shadow: 0 0 14px rgba(255,43,214,.6);
+                animation: cs-badge-latido 1.6s ease-in-out infinite;
+            }
+            @keyframes cs-badge-latido { 0%,100% { box-shadow: 0 0 10px rgba(255,43,214,.5); } 50% { box-shadow: 0 0 22px rgba(0,240,255,.8); } }
+
+            .cs-borrador-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid rgba(255,43,214,0.35); border-radius: 12px; background: linear-gradient(120deg, rgba(255,43,214,.08), rgba(0,240,255,.06)); margin-bottom: 8px; box-shadow: 0 0 14px rgba(255,43,214,.12); }
+            .cs-borrador-portada { width: 48px; height: 64px; border-radius: 8px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; color: #00f0ff; flex-shrink: 0; box-shadow: 0 0 10px rgba(0,240,255,.35); }
+            .cs-borrador-portada img { width: 100%; height: 100%; object-fit: cover; }
+            .cs-borrador-info { flex: 1; min-width: 0; }
+            .cs-borrador-titulo { color: #fff; font-weight: 700; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+            .cs-borrador-meta { color: #9fb4c8; font-size: .66rem; margin-top: 3px; }
+            .cs-borrador-acciones { display: flex; flex-direction: column; gap: 6px; }
+            .cs-borrador-acciones .cs-btn-ghost { padding: 6px 10px; font-size: .6rem; }
+            .cs-btn-peligro { border-color: rgba(255,61,127,.6) !important; color: #ff3d7f !important; }
+
+            @media (prefers-reduced-motion: reduce) {
+                .cs-sonido-item.cs-sonando .cs-eq-bar,
+                .cs-sonido-item.cs-sonando::after,
+                #csPreviewBadge { animation: none !important; }
+                .cs-sonido-item.cs-sonando .cs-eq-bar { height: 14px; }
             }
         `;
         document.head.appendChild(st);
@@ -1099,8 +1210,8 @@
         wrap.className = 'cs-preview-wrap';
         wrap.innerHTML = `
             <div class="cs-preview-video">
-                <img id="csPreviewPortada" alt="Portada del video" style="display:none;" />
-                <video id="csPreviewVideo" controls playsinline preload="metadata"></video>
+                <img id="csPreviewPortada" alt="Portada del video" />
+                <video id="csPreviewVideo" controls playsinline preload="metadata" style="width:100%; display:block;"></video>
                 <div class="cs-preview-badge" id="csPreviewBadge" style="display:none;" data-clave="videos_sonido_video_badge">◆ Sonido + video</div>
             </div>
             <div class="cs-preview-meta">
@@ -1111,6 +1222,7 @@
                 <div class="cs-preview-line" id="csPreviewUbicacion">
                     <span class="cs-ico">◆</span>
                     <span class="cs-preview-txt" data-clave="videos_preview_sin_ubicacion">Sin ubicación</span>
+                    <span class="cs-preview-duracion" id="csPreviewDuracion"></span>
                 </div>
                 <div class="cs-preview-actions">
                     <button type="button" class="cs-btn-ghost" id="csBtnVerBorradores">
@@ -1121,14 +1233,9 @@
                     </button>
                 </div>
             </div>`;
-        
-        // Insertamos el preview justo antes del botón de subir
-        const btnSubir = form.querySelector('#btnSubirVideo');
-        if (btnSubir) {
-            form.insertBefore(wrap, btnSubir.parentNode);
-        } else {
-            form.appendChild(wrap);
-        }
+        const grupos = form.querySelectorAll('.form-group');
+        if (grupos.length > 0) form.insertBefore(wrap, grupos[grupos.length - 1]);
+        else form.appendChild(wrap);
 
         wrap.style.display = 'none';
 
@@ -1142,16 +1249,24 @@
         if (input.dataset.csTransformado === '1') return;
         input.dataset.csTransformado = '1';
 
-        // En lugar de ocultarlo con JS, el HTML ya lo tiene oculto. Solo creamos el botón bonito.
+        input.style.setProperty('display', 'none', 'important');
+        input.style.setProperty('visibility', 'hidden', 'important');
+        input.style.setProperty('position', 'absolute', 'important');
+        input.style.setProperty('width', '0', 'important');
+        input.style.setProperty('height', '0', 'important');
+        input.style.setProperty('opacity', '0', 'important');
+        input.style.setProperty('pointer-events', 'none', 'important');
+        input.setAttribute('tabindex', '-1');
+        input.setAttribute('aria-hidden', 'true');
+
         const btnWrap = document.createElement('div');
         btnWrap.className = 'cs-file-btn-wrap';
         btnWrap.innerHTML = `
-            <button type="button" class="cs-file-btn" id="csFileBtnVideo" aria-label="Elegir video de la galería">
-                <span class="cs-file-btn-ico">▶</span>
-                <span class="cs-file-btn-txt" id="csFileBtnTxt" data-clave="videos_elegir_galeria">Elegir video de la galería</span>
-                <span class="cs-file-btn-hint" id="csFileBtnHint" data-clave="videos_archivo_hint" style="display:none;">MP4 · WebM · MOV · Máx 100 MB</span>
+            <button type="button" class="cs-file-btn" id="csFileBtnVideo" aria-label="Elegir video de la galería" style="border:1px solid rgba(255,255,255,0.15); background:transparent; border-radius:8px; padding:16px; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--text-muted); cursor:pointer;">
+                <span class="cs-file-btn-ico" style="font-size:1.5rem;">▶</span>
+                <span class="cs-file-btn-txt" id="csFileBtnTxt" data-clave="videos_elegir_galeria" style="font-weight:600; font-size:0.85rem;">Elegir video de la galería</span>
+                <span class="cs-file-btn-hint" id="csFileBtnHint" data-clave="videos_archivo_hint" style="font-size:0.7rem; opacity:0.7;">MP4 · WebM · MOV · Máx 100 MB</span>
             </button>`;
-        
         if (input.parentNode) input.parentNode.insertBefore(btnWrap, input.nextSibling);
 
         btnWrap.querySelector('#csFileBtnVideo').addEventListener('click', (e) => {
@@ -1165,11 +1280,16 @@
             const txt = $('csFileBtnTxt');
             const hint = $('csFileBtnHint');
             if (file) {
-                if (txt) { txt.removeAttribute('data-clave'); txt.textContent = '◈ ' + file.name; }
+                if (txt) { 
+                    txt.removeAttribute('data-clave'); 
+                    // 🔥 ADIÓS A LOS NÚMEROS DE SERIE (video-camara-1794...mp4)
+                    // Ahora mostramos un texto limpio y profesional
+                    txt.textContent = '◈ Video seleccionado'; 
+                }
                 if (hint) {
                     hint.removeAttribute('data-clave');
-                    hint.textContent = 'Video listo';
-                    hint.style.display = 'block'; // Lo mostramos al elegir archivo
+                    // 🔥 ADIÓS A LOS MEGABYTES, AHORA DICE ALGO LIMPIO
+                    hint.textContent = 'Listo para publicar';
                 }
                 btnWrap.classList.add('cs-file-con-archivo');
                 const pWrap = $('csPreviewWrap');
@@ -1182,13 +1302,12 @@
                 if (hint) {
                     hint.setAttribute('data-clave', 'videos_archivo_hint');
                     hint.textContent = vt('videos_archivo_hint', 'MP4 · WebM · MOV · Máx 100 MB');
-                    hint.style.display = 'none';
                 }
                 btnWrap.classList.remove('cs-file-con-archivo');
             }
         });
 
-        log('✅ Input file transformado');
+        log('✅ Input file transformado en botón plano');
     }
 
     // ============================================================
@@ -1582,7 +1701,7 @@
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
         actualizarBotonesSonidoUbicacion();
-        log('✅ Módulo Publicar v2.9 listo (Ajuste quirúrgico)');
+        log('✅ Módulo Publicar v2.8 listo (diseño plano y video corregido)');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
