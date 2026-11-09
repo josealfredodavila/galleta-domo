@@ -17,11 +17,13 @@ const REDIS_PASSWORD = process.env.REDIS_PASSWORD;
 const CACHE_TTL = parseInt(process.env.NOTICIAS_CACHE_TTL_SECONDS || '600', 10);
 const CACHE_TTL_PREGUNTA = parseInt(process.env.NOTICIAS_PREGUNTA_CACHE_TTL_SECONDS || '1800', 10);
 
+// Modelo del agente de Perplexity: configurable. Verifica el nombre exacto en la documentación.
 const PERPLEXITY_AGENT_MODEL = process.env.NOTICIAS_AGENT_MODEL || 'openai/gpt-5.6-sol';
 const OPENAI_MODEL_RESPALDO = process.env.NOTICIAS_OPENAI_MODEL || 'gpt-4o-mini';
 
-// Versión de la caché del feed: súbela si cambia la forma de los items
-const VERSION_CACHE_FEED = 'v3';
+// Versiones de caché: súbelas cuando cambie la forma o la calidad de los datos guardados
+const VERSION_CACHE_FEED = 'v4';
+const VERSION_CACHE_PREGUNTA = 'v3';
 
 const CATEGORIAS_VALIDAS = ['general', 'mexico', 'tecnologia', 'conectividad', 'cripto', 'negocios'];
 const REGIONES_VALIDAS = ['MX', 'US', 'ES', 'AR', 'CO', 'CL'];
@@ -45,6 +47,13 @@ const QUERIES_PERPLEXITY = {
     cripto: 'noticias de criptomonedas y blockchain hoy',
     negocios: 'noticias de negocios y economía hoy',
 };
+
+// Textos de muro de pago o avisos que no son noticias
+const PATRON_BLOQUEADO = /ONLY AVAILABLE IN PAID PLANS|solo disponible (en|para) (planes|suscriptores)|suscr[ií]bete para (leer|continuar)/i;
+
+// Saludos y preguntas demasiado cortas: se responden sin consultar proveedores
+const PATRON_SALUDO = /^(hola|buenas|buenos d[ií]as|buenas tardes|buenas noches|hey|hi|hello|qu[eé] onda|qu[eé] tal)[\s!¡?.,]*$/i;
+const RESPUESTA_SALUDO = '¡Hola! Pregúntame algo de la actualidad, por ejemplo: "¿Qué pasa hoy en México?"';
 
 let redisClient = null;
 if (REDIS_URL) {
@@ -157,9 +166,17 @@ function registrarErrorProveedor(proveedor, error) {
         console.error(`ℹ️ [noticias] 401 en ${proveedor}: la clave no es válida o no está bien copiada.`);
     }
 
+    if (status === 400) {
+        console.error(`ℹ️ [noticias] 400 en ${proveedor}: revisa el nombre del modelo o los parámetros enviados.`);
+    }
+
     if (status === 429) {
         console.error(`ℹ️ [noticias] 429 en ${proveedor}: límite de peticiones o cuota diaria alcanzada.`);
     }
+}
+
+function esContenidoBloqueado(...textos) {
+    return textos.some((t) => PATRON_BLOQUEADO.test(String(t || '')));
 }
 
 async function leerCache(clave) {
@@ -213,6 +230,7 @@ async function consultarNewsData(categoria, region) {
 
     return resultados
         .filter((r) => r && urlSegura(r.link) !== '#')
+        .filter((r) => !esContenidoBloqueado(r.title, r.description, r.content))
         .slice(0, 10)
         .map((r) => {
             const imagen = urlSegura(r.image_url);
@@ -228,7 +246,8 @@ async function consultarNewsData(categoria, region) {
                     url: urlSegura(r.link),
                 }],
             };
-        });
+        })
+        .filter((item) => item.titulo && item.resumen);
 }
 
 // ================================================================
@@ -259,6 +278,7 @@ async function consultarPerplexitySearch(categoria, region) {
 
     return (response.data?.results || [])
         .filter((r) => r && urlSegura(r.url) !== '#')
+        .filter((r) => !esContenidoBloqueado(r.title, r.snippet))
         .map((r) => ({
             id: hashId(r.url),
             titulo: limpiarTexto(r.title || 'Sin título', 200),
@@ -336,7 +356,9 @@ async function consultarPerplexityAgent(pregunta) {
             model: PERPLEXITY_AGENT_MODEL,
             input: pregunta,
             tools: [{ type: 'web_search' }],
-            instructions: 'Responde con información actualizada. Usa fuentes. No inventes URLs ni datos no verificados.',
+            instructions:
+                'Responde en español, de forma breve y clara, con información actualizada. ' +
+                'Usa fuentes. No inventes URLs ni datos no verificados.',
         },
         {
             headers: {
@@ -348,7 +370,7 @@ async function consultarPerplexityAgent(pregunta) {
     );
 
     const data = response.data || {};
-    const respuesta = (data.output_text || '').trim();
+    const respuesta = limpiarTexto(data.output_text || '', 4000);
 
     if (!respuesta) {
         throw crearError(502, 'Perplexity Agent devolvió una respuesta vacía');
@@ -361,7 +383,7 @@ async function consultarPerplexityAgent(pregunta) {
                 if (urlSegura(result?.url) !== '#') {
                     fuentes.push({
                         id: hashId(result.url),
-                        titulo: result.title || 'Fuente',
+                        titulo: limpiarTexto(result.title || 'Fuente', 120),
                         url: urlSegura(result.url),
                     });
                 }
@@ -400,6 +422,7 @@ async function consultarTavilyOpenAI(pregunta) {
 
     const fuentesCrudas = (busqueda.data?.results || [])
         .filter((r) => r && urlSegura(r.url) !== '#')
+        .filter((r) => !esContenidoBloqueado(r.title, r.content))
         .slice(0, 5);
 
     if (fuentesCrudas.length === 0) {
@@ -448,7 +471,7 @@ async function consultarTavilyOpenAI(pregunta) {
         respuesta,
         fuentes: fuentesCrudas.map((f) => ({
             id: hashId(f.url),
-            titulo: f.title || 'Fuente',
+            titulo: limpiarTexto(f.title || 'Fuente', 120),
             url: urlSegura(f.url),
         })),
     };
@@ -456,6 +479,7 @@ async function consultarTavilyOpenAI(pregunta) {
 
 // ================================================================
 // PREGUNTAS · PERPLEXITY SEARCH (respaldo 2, solo fuentes)
+// Ya no pega snippets como respuesta: devuelve un aviso corto y las fuentes aparte.
 // ================================================================
 
 async function consultarPerplexitySearchPregunta(pregunta) {
@@ -479,19 +503,19 @@ async function consultarPerplexitySearchPregunta(pregunta) {
         }
     );
 
-    const resultados = (response.data?.results || []).filter((r) => r && urlSegura(r.url) !== '#');
+    const resultados = (response.data?.results || [])
+        .filter((r) => r && urlSegura(r.url) !== '#')
+        .filter((r) => !esContenidoBloqueado(r.title, r.snippet));
 
     if (resultados.length === 0) {
         throw crearError(502, 'Perplexity Search no devolvió resultados');
     }
 
-    const lineas = resultados.map((r, i) => `[${i + 1}] ${r.title || 'Fuente'}: ${r.snippet || ''}`.trim());
-
     return {
-        respuesta: `Encontré estas fuentes relacionadas con tu pregunta:\n\n${lineas.join('\n')}`,
+        respuesta: 'No pude redactar una respuesta completa, pero encontré estas fuentes relacionadas con tu pregunta:',
         fuentes: resultados.map((r) => ({
             id: hashId(r.url),
-            titulo: r.title || 'Fuente',
+            titulo: limpiarTexto(r.title || 'Fuente', 120),
             url: urlSegura(r.url),
         })),
     };
@@ -508,7 +532,18 @@ async function preguntarActualidad(pregunta) {
         throw crearError(400, 'Pregunta requerida');
     }
 
-    const cacheKey = `noticias:pregunta:v2:${hashId(preguntaLimpia.toLowerCase())}`;
+    // Saludos y preguntas muy cortas: respuesta local, sin gastar búsquedas ni caché
+    if (PATRON_SALUDO.test(preguntaLimpia) || preguntaLimpia.length < 6) {
+        return {
+            consultadoEn: new Date().toISOString(),
+            proveedor: 'local',
+            respuesta: RESPUESTA_SALUDO,
+            fuentes: [],
+            desdeCache: false,
+        };
+    }
+
+    const cacheKey = `noticias:pregunta:${VERSION_CACHE_PREGUNTA}:${hashId(preguntaLimpia.toLowerCase())}`;
     const cached = await leerCache(cacheKey);
     if (cached) {
         return { ...cached, desdeCache: true };
