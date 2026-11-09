@@ -2,13 +2,14 @@
 /perfil                      /features/perfil/perfil.html                   200
 /configuracion               /features/perfil/configuracion/index.html      200
 /mensajes                    /features/mensajes/mensajes.html               200
+/contactos                   /features/mensajes/contactos.html              200
 /muro                        /features/muro/muro.html                       200
 /videos                      /features/videos/videos.html                   200
 /noticias                    /features/noticias/noticias.html               200
 /mercado                     /features/mercado/index.html                   200
 /live                        /features/live/live.html                       200
-/pay                         /features/pay/panel.html                       302
-/csariel-pay                 /features/pay/panel.html                       302
+/pay                         /features/pay/panel.html                       200
+/csariel-pay                 /features/pay/panel.html                       200
 /pay/cobrar/*                /features/pay/pagar.html                       200
 /terminos-csariels-pay.html  /features/pay/terminos-csariels-pay.html       200
 /legal/terminos-marquinhos   /legal/marquinhos.html                         200
