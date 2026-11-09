@@ -1,6 +1,6 @@
 /* ================================================================
    CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.7
-   ================================================================
+
    Cambios respecto a v2.6:
    - Se eliminó la restricción de aspect-ratio (9/16) en el JS.
    - El video de vista previa ahora ocupa todo el ancho disponible.
@@ -819,7 +819,7 @@
         const v = $('csPreviewVideo');
         const wrap = $('csPreviewWrap');
         if (!v) return;
-        
+
         // Mostramos el contenedor
         if (wrap) wrap.style.display = 'block';
 
@@ -828,7 +828,7 @@
             state.previewURL = null;
         }
         state.previewURL = URL.createObjectURL(file);
-        
+
         // 🔥 AQUÍ ESTABA EL ERROR: Agregamos controls, preload y aseguramos que no esté oculto
         v.src = state.previewURL;
         v.muted = false;
@@ -839,13 +839,6 @@
         try { v.load(); } catch (e) {}
 
         obtenerPortada(file).then(mostrarPortadaEnPreview);
-
-        v.addEventListener('durationchange', function () {
-            if (isFinite(v.duration) && v.duration > 0) {
-                const meta = $('csPreviewDuracion');
-                if (meta) meta.textContent = Math.round(v.duration) + ' s';
-            }
-        });
     }
 
     // ============================================================
@@ -866,7 +859,7 @@
             preview.removeAttribute('src');
             try { preview.load(); } catch (e) {}
         }
-        
+
         const wrap = $('csPreviewWrap');
         if (wrap) wrap.style.display = 'none'; // Ocultamos el contenedor al resetear
 
@@ -1274,9 +1267,8 @@
             if (file) {
                 if (txt) { txt.removeAttribute('data-clave'); txt.textContent = '◈ ' + file.name; }
                 if (hint) {
-                    const mb = (file.size / (1024 * 1024)).toFixed(2);
                     hint.removeAttribute('data-clave');
-                    hint.textContent = mb + ' MB · Listo para subir';
+                    hint.textContent = 'Video listo';
                 }
                 btnWrap.classList.add('cs-file-con-archivo');
                 // Mostramos el contenedor de preview
