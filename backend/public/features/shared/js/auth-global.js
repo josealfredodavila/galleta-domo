@@ -3,13 +3,22 @@
    AUTENTICACIÓN GLOBAL DEL FRONTEND
    ================================================================
    ARCHIVO:  backend/public/features/shared/js/auth-global.js
-   VERSIÓN:  2.0.2
+   VERSIÓN:  2.0.3
    ================================================================
 
    RESPONSABILIDAD ÚNICA:
    Proveer a cada página del frontend un cliente Supabase listo
    para usar, con la sesión del usuario resuelta, y proteger
    las rutas que declaren ser privadas.
+
+   ================================================================
+   CAMBIOS v2.0.3
+   ================================================================
+
+   - AUTH_TIMEOUT_MS subió de 30000 a 60000 ms.
+   - La carga de /api/config/public reintenta hasta 3 veces con
+     espera creciente (2 s, 4 s) antes de rendirse. Antes, un
+     solo fallo de red dejaba window.supabaseClient en null.
 
    ================================================================
    CAMBIOS v2.0.2
@@ -48,7 +57,7 @@
        CONSTANTES
     ================================================================ */
 
-    const AUTH_TIMEOUT_MS = 30000;
+    const AUTH_TIMEOUT_MS = 60000;
 
     const SUPABASE_PROJECT_URL =
         'https://zultnlogdoajehbswlih.supabase.co';
@@ -318,32 +327,54 @@
 
         configPromise = (async () => {
 
-            const response = await fetch(
-                CONFIG_ENDPOINT,
-                {
-                    method: 'GET',
-                    headers: { Accept: 'application/json' },
-                    credentials: 'same-origin',
-                    cache: 'no-store'
+            let ultimoError = null;
+
+            for (let intento = 1; intento <= 3; intento++) {
+                try {
+                    const response = await fetch(
+                        CONFIG_ENDPOINT,
+                        {
+                            method: 'GET',
+                            headers: { Accept: 'application/json' },
+                            credentials: 'same-origin',
+                            cache: 'no-store'
+                        }
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(
+                            'HTTP ' + response.status +
+                            ' al cargar ' + CONFIG_ENDPOINT + '.'
+                        );
+                    }
+
+                    const config = await response.json();
+
+                    if (!config || config.success === false) {
+                        throw new Error(
+                            'La configuración pública de Supabase no es válida.'
+                        );
+                    }
+
+                    return crearCliente(config);
+
+                } catch (error) {
+                    ultimoError = error;
+                    console.warn(
+                        '[Auth Global] Intento ' + intento +
+                        ' de configuración fallido:',
+                        error
+                    );
+
+                    if (intento < 3) {
+                        await new Promise(function (resolve) {
+                            setTimeout(resolve, 2000 * intento);
+                        });
+                    }
                 }
-            );
-
-            if (!response.ok) {
-                throw new Error(
-                    'HTTP ' + response.status +
-                    ' al cargar ' + CONFIG_ENDPOINT + '.'
-                );
             }
 
-            const config = await response.json();
-
-            if (!config || config.success === false) {
-                throw new Error(
-                    'La configuración pública de Supabase no es válida.'
-                );
-            }
-
-            return crearCliente(config);
+            throw ultimoError;
 
         })();
 
