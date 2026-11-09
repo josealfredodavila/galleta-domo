@@ -398,10 +398,11 @@
     }
 
     async function preguntar(texto) {
-        const pregunta = String(texto || '').trim();
-        if (!pregunta) {
-            mostrarRespuesta('Escribe una pregunta antes de consultar.', true);
-            return;
+        const SALUDOS = /^(hola|buenas|buenos días|buenas tardes|buenas noches|hey|hi|hello)[\s!¡?.,]*$/i;
+if (SALUDOS.test(pregunta) || pregunta.length < 6) {
+    mostrarRespuesta('¡Hola! Pregúntame algo de la actualidad, por ejemplo: "¿Qué pasa hoy en México?"', false);
+    return;
+}
         }
         if (!state.token) {
             mostrarRespuesta('Sesión no disponible. Vuelve a iniciar sesión.', true);
