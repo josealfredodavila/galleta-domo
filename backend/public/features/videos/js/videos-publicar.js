@@ -1,15 +1,13 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v2.9
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.0
    ================================================================
-   Cambios respecto a v2.8:
-   - Persistencia local (IndexedDB): el video y los datos del
-     formulario sobreviven a una recarga de la página.
-   - Guardar borrador reutiliza el video ya subido (no lo vuelve a
-     subir) y elimina de Storage los archivos reemplazados.
-   - Vista previa a pantalla completa con el sonido seleccionado,
-     sincronizado con el video. Desde ahí se puede publicar o seguir
-     editando. Publicar usa el botón de publicación existente.
-   - La lógica de audio, publicación y API no cambia.
+   Cambios respecto a v2.9:
+   - Quitar video seleccionado antes de publicar (botón ✕ sobre el
+     video y botón "Quitar video"). Conserva título, descripción,
+     sonido y ubicación.
+   - Feed: se ocultan reacciones (corazón) y compartir según FEED_UI.
+   - Feed: botón de pausa/reproducir en la barra lateral de cada video.
+   - La lógica de borradores, persistencia, vista previa y API no cambia.
    ================================================================ */
 
 (function () {
@@ -20,12 +18,22 @@
 
     const Z = { CAMARA: 99999, SHEET_BACKDROP: 100000, SHEET: 100001, PREVIEW: 100030, CONFIRM: 100010, TOAST: 100020 };
 
+    // Controles del feed. Pon true para volver a mostrar cada botón.
+    const FEED_UI = {
+        ocultarLikes: true,
+        ocultarCompartir: true,
+        ocultarReacciones: true
+    };
+
     const EQ_COLORES = ['#ff2bd6', '#ff3d7f', '#00f0ff', '#39ff14', '#ffe600', '#b026ff'];
 
     const IDB_NAME = 'csVideosPublicar';
     const IDB_STORE = 'kv';
     const KEY_META = 'meta';
     const KEY_FILE = 'file';
+
+    const ICONO_PAUSA = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+    const ICONO_PLAY = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><polygon points="7 5 19 12 7 19 7 5"/></svg>';
 
     function vt(clave, respaldo) {
         if (typeof window.tConFallback === 'function') return window.tConFallback(clave, respaldo);
@@ -713,20 +721,19 @@
         try {
             const usuarioId = session.user.id;
 
-            // Video: reutiliza el ya subido; solo sube si es nuevo
             let archivoPath = state.archivoPathRemoto;
             if (archivo && !archivoPath) {
                 archivoPath = await subirBorradorArchivo(rutaBorrador(usuarioId, archivo.name), archivo, archivo.type);
                 subidos.push(archivoPath);
             }
 
-            // Portada: igual que el video
             let portadaPath = state.portadaPathRemoto;
             const portada = blobDePortadaActual();
             if (portada && !portadaPath) {
                 portadaPath = await subirBorradorArchivo(rutaBorrador(usuarioId, 'portada.jpg'), portada, 'image/jpeg');
                 subidos.push(portadaPath);
             }
+            if (!portada) portadaPath = null;
 
             let duracion = null;
             const videoEl = $('csPreviewVideo');
@@ -759,7 +766,6 @@
             }
             if (resultado.error) throw new Error(resultado.error.message || 'No se pudo guardar el borrador');
 
-            // Limpia de Storage los archivos que fueron reemplazados
             const reemplazados = [];
             if (previos.archivo && previos.archivo !== archivoPath) reemplazados.push(previos.archivo);
             if (previos.portada && previos.portada !== portadaPath) reemplazados.push(previos.portada);
@@ -778,9 +784,7 @@
         } finally {
             state.guardandoBorrador = false;
         }
-    }
-
-    async function renderBorradores() {
+    }    async function renderBorradores() {
         const lista = $('csBorradoresLista');
         if (!lista) return;
         lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">◈</span><p>Cargando borradores…</p></div>`;
@@ -1033,7 +1037,66 @@
         v.style.display = 'block';
         try { v.load(); } catch (e) {}
 
+        actualizarBotonQuitar(true);
         obtenerPortada(file).then(mostrarPortadaEnPreview);
+    }
+
+    // ============================================================
+    // QUITAR VIDEO SELECCIONADO (antes de publicar)
+    // ============================================================
+    function actualizarBotonQuitar(tieneVideo) {
+        const tiene = typeof tieneVideo === 'boolean' ? tieneVideo : !!state.archivoVideo;
+        const overlay = $('csQuitarVideo');
+        const accion = $('csBtnQuitarVideo');
+        const bloqueVideo = document.querySelector('#csPreviewWrap .cs-preview-video');
+        if (overlay) overlay.style.display = tiene ? 'flex' : 'none';
+        if (accion) accion.style.display = tiene ? '' : 'none';
+        if (bloqueVideo) bloqueVideo.style.display = tiene ? '' : 'none';
+    }
+
+    async function quitarVideoSeleccionado() {
+        if (!state.archivoVideo) return;
+        const ok = await csConfirm({
+            titulo: 'Quitar video',
+            mensaje: 'Se quitará el video seleccionado. Tu título, descripción, sonido y ubicación se conservan.',
+            textoOk: 'Quitar',
+            peligroso: true
+        });
+        if (!ok) return;
+
+        cerrarPreview();
+
+        state.archivoVideo = null;
+        state.archivoConAudioMezclado = false;
+        state.archivoPathRemoto = null;
+        state.portadaPathRemoto = null;
+        window.__csMiniaturaCamara = null;
+        window.__csArchivoConAudioMezclado = false;
+
+        const videoEl = $('csPreviewVideo');
+        if (videoEl) {
+            try { videoEl.pause(); } catch (e) {}
+            videoEl.removeAttribute('src');
+            try { videoEl.load(); } catch (e) {}
+        }
+        if (state.previewURL) {
+            try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
+            state.previewURL = null;
+        }
+        mostrarPortadaEnPreview(null);
+
+        const input = $('inputArchivoVideo');
+        if (input) { try { input.value = ''; } catch (e) {} }
+
+        const wrap = $('csPreviewWrap');
+        if (wrap) wrap.style.display = 'block';
+
+        actualizarTextoBotonArchivo(null);
+        actualizarBotonQuitar(false);
+
+        await persistirArchivo();
+        persistirMetaDebounced();
+        csToast('Video quitado', 'success');
     }
 
     // ============================================================
@@ -1204,6 +1267,7 @@
         if (badge) badge.style.display = 'none';
 
         actualizarTextoBotonArchivo(null);
+        actualizarBotonQuitar(false);
 
         const progressEl = $('uploadProgress');
         const progressFill = $('progressFill');
@@ -1250,6 +1314,76 @@
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
     // ============================================================
+    // FEED · controles (sin reacciones/compartir, con pausa)
+    // ============================================================
+    function inyectarEstilosFeed() {
+        if ($('cs-feed-ui')) return;
+        const ocultar = [];
+        if (FEED_UI.ocultarLikes) ocultar.push('.video-card .like-btn');
+        if (FEED_UI.ocultarCompartir) ocultar.push('.video-card .btn-compartir-premium');
+        if (FEED_UI.ocultarReacciones) ocultar.push('.video-card .reaccion-picker');
+
+        const st = document.createElement('style');
+        st.id = 'cs-feed-ui';
+        st.textContent = (ocultar.length ? ocultar.join(',') + ' { display: none !important; }' : '') + `
+            .video-card .cs-pausa-btn { cursor: pointer; }
+            .video-card .cs-pausa-btn .icono { display: flex; align-items: center; justify-content: center; }
+            .video-card .cs-pausa-btn svg { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
+        `;
+        document.head.appendChild(st);
+    }
+
+    function decorarTarjeta(card) {
+        if (!card || card.dataset.csDecorada === '1') return;
+        const acciones = card.querySelector('.sidebar-acciones');
+        const video = card.querySelector('video');
+        if (!acciones || !video) return;
+        card.dataset.csDecorada = '1';
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'sidebar-btn cs-pausa-btn';
+        btn.setAttribute('aria-label', 'Pausar o reproducir');
+        btn.innerHTML = '<span class="icono cs-pausa-ico"></span>';
+        acciones.insertBefore(btn, acciones.firstChild);
+
+        const icono = btn.querySelector('.cs-pausa-ico');
+        function pintar() {
+            icono.innerHTML = video.paused ? ICONO_PLAY : ICONO_PAUSA;
+        }
+        pintar();
+        video.addEventListener('play', pintar);
+        video.addEventListener('pause', pintar);
+
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!video.getAttribute('src') && video.dataset.src) {
+                video.src = video.dataset.src;
+                video.load();
+            }
+            if (video.paused) {
+                video.play().catch(() => {});
+                card.classList.add('playing');
+            } else {
+                video.pause();
+                card.classList.remove('playing');
+            }
+            pintar();
+        });
+    }
+
+    function observarFeed() {
+        const cont = $('videosContainer');
+        if (!cont) return;
+        cont.querySelectorAll('.video-card').forEach(decorarTarjeta);
+        const obs = new MutationObserver(function () {
+            cont.querySelectorAll('.video-card').forEach(decorarTarjeta);
+        });
+        obs.observe(cont, { childList: true });
+    }
+
+    // ============================================================
     // ESTILOS
     // ============================================================
     function inyectarEstilosExtra() {
@@ -1294,6 +1428,16 @@
                 animation: cs-badge-latido 1.6s ease-in-out infinite;
             }
             @keyframes cs-badge-latido { 0%,100% { box-shadow: 0 0 10px rgba(255,43,214,.5); } 50% { box-shadow: 0 0 22px rgba(0,240,255,.8); } }
+
+            #csQuitarVideo {
+                position: absolute; top: 10px; right: 10px; z-index: 4;
+                width: 36px; height: 36px; border-radius: 50%;
+                display: none; align-items: center; justify-content: center;
+                background: rgba(0,0,0,.65); border: 1px solid rgba(255,51,102,.7);
+                color: #ff3366; font-size: 1rem; cursor: pointer; padding: 0;
+            }
+            #csQuitarVideo:active { transform: scale(.92); }
+            .cs-btn-quitar { color: #ff3366 !important; border-color: rgba(255,51,102,.6) !important; }
 
             /* ----- Vista previa a pantalla completa ----- */
             .cs-prev-modal { position: fixed; inset: 0; z-index: ${Z.PREVIEW}; background: #000; display: none; flex-direction: column; color: #fff; }
@@ -1523,6 +1667,7 @@
                 <img id="csPreviewPortada" alt="Portada del video" />
                 <video id="csPreviewVideo" controls playsinline preload="metadata"></video>
                 <div class="cs-preview-badge" id="csPreviewBadge" style="display:none;" data-clave="videos_sonido_video_badge">◆ Sonido + video</div>
+                <button type="button" id="csQuitarVideo" aria-label="Quitar video" title="Quitar video">✕</button>
             </div>
             <div class="cs-preview-meta">
                 <div class="cs-preview-line" id="csPreviewSonido">
@@ -1543,6 +1688,9 @@
                     <button type="button" class="cs-btn-ghost" id="csBtnGuardarBorrador">
                         <span class="cs-ico">◇</span> <span data-clave="videos_guardar_borrador_btn">Guardar borrador</span>
                     </button>
+                    <button type="button" class="cs-btn-ghost cs-btn-quitar" id="csBtnQuitarVideo">
+                        <span class="cs-ico">✕</span> <span>Quitar video</span>
+                    </button>
                 </div>
             </div>`;
         const grupos = form.querySelectorAll('.form-group');
@@ -1554,6 +1702,9 @@
         $('csBtnVistaPrevia').addEventListener('click', abrirPreview);
         $('csBtnVerBorradores').addEventListener('click', abrirModalBorradores);
         $('csBtnGuardarBorrador').addEventListener('click', guardarBorrador);
+        $('csQuitarVideo').addEventListener('click', quitarVideoSeleccionado);
+        $('csBtnQuitarVideo').addEventListener('click', quitarVideoSeleccionado);
+        actualizarBotonQuitar(false);
     }
 
     function transformarInputArchivo(scope) {
@@ -1982,8 +2133,10 @@
         guardarBorrador,
         abrirBorrador,
         eliminarBorrador,
-        getConfig: () => ({ ...CONFIG }),
+        quitarVideoSeleccionado,
+        getConfig: () => ({ ...CONFIG, FEED_UI: { ...FEED_UI } }),
         setProvider: (p) => { CONFIG.PROVIDER = p; },
+        setFeedUI: (parcial) => { Object.assign(FEED_UI, parcial || {}); const old = $('cs-feed-ui'); if (old) old.remove(); inyectarEstilosFeed(); },
         getState: () => ({
             sonido: state.sonidoSeleccionado,
             ubicacion: state.ubicacionSeleccionada,
@@ -1997,6 +2150,7 @@
 
     async function init() {
         inyectarEstilosExtra();
+        inyectarEstilosFeed();
         inyectarBotonesHeader();
         inyectarModales();
         inyectarSeccionPreviewEnUpload();
@@ -2006,9 +2160,10 @@
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
         iniciarVigilanteAutoplay();
+        observarFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v2.9 listo');
+        log('✅ Módulo Publicar v3.0 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
