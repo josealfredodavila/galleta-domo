@@ -903,7 +903,9 @@
     <script src="/features/videos/js/videos-publicar.js" defer></script>
     <script>
     // ================================================================
-    // VIDEOS · v15.9 — Fullscreen Pro + Doble Tap + Cámara
+    // VIDEOS · v15.10 — Fullscreen Pro + Doble Tap + Cámara
+    // Cambio: subida y procesamiento con lectura segura de respuestas,
+    // tiempo límite y mensajes de error con código HTTP.
     // ================================================================
 
     var sbVideos = null;
@@ -995,6 +997,31 @@
             var r = await sbVideos.auth.getSession();
             return r.data.session;
         } catch (e) { return null; }
+    }
+
+    // ----------------------------------------------------------------
+    // Utilidades de red: lectura segura de respuestas y tiempo límite
+    // ----------------------------------------------------------------
+    async function leerJSONSeguro(respuesta) {
+        var texto = '';
+        try { texto = await respuesta.text(); } catch (e) { return { _error: 'lectura', status: respuesta.status }; }
+        if (!texto) return { _vacio: true, status: respuesta.status };
+        try { return JSON.parse(texto); }
+        catch (e) { return { _invalido: true, status: respuesta.status, cuerpo: texto.slice(0, 120) }; }
+    }
+
+    function fetchConTimeout(url, opciones, ms) {
+        var controlador = new AbortController();
+        var temporizador = setTimeout(function () { controlador.abort(); }, ms || 120000);
+        var opts = Object.assign({}, opciones, { signal: controlador.signal });
+        return fetch(url, opts).finally(function () { clearTimeout(temporizador); });
+    }
+
+    function mensajeDeError(etapa, respuesta, datos) {
+        if (datos && datos.error) return etapa + ': ' + datos.error;
+        if (datos && datos._vacio) return etapa + ': el servidor no respondió (HTTP ' + respuesta.status + ')';
+        if (datos && datos._invalido) return etapa + ': respuesta inválida (HTTP ' + respuesta.status + ')';
+        return etapa + ': error HTTP ' + respuesta.status;
     }
 
     function iconoBasuraSVG() {
@@ -1690,14 +1717,12 @@
         var progressText = document.getElementById('progressText');
         var filePath = null;
         var videoId = null;
-        var encolado = false;
 
         function liberar() {
             subiendoVideo = false;
             if (btn) { btn.disabled = false; btn.textContent = '◈ Subir video'; }
             if (progressEl) progressEl.style.display = 'none';
             if (progressFill) progressFill.style.width = '0%';
-            if (fileInput) { try { fileInput.value = ''; } catch (e) {} }
         }
 
         if (btn) btn.disabled = true;
@@ -1725,9 +1750,14 @@
             fd.append('file', file);
             fd.append('destino', 'videos');
             fd.append('tipo', 'video');
-            var subidaResp = await fetch('/api/media/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + session.access_token }, body: fd });
-            var subidaJson = await subidaResp.json();
-            if (!subidaResp.ok || !subidaJson.ok) throw new Error(subidaJson.error || 'Error subiendo');
+
+            var subidaResp = await fetchConTimeout('/api/media/upload', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + session.access_token },
+                body: fd
+            }, 120000);
+            var subidaJson = await leerJSONSeguro(subidaResp);
+            if (!subidaResp.ok || !subidaJson.ok) throw new Error(mensajeDeError('Subida', subidaResp, subidaJson));
 
             var videoUrl = subidaJson.url;
             filePath = subidaJson.path;
@@ -1748,11 +1778,11 @@
                 sonido_url: sonido ? sonido.url : null,
                 ubicacion_nombre: ubicacion ? (ubicacion.nombre + ', ' + ubicacion.pais) : null
             }).select().single();
-            if (ins.error) throw ins.error;
+            if (ins.error) throw new Error('Registro: ' + (ins.error.message || 'no se pudo crear'));
             videoId = ins.data.id;
 
             if (progressFill) progressFill.style.width = '85%';
-            var queueResponse = await fetch('/api/video/queue', {
+            var queueResp = await fetchConTimeout('/api/video/queue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
                 body: JSON.stringify({
@@ -1762,10 +1792,9 @@
                     filePath: filePath,
                     audioUrl: sonido ? sonido.url : null
                 })
-            });
-            var queueData = await queueResponse.json();
-            if (!queueData.success) throw new Error(queueData.error || 'Error procesando');
-            encolado = true;
+            }, 60000);
+            var queueData = await leerJSONSeguro(queueResp);
+            if (!queueResp.ok || !queueData.success) throw new Error(mensajeDeError('Procesamiento', queueResp, queueData));
 
             document.getElementById('uploadSection').style.display = 'none';
             document.getElementById('processingState').classList.add('visible');
@@ -1777,7 +1806,11 @@
             subiendoVideo = false;
             iniciarPollingProcesamiento(queueData.jobId, videoId);
         } catch (e) {
-            showToast('◈ ' + (e.message || 'Error'), 'error');
+            var msg = e && e.name === 'AbortError'
+                ? 'La subida tardó demasiado. Revisa tu conexión e intenta de nuevo.'
+                : (e.message || 'Error al subir');
+            console.error('[Videos] Error al subir:', e);
+            showToast('◈ ' + msg, 'error', 6000);
             liberar();
         }
     }
@@ -1794,7 +1827,7 @@
                 var session = await getSession();
                 if (!session) return;
                 var response = await fetch('/api/video/status/' + jobId, { headers: { 'Authorization': 'Bearer ' + session.access_token } });
-                var data = await response.json();
+                var data = await leerJSONSeguro(response);
                 if (!data.success) return;
                 var progreso = data.progreso || 0;
                 if (progressFill) progressFill.style.width = progreso + '%';
