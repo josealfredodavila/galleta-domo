@@ -3,19 +3,18 @@
 // Montado en /api/webhook
 //   POST /api/webhook/nowpayments → IPN de NOWPayments (firma verificada)
 //       LP-     → Live Pass
-//       DON-    → donaciones de live (confirmar_donacion_live, 3 argumentos)
-//       TRX-    → accesos de pago a lives (pagos_transmision)
-//       muro_   → ventas P2P del Muro (muro_ventas_tokens)
-//       MKT-    → pagos de campañas de marketing (marketing_pagos)
-//       MKC-    → compras del Marketplace de canales (grupos_marketplace_compras)
-//       NET-    → paquetes de Internet (ordenes_internet)
+//       DON-    → donaciones de live
+//       TRX-    → accesos de pago a lives
+//       muro_   → ventas P2P del Muro
+//       MKT-    → pagos de campañas de marketing
+//       MKC-    → compras del Marketplace de canales
+//       NET-    → paquetes de Internet
 //       PRO-    → membresía PRO
+//       ANU-    → pagos de anuncios del carrusel  ✅ NUEVO
 //       resto   → membresía de Mercado (por payment_id)
-//   POST /api/webhook/membresia   → membresía PRO (firma verificada)
+//   POST /api/webhook/membresia   → membresía PRO
 //   POST /api/webhook/stripe      → placeholder
 //   POST /api/webhook/fintoc      → placeholder
-// Toda petición de NOWPayments pasa primero por verificarFirmaNowPayments.
-// Estados de pago unificados: pagado / cancelado / pendiente.
 // ================================================================
 
 const express = require('express');
@@ -27,6 +26,9 @@ const ventas = require('./webhooks/nowpayments-ventas');
 const marketplaceCanal = require('./webhooks/nowpayments-marketplace');
 const { handleWebhookMembresia } = require('./membresia-webhook-handler');
 const { handleWebhookInternet } = require('./webhooks/nowpayments-internet');
+
+// ✅ NUEVO: Módulo de pagos de anuncios
+const anunciosPagos = require('../services/anuncios/pagos-anuncio');
 
 const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
@@ -86,8 +88,12 @@ router.post('/nowpayments', async (req, res) => {
             return handleWebhookMembresia(req, res);
         }
 
+        // ✅ NUEVO: Rama ANU- para anuncios del carrusel
+        if (orderUpper.startsWith('ANU-')) {
+            return anunciosPagos.procesarPagoAnuncio(orderId, npStatus, data, res);
+        }
+
         // Resto (membresía de Mercado): busca por payment_id.
-        // Si no existe, responde 200 sin activar nada.
         return nowpayments.procesarMembresia(npStatus, data, res);
     } catch (e) {
         logError('/nowpayments:', e.message);
