@@ -180,6 +180,7 @@
     .badge.activo { color: var(--success); border-color: var(--success); }
     .badge.pausado { color: var(--muted); }
     .badge.reportado { color: var(--danger); border-color: var(--danger); }
+    .badge.pendiente_pago { color: #f7d44a; border-color: #f7d44a; }
 
     .vacio { color: var(--muted); font-size: .8rem; text-align: center; padding: 14px 0; }
 
@@ -229,13 +230,7 @@
         <label for="whatsapp">
             WhatsApp / Celular <span class="opcional">(opcional)</span>
         </label>
-        <input
-            type="tel"
-            id="whatsapp"
-            maxlength="20"
-            inputmode="tel"
-            autocomplete="tel"
-            placeholder="Ej: +521234567890">
+        <input type="tel" id="whatsapp" maxlength="20" inputmode="tel" autocomplete="tel" placeholder="Ej: +521234567890">
         <div class="contador izq" id="contadorWhatsapp">
             Con código de país. Se usará para el botón "WhatsApp" en el detalle.
         </div>
@@ -243,11 +238,7 @@
         <label for="ubicacion">
             Ubicación o Ciudad <span class="opcional">(opcional)</span>
         </label>
-        <input
-            type="text"
-            id="ubicacion"
-            maxlength="100"
-            placeholder="Ej: Texcoco, Estado de México">
+        <input type="text" id="ubicacion" maxlength="100" placeholder="Ej: Texcoco, Estado de México">
         <div class="contador izq" id="contadorUbicacion">
             Aparecerá en el detalle del anuncio.
         </div>
@@ -270,20 +261,16 @@
                 <input type="checkbox" id="aceptoTerminos" required>
                 <span class="terminos-texto">
                     He leído y acepto los
-                    <a href="/features/anuncios/terminos-anunciantes.html"
-                       target="_blank"
-                       rel="noopener">
+                    <a href="/features/anuncios/terminos-anunciantes.html" target="_blank" rel="noopener">
                         Términos y Condiciones para Anunciantes
                     </a>
                     de Csariel's. Entiendo que:
                     <br>
-                    • Soy el único responsable de la veracidad y legalidad
-                      de lo que anuncio.
+                    • Soy el único responsable de la veracidad y legalidad de lo que anuncio.
                     <br>
                     • Mi anuncio será identificado como <strong>PATROCINADO</strong>.
                     <br>
-                    • Csariel's puede pausar o remover mi anuncio si
-                      infringe las normas.
+                    • Csariel's puede pausar o remover mi anuncio si infringe las normas.
                 </span>
             </label>
         </div>
@@ -295,7 +282,7 @@
     <div class="tarjeta">
         <h2>MIS ANUNCIOS</h2>
         <div class="mis-anuncios" id="misAnuncios">
-            <div class="vacio">Cargando…</div>
+            <div class="vacio" id="misAnunciosPlaceholder">Cargando…</div>
         </div>
     </div>
 
@@ -335,9 +322,6 @@
         if (m.indexOf('media_no_valida') >= 0) {
             return 'La imagen no pasó la revisión. Prueba con otra.';
         }
-        if (m.indexOf('rechaz') >= 0 || m.indexOf('contenido') >= 0) {
-            return 'La imagen no pasó la revisión. Prueba con otra.';
-        }
         return 'No se pudo publicar. Intenta de nuevo.';
     }
 
@@ -359,22 +343,32 @@
         return v;
     }
 
+    // ✅ CORRECCIÓN 1: Credenciales directas (sin fetch)
     async function crearCliente() {
         if (window.supabaseClient) return window.supabaseClient;
-        var r = await fetch('/api/config/public', { cache: 'no-store', credentials: 'same-origin' });
-        var config = await r.json();
-        window.supabaseClient = window.supabase.createClient(
-            config.supabaseUrl,
-            config.supabaseAnonKey,
-            {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                    detectSessionInUrl: true
-                }
+
+        var intentos = 0;
+        while (!window.supabase || typeof window.supabase.createClient !== 'function') {
+            if (intentos++ > 100) {
+                throw new Error('El SDK de Supabase no cargó. Revisa tu conexión a internet.');
             }
+            await new Promise(function (r) { setTimeout(r, 100); });
+        }
+
+        window.supabaseClient = window.supabase.createClient(
+            'https://zultnlogdoajehbswlih.supabase.co',
+            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
+            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
         );
         return window.supabaseClient;
+    }
+
+    // ✅ CORRECCIÓN 2: Manejo de error en Mis Anuncios
+    function mostrarErrorAnuncios(mensaje) {
+        var cont = $('misAnuncios');
+        if (cont) {
+            cont.innerHTML = '<div class="vacio">' + mensaje + '<br><button type="button" class="boton-secundario" onclick="location.reload()" style="margin-top:8px;">Recargar</button></div>';
+        }
     }
 
     async function iniciar() {
@@ -389,7 +383,8 @@
         } catch (e) {
             console.error('[Crear anuncio]', e);
             document.documentElement.classList.add('auth-ready');
-            estado('No se pudo conectar. Recarga la página.', 'error');
+            estado('No se pudo conectar. Verifica tu red o recarga la página.', 'error');
+            mostrarErrorAnuncios('Error de conexión. No se pueden cargar tus anuncios.');
             return;
         }
         document.documentElement.classList.add('auth-ready');
@@ -456,7 +451,8 @@
         fd.append('destino', 'muro-imagenes');
         fd.append('tipo', 'imagen');
 
-        var r = await fetch('/api/media/upload', {
+        // ✅ CORRECCIÓN 3: URL de Railway con manejo de error
+        var r = await fetch('https://galleta-domo-production.up.railway.app/api/media/upload', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
             body: fd
@@ -478,7 +474,6 @@
         var destinoSel = $('destino').value;
         var destino = destinoSel;
 
-        // Validación: términos aceptados
         var aceptoTerminos = $('aceptoTerminos');
         if (!aceptoTerminos.checked) {
             estado('Debes aceptar los Términos y Condiciones para publicar.', 'error');
@@ -516,6 +511,7 @@
             var url = await subirImagen(archivoSeleccionado);
 
             estado('Publicando…');
+            
             var r = await client.from('anuncios').insert({
                 usuario_id: uid,
                 tipo: 'imagen',
@@ -525,34 +521,29 @@
                 destino_url: destino,
                 whatsapp_contacto: whatsapp,
                 ubicacion_negocio: ubicacionRaw || null,
-                // Auditoría de términos: SOLO enviamos la versión.
-                // El timestamp lo sella el trigger del servidor.
-                terminos_version: '1.1'
+                terminos_version: '1.1',
+                activo: false,
+                estado_moderacion: 'pendiente_pago',
+                vigencia_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
             }).select('id').single();
 
             if (r.error) throw r.error;
 
-            estado('¡Anuncio publicado! Ya aparece en el carrusel.', 'ok');
-            $('formAnuncio').reset();
-            $('contadorTitulo').textContent = '0 / 80';
-            $('contadorTexto').textContent = '0 / 200';
-            var hint = $('contadorWhatsapp');
-            hint.textContent = 'Con código de país. Se usará para el botón "WhatsApp" en el detalle.';
-            hint.classList.remove('ok', 'err');
-            $('vistaPrevia').style.display = 'none';
-            $('destinoExterno').style.display = 'none';
-            archivoSeleccionado = null;
-            cargarMisAnuncios();
+            estado('¡Anuncio creado! Redirigiendo al pago...', 'ok');
+            setTimeout(function () {
+                window.location.href = '/marketing/marketing.html?anuncio_pendiente=' + r.data.id;
+            }, 1500);
+
         } catch (err) {
             console.error('[Crear anuncio]', err);
             estado(mensajeError(err), 'error');
-        } finally {
             btn.disabled = false;
             btn.textContent = 'Publicar anuncio';
         }
     });
 
     function estadoDe(a) {
+        if (a.estado_moderacion === 'pendiente_pago') return ['pendiente_pago', 'Pendiente de pago'];
         if (a.reportes >= 5 || a.pausado_automatico) return ['reportado', 'Pausado por reportes'];
         if (!a.activo) return ['pausado', 'Pausado'];
         if (new Date(a.vigencia_fin) <= new Date()) return ['pausado', 'Vencido'];
@@ -568,10 +559,11 @@
         cargarMisAnuncios();
     }
 
+    // ✅ CORRECCIÓN 4: Manejo de error en cargarMisAnuncios
     async function cargarMisAnuncios() {
         var cont = $('misAnuncios');
         var r = await client.from('anuncios')
-            .select('id, titulo, media_url, activo, vistas, toques, reportes, pausado_automatico, vigencia_fin, created_at')
+            .select('id, titulo, media_url, activo, vistas, toques, reportes, pausado_automatico, vigencia_fin, created_at, estado_moderacion')
             .eq('usuario_id', uid)
             .order('created_at', { ascending: false })
             .limit(20);
@@ -579,7 +571,7 @@
         cont.innerHTML = '';
 
         if (r.error) {
-            cont.innerHTML = '<div class="vacio">No se pudieron cargar tus anuncios.</div>';
+            mostrarErrorAnuncios('No se pudieron cargar tus anuncios: ' + r.error.message);
             return;
         }
         if (!r.data || !r.data.length) {
@@ -618,7 +610,7 @@
             item.appendChild(img);
             item.appendChild(datos);
 
-            if (est[0] !== 'reportado' && new Date(a.vigencia_fin) > new Date()) {
+            if (est[0] !== 'reportado' && new Date(a.vigencia_fin) > new Date() && est[0] !== 'pendiente_pago') {
                 var btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'boton-secundario';
