@@ -62,35 +62,15 @@
                     }
 
                     if (!window.supabaseClient) {
-                        var supabaseUrl = null;
-                        var supabaseAnonKey = null;
-
-                        try {
-                            const response = await fetch('/api/config/public', {
-                                method: 'GET',
-                                credentials: 'same-origin',
-                                cache: 'no-store',
-                                headers: { 'Accept': 'application/json' }
-                            });
-
-                            if (response.ok) {
-                                const config = await response.json();
-                                supabaseUrl = config && config.supabaseUrl;
-                                supabaseAnonKey = config && config.supabaseAnonKey;
-                            }
-                        } catch (fetchErr) {
-                            console.warn('[Membresía] fetch /api/config/public falló:', fetchErr);
-                        }
-
-                        if (!supabaseUrl || !supabaseAnonKey) {
-                            throw new Error('Configuración pública de Supabase no disponible.');
-                        }
-
+                        // ✅ CORRECCIÓN APLICADA:
+                        // Se eliminó el fetch('/api/config/public') que causaba el error
+                        // "Unexpected token '<', '<!DOCTYPE ...' is not valid JSON".
+                        // Ahora usa las mismas credenciales hardcodeadas que el resto del ecosistema.
                         window.SupabaseSDK = window.supabase;
 
                         window.supabaseClient = window.SupabaseSDK.createClient(
-                            supabaseUrl,
-                            supabaseAnonKey,
+                            'https://zultnlogdoajehbswlih.supabase.co',
+                            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
                             {
                                 auth: {
                                     persistSession: true,
