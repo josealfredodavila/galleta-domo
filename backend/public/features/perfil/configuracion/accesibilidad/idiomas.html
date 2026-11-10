@@ -258,17 +258,48 @@
         }
     }
 
+    // ✅ CORRECCIÓN APLICADA:
+    // Se eliminó la dependencia exclusiva de cfgEsperarSupabase (que a veces no está lista).
+    // Ahora, si no hay cliente, se crea directamente con las credenciales del ecosistema.
     async function obtenerCliente() {
         if (clienteSupabase) {
             return clienteSupabase;
         }
 
+        // 1. Intentar obtener el cliente existente
         if (typeof window.cfgEsperarSupabase === 'function') {
-            clienteSupabase = await window.cfgEsperarSupabase();
+            try {
+                clienteSupabase = await window.cfgEsperarSupabase();
+            } catch (_) {}
         }
 
         if (!clienteSupabase) {
             clienteSupabase = window.supabaseClient || null;
+        }
+
+        // 2. Si no existe, crearlo con las credenciales directas
+        if (!clienteSupabase) {
+            if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+                throw new Error('Supabase SDK no disponible.');
+            }
+
+            try {
+                clienteSupabase = window.supabase.createClient(
+                    'https://zultnlogdoajehbswlih.supabase.co',
+                    'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
+                    {
+                        auth: {
+                            persistSession: true,
+                            autoRefreshToken: true,
+                            detectSessionInUrl: true
+                        }
+                    }
+                );
+                window.supabaseClient = clienteSupabase;
+            } catch (error) {
+                console.error('[Idiomas] Error creando cliente Supabase:', error);
+                throw new Error('No se pudo inicializar Supabase.');
+            }
         }
 
         return clienteSupabase;
