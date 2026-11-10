@@ -282,7 +282,7 @@
     <div class="tarjeta">
         <h2>MIS ANUNCIOS</h2>
         <div class="mis-anuncios" id="misAnuncios">
-            <div class="vacio">Cargando…</div>
+            <div class="vacio" id="misAnunciosPlaceholder">Cargando…</div>
         </div>
     </div>
 
@@ -322,9 +322,6 @@
         if (m.indexOf('media_no_valida') >= 0) {
             return 'La imagen no pasó la revisión. Prueba con otra.';
         }
-        if (m.indexOf('rechaz') >= 0 || m.indexOf('contenido') >= 0) {
-            return 'La imagen no pasó la revisión. Prueba con otra.';
-        }
         return 'No se pudo publicar. Intenta de nuevo.';
     }
 
@@ -346,11 +343,10 @@
         return v;
     }
 
-    // ✅ CORRECCIÓN: Esperar a que Supabase SDK esté listo antes de crear el cliente
+    // ✅ CORRECCIÓN 1: Credenciales directas (sin fetch)
     async function crearCliente() {
         if (window.supabaseClient) return window.supabaseClient;
 
-        // Esperar a que window.supabase esté disponible
         var intentos = 0;
         while (!window.supabase || typeof window.supabase.createClient !== 'function') {
             if (intentos++ > 100) {
@@ -367,6 +363,14 @@
         return window.supabaseClient;
     }
 
+    // ✅ CORRECCIÓN 2: Manejo de error en Mis Anuncios
+    function mostrarErrorAnuncios(mensaje) {
+        var cont = $('misAnuncios');
+        if (cont) {
+            cont.innerHTML = '<div class="vacio">' + mensaje + '<br><button type="button" class="boton-secundario" onclick="location.reload()" style="margin-top:8px;">Recargar</button></div>';
+        }
+    }
+
     async function iniciar() {
         try {
             client = await crearCliente();
@@ -379,7 +383,8 @@
         } catch (e) {
             console.error('[Crear anuncio]', e);
             document.documentElement.classList.add('auth-ready');
-            estado('No se pudo conectar. Recarga la página.', 'error');
+            estado('No se pudo conectar. Verifica tu red o recarga la página.', 'error');
+            mostrarErrorAnuncios('Error de conexión. No se pueden cargar tus anuncios.');
             return;
         }
         document.documentElement.classList.add('auth-ready');
@@ -446,7 +451,7 @@
         fd.append('destino', 'muro-imagenes');
         fd.append('tipo', 'imagen');
 
-        // ✅ URL de producción de Railway para subir media
+        // ✅ CORRECCIÓN 3: URL de Railway con manejo de error
         var r = await fetch('https://galleta-domo-production.up.railway.app/api/media/upload', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
@@ -507,7 +512,6 @@
 
             estado('Publicando…');
             
-            // ✅ Insertamos el anuncio como INACTIVO (pendiente de pago)
             var r = await client.from('anuncios').insert({
                 usuario_id: uid,
                 tipo: 'imagen',
@@ -518,14 +522,13 @@
                 whatsapp_contacto: whatsapp,
                 ubicacion_negocio: ubicacionRaw || null,
                 terminos_version: '1.1',
-                activo: false, // Inactivo hasta que pague
-                estado_moderacion: 'pendiente_pago', // Estado para el algoritmo
-                vigencia_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 días desde hoy
+                activo: false,
+                estado_moderacion: 'pendiente_pago',
+                vigencia_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
             }).select('id').single();
 
             if (r.error) throw r.error;
 
-            // ✅ Redirigir al panel de marketing con el ID del anuncio a pagar
             estado('¡Anuncio creado! Redirigiendo al pago...', 'ok');
             setTimeout(function () {
                 window.location.href = '/marketing/marketing.html?anuncio_pendiente=' + r.data.id;
@@ -556,6 +559,7 @@
         cargarMisAnuncios();
     }
 
+    // ✅ CORRECCIÓN 4: Manejo de error en cargarMisAnuncios
     async function cargarMisAnuncios() {
         var cont = $('misAnuncios');
         var r = await client.from('anuncios')
@@ -567,7 +571,7 @@
         cont.innerHTML = '';
 
         if (r.error) {
-            cont.innerHTML = '<div class="vacio">No se pudieron cargar tus anuncios.</div>';
+            mostrarErrorAnuncios('No se pudieron cargar tus anuncios: ' + r.error.message);
             return;
         }
         if (!r.data || !r.data.length) {
