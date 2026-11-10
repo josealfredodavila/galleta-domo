@@ -423,60 +423,46 @@
        SUPABASE
        ============================================================ */
 
+    // ✅ CORRECCIÓN APLICADA:
+    // Se eliminó el fetch('/api/config/public') que causaba el error
+    // "Unexpected token '<', '<!DOCTYPE ...' is not valid JSON".
+    // Ahora se usan las mismas credenciales que perfil-config.js,
+    // garantizando consistencia en todo el ecosistema.
     async function inicializarSupabase() {
+        // 1. Si otro script ya creó el cliente, lo reutilizamos
         if (window.supabaseClient) {
             supabaseClient = window.supabaseClient;
             return supabaseClient;
         }
 
+        // 2. Validar que el SDK de Supabase esté disponible
         if (
             !window.supabase ||
             typeof window.supabase.createClient !== 'function'
         ) {
-            throw new Error('Supabase SDK no disponible.');
+            throw new Error('Supabase SDK no disponible. Revisa tu conexión.');
         }
 
-        const response = await fetch('/api/config/public', {
-            method: 'GET',
-            credentials: 'same-origin',
-            cache: 'no-store',
-            headers: { Accept: 'application/json' }
-        });
-
-        if (!response.ok) {
-            throw new Error(
-                'No se pudo obtener la configuración pública de Supabase. HTTP ' +
-                response.status
-            );
-        }
-
-        const config = await response.json();
-        const url = config && config.supabaseUrl;
-        const anonKey = config && config.supabaseAnonKey;
-
-        if (typeof url !== 'string' || !url.trim()) {
-            throw new Error('supabaseUrl no está disponible.');
-        }
-
-        if (typeof anonKey !== 'string' || !anonKey.trim()) {
-            throw new Error('supabaseAnonKey no está disponible.');
-        }
-
-        supabaseClient = window.supabase.createClient(
-            url.trim(),
-            anonKey.trim(),
-            {
-                auth: {
-                    persistSession: true,
-                    autoRefreshToken: true,
-                    detectSessionInUrl: true
+        // 3. Crear el cliente con las credenciales del ecosistema
+        try {
+            supabaseClient = window.supabase.createClient(
+                'https://zultnlogdoajehbswlih.supabase.co',
+                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
+                {
+                    auth: {
+                        persistSession: true,
+                        autoRefreshToken: true,
+                        detectSessionInUrl: true
+                    }
                 }
-            }
-        );
+            );
 
-        window.supabaseClient = supabaseClient;
-
-        return supabaseClient;
+            window.supabaseClient = supabaseClient;
+            return supabaseClient;
+        } catch (error) {
+            console.error('[Configuración] Error creando cliente Supabase:', error);
+            throw new Error('No se pudo inicializar Supabase.');
+        }
     }
 
     /* ============================================================
