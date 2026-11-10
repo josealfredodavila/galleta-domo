@@ -164,6 +164,10 @@
     window.cfgInitPage = cfgInitPage;
 
     /* ---------- SUPABASE ---------- */
+    // ✅ CORRECCIÓN APLICADA:
+    // Se eliminó el fetch('/api/config/public') que causaba el error
+    // "Unexpected token '<', '<!DOCTYPE ...' is not valid JSON".
+    // Ahora usa las mismas credenciales hardcodeadas que el resto del ecosistema.
     async function obtenerCliente() {
         if (clienteSupabase) return clienteSupabase;
         if (window.supabaseClient && window.supabaseClient.auth) {
@@ -173,15 +177,21 @@
         if (!window.supabase || typeof window.supabase.createClient !== 'function') {
             throw new Error('La librería de Supabase no está disponible.');
         }
-        const r = await fetch('/api/config/public', { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
-        if (!r.ok) throw new Error('No se pudo cargar la configuración pública (' + r.status + ').');
-        const cfg = await r.json();
-        if (!cfg || !cfg.supabaseUrl || !cfg.supabaseAnonKey) throw new Error('Configuración pública incompleta.');
-        clienteSupabase = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
-            auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-        });
-        window.supabaseClient = clienteSupabase;
-        return clienteSupabase;
+
+        try {
+            clienteSupabase = window.supabase.createClient(
+                'https://zultnlogdoajehbswlih.supabase.co',
+                'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
+                {
+                    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+                }
+            );
+            window.supabaseClient = clienteSupabase;
+            return clienteSupabase;
+        } catch (error) {
+            console.error('[Seguridad] Error creando cliente Supabase:', error);
+            throw new Error('No se pudo inicializar Supabase.');
+        }
     }
 
     function guardarRetornoYSalir() {
