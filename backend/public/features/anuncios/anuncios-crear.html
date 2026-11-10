@@ -181,6 +181,8 @@
     .badge.pausado { color: var(--muted); }
     .badge.reportado { color: var(--danger); border-color: var(--danger); }
     .badge.pendiente_pago { color: #f7d44a; border-color: #f7d44a; }
+    .badge.en_cola { color: #22d3ee; border-color: #22d3ee; }
+    .badge.pendiente_revision { color: #a855f7; border-color: #a855f7; }
 
     .vacio { color: var(--muted); font-size: .8rem; text-align: center; padding: 14px 0; }
 
@@ -199,7 +201,7 @@
     </div>
 
     <div class="aviso">
-        Cualquier cuenta activa puede anunciarse. Cada anuncio dura 7 días.
+        Cualquier cuenta activa puede anunciarse. Cada anuncio dura 7 días por semana contratada.
         Puedes tener 1 activo a la vez (2 con Csariel's Pro) y publicar hasta 3 nuevos por semana.
         Los anuncios pasan revisión automática.
     </div>
@@ -256,21 +258,41 @@
         </select>
         <input type="url" id="destinoExterno" placeholder="https://..." style="display:none; margin-top:8px;">
 
+        <!-- NUEVO: Selector de semanas -->
+        <label for="semanas">Duración del anuncio</label>
+        <select id="semanas">
+            <option value="1">1 semana · USD $17.50 (≈ $299 MXN)</option>
+            <option value="2">2 semanas · USD $35.00 (≈ $598 MXN)</option>
+            <option value="3">3 semanas · USD $52.50 (≈ $897 MXN)</option>
+            <option value="4">4 semanas · USD $70.00 (≈ $1,196 MXN)</option>
+        </select>
+
+        <!-- NUEVO: Selector de moneda -->
+        <label for="moneda">Pagar con (cripto)</label>
+        <select id="moneda">
+            <option value="usdttrc20">USDT · TRON</option>
+            <option value="usdtbsc">USDT · BSC</option>
+            <option value="usdtmatic">USDT · Polygon</option>
+            <option value="usdtsol">USDT · Solana</option>
+            <option value="usdcsol">USDC · Solana</option>
+            <option value="usdcmatic">USDC · Polygon</option>
+            <option value="usdcbsc">USDC · BSC</option>
+        </select>
+        <div class="aviso" style="margin-top:8px;">
+            El precio se cobra en USD. El equivalente en MXN es solo una referencia y puede variar con el tipo de cambio.
+        </div>
+
         <div class="terminos-aceptacion">
             <label class="terminos-check">
                 <input type="checkbox" id="aceptoTerminos" required>
                 <span class="terminos-texto">
                     He leído y acepto los
                     <a href="/features/anuncios/terminos-anunciantes.html" target="_blank" rel="noopener">
-                        Términos y Condiciones para Anunciantes
+                        Términos y Condiciones para Anunciantes v1.4
                     </a>
-                    de Csariel's. Entiendo que:
-                    <br>
-                    • Soy el único responsable de la veracidad y legalidad de lo que anuncio.
-                    <br>
-                    • Mi anuncio será identificado como <strong>PATROCINADO</strong>.
-                    <br>
-                    • Csariel's puede pausar o remover mi anuncio si infringe las normas.
+                    de Csariel's. Entiendo que los pagos son <strong>definitivos y no son reembolsables</strong>,
+                    que mi anuncio se identifica como <strong>PATROCINADO</strong>, y que cambiar título, texto,
+                    imagen o video manda mi anuncio a revisión.
                 </span>
             </label>
         </div>
@@ -294,6 +316,7 @@
 
     var MAX_BYTES = 5 * 1024 * 1024;
     var TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
+    var API_ANUNCIOS_PAGO = 'https://galleta-domo-production.up.railway.app/api/payments/anuncio/create';
 
     var client = null;
     var uid = null;
@@ -325,6 +348,14 @@
         return 'No se pudo publicar. Intenta de nuevo.';
     }
 
+    function mensajePago(error) {
+        var m = String(error || '');
+        if (m.indexOf('Debes aceptar') >= 0) return 'Debes aceptar los Términos v1.4 para pagar.';
+        if (m.indexOf('no permitida') >= 0) return 'Esa moneda no está disponible para anuncios.';
+        if (m.indexOf('no está pendiente') >= 0) return 'Este anuncio ya no está pendiente de pago. Actualiza la lista.';
+        return 'No se pudo crear el pago. Intenta de nuevo desde "Pagar".';
+    }
+
     function normalizarWhatsApp(valor) {
         var v = String(valor || '').trim();
         if (!v) return null;
@@ -343,7 +374,6 @@
         return v;
     }
 
-    // ✅ CORRECCIÓN 1: Credenciales directas (sin fetch)
     async function crearCliente() {
         if (window.supabaseClient) return window.supabaseClient;
 
@@ -363,7 +393,6 @@
         return window.supabaseClient;
     }
 
-    // ✅ CORRECCIÓN 2: Manejo de error en Mis Anuncios
     function mostrarErrorAnuncios(mensaje) {
         var cont = $('misAnuncios');
         if (cont) {
@@ -451,7 +480,6 @@
         fd.append('destino', 'muro-imagenes');
         fd.append('tipo', 'imagen');
 
-        // ✅ CORRECCIÓN 3: URL de Railway con manejo de error
         var r = await fetch('https://galleta-domo-production.up.railway.app/api/media/upload', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
@@ -462,6 +490,49 @@
             throw new Error(d.error || 'upload_fallido');
         }
         return d.url;
+    }
+
+    async function iniciarPago(anuncioId) {
+        var terminos = $('aceptoTerminos');
+        if (!terminos.checked) {
+            estado('Debes aceptar los Términos v1.4 para pagar.', 'error');
+            terminos.focus();
+            return false;
+        }
+
+        var s = await client.auth.getSession();
+        var token = s.data && s.data.session && s.data.session.access_token;
+        if (!token) {
+            estado('Tu sesión expiró. Vuelve a iniciar sesión.', 'error');
+            return false;
+        }
+
+        estado('Generando tu pago…');
+        var r = await fetch(API_ANUNCIOS_PAGO, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({
+                anuncioId: anuncioId,
+                semanas: Number($('semanas').value),
+                payCurrency: $('moneda').value,
+                terminosAceptados: true,
+                terminosVersion: '1.4'
+            })
+        });
+        var d = await r.json().catch(function () { return {}; });
+
+        if (!r.ok || !d.success || !d.data) {
+            estado(mensajePago(d.error), 'error');
+            return false;
+        }
+        if (d.data.payment_url) {
+            window.location.href = d.data.payment_url;
+            return true;
+        }
+        // Sin página de pago: mostrar la dirección y el monto
+        estado('Envía ' + d.data.pay_amount + ' ' + String(d.data.pay_currency).toUpperCase() +
+               ' a: ' + d.data.pay_address, 'ok');
+        return true;
     }
 
     $('formAnuncio').addEventListener('submit', async function (e) {
@@ -521,18 +592,19 @@
                 destino_url: destino,
                 whatsapp_contacto: whatsapp,
                 ubicacion_negocio: ubicacionRaw || null,
-                terminos_version: '1.1',
+                terminos_version: '1.4',
                 activo: false,
-                estado_moderacion: 'pendiente_pago',
-                vigencia_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+                estado_moderacion: 'pendiente_pago'
             }).select('id').single();
 
             if (r.error) throw r.error;
 
-            estado('¡Anuncio creado! Redirigiendo al pago...', 'ok');
-            setTimeout(function () {
-                window.location.href = '/marketing/marketing.html?anuncio_pendiente=' + r.data.id;
-            }, 1500);
+            var pagoOk = await iniciarPago(r.data.id);
+            if (!pagoOk) {
+                btn.disabled = false;
+                btn.textContent = 'Publicar anuncio';
+                cargarMisAnuncios(); // el anuncio queda en "Pendiente de pago" con botón Pagar
+            }
 
         } catch (err) {
             console.error('[Crear anuncio]', err);
@@ -543,7 +615,9 @@
     });
 
     function estadoDe(a) {
+        if (a.en_cola) return ['en_cola', 'En cola · vigente, esperando cupo'];
         if (a.estado_moderacion === 'pendiente_pago') return ['pendiente_pago', 'Pendiente de pago'];
+        if (a.estado_moderacion === 'pendiente_revision') return ['pendiente_revision', 'En revisión'];
         if (a.reportes >= 5 || a.pausado_automatico) return ['reportado', 'Pausado por reportes'];
         if (!a.activo) return ['pausado', 'Pausado'];
         if (new Date(a.vigencia_fin) <= new Date()) return ['pausado', 'Vencido'];
@@ -559,12 +633,39 @@
         cargarMisAnuncios();
     }
 
-    // ✅ CORRECCIÓN 4: Manejo de error en cargarMisAnuncios
+    function puedeArchivar(a) {
+        if (a.en_cola || a.estado_moderacion === 'pendiente_revision') return false;
+        if (a.estado_moderacion === 'pendiente_pago') return true;
+        return new Date(a.vigencia_fin) <= new Date();
+    }
+
+    function mensajeArchivar(error) {
+        var m = String((error && error.message) || '');
+        if (m.indexOf('anuncio_pagado_vigente') >= 0) {
+            return 'Este anuncio ya está pagado y vigente. Puedes pausarlo; podrás eliminarlo cuando venza.';
+        }
+        if (m.indexOf('anuncio_no_archivable') >= 0) {
+            return 'Este anuncio está activo o en revisión y no se puede eliminar.';
+        }
+        return 'No se pudo eliminar el anuncio. Intenta de nuevo.';
+    }
+
+    async function archivarAnuncio(a) {
+        if (!confirm('Se quitará de tu panel. Si hubo pagos, quedan guardados en tu historial. ¿Continuar?')) return;
+        var r = await client.rpc('archivar_anuncio', { p_anuncio_id: a.id });
+        if (r.error) {
+            estado(mensajeArchivar(r.error), 'error');
+            return;
+        }
+        cargarMisAnuncios();
+    }
+
     async function cargarMisAnuncios() {
         var cont = $('misAnuncios');
         var r = await client.from('anuncios')
-            .select('id, titulo, media_url, activo, vistas, toques, reportes, pausado_automatico, vigencia_fin, created_at, estado_moderacion')
+            .select('id, titulo, media_url, activo, vistas, toques, reportes, pausado_automatico, vigencia_fin, created_at, estado_moderacion, en_cola')
             .eq('usuario_id', uid)
+            .is('archivado_at', null)
             .order('created_at', { ascending: false })
             .limit(20);
 
@@ -610,13 +711,31 @@
             item.appendChild(img);
             item.appendChild(datos);
 
-            if (est[0] !== 'reportado' && new Date(a.vigencia_fin) > new Date() && est[0] !== 'pendiente_pago') {
+            if (est[0] !== 'reportado' && new Date(a.vigencia_fin) > new Date() && est[0] !== 'pendiente_pago' && est[0] !== 'en_cola') {
                 var btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'boton-secundario';
                 btn.textContent = a.activo ? 'Pausar' : 'Activar';
                 btn.addEventListener('click', function () { cambiarActivo(a, !a.activo); });
                 item.appendChild(btn);
+            }
+
+            if (puedeArchivar(a)) {
+                var del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'boton-secundario';
+                del.textContent = 'Eliminar';
+                del.addEventListener('click', function () { archivarAnuncio(a); });
+                item.appendChild(del);
+            }
+
+            if (a.estado_moderacion === 'pendiente_pago') {
+                var pagar = document.createElement('button');
+                pagar.type = 'button';
+                pagar.className = 'boton-secundario';
+                pagar.textContent = 'Pagar';
+                pagar.addEventListener('click', function () { iniciarPago(a.id); });
+                item.appendChild(pagar);
             }
 
             cont.appendChild(item);
