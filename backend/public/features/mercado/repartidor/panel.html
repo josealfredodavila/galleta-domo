@@ -225,13 +225,6 @@
         .toast.warning { border-color: var(--warning); color: var(--warning); }
         .toast.success { border-color: var(--success); color: var(--success); }
 
-        .footer { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem; color: var(--text-muted); flex-wrap: wrap; gap: 10px; }
-        .footer .brand { color: var(--gold); font-weight: 600; }
-        .footer-links { display: flex; gap: 12px; flex-wrap: wrap; }
-        .footer-links a { color: var(--text-muted); text-decoration: none; display: flex; align-items: center; gap: 4px; }
-        .footer-links a .simbolo { font-family: 'Orbitron', monospace; color: var(--gold); opacity: 0.7; }
-        .footer-links a:hover { color: var(--gold); }
-
         html.tema-dia, html[data-tema="dia"] {
             --space: #f5f7fa; --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
             --glass-bg: rgba(255, 255, 255, 0.9); --glass-border: rgba(0, 0, 0, 0.1);
@@ -378,16 +371,7 @@
 
         <div id="pantallaEstado" style="display:none;"></div>
 
-        <footer class="footer">
-            <span><span class="brand">© Csariel's</span> · <span data-clave="mercado_footer">Sabor al Paladar · WEB3</span></span>
-            <div class="footer-links">
-                <a href="/terminos" data-clave="footer_terminos"><span class="simbolo">◇</span> Términos</a>
-                <a href="/privacidad" data-clave="footer_privacidad"><span class="simbolo">◆</span> Privacidad</a>
-                <a href="/cookies" data-clave="footer_cookies"><span class="simbolo">◇</span> Cookies</a>
-                <a href="/live-terminos" data-clave="footer_terminos_live"><span class="simbolo">◆</span> Términos de Live</a>
-                <span style="opacity:0.3;" data-no-traducir="1">⚡ Polygon</span>
-            </div>
-        </footer>
+        <!-- ✅ CORRECCIÓN APLICADA: Se eliminó el bloque <footer> con los enlaces de Términos, Privacidad, Cookies, etc. -->
 
     </div>
 
