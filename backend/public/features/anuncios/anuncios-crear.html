@@ -258,7 +258,6 @@
         </select>
         <input type="url" id="destinoExterno" placeholder="https://..." style="display:none; margin-top:8px;">
 
-        <!-- NUEVO: Selector de semanas -->
         <label for="semanas">Duración del anuncio</label>
         <select id="semanas">
             <option value="1">1 semana · USD $17.50 (≈ $299 MXN)</option>
@@ -267,7 +266,6 @@
             <option value="4">4 semanas · USD $70.00 (≈ $1,196 MXN)</option>
         </select>
 
-        <!-- NUEVO: Selector de moneda -->
         <label for="moneda">Pagar con (cripto)</label>
         <select id="moneda">
             <option value="usdttrc20">USDT · TRON</option>
@@ -529,7 +527,6 @@
             window.location.href = d.data.payment_url;
             return true;
         }
-        // Sin página de pago: mostrar la dirección y el monto
         estado('Envía ' + d.data.pay_amount + ' ' + String(d.data.pay_currency).toUpperCase() +
                ' a: ' + d.data.pay_address, 'ok');
         return true;
@@ -603,7 +600,7 @@
             if (!pagoOk) {
                 btn.disabled = false;
                 btn.textContent = 'Publicar anuncio';
-                cargarMisAnuncios(); // el anuncio queda en "Pendiente de pago" con botón Pagar
+                cargarMisAnuncios();
             }
 
         } catch (err) {
@@ -624,10 +621,20 @@
         return ['activo', 'Activo'];
     }
 
+    // ✅ CORRECCIÓN: usar RPC pausar_anuncio y mostrar errores visibles
     async function cambiarActivo(a, nuevo) {
-        var r = await client.from('anuncios').update({ activo: nuevo }).eq('id', a.id);
+        var r = nuevo
+            ? await client.from('anuncios').update({ activo: true }).eq('id', a.id)
+            : await client.rpc('pausar_anuncio', { p_anuncio_id: a.id });
+
         if (r.error) {
-            estado('No se pudo cambiar el anuncio.', 'error');
+            var m = String(r.error.message || '');
+            var texto = m.indexOf('limite_anuncios_activos') >= 0
+                ? 'Ya tienes el máximo de anuncios activos. Pausa uno primero.'
+                : m.indexOf('activacion_no_permitida') >= 0
+                    ? 'Este anuncio no se puede activar. Revisa su estado.'
+                    : 'No se pudo cambiar el anuncio. Intenta de nuevo.';
+            alert(texto);
             return;
         }
         cargarMisAnuncios();
