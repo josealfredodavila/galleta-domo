@@ -1,7 +1,7 @@
 // ============================================
 // CSARIEL'S · CARRUSEL 3D HORIZONTAL
 // Ruta: /features/perfil/js/carrusel-3d.js
-// v11 · ESCAPE SEGURO DE ATRIBUTOS Y VALIDACIÓN DE MEDIA
+// v12 · Motor de recomendación (Pandora) + Filtro de intereses
 // ============================================
 
 (function () {
@@ -22,64 +22,25 @@
     var URL_ANUNCIO_DETALLE = '/features/anuncios/ver.html';
     var URL_CREAR_ANUNCIO  = '/features/anuncios/anuncios-crear.html';
 
-    // Tipos de media permitidos (lista blanca)
+    // Tipos de media permitidos
     var TIPOS_MEDIA = { imagen: true, video: true };
 
-    // Paleta de degradados por slot
+    // Paleta de degradados
     var PALETA = [
-        ['#ff7900', '#ffb300'],
-        ['#00c853', '#00bfa5'],
-        ['#008f68', '#ffd54f'],
-        ['#2962ff', '#00e5ff'],
-        ['#e65100', '#ff8f00'],
-        ['#00a878', '#ffd54f'],
+        ['#ff7900', '#ffb300'], ['#00c853', '#00bfa5'], ['#008f68', '#ffd54f'],
+        ['#2962ff', '#00e5ff'], ['#e65100', '#ff8f00'], ['#00a878', '#ffd54f'],
         ['#ff4081', '#7c4dff']
     ];
 
-    // 7 invitaciones (reemplazan a las tarjetas viejas de Muro/Perfil)
+    // 7 invitaciones (se mantienen igual)
     var PLACEHOLDERS = [
-        {
-            chip: 'ANÚNCIATE GRATIS',
-            title: 'IMPULSA TU NEGOCIO',
-            desc: 'Presenta tu negocio a la comunidad Csariel’s y permite que más clientes te descubran.',
-            cta: 'Crear mi anuncio'
-        },
-        {
-            chip: 'PUBLICA SIN COSTO',
-            title: 'DA A CONOCER TU MARCA',
-            desc: 'Dale visibilidad a tus productos o servicios con un espacio para tu negocio.',
-            cta: 'Quiero anunciarme'
-        },
-        {
-            chip: 'DESTACA TU MARCA',
-            title: 'TU NEGOCIO MERECE BRILLAR',
-            desc: 'Presenta tu propuesta y destaca entre las opciones de la comunidad.',
-            cta: 'Dar el siguiente paso'
-        },
-        {
-            chip: 'CRECE EN COMUNIDAD',
-            title: 'CONECTA CON CLIENTES',
-            desc: 'Haz que tu negocio sea más fácil de descubrir dentro del ecosistema.',
-            cta: 'Publicar mi anuncio'
-        },
-        {
-            chip: 'ES TU MOMENTO',
-            title: 'HAZTE VISIBLE',
-            desc: 'Muestra lo que ofreces y acerca tu negocio a nuevos clientes.',
-            cta: 'Quiero aparecer'
-        },
-        {
-            chip: 'ESPACIO PARA TU MARCA',
-            title: 'PROMOCIONA TU NEGOCIO',
-            desc: 'Comparte tu propuesta con una presentación llamativa y profesional.',
-            cta: 'Promocionar mi marca'
-        },
-        {
-            chip: 'BIENVENIDO A CSARIEL’S',
-            title: 'TU PRÓXIMO CLIENTE PUEDE ESTAR AQUÍ',
-            desc: 'Empieza a presentar tu negocio a la comunidad. Consulta las condiciones al crear tu anuncio.',
-            cta: 'Empezar ahora'
-        }
+        { chip: 'ANÚNCIATE GRATIS', title: 'IMPULSA TU NEGOCIO', desc: 'Presenta tu negocio a la comunidad Csariel’s y permite que más clientes te descubran.', cta: 'Crear mi anuncio' },
+        { chip: 'PUBLICA SIN COSTO', title: 'DA A CONOCER TU MARCA', desc: 'Dale visibilidad a tus productos o servicios con un espacio para tu negocio.', cta: 'Quiero anunciarme' },
+        { chip: 'DESTACA TU MARCA', title: 'TU NEGOCIO MERECE BRILLAR', desc: 'Presenta tu propuesta y destaca entre las opciones de la comunidad.', cta: 'Dar el siguiente paso' },
+        { chip: 'CRECE EN COMUNIDAD', title: 'CONECTA CON CLIENTES', desc: 'Haz que tu negocio sea más fácil de descubrir dentro del ecosistema.', cta: 'Publicar mi anuncio' },
+        { chip: 'ES TU MOMENTO', title: 'HAZTE VISIBLE', desc: 'Muestra lo que ofreces y acerca tu negocio a nuevos clientes.', cta: 'Quiero aparecer' },
+        { chip: 'ESPACIO PARA TU MARCA', title: 'PROMOCIONA TU NEGOCIO', desc: 'Comparte tu propuesta con una presentación llamativa y profesional.', cta: 'Promocionar mi marca' },
+        { chip: 'BIENVENIDO A CSARIEL’S', title: 'TU PRÓXIMO CLIENTE PUEDE ESTAR AQUÍ', desc: 'Empieza a presentar tu negocio a la comunidad. Consulta las condiciones al crear tu anuncio.', cta: 'Empezar ahora' }
     ];
 
     var MAX_ROTACION = 28;
@@ -107,17 +68,18 @@
     var observerVideos = null;
     var conexionLenta = false;
 
+    // Variables del algoritmo
+    var temasInteres = [];
+    var temasBloqueados = [];
+    var personalizacionActiva = true;
+
     // --------------------------------------------
     // DETECCIÓN DE CAPACIDADES
     // --------------------------------------------
     function detectarPreferencias() {
         try {
-            var conn = navigator.connection ||
-                navigator.mozConnection ||
-                navigator.webkitConnection;
-            if (conn && (conn.effectiveType === 'slow-2g' ||
-                         conn.effectiveType === '2g' ||
-                         conn.saveData === true)) {
+            var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (conn && (conn.effectiveType === 'slow-2g' || conn.effectiveType === '2g' || conn.saveData === true)) {
                 conexionLenta = true;
             }
         } catch (e) { conexionLenta = false; }
@@ -127,52 +89,33 @@
     // UTILIDADES
     // --------------------------------------------
     function obtenerWrapper() {
-        return document.getElementById('carruselPerfilWrapper') ||
-            document.querySelector('.carrusel-3d-wrapper');
+        return document.getElementById('carruselPerfilWrapper') || document.querySelector('.carrusel-3d-wrapper');
     }
-
     function obtenerTrack() {
-        return document.getElementById('carruselPerfilTrack') ||
-            document.querySelector('.carrusel-3d-track:not(.carrusel-fullscreen-track)');
+        return document.getElementById('carruselPerfilTrack') || document.querySelector('.carrusel-3d-track:not(.carrusel-fullscreen-track)');
     }
-
     function coleccionar() {
         if (!track) return [];
         return Array.prototype.slice.call(track.querySelectorAll('.carrusel-3d-card'));
     }
-
-    // Escape para TEXTO dentro de elementos
     function esc(valor) {
         var div = document.createElement('div');
         div.textContent = valor == null ? '' : String(valor);
         return div.innerHTML;
     }
-
-    // Escape para VALORES DE ATRIBUTO (comillas incluidas)
     function escAttr(valor) {
-        return String(valor == null ? '' : valor)
-            .replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
+        return String(valor == null ? '' : valor).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
-
-    // Solo acepta URLs http(s) bien formadas; devuelve '' si no son válidas
     function urlSegura(valor) {
         try {
             var u = new URL(String(valor || '').trim());
             return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : '';
-        } catch (e) {
-            return '';
-        }
+        } catch (e) { return ''; }
     }
-
     function tipoMediaSeguro(valor) {
         var t = String(valor || 'imagen').toLowerCase();
         return TIPOS_MEDIA[t] ? t : 'imagen';
     }
-
     function obtenerColores(indice) {
         return PALETA[indice % PALETA.length];
     }
@@ -190,13 +133,9 @@
             return obj.data;
         } catch (e) { return null; }
     }
-
     function escribirCache(anuncios) {
         try {
-            sessionStorage.setItem(CACHE_KEY, JSON.stringify({
-                ts: Date.now(),
-                data: anuncios || []
-            }));
+            sessionStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: anuncios || [] }));
         } catch (e) {}
     }
 
@@ -205,44 +144,21 @@
     // --------------------------------------------
     async function obtenerCliente() {
         if (window.supabaseClient) return window.supabaseClient;
-
         if (window.supabaseReady) {
             try {
                 var cliente = await window.supabaseReady;
-                if (cliente) {
-                    window.supabaseClient = cliente;
-                    return cliente;
-                }
+                if (cliente) { window.supabaseClient = cliente; return cliente; }
             } catch (error) {}
         }
-
-        if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-            return null;
-        }
-
+        if (!window.supabase || typeof window.supabase.createClient !== 'function') return null;
         try {
-            var respuesta = await fetch('/api/config/public', {
-                cache: 'no-store',
-                credentials: 'same-origin'
-            });
+            var respuesta = await fetch('/api/config/public', { cache: 'no-store', credentials: 'same-origin' });
             if (!respuesta.ok) throw new Error('No se pudo obtener config.');
-
             var config = await respuesta.json();
-            if (!config.supabaseUrl || !config.supabaseAnonKey) {
-                throw new Error('Falta config pública de Supabase.');
-            }
-
-            window.supabaseClient = window.supabase.createClient(
-                config.supabaseUrl,
-                config.supabaseAnonKey,
-                {
-                    auth: {
-                        persistSession: true,
-                        autoRefreshToken: true,
-                        detectSessionInUrl: true
-                    }
-                }
-            );
+            if (!config.supabaseUrl || !config.supabaseAnonKey) throw new Error('Falta config pública de Supabase.');
+            window.supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey, {
+                auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+            });
             return window.supabaseClient;
         } catch (error) {
             console.warn('[Carrusel] No se pudo crear cliente Supabase:', error);
@@ -251,21 +167,49 @@
     }
 
     // --------------------------------------------
-    // CARGA DE ANUNCIOS
+    // CARGA DE PREFERENCIAS DEL USUARIO (PANDORA)
+    // --------------------------------------------
+    async function cargarPreferenciasUsuario(db) {
+        try {
+            var sesion = await db.auth.getSession();
+            var uid = sesion && sesion.data && sesion.data.session ? sesion.data.session.user.id : null;
+            if (!uid) return;
+
+            // 1. Cargar intereses y bloqueos
+            var [interesesRes, bloqueosRes] = await Promise.all([
+                db.from('usuarios_temas_interes').select('tema_id').eq('usuario_id', uid),
+                db.from('usuarios_temas_bloqueados').select('tema_id').eq('usuario_id', uid)
+            ]);
+
+            if (!interesesRes.error) temasInteres = (interesesRes.data || []).map(i => i.tema_id);
+            if (!bloqueosRes.error) temasBloqueados = (bloqueosRes.data || []).map(b => b.tema_id);
+
+            // 2. Cargar si la personalización está activa
+            var prefRes = await db.from('preferencias_usuario').select('prefs').eq('usuario_id', uid).maybeSingle();
+            if (!prefRes.error && prefRes.data && prefRes.data.prefs) {
+                personalizacionActiva = prefRes.data.prefs.personalizacion_feed !== false;
+            }
+        } catch (e) {
+            console.warn('[Pandora] Error cargando preferencias, usando feed genérico:', e);
+        }
+    }
+
+    // --------------------------------------------
+    // CARGA DE ANUNCIOS CON ALGORITMO
     // --------------------------------------------
     async function cargarAnunciosDesdeSupabase() {
         var db = await obtenerCliente();
         if (!db) return null;
 
         try {
-            var ahora = new Date().toISOString();
+            // 1. Cargar preferencias del usuario
+            await cargarPreferenciasUsuario(db);
 
+            // 2. Consultar anuncios
+            var ahora = new Date().toISOString();
             var resultado = await db
                 .from(TABLA)
-                .select(
-                    'id, usuario_id, titulo, texto, tipo, media_url, ' +
-                    'destino_url, duracion_video_seg, created_at, vigencia_fin'
-                )
+                .select('id, usuario_id, titulo, texto, tipo, media_url, destino_url, duracion_video_seg, created_at, vigencia_fin, temas')
                 .eq('activo', true)
                 .eq('estado_moderacion', 'aprobado')
                 .neq('pausado_automatico', true)
@@ -281,6 +225,23 @@
 
             var filas = Array.isArray(resultado.data) ? resultado.data : [];
 
+            // 3. Aplicar algoritmo de recomendación
+            if (personalizacionActiva) {
+                // Filtrar bloqueados
+                filas = filas.filter(function (a) {
+                    if (!a.temas || !Array.isArray(a.temas)) return true;
+                    return !a.temas.some(function (t) { return temasBloqueados.includes(t); });
+                });
+
+                // Ordenar por intereses
+                filas.sort(function (a, b) {
+                    var aInt = (a.temas || []).some(function (t) { return temasInteres.includes(t); }) ? 1 : 0;
+                    var bInt = (b.temas || []).some(function (t) { return temasInteres.includes(t); }) ? 1 : 0;
+                    return bInt - aInt;
+                });
+            }
+
+            // 4. Limpiar duplicados y limitar
             var vistos = Object.create(null);
             var unicos = [];
             filas.forEach(function (a) {
@@ -304,14 +265,11 @@
     // HTML DECORATIVO
     // --------------------------------------------
     function htmlParticulas() {
-        return '<div class="times-particles" aria-hidden="true">' +
-            '<span></span><span></span></div>';
+        return '<div class="times-particles" aria-hidden="true"><span></span><span></span></div>';
     }
 
     // --------------------------------------------
     // HTML: ANUNCIO REAL
-    // Todos los valores que vienen de la base se escapan como atributo
-    // o como texto. La media solo se usa si la URL es http(s) válida.
     // --------------------------------------------
     function htmlAnuncioReal(anuncio, indice, total) {
         var titulo = esc(anuncio.titulo || 'Anuncio');
@@ -323,43 +281,24 @@
 
         if (mediaUrl) {
             if (tipo === 'video') {
-                media =
-                    '<video class="anuncio-video" src="' +
-                    escAttr(mediaUrl) +
-                    '" muted loop playsinline ' +
-                    'preload="none" aria-hidden="true" ' +
-                    'data-lazy-video="1"></video>';
+                media = '<video class="anuncio-video" src="' + escAttr(mediaUrl) + '" muted loop playsinline preload="none" aria-hidden="true" data-lazy-video="1"></video>';
             } else {
-                media =
-                    '<img class="anuncio-img" src="' +
-                    escAttr(mediaUrl) +
-                    '" alt="" loading="lazy" decoding="async">';
+                media = '<img class="anuncio-img" src="' + escAttr(mediaUrl) + '" alt="" loading="lazy" decoding="async">';
             }
         }
 
         return (
             '<a class="carrusel-3d-card anuncio-card" ' +
-                'href="' + escAttr(URL_ANUNCIO_DETALLE) + '?id=' +
-                encodeURIComponent(String(anuncio.id)) + '" ' +
+                'href="' + escAttr(URL_ANUNCIO_DETALLE) + '?id=' + encodeURIComponent(String(anuncio.id)) + '" ' +
                 'data-anuncio-id="' + escAttr(anuncio.id) + '" ' +
                 'data-tipo="' + escAttr(tipo) + '" ' +
                 'style="--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
                 htmlParticulas() +
-                '<div class="ads-tag">' +
-                    '<span class="dot"></span> PATROCINADO' +
-                '</div>' +
-                '<div class="ads-counter">' +
-                    (indice + 1) + '/' + total +
-                '</div>' +
+                '<div class="ads-tag"><span class="dot"></span> PATROCINADO</div>' +
+                '<div class="ads-counter">' + (indice + 1) + '/' + total + '</div>' +
                 media +
-                '<div class="card-title anuncio-titulo">' +
-                    titulo +
-                '</div>' +
-                (texto
-                    ? '<div class="card-desc anuncio-texto">' +
-                        texto +
-                      '</div>'
-                    : '') +
+                '<div class="card-title anuncio-titulo">' + titulo + '</div>' +
+                (texto ? '<div class="card-desc anuncio-texto">' + texto + '</div>' : '') +
             '</a>'
         );
     }
@@ -372,30 +311,16 @@
         return (
             '<a class="carrusel-3d-card anuncio-placeholder" ' +
                 'href="' + escAttr(URL_CREAR_ANUNCIO) + '" ' +
-                'data-placeholder="1" ' +
-                'data-slot="' + indice + '" ' +
+                'data-placeholder="1" data-slot="' + indice + '" ' +
                 'style="--c1:' + par[0] + ';--c2:' + par[1] + ';">' +
                 htmlParticulas() +
-                '<div class="ads-tag">' +
-                    '<span class="dot"></span> INVITACIÓN CSARIEL’S' +
-                '</div>' +
-                '<div class="ads-counter">' +
-                    (indice + 1) + '/' + total +
-                '</div>' +
-                '<span class="ads-chip">' +
-                    esc(placeholder.chip) +
-                '</span>' +
+                '<div class="ads-tag"><span class="dot"></span> INVITACIÓN CSARIEL’S</div>' +
+                '<div class="ads-counter">' + (indice + 1) + '/' + total + '</div>' +
+                '<span class="ads-chip">' + esc(placeholder.chip) + '</span>' +
                 '<span class="card-icon" aria-hidden="true"></span>' +
-                '<div class="card-title">' +
-                    esc(placeholder.title) +
-                '</div>' +
-                '<div class="card-desc">' +
-                    esc(placeholder.desc) +
-                '</div>' +
-                '<span class="ads-cta">' +
-                    esc(placeholder.cta) +
-                    ' <span aria-hidden="true">→</span>' +
-                '</span>' +
+                '<div class="card-title">' + esc(placeholder.title) + '</div>' +
+                '<div class="card-desc">' + esc(placeholder.desc) + '</div>' +
+                '<span class="ads-cta">' + esc(placeholder.cta) + ' <span aria-hidden="true">→</span></span>' +
             '</a>'
         );
     }
@@ -411,10 +336,7 @@
             usados++;
         }
         for (var j = 0; usados < TOTAL_SLOTS; j++, usados++) {
-            slots.push({
-                tipo: 'placeholder',
-                data: PLACEHOLDERS[j % PLACEHOLDERS.length]
-            });
+            slots.push({ tipo: 'placeholder', data: PLACEHOLDERS[j % PLACEHOLDERS.length] });
         }
         return slots;
     }
@@ -434,7 +356,6 @@
             return htmlPlaceholder(slot.data, indice, total);
         }).join('');
 
-        // Limpieza total del contenedor para evitar tarjetas residuales
         track.innerHTML = html;
 
         activoActual = 0;
@@ -451,12 +372,7 @@
     // --------------------------------------------
     function configurarVideosLazy() {
         if (!track) return;
-
-        if (observerVideos) {
-            observerVideos.disconnect();
-            observerVideos = null;
-        }
-
+        if (observerVideos) { observerVideos.disconnect(); observerVideos = null; }
         var videos = track.querySelectorAll('video[data-lazy-video]');
         if (!videos.length) return;
 
@@ -488,17 +404,13 @@
                     try { video.pause(); } catch (e) {}
                 }
             });
-        }, {
-            root: track,
-            rootMargin: '80px 0px 80px 0px',
-            threshold: 0.15
-        });
+        }, { root: track, rootMargin: '80px 0px 80px 0px', threshold: 0.15 });
 
         videos.forEach(function (v) { observerVideos.observe(v); });
     }
 
     // --------------------------------------------
-    // COLORES
+    // COLORES Y NAVEGACIÓN
     // --------------------------------------------
     function asignarColores() {
         cards.forEach(function (card, indice) {
@@ -508,30 +420,18 @@
         });
     }
 
-    // --------------------------------------------
-    // NAVEGACIÓN DEL CARRUSEL
-    // --------------------------------------------
     function irACard(indice, suave) {
         var card = cards[indice];
         if (!card || !track) return;
-
         var pista = track.getBoundingClientRect();
         var tarjeta = card.getBoundingClientRect();
         if (!tarjeta.width) return;
-
-        var diferencia =
-            (tarjeta.left + tarjeta.width / 2) -
-            (pista.left + pista.width / 2);
-
-        track.scrollTo({
-            left: track.scrollLeft + diferencia,
-            behavior: suave ? 'smooth' : 'auto'
-        });
+        var diferencia = (tarjeta.left + tarjeta.width / 2) - (pista.left + pista.width / 2);
+        track.scrollTo({ left: track.scrollLeft + diferencia, behavior: suave ? 'smooth' : 'auto' });
     }
 
     function construirPuntos() {
         if (!wrapper) return;
-
         if (!dots || !dots.isConnected) {
             dots = wrapper.querySelector('.carrusel-3d-dots');
             if (!dots) {
@@ -541,16 +441,12 @@
                 wrapper.appendChild(dots);
             }
         }
-
         dots.innerHTML = '';
         cards.forEach(function (card, indice) {
             var punto = document.createElement('button');
             punto.type = 'button';
             punto.setAttribute('aria-label', 'Ir a la tarjeta ' + (indice + 1));
-            punto.addEventListener('click', function (ev) {
-                ev.preventDefault();
-                irACard(indice, true);
-            });
+            punto.addEventListener('click', function (ev) { ev.preventDefault(); irACard(indice, true); });
             if (indice === activoActual) punto.classList.add('active');
             dots.appendChild(punto);
         });
@@ -561,7 +457,6 @@
         pendiente = false;
         rafId = null;
         if (!cards.length || !track) return;
-
         var rectPista = track.getBoundingClientRect();
         var centro = rectPista.left + rectPista.width / 2;
         var mejor = 0;
@@ -572,31 +467,14 @@
             var distancia = rect.left + rect.width / 2 - centro;
             var proporcion = Math.max(-1, Math.min(1, distancia / (rect.width + 14)));
             var lejania = Math.abs(proporcion);
-
-            card.style.transform =
-                'perspective(900px) rotateY(' +
-                (-proporcion * MAX_ROTACION).toFixed(2) +
-                'deg) scale(' +
-                (1 - lejania * PERDIDA_ESCALA).toFixed(3) +
-                ')';
-
-            card.style.opacity = (
-                1 - lejania * (1 - OPACIDAD_MIN)
-            ).toFixed(3);
-
-            if (Math.abs(distancia) < mejorDistancia) {
-                mejorDistancia = Math.abs(distancia);
-                mejor = indice;
-            }
+            card.style.transform = 'perspective(900px) rotateY(' + (-proporcion * MAX_ROTACION).toFixed(2) + 'deg) scale(' + (1 - lejania * PERDIDA_ESCALA).toFixed(3) + ')';
+            card.style.opacity = (1 - lejania * (1 - OPACIDAD_MIN)).toFixed(3);
+            if (Math.abs(distancia) < mejorDistancia) { mejorDistancia = Math.abs(distancia); mejor = indice; }
         });
 
         activoActual = mejor;
-        cards.forEach(function (card, i) {
-            card.classList.toggle('active', i === mejor);
-        });
-        puntos.forEach(function (punto, i) {
-            punto.classList.toggle('active', i === mejor);
-        });
+        cards.forEach(function (card, i) { card.classList.toggle('active', i === mejor); });
+        puntos.forEach(function (punto, i) { punto.classList.toggle('active', i === mejor); });
     }
 
     function pedirActualizacion() {
@@ -609,10 +487,8 @@
         wrapper = obtenerWrapper();
         track = obtenerTrack();
         if (!wrapper || !track) return;
-
         cards = coleccionar();
         if (!cards.length) return;
-
         construirPuntos();
         asignarColores();
         pedirActualizacion();
@@ -623,12 +499,8 @@
     // CARGA
     // --------------------------------------------
     async function cargarYRenderizar() {
-        if (cargaEnCurso) {
-            recargaPendiente = true;
-            return;
-        }
+        if (cargaEnCurso) { recargaPendiente = true; return; }
         if (!track) return;
-
         cargaEnCurso = true;
         try {
             var anuncios = await cargarAnunciosDesdeSupabase();
@@ -640,9 +512,7 @@
             cargaEnCurso = false;
             if (recargaPendiente) {
                 recargaPendiente = false;
-                window.setTimeout(function () {
-                    cargarYRenderizar();
-                }, REALTIME_DEBOUNCE_MS);
+                window.setTimeout(function () { cargarYRenderizar(); }, REALTIME_DEBOUNCE_MS);
             }
         }
     }
@@ -653,19 +523,12 @@
     async function suscribirRealtime() {
         var db = await obtenerCliente();
         if (!db || realtimeChannel) return;
-
         try {
-            realtimeChannel = db
-                .channel('csariels-anuncios-carrusel')
-                .on('postgres_changes',
-                    { event: '*', schema: 'public', table: TABLA },
-                    function () {
-                        if (realtimeTimer) clearTimeout(realtimeTimer);
-                        realtimeTimer = setTimeout(function () {
-                            cargarYRenderizar();
-                        }, REALTIME_DEBOUNCE_MS);
-                    }
-                )
+            realtimeChannel = db.channel('csariels-anuncios-carrusel')
+                .on('postgres_changes', { event: '*', schema: 'public', table: TABLA }, function () {
+                    if (realtimeTimer) clearTimeout(realtimeTimer);
+                    realtimeTimer = setTimeout(function () { cargarYRenderizar(); }, REALTIME_DEBOUNCE_MS);
+                })
                 .subscribe();
         } catch (error) {
             console.warn('[Carrusel] Realtime error:', error);
@@ -678,21 +541,13 @@
     function gestionarVisibilidad() {
         if (!wrapper) return;
         wrapper.classList.toggle('is-paused', document.hidden);
-
         if (document.hidden) {
-            if (rafId !== null) {
-                window.cancelAnimationFrame(rafId);
-                rafId = null;
-                pendiente = false;
-            }
+            if (rafId !== null) { window.cancelAnimationFrame(rafId); rafId = null; pendiente = false; }
             if (track) {
-                track.querySelectorAll('video.anuncio-video').forEach(function (v) {
-                    try { v.pause(); } catch (e) {}
-                });
+                track.querySelectorAll('video.anuncio-video').forEach(function (v) { try { v.pause(); } catch (e) {} });
             }
             return;
         }
-
         if (track) {
             track.querySelectorAll('video.anuncio-video').forEach(function (v) {
                 var p = v.play();
@@ -707,15 +562,10 @@
     // --------------------------------------------
     function init() {
         if (inicializado) return;
-
         wrapper = obtenerWrapper();
         track = obtenerTrack();
-        if (!wrapper || !track) {
-            window.requestAnimationFrame(init);
-            return;
-        }
+        if (!wrapper || !track) { window.requestAnimationFrame(init); return; }
 
-        // Limpieza inicial: elimina HTML viejo antes de pintar las tarjetas correctas
         if (track) track.innerHTML = '';
 
         inicializado = true;
@@ -729,9 +579,8 @@
             renderizar(cache);
         } else {
             cards = coleccionar();
-            if (!cards.length) {
-                renderizar([]);
-            } else {
+            if (!cards.length) { renderizar([]); }
+            else {
                 activoActual = 0;
                 construirPuntos();
                 asignarColores();
@@ -745,21 +594,14 @@
 
         gestionarVisibilidad();
 
-        window.carrusel3D = {
-            refrescar: refrescar,
-            recargar: cargarYRenderizar
-        };
-
+        window.carrusel3D = { refrescar: refrescar, recargar: cargarYRenderizar };
         cargarYRenderizar();
         suscribirRealtime();
 
         window.dispatchEvent(new Event('carrusel3d:listo'));
     }
 
-    window.carrusel3D = window.carrusel3D || {
-        refrescar: function () {},
-        recargar: function () {}
-    };
+    window.carrusel3D = window.carrusel3D || { refrescar: function () {}, recargar: function () {} };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init, { once: true });
