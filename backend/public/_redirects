@@ -1,5 +1,3 @@
-/api/*  https://galleta-domo-production.up.railway.app/api/:splat  200
-
 /login                       /features/perfil/login.html                    200
 /perfil                      /features/perfil/perfil.html                   200
 /configuracion               /features/perfil/configuracion/index.html      200
