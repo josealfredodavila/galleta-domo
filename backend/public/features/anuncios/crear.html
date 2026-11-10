@@ -346,9 +346,19 @@
         return v;
     }
 
+    // ✅ CORRECCIÓN: Esperar a que Supabase SDK esté listo antes de crear el cliente
     async function crearCliente() {
         if (window.supabaseClient) return window.supabaseClient;
-        // ✅ Credenciales directas
+
+        // Esperar a que window.supabase esté disponible
+        var intentos = 0;
+        while (!window.supabase || typeof window.supabase.createClient !== 'function') {
+            if (intentos++ > 100) {
+                throw new Error('El SDK de Supabase no cargó. Revisa tu conexión a internet.');
+            }
+            await new Promise(function (r) { setTimeout(r, 100); });
+        }
+
         window.supabaseClient = window.supabase.createClient(
             'https://zultnlogdoajehbswlih.supabase.co',
             'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
