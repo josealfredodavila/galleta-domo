@@ -16,457 +16,92 @@
 
     <style>
         :root {
-            --gold: #D4AF37;
-            --gold-dark: #b8923a;
-            --gold-light: #F5E6A8;
-            --gold-glow: rgba(212, 175, 55, 0.5);
-            --gold-soft: rgba(212, 175, 55, 0.12);
-            --green-deep: #0F2D1A;
-            --green-mid: #1a4a2a;
-            --space: #04060d;
-            --space-2: #080f1a;
-            --text-primary: #f0f4f8;
-            --text-secondary: #c0d8e8;
-            --text-muted: #6b8a9e;
-            --glass-bg: rgba(15, 45, 26, 0.35);
-            --glass-bg-2: rgba(8, 15, 26, 0.7);
-            --glass-border: rgba(212, 175, 55, 0.18);
-            --glass-border-strong: rgba(212, 175, 55, 0.4);
-            --radius: 16px;
-            --radius-xl: 24px;
-            --transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            --success: #00d68f;
-            --danger: #ff3366;
-            --warning: #f59e0b;
-            --purple: #a855f7;
-            --cyan: #22d3ee;
+            --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #F5E6A8; --gold-glow: rgba(212, 175, 55, 0.5); --gold-soft: rgba(212, 175, 55, 0.12);
+            --green-deep: #0F2D1A; --green-mid: #1a4a2a; --space: #04060d; --space-2: #080f1a;
+            --text-primary: #f0f4f8; --text-secondary: #c0d8e8; --text-muted: #6b8a9e;
+            --glass-bg: rgba(15, 45, 26, 0.35); --glass-bg-2: rgba(8, 15, 26, 0.7); --glass-border: rgba(212, 175, 55, 0.18); --glass-border-strong: rgba(212, 175, 55, 0.4);
+            --radius: 16px; --radius-xl: 24px; --transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            --success: #00d68f; --danger: #ff3366; --warning: #f59e0b; --purple: #a855f7; --cyan: #22d3ee;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         ::selection { background: var(--gold); color: var(--space); }
-
         html, body { overflow-x: hidden; }
+        body { background: var(--space); color: var(--text-primary); font-family: 'Inter', sans-serif; min-height: 100vh; position: relative; -webkit-font-smoothing: antialiased; padding-bottom: 100px; }
+        body::before { content: ''; position: fixed; inset: 0; background: radial-gradient(ellipse at 20% 10%, rgba(26, 74, 42, 0.35) 0%, transparent 50%), radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 50%), radial-gradient(ellipse at 50% 100%, rgba(168, 85, 247, 0.06) 0%, transparent 60%); z-index: -2; pointer-events: none; }
+        body::after { content: ''; position: fixed; inset: 0; background-image: linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px); background-size: 60px 60px; z-index: -1; pointer-events: none; mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%); -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%); }
 
-        body {
-            background: var(--space);
-            color: var(--text-primary);
-            font-family: 'Inter', sans-serif;
-            min-height: 100vh;
-            position: relative;
-            -webkit-font-smoothing: antialiased;
-            padding-bottom: 100px;
-        }
-
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(ellipse at 20% 10%, rgba(26, 74, 42, 0.35) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 50%, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 100%, rgba(168, 85, 247, 0.06) 0%, transparent 60%);
-            z-index: -2;
-            pointer-events: none;
-        }
-
-        body::after {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(212, 175, 55, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            z-index: -1;
-            pointer-events: none;
-            mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-            -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
-        }
-
-        .bg-glow {
-            position: fixed;
-            border-radius: 50%;
-            filter: blur(140px);
-            pointer-events: none;
-            z-index: -1;
-            animation: glowFloat 18s ease-in-out infinite alternate;
-        }
+        .bg-glow { position: fixed; border-radius: 50%; filter: blur(140px); pointer-events: none; z-index: -1; animation: glowFloat 18s ease-in-out infinite alternate; }
         .bg-glow-1 { width: 500px; height: 500px; background: rgba(212, 175, 55, 0.12); top: -15%; right: -10%; }
         .bg-glow-2 { width: 450px; height: 450px; background: rgba(0, 214, 143, 0.08); bottom: -15%; left: -10%; animation-delay: -6s; }
         .bg-glow-3 { width: 350px; height: 350px; background: rgba(168, 85, 247, 0.06); top: 40%; left: 40%; animation-delay: -12s; }
+        @keyframes glowFloat { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(80px, -50px) scale(1.15); } }
 
-        @keyframes glowFloat {
-            0% { transform: translate(0, 0) scale(1); }
-            100% { transform: translate(80px, -50px) scale(1.15); }
-        }
+        .particles { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+        .particle { position: absolute; width: 2px; height: 2px; background: var(--gold); border-radius: 50%; box-shadow: 0 0 6px var(--gold); opacity: 0.4; animation: particleFloat linear infinite; }
+        @keyframes particleFloat { 0% { transform: translateY(100vh) translateX(0); opacity: 0; } 10% { opacity: 0.6; } 90% { opacity: 0.6; } 100% { transform: translateY(-100vh) translateX(40px); opacity: 0; } }
 
-        .particles {
-            position: fixed;
-            inset: 0;
-            z-index: -1;
-            pointer-events: none;
-            overflow: hidden;
-        }
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: var(--gold);
-            border-radius: 50%;
-            box-shadow: 0 0 6px var(--gold);
-            opacity: 0.4;
-            animation: particleFloat linear infinite;
-        }
-        @keyframes particleFloat {
-            0% { transform: translateY(100vh) translateX(0); opacity: 0; }
-            10% { opacity: 0.6; }
-            90% { opacity: 0.6; }
-            100% { transform: translateY(-100vh) translateX(40px); opacity: 0; }
-        }
+        @media (prefers-reduced-motion: reduce) { .particle, .bg-glow, .logo-hex, .marketing-hero::before { animation: none !important; } }
 
-        @media (prefers-reduced-motion: reduce) {
-            .particle, .bg-glow, .logo-hex, .marketing-hero::before { animation: none !important; }
-        }
+        .app { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 16px; }
 
-        .app {
-            position: relative;
-            z-index: 1;
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 0 16px;
-        }
-
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 0;
-            border-bottom: 1px solid var(--glass-border);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            background: rgba(4, 6, 13, 0.95);
-        }
-        @supports (backdrop-filter: blur(1px)) {
-            .header {
-                background: rgba(4, 6, 13, 0.85);
-                backdrop-filter: blur(24px);
-                -webkit-backdrop-filter: blur(24px);
-            }
-        }
-
+        .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 100; background: rgba(4, 6, 13, 0.95); }
+        @supports (backdrop-filter: blur(1px)) { .header { background: rgba(4, 6, 13, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); } }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .logo-hex {
-            font-size: 1.9rem;
-            color: var(--gold);
-            font-family: 'Orbitron', monospace;
-            filter: drop-shadow(0 0 12px var(--gold-glow));
-            animation: hexPulse 3s ease-in-out infinite;
-        }
-        @keyframes hexPulse {
-            0%, 100% { filter: drop-shadow(0 0 12px var(--gold-glow)); }
-            50% { filter: drop-shadow(0 0 24px var(--gold-glow)); }
-        }
-        .logo-text {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.25rem;
-            color: var(--text-primary);
-            letter-spacing: 3px;
-            font-weight: 700;
-        }
+        .logo-hex { font-size: 1.9rem; color: var(--gold); font-family: 'Orbitron', monospace; filter: drop-shadow(0 0 12px var(--gold-glow)); animation: hexPulse 3s ease-in-out infinite; }
+        @keyframes hexPulse { 0%, 100% { filter: drop-shadow(0 0 12px var(--gold-glow)); } 50% { filter: drop-shadow(0 0 24px var(--gold-glow)); } }
+        .logo-text { font-family: 'Orbitron', monospace; font-size: 1.25rem; color: var(--text-primary); letter-spacing: 3px; font-weight: 700; }
         .logo-text span { color: var(--gold); }
-        .logo-badge {
-            font-size: 0.42rem;
-            background: linear-gradient(135deg, var(--gold), var(--gold-light));
-            color: var(--space);
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-weight: 800;
-            letter-spacing: 1px;
-            box-shadow: 0 0 20px var(--gold-glow);
-        }
+        .logo-badge { font-size: 0.42rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 3px 10px; border-radius: 20px; font-weight: 800; letter-spacing: 1px; box-shadow: 0 0 20px var(--gold-glow); }
 
         .header-right { display: flex; align-items: center; gap: 10px; }
-        .status-pill {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 0.6rem;
-            color: var(--success);
-            background: rgba(0, 214, 143, 0.08);
-            padding: 5px 12px;
-            border-radius: 20px;
-            border: 1px solid rgba(0, 214, 143, 0.2);
-            font-family: 'Space Mono', monospace;
-        }
-        .status-pill .dot {
-            width: 6px; height: 6px; border-radius: 50%;
-            background: var(--success);
-            box-shadow: 0 0 10px var(--success);
-            animation: pulseDot 1.5s infinite;
-        }
-        @keyframes pulseDot {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(0.7); }
-        }
+        .status-pill { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--success); background: rgba(0, 214, 143, 0.08); padding: 5px 12px; border-radius: 20px; border: 1px solid rgba(0, 214, 143, 0.2); font-family: 'Space Mono', monospace; }
+        .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px var(--success); animation: pulseDot 1.5s infinite; }
+        @keyframes pulseDot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.7); } }
 
-        .main-nav {
-            display: flex;
-            gap: 4px;
-            background: var(--glass-bg-2);
-            border-radius: var(--radius);
-            padding: 5px;
-            border: 1px solid var(--glass-border);
-            margin: 14px 0 24px;
-            overflow-x: auto;
-            scrollbar-width: none;
-        }
+        .main-nav { display: flex; gap: 4px; background: var(--glass-bg-2); border-radius: var(--radius); padding: 5px; border: 1px solid var(--glass-border); margin: 14px 0 24px; overflow-x: auto; scrollbar-width: none; }
         .main-nav::-webkit-scrollbar { display: none; }
-        .main-nav .nav-link {
-            padding: 9px 16px;
-            border-radius: 11px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.7rem;
-            font-weight: 500;
-            transition: var(--transition);
-            white-space: nowrap;
-            letter-spacing: 0.3px;
-        }
-        .main-nav .nav-link:hover {
-            color: var(--text-primary);
-            background: rgba(212, 175, 55, 0.06);
-        }
-        .main-nav .nav-link.active {
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.08));
-            color: var(--gold);
-            border: 1px solid rgba(212, 175, 55, 0.3);
-        }
+        .main-nav .nav-link { padding: 9px 16px; border-radius: 11px; color: var(--text-muted); text-decoration: none; font-size: 0.7rem; font-weight: 500; transition: var(--transition); white-space: nowrap; letter-spacing: 0.3px; }
+        .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.06); }
+        .main-nav .nav-link.active { background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.08)); color: var(--gold); border: 1px solid rgba(212, 175, 55, 0.3); }
 
-        .marketing-hero {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 26px 28px;
-            background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.7));
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-xl);
-            margin-bottom: 24px;
-            position: relative;
-            overflow: hidden;
-            flex-wrap: wrap;
-            gap: 16px;
-        }
-        .marketing-hero::before {
-            content: '';
-            position: absolute;
-            top: 0; left: -100%;
-            width: 100%; height: 1px;
-            background: linear-gradient(90deg, transparent, var(--gold), transparent);
-            animation: scanLine 4s linear infinite;
-        }
-        @keyframes scanLine {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
+        .marketing-hero { display: flex; justify-content: space-between; align-items: center; padding: 26px 28px; background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.7)); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); margin-bottom: 24px; position: relative; overflow: hidden; flex-wrap: wrap; gap: 16px; }
+        .marketing-hero::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); animation: scanLine 4s linear infinite; }
+        @keyframes scanLine { 0% { left: -100%; } 100% { left: 100%; } }
 
         .hero-title-wrap { position: relative; z-index: 1; }
-        .hero-kicker {
-            font-family: 'Space Mono', monospace;
-            font-size: 0.58rem;
-            color: var(--gold);
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            margin-bottom: 6px;
-            opacity: 0.8;
-        }
-        .marketing-hero h1 {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #fff 30%, var(--gold) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: 1px;
-        }
-        .hero-sub {
-            font-size: 0.7rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-            letter-spacing: 0.5px;
-        }
+        .hero-kicker { font-family: 'Space Mono', monospace; font-size: 0.58rem; color: var(--gold); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 6px; opacity: 0.8; }
+        .marketing-hero h1 { font-family: 'Orbitron', monospace; font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #fff 30%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: 1px; }
+        .hero-sub { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; letter-spacing: 0.5px; }
 
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 12px 22px;
-            border-radius: 30px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-            font-family: 'Inter', sans-serif;
-            transition: var(--transition);
-            letter-spacing: 0.5px;
-            position: relative;
-            overflow: hidden;
-            text-transform: uppercase;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-            color: var(--space);
-            box-shadow: 0 4px 25px rgba(212, 175, 55, 0.35);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 35px rgba(212, 175, 55, 0.5);
-        }
-        .btn-primary:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 22px; border-radius: 30px; font-size: 0.75rem; font-weight: 700; border: none; cursor: pointer; font-family: 'Inter', sans-serif; transition: var(--transition); letter-spacing: 0.5px; position: relative; overflow: hidden; text-transform: uppercase; }
+        .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 25px rgba(212, 175, 55, 0.35); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 35px rgba(212, 175, 55, 0.5); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 14px;
-            margin-bottom: 28px;
-        }
-        .card {
-            background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.6));
-            padding: 20px 22px;
-            border-radius: var(--radius);
-            border: 1px solid var(--glass-border);
-            position: relative;
-            overflow: hidden;
-            transition: var(--transition);
-        }
-        .card:hover {
-            transform: translateY(-4px);
-            border-color: var(--glass-border-strong);
-        }
-        .card-icon {
-            font-family: 'Orbitron', monospace;
-            font-size: 1.1rem;
-            color: var(--gold);
-            margin-bottom: 10px;
-            filter: drop-shadow(0 0 10px var(--gold-glow));
-            opacity: 0.9;
-        }
-        .card h3 {
-            margin: 0 0 8px 0;
-            font-size: 0.58rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 600;
-        }
-        .card p {
-            margin: 0;
-            font-size: 1.7rem;
-            font-weight: 800;
-            color: var(--gold);
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 1px;
-        }
+        .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 28px; }
+        .card { background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.6)); padding: 20px 22px; border-radius: var(--radius); border: 1px solid var(--glass-border); position: relative; overflow: hidden; transition: var(--transition); }
+        .card:hover { transform: translateY(-4px); border-color: var(--glass-border-strong); }
+        .card-icon { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: var(--gold); margin-bottom: 10px; filter: drop-shadow(0 0 10px var(--gold-glow)); opacity: 0.9; }
+        .card h3 { margin: 0 0 8px 0; font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+        .card p { margin: 0; font-size: 1.7rem; font-weight: 800; color: var(--gold); font-family: 'Orbitron', monospace; letter-spacing: 1px; }
 
-        .filters {
-            display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            margin-bottom: 20px;
-            padding-bottom: 8px;
-            scrollbar-width: none;
-        }
+        .filters { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 8px; scrollbar-width: none; }
         .filters::-webkit-scrollbar { display: none; }
-        .filter-btn {
-            background: var(--glass-bg-2);
-            color: var(--text-muted);
-            border: 1px solid var(--glass-border);
-            padding: 9px 18px;
-            border-radius: 20px;
-            cursor: pointer;
-            white-space: nowrap;
-            font-size: 0.68rem;
-            font-weight: 600;
-            transition: var(--transition);
-            font-family: 'Inter', sans-serif;
-        }
-        .filter-btn:hover {
-            color: var(--text-primary);
-            border-color: var(--glass-border-strong);
-        }
-        .filter-btn.active {
-            background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08));
-            color: var(--gold);
-            border-color: var(--gold);
-        }
+        .filter-btn { background: var(--glass-bg-2); color: var(--text-muted); border: 1px solid var(--glass-border); padding: 9px 18px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.68rem; font-weight: 600; transition: var(--transition); font-family: 'Inter', sans-serif; }
+        .filter-btn:hover { color: var(--text-primary); border-color: var(--glass-border-strong); }
+        .filter-btn.active { background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08)); color: var(--gold); border-color: var(--gold); }
 
-        .campaigns-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 16px;
-        }
-        .campaign-card {
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.45), rgba(8, 15, 26, 0.7));
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 20px;
-            cursor: pointer;
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-        }
-        .campaign-card:hover {
-            transform: translateY(-5px);
-            border-color: var(--glass-border-strong);
-            box-shadow: 0 20px 60px rgba(212, 175, 55, 0.15);
-        }
-
-        .campaign-card h3 {
-            color: var(--gold);
-            font-size: 0.95rem;
-            margin-bottom: 14px;
-            font-family: 'Orbitron', monospace;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }
-        .campaign-card .info-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.06);
-            font-size: 0.68rem;
-        }
+        .campaigns-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+        .campaign-card { background: linear-gradient(155deg, rgba(15, 45, 26, 0.45), rgba(8, 15, 26, 0.7)); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 20px; cursor: pointer; transition: var(--transition); position: relative; overflow: hidden; }
+        .campaign-card:hover { transform: translateY(-5px); border-color: var(--glass-border-strong); box-shadow: 0 20px 60px rgba(212, 175, 55, 0.15); }
+        .campaign-card h3 { color: var(--gold); font-size: 0.95rem; margin-bottom: 14px; font-family: 'Orbitron', monospace; font-weight: 700; letter-spacing: 0.5px; }
+        .campaign-card .info-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(212, 175, 55, 0.06); font-size: 0.68rem; }
         .campaign-card .info-row:last-child { border-bottom: none; }
-        .campaign-card .info-row .label {
-            color: var(--text-muted);
-            font-weight: 500;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.6rem;
-        }
-        .campaign-card .info-row .value {
-            color: var(--text-primary);
-            font-weight: 600;
-            font-family: 'Space Mono', monospace;
-        }
+        .campaign-card .info-row .label { color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.6rem; }
+        .campaign-card .info-row .value { color: var(--text-primary); font-weight: 600; font-family: 'Space Mono', monospace; }
 
-        .badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 0.55rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: 'Space Mono', monospace;
-        }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-family: 'Space Mono', monospace; }
         .badge.borrador { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; border: 1px solid rgba(138, 168, 184, 0.3); }
         .badge.pendiente_pago { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.35); }
         .badge.pagada { background: rgba(0, 214, 143, 0.15); color: var(--success); border: 1px solid rgba(0, 214, 143, 0.35); }
@@ -477,259 +112,61 @@
         .badge.rechazada { background: rgba(255, 51, 102, 0.15); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.35); }
         .badge.cancelada { background: rgba(255, 51, 102, 0.15); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.3); }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-            grid-column: 1 / -1;
-        }
-        .empty-state .icon {
-            font-family: 'Orbitron', monospace;
-            font-size: 3rem;
-            display: block;
-            margin-bottom: 16px;
-            color: var(--gold);
-            opacity: 0.4;
-        }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); grid-column: 1 / -1; }
+        .empty-state .icon { font-family: 'Orbitron', monospace; font-size: 3rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.4; }
         .empty-state p { font-size: 0.8rem; letter-spacing: 0.5px; }
-        .empty-state small {
-            display: block;
-            margin-top: 10px;
-            font-size: 0.65rem;
-            color: var(--text-muted);
-            opacity: 0.7;
-        }
+        .empty-state small { display: block; margin-top: 10px; font-size: 0.65rem; color: var(--text-muted); opacity: 0.7; }
         .empty-state.error-state .icon { color: var(--danger); }
 
-        .modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(2, 4, 10, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 16px;
-        }
+        .modal { position: fixed; inset: 0; background: rgba(2, 4, 10, 0.9); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
         .modal.hidden { display: none; }
-
-        .modal-content {
-            background: linear-gradient(160deg, rgba(15, 45, 26, 0.98), rgba(4, 6, 13, 0.99));
-            border: 1px solid var(--glass-border-strong);
-            border-radius: var(--radius-xl);
-            padding: 32px;
-            width: 100%;
-            max-width: 620px;
-            position: relative;
-            max-height: 92vh;
-            overflow-y: auto;
-        }
-
-        .close-modal {
-            position: absolute;
-            top: 16px; right: 20px;
-            font-size: 1.8rem;
-            cursor: pointer;
-            color: var(--text-muted);
-            background: none;
-            border: none;
-            line-height: 1;
-        }
+        .modal-content { background: linear-gradient(160deg, rgba(15, 45, 26, 0.98), rgba(4, 6, 13, 0.99)); border: 1px solid var(--glass-border-strong); border-radius: var(--radius-xl); padding: 32px; width: 100%; max-width: 620px; position: relative; max-height: 92vh; overflow-y: auto; }
+        .close-modal { position: absolute; top: 16px; right: 20px; font-size: 1.8rem; cursor: pointer; color: var(--text-muted); background: none; border: none; line-height: 1; }
         .close-modal:hover { color: var(--gold); }
-
-        .modal-content h2 {
-            color: var(--gold);
-            font-family: 'Orbitron', monospace;
-            font-size: 1.05rem;
-            margin-bottom: 22px;
-            letter-spacing: 1px;
-        }
+        .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.05rem; margin-bottom: 22px; letter-spacing: 1px; }
 
         .wizard-step { display: flex; flex-direction: column; gap: 14px; }
         .wizard-step.hidden { display: none; }
-        .wizard-step h3 {
-            color: var(--text-primary);
-            font-size: 0.85rem;
-            margin-bottom: 4px;
-            font-weight: 600;
-        }
-        .wizard-step label {
-            color: var(--text-muted);
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-            margin-top: 6px;
-        }
-
-        .wizard-step input,
-        .wizard-step select,
-        .wizard-step textarea {
-            background: rgba(0, 0, 0, 0.4);
-            border: 1px solid var(--glass-border);
-            color: var(--text-primary);
-            padding: 13px 16px;
-            border-radius: 12px;
-            width: 100%;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.8rem;
-            outline: none;
-        }
+        .wizard-step h3 { color: var(--text-primary); font-size: 0.85rem; margin-bottom: 4px; font-weight: 600; }
+        .wizard-step label { color: var(--text-muted); font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; margin-top: 6px; }
+        .wizard-step input, .wizard-step select, .wizard-step textarea { background: rgba(0, 0, 0, 0.4); border: 1px solid var(--glass-border); color: var(--text-primary); padding: 13px 16px; border-radius: 12px; width: 100%; font-family: 'Inter', sans-serif; font-size: 0.8rem; outline: none; }
         .wizard-step textarea { min-height: 90px; resize: vertical; }
 
-        .btn-option {
-            padding: 18px;
-            border-radius: 16px;
-            border: 1px solid var(--glass-border);
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.4), rgba(0, 0, 0, 0.3));
-            color: var(--text-primary);
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 700;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 1px;
-            text-align: center;
-        }
+        .btn-option { padding: 18px; border-radius: 16px; border: 1px solid var(--glass-border); background: linear-gradient(155deg, rgba(15, 45, 26, 0.4), rgba(0, 0, 0, 0.3)); color: var(--text-primary); cursor: pointer; font-size: 0.9rem; font-weight: 700; font-family: 'Orbitron', monospace; letter-spacing: 1px; text-align: center; }
         .btn-option:hover { border-color: var(--gold); color: var(--gold); }
 
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid rgba(212, 175, 55, 0.08);
-            font-size: 0.75rem;
-        }
-        .detail-row span:first-child {
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 0.65rem;
-        }
-        .detail-row span:last-child {
-            color: var(--text-primary);
-            font-weight: 700;
-            font-family: 'Space Mono', monospace;
-        }
+        .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(212, 175, 55, 0.08); font-size: 0.75rem; }
+        .detail-row span:first-child { color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.65rem; }
+        .detail-row span:last-child { color: var(--text-primary); font-weight: 700; font-family: 'Space Mono', monospace; }
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(105px, 1fr));
-            gap: 10px;
-            margin: 18px 0;
-        }
-        .stat-item {
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.4), rgba(0, 0, 0, 0.35));
-            border: 1px solid var(--glass-border);
-            border-radius: 12px;
-            padding: 14px 10px;
-            text-align: center;
-        }
-        .stat-item .label {
-            font-size: 0.52rem;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
-        .stat-item .value {
-            font-size: 1.15rem;
-            color: var(--gold);
-            font-weight: 800;
-            font-family: 'Orbitron', monospace;
-            margin-top: 6px;
-        }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(105px, 1fr)); gap: 10px; margin: 18px 0; }
+        .stat-item { background: linear-gradient(155deg, rgba(15, 45, 26, 0.4), rgba(0, 0, 0, 0.35)); border: 1px solid var(--glass-border); border-radius: 12px; padding: 14px 10px; text-align: center; }
+        .stat-item .label { font-size: 0.52rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+        .stat-item .value { font-size: 1.15rem; color: var(--gold); font-weight: 800; font-family: 'Orbitron', monospace; margin-top: 6px; }
 
-        .charts-container {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 16px;
-            margin-top: 22px;
-        }
-        .chart-box {
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.35), rgba(0, 0, 0, 0.4));
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius);
-            padding: 16px;
-        }
-        .chart-box h4 {
-            color: var(--gold);
-            font-size: 0.68rem;
-            margin-bottom: 14px;
-            font-family: 'Orbitron', monospace;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
+        .charts-container { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 22px; }
+        .chart-box { background: linear-gradient(155deg, rgba(15, 45, 26, 0.35), rgba(0, 0, 0, 0.4)); border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 16px; }
+        .chart-box h4 { color: var(--gold); font-size: 0.68rem; margin-bottom: 14px; font-family: 'Orbitron', monospace; letter-spacing: 1px; text-transform: uppercase; }
 
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            padding: 16px 26px;
-            border-radius: 16px;
-            background: linear-gradient(155deg, rgba(15, 45, 26, 0.98), rgba(4, 6, 13, 0.98));
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            font-size: 0.75rem;
-            font-weight: 600;
-            transform: translateY(150px) scale(0.9);
-            opacity: 0;
-            transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-            z-index: 99999;
-            max-width: 340px;
-        }
+        .toast { position: fixed; bottom: 30px; right: 30px; padding: 16px 26px; border-radius: 16px; background: linear-gradient(155deg, rgba(15, 45, 26, 0.98), rgba(4, 6, 13, 0.98)); border: 1px solid var(--gold); color: var(--gold); font-size: 0.75rem; font-weight: 600; transform: translateY(150px) scale(0.9); opacity: 0; transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94); z-index: 99999; max-width: 340px; }
         .toast.show { transform: translateY(0) scale(1); opacity: 1; }
         .toast.error { border-color: var(--danger); color: var(--danger); }
         .toast.success { border-color: var(--success); color: var(--success); }
         .toast.warning { border-color: var(--warning); color: var(--warning); }
 
-        .red-info {
-            background: rgba(0, 214, 143, 0.06);
-            border: 1px solid rgba(0, 214, 143, 0.2);
-            border-radius: 10px;
-            padding: 10px 12px;
-            font-size: 0.68rem;
-            color: var(--text-secondary);
-            line-height: 1.5;
-            margin-top: 6px;
-        }
+        .red-info { background: rgba(0, 214, 143, 0.06); border: 1px solid rgba(0, 214, 143, 0.2); border-radius: 10px; padding: 10px 12px; font-size: 0.68rem; color: var(--text-secondary); line-height: 1.5; margin-top: 6px; }
         .red-info strong { color: var(--gold); }
         .red-info .warn { color: var(--warning); }
 
-        .btn-retry {
-            margin-top: 12px;
-            background: transparent;
-            border: 1px solid var(--gold);
-            color: var(--gold);
-            padding: 10px 18px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-size: 0.7rem;
-            font-family: 'Inter', sans-serif;
-        }
+        .btn-retry { margin-top: 12px; background: transparent; border: 1px solid var(--gold); color: var(--gold); padding: 10px 18px; border-radius: 30px; cursor: pointer; font-size: 0.7rem; font-family: 'Inter', sans-serif; }
 
-        @media (max-width: 640px) {
-            .marketing-hero { flex-direction: column; text-align: center; padding: 22px; }
-            .marketing-hero h1 { font-size: 1.15rem; }
-            .summary-cards { grid-template-columns: 1fr 1fr; gap: 10px; }
-            .card { padding: 16px; }
-            .card p { font-size: 1.3rem; }
-            .modal-content { padding: 24px 20px; }
-            .toast { right: 16px; left: 16px; bottom: 20px; max-width: none; }
-        }
-        @media (max-width: 400px) {
-            .summary-cards { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 640px) { .marketing-hero { flex-direction: column; text-align: center; padding: 22px; } .marketing-hero h1 { font-size: 1.15rem; } .summary-cards { grid-template-columns: 1fr 1fr; gap: 10px; } .card { padding: 16px; } .card p { font-size: 1.3rem; } .modal-content { padding: 24px 20px; } .toast { right: 16px; left: 16px; bottom: 20px; max-width: none; } }
+        @media (max-width: 400px) { .summary-cards { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-    <noscript>
-        <div style="padding:40px;text-align:center;color:#D4AF37;font-family:monospace;background:#04060d;min-height:100vh;">
-            <h1>⚠ JavaScript deshabilitado</h1>
-            <p>Este módulo requiere JavaScript para funcionar.</p>
-        </div>
-    </noscript>
+    <noscript><div style="padding:40px;text-align:center;color:#D4AF37;font-family:monospace;background:#04060d;min-height:100vh;"><h1>⚠ JavaScript deshabilitado</h1><p>Este módulo requiere JavaScript para funcionar.</p></div></noscript>
 
     <div class="bg-glow bg-glow-1"></div>
     <div class="bg-glow bg-glow-2"></div>
@@ -737,16 +174,9 @@
     <div class="particles" id="particles"></div>
 
     <div class="app">
-
         <header class="header">
-            <a href="/" class="logo">
-                <span class="logo-hex">◈</span>
-                <span class="logo-text">Sariel<span>'s</span></span>
-                <span class="logo-badge">✦ WEB3</span>
-            </a>
-            <div class="header-right">
-                <span class="status-pill"><span class="dot"></span> ONLINE</span>
-            </div>
+            <a href="/" class="logo"><span class="logo-hex">◈</span><span class="logo-text">Sariel<span>'s</span></span><span class="logo-badge">✦ WEB3</span></a>
+            <div class="header-right"><span class="status-pill"><span class="dot"></span> ONLINE</span></div>
         </header>
 
         <nav class="main-nav">
@@ -771,26 +201,10 @@
         </div>
 
         <section id="dashboard-summary" class="summary-cards">
-            <div class="card">
-                <div class="card-icon">◈</div>
-                <h3>Presupuesto Total</h3>
-                <p id="total-budget">$0.00</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">▲</div>
-                <h3>Campañas Activas</h3>
-                <p id="active-campaigns">0</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">▼</div>
-                <h3>Gasto Total</h3>
-                <p id="total-spent">$0.00</p>
-            </div>
-            <div class="card">
-                <div class="card-icon">◉</div>
-                <h3>Alcance Total</h3>
-                <p id="total-reach">0</p>
-            </div>
+            <div class="card"><div class="card-icon">◈</div><h3>Presupuesto Total</h3><p id="total-budget">$0.00</p></div>
+            <div class="card"><div class="card-icon">▲</div><h3>Campañas Activas</h3><p id="active-campaigns">0</p></div>
+            <div class="card"><div class="card-icon">▼</div><h3>Gasto Total</h3><p id="total-spent">$0.00</p></div>
+            <div class="card"><div class="card-icon">◉</div><h3>Alcance Total</h3><p id="total-reach">0</p></div>
         </section>
 
         <section id="campaigns-section">
@@ -802,14 +216,8 @@
                 <button class="filter-btn" data-filter="pausada">Pausadas</button>
                 <button class="filter-btn" data-filter="cancelada">Canceladas</button>
             </div>
-            <div id="campaigns-list" class="campaigns-grid">
-                <div class="empty-state">
-                    <span class="icon">◈</span>
-                    <p>Inicializando...</p>
-                </div>
-            </div>
+            <div id="campaigns-list" class="campaigns-grid"><div class="empty-state"><span class="icon">◈</span><p>Inicializando...</p></div></div>
         </section>
-
     </div>
 
     <div id="modal-detail" class="modal hidden">
@@ -859,15 +267,9 @@
                 <h3>▸ Paso 05 — Presupuesto y Red de Pago</h3>
                 <label for="campaign-budget">Presupuesto (MXN)</label>
                 <input type="number" id="campaign-budget" placeholder="Monto en MXN" min="1" step="0.01">
-
                 <label for="pay-currency">Red de pago (cripto)</label>
-                <select id="pay-currency">
-                    <option value="">Ingresa un presupuesto primero…</option>
-                </select>
-                <div class="red-info" id="red-info">
-                    ◈ Elige cuánto vas a invertir para ver las redes disponibles.
-                </div>
-
+                <select id="pay-currency"><option value="">Ingresa un presupuesto primero…</option></select>
+                <div class="red-info" id="red-info">◈ Elige cuánto vas a invertir para ver las redes disponibles.</div>
                 <button class="btn btn-primary btn-next">Siguiente →</button>
             </div>
             <div id="wizard-step-6" class="wizard-step hidden">
@@ -891,20 +293,21 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v3
-       - La configuración (URL y clave pública) sale de /api/config/public
-       - Campañas: se crean una sola vez; si falla el pago, se reintenta
-         solo el pago (nunca se duplica la campaña)
-       - Destinos de live: solo transmisiones en vivo
-       - El servidor es la autoridad: campaña, presupuesto, estado y cobro
+       MARKETING · Sariel's — v4
+       - Integración con anuncios del carrusel (pago)
+       - Detecta ?anuncio_pendiente=ID y cobra directamente
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
     const DEBUG = false;
 
     const MXN_A_USD_APROX = 0.055;
-    const MAX_POLL_INTENTOS = 80;      // 80 × 15 s = 20 min
+    const MAX_POLL_INTENTOS = 80;
     const INTERVALO_POLL_MS = 15000;
+
+    // ✅ COBRO DE ANUNCIOS DEL CARRUSEL
+    const PRECIO_ANUNCIO_MXN = 60; // Precio fijo para anuncios
+    const DURACION_ANUNCIO_DIAS = 7;
 
     const REDES_PAGO = [
         { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 1,  label: 'USDT · TRON (TRC20)' },
@@ -929,58 +332,45 @@
     let chartJsLoaded = false;
     let chartJsLoading = false;
 
-    // Estado del wizard
     let wizard = {};
-    // Campaña ya creada en el servidor (se reutiliza si el pago falla)
-    let campañaCreada = null;   // { campaign_id, pagoId?, paymentUrl? }
+    let campañaCreada = null;
     let pollTimer = null;
+
+    // ✅ Estado para anuncio pendiente
+    let anuncioPendienteId = null;
+    let anuncioPendienteData = null;
 
     function log(...a) { if (DEBUG) console.log('◈', ...a); }
     function logError(...a) { console.error('✕', ...a); }
 
     function escapeHTML(t) {
         if (t === null || t === undefined) return '';
-        return String(t)
-            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
-
     function isValidHttpUrl(s) {
         if (!s || typeof s !== 'string') return false;
-        try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; }
-        catch { return false; }
+        try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; }
     }
-
     function normalizeEstado(e) { return ESTADOS_VALIDOS.includes(e) ? e : 'borrador'; }
-
-    function formatFecha(f) {
-        if (!f) return '—';
-        try { return new Date(f).toLocaleDateString('es-MX'); } catch { return '—'; }
-    }
+    function formatFecha(f) { if (!f) return '—'; try { return new Date(f).toLocaleDateString('es-MX'); } catch { return '—'; } }
 
     function showToast(msg, type, duration) {
-        const t = document.getElementById('toast');
-        if (!t) return;
-        t.textContent = msg;
-        t.className = 'toast show ' + (type || '');
+        const t = document.getElementById('toast'); if (!t) return;
+        t.textContent = msg; t.className = 'toast show ' + (type || '');
         clearTimeout(toastTimeout);
         toastTimeout = setTimeout(() => t.classList.remove('show'), duration || 3500);
     }
 
     function renderParticles() {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        const c = document.getElementById('particles');
-        if (!c) return;
+        const c = document.getElementById('particles'); if (!c) return;
         for (let i = 0; i < 25; i++) {
-            const p = document.createElement('div');
-            p.className = 'particle';
+            const p = document.createElement('div'); p.className = 'particle';
             p.style.left = Math.random() * 100 + '%';
             p.style.animationDuration = (8 + Math.random() * 12) + 's';
             p.style.animationDelay = (Math.random() * 10) + 's';
             p.style.opacity = 0.2 + Math.random() * 0.4;
-            const s = 1 + Math.random() * 2;
-            p.style.width = s + 'px';
-            p.style.height = s + 'px';
+            const s = 1 + Math.random() * 2; p.style.width = s + 'px'; p.style.height = s + 'px';
             c.appendChild(p);
         }
     }
@@ -988,36 +378,22 @@
     function loadChartJs() {
         return new Promise((resolve, reject) => {
             if (chartJsLoaded) return resolve();
-            if (chartJsLoading) {
-                const check = setInterval(() => {
-                    if (chartJsLoaded) { clearInterval(check); resolve(); }
-                }, 100);
-                return;
-            }
+            if (chartJsLoading) { const check = setInterval(() => { if (chartJsLoaded) { clearInterval(check); resolve(); } }, 100); return; }
             chartJsLoading = true;
-            const s = document.createElement('script');
-            s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
+            const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
             s.onload = () => { chartJsLoaded = true; chartJsLoading = false; resolve(); };
             s.onerror = () => { chartJsLoading = false; reject(new Error('No se pudo cargar Chart.js')); };
             document.head.appendChild(s);
         });
     }
 
-    // ------------------------------------------------------------
-    // CONFIGURACIÓN: URL y clave pública desde el backend
-    // ------------------------------------------------------------
     async function cargarConfig() {
         const r = await fetch(`${BACKEND_URL}/api/config/public`, { cache: 'no-store' });
         const j = await r.json();
-        if (!r.ok || !j.supabaseUrl || !j.supabaseAnonKey) {
-            throw new Error('Configuración pública no disponible');
-        }
+        if (!r.ok || !j.supabaseUrl || !j.supabaseAnonKey) throw new Error('Configuración pública no disponible');
         return { url: j.supabaseUrl, key: j.supabaseAnonKey };
     }
 
-    // ------------------------------------------------------------
-    // REDES DE PAGO según el monto en MXN
-    // ------------------------------------------------------------
     function getRedesDisponibles(montoMxn) {
         const monto = Number(montoMxn);
         if (!Number.isFinite(monto) || monto <= 0) return [];
@@ -1046,9 +422,7 @@
         }
 
         const previo = select.value;
-        select.innerHTML = redes.map(r =>
-            `<option value="${escapeHTML(r.value)}">${escapeHTML(r.label)} · mín ${r.min} USD</option>`
-        ).join('');
+        select.innerHTML = redes.map(r => `<option value="${escapeHTML(r.value)}">${escapeHTML(r.label)} · mín ${r.min} USD</option>`).join('');
         if (redes.some(r => r.value === previo)) select.value = previo;
 
         const usd = (monto * MXN_A_USD_APROX).toFixed(2);
@@ -1067,111 +441,111 @@
         setupWizard();
         setupFilters();
 
-        if (!window.supabase || !window.supabase.createClient) {
-            showBootError('El SDK de Supabase no cargó. Revisa tu conexión.');
-            return;
-        }
+        if (!window.supabase || !window.supabase.createClient) { showBootError('El SDK de Supabase no cargó. Revisa tu conexión.'); return; }
 
         let cfg;
-        try { cfg = await cargarConfig(); }
-        catch (err) { logError(err); showBootError('No se pudo obtener la configuración del servidor.'); return; }
+        try { cfg = await cargarConfig(); } catch (err) { logError(err); showBootError('No se pudo obtener la configuración del servidor.'); return; }
 
-        try { supabaseClient = window.supabase.createClient(cfg.url, cfg.key); }
-        catch (err) { logError(err); showBootError('Error creando el cliente de Supabase.'); return; }
+        try { supabaseClient = window.supabase.createClient(cfg.url, cfg.key); } catch (err) { logError(err); showBootError('Error creando el cliente de Supabase.'); return; }
 
         let user = null;
-        try {
-            const { data, error } = await supabaseClient.auth.getUser();
-            if (error) throw error;
-            user = data?.user || null;
-        } catch (err) { logError('Usuario:', err); }
+        try { const { data, error } = await supabaseClient.auth.getUser(); if (error) throw error; user = data?.user || null; } catch (err) { logError('Usuario:', err); }
 
         if (!user) { showNoSession(); return; }
 
         currentUser = user;
-        try { await loadCampaigns(); }
-        catch (err) { logError('Campañas:', err); showCampaignsError(err.message); }
+        try { await loadCampaigns(); } catch (err) { logError('Campañas:', err); showCampaignsError(err.message); }
+
+        // ✅ DETECTAR SI VIENE UN ANUNCIO PENDIENTE DE PAGO
+        const urlParams = new URLSearchParams(window.location.search);
+        const pendienteId = urlParams.get('anuncio_pendiente');
+
+        if (pendienteId) {
+            anuncioPendienteId = pendienteId;
+            await cargarAnuncioPendiente(pendienteId);
+        }
     }
 
-    function showBootError(msg) {
-        const el = document.getElementById('campaigns-list');
-        if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error inicializando Marketing</p><small>${escapeHTML(msg)}</small></div>`;
+    // ✅ FUNCIÓN PARA CARGAR EL ANUNCIO PENDIENTE
+    async function cargarAnuncioPendiente(id) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('anuncios')
+                .select('id, titulo, texto, media_url')
+                .eq('id', id)
+                .eq('usuario_id', currentUser.id)
+                .eq('estado_moderacion', 'pendiente_pago')
+                .maybeSingle();
+
+            if (error || !data) {
+                showToast('No se encontró el anuncio pendiente.', 'error');
+                return;
+            }
+
+            anuncioPendienteData = data;
+
+            // Abrir el wizard directo en el paso 5 (pago)
+            document.getElementById('modal-create').classList.remove('hidden');
+            resetWizard();
+
+            // Rellenar datos del anuncio
+            wizard = {
+                nombre: data.titulo,
+                objetivo: 'alcance',
+                presupuesto: PRECIO_ANUNCIO_MXN,
+                pay_currency: 'usdttrc20', // Moneda por defecto
+                ad: {
+                    titulo: data.titulo,
+                    descripcion: data.texto || null,
+                    imagen_url: data.media_url || null,
+                    video_url: null,
+                    cta_texto: 'Ver más'
+                },
+                target_tipo: 'carrusel',
+                target_id: data.id,
+                anuncio_id: data.id
+            };
+
+            // Saltar directo al paso de pago
+            document.getElementById('campaign-budget').value = PRECIO_ANUNCIO_MXN;
+            poblarRedesDePago(PRECIO_ANUNCIO_MXN);
+            mostrarResumen();
+            showWizardStep('7');
+
+        } catch (err) {
+            logError('Error cargando anuncio pendiente:', err);
+            showToast('Error al cargar el anuncio pendiente.', 'error');
+        }
     }
 
-    function showNoSession() {
-        const el = document.getElementById('campaigns-list');
-        if (el) el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>Inicia sesión para ver tus campañas</p><a href="/" class="btn btn-primary" style="margin-top:20px;text-decoration:none;">Ir al inicio</a></div>`;
-    }
-
-    function showCampaignsError(msg) {
-        const el = document.getElementById('campaigns-list');
-        if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error cargando campañas</p><small>${escapeHTML(msg || 'Error desconocido')}</small></div>`;
-    }
+    function showBootError(msg) { const el = document.getElementById('campaigns-list'); if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error inicializando Marketing</p><small>${escapeHTML(msg)}</small></div>`; }
+    function showNoSession() { const el = document.getElementById('campaigns-list'); if (el) el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>Inicia sesión para ver tus campañas</p><a href="/" class="btn btn-primary" style="margin-top:20px;text-decoration:none;">Ir al inicio</a></div>`; }
+    function showCampaignsError(msg) { const el = document.getElementById('campaigns-list'); if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error cargando campañas</p><small>${escapeHTML(msg || 'Error desconocido')}</small></div>`; }
 
     async function loadCampaigns() {
-        const el = document.getElementById('campaigns-list');
-        if (!el || !supabaseClient || !currentUser) return;
-
+        const el = document.getElementById('campaigns-list'); if (!el || !supabaseClient || !currentUser) return;
         el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>Cargando campañas...</p></div>`;
-
-        const { data, error } = await supabaseClient
-            .from('marketing_campaigns')
-            .select('*')
-            .eq('anunciante_id', currentUser.id)
-            .order('created_at', { ascending: false });
-
+        const { data, error } = await supabaseClient.from('marketing_campaigns').select('*').eq('anunciante_id', currentUser.id).order('created_at', { ascending: false });
         if (error) { showCampaignsError(error.message); return; }
-
         campaigns = data || [];
-        if (campaigns.length === 0) {
-            el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>No hay campañas creadas aún</p></div>`;
-            calculateSummary();
-            return;
-        }
-        renderCampaigns();
-        calculateSummary();
+        if (campaigns.length === 0) { el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>No hay campañas creadas aún</p></div>`; calculateSummary(); return; }
+        renderCampaigns(); calculateSummary();
     }
 
     function renderCampaigns() {
-        const container = document.getElementById('campaigns-list');
-        if (!container) return;
-
+        const container = document.getElementById('campaigns-list'); if (!container) return;
         const filtered = currentFilter === 'all' ? campaigns : campaigns.filter(c => c.estado === currentFilter);
-
-        if (filtered.length === 0) {
-            container.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>No hay campañas ${currentFilter === 'all' ? 'creadas aún' : 'con este estado'}.</p></div>`;
-            return;
-        }
-
+        if (filtered.length === 0) { container.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>No hay campañas ${currentFilter === 'all' ? 'creadas aún' : 'con este estado'}.</p></div>`; return; }
         container.innerHTML = filtered.map(camp => {
             const estado = normalizeEstado(camp.estado);
-            return `
-                <div class="campaign-card" data-id="${escapeHTML(camp.id)}">
-                    <h3>${escapeHTML(camp.nombre) || 'Sin nombre'}</h3>
-                    <div class="info-row"><span class="label">Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div>
-                    <div class="info-row"><span class="label">Presupuesto</span><span class="value">$${parseFloat(camp.presupuesto || 0).toFixed(2)} ${escapeHTML(camp.moneda || 'MXN')}</span></div>
-                    <div class="info-row"><span class="label">Gastado</span><span class="value">$${parseFloat(camp.gastado || 0).toFixed(2)}</span></div>
-                    <div class="info-row"><span class="label">Inicio</span><span class="value">${formatFecha(camp.fecha_inicio)}</span></div>
-                    <div class="info-row"><span class="label">Fin</span><span class="value">${formatFecha(camp.fecha_fin)}</span></div>
-                </div>`;
+            return `<div class="campaign-card" data-id="${escapeHTML(camp.id)}"><h3>${escapeHTML(camp.nombre) || 'Sin nombre'}</h3><div class="info-row"><span class="label">Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div><div class="info-row"><span class="label">Presupuesto</span><span class="value">$${parseFloat(camp.presupuesto || 0).toFixed(2)} ${escapeHTML(camp.moneda || 'MXN')}</span></div><div class="info-row"><span class="label">Gastado</span><span class="value">$${parseFloat(camp.gastado || 0).toFixed(2)}</span></div><div class="info-row"><span class="label">Inicio</span><span class="value">${formatFecha(camp.fecha_inicio)}</span></div><div class="info-row"><span class="label">Fin</span><span class="value">${formatFecha(camp.fecha_fin)}</span></div></div>`;
         }).join('');
-
-        if (!container._clickBound) {
-            container._clickBound = true;
-            container.addEventListener('click', (e) => {
-                const card = e.target.closest('.campaign-card');
-                if (card && card.dataset.id) openDetail(card.dataset.id);
-            });
-        }
+        if (!container._clickBound) { container._clickBound = true; container.addEventListener('click', (e) => { const card = e.target.closest('.campaign-card'); if (card && card.dataset.id) openDetail(card.dataset.id); }); }
     }
 
     function calculateSummary() {
         let budget = 0, active = 0, spent = 0;
-        campaigns.forEach(c => {
-            budget += parseFloat(c.presupuesto || 0);
-            spent += parseFloat(c.gastado || 0);
-            if (c.estado === 'activa') active++;
-        });
+        campaigns.forEach(c => { budget += parseFloat(c.presupuesto || 0); spent += parseFloat(c.gastado || 0); if (c.estado === 'activa') active++; });
         document.getElementById('total-budget').textContent = `$${budget.toFixed(2)}`;
         document.getElementById('active-campaigns').textContent = active;
         document.getElementById('total-spent').textContent = `$${spent.toFixed(2)}`;
@@ -1180,327 +554,109 @@
 
     function setupFilters() {
         document.querySelectorAll('.filter-btn').forEach(btn => {
-            if (btn._bound) return;
-            btn._bound = true;
+            if (btn._bound) return; btn._bound = true;
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentFilter = btn.dataset.filter;
-                renderCampaigns();
+                btn.classList.add('active'); currentFilter = btn.dataset.filter; renderCampaigns();
             });
         });
     }
 
-    // ------------------------------------------------------------
-    // DETALLE Y ESTADÍSTICAS
-    // ------------------------------------------------------------
     async function openDetail(campaignId) {
-        const campaign = campaigns.find(c => c.id === campaignId);
-        if (!campaign) return;
-
+        const campaign = campaigns.find(c => c.id === campaignId); if (!campaign) return;
         const estado = normalizeEstado(campaign.estado);
         const restante = parseFloat(campaign.presupuesto || 0) - parseFloat(campaign.gastado || 0);
-
         document.getElementById('detail-title').textContent = '◈ ' + (campaign.nombre || 'Sin nombre');
-        document.getElementById('detail-info').innerHTML = `
-            <div class="detail-row"><span>Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div>
-            <div class="detail-row"><span>Presupuesto</span><span>$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${escapeHTML(campaign.moneda || 'MXN')}</span></div>
-            <div class="detail-row"><span>Gastado</span><span>$${parseFloat(campaign.gastado || 0).toFixed(2)}</span></div>
-            <div class="detail-row"><span>Restante</span><span>$${restante.toFixed(2)}</span></div>
-            <div class="detail-row"><span>Objetivo</span><span>${escapeHTML(campaign.objetivo || '—')}</span></div>
-            <div class="detail-row"><span>Inicio</span><span>${formatFecha(campaign.fecha_inicio)}</span></div>
-            <div class="detail-row"><span>Fin</span><span>${formatFecha(campaign.fecha_fin)}</span></div>`;
-
+        document.getElementById('detail-info').innerHTML = `<div class="detail-row"><span>Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div><div class="detail-row"><span>Presupuesto</span><span>$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${escapeHTML(campaign.moneda || 'MXN')}</span></div><div class="detail-row"><span>Gastado</span><span>$${parseFloat(campaign.gastado || 0).toFixed(2)}</span></div><div class="detail-row"><span>Restante</span><span>$${restante.toFixed(2)}</span></div><div class="detail-row"><span>Objetivo</span><span>${escapeHTML(campaign.objetivo || '—')}</span></div><div class="detail-row"><span>Inicio</span><span>${formatFecha(campaign.fecha_inicio)}</span></div><div class="detail-row"><span>Fin</span><span>${formatFecha(campaign.fecha_fin)}</span></div>`;
         document.getElementById('modal-detail').classList.remove('hidden');
 
-        const { data: stats, error } = await supabaseClient
-            .from('marketing_daily_stats')
-            .select('*')
-            .eq('campaign_id', campaignId)
-            .order('fecha', { ascending: true });
+        const { data: stats, error } = await supabaseClient.from('marketing_daily_stats').select('*').eq('campaign_id', campaignId).order('fecha', { ascending: true });
+        if (error || !stats || stats.length === 0) { document.getElementById('detail-stats').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--warning);font-size:0.72rem;line-height:1.6;">Las estadísticas aparecerán cuando la campaña<br>comience a recibir tráfico.</div>`; return; }
 
-        if (error || !stats || stats.length === 0) {
-            document.getElementById('detail-stats').innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--warning);font-size:0.72rem;line-height:1.6;">
-                    Las estadísticas aparecerán cuando la campaña<br>comience a recibir tráfico.
-                </div>`;
-            return;
-        }
+        const t = stats.reduce((a, s) => ({ impresiones: a.impresiones + (s.impresiones || 0), alcance: a.alcance + (s.alcance || 0), vistas: a.vistas + (s.vistas || 0), clics: a.clics + (s.clics || 0), interacciones: a.interacciones + (s.interacciones || 0), reproducciones: a.reproducciones + (s.reproducciones || 0), conversiones: a.conversiones + (s.conversiones || 0) }), { impresiones: 0, alcance: 0, vistas: 0, clics: 0, interacciones: 0, reproducciones: 0, conversiones: 0 });
 
-        const t = stats.reduce((a, s) => ({
-            impresiones: a.impresiones + (s.impresiones || 0),
-            alcance: a.alcance + (s.alcance || 0),
-            vistas: a.vistas + (s.vistas || 0),
-            clics: a.clics + (s.clics || 0),
-            interacciones: a.interacciones + (s.interacciones || 0),
-            reproducciones: a.reproducciones + (s.reproducciones || 0),
-            conversiones: a.conversiones + (s.conversiones || 0)
-        }), { impresiones: 0, alcance: 0, vistas: 0, clics: 0, interacciones: 0, reproducciones: 0, conversiones: 0 });
-
-        document.getElementById('detail-stats').innerHTML = `
-            <div class="stat-item"><div class="label">Alcance</div><div class="value">${t.alcance.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Impresiones</div><div class="value">${t.impresiones.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Vistas</div><div class="value">${t.vistas.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Clics</div><div class="value">${t.clics.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Interacciones</div><div class="value">${t.interacciones.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Reproducciones</div><div class="value">${t.reproducciones.toLocaleString()}</div></div>
-            <div class="stat-item"><div class="label">Conversiones</div><div class="value">${t.conversiones.toLocaleString()}</div></div>`;
-
-        try { await loadChartJs(); renderCharts(stats); }
-        catch (err) { logError('Chart.js:', err); }
+        document.getElementById('detail-stats').innerHTML = `<div class="stat-item"><div class="label">Alcance</div><div class="value">${t.alcance.toLocaleString()}</div></div><div class="stat-item"><div class="label">Impresiones</div><div class="value">${t.impresiones.toLocaleString()}</div></div><div class="stat-item"><div class="label">Vistas</div><div class="value">${t.vistas.toLocaleString()}</div></div><div class="stat-item"><div class="label">Clics</div><div class="value">${t.clics.toLocaleString()}</div></div><div class="stat-item"><div class="label">Interacciones</div><div class="value">${t.interacciones.toLocaleString()}</div></div><div class="stat-item"><div class="label">Reproducciones</div><div class="value">${t.reproducciones.toLocaleString()}</div></div><div class="stat-item"><div class="label">Conversiones</div><div class="value">${t.conversiones.toLocaleString()}</div></div>`;
+        try { await loadChartJs(); renderCharts(stats); } catch (err) { logError('Chart.js:', err); }
     }
 
     function renderCharts(stats) {
         if (typeof Chart === 'undefined') return;
-
         Object.values(currentChartInstances).forEach(c => { try { c.destroy(); } catch (e) {} });
         currentChartInstances = {};
-
-        Chart.defaults.color = '#6b8a9e';
-        Chart.defaults.font.family = 'Inter, sans-serif';
-        Chart.defaults.font.size = 10;
-
-        const labels = stats.map(s => {
-            try { return new Date(s.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }); }
-            catch { return ''; }
-        });
-
-        const opts = {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    backgroundColor: 'rgba(4, 6, 13, 0.95)', borderColor: '#D4AF37', borderWidth: 1,
-                    titleColor: '#D4AF37', bodyColor: '#f0f4f8', padding: 10, cornerRadius: 8
-                }
-            },
-            scales: {
-                x: { ticks: { color: '#6b8a9e', font: { size: 9 } }, grid: { color: 'rgba(212, 175, 55, 0.05)' } },
-                y: { ticks: { color: '#6b8a9e', font: { size: 9 } }, grid: { color: 'rgba(212, 175, 55, 0.05)' } }
-            }
-        };
+        Chart.defaults.color = '#6b8a9e'; Chart.defaults.font.family = 'Inter, sans-serif'; Chart.defaults.font.size = 10;
+        const labels = stats.map(s => { try { return new Date(s.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }); } catch { return ''; } });
+        const opts = { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(4, 6, 13, 0.95)', borderColor: '#D4AF37', borderWidth: 1, titleColor: '#D4AF37', bodyColor: '#f0f4f8', padding: 10, cornerRadius: 8 } }, scales: { x: { ticks: { color: '#6b8a9e', font: { size: 9 } }, grid: { color: 'rgba(212, 175, 55, 0.05)' } }, y: { ticks: { color: '#6b8a9e', font: { size: 9 } }, grid: { color: 'rgba(212, 175, 55, 0.05)' } } } };
 
         const ctxReach = document.getElementById('chart-reach').getContext('2d');
-        const gradReach = ctxReach.createLinearGradient(0, 0, 0, 200);
-        gradReach.addColorStop(0, 'rgba(212, 175, 55, 0.5)');
-        gradReach.addColorStop(1, 'rgba(212, 175, 55, 0)');
-        currentChartInstances.reach = new Chart(ctxReach, {
-            type: 'line',
-            data: { labels, datasets: [{ data: stats.map(s => s.alcance || 0), borderColor: '#D4AF37', backgroundColor: gradReach, fill: true, tension: 0.4, pointBackgroundColor: '#D4AF37', pointRadius: 4, borderWidth: 2 }] },
-            options: opts
-        });
+        const gradReach = ctxReach.createLinearGradient(0, 0, 0, 200); gradReach.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradReach.addColorStop(1, 'rgba(212, 175, 55, 0)');
+        currentChartInstances.reach = new Chart(ctxReach, { type: 'line', data: { labels, datasets: [{ data: stats.map(s => s.alcance || 0), borderColor: '#D4AF37', backgroundColor: gradReach, fill: true, tension: 0.4, pointBackgroundColor: '#D4AF37', pointRadius: 4, borderWidth: 2 }] }, options: opts });
 
-        currentChartInstances.impressions = new Chart(document.getElementById('chart-impressions'), {
-            type: 'bar',
-            data: { labels, datasets: [{ data: stats.map(s => s.impresiones || 0), backgroundColor: 'rgba(0, 214, 143, 0.7)', borderRadius: 6 }] },
-            options: opts
-        });
+        currentChartInstances.impressions = new Chart(document.getElementById('chart-impressions'), { type: 'bar', data: { labels, datasets: [{ data: stats.map(s => s.impresiones || 0), backgroundColor: 'rgba(0, 214, 143, 0.7)', borderRadius: 6 }] }, options: opts });
 
         const ctxSpent = document.getElementById('chart-spent').getContext('2d');
-        const gradSpent = ctxSpent.createLinearGradient(0, 0, 0, 200);
-        gradSpent.addColorStop(0, 'rgba(255, 51, 102, 0.5)');
-        gradSpent.addColorStop(1, 'rgba(255, 51, 102, 0)');
-        currentChartInstances.spent = new Chart(ctxSpent, {
-            type: 'line',
-            data: { labels, datasets: [{ data: stats.map(s => s.gasto || 0), borderColor: '#ff3366', backgroundColor: gradSpent, fill: true, tension: 0.4, pointBackgroundColor: '#ff3366', pointRadius: 4, borderWidth: 2 }] },
-            options: opts
-        });
+        const gradSpent = ctxSpent.createLinearGradient(0, 0, 0, 200); gradSpent.addColorStop(0, 'rgba(255, 51, 102, 0.5)'); gradSpent.addColorStop(1, 'rgba(255, 51, 102, 0)');
+        currentChartInstances.spent = new Chart(ctxSpent, { type: 'line', data: { labels, datasets: [{ data: stats.map(s => s.gasto || 0), borderColor: '#ff3366', backgroundColor: gradSpent, fill: true, tension: 0.4, pointBackgroundColor: '#ff3366', pointRadius: 4, borderWidth: 2 }] }, options: opts });
     }
 
-    // ------------------------------------------------------------
-    // WIZARD
-    // ------------------------------------------------------------
     function setupWizard() {
         const btnCreate = document.getElementById('btn-create-campaign');
-        if (btnCreate && !btnCreate._bound) {
-            btnCreate._bound = true;
-            btnCreate.addEventListener('click', () => {
-                if (!currentUser) { showToast('Inicia sesión para crear campañas', 'warning'); return; }
-                document.getElementById('modal-create').classList.remove('hidden');
-                resetWizard();
-            });
-        }
+        if (btnCreate && !btnCreate._bound) { btnCreate._bound = true; btnCreate.addEventListener('click', () => { if (!currentUser) { showToast('Inicia sesión para crear campañas', 'warning'); return; } document.getElementById('modal-create').classList.remove('hidden'); resetWizard(); }); }
 
-        document.querySelectorAll('.close-modal').forEach(btn => {
-            if (btn._bound) return;
-            btn._bound = true;
-            btn.addEventListener('click', (e) => {
-                const target = e.currentTarget.dataset.close;
-                document.getElementById(target).classList.add('hidden');
-                if (target === 'modal-create') detenerPolling();
-            });
-        });
+        document.querySelectorAll('.close-modal').forEach(btn => { if (btn._bound) return; btn._bound = true; btn.addEventListener('click', (e) => { const target = e.currentTarget.dataset.close; document.getElementById(target).classList.add('hidden'); if (target === 'modal-create') detenerPolling(); }); });
 
-        document.querySelectorAll('.btn-option').forEach(btn => {
-            if (btn._bound) return;
-            btn._bound = true;
-            btn.addEventListener('click', (e) => cargarDestinos(e.currentTarget.dataset.type));
-        });
+        document.querySelectorAll('.btn-option').forEach(btn => { if (btn._bound) return; btn._bound = true; btn.addEventListener('click', (e) => cargarDestinos(e.currentTarget.dataset.type)); });
 
         const budgetInput = document.getElementById('campaign-budget');
-        if (budgetInput && !budgetInput._bound) {
-            budgetInput._bound = true;
-            budgetInput.addEventListener('input', (e) => poblarRedesDePago(e.target.value));
-            budgetInput.addEventListener('change', (e) => poblarRedesDePago(e.target.value));
-        }
+        if (budgetInput && !budgetInput._bound) { budgetInput._bound = true; budgetInput.addEventListener('input', (e) => poblarRedesDePago(e.target.value)); budgetInput.addEventListener('change', (e) => poblarRedesDePago(e.target.value)); }
 
-        ['2', '3', '4', '5', '6'].forEach(n => {
-            const btn = document.querySelector(`#wizard-step-${n} .btn-next`);
-            if (btn && !btn._bound) {
-                btn._bound = true;
-                btn.addEventListener('click', () => handleWizardStep(n));
-            }
-        });
+        ['2', '3', '4', '5', '6'].forEach(n => { const btn = document.querySelector(`#wizard-step-${n} .btn-next`); if (btn && !btn._bound) { btn._bound = true; btn.addEventListener('click', () => handleWizardStep(n)); } });
 
         const payBtn = document.getElementById('btn-pay');
-        if (payBtn && !payBtn._bound) {
-            payBtn._bound = true;
-            payBtn.addEventListener('click', onPagarClick);
-        }
+        if (payBtn && !payBtn._bound) { payBtn._bound = true; payBtn.addEventListener('click', onPagarClick); }
     }
 
-    // Solo transmisiones EN VIVO (un anuncio a un live terminado nunca se mostraría)
     async function cargarDestinos(tipo) {
         wizard = { target_tipo: tipo };
-        const select = document.getElementById('select-target');
-        select.innerHTML = '<option value="">Cargando...</option>';
-
+        const select = document.getElementById('select-target'); select.innerHTML = '<option value="">Cargando...</option>';
         try {
             let query;
-            if (tipo === 'live') {
-                query = supabaseClient.from('transmisiones')
-                    .select('id, titulo')
-                    .eq('estado', 'en_vivo')
-                    .eq('is_live', true)
-                    .is('grupo_id', null)
-                    .order('fecha_inicio', { ascending: false })
-                    .limit(50);
-            } else {
-                query = supabaseClient.from('grupos_video')
-                    .select('id, nombre')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
-            }
-
-            const { data, error } = await query;
-            if (error) throw error;
-
-            if (!data || data.length === 0) {
-                select.innerHTML = tipo === 'live'
-                    ? '<option value="">No hay transmisiones en vivo ahora</option>'
-                    : '<option value="">No hay grupos disponibles</option>';
-            } else {
-                select.innerHTML = data.map(t => {
-                    const label = tipo === 'live' ? t.titulo : t.nombre;
-                    return `<option value="${escapeHTML(t.id)}">${escapeHTML(label || 'Sin nombre')}</option>`;
-                }).join('');
-            }
-        } catch (err) {
-            logError('Destinos:', err);
-            select.innerHTML = '<option value="">No se pudieron cargar los destinos</option>';
-            showToast('No se pudieron cargar los destinos. Intenta de nuevo.', 'error');
-        }
+            if (tipo === 'live') { query = supabaseClient.from('transmisiones').select('id, titulo').eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).order('fecha_inicio', { ascending: false }).limit(50); }
+            else { query = supabaseClient.from('grupos_video').select('id, nombre').order('created_at', { ascending: false }).limit(50); }
+            const { data, error } = await query; if (error) throw error;
+            if (!data || data.length === 0) { select.innerHTML = tipo === 'live' ? '<option value="">No hay transmisiones en vivo ahora</option>' : '<option value="">No hay grupos disponibles</option>'; }
+            else { select.innerHTML = data.map(t => { const label = tipo === 'live' ? t.titulo : t.nombre; return `<option value="${escapeHTML(t.id)}">${escapeHTML(label || 'Sin nombre')}</option>`; }).join(''); }
+        } catch (err) { logError('Destinos:', err); select.innerHTML = '<option value="">No se pudieron cargar los destinos</option>'; showToast('No se pudieron cargar los destinos. Intenta de nuevo.', 'error'); }
         showWizardStep('2');
     }
 
-    function showWizardStep(n) {
-        document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
-        const t = document.getElementById(`wizard-step-${n}`);
-        if (t) t.classList.remove('hidden');
-    }
+    function showWizardStep(n) { document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden')); const t = document.getElementById(`wizard-step-${n}`); if (t) t.classList.remove('hidden'); }
 
     function resetWizard() {
-        detenerPolling();
-        wizard = {};
-        campañaCreada = null;
-        document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea')
-            .forEach(el => { el.value = ''; });
+        detenerPolling(); wizard = {}; campañaCreada = null;
+        document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea').forEach(el => { el.value = ''; });
         poblarRedesDePago('');
-
-        const btnPay = document.getElementById('btn-pay');
-        if (btnPay) {
-            btnPay.style.display = '';
-            btnPay.disabled = false;
-            btnPay.textContent = '◈ Continuar al Pago';
-        }
+        const btnPay = document.getElementById('btn-pay'); if (btnPay) { btnPay.style.display = ''; btnPay.disabled = false; btnPay.textContent = '◈ Continuar al Pago'; }
         showWizardStep('1');
     }
 
     function handleWizardStep(n) {
-        if (n === '2') {
-            const id = document.getElementById('select-target').value;
-            if (!id) { showToast('Selecciona un destino', 'warning'); return; }
-            wizard.target_id = wizard.target_tipo === 'live' ? Number(id) : id;
-            showWizardStep('3');
-        } else if (n === '3') {
-            const nombre = document.getElementById('campaign-name').value.trim();
-            if (!nombre) { showToast('Escribe un nombre', 'warning'); return; }
-            if (nombre.length > 120) { showToast('Máximo 120 caracteres', 'warning'); return; }
-            wizard.nombre = nombre;
-            showWizardStep('4');
-        } else if (n === '4') {
-            wizard.objetivo = document.getElementById('campaign-objective').value;
-            showWizardStep('5');
-        } else if (n === '5') {
-            const budget = parseFloat(document.getElementById('campaign-budget').value);
-            if (!budget || budget <= 0) { showToast('Ingresa un presupuesto válido', 'warning'); return; }
-            if (budget > 1000000) { showToast('Presupuesto demasiado alto', 'warning'); return; }
-            const red = document.getElementById('pay-currency').value;
-            if (!red) { showToast('Selecciona una red de pago válida para tu monto', 'warning'); return; }
-            wizard.presupuesto = budget;
-            wizard.pay_currency = red;
-            showWizardStep('6');
-        } else if (n === '6') {
-            const titulo = document.getElementById('ad-title').value.trim();
-            const descripcion = document.getElementById('ad-description').value.trim();
-            const imagen = document.getElementById('ad-image').value.trim();
-            const video = document.getElementById('ad-video').value.trim();
-            const cta = document.getElementById('ad-cta').value.trim();
-
-            if (!titulo) { showToast('Escribe un título', 'warning'); return; }
-            if (imagen && !isValidHttpUrl(imagen)) { showToast('URL de imagen inválida', 'warning'); return; }
-            if (video && !isValidHttpUrl(video)) { showToast('URL de video inválida', 'warning'); return; }
-
-            wizard.ad = {
-                titulo,
-                descripcion: descripcion || null,
-                imagen_url: imagen || null,
-                video_url: video || null,
-                cta_texto: cta || 'Ver más'
-            };
-            mostrarResumen();
-            showWizardStep('7');
-        }
+        if (n === '2') { const id = document.getElementById('select-target').value; if (!id) { showToast('Selecciona un destino', 'warning'); return; } wizard.target_id = wizard.target_tipo === 'live' ? Number(id) : id; showWizardStep('3'); }
+        else if (n === '3') { const nombre = document.getElementById('campaign-name').value.trim(); if (!nombre) { showToast('Escribe un nombre', 'warning'); return; } if (nombre.length > 120) { showToast('Máximo 120 caracteres', 'warning'); return; } wizard.nombre = nombre; showWizardStep('4'); }
+        else if (n === '4') { wizard.objetivo = document.getElementById('campaign-objective').value; showWizardStep('5'); }
+        else if (n === '5') { const budget = parseFloat(document.getElementById('campaign-budget').value); if (!budget || budget <= 0) { showToast('Ingresa un presupuesto válido', 'warning'); return; } if (budget > 1000000) { showToast('Presupuesto demasiado alto', 'warning'); return; } const red = document.getElementById('pay-currency').value; if (!red) { showToast('Selecciona una red de pago válida para tu monto', 'warning'); return; } wizard.presupuesto = budget; wizard.pay_currency = red; showWizardStep('6'); }
+        else if (n === '6') { const titulo = document.getElementById('ad-title').value.trim(); const descripcion = document.getElementById('ad-description').value.trim(); const imagen = document.getElementById('ad-image').value.trim(); const video = document.getElementById('ad-video').value.trim(); const cta = document.getElementById('ad-cta').value.trim(); if (!titulo) { showToast('Escribe un título', 'warning'); return; } if (imagen && !isValidHttpUrl(imagen)) { showToast('URL de imagen inválida', 'warning'); return; } if (video && !isValidHttpUrl(video)) { showToast('URL de video inválida', 'warning'); return; } wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: imagen || null, video_url: video || null, cta_texto: cta || 'Ver más' }; mostrarResumen(); showWizardStep('7'); }
     }
 
     function mostrarResumen() {
         const red = REDES_PAGO.find(r => r.value === wizard.pay_currency);
         const usd = (wizard.presupuesto * MXN_A_USD_APROX).toFixed(2);
-        document.getElementById('summary-content').innerHTML = `
-            <div class="detail-row"><span>Campaña</span><span>${escapeHTML(wizard.nombre)}</span></div>
-            <div class="detail-row"><span>Destino</span><span>${escapeHTML(wizard.target_tipo.toUpperCase())}</span></div>
-            <div class="detail-row"><span>Objetivo</span><span>${escapeHTML(wizard.objetivo)}</span></div>
-            <div class="detail-row"><span>Presupuesto</span><span>$${wizard.presupuesto.toFixed(2)} MXN</span></div>
-            <div class="detail-row"><span>Red de pago</span><span>${escapeHTML(red ? red.label : wizard.pay_currency)}</span></div>
-            <div class="detail-row"><span>A pagar aprox</span><span>~$${usd} USD</span></div>
-            <div class="detail-row"><span>Anuncio</span><span>${escapeHTML(wizard.ad.titulo)}</span></div>`;
+        document.getElementById('summary-content').innerHTML = `<div class="detail-row"><span>Campaña</span><span>${escapeHTML(wizard.nombre)}</span></div><div class="detail-row"><span>Destino</span><span>${escapeHTML(wizard.target_tipo.toUpperCase())}</span></div><div class="detail-row"><span>Objetivo</span><span>${escapeHTML(wizard.objetivo)}</span></div><div class="detail-row"><span>Presupuesto</span><span>$${wizard.presupuesto.toFixed(2)} MXN</span></div><div class="detail-row"><span>Red de pago</span><span>${escapeHTML(red ? red.label : wizard.pay_currency)}</span></div><div class="detail-row"><span>A pagar aprox</span><span>~$${usd} USD</span></div><div class="detail-row"><span>Anuncio</span><span>${escapeHTML(wizard.ad.titulo)}</span></div>`;
     }
 
-    // ------------------------------------------------------------
-    // PAGO: la campaña se crea UNA vez; el pago se reintenta sin duplicar
-    // ------------------------------------------------------------
-    async function obtenerToken() {
-        const { data } = await supabaseClient.auth.getSession();
-        const token = data?.session?.access_token;
-        if (!token) throw new Error('Sesión expirada. Vuelve a iniciar sesión.');
-        return token;
-    }
+    async function obtenerToken() { const { data } = await supabaseClient.auth.getSession(); const token = data?.session?.access_token; if (!token) throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); return token; }
 
     async function onPagarClick() {
-        const btn = document.getElementById('btn-pay');
-        btn.disabled = true;
-
+        const btn = document.getElementById('btn-pay'); btn.disabled = true;
         try {
             const token = await obtenerToken();
             const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
@@ -1509,8 +665,7 @@
             if (!campañaCreada) {
                 btn.textContent = '◈ Creando campaña...';
                 const r1 = await fetch(`${BACKEND_URL}/api/campanas/crear`, {
-                    method: 'POST',
-                    headers,
+                    method: 'POST', headers,
                     body: JSON.stringify({
                         nombre: wizard.nombre,
                         objetivo: wizard.objetivo,
@@ -1522,26 +677,22 @@
                     })
                 });
                 const j1 = await r1.json().catch(() => ({}));
-                if (!r1.ok || !j1.success || !j1.data?.campaign_id) {
-                    throw new Error(j1.error || 'No se pudo crear la campaña');
-                }
+                if (!r1.ok || !j1.success || !j1.data?.campaign_id) throw new Error(j1.error || 'No se pudo crear la campaña');
                 campañaCreada = { campaign_id: j1.data.campaign_id };
             }
 
-            // 2. Generar el pago (reutiliza la campaña ya creada)
+            // 2. Generar el pago
             btn.textContent = '◈ Generando pago...';
             const r2 = await fetch(`${BACKEND_URL}/api/payments/marketing/create`, {
-                method: 'POST',
-                headers,
+                method: 'POST', headers,
                 body: JSON.stringify({
                     campaignId: campañaCreada.campaign_id,
-                    payCurrency: wizard.pay_currency
+                    payCurrency: wizard.pay_currency,
+                    anuncioId: wizard.anuncio_id || null // ✅ Pasamos el ID del anuncio si existe
                 })
             });
             const j2 = await r2.json().catch(() => ({}));
-            if (!r2.ok || !j2.success || !j2.data?.payment_url) {
-                throw new Error(j2.error || 'No se pudo generar el pago. Intenta de nuevo.');
-            }
+            if (!r2.ok || !j2.success || !j2.data?.payment_url) throw new Error(j2.error || 'No se pudo generar el pago. Intenta de nuevo.');
 
             campañaCreada.pagoId = j2.data.pago_id;
             mostrarPagoPendiente(j2.data.payment_url, j2.data.pago_id);
@@ -1549,87 +700,37 @@
         } catch (err) {
             logError('Pago:', err);
             showToast(err.message, 'error', 5000);
-            btn.disabled = false;
-            btn.textContent = campañaCreada ? '◈ Reintentar pago' : '◈ Continuar al Pago';
+            btn.disabled = false; btn.textContent = campañaCreada ? '◈ Reintentar pago' : '◈ Continuar al Pago';
         }
     }
 
     function mostrarPagoPendiente(paymentUrl, pagoId) {
-        if (!isValidHttpUrl(paymentUrl)) {
-            showToast('Enlace de pago inválido', 'error');
-            return;
-        }
-        document.getElementById('summary-content').innerHTML = `
-            <div class="red-info">◈ Tu campaña quedó en espera de pago. Complétalo para activarla.</div>
-            <a class="btn btn-primary" href="${escapeHTML(paymentUrl)}" target="_blank" rel="noopener noreferrer"
-               style="text-decoration:none;margin-top:12px;">Abrir página de pago</a>
-            <div id="pago-estado" class="red-info" style="margin-top:12px;">Esperando confirmación…</div>`;
+        if (!isValidHttpUrl(paymentUrl)) { showToast('Enlace de pago inválido', 'error'); return; }
+        document.getElementById('summary-content').innerHTML = `<div class="red-info">◈ Tu pago está en espera. Complétalo para activar tu anuncio.</div><a class="btn btn-primary" href="${escapeHTML(paymentUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;margin-top:12px;">Abrir página de pago</a><div id="pago-estado" class="red-info" style="margin-top:12px;">Esperando confirmación…</div>`;
         document.getElementById('btn-pay').style.display = 'none';
         pollearPago(pagoId);
     }
 
-    function detenerPolling() {
-        if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
-    }
+    function detenerPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
 
     function pollearPago(pagoId) {
-        detenerPolling();
-        let intentos = 0;
-
-        const setEstado = (txt) => {
-            const e = document.getElementById('pago-estado');
-            if (e) e.textContent = txt;
-        };
-
+        detenerPolling(); let intentos = 0;
+        const setEstado = (txt) => { const e = document.getElementById('pago-estado'); if (e) e.textContent = txt; };
         pollTimer = setInterval(async () => {
             intentos++;
             try {
                 const token = await obtenerToken();
-                const r = await fetch(
-                    `${BACKEND_URL}/api/payments/marketing/status/${encodeURIComponent(pagoId)}`,
-                    { headers: { Authorization: 'Bearer ' + token } }
-                );
+                const r = await fetch(`${BACKEND_URL}/api/payments/marketing/status/${encodeURIComponent(pagoId)}`, { headers: { Authorization: 'Bearer ' + token } });
                 const j = await r.json().catch(() => ({}));
-
-                if (j.paid) {
-                    detenerPolling();
-                    setEstado('✓ Pago confirmado. Tu campaña se activará.');
-                    showToast('Pago confirmado', 'success');
-                    loadCampaigns();
-                    return;
-                }
-
-                if (j.failed) {
-                    detenerPolling();
-                    setEstado('✕ El pago falló o expiró.');
-                    const btn = document.getElementById('btn-pay');
-                    if (btn) {
-                        btn.style.display = '';
-                        btn.disabled = false;
-                        btn.textContent = '◈ Reintentar pago';
-                    }
-                    campañaCreada.pagoId = null;   // el próximo intento genera un pago nuevo
-                    return;
-                }
-
+                if (j.paid) { detenerPolling(); setEstado('✓ Pago confirmado. Tu anuncio está activo.'); showToast('Pago confirmado', 'success'); loadCampaigns(); return; }
+                if (j.failed) { detenerPolling(); setEstado('✕ El pago falló o expiró.'); const btn = document.getElementById('btn-pay'); if (btn) { btn.style.display = ''; btn.disabled = false; btn.textContent = '◈ Reintentar pago'; } campañaCreada.pagoId = null; return; }
                 setEstado('Esperando confirmación de la red…');
-            } catch (e) {
-                // Red intermitente: se reintenta en el siguiente ciclo
-            }
-
-            if (intentos >= MAX_POLL_INTENTOS) {
-                detenerPolling();
-                setEstado('Aún sin confirmar. Revisa "Pendientes" más tarde.');
-            }
+            } catch (e) {}
+            if (intentos >= MAX_POLL_INTENTOS) { detenerPolling(); setEstado('Aún sin confirmar. Revisa "Pendientes" más tarde.'); }
         }, INTERVALO_POLL_MS);
     }
 
-    // ------------------------------------------------------------
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
 
     window.openDetail = openDetail;
     </script>
