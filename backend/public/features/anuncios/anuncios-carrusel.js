@@ -1,9 +1,7 @@
 /* ============================================
    ANUNCIOS · IMAGEN dentro del carrusel - Csariel's
    Ruta: /features/anuncios/anuncios-carrusel.js
-   Inserta una tarjeta de anuncio dentro de .carrusel-3d-track,
-   justo después de la tarjeta Perfil. Rota cada 8 s y se pausa
-   al tocar o mantener presionado. Requiere carrusel-3d.js.
+   v2.0: Motor de recomendación (Pandora) integrado.
    ============================================ */
 
 (function () {
@@ -25,7 +23,11 @@
         movido: false,
         card: null,
         inicioX: 0,
-        inicioY: 0
+        inicioY: 0,
+        // Variables del algoritmo
+        temasInteres: [],
+        temasBloqueados: [],
+        personalizacionActiva: true
     };
 
     function esperarCliente() {
@@ -57,7 +59,6 @@
         setTimeout(function () { el.remove(); }, 3200);
     }
 
-    // Ejecuta fn cuando el carrusel ya esté listo (o ya lo estaba)
     function cuandoCarruselListo(fn) {
         if (window.carrusel3D && typeof window.carrusel3D.refrescar === 'function') {
             fn();
@@ -76,7 +77,6 @@
         return state.anuncios[state.indice] || null;
     }
 
-    // Tarjeta de anuncio (se crea una sola vez)
     function crearCard() {
         var card = document.createElement('div');
         card.className = 'carrusel-3d-card anuncio-card';
@@ -142,7 +142,6 @@
         return card;
     }
 
-    // Coloca la tarjeta después de Perfil (o en la posición 2 si no se encuentra)
     function montarCard() {
         var track = document.querySelector('.carrusel-3d-track');
         if (!track || !state.card) return false;
@@ -255,7 +254,83 @@
         }
     }
 
-    // Muestra u oculta la tarjeta según haya anuncios disponibles
+    // ============================================================
+    // MOTOR DEL ALGORITMO (PANDORA)
+    // ============================================================
+    async function cargarPreferenciasUsuario() {
+        if (!state.uid) return;
+        try {
+            // 1. Cargar intereses y bloqueos (asumiendo que las tablas tienen columna tema_id)
+            var [interesesRes, bloqueosRes] = await Promise.all([
+                state.client.from('usuarios_temas_interes').select('tema_id').eq('usuario_id', state.uid),
+                state.client.from('usuarios_temas_bloqueados').select('tema_id').eq('usuario_id', state.uid)
+            ]);
+
+            if (!interesesRes.error) state.temasInteres = (interesesRes.data || []).map(i => i.tema_id);
+            if (!bloqueosRes.error) state.temasBloqueados = (bloqueosRes.data || []).map(b => b.tema_id);
+
+            // 2. Cargar si la personalización está activa (desde preferencias del usuario)
+            var prefRes = await state.client
+                .from('preferencias_usuario')
+                .select('prefs')
+                .eq('usuario_id', state.uid)
+                .maybeSingle();
+            
+            if (!prefRes.error && prefRes.data && prefRes.data.prefs) {
+                // Si el usuario apagó la personalización en cookies, no filtramos por intereses
+                state.personalizacionActiva = prefRes.data.prefs.personalizacion_feed !== false;
+            }
+        } catch (e) {
+            console.warn('[Pandora] Error cargando preferencias, usando feed genérico:', e);
+        }
+    }
+
+    function aplicarAlgoritmo(anunciosOriginales) {
+        if (!state.personalizacionActiva) {
+            // Si la personalización está apagada, devolver los anuncios sin filtrar
+            return anunciosOriginales;
+        }
+
+        // Filtrar bloqueados
+        var filtrados = anunciosOriginales.filter(function (a) {
+            if (!a.temas || !Array.isArray(a.temas)) return true; // Si no tiene temas, se queda
+            // Si algún tema del anuncio está en los bloqueados, se descarta
+            return !a.temas.some(t => state.temasBloqueados.includes(t));
+        });
+
+        // Ordenar por intereses (los que coinciden van primero)
+        filtrados.sort(function (a, b) {
+            var aInteres = (a.temas || []).some(t => state.temasInteres.includes(t)) ? 1 : 0;
+            var bInteres = (b.temas || []).some(t => state.temasInteres.includes(t)) ? 1 : 0;
+            return bInteres - aInteres; // Mayor interés primero
+        });
+
+        return filtrados;
+    }
+
+    // ============================================================
+    // CARGA Y APLICACIÓN
+    // ============================================================
+    async function cargar() {
+        if (!state.client) return;
+
+        try {
+            // 1. Cargar anuncios desde la RPC (asumiendo que trae la columna 'temas')
+            var r = await state.client.rpc('anuncios_carrusel', { p_tipo: TIPO, p_limite: 20 });
+            if (r.error) throw r.error;
+            
+            var anunciosBrutos = Array.isArray(r.data) ? r.data : [];
+            
+            // 2. Aplicar el algoritmo
+            state.anuncios = aplicarAlgoritmo(anunciosBrutos);
+
+        } catch (e) {
+            console.warn('[Anuncios] no se pudieron cargar:', e);
+            state.anuncios = [];
+        }
+        aplicarAnuncios();
+    }
+
     function aplicarAnuncios() {
         clearTimeout(state.timer);
 
@@ -268,18 +343,6 @@
         montarCard();
         recalcularCarrusel();
         mostrar(state.indice);
-    }
-
-    async function cargar() {
-        try {
-            const r = await state.client.rpc('anuncios_carrusel', { p_tipo: TIPO, p_limite: 20 });
-            if (r.error) throw r.error;
-            state.anuncios = Array.isArray(r.data) ? r.data : [];
-        } catch (e) {
-            console.warn('[Anuncios] no se pudieron cargar:', e);
-            state.anuncios = [];
-        }
-        aplicarAnuncios();
     }
 
     async function iniciar() {
@@ -298,7 +361,11 @@
             if (document.hidden) pausar(); else reanudar();
         });
 
-        // Espera a que el carrusel 3D esté listo antes de insertar
+        // Cargar preferencias antes de cargar anuncios
+        if (state.uid) {
+            await cargarPreferenciasUsuario();
+        }
+
         cuandoCarruselListo(function () {
             cargar();
             setInterval(cargar, REFRESCO_MS);
