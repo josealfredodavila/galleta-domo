@@ -1,10 +1,9 @@
 // ================================================================
-// ROUTES/PAYMENTS.JS — Csariel's (v3.2)
-// Transmisiones (pay-per-view), Muro P2P, Marketing e Internet.
+// ROUTES/PAYMENTS.JS — Csariel's (v3.3)
+// Transmisiones (pay-per-view), Muro P2P, Marketing, Internet y Anuncios.
 // Método: NOWPayments. NO toca membresías, Live Pass ni donaciones de Live.
 // Estados de ordenes_internet permitidos: pendiente, pagado, activo, cancelado.
-// v3.2: mínimo de 16 USD en todas las redes USDT/USDC (confirmado en
-//       pruebas: NOWPayments rechaza montos menores a ~11 USDT).
+// v3.3: Se agregó el módulo de pagos de anuncios del carrusel (ANU-).
 // ================================================================
 
 'use strict';
@@ -18,6 +17,9 @@ const logger = require('../utils/logger');
 const { verificarToken } = require('../middleware/auth');
 const { limitadorPagos } = require('../middleware/rateLimit');
 const { procesarOrdenInternet } = require('../services/telnyx/esim');
+
+// ✅ NUEVO: Módulo de pagos de anuncios
+const anunciosPagos = require('../services/anuncios/pagos-anuncio');
 
 let verificarErrores = (req, res, next) => next();
 try {
@@ -33,9 +35,6 @@ try {
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1/payment';
 
-// Redes permitidas. Los códigos deben coincidir con los de NOWPayments.
-// minimo_usd: NOWPayments rechaza montos menores (comprobado: 10.94 USDT
-// rechazado, 16.3 USDT aceptado). Se usa 16 USD como mínimo seguro.
 const REDES_PERMITIDAS = {
     usdttrc20: { moneda: 'USDT', red: 'TRON',     minimo_usd: 16 },
     usdtbsc:   { moneda: 'USDT', red: 'BSC',      minimo_usd: 16 },
@@ -72,7 +71,6 @@ function validarRedPago(payCurrency, montoMxn) {
     return { valido: true, red };
 }
 
-// Estado de NOWPayments → estado local de ordenes_internet (solo valores permitidos)
 function estadoInternetLocal(npStatus, estadoActual) {
     if (npStatus === 'finished') return 'pagado';
     if (['failed', 'refunded', 'expired', 'canceled', 'cancelled'].includes(npStatus)) return 'cancelado';
@@ -80,9 +78,13 @@ function estadoInternetLocal(npStatus, estadoActual) {
 }
 
 // ================================================================
+// ✅ NUEVO: RUTAS DE PAGOS DE ANUNCIOS
+// ================================================================
+router.post('/anuncio/create', verificarToken, limitadorPagos, anunciosPagos.crearPagoAnuncio);
+router.get('/anuncio/status/:pagoId', verificarToken, anunciosPagos.estadoPagoAnuncio);
+
+// ================================================================
 // POST /api/payments/create  (acceso a transmisión de pago)
-// El monto se toma de transmisiones.precio_acceso, nunca del cliente.
-// Guarda payment_id para que el webhook pueda enlazar el pago con la orden.
 // ================================================================
 router.post('/create', verificarToken, limitadorPagos, verificarErrores, async (req, res) => {
     try {
@@ -153,7 +155,6 @@ router.post('/create', verificarToken, limitadorPagos, verificarErrores, async (
             return res.status(502).json({ success: false, error: 'NOWPayments no devolvió un identificador de pago' });
         }
 
-        // Enlazar el pago con la orden: sin payment_id el webhook no puede encontrarla
         const { error: errLink } = await supabaseAdmin
             .from('pagos_transmision')
             .update({
@@ -414,7 +415,6 @@ router.post('/marketing/create', verificarToken, limitadorPagos, async (req, res
 
 // ================================================================
 // POST /api/payments/internet/create  (paquete de datos eSIM)
-// Estados: pendiente (esperando pago) → pagado → activo.
 // ================================================================
 router.post('/internet/create', verificarToken, limitadorPagos, async (req, res) => {
     try {
@@ -455,7 +455,6 @@ router.post('/internet/create', verificarToken, limitadorPagos, async (req, res)
             np = r.data;
         } catch (e) {
             logger.error(`NOWPayments Internet ${orderId}: ${e.message}`);
-            // La orden sigue 'pendiente' y el usuario puede reintentar; no se cancela
             return res.status(502).json({ success: false, error: 'No fue posible crear el pago con NOWPayments' });
         }
 
@@ -521,7 +520,6 @@ router.get('/status/:ordenId', verificarToken, async (req, res) => {
 
 // ================================================================
 // GET /api/payments/muro/status/:ventaId
-// Consulta NOWPayments; liquida solo si el pago está finished/confirmed.
 // ================================================================
 router.get('/muro/status/:ventaId', verificarToken, async (req, res) => {
     try {
@@ -632,7 +630,6 @@ router.get('/marketing/status/:pagoId', verificarToken, async (req, res) => {
         if (errP) throw errP;
         if (!pago) return respuestaError(res, 404, 'Pago no encontrado');
 
-        // Solo se marca 'pagado' después de activar la campaña, así que esto significa activado
         if (pago.estado === 'pagado') {
             return res.json({ success: true, data: pago, final: true, paid: true, activated: true });
         }
@@ -656,7 +653,6 @@ router.get('/marketing/status/:pagoId', verificarToken, async (req, res) => {
         const fallido = ['failed', 'refunded', 'expired'].includes(estadoNow);
 
         if (pagado) {
-            // 1) Activar primero. Si falla, el pago queda en 'confirmando' y el siguiente sondeo reintenta.
             const { data: camp, error: errC } = await supabaseAdmin
                 .from('marketing_campaigns').select('id, estado').eq('id', pago.campaign_id).maybeSingle();
             if (errC) throw errC;
@@ -675,7 +671,6 @@ router.get('/marketing/status/:pagoId', verificarToken, async (req, res) => {
                 }
             }
 
-            // 2) Marcar pagado solo después de activar
             const { data: actualizado, error: errU } = await supabaseAdmin
                 .from('marketing_pagos')
                 .update({ nowpayments_status: estadoNow, estado: 'pagado' })
@@ -685,7 +680,6 @@ router.get('/marketing/status/:pagoId', verificarToken, async (req, res) => {
             return res.json({ success: true, data: actualizado, final: true, paid: true, activated: true });
         }
 
-        // Estados no finales
         let estadoLocal = 'pendiente';
         if (fallido) estadoLocal = 'cancelado';
         else if (['confirming', 'sending'].includes(estadoNow)) estadoLocal = 'confirmando';
@@ -705,7 +699,6 @@ router.get('/marketing/status/:pagoId', verificarToken, async (req, res) => {
 
 // ================================================================
 // GET /api/payments/internet/status/:ordenId
-// Consulta NOWPayments y, si está pagado, activa la orden y aprovisiona la eSIM.
 // ================================================================
 router.get('/internet/status/:ordenId', verificarToken, async (req, res) => {
     try {
@@ -765,7 +758,6 @@ router.get('/internet/status/:ordenId', verificarToken, async (req, res) => {
                 message: 'Pago confirmado. La activación está pendiente de procesamiento.' });
         }
 
-        // Aprovisionamiento en segundo plano (idempotente). El webhook también lo reintenta.
         procesarOrdenInternet(orden.id).catch((e) =>
             logger.error(`aprovisionamiento eSIM ${orden.id}: ${e.message}`)
         );
