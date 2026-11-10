@@ -39,25 +39,23 @@
             async function inicializarSupabase() {
                 try {
                     if (!window.supabase || typeof window.supabase.createClient !== 'function') throw new Error('Supabase SDK no disponible.');
+                    
                     if (!window.supabaseClient) {
-                        var supabaseUrl = null;
-                        var supabaseAnonKey = null;
-                        try {
-                            const response = await fetch('/api/config/public', { method: 'GET', credentials: 'same-origin', cache: 'no-store', headers: { 'Accept': 'application/json' } });
-                            if (response.ok) {
-                                const config = await response.json();
-                                supabaseUrl = config && config.supabaseUrl;
-                                supabaseAnonKey = config && config.supabaseAnonKey;
-                            }
-                        } catch (fetchErr) { console.warn('[Chats] fetch falló:', fetchErr); }
-                        if (!supabaseUrl || !supabaseAnonKey) throw new Error('Configuración pública no disponible.');
+                        // ✅ CORRECCIÓN APLICADA:
+                        // Se eliminó el fetch('/api/config/public') y se usan credenciales directas.
                         window.SupabaseSDK = window.supabase;
-                        window.supabaseClient = window.SupabaseSDK.createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } });
+                        window.supabaseClient = window.SupabaseSDK.createClient(
+                            'https://zultnlogdoajehbswlih.supabase.co',
+                            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
+                            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+                        );
                     }
+                    
                     const resultado = await window.supabaseClient.auth.getSession();
                     const session = resultado && resultado.data ? resultado.data.session : null;
                     window.__sarielsAuthenticated = !!session;
                     clearTimeout(salvaguarda);
+                    
                     if (!session) { irAlIndexConReturnTo(); } else { revelarPagina(); }
                     return window.supabaseClient;
                 } catch (error) {
@@ -171,7 +169,6 @@
 
         const $ = (sel) => document.querySelector(sel);
         
-        // Usamos las llaves exactas que confirmó Anthropic
         let miPerfil = { 
             chats_quien_puede_mensajes: 'todos', 
             chats_filtro_solicitudes: true, 
@@ -198,7 +195,7 @@
         let contactosConfianza = [];
 
         // ============================================================
-        // 1. CARGAR PREFERENCIAS DESDE SUPABASE (Tabla correcta)
+        // 1. CARGAR PREFERENCIAS DESDE SUPABASE
         // ============================================================
         async function cargarPreferencias() {
             try {
@@ -207,7 +204,6 @@
                 const { data: sessionData } = await client.auth.getSession();
                 if (!sessionData?.session) return;
 
-                // Leemos de preferencias_usuario
                 const { data } = await client
                     .from('preferencias_usuario')
                     .select('prefs')
@@ -215,7 +211,6 @@
                     .maybeSingle();
 
                 if (data && data.prefs) {
-                    // Mezclamos lo que hay en la base con los valores por defecto
                     miPerfil = { ...miPerfil, ...data.prefs };
                 }
                 renderSecciones();
@@ -236,7 +231,6 @@
                 const sessionRes = await client.auth.getSession();
                 if (!sessionRes.data?.session) throw new Error('Sin sesión');
 
-                // Llamamos a la RPC que creó Anthropic
                 const { error } = await client.rpc('actualizar_preferencia', {
                     p_clave: clave,
                     p_valor: valor
@@ -253,6 +247,9 @@
             }
         }
 
+        // ============================================================
+        // 3. CARGAR SOLICITUDES Y CONTACTOS
+        // ============================================================
         async function cargarSolicitudes() {
             try {
                 const client = await esperarCliente();
@@ -592,11 +589,19 @@
             if (ok) cfgToast(value ? '✍️ Se muestra "escribiendo..."' : '✍️ Ya no se muestra "escribiendo..."', value ? 'success' : 'warning');
         };
 
+        // ✅ OPTIMIZACIÓN: Carga en paralelo
         window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 400));
-            renderSecciones(); // Renderiza rápido con datos por defecto
-            await cargarPreferencias(); // Luego actualiza con los de la base de datos
-            await Promise.all([cargarSolicitudes(), cargarContactosConfianza()]);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            
+            // 1. Renderizar interfaz de inmediato con valores por defecto
+            renderSecciones(); 
+            
+            // 2. Cargar preferencias, solicitudes y contactos en paralelo
+            await Promise.all([
+                cargarPreferencias(),
+                cargarSolicitudes(),
+                cargarContactosConfianza()
+            ]);
         });
 
         (async function cargarHandleSubtitulo() {
