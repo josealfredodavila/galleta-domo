@@ -9,11 +9,26 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/features/shared/config-layout.css" />
     <script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
+    
+    <!-- Librería para generar el QR visualmente -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
     <style>
         .cfg-item-disabled { opacity: .55; cursor: not-allowed; }
         .sec-row { display:flex; align-items:center; gap:12px; padding:12px 14px; }
         .sec-badge { display:inline-block; margin-left:6px; padding:2px 8px; border-radius:999px; font-size:.6rem; font-weight:700;
             background:rgba(247,212,74,.12); color:#f7d44a; border:1px solid rgba(247,212,74,.35); }
+        .sec-badge.active { background:rgba(34,197,94,.15); color:#22c55e; border-color:rgba(34,197,94,.35); }
+        
+        /* Estilos para el Modal de 2FA */
+        .tfa-modal-content { display: flex; flex-direction: column; gap: 16px; align-items: center; text-align: center; margin-top: 10px; }
+        .tfa-qr-box { padding: 12px; background: #fff; border-radius: 12px; display: inline-block; }
+        .tfa-qr-box canvas { display: block; }
+        .tfa-secret { font-family: monospace; font-size: 0.9rem; letter-spacing: 2px; color: var(--cfg-text-muted); background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; user-select: all; }
+        .tfa-input-group { width: 100%; display: flex; flex-direction: column; gap: 8px; margin-top: 8px; text-align: left; }
+        .tfa-input-group label { font-size: 0.8rem; color: var(--cfg-text-muted); }
+        .tfa-input-group input { width: 100%; padding: 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.3); color: #fff; font-size: 1.2rem; text-align: center; letter-spacing: 4px; }
+        .cfg-modal-wide { max-width: 400px; }
     </style>
 </head>
 <body class="cfg-page">
@@ -45,6 +60,7 @@
 
 <div id="cfgToast" class="cfg-toast" role="status" aria-live="polite"></div>
 
+<!-- MODAL GENÉRICO -->
 <div id="cfgModal" class="cfg-modal-overlay" aria-hidden="true">
     <div class="cfg-modal" role="dialog" aria-modal="true">
         <h3 id="cfgModalTitle" class="cfg-modal-title"></h3>
@@ -52,6 +68,32 @@
         <div class="cfg-modal-actions">
             <button type="button" id="cfgModalCancel" class="cfg-btn cfg-btn-outline">Cancelar</button>
             <button type="button" id="cfgModalConfirm" class="cfg-btn cfg-btn-primary">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL ESPECÍFICO PARA 2FA -->
+<div id="tfaModal" class="cfg-modal-overlay" aria-hidden="true">
+    <div class="cfg-modal cfg-modal-wide" role="dialog" aria-modal="true">
+        <h3 id="tfaModalTitle" class="cfg-modal-title">Configurar Verificación en 2 Pasos</h3>
+        <div id="tfaStep1" class="tfa-modal-content">
+            <p class="cfg-modal-text">Escanea este código QR con tu app de autenticación (Google Authenticator, Authy, etc.).</p>
+            <div class="tfa-qr-box"><canvas id="tfaQrCanvas"></canvas></div>
+            <p style="font-size: 0.8rem; color: var(--cfg-text-muted);">O ingresa este código manualmente:</p>
+            <div class="tfa-secret" id="tfaSecretText">CARGANDO...</div>
+            <div class="tfa-input-group">
+                <label>Código de 6 dígitos generado por tu app:</label>
+                <input type="text" id="tfaCodeInput" maxlength="6" placeholder="000000" inputmode="numeric" pattern="[0-9]*">
+            </div>
+        </div>
+        <div id="tfaStep2" class="tfa-modal-content" style="display: none;">
+            <div style="font-size: 3rem; color: #22c55e; margin-bottom: 10px;">✅</div>
+            <p class="cfg-modal-text">¡Verificación en 2 pasos activada correctamente!</p>
+        </div>
+        <div class="cfg-modal-actions" style="margin-top: 20px;">
+            <button type="button" id="tfaModalCancel" class="cfg-btn cfg-btn-outline">Cancelar</button>
+            <button type="button" id="tfaModalVerify" class="cfg-btn cfg-btn-primary">Verificar y Activar</button>
+            <button type="button" id="tfaModalClose" class="cfg-btn cfg-btn-primary" style="display: none;">Entendido</button>
         </div>
     </div>
 </div>
@@ -68,6 +110,10 @@
     let sesionesActivas = [];
     let appsConectadas = [];
     let ocupado = false;
+    
+    // Variables para 2FA
+    let factorIdActual = null;
+    let tiene2FA = false;
 
     const $ = function (s) { return document.querySelector(s); };
 
@@ -83,7 +129,6 @@
         return (window.CFG_ICONS && window.CFG_ICONS[nombre]) || '';
     }
 
-    /* Ítem de lista. Los textos pasan por escapeHtml; los onclick son constantes del código. */
     function item(o) {
         const esLink = Boolean(o.href);
         const tag = esLink ? 'a' : 'button';
@@ -97,7 +142,7 @@
         return '<' + tag + ' class="' + cls + '"' + attr + estilo + tipo + dis + '>' +
             '<div class="cfg-item-icon">' + icono(o.icon || 'settings') + '</div>' +
             '<div class="cfg-item-content">' +
-                '<div class="cfg-item-title">' + escapeHtml(o.title) + (o.badge ? ' <span class="sec-badge">' + escapeHtml(o.badge) + '</span>' : '') + '</div>' +
+                '<div class="cfg-item-title">' + escapeHtml(o.title) + (o.badge ? ' <span class="sec-badge ' + (o.badgeClass || '') + '">' + escapeHtml(o.badge) + '</span>' : '') + '</div>' +
                 '<div class="cfg-item-desc">' + escapeHtml(o.desc || '') + '</div>' +
             '</div>' + chevron +
             '</' + tag + '>';
@@ -119,7 +164,7 @@
     }
     window.cfgToast = cfgToast;
 
-    /* ---------- MODAL DE CONFIRMACIÓN ---------- */
+    /* ---------- MODAL DE CONFIRMACIÓN GENÉRICO ---------- */
     let modalResolver = null;
     function cfgConfirm(o) {
         o = o || {};
@@ -164,10 +209,6 @@
     window.cfgInitPage = cfgInitPage;
 
     /* ---------- SUPABASE ---------- */
-    // ✅ CORRECCIÓN APLICADA:
-    // Se eliminó el fetch('/api/config/public') que causaba el error
-    // "Unexpected token '<', '<!DOCTYPE ...' is not valid JSON".
-    // Ahora usa las mismas credenciales hardcodeadas que el resto del ecosistema.
     async function obtenerCliente() {
         if (clienteSupabase) return clienteSupabase;
         if (window.supabaseClient && window.supabaseClient.auth) {
@@ -177,14 +218,11 @@
         if (!window.supabase || typeof window.supabase.createClient !== 'function') {
             throw new Error('La librería de Supabase no está disponible.');
         }
-
         try {
             clienteSupabase = window.supabase.createClient(
                 'https://zultnlogdoajehbswlih.supabase.co',
                 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
-                {
-                    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
-                }
+                { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
             );
             window.supabaseClient = clienteSupabase;
             return clienteSupabase;
@@ -224,7 +262,157 @@
         }
     }
 
-    /* ---------- CARGA ---------- */
+    /* ---------- LÓGICA 2FA ---------- */
+    async function cargarEstado2FA(client) {
+        try {
+            const { data, error } = await client.auth.mfa.listFactors();
+            if (error) throw error;
+            
+            // Verificamos si ya tiene un factor TOTP verificado
+            const totpFactor = data.totp.find(f => f.status === 'verified');
+            if (totpFactor) {
+                tiene2FA = true;
+                factorIdActual = totpFactor.id;
+            } else {
+                tiene2FA = false;
+                factorIdActual = null;
+            }
+        } catch (error) {
+            console.warn('[Seguridad] Error cargando 2FA:', error);
+            tiene2FA = false;
+        }
+    }
+
+    window.onConfigurar2FA = async function() {
+        if (ocupado) return;
+        
+        if (tiene2FA) {
+            // Si ya lo tiene, ofrecemos desactivarlo
+            const ok = await cfgConfirm({
+                title: '¿Desactivar Verificación en 2 Pasos?',
+                text: 'Tu cuenta será menos segura. Solo te pediremos tu contraseña para iniciar sesión.',
+                confirmText: 'Desactivar',
+                cancelText: 'Cancelar',
+                danger: true
+            });
+            if (!ok) return;
+            
+            ocupado = true;
+            try {
+                const client = await obtenerCliente();
+                const { error } = await client.auth.mfa.unenroll({ factorId: factorIdActual });
+                if (error) throw error;
+                
+                cfgToast('Verificación en 2 pasos desactivada', 'success');
+                await cargarEstado2FA(client);
+                renderAutenticacion();
+            } catch (error) {
+                cfgToast('Error al desactivar: ' + error.message, 'error');
+            } finally {
+                ocupado = false;
+            }
+            return;
+        }
+
+        // Si no lo tiene, mostramos el modal para activarlo
+        ocupado = true;
+        try {
+            const client = await obtenerCliente();
+            
+            // 1. Crear el factor TOTP en Supabase
+            const { data, error } = await client.auth.mfa.enroll({ factorType: 'totp' });
+            if (error) throw error;
+
+            const qrCodeUrl = data.totp.qr_code;
+            const secret = data.totp.secret;
+            
+            // Guardamos el ID temporalmente para verificarlo
+            const tempFactorId = data.id;
+
+            // 2. Dibujar el QR en el canvas
+            const canvas = document.getElementById('tfaQrCanvas');
+            QRCode.toCanvas(canvas, qrCodeUrl, { width: 200, margin: 1 }, function (error) {
+                if (error) console.error(error);
+            });
+
+            // 3. Mostrar el código manual
+            document.getElementById('tfaSecretText').textContent = secret;
+            document.getElementById('tfaCodeInput').value = '';
+            
+            // 4. Configurar el Modal
+            const tfaModal = document.getElementById('tfaModal');
+            document.getElementById('tfaStep1').style.display = 'block';
+            document.getElementById('tfaStep2').style.display = 'none';
+            document.getElementById('tfaModalVerify').style.display = 'block';
+            document.getElementById('tfaModalClose').style.display = 'none';
+            document.getElementById('tfaModalCancel').textContent = 'Cancelar';
+            
+            tfaModal.classList.add('show');
+            tfaModal.setAttribute('aria-hidden', 'false');
+
+            // Función para verificar el código
+            document.getElementById('tfaModalVerify').onclick = async function() {
+                const code = document.getElementById('tfaCodeInput').value.trim();
+                if (code.length !== 6) {
+                    cfgToast('El código debe tener 6 dígitos', 'warning');
+                    return;
+                }
+
+                this.textContent = 'Verificando...';
+                this.disabled = true;
+
+                try {
+                    // 5. Desafiar y verificar el código
+                    const challenge = await client.auth.mfa.challenge({ factorId: tempFactorId });
+                    const verify = await client.auth.mfa.verify({
+                        factorId: tempFactorId,
+                        challengeId: challenge.data.id,
+                        code: code
+                    });
+
+                    if (verify.error) throw verify.error;
+
+                    // 6. Éxito
+                    document.getElementById('tfaStep1').style.display = 'none';
+                    document.getElementById('tfaStep2').style.display = 'block';
+                    document.getElementById('tfaModalVerify').style.display = 'none';
+                    document.getElementById('tfaModalCancel').style.display = 'none';
+                    document.getElementById('tfaModalClose').style.display = 'block';
+                    
+                    await cargarEstado2FA(client);
+                    renderAutenticacion();
+
+                } catch (err) {
+                    console.error(err);
+                    cfgToast('Código incorrecto. Intenta de nuevo.', 'error');
+                } finally {
+                    this.textContent = 'Verificar y Activar';
+                    this.disabled = false;
+                }
+            };
+
+            document.getElementById('tfaModalClose').onclick = function() {
+                tfaModal.classList.remove('show');
+                tfaModal.setAttribute('aria-hidden', 'true');
+                ocupado = false;
+            };
+
+            document.getElementById('tfaModalCancel').onclick = async function() {
+                // Si cancela, eliminamos el factor no verificado
+                await client.auth.mfa.unenroll({ factorId: tempFactorId });
+                tfaModal.classList.remove('show');
+                tfaModal.setAttribute('aria-hidden', 'true');
+                ocupado = false;
+            };
+
+        } catch (error) {
+            console.error(error);
+            cfgToast('Error al iniciar 2FA: ' + error.message, 'error');
+            ocupado = false;
+        }
+    };
+
+    /* ---------- CARGA SESIONES / APPS ---------- */
     async function cargarSesiones(client) {
         sesionesActivas = [];
         try {
@@ -256,11 +444,14 @@
     function renderAutenticacion() {
         $('#seccionAuth').innerHTML = item({
             icon: 'shield',
-            title: 'Verificación en 2 pasos',
-            desc: 'Próximamente. Todavía no protege tu cuenta; lo estamos preparando.',
-            badge: 'Próximamente',
-            disabled: true,
-            chevron: false
+            title: 'Verificación en 2 pasos (2FA)',
+            desc: tiene2FA 
+                ? 'Tu cuenta está protegida. Te pediremos un código cada vez que inicies sesión.' 
+                : 'Agrega una capa extra de seguridad a tu cuenta.',
+            badge: tiene2FA ? 'Activado' : 'Desactivado',
+            badgeClass: tiene2FA ? 'active' : '',
+            onclick: 'window.onConfigurar2FA()',
+            chevron: true
         });
     }
 
@@ -417,7 +608,13 @@
             subtitle: 'Protege tu cuenta',
             backUrl: '/features/perfil/configuracion/index.html'
         });
-        await Promise.all([cargarSesiones(client), cargarApps(client)]);
+        
+        await Promise.all([
+            cargarSesiones(client), 
+            cargarApps(client),
+            cargarEstado2FA(client)
+        ]);
+        
         renderSecciones();
     }, { once: true });
 
