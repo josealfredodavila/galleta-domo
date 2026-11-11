@@ -308,6 +308,7 @@
 
     <div class="tarjeta">
         <h2>MIS ANUNCIOS</h2>
+        <div class="estado" id="estadoLista"></div>
         <div class="mis-anuncios" id="misAnuncios">
             <div class="vacio" id="misAnunciosPlaceholder">Cargando…</div>
         </div>
@@ -335,6 +336,14 @@
         var el = $('estado');
         el.textContent = texto || '';
         el.className = 'estado' + (tipo ? ' ' + tipo : '');
+    }
+
+    // Aviso visible junto a la lista de anuncios (los botones de "Mis anuncios" lo usan)
+    function avisoLista(texto, tipo) {
+        var el = $('estadoLista');
+        el.textContent = texto || '';
+        el.className = 'estado' + (tipo ? ' ' + tipo : '');
+        if (texto) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     function mensajeError(err) {
@@ -546,22 +555,31 @@
         });
     }
 
-    async function iniciarPago(anuncioId) {
+    // yaAceptadoAntes: true cuando el anuncio ya se publicó con v1.4 (la aceptación quedó guardada)
+    async function iniciarPago(anuncioId, yaAceptadoAntes) {
         var terminos = $('aceptoTerminos');
-        if (!terminos.checked) {
-            estado('Debes aceptar los Términos v1.4 para pagar.', 'error');
-            terminos.focus();
+        var aceptado = yaAceptadoAntes === true || terminos.checked;
+
+        if (!aceptado) {
+            if (yaAceptadoAntes === true) {
+                // no debería ocurrir, pero por seguridad
+                avisoLista('Vuelve a aceptar los Términos v1.4 para pagar.', 'error');
+            } else {
+                estado('Debes aceptar los Términos v1.4 para pagar.', 'error');
+                terminos.focus();
+                terminos.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return false;
         }
 
         var s = await client.auth.getSession();
         var token = s.data && s.data.session && s.data.session.access_token;
         if (!token) {
-            estado('Tu sesión expiró. Vuelve a iniciar sesión.', 'error');
+            avisoLista('Tu sesión expiró. Vuelve a iniciar sesión.', 'error');
             return false;
         }
 
-        estado('Preparando tu pago…');
+        avisoLista('Preparando tu pago…', '');
         var r = await fetch(API_ANUNCIOS_PAGO, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -576,13 +594,13 @@
         var d = await r.json().catch(function () { return {}; });
 
         if (!r.ok || !d.success || !d.data) {
-            estado(mensajePago(d.error), 'error');
+            avisoLista(mensajePago(d.error), 'error');
             return false;
         }
 
         // Si el servidor dio dirección, mostramos la terminal (factura nueva o reutilizada)
         if (d.data.pay_address) {
-            estado('');
+            avisoLista('', '');
             mostrarTerminal(anuncioId, d.data, token);
             return true;
         }
@@ -593,7 +611,7 @@
             return true;
         }
 
-        estado('No se pudo generar la dirección de pago. Intenta de nuevo.', 'error');
+        avisoLista('No se pudo generar la dirección de pago. Intenta de nuevo.', 'error');
         return false;
     }
 
@@ -661,7 +679,8 @@
 
             if (r.error) throw r.error;
 
-            var pagoOk = await iniciarPago(r.data.id);
+            // Recién publicado: la casilla acaba de marcarse, así que se considera aceptada
+            var pagoOk = await iniciarPago(r.data.id, true);
             if (!pagoOk) {
                 btn.disabled = false;
                 btn.textContent = 'Publicar anuncio';
@@ -698,7 +717,7 @@
                 : m.indexOf('activacion_no_permitida') >= 0
                     ? 'Este anuncio no se puede activar. Revisa su estado.'
                     : 'No se pudo cambiar el anuncio. Intenta de nuevo.';
-            alert(texto);
+            avisoLista(texto, 'error');
             return;
         }
         cargarMisAnuncios();
@@ -710,7 +729,6 @@
         return new Date(a.vigencia_fin) <= new Date();
     }
 
-    // ✅ Mensajes de archivado, incluido el bloqueo por pago en curso
     function mensajeArchivar(error) {
         var m = String((error && error.message) || '');
         if (m.indexOf('pago_en_curso') >= 0) {
@@ -729,7 +747,7 @@
         if (!confirm('Se quitará de tu panel. Si hubo pagos, quedan guardados en tu historial. ¿Continuar?')) return;
         var r = await client.rpc('archivar_anuncio', { p_anuncio_id: a.id });
         if (r.error) {
-            estado(mensajeArchivar(r.error), 'error');
+            avisoLista(mensajeArchivar(r.error), 'error');
             return;
         }
         cargarMisAnuncios();
@@ -738,7 +756,7 @@
     async function cargarMisAnuncios() {
         var cont = $('misAnuncios');
         var r = await client.from('anuncios')
-            .select('id, titulo, media_url, activo, vistas, toques, reportes, pausado_automatico, vigencia_fin, created_at, estado_moderacion, en_cola')
+            .select('id, titulo, media_url, activo, vistas, toques, reportes, pausado_automatico, vigencia_fin, created_at, estado_moderacion, en_cola, terminos_version')
             .eq('usuario_id', uid)
             .is('archivado_at', null)
             .order('created_at', { ascending: false })
@@ -809,7 +827,10 @@
                 pagar.type = 'button';
                 pagar.className = 'boton-secundario';
                 pagar.textContent = 'Pagar';
-                pagar.addEventListener('click', function () { iniciarPago(a.id); });
+                pagar.addEventListener('click', function () {
+                    // Si el anuncio se publicó con v1.4, la aceptación ya quedó registrada
+                    iniciarPago(a.id, a.terminos_version === '1.4');
+                });
                 item.appendChild(pagar);
             }
 
