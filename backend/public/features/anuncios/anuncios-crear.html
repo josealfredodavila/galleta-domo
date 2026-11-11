@@ -710,6 +710,7 @@
         return new Date(a.vigencia_fin) <= new Date();
     }
 
+    // ✅ Mensajes de archivado, incluido el bloqueo por pago en curso
     function mensajeArchivar(error) {
         var m = String((error && error.message) || '');
         if (m.indexOf('pago_en_curso') >= 0) {
