@@ -1,5 +1,5 @@
 // ================================================================
-// ROUTES/WEBHOOKS.JS — Csariel's
+// backend/routes/webhooks.js — Csariel's
 // Montado en /api/webhook
 //   POST /api/webhook/nowpayments → IPN de NOWPayments (firma verificada)
 //       LP-     → Live Pass
@@ -10,11 +10,12 @@
 //       MKC-    → compras del Marketplace de canales
 //       NET-    → paquetes de Internet
 //       PRO-    → membresía PRO
-//       ANU-    → pagos de anuncios del carrusel  ✅ NUEVO
+//       ANU-    → pagos de anuncios del carrusel  ✅
 //       resto   → membresía de Mercado (por payment_id)
 //   POST /api/webhook/membresia   → membresía PRO
 //   POST /api/webhook/stripe      → placeholder
 //   POST /api/webhook/fintoc      → placeholder
+// v2: carga del módulo de anuncios protegida con try/catch.
 // ================================================================
 
 const express = require('express');
@@ -27,8 +28,13 @@ const marketplaceCanal = require('./webhooks/nowpayments-marketplace');
 const { handleWebhookMembresia } = require('./membresia-webhook-handler');
 const { handleWebhookInternet } = require('./webhooks/nowpayments-internet');
 
-// ✅ NUEVO: Módulo de pagos de anuncios
-const anunciosPagos = require('../services/anuncios/pagos-anuncio');
+// ✅ Carga protegida del módulo de anuncios (no tumba la app si falta)
+let anunciosPagos = null;
+try {
+    anunciosPagos = require('../services/anuncios/pagos-anuncio');
+} catch (e) {
+    console.error('[ANU] módulo no cargado:', e.message);
+}
 
 const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
@@ -88,8 +94,13 @@ router.post('/nowpayments', async (req, res) => {
             return handleWebhookMembresia(req, res);
         }
 
-        // ✅ NUEVO: Rama ANU- para anuncios del carrusel
+        // ✅ Rama ANU- para anuncios del carrusel (protegida)
         if (orderUpper.startsWith('ANU-')) {
+            if (!anunciosPagos) {
+                logError(`ANU recibido pero módulo no disponible: ${orderId}`);
+                // Respondemos 200 para que NOWPayments no reintente en bucle.
+                return res.status(200).json({ ok: true, ignorado: 'modulo_anu_no_disponible' });
+            }
             return anunciosPagos.procesarPagoAnuncio(orderId, npStatus, data, res);
         }
 
@@ -125,6 +136,7 @@ router.get('/health', (req, res) => {
         status: 'ok',
         router: 'webhooks',
         firma_configurada: !!NOWPAYMENTS_IPN_SECRET,
+        modulo_anu_cargado: !!anunciosPagos,
         timestamp: new Date().toISOString()
     });
 });
