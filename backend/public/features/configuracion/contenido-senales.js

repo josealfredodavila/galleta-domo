@@ -1,0 +1,144 @@
+// ================================================================
+// CONTENIDO QUE VES · SEÑALES DE PUBLICACIONES · v1.0
+// Agrega la sección "Publicaciones que ocultaste" y "Guardados".
+// Lee/escribe publicacion_senales y publicacion_guardados (RLS: solo tus filas).
+// Cárgalo al final de contenido-que-ves.html, después de config-layout.js.
+// ================================================================
+
+(function () {
+    'use strict';
+
+    if (window.__senalesIniciado) return;
+    window.__senalesIniciado = true;
+
+    function esc(v) {
+        var d = document.createElement('div');
+        d.textContent = v == null ? '' : String(v);
+        return d.innerHTML;
+    }
+
+    function toast(texto, tipo) {
+        if (typeof window.cfgToast === 'function') return window.cfgToast(texto, tipo || '');
+        if (typeof window.showToast === 'function') return window.showToast(texto, tipo || 'info');
+        console.log('[Senales]', texto);
+    }
+
+    async function cliente() {
+        if (window.supabaseClient) return window.supabaseClient;
+        if (window.supabaseReady) {
+            try { return await window.supabaseReady; } catch (e) { return null; }
+        }
+        return null;
+    }
+
+    async function sesion() {
+        var c = await cliente();
+        if (!c) return null;
+        var r = await c.auth.getSession();
+        return r && r.data && r.data.session ? { c: c, uid: r.data.session.user.id } : null;
+    }
+
+    function crearSeccion() {
+        var contenido = document.querySelector('.cfg-content');
+        var aviso = contenido ? contenido.querySelector('.cfg-aviso') : null;
+        if (!contenido || document.getElementById('seccionSenales')) return null;
+
+        var titulo = document.createElement('h2');
+        titulo.className = 'cfg-section-title';
+        titulo.textContent = 'Publicaciones que ocultaste';
+
+        var lista = document.createElement('div');
+        lista.className = 'cfg-list';
+        lista.id = 'seccionSenales';
+        lista.innerHTML = '<div style="padding:12px 4px;color:var(--cfg-text-muted,#8aa8b8);font-size:.8rem;">Cargando…</div>';
+
+        var tituloG = document.createElement('h2');
+        tituloG.className = 'cfg-section-title';
+        tituloG.textContent = 'Guardados';
+
+        var listaG = document.createElement('div');
+        listaG.className = 'cfg-list';
+        listaG.id = 'seccionGuardados';
+
+        var ref = aviso || contenido.lastElementChild;
+        contenido.insertBefore(titulo, ref);
+        contenido.insertBefore(lista, ref);
+        contenido.insertBefore(tituloG, ref);
+        contenido.insertBefore(listaG, ref);
+        return { lista: lista, listaG: listaG };
+    }
+
+    async function cargarSenales(s, lista) {
+        var r = await s.c.from('publicacion_senales')
+            .select('publicacion_id, tipo, created_at')
+            .eq('usuario_id', s.uid)
+            .eq('tipo', 'no_interesa')
+            .order('created_at', { ascending: false })
+            .limit(100);
+
+        if (r.error) {
+            lista.innerHTML = '<div style="padding:12px 4px;color:#ff3366;font-size:.8rem;">No se pudo cargar.</div>';
+            return;
+        }
+
+        var filas = r.data || [];
+        if (!filas.length) {
+            lista.innerHTML = '<div style="padding:12px 4px;color:var(--cfg-text-muted,#8aa8b8);font-size:.8rem;">No has ocultado publicaciones. Usa ☰ en una publicación para indicar que no te interesa.</div>';
+            return;
+        }
+
+        lista.innerHTML = filas.map(function (f) {
+            return '<div class="cfg-item" data-pub="' + esc(f.publicacion_id) + '" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.06);">' +
+                '<span style="font-size:.8rem;color:var(--cfg-text,#f0f4f8);">Publicación ocultada</span>' +
+                '<button type="button" class="cfg-btn-quitar" style="padding:6px 12px;border-radius:99px;border:1px solid rgba(0,229,255,.35);background:transparent;color:#00e5ff;font-size:.72rem;font-weight:700;cursor:pointer;">Quitar</button>' +
+            '</div>';
+        }).join('');
+
+        lista.querySelectorAll('.cfg-item').forEach(function (fila) {
+            fila.querySelector('.cfg-btn-quitar').addEventListener('click', async function () {
+                var pubId = fila.dataset.pub;
+                var del = await s.c.from('publicacion_senales').delete()
+                    .eq('usuario_id', s.uid).eq('publicacion_id', pubId).eq('tipo', 'no_interesa');
+                if (del.error) { toast('No se pudo quitar', 'error'); return; }
+                toast('Publicación visible otra vez', 'success');
+                fila.remove();
+                if (!lista.querySelector('.cfg-item')) cargarSenales(s, lista);
+            });
+        });
+    }
+
+    async function cargarGuardados(s, listaG) {
+        var r = await s.c.from('publicacion_guardados')
+            .select('publicacion_id', { count: 'exact', head: false })
+            .eq('usuario_id', s.uid)
+            .order('created_at', { ascending: false })
+            .limit(200);
+
+        var n = r.error ? null : (r.data || []).length;
+        listaG.innerHTML =
+            '<div class="cfg-item" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 4px;">' +
+                '<div>' +
+                    '<div style="font-weight:600;color:var(--cfg-text,#f0f4f8);font-size:.85rem;">Publicaciones guardadas</div>' +
+                    '<div style="font-size:.72rem;color:var(--cfg-text-muted,#8aa8b8);">' +
+                        (n == null ? 'No se pudo cargar' : (n === 0 ? 'Aún no guardas nada' : n + ' guardada' + (n === 1 ? '' : 's'))) +
+                    '</div>' +
+                '</div>' +
+                '<span style="color:#00e5ff;font-size:.75rem;">Se gestionan desde ☰ en cada publicación</span>' +
+            '</div>';
+    }
+
+    async function iniciar() {
+        var s = await sesion();
+        if (!s) return;
+        var nodos = crearSeccion();
+        if (!nodos) return;
+        cargarSenales(s, nodos.lista);
+        cargarGuardados(s, nodos.listaG);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function () { setTimeout(iniciar, 600); });
+    } else {
+        setTimeout(iniciar, 600);
+    }
+})();
