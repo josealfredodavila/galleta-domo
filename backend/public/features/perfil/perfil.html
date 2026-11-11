@@ -256,11 +256,8 @@
 
 <!-- ================================================================
      CABECERA DEL PERFIL · @HANDLE, FOTO Y ESTADÍSTICAS (v2)
-     Se aplica a #perfilHandle, #perfilAvatar y .stats dentro del
-     encabezado. Va al final de <head> para tener prioridad.
      ================================================================ -->
 <style>
-    /* @handle: píldora azul igual que en las publicaciones */
     .perfil-header #perfilHandle {
         display: inline-flex;
         align-items: center;
@@ -294,14 +291,12 @@
         50%      { opacity: .35; }
     }
 
-    /* Foto de perfil: marco cian con brillo violeta */
     .perfil-header #perfilAvatar,
     .perfil-header .avatar {
         border: 2px solid rgba(0, 229, 255, .55) !important;
         box-shadow: 0 0 0 3px rgba(139, 92, 246, .18), 0 0 22px rgba(0, 229, 255, .28) !important;
     }
 
-    /* Estadísticas: números legibles, sin cuadritos */
     .perfil-header .stats .number {
         font-family: Orbitron, Inter, sans-serif !important;
         font-weight: 700;
@@ -327,6 +322,168 @@
         .perfil-header #perfilHandle,
         .perfil-header #perfilHandle::before { animation: none !important; }
     }
+</style>
+
+<!-- ================================================================
+     BARRA DE ACCIONES RÁPIDAS (reemplaza el engranaje y el altavoz)
+     ================================================================ -->
+<style>
+    .pf-acciones-rapidas {
+        max-width: 720px;
+        margin: 12px auto 0;
+        padding: 0 16px;
+        box-sizing: border-box;
+        display: flex;
+        gap: 8px;
+        overflow-x: auto;
+        scrollbar-width: none;
+    }
+    .pf-acciones-rapidas::-webkit-scrollbar { display: none; }
+    .pf-acciones-rapidas a,
+    .pf-acciones-rapidas button {
+        flex: 0 0 auto;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 229, 255, .28);
+        background: rgba(0, 229, 255, .05);
+        color: #5cc8ff;
+        font-family: 'Inter', sans-serif;
+        font-size: .74rem;
+        font-weight: 700;
+        letter-spacing: .3px;
+        text-decoration: none;
+        cursor: pointer;
+        white-space: nowrap;
+        -webkit-tap-highlight-color: transparent;
+        transition: background .18s ease, border-color .18s ease, transform .14s ease;
+    }
+    .pf-acciones-rapidas a:hover,
+    .pf-acciones-rapidas button:hover { background: rgba(0, 229, 255, .14); border-color: rgba(0, 229, 255, .6); }
+    .pf-acciones-rapidas a:active,
+    .pf-acciones-rapidas button:active { transform: scale(.97); }
+    .pf-acciones-rapidas .pf-acc-pro {
+        border-color: rgba(212, 175, 55, .4);
+        background: linear-gradient(135deg, rgba(212, 175, 55, .14), rgba(139, 92, 246, .1));
+        color: #D4AF37;
+    }
+    .pf-acciones-rapidas .pf-acc-ico { font-size: .9rem; line-height: 1; }
+</style>
+
+<!-- ================================================================
+     COMPOSER NEÓN (área de escribir publicación)
+     ================================================================ -->
+<style>
+    .pf-composer {
+        position: relative;
+        border-radius: 22px;
+        padding: 14px;
+        background: linear-gradient(160deg, rgba(8, 15, 26, .92), rgba(5, 8, 15, .96));
+        border: 1px solid rgba(0, 229, 255, .18);
+        box-shadow: 0 0 0 1px rgba(139, 92, 246, .08), 0 14px 40px rgba(0, 0, 0, .45);
+        overflow: hidden;
+    }
+    .pf-composer::before {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: 22px;
+        padding: 1px;
+        background: linear-gradient(120deg, rgba(0, 229, 255, .0), rgba(0, 229, 255, .55), rgba(139, 92, 246, .55), rgba(0, 229, 255, .0));
+        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+        -webkit-mask-composite: xor;
+        mask-composite: exclude;
+        pointer-events: none;
+        opacity: .0;
+        transition: opacity .3s ease;
+    }
+    .pf-composer:focus-within::before { opacity: 1; }
+
+    .pf-composer-cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .pf-composer-avatar {
+        width: 38px; height: 38px; border-radius: 50%; flex: 0 0 38px;
+        border: 2px solid rgba(0, 229, 255, .55);
+        box-shadow: 0 0 14px rgba(0, 229, 255, .25);
+        background: #0b1410 center/cover no-repeat;
+        display: flex; align-items: center; justify-content: center;
+        color: #00e5ff; font-weight: 800; font-family: 'Orbitron', monospace;
+    }
+    .pf-composer-titulo {
+        font-family: 'Orbitron', monospace; font-size: .72rem; letter-spacing: 1.5px;
+        color: #5cc8ff; text-shadow: 0 0 10px rgba(0, 229, 255, .4);
+    }
+    .pf-composer-sub { font-size: .66rem; color: #8aa8b8; margin-top: 2px; }
+
+    .pf-composer textarea#inputNuevaPublicacion {
+        width: 100%;
+        min-height: 84px;
+        resize: vertical;
+        background: rgba(0, 0, 0, .35);
+        border: 1px solid rgba(0, 229, 255, .18);
+        border-radius: 16px;
+        padding: 12px 14px;
+        color: #f0f4f8;
+        font-family: 'Inter', sans-serif;
+        font-size: .95rem;
+        line-height: 1.5;
+        box-sizing: border-box;
+        transition: border-color .2s ease, box-shadow .2s ease;
+    }
+    .pf-composer textarea#inputNuevaPublicacion::placeholder { color: #5f7a8c; }
+    .pf-composer textarea#inputNuevaPublicacion:focus {
+        outline: none;
+        border-color: #00e5ff;
+        box-shadow: 0 0 0 2px rgba(0, 229, 255, .18), 0 0 22px rgba(0, 229, 255, .16);
+    }
+
+    .pf-composer-barra {
+        display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap;
+    }
+    .pf-composer-iconos { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pf-composer-icono {
+        width: 36px; height: 36px; border-radius: 12px;
+        border: 1px solid rgba(0, 229, 255, .2);
+        background: rgba(0, 229, 255, .05);
+        color: #5cc8ff; font-size: 1rem; line-height: 1;
+        cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+        transition: background .18s ease, transform .14s ease, box-shadow .18s ease;
+    }
+    .pf-composer-icono:hover { background: rgba(0, 229, 255, .15); box-shadow: 0 0 12px rgba(0, 229, 255, .25); }
+    .pf-composer-icono:active { transform: scale(.94); }
+    .pf-composer-icono[title]::after { content: none; }
+
+    .pf-composer-pie { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .pf-composer-contador {
+        font-family: 'Orbitron', monospace; font-size: .6rem; color: #8aa8b8;
+        min-width: 56px; text-align: right; font-variant-numeric: tabular-nums;
+    }
+    .pf-composer-contador.cerca { color: #D4AF37; }
+    .pf-composer-contador.lleno { color: #ff3366; }
+
+    .pf-composer #btnPublicarPerfil {
+        padding: 10px 22px !important;
+        border-radius: 99px !important;
+        border: 0 !important;
+        background: linear-gradient(135deg, #00e5ff, #8b5cf6) !important;
+        color: #05080f !important;
+        font-family: 'Orbitron', monospace !important;
+        font-size: .7rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 1px !important;
+        cursor: pointer;
+        box-shadow: 0 6px 22px rgba(0, 229, 255, .28);
+        transition: transform .14s ease, box-shadow .2s ease, opacity .2s ease;
+    }
+    .pf-composer #btnPublicarPerfil:hover { box-shadow: 0 8px 30px rgba(0, 229, 255, .42); }
+    .pf-composer #btnPublicarPerfil:active { transform: scale(.97); }
+    .pf-composer #btnPublicarPerfil:disabled { opacity: .55; cursor: not-allowed; }
+
+    .pf-composer .emoji-picker { position: relative; }
+    .pf-composer .preview-archivos { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .pf-composer .accion-btn { display: none; }
 </style>
 </head>
 <body>
@@ -386,18 +543,25 @@
 </div>
 <!-- ============ FIN DEL CARRUSEL 3D HORIZONTAL ============ -->
 
-<div class="anuncios-crear-acceso" style="max-width:720px;margin:12px auto 0;padding:0 16px;box-sizing:border-box;display:flex;justify-content:flex-end;">
-    <a href="/features/anuncios/anuncios-crear.html" style="display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:99px;color:var(--gold,#D4AF37);text-decoration:none;font-size:.78rem;font-weight:700;letter-spacing:.5px;background:transparent;">
-        📢 Crear anuncio
+<!-- BARRA DE ACCIONES RÁPIDAS -->
+<nav class="pf-acciones-rapidas" aria-label="Acciones rápidas">
+    <button type="button" onclick="window.pfIrAComposer && window.pfIrAComposer()">
+        <span class="pf-acc-ico">✎</span> Publicar
+    </button>
+    <a href="/features/anuncios/anuncios-crear.html">
+        <span class="pf-acc-ico">◉</span> Mis anuncios
     </a>
-</div>
+    <a href="/features/perfil/configuracion/index.html">
+        <span class="pf-acc-ico">⚙</span> Ajustes
+    </a>
+    <a href="/features/anuncios/anuncios-crear.html" class="pf-acc-pro">
+        <span class="pf-acc-ico">✦</span> Promocionar
+    </a>
+</nav>
 
 <div class="perfil-container">
 
     <div class="perfil-header" id="perfilHeader">
-        <a href="/features/perfil/configuracion/index.html" class="config-btn" data-clave-title="perfil_titulo_config" title="Configuración">
-            <svg class="icon icon-lg" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </a>
 
         <div class="avatar-container" style="position:relative;">
             <div class="avatar" id="perfilAvatar" role="button" tabindex="0" aria-haspopup="menu" aria-expanded="false" aria-label="Opciones de foto de perfil">
@@ -631,30 +795,41 @@
     </div>
 
 <div id="tab-mis-publicaciones" class="tab-content active">
-    <div class="panel">
-        <div class="panel-header">
-            <h3 data-clave="perfil_crear_publicacion">Crear publicación</h3>
-            <span class="panel-badge" data-clave="perfil_badge_nuevo">Nuevo</span>
-        </div>
-        <div class="panel-body">
-            <div class="form-publicacion">
-                <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" placeholder="¿Qué estás pensando? Puedes usar #hashtags, @menciones y emojis ✨"></textarea>
 
-                <div class="acciones">
-                    <button type="button" class="accion-btn" onclick="window.toggleEmojiPickerPerfil()" id="btnEmojiPerfil" data-clave="perfil_emoji">Emoji</button>
-                    <button type="button" class="accion-btn" onclick="window.insertarHashtagPerfil()" data-clave="perfil_hashtag">Hashtag</button>
-                    <button type="button" class="accion-btn" onclick="document.getElementById('inputFotoPerfilPost').click()" data-clave="perfil_foto">Foto</button>
-                    <button type="button" class="accion-btn" onclick="document.getElementById('inputVideoPerfilPost').click()" data-clave="perfil_video">Video</button>
+    <!-- COMPOSER NEÓN -->
+    <div class="panel" id="pfComposerPanel">
+        <div class="panel-body">
+            <div class="pf-composer" id="pfComposer">
+                <div class="pf-composer-cabecera">
+                    <div class="pf-composer-avatar" id="pfComposerAvatar">◈</div>
+                    <div>
+                        <div class="pf-composer-titulo" data-clave="perfil_crear_publicacion">NUEVA PUBLICACIÓN</div>
+                        <div class="pf-composer-sub">Texto, foto o video · Hashtags y menciones</div>
+                    </div>
+                </div>
+
+                <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" maxlength="2000" placeholder="¿Qué estás pensando? Usa #hashtags, @menciones y emojis ✨"></textarea>
+
+                <div class="pf-composer-barra">
+                    <div class="pf-composer-iconos">
+                        <button type="button" class="pf-composer-icono" id="btnEmojiPerfil" onclick="window.toggleEmojiPickerPerfil()" title="Emoji" aria-label="Emoji">☺</button>
+                        <button type="button" class="pf-composer-icono" onclick="window.insertarHashtagPerfil()" title="Hashtag" aria-label="Hashtag">#</button>
+                        <button type="button" class="pf-composer-icono" onclick="document.getElementById('inputFotoPerfilPost').click()" title="Foto" aria-label="Foto">🖼</button>
+                        <button type="button" class="pf-composer-icono" onclick="document.getElementById('inputVideoPerfilPost').click()" title="Video" aria-label="Video">🎬</button>
+                    </div>
 
                     <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
                     <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
 
-                    <button type="button" class="btn-publicar" onclick="window.publicarDesdePerfil()" id="btnPublicarPerfil" data-clave="perfil_publicar">Publicar</button>
-
-                    <div class="emoji-picker" id="emojiPickerPerfil">
-                        <div class="titulo" data-clave="perfil_elige_emoji">Elige tu emoji</div>
-                        <div class="grid" id="emojiGridPerfil"></div>
+                    <div class="pf-composer-pie">
+                        <span class="pf-composer-contador" id="pfContador">0 / 2000</span>
+                        <button type="button" id="btnPublicarPerfil" onclick="window.publicarDesdePerfil()" data-clave="perfil_publicar">PUBLICAR</button>
                     </div>
+                </div>
+
+                <div class="emoji-picker" id="emojiPickerPerfil">
+                    <div class="titulo" data-clave="perfil_elige_emoji">Elige tu emoji</div>
+                    <div class="grid" id="emojiGridPerfil"></div>
                 </div>
 
                 <div id="previewArchivosPerfil" class="preview-archivos"></div>
@@ -878,7 +1053,7 @@
     </div>
 </div>
 
-<!-- NUEVA PESTAÑA: COMPRAS Y VENTAS DEL MARKETPLACE DE CANALES -->
+<!-- COMPRAS Y VENTAS DEL MARKETPLACE DE CANALES -->
 <div id="tab-compras" class="tab-content">
     <div class="panel">
         <div class="panel-header">
@@ -1032,6 +1207,8 @@
 <script src="/features/perfil/js/perfil-esim.js?v=8"></script>
 <script src="/features/perfil/js/perfil-wallet.js?v=8"></script>
 <script src="/features/perfil/js/perfil-publicaciones.js?v=8"></script>
+<!-- ACCIONES DE PUBLICACIÓN: visor futurista, menú ☰ y composer (después de perfil-publicaciones.js) -->
+<script src="/features/perfil/perfil-publicaciones-acciones.js?v=1"></script>
 <!-- VISOR MODAL NUEVO -->
 <script src="/features/perfil/js/perfil-visor.js?v=1"></script>
 <script src="/features/perfil/js/perfil-internet.js?v=8"></script>
@@ -1042,6 +1219,63 @@
 
 <!-- PASAPORTE DIGITAL DEL DOMO (después de init) -->
 <script src="/features/perfil/js/pasaporte-domo.js?v=1"></script>
+
+<script>
+/* ================================================================
+   COMPOSER · CONTADOR, AVATAR Y NAVEGACIÓN (v1)
+   ================================================================ */
+(function () {
+    'use strict';
+
+    var input = document.getElementById('inputNuevaPublicacion');
+    var contador = document.getElementById('pfContador');
+    var avatarEl = document.getElementById('pfComposerAvatar');
+    var MAX = 2000;
+
+    function pintarContador() {
+        if (!input || !contador) return;
+        var n = input.value.length;
+        contador.textContent = n + ' / ' + MAX;
+        contador.classList.toggle('cerca', n >= MAX * 0.9 && n < MAX);
+        contador.classList.toggle('lleno', n >= MAX);
+    }
+
+    if (input) input.addEventListener('input', pintarContador);
+    pintarContador();
+
+    window.pfIrAComposer = function () {
+        var panel = document.getElementById('pfComposerPanel');
+        if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(function () { if (input) input.focus(); }, 350);
+    };
+
+    async function pintarAvatar() {
+        if (!avatarEl) return;
+        for (var i = 0; i < 60 && !window.supabaseClient; i++) {
+            await new Promise(function (r) { setTimeout(r, 100); });
+        }
+        if (!window.supabaseClient) return;
+        try {
+            var s = await window.supabaseClient.auth.getSession();
+            var uid = s.data && s.data.session ? s.data.session.user.id : null;
+            if (!uid) return;
+            var r = await window.supabaseClient.from('usuarios').select('nombre, avatar_url').eq('id', uid).maybeSingle();
+            if (r.data && r.data.avatar_url) {
+                avatarEl.textContent = '';
+                avatarEl.style.backgroundImage = 'url("' + String(r.data.avatar_url).replace(/"/g, '%22') + '")';
+            } else if (r.data && r.data.nombre) {
+                avatarEl.textContent = String(r.data.nombre).charAt(0).toUpperCase();
+            }
+        } catch (e) { /* sin avatar: se queda el símbolo */ }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', pintarAvatar, { once: true });
+    } else {
+        pintarAvatar();
+    }
+})();
+</script>
 
 <script>
 /* ================================================================
