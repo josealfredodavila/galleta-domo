@@ -325,7 +325,7 @@
 </style>
 
 <!-- ================================================================
-     BARRA DE ACCIONES RÁPIDAS (reemplaza el engranaje y el altavoz)
+     BARRA DE ACCIONES RÁPIDAS
      ================================================================ -->
 <style>
     .pf-acciones-rapidas {
@@ -373,117 +373,221 @@
 </style>
 
 <!-- ================================================================
-     COMPOSER NEÓN (área de escribir publicación)
+     COMPOSER PRO (tarjeta para publicar) · v2
+     Sin emojis: iconos SVG. Sin avatar antiguo. Anillo de progreso.
      ================================================================ -->
 <style>
     .pf-composer {
         position: relative;
-        border-radius: 22px;
-        padding: 14px;
-        background: linear-gradient(160deg, rgba(8, 15, 26, .92), rgba(5, 8, 15, .96));
-        border: 1px solid rgba(0, 229, 255, .18);
-        box-shadow: 0 0 0 1px rgba(139, 92, 246, .08), 0 14px 40px rgba(0, 0, 0, .45);
+        border-radius: 24px;
+        padding: 18px 16px 16px;
+        background:
+            radial-gradient(120% 90% at 0% 0%, rgba(0, 229, 255, .10), transparent 55%),
+            radial-gradient(120% 90% at 100% 100%, rgba(139, 92, 246, .12), transparent 55%),
+            linear-gradient(170deg, rgba(10, 18, 30, .96), rgba(4, 7, 13, .98));
+        border: 1px solid rgba(0, 229, 255, .16);
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, .02) inset,
+            0 18px 50px rgba(0, 0, 0, .55),
+            0 0 40px rgba(0, 229, 255, .06);
         overflow: hidden;
+        transition: box-shadow .35s ease, border-color .35s ease;
     }
-    .pf-composer::before {
+    .pf-composer::after {
         content: '';
         position: absolute;
-        inset: -1px;
-        border-radius: 22px;
-        padding: 1px;
-        background: linear-gradient(120deg, rgba(0, 229, 255, .0), rgba(0, 229, 255, .55), rgba(139, 92, 246, .55), rgba(0, 229, 255, .0));
-        -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-        -webkit-mask-composite: xor;
-        mask-composite: exclude;
+        left: 18px; right: 18px; top: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0, 229, 255, .8), rgba(139, 92, 246, .8), transparent);
+        opacity: .6;
         pointer-events: none;
-        opacity: .0;
-        transition: opacity .3s ease;
     }
-    .pf-composer:focus-within::before { opacity: 1; }
+    .pf-composer:focus-within {
+        border-color: rgba(0, 229, 255, .45);
+        box-shadow:
+            0 0 0 1px rgba(255, 255, 255, .02) inset,
+            0 18px 50px rgba(0, 0, 0, .55),
+            0 0 48px rgba(0, 229, 255, .18);
+    }
 
-    .pf-composer-cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-    .pf-composer-avatar {
-        width: 38px; height: 38px; border-radius: 50%; flex: 0 0 38px;
-        border: 2px solid rgba(0, 229, 255, .55);
-        box-shadow: 0 0 14px rgba(0, 229, 255, .25);
-        background: #0b1410 center/cover no-repeat;
-        display: flex; align-items: center; justify-content: center;
-        color: #00e5ff; font-weight: 800; font-family: 'Orbitron', monospace;
+    .pf-composer-cabecera {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+    .pf-composer-pulso {
+        width: 8px; height: 8px; border-radius: 50%;
+        background: #00e5ff;
+        box-shadow: 0 0 0 0 rgba(0, 229, 255, .6);
+        animation: pfPulso 2.2s ease-out infinite;
+        flex: 0 0 8px;
+    }
+    @keyframes pfPulso {
+        0%   { box-shadow: 0 0 0 0 rgba(0, 229, 255, .55); }
+        70%  { box-shadow: 0 0 0 10px rgba(0, 229, 255, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
     }
     .pf-composer-titulo {
-        font-family: 'Orbitron', monospace; font-size: .72rem; letter-spacing: 1.5px;
-        color: #5cc8ff; text-shadow: 0 0 10px rgba(0, 229, 255, .4);
+        font-family: 'Orbitron', monospace;
+        font-size: .72rem;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #bfefff;
+        text-shadow: 0 0 12px rgba(0, 229, 255, .35);
     }
-    .pf-composer-sub { font-size: .66rem; color: #8aa8b8; margin-top: 2px; }
+    .pf-composer-sub {
+        font-size: .66rem;
+        color: #6f8ba0;
+        margin-top: 3px;
+        letter-spacing: .2px;
+    }
 
     .pf-composer textarea#inputNuevaPublicacion {
         width: 100%;
-        min-height: 84px;
+        min-height: 96px;
         resize: vertical;
-        background: rgba(0, 0, 0, .35);
-        border: 1px solid rgba(0, 229, 255, .18);
-        border-radius: 16px;
-        padding: 12px 14px;
-        color: #f0f4f8;
+        background: rgba(0, 0, 0, .28);
+        border: 1px solid rgba(255, 255, 255, .06);
+        border-radius: 18px;
+        padding: 14px 16px;
+        color: #eef6ff;
         font-family: 'Inter', sans-serif;
-        font-size: .95rem;
-        line-height: 1.5;
+        font-size: .96rem;
+        line-height: 1.55;
         box-sizing: border-box;
-        transition: border-color .2s ease, box-shadow .2s ease;
+        transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
     }
-    .pf-composer textarea#inputNuevaPublicacion::placeholder { color: #5f7a8c; }
+    .pf-composer textarea#inputNuevaPublicacion::placeholder { color: #4f6577; }
     .pf-composer textarea#inputNuevaPublicacion:focus {
         outline: none;
-        border-color: #00e5ff;
-        box-shadow: 0 0 0 2px rgba(0, 229, 255, .18), 0 0 22px rgba(0, 229, 255, .16);
+        background: rgba(0, 0, 0, .42);
+        border-color: rgba(0, 229, 255, .55);
+        box-shadow: 0 0 0 3px rgba(0, 229, 255, .10), 0 0 26px rgba(0, 229, 255, .14);
     }
 
     .pf-composer-barra {
-        display: flex; align-items: center; gap: 6px; margin-top: 10px; flex-wrap: wrap;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 14px;
+        flex-wrap: wrap;
     }
-    .pf-composer-iconos { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pf-composer-iconos { display: flex; gap: 8px; }
     .pf-composer-icono {
-        width: 36px; height: 36px; border-radius: 12px;
-        border: 1px solid rgba(0, 229, 255, .2);
-        background: rgba(0, 229, 255, .05);
-        color: #5cc8ff; font-size: 1rem; line-height: 1;
-        cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
-        transition: background .18s ease, transform .14s ease, box-shadow .18s ease;
+        position: relative;
+        width: 40px; height: 40px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, .07);
+        background: rgba(255, 255, 255, .03);
+        color: #7fdcff;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease, color .2s ease;
     }
-    .pf-composer-icono:hover { background: rgba(0, 229, 255, .15); box-shadow: 0 0 12px rgba(0, 229, 255, .25); }
-    .pf-composer-icono:active { transform: scale(.94); }
-    .pf-composer-icono[title]::after { content: none; }
+    .pf-composer-icono svg {
+        width: 18px; height: 18px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.8;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: none;
+    }
+    .pf-composer-icono:hover {
+        background: rgba(0, 229, 255, .10);
+        border-color: rgba(0, 229, 255, .35);
+        box-shadow: 0 0 14px rgba(0, 229, 255, .22);
+        color: #cdf6ff;
+    }
+    .pf-composer-icono:active { transform: scale(.92); }
+    .pf-composer-icono:focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; }
 
-    .pf-composer-pie { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .pf-composer-pie {
+        margin-left: auto;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+    .pf-composer-anillo {
+        position: relative;
+        width: 36px; height: 36px;
+        flex: 0 0 36px;
+    }
+    .pf-composer-anillo svg { width: 36px; height: 36px; transform: rotate(-90deg); }
+    .pf-composer-anillo circle { fill: none; stroke-width: 3; }
+    .pf-composer-anillo .fondo { stroke: rgba(255, 255, 255, .08); }
+    .pf-composer-anillo .progreso {
+        stroke: url(#pfGradAnillo);
+        stroke: #00e5ff;
+        stroke-linecap: round;
+        stroke-dasharray: 94.25;
+        stroke-dashoffset: 94.25;
+        transition: stroke-dashoffset .3s ease, stroke .3s ease;
+        filter: drop-shadow(0 0 4px rgba(0, 229, 255, .6));
+    }
+    .pf-composer-anillo.cerca .progreso { stroke: #D4AF37; filter: drop-shadow(0 0 4px rgba(212, 175, 55, .6)); }
+    .pf-composer-anillo.lleno .progreso { stroke: #ff3366; filter: drop-shadow(0 0 4px rgba(255, 51, 102, .6)); }
     .pf-composer-contador {
-        font-family: 'Orbitron', monospace; font-size: .6rem; color: #8aa8b8;
-        min-width: 56px; text-align: right; font-variant-numeric: tabular-nums;
+        font-family: 'Orbitron', monospace;
+        font-size: .58rem;
+        color: #6f8ba0;
+        min-width: 58px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        letter-spacing: .5px;
     }
     .pf-composer-contador.cerca { color: #D4AF37; }
     .pf-composer-contador.lleno { color: #ff3366; }
 
     .pf-composer #btnPublicarPerfil {
-        padding: 10px 22px !important;
-        border-radius: 99px !important;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 11px 22px !important;
+        border-radius: 14px !important;
         border: 0 !important;
-        background: linear-gradient(135deg, #00e5ff, #8b5cf6) !important;
-        color: #05080f !important;
+        background: linear-gradient(120deg, #00e5ff 0%, #3b82f6 55%, #8b5cf6 100%) !important;
+        background-size: 200% 100%;
+        color: #04070d !important;
         font-family: 'Orbitron', monospace !important;
-        font-size: .7rem !important;
+        font-size: .68rem !important;
         font-weight: 700 !important;
-        letter-spacing: 1px !important;
+        letter-spacing: 1.5px !important;
+        text-transform: uppercase;
         cursor: pointer;
-        box-shadow: 0 6px 22px rgba(0, 229, 255, .28);
-        transition: transform .14s ease, box-shadow .2s ease, opacity .2s ease;
+        box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
+        transition: background-position .6s ease, transform .15s ease, box-shadow .25s ease, opacity .2s ease;
+        overflow: hidden;
     }
-    .pf-composer #btnPublicarPerfil:hover { box-shadow: 0 8px 30px rgba(0, 229, 255, .42); }
-    .pf-composer #btnPublicarPerfil:active { transform: scale(.97); }
-    .pf-composer #btnPublicarPerfil:disabled { opacity: .55; cursor: not-allowed; }
+    .pf-composer #btnPublicarPerfil svg {
+        width: 15px; height: 15px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2.2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    .pf-composer #btnPublicarPerfil:hover {
+        background-position: 100% 0;
+        box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4);
+    }
+    .pf-composer #btnPublicarPerfil:active { transform: scale(.96); }
+    .pf-composer #btnPublicarPerfil:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 
     .pf-composer .emoji-picker { position: relative; }
-    .pf-composer .preview-archivos { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .pf-composer .preview-archivos { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
 
     .pf-composer .accion-btn { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .pf-composer-pulso { animation: none !important; }
+        .pf-composer #btnPublicarPerfil { transition: none !important; }
+    }
 </style>
 </head>
 <body>
@@ -549,10 +653,13 @@
         <span class="pf-acc-ico">✎</span> Publicar
     </button>
     <a href="/features/anuncios/anuncios-crear.html">
-        <span class="pf-acc-ico">◉</span> Anuncios
+        <span class="pf-acc-ico">◉</span> Mis anuncios
     </a>
     <a href="/features/perfil/configuracion/index.html">
         <span class="pf-acc-ico">⚙</span> Ajustes
+    </a>
+    <a href="/features/anuncios/anuncios-crear.html" class="pf-acc-pro">
+        <span class="pf-acc-ico">✦</span> Promocionar
     </a>
 </nav>
 
@@ -793,34 +900,51 @@
 
 <div id="tab-mis-publicaciones" class="tab-content active">
 
-    <!-- COMPOSER NEÓN -->
+    <!-- COMPOSER PRO -->
     <div class="panel" id="pfComposerPanel">
         <div class="panel-body">
             <div class="pf-composer" id="pfComposer">
                 <div class="pf-composer-cabecera">
-                    <div class="pf-composer-avatar" id="pfComposerAvatar">◈</div>
+                    <span class="pf-composer-pulso" aria-hidden="true"></span>
                     <div>
-                        <div class="pf-composer-titulo" data-clave="perfil_crear_publicacion">NUEVA PUBLICACIÓN</div>
-                        <div class="pf-composer-sub">Texto, foto o video · Hashtags y menciones</div>
+                        <div class="pf-composer-titulo" data-clave="perfil_crear_publicacion">Crear publicación</div>
+                        <div class="pf-composer-sub">Texto, foto o video · #hashtags · @menciones</div>
                     </div>
                 </div>
 
-                <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" maxlength="2000" placeholder="¿Qué estás pensando? Usa #hashtags, @menciones y emojis ✨"></textarea>
+                <textarea id="inputNuevaPublicacion" data-placeholder="perfil_que_piensas" maxlength="2000" placeholder="¿Qué quieres compartir hoy?"></textarea>
 
                 <div class="pf-composer-barra">
                     <div class="pf-composer-iconos">
-                        <button type="button" class="pf-composer-icono" id="btnEmojiPerfil" onclick="window.toggleEmojiPickerPerfil()" title="Emoji" aria-label="Emoji">☺</button>
-                        <button type="button" class="pf-composer-icono" onclick="window.insertarHashtagPerfil()" title="Hashtag" aria-label="Hashtag">#</button>
-                        <button type="button" class="pf-composer-icono" onclick="document.getElementById('inputFotoPerfilPost').click()" title="Foto" aria-label="Foto">🖼</button>
-                        <button type="button" class="pf-composer-icono" onclick="document.getElementById('inputVideoPerfilPost').click()" title="Video" aria-label="Video">🎬</button>
+                        <button type="button" class="pf-composer-icono" id="btnEmojiPerfil" onclick="window.toggleEmojiPickerPerfil()" title="Emoji" aria-label="Emoji">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                        </button>
+                        <button type="button" class="pf-composer-icono" onclick="window.insertarHashtagPerfil()" title="Hashtag" aria-label="Hashtag">
+                            <svg viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+                        </button>
+                        <button type="button" class="pf-composer-icono" onclick="document.getElementById('inputFotoPerfilPost').click()" title="Foto" aria-label="Foto">
+                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                        </button>
+                        <button type="button" class="pf-composer-icono" onclick="document.getElementById('inputVideoPerfilPost').click()" title="Video" aria-label="Video">
+                            <svg viewBox="0 0 24 24"><rect x="2" y="5" width="14" height="14" rx="3"/><path d="M16 10l6-3v10l-6-3"/></svg>
+                        </button>
                     </div>
 
                     <input type="file" id="inputFotoPerfilPost" accept="image/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'imagen')" />
                     <input type="file" id="inputVideoPerfilPost" accept="video/*" style="display:none;" onchange="window.seleccionarArchivoPerfil(event, 'video')" />
 
                     <div class="pf-composer-pie">
+                        <div class="pf-composer-anillo" id="pfAnillo" aria-hidden="true">
+                            <svg viewBox="0 0 36 36">
+                                <circle class="fondo" cx="18" cy="18" r="15"/>
+                                <circle class="progreso" id="pfAnilloProgreso" cx="18" cy="18" r="15"/>
+                            </svg>
+                        </div>
                         <span class="pf-composer-contador" id="pfContador">0 / 2000</span>
-                        <button type="button" id="btnPublicarPerfil" onclick="window.publicarDesdePerfil()" data-clave="perfil_publicar">PUBLICAR</button>
+                        <button type="button" id="btnPublicarPerfil" onclick="window.publicarDesdePerfil()" data-clave="perfil_publicar">
+                            <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            Publicar
+                        </button>
                     </div>
                 </div>
 
@@ -1219,22 +1343,30 @@
 
 <script>
 /* ================================================================
-   COMPOSER · CONTADOR, AVATAR Y NAVEGACIÓN (v1)
+   COMPOSER PRO · CONTADOR CON ANILLO Y NAVEGACIÓN (v2)
    ================================================================ */
 (function () {
     'use strict';
 
     var input = document.getElementById('inputNuevaPublicacion');
     var contador = document.getElementById('pfContador');
-    var avatarEl = document.getElementById('pfComposerAvatar');
+    var anillo = document.getElementById('pfAnillo');
+    var progreso = document.getElementById('pfAnilloProgreso');
     var MAX = 2000;
+    var CIRCUNFERENCIA = 94.25;
 
     function pintarContador() {
         if (!input || !contador) return;
         var n = input.value.length;
+        var ratio = Math.min(n / MAX, 1);
         contador.textContent = n + ' / ' + MAX;
         contador.classList.toggle('cerca', n >= MAX * 0.9 && n < MAX);
         contador.classList.toggle('lleno', n >= MAX);
+        if (progreso) progreso.style.strokeDashoffset = String(CIRCUNFERENCIA * (1 - ratio));
+        if (anillo) {
+            anillo.classList.toggle('cerca', n >= MAX * 0.9 && n < MAX);
+            anillo.classList.toggle('lleno', n >= MAX);
+        }
     }
 
     if (input) input.addEventListener('input', pintarContador);
@@ -1245,32 +1377,6 @@
         if (panel) panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
         setTimeout(function () { if (input) input.focus(); }, 350);
     };
-
-    async function pintarAvatar() {
-        if (!avatarEl) return;
-        for (var i = 0; i < 60 && !window.supabaseClient; i++) {
-            await new Promise(function (r) { setTimeout(r, 100); });
-        }
-        if (!window.supabaseClient) return;
-        try {
-            var s = await window.supabaseClient.auth.getSession();
-            var uid = s.data && s.data.session ? s.data.session.user.id : null;
-            if (!uid) return;
-            var r = await window.supabaseClient.from('usuarios').select('nombre, avatar_url').eq('id', uid).maybeSingle();
-            if (r.data && r.data.avatar_url) {
-                avatarEl.textContent = '';
-                avatarEl.style.backgroundImage = 'url("' + String(r.data.avatar_url).replace(/"/g, '%22') + '")';
-            } else if (r.data && r.data.nombre) {
-                avatarEl.textContent = String(r.data.nombre).charAt(0).toUpperCase();
-            }
-        } catch (e) { /* sin avatar: se queda el símbolo */ }
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', pintarAvatar, { once: true });
-    } else {
-        pintarAvatar();
-    }
 })();
 </script>
 
