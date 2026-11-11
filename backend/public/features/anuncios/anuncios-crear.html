@@ -579,7 +579,7 @@
             var url = await subirImagen(archivoSeleccionado);
 
             estado('Publicando…');
-            
+
             var r = await client.from('anuncios').insert({
                 usuario_id: uid,
                 tipo: 'imagen',
@@ -621,7 +621,6 @@
         return ['activo', 'Activo'];
     }
 
-    // ✅ CORRECCIÓN: usar RPC pausar_anuncio y mostrar errores visibles
     async function cambiarActivo(a, nuevo) {
         var r = nuevo
             ? await client.from('anuncios').update({ activo: true }).eq('id', a.id)
@@ -646,8 +645,12 @@
         return new Date(a.vigencia_fin) <= new Date();
     }
 
+    // ✅ Mensajes de archivado, incluido el bloqueo por pago en curso
     function mensajeArchivar(error) {
         var m = String((error && error.message) || '');
+        if (m.indexOf('pago_en_curso') >= 0) {
+            return 'Tienes un pago en curso para este anuncio. Espera a que termine o expire antes de eliminarlo.';
+        }
         if (m.indexOf('anuncio_pagado_vigente') >= 0) {
             return 'Este anuncio ya está pagado y vigente. Puedes pausarlo; podrás eliminarlo cuando venza.';
         }
