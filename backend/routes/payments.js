@@ -1,9 +1,10 @@
 // ================================================================
-// ROUTES/PAYMENTS.JS — Csariel's (v3.3)
+// backend/routes/payments.js — Csariel's (v3.3)
 // Transmisiones (pay-per-view), Muro P2P, Marketing, Internet y Anuncios.
 // Método: NOWPayments. NO toca membresías, Live Pass ni donaciones de Live.
 // Estados de ordenes_internet permitidos: pendiente, pagado, activo, cancelado.
 // v3.3: Se agregó el módulo de pagos de anuncios del carrusel (ANU-).
+// v3.3.1: Carga del módulo de anuncios protegida con try/catch (no tumba la app).
 // ================================================================
 
 'use strict';
@@ -18,8 +19,13 @@ const { verificarToken } = require('../middleware/auth');
 const { limitadorPagos } = require('../middleware/rateLimit');
 const { procesarOrdenInternet } = require('../services/telnyx/esim');
 
-// ✅ NUEVO: Módulo de pagos de anuncios
-const anunciosPagos = require('../services/anuncios/pagos-anuncio');
+// ✅ Carga protegida: si el módulo falta o explota, la app sigue viva.
+let anunciosPagos = null;
+try {
+    anunciosPagos = require('../services/anuncios/pagos-anuncio');
+} catch (e) {
+    console.error('[ANU] módulo no cargado:', e.message);
+}
 
 let verificarErrores = (req, res, next) => next();
 try {
@@ -78,10 +84,25 @@ function estadoInternetLocal(npStatus, estadoActual) {
 }
 
 // ================================================================
-// ✅ NUEVO: RUTAS DE PAGOS DE ANUNCIOS
+// ✅ RUTAS DE PAGOS DE ANUNCIOS (protegidas)
 // ================================================================
-router.post('/anuncio/create', verificarToken, limitadorPagos, anunciosPagos.crearPagoAnuncio);
-router.get('/anuncio/status/:pagoId', verificarToken, anunciosPagos.estadoPagoAnuncio);
+const anunciosNoDisponibles = (res) =>
+    res.status(503).json({ success: false, error: 'Servicio de anuncios no disponible' });
+
+router.post('/anuncio/create',
+    verificarToken,
+    limitadorPagos,
+    (req, res, next) => {
+        if (!anunciosPagos) return anunciosNoDisponibles(res);
+        return anunciosPagos.crearPagoAnuncio(req, res, next);
+    });
+
+router.get('/anuncio/status/:pagoId',
+    verificarToken,
+    (req, res, next) => {
+        if (!anunciosPagos) return anunciosNoDisponibles(res);
+        return anunciosPagos.estadoPagoAnuncio(req, res, next);
+    });
 
 // ================================================================
 // POST /api/payments/create  (acceso a transmisión de pago)
