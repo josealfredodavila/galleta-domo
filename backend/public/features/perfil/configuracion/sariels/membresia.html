@@ -62,10 +62,6 @@
                     }
 
                     if (!window.supabaseClient) {
-                        // ✅ CORRECCIÓN APLICADA:
-                        // Se eliminó el fetch('/api/config/public') que causaba el error
-                        // "Unexpected token '<', '<!DOCTYPE ...' is not valid JSON".
-                        // Ahora usa las mismas credenciales hardcodeadas que el resto del ecosistema.
                         window.SupabaseSDK = window.supabase;
 
                         window.supabaseClient = window.SupabaseSDK.createClient(
@@ -334,6 +330,47 @@
             margin-top: 10px;
             font-family: 'Orbitron', monospace;
         }
+
+        /* Tarjeta de orden pendiente (ocultar, NO cancelar) */
+        .cfg-pago-pendiente {
+            margin: 16px;
+            padding: 16px 18px;
+            background: rgba(245, 158, 11, 0.08);
+            border: 1px solid rgba(245, 158, 11, 0.35);
+            border-radius: 16px;
+            display: none;
+        }
+
+        .cfg-pago-pendiente-titulo {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #f7d44a;
+            margin-bottom: 6px;
+        }
+
+        .cfg-pago-pendiente-texto {
+            font-size: 0.72rem;
+            color: var(--cfg-text-muted);
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .cfg-pago-pendiente-btn {
+            padding: 9px 18px;
+            border-radius: 20px;
+            border: 1px solid rgba(245, 158, 11, 0.5);
+            background: transparent;
+            color: #f7d44a;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .cfg-pago-pendiente-btn:disabled {
+            opacity: 0.5;
+            cursor: wait;
+        }
     </style>
 </head>
 <body class="cfg-page">
@@ -348,6 +385,17 @@
         </div>
 
         <div id="estadoNoPro" style="display: none;">
+
+            <div class="cfg-pago-pendiente" id="avisoPendiente">
+                <div class="cfg-pago-pendiente-titulo">⏳ Tienes un pago pendiente</div>
+                <div class="cfg-pago-pendiente-texto">
+                    Ocultar esta orden la quita de tu pantalla. <strong>No cancela el pago:</strong>
+                    si ya enviaste fondos o los envías después, tu membresía se activará igual.
+                </div>
+                <button class="cfg-pago-pendiente-btn" id="btnOcultarPendiente" type="button">
+                    Ocultar esta orden
+                </button>
+            </div>
 
             <div class="cfg-pro-hero">
                 <span class="cfg-pro-crown">👑</span>
@@ -491,6 +539,7 @@
         let precioPro = null;
         let duracionDias = 30;
         let esProActivo = false;
+        let pagoPendienteId = null;
 
         cfgInitPage({
             title: 'Membresía Pro',
@@ -562,6 +611,79 @@
             }
         }
 
+        // Busca la orden pendiente más reciente que el usuario aún no ha ocultado.
+        // Si la consulta falla (p. ej. por RLS), simplemente no se muestra la tarjeta.
+        async function cargarPagoPendiente(client, userId) {
+            pagoPendienteId = null;
+            const aviso = $('#avisoPendiente');
+            if (aviso) aviso.style.display = 'none';
+
+            try {
+                const { data, error } = await client
+                    .from('pagos_membresia')
+                    .select('id, estado, created_at')
+                    .eq('usuario_id', userId)
+                    .in('estado', ['pendiente', 'waiting', 'expired', 'failed'])
+                    .is('oculto_usuario_at', null)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle();
+
+                if (error || !data) return;
+
+                pagoPendienteId = data.id;
+                if (aviso) aviso.style.display = 'block';
+            } catch (e) {
+                console.error('Error cargando pago pendiente:', e);
+            }
+        }
+
+        // Oculta la orden en la pantalla del usuario. NO cancela el pago.
+        window.ocultarOrdenMembresia = async function () {
+            if (!pagoPendienteId) return;
+
+            const btn = $('#btnOcultarPendiente');
+            const ok = await cfgConfirm({
+                title: '¿Ocultar esta orden?',
+                text: 'Se quitará de tu pantalla. No cancela el pago: si ya enviaste fondos o los envías después, tu membresía se activará igual.',
+                confirmText: 'Ocultar',
+                cancelText: 'Volver',
+                danger: false,
+            });
+            if (!ok) return;
+
+            if (btn) btn.disabled = true;
+
+            try {
+                const client = await esperarCliente();
+                const { data: sessionData } = await client.auth.getSession();
+                const token = sessionData && sessionData.session && sessionData.session.access_token;
+                if (!token) throw new Error('Tu sesión expiró. Vuelve a iniciar sesión.');
+
+                const resp = await fetch(
+                    '/api/payments/membresia/ocultar/' + encodeURIComponent(pagoPendienteId),
+                    {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    }
+                );
+                const data = await resp.json().catch(() => ({}));
+                if (!resp.ok || !data.success) {
+                    throw new Error(data.error || 'No se pudo ocultar la orden.');
+                }
+
+                cfgToast('✅ Orden oculta de tu pantalla.', '', 4000);
+                pagoPendienteId = null;
+                const aviso = $('#avisoPendiente');
+                if (aviso) aviso.style.display = 'none';
+            } catch (e) {
+                console.error('Error ocultando orden:', e);
+                cfgToast('❌ ' + e.message, 'error');
+            } finally {
+                if (btn) btn.disabled = false;
+            }
+        };
+
         async function cargarEstadoPro() {
             try {
                 const client = await esperarCliente();
@@ -612,6 +734,7 @@
                 }
 
                 mostrarNoPro();
+                await cargarPagoPendiente(client, session.user.id);
                 return false;
 
             } catch (error) {
@@ -738,6 +861,10 @@
 
         window.addEventListener('DOMContentLoaded', async () => {
             await dormir(400);
+
+            const btnOcultar = $('#btnOcultarPendiente');
+            if (btnOcultar) btnOcultar.addEventListener('click', () => window.ocultarOrdenMembresia());
+
             const activo = await cargarEstadoPro();
 
             const params = new URLSearchParams(window.location.search);
