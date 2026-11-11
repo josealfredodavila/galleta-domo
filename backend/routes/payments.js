@@ -1,10 +1,11 @@
 // ================================================================
-// backend/routes/payments.js — Csariel's (v3.3)
+// backend/routes/payments.js — Csariel's (v3.3.2)
 // Transmisiones (pay-per-view), Muro P2P, Marketing, Internet y Anuncios.
 // Método: NOWPayments. NO toca membresías, Live Pass ni donaciones de Live.
 // Estados de ordenes_internet permitidos: pendiente, pagado, activo, cancelado.
-// v3.3: Se agregó el módulo de pagos de anuncios del carrusel (ANU-).
+// v3.3:   Módulo de pagos de anuncios del carrusel (ANU-).
 // v3.3.1: Carga del módulo de anuncios protegida con try/catch (no tumba la app).
+// v3.3.2: Endpoint POST /membresia/ocultar/:pagoId (oculta, NO cancela).
 // ================================================================
 
 'use strict';
@@ -806,6 +807,36 @@ router.get('/history', verificarToken, async (req, res) => {
     } catch (e) {
         logger.error(`Error historial: ${e.message}`);
         return res.status(500).json({ success: false, error: 'Error obteniendo historial de pagos' });
+    }
+});
+
+// ================================================================
+// POST /api/payments/membresia/ocultar/:pagoId
+// Oculta una orden de membresía en la pantalla del usuario.
+// NO cancela el pago: si llega después, el webhook la activa igual.
+// ================================================================
+const UUID_PAGO_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+router.post('/membresia/ocultar/:pagoId', verificarToken, async (req, res) => {
+    try {
+        const pagoId = String(req.params.pagoId || '');
+        if (!UUID_PAGO_RE.test(pagoId)) return respuestaError(res, 400, 'pagoId inválido');
+
+        const { data, error } = await supabaseAdmin
+            .from('pagos_membresia')
+            .update({ oculto_usuario_at: new Date().toISOString() })
+            .eq('id', pagoId)
+            .eq('usuario_id', req.usuario.id)
+            .in('estado', ['pendiente', 'waiting', 'expired', 'failed'])
+            .select('id, estado')
+            .maybeSingle();
+        if (error) throw error;
+        if (!data) return respuestaError(res, 409, 'Solo puedes ocultar órdenes que no estén confirmadas');
+
+        return res.json({ success: true, data });
+    } catch (e) {
+        logger.error(`Error ocultando pago membresía: ${e.message}`);
+        return respuestaError(res, 500, 'Error ocultando el pago');
     }
 });
 
