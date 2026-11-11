@@ -1,0 +1,592 @@
+// ================================================================
+// PERFIL · ACCIONES DE PUBLICACIÓN · v1.0
+// Se carga DESPUÉS de perfil-publicaciones.js.
+//
+// Incluye:
+//  - Visor futurista a pantalla completa: sin X, sin botón descargar,
+//    sin Marquinhos. Tocar la foto o el fondo lo cierra.
+//    Flechas solo si hay varias imágenes; deslizar también navega.
+//  - Menú ☰ por publicación: contenido que me interesa / no me interesa,
+//    notificar actividad, guardar, etiquetar, copiar enlace, compartir,
+//    descargar (si el autor lo permite) y reportar.
+//  - Composer con estética neón (solo CSS sobre los IDs existentes).
+//
+// Requiere en la página: window.supabaseClient, descargarArchivoForzado
+// (de perfil-publicaciones.js) y opcionalmente window.showToast.
+// ================================================================
+
+(function () {
+    'use strict';
+
+    if (window.__pfAccionesIniciado) return;
+    window.__pfAccionesIniciado = true;
+
+    var RUTA_PUBLICO = '/features/perfil/perfil-publico.html';
+    var RUTA_PROPIO = '/features/perfil/perfil.html';
+
+    // ------------------------------------------------------------
+    // Utilidades
+    // ------------------------------------------------------------
+    function toast(texto, tipo) {
+        if (typeof window.showToast === 'function') return window.showToast(texto, tipo || 'info');
+        console.log('[Perfil]', texto);
+    }
+
+    function esc(v) {
+        var d = document.createElement('div');
+        d.textContent = v == null ? '' : String(v);
+        return d.innerHTML;
+    }
+
+    async function cliente() {
+        var c = window.supabaseClient;
+        if (c) return c;
+        if (window.supabaseReady) {
+            try { return await window.supabaseReady; } catch (e) { return null; }
+        }
+        return null;
+    }
+
+    async function sesionActual() {
+        var c = await cliente();
+        if (!c) return null;
+        var r = await c.auth.getSession();
+        return r && r.data && r.data.session ? { client: c, user: r.data.session.user } : null;
+    }
+
+    // Ruta del perfil del autor (igual que pubUrlPerfilAutor de perfil-publicaciones.js)
+    function urlAutor(handle, ownerId, miId) {
+        if (miId && ownerId && String(ownerId) === String(miId)) return RUTA_PROPIO;
+        var h = String(handle || '').trim();
+        if (!/^[A-Za-z0-9_]{1,40}$/.test(h)) return null;
+        return RUTA_PUBLICO + '?u=' + encodeURIComponent(h);
+    }
+
+    function datosDeTarjeta(card) {
+        var contenedor = card.querySelector('.comentarios-container');
+        var handleEl = card.querySelector('.pub-autor-handle');
+        var handle = handleEl ? handleEl.textContent.replace('@', '').trim() : '';
+        var img = card.querySelector('.pub-media-wrap img');
+        var video = card.querySelector('.pub-media-wrap video');
+        return {
+            id: card.dataset.id,
+            ownerId: contenedor ? contenedor.dataset.dueno : '',
+            handle: handle,
+            mediaUrl: img ? img.src : (video ? video.src : null),
+            mediaTipo: img ? 'imagen' : (video ? 'video' : null)
+        };
+    }
+
+    // ============================================================
+    // VISOR FUTURISTA
+    // ============================================================
+    var visor = { items: [], index: 0, x: 0, y: 0 };
+
+    function estilosBase() {
+        if (document.getElementById('pf-estilos')) return;
+        var s = document.createElement('style');
+        s.id = 'pf-estilos';
+        s.textContent = [
+            /* Ocultar el robot flotante mientras el visor está abierto */
+            'body.pf-visor-abierto [id*="marquinhos" i],',
+            'body.pf-visor-abierto [class*="marquinhos" i],',
+            'body.pf-visor-abierto [data-marquinhos] { display: none !important; }',
+
+            '#pfVisor { position: fixed; inset: 0; z-index: 100080; display: none;',
+            '  align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(0,229,255,.06), #000 70%);',
+            '  touch-action: manipulation; }',
+            '#pfVisor.show { display: flex; }',
+            '#pfVisor .pf-v-media { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;',
+            '  box-sizing: border-box; padding: 24px 10px; }',
+            '#pfVisor .pf-v-media img, #pfVisor .pf-v-media video { max-width: 100%; max-height: 100%; object-fit: contain;',
+            '  border-radius: 14px; box-shadow: 0 0 40px rgba(0,229,255,.18); user-select: none; -webkit-user-drag: none; }',
+            '#pfVisor .pf-v-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px;',
+            '  border-radius: 50%; border: 1px solid rgba(0,229,255,.35); background: rgba(0,0,0,.45); color: #00e5ff;',
+            '  font-size: 22px; line-height: 1; cursor: pointer; display: none; }',
+            '#pfVisor .pf-v-prev { left: 8px; }',
+            '#pfVisor .pf-v-next { right: 8px; }',
+            '#pfVisor .pf-v-contador { position: absolute; top: calc(14px + env(safe-area-inset-top,0px)); left: 50%;',
+            '  transform: translateX(-50%); font-size: .7rem; letter-spacing: 1px; color: #8aa8b8; font-family: "Orbitron", monospace; }',
+
+            /* Menú ☰ */
+            '.pf-menu-btn { margin-left: auto; width: 34px; height: 34px; border-radius: 50%; border: 1px solid rgba(0,229,255,.25);',
+            '  background: rgba(0,229,255,.06); color: #00e5ff; font-size: 18px; line-height: 1; cursor: pointer; display: inline-flex;',
+            '  align-items: center; justify-content: center; }',
+            '.pf-menu-btn:hover { background: rgba(0,229,255,.16); }',
+            '.pf-menu { position: fixed; z-index: 100090; min-width: 230px; max-width: calc(100vw - 24px); padding: 8px 0;',
+            '  border-radius: 16px; background: rgba(8,15,26,.97); border: 1px solid rgba(0,229,255,.28);',
+            '  box-shadow: 0 16px 50px rgba(0,0,0,.6), 0 0 28px rgba(0,229,255,.12); backdrop-filter: blur(10px); }',
+            '.pf-menu button { display: flex; align-items: center; gap: 10px; width: 100%; padding: 11px 16px; border: 0;',
+            '  background: none; color: #f0f4f8; font-size: .86rem; text-align: left; cursor: pointer; }',
+            '.pf-menu button:hover { background: rgba(0,229,255,.1); }',
+            '.pf-menu button .pf-ico { width: 18px; text-align: center; color: #00e5ff; }',
+            '.pf-menu button.pf-peligro { color: #ff5c7a; }',
+            '.pf-menu button.pf-peligro .pf-ico { color: #ff5c7a; }',
+            '.pf-menu .pf-sep { height: 1px; margin: 6px 0; background: rgba(255,255,255,.08); }',
+            '.pf-menu .pf-estado { font-size: .65rem; color: #8aa8b8; margin-left: auto; }',
+
+            /* Hoja de reporte */
+            '.pf-sheet-bg { position: fixed; inset: 0; z-index: 100095; background: rgba(0,0,0,.6); display: flex;',
+            '  align-items: flex-end; justify-content: center; }',
+            '.pf-sheet { width: 100%; max-width: 480px; background: #0b121c; border-top: 1px solid rgba(0,229,255,.3);',
+            '  border-radius: 20px 20px 0 0; padding: 18px 18px calc(18px + env(safe-area-inset-bottom,0px)); }',
+            '.pf-sheet h4 { margin: 0 0 12px; color: #00e5ff; font-family: "Orbitron", monospace; font-size: .85rem; letter-spacing: 1px; }',
+            '.pf-sheet .pf-op { display: block; width: 100%; padding: 11px 14px; margin-bottom: 6px; border-radius: 12px;',
+            '  border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); color: #f0f4f8; text-align: left; cursor: pointer; font-size: .86rem; }',
+            '.pf-sheet .pf-op.sel { border-color: #00e5ff; background: rgba(0,229,255,.1); }',
+            '.pf-sheet textarea { width: 100%; min-height: 60px; margin-top: 6px; padding: 10px; border-radius: 12px;',
+            '  background: rgba(0,0,0,.4); border: 1px solid rgba(0,229,255,.2); color: #f0f4f8; font-family: inherit; }',
+            '.pf-sheet .pf-acciones { display: flex; gap: 8px; margin-top: 12px; }',
+            '.pf-sheet .pf-acciones button { flex: 1; padding: 11px; border-radius: 99px; border: 1px solid rgba(0,229,255,.35);',
+            '  background: transparent; color: #00e5ff; font-weight: 700; cursor: pointer; }',
+            '.pf-sheet .pf-acciones button.pf-primario { background: linear-gradient(135deg,#00e5ff,#8b5cf6); color: #05080f; border: 0; }',
+
+            /* Composer neón (sobre IDs existentes) */
+            '#inputNuevaPublicacion { border-radius: 18px !important; background: rgba(8,15,26,.72) !important;',
+            '  border: 1px solid rgba(0,229,255,.22) !important; padding: 14px 16px !important; font-size: .95rem !important;',
+            '  color: #f0f4f8 !important; box-shadow: 0 0 18px rgba(0,229,255,.06); transition: box-shadow .25s ease, border-color .25s ease; }',
+            '#inputNuevaPublicacion:focus { outline: none !important; border-color: #00e5ff !important;',
+            '  box-shadow: 0 0 0 2px rgba(0,229,255,.25), 0 0 26px rgba(0,229,255,.18) !important; }',
+            '#btnPublicarPerfil { border-radius: 99px !important; background: linear-gradient(135deg,#00e5ff,#8b5cf6) !important;',
+            '  color: #05080f !important; font-weight: 800 !important; border: 0 !important;',
+            '  box-shadow: 0 6px 22px rgba(0,229,255,.25) !important; letter-spacing: .5px; }',
+            '#btnPublicarPerfil:disabled { opacity: .55; }'
+        ].join('\n');
+        document.head.appendChild(s);
+    }
+
+    function visorEl() {
+        var el = document.getElementById('pfVisor');
+        if (el) return el;
+
+        el = document.createElement('div');
+        el.id = 'pfVisor';
+        el.setAttribute('role', 'dialog');
+        el.setAttribute('aria-modal', 'true');
+        el.innerHTML =
+            '<div class="pf-v-contador"></div>' +
+            '<button type="button" class="pf-v-nav pf-v-prev" aria-label="Anterior">‹</button>' +
+            '<div class="pf-v-media"></div>' +
+            '<button type="button" class="pf-v-nav pf-v-next" aria-label="Siguiente">›</button>';
+        document.body.appendChild(el);
+
+        // Tocar la foto o el fondo cierra. Las flechas no cierran.
+        el.addEventListener('click', function (e) {
+            if (e.target.closest('.pf-v-nav')) return;
+            cerrarVisor();
+        });
+        el.querySelector('.pf-v-prev').addEventListener('click', function (e) { e.stopPropagation(); navegar(-1); });
+        el.querySelector('.pf-v-next').addEventListener('click', function (e) { e.stopPropagation(); navegar(1); });
+
+        el.addEventListener('touchstart', function (e) {
+            visor.x = e.changedTouches[0].clientX;
+            visor.y = e.changedTouches[0].clientY;
+        }, { passive: true });
+        el.addEventListener('touchend', function (e) {
+            var dx = e.changedTouches[0].clientX - visor.x;
+            var dy = e.changedTouches[0].clientY - visor.y;
+            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) navegar(dx < 0 ? 1 : -1);
+            else if (dy > 110 && Math.abs(dy) > Math.abs(dx)) cerrarVisor();
+        }, { passive: true });
+
+        return el;
+    }
+
+    function pintarItem() {
+        var el = visorEl();
+        var caja = el.querySelector('.pf-v-media');
+        var item = visor.items[visor.index];
+        if (!item) return;
+
+        caja.innerHTML = '';
+        if (item.tipo === 'video') {
+            var v = document.createElement('video');
+            v.controls = true;
+            v.playsInline = true;
+            v.preload = 'auto';
+            v.src = item.url;
+            caja.appendChild(v);
+            var p = v.play();
+            if (p && typeof p.catch === 'function') p.catch(function () {});
+        } else {
+            var im = document.createElement('img');
+            im.alt = '';
+            im.src = item.url;
+            caja.appendChild(im);
+        }
+
+        var varios = visor.items.length > 1;
+        el.querySelector('.pf-v-contador').textContent = varios ? (visor.index + 1) + ' / ' + visor.items.length : '';
+        el.querySelector('.pf-v-prev').style.display = varios && visor.index > 0 ? 'block' : 'none';
+        el.querySelector('.pf-v-next').style.display = varios && visor.index < visor.items.length - 1 ? 'block' : 'none';
+    }
+
+    function navegar(dir) {
+        var n = visor.index + dir;
+        if (n < 0 || n >= visor.items.length) return;
+        visor.index = n;
+        pintarItem();
+    }
+
+    function abrirVisor(indice) {
+        // Lista de medios de la página (la llena perfil-publicaciones.js)
+        var lista = Array.isArray(window.listaMultimediaPerfil) ? window.listaMultimediaPerfil : [];
+        if (!lista[indice]) return;
+
+        estilosBase();
+        visor.items = lista.slice();
+        visor.index = indice;
+        pintarItem();
+        visorEl().classList.add('show');
+        document.body.classList.add('pf-visor-abierto');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function cerrarVisor() {
+        var el = document.getElementById('pfVisor');
+        if (!el) return;
+        var v = el.querySelector('video');
+        if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
+        el.querySelector('.pf-v-media').innerHTML = '';
+        el.classList.remove('show');
+        document.body.classList.remove('pf-visor-abierto');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', function (e) {
+        var el = document.getElementById('pfVisor');
+        if (!el || !el.classList.contains('show')) return;
+        if (e.key === 'Escape') cerrarVisor();
+        if (e.key === 'ArrowLeft') navegar(-1);
+        if (e.key === 'ArrowRight') navegar(1);
+    });
+
+    // Sustituye el visor anterior: las funciones que llaman a pubAbrirVisor
+    // usan el global, así que ahora abren este visor.
+    window.pubAbrirVisor = abrirVisor;
+    window.pubCerrarVisor = cerrarVisor;
+
+    // ============================================================
+    // MENÚ ☰ POR PUBLICACIÓN
+    // ============================================================
+    var menuActivo = null;
+
+    function cerrarMenu() {
+        if (menuActivo) { menuActivo.remove(); menuActivo = null; }
+    }
+
+    async function estadoPublicacion(publicacionId, miId, c) {
+        var guardado = false, senal = null, suscrito = false;
+        try {
+            var g = await c.from('publicacion_guardados').select('publicacion_id').eq('usuario_id', miId).eq('publicacion_id', publicacionId).maybeSingle();
+            guardado = !!g.data;
+            var s = await c.from('publicacion_senales').select('tipo').eq('usuario_id', miId).eq('publicacion_id', publicacionId).maybeSingle();
+            senal = s.data ? s.data.tipo : null;
+            var n = await c.from('publicacion_suscripciones').select('publicacion_id').eq('usuario_id', miId).eq('publicacion_id', publicacionId).maybeSingle();
+            suscrito = !!n.data;
+        } catch (e) { console.warn('[Perfil] estado publicación:', e); }
+        return { guardado: guardado, senal: senal, suscrito: suscrito };
+    }
+
+    function itemMenu(icono, texto, onClick, extra) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.innerHTML = '<span class="pf-ico">' + icono + '</span><span>' + esc(texto) + '</span>' +
+            (extra ? '<span class="pf-estado">' + esc(extra) + '</span>' : '');
+        b.addEventListener('click', function (e) {
+            e.stopPropagation();
+            cerrarMenu();
+            onClick();
+        });
+        return b;
+    }
+
+    async function abrirMenu(boton, card) {
+        cerrarMenu();
+        var sesion = await sesionActual();
+        if (!sesion) { toast('Inicia sesión', 'warning'); return; }
+
+        var d = datosDeTarjeta(card);
+        var soyDueno = d.ownerId && String(d.ownerId) === String(sesion.user.id);
+        var est = await estadoPublicacion(d.id, sesion.user.id, sesion.client);
+
+        var menu = document.createElement('div');
+        menu.className = 'pf-menu';
+        menu.setAttribute('role', 'menu');
+
+        menu.appendChild(itemMenu('👍', 'Me interesa', function () { senalPublicacion(d, sesion, 'interesa'); }, est.senal === 'interesa' ? 'activo' : ''));
+        menu.appendChild(itemMenu('🚫', 'No me interesa', function () { senalPublicacion(d, sesion, 'no_interesa'); }, est.senal === 'no_interesa' ? 'activo' : ''));
+        menu.appendChild(sep());
+        menu.appendChild(itemMenu('🔔', est.suscrito ? 'Dejar de notificarme' : 'Notificarme de esta publicación', function () { alternarSuscripcion(d, sesion, est.suscrito); }));
+        menu.appendChild(itemMenu('🔖', est.guardado ? 'Quitar de guardados' : 'Guardar', function () { alternarGuardado(d, sesion, est.guardado); }));
+        if (d.mediaUrl && d.mediaTipo === 'imagen') {
+            menu.appendChild(itemMenu('⬇️', 'Descargar foto', function () { descargar(d); }));
+        }
+        menu.appendChild(itemMenu('🔗', 'Copiar enlace', function () { copiarEnlace(d); }));
+        menu.appendChild(itemMenu('↗', 'Compartir', function () { compartir(d); }));
+        if (soyDueno) {
+            menu.appendChild(itemMenu('🏷️', 'Etiquetar persona', function () { etiquetar(d, sesion); }));
+        }
+        menu.appendChild(sep());
+        if (!soyDueno) {
+            var rep = itemMenu('⚑', 'Reportar publicación', function () { abrirReporte(d, sesion); });
+            rep.classList.add('pf-peligro');
+            menu.appendChild(rep);
+        }
+
+        document.body.appendChild(menu);
+        menuActivo = menu;
+
+        var r = boton.getBoundingClientRect();
+        var top = r.bottom + 6;
+        var left = Math.min(r.right - 230, window.innerWidth - 240);
+        if (top + menu.offsetHeight > window.innerHeight) top = Math.max(8, r.top - menu.offsetHeight - 6);
+        menu.style.top = top + 'px';
+        menu.style.left = Math.max(8, left) + 'px';
+    }
+
+    function sep() {
+        var s = document.createElement('div');
+        s.className = 'pf-sep';
+        return s;
+    }
+
+    document.addEventListener('click', function (e) {
+        if (menuActivo && !menuActivo.contains(e.target) && !e.target.closest('.pf-menu-btn')) cerrarMenu();
+    });
+
+    // ------------------------------------------------------------
+    // Acciones
+    // ------------------------------------------------------------
+    async function senalPublicacion(d, sesion, tipo) {
+        try {
+            var actual = await sesion.client.from('publicacion_senales').select('tipo').eq('usuario_id', sesion.user.id).eq('publicacion_id', d.id).maybeSingle();
+            if (actual.data && actual.data.tipo === tipo) {
+                await sesion.client.from('publicacion_senales').delete().eq('usuario_id', sesion.user.id).eq('publicacion_id', d.id);
+                toast('Preferencia quitada', 'success');
+            } else {
+                var r = await sesion.client.from('publicacion_senales').upsert({ usuario_id: sesion.user.id, publicacion_id: d.id, tipo: tipo });
+                if (r.error) throw r.error;
+                toast(tipo === 'interesa' ? 'Verás más contenido como este' : 'Verás menos contenido como este', 'success');
+                if (tipo === 'no_interesa') ocultarTarjeta(d.id);
+            }
+        } catch (e) { console.error(e); toast('No se pudo guardar tu preferencia', 'error'); }
+    }
+
+    function ocultarTarjeta(id) {
+        var card = document.querySelector('.publicacion-card[data-id="' + id + '"]');
+        if (card) card.style.display = 'none';
+    }
+
+    async function alternarSuscripcion(d, sesion, suscrito) {
+        try {
+            if (suscrito) {
+                await sesion.client.from('publicacion_suscripciones').delete().eq('usuario_id', sesion.user.id).eq('publicacion_id', d.id);
+                toast('Notificaciones desactivadas', 'success');
+            } else {
+                var r = await sesion.client.from('publicacion_suscripciones').upsert({ usuario_id: sesion.user.id, publicacion_id: d.id });
+                if (r.error) throw r.error;
+                toast('Te avisaremos de nuevas respuestas', 'success');
+            }
+        } catch (e) { console.error(e); toast('No se pudo cambiar la notificación', 'error'); }
+    }
+
+    async function alternarGuardado(d, sesion, guardado) {
+        try {
+            if (guardado) {
+                await sesion.client.from('publicacion_guardados').delete().eq('usuario_id', sesion.user.id).eq('publicacion_id', d.id);
+                toast('Quitada de guardados', 'success');
+            } else {
+                var r = await sesion.client.from('publicacion_guardados').upsert({ usuario_id: sesion.user.id, publicacion_id: d.id });
+                if (r.error) throw r.error;
+                toast('Guardada', 'success');
+            }
+        } catch (e) { console.error(e); toast('No se pudo guardar', 'error'); }
+    }
+
+    function enlaceDePublicacion(d) {
+        var h = d.handle ? '?u=' + encodeURIComponent(d.handle) : '';
+        return location.origin + RUTA_PUBLICO + h + '#pub-' + d.id;
+    }
+
+    async function copiarEnlace(d) {
+        var url = enlaceDePublicacion(d);
+        try {
+            await navigator.clipboard.writeText(url);
+            toast('🔗 Enlace copiado', 'success');
+        } catch (e) {
+            window.prompt('Copia el enlace:', url);
+        }
+    }
+
+    async function compartir(d) {
+        var url = enlaceDePublicacion(d);
+        if (navigator.share) {
+            try { await navigator.share({ title: 'Publicación en Csariel\'s', url: url }); return; }
+            catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        copiarEnlace(d);
+    }
+
+    function descargar(d) {
+        if (typeof window.descargarArchivoForzado === 'function') {
+            window.descargarArchivoForzado(d.mediaUrl);
+        } else {
+            toast('Descarga no disponible', 'error');
+        }
+    }
+
+    async function etiquetar(d, sesion) {
+        var handle = window.prompt('Escribe el @usuario a etiquetar (sin @):', '');
+        handle = (handle || '').trim().replace(/^@/, '');
+        if (!/^[A-Za-z0-9_]{1,40}$/.test(handle)) { if (handle) toast('Usuario no válido', 'warning'); return; }
+        try {
+            var u = await sesion.client.from('usuarios').select('id').eq('handle', handle).maybeSingle();
+            if (!u.data) { toast('No encontramos a @' + handle, 'warning'); return; }
+            if (u.data.id === sesion.user.id) { toast('No puedes etiquetarte a ti mismo', 'warning'); return; }
+            var r = await sesion.client.from('publicacion_etiquetas').insert({
+                publicacion_id: d.id, usuario_id: u.data.id, etiquetado_por: sesion.user.id
+            });
+            if (r.error) {
+                if (r.error.code === '23505') { toast('Ya está etiquetado', 'warning'); return; }
+                throw r.error;
+            }
+            toast('🏷️ Etiquetado @' + handle, 'success');
+        } catch (e) { console.error(e); toast('No se pudo etiquetar', 'error'); }
+    }
+
+    // ------------------------------------------------------------
+    // Reportar
+    // ------------------------------------------------------------
+    var MOTIVOS = [
+        ['spam', 'Spam o engañoso'],
+        ['odio', 'Discurso de odio'],
+        ['violencia', 'Violencia o peligro'],
+        ['sexual', 'Contenido sexual'],
+        ['falso', 'Información falsa'],
+        ['otro', 'Otro motivo']
+    ];
+
+    function abrirReporte(d, sesion) {
+        var bg = document.createElement('div');
+        bg.className = 'pf-sheet-bg';
+        var motivoSel = null;
+
+        var sheet = document.createElement('div');
+        sheet.className = 'pf-sheet';
+        sheet.innerHTML = '<h4>REPORTAR PUBLICACIÓN</h4>';
+
+        MOTIVOS.forEach(function (m) {
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'pf-op';
+            b.textContent = m[1];
+            b.addEventListener('click', function () {
+                motivoSel = m[0];
+                sheet.querySelectorAll('.pf-op').forEach(function (x) { x.classList.remove('sel'); });
+                b.classList.add('sel');
+            });
+            sheet.appendChild(b);
+        });
+
+        var detalle = document.createElement('textarea');
+        detalle.maxLength = 500;
+        detalle.placeholder = 'Detalles (opcional)';
+        sheet.appendChild(detalle);
+
+        var acc = document.createElement('div');
+        acc.className = 'pf-acciones';
+        var cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.textContent = 'Cancelar';
+        var enviar = document.createElement('button');
+        enviar.type = 'button';
+        enviar.className = 'pf-primario';
+        enviar.textContent = 'Enviar reporte';
+        acc.appendChild(cancel);
+        acc.appendChild(enviar);
+        sheet.appendChild(acc);
+
+        bg.appendChild(sheet);
+        document.body.appendChild(bg);
+
+        function cerrar() { bg.remove(); }
+        cancel.addEventListener('click', cerrar);
+        bg.addEventListener('click', function (e) { if (e.target === bg) cerrar(); });
+
+        enviar.addEventListener('click', async function () {
+            if (!motivoSel) { toast('Elige un motivo', 'warning'); return; }
+            enviar.disabled = true;
+            try {
+                var r = await sesion.client.from('publicacion_reportes').insert({
+                    usuario_id: sesion.user.id,
+                    publicacion_id: d.id,
+                    motivo: motivoSel,
+                    detalle: detalle.value.trim() || null
+                });
+                if (r.error) {
+                    if (r.error.code === '23505') toast('Ya reportaste esta publicación', 'warning');
+                    else throw r.error;
+                } else {
+                    toast('Gracias. Revisaremos el reporte.', 'success');
+                }
+                cerrar();
+            } catch (e) {
+                console.error(e);
+                toast('No se pudo enviar el reporte', 'error');
+                enviar.disabled = false;
+            }
+        });
+    }
+
+    // ============================================================
+    // INYECCIÓN DEL BOTÓN ☰ EN CADA PUBLICACIÓN
+    // ============================================================
+    function inyectarBotones() {
+        document.querySelectorAll('#misPublicacionesList .publicacion-card').forEach(function (card) {
+            if (card.dataset.pfMenu === '1') return;
+            var stats = card.querySelector('.stats');
+            if (!stats) return;
+
+            var b = document.createElement('button');
+            b.type = 'button';
+            b.className = 'pf-menu-btn';
+            b.setAttribute('aria-label', 'Opciones de la publicación');
+            b.textContent = '☰';
+            b.addEventListener('click', function (e) {
+                e.stopPropagation();
+                if (menuActivo) { cerrarMenu(); return; }
+                abrirMenu(b, card);
+            });
+
+            stats.appendChild(b);
+            card.dataset.pfMenu = '1';
+        });
+    }
+
+    function observar() {
+        var lista = document.getElementById('misPublicacionesList');
+        if (!lista) return;
+        new MutationObserver(inyectarBotones).observe(lista, { childList: true, subtree: true });
+        inyectarBotones();
+    }
+
+    // Enlaces con #pub-<id> (desde "Copiar enlace"): resalta la publicación
+    function resaltarDesdeHash() {
+        var m = location.hash.match(/^#pub-(.+)$/);
+        if (!m) return;
+        var card = document.querySelector('.publicacion-card[data-id="' + m[1] + '"]');
+        if (card) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    estilosBase();
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', observar);
+    } else {
+        observar();
+    }
+    window.addEventListener('load', resaltarDesdeHash);
+
+    window.pfPublicacionesAcciones = { abrirVisor: abrirVisor, cerrarVisor: cerrarVisor };
+})();
