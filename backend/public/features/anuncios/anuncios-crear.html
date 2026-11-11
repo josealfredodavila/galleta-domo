@@ -10,6 +10,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+<link rel="stylesheet" href="/features/terminal-pago/terminal-pago.css">
+<script src="/features/terminal-pago/terminal-pago.js"></script>
 
 <style>
     html:not(.auth-ready) body { visibility: hidden; }
@@ -167,6 +170,8 @@
     .estado.error { color: var(--danger); }
     .estado.ok { color: var(--success); }
 
+    #terminalPago { display: none; }
+
     .mis-anuncios { display: flex; flex-direction: column; gap: 10px; }
     .mi-anuncio {
         display: flex; gap: 12px; align-items: center;
@@ -299,6 +304,8 @@
         <div class="estado" id="estado"></div>
     </form>
 
+    <div id="terminalPago"></div>
+
     <div class="tarjeta">
         <h2>MIS ANUNCIOS</h2>
         <div class="mis-anuncios" id="misAnuncios">
@@ -314,7 +321,8 @@
 
     var MAX_BYTES = 5 * 1024 * 1024;
     var TIPOS = ['image/jpeg', 'image/png', 'image/webp'];
-    var API_ANUNCIOS_PAGO = 'https://galleta-domo-production.up.railway.app/api/payments/anuncio/create';
+    var API_BASE = 'https://galleta-domo-production.up.railway.app';
+    var API_ANUNCIOS_PAGO = API_BASE + '/api/payments/anuncio/create';
 
     var client = null;
     var uid = null;
@@ -351,6 +359,7 @@
         if (m.indexOf('Debes aceptar') >= 0) return 'Debes aceptar los Términos v1.4 para pagar.';
         if (m.indexOf('no permitida') >= 0) return 'Esa moneda no está disponible para anuncios.';
         if (m.indexOf('no está pendiente') >= 0) return 'Este anuncio ya no está pendiente de pago. Actualiza la lista.';
+        if (m.indexOf('pago parcial') >= 0 || m.indexOf('soporte') >= 0) return m;
         return 'No se pudo crear el pago. Intenta de nuevo desde "Pagar".';
     }
 
@@ -478,7 +487,7 @@
         fd.append('destino', 'muro-imagenes');
         fd.append('tipo', 'imagen');
 
-        var r = await fetch('https://galleta-domo-production.up.railway.app/api/media/upload', {
+        var r = await fetch(API_BASE + '/api/media/upload', {
             method: 'POST',
             headers: { 'Authorization': 'Bearer ' + token },
             body: fd
@@ -488,6 +497,53 @@
             throw new Error(d.error || 'upload_fallido');
         }
         return d.url;
+    }
+
+    // Muestra la terminal de pago con el monto y la dirección que devolvió el servidor
+    function mostrarTerminal(anuncioId, datos, token) {
+        var form = $('formAnuncio');
+        var cont = $('terminalPago');
+
+        form.style.display = 'none';
+        cont.style.display = 'block';
+
+        var semanasTexto = $('semanas').selectedOptions[0].text;
+        var monedaTexto = $('moneda').selectedOptions[0].text;
+        var partes = monedaTexto.split('·');
+        var moneda = partes[0].trim();
+        var red = partes[1] ? partes[1].trim() : monedaTexto;
+
+        TerminalPago.mount(cont, {
+            titulo: 'PAGO DE ANUNCIO',
+            subtitulo: 'Anuncio · ' + semanasTexto,
+            monto: String(datos.pay_amount),
+            moneda: moneda,
+            red: red,
+            direccion: datos.pay_address,
+
+            consultarEstado: async function () {
+                var r = await fetch(API_BASE + '/api/payments/anuncio/status/' + encodeURIComponent(datos.pago_id), {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                var j = await r.json().catch(function () { return {}; });
+                if (!r.ok || !j.data) throw new Error('estado_no_disponible');
+                return { estado: j.data.nowpayments_status || j.data.estado };
+            },
+
+            // Posponer: la factura sigue viva; si el pago llega, el webhook activa el anuncio
+            onOcultado: function () {
+                form.style.display = 'block';
+                cont.style.display = 'none';
+                cargarMisAnuncios();
+            },
+
+            onFinal: function (estadoFinal) {
+                if (estadoFinal === 'finished') {
+                    estado('¡Pago confirmado! Tu anuncio se activará según tu cupo.', 'ok');
+                }
+                cargarMisAnuncios();
+            }
+        });
     }
 
     async function iniciarPago(anuncioId) {
@@ -505,7 +561,7 @@
             return false;
         }
 
-        estado('Generando tu pago…');
+        estado('Preparando tu pago…');
         var r = await fetch(API_ANUNCIOS_PAGO, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
@@ -523,13 +579,22 @@
             estado(mensajePago(d.error), 'error');
             return false;
         }
+
+        // Si el servidor dio dirección, mostramos la terminal (factura nueva o reutilizada)
+        if (d.data.pay_address) {
+            estado('');
+            mostrarTerminal(anuncioId, d.data, token);
+            return true;
+        }
+
+        // Sin dirección: caemos a la página de pago de la pasarela
         if (d.data.payment_url) {
             window.location.href = d.data.payment_url;
             return true;
         }
-        estado('Envía ' + d.data.pay_amount + ' ' + String(d.data.pay_currency).toUpperCase() +
-               ' a: ' + d.data.pay_address, 'ok');
-        return true;
+
+        estado('No se pudo generar la dirección de pago. Intenta de nuevo.', 'error');
+        return false;
     }
 
     $('formAnuncio').addEventListener('submit', async function (e) {
@@ -645,7 +710,6 @@
         return new Date(a.vigencia_fin) <= new Date();
     }
 
-    // ✅ Mensajes de archivado, incluido el bloqueo por pago en curso
     function mensajeArchivar(error) {
         var m = String((error && error.message) || '');
         if (m.indexOf('pago_en_curso') >= 0) {
