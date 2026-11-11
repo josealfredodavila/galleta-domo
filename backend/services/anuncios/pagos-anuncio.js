@@ -1,13 +1,14 @@
 // ================================================================
-// backend/services/anuncios/pagos-anuncio.js — Csariel's
+// services/anuncios/pagos-anuncio.js — Csariel's (v2, con reutilización)
 // Pagos de anuncios del carrusel (flujo propio, prefijo ANU-).
-//   POST /api/payments/anuncio/create        → crea el pago
-//   GET  /api/payments/anuncio/status/:pagoId → estado (solo lectura)
-//   procesarPagoAnuncio(...)                 → lo llama el webhook ANU-
+//   POST /api/payments/anuncio/create          → crea o reutiliza el pago
+//   GET  /api/payments/anuncio/status/:pagoId  → estado (solo lectura)
+//   procesarPagoAnuncio(...)                   → lo llama el webhook ANU-
 // Reglas:
 //   - Precio fijo en USD por semana, calculado en el servidor.
-//   - Solo redes sin ERC20 (mínimo 20 USD en Ethereum).
+//   - Solo redes sin ERC20.
 //   - Términos v1.4 obligatorios (sin devoluciones).
+//   - Si ya hay una factura viva para el mismo anuncio/semanas/red, se reutiliza.
 //   - La vigencia se calcula en la RPC activar_anuncio_pagado, nunca aquí.
 // ================================================================
 
@@ -16,6 +17,7 @@
 const axios = require('axios');
 const { supabaseAdmin } = require('../../config/supabase');
 const logger = require('../../utils/logger');
+const { decidirFactura } = require('../pagos/reutilizar-factura');
 
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1/payment';
 const TERMINOS_VERSION_ACTUAL = '1.4';
@@ -56,19 +58,54 @@ async function crearPagoAnuncio(req, res) {
         if (!Number.isInteger(anuncioId) || anuncioId <= 0) return fail(res, 400, 'anuncioId inválido');
         if (!SEMANAS_PERMITIDAS.includes(semanas)) return fail(res, 400, 'semanas debe ser 1, 2, 3 o 4');
         if (!REDES_ANUNCIO[payCurrency]) return fail(res, 400, 'Red de pago no permitida para anuncios');
-        if (!terminosOk) return fail(res, 400, 'Debes aceptar los Términos v1.4 para continuar');
         if (!process.env.NOWPAYMENTS_API_KEY) return fail(res, 500, 'Servicio de pagos no configurado');
 
         const { data: anuncio, error: errA } = await supabaseAdmin
             .from('anuncios')
-            .select('id, usuario_id, estado_moderacion')
+            .select('id, usuario_id, estado_moderacion, archivado_at')
             .eq('id', anuncioId)
             .maybeSingle();
         if (errA) throw errA;
         if (!anuncio || anuncio.usuario_id !== userId) return fail(res, 404, 'Anuncio no encontrado');
+        if (anuncio.archivado_at) return fail(res, 409, 'El anuncio fue eliminado');
         if (anuncio.estado_moderacion !== 'pendiente_pago') {
             return fail(res, 409, 'El anuncio no está pendiente de pago');
         }
+
+        // Antes de crear una factura nueva, revisamos si ya existe una viva con estas mismas opciones.
+        const decision = await decidirFactura({
+            supabaseAdmin,
+            tabla: 'pagos_anuncios',
+            filtros: { anuncio_id: anuncioId, usuario_id: userId, semanas, pay_currency: payCurrency }
+        });
+
+        if (decision.modo === 'bloqueado') {
+            return res.status(409).json({
+                success: false,
+                error: 'Ya tienes un pago parcial en esta orden. Escríbenos a soporte antes de intentar de nuevo.'
+            });
+        }
+
+        if (decision.modo === 'reutilizar') {
+            const f = decision.fila;
+            return res.status(200).json({
+                success: true,
+                reutilizado: true,
+                data: {
+                    pago_id: f.id,
+                    semanas: f.semanas,
+                    total_usd: Number(f.precio_usd),
+                    payment_url: f.payment_url || null,
+                    pay_address: decision.np.payAddress || f.pay_address,
+                    pay_amount: decision.np.payAmount ?? f.pay_amount,
+                    pay_currency: decision.np.payCurrency || f.pay_currency,
+                    estado_np: decision.np.status
+                }
+            });
+        }
+
+        // decision.modo === 'crear': los términos solo se exigen para una factura nueva
+        if (!terminosOk) return fail(res, 400, 'Debes aceptar los Términos v1.4 para continuar');
 
         const totalUsd = precioTotalUsd(semanas);
         if (totalUsd < MIN_NOWPAYMENTS_USD) {
@@ -140,6 +177,7 @@ async function crearPagoAnuncio(req, res) {
 
         return res.status(201).json({
             success: true,
+            reutilizado: false,
             data: {
                 pago_id: pago.id,
                 semanas,
