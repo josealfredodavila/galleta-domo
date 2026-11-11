@@ -78,7 +78,7 @@
     <!-- Apariencia global -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
-    <!-- CSS del módulo grupos (rediseño) -->
+    <!-- CSS del módulo grupos (v3) -->
     <link rel="stylesheet" href="/features/grupos/css/grupos.css">
 
     <!-- MASCOTAS · CARGA CONDICIONAL -->
@@ -327,7 +327,7 @@
             <!-- Cabecera del canal -->
             <div class="grupo-header-interno" id="grupoHeaderInterno">
                 <button class="btn-ajustes-canal" onclick="abrirAjustesCanal()" id="btnAjustesCanal" style="display:none;" title="Ajustes del canal" aria-label="Ajustes del canal">
-                    <span>&#9881;</span>
+                    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.32 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
                 <div class="portada" id="grupoPortada"></div>
                 <div class="info-row">
@@ -377,8 +377,12 @@
                 <div class="live-video-wrap">
                     <video id="grupoLiveVideo" autoplay playsinline muted></video>
                     <div class="live-controls-inline">
-                        <button class="live-ctrl-btn" onclick="toggleMuteGrupoLive()" id="grupoLiveMuteBtn" title="Micrófono" aria-label="Micrófono">Mic</button>
-                        <button class="live-ctrl-btn end" onclick="finalizarLiveGrupo()" id="grupoLiveEndBtn" title="Finalizar" aria-label="Finalizar" style="display:none;">Fin</button>
+                        <button class="live-ctrl-btn" onclick="toggleMuteGrupoLive()" id="grupoLiveMuteBtn" title="Micrófono" aria-label="Micrófono">
+                            <svg viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                        </button>
+                        <button class="live-ctrl-btn end" onclick="finalizarLiveGrupo()" id="grupoLiveEndBtn" title="Finalizar" aria-label="Finalizar" style="display:none;">
+                            <svg viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+                        </button>
                     </div>
                 </div>
                 <div class="live-info">
