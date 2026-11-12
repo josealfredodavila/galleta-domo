@@ -195,7 +195,7 @@
             <div class="hero-title-wrap">
                 <div class="hero-kicker">// Sariel's Ecosystem · Ads Network</div>
                 <h1>◈ Panel de Marketing</h1>
-                <div class="hero-sub">Gestiona tus campañas publicitarias en LIVE y GRUPOS</div>
+                <div class="hero-sub">Gestiona tus campañas publicitarias en LIVE, GRUPOS y VIDEOS</div>
             </div>
             <button id="btn-create-campaign" class="btn btn-primary">+ Crear Campaña</button>
         </div>
@@ -242,6 +242,7 @@
                 <h3>▸ Paso 01 — ¿Dónde anunciar?</h3>
                 <button class="btn-option" data-type="live">◉ LIVE</button>
                 <button class="btn-option" data-type="grupo">◇ GRUPO</button>
+                <button class="btn-option" data-type="video">▶ VIDEOS</button>
             </div>
             <div id="wizard-step-2" class="wizard-step hidden">
                 <h3>▸ Paso 02 — Seleccionar destino</h3>
@@ -620,12 +621,49 @@
         const select = document.getElementById('select-target'); select.innerHTML = '<option value="">Cargando...</option>';
         try {
             let query;
-            if (tipo === 'live') { query = supabaseClient.from('transmisiones').select('id, titulo').eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).order('fecha_inicio', { ascending: false }).limit(50); }
-            else { query = supabaseClient.from('grupos_video').select('id, nombre').order('created_at', { ascending: false }).limit(50); }
+            if (tipo === 'live') {
+                query = supabaseClient.from('transmisiones')
+                    .select('id, titulo')
+                    .eq('estado', 'en_vivo')
+                    .eq('is_live', true)
+                    .is('grupo_id', null)
+                    .order('fecha_inicio', { ascending: false })
+                    .limit(50);
+            } else if (tipo === 'video') {
+                query = supabaseClient.from('videos')
+                    .select('id, titulo')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+            } else {
+                query = supabaseClient.from('grupos_video')
+                    .select('id, nombre')
+                    .order('created_at', { ascending: false })
+                    .limit(50);
+            }
             const { data, error } = await query; if (error) throw error;
-            if (!data || data.length === 0) { select.innerHTML = tipo === 'live' ? '<option value="">No hay transmisiones en vivo ahora</option>' : '<option value="">No hay grupos disponibles</option>'; }
-            else { select.innerHTML = data.map(t => { const label = tipo === 'live' ? t.titulo : t.nombre; return `<option value="${escapeHTML(t.id)}">${escapeHTML(label || 'Sin nombre')}</option>`; }).join(''); }
-        } catch (err) { logError('Destinos:', err); select.innerHTML = '<option value="">No se pudieron cargar los destinos</option>'; showToast('No se pudieron cargar los destinos. Intenta de nuevo.', 'error'); }
+
+            if (tipo === 'video') {
+                // ✅ Opción especial: patrocinar todo el feed viral
+                const opciones = ['<option value="__feed__">◈ Feed viral completo (todos los videos)</option>'];
+                if (data && data.length > 0) {
+                    opciones.push(...data.map(t => `<option value="${escapeHTML(t.id)}">▶ ${escapeHTML(t.titulo || 'Sin título')}</option>`));
+                }
+                select.innerHTML = opciones.join('');
+            } else if (!data || data.length === 0) {
+                select.innerHTML = tipo === 'live'
+                    ? '<option value="">No hay transmisiones en vivo ahora</option>'
+                    : '<option value="">No hay grupos disponibles</option>';
+            } else {
+                select.innerHTML = data.map(t => {
+                    const label = tipo === 'live' ? t.titulo : t.nombre;
+                    return `<option value="${escapeHTML(t.id)}">${escapeHTML(label || 'Sin nombre')}</option>`;
+                }).join('');
+            }
+        } catch (err) {
+            logError('Destinos:', err);
+            select.innerHTML = '<option value="">No se pudieron cargar los destinos</option>';
+            showToast('No se pudieron cargar los destinos. Intenta de nuevo.', 'error');
+        }
         showWizardStep('2');
     }
 
@@ -640,7 +678,14 @@
     }
 
     function handleWizardStep(n) {
-        if (n === '2') { const id = document.getElementById('select-target').value; if (!id) { showToast('Selecciona un destino', 'warning'); return; } wizard.target_id = wizard.target_tipo === 'live' ? Number(id) : id; showWizardStep('3'); }
+        if (n === '2') {
+            const id = document.getElementById('select-target').value;
+            if (!id) { showToast('Selecciona un destino', 'warning'); return; }
+            // ✅ '__feed__' se guarda como string; los IDs de video también como string (UUIDs)
+            if (wizard.target_tipo === 'live') wizard.target_id = Number(id);
+            else wizard.target_id = id; // grupo, video, o '__feed__'
+            showWizardStep('3');
+        }
         else if (n === '3') { const nombre = document.getElementById('campaign-name').value.trim(); if (!nombre) { showToast('Escribe un nombre', 'warning'); return; } if (nombre.length > 120) { showToast('Máximo 120 caracteres', 'warning'); return; } wizard.nombre = nombre; showWizardStep('4'); }
         else if (n === '4') { wizard.objetivo = document.getElementById('campaign-objective').value; showWizardStep('5'); }
         else if (n === '5') { const budget = parseFloat(document.getElementById('campaign-budget').value); if (!budget || budget <= 0) { showToast('Ingresa un presupuesto válido', 'warning'); return; } if (budget > 1000000) { showToast('Presupuesto demasiado alto', 'warning'); return; } const red = document.getElementById('pay-currency').value; if (!red) { showToast('Selecciona una red de pago válida para tu monto', 'warning'); return; } wizard.presupuesto = budget; wizard.pay_currency = red; showWizardStep('6'); }
