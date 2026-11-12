@@ -904,9 +904,8 @@
     <script src="/features/videos/js/videos-publicar.js" defer></script>
     <script>
     // ================================================================
-    // VIDEOS · v15.10 — Fullscreen Pro + Doble Tap + Cámara
-    // Cambio: subida y procesamiento con lectura segura de respuestas,
-    // tiempo límite y mensajes de error con código HTTP.
+    // VIDEOS · v15.12 — Cuota agotada (413) y liberación del archivo
+    // si el trigger de la base rechaza el registro del video.
     // ================================================================
 
     var sbVideos = null;
@@ -1758,6 +1757,14 @@
                 body: fd
             }, 120000);
             var subidaJson = await leerJSONSeguro(subidaResp);
+            if (subidaResp.status === 413 && subidaJson && subidaJson.error === 'cuota_excedida') {
+                if (window.VideosPublicar && typeof window.VideosPublicar.mostrarAvisoCuota === 'function') {
+                    window.VideosPublicar.mostrarAvisoCuota(subidaJson);
+                }
+                var errCuota = new Error('__cuota__');
+                errCuota.silencioso = true;
+                throw errCuota;
+            }
             if (!subidaResp.ok || !subidaJson.ok) throw new Error(mensajeDeError('Subida', subidaResp, subidaJson));
 
             var videoUrl = subidaJson.url;
@@ -1779,7 +1786,26 @@
                 sonido_url: sonido ? sonido.url : null,
                 ubicacion_nombre: ubicacion ? (ubicacion.nombre + ', ' + ubicacion.pais) : null
             }).select().single();
-            if (ins.error) throw new Error('Registro: ' + (ins.error.message || 'no se pudo crear'));
+            if (ins.error) {
+                var msgIns = String(ins.error.message || '');
+                if (msgIns.indexOf('cuota_excedida') !== -1) {
+                    // El trigger de la base rechazó el registro: liberar el archivo ya subido
+                    try {
+                        await fetch('/api/media/liberar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                            body: JSON.stringify({ url: videoUrl })
+                        });
+                    } catch (eLib) {}
+                    if (window.VideosPublicar && typeof window.VideosPublicar.mostrarAvisoCuota === 'function') {
+                        window.VideosPublicar.mostrarAvisoCuota({ plan: null, limite_mb: null, usado_mb: null, disponible_mb: 0 });
+                    }
+                    var errCuota2 = new Error('__cuota__');
+                    errCuota2.silencioso = true;
+                    throw errCuota2;
+                }
+                throw new Error('Registro: ' + (msgIns || 'no se pudo crear'));
+            }
             videoId = ins.data.id;
 
             if (progressFill) progressFill.style.width = '85%';
@@ -1807,6 +1833,7 @@
             subiendoVideo = false;
             iniciarPollingProcesamiento(queueData.jobId, videoId);
         } catch (e) {
+            if (e && e.silencioso) { liberar(); return; }
             var msg = e && e.name === 'AbortError'
                 ? 'La subida tardó demasiado. Revisa tu conexión e intenta de nuevo.'
                 : (e.message || 'Error al subir');
