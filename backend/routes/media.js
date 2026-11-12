@@ -3,11 +3,13 @@
 // Subida centralizada con moderación, deduplicación por SHA-256
 // y cuota de almacenamiento por plan.
 // ================================================================
-// v2.0: migración de Supabase Storage a Cloudflare R2.
+// v2.1: migración de Supabase Storage a Cloudflare R2 (con diagnóstico).
 //       - Se conserva intacta la lógica de cuota, deduplicación,
 //         borradores y liberación de archivos huérfanos.
 //       - Solo cambia el "almacén" (Supabase → R2).
 //       - Las URLs públicas ahora apuntan a R2_PUBLIC_URL.
+//       - 🔍 Se agregaron logs de diagnóstico en subirAR2 para
+//         identificar errores de CORS, credenciales o endpoint.
 // ================================================================
 
 'use strict';
@@ -45,11 +47,22 @@ if (R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_ENDPOINT) {
         credentials: {
             accessKeyId: R2_ACCESS_KEY_ID,
             secretAccessKey: R2_SECRET_ACCESS_KEY
-        }
+        },
+        // 🔍 DIAG: deshabilitar checksums nuevos que pueden romper con R2
+        // (algunos SDKs modernos añaden checksum CRC32 por defecto y R2 lo rechaza).
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED'
     });
     console.log('✅ [media] Cliente R2 configurado');
+    console.log('🔍 [media] R2 endpoint:', R2_ENDPOINT);
+    console.log('🔍 [media] R2 bucket:', R2_BUCKET);
+    console.log('🔍 [media] R2 public URL:', R2_PUBLIC_URL || '(vacío)');
 } else {
     console.error('❌ [media] R2 no configurado. Revisa R2_ACCOUNT_ID / R2_ACCESS_KEY_ID / R2_SECRET_ACCESS_KEY.');
+    console.error('  R2_ACCOUNT_ID:', R2_ACCOUNT_ID ? 'definido' : 'FALTA');
+    console.error('  R2_ACCESS_KEY_ID:', R2_ACCESS_KEY_ID ? 'definido' : 'FALTA');
+    console.error('  R2_SECRET_ACCESS_KEY:', R2_SECRET_ACCESS_KEY ? 'definido' : 'FALTA');
+    console.error('  R2_ENDPOINT:', R2_ENDPOINT || 'FALTA');
 }
 
 if (!R2_PUBLIC_URL) {
@@ -75,10 +88,6 @@ const DESTINOS = {
     'chat-attachments': { tipo: 'auto', limiteMBImagen: LIMITE_IMAGEN_MB, limiteMBVideo: LIMITE_CHAT_VIDEO_MB },
     'mercado': { tipo: 'imagen', limiteMB: 3 }
 };
-
-// 🆕 R2: los "buckets" de Supabase ahora son "prefijos" dentro del único bucket R2.
-// La clave del archivo en R2 será: <destino>/<usuarioId>/<timestamp>-<random>.<ext>
-// Los nombres de destino se mantienen iguales para no romper el frontend.
 
 const COLUMNAS_CON_URL = [
     ['publicaciones', 'media_url'], ['publicaciones_publicas', 'media_url'],
@@ -109,16 +118,13 @@ const upload = multer({
 });
 
 // ================================================================
-// HELPERS (sin cambios, salvo extraerBucketYRuta que se adapta a R2)
+// HELPERS
 // ================================================================
 
 function sha256Hex(buffer) {
     return createHash('sha256').update(buffer).digest('hex');
 }
 
-// 🆕 R2: el nombre de archivo incluye el "destino" como prefijo
-// (antes Supabase usaba un bucket por destino; R2 usa un solo bucket
-// con prefijos por destino).
 function generarNombreArchivo(destino, usuarioId, extension) {
     const timestamp = Date.now();
     const random = Math.random().toString(36).slice(2, 10);
@@ -133,9 +139,6 @@ function extensionSegura(mime) {
     return mapa[mime] || null;
 }
 
-// 🆕 R2: reemplaza la función anterior extraerBucketYRuta (Supabase).
-// Ahora extrae el destino y el path desde la URL pública de R2.
-// Formato: <R2_PUBLIC_URL>/<destino>/<usuarioId>/<archivo>
 function extraerDestinoYRutaR2(url) {
     if (!R2_PUBLIC_URL || typeof url !== 'string') return null;
     if (!url.startsWith(R2_PUBLIC_URL + '/')) return null;
@@ -150,7 +153,6 @@ function extraerDestinoYRutaR2(url) {
     return { destino, path: resto };
 }
 
-// 🆕 R2: URL pública del archivo (reemplaza getPublicUrl de Supabase)
 function construirUrlPublicaR2(path) {
     if (!R2_PUBLIC_URL) return null;
     return `${R2_PUBLIC_URL}/${path}`;
@@ -216,6 +218,15 @@ function logSubida(req, destino, resultado) {
 
 async function subirAR2(path, buffer, contentType) {
     if (!r2Client) throw new Error('R2 no configurado');
+
+    // 🔍 DIAG: logs detallados antes de subir
+    console.log('🔍 [R2] Iniciando subida');
+    console.log('🔍 [R2] path:', path);
+    console.log('🔍 [R2] bucket:', R2_BUCKET);
+    console.log('🔍 [R2] contentType:', contentType);
+    console.log('🔍 [R2] size:', buffer.length, 'bytes');
+    console.log('🔍 [R2] endpoint:', R2_ENDPOINT);
+
     const cmd = new PutObjectCommand({
         Bucket: R2_BUCKET,
         Key: path,
@@ -223,8 +234,22 @@ async function subirAR2(path, buffer, contentType) {
         ContentType: contentType,
         CacheControl: 'public, max-age=3600'
     });
-    await r2Client.send(cmd);
-    return path;
+
+    try {
+        const result = await r2Client.send(cmd);
+        console.log('✅ [R2] Subida exitosa. ETag:', result.ETag);
+        return path;
+    } catch (err) {
+        // 🔍 DIAG: error detallado con todos los campos útiles
+        console.error('❌ [R2] Error detallado:');
+        console.error('  name:', err.name);
+        console.error('  message:', err.message);
+        console.error('  code:', err.Code || err.code);
+        console.error('  httpStatusCode:', err.$metadata && err.$metadata.httpStatusCode);
+        console.error('  requestId:', err.$metadata && err.$metadata.requestId);
+        console.error('  stack:', err.stack ? err.stack.split('\n').slice(0, 5).join('\n') : 'sin stack');
+        throw err;
+    }
 }
 
 async function borrarDeR2(path) {
@@ -257,7 +282,6 @@ router.post(
         const destino = (req.body && req.body.destino) || '';
         const tipo = (req.body && req.body.tipo) || '';
 
-        // ---- validaciones (igual que antes) ----
         if (!usuarioId) {
             logSubida(req, destino, 'no_auth');
             return res.status(401).json({ ok: false, error: 'No autenticado' });
@@ -291,7 +315,6 @@ router.post(
             return res.status(413).json({ ok: false, error: `El archivo supera el límite de ${limiteMB} MB` });
         }
 
-        // ---- deduplicación (misma lógica, misma tabla archivos_hash) ----
         const hash = sha256Hex(req.file.buffer);
         const { data: existente, error: errBusqueda } = await supabaseAdmin
             .from('archivos_hash')
@@ -312,7 +335,6 @@ router.post(
             });
         }
 
-        // ---- cuota (misma lógica, misma RPC) ----
         const cuota = await consultarCuotaUsuario(usuarioId);
         if (!cuota.ok) {
             console.error('❌ [media] Error consultando cuota:', cuota.error);
@@ -334,7 +356,6 @@ router.post(
             });
         }
 
-        // ---- moderación (igual que antes) ----
         let resultadoModeracion;
         try {
             if (tipo === 'imagen') resultadoModeracion = await moderarImagen(req.file.buffer);
@@ -372,26 +393,32 @@ router.post(
             return res.status(400).json({ ok: false, error: 'Formato no soportado' });
         }
 
-        // 🆕 R2: path incluye destino como prefijo
         const nombreArchivo = generarNombreArchivo(destino, usuarioId, extension);
 
-        // 🆕 R2: subir al bucket único
         try {
             await subirAR2(nombreArchivo, req.file.buffer, req.file.mimetype);
         } catch (upErr) {
             console.error('❌ [media] Error subiendo a R2:', upErr.message || upErr);
             logSubida(req, destino, 'error_subida');
-            return res.status(500).json({ ok: false, error: 'Error al guardar el archivo' });
+            return res.status(500).json({
+                ok: false,
+                error: 'Error al guardar el archivo',
+                // 🔍 DIAG: incluir el error real para verlo en la UI y en curl
+                debug: {
+                    name: upErr.name || null,
+                    message: upErr.message || null,
+                    code: upErr.Code || upErr.code || null,
+                    httpStatusCode: upErr.$metadata ? upErr.$metadata.httpStatusCode : null
+                }
+            });
         }
 
-        // 🆕 R2: URL pública
         const url = construirUrlPublicaR2(nombreArchivo);
         if (!url) {
             logSubida(req, destino, 'sin_url_publica');
             return res.status(500).json({ ok: false, error: 'Error generando URL' });
         }
 
-        // ---- registrar hash (misma tabla) ----
         const { error: errInsert } = await supabaseAdmin
             .from('archivos_hash')
             .insert({
@@ -404,7 +431,6 @@ router.post(
 
         if (errInsert) {
             if (errInsert.code === '23505') {
-                // otra subida idéntica llegó a la vez
                 await borrarDeR2(nombreArchivo);
 
                 const { data: ganador } = await supabaseAdmin
@@ -442,7 +468,6 @@ router.post('/liberar', verificarToken, async (req, res) => {
         return res.status(400).json({ ok: false, error: 'URL inválida' });
     }
 
-    // 🆕 R2: extraer destino + path desde URL pública de R2
     const ubicacion = extraerDestinoYRutaR2(url);
     if (!ubicacion) {
         return res.status(400).json({ ok: false, error: 'Archivo no reconocido' });
