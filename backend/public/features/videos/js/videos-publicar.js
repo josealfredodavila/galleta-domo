@@ -617,6 +617,24 @@
         try { data = await respuesta.json(); } catch (e) { data = {}; }
 
         if (!respuesta.ok || !data.ok) {
+            // Cuota de almacenamiento agotada: el servidor envía un mensaje legible.
+            // No disparamos csToast aquí: el llamador (pantalla de publicación) es
+            // quien muestra el aviso, igual que con el resto de errores de subida.
+            if (data && data.error === 'cuota_excedida') {
+                const mensaje = data.mensaje || 'Llegaste al límite de tu espacio de almacenamiento.';
+                return {
+                    ok: false,
+                    error: mensaje,
+                    cuotaExcedida: true,
+                    status: respuesta.status,
+                    cuota: {
+                        plan: data.plan,
+                        limite_mb: data.limite_mb,
+                        usado_mb: data.usado_mb,
+                        disponible_mb: data.disponible_mb
+                    }
+                };
+            }
             const mensaje = data && data.error ? data.error : 'No se pudo subir el archivo';
             return { ok: false, error: mensaje, status: respuesta.status };
         }
@@ -784,7 +802,9 @@
         } finally {
             state.guardandoBorrador = false;
         }
-    }    async function renderBorradores() {
+    }
+
+    async function renderBorradores() {
         const lista = $('csBorradoresLista');
         if (!lista) return;
         lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">◈</span><p>Cargando borradores…</p></div>`;
