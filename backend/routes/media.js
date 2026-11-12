@@ -1,17 +1,25 @@
 // ================================================================
 // ROUTES/MEDIA.JS — Sariel's Ecosystem
-// Subida centralizada con moderación y deduplicación por SHA-256
+// Subida centralizada con moderación, deduplicación por SHA-256
+// y cuota de almacenamiento por plan.
 // ================================================================
 // Endpoints:
 //   POST /api/media/upload
 //     multipart/form-data: file, destino, tipo ('imagen' | 'video')
-//     Si el mismo contenido ya existe en ese destino, devuelve la URL
-//     existente (reutilizado: true) sin moderar ni subir de nuevo.
+//     - Si el mismo contenido ya existe en ese destino, devuelve la URL
+//       existente (reutilizado: true) sin moderar, sin subir y sin
+//       consumir cuota.
+//     - Si no, valida la cuota del usuario (plan activo o gratuito) y
+//       responde 413 'cuota_excedida' cuando no cabe el archivo.
 //
 //   POST /api/media/liberar
 //     JSON: { url }
 //     Borra el archivo de Storage SOLO si ninguna fila de la base lo
 //     referencia. Si sigue en uso, no hace nada y lo informa.
+//
+// Cuota: la calcula la función SQL consultar_cuota_almacenamiento.
+// Los archivos existentes nunca se borran por la cuota: si el usuario
+// supera su límite (p. ej. al vencer Pro), solo se bloquean subidas nuevas.
 // ================================================================
 
 'use strict';
@@ -203,6 +211,27 @@ async function estaReferenciada(url) {
     return false;
 }
 
+// Lee la cuota del usuario desde la base. Devuelve { ok, ...datos } o { ok: false, error }.
+async function consultarCuotaUsuario(usuarioId) {
+    const { data, error } = await supabaseAdmin.rpc('consultar_cuota_almacenamiento', {
+        p_usuario_id: usuarioId
+    });
+    if (error || !data) {
+        return { ok: false, error: error ? error.message : 'sin_datos' };
+    }
+    return {
+        ok: true,
+        plan: data.plan,
+        limiteBytes: Number(data.limite_bytes),
+        usadoBytes: Number(data.usado_bytes),
+        disponibleBytes: Number(data.disponible_bytes)
+    };
+}
+
+function formatearMB(bytes) {
+    return Math.round((bytes / 1024 / 1024) * 10) / 10;
+}
+
 function logSubida(req, destino, resultado) {
     const usuario = (req.usuario && req.usuario.id) || 'desconocido';
     const fecha = new Date().toISOString();
@@ -266,8 +295,7 @@ router.post(
 
         // ------------------------------------------------------------
         // DEDUPLICACIÓN: si este contenido ya está en el destino, se
-        // reutiliza. Solo entran a archivos_hash archivos ya moderados,
-        // así que no hace falta moderar de nuevo.
+        // reutiliza. No se modera ni se cobra cuota: no sube bytes nuevos.
         // ------------------------------------------------------------
         const hash = sha256Hex(req.file.buffer);
 
@@ -291,6 +319,33 @@ router.post(
                 url: existente.public_url,
                 path: existente.path,
                 reutilizado: true
+            });
+        }
+
+        // ------------------------------------------------------------
+        // CUOTA DE ALMACENAMIENTO: se valida antes de moderar y subir,
+        // para no gastar moderación en archivos que no van a entrar.
+        // Si la consulta falla, no se acepta la subida (fallo seguro).
+        // ------------------------------------------------------------
+        const cuota = await consultarCuotaUsuario(usuarioId);
+        if (!cuota.ok) {
+            console.error('❌ [media] Error consultando cuota:', cuota.error);
+            logSubida(req, destino, 'error_cuota');
+            return res.status(503).json({ ok: false, error: 'No pudimos verificar tu espacio. Intenta de nuevo.' });
+        }
+
+        if (req.file.size > cuota.disponibleBytes) {
+            logSubida(req, destino, 'cuota_excedida');
+            return res.status(413).json({
+                ok: false,
+                error: 'cuota_excedida',
+                mensaje: cuota.disponibleBytes > 0
+                    ? `Te quedan ${formatearMB(cuota.disponibleBytes)} MB en tu plan ${cuota.plan === 'pro' ? 'Pro' : 'gratuito'}.`
+                    : `Llegaste al límite de tu plan ${cuota.plan === 'pro' ? 'Pro' : 'gratuito'}. Libera espacio o renueva Pro para subir más.`,
+                plan: cuota.plan,
+                limite_mb: formatearMB(cuota.limiteBytes),
+                usado_mb: formatearMB(cuota.usadoBytes),
+                disponible_mb: formatearMB(cuota.disponibleBytes)
             });
         }
 
