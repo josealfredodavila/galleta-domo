@@ -1,13 +1,10 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.0
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.2
    ================================================================
-   Cambios respecto a v2.9:
-   - Quitar video seleccionado antes de publicar (botón ✕ sobre el
-     video y botón "Quitar video"). Conserva título, descripción,
-     sonido y ubicación.
-   - Feed: se ocultan reacciones (corazón) y compartir según FEED_UI.
-   - Feed: botón de pausa/reproducir en la barra lateral de cada video.
-   - La lógica de borradores, persistencia, vista previa y API no cambia.
+   Cambios respecto a v3.1:
+   - Validación previa de cuota en guardarBorrador: se bloquea solo
+     cuando el uso supera el límite (usado_mb > limite_mb), igual que
+     el trigger de la base de datos.
    ================================================================ */
 
 (function () {
@@ -52,6 +49,9 @@
         BARRAS_EQ: EQ_COLORES.length,
         MAX_BORRADORES_LISTA: 50
     };
+
+    const LIMITE_BORRADORES = 3;
+    const RUTA_MEMBRESIA_PRO = '/membresia-pro.html';
 
     const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     const SUPABASE_STORAGE_URL = SUPABASE_URL + '/storage/v1/object/public/audios';
@@ -194,6 +194,109 @@
 
     window.csToast = csToast;
     window.csConfirm = csConfirm;
+
+    // ============================================================
+    // MODAL DE CUOTA AGOTADA
+    // ============================================================
+    function formatearEspacio(mb) {
+        const n = Number(mb) || 0;
+        return n >= 1024 ? (Math.round((n / 1024) * 10) / 10) + ' GB' : Math.round(n) + ' MB';
+    }
+
+    function descargarBlob(blob, nombre) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = nombre || ('video-' + Date.now() + '.webm');
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+
+    async function descargarVideoActual() {
+        // Caso 1: archivo recién elegido o grabado (sigue en memoria)
+        if (state.archivoVideo) {
+            descargarBlob(state.archivoVideo, state.archivoVideo.name);
+            return;
+        }
+        // Caso 2: borrador guardado en Storage
+        if (state.archivoPathRemoto) {
+            try {
+                const resp = await fetch(urlPublicaBorrador(state.archivoPathRemoto));
+                if (!resp.ok) throw new Error('HTTP ' + resp.status);
+                const blob = await resp.blob();
+                descargarBlob(blob, state.archivoPathRemoto.split('/').pop());
+            } catch (e) {
+                csToast('No se pudo descargar el video. Intenta de nuevo.', 'error');
+            }
+            return;
+        }
+        csToast('No hay video para descargar', 'warning');
+    }
+
+    function mostrarAvisoCuota(cuota) {
+        document.getElementById('csModalCuota')?.remove();
+        const c = cuota || {};
+        const esPro = c.plan === 'pro';
+
+        const overlay = document.createElement('div');
+        overlay.id = 'csModalCuota';
+        overlay.className = 'cs-confirm-overlay show';
+        overlay.style.setProperty('z-index', String(Z.CONFIRM), 'important');
+
+        const modal = document.createElement('div');
+        modal.className = 'cs-confirm-modal';
+        modal.setAttribute('role', 'dialog');
+        modal.setAttribute('aria-modal', 'true');
+
+        const titulo = document.createElement('div');
+        titulo.className = 'cs-confirm-titulo';
+        titulo.textContent = 'Alcanzaste el límite de tu espacio';
+
+        const detalle = document.createElement('div');
+        detalle.className = 'cs-confirm-mensaje';
+        const tieneCifras = c.limite_mb != null;
+        detalle.textContent = esPro
+            ? (tieneCifras
+                ? `Tu plan Pro incluye ${formatearEspacio(c.limite_mb)} y ya lo usaste. Libera espacio para seguir subiendo.`
+                : 'Ya usaste el espacio de tu plan Pro. Libera espacio para seguir subiendo.')
+            : (tieneCifras
+                ? `Tu plan gratuito incluye ${formatearEspacio(c.limite_mb)} y ya lo usaste. `
+                : 'Ya usaste el espacio de tu plan gratuito. ') +
+              'Tus videos y borradores siguen guardados. Para subir más, amplía a Pro o libera espacio.';
+
+        const acciones = document.createElement('div');
+        acciones.className = 'cs-confirm-acciones';
+        acciones.style.flexDirection = 'column';
+
+        if (!esPro) {
+            const btnPro = document.createElement('button');
+            btnPro.type = 'button';
+            btnPro.className = 'cs-confirm-btn cs-confirm-ok';
+            btnPro.textContent = 'Subir a Pro · $300 MXN por 5 GB';
+            btnPro.addEventListener('click', () => { window.location.href = RUTA_MEMBRESIA_PRO; });
+            acciones.appendChild(btnPro);
+        }
+
+        const btnDescargar = document.createElement('button');
+        btnDescargar.type = 'button';
+        btnDescargar.className = 'cs-confirm-btn cs-confirm-cancel';
+        btnDescargar.textContent = 'Descargar mi video al teléfono';
+        btnDescargar.addEventListener('click', descargarVideoActual);
+
+        const btnCerrar = document.createElement('button');
+        btnCerrar.type = 'button';
+        btnCerrar.className = 'cs-confirm-btn cs-confirm-cancel';
+        btnCerrar.textContent = 'Ahora no';
+        btnCerrar.addEventListener('click', () => overlay.remove());
+
+        acciones.append(btnDescargar, btnCerrar);
+        modal.append(titulo, detalle, acciones);
+        overlay.append(modal);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+        document.body.appendChild(overlay);
+    }
 
     // ============================================================
     // PERSISTENCIA LOCAL · IndexedDB (sobrevive a recargas)
@@ -617,22 +720,20 @@
         try { data = await respuesta.json(); } catch (e) { data = {}; }
 
         if (!respuesta.ok || !data.ok) {
-            // Cuota de almacenamiento agotada: el servidor envía un mensaje legible.
-            // No disparamos csToast aquí: el llamador (pantalla de publicación) es
-            // quien muestra el aviso, igual que con el resto de errores de subida.
             if (data && data.error === 'cuota_excedida') {
-                const mensaje = data.mensaje || 'Llegaste al límite de tu espacio de almacenamiento.';
+                const cuota = {
+                    plan: data.plan,
+                    limite_mb: data.limite_mb,
+                    usado_mb: data.usado_mb,
+                    disponible_mb: data.disponible_mb
+                };
+                mostrarAvisoCuota(cuota);
                 return {
                     ok: false,
-                    error: mensaje,
+                    error: data.mensaje || 'Alcanzaste el límite de tu espacio.',
                     cuotaExcedida: true,
                     status: respuesta.status,
-                    cuota: {
-                        plan: data.plan,
-                        limite_mb: data.limite_mb,
-                        usado_mb: data.usado_mb,
-                        disponible_mb: data.disponible_mb
-                    }
+                    cuota
                 };
             }
             const mensaje = data && data.error ? data.error : 'No se pudo subir el archivo';
@@ -713,6 +814,30 @@
         state.borradorPaths = null;
     }
 
+    async function contarBorradores(sb, usuarioId) {
+        const { count, error } = await sb
+            .from('videos_borradores')
+            .select('id', { count: 'exact', head: true })
+            .eq('usuario_id', usuarioId);
+        if (error) throw new Error('No se pudo verificar tus borradores');
+        return count || 0;
+    }
+
+    // Devuelve la cuota del usuario o null si no se pudo consultar.
+    // Si no se puede consultar, la UI no bloquea: el servidor sigue aplicando la regla.
+    async function consultarCuotaCliente(session) {
+        try {
+            const resp = await fetch('/api/media/cuota', {
+                headers: { 'Authorization': 'Bearer ' + session.access_token }
+            });
+            if (!resp.ok) return null;
+            const data = await resp.json();
+            return data && data.ok ? data : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     async function guardarBorrador() {
         if (state.guardandoBorrador) return;
         const session = await obtenerSesion();
@@ -729,6 +854,21 @@
         if (!titulo && !archivo && !descripcion && !sonido && !ubicacion) {
             csToast('Escribe algo o elige un video antes de guardar el borrador', 'warning');
             return;
+        }
+
+        // Validación previa: tope de borradores y retención por cuota.
+        // La cuota se bloquea solo cuando el uso supera el límite (igual que el trigger).
+        if (!state.borradorEditandoId) {
+            const total = await contarBorradores(sb, session.user.id);
+            if (total >= LIMITE_BORRADORES) {
+                csToast(`Ya tienes ${LIMITE_BORRADORES} borradores. Elimina uno para guardar otro.`, 'warning', 5000);
+                return;
+            }
+            const cuota = await consultarCuotaCliente(session);
+            if (cuota && Number(cuota.usado_mb) > Number(cuota.limite_mb)) {
+                mostrarAvisoCuota(cuota);
+                return;
+            }
         }
 
         state.guardandoBorrador = true;
@@ -798,7 +938,14 @@
         } catch (e) {
             warn('Error guardando borrador:', e);
             await borrarBorradorArchivos(subidos);
-            csToast(e.message || 'No se pudo guardar el borrador', 'error', 4000);
+            const msg = String(e.message || '');
+            if (msg.includes('limite_borradores')) {
+                csToast(`Ya tienes ${LIMITE_BORRADORES} borradores. Elimina uno para guardar otro.`, 'warning', 5000);
+            } else if (msg.includes('cuota_excedida')) {
+                mostrarAvisoCuota({ plan: null, limite_mb: null, usado_mb: null, disponible_mb: 0 });
+            } else {
+                csToast(msg || 'No se pudo guardar el borrador', 'error', 4000);
+            }
         } finally {
             state.guardandoBorrador = false;
         }
@@ -2154,7 +2301,8 @@
         abrirBorrador,
         eliminarBorrador,
         quitarVideoSeleccionado,
-        getConfig: () => ({ ...CONFIG, FEED_UI: { ...FEED_UI } }),
+        mostrarAvisoCuota,
+        getConfig: () => ({ ...CONFIG, FEED_UI: { ...FEED_UI }, LIMITE_BORRADORES, RUTA_MEMBRESIA_PRO }),
         setProvider: (p) => { CONFIG.PROVIDER = p; },
         setFeedUI: (parcial) => { Object.assign(FEED_UI, parcial || {}); const old = $('cs-feed-ui'); if (old) old.remove(); inyectarEstilosFeed(); },
         getState: () => ({
@@ -2183,7 +2331,7 @@
         observarFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v3.0 listo');
+        log('✅ Módulo Publicar v3.2 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
