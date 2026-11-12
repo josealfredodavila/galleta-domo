@@ -541,6 +541,30 @@ router.post('/liberar', verificarToken, async (req, res) => {
 });
 
 // ================================================================
+// CUOTA DEL USUARIO (para mostrar el aviso antes de subir)
+// ================================================================
+
+router.get('/cuota', verificarToken, async (req, res) => {
+    const usuarioId = req.usuario && req.usuario.id;
+    if (!usuarioId) {
+        return res.status(401).json({ ok: false, error: 'No autenticado' });
+    }
+
+    const cuota = await consultarCuotaUsuario(usuarioId);
+    if (!cuota.ok) {
+        return res.status(503).json({ ok: false, error: 'No pudimos verificar tu espacio' });
+    }
+
+    return res.status(200).json({
+        ok: true,
+        plan: cuota.plan,
+        limite_mb: formatearMB(cuota.limiteBytes),
+        usado_mb: formatearMB(cuota.usadoBytes),
+        disponible_mb: formatearMB(cuota.disponibleBytes)
+    });
+});
+
+// ================================================================
 // MANEJO DE ERRORES DE MULTER
 // ================================================================
 
