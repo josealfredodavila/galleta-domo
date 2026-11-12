@@ -192,67 +192,92 @@ Csariel's Pay es la capa de pagos unificada del ecosistema. Provee una experienc
 
 ### 🧾 Flujo de Cobro por QR Dinámico
 
-```text
-Vendedor genera intención
-        ↓
-QR / Link público
-        ↓
-Comprador escanea
-        ↓
-Elige método (tarjeta / SPEI / crypto)
-        ↓
-Backend crea orden con el proveedor
-        ↓
-Comprador paga
-        ↓
-Webhook firmado del proveedor
-        ↓
-Backend verifica y confirma
-        ↓
-Pedido actualizado + saldo acreditado
+    Vendedor genera intención
+            ↓
+    QR / Link público
+            ↓
+    Comprador escanea
+            ↓
+    Elige método (tarjeta / SPEI / crypto)
+            ↓
+    Backend crea orden con el proveedor
+            ↓
+    Comprador paga
+            ↓
+    Webhook firmado del proveedor
+            ↓
+    Backend verifica y confirma
+            ↓
+    Pedido actualizado + saldo acreditado
 
+### 👛 Retiros y Stripe Connect
 
-👛 Retiros y Stripe Connect
+| Riel | Proveedor | Estado |
+| :--- | :--- | :--- |
+| 🏦 **SPEI** | Fintoc | Disponible en México (requiere cuenta Business verificada) |
+| 💳 **Tarjeta** | Stripe Connect | Disponible (onboarding KYC manejado por Stripe) |
+| ₿ **Crypto** | NOWPayments | Disponible (requiere payouts habilitados) |
 
-RielProveedorEstado
-🏦 SPEIFintocDisponible en México (requiere cuenta Business verificada)
-💳 TarjetaStripe ConnectDisponible (onboarding KYC manejado por Stripe)
-₿ CryptoNOWPaymentsDisponible (requiere payouts habilitados)
+* ✅ Solicitud de retiro con validación de saldo, reserva atómica de fondos e idempotencia (`idempotency_key`).
+* ✅ Estados claros (`pending`, `processing`, `completed`, `failed`, `cancelled`) y reverso automático si falla.
+* ✅ Datos bancarios aislados mediante Stripe Connect Express / Standard.
 
-​✅ Solicitud de retiro con validación de saldo, reserva atómica de fondos e idempotencia (idempotency_key).
-​✅ Estados claros (pending, processing, completed, failed, cancelled) y reverso automático si falla.
-​✅ Datos bancarios aislados mediante Stripe Connect Express / Standard.
-​🔐 Seguridad y Proveedores de Csariel's Pay
-​✅ Verificación criptográfica obligatoria en todos los webhooks (HMAC-SHA256, firmas JWS, 3D Secure).
-​✅ Confirmación de pagos exclusivamente vía webhook firmado y aislamiento por service_role.
-​✅ Row Level Security (RLS) activo en todas las tablas pay_*.
-​✅ Cobertura activa en México, Colombia, Chile, Argentina, Perú y Ecuador.
-​🚴 Sistema de Repartidores y Pedidos
-​✅ Registro de repartidores, perfil vehicular, disponibilidad y seguimiento de pedidos sin costo de membresía.
-​✅ Durante la primera fase, el comprador paga directamente al repartidor el costo de entrega y Mercado no aplica comisión sobre ventas.
+### 🔐 Seguridad y Proveedores de Csariel's Pay
 
-Cliente → Selecciona tienda → Selecciona productos → Realiza pedido
-  ↓
-Tienda recibe pedido → Tienda prepara pedido
-  ↓
-Repartidor recibe/asume entrega → Entrega al cliente
-  ↓
-Pedido completado → Reseña
+* ✅ Verificación criptográfica obligatoria en todos los webhooks (HMAC-SHA256, firmas JWS, 3D Secure).
+* ✅ Confirmación de pagos exclusivamente vía webhook firmado y aislamiento por `service_role`.
+* ✅ Row Level Security (RLS) activo en todas las tablas `pay_*`.
+* ✅ Cobertura activa en **México, Colombia, Chile, Argentina, Perú y Ecuador**.
 
-📱 eSIM
-​Integración con Telnyx para servicios de conectividad móvil y datos internacionales.
-​✅ Compra de paquetes de datos, activación mediante QR y monitoreo de consumo en tiempo real.
-​🔐 Seguridad e Infraestructura
-​Frontend CDN (Cloudflare Pages): HTTPS estricto con SSL/TLS global, reglas _redirects y shim api-config.js.
-​Backend & AI Orchestrator (Railway): JWT + Supabase Auth (Bearer), Helmet, Rate Limiting, CORS restringido y aislamiento estricto de llaves privadas de IA (OpenAI, NVIDIA, Anthropic).
-​Base de Datos y Storage (Supabase): PostgreSQL con RLS activo, funciones RPC blindadas por rol y sesión (auth.uid()), límites anti-farma en recompensas y cuotas de almacenamiento por plan.
-​Protección de Cuentas: Cloudflare Turnstile anti-bot, protección contra contraseñas filtradas y eliminación segura de cuenta con resguardo de auditoría.
-​⚖️ Privacidad y Aceptación Legal
-​✅ Términos, condiciones y políticas de privacidad con registro de aceptación mediante Hash SHA-256, timestamp y control de versión.
-​✅ Cumplimiento de eliminación de datos centralizados manteniendo intactos los registros inmutables en blockchain.
-​🌎 Internacionalización
-​Idiomas configurados mediante arquitectura de claves (data-clave):
+---
+
+## 🚴 Sistema de Repartidores y Pedidos
+
+* ✅ Registro de repartidores, perfil vehicular, disponibilidad y seguimiento de pedidos sin costo de membresía.
+* ✅ Durante la primera fase, el comprador paga directamente al repartidor el costo de entrega y Mercado no aplica comisión sobre ventas.
+
+    Cliente → Selecciona tienda → Selecciona productos → Realiza pedido
+      ↓
+    Tienda recibe pedido → Tienda prepara pedido
+      ↓
+    Repartidor recibe/asume entrega → Entrega al cliente
+      ↓
+    Pedido completado → Reseña
+
+---
+
+## 📱 eSIM
+
+Integración con **Telnyx** para servicios de conectividad móvil y datos internacionales.
+
+* ✅ Compra de paquetes de datos, activación mediante QR y monitoreo de consumo en tiempo real.
+
+---
+
+## 🔐 Seguridad e Infraestructura
+
+* **Frontend CDN (Cloudflare Pages):** HTTPS estricto con SSL/TLS global, reglas `_redirects` y shim `api-config.js`.
+* **Backend & AI Orchestrator (Railway):** JWT + Supabase Auth (Bearer), Helmet, Rate Limiting, CORS restringido y aislamiento estricto de llaves privadas de IA (OpenAI, NVIDIA, Anthropic).
+* **Base de Datos y Storage (Supabase):** PostgreSQL con RLS activo, funciones RPC blindadas por rol y sesión (`auth.uid()`), límites anti-farma en recompensas y cuotas de almacenamiento por plan.
+* **Protección de Cuentas:** Cloudflare Turnstile anti-bot, protección contra contraseñas filtradas y eliminación segura de cuenta con resguardo de auditoría.
+
+---
+
+## ⚖️ Privacidad y Aceptación Legal
+
+* ✅ Términos, condiciones y políticas de privacidad con registro de aceptación mediante Hash SHA-256, timestamp y control de versión.
+* ✅ Cumplimiento de eliminación de datos centralizados manteniendo intactos los registros inmutables en blockchain.
+
+---
+
+## 🌎 Internacionalización
+
+Idiomas configurados mediante arquitectura de claves (`data-clave`):
 🇲🇽 Español · 🇺🇸 English · 🇧🇷 Português · 🇩🇪 Deutsch · 🇫🇷 Français · 🇮🇹 Italiano
-​📜 Licencia
-​Proyecto privado. Todos los derechos reservados.
-© Csariel's Ecosistema WEB3
+
+---
+
+## 📜 Licencia
+
+Proyecto privado. Todos los derechos reservados.  
+**© Csariel's Ecosistema WEB3**
