@@ -331,7 +331,6 @@
             font-family: 'Orbitron', monospace;
         }
 
-        /* Tarjeta de orden pendiente (ocultar, NO cancelar) */
         .cfg-pago-pendiente {
             margin: 16px;
             padding: 16px 18px;
@@ -595,8 +594,6 @@
             }
         }
 
-        // Busca la orden pendiente más reciente que el usuario aún no ha ocultado.
-        // Si la consulta falla (p. ej. por RLS), simplemente no se muestra la tarjeta.
         async function cargarPagoPendiente(client, userId) {
             pagoPendienteId = null;
             const aviso = $('#avisoPendiente');
@@ -622,7 +619,6 @@
             }
         }
 
-        // Oculta la orden en la pantalla del usuario. NO cancela el pago.
         window.ocultarOrdenMembresia = async function () {
             if (!pagoPendienteId) return;
 
