@@ -92,8 +92,9 @@
         .search-user-action {
             padding: 6px 12px; border-radius: 14px; font-size: 0.7rem; font-weight: 700;
             background: rgba(0, 229, 255, 0.1); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.3);
-            cursor: pointer;
+            cursor: pointer; transition: all 0.2s;
         }
+        .search-user-action:hover { background: rgba(0, 229, 255, 0.2); }
 
         /* ================================================================
            COMPOSITOR WEB3 (ESTILO PERFIL / VIDEOS)
@@ -660,10 +661,8 @@
         const resultsContainer = document.getElementById('globalSearchResults');
         let debounceTimer;
 
-        // Cargar Supabase si no está en window
         function getClient() {
-            if (window.supabaseClient) return window.supabaseClient;
-            return null;
+            return window.supabaseClient || null;
         }
 
         input.addEventListener('input', function(e) {
@@ -676,7 +675,7 @@
                 return;
             }
 
-            resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">🔍 Buscando...</div>';
+            resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">🔍 Buscando en Csariel\'s...</div>';
             resultsContainer.classList.add('active');
 
             debounceTimer = setTimeout(async () => {
@@ -684,9 +683,7 @@
                 if (!client) return;
 
                 try {
-                    // Usamos la función RPC de búsqueda que ya tienes en contactos
                     const { data, error } = await client.rpc('buscar_usuarios', { p_query: query });
-                    
                     if (error) throw error;
                     
                     const usuarios = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
@@ -696,19 +693,31 @@
                         return;
                     }
 
-                    resultsContainer.innerHTML = usuarios.map(u => {
+                    const session = await client.auth.getSession();
+                    const miId = session && session.data && session.data.session ? session.data.session.user.id : null;
+                    const usuariosFiltrados = usuarios.filter(u => u.id !== miId);
+
+                    if (!usuariosFiltrados.length) {
+                        resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">No se encontraron usuarios.</div>';
+                        return;
+                    }
+
+                    resultsContainer.innerHTML = usuariosFiltrados.map(u => {
                         const nombre = u.nombre || u.handle || 'Usuario';
                         const handle = u.handle ? '@' + u.handle.replace(/^@/, '') : '';
-                        const avatar = u.avatar_url ? `<img src="${u.avatar_url}" alt="">` : nombre.charAt(0).toUpperCase();
+                        
+                        const avatarImg = u.avatar_url 
+                            ? `<img src="${u.avatar_url}" alt="${nombre}" style="width:100%;height:100%;object-fit:cover;">` 
+                            : nombre.charAt(0).toUpperCase();
 
                         return `
-                            <div class="search-user-item" onclick="verPerfilDesdeMuro('${u.handle || u.id}')">
-                                <div class="search-user-avatar">${avatar}</div>
+                            <div class="search-user-item" onclick="window.verPerfilDesdeMuro('${u.id}', '${u.handle || ''}')">
+                                <div class="search-user-avatar">${avatarImg}</div>
                                 <div class="search-user-info">
-                                    <div class="search-user-name">${nombre}</div>
+                                    <div class="search-user-name">${nombre} ${u.verificado ? '<span style="color:var(--gold);font-size:0.7rem;">✓</span>' : ''}</div>
                                     <div class="search-user-handle">${handle}</div>
                                 </div>
-                                <button class="search-user-action" onclick="event.stopPropagation(); agregarDesdeMuro('${u.id}')">Ver</button>
+                                <button class="search-user-action" onclick="event.stopPropagation(); window.agregarDesdeMuro('${u.id}')">Agregar</button>
                             </div>
                         `;
                     }).join('');
@@ -720,19 +729,49 @@
             }, 400);
         });
 
-        // Cerrar resultados al hacer clic fuera
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.global-search-container')) {
                 resultsContainer.classList.remove('active');
             }
         });
 
-        // Funciones globales para manejar los clics
-        window.verPerfilDesdeMuro = function(handleOrId) {
-            if (!handleOrId) return;
-            if (handleOrId.startsWith('@')) handleOrId = handleOrId.substring(1);
-            // Redirigir a la página de perfil público
-            window.location.href = `/features/perfil/perfil-publico.html?u=${encodeURIComponent(handleOrId)}`;
+        window.verPerfilDesdeMuro = function(usuarioId, handle) {
+            if (!usuarioId) return;
+            const param = handle ? `?u=${encodeURIComponent(handle)}` : `?id=${encodeURIComponent(usuarioId)}`;
+            window.location.href = `/features/perfil/perfil-publico.html${param}`;
+        };
+
+        window.agregarDesdeMuro = async function(contactoId) {
+            const client = getClient();
+            if (!client) return;
+            
+            try {
+                const session = await client.auth.getSession();
+                if (!session || !session.data.session) return;
+
+                const miId = session.data.session.user.id;
+
+                const { error } = await client.from('contactos').insert({
+                    usuario_id: miId,
+                    contacto_id: contactoId,
+                    estado: 'pendiente',
+                    es_favorito: false
+                });
+
+                if (error) {
+                    if (error.code === '23505') {
+                        if (window.showToast) window.showToast('Ya enviaste una solicitud a esta persona.', 'warning');
+                    } else {
+                        throw error;
+                    }
+                } else {
+                    if (window.showToast) window.showToast('Solicitud de amistad enviada.', 'success');
+                    resultsContainer.classList.remove('active');
+                }
+            } catch (err) {
+                console.error("Error al agregar:", err);
+                if (window.showToast) window.showToast('No se pudo enviar la solicitud.', 'error');
+            }
         };
     })();
     </script>
