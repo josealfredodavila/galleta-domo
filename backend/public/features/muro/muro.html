@@ -22,176 +22,109 @@
         /* ================================================================
            BARRA DE BÚSQUEDA GLOBAL
            ================================================================ */
-        .global-search-container {
-            position: relative;
-            margin: 10px 0 16px;
-            z-index: 100;
-        }
-
+        .global-search-container { position: relative; margin: 10px 0 16px; z-index: 100; }
         .global-search-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 20px;
-            padding: 10px 16px;
-            transition: all 0.3s ease;
+            display: flex; align-items: center; gap: 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px; padding: 10px 16px; transition: all 0.3s ease;
         }
-
         .global-search-bar:focus-within {
-            background: rgba(0, 0, 0, 0.4);
-            border-color: rgba(0, 229, 255, 0.4);
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
+            background: rgba(0,0,0,0.4);
+            border-color: rgba(0,229,255,0.4);
+            box-shadow: 0 0 15px rgba(0,229,255,0.1);
         }
-
-        .global-search-bar svg {
-            width: 18px;
-            height: 18px;
-            color: #8c949c;
-            flex-shrink: 0;
-        }
-
+        .global-search-bar svg { width:18px; height:18px; color:#8c949c; flex-shrink:0; }
         .global-search-bar input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            outline: none;
-            color: #f0f4f8;
-            font-size: 0.9rem;
-            font-family: 'Inter', sans-serif;
+            flex:1; background:transparent; border:none; outline:none;
+            color:#f0f4f8; font-size:0.9rem; font-family:'Inter',sans-serif;
         }
-
-        .global-search-bar input::placeholder { color: #6b737b; }
-
+        .global-search-bar input::placeholder { color:#6b737b; }
         .global-search-results {
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 0;
-            right: 0;
-            background: #0b1016;
-            border: 1px solid rgba(0, 229, 255, 0.2);
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
-            max-height: 400px;
-            overflow-y: auto;
-            display: none;
-            padding: 8px;
+            position:absolute; top:calc(100% + 8px); left:0; right:0;
+            background:#0b1016; border:1px solid rgba(0,229,255,0.2);
+            border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.8);
+            max-height:400px; overflow-y:auto; display:none; padding:8px;
         }
-
-        .global-search-results.active { display: block; }
-
+        .global-search-results.active { display:block; }
         .search-user-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px;
-            border-radius: 12px;
-            cursor: pointer;
-            transition: background 0.2s;
+            display:flex; align-items:center; gap:12px; padding:10px;
+            border-radius:12px; cursor:pointer; transition:background 0.2s;
         }
-
-        .search-user-item:hover { background: rgba(255, 255, 255, 0.05); }
-
+        .search-user-item:hover { background: rgba(255,255,255,0.05); }
         .search-user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            overflow: hidden;
-            background: linear-gradient(135deg, #1a4a2a, #a855f7);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #fff;
-            font-weight: 700;
-            flex-shrink: 0;
+            width:40px; height:40px; border-radius:50%; overflow:hidden;
+            background: linear-gradient(135deg,#1a4a2a,#a855f7);
+            display:flex; align-items:center; justify-content:center;
+            color:#fff; font-weight:700; flex-shrink:0;
         }
-
-        .search-user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .search-user-info { flex: 1; min-width: 0; }
-
-        .search-user-name {
-            font-size: 0.85rem;
-            font-weight: 700;
-            color: #f0f4f8;
-        }
-
-        .search-user-handle {
-            font-size: 0.7rem;
-            color: #8c949c;
-        }
-
+        .search-user-avatar img { width:100%; height:100%; object-fit:cover; }
+        .search-user-info { flex:1; min-width:0; }
+        .search-user-name { font-size:0.85rem; font-weight:700; color:#f0f4f8; }
+        .search-user-handle { font-size:0.7rem; color:#8c949c; }
         .search-user-action {
-            padding: 6px 12px;
-            border-radius: 14px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            background: rgba(0, 229, 255, 0.1);
-            color: #00e5ff;
-            border: 1px solid rgba(0, 229, 255, 0.3);
-            cursor: pointer;
-            transition: all 0.2s;
+            padding:6px 12px; border-radius:14px; font-size:0.7rem; font-weight:700;
+            background: rgba(0,229,255,0.1); color:#00e5ff;
+            border: 1px solid rgba(0,229,255,0.3); cursor:pointer; transition: all 0.2s;
         }
+        .search-user-action:hover { background: rgba(0,229,255,0.2); }
 
-        .search-user-action:hover {
-            background: rgba(0, 229, 255, 0.2);
+        /* ================================================================
+           SECCIONES (fix z-index vs header blur)
+           ================================================================ */
+        .sec-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
         }
 
         /* ================================================================
-           COMPOSITOR WEB3
+           COMPOSITOR UNIFICADO · .pf-composer
            ================================================================ */
-        .post-form {
+        .pf-composer {
             position: relative;
             border-radius: 24px;
             padding: 18px 16px 16px;
             background:
-                radial-gradient(120% 90% at 0% 0%, rgba(0, 229, 255, .10), transparent 55%),
-                radial-gradient(120% 90% at 100% 100%, rgba(139, 92, 246, .12), transparent 55%),
-                linear-gradient(170deg, rgba(10, 18, 30, .96), rgba(4, 7, 13, .98)) !important;
-            border: 1px solid rgba(0, 229, 255, .16) !important;
+                radial-gradient(120% 90% at 0% 0%, rgba(0,229,255,.10), transparent 55%),
+                radial-gradient(120% 90% at 100% 100%, rgba(139,92,246,.12), transparent 55%),
+                linear-gradient(170deg, rgba(10,18,30,.96), rgba(4,7,13,.98)) !important;
+            border: 1px solid rgba(0,229,255,.16) !important;
             box-shadow:
-                0 0 0 1px rgba(255, 255, 255, .02) inset,
-                0 18px 50px rgba(0, 0, 0, .55),
-                0 0 40px rgba(0, 229, 255, .06) !important;
+                0 0 0 1px rgba(255,255,255,.02) inset,
+                0 18px 50px rgba(0,0,0,.55),
+                0 0 40px rgba(0,229,255,.06) !important;
             overflow: visible;
             transition: box-shadow .35s ease, border-color .35s ease;
             margin-bottom: 20px;
             z-index: 10;
         }
 
-        .post-form::after {
+        .pf-composer::after {
             content: '';
             position: absolute;
-            left: 18px;
-            right: 18px;
-            top: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(0, 229, 255, .8), rgba(139, 92, 246, .8), transparent);
-            opacity: .6;
-            pointer-events: none;
+            left: 18px; right: 18px; top: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0,229,255,.8), rgba(139,92,246,.8), transparent);
+            opacity: .6; pointer-events: none;
         }
 
-        .post-form:focus-within {
-            border-color: rgba(0, 229, 255, .45) !important;
+        .pf-composer:focus-within {
+            border-color: rgba(0,229,255,.45) !important;
             box-shadow:
-                0 0 0 1px rgba(255, 255, 255, .02) inset,
-                0 18px 50px rgba(0, 0, 0, .55),
-                0 0 48px rgba(0, 229, 255, .18) !important;
+                0 0 0 1px rgba(255,255,255,.02) inset,
+                0 18px 50px rgba(0,0,0,.55),
+                0 0 48px rgba(0,229,255,.18) !important;
         }
 
-        .post-form .form-header {
+        .pf-usuario {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 14px;
         }
 
-        .post-form .avatar {
+        .pf-avatar {
             width: 36px;
             height: 36px;
             border-radius: 50%;
@@ -205,16 +138,11 @@
             font-weight: 700;
             color: #fff;
             flex-shrink: 0;
-            box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+            box-shadow: 0 0 10px rgba(0,229,255,0.2);
         }
+        .pf-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
-        .post-form .avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .post-form .nombre {
+        .pf-nombre {
             font-family: 'Orbitron', monospace;
             font-size: .8rem;
             font-weight: 700;
@@ -222,7 +150,7 @@
             letter-spacing: .5px;
         }
 
-        .post-form .handle {
+        .pf-handle {
             display: inline-flex;
             align-items: center;
             gap: 4px;
@@ -232,27 +160,69 @@
             color: #5cc8ff !important;
             font-weight: 600;
             font-size: .72rem;
-            background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16));
-            border: 1px solid rgba(0, 229, 255, .38);
-            text-shadow: 0 0 8px rgba(0, 229, 255, .5);
-            box-shadow: 0 0 10px rgba(0, 229, 255, .12);
-            animation: perfilHandleHalo 2.4s ease-in-out infinite;
+            background: linear-gradient(135deg, rgba(0,229,255,.12), rgba(139,92,246,.16));
+            border: 1px solid rgba(0,229,255,.38);
+            text-shadow: 0 0 8px rgba(0,229,255,.5);
+            box-shadow: 0 0 10px rgba(0,229,255,.12);
+            animation: pfHalo 2.4s ease-in-out infinite;
         }
-
-        .post-form .handle::before {
+        .pf-handle::before {
             content: '⚡';
             font-size: .68rem;
             line-height: 1;
-            filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
-            animation: perfilHandleDestello 1.8s steps(2, end) infinite;
+            filter: drop-shadow(0 0 4px rgba(0,229,255,.9));
+            animation: pfDestello 1.8s steps(2, end) infinite;
         }
 
-        .post-form textarea#postContent {
+        @keyframes pfHalo {
+            0%, 100% { box-shadow: 0 0 6px rgba(0,229,255,.15); }
+            50% { box-shadow: 0 0 14px rgba(0,229,255,.45), 0 0 22px rgba(139,92,246,.25); }
+        }
+        @keyframes pfDestello {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .35; }
+        }
+
+        .pf-tema {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .pf-tema label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .65rem;
+            color: #6f8ba0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-tema {
+            background: rgba(0,229,255,.05);
+            border: 1px solid rgba(0,229,255,.2);
+            color: #7fdcff;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: .72rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all .2s;
+        }
+        .btn-tema:hover {
+            background: rgba(0,229,255,.15);
+            border-color: rgba(0,229,255,.4);
+            color: #cdf6ff;
+        }
+
+        textarea#postContent {
             width: 100%;
             min-height: 96px;
             resize: vertical;
-            background: rgba(0, 0, 0, .28);
-            border: 1px solid rgba(255, 255, 255, .06);
+            background: rgba(0,0,0,.28);
+            border: 1px solid rgba(255,255,255,.06);
             border-radius: 18px;
             padding: 14px 16px;
             color: #eef6ff;
@@ -262,69 +232,30 @@
             box-sizing: border-box;
             transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
         }
-
-        .post-form textarea#postContent::placeholder { color: #4f6577; }
-
-        .post-form textarea#postContent:focus {
+        textarea#postContent::placeholder { color: #4f6577; }
+        textarea#postContent:focus {
             outline: none;
-            background: rgba(0, 0, 0, .42);
-            border-color: rgba(0, 229, 255, .55);
-            box-shadow: 0 0 0 3px rgba(0, 229, 255, .10), 0 0 26px rgba(0, 229, 255, .14);
+            background: rgba(0,0,0,.42);
+            border-color: rgba(0,229,255,.55);
+            box-shadow: 0 0 0 3px rgba(0,229,255,.10), 0 0 26px rgba(0,229,255,.14);
         }
 
-        .post-form .tema-selector {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 12px;
-        }
-
-        .post-form .tema-selector label {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: .65rem;
-            color: #6f8ba0;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .post-form .btn-tema {
-            background: rgba(0, 229, 255, .05);
-            border: 1px solid rgba(0, 229, 255, .2);
-            color: #7fdcff;
-            padding: 6px 12px;
-            border-radius: 12px;
-            font-size: .72rem;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .post-form .btn-tema:hover {
-            background: rgba(0, 229, 255, .15);
-            border-color: rgba(0, 229, 255, .4);
-            color: #cdf6ff;
-        }
-
-        .post-form .form-actions {
+        .pf-barra {
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            margin-top: 14px;
-            flex-wrap: wrap;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255,255,255,.05);
         }
 
-        .post-form .tools {
+        .pf-iconos {
             display: flex;
             gap: 8px;
             align-items: center;
         }
-
-        .post-form .tools > button {
+        .pf-iconos > button {
             display: inline-flex;
             align-items: center;
             justify-content: center;
@@ -332,44 +263,117 @@
             width: 40px;
             height: 40px;
             border-radius: 14px;
-            border: 1px solid rgba(255, 255, 255, .07);
-            background: rgba(255, 255, 255, .03);
+            border: 1px solid rgba(255,255,255,.07);
+            background: rgba(255,255,255,.03);
             color: #7fdcff;
             cursor: pointer;
             padding: 0;
             transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease, color .2s ease;
-            font-size: 0;
         }
-
-        .post-form .tools > button svg {
-            width: 18px;
-            height: 18px;
-        }
-
-        .post-form .tools > button:hover {
-            background: rgba(0, 229, 255, .10);
-            border-color: rgba(0, 229, 255, .35);
-            box-shadow: 0 0 14px rgba(0, 229, 255, .22);
+        .pf-iconos > button svg { width: 18px; height: 18px; }
+        .pf-iconos > button:hover {
+            background: rgba(0,229,255,.10);
+            border-color: rgba(0,229,255,.35);
+            box-shadow: 0 0 14px rgba(0,229,255,.22);
             color: #cdf6ff;
         }
+        .pf-iconos > button:active { transform: scale(.92); }
 
-        .post-form .tools > button:active { transform: scale(.92); }
-
-        .post-form .tools > button.venta {
+        .pf-iconos > button.venta {
             width: auto;
             padding: 0 14px;
             font-size: .7rem;
-            border-color: rgba(212, 175, 55, .3);
+            border-color: rgba(212,175,55,.3);
             color: #D4AF37;
         }
-
-        .post-form .tools > button.venta:hover {
-            background: rgba(212, 175, 55, .1);
-            border-color: rgba(212, 175, 55, .6);
-            box-shadow: 0 0 14px rgba(212, 175, 55, .2);
+        .pf-iconos > button.venta:hover {
+            background: rgba(212,175,55,.1);
+            border-color: rgba(212,175,55,.6);
+            box-shadow: 0 0 14px rgba(212,175,55,.2);
         }
 
-        .post-form #btnPublicar {
+        /* Emoji picker */
+        #emojiPicker {
+            position: absolute;
+            bottom: 70px;
+            left: 10px;
+            background: #0b1016;
+            border: 1px solid rgba(0,229,255,.2);
+            border-radius: 16px;
+            padding: 10px;
+            display: none;
+            z-index: 30;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            max-width: 280px;
+        }
+        #emojiPicker.active { display: block; }
+        #emojiPicker .titulo {
+            font-size: .65rem;
+            color: #8c949c;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        #emojiPicker .grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 4px;
+        }
+        #emojiPicker .grid button {
+            background: transparent;
+            border: none;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 8px;
+        }
+        #emojiPicker .grid button:hover { background: rgba(255,255,255,.08); }
+
+        .pf-pie {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .pf-anillo {
+            position: relative;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .pf-anillo svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+        .pf-anillo circle {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+        }
+        .pf-anillo .bg { stroke: rgba(255,255,255,.08); }
+        .pf-anillo .fg {
+            stroke: #00e5ff;
+            stroke-dasharray: 94.25;
+            stroke-dashoffset: 94.25;
+            transition: stroke-dashoffset .2s ease, stroke .2s ease;
+        }
+        .pf-anillo.cerca .fg { stroke: #ffb800; }
+        .pf-anillo.lleno .fg { stroke: #ff3366; }
+        #pfContador {
+            position: relative;
+            font-size: .58rem;
+            color: #8c949c;
+            font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            z-index: 1;
+        }
+
+        #btnPublicar {
             position: relative;
             display: inline-flex;
             align-items: center;
@@ -386,44 +390,55 @@
             letter-spacing: 1.5px !important;
             text-transform: uppercase;
             cursor: pointer;
-            box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
+            box-shadow: 0 8px 26px rgba(0,229,255,.25), inset 0 1px 0 rgba(255,255,255,.35);
             transition: background-position .6s ease, transform .15s ease, box-shadow .25s ease, opacity .2s ease;
             overflow: hidden;
         }
-
-        .post-form #btnPublicar svg {
-            width: 15px;
-            height: 15px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2.2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
+        #btnPublicar svg {
+            width: 15px; height: 15px;
+            fill: none; stroke: currentColor;
+            stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round;
         }
-
-        .post-form #btnPublicar:hover {
+        #btnPublicar:hover {
             background-position: 100% 0;
-            box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4);
+            box-shadow: 0 10px 34px rgba(0,229,255,.42), inset 0 1px 0 rgba(255,255,255,.4);
+        }
+        #btnPublicar:active { transform: scale(.96); }
+        #btnPublicar:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+        @media (max-width: 420px) {
+            .pf-composer { padding: 14px 12px 12px; border-radius: 20px; }
+            .pf-tema { flex-wrap: wrap; }
+            .pf-iconos { gap: 6px; }
+            .pf-iconos > button { width: 36px; height: 36px; border-radius: 12px; }
+            .pf-iconos > button.venta { padding: 0 10px; font-size: .62rem; }
+            .pf-barra { flex-wrap: wrap; }
+            #btnPublicar { padding: 10px 16px !important; font-size: .62rem !important; letter-spacing: 1px !important; }
+            textarea#postContent { min-height: 80px; font-size: .9rem; padding: 12px 14px; }
+            .pf-pie { gap: 8px; }
+            .pf-anillo { width: 32px; height: 32px; }
         }
 
-        .post-form #btnPublicar:active { transform: scale(.96); }
-
-        .post-form #btnPublicar:disabled {
-            opacity: .5;
-            cursor: not-allowed;
-            box-shadow: none;
+        /* ================================================================
+           TENDENCIAS / TOKENS (ahora usan .sec-head)
+           ================================================================ */
+        .trending-section .sec-head h3,
+        .tokens-destacados .sec-head h3 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-family: 'Orbitron', monospace;
+            color: #f0f4f8;
+        }
+        .trending-section .sec-head .actualizado {
+            font-size: 0.65rem;
+            color: #6f8ba0;
         }
 
-        @keyframes perfilHandleHalo {
-            0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
-            50% { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
-        }
-
-        @keyframes perfilHandleDestello {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .35; }
-        }
-
+        /* ================================================================
+           HEADER (blur + z-index)
+           ================================================================ */
         .header {
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -431,195 +446,280 @@
         }
 
         /* ================================================================
-           CSARIEL'S · HISTORIAS · ARO WEB3 PRO
-
-           Diseño:
-           - Sin discos multicolor.
-           - Sin fondos circulares giratorios.
-           - Aro metálico fino en oro y cian.
-           - Centro reservado para la fotografía.
-           - Historias vistas con aro discreto.
+           ARO HISTORIAS (mantengo tu diseño Web3 Pro)
            ================================================================ */
-
         #csStoryStrip {
-            display: flex;
-            gap: 16px;
-            padding: 12px 0 16px;
-            overflow-x: auto;
-            scrollbar-width: none;
+            display: flex; gap: 16px; padding: 12px 0 16px;
+            overflow-x: auto; scrollbar-width: none;
         }
-
-        #csStoryStrip::-webkit-scrollbar {
-            display: none;
-        }
+        #csStoryStrip::-webkit-scrollbar { display: none; }
 
         .cs-story-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 8px;
-            background: transparent !important;
-            border: none !important;
-            cursor: pointer;
-            padding: 0;
-            flex-shrink: 0;
-            transition: transform .2s ease;
-            width: 68px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            background: transparent !important; border: none !important;
+            cursor: pointer; padding: 0; flex-shrink: 0;
+            transition: transform .2s ease; width: 68px;
         }
-
-        .cs-story-item:hover {
-            transform: translateY(-2px);
-        }
-
+        .cs-story-item:hover { transform: translateY(-2px); }
         .cs-story-item > span:last-child {
-            font-size: .7rem;
-            color: #8fa3b8;
-            font-weight: 600;
-            letter-spacing: .3px;
-            max-width: 68px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            font-size: .7rem; color: #8fa3b8; font-weight: 600;
+            letter-spacing: .3px; max-width: 68px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
 
-        /* ARO EXTERIOR WEB3 PRO */
         .cs-story-ring {
-            position: relative;
-            width: 68px;
-            height: 68px;
-            min-width: 68px;
-            min-height: 68px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 3px;
-            box-sizing: border-box;
-
-            /* Aro metálico elegante, sin disco multicolor */
-            background: linear-gradient(
-                145deg,
-                #D4AF37 0%,
-                #f6e6a6 22%,
-                #00c9d8 50%,
-                #0F2D1A 76%,
-                #D4AF37 100%
-            );
-
-            /* Sin giro ni animación multicolor */
+            position: relative; width: 68px; height: 68px;
+            min-width: 68px; min-height: 68px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            padding: 3px; box-sizing: border-box;
+            background: linear-gradient(145deg, #D4AF37 0%, #f6e6a6 22%, #00c9d8 50%, #0F2D1A 76%, #D4AF37 100%);
             animation: none !important;
-
             box-shadow:
-                0 0 0 1px rgba(212, 175, 55, .28),
-                0 0 12px rgba(0, 229, 255, .13),
-                0 0 16px rgba(212, 175, 55, .12);
-
+                0 0 0 1px rgba(212,175,55,.28),
+                0 0 12px rgba(0,229,255,.13),
+                0 0 16px rgba(212,175,55,.12);
             transition: box-shadow .25s ease, transform .25s ease;
             overflow: visible !important;
         }
-
-        /* Eliminar el antiguo disco holográfico */
-        .cs-story-ring::before {
-            content: none !important;
-            display: none !important;
-        }
-
+        .cs-story-ring::before { content: none !important; display: none !important; }
         .cs-story-item:hover .cs-story-ring {
             box-shadow:
-                0 0 0 1px rgba(212, 175, 55, .55),
-                0 0 16px rgba(0, 229, 255, .28),
-                0 0 22px rgba(212, 175, 55, .20);
+                0 0 0 1px rgba(212,175,55,.55),
+                0 0 16px rgba(0,229,255,.28),
+                0 0 22px rgba(212,175,55,.20);
         }
-
-        /* FOTOGRAFÍA INTERIOR */
         .cs-story-ring img,
         .cs-story-ring > .story-avatar {
-            width: 100%;
-            height: 100%;
-            min-width: 0;
-            min-height: 0;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #0a0f16;
-            background: #0a0f16;
-            position: relative;
-            z-index: 2;
-            box-sizing: border-box;
+            width: 100%; height: 100%; min-width: 0; min-height: 0;
+            border-radius: 50%; object-fit: cover;
+            border: 2px solid #0a0f16; background: #0a0f16;
+            position: relative; z-index: 2; box-sizing: border-box;
         }
-
-        /* HISTORIA YA VISTA */
         .cs-story-ring.vista {
-            background: linear-gradient(
-                145deg,
-                #46534c,
-                #8b9690,
-                #26372e
-            ) !important;
-
+            background: linear-gradient(145deg, #46534c, #8b9690, #26372e) !important;
             animation: none !important;
-
-            box-shadow:
-                0 0 0 1px rgba(143, 163, 152, .25);
+            box-shadow: 0 0 0 1px rgba(143,163,152,.25);
         }
-
-        .cs-story-ring.vista::before {
-            display: none !important;
-        }
-
-        /* TU HISTORIA · ARO PARA AGREGAR */
+        .cs-story-ring.vista::before { display: none !important; }
         .cs-story-ring.story-add {
-            background: linear-gradient(
-                145deg,
-                #D4AF37 0%,
-                #f5e4a1 28%,
-                #00e5ff 65%,
-                #0F2D1A 100%
-            ) !important;
-
+            background: linear-gradient(145deg, #D4AF37 0%, #f5e4a1 28%, #00e5ff 65%, #0F2D1A 100%) !important;
             animation: none !important;
-
             box-shadow:
-                0 0 0 1px rgba(212, 175, 55, .4),
-                0 0 13px rgba(0, 229, 255, .18),
-                0 0 18px rgba(212, 175, 55, .15);
+                0 0 0 1px rgba(212,175,55,.4),
+                0 0 13px rgba(0,229,255,.18),
+                0 0 18px rgba(212,175,55,.15);
         }
-
-        .cs-story-ring.story-add::before {
-            display: none !important;
-        }
-
+        .cs-story-ring.story-add::before { display: none !important; }
         .cs-story-ring.story-add svg {
-            width: 26px;
-            height: 26px;
-            stroke: #D4AF37;
-            stroke-width: 2.4;
-            fill: none;
-            filter: drop-shadow(0 0 4px rgba(212, 175, 55, .35));
-            position: relative;
-            z-index: 3;
+            width: 26px; height: 26px;
+            stroke: #D4AF37; stroke-width: 2.4; fill: none;
+            filter: drop-shadow(0 0 4px rgba(212,175,55,.35));
+            position: relative; z-index: 3;
         }
-
         .cs-story-ring.story-add::after {
-            content: '';
-            position: absolute;
-            inset: 3px;
-            border-radius: 50%;
-            background: #0a0f16;
-            z-index: 1;
+            content: ''; position: absolute; inset: 3px;
+            border-radius: 50%; background: #0a0f16; z-index: 1;
         }
+        .cs-story-ring.story-add svg { z-index: 3; }
 
-        .cs-story-ring.story-add svg {
-            z-index: 3;
-        }
-
-        /* Accesibilidad: respetar movimiento reducido */
         @media (prefers-reduced-motion: reduce) {
-            .cs-story-ring,
-            .cs-story-ring.story-add,
-            .cs-story-item {
-                animation: none !important;
-                transition: none !important;
+            .cs-story-ring, .cs-story-ring.story-add, .cs-story-item {
+                animation: none !important; transition: none !important;
             }
+        }
+
+        /* ================================================================
+           HISTORIAS · VISOR + PIE + PANELES (v4.0)
+           ================================================================ */
+        #csHistoriaVisor {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 5000;
+            align-items: center;
+            justify-content: center;
+        }
+        .cs-historia-backdrop {
+            position: absolute; inset: 0;
+            background: rgba(0,0,0,.85);
+            backdrop-filter: blur(6px);
+        }
+        .cs-historia-card {
+            position: relative;
+            max-width: 440px;
+            width: 100%;
+            background: #0b1016;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,.8);
+            display: flex;
+            flex-direction: column;
+            max-height: 92vh;
+        }
+        .cs-historia-barras {
+            display: flex; gap: 4px; padding: 10px 12px 6px;
+        }
+        .cs-historia-barra {
+            flex: 1; height: 3px; background: rgba(255,255,255,.15);
+            border-radius: 2px; overflow: hidden;
+        }
+        .cs-historia-barra.completada { background: rgba(255,255,255,.7); }
+        .cs-historia-barra.activa {
+            background: linear-gradient(90deg, #00e5ff, #8b5cf6);
+        }
+        .cs-historia-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 6px 12px;
+        }
+        .cs-historia-autor {
+            font-size: .85rem; font-weight: 700; color: #f0f4f8;
+        }
+        .cs-historia-cerrar {
+            background: transparent; border: none; color: #fff;
+            font-size: 1rem; cursor: pointer; padding: 4px 8px;
+        }
+        .cs-historia-media {
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            background: #000; min-height: 200px; max-height: 70vh;
+            overflow: hidden;
+        }
+        .cs-historia-media img,
+        .cs-historia-media video,
+        .cs-historia-media-el {
+            max-width: 100%; max-height: 70vh;
+            object-fit: contain; display: block;
+        }
+        .cs-historia-caption {
+            padding: 10px 16px; color: #d0d8e0; font-size: .85rem;
+        }
+        .cs-historia-nav {
+            display: flex; justify-content: space-between;
+            padding: 10px 16px 14px;
+        }
+        .cs-historia-nav button {
+            background: rgba(255,255,255,.08); color: #fff;
+            border: 1px solid rgba(255,255,255,.1);
+            border-radius: 50%; width: 40px; height: 40px;
+            cursor: pointer; font-size: .9rem;
+            transition: background .2s;
+        }
+        .cs-historia-nav button:hover:not(:disabled) { background: rgba(0,229,255,.2); }
+        .cs-historia-nav button:disabled { opacity: .3; cursor: not-allowed; }
+
+        /* PIE · Dueño vs Espectador */
+        .cs-historia-pie {
+            display: flex; flex-direction: column; gap: 8px;
+            padding: 8px 16px 4px;
+            border-top: 1px solid rgba(255,255,255,.06);
+        }
+        .cs-historia-resumen {
+            font-size: .7rem; color: #8fa3b8;
+            display: flex; gap: 12px;
+        }
+        .cs-historia-pie-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(0,229,255,.08);
+            border: 1px solid rgba(0,229,255,.25);
+            color: #7fdcff;
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-size: .72rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .2s;
+        }
+        .cs-historia-pie-btn:hover {
+            background: rgba(0,229,255,.18);
+            border-color: rgba(0,229,255,.5);
+            color: #cdf6ff;
+        }
+        .cs-historia-comentar {
+            display: flex; gap: 8px; align-items: center;
+            padding: 8px 0;
+        }
+        .cs-historia-input {
+            flex: 1;
+            background: rgba(0,0,0,.35);
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 20px;
+            padding: 8px 14px;
+            color: #eef6ff;
+            font-family: 'Inter', sans-serif;
+            font-size: .8rem;
+            outline: none;
+        }
+        .cs-historia-input:focus {
+            border-color: rgba(0,229,255,.5);
+            box-shadow: 0 0 0 2px rgba(0,229,255,.1);
+        }
+        .cs-historia-enviar {
+            background: linear-gradient(120deg, #00e5ff, #8b5cf6);
+            border: 0; color: #04070d;
+            border-radius: 20px; padding: 8px 16px;
+            font-size: .72rem; font-weight: 700;
+            font-family: 'Orbitron', monospace;
+            letter-spacing: .5px; cursor: pointer;
+        }
+        .cs-historia-enviar:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* Panel vistas / comentarios */
+        .cs-historia-panel {
+            position: absolute; left: 0; right: 0; bottom: 0;
+            top: 40%;
+            background: #0b1016;
+            border-top: 1px solid rgba(0,229,255,.25);
+            border-radius: 20px 20px 0 0;
+            display: flex; flex-direction: column;
+            z-index: 10;
+            box-shadow: 0 -10px 40px rgba(0,0,0,.8);
+        }
+        .cs-panel-titulo {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 12px 16px;
+            font-family: 'Orbitron', monospace;
+            font-size: .8rem; color: #f0f4f8;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+        }
+        .cs-panel-titulo button {
+            background: transparent; border: none; color: #8fa3b8;
+            font-size: 1rem; cursor: pointer;
+        }
+        .cs-panel-vacio {
+            padding: 24px 16px; text-align: center;
+            color: #6f8ba0; font-size: .8rem;
+        }
+        .cs-panel-lista {
+            flex: 1; overflow-y: auto; padding: 4px 0;
+        }
+        .cs-panel-fila {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 16px;
+            border-bottom: 1px solid rgba(255,255,255,.03);
+        }
+        .cs-panel-fila.alto {
+            align-items: flex-start;
+        }
+        .cs-panel-avatar {
+            width: 32px; height: 32px; border-radius: 50%;
+            overflow: hidden; flex-shrink: 0;
+            background: linear-gradient(135deg, #1a4a2a, #a855f7);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; font-size: .8rem;
+        }
+        .cs-panel-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .cs-panel-info {
+            flex: 1; min-width: 0;
+            display: flex; flex-direction: column; gap: 2px;
+        }
+        .cs-panel-nombre {
+            font-size: .8rem; font-weight: 700; color: #f0f4f8;
+        }
+        .cs-panel-sub {
+            font-size: .65rem; color: #6f8ba0;
+        }
+        .cs-panel-texto {
+            font-size: .8rem; color: #d0d8e0; line-height: 1.4;
+            word-break: break-word;
         }
     </style>
 </head>
@@ -658,12 +758,10 @@
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
-
             <a href="/" class="nav-link" data-nav="inicio">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
                 Inicio
             </a>
-
             <a href="/features/muro/muro.html" class="nav-link active" data-nav="muro" aria-current="page">
                 <svg class="icon icon-sm" viewBox="0 0 24 24">
                     <rect x="3" y="3" width="7" height="7" rx="1.5"/>
@@ -673,12 +771,10 @@
                 </svg>
                 Muro
             </a>
-
             <a href="/features/perfil/perfil.html" class="nav-link" data-nav="perfil">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
                 Perfil
             </a>
-
             <a href="/features/mensajes/contactos.html" class="nav-link" data-nav="contactos">
                 <svg class="icon icon-sm" viewBox="0 0 24 24">
                     <circle cx="9" cy="8" r="3.5"/>
@@ -688,7 +784,6 @@
                 </svg>
                 Contactos
             </a>
-
             <a href="/features/live/live.html" class="nav-link live" data-nav="live">
                 <svg class="icon icon-sm" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="2"/>
@@ -696,7 +791,6 @@
                 </svg>
                 Live
             </a>
-
             <a href="/features/internet/internet.html" class="nav-link" data-nav="internet">
                 <svg class="icon icon-sm" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="9"/>
@@ -704,7 +798,6 @@
                 </svg>
                 Internet
             </a>
-
             <a href="/features/videos/videos.html" class="nav-link" data-nav="videos">
                 <svg class="icon icon-sm" viewBox="0 0 24 24">
                     <rect x="2.5" y="5" width="19" height="14" rx="2.5"/>
@@ -712,12 +805,10 @@
                 </svg>
                 Videos
             </a>
-
             <a href="/features/grupos/grupos.html" class="nav-link" data-nav="grupos">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/></svg>
                 Canales
             </a>
-
             <a href="/features/mercado/index.html" class="nav-link" data-nav="mercado">
                 <svg class="icon icon-sm" viewBox="0 0 24 24">
                     <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
@@ -726,7 +817,6 @@
                 </svg>
                 Mercado
             </a>
-
         </nav>
 
         <!-- BÚSQUEDA GLOBAL -->
@@ -743,32 +833,26 @@
 
         <!-- FILTROS DEL MURO -->
         <nav class="muro-filter-nav" id="muroFilterNav" aria-label="Filtros del Muro">
-
             <a href="#" class="filter-tab active" data-filter="parati">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>
                 Para ti
             </a>
-
             <a href="#" class="filter-tab" data-filter="envivo">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49"/></svg>
                 En vivo <span class="dot-live"></span>
             </a>
-
             <a href="#" class="filter-tab" data-filter="siguiendo">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M18 8v6M15 11h6"/></svg>
                 Siguiendo
             </a>
-
             <a href="#" class="filter-tab" data-filter="explorar">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>
                 Explorar
             </a>
-
             <a href="#" class="filter-tab" data-filter="puebla">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
                 Puebla
             </a>
-
         </nav>
 
         <!-- ESPACIO SOCIAL -->
@@ -798,7 +882,6 @@
                     <span><span data-clave="muro_tendencia">Tendencia:</span> <strong id="tendenciaValor" style="color:var(--text-muted);">Estable</strong></span>
                 </div>
             </div>
-
             <button class="btn-vender-token" onclick="abrirModalVenta()" data-clave="muro_vender_tokens">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
                 Vender Es.stoks
@@ -807,7 +890,7 @@
 
         <!-- TENDENCIAS -->
         <div class="trending-section">
-            <div class="header">
+            <div class="sec-head">
                 <h3 data-clave="muro_tendencia_ahora">
                     <svg class="icon" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
                     Tendencia ahora
@@ -822,7 +905,7 @@
 
         <!-- TOKENS DESTACADOS -->
         <div class="tokens-destacados" id="tokensDestacados" style="display:none;">
-            <div class="header">
+            <div class="sec-head">
                 <h3>
                     <svg class="icon" viewBox="0 0 24 24"><path d="M6 3h12l4 6-10 12L2 9l4-6z"/><path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/></svg>
                     Tokens en venta destacados
@@ -841,18 +924,18 @@
             <span class="info" id="filtroInfo">Mostrando todo el muro</span>
         </div>
 
-        <!-- COMPOSITOR -->
-        <div class="post-form">
+        <!-- COMPOSITOR UNIFICADO -->
+        <div class="pf-composer" id="pfComposerMuro">
 
-            <div class="form-header">
-                <div class="avatar" id="userAvatar">◈</div>
+            <div class="pf-usuario">
+                <div class="pf-avatar" id="userAvatar">◈</div>
                 <div>
-                    <div class="nombre" id="userNombre">Explorador</div>
-                    <div class="handle" id="userHandle">@explorador</div>
+                    <div class="pf-nombre" id="userNombre">Explorador</div>
+                    <div class="pf-handle" id="userHandle">@explorador</div>
                 </div>
             </div>
 
-            <div class="tema-selector">
+            <div class="pf-tema">
                 <label>
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                     Tema (opcional):
@@ -866,13 +949,17 @@
                 <div class="tema-dropdown" id="temaDropdown"></div>
             </div>
 
-            <textarea id="postContent" data-placeholder="muro_placeholder" placeholder="¿Qué está pasando en tu mundo? #hashtag @mencion"></textarea>
+            <textarea id="postContent" data-placeholder="muro_placeholder" placeholder="¿Qué está pasando en tu mundo? #hashtag @mencion" maxlength="2000"></textarea>
 
-            <div class="form-actions">
-                <div class="tools">
+            <div class="pf-barra">
+                <div class="pf-iconos">
 
                     <button type="button" onclick="insertarHashtag()" title="Hashtag">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
+                    </button>
+
+                    <button type="button" onclick="insertarMencion()" title="Mención">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg>
                     </button>
 
                     <button type="button" onclick="toggleEmojiPicker()" id="btnEmoji" title="Emoji">
@@ -895,10 +982,20 @@
 
                 </div>
 
-                <button class="btn-publicar" id="btnPublicar" data-clave="muro_publicar">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                    Publicar
-                </button>
+                <div class="pf-pie">
+                    <div class="pf-anillo" id="pfAnillo">
+                        <svg viewBox="0 0 36 36">
+                            <circle class="bg" cx="18" cy="18" r="15"></circle>
+                            <circle class="fg" id="pfAnilloProgreso" cx="18" cy="18" r="15"></circle>
+                        </svg>
+                        <span id="pfContador">0</span>
+                    </div>
+
+                    <button class="btn-publicar" id="btnPublicar" data-clave="muro_publicar">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                        Publicar
+                    </button>
+                </div>
             </div>
 
             <input type="file" id="inputImagen" accept="image/*" style="display:none;" onchange="subirImagenMuro(event)" />
@@ -920,13 +1017,11 @@
     <!-- MODAL VENDER -->
     <div class="modal-overlay" id="modalVender">
         <div class="modal">
-
             <div class="modal-header">
                 <h2 data-clave="muro_vender_tokens">
                     <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
                     Vender Es.stoks
                 </h2>
-
                 <button type="button" class="btn-cerrar" onclick="cerrarModalVenta()" aria-label="Cerrar">
                     <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
@@ -961,31 +1056,26 @@
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
                 Publicar venta
             </button>
-
         </div>
     </div>
 
     <!-- MODAL CONFIRMAR COMPRA -->
     <div class="modal-overlay" id="modalConfirmarCompra">
         <div class="modal">
-
             <div class="modal-header">
                 <h2 data-clave="muro_confirmar_compra">
                     <svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     Confirmar compra
                 </h2>
-
                 <button type="button" class="btn-cerrar" onclick="cerrarModalConfirmacion()" aria-label="Cerrar">
                     <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
 
             <div class="modal-body">
-
                 <div class="form-group" style="text-align:left;">
                     <label data-clave="muro_cantidad_comprar">¿Cuántos tokens quieres comprar?</label>
                     <input type="number" id="inputCantidadCompra" min="1" step="1" value="1" />
-
                     <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
                         <span>Disponibles: <strong id="confirmDisponibles">0</strong></span>
                         <button type="button" onclick="seleccionarTodosTokens()" style="background:none;border:none;color:var(--gold);font-size:0.6rem;cursor:pointer;text-decoration:underline;">Comprar todos</button>
@@ -993,40 +1083,32 @@
                 </div>
 
                 <div class="detalle-pago">
-
                     <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:4px;">
                         <span style="color:var(--text-muted);">Precio unitario:</span>
                         <span id="confirmPrecioUnitario">$0.00 MXN</span>
                     </div>
-
                     <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:6px;">
                         <span style="color:var(--text-muted);">Cantidad:</span>
                         <span id="confirmCantidadLabel">1 token</span>
                     </div>
-
                     <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:6px;margin-top:6px;">
-
                         <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
                             <span style="color:var(--text-muted);">Total a pagar:</span>
                             <span id="confirmTotal" style="font-family:'Orbitron',monospace;color:var(--gold);font-weight:700;">$0.00 MXN</span>
                         </div>
-
                         <div style="display:flex;justify-content:space-between;font-size:0.6rem;margin-bottom:4px;">
                             <span style="color:var(--text-muted);">Comisión Csariel's (3%):</span>
                             <span id="confirmComision" style="color:var(--warning);">$0.00 MXN</span>
                         </div>
-
                         <div style="display:flex;justify-content:space-between;font-size:0.6rem;">
                             <span style="color:var(--text-muted);">Vendedor recibe:</span>
                             <span id="confirmVendedor" style="color:var(--success);">$0.00 MXN</span>
                         </div>
-
                     </div>
                 </div>
 
                 <div class="form-group" style="text-align:left;margin-top:12px;">
                     <label for="muro-pay-currency">Red de pago (cripto)</label>
-
                     <select id="muro-pay-currency" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
                         <option value="usdttrc20">USDT · TRON (TRC20) — recomendado</option>
                         <option value="usdtbsc">USDT · BSC (BEP20)</option>
@@ -1045,13 +1127,11 @@
 
                 <div style="display:flex;gap:10px;margin-top:16px;">
                     <button type="button" class="btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
-
                     <button type="button" class="btn-confirmar" onclick="confirmarCompraCrypto()" id="btnConfirmarCompra">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                         Ir a pagar
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
@@ -1059,20 +1139,17 @@
     <!-- MODAL PAGO CRYPTO -->
     <div class="modal-overlay" id="cryptoPaymentModal">
         <div class="modal modal-content">
-
             <div class="modal-header">
                 <h2 data-clave="muro_pagar_usdt">
                     <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                     Pagar con USDT/USDC
                 </h2>
-
                 <button type="button" class="btn-cerrar" onclick="cerrarModalPago()" aria-label="Cerrar">
                     <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
 
             <div style="text-align:center;">
-
                 <div class="contador-pago" id="contadorPago">
                     <div class="label" data-clave="muro_tiempo_restante">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -1101,21 +1178,17 @@
                 </div>
 
                 <div class="actions">
-
                     <button type="button" onclick="copiarDireccionCrypto()" style="background:transparent;color:var(--text-secondary);border:1px solid var(--glass-border);padding:8px 16px;border-radius:30px;font-size:0.65rem;cursor:pointer;">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         Copiar dirección
                     </button>
-
                     <button type="button" class="btn-gold" onclick="verificarPagoCrypto()" id="btnVerificarPago">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                         Verificar pago
                     </button>
-
                 </div>
 
                 <div class="status" id="cryptoStatus">Esperando confirmación de pago...</div>
-
             </div>
         </div>
     </div>
@@ -1150,176 +1223,116 @@
     <script src="/features/muro/js/muro-realtime.js"></script>
 
     <!-- HISTORIAS -->
-    <script src="/features/muro/js/muro-historias.js?v=3"></script>
+    <script src="/features/muro/js/muro-historias.js?v=4"></script>
     <script src="/features/muro/js/muro-init.js"></script>
 
     <!-- BÚSQUEDA GLOBAL -->
     <script>
     window.verPerfilDesdeMuro = function(usuarioId, handle) {
         if (!usuarioId) return;
-
         const param = handle
             ? `?u=${encodeURIComponent(handle)}`
             : `?id=${encodeURIComponent(usuarioId)}`;
-
         window.location.href = `/features/perfil/perfil-publico.html${param}`;
     };
 
     window.agregarDesdeMuro = async function(contactoId) {
         const client = window.supabaseClient || null;
-
-        if (!client) {
-            console.error("Supabase no está listo");
-            return;
-        }
-
+        if (!client) return;
         try {
             const session = await client.auth.getSession();
-
             if (!session || !session.data.session) return;
-
             const miId = session.data.session.user.id;
-
             const { error } = await client.from('contactos').insert({
                 usuario_id: miId,
                 contacto_id: contactoId,
                 estado: 'pendiente',
                 es_favorito: false
             });
-
             if (error) {
                 if (error.code === '23505') {
-                    if (window.showToast) {
-                        window.showToast('Ya enviaste una solicitud a esta persona.', 'warning');
-                    }
-                } else {
-                    throw error;
-                }
+                    if (window.showToast) window.showToast('Ya enviaste una solicitud a esta persona.', 'warning');
+                } else { throw error; }
             } else {
-                if (window.showToast) {
-                    window.showToast('Solicitud de amistad enviada.', 'success');
-                }
-
+                if (window.showToast) window.showToast('Solicitud de amistad enviada.', 'success');
                 const resultsContainer = document.getElementById('globalSearchResults');
-
-                if (resultsContainer) {
-                    resultsContainer.classList.remove('active');
-                }
+                if (resultsContainer) resultsContainer.classList.remove('active');
             }
-
         } catch (err) {
             console.error("Error al agregar:", err);
-
-            if (window.showToast) {
-                window.showToast('No se pudo enviar la solicitud.', 'error');
-            }
+            if (window.showToast) window.showToast('No se pudo enviar la solicitud.', 'error');
         }
     };
 
     (function() {
         const input = document.getElementById('globalSearchInput');
         const resultsContainer = document.getElementById('globalSearchResults');
-
         let debounceTimer;
-
         if (!input || !resultsContainer) return;
 
         input.addEventListener('input', function(e) {
             const query = e.target.value.trim();
-
             clearTimeout(debounceTimer);
-
             if (query.length < 2) {
                 resultsContainer.classList.remove('active');
                 resultsContainer.innerHTML = '';
                 return;
             }
-
             resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">🔍 Buscando en Csariel\'s...</div>';
             resultsContainer.classList.add('active');
 
             debounceTimer = setTimeout(async () => {
                 const client = window.supabaseClient || null;
-
                 if (!client) return;
-
                 try {
-                    const { data, error } = await client.rpc('buscar_usuarios', {
-                        p_query: query
-                    });
-
+                    const { data, error } = await client.rpc('buscar_usuarios', { p_query: query });
                     if (error) throw error;
-
-                    const usuarios = Array.isArray(data)
-                        ? data
-                        : (data && Array.isArray(data.data) ? data.data : []);
-
+                    const usuarios = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
                     if (!usuarios.length) {
                         resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">No se encontraron usuarios.</div>';
                         return;
                     }
-
                     const session = await client.auth.getSession();
-
-                    const miId = session && session.data && session.data.session
-                        ? session.data.session.user.id
-                        : null;
-
+                    const miId = session && session.data && session.data.session ? session.data.session.user.id : null;
                     const usuariosFiltrados = usuarios.filter(u => u.id !== miId);
-
                     if (!usuariosFiltrados.length) {
                         resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">No se encontraron usuarios.</div>';
                         return;
                     }
-
                     resultsContainer.innerHTML = usuariosFiltrados.map(u => {
                         const nombre = u.nombre || u.handle || 'Usuario';
-
-                        const handle = u.handle
-                            ? '@' + u.handle.replace(/^@/, '')
-                            : '';
-
+                        const handle = u.handle ? '@' + u.handle.replace(/^@/, '') : '';
                         const avatarImg = u.avatar_url
                             ? `<img src="${u.avatar_url}" alt="${nombre}" style="width:100%;height:100%;object-fit:cover;">`
                             : nombre.charAt(0).toUpperCase();
-
                         return `
                             <div class="search-user-item" onclick="window.verPerfilDesdeMuro('${u.id}', '${u.handle || ''}')">
                                 <div class="search-user-avatar">${avatarImg}</div>
-
                                 <div class="search-user-info">
                                     <div class="search-user-name">
                                         ${nombre}
                                         ${u.verificado ? '<span style="color:var(--gold);font-size:0.7rem;">✓</span>' : ''}
                                     </div>
-
                                     <div class="search-user-handle">${handle}</div>
                                 </div>
-
                                 <button class="search-user-action" onclick="event.stopPropagation(); window.agregarDesdeMuro('${u.id}')">
                                     Agregar
                                 </button>
                             </div>
                         `;
                     }).join('');
-
                 } catch (err) {
                     console.error("Error buscando usuarios:", err);
-
                     resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #ff3366; font-size: 0.8rem;">Error al buscar usuarios.</div>';
                 }
-
             }, 400);
         });
 
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.global-search-container')) {
-                if (resultsContainer) {
-                    resultsContainer.classList.remove('active');
-                }
+                if (resultsContainer) resultsContainer.classList.remove('active');
             }
         });
-
     })();
     </script>
 
@@ -1329,125 +1342,122 @@
         'use strict';
 
         var DESTINOS = {
-            inicio: '/',
-            muro: '/features/muro/muro.html',
-            perfil: '/features/perfil/perfil.html',
-            contactos: '/features/mensajes/contactos.html',
-            live: '/features/live/live.html',
-            internet: '/features/internet/internet.html',
-            videos: '/features/videos/videos.html',
-            grupos: '/features/grupos/grupos.html',
-            mercado: '/features/mercado/index.html'
+            inicio: '/', muro: '/features/muro/muro.html', perfil: '/features/perfil/perfil.html',
+            contactos: '/features/mensajes/contactos.html', live: '/features/live/live.html',
+            internet: '/features/internet/internet.html', videos: '/features/videos/videos.html',
+            grupos: '/features/grupos/grupos.html', mercado: '/features/mercado/index.html'
         };
 
         document.querySelectorAll('.main-nav a[data-nav]').forEach(function (enlace) {
             var destino = DESTINOS[enlace.getAttribute('data-nav')];
-
-            if (destino && enlace.getAttribute('href') !== destino) {
-                enlace.setAttribute('href', destino);
-            }
+            if (destino && enlace.getAttribute('href') !== destino) enlace.setAttribute('href', destino);
         });
 
         var DESTINOS_SECCIONES = {
-            inicio: '/',
-            muro: '/features/muro/muro.html',
-            perfil: '/features/perfil/perfil.html',
-            contactos: '/features/mensajes/contactos.html',
-            live: '/features/live/live.html'
+            inicio: '/', muro: '/features/muro/muro.html', perfil: '/features/perfil/perfil.html',
+            contactos: '/features/mensajes/contactos.html', live: '/features/live/live.html'
         };
 
         document.querySelectorAll('.muro-section-nav a[data-sec]').forEach(function (enlace) {
             var destino = DESTINOS_SECCIONES[enlace.getAttribute('data-sec')];
-
-            if (destino && enlace.getAttribute('href') !== destino) {
-                enlace.setAttribute('href', destino);
-            }
+            if (destino && enlace.getAttribute('href') !== destino) enlace.setAttribute('href', destino);
         });
 
         var filterTabs = document.querySelectorAll('.muro-filter-nav .filter-tab');
-
         filterTabs.forEach(function (tab) {
             tab.addEventListener('click', function (e) {
                 e.preventDefault();
-
-                filterTabs.forEach(function (t) {
-                    t.classList.remove('active');
-                    t.removeAttribute('aria-current');
-                });
-
+                filterTabs.forEach(function (t) { t.classList.remove('active'); t.removeAttribute('aria-current'); });
                 tab.classList.add('active');
                 tab.setAttribute('aria-current', 'true');
-
                 var filtro = tab.getAttribute('data-filter');
                 var info = document.getElementById('filtroInfo');
-
                 var mensajes = {
-                    parati: 'Mostrando todo el muro',
-                    envivo: 'Contenido en vivo',
+                    parati: 'Mostrando todo el muro', envivo: 'Contenido en vivo',
                     siguiendo: 'Publicaciones de cuentas que sigues',
-                    explorar: 'Explorando todo el contenido',
-                    puebla: 'Contenido de Puebla'
+                    explorar: 'Explorando todo el contenido', puebla: 'Contenido de Puebla'
                 };
-
-                if (info) {
-                    info.textContent = mensajes[filtro] || 'Mostrando todo el muro';
-                }
+                if (info) info.textContent = mensajes[filtro] || 'Mostrando todo el muro';
             });
         });
 
         function arrancarHistorias() {
             if (typeof cargarHistorias === 'function') {
-                cargarHistorias().catch(function (e) {
-                    console.warn('[Muro] Historias no cargadas:', e);
-                });
+                cargarHistorias().catch(function (e) { console.warn('[Muro] Historias no cargadas:', e); });
             }
         }
-
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', arrancarHistorias);
-        } else {
-            arrancarHistorias();
-        }
-
+        } else { arrancarHistorias(); }
     })();
 
     function enfocarPublicacion() {
         var ta = document.getElementById('postContent');
-
         if (!ta) return;
+        ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        setTimeout(function () { ta.focus(); }, 300);
+    }
 
-        ta.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-        });
-
-        setTimeout(function () {
-            ta.focus();
-        }, 300);
+    // NUEVA · Inserta @ en la posición del cursor
+    function insertarMencion() {
+        var ta = document.getElementById('postContent');
+        if (!ta) return;
+        var start = ta.selectionStart || 0;
+        var end = ta.selectionEnd || 0;
+        var texto = ta.value;
+        var antes = texto.slice(0, start);
+        var despues = texto.slice(end);
+        // Evita duplicar @ si ya hay uno justo antes
+        var prefijo = (antes.endsWith('@') || antes.endsWith(' ')) ? '' : '@';
+        ta.value = antes + prefijo + '@' + despues;
+        var pos = (antes + prefijo + '@').length;
+        ta.setSelectionRange(pos, pos);
+        ta.focus();
+        // Dispara el contador de caracteres
+        ta.dispatchEvent(new Event('input', { bubbles: true }));
     }
 
     function compartirMuro() {
         var url = window.location.href;
         var titulo = "Csariel's · Muro WEB3";
-
         if (navigator.share) {
-            navigator.share({
-                title: titulo,
-                url: url
-            }).catch(function () {});
-
+            navigator.share({ title: titulo, url: url }).catch(function () {});
         } else if (navigator.clipboard) {
             navigator.clipboard.writeText(url).then(function () {
-                if (typeof showToast === 'function') {
-                    showToast('Enlace copiado', 'success');
-                }
+                if (typeof showToast === 'function') showToast('Enlace copiado', 'success');
             }).catch(function () {
-                if (typeof showToast === 'function') {
-                    showToast('No se pudo copiar el enlace', 'error');
-                }
+                if (typeof showToast === 'function') showToast('No se pudo copiar el enlace', 'error');
             });
         }
     }
+    </script>
+
+    <!-- CONTADOR DE CARACTERES · PF-ANILLO -->
+    <script>
+    (function () {
+        'use strict';
+        var MAX = 2000;
+        var CIRC = 94.25;
+        var ta = document.getElementById('postContent');
+        var anillo = document.getElementById('pfAnillo');
+        var progreso = document.getElementById('pfAnilloProgreso');
+        var contador = document.getElementById('pfContador');
+        if (!ta || !anillo || !progreso || !contador) return;
+
+        function actualizar() {
+            var len = ta.value.length;
+            var ratio = Math.min(len / MAX, 1);
+            var offset = CIRC - (CIRC * ratio);
+            progreso.style.strokeDashoffset = String(offset);
+            contador.textContent = String(len);
+            anillo.classList.toggle('cerca', ratio >= 0.85 && ratio < 1);
+            anillo.classList.toggle('lleno', ratio >= 1);
+        }
+
+        ta.addEventListener('input', actualizar);
+        // Estado inicial
+        actualizar();
+    })();
     </script>
 
 </body>
