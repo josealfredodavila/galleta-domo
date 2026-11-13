@@ -1,9 +1,8 @@
 // ================================================================
-// MENSAJES · JS v5.9 · WEB3 NEON UI
-// Cambios v5.9 (Integración unificada de Estados con Muro):
-// - Estados ahora soporta VIDEO (media_tipo, media_url, duracion_segundos).
-// - cargarEstados, mostrarEstadoActual, previewEstado y publicarEstado actualizados.
-// - Se eliminó el localStorage de vistos en mensajes para usar la DB.
+// MENSAJES · JS v5.9.2 · WEB3 NEON UI
+// Cambios v5.9.2 (Separación de origen):
+// - cargarEstados: Filtra solo los estados con origen === 'mensajes'.
+// - publicarEstado: Inserta con origen: 'mensajes'.
 // ================================================================
 
 'use strict';
@@ -376,7 +375,6 @@ async function descargarImagen(url, nombreArchivo) {
 
 function cerrarPhotoViewer() { $('photoViewer').classList.remove('show'); }
 
-// [v5.9] LOCALSTORAGE ELIMINADO: Ahora todo se lee de la DB (estados_vistas)
 function estadoEsNuevo(estado) {
     if (!window.__estadosVistosIds) return true;
     return !window.__estadosVistosIds.has(estado.id);
@@ -412,8 +410,13 @@ async function cargarEstados() {
     scroll.innerHTML = '';
     if (!user) return;
     try {
-        // [v5.9] Columnas nuevas incluidas
-        const { data, error } = await db.from('estados').select('id, usuario_id, imagen_url, media_url, media_tipo, duracion_segundos, caption, created_at, expires_at').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: true });
+        // [v5.9.2] Filtro estricto por origen 'mensajes'
+        const { data, error } = await db.from('estados')
+            .select('id, usuario_id, imagen_url, media_url, media_tipo, duracion_segundos, caption, created_at, expires_at, origen')
+            .eq('origen', 'mensajes')
+            .gt('expires_at', new Date().toISOString())
+            .order('created_at', { ascending: true });
+            
         if (error) {
             if (error.code === '42P01') { console.warn('Tabla estados no existe aún'); return; }
             throw error;
@@ -424,7 +427,6 @@ async function cargarEstados() {
             return;
         }
 
-        // [v5.9] Cargar vistos en lote desde DB
         window.__estadosVistosIds = new Set();
         const idsEstados = estadosCache.map(e => e.id);
         if (idsEstados.length > 0) {
@@ -457,7 +459,6 @@ async function cargarEstados() {
         if (miEstado && miEstado.length > 0) {
             const tieneNuevos = miEstado.some(e => estadoEsNuevo(e));
             const ultimoEstadoId = miEstado[miEstado.length - 1].id;
-            // [v5.9] Fallback a media_url
             const ultimoEstadoImg = miEstado[miEstado.length - 1].media_url || miEstado[miEstado.length - 1].imagen_url;
             const totalVistas = await obtenerVistasEstado(ultimoEstadoId);
             const html = `
@@ -515,7 +516,6 @@ async function mostrarEstadoActual() {
         });
     }
     
-    // [v5.9] Manejo unificado de media (Imagen / Video)
     const urlMedia = estado.media_url || estado.imagen_url;
     const evImageEl = $('evImage');
     const evVideoEl = $('evVideo'); 
@@ -566,7 +566,6 @@ function iniciarProgresoEstado(estado) {
     if (estadoTimer) clearInterval(estadoTimer);
     progress.style.width = estadoProgresoActual + '%';
     
-    // [v5.9] Soporte para duración de video o imagen
     const esVideo = (estado.media_tipo === 'video');
     const duracionMs = (estado.duracion_segundos || 5) * 1000;
     
@@ -583,7 +582,7 @@ function iniciarProgresoEstado(estado) {
     } else {
         estadoTimer = setInterval(() => {
             if (estadoPausado) return;
-            estadoProgresoActual += 100 / (duracionMs / 50); // Avanza proporcional a los segundos
+            estadoProgresoActual += 100 / (duracionMs / 50);
             progress.style.width = estadoProgresoActual + '%';
             if (estadoProgresoActual >= 100) { clearInterval(estadoTimer); estadoProgresoActual = 0; siguienteEstado(); }
         }, 50);
@@ -671,7 +670,6 @@ function abrirModalEstado() {
 function cerrarModalEstado() { $('estadoUploadModal').classList.remove('show'); }
 function seleccionarArchivoEstado() { $('estadoFileInput').click(); }
 
-// [v5.9] PREVISUALIZACIÓN ADAPTADA A VIDEO
 async function previewEstado(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -713,7 +711,6 @@ async function previewEstado(event) {
     reader.readAsDataURL(file);
 }
 
-// [v5.9] PUBLICACIÓN ADAPTADA CON NUEVAS COLUMNAS
 async function publicarEstado() {
     const fileInput = $('estadoFileInput');
     const file = fileInput.files[0];
@@ -730,14 +727,15 @@ async function publicarEstado() {
     try {
         const d = await subirViaBackend(file, ESTADOS_BUCKET, tipo);
         
-        // [v5.9] Insertar en TODAS las columnas para compatibilidad total con Muro
+        // [v5.9.2] Insertar con origen 'mensajes'
         const { error: insertError } = await db.from('estados').insert({ 
             usuario_id: user.id, 
-            imagen_url: d.url, // Columna vieja (compatibilidad)
-            media_url: d.url,  // Nueva columna
-            media_tipo: tipo,  // Nueva columna
-            duracion_segundos: esVideo ? 15 : 5, // Duración estimada
-            caption: caption || null 
+            imagen_url: d.url,
+            media_url: d.url,  
+            media_tipo: tipo,  
+            duracion_segundos: esVideo ? 15 : 5, 
+            caption: caption || null,
+            origen: 'mensajes'
         });
         
         if (insertError) throw insertError;
@@ -946,7 +944,6 @@ async function loadConversations() {
     } catch (e) { console.error('Error en loadConversations:', e); }
 }
 
-// Debounce global para no saturar la bandeja durante ráfagas de eventos
 const recargarBandeja = debounce(loadConversations, 300);
 
 function aplicarFiltroConversaciones() {
@@ -1312,10 +1309,6 @@ async function append(m, sent) {
     scrollToBottom(true);
 }
 
-/* ============================================================
-   markRead con control de frecuencia (máx. 1 cada 2s por id)
-   force=true salta el límite (usado en INSERT entrante con chat abierto)
-   ============================================================ */
 async function markRead(id, force = false) {
     if (!user || id === BOT_ID) return;
     const ahora = Date.now();
@@ -1346,9 +1339,6 @@ async function deleteConversation() {
     } catch (e) { console.error('Error eliminando conversación:', e); toast('❌ No se pudo eliminar la conversación', 'error'); }
 }
 
-/* ============================================================
-   Suscripción a mensajes
-   ============================================================ */
 function subscribeMessages(id) {
     if (id === BOT_ID) return;
     if (msgChannel) {
@@ -2005,13 +1995,12 @@ async function startCall(tipo = 'video') {
     }
 }
 
-// Helper para fechas de Supabase (zona horaria segura)
 function parsearFechaSupabase(iso) {
     if (!iso) return null;
     if (iso instanceof Date) return iso;
     const s = String(iso);
     if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(s)) {
-        return new Date(s + 'Z'); // Asumir UTC si no tiene zona
+        return new Date(s + 'Z');
     }
     return new Date(s);
 }
@@ -2028,7 +2017,6 @@ async function incoming(data) {
     if (!user || !data || data.creador_id === user.id) return;
     if (data.estado && data.estado !== 'ringing') return;
     
-    // FIX v5.8: Comprobación de tiempo segura
     const fecha = parsearFechaSupabase(data.created_at);
     if (fecha) {
         const edad = Date.now() - fecha.getTime();
@@ -2613,8 +2601,6 @@ async function init() {
         }).subscribe();
     }
 
-    // [v5.9] Limpieza de vistos ya no es necesaria en localStorage porque usamos la DB
-
     setInterval(() => { if (document.hidden) return; cargarEstados(); }, 10 * 60 * 1000);
 
     registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
@@ -2803,7 +2789,7 @@ window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 
 // ================================================================
-// EXPOSICIÓN GLOBAL PARA LLAMADAS-UI.JS Y MÓDULOS EXTERNOS (v5.9)
+// EXPOSICIÓN GLOBAL PARA LLAMADAS-UI.JS Y MÓDULOS EXTERNOS (v5.9.2)
 // ================================================================
 window.startCall = startCall;
 window.acceptCall = acceptCall;
@@ -2817,7 +2803,7 @@ Object.defineProperty(window, 'current', {
 });
 
 window.NeonUI = {
-    version: '5.9.0',
+    version: '5.9.2',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
