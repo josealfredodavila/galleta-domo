@@ -1,8 +1,11 @@
 // ================================================================
-// MENSAJES · JS v5.9.2 · WEB3 NEON UI
-// Cambios v5.9.2 (Separación de origen):
-// - cargarEstados: Filtra solo los estados con origen === 'mensajes'.
-// - publicarEstado: Inserta con origen: 'mensajes'.
+// MENSAJES · JS v5.9.3 · WEB3 NEON UI
+// Cambios v5.9.3 (Historias · paridad con Muro):
+// - cargarEstados: usa RPC estados_mensajes_activos() (filtra bloqueados)
+// - Visor: dueño ve Eliminar; espectador ve Comentar
+// - Panel Vistas/Comentarios con pestañas
+// - Botón ⏭ Saltar grupo
+// - Al eliminar: borra fila + archivo del bucket (best-effort)
 // ================================================================
 
 'use strict';
@@ -12,6 +15,7 @@ const BOT_UUID = '0a000000-0000-4000-8000-000000000001';
 const ESTADOS_BUCKET = 'sariels-estados';
 const BOT_MAX_HISTORY = 6;
 const PERFIL_CACHE_LIMITE = 500;
+const ESTADOS_TTL_MS = 24 * 60 * 60 * 1000;
 
 let db = null;
 let user = null;
@@ -375,6 +379,9 @@ async function descargarImagen(url, nombreArchivo) {
 
 function cerrarPhotoViewer() { $('photoViewer').classList.remove('show'); }
 
+// ================================================================
+// HISTORIAS · helpers
+// ================================================================
 function estadoEsNuevo(estado) {
     if (!window.__estadosVistosIds) return true;
     return !window.__estadosVistosIds.has(estado.id);
@@ -382,10 +389,10 @@ function estadoEsNuevo(estado) {
 
 async function registrarVistaEstado(estadoId) {
     if (!user) return;
-    try { 
-        await db.from('estados_vistas').upsert({ estado_id: estadoId, usuario_id: user.id }, { onConflict: 'estado_id,usuario_id', ignoreDuplicates: true }); 
+    try {
+        await db.from('estados_vistas').upsert({ estado_id: estadoId, usuario_id: user.id }, { onConflict: 'estado_id,usuario_id', ignoreDuplicates: true });
         if (window.__estadosVistosIds) window.__estadosVistosIds.add(estadoId);
-    } catch (e) { }
+    } catch (e) { /* silencioso */ }
 }
 
 async function obtenerVistasEstado(estadoId) {
@@ -405,33 +412,73 @@ function haceTiempo(fecha) {
     return `hace ${Math.floor(diffMin / 1440)} d`;
 }
 
+// ================================================================
+// HISTORIAS · cargar (v5.9.3: usa RPC que filtra bloqueados)
+// ================================================================
 async function cargarEstados() {
     const scroll = $('estadosScroll');
+    if (!scroll) return;
     scroll.innerHTML = '';
     if (!user) return;
+
     try {
-        // [v5.9.2] Filtro estricto por origen 'mensajes'
-        const { data, error } = await db.from('estados')
-            .select('id, usuario_id, imagen_url, media_url, media_tipo, duracion_segundos, caption, created_at, expires_at, origen')
-            .eq('origen', 'mensajes')
-            .gt('expires_at', new Date().toISOString())
-            .order('created_at', { ascending: true });
-            
-        if (error) {
-            if (error.code === '42P01') { console.warn('Tabla estados no existe aún'); return; }
-            throw error;
+        // [v5.9.3] RPC estados_mensajes_activos filtra bloqueados y solo origen='mensajes'
+        let filas = [];
+        const rpc = await db.rpc('estados_mensajes_activos');
+
+        if (!rpc.error && Array.isArray(rpc.data)) {
+            if (rpc.data.length > 0 && Array.isArray(rpc.data[0].estados)) {
+                // Formato agrupado por usuario
+                rpc.data.forEach(u => {
+                    (u.estados || []).forEach(e => {
+                        filas.push({
+                            id: e.id,
+                            usuario_id: u.usuario_id,
+                            imagen_url: e.imagen_url,
+                            media_url: e.media_url,
+                            media_tipo: e.media_tipo,
+                            duracion_segundos: e.duracion_segundos,
+                            caption: e.caption,
+                            created_at: e.created_at,
+                            expires_at: e.expires_at,
+                            origen: 'mensajes'
+                        });
+                    });
+                });
+            } else {
+                // Formato plano (la RPC ya devuelve filas de estados)
+                filas = rpc.data.map(e => ({ ...e, origen: e.origen || 'mensajes' }));
+            }
+        } else {
+            // Fallback: consulta directa (mientras la RPC se crea/verifica)
+            if (rpc.error) console.warn('[Estados] RPC falló, usando fallback:', rpc.error.message);
+            const { data, error } = await db.from('estados')
+                .select('id, usuario_id, imagen_url, media_url, media_tipo, duracion_segundos, caption, created_at, expires_at, origen')
+                .eq('origen', 'mensajes')
+                .gt('expires_at', new Date().toISOString())
+                .order('created_at', { ascending: true });
+            if (error) {
+                if (error.code === '42P01') { console.warn('Tabla estados no existe aún'); return; }
+                throw error;
+            }
+            filas = data || [];
         }
-        estadosCache = data || [];
+
+        estadosCache = filas;
         if (estadosCache.length === 0) {
             scroll.innerHTML = '<div style="color:var(--muted);font-size:.7rem;padding:8px 4px;text-align:center;width:100%;">Sin estados</div>';
             return;
         }
 
+        // Cargar vistas propias en lote
         window.__estadosVistosIds = new Set();
         const idsEstados = estadosCache.map(e => e.id);
         if (idsEstados.length > 0) {
             try {
-                const { data: vistasData } = await db.from('estados_vistas').select('estado_id').eq('usuario_id', user.id).in('estado_id', idsEstados);
+                const { data: vistasData } = await db.from('estados_vistas')
+                    .select('estado_id')
+                    .eq('usuario_id', user.id)
+                    .in('estado_id', idsEstados);
                 (vistasData || []).forEach(v => window.__estadosVistosIds.add(v.estado_id));
             } catch (e) { console.warn('Error cargando vistas en lote:', e); }
         }
@@ -439,6 +486,7 @@ async function cargarEstados() {
         const porUsuario = {};
         estadosCache.forEach(e => { if (!porUsuario[e.usuario_id]) porUsuario[e.usuario_id] = []; porUsuario[e.usuario_id].push(e); });
 
+        // Precargar perfiles en lote (excepto el mío)
         const idsUnicos = Object.keys(porUsuario).filter(uid => uid !== user.id);
         if (idsUnicos.length > 0) {
             try {
@@ -455,6 +503,7 @@ async function cargarEstados() {
             } catch (e) { console.warn('Error cargando perfiles de estados en lote:', e); }
         }
 
+        // Mi estado
         const miEstado = porUsuario[user.id];
         if (miEstado && miEstado.length > 0) {
             const tieneNuevos = miEstado.some(e => estadoEsNuevo(e));
@@ -472,6 +521,8 @@ async function cargarEstados() {
             scroll.insertAdjacentHTML('beforeend', html);
             scroll.querySelector(`[data-userid="${user.id}"]`).onclick = () => abrirEstadoUsuario(user.id);
         }
+
+        // Otros estados
         for (const uid of Object.keys(porUsuario)) {
             if (uid === user.id) continue;
             const entrada = perfilCache.get(uid);
@@ -491,6 +542,9 @@ async function cargarEstados() {
     } catch (e) { console.warn('Error cargando estados:', e); }
 }
 
+// ================================================================
+// HISTORIAS · abrir / navegar
+// ================================================================
 function abrirEstadoUsuario(uid) {
     const estados = estadosCache.filter(e => e.usuario_id === uid);
     if (estados.length === 0) { toast('ℹ️ Este usuario no tiene estados', 'warning'); return; }
@@ -499,11 +553,15 @@ function abrirEstadoUsuario(uid) {
     $('estadoViewer').classList.add('show');
 }
 
+function _ocultarEl(id) { const el = $(id); if (el) el.classList.add('hidden'); }
+function _mostrarEl(id) { const el = $(id); if (el) el.classList.remove('hidden'); }
+
 async function mostrarEstadoActual() {
     const estados = estadosCache.filter(e => e.usuario_id === estadoActualUserId);
     if (estadoActualIndex >= estados.length) { cerrarEstadoViewer(); return; }
     const estado = estados[estadoActualIndex];
     const esMiEstado = (estadoActualUserId === user.id);
+
     if (esMiEstado) {
         $('evAvatar').innerHTML = currentUserProfile?.avatar_url ? `<img src="${esc(currentUserProfile.avatar_url)}" alt="">` : esc((currentUserProfile?.nombre || '◈').charAt(0).toUpperCase());
         $('evName').textContent = 'Tú';
@@ -515,12 +573,12 @@ async function mostrarEstadoActual() {
             }
         });
     }
-    
+
     const urlMedia = estado.media_url || estado.imagen_url;
     const evImageEl = $('evImage');
-    const evVideoEl = $('evVideo'); 
+    const evVideoEl = $('evVideo');
     const tipo = estado.media_tipo || 'imagen';
-    
+
     if (tipo === 'video') {
         if (evImageEl) evImageEl.style.display = 'none';
         let videoEl = document.getElementById('evVideo');
@@ -546,36 +604,66 @@ async function mostrarEstadoActual() {
     $('evTime').textContent = haceTiempo(estado.created_at);
     if (estado.caption) { $('evCaption').textContent = estado.caption; $('evCaption').classList.remove('hidden'); }
     else $('evCaption').classList.add('hidden');
-    
+
     registrarVistaEstado(estado.id);
-    
+
     $('evPrev').classList.toggle('hidden', estadoActualIndex === 0);
     $('evNext').classList.toggle('hidden', estadoActualIndex >= estados.length - 1);
+
+    // [v5.9.3] Panel dueño: Vistas + Eliminar · Espectador: Comentar
+    const evVistasEl = $('evVistas');
+    const evEliminarEl = $('evEliminar');
+    const evComentarEl = $('evComentar');
+
     if (esMiEstado) {
         const total = await obtenerVistasEstado(estado.id);
-        $('evVistasCount').textContent = total;
-        $('evVistas').classList.remove('hidden');
-        $('evVistas').dataset.estadoId = estado.id;
-    } else $('evVistas').classList.add('hidden');
-    
+        if ($('evVistasCount')) $('evVistasCount').textContent = total;
+        if (evVistasEl) {
+            evVistasEl.classList.remove('hidden');
+            evVistasEl.dataset.estadoId = estado.id;
+            evVistasEl.onclick = (e) => { e.stopPropagation(); abrirPanelEstado(estado.id, 'vistas'); };
+        }
+        if (evEliminarEl) {
+            evEliminarEl.classList.remove('hidden');
+            evEliminarEl.dataset.estadoId = estado.id;
+            evEliminarEl.onclick = (e) => { e.stopPropagation(); eliminarHistoriaMensajes(estado.id); };
+        }
+        _ocultarEl('evComentar');
+    } else {
+        _ocultarEl('evVistas');
+        _ocultarEl('evEliminar');
+        if (evComentarEl) {
+            evComentarEl.classList.remove('hidden');
+            evComentarEl.dataset.estadoId = estado.id;
+            evComentarEl.onclick = (e) => { e.stopPropagation(); comentarHistoriaMensajes(estado.id); };
+        }
+    }
+
+    // Botón Saltar (siempre visible si hay más usuarios)
+    const evSkipEl = $('evSkip');
+    if (evSkipEl) {
+        evSkipEl.classList.remove('hidden');
+        evSkipEl.onclick = (e) => { e.stopPropagation(); saltarGrupoMensajes(); };
+    }
+
     iniciarProgresoEstado(estado);
 }
 
 function iniciarProgresoEstado(estado) {
     const progress = $('estadoProgress');
     if (estadoTimer) clearInterval(estadoTimer);
-    progress.style.width = estadoProgresoActual + '%';
-    
+    if (progress) progress.style.width = estadoProgresoActual + '%';
+
     const esVideo = (estado.media_tipo === 'video');
     const duracionMs = (estado.duracion_segundos || 5) * 1000;
-    
+
     if (esVideo) {
         const videoEl = document.getElementById('evVideo');
         if (videoEl) {
             estadoTimer = setInterval(() => {
                 if (estadoPausado || videoEl.paused) return;
                 if (videoEl.duration) estadoProgresoActual = (videoEl.currentTime / videoEl.duration) * 100;
-                progress.style.width = estadoProgresoActual + '%';
+                if (progress) progress.style.width = estadoProgresoActual + '%';
             }, 100);
             videoEl.onended = () => { clearInterval(estadoTimer); estadoProgresoActual = 0; siguienteEstado(); };
         }
@@ -583,7 +671,7 @@ function iniciarProgresoEstado(estado) {
         estadoTimer = setInterval(() => {
             if (estadoPausado) return;
             estadoProgresoActual += 100 / (duracionMs / 50);
-            progress.style.width = estadoProgresoActual + '%';
+            if (progress) progress.style.width = estadoProgresoActual + '%';
             if (estadoProgresoActual >= 100) { clearInterval(estadoTimer); estadoProgresoActual = 0; siguienteEstado(); }
         }, 50);
     }
@@ -591,16 +679,43 @@ function iniciarProgresoEstado(estado) {
 
 function siguienteEstado() {
     const estados = estadosCache.filter(e => e.usuario_id === estadoActualUserId);
-    if (estadoActualIndex < estados.length - 1) { estadoActualIndex++; estadoProgresoActual = 0; estadoPausado = false; mostrarEstadoActual(); }
-    else cerrarEstadoViewer();
+    if (estadoActualIndex < estados.length - 1) {
+        estadoActualIndex++; estadoProgresoActual = 0; estadoPausado = false;
+        mostrarEstadoActual();
+    } else {
+        // Al terminar el usuario actual, saltar al siguiente que tenga historias
+        saltarGrupoMensajes();
+    }
 }
 
 function anteriorEstado() {
     if (estadoActualIndex > 0) { estadoActualIndex--; estadoProgresoActual = 0; estadoPausado = false; mostrarEstadoActual(); }
 }
 
+// [v5.9.3] Salta al siguiente usuario con historias activas
+function saltarGrupoMensajes() {
+    if (!estadoActualUserId) return;
+    const ordenUsuarios = [];
+    estadosCache.forEach(e => { if (!ordenUsuarios.includes(e.usuario_id)) ordenUsuarios.push(e.usuario_id); });
+    const idxActual = ordenUsuarios.indexOf(estadoActualUserId);
+
+    for (let i = idxActual + 1; i < ordenUsuarios.length; i++) {
+        const uid = ordenUsuarios[i];
+        const estados = estadosCache.filter(e => e.usuario_id === uid);
+        if (estados.length > 0) {
+            estadoActualUserId = uid;
+            estadoActualIndex = 0;
+            estadoProgresoActual = 0;
+            estadoPausado = false;
+            mostrarEstadoActual();
+            return;
+        }
+    }
+    cerrarEstadoViewer();
+}
+
 function cerrarEstadoViewer() {
-    $('estadoViewer').classList.remove('show');
+    const v = $('estadoViewer'); if (v) v.classList.remove('show');
     if (estadoTimer) clearInterval(estadoTimer);
     estadoTimer = null; estadoPausado = false; estadoProgresoActual = 0; estadoActualUserId = null;
     const videoEl = document.getElementById('evVideo');
@@ -608,56 +723,198 @@ function cerrarEstadoViewer() {
     cargarEstados();
 }
 
-function activarPausaEstado() { 
-    if (!$('estadoViewer').classList.contains('show')) return; 
-    estadoPausado = true; 
+function activarPausaEstado() {
+    if (!$('estadoViewer')?.classList.contains('show')) return;
+    estadoPausado = true;
     const videoEl = document.getElementById('evVideo');
     if (videoEl) videoEl.pause();
 }
-function desactivarPausaEstado() { 
-    if (!$('estadoViewer').classList.contains('show')) return; 
-    estadoPausado = false; 
+function desactivarPausaEstado() {
+    if (!$('estadoViewer')?.classList.contains('show')) return;
+    estadoPausado = false;
     const videoEl = document.getElementById('evVideo');
     if (videoEl) videoEl.play().catch(() => {});
 }
 
-async function abrirVistasModal(estadoId) {
+// ================================================================
+// HISTORIAS · panel vistas/comentarios (v5.9.3)
+// ================================================================
+async function abrirPanelEstado(estadoId, tab = 'vistas') {
     if (!estadoId) return;
     $('vistasModal').classList.add('show');
     const list = $('vistasList');
+    const countEl = $('vistasModalCount');
     list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>';
-    $('vistasModalCount').textContent = '';
+    if (countEl) countEl.textContent = '';
+
+    // Pestañas
+    let tabsBar = document.getElementById('vistasTabsBar');
+    if (!tabsBar) {
+        tabsBar = document.createElement('div');
+        tabsBar.id = 'vistasTabsBar';
+        tabsBar.style.cssText = 'display:flex;gap:6px;padding:0 4px 10px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:10px;';
+        list.parentNode.insertBefore(tabsBar, list);
+    }
+    tabsBar.innerHTML = `
+        <button type="button" data-tab="vistas" style="flex:1;padding:7px 12px;border-radius:99px;border:1px solid ${tab==='vistas'?'var(--gold)':'rgba(255,255,255,.1)'};background:${tab==='vistas'?'rgba(212,175,55,.15)':'transparent'};color:${tab==='vistas'?'var(--gold)':'var(--muted)'};font-size:.72rem;font-weight:700;cursor:pointer;">👁 Vistas</button>
+        <button type="button" data-tab="comentarios" style="flex:1;padding:7px 12px;border-radius:99px;border:1px solid ${tab==='comentarios'?'var(--gold)':'rgba(255,255,255,.1)'};background:${tab==='comentarios'?'rgba(212,175,55,.15)':'transparent'};color:${tab==='comentarios'?'var(--gold)':'var(--muted)'};font-size:.72rem;font-weight:700;cursor:pointer;">💬 Comentarios</button>
+    `;
+    tabsBar.querySelectorAll('button').forEach(btn => {
+        btn.onclick = () => abrirPanelEstado(estadoId, btn.dataset.tab);
+    });
+
     try {
-        const { data: vistas, error } = await db.from('estados_vistas').select('usuario_id, visto_at').eq('estado_id', estadoId).order('visto_at', { ascending: false });
-        if (error) throw error;
-        if (!vistas || vistas.length === 0) { list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Nadie ha visto este estado aún</div>'; return; }
-        $('vistasModalCount').textContent = `(${vistas.length})`;
-        const ids = vistas.map(v => v.usuario_id);
-        const { data: perfiles } = await db.from('perfiles_publicos').select('id, nombre, handle, avatar_url').in('id', ids);
-        const perfilMap = {};
-        (perfiles || []).forEach(p => { perfilMap[p.id] = p; });
-        list.innerHTML = '';
-        vistas.forEach(v => {
-            const p = perfilMap[v.usuario_id] || { nombre: 'Usuario', handle: '', avatar_url: null };
-            const inicial = (p.nombre || '◈').charAt(0).toUpperCase();
-            const avatarHTML = p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc(inicial);
-            list.insertAdjacentHTML('beforeend', `
-                <div class="result" style="cursor:pointer;" data-handle="${esc(p.handle || '')}">
-                    <div class="avatar">${avatarHTML}</div>
-                    <div style="flex:1;min-width:0;"><b>${esc(p.nombre || 'Usuario')}</b><div style="font-size:.68rem;color:var(--muted);">@${esc(p.handle || 'usuario')} · ${haceTiempo(v.visto_at)}</div></div>
-                </div>`);
-        });
-        list.querySelectorAll('.result').forEach(el => {
-            el.onclick = () => { const handle = el.dataset.handle; if (handle) window.location.href = `/perfil/${handle}`; };
-        });
+        if (tab === 'vistas') {
+            const { data: vistas, error } = await db.from('estados_vistas')
+                .select('usuario_id, visto_at')
+                .eq('estado_id', estadoId)
+                .order('visto_at', { ascending: false });
+            if (error) throw error;
+            if (!vistas || vistas.length === 0) {
+                list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Nadie ha visto este estado aún</div>';
+                return;
+            }
+            if (countEl) countEl.textContent = `(${vistas.length})`;
+            const ids = vistas.map(v => v.usuario_id);
+            const { data: perfiles } = await db.from('perfiles_publicos')
+                .select('id, nombre, handle, avatar_url').in('id', ids);
+            const perfilMap = {};
+            (perfiles || []).forEach(p => { perfilMap[p.id] = p; });
+            list.innerHTML = '';
+            vistas.forEach(v => {
+                const p = perfilMap[v.usuario_id] || { nombre: 'Usuario', handle: '', avatar_url: null };
+                const inicial = (p.nombre || '◈').charAt(0).toUpperCase();
+                const avatarHTML = p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc(inicial);
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="result" style="cursor:pointer;" data-handle="${esc(p.handle || '')}">
+                        <div class="avatar">${avatarHTML}</div>
+                        <div style="flex:1;min-width:0;"><b>${esc(p.nombre || 'Usuario')}</b><div style="font-size:.68rem;color:var(--muted);">@${esc(p.handle || 'usuario')} · ${haceTiempo(v.visto_at)}</div></div>
+                    </div>`);
+            });
+            list.querySelectorAll('.result').forEach(el => {
+                el.onclick = () => { const h = el.dataset.handle; if (h) window.location.href = `/perfil/${h}`; };
+            });
+        } else {
+            // Comentarios vía RPC (misma que usa el Muro)
+            const { data: comentarios, error } = await db.rpc('estado_comentarios_lista', { p_estado_id: estadoId });
+            if (error) throw error;
+            const arr = Array.isArray(comentarios) ? comentarios : (comentarios && comentarios.data) || [];
+            if (countEl) countEl.textContent = `(${arr.length})`;
+            if (!arr.length) {
+                list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Aún no hay comentarios</div>';
+                return;
+            }
+            list.innerHTML = '';
+            arr.forEach(c => {
+                const nombre = c.nombre || c.usuario_handle || 'Usuario';
+                const inicial = nombre.charAt(0).toUpperCase();
+                const avatarHTML = c.avatar_url ? `<img src="${esc(c.avatar_url)}" alt="">` : esc(inicial);
+                const texto = c.comentario || c.texto || c.contenido || '';
+                const cuando = c.created_at ? haceTiempo(c.created_at) : '';
+                list.insertAdjacentHTML('beforeend', `
+                    <div class="result" style="align-items:flex-start;">
+                        <div class="avatar">${avatarHTML}</div>
+                        <div style="flex:1;min-width:0;">
+                            <b>${esc(nombre)}</b>
+                            <div style="font-size:.78rem;color:var(--text-secondary);margin-top:3px;word-break:break-word;">${esc(texto)}</div>
+                            ${cuando ? `<div style="font-size:.65rem;color:var(--muted);margin-top:2px;">${esc(cuando)}</div>` : ''}
+                        </div>
+                    </div>`);
+            });
+        }
     } catch (e) {
-        console.error('Error cargando vistas:', e);
-        list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:.8rem;">Error al cargar vistas</div>';
+        console.error('[Estados] Error cargando panel:', e);
+        list.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:.8rem;">Error al cargar</div>';
     }
 }
 
+// Alias de compatibilidad con el nombre anterior
+async function abrirVistasModal(estadoId) { return abrirPanelEstado(estadoId, 'vistas'); }
+
 function cerrarVistasModal() { $('vistasModal').classList.remove('show'); }
 
+// ================================================================
+// HISTORIAS · eliminar (dueño) · comentar (espectador)
+// ================================================================
+function extraerPathBucketEstados(url) {
+    if (!url) return null;
+    const m = url.match(/\/storage\/v1\/object\/public\/[^/]+\/(.+)$/);
+    if (m) return decodeURIComponent(m[1].split('?')[0]);
+    if (!url.startsWith('http') && url.includes('/')) return url;
+    return null;
+}
+
+async function eliminarHistoriaMensajes(estadoId) {
+    if (!estadoId || !user) return;
+    const confirmado = await NeonModal.confirm({
+        title: 'Eliminar historia',
+        message: '¿Eliminar esta historia? Se borrará para todos. No se puede deshacer.',
+        icon: '🗑',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        danger: true
+    });
+    if (!confirmado) return;
+
+    try {
+        const { data: fila, error: e1 } = await db.from('estados')
+            .select('id, media_url, imagen_url, usuario_id')
+            .eq('id', estadoId)
+            .maybeSingle();
+        if (e1) throw e1;
+        if (!fila || fila.usuario_id !== user.id) throw new Error('No puedes eliminar esta historia');
+        const urlMedia = fila.media_url || fila.imagen_url;
+
+        const { error: e2 } = await db.from('estados')
+            .delete()
+            .eq('id', estadoId)
+            .eq('usuario_id', user.id);
+        if (e2) throw e2;
+
+        if (urlMedia) {
+            try {
+                const path = extraerPathBucketEstados(urlMedia);
+                if (path) await db.storage.from(ESTADOS_BUCKET).remove([path]);
+            } catch (e) { console.warn('[Estados] No se pudo borrar archivo del bucket:', e); }
+        }
+
+        toast('✅ Historia eliminada', 'success');
+        if (estadoActualUserId === user.id) cerrarEstadoViewer();
+        else await cargarEstados();
+    } catch (e) {
+        console.error('[Estados] Error eliminando:', e);
+        toast('❌ ' + (e.message || 'No se pudo eliminar la historia'), 'error');
+    }
+}
+
+async function comentarHistoriaMensajes(estadoId) {
+    if (!estadoId || !user) return;
+    const texto = await NeonModal.prompt({
+        title: 'Comentar historia',
+        message: 'Escribe tu comentario (máx. 200 caracteres):',
+        icon: '💬',
+        placeholder: 'Tu comentario…',
+        confirmText: 'Enviar',
+        cancelText: 'Cancelar',
+        maxlength: 200
+    });
+    if (!texto || !texto.trim()) return;
+    try {
+        const { error } = await db.rpc('estado_enviar_comentario', {
+            p_estado_id: estadoId,
+            p_comentario: texto.trim()
+        });
+        if (error) throw error;
+        toast('✅ Comentario enviado', 'success');
+    } catch (e) {
+        console.error('[Estados] Error comentando:', e);
+        toast('❌ ' + (e.message || 'No se pudo enviar el comentario'), 'error');
+    }
+}
+
+// ================================================================
+// HISTORIAS · modal subir / preview / publicar
+// ================================================================
 function abrirModalEstado() {
     $('estadoUploadModal').classList.add('show');
     $('estadoPreviewWrap').style.display = 'none';
@@ -673,17 +930,17 @@ function seleccionarArchivoEstado() { $('estadoFileInput').click(); }
 async function previewEstado(event) {
     const file = event.target.files[0];
     if (!file) return;
-    
+
     const esVideo = file.type.startsWith('video/');
     const maxBytes = esVideo ? 25 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxBytes) { toast(esVideo ? '❌ Video máximo 25 MB' : '❌ Imagen máxima 10 MB', 'error'); event.target.value = ''; return; }
     if (!file.type.startsWith('image/') && !esVideo) { toast('❌ Solo imágenes o videos', 'error'); event.target.value = ''; return; }
-    
+
     const reader = new FileReader();
-    reader.onload = e => { 
+    reader.onload = e => {
         const previewWrap = $('estadoPreviewWrap');
         const previewImg = $('estadoPreviewImg');
-        
+
         if (esVideo) {
             let previewVideo = document.getElementById('estadoPreviewVideo');
             if (!previewVideo) {
@@ -702,11 +959,11 @@ async function previewEstado(event) {
             const previewVideo = document.getElementById('estadoPreviewVideo');
             if (previewVideo) previewVideo.style.display = 'none';
             previewImg.style.display = 'block';
-            previewImg.src = e.target.result; 
+            previewImg.src = e.target.result;
         }
-        
-        previewWrap.style.display = 'block'; 
-        $('btnPublicarEstado').disabled = false; 
+
+        previewWrap.style.display = 'block';
+        $('btnPublicarEstado').disabled = false;
     };
     reader.readAsDataURL(file);
 }
@@ -716,28 +973,31 @@ async function publicarEstado() {
     const file = fileInput.files[0];
     if (!file) { toast('⚠️ Selecciona un archivo', 'error'); return; }
     if (!await auth()) return;
-    
+
     const esVideo = file.type.startsWith('video/');
     const tipo = esVideo ? 'video' : 'imagen';
     const caption = $('estadoCaption').value.trim();
     const btn = $('btnPublicarEstado');
     btn.disabled = true;
     btn.textContent = '⏳ Publicando...';
-    
+
     try {
         const d = await subirViaBackend(file, ESTADOS_BUCKET, tipo);
-        
-        // [v5.9.2] Insertar con origen 'mensajes'
-        const { error: insertError } = await db.from('estados').insert({ 
-            usuario_id: user.id, 
+
+        // expires_at explícito (24 h) — no dependemos del default
+        const expiresAt = new Date(Date.now() + ESTADOS_TTL_MS).toISOString();
+
+        const { error: insertError } = await db.from('estados').insert({
+            usuario_id: user.id,
             imagen_url: d.url,
-            media_url: d.url,  
-            media_tipo: tipo,  
-            duracion_segundos: esVideo ? 15 : 5, 
+            media_url: d.url,
+            media_tipo: tipo,
+            duracion_segundos: esVideo ? 15 : 5,
             caption: caption || null,
-            origen: 'mensajes'
+            origen: 'mensajes',
+            expires_at: expiresAt
         });
-        
+
         if (insertError) throw insertError;
         toast('✅ Estado publicado (24h)', 'success');
         cerrarModalEstado();
@@ -752,6 +1012,9 @@ async function publicarEstado() {
     }
 }
 
+// ================================================================
+// RESTO DEL ARCHIVO (sin cambios) — mensajes, bot, canales, llamadas
+// ================================================================
 function scrollToBottom(force = false) {
     const box = $('messages');
     if (!box) return;
@@ -859,7 +1122,6 @@ async function loadConversations() {
     if (!list) return;
     list.innerHTML = '';
 
-    // Fila fija de Marquinhos
     const botEl = document.createElement('div');
     botEl.className = 'conv conv-bot' + (current?.id === BOT_ID ? ' active' : '');
     botEl.dataset.id = BOT_ID;
@@ -876,7 +1138,6 @@ async function loadConversations() {
 
     if (!await auth()) return;
 
-    // Preview y badge de Marquinhos (caché de 30 s)
     try {
         const ahora = Date.now();
         if (ahora - botResumenCache.ts > BOT_RESUMEN_TTL_MS) {
@@ -895,7 +1156,6 @@ async function loadConversations() {
         }
     } catch (e) { console.warn('Error cargando badge bot:', e); }
 
-    // Bandeja vía RPC
     try {
         const { data: filas, error } = await db.rpc('listar_conversaciones', { p_limite: 50 });
         if (error) { console.error('Error listar_conversaciones:', error); return; }
@@ -914,13 +1174,9 @@ async function loadConversations() {
             const noLeidos = Number(conv.no_leidos) || 0;
 
             let preview;
-            if (!ultimoTipo) {
-                preview = 'Sin mensajes';
-            } else if (ultimoTipo === 'texto') {
-                preview = (ultimoContenido || '').slice(0, 60) || 'Sin mensajes';
-            } else {
-                preview = '📎 ' + (ultimoContenido || ultimoTipo);
-            }
+            if (!ultimoTipo) preview = 'Sin mensajes';
+            else if (ultimoTipo === 'texto') preview = (ultimoContenido || '').slice(0, 60) || 'Sin mensajes';
+            else preview = '📎 ' + (ultimoContenido || ultimoTipo);
 
             const hora = conv.ultimo_at ? new Date(conv.ultimo_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
@@ -976,9 +1232,8 @@ async function openConversation(id) {
 
     const callBtn = $('videoCall');
     if (callBtn) {
-        if (esBot) {
-            callBtn.style.display = 'none';
-        } else {
+        if (esBot) callBtn.style.display = 'none';
+        else {
             callBtn.style.display = 'inline-flex';
             callBtn.title = 'Iniciar videollamada con ' + (p.nombre || 'usuario');
             callBtn.disabled = !window.__livekitReady;
@@ -1175,24 +1430,9 @@ async function sendMessage(text) {
         return;
     }
 
-    if (resp.estado === 'entregado' && resp.mensaje) {
-        await append(resp.mensaje, true);
-        recargarBandeja();
-        return;
-    }
-    
-    if (resp.estado === 'solicitud') {
-        toast('📥 Tu mensaje se envió como solicitud. Aparecerá cuando la acepte.', 'success');
-        recargarBandeja();
-        return;
-    }
-    
-    if (resp.estado === 'solicitud_en_espera') {
-        toast('⏳ Ya tienes una solicitud pendiente con esta persona.', 'warning');
-        $('messageInput').value = textoLimpio;
-        return;
-    }
-    
+    if (resp.estado === 'entregado' && resp.mensaje) { await append(resp.mensaje, true); recargarBandeja(); return; }
+    if (resp.estado === 'solicitud') { toast('📥 Tu mensaje se envió como solicitud. Aparecerá cuando la acepte.', 'success'); recargarBandeja(); return; }
+    if (resp.estado === 'solicitud_en_espera') { toast('⏳ Ya tienes una solicitud pendiente con esta persona.', 'warning'); $('messageInput').value = textoLimpio; return; }
     toast('⚠️ No se pudo enviar el mensaje.', 'error');
     $('messageInput').value = textoLimpio;
 }
@@ -1353,11 +1593,7 @@ function subscribeMessages(id) {
         const el = document.querySelector(`.bubblewrap[data-mensaje-id="${m.id}"]`);
         if (!el) { recargarBandeja(); return; }
 
-        if (m.eliminado === true) {
-            el.remove();
-            recargarBandeja();
-            return;
-        }
+        if (m.eliminado === true) { el.remove(); recargarBandeja(); return; }
 
         const bubble = el.querySelector('.bubble');
         const metaEl = el.querySelector('.meta');
@@ -1386,17 +1622,10 @@ function subscribeMessages(id) {
     msgChannel = db.channel('chat-' + id)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + id }, p => {
             const m = p.new;
-            if (m.destinatario_id === user.id) {
-                append(m, false);
-                markRead(id, true);
-            }
+            if (m.destinatario_id === user.id) { append(m, false); markRead(id, true); }
         })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + user.id }, p => {
-            manejarUpdate(p.new);
-        })
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'destinatario_id=eq.' + user.id }, p => {
-            manejarUpdate(p.new);
-        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + user.id }, p => { manejarUpdate(p.new); })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'destinatario_id=eq.' + user.id }, p => { manejarUpdate(p.new); })
         .subscribe();
 }
 
@@ -1516,7 +1745,7 @@ async function uploadFile(file) {
             storageRef = `bucket://chat-attachments/${d.path}`;
         }
     } catch (e) { console.error('Error subiendo archivo:', e); toast('❌ ' + (e.message || 'No se pudo subir el archivo'), 'error'); return; }
-    
+
     let resp;
     try {
         resp = await enviarMensajeChat(current.id, file.name, type, storageRef, file.name);
@@ -1526,11 +1755,8 @@ async function uploadFile(file) {
         else toast('❌ ' + (e.message || 'No se pudo guardar el archivo'), 'error');
         return;
     }
-    
-    if (resp.estado === 'entregado' && resp.mensaje) {
-        await append(resp.mensaje, true);
-        recargarBandeja();
-    }
+
+    if (resp.estado === 'entregado' && resp.mensaje) { await append(resp.mensaje, true); recargarBandeja(); }
 }
 
 function newConversation() {
@@ -2016,13 +2242,11 @@ function cerrarOverlayEntrante() {
 async function incoming(data) {
     if (!user || !data || data.creador_id === user.id) return;
     if (data.estado && data.estado !== 'ringing') return;
-    
     const fecha = parsearFechaSupabase(data.created_at);
     if (fecha) {
         const edad = Date.now() - fecha.getTime();
         if (edad > LLAMADA_VIGENCIA_MS) return;
     }
-
     if (call.active || call.id || incomingId) {
         if (incomingId !== data.id && !call.id) await terminarLlamadaServidor(data.id, { motivo: 'ocupado' });
         return;
@@ -2162,15 +2386,8 @@ async function bloquearUsuarioActual() {
     }
 }
 
-async function abrirModalConfigLlamadas() {
-    const modal = $('modalConfigLlamadas');
-    if (modal) modal.classList.add('show');
-}
-
-async function cerrarModalConfigLlamadas() {
-    const modal = $('modalConfigLlamadas');
-    if (modal) modal.classList.remove('show');
-}
+async function abrirModalConfigLlamadas() { const modal = $('modalConfigLlamadas'); if (modal) modal.classList.add('show'); }
+async function cerrarModalConfigLlamadas() { const modal = $('modalConfigLlamadas'); if (modal) modal.classList.remove('show'); }
 
 async function abrirListaBloqueados() {
     const modal = $('modalBloqueados');
@@ -2184,10 +2401,7 @@ async function abrirListaBloqueados() {
         const bloqueados = data || [];
         const countEl = $('countBloqueados');
         if (countEl) countEl.textContent = bloqueados.length;
-        if (!bloqueados.length) {
-            lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No tienes usuarios bloqueados</div>';
-            return;
-        }
+        if (!bloqueados.length) { lista.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No tienes usuarios bloqueados</div>'; return; }
         lista.innerHTML = bloqueados.map(b => `
             <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,229,255,.1);" data-id="${esc(b.id)}">
                 <div class="avatar" style="width:36px;height:36px;font-size:.8rem;">${b.avatar_url ? `<img src="${esc(b.avatar_url)}" alt="">` : esc((b.nombre || '◈').charAt(0).toUpperCase())}</div>
@@ -2201,14 +2415,8 @@ async function abrirListaBloqueados() {
         lista.querySelectorAll('.btn-desbloquear').forEach(btn => {
             btn.onclick = async () => {
                 const id = btn.dataset.id;
-                try {
-                    await db.rpc('desbloquear_contacto', { p_contacto_id: id });
-                    toast('✅ Usuario desbloqueado', 'success');
-                    await abrirListaBloqueados();
-                } catch (e) {
-                    console.error('Error desbloqueando:', e);
-                    toast('❌ No se pudo desbloquear', 'error');
-                }
+                try { await db.rpc('desbloquear_contacto', { p_contacto_id: id }); toast('✅ Usuario desbloqueado', 'success'); await abrirListaBloqueados(); }
+                catch (e) { console.error('Error desbloqueando:', e); toast('❌ No se pudo desbloquear', 'error'); }
             };
         });
     } catch (e) {
@@ -2236,13 +2444,9 @@ async function mostrarMenuMensaje(bubblewrap, msgId) {
     menu.style.top = y + 'px';
 
     const opciones = [];
-    if (esDeUsuario && esSent) {
-        opciones.push({ texto: 'Editar', accion: () => editarMensaje(msgId, bubblewrap) });
-    }
+    if (esDeUsuario && esSent) opciones.push({ texto: 'Editar', accion: () => editarMensaje(msgId, bubblewrap) });
     opciones.push({ texto: 'Eliminar para mí', accion: () => eliminarMensajeParaMi(msgId, bubblewrap) });
-    if (esDeUsuario && esSent) {
-        opciones.push({ texto: 'Eliminar para todos', accion: () => eliminarMensajeParaTodos(msgId, bubblewrap), danger: true });
-    }
+    if (esDeUsuario && esSent) opciones.push({ texto: 'Eliminar para todos', accion: () => eliminarMensajeParaTodos(msgId, bubblewrap), danger: true });
 
     opciones.forEach(op => {
         const btn = document.createElement('button');
@@ -2266,7 +2470,6 @@ async function editarMensaje(msgId, bubblewrap) {
     const bubble = bubblewrap.querySelector('.bubble');
     const metaEl = bubblewrap.querySelector('.meta');
     const esSent = bubblewrap.classList.contains('sent');
-
     let contenidoActual = bubble.textContent.trim();
 
     const nuevoTexto = await NeonModal.prompt({
@@ -2281,35 +2484,25 @@ async function editarMensaje(msgId, bubblewrap) {
     if (!nuevoTexto || nuevoTexto === contenidoActual) return;
 
     try {
-        const { error } = await db.rpc('editar_mensaje_chat', {
-            p_mensaje_id: msgId,
-            p_contenido: nuevoTexto
-        });
+        const { error } = await db.rpc('editar_mensaje_chat', { p_mensaje_id: msgId, p_contenido: nuevoTexto });
         if (error) {
             const msgErr = error.message || '';
-            if (msgErr.indexOf('contenido_no_permitido') !== -1) {
-                toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
-            } else if (msgErr.indexOf('edicion_expirada') !== -1) {
-                toast('Ya no puedes editar este mensaje (más de 15 minutos)', 'error');
-            } else {
-                toast('❌ ' + (msgErr || 'No se pudo editar'), 'error');
-            }
+            if (msgErr.indexOf('contenido_no_permitido') !== -1) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
+            else if (msgErr.indexOf('edicion_expirada') !== -1) toast('Ya no puedes editar este mensaje (más de 15 minutos)', 'error');
+            else toast('❌ ' + (msgErr || 'No se pudo editar'), 'error');
             return;
         }
-
         const textoLimpio = limpiarMarkdown(nuevoTexto);
         const innerHtml = (typeof window.formatearMensajeConEmotes === 'function')
             ? window.formatearMensajeConEmotes(textoLimpio)
             : esc(textoLimpio);
         bubble.innerHTML = innerHtml;
-
         if (metaEl) {
             const horaMatch = metaEl.textContent.match(/^\s*(\d{1,2}:\d{2})/);
             const hora = horaMatch ? horaMatch[1] : '';
             const leidoEstado = esSent ? (metaEl.textContent.includes('◆◆') ? ' · ◆◆' : ' · ◈◈') : '';
             metaEl.textContent = `${hora} · editado${leidoEstado}`;
         }
-
         toast('✎ Mensaje editado', 'success');
         recargarBandeja();
     } catch (e) {
@@ -2319,14 +2512,7 @@ async function editarMensaje(msgId, bubblewrap) {
 }
 
 async function eliminarMensajeParaMi(msgId, bubblewrap) {
-    const confirmado = await NeonModal.confirm({
-        title: 'Eliminar para mí',
-        message: '¿Eliminar este mensaje solo de tu vista?',
-        icon: '🗑',
-        confirmText: 'Eliminar',
-        cancelText: 'Cancelar',
-        danger: true
-    });
+    const confirmado = await NeonModal.confirm({ title: 'Eliminar para mí', message: '¿Eliminar este mensaje solo de tu vista?', icon: '🗑', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
     if (!confirmado) return;
     try {
         const { error } = await db.rpc('eliminar_mensaje_para_mi', { p_mensaje_id: msgId });
@@ -2334,21 +2520,11 @@ async function eliminarMensajeParaMi(msgId, bubblewrap) {
         bubblewrap.remove();
         toast('✅ Mensaje eliminado para ti', 'success');
         recargarBandeja();
-    } catch (e) {
-        console.error('Error eliminando para mí:', e);
-        toast('❌ No se pudo eliminar', 'error');
-    }
+    } catch (e) { console.error('Error eliminando para mí:', e); toast('❌ No se pudo eliminar', 'error'); }
 }
 
 async function eliminarMensajeParaTodos(msgId, bubblewrap) {
-    const confirmado = await NeonModal.confirm({
-        title: 'Eliminar para todos',
-        message: '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.',
-        icon: '🗑',
-        confirmText: 'Eliminar',
-        cancelText: 'Cancelar',
-        danger: true
-    });
+    const confirmado = await NeonModal.confirm({ title: 'Eliminar para todos', message: '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.', icon: '🗑', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
     if (!confirmado) return;
     try {
         const { error } = await db.rpc('eliminar_mensaje_para_todos', { p_mensaje_id: msgId });
@@ -2356,10 +2532,7 @@ async function eliminarMensajeParaTodos(msgId, bubblewrap) {
         bubblewrap.remove();
         toast('✅ Mensaje eliminado para todos', 'success');
         recargarBandeja();
-    } catch (e) {
-        console.error('Error eliminando para todos:', e);
-        toast('❌ No se pudo eliminar', 'error');
-    }
+    } catch (e) { console.error('Error eliminando para todos:', e); toast('❌ No se pudo eliminar', 'error'); }
 }
 
 function configurarLongPressMensajes() {
@@ -2381,8 +2554,7 @@ function configurarLongPressMensajes() {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         const bubblewrap = e.target.closest('.bubblewrap');
         if (!esMensajeValido(bubblewrap)) return;
-        startX = e.clientX;
-        startY = e.clientY;
+        startX = e.clientX; startY = e.clientY;
         pressTimer = setTimeout(() => {
             pressTimer = null;
             const msgId = bubblewrap.dataset.mensajeId;
@@ -2390,22 +2562,12 @@ function configurarLongPressMensajes() {
         }, 500);
     });
 
-    box.addEventListener('pointerup', () => {
-        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    });
-
-    box.addEventListener('pointercancel', () => {
-        if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
-    });
-
+    box.addEventListener('pointerup', () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
+    box.addEventListener('pointercancel', () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
     box.addEventListener('pointermove', e => {
         if (!pressTimer) return;
-        if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
-            clearTimeout(pressTimer);
-            pressTimer = null;
-        }
+        if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) { clearTimeout(pressTimer); pressTimer = null; }
     });
-
     box.addEventListener('contextmenu', e => {
         if (e.pointerType === 'touch') return;
         const bubblewrap = e.target.closest('.bubblewrap');
@@ -2448,15 +2610,8 @@ async function init() {
         }
     });
 
-    window.addEventListener('livekit:ready', () => {
-        window.__livekitReady = true;
-        if (callBtn) callBtn.disabled = false;
-    });
-    window.addEventListener('livekit:error', () => {
-        window.__livekitReady = false;
-        if (callBtn) callBtn.disabled = true;
-        toast('⚠️ Las llamadas no están disponibles en este dispositivo.', 'warning');
-    });
+    window.addEventListener('livekit:ready', () => { window.__livekitReady = true; if (callBtn) callBtn.disabled = false; });
+    window.addEventListener('livekit:error', () => { window.__livekitReady = false; if (callBtn) callBtn.disabled = true; toast('⚠️ Las llamadas no están disponibles en este dispositivo.', 'warning'); });
 
     const bind = (id, fn, ev = 'onclick') => { const el = $(id); if (el) el[ev] = fn; };
     const bindChange = (id, fn) => { const el = $(id); if (el) el.addEventListener('change', fn); };
@@ -2480,7 +2635,7 @@ async function init() {
     bind('evClose', cerrarEstadoViewer);
     bind('evPrev', (e) => { if (e) e.stopPropagation(); anteriorEstado(); });
     bind('evNext', (e) => { if (e) e.stopPropagation(); siguienteEstado(); });
-    bind('evVistas', (e) => { if (e) e.stopPropagation(); const el = $('evVistas'); const estadoId = el?.dataset.estadoId; if (estadoId) abrirVistasModal(estadoId); });
+    bind('evVistas', (e) => { if (e) e.stopPropagation(); const el = $('evVistas'); const estadoId = el?.dataset.estadoId; if (estadoId) abrirPanelEstado(estadoId, 'vistas'); });
 
     const evBody = $('evBody');
     if (evBody) {
@@ -2616,31 +2771,19 @@ async function init() {
                     await openConversation(usuarioParam);
                     if (accionParam === 'llamada') {
                         setTimeout(async () => {
-                            const ok = await NeonModal.confirm({
-                                title: 'Iniciar videollamada',
-                                message: '¿Quieres llamar a este usuario ahora?',
-                                icon: '📹',
-                                confirmText: 'Llamar',
-                                cancelText: 'Cancelar'
-                            });
-                            if (ok && typeof startCall === 'function') {
-                                try { await startCall('video'); }
-                                catch (e) { console.error('[Llamadas] Error en inicio automático:', e); }
-                            }
+                            const ok = await NeonModal.confirm({ title: 'Iniciar videollamada', message: '¿Quieres llamar a este usuario ahora?', icon: '📹', confirmText: 'Llamar', cancelText: 'Cancelar' });
+                            if (ok && typeof startCall === 'function') { try { await startCall('video'); } catch (e) { console.error('[Llamadas] Error en inicio automático:', e); } }
                         }, 1000);
                     }
-                } catch (e) {
-                    console.error('[Mensajes] Error al abrir conversación desde URL:', e);
-                }
+                } catch (e) { console.error('[Mensajes] Error al abrir conversación desde URL:', e); }
             }, 800);
         }
 
         if (usuarioParam || accionParam) {
             urlObj.searchParams.delete('usuario');
             urlObj.searchParams.delete('accion');
-            try {
-                window.history.replaceState({}, '', urlObj.pathname + urlObj.search + urlObj.hash);
-            } catch (e) { console.warn('No se pudo limpiar la URL:', e); }
+            try { window.history.replaceState({}, '', urlObj.pathname + urlObj.search + urlObj.hash); }
+            catch (e) { console.warn('No se pudo limpiar la URL:', e); }
         }
     }
 
@@ -2650,9 +2793,8 @@ async function init() {
     configurarLongPressMensajes();
 
     setTimeout(async () => {
-        try {
-            if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas();
-        } catch (e) { console.warn('⚠️ Error aplicando idiomas:', e); }
+        try { if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas(); }
+        catch (e) { console.warn('⚠️ Error aplicando idiomas:', e); }
     }, 500);
 }
 
@@ -2696,8 +2838,7 @@ if ('serviceWorker' in navigator) {
         const data = event.data || {};
         if (data.tipo === 'notificacion_click' && data.llamadaId) {
             if (data.accion === 'reject') {
-                llamadaFetch(`/api/llamadas/${encodeURIComponent(data.llamadaId)}/terminar`,
-                             { motivo: 'rechazada_desde_notificacion' })
+                llamadaFetch(`/api/llamadas/${encodeURIComponent(data.llamadaId)}/terminar`, { motivo: 'rechazada_desde_notificacion' })
                     .then(() => toast('📵 Llamada rechazada', 'warning'))
                     .catch(e => console.warn('[Llamadas] rechazo desde notificación:', e.code || e.message));
                 return;
@@ -2788,22 +2929,31 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 
+// Nuevas funciones expuestas de historias (v5.9.3)
+window.cargarEstados = cargarEstados;
+window.abrirEstadoUsuario = abrirEstadoUsuario;
+window.cerrarEstadoViewer = cerrarEstadoViewer;
+window.eliminarHistoriaMensajes = eliminarHistoriaMensajes;
+window.comentarHistoriaMensajes = comentarHistoriaMensajes;
+window.saltarGrupoMensajes = saltarGrupoMensajes;
+window.abrirPanelEstado = abrirPanelEstado;
+window.abrirVistasModal = abrirVistasModal;
+
 // ================================================================
-// EXPOSICIÓN GLOBAL PARA LLAMADAS-UI.JS Y MÓDULOS EXTERNOS (v5.9.2)
+// EXPOSICIÓN GLOBAL PARA LLAMADAS-UI.JS Y MÓDULOS EXTERNOS
 // ================================================================
 window.startCall = startCall;
 window.acceptCall = acceptCall;
 window.endCall = finalizarLlamadaLocal;
-window.cancelCall = finalizarLlamadaLocal; // Alias por si se usa en otro lado
+window.cancelCall = finalizarLlamadaLocal;
 
-// Exponer 'current' dinámicamente para que llamadas-ui.js siempre vea la conversación actual
 Object.defineProperty(window, 'current', {
     get: function () { return current; },
     configurable: true
 });
 
 window.NeonUI = {
-    version: '5.9.2',
+    version: '5.9.3',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
