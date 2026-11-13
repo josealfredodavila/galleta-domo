@@ -68,6 +68,7 @@
             border: 1px solid rgba(0,229,255,0.3); cursor:pointer; transition: all 0.2s;
         }
         .search-user-action:hover { background: rgba(0,229,255,0.2); }
+        .search-user-action:disabled { opacity: .55; cursor: default; }
 
         /* ================================================================
            SECCIONES (fix z-index vs header blur)
@@ -819,7 +820,7 @@
             </a>
         </nav>
 
-        <!-- BÚSQUEDA GLOBAL -->
+        <!-- BÚSQUEDA GLOBAL (lógica en /features/muro/js/buscador-global.js) -->
         <div class="global-search-container">
             <div class="global-search-bar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1226,115 +1227,8 @@
     <script src="/features/muro/js/muro-historias.js?v=4"></script>
     <script src="/features/muro/js/muro-init.js"></script>
 
-    <!-- BÚSQUEDA GLOBAL -->
-    <script>
-    window.verPerfilDesdeMuro = function(usuarioId, handle) {
-        if (!usuarioId) return;
-        const param = handle
-            ? `?u=${encodeURIComponent(handle)}`
-            : `?id=${encodeURIComponent(usuarioId)}`;
-        window.location.href = `/features/perfil/perfil-publico.html${param}`;
-    };
-
-    window.agregarDesdeMuro = async function(contactoId) {
-        const client = window.supabaseClient || null;
-        if (!client) return;
-        try {
-            const session = await client.auth.getSession();
-            if (!session || !session.data.session) return;
-            const miId = session.data.session.user.id;
-            const { error } = await client.from('contactos').insert({
-                usuario_id: miId,
-                contacto_id: contactoId,
-                estado: 'pendiente',
-                es_favorito: false
-            });
-            if (error) {
-                if (error.code === '23505') {
-                    if (window.showToast) window.showToast('Ya enviaste una solicitud a esta persona.', 'warning');
-                } else { throw error; }
-            } else {
-                if (window.showToast) window.showToast('Solicitud de amistad enviada.', 'success');
-                const resultsContainer = document.getElementById('globalSearchResults');
-                if (resultsContainer) resultsContainer.classList.remove('active');
-            }
-        } catch (err) {
-            console.error("Error al agregar:", err);
-            if (window.showToast) window.showToast('No se pudo enviar la solicitud.', 'error');
-        }
-    };
-
-    (function() {
-        const input = document.getElementById('globalSearchInput');
-        const resultsContainer = document.getElementById('globalSearchResults');
-        let debounceTimer;
-        if (!input || !resultsContainer) return;
-
-        input.addEventListener('input', function(e) {
-            const query = e.target.value.trim();
-            clearTimeout(debounceTimer);
-            if (query.length < 2) {
-                resultsContainer.classList.remove('active');
-                resultsContainer.innerHTML = '';
-                return;
-            }
-            resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">🔍 Buscando en Csariel\'s...</div>';
-            resultsContainer.classList.add('active');
-
-            debounceTimer = setTimeout(async () => {
-                const client = window.supabaseClient || null;
-                if (!client) return;
-                try {
-                    const { data, error } = await client.rpc('buscar_usuarios', { p_query: query });
-                    if (error) throw error;
-                    const usuarios = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
-                    if (!usuarios.length) {
-                        resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">No se encontraron usuarios.</div>';
-                        return;
-                    }
-                    const session = await client.auth.getSession();
-                    const miId = session && session.data && session.data.session ? session.data.session.user.id : null;
-                    const usuariosFiltrados = usuarios.filter(u => u.id !== miId);
-                    if (!usuariosFiltrados.length) {
-                        resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">No se encontraron usuarios.</div>';
-                        return;
-                    }
-                    resultsContainer.innerHTML = usuariosFiltrados.map(u => {
-                        const nombre = u.nombre || u.handle || 'Usuario';
-                        const handle = u.handle ? '@' + u.handle.replace(/^@/, '') : '';
-                        const avatarImg = u.avatar_url
-                            ? `<img src="${u.avatar_url}" alt="${nombre}" style="width:100%;height:100%;object-fit:cover;">`
-                            : nombre.charAt(0).toUpperCase();
-                        return `
-                            <div class="search-user-item" onclick="window.verPerfilDesdeMuro('${u.id}', '${u.handle || ''}')">
-                                <div class="search-user-avatar">${avatarImg}</div>
-                                <div class="search-user-info">
-                                    <div class="search-user-name">
-                                        ${nombre}
-                                        ${u.verificado ? '<span style="color:var(--gold);font-size:0.7rem;">✓</span>' : ''}
-                                    </div>
-                                    <div class="search-user-handle">${handle}</div>
-                                </div>
-                                <button class="search-user-action" onclick="event.stopPropagation(); window.agregarDesdeMuro('${u.id}')">
-                                    Agregar
-                                </button>
-                            </div>
-                        `;
-                    }).join('');
-                } catch (err) {
-                    console.error("Error buscando usuarios:", err);
-                    resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #ff3366; font-size: 0.8rem;">Error al buscar usuarios.</div>';
-                }
-            }, 400);
-        });
-
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.global-search-container')) {
-                if (resultsContainer) resultsContainer.classList.remove('active');
-            }
-        });
-    })();
-    </script>
+    <!-- BUSCADOR GLOBAL v1.2 -->
+    <script src="/features/muro/js/buscador-global.js"></script>
 
     <!-- GUARDIAS Y FILTROS DEL MURO -->
     <script>
