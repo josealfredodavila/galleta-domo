@@ -1,5 +1,5 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v20
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v21
    ============================================================
    - Diseño plano controlado desde el CSS de la página.
    - Sin bordes, fondos, sombras ni radios inyectados
@@ -10,6 +10,21 @@
    - Protección frente a resultados antiguos de búsqueda.
    - Paginación, caché de perfiles y reintentos controlados.
    - No crea tablas ni modifica la base de datos.
+   ============================================================
+   CAMBIOS v21 (integración social):
+   1) buscarUsuarios usa la RPC buscar_usuarios en lugar de
+      consultar perfiles_publicos directamente. Se añade una
+      capa adaptadora que prueba variantes de firma porque la
+      firma exacta de la RPC no está documentada aquí.
+      → Ajusta ADAPTADOR_BUSQUEDA con la firma real cuando la
+        confirmes, o revisa el console.log "[Contactos] Firma
+        de buscar_usuarios usada: ..." tras la primera búsqueda.
+   2) cargarSolicitudesEnviadasUI() muestra las solicitudes
+      que YO envié y aún están pendientes, con botón cancelar.
+   3) cargarBloqueadosUI() + desbloquearContacto() muestran
+      y gestionan la lista de usuarios bloqueados.
+   4) Las tres funciones nuevas se llaman en inicializar y
+      tras aceptar/rechazar/cancelar/bloquear/desbloquear.
    ============================================================ */
 
 (function () {
@@ -19,6 +34,7 @@
         CONTACTOS_TABLE: 'contactos',
         PERFILES_VISTA: 'perfiles_publicos',
         BLOQUEOS_TABLE: 'bloqueos',
+        RPC_BUSCAR_USUARIOS: 'buscar_usuarios',
         RPC_BLOQUEAR: 'bloquear_contacto',
         RPC_INVITACION: 'obtener_o_crear_invitacion',
         RPC_RESPONDER_SOLICITUD: 'responder_solicitud_amistad',
@@ -66,7 +82,10 @@
         idsContactosSet: new Set(),
 
         busquedaVersion: 0,
-        operacionEnCurso: new Set()
+        operacionEnCurso: new Set(),
+
+        // Cache del nombre de firma de RPC que funcionó
+        firmaBusquedaUsada: null
     };
 
     var SVG_ICONS = {
@@ -90,6 +109,9 @@
 
         cancelar:
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 6-12 12"/><path d="m6 6 12 12"/></svg>',
+
+        desbloquear:
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V7a5 5 0 0 1 9.9-1"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg>',
 
         agregarAmigo:
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M19 8v6"/><path d="M16 11h6"/></svg>'
@@ -501,7 +523,9 @@
 
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
+            await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
+            await cargarBloqueadosUI();
         } finally {
             state.inicializando = false;
         }
@@ -806,7 +830,7 @@
     }
 
     /* ============================================================
-       SOLICITUDES PENDIENTES
+       SOLICITUDES RECIBIDAS (pendientes)
        ============================================================ */
 
     async function cargarSolicitudesPendientesUI() {
@@ -912,6 +936,100 @@
     }
 
     window.cargarSolicitudesPendientesUI = cargarSolicitudesPendientesUI;
+
+    /* ============================================================
+       SOLICITUDES ENVIADAS (nueva en v21)
+       Consulta contactos donde usuario_id = yo AND estado = 'pendiente'
+       (es decir, filas creadas por mí al enviar solicitud). El
+       destinatario real es contacto_id.
+       ============================================================ */
+
+    async function cargarSolicitudesEnviadasUI() {
+        var client = sb();
+        var session = await getSession();
+
+        if (!client || !session) return;
+
+        var contenedor = document.getElementById('solicitudesEnviadasLista');
+        var seccion = document.getElementById('solicitudesEnviadasSection');
+        var contador = document.getElementById('solicitudesEnviadasContador');
+
+        if (!contenedor || !seccion || !contador) return;
+
+        try {
+            var resultado = await client
+                .from(CONFIG.CONTACTOS_TABLE)
+                .select('id, usuario_id, contacto_id, estado')
+                .eq('usuario_id', session.user.id)
+                .eq('estado', 'pendiente');
+
+            if (resultado.error) throw resultado.error;
+
+            var solicitudes = resultado.data || [];
+
+            if (!solicitudes.length) {
+                seccion.style.display = 'none';
+                return;
+            }
+
+            var idsDestinatarios = solicitudes.map(function (solicitud) {
+                return solicitud.contacto_id;
+            });
+
+            await cargarPerfilesEnLote(idsDestinatarios);
+
+            seccion.style.display = 'block';
+            contador.textContent = String(solicitudes.length);
+
+            contenedor.innerHTML = solicitudes.map(function (solicitud) {
+                var perfil = getPerfilCacheado(solicitud.contacto_id) || {};
+                var nombre = perfil.nombre || perfil.handle || 'Usuario';
+                var handle = perfil.handle
+                    ? '@' + String(perfil.handle).replace(/^@/, '')
+                    : '';
+
+                var avatarUrl = obtenerAvatarSeguro(perfil.avatar_url);
+                var avatar = avatarUrl
+                    ? '<img src="' + escapeHtml(avatarUrl) +
+                      '" alt="" loading="lazy" onerror="this.remove()">'
+                    : escapeHtml(obtenerInicial(nombre));
+
+                return `
+                    <div class="solicitud-enviada-card">
+                        <div class="avatar">${avatar}</div>
+                        <div class="info">
+                            <div class="nombre">${escapeHtml(nombre)}</div>
+                            <div class="handle">${escapeHtml(handle)}</div>
+                        </div>
+                        <div class="acciones">
+                            <button type="button" class="btn-cancelar-solicitud"
+                                data-solicitud-cancelar="${escapeHtml(solicitud.id)}">
+                                ${SVG_ICONS.cancelar} Cancelar
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            contenedor.querySelectorAll('[data-solicitud-cancelar]').forEach(
+                function (boton) {
+                    boton.addEventListener('click', function () {
+                        cancelarSolicitudEnviada(
+                            boton.getAttribute('data-solicitud-cancelar')
+                        );
+                    });
+                }
+            );
+        } catch (error) {
+            console.error(
+                '[Contactos] Error cargando solicitudes enviadas:',
+                error
+            );
+            seccion.style.display = 'none';
+        }
+    }
+
+    window.cargarSolicitudesEnviadasUI = cargarSolicitudesEnviadasUI;
 
     /* ============================================================
        SUGERENCIAS DE AMISTAD
@@ -1053,6 +1171,93 @@
     }
 
     window.cargarSugerenciasUI = cargarSugerenciasUI;
+
+    /* ============================================================
+       BLOQUEADOS (nueva en v21)
+       Muestra los usuarios bloqueados por el usuario actual,
+       permite desbloquear (borra la fila de bloqueos).
+       ============================================================ */
+
+    async function cargarBloqueadosUI() {
+        var client = sb();
+        var session = await getSession();
+
+        if (!client || !session) return;
+
+        var seccion = document.getElementById('bloqueadosSection');
+        var contenedor = document.getElementById('bloqueadosLista');
+        var contador = document.getElementById('bloqueadosContador');
+
+        if (!seccion || !contenedor || !contador) return;
+
+        try {
+            var resultado = await client
+                .from(CONFIG.BLOQUEOS_TABLE)
+                .select('id, bloqueado_id, motivo, created_at')
+                .eq('usuario_id', session.user.id)
+                .order('created_at', { ascending: false });
+
+            if (resultado.error) throw resultado.error;
+
+            var bloqueos = resultado.data || [];
+
+            if (!bloqueos.length) {
+                seccion.style.display = 'none';
+                return;
+            }
+
+            var ids = bloqueos.map(function (b) { return b.bloqueado_id; });
+            await cargarPerfilesEnLote(ids);
+
+            seccion.style.display = 'block';
+            contador.textContent = String(bloqueos.length);
+
+            contenedor.innerHTML = bloqueos.map(function (bloqueo) {
+                var perfil = getPerfilCacheado(bloqueo.bloqueado_id) || {};
+                var nombre = perfil.nombre || perfil.handle || 'Usuario';
+                var handle = perfil.handle
+                    ? '@' + String(perfil.handle).replace(/^@/, '')
+                    : '';
+
+                var avatarUrl = obtenerAvatarSeguro(perfil.avatar_url);
+                var avatar = avatarUrl
+                    ? '<img src="' + escapeHtml(avatarUrl) +
+                      '" alt="" loading="lazy" onerror="this.remove()">'
+                    : escapeHtml(obtenerInicial(nombre));
+
+                return `
+                    <div class="bloqueado-card">
+                        <div class="avatar">${avatar}</div>
+                        <div class="info">
+                            <div class="nombre">${escapeHtml(nombre)}</div>
+                            <div class="handle">${escapeHtml(handle)}</div>
+                        </div>
+                        <div class="acciones">
+                            <button type="button" class="btn-desbloquear"
+                                data-bloqueado-desbloquear="${escapeHtml(bloqueo.bloqueado_id)}">
+                                ${SVG_ICONS.desbloquear} Desbloquear
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            contenedor.querySelectorAll('[data-bloqueado-desbloquear]').forEach(
+                function (boton) {
+                    boton.addEventListener('click', function () {
+                        desbloquearContacto(
+                            boton.getAttribute('data-bloqueado-desbloquear')
+                        );
+                    });
+                }
+            );
+        } catch (error) {
+            console.error('[Contactos] Error cargando bloqueados:', error);
+            seccion.style.display = 'none';
+        }
+    }
+
+    window.cargarBloqueadosUI = cargarBloqueadosUI;
 
     /* ============================================================
        LISTA PRINCIPAL · DISEÑO PLANO
@@ -1524,6 +1729,97 @@
 
     window.cerrarModalInvitacion = cerrarModalInvitacion;
 
+    /* ============================================================
+       RPC buscar_usuarios — capa adaptadora
+       ------------------------------------------------------------
+       No tenemos la firma exacta de la RPC documentada aquí.
+       En vez de adivinar una sola, probamos variantes en orden
+       y recordamos la que funcionó en state.firmaBusquedaUsada
+       para las siguientes búsquedas.
+
+       TODO: Cuando confirmes la firma real (por ejemplo con
+         SELECT pg_get_functiondef('public.buscar_usuarios'::regprocedure);
+       deja SOLO la variante correcta y elimina las otras dos.
+       ============================================================ */
+
+    var ADAPTADOR_BUSQUEDA = [
+        {
+            etiqueta: 'p_termino/p_limite',
+            params: function (termino, limite) {
+                return { p_termino: termino, p_limite: limite };
+            }
+        },
+        {
+            etiqueta: 'query',
+            params: function (termino) {
+                return { query: termino };
+            }
+        },
+        {
+            etiqueta: 'termino',
+            params: function (termino, limite) {
+                return { termino: termino, limite: limite };
+            }
+        }
+    ];
+
+    async function invocarBuscarUsuarios(client, termino, limite) {
+        var orden = ADAPTADOR_BUSQUEDA.slice();
+
+        // Si ya sabemos qué firma funciona, ponla primero.
+        if (state.firmaBusquedaUsada) {
+            orden.sort(function (a, b) {
+                if (a.etiqueta === state.firmaBusquedaUsada) return -1;
+                if (b.etiqueta === state.firmaBusquedaUsada) return 1;
+                return 0;
+            });
+        }
+
+        var ultimoError = null;
+
+        for (var i = 0; i < orden.length; i++) {
+            var variante = orden[i];
+            var resultado = await client.rpc(
+                CONFIG.RPC_BUSCAR_USUARIOS,
+                variante.params(termino, limite)
+            );
+
+            if (!resultado.error) {
+                if (state.firmaBusquedaUsada !== variante.etiqueta) {
+                    state.firmaBusquedaUsada = variante.etiqueta;
+                    console.log(
+                        '[Contactos] Firma de buscar_usuarios usada: ' +
+                        variante.etiqueta +
+                        '. Para eliminar la capa adaptadora, ' +
+                        'fija esta firma en el código.'
+                    );
+                }
+                return resultado;
+            }
+
+            // Si el error es de "función/argumentos no existen", probar siguiente.
+            // Si es otro tipo (permisos, RLS, timeout), propagarlo ya.
+            var mensaje = String(resultado.error.message || '');
+            var esFirmaIncorrecta =
+                /does not exist|no existe|could not find|argument|signature|invalid parameter/i.test(mensaje) ||
+                resultado.error.code === '42883' || // undefined_function
+                resultado.error.code === 'PGRST202';
+
+            if (!esFirmaIncorrecta) {
+                return resultado;
+            }
+
+            ultimoError = resultado.error;
+            console.warn(
+                '[Contactos] buscar_usuarios variante "' +
+                variante.etiqueta + '" no compatible:',
+                mensaje
+            );
+        }
+
+        return { data: null, error: ultimoError };
+    }
+
     async function buscarUsuarios(texto, version) {
         var client = sb();
         var session = await getSession();
@@ -1543,45 +1839,38 @@
         }
 
         try {
-            var patron = '%' + termino + '%';
-
-            var resultados = await Promise.all([
-                withRetry(function () {
-                    return client
-                        .from(CONFIG.PERFILES_VISTA)
-                        .select(CONFIG.CAMPOS_PUBLICOS)
-                        .neq('id', session.user.id)
-                        .ilike('nombre', patron)
-                        .limit(CONFIG.MAX_RESULTADOS_BUSQUEDA);
-                }, 'buscar por nombre'),
-
-                withRetry(function () {
-                    return client
-                        .from(CONFIG.PERFILES_VISTA)
-                        .select(CONFIG.CAMPOS_PUBLICOS)
-                        .neq('id', session.user.id)
-                        .ilike('handle', patron)
-                        .limit(CONFIG.MAX_RESULTADOS_BUSQUEDA);
-                }, 'buscar por usuario')
-            ]);
+            var resultado = await withRetry(function () {
+                return invocarBuscarUsuarios(
+                    client,
+                    termino,
+                    CONFIG.MAX_RESULTADOS_BUSQUEDA
+                );
+            }, 'buscar usuarios');
 
             if (version !== state.busquedaVersion) return;
+            if (resultado.error) throw resultado.error;
 
-            var error = resultados.find(function (resultado) {
-                return resultado && resultado.error;
-            });
-
-            if (error) throw error.error;
+            // La RPC puede devolver array, o { data: [...] }, o similar.
+            var crudo = resultado.data;
+            var lista = Array.isArray(crudo)
+                ? crudo
+                : (crudo && Array.isArray(crudo.data) ? crudo.data : []);
 
             var mapa = new Map();
 
-            resultados.forEach(function (resultado) {
-                (resultado.data || []).forEach(function (usuario) {
-                    if (usuario && usuario.id && !mapa.has(usuario.id)) {
-                        mapa.set(usuario.id, usuario);
+            lista.forEach(function (usuario) {
+                if (!usuario || !usuario.id) return;
+                if (usuario.id === session.user.id) return;
+                if (!mapa.has(usuario.id)) {
+                    mapa.set(usuario.id, usuario);
+                    // Cachear solo si tiene los campos mínimos
+                    if (
+                        usuario.nombre !== undefined ||
+                        usuario.handle !== undefined
+                    ) {
                         setPerfilCache(usuario.id, usuario);
                     }
-                });
+                }
             });
 
             var usuarios = Array.from(mapa.values())
@@ -1592,33 +1881,17 @@
                 return;
             }
 
-            var idsBloqueados = new Set();
-
-            try {
-                var bloqueosResultado = await client
-                    .from(CONFIG.BLOQUEOS_TABLE)
-                    .select('bloqueado_id')
-                    .eq('usuario_id', session.user.id);
-
-                (bloqueosResultado.data || []).forEach(function (bloqueo) {
-                    if (bloqueo.bloqueado_id) {
-                        idsBloqueados.add(bloqueo.bloqueado_id);
-                    }
-                });
-            } catch (errorBloqueos) {
-                console.warn('[Contactos] No se pudieron consultar bloqueos.');
-            }
-
-            if (version !== state.busquedaVersion) return;
-
+            // Si la RPC no filtra bloqueos (según documentación lo
+            // hace, pero por seguridad del cliente no filtramos aquí
+            // para evitar bloquear resultados correctos por error).
+            // Excluimos solo los que ya son contacto:
             var disponibles = usuarios.filter(function (usuario) {
-                return !state.idsContactosSet.has(usuario.id) &&
-                    !idsBloqueados.has(usuario.id);
+                return !state.idsContactosSet.has(usuario.id);
             });
 
             if (!disponibles.length) {
                 mostrarMensajeBusqueda(
-                    'Los usuarios encontrados ya están en tus contactos o están bloqueados.'
+                    'Los usuarios encontrados ya están en tus contactos o bloqueados.'
                 );
                 return;
             }
@@ -1761,6 +2034,7 @@
 
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
+            await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
         } catch (error) {
             console.error('[Contactos] Error agregando contacto:', error);
@@ -1814,7 +2088,9 @@
 
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
+            await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
+            await cargarBloqueadosUI();
         } catch (error) {
             console.error('[Contactos] Error aceptando solicitud:', error);
             showToast('No se pudo aceptar la solicitud.', 'error');
@@ -1859,6 +2135,7 @@
 
             await cargarSolicitudesPendientesUI();
             await cargarContactos({ reset: true });
+            await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
         } catch (error) {
             console.error('[Contactos] Error rechazando solicitud:', error);
@@ -1912,6 +2189,7 @@
 
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
+            await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
         } catch (error) {
             console.error(
@@ -2053,6 +2331,7 @@
 
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
+            await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
         } catch (error) {
             console.error('[Contactos] Error eliminando contacto:', error);
@@ -2137,7 +2416,9 @@
 
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
+            await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
+            await cargarBloqueadosUI();
         } catch (error) {
             console.error('[Contactos] Error bloqueando contacto:', error);
 
@@ -2155,6 +2436,69 @@
     }
 
     window.bloquearContacto = bloquearContacto;
+
+    /* ============================================================
+       DESBLOQUEAR CONTACTO (nueva en v21)
+       Borra la fila de bloqueos. No usa RPC: la tabla bloqueos
+       tiene RLS por usuario_id, así que un DELETE directo es
+       equivalente al endpoint DELETE /bloqueos/:id del backend.
+       ============================================================ */
+
+    async function desbloquearContacto(bloqueadoId) {
+        var client = sb();
+        var session = await getSession();
+
+        if (!client || !session) {
+            showToast('Inicia sesión para continuar.', 'error');
+            return;
+        }
+
+        if (!bloqueadoId) return;
+
+        var confirmado = await showConfirm({
+            title: 'Desbloquear usuario',
+            message:
+                '¿Quieres desbloquear a este usuario? Podrá volver a enviarte solicitudes y llamadas.',
+            icon: '🔓',
+            confirmText: 'Desbloquear',
+            cancelText: 'Cancelar',
+            danger: false
+        });
+
+        if (!confirmado) return;
+
+        var clave = 'desbloquear:' + bloqueadoId;
+
+        if (state.operacionEnCurso.has(clave)) return;
+
+        state.operacionEnCurso.add(clave);
+
+        try {
+            var resultado = await withRetry(function () {
+                return client
+                    .from(CONFIG.BLOQUEOS_TABLE)
+                    .delete()
+                    .eq('usuario_id', session.user.id)
+                    .eq('bloqueado_id', bloqueadoId);
+            }, 'desbloquear contacto');
+
+            if (resultado.error) throw resultado.error;
+
+            showToast('Usuario desbloqueado.', 'success');
+
+            await cargarBloqueadosUI();
+            await cargarSugerenciasUI();
+            await cargarSolicitudesPendientesUI();
+            await cargarSolicitudesEnviadasUI();
+        } catch (error) {
+            console.error('[Contactos] Error desbloqueando:', error);
+            showToast('No se pudo desbloquear al usuario.', 'error');
+        } finally {
+            state.operacionEnCurso.delete(clave);
+        }
+    }
+
+    window.desbloquearContacto = desbloquearContacto;
 
     /* ============================================================
        MENSAJES Y LLAMADAS
