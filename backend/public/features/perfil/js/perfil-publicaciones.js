@@ -1,7 +1,9 @@
-
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
+// v6.0 (Doble toque/clic sobre la foto para cerrar el visor.
+//       Se elimina el cuadro invisible del fondo del visor.
+//       Se conserva todo lo demás sin cambios.)
 // v5.9 (Menú de acciones ⋯ en el visor a pantalla completa.
 //       Se elimina la X y el botón independiente de descarga.
 //       Descarga y reporte quedan dentro del menú.
@@ -152,7 +154,10 @@ var pubVisor = {
     items: [],
     index: 0,
     tocoX: 0,
-    tocoY: 0
+    tocoY: 0,
+    ultimoTapTiempo: 0,
+    ultimoTapX: 0,
+    ultimoTapY: 0
 };
 
 function pubCerrarMenuVisor() {
@@ -352,6 +357,39 @@ function pubMostrarItem() {
         var imagen = document.createElement('img');
         imagen.alt = 'Publicación';
         imagen.src = item.url;
+
+        // ============================================================
+        // DOBLE TOQUE / DOBLE CLIC PARA CERRAR LA FOTO
+        // ============================================================
+        var ultimoTap = 0;
+        var UMBRAL_DOBLE_TAP = 320;
+
+        function manejarDobleTap(e) {
+            var ahora = Date.now();
+
+            if (ahora - ultimoTap < UMBRAL_DOBLE_TAP) {
+                e.preventDefault();
+                e.stopPropagation();
+                ultimoTap = 0;
+                pubCerrarVisor();
+                return;
+            }
+
+            ultimoTap = ahora;
+        }
+
+        // En móviles: touchstart para doble tap
+        imagen.addEventListener('touchstart', function (e) {
+            if (e.touches && e.touches.length === 1) {
+                manejarDobleTap(e);
+            }
+        }, { passive: false });
+
+        // En escritorio: click para doble clic
+        imagen.addEventListener('click', function (e) {
+            manejarDobleTap(e);
+        });
+
         caja.appendChild(imagen);
     }
 
@@ -614,6 +652,8 @@ document.addEventListener('keydown', function (e) {
             justify-content: center;
             padding: 56px 12px 56px;
             box-sizing: border-box;
+            background: transparent;
+            pointer-events: auto;
         }
 
         .pub-vf-media img,
@@ -623,6 +663,9 @@ document.addEventListener('keydown', function (e) {
             object-fit: contain;
             border-radius: 8px;
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* Menú de tres puntos */
