@@ -206,10 +206,10 @@
                     if (error) throw error;
                 } else {
                     // Se guarda usando tu RPC existente para la tabla preferencias_usuario
-                    // La RPC recibe la clave y un JSON con el valor
+                    // Enviamos el JSON con la estructura exacta { value: true/false }
                     const { error } = await cliente.rpc('actualizar_preferencia', { 
                         p_key: clave, 
-                        p_value: valor // El SDK de Supabase convierte esto a { value: true } automáticamente en JSONB
+                        p_value: { value: valor } 
                     });
                     if (error) throw error;
                 }
