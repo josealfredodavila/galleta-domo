@@ -22,7 +22,7 @@
         function cargarScript() {
             if (window.LivekitClient) { yaCargado = true; window.__livekitReady = true; return; }
             if (intento >= maxIntentos) {
-                console.warn('[LiveKit] No se pudo cargar tras ' + maxIntentos + ' intentos. Las llamadas no estarán disponibles.');
+                console.warn('[LiveKit] No se pudo cargar tras ' + maxIntentos + ' intentos.');
                 window.dispatchEvent(new CustomEvent('livekit:error'));
                 return;
             }
@@ -36,22 +36,15 @@
                     window.__livekitReady = true;
                     window.dispatchEvent(new CustomEvent('livekit:ready'));
                 } else {
-                    console.warn('[LiveKit] Script cargado pero window.LivekitClient no existe. Reintentando...');
                     setTimeout(cargarScript, 1500);
                 }
             };
-            s.onerror = function () {
-                console.warn('[LiveKit] Error de carga intento ' + intento);
-                setTimeout(cargarScript, 1500);
-            };
+            s.onerror = function () { setTimeout(cargarScript, 1500); };
             document.head.appendChild(s);
         }
 
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', cargarScript);
-        } else {
-            cargarScript();
-        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargarScript);
+        else cargarScript();
     })();
 </script>
 
@@ -66,37 +59,18 @@
     .chathead { position: relative; z-index: 5; }
     .chathead .actions { position: relative; z-index: 6; }
 
-    /* Botón de videollamada profesional */
     .btn-videollamada {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 8px 14px;
-      border: 1px solid var(--cyan, #00e5ff);
-      border-radius: 12px;
-      background: rgba(0, 229, 255, 0.08);
-      color: var(--cyan, #00e5ff);
-      font: inherit;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      font-size: 0.75rem;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 8px 14px; border: 1px solid var(--cyan, #00e5ff); border-radius: 12px;
+      background: rgba(0, 229, 255, 0.08); color: var(--cyan, #00e5ff); font: inherit;
+      font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 0.75rem;
     }
     .btn-videollamada:hover {
-      background: rgba(0, 229, 255, 0.18);
-      border-color: var(--cyan, #00e5ff);
-      box-shadow: 0 0 15px rgba(0, 229, 255, 0.3);
-      transform: translateY(-1px);
+      background: rgba(0, 229, 255, 0.18); border-color: var(--cyan, #00e5ff);
+      box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); transform: translateY(-1px);
     }
-    .btn-videollamada:disabled {
-      opacity: 0.4;
-      cursor: not-allowed;
-      background: rgba(0, 229, 255, 0.03);
-    }
-    .btn-videollamada svg {
-      flex-shrink: 0;
-    }
+    .btn-videollamada:disabled { opacity: 0.4; cursor: not-allowed; background: rgba(0, 229, 255, 0.03); }
+    .btn-videollamada svg { flex-shrink: 0; }
     @media (max-width: 480px) {
       .btn-videollamada span { display: none; }
       .btn-videollamada { padding: 8px; }
@@ -124,96 +98,44 @@
 </nav>
 <main class="panel" id="panel">
 <aside class="sidebar">
-
     <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
-        <button class="sidebar-tab active" data-tab="chats" data-neon="tab" role="tab" aria-selected="true" onclick="cambiarPestana('chats')">
-            <span class="tab-icon">◈</span>
-            <span class="tab-label">Chats</span>
-        </button>
-        <button class="sidebar-tab" data-tab="canales" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
-            <span class="tab-icon">⬡</span>
-            <span class="tab-label">Canales</span>
-        </button>
-        <button class="sidebar-tab" data-tab="grupos" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
-            <span class="tab-icon">◆</span>
-            <span class="tab-label">Grupos</span>
-        </button>
-        <button class="sidebar-tab" data-tab="llamadas" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')">
-            <span class="tab-icon">☎</span>
-            <span class="tab-label">Llamadas</span>
-        </button>
+        <button class="sidebar-tab active" data-tab="chats" data-neon="tab" role="tab" aria-selected="true" onclick="cambiarPestana('chats')"><span class="tab-icon">◈</span><span class="tab-label">Chats</span></button>
+        <button class="sidebar-tab" data-tab="canales" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('canales')"><span class="tab-icon">⬡</span><span class="tab-label">Canales</span></button>
+        <button class="sidebar-tab" data-tab="grupos" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')"><span class="tab-icon">◆</span><span class="tab-label">Grupos</span></button>
+        <button class="sidebar-tab" data-tab="llamadas" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')"><span class="tab-icon">☎</span><span class="tab-label">Llamadas</span></button>
     </div>
 
     <div class="tab-content" id="tabChats">
-        <div class="sidehead">
-            <span>◈ Conversaciones</span>
-        </div>
-        <div class="searchbox">
-            <input type="text" id="searchConversations" placeholder="◇ Buscar conversación…" autocomplete="off">
-        </div>
+        <div class="sidehead"><span>◈ Conversaciones</span></div>
+        <div class="searchbox"><input type="text" id="searchConversations" placeholder="◇ Buscar conversación…" autocomplete="off"></div>
         <div class="estados-bar">
-            <div class="estados-header">
-                <div class="estados-title">◈ ESTADOS</div>
-                <button class="btn-subir-estado" id="btnSubirEstado" title="Subir estado" data-neon="chip">＋ Subir</button>
-            </div>
+            <div class="estados-header"><div class="estados-title">◈ ESTADOS</div><button class="btn-subir-estado" id="btnSubirEstado" title="Subir estado" data-neon="chip">＋ Subir</button></div>
             <div class="estados-scroll" id="estadosScroll"></div>
         </div>
         <div class="convlist" id="conversationList"></div>
     </div>
 
     <div class="tab-content hidden" id="tabCanales">
-        <div class="sidehead">
-            <span>⬡ Canales Públicos</span>
-        </div>
-        <div class="searchbox">
-            <input type="text" id="searchCanales" placeholder="◇ Buscar canal…" autocomplete="off" oninput="buscarCanalesDebounce()">
-        </div>
-        <div class="filtros-canales">
-            <select id="filtroEstadoCanal" onchange="cargarCanales()">
-                <option value="">Todos los estados</option>
-            </select>
-        </div>
+        <div class="sidehead"><span>⬡ Canales Públicos</span></div>
+        <div class="searchbox"><input type="text" id="searchCanales" placeholder="◇ Buscar canal…" autocomplete="off" oninput="buscarCanalesDebounce()"></div>
+        <div class="filtros-canales"><select id="filtroEstadoCanal" onchange="cargarCanales()"><option value="">Todos los estados</option></select></div>
         <div class="canales-lista" id="canalesLista"></div>
     </div>
 
     <div class="tab-content hidden" id="tabGrupos">
-        <div class="sidehead">
-            <span>◆ Grupos Privados</span>
-        </div>
-        <div class="searchbox">
-            <input type="text" id="searchGrupos" placeholder="◇ Buscar grupo…" autocomplete="off" oninput="buscarGruposDebounce()">
-        </div>
-        <div class="filtros-canales">
-            <select id="filtroEstadoGrupo" onchange="cargarGrupos()">
-                <option value="">Todos los estados</option>
-            </select>
-        </div>
+        <div class="sidehead"><span>◆ Grupos Privados</span></div>
+        <div class="searchbox"><input type="text" id="searchGrupos" placeholder="◇ Buscar grupo…" autocomplete="off" oninput="buscarGruposDebounce()"></div>
+        <div class="filtros-canales"><select id="filtroEstadoGrupo" onchange="cargarGrupos()"><option value="">Todos los estados</option></select></div>
         <div class="canales-lista" id="gruposLista"></div>
     </div>
 
     <div class="tab-content hidden" id="tabLlamadas">
-        <div class="sidehead">
-            <span>☎ Historial de llamadas</span>
-            <button class="btn-subir-estado" id="btnBorrarTodoHistorial" title="Borrar todo el historial" data-neon="chip-danger" style="background:linear-gradient(135deg,#ff3366,#cc1a4d);color:#fff;">🗑 Todo</button>
-        </div>
+        <div class="sidehead"><span>☎ Historial de llamadas</span><button class="btn-subir-estado" id="btnBorrarTodoHistorial" title="Borrar todo el historial" data-neon="chip-danger" style="background:linear-gradient(135deg,#ff3366,#cc1a4d);color:#fff;">🗑 Todo</button></div>
         <div class="filtros-canales" style="padding:0 12px 6px; gap:6px; flex-wrap:wrap;">
-            <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;">
-                <option value="all">Todos los tipos</option>
-                <option value="audio">Solo audio</option>
-                <option value="video">Solo video</option>
-            </select>
-            <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;">
-                <option value="all">Todas</option>
-                <option value="entrante">Entrantes</option>
-                <option value="saliente">Salientes</option>
-            </select>
+            <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;"><option value="all">Todos los tipos</option><option value="audio">Solo audio</option><option value="video">Solo video</option></select>
+            <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;"><option value="all">Todas</option><option value="entrante">Entrantes</option><option value="saliente">Salientes</option></select>
         </div>
-        <div class="canales-lista" id="historialLlamadasLista">
-            <div class="empty-state-small">
-                <div class="empty-icon">☎</div>
-                <div class="empty-text">Cargando historial…</div>
-            </div>
-        </div>
+        <div class="canales-lista" id="historialLlamadasLista"><div class="empty-state-small"><div class="empty-icon">☎</div><div class="empty-text">Cargando historial…</div></div></div>
     </div>
 
     <button class="fab" id="newChat" title="Nueva conversación" data-neon="fab">＋</button>
@@ -221,10 +143,7 @@
 <section class="chat">
     <header class="chathead">
         <button class="backbtn" id="backBtn" title="Volver" data-neon="icon" aria-label="Volver">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <line x1="19" y1="12" x2="5" y2="12"></line>
-                <polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
         <div class="avatar" id="chatAvatar" title="Ver foto">◈</div>
         <div>
@@ -235,26 +154,16 @@
             <button class="iconbtn" id="deleteChat" title="Eliminar conversación" data-neon="icon">◇</button>
             <button class="iconbtn" id="blockUser" title="Bloquear contacto" data-neon="icon-danger" style="color:#ff3366;">⛔</button>
             <button class="btn-videollamada" id="videoCall" title="Iniciar videollamada" disabled>
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="3" y="6" width="12" height="12" rx="3"></rect>
-                    <path d="m15 10 6-3v10l-6-3"></path>
-                </svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="3"></rect><path d="m15 10 6-3v10l-6-3"></path></svg>
                 <span>Videollamada</span>
             </button>
             <button class="iconbtn" id="searchChat" title="Buscar en la conversación" data-neon="icon">◇</button>
         </div>
     </header>
     <div class="messages" id="messages">
-        <div class="empty" id="emptyState">
-            <strong>◈</strong>
-            <p>Selecciona una conversación</p>
-            <small>Elige un chat de la lista para empezar a hablar</small>
-        </div>
+        <div class="empty" id="emptyState"><strong>◈</strong><p>Selecciona una conversación</p><small>Elige un chat de la lista para empezar a hablar</small></div>
         <div id="scrollAnchor"></div>
-        <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">
-            ↓
-            <span class="badge-new" id="newMsgBadge" style="display:none;">1</span>
-        </button>
+        <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span></button>
     </div>
     <form class="composer" id="composer" style="display:none;">
         <button type="button" class="btn" id="attach" title="Adjuntar" data-neon="btn">◆</button>
@@ -284,12 +193,7 @@
         <div class="profile-modal-avatar" id="profileModalAvatar">◈</div>
         <div class="profile-modal-name" id="profileModalName">Mi Perfil</div>
         <div class="profile-modal-handle" id="profileModalHandle">@usuario</div>
-        <div class="profile-modal-actions">
-            <button class="profile-modal-btn" id="btnCambiarFoto">
-                <span class="icon">◆</span>
-                <span>Cambiar foto de perfil</span>
-            </button>
-        </div>
+        <div class="profile-modal-actions"><button class="profile-modal-btn" id="btnCambiarFoto"><span class="icon">◆</span><span>Cambiar foto de perfil</span></button></div>
         <button class="btn" id="btnCerrarProfileModal" style="margin-top:18px;width:100%;" data-neon="btn">Cerrar</button>
     </div>
 </div>
@@ -298,9 +202,7 @@
     <div class="modalbox" style="max-width:420px;">
         <button class="iconbtn" id="closeVistasModal" style="float:right" data-neon="icon">✕</button>
         <h2 style="display:flex;align-items:center;gap:8px;">◉ Vistas <span id="vistasModalCount" style="color:var(--muted);font-size:.85rem;font-weight:400;"></span></h2>
-        <div id="vistasList" style="margin-top:10px;">
-            <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>
-        </div>
+        <div id="vistasList" style="margin-top:10px;"><div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div></div>
     </div>
 </div>
 
@@ -311,14 +213,8 @@
         <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">Los canales son públicos: cualquier usuario puede verlos y unirse.</p>
         <input class="search" id="canalNombre" placeholder="Nombre del canal *" maxlength="80" style="margin-bottom:10px;">
         <textarea id="canalDescripcion" placeholder="Descripción (opcional)" maxlength="200" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:70px;margin-bottom:10px;"></textarea>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-            <input class="search" id="canalEstado" placeholder="Estado (opcional)">
-            <input class="search" id="canalMunicipio" placeholder="Municipio *">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-            <input class="search" id="canalCiudad" placeholder="Ciudad (opcional)">
-            <input class="search" id="canalPais" placeholder="País" value="México">
-        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;"><input class="search" id="canalEstado" placeholder="Estado (opcional)"><input class="search" id="canalMunicipio" placeholder="Municipio *"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;"><input class="search" id="canalCiudad" placeholder="Ciudad (opcional)"><input class="search" id="canalPais" placeholder="País" value="México"></div>
         <button class="btn send" id="btnCrearCanal" onclick="crearCanal()" style="width:100%;" data-neon="send">⬡ Crear Canal</button>
     </div>
 </div>
@@ -330,14 +226,8 @@
         <p style="color:var(--muted);font-size:.75rem;margin-bottom:14px;">Los grupos son privados: solo por invitación.</p>
         <input class="search" id="grupoNombre" placeholder="Nombre del grupo *" maxlength="80" style="margin-bottom:10px;">
         <textarea id="grupoDescripcion" placeholder="Descripción (opcional)" maxlength="200" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:70px;margin-bottom:10px;"></textarea>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-            <input class="search" id="grupoEstado" placeholder="Estado (opcional)">
-            <input class="search" id="grupoMunicipio" placeholder="Municipio *">
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
-            <input class="search" id="grupoCiudad" placeholder="Ciudad (opcional)">
-            <input class="search" id="grupoPais" placeholder="País" value="México">
-        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;"><input class="search" id="grupoEstado" placeholder="Estado (opcional)"><input class="search" id="grupoMunicipio" placeholder="Municipio *"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;"><input class="search" id="grupoCiudad" placeholder="Ciudad (opcional)"><input class="search" id="grupoPais" placeholder="País" value="México"></div>
         <button class="btn send" id="btnCrearGrupo" onclick="crearGrupo()" style="width:100%;" data-neon="send">◆ Crear Grupo</button>
     </div>
 </div>
@@ -347,9 +237,7 @@
         <button class="iconbtn" id="closeEstadoModal" style="float:right" data-neon="icon">✕</button>
         <h2>◈ Nuevo Estado</h2>
         <p style="color:var(--muted);font-size:.8rem;margin-bottom:14px;">Se mostrará 24 horas</p>
-        <div id="estadoPreviewWrap" style="margin:16px 0;display:none;">
-            <img id="estadoPreviewImg" style="max-width:100%;max-height:240px;border-radius:12px;border:2px solid var(--gold);">
-        </div>
+        <div id="estadoPreviewWrap" style="margin:16px 0;display:none;"><img id="estadoPreviewImg" style="max-width:100%;max-height:240px;border-radius:12px;border:2px solid var(--gold);"></div>
         <input type="file" id="estadoFileInput" accept="image/*" style="display:none;">
         <button class="btn" id="btnSeleccionarEstado" style="width:100%;margin-bottom:10px;" data-neon="btn">◆ Seleccionar imagen</button>
         <textarea id="estadoCaption" placeholder="Escribe un mensaje (opcional)" maxlength="120" style="width:100%;padding:10px 14px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;font-family:inherit;resize:none;min-height:60px;margin-bottom:12px;"></textarea>
@@ -361,16 +249,11 @@
     <div class="modalbox" style="max-width:480px;">
         <button class="iconbtn" id="closeModalConfig" style="float:right" data-neon="icon">✕</button>
         <h2>⚙ Configuración de llamadas</h2>
-
         <label style="display:block;color:var(--muted);font-size:.75rem;margin-bottom:6px;font-weight:600;">¿Quién puede llamarme?</label>
         <select id="selectQuienPuedeLlamarme" style="width:100%;padding:11px 13px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.05);color:var(--text);outline:0;margin-bottom:16px;">
-            <option value="todos">Todos</option>
-            <option value="contactos">Solo mis contactos</option>
-            <option value="nadie">Nadie</option>
+            <option value="todos">Todos</option><option value="contactos">Solo mis contactos</option><option value="nadie">Nadie</option>
         </select>
-
         <button class="btn send" id="btnVerBloqueados" style="width:100%;margin-bottom:10px;" data-neon="btn">⛔ Ver usuarios bloqueados (<span id="countBloqueados">0</span>)</button>
-
         <button class="btn send" id="btnGuardarConfig" style="width:100%;" data-neon="send">Guardar configuración</button>
     </div>
 </div>
@@ -379,9 +262,7 @@
     <div class="modalbox" style="max-width:480px;">
         <button class="iconbtn" id="closeModalBloqueados" style="float:right" data-neon="icon">✕</button>
         <h2>⛔ Usuarios bloqueados</h2>
-        <div id="listaBloqueados" style="margin-top:10px;">
-            <div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div>
-        </div>
+        <div id="listaBloqueados" style="margin-top:10px;"><div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">Cargando…</div></div>
     </div>
 </div>
 
@@ -396,10 +277,7 @@
     <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
     <div class="estado-viewer-header">
         <div class="estado-viewer-avatar" id="evAvatar">◈</div>
-        <div class="estado-viewer-info">
-            <div class="estado-viewer-name" id="evName">Usuario</div>
-            <div class="estado-viewer-time" id="evTime">Hace un momento</div>
-        </div>
+        <div class="estado-viewer-info"><div class="estado-viewer-name" id="evName">Usuario</div><div class="estado-viewer-time" id="evTime">Hace un momento</div></div>
         <button class="estado-viewer-close" id="evClose">✕</button>
     </div>
     <div class="estado-viewer-body" id="evBody">
@@ -408,36 +286,17 @@
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
         <button class="estado-viewer-nav next" id="evNext">›</button>
     </div>
-    <div class="estado-viewer-vistas hidden" id="evVistas">
-        <div class="estado-viewer-vistas-pill">
-            ◉ <span id="evVistasCount">0</span> vistas
-        </div>
-    </div>
+    <div class="estado-viewer-vistas hidden" id="evVistas"><div class="estado-viewer-vistas-pill">◉ <span id="evVistasCount">0</span> vistas</div></div>
 </div>
 
 <div class="call" id="callOverlay">
-    <div class="videos">
-        <video id="remoteVideo" autoplay playsinline></video>
-        <video id="localVideo" class="local" autoplay playsinline muted></video>
-    </div>
+    <div class="videos"><video id="remoteVideo" autoplay playsinline></video><video id="localVideo" class="local" autoplay playsinline muted></video></div>
     <div class="callinfo" id="callInfo">◈ Conectando…</div>
     <div class="controls">
-        <button id="toggleMic" title="Activar/Silenciar micrófono">
-            <span class="ctrl-icon">🎤</span>
-            <span class="ctrl-label">Micrófono</span>
-        </button>
-        <button id="toggleCam" title="Activar/Desactivar cámara">
-            <span class="ctrl-icon">📷</span>
-            <span class="ctrl-label">Cámara</span>
-        </button>
-        <button id="toggleScreen" title="Compartir pantalla">
-            <span class="ctrl-icon">🖥️</span>
-            <span class="ctrl-label">Pantalla</span>
-        </button>
-        <button class="hang" id="hangup" title="Colgar llamada">
-            <span class="ctrl-icon">📵</span>
-            <span class="ctrl-label">Colgar</span>
-        </button>
+        <button id="toggleMic" title="Activar/Silenciar micrófono"><span class="ctrl-icon">🎤</span><span class="ctrl-label">Micrófono</span></button>
+        <button id="toggleCam" title="Activar/Desactivar cámara"><span class="ctrl-icon">📷</span><span class="ctrl-label">Cámara</span></button>
+        <button id="toggleScreen" title="Compartir pantalla"><span class="ctrl-icon">🖥️</span><span class="ctrl-label">Pantalla</span></button>
+        <button class="hang" id="hangup" title="Colgar llamada"><span class="ctrl-icon">📵</span><span class="ctrl-label">Colgar</span></button>
     </div>
 </div>
 
@@ -446,14 +305,8 @@
     <h2 id="incomingName">Usuario</h2>
     <div class="callinfo">🔔 <strong>Llamada entrante</strong></div>
     <div class="controls">
-        <button id="acceptCall" class="accept" title="Aceptar llamada">
-            <span class="ctrl-icon">📹</span>
-            <span class="ctrl-label">Aceptar</span>
-        </button>
-        <button class="hang" id="rejectCall" title="Rechazar llamada">
-            <span class="ctrl-icon">📵</span>
-            <span class="ctrl-label">Rechazar</span>
-        </button>
+        <button id="acceptCall" class="accept" title="Aceptar llamada"><span class="ctrl-icon">📹</span><span class="ctrl-label">Aceptar</span></button>
+        <button class="hang" id="rejectCall" title="Rechazar llamada"><span class="ctrl-icon">📵</span><span class="ctrl-label">Rechazar</span></button>
     </div>
 </div>
 
@@ -461,9 +314,17 @@
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/js/teclado-emojis.js?v=4"></script>
+
+<!-- 1. Cerebro Social -->
+<script src="/features/mensajes/social-acciones.js?v=1"></script>
+
+<!-- 2. Lógica de Mensajes y Llamadas -->
 <script src="/features/mensajes/js/mensajes.js?v=18"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
+
+<!-- 3. Lógica de Contactos (Se auto-detecta y no falla si no está el DOM) -->
+<script src="/features/mensajes/contactos.js?v=12" defer></script>
 
 <script>
     (function () {
