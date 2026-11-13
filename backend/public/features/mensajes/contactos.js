@@ -1,28 +1,32 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v22
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v23
    ============================================================
    - Diseño plano controlado desde el CSS de la página.
    - Sin bordes, fondos, sombras ni radios inyectados
      mediante estilos inline en las tarjetas.
    - Conserva Supabase, solicitudes, favoritos y bloqueos.
    - Avatares seguros, estados y búsqueda optimizada.
-   - Corrección para IDs UUID al actualizar favoritos.
    - Protección frente a resultados antiguos de búsqueda.
    - Paginación, caché de perfiles y reintentos controlados.
    - No crea tablas ni modifica la base de datos.
    ============================================================
-   CAMBIOS v22 (integración con perfil público):
+   CAMBIOS v23 (integración completa):
    1) abrirPerfil(contactoId) navega a /features/perfil/perfil-publico.html
-      usando el handle del contacto (el perfil público busca por ?u=<handle>).
-   2) Click en el avatar de la tarjeta abre el perfil público.
-      Click en cualquier otra zona de la tarjeta sigue abriendo mensajes.
-   3) Si el contacto no tiene handle público, se muestra un toast y no
-      se navega (no rompe la tarjeta).
+      con ?u=<handle> (parámetro real que usa perfil-publico.html).
+   2) Click en el avatar de la tarjeta → perfil público.
+      Click en el resto de la tarjeta → mensajes (como antes).
+   3) El avatar es accesible por teclado (role=button, tabindex=0)
+      y responde a Enter/Espacio.
+   4) Menú contextual accesible por teclado sobre el avatar.
+   5) Si el contacto no tiene handle, se muestra toast y no se navega.
+   6) URL del perfil público y de mensajes en constantes CONFIG.
    ============================================================
-   CAMBIOS v21 (integración social) conservados:
-   1) buscarUsuarios usa la RPC buscar_usuarios (capa adaptadora).
-   2) cargarSolicitudesEnviadasUI() muestra solicitudes enviadas.
-   3) cargarBloqueadosUI() + desbloquearContacto() gestionan bloqueados.
+   CONSERVADO de v21/v22:
+   - buscarUsuarios con capa adaptadora sobre buscar_usuarios RPC.
+   - cargarSolicitudesPendientesUI / cargarSolicitudesEnviadasUI.
+   - cargarBloqueadosUI / desbloquearContacto.
+   - Favoritos independientes del estado de amistad.
+   - Reintentos, caché de perfiles, paginación, scroll infinito.
    ============================================================ */
 
 (function () {
@@ -90,31 +94,31 @@
 
     var SVG_ICONS = {
         mensaje:
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg>',
 
         llamar:
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92Z"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92Z"/></svg>',
 
         favorito:
-            '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z"/></svg>',
 
         favoritoOutline:
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z"/></svg>',
 
         bloquear:
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m5.64 5.64 12.72 12.72"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.64 5.64 12.72 12.72"/></svg>',
 
         eliminar:
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>',
 
         cancelar:
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m18 6-12 12"/><path d="m6 6 12 12"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 6-12 12"/><path d="m6 6 12 12"/></svg>',
 
         desbloquear:
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11V7a5 5 0 0 1 9.9-1"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg>',
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 11V7a5 5 0 0 1 9.9-1"/><rect x="3" y="11" width="18" height="11" rx="2"/></svg>',
 
         agregarAmigo:
-            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M19 8v6"/><path d="M16 11h6"/></svg>'
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M19 8v6"/><path d="M16 11h6"/></svg>'
     };
 
     /* ============================================================
@@ -487,9 +491,11 @@
                 document.querySelectorAll('.filtros .filtro').forEach(
                     function (item) {
                         item.classList.remove('active');
+                        item.setAttribute('aria-pressed', 'false');
                     }
                 );
                 boton.classList.add('active');
+                boton.setAttribute('aria-pressed', 'true');
                 state.filtroActual = boton.dataset.filtro || 'todos';
                 renderizarContactos();
             });
@@ -735,7 +741,7 @@
     }
 
     /* ============================================================
-       SOLICITUDES RECIBIDAS (pendientes)
+       SOLICITUDES RECIBIDAS
        ============================================================ */
 
     async function cargarSolicitudesPendientesUI() {
@@ -1195,6 +1201,10 @@
 
     /* ============================================================
        RENDERIZAR TARJETA
+       ------------------------------------------------------------
+       El avatar lleva role=button + tabindex=0 + aria-label.
+       Al hacer click o Enter/Espacio sobre él se abre el perfil
+       público. El resto de la tarjeta sigue abriendo mensajes.
        ============================================================ */
 
     function renderizarTarjeta(contacto) {
@@ -1290,13 +1300,16 @@
                 role="button"
                 aria-label="Abrir conversación con ${escapeHtml(contacto.nombre)}">
 
-                <div class="contacto-avatar ${enLinea ? 'online' : 'offline'}">
+                <div class="contacto-avatar ${enLinea ? 'online' : 'offline'}"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Ver perfil de ${escapeHtml(contacto.nombre)}">
                     ${avatar}
 
                     <span class="online-dot ${enLinea ? 'visible' : 'hidden'}"></span>
 
                     ${contacto.es_favorito
-                        ? '<span class="favorito-badge">★</span>'
+                        ? '<span class="favorito-badge" aria-hidden="true">★</span>'
                         : ''}
                 </div>
 
@@ -1330,11 +1343,10 @@
 
     /* ============================================================
        DELEGACIÓN DE EVENTOS DE TARJETAS
-       ============================================================
-       Cambio v22:
-       - Click en .contacto-avatar → abrirPerfil() (perfil público).
-       - Click en [data-accion] → comportamiento existente.
-       - Click en cualquier otra zona → abrirMensaje() (como antes).
+       ------------------------------------------------------------
+       - Click/Enter/Espacio en .contacto-avatar → abrirPerfil()
+       - Click en [data-accion] → comportamiento existente
+       - Click en cualquier otra zona → abrirMensaje()
        ============================================================ */
 
     function configurarEventosTarjetas() {
@@ -1378,25 +1390,34 @@
                 return;
             }
 
-            // v22: click en el avatar → perfil público
             if (event.target.closest('.contacto-avatar')) {
                 abrirPerfil(contactoId);
                 return;
             }
 
-            // Click en el resto de la tarjeta → mensajes (comportamiento anterior)
             abrirMensaje(contactoId);
         });
 
         lista.addEventListener('keydown', function (event) {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+
+            var tarjeta = event.target.closest('.contacto-card');
+            if (!tarjeta) return;
+
+            var contactoId = tarjeta.getAttribute('data-contacto-id');
+
+            if (event.target.classList.contains('contacto-avatar')) {
+                event.preventDefault();
+                abrirPerfil(contactoId);
+                return;
+            }
+
             if (
-                (event.key === 'Enter' || event.key === ' ') &&
+                event.target === tarjeta ||
                 event.target.classList.contains('contacto-card')
             ) {
                 event.preventDefault();
-                abrirMensaje(
-                    event.target.getAttribute('data-contacto-id')
-                );
+                abrirMensaje(contactoId);
             }
         });
     }
@@ -1475,7 +1496,7 @@
         lista.setAttribute('aria-busy', 'false');
         lista.innerHTML = `
             <div class="empty-state">
-                <div class="icon">
+                <div class="icon" aria-hidden="true">
                     ${escapeHtml(icono)}
                 </div>
                 <h3>${escapeHtml(mensaje)}</h3>
@@ -1569,7 +1590,7 @@
     window.cerrarModalInvitacion = cerrarModalInvitacion;
 
     /* ============================================================
-       RPC buscar_usuarios — capa adaptadora (v21 conservada)
+       RPC buscar_usuarios — capa adaptadora
        ============================================================ */
 
     var ADAPTADOR_BUSQUEDA = [
@@ -2241,12 +2262,11 @@
     window.abrirMensaje = abrirMensaje;
 
     /* ============================================================
-       ABRIR PERFIL PÚBLICO (nuevo en v22)
+       ABRIR PERFIL PÚBLICO
        ------------------------------------------------------------
        El perfil público vive en /features/perfil/perfil-publico.html
-       y busca por handle (?u=<handle>), no por UUID.
-       Se navega con el handle del contacto ya cacheado en state.contactos.
-       Si no hay handle disponible, se muestra un toast y no se navega.
+       y busca por handle (?u=<handle>). Se navega con el handle del
+       contacto ya cacheado en state.contactos.
        ============================================================ */
 
     function abrirPerfil(contactoId) {
