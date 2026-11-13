@@ -1,8 +1,21 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v5.9 (Visor PRO: Botón de menú ☰ en lugar de X, doble toque para
-//       cerrar el visor, y botón de descarga con estilo futurista)
+// v5.8 (Visor propio a pantalla completa para fotos y videos de
+//       "Mis publicaciones". Cada medio tiene botón ⛶. Flechas,
+//       deslizar, descarga y cierre con ×, Escape o tocando el fondo.
+//       Ya no depende de perfil-visor.js.)
+// v5.7 (El enlace al autor usa ?u=<handle>, que es lo que lee
+//       perfil-publico.html. El @handle se muestra en azul y es
+//       clicable, igual que el nombre y el avatar.)
+// v5.6 (Nombre, handle y avatar de cada publicación enlazan al perfil
+//       del autor. Si es tu propia publicación, abre tu perfil.)
+// v5.5 (Diseño tipo Facebook: publicaciones sin tarjeta ni bordes,
+//       medios a todo el ancho, barra de acciones plana)
+// v5.4 (Eliminación sin borrar Storage desde el cliente)
+// v5.3 (Emojis de reacción alineados con la base de datos,
+//       reacciones optimizadas, comentarios protegidos contra envíos
+//       repetidos, vista previa segura, medios compatibles)
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -127,6 +140,10 @@ return 'es-MX';
 // ================================================================
 // ENLACE AL PERFIL DEL AUTOR
 // ================================================================
+// Usa ?u=<handle>, el parámetro que lee perfil-publico.html.
+// Si el autor es el usuario en sesión, abre su propio perfil.
+// ================================================================
+
 function pubUrlPerfilAutor(handle, usuarioId, miId) {
 if (miId && usuarioId && String(usuarioId) === String(miId)) {
 return PUB_RUTA_PERFIL_PROPIO;
@@ -143,8 +160,11 @@ return PUB_RUTA_PERFIL_PUBLICO + '?u=' + encodeURIComponent(h);
 // ================================================================
 // VISOR PROPIO A PANTALLA COMPLETA (fotos y videos de la lista)
 // ================================================================
+// No depende de perfil-visor.js. Usa window.listaMultimediaPerfil,
+// que se llena al pintar cada publicación.
+// ================================================================
 
-var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0, ultimoTapTiempo: 0 };
+var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0 };
 
 function pubVisorEl() {
 var el = document.getElementById('pubVisorFull');
@@ -157,7 +177,7 @@ el.setAttribute('role', 'dialog');
 el.setAttribute('aria-modal', 'true');  
 el.setAttribute('aria-label', 'Vista de publicación');  
 el.innerHTML =  
-    '<button type="button" class="pub-vf-cerrar" aria-label="Cerrar">☰</button>' +  
+    '<button type="button" class="pub-vf-cerrar" aria-label="Cerrar">×</button>' +  
     '<button type="button" class="pub-vf-nav pub-vf-prev" aria-label="Anterior">‹</button>' +  
     '<div class="pub-vf-media"></div>' +  
     '<button type="button" class="pub-vf-nav pub-vf-next" aria-label="Siguiente">›</button>' +  
@@ -191,17 +211,6 @@ el.querySelector('.pub-vf-descargar').addEventListener('click', function (e) {
 // Tocar el fondo (no la foto ni el video) cierra el visor  
 el.querySelector('.pub-vf-media').addEventListener('click', function (e) {  
     if (e.target === e.currentTarget) pubCerrarVisor();  
-});  
-
-// Doble toque en la imagen/video para cerrar  
-el.querySelector('.pub-vf-media').addEventListener('touchend', function (e) {  
-    var ahora = Date.now();  
-    if (ahora - pubVisor.ultimoTapTiempo < 300) {  
-        pubCerrarVisor();  
-        pubVisor.ultimoTapTiempo = 0;  
-    } else {  
-        pubVisor.ultimoTapTiempo = ahora;  
-    }  
 });  
 
 el.addEventListener('touchstart', function (e) {  
@@ -451,9 +460,6 @@ style.appendChild(document.createTextNode(`
         justify-content: center;  
     }  
 
-    /* ================================================================
-       VISOR PRO WEB3 (Estilo cristal con menú ☰ y descarga estilizada)
-       ================================================================ */
     .pub-vf {  
         position: fixed;  
         inset: 0;  
@@ -465,7 +471,6 @@ style.appendChild(document.createTextNode(`
         touch-action: manipulation;  
     }  
     .pub-vf.show { display: flex; }  
-    
     .pub-vf-media {  
         width: 100%;  
         height: 100%;  
@@ -483,8 +488,6 @@ style.appendChild(document.createTextNode(`
         border-radius: 8px;  
         user-select: none;  
     }  
-
-    /* Botón de Cerrar (Sándwich ☰) */
     .pub-vf-cerrar {  
         position: absolute;  
         top: calc(12px + env(safe-area-inset-top, 0px));  
@@ -492,26 +495,14 @@ style.appendChild(document.createTextNode(`
         width: 42px;  
         height: 42px;  
         border-radius: 50%;  
-        border: 1px solid rgba(255,255,255,.15);  
-        background: rgba(20,20,20,.6);  
-        backdrop-filter: blur(8px);  
-        -webkit-backdrop-filter: blur(8px);  
+        border: 0;  
+        background: rgba(255,255,255,.14);  
         color: #fff;  
-        font-size: 22px;  
-        font-weight: 300;  
+        font-size: 26px;  
         line-height: 1;  
         cursor: pointer;  
         z-index: 2;  
-        display: flex;  
-        align-items: center;  
-        justify-content: center;  
-        transition: background .2s, transform .2s;  
     }  
-    .pub-vf-cerrar:hover {  
-        background: rgba(40,40,40,.9);  
-        transform: scale(1.05);  
-    }  
-
     .pub-vf-nav {  
         position: absolute;  
         top: 50%;  
@@ -520,7 +511,7 @@ style.appendChild(document.createTextNode(`
         height: 42px;  
         border-radius: 50%;  
         border: 0;  
-        background: rgba(255,255,255,.1);  
+        background: rgba(255,255,255,.14);  
         color: #fff;  
         font-size: 28px;  
         line-height: 1;  
@@ -529,33 +520,20 @@ style.appendChild(document.createTextNode(`
     }  
     .pub-vf-prev { left: 10px; }  
     .pub-vf-next { right: 10px; }  
-
-    /* Botón de Descarga (Estilo Neón Naranja) */
     .pub-vf-descargar {  
         position: absolute;  
         bottom: calc(20px + env(safe-area-inset-bottom, 0px));  
         left: 50%;  
         transform: translateX(-50%);  
-        padding: 12px 28px;  
-        border-radius: 30px;  
-        border: 1.5px solid #ff7a1a;  
-        background: rgba(15, 15, 15, 0.8);  
-        backdrop-filter: blur(10px);  
-        -webkit-backdrop-filter: blur(10px);  
+        padding: 10px 22px;  
+        border-radius: 24px;  
+        border: 1px solid #ff7a1a;  
+        background: rgba(20,20,20,.9);  
         color: #ff7a1a;  
-        font-family: 'Inter', sans-serif;  
         font-weight: 700;  
         font-size: .85rem;  
-        letter-spacing: 1px;  
         cursor: pointer;  
         z-index: 2;  
-        transition: all .25s ease;  
-        box-shadow: 0 0 20px rgba(255, 122, 26, 0.15);  
-    }  
-    .pub-vf-descargar:hover {  
-        background: rgba(255, 122, 26, 0.15);  
-        box-shadow: 0 0 30px rgba(255, 122, 26, 0.4);  
-        transform: translateX(-50%) scale(1.05);  
     }  
 
     .perfil-aviso-moderacion {  
