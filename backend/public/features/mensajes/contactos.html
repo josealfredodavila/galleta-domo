@@ -936,11 +936,12 @@
             </div>
 
             <div class="search-bar">
+                <!-- El placeholder ahora invita a buscar en toda la red (Modo Facebook) -->
                 <input type="text" id="searchInput"
-                    placeholder="Buscar contactos por nombre o @handle..."
+                    placeholder="🔍 Buscar personas en Csariel's (Nombre, @handle, correo)..."
                     data-placeholder="contactos_buscar"
                     autocomplete="off" maxlength="80" inputmode="search"
-                    aria-label="Buscar contactos">
+                    aria-label="Buscar personas en el ecosistema">
                 <button type="button" class="btn-invitar" onclick="invitarContacto()" data-clave="contactos_invitar">
                     Invitar
                 </button>
@@ -1007,7 +1008,7 @@
                 <button type="button" class="btn-cerrar" onclick="cerrarModalBuscar()" aria-label="Cerrar">✕</button>
             </div>
             <div class="form-group">
-                <label for="searchInputModal" data-clave="contactos_buscar_label">Buscar por nombre o @handle</label>
+                <label for="searchInputModal" data-clave="contactos_buscar_label">Buscar por nombre, @handle, correo o teléfono</label>
                 <input type="text" id="searchInputModal" placeholder="Ej: Juan o @juan123"
                     autocomplete="off" maxlength="80" inputmode="search">
             </div>
@@ -1060,6 +1061,7 @@
         </div>
     </div>
 
-    <script src="/features/mensajes/contactos.js?v=12" defer></script>
+    <!-- ACTUALIZACIÓN CRÍTICA: v=15 para forzar la carga del nuevo contactos.js v25 -->
+    <script src="/features/mensajes/contactos.js?v=15" defer></script>
 </body>
 </html>
