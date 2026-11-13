@@ -238,6 +238,141 @@
             -webkit-backdrop-filter: blur(10px);
             z-index: 1000 !important;
         }
+
+        /* ================================================================
+           ANILLO DE HISTORIA ULTRA FUTURISTA WEB3 (HOLOGRAMA)
+           ================================================================ */
+        #csStoryStrip {
+            display: flex;
+            gap: 16px;
+            padding: 12px 0 16px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        #csStoryStrip::-webkit-scrollbar { display: none; }
+
+        .cs-story-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            flex-shrink: 0;
+            transition: transform .2s ease;
+        }
+        .cs-story-item:hover { transform: scale(1.05); }
+        .cs-story-item > span:last-child {
+            font-size: .7rem;
+            color: #8fa3b8;
+            font-weight: 600;
+            letter-spacing: .3px;
+            max-width: 68px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Anillo base (conic-gradient animado) */
+        .cs-story-ring {
+            position: relative;
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3px;
+            background: conic-gradient(from 0deg, #00e5ff, #8b5cf6, #ff00aa, #00e5ff);
+            animation: girarHolograma 4s linear infinite;
+            box-shadow:
+                0 0 20px rgba(0, 229, 255, .4),
+                0 0 40px rgba(139, 92, 246, .2),
+                inset 0 0 10px rgba(0, 229, 255, .2);
+            transition: box-shadow .3s ease;
+        }
+        .cs-story-ring::before {
+            content: '';
+            position: absolute;
+            inset: -2px;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg, #00e5ff, transparent 30%, #8b5cf6, transparent 60%, #ff00aa, transparent 90%, #00e5ff);
+            z-index: -1;
+            filter: blur(6px);
+            opacity: .7;
+            animation: girarHolograma 3s linear infinite reverse;
+        }
+        .cs-story-item:hover .cs-story-ring {
+            box-shadow:
+                0 0 30px rgba(0, 229, 255, .8),
+                0 0 60px rgba(139, 92, 246, .5),
+                inset 0 0 15px rgba(0, 229, 255, .4);
+        }
+
+        /* Interior (recorte de la foto) */
+        .cs-story-ring img,
+        .cs-story-ring > .story-avatar {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #0a0f16;
+            background: #0a0f16;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Anillo visto (gris) */
+        .cs-story-ring.vista {
+            background: conic-gradient(from 0deg, #2a3440, #4a5563, #2a3440);
+            animation: none;
+            box-shadow: none;
+        }
+        .cs-story-ring.vista::before { display: none; }
+
+        /* Botón "Tu historia" (Añadir) */
+        .cs-story-ring.story-add {
+            background: conic-gradient(from 0deg, #00e5ff, #8b5cf6, #00e5ff);
+            animation: girarHolograma 3s linear infinite;
+        }
+        .cs-story-ring.story-add svg {
+            width: 26px;
+            height: 26px;
+            stroke: #00e5ff;
+            stroke-width: 3;
+            fill: none;
+            filter: drop-shadow(0 0 6px rgba(0, 229, 255, 1));
+            position: relative;
+            z-index: 3;
+        }
+        .cs-story-ring.story-add::after {
+            content: '';
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 229, 255, .15), transparent 70%);
+            z-index: 1;
+        }
+
+        @keyframes girarHolograma {
+            from { transform: rotate(0deg); }
+            to   { transform: rotate(360deg); }
+        }
+
+        /* Animación de pulso en el anillo de "Tu historia" */
+        @keyframes pulsoFuturista {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(0, 229, 255, .4), 0 0 40px rgba(139, 92, 246, .2);
+            }
+            50% {
+                box-shadow: 0 0 35px rgba(0, 229, 255, .7), 0 0 70px rgba(139, 92, 246, .4);
+            }
+        }
+        .cs-story-ring.story-add {
+            animation: girarHolograma 3s linear infinite, pulsoFuturista 2.5s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
@@ -649,7 +784,8 @@
     <script src="/features/muro/js/muro-ventas.js"></script>
     <script src="/features/muro/js/muro-pagos.js"></script>
     <script src="/features/muro/js/muro-realtime.js"></script>
-    <script src="/features/muro/js/muro-historias.js"></script>
+    <!-- [v3.2] Script unificado de historias con soporte de video y RPC -->
+    <script src="/features/muro/js/muro-historias.js?v=2"></script>
     <script src="/features/muro/js/muro-init.js"></script>
 
     <!-- ================= SCRIPT DE BÚSQUEDA GLOBAL CORREGIDO ================= -->
