@@ -1,29 +1,82 @@
 // ================================================================
-// BUSCADOR GLOBAL DEL ECOSISTEMA · v1.1
-// Requiere: #globalSearchInput y #globalSearchResults en la página
-// y window.supabaseClient ya inicializado.
-// Cambios v1.1:
-//  - Tolera respuesta de buscar_usuarios envuelta ({data: [...]})
-//  - Normaliza fields (handle / usuario_handle, avatar / avatar_url)
-//  - Log de error más explícito (código + mensaje)
+// BUSCADOR GLOBAL DEL ECOSISTEMA · v1.2
+// Requiere: #globalSearchInput y #globalSearchResults en la página.
+// Usa window.supabaseClient (espera a que exista, hasta 5 s).
+// Cambios v1.2 (para alta concurrencia):
+//  - Espera al cliente de Supabase en vez de fallar en silencio
+//  - Cache de resultados en memoria (LRU) para no repetir RPC
+//  - Sesión leída una sola vez y reutilizada
+//  - Avatares: solo http(s) (evita esquemas raros en src)
+//  - Protección contra doble inicialización
+//  - Mensajes claros para sin sesión, rate limit y errores de red
+//  - Escape cierra el panel; "Agregar" queda deshabilitado tras enviar
 // ================================================================
 (function () {
     'use strict';
 
+    if (window.__buscadorGlobalIniciado) return;
+
     var input = document.getElementById('globalSearchInput');
     var caja = document.getElementById('globalSearchResults');
     if (!input || !caja) return;
+    window.__buscadorGlobalIniciado = true;
+
+    var DEBOUNCE_MS = 350;
+    var MIN_CHARS = 2;
+    var MAX_CACHE = 50;
+    var CACHE_TTL_MS = 60 * 1000;
+    var ESPERA_CLIENTE_MS = 5000;
 
     var timer = null;
     var ultimaBusqueda = 0;
+    var miIdCache = undefined; // undefined = no leído, null = sin sesión
+    var cache = new Map();     // query -> { t, lista }
 
-    function cliente() { return window.supabaseClient || null; }
+    // ------------------------------------------------------------
+    // CLIENTE
+    // ------------------------------------------------------------
+    function esperarCliente() {
+        return new Promise(function (resolve) {
+            var inicio = Date.now();
+            (function revisar() {
+                if (window.supabaseClient) return resolve(window.supabaseClient);
+                if (Date.now() - inicio > ESPERA_CLIENTE_MS) return resolve(null);
+                setTimeout(revisar, 100);
+            })();
+        });
+    }
 
+    async function obtenerMiId(client) {
+        if (miIdCache !== undefined) return miIdCache;
+        try {
+            var sesion = await client.auth.getSession();
+            miIdCache = (sesion.data && sesion.data.session && sesion.data.session.user.id) || null;
+        } catch (e) {
+            miIdCache = null;
+        }
+        return miIdCache;
+    }
+
+    // Si cambia la sesión (login/logout), invalida lo cacheado
+    function engancharCambioSesion(client) {
+        if (!client.auth || !client.auth.onAuthStateChange) return;
+        client.auth.onAuthStateChange(function () {
+            miIdCache = undefined;
+            cache.clear();
+        });
+    }
+
+    // ------------------------------------------------------------
+    // UTILIDADES DE UI (sin innerHTML con datos de usuarios)
+    // ------------------------------------------------------------
     function mostrarMensaje(texto, color) {
         var d = document.createElement('div');
         d.className = 'gs-msg';
+        d.style.padding = '12px';
+        d.style.textAlign = 'center';
+        d.style.fontSize = '0.8rem';
+        d.style.color = color || '#8c949c';
         d.textContent = texto;
-        if (color) d.style.color = color;
         caja.replaceChildren(d);
         caja.classList.add('active');
     }
@@ -33,6 +86,16 @@
         caja.replaceChildren();
     }
 
+    function urlAvatarSegura(url) {
+        if (!url || typeof url !== 'string') return null;
+        try {
+            var u = new URL(url, window.location.origin);
+            return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     function verPerfil(id, handle) {
         var param = handle
             ? '?u=' + encodeURIComponent(handle)
@@ -40,12 +103,20 @@
         window.location.href = '/features/perfil/perfil-publico.html' + param;
     }
 
-    async function agregarContacto(contactoId, boton) {
-        var client = cliente();
-        if (!client) return;
+    function traducirError(err) {
+        var msg = (err && (err.message || err.code)) || '';
+        if (/no_autenticado|42501|JWT|auth/i.test(msg)) return 'Inicia sesión para buscar.';
+        if (/rate|429|too many/i.test(msg)) return 'Demasiadas búsquedas. Espera un momento.';
+        if (/network|Failed to fetch/i.test(msg)) return 'Sin conexión. Revisa tu internet.';
+        return 'Error al buscar usuarios.';
+    }
+
+    // ------------------------------------------------------------
+    // ACCIONES
+    // ------------------------------------------------------------
+    async function agregarContacto(client, contactoId, boton) {
         try {
-            var sesion = await client.auth.getSession();
-            var miId = sesion.data && sesion.data.session && sesion.data.session.user.id;
+            var miId = await obtenerMiId(client);
             if (!miId) {
                 if (window.showToast) showToast('Inicia sesión para agregar contactos', 'error');
                 return;
@@ -58,6 +129,8 @@
             });
             if (res.error && res.error.code === '23505') {
                 if (window.showToast) showToast('Ya enviaste una solicitud a esta persona.', 'warning');
+                boton.textContent = 'Enviada';
+                boton.disabled = true;
             } else if (res.error) {
                 throw res.error;
             } else {
@@ -66,16 +139,15 @@
                 boton.disabled = true;
             }
         } catch (e) {
-            console.error('Error al agregar:', e);
+            console.error('[Buscador] Error al agregar:', e && e.code, e && e.message);
             if (window.showToast) showToast('No se pudo enviar la solicitud.', 'error');
         }
     }
 
-    function filaUsuario(u) {
-        // v1.1: tolerar nombre alternativo en la respuesta de la RPC
-        var nombre = u.nombre || u.handle || u.usuario_handle || 'Usuario';
+    function filaUsuario(client, u) {
         var handleRaw = u.handle || u.usuario_handle || '';
-        var avatarUrl = u.avatar_url || u.avatar || null;
+        var nombre = u.nombre || handleRaw || 'Usuario';
+        var avatarUrl = urlAvatarSegura(u.avatar_url || u.avatar || null);
 
         var fila = document.createElement('div');
         fila.className = 'search-user-item';
@@ -86,6 +158,7 @@
         if (avatarUrl) {
             var img = document.createElement('img');
             img.alt = '';
+            img.loading = 'lazy';
             img.src = avatarUrl;
             avatar.appendChild(img);
         } else {
@@ -98,12 +171,6 @@
         var nom = document.createElement('div');
         nom.className = 'search-user-name';
         nom.textContent = nombre;
-        if (u.verificado) {
-            var check = document.createElement('span');
-            check.className = 'gs-check';
-            check.textContent = ' ✓';
-            nom.appendChild(check);
-        }
 
         var handle = document.createElement('div');
         handle.className = 'search-user-handle';
@@ -118,7 +185,10 @@
         btn.textContent = 'Agregar';
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
-            agregarContacto(u.id, btn);
+            btn.disabled = true;
+            agregarContacto(client, u.id, btn).then(function () {
+                if (!btn.textContent || btn.textContent === 'Agregar') btn.disabled = false;
+            });
         });
 
         fila.appendChild(avatar);
@@ -127,56 +197,90 @@
         return fila;
     }
 
-    async function buscar(query) {
-        var client = cliente();
-        if (!client) return;
+    // ------------------------------------------------------------
+    // BÚSQUEDA
+    // ------------------------------------------------------------
+    function leerCache(q) {
+        var hit = cache.get(q);
+        if (!hit) return null;
+        if (Date.now() - hit.t > CACHE_TTL_MS) { cache.delete(q); return null; }
+        return hit.lista;
+    }
 
+    function guardarCache(q, lista) {
+        if (cache.size >= MAX_CACHE) cache.delete(cache.keys().next().value);
+        cache.set(q, { t: Date.now(), lista: lista });
+    }
+
+    async function buscar(client, query) {
         var reqId = ++ultimaBusqueda;
+        var q = query.toLowerCase();
+
+        var enCache = leerCache(q);
+        if (enCache) {
+            pintar(client, enCache, reqId);
+            return;
+        }
+
         mostrarMensaje('🔍 Buscando en Csariel\'s…');
 
         try {
             var res = await client.rpc('buscar_usuarios', { p_query: query });
-            if (reqId !== ultimaBusqueda) return;
-            if (res.error) {
-                console.error('[Buscador] RPC error:', res.error.code, res.error.message);
-                throw res.error;
-            }
+            if (reqId !== ultimaBusqueda) return; // respuesta vieja, la ignoro
+            if (res.error) throw res.error;
 
-            // v1.1: normalizar respuesta — array plano o envuelto en {data:[...]}
             var raw = res.data;
             var lista = Array.isArray(raw) ? raw
                       : (raw && Array.isArray(raw.data)) ? raw.data
-                      : (raw && Array.isArray(raw.resultados)) ? raw.resultados
                       : [];
 
-            // Excluirme a mí mismo
-            var sesion = await client.auth.getSession();
-            var miId = sesion.data && sesion.data.session ? sesion.data.session.user.id : null;
+            var miId = await obtenerMiId(client);
             lista = lista.filter(function (u) { return u.id !== miId; });
 
-            if (!lista.length) {
-                mostrarMensaje('No se encontraron usuarios.');
-                return;
-            }
-
-            caja.replaceChildren.apply(caja, lista.map(filaUsuario));
-            caja.classList.add('active');
+            guardarCache(q, lista);
+            pintar(client, lista, reqId);
         } catch (e) {
             if (reqId !== ultimaBusqueda) return;
-            console.error('[Buscador] Error buscando usuarios:', e);
-            mostrarMensaje('Error al buscar usuarios.', '#ff3366');
+            console.error('[Buscador] RPC:', e && e.code, e && e.message);
+            mostrarMensaje(traducirError(e), '#ff3366');
         }
     }
 
+    function pintar(client, lista, reqId) {
+        if (reqId !== ultimaBusqueda) return;
+        if (!lista.length) {
+            mostrarMensaje('No se encontraron usuarios.');
+            return;
+        }
+        caja.replaceChildren();
+        lista.forEach(function (u) { caja.appendChild(filaUsuario(client, u)); });
+        caja.classList.add('active');
+    }
+
+    // ------------------------------------------------------------
+    // EVENTOS
+    // ------------------------------------------------------------
     input.addEventListener('input', function (e) {
         var query = e.target.value.trim();
         clearTimeout(timer);
-        if (query.length < 2) {
+        if (query.length < MIN_CHARS) {
             ultimaBusqueda++;
             cerrar();
             return;
         }
-        timer = setTimeout(function () { buscar(query); }, 350);
+        timer = setTimeout(async function () {
+            var client = await esperarCliente();
+            if (!client) {
+                mostrarMensaje('No se pudo conectar. Recarga la página.', '#ff3366');
+                return;
+            }
+            engancharCambioSesion(client);
+            buscar(client, query);
+        }, DEBOUNCE_MS);
+    });
+
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { input.value = ''; ultimaBusqueda++; cerrar(); }
     });
 
     document.addEventListener('click', function (e) {
