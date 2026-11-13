@@ -1,9 +1,9 @@
 // ================================================================
-// MENSAJES · JS v5.7 · WEB3 NEON UI
-// Cambios v5.7:
-// - markRead(id, force): el INSERT entrante con conversación abierta fuerza la lectura
-// - Caché de 30 s para el resumen de Marquinhos (preview y badge) en loadConversations
-// - Resto de v5.6 sin cambios
+// MENSAJES · JS v5.8 · WEB3 NEON UI
+// Cambios v5.8 (Integración de llamadas y zonas horarias):
+// - parsearFechaSupabase(): corrige incoming() forzando UTC si falta zona.
+// - Expuestos globalmente para llamadas-ui.js:
+//   window.startCall, window.acceptCall, window.endCall, window.current
 // ================================================================
 
 'use strict';
@@ -1884,6 +1884,17 @@ async function startCall(tipo = 'video') {
     }
 }
 
+// Helper para fechas de Supabase (zona horaria segura)
+function parsearFechaSupabase(iso) {
+    if (!iso) return null;
+    if (iso instanceof Date) return iso;
+    const s = String(iso);
+    if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(s)) {
+        return new Date(s + 'Z'); // Asumir UTC si no tiene zona
+    }
+    return new Date(s);
+}
+
 function cerrarOverlayEntrante() {
     clearTimeout(ringTimer);
     ringTimer = null;
@@ -1895,8 +1906,14 @@ function cerrarOverlayEntrante() {
 async function incoming(data) {
     if (!user || !data || data.creador_id === user.id) return;
     if (data.estado && data.estado !== 'ringing') return;
-    const edad = Date.now() - new Date(data.created_at || Date.now()).getTime();
-    if (edad > LLAMADA_VIGENCIA_MS) return;
+    
+    // FIX v5.8: Comprobación de tiempo segura
+    const fecha = parsearFechaSupabase(data.created_at);
+    if (fecha) {
+        const edad = Date.now() - fecha.getTime();
+        if (edad > LLAMADA_VIGENCIA_MS) return;
+    }
+
     if (call.active || call.id || incomingId) {
         if (incomingId !== data.id && !call.id) await terminarLlamadaServidor(data.id, { motivo: 'ocupado' });
         return;
@@ -2661,8 +2678,23 @@ window.crearGrupo = crearGrupo;
 window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
+
+// ================================================================
+// EXPOSICIÓN GLOBAL PARA LLAMADAS-UI.JS Y MÓDULOS EXTERNOS (v5.8)
+// ================================================================
+window.startCall = startCall;
+window.acceptCall = acceptCall;
+window.endCall = finalizarLlamadaLocal;
+window.cancelCall = finalizarLlamadaLocal; // Alias por si se usa en otro lado
+
+// Exponer 'current' dinámicamente para que llamadas-ui.js siempre vea la conversación actual
+Object.defineProperty(window, 'current', {
+    get: function () { return current; },
+    configurable: true
+});
+
 window.NeonUI = {
-    version: '5.7.0',
+    version: '5.8.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
