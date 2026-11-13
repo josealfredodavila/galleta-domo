@@ -1,13 +1,14 @@
 // ================================================================
-// CSARIEL'S · SOCIAL ACCIONES · v1.0
-// Cerebro unificado para relaciones sociales.
-// Consume las RPCs y tablas existentes (contactos, bloqueos).
+// CSARIEL'S · SOCIAL ACCIONES · v1.0 (Cerebro Unificado)
+// ================================================================
+// Centraliza todas las operaciones de relaciones sociales.
+// Consume tablas: contactos, bloqueos, perfiles_publicos.
+// Consume RPCs: responder_solicitud_amistad, eliminar_amistad,
+//               bloquear_contacto, desbloquear_contacto, listar_bloqueados.
 // ================================================================
 
 (function () {
     'use strict';
-
-    // Si ya se cargó, no duplicar.
     if (window.SocialAcciones) return;
 
     const TABLA_CONTACTOS = 'contactos';
@@ -19,11 +20,11 @@
 
     function toast(msg, type) {
         if (typeof window.showToast === 'function') return window.showToast(msg, type);
+        if (typeof window.toast === 'function') return window.toast(msg, type);
         console.log('[Social]', msg);
     }
 
     function confirmar(titulo, mensaje, peligroso = true) {
-        // Reutiliza tu NeonModal si existe (cargado desde mensajes.js), si no, usa el nativo.
         if (window.NeonModal && typeof window.NeonModal.confirm === 'function') {
             return window.NeonModal.confirm({ title: titulo, message: mensaje, danger: peligroso, confirmText: 'Aceptar', cancelText: 'Cancelar' });
         }
@@ -31,27 +32,26 @@
     }
 
     /**
-     * FUNCIÓN CENTRAL: Determina el estado de la relación entre dos usuarios.
-     * Devuelve: 'bloqueado_por_mi', 'bloqueado_por_el', 'amigos', 'solicitud_enviada', 'solicitud_recibida', 'ninguno'.
+     * Devuelve el estado exacto de la relación entre dos usuarios.
+     * Estados posibles: 'bloqueado_por_mi', 'bloqueado_por_el', 'amigos',
+     * 'solicitud_enviada', 'solicitud_recibida', 'ninguno', 'error'.
      */
     async function obtenerEstadoRelacion(miId, otroId) {
         const db = getClient();
-        if (!db || !miId || !otroId) return { estado: 'error' };
+        if (!db || !miId || !otroId || miId === otroId) return { estado: 'error' };
 
         try {
-            // 1. Revisar bloqueos (en ambos sentidos)
+            // 1. Verificar bloqueos en ambos sentidos
             const { data: bloqueos } = await db.from(TABLA_BLOQUEOS)
                 .select('usuario_id, bloqueado_id')
                 .or(`and(usuario_id.eq.${miId},bloqueado_id.eq.${otroId}),and(usuario_id.eq.${otroId},bloqueado_id.eq.${miId})`);
 
             if (bloqueos && bloqueos.length > 0) {
-                const yoBloquee = bloqueos.some(b => b.usuario_id === miId && b.bloqueado_id === otroId);
-                const elMeBloqueo = bloqueos.some(b => b.usuario_id === otroId && b.bloqueado_id === miId);
-                if (yoBloquee) return { estado: 'bloqueado_por_mi' };
-                if (elMeBloqueo) return { estado: 'bloqueado_por_el' };
+                if (bloqueos.some(b => b.usuario_id === miId)) return { estado: 'bloqueado_por_mi' };
+                if (bloqueos.some(b => b.usuario_id === otroId)) return { estado: 'bloqueado_por_el' };
             }
 
-            // 2. Revisar contacto/amistad
+            // 2. Verificar relación en contactos
             const { data: relacion } = await db.from(TABLA_CONTACTOS)
                 .select('id, usuario_id, contacto_id, estado, es_favorito')
                 .or(`and(usuario_id.eq.${miId},contacto_id.eq.${otroId}),and(usuario_id.eq.${otroId},contacto_id.eq.${miId})`)
@@ -59,16 +59,14 @@
 
             if (relacion) {
                 if (relacion.estado === 'activo') {
-                    return { 
-                        estado: 'amigos', 
+                    return {
+                        estado: 'amigos',
                         esFavorito: relacion.usuario_id === miId ? relacion.es_favorito : false,
                         filaId: relacion.usuario_id === miId ? relacion.id : null
                     };
                 }
                 if (relacion.estado === 'pendiente') {
-                    // Si yo envié la solicitud
                     if (relacion.usuario_id === miId) return { estado: 'solicitud_enviada', filaId: relacion.id };
-                    // Si yo la recibí
                     return { estado: 'solicitud_recibida', filaId: relacion.id };
                 }
             }
@@ -80,17 +78,12 @@
         }
     }
 
-    // --- ACCIONES ---
-
     async function enviarSolicitud(miId, otroId) {
         const db = getClient();
         if (!db) return { ok: false };
         try {
             const { error } = await db.from(TABLA_CONTACTOS).insert({
-                usuario_id: miId,
-                contacto_id: otroId,
-                estado: 'pendiente',
-                es_favorito: false
+                usuario_id: miId, contacto_id: otroId, estado: 'pendiente', es_favorito: false
             });
             if (error) throw error;
             toast('Solicitud de amistad enviada', 'success');
@@ -106,10 +99,7 @@
         const db = getClient();
         if (!db) return { ok: false };
         try {
-            const { error } = await db.rpc('responder_solicitud_amistad', {
-                p_fila_id: filaId,
-                p_aceptar: aceptar
-            });
+            const { error } = await db.rpc('responder_solicitud_amistad', { p_fila_id: filaId, p_aceptar: aceptar });
             if (error) throw error;
             toast(aceptar ? 'Ahora son amigos' : 'Solicitud rechazada', 'success');
             return { ok: true };
@@ -133,9 +123,7 @@
         const db = getClient();
         if (!db) return { ok: false };
         try {
-            const { error } = await db.from(TABLA_CONTACTOS)
-                .update({ es_favorito: nuevoValor })
-                .eq('id', filaId);
+            const { error } = await db.from(TABLA_CONTACTOS).update({ es_favorito: nuevoValor }).eq('id', filaId);
             if (error) throw error;
             toast(nuevoValor ? 'Añadido a favoritos' : 'Quitado de favoritos', 'success');
             return { ok: true };
@@ -175,15 +163,19 @@
         } catch (e) { return { ok: false }; }
     }
 
+    async function listarBloqueados() {
+        const db = getClient();
+        if (!db) return [];
+        try {
+            const { data, error } = await db.rpc('listar_bloqueados');
+            if (error) throw error;
+            return data || [];
+        } catch (e) { return []; }
+    }
+
     window.SocialAcciones = {
-        obtenerEstadoRelacion,
-        enviarSolicitud,
-        responderSolicitud,
-        cancelarSolicitud,
-        toggleFavorito,
-        eliminarAmistad,
-        bloquear,
-        desbloquear,
-        confirmar
+        obtenerEstadoRelacion, enviarSolicitud, responderSolicitud,
+        cancelarSolicitud, toggleFavorito, eliminarAmistad,
+        bloquear, desbloquear, listarBloqueados, confirmar
     };
 })();
