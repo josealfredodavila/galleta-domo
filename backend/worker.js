@@ -1,12 +1,21 @@
 /* ================================================================
    WORKER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN v4 - Mezcla de audio de fondo (Phonk, Trap, etc.)
+   VERSIÓN v5 - Almacenamiento en Cloudflare R2 + mezcla de audio
    ================================================================
-   - Recibe audioUrl del job.
-   - Descarga audio en try/catch independiente (si falla → sin música).
-   - Si el video no tiene audio y sí hay música → solo música.
-   - Si el video tiene audio y sí hay música → original 40% + música 100%.
-   - Sin audio de fondo → comportamiento original (solo marca de agua).
+   - Jobs con storage: 'r2' (y r2Key): descarga el original desde R2,
+     sube el procesado a R2 y borra el original de R2.
+   - Jobs sin storage (anteriores): flujo legacy con Supabase Storage.
+   - Audio de fondo: descarga en try/catch independiente (si falla
+     → sin música).
+   - Video con audio + música → original 40% + música 100%.
+   - Video sin audio + música → solo música.
+   - Sin música → solo marca de agua.
+   ================================================================
+   Variables requeridas (Railway, servicio del worker):
+     SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REDIS_URL
+     R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
+     R2_ENDPOINT, R2_BUCKET, R2_PUBLIC_URL
+   Dependencia nueva: @aws-sdk/client-s3
    ================================================================ */
 
 const { Worker } = require('bullmq');
@@ -14,6 +23,8 @@ const IORedis = require('ioredis');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const { createClient } = require('@supabase/supabase-js');
+const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { pipeline } = require('stream/promises');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -34,6 +45,13 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const REDIS_URL = process.env.REDIS_URL;
 const PORT = process.env.PORT || 3001;
 
+const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
+const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
+const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+const R2_BUCKET = process.env.R2_BUCKET || 'csariels-media';
+const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
+const R2_ENDPOINT = process.env.R2_ENDPOINT || (R2_ACCOUNT_ID ? `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : '');
+
 const faltantes = [];
 if (!SUPABASE_URL) faltantes.push('SUPABASE_URL');
 if (!SUPABASE_SERVICE_ROLE_KEY) faltantes.push('SUPABASE_SERVICE_ROLE_KEY');
@@ -47,12 +65,30 @@ if (faltantes.length > 0) {
     process.exit(1);
 }
 
+const r2Configurado = Boolean(R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_ENDPOINT && R2_PUBLIC_URL);
+if (!r2Configurado) {
+    console.warn('⚠️ R2 no configurado completamente en el worker. Los jobs con storage: "r2" fallarán.');
+}
+
 // ================================================================
-// CONFIGURACIÓN DE SUPABASE
+// CLIENTES
 // ================================================================
 const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { autoRefreshToken: false, persistSession: false }
 });
+
+const r2Client = r2Configurado
+    ? new S3Client({
+        region: 'auto',
+        endpoint: R2_ENDPOINT,
+        credentials: {
+            accessKeyId: R2_ACCESS_KEY_ID,
+            secretAccessKey: R2_SECRET_ACCESS_KEY
+        },
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED'
+    })
+    : null;
 
 // ================================================================
 // CONFIGURACIÓN DE REDIS
@@ -87,13 +123,48 @@ const MAX_CONCURRENT = 1;
 const LOGO_PATH = path.join(__dirname, 'assets', 'sariels_web3.png');
 
 // ================================================================
-// FUNCIÓN PRINCIPAL: PROCESAR VIDEO (CON AUDIO DE FONDO)
+// HELPERS R2
+// ================================================================
+function urlPublicaR2(key) {
+    return `${R2_PUBLIC_URL}/${key}`;
+}
+
+async function descargarR2ADisco(key, destino) {
+    if (!r2Client) throw new Error('R2 no configurado en el worker');
+    const resp = await r2Client.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+    await pipeline(resp.Body, fs.createWriteStream(destino));
+    return fs.statSync(destino).size;
+}
+
+async function subirBufferR2(key, buffer, contentType) {
+    if (!r2Client) throw new Error('R2 no configurado en el worker');
+    await r2Client.send(new PutObjectCommand({
+        Bucket: R2_BUCKET,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+        CacheControl: 'public, max-age=31536000'
+    }));
+    return urlPublicaR2(key);
+}
+
+async function borrarR2(key) {
+    if (!r2Client) throw new Error('R2 no configurado en el worker');
+    await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+}
+
+// ================================================================
+// FUNCIÓN PRINCIPAL: PROCESAR VIDEO
 // ================================================================
 async function procesarVideo(job) {
-    const { videoId, videoUrl, userId, bucket, filePath, audioUrl } = job.data;
+    const { videoId, videoUrl, userId, bucket, filePath, audioUrl, storage, r2Key } = job.data;
+
+    const usaR2 = storage === 'r2';
+    const keyOriginal = r2Key || filePath;
 
     console.log(`\n📹 [JOB ${job.id}] Procesando video: ${videoId}`);
     console.log(`   Attempt: ${job.attemptsMade + 1}/${job.opts.attempts}`);
+    console.log(`   Almacenamiento: ${usaR2 ? 'R2 (' + keyOriginal + ')' : 'Supabase (legacy)'}`);
     console.log(`   Audio externo: ${audioUrl ? 'SÍ' : 'NO'}`);
 
     const inputPath = path.join(TEMP_DIR, `sariels_input_${job.id}.mp4`);
@@ -106,18 +177,22 @@ async function procesarVideo(job) {
             throw new Error(`❌ El logo no existe en: ${LOGO_PATH}`);
         }
 
-        // PASO 1: Descargar video
+        // PASO 1: Descargar video original
         await job.updateProgress(5);
         console.log(`📥 [JOB ${job.id}] Descargando video...`);
 
-        const response = await axios.get(videoUrl, {
-            responseType: 'arraybuffer',
-            timeout: 120000,
-            maxContentLength: 200 * 1024 * 1024
-        });
-
-        fs.writeFileSync(inputPath, Buffer.from(response.data));
-        console.log(`✅ [JOB ${job.id}] Video descargado (${(response.data.length / 1024 / 1024).toFixed(2)} MB)`);
+        if (usaR2) {
+            const bytes = await descargarR2ADisco(keyOriginal, inputPath);
+            console.log(`✅ [JOB ${job.id}] Video descargado de R2 (${(bytes / 1024 / 1024).toFixed(2)} MB)`);
+        } else {
+            const response = await axios.get(videoUrl, {
+                responseType: 'arraybuffer',
+                timeout: 120000,
+                maxContentLength: 200 * 1024 * 1024
+            });
+            fs.writeFileSync(inputPath, Buffer.from(response.data));
+            console.log(`✅ [JOB ${job.id}] Video descargado (${(response.data.length / 1024 / 1024).toFixed(2)} MB)`);
+        }
 
         await job.updateProgress(10);
 
@@ -190,7 +265,6 @@ async function procesarVideo(job) {
         console.log(`   - Escala: ${finalWidth}x${finalHeight}`);
         console.log(`   - Logo: ${logoW}x${logoH} en posición (${xBR}, ${yBR})`);
 
-        // Construir filter_complex según si hay audio externo
         let filterComplex;
         let outputMaps = null;
 
@@ -295,26 +369,34 @@ async function procesarVideo(job) {
         console.log(`📤 [JOB ${job.id}] Subiendo video procesado...`);
 
         const outputBuffer = fs.readFileSync(outputPath);
-        const processedPath = `${userId}/${videoId}_processed.mp4`;
+        let processedUrl;
 
-        const { error: uploadError } = await supabaseAdmin.storage
-            .from(bucket)
-            .upload(processedPath, outputBuffer, {
-                contentType: 'video/mp4',
-                cacheControl: '31536000',
-                upsert: true
-            });
+        if (usaR2) {
+            // Mismo prefijo que /api/media/upload: videos/<uid>/<archivo>
+            const processedKey = `${bucket || 'videos'}/${userId}/${videoId}_processed.mp4`;
+            processedUrl = await subirBufferR2(processedKey, outputBuffer, 'video/mp4');
+            console.log(`✅ [JOB ${job.id}] Video subido a R2: ${processedUrl}`);
+        } else {
+            const processedPath = `${userId}/${videoId}_processed.mp4`;
+            const { error: uploadError } = await supabaseAdmin.storage
+                .from(bucket)
+                .upload(processedPath, outputBuffer, {
+                    contentType: 'video/mp4',
+                    cacheControl: '31536000',
+                    upsert: true
+                });
 
-        if (uploadError) {
-            throw new Error(`Error subiendo video procesado: ${uploadError.message}`);
+            if (uploadError) {
+                throw new Error(`Error subiendo video procesado: ${uploadError.message}`);
+            }
+
+            const { data: urlData } = supabaseAdmin.storage
+                .from(bucket)
+                .getPublicUrl(processedPath);
+
+            processedUrl = urlData.publicUrl;
+            console.log(`✅ [JOB ${job.id}] Video subido (Supabase): ${processedUrl}`);
         }
-
-        const { data: urlData } = supabaseAdmin.storage
-            .from(bucket)
-            .getPublicUrl(processedPath);
-
-        const processedUrl = urlData.publicUrl;
-        console.log(`✅ [JOB ${job.id}] Video subido: ${processedUrl}`);
 
         await job.updateProgress(95);
 
@@ -337,16 +419,20 @@ async function procesarVideo(job) {
         }
 
         // PASO 7: Borrar original
-        if (filePath) {
+        if (keyOriginal) {
             console.log(`🗑️ [JOB ${job.id}] Borrando video original...`);
-            const { error: removeError } = await supabaseAdmin.storage
-                .from(bucket)
-                .remove([filePath]);
-
-            if (removeError) {
-                console.warn(`⚠️ [JOB ${job.id}] No se pudo borrar original:`, removeError.message);
-            } else {
+            try {
+                if (usaR2) {
+                    await borrarR2(keyOriginal);
+                } else {
+                    const { error: removeError } = await supabaseAdmin.storage
+                        .from(bucket)
+                        .remove([keyOriginal]);
+                    if (removeError) throw new Error(removeError.message);
+                }
                 console.log(`✅ [JOB ${job.id}] Original borrado`);
+            } catch (removeError) {
+                console.warn(`⚠️ [JOB ${job.id}] No se pudo borrar original:`, removeError.message);
             }
         }
 
@@ -447,6 +533,7 @@ const healthServer = http.createServer((req, res) => {
             status: 'ok',
             service: 'worker-video',
             redis: redisConnection.status,
+            r2: r2Configurado,
             timestamp: new Date().toISOString()
         }));
     } else {
@@ -487,13 +574,13 @@ process.on('SIGTERM', async () => {
 });
 
 console.log('========================================');
-console.log("🎬 WORKER DE VIDEOS - SARIEL'S v4");
+console.log("🎬 WORKER DE VIDEOS - SARIEL'S v5 (R2)");
 console.log('========================================');
 console.log('📡 Cola:', COLA_NOMBRE);
 console.log('🔢 Concurrencia:', MAX_CONCURRENT);
 console.log('📁 Temp dir:', TEMP_DIR);
 console.log('🖼️ Logo:', LOGO_PATH);
+console.log('☁️ R2:', r2Configurado ? 'configurado' : 'NO configurado');
 console.log('🎵 Audio: mezcla original 40% + fondo 100%');
 console.log('🎯 Limiter: 3 jobs/minuto');
-console.log('🛡️ upsert:true (evita duplicados en reintentos)');
 console.log('========================================');
