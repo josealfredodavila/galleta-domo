@@ -101,6 +101,73 @@
       .btn-videollamada span { display: none; }
       .btn-videollamada { padding: 8px; }
     }
+
+    /* [v5.9.3] Botones nuevos del visor de estados */
+    .estado-viewer-owner-actions {
+        position: absolute;
+        bottom: 18px;
+        left: 50%;
+        transform: translateX(-50%);
+        display: flex;
+        gap: 8px;
+        z-index: 20;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 0 12px;
+        max-width: calc(100% - 24px);
+    }
+    .ev-action-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 8px 16px;
+        border-radius: 99px;
+        font-size: .74rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        border: 1px solid transparent;
+        transition: all .2s ease;
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+    }
+    .ev-action-btn.ev-vistas {
+        background: rgba(212,175,55,.15);
+        border-color: rgba(212,175,55,.5);
+        color: #f0d060;
+    }
+    .ev-action-btn.ev-vistas:hover {
+        background: rgba(212,175,55,.28);
+        border-color: rgba(212,175,55,.8);
+    }
+    .ev-action-btn.ev-eliminar {
+        background: rgba(255,51,102,.15);
+        border-color: rgba(255,51,102,.5);
+        color: #ff5c7a;
+    }
+    .ev-action-btn.ev-eliminar:hover {
+        background: rgba(255,51,102,.28);
+        border-color: rgba(255,51,102,.8);
+    }
+    .ev-action-btn.ev-comentar {
+        background: rgba(0,229,255,.12);
+        border-color: rgba(0,229,255,.45);
+        color: #7fdcff;
+    }
+    .ev-action-btn.ev-comentar:hover {
+        background: rgba(0,229,255,.24);
+        border-color: rgba(0,229,255,.7);
+    }
+    .ev-action-btn.ev-skip {
+        background: rgba(168,85,247,.12);
+        border-color: rgba(168,85,247,.45);
+        color: #d8b4fe;
+    }
+    .ev-action-btn.ev-skip:hover {
+        background: rgba(168,85,247,.24);
+        border-color: rgba(168,85,247,.7);
+    }
+    .ev-action-btn.hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -393,6 +460,12 @@
     <div class="pv-handle" id="pvHandle"></div>
 </div>
 
+<!-- ============================================================
+     VISOR DE ESTADOS · v5.9.3
+     - Botones dueño: Vistas / Eliminar
+     - Botón espectador: Comentar
+     - Botón universal: ⏭ Saltar grupo
+     ============================================================ -->
 <div class="estado-viewer" id="estadoViewer">
     <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
     <div class="estado-viewer-header">
@@ -406,15 +479,25 @@
     <div class="estado-viewer-body" id="evBody">
         <button class="estado-viewer-nav prev" id="evPrev">‹</button>
         <img class="estado-viewer-img" id="evImage" src="" alt="Estado" draggable="false">
-        <!-- [v5.9] Video oculto para cuando el estado sea video -->
         <video class="estado-viewer-img" id="evVideo" playsinline controls style="display:none;"></video>
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
         <button class="estado-viewer-nav next" id="evNext">›</button>
     </div>
-    <div class="estado-viewer-vistas hidden" id="evVistas">
-        <div class="estado-viewer-vistas-pill">
-            ◉ <span id="evVistasCount">0</span> vistas
-        </div>
+
+    <!-- [v5.9.3] Barra de acciones del visor -->
+    <div class="estado-viewer-owner-actions">
+        <button class="ev-action-btn ev-vistas hidden" id="evVistas" type="button" title="Ver quién ha visto esta historia">
+            👁 <span id="evVistasCount">0</span> vistas
+        </button>
+        <button class="ev-action-btn ev-eliminar hidden" id="evEliminar" type="button" title="Eliminar esta historia">
+            🗑 Eliminar
+        </button>
+        <button class="ev-action-btn ev-comentar hidden" id="evComentar" type="button" title="Comentar esta historia">
+            💬 Comentar
+        </button>
+        <button class="ev-action-btn ev-skip" id="evSkip" type="button" title="Saltar al siguiente usuario">
+            ⏭ Saltar
+        </button>
     </div>
 </div>
 
@@ -464,8 +547,8 @@
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/js/teclado-emojis.js?v=4"></script>
-<!-- BUMP DE VERSIÓN: v19 -> v20 para forzar recarga del nuevo mensajes.js v5.9 con soporte de video -->
-<script src="/features/mensajes/js/mensajes.js?v=20"></script>
+<!-- [v5.9.3] Bump a mensajes.js v5.9.3 — paridad de historias con Muro -->
+<script src="/features/mensajes/js/mensajes.js?v=5.9.3"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
