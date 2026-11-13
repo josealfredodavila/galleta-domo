@@ -251,7 +251,9 @@
 
         /* ---------- Secciones de solicitudes y sugerencias ---------- */
         .solicitudes-section,
-        .sugerencias-section {
+        .sugerencias-section,
+        .solicitudes-enviadas-section,
+        .bloqueados-section {
             display: none;
             margin-bottom: 20px;
             padding: 0 0 6px;
@@ -259,7 +261,9 @@
         }
 
         .solicitudes-titulo,
-        .sugerencias-titulo {
+        .sugerencias-titulo,
+        .solicitudes-enviadas-titulo,
+        .bloqueados-titulo {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -269,6 +273,8 @@
 
         .solicitudes-titulo { color: var(--gold); }
         .sugerencias-titulo { color: var(--cyan); }
+        .solicitudes-enviadas-titulo { color: var(--orange-soft); }
+        .bloqueados-titulo { color: #ff8197; }
 
         .contador {
             display: inline-flex;
@@ -284,7 +290,9 @@
         }
 
         .solicitud-card,
-        .sugerencia-card {
+        .sugerencia-card,
+        .solicitud-enviada-card,
+        .bloqueado-card {
             display: flex;
             align-items: center;
             flex-wrap: wrap;
@@ -295,10 +303,14 @@
         }
 
         .solicitud-card:last-child,
-        .sugerencia-card:last-child { border-bottom: 0; }
+        .sugerencia-card:last-child,
+        .solicitud-enviada-card:last-child,
+        .bloqueado-card:last-child { border-bottom: 0; }
 
         .solicitud-card .avatar,
         .sugerencia-card .avatar,
+        .solicitud-enviada-card .avatar,
+        .bloqueado-card .avatar,
         .resultado-usuario .avatar {
             display: flex;
             align-items: center;
@@ -315,14 +327,20 @@
 
         .solicitud-card .avatar img,
         .sugerencia-card .avatar img,
+        .solicitud-enviada-card .avatar img,
+        .bloqueado-card .avatar img,
         .resultado-usuario .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
         .solicitud-card .info,
         .sugerencia-card .info,
+        .solicitud-enviada-card .info,
+        .bloqueado-card .info,
         .resultado-usuario .info { flex: 1; min-width: 0; }
 
         .solicitud-card .nombre,
         .sugerencia-card .nombre,
+        .solicitud-enviada-card .nombre,
+        .bloqueado-card .nombre,
         .resultado-usuario .nombre {
             color: var(--text-primary);
             font-size: .84rem;
@@ -332,6 +350,8 @@
 
         .solicitud-card .handle,
         .sugerencia-card .handle,
+        .solicitud-enviada-card .handle,
+        .bloqueado-card .handle,
         .resultado-usuario .handle {
             margin-top: 2px;
             color: var(--text-muted);
@@ -340,7 +360,9 @@
         }
 
         .solicitud-card .acciones,
-        .sugerencia-card .acciones {
+        .sugerencia-card .acciones,
+        .solicitud-enviada-card .acciones,
+        .bloqueado-card .acciones {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
@@ -348,7 +370,9 @@
         }
 
         .solicitud-card .acciones button,
-        .sugerencia-card .acciones button {
+        .sugerencia-card .acciones button,
+        .solicitud-enviada-card .acciones button,
+        .bloqueado-card .acciones button {
             padding: 7px 12px;
             border-radius: 16px;
             font-size: .68rem;
@@ -363,6 +387,10 @@
         .btn-rechazar:hover { background: rgba(255,51,102,.08); }
         .btn-agregar-sugerencia { border: 1px solid var(--cyan); color: var(--cyan); background: transparent; }
         .btn-agregar-sugerencia:hover { background: rgba(0,229,255,.07); }
+        .btn-cancelar-solicitud { border: 1px solid var(--orange-soft); color: var(--orange-soft); background: transparent; }
+        .btn-cancelar-solicitud:hover { background: rgba(255,160,77,.08); }
+        .btn-desbloquear { border: 1px solid var(--success); color: var(--success); background: transparent; }
+        .btn-desbloquear:hover { background: rgba(0,214,143,.08); }
 
         /* ---------- Lista de contactos: filas planas ---------- */
         .contactos-list {
@@ -837,7 +865,9 @@
             }
             .btn-invitar { display: none; }
             .solicitud-card .acciones,
-            .sugerencia-card .acciones { width: 100%; justify-content: flex-end; }
+            .sugerencia-card .acciones,
+            .solicitud-enviada-card .acciones,
+            .bloqueado-card .acciones { width: 100%; justify-content: flex-end; }
         }
 
         @media (max-width: 480px) {
@@ -931,9 +961,25 @@
                 <div id="solicitudesPendientesLista"></div>
             </section>
 
+            <section class="solicitudes-enviadas-section" id="solicitudesEnviadasSection" aria-label="Solicitudes enviadas">
+                <div class="solicitudes-enviadas-titulo">
+                    Solicitudes enviadas
+                    <span class="contador" id="solicitudesEnviadasContador" style="background:var(--orange-soft);">0</span>
+                </div>
+                <div id="solicitudesEnviadasLista"></div>
+            </section>
+
             <section class="sugerencias-section" id="sugerenciasSection" aria-label="Sugerencias de contactos">
                 <div class="sugerencias-titulo">Personas que quizás conozcas</div>
                 <div id="sugerenciasLista"></div>
+            </section>
+
+            <section class="bloqueados-section" id="bloqueadosSection" aria-label="Usuarios bloqueados">
+                <div class="bloqueados-titulo">
+                    Usuarios bloqueados
+                    <span class="contador" id="bloqueadosContador" style="background:#ff8197;">0</span>
+                </div>
+                <div id="bloqueadosLista"></div>
             </section>
 
             <div class="contactos-list" id="contactosList" aria-live="polite" aria-busy="true">
@@ -1014,6 +1060,6 @@
         </div>
     </div>
 
-    <script src="/features/mensajes/contactos.js?v=11" defer></script>
+    <script src="/features/mensajes/contactos.js?v=12" defer></script>
 </body>
 </html>
