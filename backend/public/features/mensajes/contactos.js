@@ -1,10 +1,10 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.1
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.4
    ============================================================
    - Búsqueda Global: Escribe en la barra superior para buscar en 
      toda la plataforma (Modo Facebook).
-   - Bug fix: Los contactos nuevos ya no aparecen como "Usuario".
-   - Bug fix: Tarjeta de solicitud enviada corregida (botón azul, sin "X").
+   - Bug fix: Las solicitudes pendientes se muestran en la lista 
+     general, pero sin la "X" roja, solo con su estado.
    - UI Mega Pro: Botones estilizados con gradientes Web3.
    - Accesibilidad: Soporte para teclado (Enter/Espacio) en perfiles.
    ============================================================ */
@@ -298,7 +298,6 @@
                 return;
             }
 
-            // Guardar en caché los resultados de la búsqueda global
             usuarios.forEach(function(u) {
                 if (u.nombre || u.handle) setPerfilCache(u.id, u);
             });
@@ -348,8 +347,13 @@
                 if (!conteo.error) state.totalContactos = conteo.count || 0;
             }
 
+            // Volvemos a traer todo, sin filtrar por 'activo', para que salgan los pendientes
             var resultado = await withRetry(function () {
-                return client.from(CONFIG.CONTACTOS_TABLE).select('id, usuario_id, contacto_id, es_favorito, estado, fecha, created_at').eq('usuario_id', session.user.id).order('fecha', { ascending: false, nullsFirst: false }).range(desde, hasta);
+                return client.from(CONFIG.CONTACTOS_TABLE)
+                    .select('id, usuario_id, contacto_id, es_favorito, estado, fecha, created_at')
+                    .eq('usuario_id', session.user.id)
+                    .order('fecha', { ascending: false, nullsFirst: false })
+                    .range(desde, hasta);
             }, 'cargar contactos');
 
             if (resultado.error) throw resultado.error;
@@ -418,7 +422,6 @@
             var solicitudes = res.data || [];
             if (!solicitudes.length) { seccion.style.display = 'none'; return; }
 
-            // Forzar carga de perfiles para asegurar que tenemos nombres reales
             await cargarPerfilesEnLote(solicitudes.map(function (s) { return s.usuario_id; }));
             
             seccion.style.display = 'block'; contador.textContent = String(solicitudes.length);
@@ -459,7 +462,6 @@
             var solicitudes = res.data || [];
             if (!solicitudes.length) { seccion.style.display = 'none'; return; }
 
-            // Forzar carga de perfiles para asegurar que tenemos nombres reales
             await cargarPerfilesEnLote(solicitudes.map(function (s) { return s.contacto_id; }));
             
             seccion.style.display = 'block'; contador.textContent = String(solicitudes.length);
@@ -608,6 +610,7 @@
         var inicial = escapeHtml(obtenerInicial(contacto.nombre));
         var avatarUrl = obtenerAvatarSeguro(contacto.avatar_url);
         var avatar = avatarUrl ? '<img class="contacto-avatar-img" src="' + escapeHtml(avatarUrl) + '" alt="' + escapeHtml(contacto.nombre) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.classList.add(\'avatar-image-error\')"><span class="avatar-fallback avatar-fallback-hidden">' + inicial + '</span>' : '<span class="avatar-fallback">' + inicial + '</span>';
+        
         var pendiente = contacto.estado === 'pendiente';
         var enLinea = contacto.online === true;
         var handle = contacto.handle ? '@' + String(contacto.handle).replace(/^@/, '') : '';
@@ -619,14 +622,19 @@
         var favIcono = contacto.es_favorito ? SVG_ICONS.favorito : SVG_ICONS.favoritoOutline;
         var verificado = contacto.verificado ? '<span class="verified" title="Perfil verificado">✓</span>' : '';
 
-        // Botones Mega Pro con gradientes
-        var btnMsj = pendiente ? '' : '<button type="button" class="mensaje" data-accion="mensaje" title="Enviar mensaje" aria-label="Enviar mensaje">' + SVG_ICONS.mensaje + '<span>Mensaje</span></button>';
-        var btnLlamar = pendiente ? '' : '<button type="button" class="llamar" data-accion="llamar" title="Llamar" aria-label="Llamar">' + SVG_ICONS.llamar + '</button>';
-        var btnFav = pendiente ? '' : '<button type="button" class="favorito ' + favClase + '" data-accion="favorito" title="' + (contacto.es_favorito ? 'Quitar favorito' : 'Agregar favorito') + '" aria-label="Cambiar favorito">' + favIcono + '</button>';
+        // Lógica de botones:
+        // Si está pendiente, no mostramos ningún botón en esta vista de la lista general.
+        // Todo se maneja en la sección superior.
+        var accionesHTML = '';
         
-        var extras = pendiente 
-            ? '<button type="button" class="rechazar" data-accion="cancelar" title="Cancelar solicitud" aria-label="Cancelar">' + SVG_ICONS.cancelar + '</button>' 
-            : '<button type="button" class="bloquear" data-accion="bloquear" title="Bloquear usuario" aria-label="Bloquear">' + SVG_ICONS.bloquear + '</button><button type="button" class="eliminar" data-accion="eliminar" title="Eliminar contacto" aria-label="Eliminar">' + SVG_ICONS.eliminar + '</button>';
+        if (!pendiente) {
+            var btnMsj = '<button type="button" class="mensaje" data-accion="mensaje" title="Enviar mensaje" aria-label="Enviar mensaje">' + SVG_ICONS.mensaje + '<span>Mensaje</span></button>';
+            var btnLlamar = '<button type="button" class="llamar" data-accion="llamar" title="Llamar" aria-label="Llamar">' + SVG_ICONS.llamar + '</button>';
+            var btnFav = '<button type="button" class="favorito ' + favClase + '" data-accion="favorito" title="' + (contacto.es_favorito ? 'Quitar favorito' : 'Agregar favorito') + '" aria-label="Cambiar favorito">' + favIcono + '</button>';
+            var extras = '<button type="button" class="bloquear" data-accion="bloquear" title="Bloquear usuario" aria-label="Bloquear">' + SVG_ICONS.bloquear + '</button><button type="button" class="eliminar" data-accion="eliminar" title="Eliminar contacto" aria-label="Eliminar">' + SVG_ICONS.eliminar + '</button>';
+            
+            accionesHTML = btnMsj + btnLlamar + btnFav + extras;
+        }
 
         return `
             <article class="contacto-card ${pendiente ? 'pendiente' : ''}" data-contacto-id="${contactoId}" data-fila-id="${filaId}" tabindex="0" role="button" aria-label="Abrir conversación con ${escapeHtml(contacto.nombre)}">
@@ -641,10 +649,7 @@
                     ${handle ? '<div class="contacto-meta">' + escapeHtml(handle) + '</div>' : ''}
                 </div>
                 <div class="contacto-actions">
-                    ${btnMsj}
-                    ${btnLlamar}
-                    ${btnFav}
-                    ${extras}
+                    ${accionesHTML}
                 </div>
             </article>
         `;
@@ -673,7 +678,6 @@
                 }
                 if (accion === 'bloquear') bloquearContacto(contactoId);
                 if (accion === 'eliminar') eliminarContacto(contactoId);
-                if (accion === 'cancelar') cancelarSolicitudEnviada(filaId);
                 return;
             }
 
@@ -862,14 +866,12 @@
 
             showToast('Solicitud enviada.', 'success');
             
-            // Bug Fix: Forzamos la descarga del perfil para que no salga "Usuario"
             await cargarPerfilesEnLote([contactoId]);
             
             var input = document.getElementById('searchInputModal'); if (input) input.value = '';
             var res = document.getElementById('resultadosBusqueda'); if (res) res.innerHTML = '';
             cerrarModalBuscar();
             
-            // Refrescamos la vista
             var inputGlobal = document.getElementById('searchInput'); if (inputGlobal) inputGlobal.value = '';
             state.textoBusqueda = '';
             
