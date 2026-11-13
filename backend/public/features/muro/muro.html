@@ -24,6 +24,78 @@
         .cs-social-actions { display: none !important; }
 
         /* ================================================================
+           NUEVA BARRA DE BÚSQUEDA GLOBAL (ESTILO FACEBOOK)
+           ================================================================ */
+        .global-search-container {
+            position: relative;
+            margin: 10px 0 16px;
+            z-index: 100;
+        }
+        .global-search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 10px 16px;
+            transition: all 0.3s ease;
+        }
+        .global-search-bar:focus-within {
+            background: rgba(0, 0, 0, 0.4);
+            border-color: rgba(0, 229, 255, 0.4);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
+        }
+        .global-search-bar svg {
+            width: 18px; height: 18px; color: #8c949c; flex-shrink: 0;
+        }
+        .global-search-bar input {
+            flex: 1; background: transparent; border: none; outline: none;
+            color: #f0f4f8; font-size: 0.9rem; font-family: 'Inter', sans-serif;
+        }
+        .global-search-bar input::placeholder { color: #6b737b; }
+
+        /* Resultados de búsqueda flotantes */
+        .global-search-results {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0; right: 0;
+            background: #0b1016;
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+            max-height: 400px;
+            overflow-y: auto;
+            display: none;
+            padding: 8px;
+        }
+        .global-search-results.active { display: block; }
+        
+        .search-user-item {
+            display: flex; align-items: center; gap: 12px; padding: 10px;
+            border-radius: 12px; cursor: pointer; transition: background 0.2s;
+        }
+        .search-user-item:hover { background: rgba(255, 255, 255, 0.05); }
+        
+        .search-user-avatar {
+            width: 40px; height: 40px; border-radius: 50%; overflow: hidden;
+            background: linear-gradient(135deg, #1a4a2a, #a855f7);
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-weight: 700; flex-shrink: 0;
+        }
+        .search-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .search-user-info { flex: 1; min-width: 0; }
+        .search-user-name { font-size: 0.85rem; font-weight: 700; color: #f0f4f8; }
+        .search-user-handle { font-size: 0.7rem; color: #8c949c; }
+        
+        .search-user-action {
+            padding: 6px 12px; border-radius: 14px; font-size: 0.7rem; font-weight: 700;
+            background: rgba(0, 229, 255, 0.1); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.3);
+            cursor: pointer;
+        }
+
+        /* ================================================================
            COMPOSITOR WEB3 (ESTILO PERFIL / VIDEOS)
            ================================================================ */
         .post-form {
@@ -232,6 +304,15 @@
                 Mercado
             </a>
         </nav>
+
+        <!-- ================= NUEVA BARRA DE BÚSQUEDA GLOBAL ================= -->
+        <div class="global-search-container">
+            <div class="global-search-bar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="globalSearchInput" placeholder="Buscar personas en Csariel's..." autocomplete="off" maxlength="80">
+            </div>
+            <div class="global-search-results" id="globalSearchResults"></div>
+        </div>
 
         <!-- ===== FILTROS DEL MURO ===== -->
         <nav class="muro-filter-nav" id="muroFilterNav" aria-label="Filtros del Muro">
@@ -569,6 +650,92 @@
     <script src="/features/muro/js/muro-realtime.js"></script>
     <script src="/features/muro/js/muro-historias.js"></script>
     <script src="/features/muro/js/muro-init.js"></script>
+
+    <!-- NUEVO SCRIPT DE BÚSQUEDA GLOBAL -->
+    <script>
+    (function() {
+        'use strict';
+
+        const input = document.getElementById('globalSearchInput');
+        const resultsContainer = document.getElementById('globalSearchResults');
+        let debounceTimer;
+
+        // Cargar Supabase si no está en window
+        function getClient() {
+            if (window.supabaseClient) return window.supabaseClient;
+            return null;
+        }
+
+        input.addEventListener('input', function(e) {
+            const query = e.target.value.trim();
+            clearTimeout(debounceTimer);
+
+            if (query.length < 2) {
+                resultsContainer.classList.remove('active');
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">🔍 Buscando...</div>';
+            resultsContainer.classList.add('active');
+
+            debounceTimer = setTimeout(async () => {
+                const client = getClient();
+                if (!client) return;
+
+                try {
+                    // Usamos la función RPC de búsqueda que ya tienes en contactos
+                    const { data, error } = await client.rpc('buscar_usuarios', { p_query: query });
+                    
+                    if (error) throw error;
+                    
+                    const usuarios = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+
+                    if (!usuarios.length) {
+                        resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">No se encontraron usuarios.</div>';
+                        return;
+                    }
+
+                    resultsContainer.innerHTML = usuarios.map(u => {
+                        const nombre = u.nombre || u.handle || 'Usuario';
+                        const handle = u.handle ? '@' + u.handle.replace(/^@/, '') : '';
+                        const avatar = u.avatar_url ? `<img src="${u.avatar_url}" alt="">` : nombre.charAt(0).toUpperCase();
+
+                        return `
+                            <div class="search-user-item" onclick="verPerfilDesdeMuro('${u.handle || u.id}')">
+                                <div class="search-user-avatar">${avatar}</div>
+                                <div class="search-user-info">
+                                    <div class="search-user-name">${nombre}</div>
+                                    <div class="search-user-handle">${handle}</div>
+                                </div>
+                                <button class="search-user-action" onclick="event.stopPropagation(); agregarDesdeMuro('${u.id}')">Ver</button>
+                            </div>
+                        `;
+                    }).join('');
+
+                } catch (err) {
+                    console.error("Error buscando usuarios:", err);
+                    resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #ff3366; font-size: 0.8rem;">Error al buscar usuarios.</div>';
+                }
+            }, 400);
+        });
+
+        // Cerrar resultados al hacer clic fuera
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.global-search-container')) {
+                resultsContainer.classList.remove('active');
+            }
+        });
+
+        // Funciones globales para manejar los clics
+        window.verPerfilDesdeMuro = function(handleOrId) {
+            if (!handleOrId) return;
+            if (handleOrId.startsWith('@')) handleOrId = handleOrId.substring(1);
+            // Redirigir a la página de perfil público
+            window.location.href = `/features/perfil/perfil-publico.html?u=${encodeURIComponent(handleOrId)}`;
+        };
+    })();
+    </script>
 
     <script>
     (function () {
