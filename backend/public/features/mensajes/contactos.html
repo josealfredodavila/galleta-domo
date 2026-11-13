@@ -38,6 +38,7 @@
             --danger: #ff3366;
             --cyan: #00e5ff;
             --violet: #a855f7;
+            --blue-btn: #0084ff;
             --transition: .2s ease;
         }
 
@@ -292,10 +293,11 @@
         .solicitud-card,
         .sugerencia-card,
         .solicitud-enviada-card,
-        .bloqueado-card {
+        .bloqueado-card,
+        .resultado-usuario {
             display: flex;
             align-items: center;
-            flex-wrap: wrap;
+            flex-wrap: nowrap; /* Evita que se rompa el layout */
             gap: 12px;
             padding: 12px 0;
             border-bottom: 1px solid var(--line);
@@ -307,6 +309,7 @@
         .solicitud-enviada-card:last-child,
         .bloqueado-card:last-child { border-bottom: 0; }
 
+        /* Estilos de avatares */
         .solicitud-card .avatar,
         .sugerencia-card .avatar,
         .solicitud-enviada-card .avatar,
@@ -316,13 +319,14 @@
             align-items: center;
             justify-content: center;
             flex: 0 0 auto;
-            width: 42px;
-            height: 42px;
+            width: 46px;
+            height: 46px;
             overflow: hidden;
             border-radius: 50%;
             color: #fff;
             background: linear-gradient(135deg, var(--green-mid), var(--violet));
             font-weight: 800;
+            font-size: 1.1rem;
         }
 
         .solicitud-card .avatar img,
@@ -331,6 +335,7 @@
         .bloqueado-card .avatar img,
         .resultado-usuario .avatar img { width: 100%; height: 100%; object-fit: cover; }
 
+        /* Info del usuario */
         .solicitud-card .info,
         .sugerencia-card .info,
         .solicitud-enviada-card .info,
@@ -343,7 +348,7 @@
         .bloqueado-card .nombre,
         .resultado-usuario .nombre {
             color: var(--text-primary);
-            font-size: .84rem;
+            font-size: .88rem;
             font-weight: 700;
             overflow-wrap: anywhere;
         }
@@ -355,40 +360,58 @@
         .resultado-usuario .handle {
             margin-top: 2px;
             color: var(--text-muted);
-            font-size: .68rem;
+            font-size: .7rem;
             overflow-wrap: anywhere;
         }
 
+        /* Acciones */
         .solicitud-card .acciones,
         .sugerencia-card .acciones,
         .solicitud-enviada-card .acciones,
-        .bloqueado-card .acciones {
+        .bloqueado-card .acciones,
+        .resultado-usuario .acciones {
             display: flex;
-            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            flex-wrap: nowrap;
             gap: 8px;
+            flex: 0 0 auto;
             margin-left: auto;
         }
 
         .solicitud-card .acciones button,
         .sugerencia-card .acciones button,
         .solicitud-enviada-card .acciones button,
-        .bloqueado-card .acciones button {
-            padding: 7px 12px;
-            border-radius: 16px;
-            font-size: .68rem;
-            font-weight: 700;
+        .bloqueado-card .acciones button,
+        .resultado-usuario .acciones button {
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: .72rem;
+            font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .btn-aceptar { border: 1px solid var(--success); color: var(--success); background: transparent; }
         .btn-aceptar:hover { background: rgba(0,214,143,.08); }
+        
         .btn-rechazar { border: 1px solid rgba(255,51,102,.45); color: #ff8198; background: transparent; }
         .btn-rechazar:hover { background: rgba(255,51,102,.08); }
+        
         .btn-agregar-sugerencia { border: 1px solid var(--cyan); color: var(--cyan); background: transparent; }
         .btn-agregar-sugerencia:hover { background: rgba(0,229,255,.07); }
-        .btn-cancelar-solicitud { border: 1px solid var(--orange-soft); color: var(--orange-soft); background: transparent; }
-        .btn-cancelar-solicitud:hover { background: rgba(255,160,77,.08); }
+        
+        /* NUEVO BOTÓN CANCELAR ENVÍO CON ESTILO AZUL */
+        .btn-cancelar-envio { 
+            border: none; 
+            color: #ffffff; 
+            background: var(--blue-btn); 
+        }
+        .btn-cancelar-envio:hover { background: #0073e6; }
+
         .btn-desbloquear { border: 1px solid var(--success); color: var(--success); background: transparent; }
         .btn-desbloquear:hover { background: rgba(0,214,143,.08); }
 
@@ -606,25 +629,6 @@
             text-align: center;
         }
 
-        .resultado-usuario .btn-agregar,
-        .resultado-usuario button {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            flex: 0 0 auto;
-            padding: 7px 12px;
-            border: 1px solid var(--cyan);
-            border-radius: 16px;
-            color: var(--cyan);
-            background: transparent;
-            font-size: .66rem;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .resultado-usuario button:hover { background: rgba(0,229,255,.07); }
-        .resultado-usuario button svg { width: 14px; height: 14px; }
-
         .resultado-avatar-img,
         .resultado-avatar-fallback {
             display: flex;
@@ -727,14 +731,6 @@
         .form-group input:focus { border-bottom-color: var(--orange); }
 
         .resultados-busqueda { display: flex; flex-direction: column; max-height: 380px; overflow-y: auto; }
-
-        .resultado-usuario {
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            padding: 11px 0;
-            border-bottom: 1px solid var(--line);
-        }
 
         .codigo-box {
             margin-bottom: 16px;
@@ -864,10 +860,16 @@
                 padding-left: 61px;
             }
             .btn-invitar { display: none; }
+            
+            /* Ajuste para que las acciones de las tarjetas se mantengan a la derecha en móvil */
             .solicitud-card .acciones,
             .sugerencia-card .acciones,
             .solicitud-enviada-card .acciones,
-            .bloqueado-card .acciones { width: 100%; justify-content: flex-end; }
+            .bloqueado-card .acciones { 
+                width: auto; 
+                justify-content: flex-end; 
+                margin-left: auto;
+            }
         }
 
         @media (max-width: 480px) {
@@ -936,7 +938,6 @@
             </div>
 
             <div class="search-bar">
-                <!-- El placeholder ahora invita a buscar en toda la red (Modo Facebook) -->
                 <input type="text" id="searchInput"
                     placeholder="🔍 Buscar personas en Csariel's (Nombre, @handle, correo)..."
                     data-placeholder="contactos_buscar"
@@ -1061,7 +1062,6 @@
         </div>
     </div>
 
-    <!-- ACTUALIZACIÓN CRÍTICA: v=15 para forzar la carga del nuevo contactos.js v25 -->
-    <script src="/features/mensajes/contactos.js?v=15" defer></script>
+    <script src="/features/mensajes/contactos.js?v=16" defer></script>
 </body>
 </html>
