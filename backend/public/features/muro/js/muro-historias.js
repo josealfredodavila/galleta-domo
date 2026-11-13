@@ -1,8 +1,9 @@
 // ================================================================
-// MURO · HISTORIAS (tabla estados) — v3.3 (Filtro por origen)
+// MURO · HISTORIAS (tabla estados) — v3.4 (Anillo con foto propia)
 // ================================================================
 // Filtra las historias para que solo aparezcan las que se subieron
-// desde el Muro (origen === 'muro'). Evita mezclar con Mensajes.
+// desde el Muro (origen === 'muro'). Muestra tu foto en el anillo
+// si ya tienes una historia activa, o el botón '+' si no.
 // ================================================================
 
 var HISTORIA_MAX_IMAGEN_BYTES = 10 * 1024 * 1024;  // 10 MB
@@ -77,19 +78,41 @@ function renderizarBarraHistorias() {
     var contenedor = document.getElementById('csStoryStrip');
     if (!contenedor) return;
 
-    var html =
-        '<button type="button" class="cs-story-item" onclick="crearHistoria()">' +
-            '<span class="cs-story-ring story-add">＋</span>' +
-            '<span>Tu historia</span>' +
-        '</button>';
+    // 1. Buscar si YO tengo una historia activa
+    var miHistoria = historiasDelFeed.find(function(u) { 
+        return sessionUser && u.usuario_id === sessionUser.id; 
+    });
 
+    var html = '';
+    
+    if (miHistoria && miHistoria.estados && miHistoria.estados.length > 0) {
+        // MOSTRAR MI FOTO EN EL ANILLO CON EL DISEÑO FUTURISTA
+        var ultimoEstado = miHistoria.estados[miHistoria.estados.length - 1];
+        var miFoto = ultimoEstado.media_url || ultimoEstado.imagen_url;
+        html +=
+            '<button type="button" class="cs-story-item" onclick="abrirHistoriasDe(\'' + sessionUser.id + '\')">' +
+                '<span class="cs-story-ring" style="background: conic-gradient(from 0deg, #00e5ff, #8b5cf6, #00e5ff); animation: girarHolograma 3s linear infinite; overflow: hidden !important; padding: 3px; border-radius: 50%;">' +
+                    '<img src="' + escapeHTML(miFoto) + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid #0a0f16;">' +
+                '</span>' +
+                '<span>Tú</span>' +
+            '</button>';
+    } else {
+        // SI NO HAY FOTO, MOSTRAR BOTÓN "+"
+        html +=
+            '<button type="button" class="cs-story-item" onclick="crearHistoria()">' +
+                '<span class="cs-story-ring story-add" style="background: conic-gradient(from 0deg, #00e5ff, #8b5cf6, #00e5ff); animation: girarHolograma 3s linear infinite;">＋</span>' +
+                '<span>Tu historia</span>' +
+            '</button>';
+    }
+
+    // 2. Agregar historias de OTROS usuarios
     historiasDelFeed.forEach(function (u) {
         if (sessionUser && u.usuario_id === sessionUser.id) return;
 
         var vistas = todosVistos(u.estados);
         var inicial = (u.nombre || '?').charAt(0).toUpperCase();
         var avatar = u.avatar_url
-            ? '<img src="' + escapeHTML(u.avatar_url) + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">'
+            ? '<img src="' + escapeHTML(u.avatar_url) + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;border:2px solid #0a0f16;">'
             : inicial;
 
         html +=
@@ -210,7 +233,7 @@ async function subirHistoria(event) {
                 media_url: data.url,
                 duracion_segundos: duracion,
                 caption: null,
-                origen: 'muro' // <--- VITAL: Marca esta historia como del Muro
+                origen: 'muro' // VITAL: Marca esta historia como del Muro
             });
         if (insert.error) throw insert.error;
 
