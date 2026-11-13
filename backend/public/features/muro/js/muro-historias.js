@@ -1,5 +1,8 @@
 // ================================================================
-// MURO · HISTORIAS (tabla estados) — v3.2 (Escalable Global)
+// MURO · HISTORIAS (tabla estados) — v3.3 (Filtro por origen)
+// ================================================================
+// Filtra las historias para que solo aparezcan las que se subieron
+// desde el Muro (origen === 'muro'). Evita mezclar con Mensajes.
 // ================================================================
 
 var HISTORIA_MAX_IMAGEN_BYTES = 10 * 1024 * 1024;  // 10 MB
@@ -20,7 +23,23 @@ async function cargarHistorias() {
         // La RPC hace todo el trabajo pesado en el servidor
         var rpc = await supabaseClient.rpc('estados_activos_por_usuario');
         if (rpc.error) throw rpc.error;
-        historiasDelFeed = rpc.data || [];
+        
+        // FILTRO: Solo traer los estados con origen 'muro'
+        var datosCrudos = rpc.data || [];
+        historiasDelFeed = datosCrudos.map(function(u) {
+            var estadosFiltrados = (u.estados || []).filter(function(e) {
+                return (e.origen || 'muro') === 'muro';
+            });
+            return {
+                usuario_id: u.usuario_id,
+                nombre: u.nombre,
+                handle: u.handle,
+                avatar_url: u.avatar_url,
+                estados: estadosFiltrados
+            };
+        }).filter(function(u) {
+            return u.estados.length > 0;
+        });
 
         await cargarMisVistas();
         renderizarBarraHistorias();
@@ -190,7 +209,8 @@ async function subirHistoria(event) {
                 media_tipo: tipo,
                 media_url: data.url,
                 duracion_segundos: duracion,
-                caption: null
+                caption: null,
+                origen: 'muro' // <--- VITAL: Marca esta historia como del Muro
             });
         if (insert.error) throw insert.error;
 
