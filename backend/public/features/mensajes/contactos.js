@@ -1,9 +1,10 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.1
    ============================================================
    - Búsqueda Global: Escribe en la barra superior para buscar en 
      toda la plataforma (Modo Facebook).
    - Bug fix: Los contactos nuevos ya no aparecen como "Usuario".
+   - Bug fix: Tarjeta de solicitud enviada corregida (botón azul, sin "X").
    - UI Mega Pro: Botones estilizados con gradientes Web3.
    - Accesibilidad: Soporte para teclado (Enter/Espacio) en perfiles.
    ============================================================ */
@@ -89,6 +90,7 @@
     }
 
     function normalizarTextoBusqueda(value) { return String(value == null ? '' : value).replace(/\u0000/g, '').trim().slice(0, CONFIG.MAX_CHARS_BUSQUEDA); }
+    
     function obtenerAvatarSeguro(url) {
         if (!url) return ''; var valor = String(url).trim(); if (!valor) return '';
         try {
@@ -98,6 +100,7 @@
             return parsed.href;
         } catch (error) { return ''; }
     }
+    
     function obtenerInicial(nombre) { var texto = String(nombre || 'U').trim(); return texto ? texto.charAt(0).toUpperCase() : 'U'; }
     function debounce(fn, ms) { var timer = null; return function () { var contexto = this; var args = arguments; clearTimeout(timer); timer = setTimeout(function () { fn.apply(contexto, args); }, ms); }; }
     function emitirListo() { try { window.dispatchEvent(new Event('contactos:listo')); } catch (error) {} }
@@ -213,7 +216,7 @@
             try {
                 var resultado = await withRetry(function () { return client.from(CONFIG.PERFILES_VISTA).select(CONFIG.CAMPOS_PUBLICOS).in('id', chunk); }, 'cargar perfiles');
                 if (!resultado.error) { (resultado.data || []).forEach(function (p) { setPerfilCache(p.id, p); }); }
-            } catch (error) {}
+            } catch (error) { console.error('[Contactos] Error cargando perfiles:', error); }
         }
     }
 
@@ -294,6 +297,11 @@
                 lista.innerHTML = '<div class="empty-state"><div class="icon">🛸</div><h3>No se encontraron usuarios.</h3></div>';
                 return;
             }
+
+            // Guardar en caché los resultados de la búsqueda global
+            usuarios.forEach(function(u) {
+                if (u.nombre || u.handle) setPerfilCache(u.id, u);
+            });
 
             lista.innerHTML = usuarios.map(function (usuario) {
                 var nombre = usuario.nombre || usuario.handle || 'Usuario';
@@ -410,7 +418,9 @@
             var solicitudes = res.data || [];
             if (!solicitudes.length) { seccion.style.display = 'none'; return; }
 
+            // Forzar carga de perfiles para asegurar que tenemos nombres reales
             await cargarPerfilesEnLote(solicitudes.map(function (s) { return s.usuario_id; }));
+            
             seccion.style.display = 'block'; contador.textContent = String(solicitudes.length);
 
             contenedor.innerHTML = solicitudes.map(function (solicitud) {
@@ -449,7 +459,9 @@
             var solicitudes = res.data || [];
             if (!solicitudes.length) { seccion.style.display = 'none'; return; }
 
+            // Forzar carga de perfiles para asegurar que tenemos nombres reales
             await cargarPerfilesEnLote(solicitudes.map(function (s) { return s.contacto_id; }));
+            
             seccion.style.display = 'block'; contador.textContent = String(solicitudes.length);
 
             contenedor.innerHTML = solicitudes.map(function (solicitud) {
@@ -462,9 +474,12 @@
                 return `
                     <div class="solicitud-enviada-card">
                         <div class="avatar">${avatar}</div>
-                        <div class="info"><div class="nombre">${escapeHtml(nombre)}</div><div class="handle">${escapeHtml(handle)}</div></div>
+                        <div class="info">
+                            <div class="nombre">${escapeHtml(nombre)}</div>
+                            <div class="handle">${escapeHtml(handle)}</div>
+                        </div>
                         <div class="acciones">
-                            <button type="button" class="btn-cancelar-solicitud" data-solicitud-cancelar="${solicitud.id}">Cancelar envío</button>
+                            <button type="button" class="btn-cancelar-envio" data-solicitud-cancelar="${solicitud.id}">Cancelar envío</button>
                         </div>
                     </div>`;
             }).join('');
