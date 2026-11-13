@@ -151,7 +151,7 @@
         #userAvatarGrupo {
             background-size: cover;
             background-position: center;
-            color: transparent; /* Oculta el texto ◈ si hay imagen */
+            color: transparent;
         }
         #userHandleGrupo {
             display: inline-flex;
@@ -735,14 +735,13 @@
     // ================================================================
     // CARGAR DATOS DEL USUARIO (AVATAR Y NOMBRE) EN EL COMPOSITOR
     // ================================================================
-    document.addEventListener('DOMContentLoaded', async function() {
-        // Esperamos a que el SDK de Supabase y el cliente estén listos
+    window.cargarDatosUsuarioCompositor = function() {
         var intentos = 0;
-        function cargarDatosUsuario() {
+        function intentarCarga() {
             if (intentos++ > 50) return; // 5 segundos máximo
             
             if (!window.supabaseClient) {
-                setTimeout(cargarDatosUsuario, 100);
+                setTimeout(intentarCarga, 100);
                 return;
             }
 
@@ -751,7 +750,7 @@
                 var session = res.data.session;
                 if (!session) return; // No hay sesión, no hacer nada
 
-                // Consultar la tabla usuarios (asumiendo que tiene 'nombre', 'handle', 'avatar_url')
+                // Consultar la tabla usuarios
                 window.supabaseClient
                     .from('usuarios')
                     .select('nombre, handle, avatar_url')
@@ -770,7 +769,7 @@
                         if (elAvatar) {
                             if (perfil.avatar_url) {
                                 elAvatar.style.backgroundImage = 'url(' + perfil.avatar_url + ')';
-                                elAvatar.textContent = ''; // Ocultar el diamante
+                                elAvatar.textContent = '';
                             } else {
                                 elAvatar.textContent = (perfil.nombre || 'U').charAt(0).toUpperCase();
                             }
@@ -782,16 +781,14 @@
                             elNombre.textContent = perfil.nombre || 'Usuario';
                         }
 
-                        // 3. Actualizar Handle (la píldora con el rayo)
+                        // 3. Actualizar Handle
                         var elHandle = document.getElementById('userHandleGrupo');
                         if (elHandle) {
                             if (perfil.handle) {
-                                // Actualizamos el texto del handle
                                 elHandle.innerHTML = '⚡ @' + perfil.handle;
-                                // Aseguramos que sea visible (el CSS base ya lo tiene)
                                 elHandle.style.display = 'inline-flex'; 
                             } else {
-                                elHandle.style.display = 'none'; // Si no tiene handle, ocultarlo
+                                elHandle.style.display = 'none';
                             }
                         }
                     })
@@ -802,9 +799,25 @@
                 console.warn('[Compositor] Error obteniendo sesión:', e);
             });
         }
+        intentarCarga();
+    };
+
+    // Ejecutar al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        window.cargarDatosUsuarioCompositor();
         
-        // Iniciar el bucle de espera
-        cargarDatosUsuario();
+        // Observador para asegurar que se cargue cuando el compositor se muestre
+        var formPublicacion = document.getElementById('formPublicacion');
+        if (formPublicacion) {
+            var observer = new MutationObserver(function(mutations) {
+                mutations.forEach(function(mutation) {
+                    if (mutation.attributeName === 'style' && formPublicacion.style.display !== 'none') {
+                        window.cargarDatosUsuarioCompositor();
+                    }
+                });
+            });
+            observer.observe(formPublicacion, { attributes: true });
+        }
     });
     </script>
 </body>
