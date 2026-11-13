@@ -7,118 +7,78 @@
     <title>Visibilidad y contactos · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
-
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
-
-    <!-- ✅ CORRECCIÓN: Se agregó apariencia-global.js para que tome el color de acento -->
     <script src="/features/shared/js/apariencia-global.js"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    
     <script>
-        (function () {
-            'use strict';
+    (function () {
+        'use strict';
+        window.__sarielsAuthenticated = null;
+        window.supabaseClient = window.supabaseClient || null;
+        window.supabaseReady = null;
 
-            window.__sarielsAuthenticated = null;
-            window.supabaseClient = window.supabaseClient || null;
-            window.supabaseReady = null;
+        function revelarPagina() { document.documentElement.classList.add('auth-ready'); }
+        function irAlIndexConReturnTo() {
+            try {
+                var returnTo = window.location.pathname + window.location.search + window.location.hash;
+                if (returnTo.startsWith('/') && !returnTo.startsWith('//')) localStorage.setItem('wallet_returnTo', returnTo);
+            } catch (e) {}
+            window.location.replace('/');
+        }
 
-            window.getSupabaseClient = function () {
-                return window.supabaseReady;
-            };
+        var salvaguarda = setTimeout(revelarPagina, 10000);
 
-            function esRutaInternaSegura(valor) {
-                if (typeof valor !== 'string') return false;
-                if (!valor.startsWith('/')) return false;
-                if (valor.startsWith('//')) return false;
-                if (valor.startsWith('/\\')) return false;
-                return true;
-            }
-
-            function revelarPagina() {
-                document.documentElement.classList.add('auth-ready');
-            }
-
-            function irAlIndexConReturnTo() {
-                try {
-                    var returnTo = window.location.pathname + window.location.search + window.location.hash;
-                    if (esRutaInternaSegura(returnTo)) {
-                        localStorage.setItem('wallet_returnTo', returnTo);
-                    }
-                    window.location.replace('/');
-                } catch (e) {
-                    window.location.replace('/');
+        async function inicializarSupabase() {
+            try {
+                if (!window.supabaseClient) {
+                    window.supabaseClient = window.supabase.createClient(
+                        'https://zultnlogdoajehbswlih.supabase.co',
+                        'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
+                        { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
+                    );
                 }
-            }
-
-            var salvaguarda = setTimeout(function () {
-                console.warn('[Visibilidad] Salvaguarda activada.');
+                var resultado = await window.supabaseClient.auth.getSession();
+                var session = resultado?.data?.session || null;
+                window.__sarielsAuthenticated = !!session;
+                clearTimeout(salvaguarda);
+                if (!session) irAlIndexConReturnTo();
+                else revelarPagina();
+                return window.supabaseClient;
+            } catch (error) {
+                console.error('[Visibilidad] Error:', error);
+                clearTimeout(salvaguarda);
                 revelarPagina();
-            }, 10000);
-
-            async function inicializarSupabase() {
-                try {
-                    if (!window.supabase || typeof window.supabase.createClient !== 'function') {
-                        throw new Error('Supabase SDK no disponible.');
-                    }
-
-                    if (!window.supabaseClient) {
-                        // ✅ CORRECCIÓN APLICADA:
-                        // Se eliminó el fetch('/api/config/public') y se usan credenciales directas.
-                        window.SupabaseSDK = window.supabase;
-
-                        window.supabaseClient = window.SupabaseSDK.createClient(
-                            'https://zultnlogdoajehbswlih.supabase.co',
-                            'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
-                            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
-                        );
-                    }
-
-                    const resultado = await window.supabaseClient.auth.getSession();
-                    const session = resultado && resultado.data ? resultado.data.session : null;
-
-                    window.__sarielsAuthenticated = !!session;
-
-                    clearTimeout(salvaguarda);
-
-                    if (!session) {
-                        irAlIndexConReturnTo();
-                    } else {
-                        revelarPagina();
-                    }
-
-                    return window.supabaseClient;
-                } catch (error) {
-                    console.error('[Visibilidad] Error inicializando Supabase:', error);
-                    window.__sarielsAuthenticated = false;
-                    clearTimeout(salvaguarda);
-                    revelarPagina();
-                    return null;
-                }
+                return null;
             }
-
-            window.supabaseReady = inicializarSupabase();
-        })();
+        }
+        window.supabaseReady = inicializarSupabase();
+    })();
     </script>
 
     <style>
         html:not(.auth-ready) body { visibility: hidden; }
         html.auth-ready body { visibility: visible; }
+        .cfg-save-status { margin: 12px 0; padding: 10px 0; font-family: Inter, sans-serif; font-size: 12px; color: var(--cfg-text-secondary, #999); min-height: 20px; }
+        .cfg-save-status.success { color: #35c77a; }
+        .cfg-save-status.error { color: #ff6262; }
+        .cfg-toggle-saving { opacity: 0.55; pointer-events: none; }
     </style>
 </head>
+
 <body class="cfg-page">
-
     <div id="cfgHeaderSlot"></div>
-
     <main class="cfg-content">
-
         <h2 class="cfg-section-title">Visibilidad</h2>
         <div class="cfg-list" id="seccionVisibilidad"></div>
 
         <h2 class="cfg-section-title">Contactos</h2>
         <div class="cfg-list" id="seccionContactos"></div>
 
+        <div id="estadoGuardado" class="cfg-save-status" aria-live="polite"></div>
+
         <div class="cfg-aviso">
-            ℹ️ Las opciones marcadas como "Próximamente" aún no están activas.
+            ℹ️ Tus preferencias se guardan directamente en tu cuenta de forma segura.
         </div>
 
         <div class="cfg-footer">
@@ -134,81 +94,177 @@
         'use strict';
 
         const $ = (sel) => document.querySelector(sel);
-
-        async function esperarCliente() {
-            const inicio = Date.now();
-            while (Date.now() - inicio < 10000) {
-                if (window.supabaseClient) return window.supabaseClient;
-                await new Promise(r => setTimeout(r, 100));
-            }
-            return null;
-        }
+        let cliente = null;
+        let usuarioId = null;
+        let guardando = false;
 
         cfgInitPage({
             title: 'Visibilidad y contactos',
-            subtitle: '',
-            backUrl: '/features/perfil/configuracion/index.html',
+            subtitle: '', // Se llenará con el handle
+            backUrl: '/features/perfil/configuracion/index.html'
         });
 
-        const PREF_KEYS = {
-            encontrarme_email: 'visibilidad_encontrarme_email',
-            encontrarme_telefono: 'visibilidad_encontrarme_telefono',
-        };
+        function mostrarEstado(mensaje, tipo) {
+            const el = $('#estadoGuardado');
+            if (!el) return;
+            el.textContent = mensaje;
+            el.className = 'cfg-save-status' + (tipo ? ' ' + tipo : '');
+        }
 
-        function renderToggles() {
+        function renderToggles(prefsJson) {
+            // 1. Preferencias de búsqueda (guardadas en prefs JSONB)
+            const findEmail = prefsJson.visibilidad_encontrarme_email === true;
+            const findPhone = prefsJson.visibilidad_encontrarme_telefono === true;
+            // 2. Preferencia de estado (guardada como columna booleana en 'usuarios')
+            const hideStatus = prefsJson.ocultar_estado === true;
+            // 3. Preferencia de contactos
+            const syncContacts = prefsJson.visibilidad_sincronizar_contactos === true;
+
             $('#seccionVisibilidad').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleEmail',
-                    title: 'Permite que otros te encuentren por tu correo electrónico (Próximamente)',
-                    desc: 'Esta opción aún no afecta las búsquedas. Estará disponible pronto.',
-                    checked: false,
-                    disabled: true,
+                    title: 'Permitir que otros te encuentren por correo electrónico',
+                    desc: 'Controla si tu cuenta puede aparecer cuando alguien busca utilizando tu correo.',
+                    checked: findEmail,
+                    disabled: false
                 }),
                 cfgRenderToggle({
                     id: 'toggleTelefono',
-                    title: 'Permitir que otros te encuentren por tu número de teléfono (Próximamente)',
-                    desc: 'Requiere añadir un número de teléfono. Aún no está disponible.',
-                    checked: false,
-                    disabled: true,
+                    title: 'Permitir que otros te encuentren por número de teléfono',
+                    desc: 'Controla si tu cuenta puede aparecer cuando alguien busca utilizando tu teléfono.',
+                    checked: findPhone,
+                    disabled: false
                 }),
+                cfgRenderToggle({
+                    id: 'toggleOcultarEstado',
+                    title: 'Ocultar mi estado en línea',
+                    desc: 'Si lo desactivas, los demás no podrán ver cuando estás conectado.',
+                    checked: hideStatus,
+                    disabled: false
+                })
             ].join('');
 
             $('#seccionContactos').innerHTML = [
                 cfgRenderToggle({
                     id: 'toggleSync',
                     title: 'Sincronizar contactos de la libreta (Próximamente)',
-                    desc: 'Permitirá cargar los contactos de tu teléfono para encontrar a tus amigos. Aún no está disponible.',
-                    checked: false,
-                    disabled: true,
-                }),
+                    desc: 'Permitirá cargar los contactos de tu teléfono para encontrar amigos.',
+                    checked: syncContacts,
+                    disabled: true // Lo dejamos bloqueado hasta que programes el backend
+                })
             ].join('');
         }
 
-        /* ============================================================
-           SUBTÍTULO: handle real del usuario (no el correo)
-        ============================================================ */
-        async function cargarHandleSubtitulo() {
+        async function cargarPreferencias() {
             try {
-                const client = await esperarCliente();
-                if (!client) return;
+                // Obtenemos los datos de la tabla usuarios y de la tabla preferencias
+                const { data: usuario, error: errUser } = await cliente
+                    .from('usuarios')
+                    .select('handle, ocultar_estado')
+                    .eq('id', usuarioId)
+                    .single();
 
-                const { data: sd } = await client.auth.getSession();
-                if (!sd || !sd.session) return;
+                if (errUser) throw errUser;
 
-                const { data } = await client.rpc('mi_perfil_privado');
-                const perfil = Array.isArray(data) ? data[0] : data;
-                const handle = perfil && (perfil.handle || perfil.username);
-
+                // Colocamos el @handle en el subtítulo
                 const subEl = document.querySelector('.cfg-header-subtitle');
-                if (subEl && handle) subEl.textContent = '@' + handle;
-            } catch (e) { /* silencioso */ }
+                if (subEl && usuario.handle) subEl.textContent = '@' + usuario.handle;
+
+                // Obtenemos las preferencias JSON
+                const { data: pref, error: errPref } = await cliente
+                    .from('preferencias_usuario')
+                    .select('prefs')
+                    .eq('usuario_id', usuarioId)
+                    .maybeSingle();
+
+                let prefs = (pref && pref.prefs) ? pref.prefs : {};
+                
+                // Inyectamos el valor actual de 'ocultar_estado' al objeto JSON para renderizarlo
+                prefs.ocultar_estado = usuario.ocultar_estado;
+
+                renderToggles(prefs);
+                conectarInterruptores();
+
+            } catch (error) {
+                console.error('[Visibilidad] Error cargando preferencias:', error);
+                mostrarEstado('No fue posible cargar tus preferencias.', 'error');
+            }
         }
 
-        window.addEventListener('DOMContentLoaded', async () => {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            renderToggles();
-            cargarHandleSubtitulo();
-        });
+        async function guardarPreferencia(clave, valor, interruptor) {
+            if (guardando) return false;
+            guardando = true;
+
+            const contenedor = interruptor.closest('.cfg-item') || interruptor.parentElement;
+            if (contenedor) contenedor.classList.add('cfg-toggle-saving');
+            mostrarEstado('Guardando cambios...', '');
+
+            try {
+                if (clave === 'ocultar_estado') {
+                    // Se guarda directo en la tabla usuarios
+                    const { error } = await cliente.from('usuarios').update({ ocultar_estado: valor }).eq('id', usuarioId);
+                    if (error) throw error;
+                } else {
+                    // Se guarda usando tu RPC existente para la tabla preferencias_usuario
+                    // La RPC recibe la clave y un JSON con el valor
+                    const { error } = await cliente.rpc('actualizar_preferencia', { 
+                        p_key: clave, 
+                        p_value: valor // El SDK de Supabase convierte esto a { value: true } automáticamente en JSONB
+                    });
+                    if (error) throw error;
+                }
+
+                mostrarEstado('✓ Preferencia guardada.', 'success');
+                return true;
+
+            } catch (error) {
+                console.error('[Visibilidad] Error al guardar:', error);
+                mostrarEstado('No se pudo guardar. Revisa tu conexión.', 'error');
+                interruptor.checked = !valor; // Revertir visualmente
+                return false;
+            } finally {
+                guardando = false;
+                if (contenedor) contenedor.classList.remove('cfg-toggle-saving');
+                setTimeout(() => mostrarEstado('', ''), 3000);
+            }
+        }
+
+        function conectarInterruptores() {
+            const configs = [
+                { id: 'toggleEmail', clave: 'visibilidad_encontrarme_email' },
+                { id: 'toggleTelefono', clave: 'visibilidad_encontrarme_telefono' },
+                { id: 'toggleOcultarEstado', clave: 'ocultar_estado' }
+            ];
+
+            configs.forEach(config => {
+                const el = document.getElementById(config.id);
+                if (el) {
+                    el.addEventListener('change', function () {
+                        guardarPreferencia(config.clave, this.checked, this);
+                    });
+                }
+            });
+        }
+
+        async function iniciar() {
+            try {
+                cliente = await window.supabaseReady;
+                if (!cliente) throw new Error('Cliente Supabase no listo.');
+
+                const { data: { session } } = await cliente.auth.getSession();
+                if (!session) return; // El bloque de arriba ya redirige
+
+                usuarioId = session.user.id;
+                await cargarPreferencias();
+
+            } catch (error) {
+                console.error('[Visibilidad] Error de inicialización:', error);
+                mostrarEstado('No se pudo inicializar el módulo.', 'error');
+            }
+        }
+
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciar);
+        else iniciar();
 
     })();
     </script>
