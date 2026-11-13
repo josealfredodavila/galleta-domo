@@ -11,6 +11,13 @@
 //   bloqueos: (usuario_id, bloqueado_id, motivo, created_at)
 //   función public.puede_llamar(p_origen, p_destino)
 // El backend usa service_role (omite RLS).
+//
+// v2.1 — CAMBIO:
+//   POST /:id/aceptar vuelve a comprobar puede_llamar antes de aceptar.
+//   Si el permiso fue revocado (bloqueo nuevo, cambio de config, o
+//   permitir_llamadas_conversacion desactivado), la llamada pasa a
+//   'rejected' con motivo 'permiso_revocado' y se devuelve 403.
+//   No se alteran tiempos, LiveKit, señalización ni push.
 
 const express = require('express');
 const crypto = require('crypto');
@@ -19,7 +26,7 @@ const { supabaseAdmin } = require('../config/supabase');
 const { verificarToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
 
-// NUEVO: Importamos el helper de Push para notificar al destinatario
+// Helper de Push para notificar al destinatario
 const { enviarPushLlamadaEntrante } = require('./push');
 
 const router = express.Router();
@@ -172,11 +179,8 @@ router.post('/iniciar', verificarToken, async (req, res) => {
 
     await registrarParticipante(id, uid, 'caller', 'invited');
 
-    // ============================================================
-    // NUEVO: Disparar Notificación Push al destinatario
-    // ============================================================
+    // Disparar Notificación Push al destinatario (fire and forget)
     try {
-      // Obtenemos el nombre y avatar del que llama para la notificación
       const { data: creador } = await supabaseAdmin
         .from('usuarios')
         .select('nombre, avatar_url')
@@ -186,15 +190,12 @@ router.post('/iniciar', verificarToken, async (req, res) => {
       const nombreCreador = creador?.nombre || 'Alguien';
       const avatarCreador = creador?.avatar_url || '/icon-192.png';
 
-      // Enviamos el push sin bloquear la respuesta HTTP (fire and forget)
       enviarPushLlamadaEntrante(destinoId, nombreCreador, avatarCreador, id)
         .catch((err) => logger.error(`[llamadas] Error enviando Push: ${err.message}`));
 
     } catch (pushErr) {
-      // Si falla el push, no rompemos la llamada. Solo lo registramos en logs.
       logger.error(`[llamadas] Error preparando Push: ${pushErr.message}`);
     }
-    // ============================================================
 
     return res.json({
       success: true,
@@ -208,6 +209,12 @@ router.post('/iniciar', verificarToken, async (req, res) => {
 
 // ================================================================
 // POST /:id/aceptar  → el destinatario contesta
+//
+// v2.1: se vuelve a comprobar puede_llamar justo antes de aceptar.
+//   - Si ya no puede llamar (bloqueo, config, conversación sin
+//     permitir_llamadas_conversacion), se cierra como 'rejected'
+//     con motivo_fin = 'permiso_revocado' y se devuelve 403.
+//   - No se marca 'active' ni se emite token en ese caso.
 // ================================================================
 router.post('/:id/aceptar', verificarToken, async (req, res) => {
   try {
@@ -223,6 +230,49 @@ router.post('/:id/aceptar', verificarToken, async (req, res) => {
     if (llamada.motor !== 'livekit') {
       return res.status(400).json({ success: false, error: 'motor_no_compatible' });
     }
+
+    // ---- Revalidación de permiso ----
+    // El origen es el creador; el destino es quien acepta (uid).
+    const { data: puede, error: errPuede } = await supabaseAdmin
+      .rpc('puede_llamar', {
+        p_origen: llamada.creador_id,
+        p_destino: llamada.destinatario_id
+      });
+    if (errPuede) throw errPuede;
+
+    if (!puede) {
+      const ahora = new Date().toISOString();
+      const { error: errCerrar } = await supabaseAdmin
+        .from('llamadas')
+        .update({
+          estado: 'rejected',
+          finalizada_at: ahora,
+          motivo_fin: 'permiso_revocado'
+        })
+        .eq('id', llamada.id)
+        .eq('estado', 'ringing');
+      if (errCerrar) {
+        logger.error(`[llamadas] aceptar (cerrar por permiso): ${errCerrar.message}`);
+      }
+
+      // Marcar al destinatario como declined en participantes
+      try {
+        await supabaseAdmin
+          .from('llamadas_participantes')
+          .update({ estado: 'declined', salio_at: ahora })
+          .eq('llamada_id', llamada.id)
+          .eq('usuario_id', uid);
+      } catch (ePart) {
+        logger.error(`[llamadas] aceptar (participante declined): ${ePart.message}`);
+      }
+
+      return res.status(403).json({
+        success: false,
+        error: 'llamada_no_permitida',
+        motivo: 'permiso_revocado'
+      });
+    }
+    // ---- Fin revalidación ----
 
     const { error } = await supabaseAdmin.from('llamadas').update({
       estado: 'active',
