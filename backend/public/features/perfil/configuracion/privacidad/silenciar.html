@@ -62,8 +62,6 @@
                     }
 
                     if (!window.supabaseClient) {
-                        // ✅ CORRECCIÓN APLICADA:
-                        // Se eliminó el fetch('/api/config/public') y se usan credenciales directas.
                         window.SupabaseSDK = window.supabase;
 
                         window.supabaseClient = window.SupabaseSDK.createClient(
@@ -215,6 +213,10 @@
 
     <main class="cfg-content">
 
+        <!-- NUEVA SECCIÓN DE PRIVACIDAD -->
+        <h2 class="cfg-section-title">Privacidad de la cuenta</h2>
+        <div class="cfg-list" id="seccionPrivacidad"></div>
+
         <h2 class="cfg-section-title">Cuentas</h2>
         <div class="cfg-list" id="seccionCuentas"></div>
 
@@ -275,16 +277,42 @@
         let cuentasSilenciadas = [];
         let cuentasBloqueadas = [];
         let palabrasSilenciadas = [];
+        let esCuentaPrivada = false; // Variable para guardar el estado
 
         /* ============================================================
            CARGAR DATOS
         ============================================================ */
         async function cargarTodo() {
             await Promise.all([
+                cargarPreferenciaPrivacidad(), // Cargar la privacidad
                 cargarCuentas('silenciada'),
                 cargarCuentas('bloqueada'),
                 cargarPalabrasSilenciadas(),
             ]);
+        }
+
+        // NUEVA FUNCIÓN: Cargar si la cuenta es privada
+        async function cargarPreferenciaPrivacidad() {
+            try {
+                const client = await esperarCliente();
+                if (!client) return;
+
+                const { data: sd } = await client.auth.getSession();
+                if (!sd || !sd.session) return;
+
+                // Consultamos el perfil del usuario
+                const { data, error } = await client
+                    .from('perfiles')
+                    .select('es_privado')
+                    .eq('id', sd.session.user.id)
+                    .single();
+
+                if (!error && data) {
+                    esCuentaPrivada = data.es_privado === true;
+                }
+            } catch (e) {
+                console.warn('Error cargando privacidad:', e);
+            }
         }
 
         async function cargarCuentas(tipo) {
@@ -366,6 +394,17 @@
            RENDER
         ============================================================ */
         function renderSecciones() {
+            // Renderizar el Switch de Privacidad
+            $('#seccionPrivacidad').innerHTML = [
+                cfgRenderToggle({
+                    id: 'toggleCuentaPrivada',
+                    title: 'Cuenta privada',
+                    desc: 'Solo tus amigos pueden ver tu perfil y publicaciones.',
+                    checked: esCuentaPrivada,
+                    onChange: `window.onTogglePrivacidad(this.checked)`,
+                })
+            ].join('');
+
             const totalSilenciadas = cuentasSilenciadas.length;
             const totalBloqueadas = cuentasBloqueadas.length;
 
@@ -422,6 +461,35 @@
             div.textContent = texto;
             return div.innerHTML;
         }
+
+        /* ============================================================
+           GUARDAR PRIVACIDAD (NUEVO)
+        ============================================================ */
+        window.onTogglePrivacidad = async (value) => {
+            try {
+                const client = await esperarCliente();
+                if (!client) throw new Error('Supabase no disponible');
+
+                const { data: sd } = await client.auth.getSession();
+                if (!sd || !sd.session) throw new Error('Inicia sesión');
+
+                // Actualizamos la columna 'es_privado' en la tabla 'perfiles'
+                const { error } = await client
+                    .from('perfiles')
+                    .update({ es_privado: value })
+                    .eq('id', sd.session.user.id);
+
+                if (error) throw error;
+
+                esCuentaPrivada = value;
+                cfgToast(value ? '🔒 Tu cuenta ahora es privada' : '🔓 Tu cuenta ahora es pública', 'success');
+            } catch (e) {
+                console.error('Error guardando privacidad:', e);
+                cfgToast('❌ Error al guardar: ' + e.message, 'error');
+                // Revertir el switch visualmente si falla
+                renderSecciones();
+            }
+        };
 
         /* ============================================================
            MODAL DE CUENTAS
