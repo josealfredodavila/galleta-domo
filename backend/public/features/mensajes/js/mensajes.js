@@ -1,9 +1,9 @@
 // ================================================================
-// MENSAJES · JS v5.8 · WEB3 NEON UI
-// Cambios v5.8 (Integración de llamadas y zonas horarias):
-// - parsearFechaSupabase(): corrige incoming() forzando UTC si falta zona.
-// - Expuestos globalmente para llamadas-ui.js:
-//   window.startCall, window.acceptCall, window.endCall, window.current
+// MENSAJES · JS v5.9 · WEB3 NEON UI
+// Cambios v5.9 (Integración unificada de Estados con Muro):
+// - Estados ahora soporta VIDEO (media_tipo, media_url, duracion_segundos).
+// - cargarEstados, mostrarEstadoActual, previewEstado y publicarEstado actualizados.
+// - Se eliminó el localStorage de vistos en mensajes para usar la DB.
 // ================================================================
 
 'use strict';
@@ -44,7 +44,6 @@ let estadoActualUserId = null;
 let estadoTimer = null;
 let estadoProgresoActual = 0;
 let estadoPausado = false;
-let estadoVistos = JSON.parse(localStorage.getItem('sariels_estados_vistos') || '{}');
 
 const call = {
     room: null, id: null, active: false, audio: null, video: null,
@@ -377,17 +376,20 @@ async function descargarImagen(url, nombreArchivo) {
 
 function cerrarPhotoViewer() { $('photoViewer').classList.remove('show'); }
 
-function marcarEstadoVisto(estadoId) { estadoVistos[estadoId] = Date.now(); localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos)); }
-function estadoEsNuevo(estado) { return !estadoVistos[estado.id]; }
-function limpiarVistosAntiguos() {
-    const limite = Date.now() - (48 * 60 * 60 * 1000);
-    Object.keys(estadoVistos).forEach(k => { if (estadoVistos[k] < limite) delete estadoVistos[k]; });
-    localStorage.setItem('sariels_estados_vistos', JSON.stringify(estadoVistos));
+// [v5.9] LOCALSTORAGE ELIMINADO: Ahora todo se lee de la DB (estados_vistas)
+function estadoEsNuevo(estado) {
+    if (!window.__estadosVistosIds) return true;
+    return !window.__estadosVistosIds.has(estado.id);
 }
+
 async function registrarVistaEstado(estadoId) {
     if (!user) return;
-    try { await db.from('estados_vistas').upsert({ estado_id: estadoId, usuario_id: user.id }, { onConflict: 'estado_id,usuario_id', ignoreDuplicates: true }); } catch (e) { }
+    try { 
+        await db.from('estados_vistas').upsert({ estado_id: estadoId, usuario_id: user.id }, { onConflict: 'estado_id,usuario_id', ignoreDuplicates: true }); 
+        if (window.__estadosVistosIds) window.__estadosVistosIds.add(estadoId);
+    } catch (e) { }
 }
+
 async function obtenerVistasEstado(estadoId) {
     try {
         const { count, error } = await db.from('estados_vistas').select('id', { count: 'exact', head: true }).eq('estado_id', estadoId);
@@ -395,6 +397,7 @@ async function obtenerVistasEstado(estadoId) {
         return count || 0;
     } catch (e) { return 0; }
 }
+
 function haceTiempo(fecha) {
     if (!fecha) return 'hace tiempo';
     const diffMin = Math.floor((Date.now() - new Date(fecha).getTime()) / 60000);
@@ -409,7 +412,8 @@ async function cargarEstados() {
     scroll.innerHTML = '';
     if (!user) return;
     try {
-        const { data, error } = await db.from('estados').select('id, usuario_id, imagen_url, caption, created_at, expires_at').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: true });
+        // [v5.9] Columnas nuevas incluidas
+        const { data, error } = await db.from('estados').select('id, usuario_id, imagen_url, media_url, media_tipo, duracion_segundos, caption, created_at, expires_at').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: true });
         if (error) {
             if (error.code === '42P01') { console.warn('Tabla estados no existe aún'); return; }
             throw error;
@@ -418,6 +422,16 @@ async function cargarEstados() {
         if (estadosCache.length === 0) {
             scroll.innerHTML = '<div style="color:var(--muted);font-size:.7rem;padding:8px 4px;text-align:center;width:100%;">Sin estados</div>';
             return;
+        }
+
+        // [v5.9] Cargar vistos en lote desde DB
+        window.__estadosVistosIds = new Set();
+        const idsEstados = estadosCache.map(e => e.id);
+        if (idsEstados.length > 0) {
+            try {
+                const { data: vistasData } = await db.from('estados_vistas').select('estado_id').eq('usuario_id', user.id).in('estado_id', idsEstados);
+                (vistasData || []).forEach(v => window.__estadosVistosIds.add(v.estado_id));
+            } catch (e) { console.warn('Error cargando vistas en lote:', e); }
         }
 
         const porUsuario = {};
@@ -443,7 +457,8 @@ async function cargarEstados() {
         if (miEstado && miEstado.length > 0) {
             const tieneNuevos = miEstado.some(e => estadoEsNuevo(e));
             const ultimoEstadoId = miEstado[miEstado.length - 1].id;
-            const ultimoEstadoImg = miEstado[miEstado.length - 1].imagen_url;
+            // [v5.9] Fallback a media_url
+            const ultimoEstadoImg = miEstado[miEstado.length - 1].media_url || miEstado[miEstado.length - 1].imagen_url;
             const totalVistas = await obtenerVistasEstado(ultimoEstadoId);
             const html = `
                 <div class="estado-item" data-userid="${user.id}" style="position:relative;">
@@ -499,12 +514,41 @@ async function mostrarEstadoActual() {
             }
         });
     }
-    $('evImage').src = estado.imagen_url;
+    
+    // [v5.9] Manejo unificado de media (Imagen / Video)
+    const urlMedia = estado.media_url || estado.imagen_url;
+    const evImageEl = $('evImage');
+    const evVideoEl = $('evVideo'); 
+    const tipo = estado.media_tipo || 'imagen';
+    
+    if (tipo === 'video') {
+        if (evImageEl) evImageEl.style.display = 'none';
+        let videoEl = document.getElementById('evVideo');
+        if (!videoEl) {
+            videoEl = document.createElement('video');
+            videoEl.id = 'evVideo';
+            videoEl.controls = true;
+            videoEl.playsInline = true;
+            videoEl.style.cssText = 'width:100%;max-height:80vh;border-radius:12px;display:block;';
+            if (evImageEl && evImageEl.parentNode) evImageEl.parentNode.appendChild(videoEl);
+        }
+        videoEl.style.display = 'block';
+        videoEl.src = urlMedia;
+        videoEl.play().catch(e => console.log('Auto-play bloqueado:', e));
+    } else {
+        if (evVideoEl) evVideoEl.style.display = 'none';
+        if (evImageEl) {
+            evImageEl.style.display = 'block';
+            evImageEl.src = urlMedia;
+        }
+    }
+
     $('evTime').textContent = haceTiempo(estado.created_at);
     if (estado.caption) { $('evCaption').textContent = estado.caption; $('evCaption').classList.remove('hidden'); }
     else $('evCaption').classList.add('hidden');
-    marcarEstadoVisto(estado.id);
+    
     registrarVistaEstado(estado.id);
+    
     $('evPrev').classList.toggle('hidden', estadoActualIndex === 0);
     $('evNext').classList.toggle('hidden', estadoActualIndex >= estados.length - 1);
     if (esMiEstado) {
@@ -513,19 +557,37 @@ async function mostrarEstadoActual() {
         $('evVistas').classList.remove('hidden');
         $('evVistas').dataset.estadoId = estado.id;
     } else $('evVistas').classList.add('hidden');
-    iniciarProgresoEstado();
+    
+    iniciarProgresoEstado(estado);
 }
 
-function iniciarProgresoEstado() {
+function iniciarProgresoEstado(estado) {
     const progress = $('estadoProgress');
     if (estadoTimer) clearInterval(estadoTimer);
     progress.style.width = estadoProgresoActual + '%';
-    estadoTimer = setInterval(() => {
-        if (estadoPausado) return;
-        estadoProgresoActual += 1;
-        progress.style.width = estadoProgresoActual + '%';
-        if (estadoProgresoActual >= 100) { clearInterval(estadoTimer); estadoProgresoActual = 0; siguienteEstado(); }
-    }, 50);
+    
+    // [v5.9] Soporte para duración de video o imagen
+    const esVideo = (estado.media_tipo === 'video');
+    const duracionMs = (estado.duracion_segundos || 5) * 1000;
+    
+    if (esVideo) {
+        const videoEl = document.getElementById('evVideo');
+        if (videoEl) {
+            estadoTimer = setInterval(() => {
+                if (estadoPausado || videoEl.paused) return;
+                if (videoEl.duration) estadoProgresoActual = (videoEl.currentTime / videoEl.duration) * 100;
+                progress.style.width = estadoProgresoActual + '%';
+            }, 100);
+            videoEl.onended = () => { clearInterval(estadoTimer); estadoProgresoActual = 0; siguienteEstado(); };
+        }
+    } else {
+        estadoTimer = setInterval(() => {
+            if (estadoPausado) return;
+            estadoProgresoActual += 100 / (duracionMs / 50); // Avanza proporcional a los segundos
+            progress.style.width = estadoProgresoActual + '%';
+            if (estadoProgresoActual >= 100) { clearInterval(estadoTimer); estadoProgresoActual = 0; siguienteEstado(); }
+        }, 50);
+    }
 }
 
 function siguienteEstado() {
@@ -542,11 +604,23 @@ function cerrarEstadoViewer() {
     $('estadoViewer').classList.remove('show');
     if (estadoTimer) clearInterval(estadoTimer);
     estadoTimer = null; estadoPausado = false; estadoProgresoActual = 0; estadoActualUserId = null;
+    const videoEl = document.getElementById('evVideo');
+    if (videoEl) { videoEl.pause(); videoEl.src = ''; }
     cargarEstados();
 }
 
-function activarPausaEstado() { if (!$('estadoViewer').classList.contains('show')) return; estadoPausado = true; }
-function desactivarPausaEstado() { if (!$('estadoViewer').classList.contains('show')) return; estadoPausado = false; }
+function activarPausaEstado() { 
+    if (!$('estadoViewer').classList.contains('show')) return; 
+    estadoPausado = true; 
+    const videoEl = document.getElementById('evVideo');
+    if (videoEl) videoEl.pause();
+}
+function desactivarPausaEstado() { 
+    if (!$('estadoViewer').classList.contains('show')) return; 
+    estadoPausado = false; 
+    const videoEl = document.getElementById('evVideo');
+    if (videoEl) videoEl.play().catch(() => {});
+}
 
 async function abrirVistasModal(estadoId) {
     if (!estadoId) return;
@@ -597,28 +671,75 @@ function abrirModalEstado() {
 function cerrarModalEstado() { $('estadoUploadModal').classList.remove('show'); }
 function seleccionarArchivoEstado() { $('estadoFileInput').click(); }
 
+// [v5.9] PREVISUALIZACIÓN ADAPTADA A VIDEO
 async function previewEstado(event) {
     const file = event.target.files[0];
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast('❌ La imagen no puede superar 5 MB', 'error'); event.target.value = ''; return; }
-    if (!file.type.startsWith('image/')) { toast('❌ Solo se permiten imágenes', 'error'); event.target.value = ''; return; }
+    
+    const esVideo = file.type.startsWith('video/');
+    const maxBytes = esVideo ? 25 * 1024 * 1024 : 10 * 1024 * 1024;
+    if (file.size > maxBytes) { toast(esVideo ? '❌ Video máximo 25 MB' : '❌ Imagen máxima 10 MB', 'error'); event.target.value = ''; return; }
+    if (!file.type.startsWith('image/') && !esVideo) { toast('❌ Solo imágenes o videos', 'error'); event.target.value = ''; return; }
+    
     const reader = new FileReader();
-    reader.onload = e => { $('estadoPreviewImg').src = e.target.result; $('estadoPreviewWrap').style.display = 'block'; $('btnPublicarEstado').disabled = false; };
+    reader.onload = e => { 
+        const previewWrap = $('estadoPreviewWrap');
+        const previewImg = $('estadoPreviewImg');
+        
+        if (esVideo) {
+            let previewVideo = document.getElementById('estadoPreviewVideo');
+            if (!previewVideo) {
+                previewVideo = document.createElement('video');
+                previewVideo.id = 'estadoPreviewVideo';
+                previewVideo.controls = true;
+                previewVideo.muted = true;
+                previewVideo.playsInline = true;
+                previewVideo.style.cssText = 'width:100%;max-height:50vh;border-radius:12px;display:block;';
+                previewImg.parentNode.insertBefore(previewVideo, previewImg.nextSibling);
+            }
+            previewVideo.src = e.target.result;
+            previewVideo.style.display = 'block';
+            previewImg.style.display = 'none';
+        } else {
+            const previewVideo = document.getElementById('estadoPreviewVideo');
+            if (previewVideo) previewVideo.style.display = 'none';
+            previewImg.style.display = 'block';
+            previewImg.src = e.target.result; 
+        }
+        
+        previewWrap.style.display = 'block'; 
+        $('btnPublicarEstado').disabled = false; 
+    };
     reader.readAsDataURL(file);
 }
 
+// [v5.9] PUBLICACIÓN ADAPTADA CON NUEVAS COLUMNAS
 async function publicarEstado() {
     const fileInput = $('estadoFileInput');
     const file = fileInput.files[0];
-    if (!file) { toast('⚠️ Selecciona una imagen', 'error'); return; }
+    if (!file) { toast('⚠️ Selecciona un archivo', 'error'); return; }
     if (!await auth()) return;
+    
+    const esVideo = file.type.startsWith('video/');
+    const tipo = esVideo ? 'video' : 'imagen';
     const caption = $('estadoCaption').value.trim();
     const btn = $('btnPublicarEstado');
     btn.disabled = true;
     btn.textContent = '⏳ Publicando...';
+    
     try {
-        const d = await subirViaBackend(file, ESTADOS_BUCKET, 'imagen');
-        const { error: insertError } = await db.from('estados').insert({ usuario_id: user.id, imagen_url: d.url, caption: caption || null });
+        const d = await subirViaBackend(file, ESTADOS_BUCKET, tipo);
+        
+        // [v5.9] Insertar en TODAS las columnas para compatibilidad total con Muro
+        const { error: insertError } = await db.from('estados').insert({ 
+            usuario_id: user.id, 
+            imagen_url: d.url, // Columna vieja (compatibilidad)
+            media_url: d.url,  // Nueva columna
+            media_tipo: tipo,  // Nueva columna
+            duracion_segundos: esVideo ? 15 : 5, // Duración estimada
+            caption: caption || null 
+        });
+        
         if (insertError) throw insertError;
         toast('✅ Estado publicado (24h)', 'success');
         cerrarModalEstado();
@@ -2492,7 +2613,9 @@ async function init() {
         }).subscribe();
     }
 
-    setInterval(() => { if (document.hidden) return; limpiarVistosAntiguos(); cargarEstados(); }, 10 * 60 * 1000);
+    // [v5.9] Limpieza de vistos ya no es necesaria en localStorage porque usamos la DB
+
+    setInterval(() => { if (document.hidden) return; cargarEstados(); }, 10 * 60 * 1000);
 
     registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
 
@@ -2680,7 +2803,7 @@ window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 
 // ================================================================
-// EXPOSICIÓN GLOBAL PARA LLAMADAS-UI.JS Y MÓDULOS EXTERNOS (v5.8)
+// EXPOSICIÓN GLOBAL PARA LLAMADAS-UI.JS Y MÓDULOS EXTERNOS (v5.9)
 // ================================================================
 window.startCall = startCall;
 window.acceptCall = acceptCall;
@@ -2694,7 +2817,7 @@ Object.defineProperty(window, 'current', {
 });
 
 window.NeonUI = {
-    version: '5.8.0',
+    version: '5.9.0',
     decorarComposer: decorarComposerWeb3,
     decorarSidebarTabs: decorarSidebarTabsWeb3,
     decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
