@@ -1,44 +1,23 @@
 // ================================================================
-// MURO · HISTORIAS (tabla estados) — v3 con video
-// ================================================================
-// Barra superior de historias, visor a pantalla completa, subida
-// de imágenes y videos, y registro de vistas.
-// v3: destino de subida 'sariels-estados' (bucket que revisa el cron
-//     de limpieza y que media.js permite para imagen y video).
-// Tablas: estados, estados_vistas. RPC: estados_activos_por_usuario().
-// Depende de: muro-config.js (supabaseClient, sessionUser),
-//             muro-utils.js (escapeHTML, showToast).
-//
-// Uso desde el HTML:
-//   <button onclick="crearHistoria()">Subir historia</button>
-//   <section id="csStoryStrip"></section>
-//   <div id="csHistoriaVisor"></div>
+// MURO · HISTORIAS (tabla estados) — v3.2 (Escalable Global)
 // ================================================================
 
-// ================================================================
-// CONSTANTES
-// ================================================================
 var HISTORIA_MAX_IMAGEN_BYTES = 10 * 1024 * 1024;  // 10 MB
 var HISTORIA_MAX_VIDEO_BYTES  = 25 * 1024 * 1024;  // 25 MB
 var HISTORIA_MAX_VIDEO_SEG    = 30;
-var HISTORIA_DURACION_IMAGEN  = 5;                 // segundos
+var HISTORIA_DURACION_IMAGEN  = 5;
 
-// ================================================================
-// ESTADO GLOBAL
-// ================================================================
-var historiasDelFeed = [];        // resultado de la RPC (una fila por usuario)
-var historiaSeleccionada = null;  // { usuario, indice }
-var estadosVistosIds = new Set(); // ids de estados que YO ya vi
+var historiasDelFeed = [];        
+var historiaSeleccionada = null;  
+var estadosVistosIds = new Set(); 
 var temporizadorHistoria = null;
 
-// ================================================================
-// CARGAR HISTORIAS ACTIVAS Y MIS VISTAS
-// ================================================================
 async function cargarHistorias() {
     var contenedor = document.getElementById('csStoryStrip');
     if (!contenedor) return;
 
     try {
+        // La RPC hace todo el trabajo pesado en el servidor
         var rpc = await supabaseClient.rpc('estados_activos_por_usuario');
         if (rpc.error) throw rpc.error;
         historiasDelFeed = rpc.data || [];
@@ -50,7 +29,6 @@ async function cargarHistorias() {
     }
 }
 
-// Ids de estados que el usuario actual ya vio (sirve en cualquier dispositivo)
 async function cargarMisVistas() {
     estadosVistosIds = new Set();
     if (!sessionUser) return;
@@ -61,6 +39,7 @@ async function cargarMisVistas() {
     });
     if (!ids.length) return;
 
+    // Consulta indexada, rápida incluso con millones de vistas
     var res = await supabaseClient
         .from('estados_vistas')
         .select('estado_id')
@@ -71,14 +50,10 @@ async function cargarMisVistas() {
     (res.data || []).forEach(function (v) { estadosVistosIds.add(v.estado_id); });
 }
 
-// ¿Ya vi todos los estados de ese usuario?
 function todosVistos(estados) {
     return (estados || []).every(function (e) { return estadosVistosIds.has(e.id); });
 }
 
-// ================================================================
-// BARRA SUPERIOR
-// ================================================================
 function renderizarBarraHistorias() {
     var contenedor = document.getElementById('csStoryStrip');
     if (!contenedor) return;
@@ -90,7 +65,6 @@ function renderizarBarraHistorias() {
         '</button>';
 
     historiasDelFeed.forEach(function (u) {
-        // Mis historias ya están representadas por el botón "Tu historia"
         if (sessionUser && u.usuario_id === sessionUser.id) return;
 
         var vistas = todosVistos(u.estados);
@@ -109,9 +83,6 @@ function renderizarBarraHistorias() {
     contenedor.innerHTML = html;
 }
 
-// ================================================================
-// SUBIR UNA HISTORIA (imagen o video)
-// ================================================================
 function crearHistoria() {
     if (!sessionUser) {
         showToast('Inicia sesión para subir una historia', 'error');
@@ -130,7 +101,6 @@ function crearHistoria() {
     input.click();
 }
 
-// Lee la duración de un video local (en segundos) antes de subirlo
 function leerDuracionVideo(file) {
     return new Promise(function (resolve, reject) {
         var url = URL.createObjectURL(file);
@@ -171,8 +141,8 @@ async function subirHistoria(event) {
     }
 
     var duracion = HISTORIA_DURACION_IMAGEN;
-    try {
-        if (esVideo) {
+    if (esVideo) {
+        try {
             var seg = await leerDuracionVideo(file);
             if (!seg || seg > HISTORIA_MAX_VIDEO_SEG) {
                 showToast('El video debe durar máximo ' + HISTORIA_MAX_VIDEO_SEG + ' segundos', 'error');
@@ -180,11 +150,11 @@ async function subirHistoria(event) {
                 return;
             }
             duracion = Math.max(1, Math.round(seg));
+        } catch (e) {
+            showToast('No se pudo leer el video', 'error');
+            input.value = '';
+            return;
         }
-    } catch (e) {
-        showToast('No se pudo leer el video', 'error');
-        input.value = '';
-        return;
     }
 
     showToast('Subiendo historia...', '');
@@ -211,11 +181,12 @@ async function subirHistoria(event) {
             throw new Error(data.error || 'No se pudo subir la historia');
         }
 
-        // expires_at se llena con el default de la tabla (now() + 24 h)
+        // Inserción optimizada con todas las columnas
         var insert = await supabaseClient
             .from('estados')
             .insert({
                 usuario_id: sessionUser.id,
+                imagen_url: data.url,
                 media_tipo: tipo,
                 media_url: data.url,
                 duracion_segundos: duracion,
@@ -233,9 +204,6 @@ async function subirHistoria(event) {
     }
 }
 
-// ================================================================
-// VISOR
-// ================================================================
 function abrirHistoriasDe(usuarioId) {
     var usuario = historiasDelFeed.find(function (u) { return u.usuario_id === usuarioId; });
     if (!usuario || !usuario.estados || !usuario.estados.length) {
@@ -276,9 +244,7 @@ function renderizarVisorHistoria() {
                 '<button class="cs-historia-cerrar" onclick="cerrarVisorHistoria()">✕</button>' +
             '</div>' +
             '<div class="cs-historia-media">' + mediaHtml + '</div>' +
-            (estado.caption
-                ? '<div class="cs-historia-caption">' + escapeHTML(estado.caption) + '</div>'
-                : '') +
+            (estado.caption ? '<div class="cs-historia-caption">' + escapeHTML(estado.caption) + '</div>' : '') +
             '<div class="cs-historia-nav">' +
                 '<button onclick="historiaAnterior()"' + (historiaSeleccionada.indice === 0 ? ' disabled' : '') + '>◀</button>' +
                 '<button onclick="historiaSiguiente()">▶</button>' +
@@ -287,7 +253,6 @@ function renderizarVisorHistoria() {
 
     registrarVista(estado.id);
 
-    // Avance: imágenes por temporizador; videos al terminar (con respaldo por duración)
     clearTimeout(temporizadorHistoria);
     var duracionMs = (estado.duracion_segundos || HISTORIA_DURACION_IMAGEN) * 1000;
 
@@ -295,7 +260,6 @@ function renderizarVisorHistoria() {
         var video = document.getElementById('csHistoriaVideo');
         if (video) {
             video.addEventListener('ended', historiaSiguiente);
-            // Respaldo por si el video no dispara 'ended'
             temporizadorHistoria = setTimeout(historiaSiguiente, duracionMs + 2000);
         }
     } else {
@@ -303,7 +267,6 @@ function renderizarVisorHistoria() {
     }
 }
 
-// Registra la vista una sola vez (la tabla tiene UNIQUE (estado_id, usuario_id))
 async function registrarVista(estadoId) {
     if (!sessionUser || estadosVistosIds.has(estadoId)) return;
     estadosVistosIds.add(estadoId);
@@ -350,9 +313,6 @@ function cerrarVisorHistoria() {
     mostrarVisorHistoria(false);
 }
 
-// ================================================================
-// EXPORTS GLOBALES
-// ================================================================
 window.cargarHistorias = cargarHistorias;
 window.crearHistoria = crearHistoria;
 window.abrirHistoriasDe = abrirHistoriasDe;
