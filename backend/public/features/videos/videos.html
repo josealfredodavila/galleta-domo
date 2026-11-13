@@ -235,7 +235,48 @@
         .video-card .overlay-info .autor-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; pointer-events: auto; }
         .video-card .overlay-info .autor-avatar { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 1px solid var(--gold); background: var(--green-deep); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
         .video-card .overlay-info .autor-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .video-card .overlay-info .autor-nombre { font-weight: 700; font-size: 0.85rem; color: #fff; }
+        
+        /* ================================================================
+           NUEVO ESTILO DEL @HANDLE (IDÉNTICO AL PERFIL)
+           ================================================================ */
+        .video-card .overlay-info .autor-nombre {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            margin-top: 4px;
+            padding: 3px 12px 3px 9px;
+            border-radius: 999px;
+            color: #5cc8ff !important;
+            font-weight: 600;
+            font-size: .82rem;
+            letter-spacing: .2px;
+            background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16));
+            border: 1px solid rgba(0, 229, 255, .38);
+            text-shadow: 0 0 8px rgba(0, 229, 255, .5);
+            box-shadow: 0 0 10px rgba(0, 229, 255, .12);
+            animation: perfilHandleHalo 2.4s ease-in-out infinite;
+        }
+        .video-card .overlay-info .autor-nombre::before {
+            content: '⚡';
+            font-size: .72rem;
+            line-height: 1;
+            filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
+            animation: perfilHandleDestello 1.8s steps(2, end) infinite;
+        }
+        @keyframes perfilHandleHalo {
+            0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
+            50%      { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
+        }
+        @keyframes perfilHandleDestello {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: .35; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .video-card .overlay-info .autor-nombre,
+            .video-card .overlay-info .autor-nombre::before { animation: none !important; }
+        }
+        /* ================================================================ */
+
         .video-card .overlay-info .titulo { font-size: 0.8rem; color: rgba(255,255,255,0.92); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
         .video-card .overlay-info .descripcion-corta { font-size: 0.7rem; color: rgba(255,255,255,0.72); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
@@ -964,6 +1005,7 @@
         html += '<div class="overlay-info">';
         html += '<div class="autor-row">';
         html += '<div class="autor-avatar">' + avatarHTML + '</div>';
+        // Aquí se aplica la nueva clase para el @handle
         html += '<div class="autor-nombre">@' + autorHandle + '</div>';
         html += '</div>';
         if (titulo) html += '<div class="titulo">' + titulo + '</div>';
