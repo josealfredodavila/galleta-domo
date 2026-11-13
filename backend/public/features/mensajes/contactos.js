@@ -1,10 +1,8 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.4
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.5
    ============================================================
-   - Búsqueda Global: Escribe en la barra superior para buscar en 
-     toda la plataforma (Modo Facebook).
-   - Bug fix: Las solicitudes pendientes se muestran en la lista 
-     general, pero sin la "X" roja, solo con su estado.
+   - Bug fix: Se evita la duplicación de solicitudes pendientes en 
+     la lista general. Las pendientes solo se muestran arriba.
    - UI Mega Pro: Botones estilizados con gradientes Web3.
    - Accesibilidad: Soporte para teclado (Enter/Espacio) en perfiles.
    ============================================================ */
@@ -343,15 +341,18 @@
             var hasta = desde + CONFIG.PAGE_SIZE - 1;
 
             if (reset) {
+                // Contamos solo los activos para las estadísticas
                 var conteo = await withRetry(function () { return client.from(CONFIG.CONTACTOS_TABLE).select('id', { count: 'exact', head: true }).eq('usuario_id', session.user.id).eq('estado', 'activo'); }, 'contar contactos');
                 if (!conteo.error) state.totalContactos = conteo.count || 0;
             }
 
-            // Volvemos a traer todo, sin filtrar por 'activo', para que salgan los pendientes
+            // FIX: Filtramos explícitamente para traer SOLO los activos a la lista general.
+            // Así evitamos que las solicitudes pendientes se dupliquen abajo.
             var resultado = await withRetry(function () {
                 return client.from(CONFIG.CONTACTOS_TABLE)
                     .select('id, usuario_id, contacto_id, es_favorito, estado, fecha, created_at')
                     .eq('usuario_id', session.user.id)
+                    .eq('estado', 'activo') 
                     .order('fecha', { ascending: false, nullsFirst: false })
                     .range(desde, hasta);
             }, 'cargar contactos');
@@ -622,17 +623,12 @@
         var favIcono = contacto.es_favorito ? SVG_ICONS.favorito : SVG_ICONS.favoritoOutline;
         var verificado = contacto.verificado ? '<span class="verified" title="Perfil verificado">✓</span>' : '';
 
-        // Lógica de botones:
-        // Si está pendiente, no mostramos ningún botón en esta vista de la lista general.
-        // Todo se maneja en la sección superior.
         var accionesHTML = '';
-        
         if (!pendiente) {
             var btnMsj = '<button type="button" class="mensaje" data-accion="mensaje" title="Enviar mensaje" aria-label="Enviar mensaje">' + SVG_ICONS.mensaje + '<span>Mensaje</span></button>';
             var btnLlamar = '<button type="button" class="llamar" data-accion="llamar" title="Llamar" aria-label="Llamar">' + SVG_ICONS.llamar + '</button>';
             var btnFav = '<button type="button" class="favorito ' + favClase + '" data-accion="favorito" title="' + (contacto.es_favorito ? 'Quitar favorito' : 'Agregar favorito') + '" aria-label="Cambiar favorito">' + favIcono + '</button>';
             var extras = '<button type="button" class="bloquear" data-accion="bloquear" title="Bloquear usuario" aria-label="Bloquear">' + SVG_ICONS.bloquear + '</button><button type="button" class="eliminar" data-accion="eliminar" title="Eliminar contacto" aria-label="Eliminar">' + SVG_ICONS.eliminar + '</button>';
-            
             accionesHTML = btnMsj + btnLlamar + btnFav + extras;
         }
 
@@ -865,7 +861,6 @@
             }
 
             showToast('Solicitud enviada.', 'success');
-            
             await cargarPerfilesEnLote([contactoId]);
             
             var input = document.getElementById('searchInputModal'); if (input) input.value = '';
