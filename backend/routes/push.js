@@ -1,8 +1,11 @@
 // ================================================================
-// ROUTES/PUSH.JS — Csariel's · v2.7
-// CAMBIOS v2.7:
-// - enviarPushLlamadaEntrante: vibración larga y requireInteraction
-//   para despertar la pantalla en llamadas entrantes.
+// ROUTES/PUSH.JS — Csariel's · v2.8
+// CAMBIOS v2.8:
+// - Se documenta explícitamente que push NO cubre eventos sociales
+//   (amistad/conversación): esos los manejan los triggers de Supabase
+//   (Migración 003). Push solo cubre llamadas entrantes y live.
+// - Sin cambios en la firma de enviarPushLlamadaEntrante para no romper
+//   la integración con routes/llamadas.js.
 // ================================================================
 
 const express = require('express');
@@ -24,7 +27,7 @@ if (!PUSH_ACTIVO) {
 }
 
 // ================================================================
-// AUTENTICACIÓN
+// AUTENTICACIÓN (sin cambios)
 // ================================================================
 async function verificarAutenticacion(req, res, next) {
     try {
@@ -49,7 +52,7 @@ async function verificarAutenticacion(req, res, next) {
 }
 
 // ================================================================
-// GET /vapid-public-key
+// GET /vapid-public-key (sin cambios)
 // ================================================================
 router.get('/vapid-public-key', (req, res) => {
     if (!PUSH_ACTIVO) {
@@ -59,7 +62,7 @@ router.get('/vapid-public-key', (req, res) => {
 });
 
 // ================================================================
-// POST /subscribe
+// POST /subscribe (sin cambios)
 // ================================================================
 router.post('/subscribe', verificarAutenticacion, async (req, res) => {
     try {
@@ -107,7 +110,7 @@ router.post('/subscribe', verificarAutenticacion, async (req, res) => {
 });
 
 // ================================================================
-// POST /unsubscribe
+// POST /unsubscribe (sin cambios)
 // ================================================================
 router.post('/unsubscribe', verificarAutenticacion, async (req, res) => {
     try {
@@ -135,7 +138,7 @@ router.post('/unsubscribe', verificarAutenticacion, async (req, res) => {
 });
 
 // ================================================================
-// POST /test
+// POST /test (sin cambios)
 // ================================================================
 router.post('/test', verificarAutenticacion, async (req, res) => {
     try {
@@ -155,7 +158,7 @@ router.post('/test', verificarAutenticacion, async (req, res) => {
 });
 
 // ================================================================
-// POST /broadcast-live
+// POST /broadcast-live (sin cambios)
 // ================================================================
 router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
     try {
@@ -216,7 +219,7 @@ router.post('/broadcast-live', verificarAutenticacion, async (req, res) => {
 });
 
 // ================================================================
-// HELPER: push a usuarios específicos
+// HELPER: push a usuarios específicos (sin cambios)
 // ================================================================
 async function enviarPushAUsuarios(usuarioIds, payload) {
     if (!PUSH_ACTIVO) {
@@ -303,7 +306,7 @@ async function enviarPushAUsuarios(usuarioIds, payload) {
 }
 
 // ================================================================
-// HELPER: push a seguidores de un streamer
+// HELPER: push a seguidores (sin cambios)
 // ================================================================
 async function enviarPushASeguidores(streamerId, payload) {
     try {
@@ -328,7 +331,7 @@ async function enviarPushASeguidores(streamerId, payload) {
 }
 
 // ================================================================
-// HELPER: push de llamada entrante (usado por llamadas.js)
+// HELPER: push de llamada entrante (sin cambios, usado por llamadas.js)
 // ================================================================
 async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamadaId) {
     console.log(`[Push] Iniciando envío de Push a ${destinatarioId} para llamada ${llamadaId}`);
@@ -340,9 +343,9 @@ async function enviarPushLlamadaEntrante(destinatarioId, nombre, avatar, llamada
         badge: '/badge-72.png',
         url: `/features/mensajes/mensajes.html?llamadaId=${llamadaId}`,
         tag: `llamada-${llamadaId}`,
-        requireInteraction: true, // 🔥 Mantiene la notificación fija en pantalla
+        requireInteraction: true,
         renotify: true,
-        vibrate: [1000, 500, 1000, 500, 1000], // 🔥 Vibración larga e insistente
+        vibrate: [1000, 500, 1000, 500, 1000],
         data: { tipo: 'llamada_entrante', llamadaId },
         actions: [
             { action: 'accept', title: '✅ Aceptar' },
