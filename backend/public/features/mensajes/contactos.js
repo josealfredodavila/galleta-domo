@@ -1,5 +1,5 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v21
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v22
    ============================================================
    - Diseño plano controlado desde el CSS de la página.
    - Sin bordes, fondos, sombras ni radios inyectados
@@ -11,20 +11,18 @@
    - Paginación, caché de perfiles y reintentos controlados.
    - No crea tablas ni modifica la base de datos.
    ============================================================
-   CAMBIOS v21 (integración social):
-   1) buscarUsuarios usa la RPC buscar_usuarios en lugar de
-      consultar perfiles_publicos directamente. Se añade una
-      capa adaptadora que prueba variantes de firma porque la
-      firma exacta de la RPC no está documentada aquí.
-      → Ajusta ADAPTADOR_BUSQUEDA con la firma real cuando la
-        confirmes, o revisa el console.log "[Contactos] Firma
-        de buscar_usuarios usada: ..." tras la primera búsqueda.
-   2) cargarSolicitudesEnviadasUI() muestra las solicitudes
-      que YO envié y aún están pendientes, con botón cancelar.
-   3) cargarBloqueadosUI() + desbloquearContacto() muestran
-      y gestionan la lista de usuarios bloqueados.
-   4) Las tres funciones nuevas se llaman en inicializar y
-      tras aceptar/rechazar/cancelar/bloquear/desbloquear.
+   CAMBIOS v22 (integración con perfil público):
+   1) abrirPerfil(contactoId) navega a /features/perfil/perfil-publico.html
+      usando el handle del contacto (el perfil público busca por ?u=<handle>).
+   2) Click en el avatar de la tarjeta abre el perfil público.
+      Click en cualquier otra zona de la tarjeta sigue abriendo mensajes.
+   3) Si el contacto no tiene handle público, se muestra un toast y no
+      se navega (no rompe la tarjeta).
+   ============================================================
+   CAMBIOS v21 (integración social) conservados:
+   1) buscarUsuarios usa la RPC buscar_usuarios (capa adaptadora).
+   2) cargarSolicitudesEnviadasUI() muestra solicitudes enviadas.
+   3) cargarBloqueadosUI() + desbloquearContacto() gestionan bloqueados.
    ============================================================ */
 
 (function () {
@@ -39,6 +37,9 @@
         RPC_INVITACION: 'obtener_o_crear_invitacion',
         RPC_RESPONDER_SOLICITUD: 'responder_solicitud_amistad',
         RPC_ELIMINAR_AMISTAD: 'eliminar_amistad',
+
+        PERFIL_PUBLICO_URL: '/features/perfil/perfil-publico.html',
+        MENSAJES_URL: '/features/mensajes/mensajes.html',
 
         PAGE_SIZE: 30,
         MAX_RESULTADOS_BUSQUEDA: 20,
@@ -84,7 +85,6 @@
         busquedaVersion: 0,
         operacionEnCurso: new Set(),
 
-        // Cache del nombre de firma de RPC que funcionó
         firmaBusquedaUsada: null
     };
 
@@ -128,7 +128,6 @@
         ) {
             return window.supabaseClient;
         }
-
         return null;
     }
 
@@ -150,22 +149,16 @@
 
     function obtenerAvatarSeguro(url) {
         if (!url) return '';
-
         var valor = String(url).trim();
-
         if (!valor) return '';
-
         try {
             if (valor.charAt(0) === '/' && valor.indexOf('//') !== 0) {
                 return valor;
             }
-
             var parsed = new URL(valor, window.location.origin);
-
             if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
                 return '';
             }
-
             return parsed.href;
         } catch (error) {
             return '';
@@ -174,19 +167,15 @@
 
     function obtenerInicial(nombre) {
         var texto = String(nombre || 'U').trim();
-
         return texto ? texto.charAt(0).toUpperCase() : 'U';
     }
 
     function debounce(fn, ms) {
         var timer = null;
-
         return function () {
             var contexto = this;
             var args = arguments;
-
             clearTimeout(timer);
-
             timer = setTimeout(function () {
                 fn.apply(contexto, args);
             }, ms);
@@ -203,25 +192,19 @@
 
     function showToast(mensaje, tipo) {
         var toast = document.getElementById('toast');
-
         if (!toast) {
             console.log('[Csariel’s Contactos]', mensaje);
             return;
         }
-
         toast.textContent = String(mensaje || '');
         toast.className = 'toast';
-
         if (tipo) {
             toast.classList.add(tipo);
         }
-
         requestAnimationFrame(function () {
             toast.classList.add('show');
         });
-
         clearTimeout(window.__contactosToastTimer);
-
         window.__contactosToastTimer = setTimeout(function () {
             toast.classList.remove('show');
         }, 3500);
@@ -233,15 +216,12 @@
         if (state.operacionEnCurso.has(clave)) {
             return false;
         }
-
         state.operacionEnCurso.add(clave);
-
         Promise.resolve()
             .then(callback)
             .finally(function () {
                 state.operacionEnCurso.delete(clave);
             });
-
         return true;
     }
 
@@ -251,7 +231,6 @@
 
     function showConfirm(opciones) {
         opciones = opciones || {};
-
         return new Promise(function (resolve) {
             var overlay = document.getElementById('confirmModalOverlay');
             var iconEl = document.getElementById('confirmModalIcon');
@@ -300,13 +279,8 @@
                 resolve(valor);
             }
 
-            function cancelar() {
-                finalizar(false);
-            }
-
-            function confirmar() {
-                finalizar(true);
-            }
+            function cancelar() { finalizar(false); }
+            function confirmar() { finalizar(true); }
 
             function clickFondo(event) {
                 if (event.target === overlay) {
@@ -333,17 +307,13 @@
 
     async function getSession() {
         var ahora = Date.now();
-
         if (state.session && ahora < state.sessionExpira) {
             return state.session;
         }
-
         var client = sb();
-
         if (!client || !client.auth) {
             return null;
         }
-
         try {
             var resultado = await Promise.race([
                 client.auth.getSession(),
@@ -367,7 +337,6 @@
 
             state.session = data && data.session ? data.session : null;
             state.sessionExpira = ahora + 60000;
-
             return state.session;
         } catch (error) {
             console.error('[Contactos] Excepción de sesión:', error);
@@ -377,14 +346,11 @@
 
     async function withRetry(fn, contexto) {
         var ultimoError = null;
-
         for (var intento = 0; intento < CONFIG.RETRY_MAX; intento++) {
             try {
                 var resultado = await fn();
-
                 if (resultado && resultado.error) {
                     var err = resultado.error;
-
                     if (
                         err.code === '23505' ||
                         err.code === '42501' ||
@@ -392,31 +358,24 @@
                     ) {
                         return resultado;
                     }
-
                     throw err;
                 }
-
                 return resultado;
             } catch (error) {
                 ultimoError = error;
-
                 if (intento === CONFIG.RETRY_MAX - 1) {
                     break;
                 }
-
                 var delay = CONFIG.RETRY_BASE_MS * Math.pow(2, intento);
-
                 console.warn(
                     '[Contactos] Reintentando ' + (contexto || 'operación'),
                     error
                 );
-
                 await new Promise(function (resolve) {
                     setTimeout(resolve, delay);
                 });
             }
         }
-
         throw ultimoError;
     }
 
@@ -426,23 +385,18 @@
 
     function getPerfilCacheado(id) {
         var entry = state.perfilCache.get(id);
-
         if (!entry) return null;
-
         if (Date.now() > entry.expira) {
             state.perfilCache.delete(id);
             return null;
         }
-
         state.perfilCache.delete(id);
         state.perfilCache.set(id, entry);
-
         return entry.perfil;
     }
 
     function setPerfilCache(id, perfil) {
         if (!id || !perfil) return;
-
         if (
             !state.perfilCache.has(id) &&
             state.perfilCache.size >= CONFIG.CACHE_MAX_SIZE
@@ -450,7 +404,6 @@
             var primeraClave = state.perfilCache.keys().next().value;
             state.perfilCache.delete(primeraClave);
         }
-
         state.perfilCache.set(id, {
             perfil: perfil,
             expira: Date.now() + CONFIG.PROFILE_CACHE_TTL_MS
@@ -459,21 +412,15 @@
 
     async function cargarPerfilesEnLote(ids) {
         var client = sb();
-
         if (!client || !Array.isArray(ids)) return;
-
         var unicos = Array.from(new Set(ids.filter(Boolean)));
         var faltantes = unicos.filter(function (id) {
             return !getPerfilCacheado(id);
         });
-
         if (!faltantes.length) return;
-
         var CHUNK_SIZE = 100;
-
         for (var i = 0; i < faltantes.length; i += CHUNK_SIZE) {
             var chunk = faltantes.slice(i, i + CHUNK_SIZE);
-
             try {
                 var resultado = await withRetry(function () {
                     return client
@@ -481,7 +428,6 @@
                         .select(CONFIG.CAMPOS_PUBLICOS)
                         .in('id', chunk);
                 }, 'cargar perfiles');
-
                 if (resultado.error) {
                     console.warn(
                         '[Contactos] No se pudieron cargar perfiles:',
@@ -489,7 +435,6 @@
                     );
                     continue;
                 }
-
                 (resultado.data || []).forEach(function (perfil) {
                     setPerfilCache(perfil.id, perfil);
                 });
@@ -505,22 +450,17 @@
 
     async function inicializarContactos() {
         if (state.initialized || state.inicializando) return;
-
         state.inicializando = true;
         configurarEventos();
-
         try {
             var session = await getSession();
-
             if (!session) {
                 mostrarEstadoVacio('◈', 'Inicia sesión para ver tus contactos.');
                 actualizarEstadisticas(0, 0);
                 emitirListo();
                 return;
             }
-
             state.initialized = true;
-
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
             await cargarSolicitudesEnviadasUI();
@@ -533,13 +473,11 @@
 
     function configurarEventos() {
         var searchInput = document.getElementById('searchInput');
-
         if (searchInput) {
             searchInput.addEventListener('input', debounce(function (event) {
                 state.textoBusqueda = normalizarTextoBusqueda(
                     event.target.value
                 ).toLowerCase();
-
                 renderizarContactos();
             }, CONFIG.DEBOUNCE_FILTRO_MS));
         }
@@ -551,30 +489,24 @@
                         item.classList.remove('active');
                     }
                 );
-
                 boton.classList.add('active');
                 state.filtroActual = boton.dataset.filtro || 'todos';
-
                 renderizarContactos();
             });
         });
 
         var modalInput = document.getElementById('searchInputModal');
-
         if (modalInput) {
             modalInput.addEventListener('input', function () {
                 clearTimeout(state.busquedaTimer);
-
                 var texto = normalizarTextoBusqueda(modalInput.value);
                 var versionActual = ++state.busquedaVersion;
-
                 if (texto.length < CONFIG.MIN_CHARS_BUSQUEDA) {
                     mostrarMensajeBusqueda(
                         'Escribe al menos 2 caracteres para buscar'
                     );
                     return;
                 }
-
                 state.busquedaTimer = setTimeout(function () {
                     buscarUsuarios(texto, versionActual);
                 }, CONFIG.DEBOUNCE_BUSQUEDA_MS);
@@ -582,7 +514,6 @@
         }
 
         var resultados = document.getElementById('resultadosBusqueda');
-
         if (resultados) {
             resultados.addEventListener(
                 'click',
@@ -600,7 +531,6 @@
         document.addEventListener('click', function (event) {
             var buscar = document.getElementById('modalBuscarContacto');
             var invitacion = document.getElementById('modalInvitacion');
-
             if (buscar && event.target === buscar) cerrarModalBuscar();
             if (invitacion && event.target === invitacion) {
                 cerrarModalInvitacion();
@@ -610,17 +540,14 @@
         window.addEventListener('beforeunload', cleanup);
 
         var client = sb();
-
         if (client && client.auth && client.auth.onAuthStateChange) {
             client.auth.onAuthStateChange(function (evento, session) {
                 state.session = session || null;
                 state.sessionExpira = Date.now() + 60000;
-
                 if (evento === 'SIGNED_OUT') {
                     state.contactos = [];
                     state.totalContactos = 0;
                     state.idsContactosSet.clear();
-
                     actualizarEstadisticas(0, 0);
                     mostrarEstadoVacio(
                         '◈',
@@ -638,16 +565,13 @@
             state.observerScroll.disconnect();
             state.observerScroll = null;
         }
-
         clearTimeout(state.busquedaTimer);
         clearTimeout(state.filtroTimer);
     }
 
     function manejarClickResultadosBusqueda(event) {
         var boton = event.target.closest('button[data-action="agregar"]');
-
         if (!boton) return;
-
         agregarContacto(boton.dataset.usuarioId || '');
     }
 
@@ -657,14 +581,10 @@
 
     async function cargarContactos(opciones) {
         opciones = opciones || {};
-
         var reset = opciones.reset === true;
-
         if (state.cargando) return;
-
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) {
             mostrarEstadoVacio('◈', 'Inicia sesión para ver tus contactos.');
             actualizarEstadisticas(0, 0);
@@ -697,9 +617,7 @@
                         .eq('usuario_id', session.user.id)
                         .eq('estado', 'activo');
                 }, 'contar contactos');
-
                 if (conteo.error) throw conteo.error;
-
                 state.totalContactos = conteo.count || 0;
             }
 
@@ -710,21 +628,16 @@
                         'id, usuario_id, contacto_id, es_favorito, estado, fecha, created_at'
                     )
                     .eq('usuario_id', session.user.id)
-                    .order('fecha', {
-                        ascending: false,
-                        nullsFirst: false
-                    })
+                    .order('fecha', { ascending: false, nullsFirst: false })
                     .range(desde, hasta);
             }, 'cargar contactos');
 
             if (resultado.error) throw resultado.error;
-
             var pagina = resultado.data || [];
 
             if (!pagina.length) {
                 state.hayMas = false;
                 quitarCargandoMas();
-
                 if (reset) {
                     actualizarEstadisticas(0, 0);
                     mostrarEstadoVacio(
@@ -733,7 +646,6 @@
                     );
                     emitirListo();
                 }
-
                 return;
             }
 
@@ -753,12 +665,8 @@
                     ultima_conexion: null,
                     verificado: false
                 };
-
                 state.idsContactosSet.add(contacto.contacto_id);
-
-                return Object.assign({}, contacto, {
-                    contacto: perfil
-                });
+                return Object.assign({}, contacto, { contacto: perfil });
             });
 
             if (reset) {
@@ -769,7 +677,6 @@
                         return String(item.id);
                     })
                 );
-
                 enriquecidos.forEach(function (item) {
                     if (!idsExistentes.has(String(item.id))) {
                         state.contactos.push(item);
@@ -788,7 +695,6 @@
         } catch (error) {
             console.error('[Contactos] Error cargando contactos:', error);
             quitarCargandoMas();
-
             if (reset) {
                 state.contactos = [];
                 actualizarEstadisticas(0, 0);
@@ -813,7 +719,6 @@
     function normalizarContacto(item) {
         var usuario = item && item.contacto ? item.contacto : {};
         var nombre = usuario.nombre || usuario.handle || 'Usuario';
-
         return {
             id: item && item.id != null ? item.id : null,
             contacto_id: item ? item.contacto_id : null,
@@ -836,13 +741,11 @@
     async function cargarSolicitudesPendientesUI() {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) return;
 
         var contenedor = document.getElementById('solicitudesPendientesLista');
         var seccion = document.getElementById('solicitudesPendientesSection');
         var contador = document.getElementById('solicitudesContador');
-
         if (!contenedor || !seccion || !contador) return;
 
         try {
@@ -853,7 +756,6 @@
                 .eq('estado', 'pendiente');
 
             if (resultado.error) throw resultado.error;
-
             var solicitudes = resultado.data || [];
 
             if (!solicitudes.length) {
@@ -864,7 +766,6 @@
             var idsRemitentes = solicitudes.map(function (solicitud) {
                 return solicitud.usuario_id;
             });
-
             await cargarPerfilesEnLote(idsRemitentes);
 
             seccion.style.display = 'block';
@@ -876,7 +777,6 @@
                 var handle = perfil.handle
                     ? '@' + String(perfil.handle).replace(/^@/, '')
                     : '';
-
                 var avatarUrl = obtenerAvatarSeguro(perfil.avatar_url);
                 var avatar = avatarUrl
                     ? '<img src="' + escapeHtml(avatarUrl) +
@@ -927,10 +827,7 @@
                 }
             );
         } catch (error) {
-            console.error(
-                '[Contactos] Error cargando solicitudes:',
-                error
-            );
+            console.error('[Contactos] Error cargando solicitudes:', error);
             seccion.style.display = 'none';
         }
     }
@@ -938,22 +835,17 @@
     window.cargarSolicitudesPendientesUI = cargarSolicitudesPendientesUI;
 
     /* ============================================================
-       SOLICITUDES ENVIADAS (nueva en v21)
-       Consulta contactos donde usuario_id = yo AND estado = 'pendiente'
-       (es decir, filas creadas por mí al enviar solicitud). El
-       destinatario real es contacto_id.
+       SOLICITUDES ENVIADAS
        ============================================================ */
 
     async function cargarSolicitudesEnviadasUI() {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) return;
 
         var contenedor = document.getElementById('solicitudesEnviadasLista');
         var seccion = document.getElementById('solicitudesEnviadasSection');
         var contador = document.getElementById('solicitudesEnviadasContador');
-
         if (!contenedor || !seccion || !contador) return;
 
         try {
@@ -964,7 +856,6 @@
                 .eq('estado', 'pendiente');
 
             if (resultado.error) throw resultado.error;
-
             var solicitudes = resultado.data || [];
 
             if (!solicitudes.length) {
@@ -975,7 +866,6 @@
             var idsDestinatarios = solicitudes.map(function (solicitud) {
                 return solicitud.contacto_id;
             });
-
             await cargarPerfilesEnLote(idsDestinatarios);
 
             seccion.style.display = 'block';
@@ -987,7 +877,6 @@
                 var handle = perfil.handle
                     ? '@' + String(perfil.handle).replace(/^@/, '')
                     : '';
-
                 var avatarUrl = obtenerAvatarSeguro(perfil.avatar_url);
                 var avatar = avatarUrl
                     ? '<img src="' + escapeHtml(avatarUrl) +
@@ -1038,12 +927,10 @@
     async function cargarSugerenciasUI() {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) return;
 
         var seccion = document.getElementById('sugerenciasSection');
         var contenedor = document.getElementById('sugerenciasLista');
-
         if (!seccion || !contenedor) return;
 
         try {
@@ -1060,7 +947,6 @@
             }
 
             var idsExcluir = new Set([session.user.id]);
-
             (existentesResultado.data || []).forEach(function (item) {
                 if (item.usuario_id) idsExcluir.add(item.usuario_id);
                 if (item.contacto_id) idsExcluir.add(item.contacto_id);
@@ -1071,7 +957,6 @@
                     .from(CONFIG.BLOQUEOS_TABLE)
                     .select('bloqueado_id')
                     .eq('usuario_id', session.user.id);
-
                 (bloqueosResultado.data || []).forEach(function (bloqueo) {
                     if (bloqueo.bloqueado_id) {
                         idsExcluir.add(bloqueo.bloqueado_id);
@@ -1085,7 +970,6 @@
             }
 
             var idsExcluirArray = Array.from(idsExcluir);
-
             if (!idsExcluirArray.length) {
                 seccion.style.display = 'none';
                 return;
@@ -1099,7 +983,6 @@
                 .limit(CONFIG.MAX_SUGERENCIAS);
 
             if (perfilesResultado.error) throw perfilesResultado.error;
-
             var perfiles = perfilesResultado.data || [];
 
             if (!perfiles.length) {
@@ -1118,13 +1001,11 @@
                 var handle = usuario.handle
                     ? '@' + String(usuario.handle).replace(/^@/, '')
                     : '';
-
                 var avatarUrl = obtenerAvatarSeguro(usuario.avatar_url);
                 var avatar = avatarUrl
                     ? '<img src="' + escapeHtml(avatarUrl) +
                       '" alt="" loading="lazy" onerror="this.remove()">'
                     : escapeHtml(obtenerInicial(nombre));
-
                 var estado = usuario.online === true
                     ? '<span class="estado online">● En línea</span>'
                     : '<span class="estado">Desconectado</span>';
@@ -1173,21 +1054,17 @@
     window.cargarSugerenciasUI = cargarSugerenciasUI;
 
     /* ============================================================
-       BLOQUEADOS (nueva en v21)
-       Muestra los usuarios bloqueados por el usuario actual,
-       permite desbloquear (borra la fila de bloqueos).
+       BLOQUEADOS
        ============================================================ */
 
     async function cargarBloqueadosUI() {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) return;
 
         var seccion = document.getElementById('bloqueadosSection');
         var contenedor = document.getElementById('bloqueadosLista');
         var contador = document.getElementById('bloqueadosContador');
-
         if (!seccion || !contenedor || !contador) return;
 
         try {
@@ -1198,7 +1075,6 @@
                 .order('created_at', { ascending: false });
 
             if (resultado.error) throw resultado.error;
-
             var bloqueos = resultado.data || [];
 
             if (!bloqueos.length) {
@@ -1218,7 +1094,6 @@
                 var handle = perfil.handle
                     ? '@' + String(perfil.handle).replace(/^@/, '')
                     : '';
-
                 var avatarUrl = obtenerAvatarSeguro(perfil.avatar_url);
                 var avatar = avatarUrl
                     ? '<img src="' + escapeHtml(avatarUrl) +
@@ -1265,7 +1140,6 @@
 
     function renderizarContactos() {
         var lista = document.getElementById('contactosList');
-
         if (!lista) return;
 
         var listaContactos = state.contactos.map(normalizarContacto);
@@ -1275,13 +1149,11 @@
                 return contacto.online;
             });
         }
-
         if (state.filtroActual === 'favoritos') {
             listaContactos = listaContactos.filter(function (contacto) {
                 return contacto.es_favorito;
             });
         }
-
         if (state.filtroActual === 'recientes') {
             listaContactos = listaContactos
                 .filter(function (contacto) {
@@ -1293,10 +1165,8 @@
                 })
                 .slice(0, 10);
         }
-
         if (state.textoBusqueda) {
             var q = state.textoBusqueda;
-
             listaContactos = listaContactos.filter(function (contacto) {
                 return contacto.nombre.toLowerCase().includes(q) ||
                     contacto.handle.toLowerCase().includes(q);
@@ -1311,25 +1181,20 @@
                     : state.filtroActual === 'favoritos'
                         ? 'Todavía no tienes favoritos.'
                         : 'Aún no tienes contactos agregados.';
-
             mostrarEstadoVacio('◈', mensaje);
             return;
         }
 
         lista.setAttribute('aria-busy', 'false');
-
         lista.innerHTML = listaContactos.map(renderizarTarjeta).join('') +
             (state.hayMas && !state.textoBusqueda
                 ? '<div id="cargandoMasSentinel" class="contactos-sentinel"></div>'
                 : '');
-
         configurarScrollInfinito();
     }
 
     /* ============================================================
        RENDERIZAR TARJETA
-       Sin estilos inline.
-       El CSS de la página controla toda la presentación.
        ============================================================ */
 
     function renderizarTarjeta(contacto) {
@@ -1365,7 +1230,6 @@
         var contactoId = escapeHtml(contacto.contacto_id);
 
         var favoritoClase = contacto.es_favorito ? 'active' : '';
-
         var favoritoIcono = contacto.es_favorito
             ? SVG_ICONS.favorito
             : SVG_ICONS.favoritoOutline;
@@ -1466,19 +1330,21 @@
 
     /* ============================================================
        DELEGACIÓN DE EVENTOS DE TARJETAS
+       ============================================================
+       Cambio v22:
+       - Click en .contacto-avatar → abrirPerfil() (perfil público).
+       - Click en [data-accion] → comportamiento existente.
+       - Click en cualquier otra zona → abrirMensaje() (como antes).
        ============================================================ */
 
     function configurarEventosTarjetas() {
         var lista = document.getElementById('contactosList');
-
         if (!lista || lista.dataset.eventosCsariel === '1') return;
-
         lista.dataset.eventosCsariel = '1';
 
         lista.addEventListener('click', function (event) {
             var boton = event.target.closest('[data-accion]');
             var tarjeta = event.target.closest('.contacto-card');
-
             if (!tarjeta) return;
 
             var contactoId = tarjeta.getAttribute('data-contacto-id');
@@ -1497,7 +1363,6 @@
                     var item = state.contactos.find(function (contacto) {
                         return String(contacto.id) === String(filaId);
                     });
-
                     if (item) {
                         toggleFavorito(filaId, item.es_favorito !== true);
                     }
@@ -1513,6 +1378,13 @@
                 return;
             }
 
+            // v22: click en el avatar → perfil público
+            if (event.target.closest('.contacto-avatar')) {
+                abrirPerfil(contactoId);
+                return;
+            }
+
+            // Click en el resto de la tarjeta → mensajes (comportamiento anterior)
             abrirMensaje(contactoId);
         });
 
@@ -1522,7 +1394,6 @@
                 event.target.classList.contains('contacto-card')
             ) {
                 event.preventDefault();
-
                 abrirMensaje(
                     event.target.getAttribute('data-contacto-id')
                 );
@@ -1535,9 +1406,7 @@
             state.observerScroll.disconnect();
             state.observerScroll = null;
         }
-
         var sentinel = document.getElementById('cargandoMasSentinel');
-
         if (!sentinel || !('IntersectionObserver' in window)) return;
 
         state.observerScroll = new IntersectionObserver(
@@ -1559,16 +1428,13 @@
     }
 
     /* ============================================================
-       CARGA VISUAL · SKELETON PLANO
+       CARGA VISUAL
        ============================================================ */
 
     function mostrarCargando() {
         var lista = document.getElementById('contactosList');
-
         if (!lista) return;
-
         lista.setAttribute('aria-busy', 'true');
-
         lista.innerHTML = Array(4).fill('').map(function () {
             return `
                 <div class="contacto-card skeleton">
@@ -1584,48 +1450,35 @@
 
     function mostrarCargandoMas() {
         var lista = document.getElementById('contactosList');
-
         if (!lista || document.getElementById('cargandoMasIndicador')) return;
-
         var div = document.createElement('div');
-
         div.id = 'cargandoMasIndicador';
         div.className = 'contactos-loading-more';
         div.textContent = 'Cargando más contactos…';
-
         lista.appendChild(div);
     }
 
     function quitarCargandoMas() {
         var elemento = document.getElementById('cargandoMasIndicador');
-
         if (elemento) elemento.remove();
-
         var lista = document.getElementById('contactosList');
-
         if (lista) lista.setAttribute('aria-busy', 'false');
     }
 
     /* ============================================================
-       ESTADO VACÍO · DISEÑO PLANO
-       Sin bordes, fondos ni sombras inline.
+       ESTADO VACÍO
        ============================================================ */
 
     function mostrarEstadoVacio(icono, mensaje) {
         var lista = document.getElementById('contactosList');
-
         if (!lista) return;
-
         lista.setAttribute('aria-busy', 'false');
-
         lista.innerHTML = `
             <div class="empty-state">
                 <div class="icon">
                     ${escapeHtml(icono)}
                 </div>
-
                 <h3>${escapeHtml(mensaje)}</h3>
-
                 ${state.contactos.length === 0
                     ? '<button type="button" class="btn-accion" data-contactos-action="agregar">' +
                       SVG_ICONS.agregarAmigo +
@@ -1633,11 +1486,9 @@
                     : ''}
             </div>
         `;
-
         var boton = lista.querySelector(
             '[data-contactos-action="agregar"]'
         );
-
         if (boton) {
             boton.addEventListener(
                 'click',
@@ -1651,23 +1502,18 @@
         var activos = state.contactos.filter(function (contacto) {
             return (contacto.estado || 'activo') === 'activo';
         }).length;
-
         var total = state.totalContactos;
-
         if (total < activos) total = activos;
-
         var online = state.contactos.filter(function (contacto) {
             return contacto.contacto && contacto.contacto.online === true &&
                 (contacto.estado || 'activo') === 'activo';
         }).length;
-
         actualizarEstadisticas(total, online);
     }
 
     function actualizarEstadisticas(total, online) {
         var totalEl = document.getElementById('totalContactos');
         var onlineEl = document.getElementById('onlineContactos');
-
         if (totalEl) totalEl.textContent = String(total || 0);
         if (onlineEl) onlineEl.textContent = String(online || 0);
     }
@@ -1678,9 +1524,7 @@
 
     function abrirAgregarContacto() {
         var modal = document.getElementById('modalBuscarContacto');
-
         if (!modal) return;
-
         modal.classList.add('show', 'active');
         modal.setAttribute('aria-hidden', 'false');
 
@@ -1690,7 +1534,6 @@
         if (input) {
             input.value = '';
             clearTimeout(state.busquedaTimer);
-
             setTimeout(function () {
                 input.focus();
             }, 100);
@@ -1708,9 +1551,7 @@
 
     function cerrarModalBuscar() {
         var modal = document.getElementById('modalBuscarContacto');
-
         if (!modal) return;
-
         modal.classList.remove('show', 'active');
         modal.setAttribute('aria-hidden', 'true');
         clearTimeout(state.busquedaTimer);
@@ -1720,9 +1561,7 @@
 
     function cerrarModalInvitacion() {
         var modal = document.getElementById('modalInvitacion');
-
         if (!modal) return;
-
         modal.classList.remove('show', 'active');
         modal.setAttribute('aria-hidden', 'true');
     }
@@ -1730,16 +1569,7 @@
     window.cerrarModalInvitacion = cerrarModalInvitacion;
 
     /* ============================================================
-       RPC buscar_usuarios — capa adaptadora
-       ------------------------------------------------------------
-       No tenemos la firma exacta de la RPC documentada aquí.
-       En vez de adivinar una sola, probamos variantes en orden
-       y recordamos la que funcionó en state.firmaBusquedaUsada
-       para las siguientes búsquedas.
-
-       TODO: Cuando confirmes la firma real (por ejemplo con
-         SELECT pg_get_functiondef('public.buscar_usuarios'::regprocedure);
-       deja SOLO la variante correcta y elimina las otras dos.
+       RPC buscar_usuarios — capa adaptadora (v21 conservada)
        ============================================================ */
 
     var ADAPTADOR_BUSQUEDA = [
@@ -1765,8 +1595,6 @@
 
     async function invocarBuscarUsuarios(client, termino, limite) {
         var orden = ADAPTADOR_BUSQUEDA.slice();
-
-        // Si ya sabemos qué firma funciona, ponla primero.
         if (state.firmaBusquedaUsada) {
             orden.sort(function (a, b) {
                 if (a.etiqueta === state.firmaBusquedaUsada) return -1;
@@ -1776,7 +1604,6 @@
         }
 
         var ultimoError = null;
-
         for (var i = 0; i < orden.length; i++) {
             var variante = orden[i];
             var resultado = await client.rpc(
@@ -1797,12 +1624,10 @@
                 return resultado;
             }
 
-            // Si el error es de "función/argumentos no existen", probar siguiente.
-            // Si es otro tipo (permisos, RLS, timeout), propagarlo ya.
             var mensaje = String(resultado.error.message || '');
             var esFirmaIncorrecta =
                 /does not exist|no existe|could not find|argument|signature|invalid parameter/i.test(mensaje) ||
-                resultado.error.code === '42883' || // undefined_function
+                resultado.error.code === '42883' ||
                 resultado.error.code === 'PGRST202';
 
             if (!esFirmaIncorrecta) {
@@ -1823,7 +1648,6 @@
     async function buscarUsuarios(texto, version) {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) {
             mostrarMensajeBusqueda('Inicia sesión para buscar contactos.');
             return;
@@ -1850,20 +1674,17 @@
             if (version !== state.busquedaVersion) return;
             if (resultado.error) throw resultado.error;
 
-            // La RPC puede devolver array, o { data: [...] }, o similar.
             var crudo = resultado.data;
             var lista = Array.isArray(crudo)
                 ? crudo
                 : (crudo && Array.isArray(crudo.data) ? crudo.data : []);
 
             var mapa = new Map();
-
             lista.forEach(function (usuario) {
                 if (!usuario || !usuario.id) return;
                 if (usuario.id === session.user.id) return;
                 if (!mapa.has(usuario.id)) {
                     mapa.set(usuario.id, usuario);
-                    // Cachear solo si tiene los campos mínimos
                     if (
                         usuario.nombre !== undefined ||
                         usuario.handle !== undefined
@@ -1881,10 +1702,6 @@
                 return;
             }
 
-            // Si la RPC no filtra bloqueos (según documentación lo
-            // hace, pero por seguridad del cliente no filtramos aquí
-            // para evitar bloquear resultados correctos por error).
-            // Excluimos solo los que ya son contacto:
             var disponibles = usuarios.filter(function (usuario) {
                 return !state.idsContactosSet.has(usuario.id);
             });
@@ -1905,23 +1722,18 @@
 
     /* ============================================================
        RESULTADOS DE BÚSQUEDA
-       Sin estilos inline.
        ============================================================ */
 
     function renderizarResultadosBusqueda(usuarios) {
         var contenedor = document.getElementById('resultadosBusqueda');
-
         if (!contenedor) return;
 
         contenedor.innerHTML = usuarios.map(function (usuario) {
             var nombre = usuario.nombre || usuario.handle || 'Usuario';
-
             var handle = usuario.handle
                 ? '@' + String(usuario.handle).replace(/^@/, '')
                 : '';
-
             var avatarUrl = obtenerAvatarSeguro(usuario.avatar_url);
-
             var avatar = avatarUrl
                 ? '<img class="resultado-avatar-img" src="' +
                   escapeHtml(avatarUrl) +
@@ -1934,7 +1746,6 @@
             return `
                 <div class="resultado-usuario">
                     ${avatar}
-
                     <div class="resultado-info">
                         <div class="resultado-nombre">
                             ${escapeHtml(nombre)}
@@ -1942,16 +1753,13 @@
                                 ? '<span class="verified">✓</span>'
                                 : ''}
                         </div>
-
                         <div class="resultado-handle">
                             ${escapeHtml(handle)}
                         </div>
-
                         <div class="resultado-estado ${usuario.online ? 'online' : 'offline'}">
                             ${usuario.online ? '● En línea' : 'Desconectado'}
                         </div>
                     </div>
-
                     <button type="button" class="btn-agregar"
                         data-action="agregar"
                         data-usuario-id="${escapeHtml(usuario.id)}">
@@ -1964,9 +1772,7 @@
 
     function mostrarMensajeBusqueda(mensaje) {
         var contenedor = document.getElementById('resultadosBusqueda');
-
         if (!contenedor) return;
-
         contenedor.innerHTML =
             '<div class="busqueda-mensaje">' +
             escapeHtml(mensaje) +
@@ -1976,28 +1782,22 @@
     async function agregarContacto(contactoId) {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) {
             showToast('Inicia sesión para agregar contactos.', 'error');
             return;
         }
-
         if (!contactoId) return;
-
         if (contactoId === session.user.id) {
             showToast('No puedes agregarte a ti mismo.', 'warning');
             return;
         }
-
         if (state.idsContactosSet.has(contactoId)) {
             showToast('Este usuario ya está en tus contactos.', 'warning');
             return;
         }
 
         var clave = 'agregar:' + contactoId;
-
         if (state.operacionEnCurso.has(clave)) return;
-
         state.operacionEnCurso.add(clave);
 
         try {
@@ -2018,7 +1818,6 @@
                     );
                     return;
                 }
-
                 throw resultado.error;
             }
 
@@ -2026,7 +1825,6 @@
 
             var input = document.getElementById('searchInputModal');
             if (input) input.value = '';
-
             var resultados = document.getElementById('resultadosBusqueda');
             if (resultados) resultados.innerHTML = '';
 
@@ -2053,39 +1851,28 @@
     async function aceptarSolicitud(contactoRowId, otroUsuarioId) {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) return;
 
         var fila = Number(contactoRowId);
-
         if (!Number.isFinite(fila) || fila <= 0) {
             showToast('El identificador de la solicitud no es válido.', 'error');
             return;
         }
 
         var clave = 'aceptar:' + contactoRowId;
-
         if (state.operacionEnCurso.has(clave)) return;
-
         state.operacionEnCurso.add(clave);
 
         try {
             var resultado = await client.rpc(
                 CONFIG.RPC_RESPONDER_SOLICITUD,
-                {
-                    p_fila_id: fila,
-                    p_aceptar: true
-                }
+                { p_fila_id: fila, p_aceptar: true }
             );
-
             if (resultado.error) throw resultado.error;
-
             if (otroUsuarioId) {
                 state.idsContactosSet.add(otroUsuarioId);
             }
-
             showToast('Amistad aceptada.', 'success');
-
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
             await cargarSolicitudesEnviadasUI();
@@ -2104,35 +1891,25 @@
     async function rechazarSolicitud(contactoRowId) {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) return;
 
         var fila = Number(contactoRowId);
-
         if (!Number.isFinite(fila) || fila <= 0) {
             showToast('El identificador de la solicitud no es válido.', 'error');
             return;
         }
 
         var clave = 'rechazar:' + contactoRowId;
-
         if (state.operacionEnCurso.has(clave)) return;
-
         state.operacionEnCurso.add(clave);
 
         try {
             var resultado = await client.rpc(
                 CONFIG.RPC_RESPONDER_SOLICITUD,
-                {
-                    p_fila_id: fila,
-                    p_aceptar: false
-                }
+                { p_fila_id: fila, p_aceptar: false }
             );
-
             if (resultado.error) throw resultado.error;
-
             showToast('Solicitud rechazada.', 'success');
-
             await cargarSolicitudesPendientesUI();
             await cargarContactos({ reset: true });
             await cargarSolicitudesEnviadasUI();
@@ -2150,12 +1927,10 @@
     async function cancelarSolicitudEnviada(filaId) {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) {
             showToast('Inicia sesión para continuar.', 'error');
             return;
         }
-
         if (!filaId) return;
 
         var confirmado = await showConfirm({
@@ -2166,13 +1941,10 @@
             cancelText: 'Volver',
             danger: true
         });
-
         if (!confirmado) return;
 
         var clave = 'cancelar:' + filaId;
-
         if (state.operacionEnCurso.has(clave)) return;
-
         state.operacionEnCurso.add(clave);
 
         try {
@@ -2182,20 +1954,14 @@
                 .eq('id', filaId)
                 .eq('usuario_id', session.user.id)
                 .eq('estado', 'pendiente');
-
             if (resultado.error) throw resultado.error;
-
             showToast('Solicitud cancelada.', 'success');
-
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
             await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
         } catch (error) {
-            console.error(
-                '[Contactos] Error cancelando solicitud:',
-                error
-            );
+            console.error('[Contactos] Error cancelando solicitud:', error);
             showToast('No se pudo cancelar la solicitud.', 'error');
         } finally {
             state.operacionEnCurso.delete(clave);
@@ -2211,27 +1977,22 @@
     async function toggleFavorito(contactoRowId, nuevoValor) {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) {
             showToast('Inicia sesión para continuar.', 'error');
             return;
         }
-
         if (contactoRowId == null || contactoRowId === '') return;
 
         var clave = 'favorito:' + String(contactoRowId);
-
         if (state.operacionEnCurso.has(clave)) return;
 
         var item = state.contactos.find(function (contacto) {
             return String(contacto.id) === String(contactoRowId);
         });
-
         if (!item) return;
 
         var valorAnterior = item.es_favorito;
         var valorNuevo = nuevoValor === true;
-
         state.operacionEnCurso.add(clave);
 
         item.es_favorito = valorNuevo;
@@ -2245,22 +2006,16 @@
                     .eq('id', contactoRowId)
                     .eq('usuario_id', session.user.id);
             }, 'actualizar favorito');
-
             if (resultado.error) throw resultado.error;
-
             showToast(
                 valorNuevo ? 'Agregado a favoritos.' : 'Quitado de favoritos.',
                 'success'
             );
-
             renderizarContactos();
         } catch (error) {
             console.error('[Contactos] Error actualizando favorito:', error);
-
             item.es_favorito = valorAnterior;
-
             renderizarContactos();
-
             showToast('No se pudo actualizar el favorito.', 'error');
         } finally {
             state.operacionEnCurso.delete(clave);
@@ -2276,12 +2031,10 @@
     async function eliminarContacto(contactoIdDelContacto) {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) {
             showToast('Inicia sesión para continuar.', 'error');
             return;
         }
-
         if (!contactoIdDelContacto) return;
 
         var confirmado = await showConfirm({
@@ -2293,13 +2046,10 @@
             cancelText: 'Cancelar',
             danger: true
         });
-
         if (!confirmado) return;
 
         var clave = 'eliminar:' + contactoIdDelContacto;
-
         if (state.operacionEnCurso.has(clave)) return;
-
         state.operacionEnCurso.add(clave);
 
         var backup = state.contactos.slice();
@@ -2310,39 +2060,29 @@
             return String(contacto.contacto_id) !==
                 String(contactoIdDelContacto);
         });
-
         state.idsContactosSet.delete(contactoIdDelContacto);
         state.totalContactos = Math.max(0, state.totalContactos - 1);
-
         renderizarContactos();
         recalcularEstadisticas();
 
         try {
             var resultado = await client.rpc(
                 CONFIG.RPC_ELIMINAR_AMISTAD,
-                {
-                    p_contacto_id: contactoIdDelContacto
-                }
+                { p_contacto_id: contactoIdDelContacto }
             );
-
             if (resultado.error) throw resultado.error;
-
             showToast('Contacto eliminado.', 'success');
-
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
             await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
         } catch (error) {
             console.error('[Contactos] Error eliminando contacto:', error);
-
             state.contactos = backup;
             state.idsContactosSet = backupSet;
             state.totalContactos = backupTotal;
-
             renderizarContactos();
             recalcularEstadisticas();
-
             showToast('No se pudo eliminar el contacto.', 'error');
         } finally {
             state.operacionEnCurso.delete(clave);
@@ -2358,14 +2098,11 @@
     async function bloquearContacto(contactoId) {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) {
             showToast('Inicia sesión para continuar.', 'error');
             return;
         }
-
         if (!contactoId) return;
-
         if (contactoId === session.user.id) {
             showToast('No puedes bloquearte a ti mismo.', 'warning');
             return;
@@ -2380,13 +2117,10 @@
             cancelText: 'Cancelar',
             danger: true
         });
-
         if (!confirmado) return;
 
         var clave = 'bloquear:' + contactoId;
-
         if (state.operacionEnCurso.has(clave)) return;
-
         state.operacionEnCurso.add(clave);
 
         var backup = state.contactos.slice();
@@ -2396,10 +2130,8 @@
         state.contactos = state.contactos.filter(function (contacto) {
             return String(contacto.contacto_id) !== String(contactoId);
         });
-
         state.idsContactosSet.delete(contactoId);
         state.totalContactos = Math.max(0, state.totalContactos - 1);
-
         renderizarContactos();
         recalcularEstadisticas();
 
@@ -2409,11 +2141,8 @@
                     p_contacto_id: contactoId
                 });
             }, 'bloquear contacto');
-
             if (resultado.error) throw resultado.error;
-
             showToast('Usuario bloqueado.', 'success');
-
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
             await cargarSolicitudesEnviadasUI();
@@ -2421,14 +2150,11 @@
             await cargarBloqueadosUI();
         } catch (error) {
             console.error('[Contactos] Error bloqueando contacto:', error);
-
             state.contactos = backup;
             state.idsContactosSet = backupSet;
             state.totalContactos = backupTotal;
-
             renderizarContactos();
             recalcularEstadisticas();
-
             showToast('No se pudo bloquear al usuario.', 'error');
         } finally {
             state.operacionEnCurso.delete(clave);
@@ -2438,21 +2164,16 @@
     window.bloquearContacto = bloquearContacto;
 
     /* ============================================================
-       DESBLOQUEAR CONTACTO (nueva en v21)
-       Borra la fila de bloqueos. No usa RPC: la tabla bloqueos
-       tiene RLS por usuario_id, así que un DELETE directo es
-       equivalente al endpoint DELETE /bloqueos/:id del backend.
+       DESBLOQUEAR CONTACTO
        ============================================================ */
 
     async function desbloquearContacto(bloqueadoId) {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) {
             showToast('Inicia sesión para continuar.', 'error');
             return;
         }
-
         if (!bloqueadoId) return;
 
         var confirmado = await showConfirm({
@@ -2464,13 +2185,10 @@
             cancelText: 'Cancelar',
             danger: false
         });
-
         if (!confirmado) return;
 
         var clave = 'desbloquear:' + bloqueadoId;
-
         if (state.operacionEnCurso.has(clave)) return;
-
         state.operacionEnCurso.add(clave);
 
         try {
@@ -2481,11 +2199,8 @@
                     .eq('usuario_id', session.user.id)
                     .eq('bloqueado_id', bloqueadoId);
             }, 'desbloquear contacto');
-
             if (resultado.error) throw resultado.error;
-
             showToast('Usuario desbloqueado.', 'success');
-
             await cargarBloqueadosUI();
             await cargarSugerenciasUI();
             await cargarSolicitudesPendientesUI();
@@ -2501,14 +2216,14 @@
     window.desbloquearContacto = desbloquearContacto;
 
     /* ============================================================
-       MENSAJES Y LLAMADAS
+       MENSAJES, LLAMADAS Y PERFIL
        ============================================================ */
 
     function llamarContacto(contactoId) {
         if (!contactoId) return;
-
         window.location.href =
-            '/features/mensajes/mensajes.html?usuario=' +
+            CONFIG.MENSAJES_URL +
+            '?usuario=' +
             encodeURIComponent(contactoId) +
             '&accion=llamada';
     }
@@ -2517,13 +2232,47 @@
 
     function abrirMensaje(contactoId) {
         if (!contactoId) return;
-
         window.location.href =
-            '/features/mensajes/mensajes.html?usuario=' +
+            CONFIG.MENSAJES_URL +
+            '?usuario=' +
             encodeURIComponent(contactoId);
     }
 
     window.abrirMensaje = abrirMensaje;
+
+    /* ============================================================
+       ABRIR PERFIL PÚBLICO (nuevo en v22)
+       ------------------------------------------------------------
+       El perfil público vive en /features/perfil/perfil-publico.html
+       y busca por handle (?u=<handle>), no por UUID.
+       Se navega con el handle del contacto ya cacheado en state.contactos.
+       Si no hay handle disponible, se muestra un toast y no se navega.
+       ============================================================ */
+
+    function abrirPerfil(contactoId) {
+        if (!contactoId) return;
+
+        var item = state.contactos.find(function (c) {
+            return String(c.contacto_id) === String(contactoId);
+        });
+
+        var handle = item && item.contacto ? item.contacto.handle : '';
+
+        if (!handle) {
+            showToast(
+                'Este contacto aún no tiene perfil público disponible.',
+                'warning'
+            );
+            return;
+        }
+
+        window.location.href =
+            CONFIG.PERFIL_PUBLICO_URL +
+            '?u=' +
+            encodeURIComponent(handle);
+    }
+
+    window.abrirPerfil = abrirPerfil;
 
     /* ============================================================
        INVITACIONES
@@ -2532,7 +2281,6 @@
     async function invitarContacto() {
         var client = sb();
         var session = await getSession();
-
         if (!client || !session) {
             showToast('Inicia sesión para invitar contactos.', 'error');
             return;
@@ -2545,7 +2293,6 @@
             modal.classList.add('show', 'active');
             modal.setAttribute('aria-hidden', 'false');
         }
-
         if (codigoElemento) {
             codigoElemento.textContent = 'Generando código…';
         }
@@ -2554,7 +2301,6 @@
             var resultado = await withRetry(function () {
                 return client.rpc(CONFIG.RPC_INVITACION);
             }, 'generar invitación');
-
             if (resultado.error) throw resultado.error;
 
             var invitacion = Array.isArray(resultado.data)
@@ -2572,11 +2318,9 @@
             }
         } catch (error) {
             console.error('[Contactos] Error generando invitación:', error);
-
             if (codigoElemento) {
                 codigoElemento.textContent = 'ERROR';
             }
-
             showToast('No se pudo generar la invitación.', 'error');
         }
     }
@@ -2585,16 +2329,10 @@
 
     async function copiarCodigoInvitacion() {
         var elemento = document.getElementById('codigoInvitacion');
-
         if (!elemento) return;
 
         var codigo = elemento.textContent.trim();
-
-        if (
-            !codigo ||
-            codigo === 'Generando código…' ||
-            codigo === 'ERROR'
-        ) {
+        if (!codigo || codigo === 'Generando código…' || codigo === 'ERROR') {
             return;
         }
 
@@ -2606,24 +2344,18 @@
                 await navigator.clipboard.writeText(codigo);
             } else {
                 var temporal = document.createElement('textarea');
-
                 temporal.value = codigo;
                 temporal.setAttribute('readonly', '');
                 temporal.style.position = 'fixed';
                 temporal.style.opacity = '0';
-
                 document.body.appendChild(temporal);
                 temporal.select();
-
                 var correcto = document.execCommand('copy');
-
                 temporal.remove();
-
                 if (!correcto) {
                     throw new Error('No se pudo copiar el código.');
                 }
             }
-
             showToast('Código copiado.', 'success');
         } catch (error) {
             console.error('[Contactos] Error copiando código:', error);
@@ -2639,31 +2371,23 @@
 
     function esperarSupabase() {
         var intentos = 0;
-
         var timer = setInterval(async function () {
             intentos++;
-
             if (sb()) {
                 clearInterval(timer);
-
                 configurarEventosTarjetas();
                 await inicializarContactos();
-
                 return;
             }
-
             if (intentos >= 100) {
                 clearInterval(timer);
-
                 console.error(
                     '[Contactos] Supabase no estuvo disponible a tiempo.'
                 );
-
                 mostrarEstadoVacio(
                     '⚠️',
                     'No se pudo inicializar la conexión. Recarga la página.'
                 );
-
                 emitirListo();
             }
         }, 100);
