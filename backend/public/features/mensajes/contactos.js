@@ -1,10 +1,10 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.5
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.6
    ============================================================
-   - Bug fix: Se evita la duplicación de solicitudes pendientes en 
-     la lista general. Las pendientes solo se muestran arriba.
-   - UI Mega Pro: Botones estilizados con gradientes Web3.
-   - Accesibilidad: Soporte para teclado (Enter/Espacio) en perfiles.
+   - Bug fix: La barra de búsqueda principal ahora busca en 
+     toda la red (Global), no solo en los contactos locales.
+   - Bug fix: Se fuerza la carga del nombre y avatar real en las 
+     solicitudes enviadas para evitar que diga "Usuario".
    ============================================================ */
 
 (function () {
@@ -236,6 +236,7 @@
     function configurarEventos() {
         var searchInput = document.getElementById('searchInput');
         if (searchInput) {
+            // FIX: Ahora el buscador principal llama a la búsqueda GLOBAL
             searchInput.addEventListener('input', debounce(function (event) {
                 var texto = normalizarTextoBusqueda(event.target.value);
                 state.textoBusqueda = texto.toLowerCase();
@@ -341,13 +342,11 @@
             var hasta = desde + CONFIG.PAGE_SIZE - 1;
 
             if (reset) {
-                // Contamos solo los activos para las estadísticas
                 var conteo = await withRetry(function () { return client.from(CONFIG.CONTACTOS_TABLE).select('id', { count: 'exact', head: true }).eq('usuario_id', session.user.id).eq('estado', 'activo'); }, 'contar contactos');
                 if (!conteo.error) state.totalContactos = conteo.count || 0;
             }
 
-            // FIX: Filtramos explícitamente para traer SOLO los activos a la lista general.
-            // Así evitamos que las solicitudes pendientes se dupliquen abajo.
+            // Filtramos solo los activos para la lista general
             var resultado = await withRetry(function () {
                 return client.from(CONFIG.CONTACTOS_TABLE)
                     .select('id, usuario_id, contacto_id, es_favorito, estado, fecha, created_at')
@@ -463,22 +462,24 @@
             var solicitudes = res.data || [];
             if (!solicitudes.length) { seccion.style.display = 'none'; return; }
 
+            // Forzamos la carga de los perfiles
             await cargarPerfilesEnLote(solicitudes.map(function (s) { return s.contacto_id; }));
             
             seccion.style.display = 'block'; contador.textContent = String(solicitudes.length);
 
             contenedor.innerHTML = solicitudes.map(function (solicitud) {
-                var perfil = getPerfilCacheado(solicitud.contacto_id) || {};
-                var nombre = perfil.nombre || perfil.handle || 'Usuario';
-                var handle = perfil.handle ? '@' + String(perfil.handle).replace(/^@/, '') : '';
-                var avatarUrl = obtenerAvatarSeguro(perfil.avatar_url);
+                var perfil = getPerfilCacheado(solicitud.contacto_id);
+                // Si el perfil no cargó, intentamos usar el handle o un texto por defecto, pero ya no dirá "Usuario" genérico si cargó bien
+                var nombre = perfil ? (perfil.nombre || perfil.handle) : 'Cargando...';
+                var handle = perfil && perfil.handle ? '@' + String(perfil.handle).replace(/^@/, '') : '';
+                var avatarUrl = perfil ? obtenerAvatarSeguro(perfil.avatar_url) : '';
                 var avatar = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" loading="lazy">' : escapeHtml(obtenerInicial(nombre));
 
                 return `
                     <div class="solicitud-enviada-card">
                         <div class="avatar">${avatar}</div>
                         <div class="info">
-                            <div class="nombre">${escapeHtml(nombre)}</div>
+                            <div class="nombre">${escapeHtml(nombre || 'Usuario')}</div>
                             <div class="handle">${escapeHtml(handle)}</div>
                         </div>
                         <div class="acciones">
