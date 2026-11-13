@@ -442,10 +442,10 @@
 
                     <div class="pf-composer-barra">
                         <div class="pf-composer-iconos">
-                            <button type="button" class="pf-composer-icono" id="btnEmoji" title="Emoji">
+                            <button type="button" class="pf-composer-icono" title="Emoji">
                                 <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                             </button>
-                            <button type="button" class="pf-composer-icono" id="btnHashtag" title="Hashtag">
+                            <button type="button" class="pf-composer-icono" title="Hashtag">
                                 <svg viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
                             </button>
                             <button type="button" class="pf-composer-icono" id="btnFotoVideo" title="Galería">
@@ -1593,41 +1593,6 @@
                 const input = document.getElementById('inputArchivoVideo');
                 if (input) input.click();
             });
-        }
-
-        // Botón Emoji: inserta un emoji al final del cursor
-        const btnEmoji = document.getElementById('btnEmoji');
-        if (btnEmoji) {
-            btnEmoji.addEventListener('click', function(e) {
-                e.preventDefault();
-                const input = document.getElementById('inputDescripcionVideo');
-                if (!input) return;
-                insertarTextoEnCursor(input, '😀');
-            });
-        }
-
-        // Botón Hashtag: inserta un '#' al final del cursor
-        const btnHashtag = document.getElementById('btnHashtag');
-        if (btnHashtag) {
-            btnHashtag.addEventListener('click', function(e) {
-                e.preventDefault();
-                const input = document.getElementById('inputDescripcionVideo');
-                if (!input) return;
-                insertarTextoEnCursor(input, '#');
-            });
-        }
-
-        // Helper: inserta texto en la posición del cursor del textarea
-        function insertarTextoEnCursor(input, texto) {
-            const start = input.selectionStart || 0;
-            const end = input.selectionEnd || 0;
-            const valor = input.value || '';
-            input.value = valor.substring(0, start) + texto + valor.substring(end);
-            const nuevaPos = start + texto.length;
-            input.selectionStart = nuevaPos;
-            input.selectionEnd = nuevaPos;
-            input.focus();
-            input.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
         window.csCamaraOnVideoGrabado = function(file) {
