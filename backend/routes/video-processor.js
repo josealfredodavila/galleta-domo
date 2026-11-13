@@ -6,20 +6,21 @@
    marca de Sariel's + mezclar audio de fondo si viene).
 
    FLUJO:
-   1. Usuario sube video a Supabase Storage (desde el frontend)
-   2. Frontend llama a POST /api/video/queue (con audioUrl opcional)
-   3. Este endpoint agrega un job a la cola de Redis
-   4. Worker procesa en background
+   1. Usuario sube video vía POST /api/media/upload (Cloudflare R2)
+   2. Frontend inserta la fila en videos y llama a POST /api/video/queue
+   3. Este endpoint valida y agrega un job a la cola de Redis
+   4. Worker procesa en background, leyendo el original desde R2
    5. Frontend hace polling a GET /api/video/status/:jobId
-   6. Cuando termina, el video procesado reemplaza al original
 
-   FIX v3 (audio de fondo + SSRF):
-   - Acepta y valida audioUrl (debe ser del bucket 'audios' de Supabase).
-   - Pasa audioUrl al job de BullMQ.
-   - Guarda audio_url en video_jobs.
-   - Mantiene todas las correcciones de v2: jobId estable, validación
-     de filePath con userId, videoUrl y bucket desde la DB, verificación
-     de dueño, y deduplicación de jobs activos.
+   v4 (migración a R2):
+   - filePath acepta el formato que devuelve /api/media/upload:
+     "videos/<uid>/<archivo>".
+   - filePath debe coincidir con el final de videos.url_video
+     (evita encolar archivos ajenos).
+   - El job incluye storage: 'r2' y r2Key para que el Worker
+     descargue desde R2 en vez de Supabase Storage.
+   - Se mantienen las validaciones de v3: audioUrl (SSRF),
+     dueño del video, deduplicación de jobs activos y jobId estable.
    ================================================================ */
 
 const express = require('express');
@@ -46,6 +47,9 @@ const supabaseAdmin = (SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY)
 // ================================================================
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const COLA_NOMBRE = 'video-processing';
+
+// Bucket lógico de videos (en R2 es el prefijo de la clave)
+const BUCKET_VIDEOS = 'videos';
 
 // Prefijo permitido para audioUrl (protección SSRF)
 const AUDIO_URL_PREFIX = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios/';
@@ -83,6 +87,23 @@ const videoQueue = new Queue(COLA_NOMBRE, {
 });
 
 // ================================================================
+// VALIDACIÓN DE filePath (formato R2)
+// ================================================================
+// Acepta exactamente "videos/<uid>/<archivo>" con el uid del usuario
+// autenticado. Rechaza rutas absolutas, retrocesos, barras dobles y
+// separadores de Windows.
+function filePathValido(filePath, userId) {
+    if (typeof filePath !== 'string') return false;
+    if (filePath.length === 0 || filePath.length > 500) return false;
+    if (filePath.startsWith('/')) return false;
+    if (filePath.includes('\\')) return false;
+    if (filePath.includes('..') || filePath.includes('//')) return false;
+
+    const prefijo = `${BUCKET_VIDEOS}/${userId}/`;
+    return filePath.startsWith(prefijo) && filePath.length > prefijo.length;
+}
+
+// ================================================================
 // MIDDLEWARE DE AUTENTICACIÓN
 // ================================================================
 async function autenticar(req, res, next) {
@@ -116,7 +137,7 @@ router.post('/queue', autenticar, async (req, res) => {
             return res.status(500).json({ success: false, error: 'Admin no configurado' });
         }
 
-        const { videoId, videoUrl, bucket = 'videos', filePath, audioUrl } = req.body;
+        const { videoId, videoUrl, filePath, audioUrl } = req.body;
 
         if (!videoId || !videoUrl) {
             return res.status(400).json({
@@ -132,11 +153,7 @@ router.post('/queue', autenticar, async (req, res) => {
             });
         }
 
-        if (
-            !filePath.startsWith(req.user.id + '/') ||
-            filePath.includes('..') ||
-            filePath.includes('//')
-        ) {
+        if (!filePathValido(filePath, req.user.id)) {
             return res.status(400).json({
                 success: false,
                 error: 'filePath inválido'
@@ -172,6 +189,14 @@ router.post('/queue', autenticar, async (req, res) => {
             return res.status(403).json({ success: false, error: 'No eres el dueño de este video' });
         }
 
+        // El filePath debe ser el archivo que realmente está guardado en el registro del video.
+        if (!video.url_video || !video.url_video.endsWith('/' + filePath)) {
+            return res.status(400).json({
+                success: false,
+                error: 'filePath no corresponde al video'
+            });
+        }
+
         const { data: existingJob } = await supabaseAdmin
             .from('video_jobs')
             .select('job_id, estado')
@@ -194,14 +219,16 @@ router.post('/queue', autenticar, async (req, res) => {
             videoId,
             videoUrl: video.url_video,
             userId: req.user.id,
-            bucket: 'videos',
+            bucket: BUCKET_VIDEOS,
             filePath,
+            storage: 'r2',
+            r2Key: filePath,
             audioUrl: audioUrl || null
         }, {
             jobId: stableJobId
         });
 
-        console.log(`📥 [QUEUE] Job creado: ${job.id} para video: ${videoId}`);
+        console.log(`📥 [QUEUE] Job creado: ${job.id} para video: ${videoId} (R2: ${filePath})`);
         if (audioUrl) {
             console.log(`🎵 [QUEUE] Audio de fondo: ${audioUrl}`);
         }
