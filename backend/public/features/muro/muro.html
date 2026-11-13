@@ -256,12 +256,13 @@
             flex-direction: column;
             align-items: center;
             gap: 8px;
-            background: transparent;
-            border: none;
+            background: transparent !important;
+            border: none !important;
             cursor: pointer;
             padding: 0;
             flex-shrink: 0;
             transition: transform .2s ease;
+            width: 68px;
         }
         .cs-story-item:hover { transform: scale(1.05); }
         .cs-story-item > span:last-child {
@@ -292,6 +293,7 @@
                 0 0 40px rgba(139, 92, 246, .2),
                 inset 0 0 10px rgba(0, 229, 255, .2);
             transition: box-shadow .3s ease;
+            overflow: hidden !important;
         }
         .cs-story-ring::before {
             content: '';
@@ -326,7 +328,7 @@
 
         /* Anillo visto (gris) */
         .cs-story-ring.vista {
-            background: conic-gradient(from 0deg, #2a3440, #4a5563, #2a3440);
+            background: conic-gradient(from 0deg, #2a3440, #4a5563, #2a3440) !important;
             animation: none;
             box-shadow: none;
         }
@@ -334,7 +336,7 @@
 
         /* Botón "Tu historia" (Añadir) */
         .cs-story-ring.story-add {
-            background: conic-gradient(from 0deg, #00e5ff, #8b5cf6, #00e5ff);
+            background: conic-gradient(from 0deg, #00e5ff, #8b5cf6, #00e5ff) !important;
             animation: girarHolograma 3s linear infinite;
         }
         .cs-story-ring.story-add svg {
@@ -784,8 +786,8 @@
     <script src="/features/muro/js/muro-ventas.js"></script>
     <script src="/features/muro/js/muro-pagos.js"></script>
     <script src="/features/muro/js/muro-realtime.js"></script>
-    <!-- [v3.2] Script unificado de historias con soporte de video y RPC -->
-    <script src="/features/muro/js/muro-historias.js?v=2"></script>
+    <!-- [v3.3] Script unificado de historias con soporte de video, RPC y filtro de origen -->
+    <script src="/features/muro/js/muro-historias.js?v=3"></script>
     <script src="/features/muro/js/muro-init.js"></script>
 
     <!-- ================= SCRIPT DE BÚSQUEDA GLOBAL CORREGIDO ================= -->
