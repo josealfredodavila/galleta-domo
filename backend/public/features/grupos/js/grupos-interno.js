@@ -5,24 +5,6 @@
 // reportes, etiquetas, comentarios, reacciones y acciones del canal.
 // Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js,
 //             grupos-marketplace.js (mkTarjetaCompraHTML)
-//
-// v3 (moderación):
-// - subirFotoGrupo, subirVideoGrupo, cambiarAvatarGrupo y
-//   cambiarPortadaGrupo ya suben vía POST /api/media/upload.
-// - publicarEnGrupo() y enviarComentarioPublicacion() manejan el
-//   error 'contenido_no_permitido' del trigger de DB.
-// - Cartel amarillo ⚠️ en posts y comentarios con aviso_moderacion.
-//
-// v3.1 (fix):
-// - Las consultas a las vistas grupos_video_publicaciones_publicas y
-//   grupos_video_comentarios_publicos ya NO piden la columna
-//   aviso_moderacion (esas vistas no la tienen; la consulta fallaba y
-//   el feed se quedaba en "Sin publicaciones aún").
-//
-// v3.2 (marketplace de canales):
-// - La tarjeta de compra (precio, stock y botón "Comprar") se inserta
-//   en cada publicación de marketplace con mkTarjetaCompraHTML(p).
-// - Se muestra la descripción guardada del producto.
 // ================================================================
 
 // ================================================================
@@ -413,11 +395,27 @@ function renderizarPublicacionesCache() {
 // RENDERIZAR PUBLICACIÓN (HTML)
 // ================================================================
 function renderizarPublicacionHTML(p) {
+    // --- NUEVO DISEÑO: Avatar y Handle WEB3 ---
     var avatarUrl = p.usuario_avatar_url && grpSafeUrl(p.usuario_avatar_url)
         ? '<img src="' + grpEscapeHTML(grpSafeUrl(p.usuario_avatar_url)) + '">'
         : '◈';
+    
     var nombre = grpEscapeHTML(p.usuario_nombre || 'Usuario');
-    var handle = p.usuario_handle ? ' <span style="color:var(--text-muted);font-weight:400;font-size:0.65rem;">@' + grpEscapeHTML(p.usuario_handle) + '</span>' : '';
+    
+    // Diseño de la píldora cian con el rayo
+    var handleHTML = '';
+    if (p.usuario_handle) {
+        handleHTML = '<span class="grp-post-handle" style="' +
+            'display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 1px 8px 1px 6px; ' +
+            'border-radius: 999px; color: #5cc8ff !important; font-weight: 600 !important; font-size: .7rem !important; ' +
+            'line-height: 1.5; background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16)) !important; ' +
+            'border: 1px solid rgba(0, 229, 255, .35) !important; text-shadow: 0 0 8px rgba(0, 229, 255, .55); ' +
+            'white-space: nowrap;' +
+        '">' +
+            '<span style="font-size:.65rem; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));">⚡</span> @' + grpEscapeHTML(p.usuario_handle) + 
+        '</span>';
+    }
+
     var contenido = grpEscapeHTML(p.contenido || '');
     var imgUrl = grpSafeUrl(p.imagen_url);
     var vidUrl = grpSafeUrl(p.video_url);
@@ -478,7 +476,8 @@ function renderizarPublicacionHTML(p) {
         '<div class="header">' +
         '<div class="avatar">' + avatarUrl + '</div>' +
         '<div style="flex:1;min-width:0;">' +
-        '<div class="nombre">' + nombre + handle + '</div>' +
+        // Aquí inyectamos el nombre y el nuevo handle
+        '<div class="nombre" style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">' + nombre + handleHTML + '</div>' +
         '<div class="fecha">' + new Date(p.created_at).toLocaleString() + '</div>' +
         '</div>' +
         '<div class="post-menu-wrapper">' +
@@ -852,9 +851,6 @@ async function guardarEtiquetas() {
 // ================================================================
 // CARGAR PUBLICACIONES DEL GRUPO
 // ================================================================
-// v3.1: se quitó 'aviso_moderacion' del select porque la vista no
-// tiene esa columna; la consulta fallaba y el feed no se mostraba.
-// v3.2: la vista ya expone stock y descripcion (migración aplicada).
 async function cargarPublicacionesGrupo(grupoId) {
     try {
         var result = await window.supabaseClient
@@ -899,7 +895,6 @@ async function publicarEnGrupo() {
         }).select().single();
 
         if (result.error) {
-            // ✅ Detectar error de moderación
             if (esErrorModeracionGrupo(result.error)) {
                 grpShowToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
                 return;
@@ -938,12 +933,7 @@ async function subirFotoGrupo() {
             var token = session && session.data && session.data.session && session.data.session.access_token;
             if (!token) throw new Error('Sesión no disponible');
 
-            var subida = await subirArchivoConModeracionGrupo(
-                file,
-                'grupos-publicaciones',
-                'imagen',
-                token
-            );
+            var subida = await subirArchivoConModeracionGrupo(file, 'grupos-publicaciones', 'imagen', token);
 
             var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({
                 grupo_id: grupoActualId,
@@ -984,12 +974,7 @@ async function subirVideoGrupo() {
             var token = session && session.data && session.data.session && session.data.session.access_token;
             if (!token) throw new Error('Sesión no disponible');
 
-            var subida = await subirArchivoConModeracionGrupo(
-                file,
-                'grupos-publicaciones',
-                'video',
-                token
-            );
+            var subida = await subirArchivoConModeracionGrupo(file, 'grupos-publicaciones', 'video', token);
 
             var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({
                 grupo_id: grupoActualId,
@@ -1052,7 +1037,6 @@ async function cargarComentariosPublicacion(publicacionId) {
     var lista = document.getElementById('comentariosLista-' + publicacionId);
     if (!lista) return;
     try {
-        // v3.1: sin 'aviso_moderacion' en el select (la vista no tiene esa columna)
         var result = await window.supabaseClient
             .from('grupos_video_comentarios_publicos')
             .select('*')
@@ -1092,7 +1076,6 @@ async function enviarComentarioPublicacion(publicacionId) {
         });
 
         if (result.error) {
-            // ✅ Detectar error de moderación
             if (esErrorModeracionGrupo(result.error)) {
                 grpShowToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
                 return;
@@ -1227,12 +1210,7 @@ async function cambiarAvatarGrupo() {
             var token = session && session.data && session.data.session && session.data.session.access_token;
             if (!token) throw new Error('Sesión no disponible');
 
-            var subida = await subirArchivoConModeracionGrupo(
-                file,
-                'grupos-publicaciones',
-                'imagen',
-                token
-            );
+            var subida = await subirArchivoConModeracionGrupo(file, 'grupos-publicaciones', 'imagen', token);
 
             var updateResult = await window.supabaseClient
                 .from('grupos_video')
@@ -1273,12 +1251,7 @@ async function cambiarPortadaGrupo() {
 
             var tipo = file.type.startsWith('video/') ? 'video' : 'imagen';
 
-            var subida = await subirArchivoConModeracionGrupo(
-                file,
-                'grupos-publicaciones',
-                tipo,
-                token
-            );
+            var subida = await subirArchivoConModeracionGrupo(file, 'grupos-publicaciones', tipo, token);
 
             var updateResult = await window.supabaseClient
                 .from('grupos_video')
