@@ -1,9 +1,14 @@
 /* ================================================================
    WORKER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN v5 - Almacenamiento en Cloudflare R2 + mezcla de audio
+   VERSIÓN v5.1 - Producción: R2 + cuota consistente + borrado seguro
    ================================================================
-   - Jobs con storage: 'r2' (y r2Key): descarga el original desde R2,
-     sube el procesado a R2 y borra el original de R2.
+   - Jobs con storage: 'r2' (r2Key): descarga el original desde R2,
+     procesa, sube el resultado a R2 y registra ambos en archivos_hash
+     para que la cuota del usuario sea correcta.
+   - El original SOLO se borra si: la base se actualizó bien y ningún
+     otro video apunta a ese archivo (la deduplicación puede reutilizarlo).
+   - Si falla la actualización de la base, el job falla y el original
+     se conserva (no se pierde el video).
    - Jobs sin storage (anteriores): flujo legacy con Supabase Storage.
    - Audio de fondo: descarga en try/catch independiente (si falla
      → sin música).
@@ -15,7 +20,7 @@
      SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REDIS_URL
      R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
      R2_ENDPOINT, R2_BUCKET, R2_PUBLIC_URL
-   Dependencia nueva: @aws-sdk/client-s3
+   Dependencia: @aws-sdk/client-s3
    ================================================================ */
 
 const { Worker } = require('bullmq');
@@ -25,6 +30,7 @@ const ffmpegPath = require('ffmpeg-static');
 const { createClient } = require('@supabase/supabase-js');
 const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
 const { pipeline } = require('stream/promises');
+const { createHash } = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -123,7 +129,7 @@ const MAX_CONCURRENT = 1;
 const LOGO_PATH = path.join(__dirname, 'assets', 'sariels_web3.png');
 
 // ================================================================
-// HELPERS R2
+// HELPERS R2 Y CUOTA
 // ================================================================
 function urlPublicaR2(key) {
     return `${R2_PUBLIC_URL}/${key}`;
@@ -153,6 +159,33 @@ async function borrarR2(key) {
     await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
 }
 
+// Registra un archivo en archivos_hash para que cuente en la cuota.
+// Si ya existe el mismo hash en el bucket, no se duplica.
+async function registrarArchivoHash({ bucket, sha256, path: key, publicUrl, size }) {
+    const { error } = await supabaseAdmin
+        .from('archivos_hash')
+        .upsert(
+            { bucket, sha256, path: key, public_url: publicUrl, size },
+            { onConflict: 'bucket,sha256', ignoreDuplicates: true }
+        );
+    if (error) {
+        console.warn(`⚠️ No se registró archivos_hash (${key}):`, error.message);
+        return false;
+    }
+    return true;
+}
+
+// ¿Otro video (distinto de este) apunta al mismo archivo original?
+async function archivoOriginalEnUso(urlOriginal, videoIdActual) {
+    const { count, error } = await supabaseAdmin
+        .from('videos')
+        .select('id', { count: 'exact', head: true })
+        .eq('url_video', urlOriginal)
+        .neq('id', videoIdActual);
+    if (error) throw new Error(`No se pudo verificar uso del original: ${error.message}`);
+    return (count || 0) > 0;
+}
+
 // ================================================================
 // FUNCIÓN PRINCIPAL: PROCESAR VIDEO
 // ================================================================
@@ -161,6 +194,7 @@ async function procesarVideo(job) {
 
     const usaR2 = storage === 'r2';
     const keyOriginal = r2Key || filePath;
+    const bucketLogico = bucket || 'videos';
 
     console.log(`\n📹 [JOB ${job.id}] Procesando video: ${videoId}`);
     console.log(`   Attempt: ${job.attemptsMade + 1}/${job.opts.attempts}`);
@@ -369,17 +403,28 @@ async function procesarVideo(job) {
         console.log(`📤 [JOB ${job.id}] Subiendo video procesado...`);
 
         const outputBuffer = fs.readFileSync(outputPath);
+        const outputSha256 = createHash('sha256').update(outputBuffer).digest('hex');
         let processedUrl;
 
         if (usaR2) {
             // Mismo prefijo que /api/media/upload: videos/<uid>/<archivo>
-            const processedKey = `${bucket || 'videos'}/${userId}/${videoId}_processed.mp4`;
+            const processedKey = `${bucketLogico}/${userId}/${videoId}_processed.mp4`;
             processedUrl = await subirBufferR2(processedKey, outputBuffer, 'video/mp4');
+
+            // Registrar el procesado para que cuente en la cuota
+            await registrarArchivoHash({
+                bucket: bucketLogico,
+                sha256: outputSha256,
+                path: processedKey,
+                publicUrl: processedUrl,
+                size: outputBuffer.length
+            });
+
             console.log(`✅ [JOB ${job.id}] Video subido a R2: ${processedUrl}`);
         } else {
             const processedPath = `${userId}/${videoId}_processed.mp4`;
             const { error: uploadError } = await supabaseAdmin.storage
-                .from(bucket)
+                .from(bucketLogico)
                 .upload(processedPath, outputBuffer, {
                     contentType: 'video/mp4',
                     cacheControl: '31536000',
@@ -391,7 +436,7 @@ async function procesarVideo(job) {
             }
 
             const { data: urlData } = supabaseAdmin.storage
-                .from(bucket)
+                .from(bucketLogico)
                 .getPublicUrl(processedPath);
 
             processedUrl = urlData.publicUrl;
@@ -400,7 +445,7 @@ async function procesarVideo(job) {
 
         await job.updateProgress(95);
 
-        // PASO 6: Actualizar DB
+        // PASO 6: Actualizar DB (si falla, NO se borra el original)
         console.log(`💾 [JOB ${job.id}] Actualizando base de datos...`);
 
         const { error: dbError } = await supabaseAdmin
@@ -413,24 +458,35 @@ async function procesarVideo(job) {
             .eq('id', videoId);
 
         if (dbError) {
-            console.warn(`⚠️ [JOB ${job.id}] No se pudo actualizar DB:`, dbError.message);
-        } else {
-            console.log(`✅ [JOB ${job.id}] DB actualizada`);
+            throw new Error(`No se pudo actualizar el video en la base: ${dbError.message}`);
         }
+        console.log(`✅ [JOB ${job.id}] DB actualizada`);
 
-        // PASO 7: Borrar original
+        // PASO 7: Borrar original solo si nadie más lo usa
         if (keyOriginal) {
-            console.log(`🗑️ [JOB ${job.id}] Borrando video original...`);
+            console.log(`🗑️ [JOB ${job.id}] Revisando si el original puede borrarse...`);
             try {
                 if (usaR2) {
-                    await borrarR2(keyOriginal);
+                    const enUso = videoUrl ? await archivoOriginalEnUso(videoUrl, videoId) : true;
+
+                    if (enUso) {
+                        console.log(`ℹ️ [JOB ${job.id}] Original compartido con otro video. No se borra.`);
+                    } else {
+                        await borrarR2(keyOriginal);
+                        await supabaseAdmin
+                            .from('archivos_hash')
+                            .delete()
+                            .eq('bucket', bucketLogico)
+                            .eq('path', keyOriginal);
+                        console.log(`✅ [JOB ${job.id}] Original borrado de R2 y de archivos_hash`);
+                    }
                 } else {
                     const { error: removeError } = await supabaseAdmin.storage
-                        .from(bucket)
+                        .from(bucketLogico)
                         .remove([keyOriginal]);
                     if (removeError) throw new Error(removeError.message);
+                    console.log(`✅ [JOB ${job.id}] Original borrado (Supabase)`);
                 }
-                console.log(`✅ [JOB ${job.id}] Original borrado`);
             } catch (removeError) {
                 console.warn(`⚠️ [JOB ${job.id}] No se pudo borrar original:`, removeError.message);
             }
@@ -574,7 +630,7 @@ process.on('SIGTERM', async () => {
 });
 
 console.log('========================================');
-console.log("🎬 WORKER DE VIDEOS - SARIEL'S v5 (R2)");
+console.log("🎬 WORKER DE VIDEOS - SARIEL'S v5.1 (R2, producción)");
 console.log('========================================');
 console.log('📡 Cola:', COLA_NOMBRE);
 console.log('🔢 Concurrencia:', MAX_CONCURRENT);
