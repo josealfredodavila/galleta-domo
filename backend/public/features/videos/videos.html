@@ -6,13 +6,13 @@
     <title data-clave="videos_titulo_pagina">◈ Videos · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="/features/videos/css/videos-publicar.css">
     <link rel="stylesheet" href="/features/videos/css/videos-composer-pro.css">
 
     <script src="/features/shared/js/api-config.js"></script>
     <script src="/features/shared/js/apariencia-global.js"></script>
-    
+
     <style>
         /* ================================================================
            ESTILOS BASE Y FEED DE VIDEOS (INTACTOS)
@@ -109,7 +109,7 @@
             font-family: 'Orbitron', monospace; font-size: .72rem; letter-spacing: 2px; text-transform: uppercase; color: #bfefff; text-shadow: 0 0 12px rgba(0, 229, 255, .35);
         }
         .pf-composer-sub { font-size: .66rem; color: #6f8ba0; margin-top: 3px; letter-spacing: .2px; }
-        
+
         .pf-composer textarea#inputDescripcionVideo {
             width: 100%; min-height: 96px; resize: vertical; background: rgba(0, 0, 0, .28);
             border: 1px solid rgba(255, 255, 255, .06); border-radius: 18px; padding: 14px 16px;
@@ -120,7 +120,7 @@
         .pf-composer textarea#inputDescripcionVideo:focus {
             outline: none; background: rgba(0, 0, 0, .42); border-color: rgba(0, 229, 255, .55); box-shadow: 0 0 0 3px rgba(0, 229, 255, .10), 0 0 26px rgba(0, 229, 255, .14);
         }
-        
+
         .pf-composer-barra { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
         .pf-composer-iconos { display: flex; gap: 8px; }
         .pf-composer-icono {
@@ -131,7 +131,7 @@
         .pf-composer-icono svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
         .pf-composer-icono:hover { background: rgba(0, 229, 255, .10); border-color: rgba(0, 229, 255, .35); box-shadow: 0 0 14px rgba(0, 229, 255, .22); color: #cdf6ff; }
         .pf-composer-icono:active { transform: scale(.92); }
-        
+
         .pf-composer-pie { margin-left: auto; display: flex; align-items: center; gap: 12px; }
         .pf-composer-anillo { position: relative; width: 36px; height: 36px; flex: 0 0 36px; }
         .pf-composer-anillo svg { width: 36px; height: 36px; transform: rotate(-90deg); }
@@ -222,7 +222,7 @@
 
         .video-card .thumbnail { position: relative; width: 100%; flex: 1; min-height: 0; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden; }
         .video-card .thumbnail video { width: 100%; height: 100%; object-fit: contain; background: #000; display: block; transition: object-fit 0.35s ease, transform 0.35s ease; }
-        
+
         /* Botón Play corregido (sin margin-left) */
         .video-card .thumbnail .play-btn { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 70px; height: 70px; background: rgba(0, 0, 0, 0.55); backdrop-filter: blur(8px); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #D4AF37; cursor: pointer; border: 1px solid rgba(212, 175, 55, 0.4); z-index: 3; transition: var(--transition); }
         .video-card .thumbnail .play-btn svg { width: 30px; height: 30px; stroke: currentColor; fill: currentColor; }
@@ -428,12 +428,12 @@
                 </div>
 
                 <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();" style="margin:0;">
-                    
+
                     <div class="form-group-old">
                         <label>Título del video</label>
                         <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Csariel's" required maxlength="200" value="Video de Csariel's" />
                     </div>
-                    
+
                     <textarea id="inputDescripcionVideo" placeholder="¿Qué piensas?" maxlength="2000"></textarea>
 
                     <div style="display: none;">
@@ -464,14 +464,14 @@
                                 </svg>
                             </div>
                             <span class="pf-composer-contador" id="pfContador">0 / 2000</span>
-                            
+
                             <button type="submit" id="btnSubirVideo">
                                 <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                                 Publicar
                             </button>
                         </div>
                     </div>
-                    
+
                     <div id="uploadProgress" style="display:none;margin-top:12px;">
                         <div style="background:rgba(255,255,255,0.05);border-radius:4px;height:4px;overflow:hidden;">
                             <div id="progressFill" style="height:100%;width:0%;background:linear-gradient(90deg, #00e5ff, #8b5cf6);border-radius:4px;transition:width 0.3s;"></div>
@@ -554,12 +554,11 @@
         <span id="errorBannerText"></span>
         <button onclick="document.getElementById('errorBanner').style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 10px;cursor:pointer;" data-clave="error_cerrar">Cerrar</button>
     </div>
-
     <script src="/features/videos/js/videos-camara.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js?v=6"></script>
     <script src="/features/videos/js/videos-publicar.js" defer></script>
-    
+
     <script>
     var sbVideos = null;
     (function crearClienteVideos() {
@@ -597,6 +596,30 @@
     var longPressTimers = {};
     var vistasContadas = {};
     var audioGlobalActivado = false;
+
+    // ================================================================
+    // REPRODUCCIÓN ÚNICA DEL FEED
+    // Solo un video del feed puede sonar a la vez. Antes de que cualquier
+    // video empiece a reproducirse (por scroll, por botón o por otro script),
+    // se pausan los demás de la lista.
+    // ================================================================
+    function pausarOtrosVideos(videoQueSuena) {
+        document.querySelectorAll('.video-card video').forEach(function (v) {
+            if (v === videoQueSuena) return;
+            if (!v.paused) v.pause();
+            var card = v.closest('.video-card');
+            if (card) card.classList.remove('playing');
+        });
+    }
+
+    // Captura cualquier 'play' de un video del feed, venga de donde venga
+    // (IntersectionObserver de este archivo o de videos-publicar.js).
+    document.addEventListener('play', function (e) {
+        var v = e.target;
+        if (v && v.tagName === 'VIDEO' && v.closest && v.closest('.video-card')) {
+            pausarOtrosVideos(v);
+        }
+    }, true);
 
     function tr(clave, fallback) {
         if (typeof window.tConFallback === 'function') return window.tConFallback(clave, fallback);
@@ -774,15 +797,16 @@
     }
 
     // ==========================================
-    // CORRECCIÓN CLAVE DEL AUTOPLAY (Se limpia estado bloqueado)
+    // Reproduce un video del feed. Antes pausa los demás.
     // ==========================================
     function reproducirVideoConSonido(video) {
         if (!video) return;
+        pausarOtrosVideos(video);
         if (!video.getAttribute('src') && video.dataset.src) {
             video.src = video.dataset.src;
             video.load();
         }
-        
+
         // 1. Intentar reproducir con sonido (si el navegador lo permite)
         video.muted = false;
         video.volume = 1;
@@ -791,13 +815,11 @@
         var promesa = video.play();
         if (promesa && typeof promesa.then === 'function') {
             promesa.catch(function(err) {
-                // Si falla (NotAllowedError), significa que el navegador lo bloqueó.
-                // Entonces lo forzamos a modo silencio y lo reproducimos de inmediato.
+                // Si el navegador bloquea el audio, reproducir en silencio.
                 if (err && (err.name === 'NotAllowedError' || err.name === 'AbortError')) {
                     video.muted = true;
                     video.setAttribute('muted', '');
-                    video.play().catch(function(err2) {
-                        // Si incluso en silencio falla (raro), mostramos el botón de audio.
+                    video.play().catch(function() {
                         mostrarBotonAudioGlobal();
                     });
                 }
@@ -934,7 +956,6 @@
         }
 
         html += '<div class="thumbnail">';
-        // CORRECCIÓN: Quitamos crossorigin="anonymous" y preload="auto" -> preload="metadata"
         html += '<video preload="metadata" playsinline webkit-playsinline data-src="' + videoUrl + '" poster="' + posterUrl + '"></video>';
         html += '<div class="play-btn" onclick="togglePlayCard(event, \'' + v.id + '\')">' + iconoPlaySVG() + '</div>';
         html += '</div>';
@@ -1343,22 +1364,12 @@
         if (!card) return;
         var video = card.querySelector('video');
         if (!video) return;
-        if (!video.getAttribute('src') && video.dataset.src) { video.preload = 'auto'; video.src = video.dataset.src; video.load(); }
-        
+
         if (video.paused) {
-            // Si el usuario da play manual, intentamos quitar el mute y reproducir.
-            // Si falla, forzamos silencio para que arranque.
-            video.muted = false;
-            video.volume = 1;
-            var p = video.play();
-            if (p && p.catch) {
-                p.catch(function() {
-                    video.muted = true;
-                    video.play().catch(function() {});
-                });
-            }
-            card.classList.add('playing');
+            // Reproducción manual: reproduce este video y pausa los demás.
             videoPausadoManualmente = null;
+            reproducirVideoConSonido(video);
+            card.classList.add('playing');
             incrementarVista(videoId);
         } else {
             video.pause();
@@ -1609,12 +1620,12 @@
             descInput.addEventListener('input', function() {
                 const len = descInput.value.length;
                 contador.textContent = len + ' / ' + max;
-                
+
                 if (anillo) {
                     const ratio = Math.min(len / max, 1);
                     const dashoffset = 94.25 * (1 - ratio);
                     anillo.style.strokeDashoffset = dashoffset;
-                    
+
                     if (len >= max * 0.9) anillo.style.stroke = '#D4AF37';
                     else anillo.style.stroke = '#00e5ff';
                 }
