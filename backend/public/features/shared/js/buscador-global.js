@@ -1,7 +1,11 @@
 // ================================================================
-// BUSCADOR GLOBAL DEL ECOSISTEMA · v1.0
+// BUSCADOR GLOBAL DEL ECOSISTEMA · v1.1
 // Requiere: #globalSearchInput y #globalSearchResults en la página
 // y window.supabaseClient ya inicializado.
+// Cambios v1.1:
+//  - Tolera respuesta de buscar_usuarios envuelta ({data: [...]})
+//  - Normaliza fields (handle / usuario_handle, avatar / avatar_url)
+//  - Log de error más explícito (código + mensaje)
 // ================================================================
 (function () {
     'use strict';
@@ -68,18 +72,21 @@
     }
 
     function filaUsuario(u) {
-        var nombre = u.nombre || u.handle || 'Usuario';
+        // v1.1: tolerar nombre alternativo en la respuesta de la RPC
+        var nombre = u.nombre || u.handle || u.usuario_handle || 'Usuario';
+        var handleRaw = u.handle || u.usuario_handle || '';
+        var avatarUrl = u.avatar_url || u.avatar || null;
 
         var fila = document.createElement('div');
         fila.className = 'search-user-item';
-        fila.addEventListener('click', function () { verPerfil(u.id, u.handle); });
+        fila.addEventListener('click', function () { verPerfil(u.id, handleRaw); });
 
         var avatar = document.createElement('div');
         avatar.className = 'search-user-avatar';
-        if (u.avatar_url) {
+        if (avatarUrl) {
             var img = document.createElement('img');
             img.alt = '';
-            img.src = u.avatar_url;
+            img.src = avatarUrl;
             avatar.appendChild(img);
         } else {
             avatar.textContent = nombre.charAt(0).toUpperCase();
@@ -100,7 +107,7 @@
 
         var handle = document.createElement('div');
         handle.className = 'search-user-handle';
-        handle.textContent = u.handle ? '@' + String(u.handle).replace(/^@/, '') : '';
+        handle.textContent = handleRaw ? '@' + String(handleRaw).replace(/^@/, '') : '';
 
         info.appendChild(nom);
         info.appendChild(handle);
@@ -130,13 +137,22 @@
         try {
             var res = await client.rpc('buscar_usuarios', { p_query: query });
             if (reqId !== ultimaBusqueda) return;
-            if (res.error) throw res.error;
+            if (res.error) {
+                console.error('[Buscador] RPC error:', res.error.code, res.error.message);
+                throw res.error;
+            }
 
+            // v1.1: normalizar respuesta — array plano o envuelto en {data:[...]}
+            var raw = res.data;
+            var lista = Array.isArray(raw) ? raw
+                      : (raw && Array.isArray(raw.data)) ? raw.data
+                      : (raw && Array.isArray(raw.resultados)) ? raw.resultados
+                      : [];
+
+            // Excluirme a mí mismo
             var sesion = await client.auth.getSession();
             var miId = sesion.data && sesion.data.session ? sesion.data.session.user.id : null;
-
-            var lista = (Array.isArray(res.data) ? res.data : [])
-                .filter(function (u) { return u.id !== miId; });
+            lista = lista.filter(function (u) { return u.id !== miId; });
 
             if (!lista.length) {
                 mostrarMensaje('No se encontraron usuarios.');
@@ -147,7 +163,7 @@
             caja.classList.add('active');
         } catch (e) {
             if (reqId !== ultimaBusqueda) return;
-            console.error('Error buscando usuarios:', e);
+            console.error('[Buscador] Error buscando usuarios:', e);
             mostrarMensaje('Error al buscar usuarios.', '#ff3366');
         }
     }
