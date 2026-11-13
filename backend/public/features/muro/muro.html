@@ -222,6 +222,208 @@
         .post-form #btnPublicar:active { transform: scale(.96); }
         .post-form #btnPublicar:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 
+        /* ================================================================
+           ARO FUTURISTA CÓSMICO PARA HISTORIAS (WEB3)
+           ================================================================ */
+        .cs-story-strip {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding: 10px 0 20px;
+            scrollbar-width: none;
+        }
+        .cs-story-strip::-webkit-scrollbar { display: none; }
+
+        .cs-story-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            min-width: 74px;
+        }
+
+        /* El Aro Mágico */
+        .cs-story-ring {
+            position: relative;
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 3px; /* Grosor del aro */
+            background: linear-gradient(135deg, #00e5ff, #a855f7, #ff3366, #00e5ff);
+            background-size: 300% 300%;
+            animation: cosmicSpin 4s linear infinite;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.3), inset 0 0 10px rgba(168, 85, 247, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        /* Efecto al pasar el dedo o mouse */
+        .cs-story-item:active .cs-story-ring {
+            transform: scale(0.95);
+        }
+
+        /* El interior del aro (donde va la foto) */
+        .cs-story-ring::before {
+            content: '';
+            position: absolute;
+            inset: 3px;
+            border-radius: 50%;
+            background: #05080f; /* Fondo oscuro para tapar el gradiente por dentro */
+            z-index: 1;
+        }
+
+        /* La imagen o inicial */
+        .cs-story-ring img,
+        .cs-story-ring .cs-story-initial {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid transparent; /* Espacio para que respire */
+        }
+
+        /* Texto debajo del aro */
+        .cs-story-item > span:last-child {
+            font-size: 0.7rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-align: center;
+            max-width: 74px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* El botón de "Tu historia" (+) */
+        .cs-story-ring.story-add {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px dashed rgba(0, 229, 255, 0.5);
+            animation: none; /* Sin giro para el botón de agregar */
+            box-shadow: none;
+            font-size: 1.5rem;
+            color: #00e5ff;
+            padding: 0;
+        }
+        .cs-story-ring.story-add::before { display: none; }
+        .cs-story-ring.story-add:hover {
+            background: rgba(0, 229, 255, 0.1);
+            border-color: #00e5ff;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+        }
+
+        /* Estado "Visto" (gris, sin animación) */
+        .cs-story-ring.vista {
+            background: #2a3340;
+            animation: none;
+            box-shadow: none;
+        }
+
+        /* Animación de rotación del gradiente */
+        @keyframes cosmicSpin {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* ================================================================
+           VISOR DE HISTORIAS (MANTENIENDO EL ESTILO PREMIUM)
+           ================================================================ */
+        #csHistoriaVisor {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+        .cs-historia-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.95);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .cs-historia-card {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 450px;
+            height: 100%;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 16px;
+        }
+        .cs-historia-barras {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+        }
+        .cs-historia-barra {
+            flex: 1;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .cs-historia-barra.completada { background: #fff; }
+        .cs-historia-barra.activa { background: #00e5ff; }
+        .cs-historia-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .cs-historia-autor {
+            color: #fff;
+            font-weight: 700;
+            font-size: 0.9rem;
+            font-family: 'Orbitron', monospace;
+        }
+        .cs-historia-cerrar {
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 1.2rem;
+            cursor: pointer;
+        }
+        .cs-historia-media {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+        .cs-historia-caption {
+            color: #c0d8e8;
+            font-size: 0.8rem;
+            margin-top: 12px;
+            text-align: center;
+        }
+        .cs-historia-nav {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 16px;
+        }
+        .cs-historia-nav button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .cs-historia-nav button:disabled { opacity: 0.3; }
+
         /* Animaciones del Handle */
         @keyframes perfilHandleHalo {
             0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
