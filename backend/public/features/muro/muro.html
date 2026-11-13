@@ -8,29 +8,26 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='10' width='80' height='80' rx='16' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/%3E%3Ctext x='50' y='68' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'%3E%E2%97%88%3C/text%3E%3C/svg%3E" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- Apariencia global -->
     <script src="/features/shared/js/apariencia-global.js"></script>
 
-    <!-- CSS del módulo muro -->
     <link rel="stylesheet" href="/features/muro/css/muro.css">
     <link rel="stylesheet" href="/features/muro/css/muro-social-actions.css">
-    <!-- Acciones de publicación (me gusta, comentar, compartir, eliminar) -->
     <link rel="stylesheet" href="/features/muro/css/muro-acciones.css">
 
     <style>
-        /* Ocultar barras redundantes */
         .muro-section-nav { display: none !important; }
         .muro-filter-nav { margin-top: 16px !important; }
         .cs-social-actions { display: none !important; }
 
         /* ================================================================
-           NUEVA BARRA DE BÚSQUEDA GLOBAL (ESTILO FACEBOOK)
+           BARRA DE BÚSQUEDA GLOBAL
            ================================================================ */
         .global-search-container {
             position: relative;
             margin: 10px 0 16px;
             z-index: 100;
         }
+
         .global-search-bar {
             display: flex;
             align-items: center;
@@ -41,25 +38,37 @@
             padding: 10px 16px;
             transition: all 0.3s ease;
         }
+
         .global-search-bar:focus-within {
             background: rgba(0, 0, 0, 0.4);
             border-color: rgba(0, 229, 255, 0.4);
             box-shadow: 0 0 15px rgba(0, 229, 255, 0.1);
         }
+
         .global-search-bar svg {
-            width: 18px; height: 18px; color: #8c949c; flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            color: #8c949c;
+            flex-shrink: 0;
         }
+
         .global-search-bar input {
-            flex: 1; background: transparent; border: none; outline: none;
-            color: #f0f4f8; font-size: 0.9rem; font-family: 'Inter', sans-serif;
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #f0f4f8;
+            font-size: 0.9rem;
+            font-family: 'Inter', sans-serif;
         }
+
         .global-search-bar input::placeholder { color: #6b737b; }
 
-        /* Resultados de búsqueda flotantes */
         .global-search-results {
             position: absolute;
             top: calc(100% + 8px);
-            left: 0; right: 0;
+            left: 0;
+            right: 0;
             background: #0b1016;
             border: 1px solid rgba(0, 229, 255, 0.2);
             border-radius: 16px;
@@ -69,35 +78,72 @@
             display: none;
             padding: 8px;
         }
+
         .global-search-results.active { display: block; }
-        
+
         .search-user-item {
-            display: flex; align-items: center; gap: 12px; padding: 10px;
-            border-radius: 12px; cursor: pointer; transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
         }
+
         .search-user-item:hover { background: rgba(255, 255, 255, 0.05); }
-        
+
         .search-user-avatar {
-            width: 40px; height: 40px; border-radius: 50%; overflow: hidden;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
             background: linear-gradient(135deg, #1a4a2a, #a855f7);
-            display: flex; align-items: center; justify-content: center;
-            color: #fff; font-weight: 700; flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 700;
+            flex-shrink: 0;
         }
-        .search-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        
+
+        .search-user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         .search-user-info { flex: 1; min-width: 0; }
-        .search-user-name { font-size: 0.85rem; font-weight: 700; color: #f0f4f8; }
-        .search-user-handle { font-size: 0.7rem; color: #8c949c; }
-        
-        .search-user-action {
-            padding: 6px 12px; border-radius: 14px; font-size: 0.7rem; font-weight: 700;
-            background: rgba(0, 229, 255, 0.1); color: #00e5ff; border: 1px solid rgba(0, 229, 255, 0.3);
-            cursor: pointer; transition: all 0.2s;
+
+        .search-user-name {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #f0f4f8;
         }
-        .search-user-action:hover { background: rgba(0, 229, 255, 0.2); }
+
+        .search-user-handle {
+            font-size: 0.7rem;
+            color: #8c949c;
+        }
+
+        .search-user-action {
+            padding: 6px 12px;
+            border-radius: 14px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: rgba(0, 229, 255, 0.1);
+            color: #00e5ff;
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .search-user-action:hover {
+            background: rgba(0, 229, 255, 0.2);
+        }
 
         /* ================================================================
-           COMPOSITOR WEB3 (ESTILO PERFIL / VIDEOS)
+           COMPOSITOR WEB3
            ================================================================ */
         .post-form {
             position: relative;
@@ -108,131 +154,276 @@
                 radial-gradient(120% 90% at 100% 100%, rgba(139, 92, 246, .12), transparent 55%),
                 linear-gradient(170deg, rgba(10, 18, 30, .96), rgba(4, 7, 13, .98)) !important;
             border: 1px solid rgba(0, 229, 255, .16) !important;
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, .02) inset, 0 18px 50px rgba(0, 0, 0, .55), 0 0 40px rgba(0, 229, 255, .06) !important;
-            overflow: visible; /* Permitir que los dropdowns se vean */
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, .02) inset,
+                0 18px 50px rgba(0, 0, 0, .55),
+                0 0 40px rgba(0, 229, 255, .06) !important;
+            overflow: visible;
             transition: box-shadow .35s ease, border-color .35s ease;
             margin-bottom: 20px;
             z-index: 10;
         }
+
         .post-form::after {
             content: '';
-            position: absolute; left: 18px; right: 18px; top: 0; height: 1px;
+            position: absolute;
+            left: 18px;
+            right: 18px;
+            top: 0;
+            height: 1px;
             background: linear-gradient(90deg, transparent, rgba(0, 229, 255, .8), rgba(139, 92, 246, .8), transparent);
-            opacity: .6; pointer-events: none;
-        }
-        .post-form:focus-within {
-            border-color: rgba(0, 229, 255, .45) !important;
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, .02) inset, 0 18px 50px rgba(0, 0, 0, .55), 0 0 48px rgba(0, 229, 255, .18) !important;
+            opacity: .6;
+            pointer-events: none;
         }
 
-        /* Cabecera del compositor */
-        .post-form .form-header {
-            display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+        .post-form:focus-within {
+            border-color: rgba(0, 229, 255, .45) !important;
+            box-shadow:
+                0 0 0 1px rgba(255, 255, 255, .02) inset,
+                0 18px 50px rgba(0, 0, 0, .55),
+                0 0 48px rgba(0, 229, 255, .18) !important;
         }
+
+        .post-form .form-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
         .post-form .avatar {
-            width: 36px; height: 36px; border-radius: 50%; overflow: hidden; border: 1.5px solid var(--cyan, #00e5ff);
-            background: var(--green-deep, #0F2D1A); display: flex; align-items: center; justify-content: center;
-            font-size: 0.9rem; font-weight: 700; color: #fff; flex-shrink: 0;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 1.5px solid var(--cyan, #00e5ff);
+            background: var(--green-deep, #0F2D1A);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #fff;
+            flex-shrink: 0;
             box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
         }
-        .post-form .avatar img { width: 100%; height: 100%; object-fit: cover; }
-        
-        .post-form .nombre { font-family: 'Orbitron', monospace; font-size: .8rem; font-weight: 700; color: #fff; letter-spacing: .5px; }
-        
-        /* @Handle estilo WEB3 (Rayo + Píldora) */
-        .post-form .handle {
-            display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; padding: 2px 10px 2px 8px;
-            border-radius: 999px; color: #5cc8ff !important; font-weight: 600; font-size: .72rem;
-            background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16));
-            border: 1px solid rgba(0, 229, 255, .38); text-shadow: 0 0 8px rgba(0, 229, 255, .5);
-            box-shadow: 0 0 10px rgba(0, 229, 255, .12); animation: perfilHandleHalo 2.4s ease-in-out infinite;
+
+        .post-form .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
+
+        .post-form .nombre {
+            font-family: 'Orbitron', monospace;
+            font-size: .8rem;
+            font-weight: 700;
+            color: #fff;
+            letter-spacing: .5px;
+        }
+
+        .post-form .handle {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 4px;
+            padding: 2px 10px 2px 8px;
+            border-radius: 999px;
+            color: #5cc8ff !important;
+            font-weight: 600;
+            font-size: .72rem;
+            background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16));
+            border: 1px solid rgba(0, 229, 255, .38);
+            text-shadow: 0 0 8px rgba(0, 229, 255, .5);
+            box-shadow: 0 0 10px rgba(0, 229, 255, .12);
+            animation: perfilHandleHalo 2.4s ease-in-out infinite;
+        }
+
         .post-form .handle::before {
-            content: '⚡'; font-size: .68rem; line-height: 1; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
+            content: '⚡';
+            font-size: .68rem;
+            line-height: 1;
+            filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
             animation: perfilHandleDestello 1.8s steps(2, end) infinite;
         }
 
-        /* Textarea WEB3 */
         .post-form textarea#postContent {
-            width: 100%; min-height: 96px; resize: vertical; background: rgba(0, 0, 0, .28);
-            border: 1px solid rgba(255, 255, 255, .06); border-radius: 18px; padding: 14px 16px;
-            color: #eef6ff; font-family: 'Inter', sans-serif; font-size: .96rem; line-height: 1.55;
-            box-sizing: border-box; transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
+            width: 100%;
+            min-height: 96px;
+            resize: vertical;
+            background: rgba(0, 0, 0, .28);
+            border: 1px solid rgba(255, 255, 255, .06);
+            border-radius: 18px;
+            padding: 14px 16px;
+            color: #eef6ff;
+            font-family: 'Inter', sans-serif;
+            font-size: .96rem;
+            line-height: 1.55;
+            box-sizing: border-box;
+            transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
         }
+
         .post-form textarea#postContent::placeholder { color: #4f6577; }
+
         .post-form textarea#postContent:focus {
-            outline: none; background: rgba(0, 0, 0, .42); border-color: rgba(0, 229, 255, .55);
+            outline: none;
+            background: rgba(0, 0, 0, .42);
+            border-color: rgba(0, 229, 255, .55);
             box-shadow: 0 0 0 3px rgba(0, 229, 255, .10), 0 0 26px rgba(0, 229, 255, .14);
         }
 
-        /* Selector de Tema */
         .post-form .tema-selector {
-            display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
         }
+
         .post-form .tema-selector label {
-            display: flex; align-items: center; gap: 4px; font-size: .65rem; color: #6f8ba0; text-transform: uppercase; letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: .65rem;
+            color: #6f8ba0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
+
         .post-form .btn-tema {
-            background: rgba(0, 229, 255, .05); border: 1px solid rgba(0, 229, 255, .2); color: #7fdcff;
-            padding: 6px 12px; border-radius: 12px; font-size: .72rem; display: flex; align-items: center; gap: 6px;
-            cursor: pointer; transition: all 0.2s;
+            background: rgba(0, 229, 255, .05);
+            border: 1px solid rgba(0, 229, 255, .2);
+            color: #7fdcff;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: .72rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        .post-form .btn-tema:hover { background: rgba(0, 229, 255, .15); border-color: rgba(0, 229, 255, .4); color: #cdf6ff; }
 
-        /* Botones de herramientas (Hashtag, Emoji, Imagen) */
+        .post-form .btn-tema:hover {
+            background: rgba(0, 229, 255, .15);
+            border-color: rgba(0, 229, 255, .4);
+            color: #cdf6ff;
+        }
+
         .post-form .form-actions {
-            display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; flex-wrap: wrap;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 14px;
+            flex-wrap: wrap;
         }
+
         .post-form .tools {
-            display: flex; gap: 8px; align-items: center;
+            display: flex;
+            gap: 8px;
+            align-items: center;
         }
+
         .post-form .tools > button {
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-            width: 40px; height: 40px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .07);
-            background: rgba(255, 255, 255, .03); color: #7fdcff; cursor: pointer; padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            width: 40px;
+            height: 40px;
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, .07);
+            background: rgba(255, 255, 255, .03);
+            color: #7fdcff;
+            cursor: pointer;
+            padding: 0;
             transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease, color .2s ease;
-            font-size: 0; /* Ocultar texto para dejar solo el icono */
+            font-size: 0;
         }
-        .post-form .tools > button svg { width: 18px; height: 18px; }
+
+        .post-form .tools > button svg {
+            width: 18px;
+            height: 18px;
+        }
+
         .post-form .tools > button:hover {
-            background: rgba(0, 229, 255, .10); border-color: rgba(0, 229, 255, .35); box-shadow: 0 0 14px rgba(0, 229, 255, .22); color: #cdf6ff;
+            background: rgba(0, 229, 255, .10);
+            border-color: rgba(0, 229, 255, .35);
+            box-shadow: 0 0 14px rgba(0, 229, 255, .22);
+            color: #cdf6ff;
         }
+
         .post-form .tools > button:active { transform: scale(.92); }
-        
-        /* Botón especial para vender tokens */
+
         .post-form .tools > button.venta {
-            width: auto; padding: 0 14px; font-size: .7rem; border-color: rgba(212, 175, 55, .3); color: #D4AF37;
+            width: auto;
+            padding: 0 14px;
+            font-size: .7rem;
+            border-color: rgba(212, 175, 55, .3);
+            color: #D4AF37;
         }
+
         .post-form .tools > button.venta:hover {
-            background: rgba(212, 175, 55, .1); border-color: rgba(212, 175, 55, .6); box-shadow: 0 0 14px rgba(212, 175, 55, .2);
+            background: rgba(212, 175, 55, .1);
+            border-color: rgba(212, 175, 55, .6);
+            box-shadow: 0 0 14px rgba(212, 175, 55, .2);
         }
 
-        /* Botón Publicar WEB3 */
         .post-form #btnPublicar {
-            position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px !important;
-            border-radius: 14px !important; border: 0 !important;
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 11px 22px !important;
+            border-radius: 14px !important;
+            border: 0 !important;
             background: linear-gradient(120deg, #00e5ff 0%, #3b82f6 55%, #8b5cf6 100%) !important;
-            background-size: 200% 100%; color: #04070d !important; font-family: 'Orbitron', monospace !important;
-            font-size: .68rem !important; font-weight: 700 !important; letter-spacing: 1.5px !important; text-transform: uppercase;
-            cursor: pointer; box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
-            transition: background-position .6s ease, transform .15s ease, box-shadow .25s ease, opacity .2s ease; overflow: hidden;
+            background-size: 200% 100%;
+            color: #04070d !important;
+            font-family: 'Orbitron', monospace !important;
+            font-size: .68rem !important;
+            font-weight: 700 !important;
+            letter-spacing: 1.5px !important;
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
+            transition: background-position .6s ease, transform .15s ease, box-shadow .25s ease, opacity .2s ease;
+            overflow: hidden;
         }
-        .post-form #btnPublicar svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-        .post-form #btnPublicar:hover { background-position: 100% 0; box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4); }
-        .post-form #btnPublicar:active { transform: scale(.96); }
-        .post-form #btnPublicar:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
 
-        /* Animaciones del Handle */
+        .post-form #btnPublicar svg {
+            width: 15px;
+            height: 15px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .post-form #btnPublicar:hover {
+            background-position: 100% 0;
+            box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4);
+        }
+
+        .post-form #btnPublicar:active { transform: scale(.96); }
+
+        .post-form #btnPublicar:disabled {
+            opacity: .5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
         @keyframes perfilHandleHalo {
             0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
-            50%      { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
-        }
-        @keyframes perfilHandleDestello {
-            0%, 100% { opacity: 1; }
-            50%      { opacity: .35; }
+            50% { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
         }
 
-        /* Header Blur */
+        @keyframes perfilHandleDestello {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .35; }
+        }
+
         .header {
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
@@ -240,8 +431,16 @@
         }
 
         /* ================================================================
-           ANILLO DE HISTORIA ULTRA FUTURISTA WEB3 (HOLOGRAMA)
+           CSARIEL'S · HISTORIAS · ARO WEB3 PRO
+
+           Diseño:
+           - Sin discos multicolor.
+           - Sin fondos circulares giratorios.
+           - Aro metálico fino en oro y cian.
+           - Centro reservado para la fotografía.
+           - Historias vistas con aro discreto.
            ================================================================ */
+
         #csStoryStrip {
             display: flex;
             gap: 16px;
@@ -249,7 +448,10 @@
             overflow-x: auto;
             scrollbar-width: none;
         }
-        #csStoryStrip::-webkit-scrollbar { display: none; }
+
+        #csStoryStrip::-webkit-scrollbar {
+            display: none;
+        }
 
         .cs-story-item {
             display: flex;
@@ -264,7 +466,11 @@
             transition: transform .2s ease;
             width: 68px;
         }
-        .cs-story-item:hover { transform: scale(1.05); }
+
+        .cs-story-item:hover {
+            transform: translateY(-2px);
+        }
+
         .cs-story-item > span:last-child {
             font-size: .7rem;
             color: #8fa3b8;
@@ -276,113 +482,155 @@
             white-space: nowrap;
         }
 
-        /* Anillo base (conic-gradient animado) */
+        /* ARO EXTERIOR WEB3 PRO */
         .cs-story-ring {
             position: relative;
             width: 68px;
             height: 68px;
+            min-width: 68px;
+            min-height: 68px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 3px;
-            background: conic-gradient(from 0deg, #00e5ff, #8b5cf6, #ff00aa, #00e5ff);
-            animation: girarHolograma 4s linear infinite;
+            box-sizing: border-box;
+
+            /* Aro metálico elegante, sin disco multicolor */
+            background: linear-gradient(
+                145deg,
+                #D4AF37 0%,
+                #f6e6a6 22%,
+                #00c9d8 50%,
+                #0F2D1A 76%,
+                #D4AF37 100%
+            );
+
+            /* Sin giro ni animación multicolor */
+            animation: none !important;
+
             box-shadow:
-                0 0 20px rgba(0, 229, 255, .4),
-                0 0 40px rgba(139, 92, 246, .2),
-                inset 0 0 10px rgba(0, 229, 255, .2);
-            transition: box-shadow .3s ease;
-            overflow: hidden !important;
-        }
-        .cs-story-ring::before {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            border-radius: 50%;
-            background: conic-gradient(from 0deg, #00e5ff, transparent 30%, #8b5cf6, transparent 60%, #ff00aa, transparent 90%, #00e5ff);
-            z-index: -1;
-            filter: blur(6px);
-            opacity: .7;
-            animation: girarHolograma 3s linear infinite reverse;
-        }
-        .cs-story-item:hover .cs-story-ring {
-            box-shadow:
-                0 0 30px rgba(0, 229, 255, .8),
-                0 0 60px rgba(139, 92, 246, .5),
-                inset 0 0 15px rgba(0, 229, 255, .4);
+                0 0 0 1px rgba(212, 175, 55, .28),
+                0 0 12px rgba(0, 229, 255, .13),
+                0 0 16px rgba(212, 175, 55, .12);
+
+            transition: box-shadow .25s ease, transform .25s ease;
+            overflow: visible !important;
         }
 
-        /* Interior (recorte de la foto) */
+        /* Eliminar el antiguo disco holográfico */
+        .cs-story-ring::before {
+            content: none !important;
+            display: none !important;
+        }
+
+        .cs-story-item:hover .cs-story-ring {
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, .55),
+                0 0 16px rgba(0, 229, 255, .28),
+                0 0 22px rgba(212, 175, 55, .20);
+        }
+
+        /* FOTOGRAFÍA INTERIOR */
         .cs-story-ring img,
         .cs-story-ring > .story-avatar {
             width: 100%;
             height: 100%;
+            min-width: 0;
+            min-height: 0;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #0a0f16;
             background: #0a0f16;
             position: relative;
             z-index: 2;
+            box-sizing: border-box;
         }
 
-        /* Anillo visto (gris) */
+        /* HISTORIA YA VISTA */
         .cs-story-ring.vista {
-            background: conic-gradient(from 0deg, #2a3440, #4a5563, #2a3440) !important;
-            animation: none;
-            box-shadow: none;
-        }
-        .cs-story-ring.vista::before { display: none; }
+            background: linear-gradient(
+                145deg,
+                #46534c,
+                #8b9690,
+                #26372e
+            ) !important;
 
-        /* Botón "Tu historia" (Añadir) */
-        .cs-story-ring.story-add {
-            background: conic-gradient(from 0deg, #00e5ff, #8b5cf6, #00e5ff) !important;
-            animation: girarHolograma 3s linear infinite;
+            animation: none !important;
+
+            box-shadow:
+                0 0 0 1px rgba(143, 163, 152, .25);
         }
+
+        .cs-story-ring.vista::before {
+            display: none !important;
+        }
+
+        /* TU HISTORIA · ARO PARA AGREGAR */
+        .cs-story-ring.story-add {
+            background: linear-gradient(
+                145deg,
+                #D4AF37 0%,
+                #f5e4a1 28%,
+                #00e5ff 65%,
+                #0F2D1A 100%
+            ) !important;
+
+            animation: none !important;
+
+            box-shadow:
+                0 0 0 1px rgba(212, 175, 55, .4),
+                0 0 13px rgba(0, 229, 255, .18),
+                0 0 18px rgba(212, 175, 55, .15);
+        }
+
+        .cs-story-ring.story-add::before {
+            display: none !important;
+        }
+
         .cs-story-ring.story-add svg {
             width: 26px;
             height: 26px;
-            stroke: #00e5ff;
-            stroke-width: 3;
+            stroke: #D4AF37;
+            stroke-width: 2.4;
             fill: none;
-            filter: drop-shadow(0 0 6px rgba(0, 229, 255, 1));
+            filter: drop-shadow(0 0 4px rgba(212, 175, 55, .35));
             position: relative;
             z-index: 3;
         }
+
         .cs-story-ring.story-add::after {
             content: '';
             position: absolute;
-            inset: 4px;
+            inset: 3px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(0, 229, 255, .15), transparent 70%);
+            background: #0a0f16;
             z-index: 1;
         }
 
-        @keyframes girarHolograma {
-            from { transform: rotate(0deg); }
-            to   { transform: rotate(360deg); }
+        .cs-story-ring.story-add svg {
+            z-index: 3;
         }
 
-        /* Animación de pulso en el anillo de "Tu historia" */
-        @keyframes pulsoFuturista {
-            0%, 100% {
-                box-shadow: 0 0 20px rgba(0, 229, 255, .4), 0 0 40px rgba(139, 92, 246, .2);
+        /* Accesibilidad: respetar movimiento reducido */
+        @media (prefers-reduced-motion: reduce) {
+            .cs-story-ring,
+            .cs-story-ring.story-add,
+            .cs-story-item {
+                animation: none !important;
+                transition: none !important;
             }
-            50% {
-                box-shadow: 0 0 35px rgba(0, 229, 255, .7), 0 0 70px rgba(139, 92, 246, .4);
-            }
-        }
-        .cs-story-ring.story-add {
-            animation: girarHolograma 3s linear infinite, pulsoFuturista 2.5s ease-in-out infinite;
         }
     </style>
 </head>
+
 <body>
     <div class="nebula nebula-1" aria-hidden="true"></div>
     <div class="nebula nebula-2" aria-hidden="true"></div>
     <div class="nebula nebula-3" aria-hidden="true"></div>
 
     <div class="app">
+
         <header class="header">
             <a href="/" class="logo" aria-label="Ir a la página de inicio">
                 <span class="logo-hex">◈</span>
@@ -392,96 +640,144 @@
                     WEB3
                 </span>
             </a>
+
             <div class="header-actions">
                 <span class="network-badge">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/></svg>
                     Polygon
                 </span>
+
                 <span class="token-badge" id="tokenBadge" onclick="verTokens()">
-                    <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
+                    <svg class="icon icon-sm" viewBox="0 0 24 24">
+                        <polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/>
+                        <polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/>
+                    </svg>
                     <span id="tokenBadgeCantidad">0</span> Es.stoks
                 </span>
             </div>
         </header>
 
         <nav class="main-nav" aria-label="Navegación principal">
+
             <a href="/" class="nav-link" data-nav="inicio">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5V21a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>
                 Inicio
             </a>
+
             <a href="/features/muro/muro.html" class="nav-link active" data-nav="muro" aria-current="page">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"/>
+                    <rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                </svg>
                 Muro
             </a>
+
             <a href="/features/perfil/perfil.html" class="nav-link" data-nav="perfil">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
                 Perfil
             </a>
+
             <a href="/features/mensajes/contactos.html" class="nav-link" data-nav="contactos">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7"/><path d="M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <circle cx="9" cy="8" r="3.5"/>
+                    <path d="M2.5 20a6.5 6.5 0 0 1 13 0"/>
+                    <path d="M16 4.5a3.5 3.5 0 0 1 0 7"/>
+                    <path d="M21.5 20a6.5 6.5 0 0 0-4-6"/>
+                </svg>
                 Contactos
             </a>
+
             <a href="/features/live/live.html" class="nav-link live" data-nav="live">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="2"/>
+                    <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
+                </svg>
                 Live
             </a>
+
             <a href="/features/internet/internet.html" class="nav-link" data-nav="internet">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>
+                </svg>
                 Internet
             </a>
+
             <a href="/features/videos/videos.html" class="nav-link" data-nav="videos">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="2.5"/><polygon points="10 9 15 12 10 15 10 9"/></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <rect x="2.5" y="5" width="19" height="14" rx="2.5"/>
+                    <polygon points="10 9 15 12 10 15 10 9"/>
+                </svg>
                 Videos
             </a>
+
             <a href="/features/grupos/grupos.html" class="nav-link" data-nav="grupos">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2.5 20.5 7v10L12 21.5 3.5 17V7z"/></svg>
                 Canales
             </a>
+
             <a href="/features/mercado/index.html" class="nav-link" data-nav="mercado">
-                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                    <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                    <path d="M3 6h18"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                </svg>
                 Mercado
             </a>
+
         </nav>
 
-        <!-- ================= NUEVA BARRA DE BÚSQUEDA GLOBAL ================= -->
+        <!-- BÚSQUEDA GLOBAL -->
         <div class="global-search-container">
             <div class="global-search-bar">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
                 <input type="text" id="globalSearchInput" placeholder="Buscar personas en Csariel's..." autocomplete="off" maxlength="80">
             </div>
             <div class="global-search-results" id="globalSearchResults"></div>
         </div>
 
-        <!-- ===== FILTROS DEL MURO ===== -->
+        <!-- FILTROS DEL MURO -->
         <nav class="muro-filter-nav" id="muroFilterNav" aria-label="Filtros del Muro">
+
             <a href="#" class="filter-tab active" data-filter="parati">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/></svg>
                 Para ti
             </a>
+
             <a href="#" class="filter-tab" data-filter="envivo">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49"/></svg>
                 En vivo <span class="dot-live"></span>
             </a>
+
             <a href="#" class="filter-tab" data-filter="siguiendo">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/><path d="M18 8v6M15 11h6"/></svg>
                 Siguiendo
             </a>
+
             <a href="#" class="filter-tab" data-filter="explorar">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5z"/></svg>
                 Explorar
             </a>
+
             <a href="#" class="filter-tab" data-filter="puebla">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
                 Puebla
             </a>
+
         </nav>
 
-        <!-- ===== ESPACIO SOCIAL ===== -->
+        <!-- ESPACIO SOCIAL -->
         <div class="cs-social-section-title">
             <span>Tu espacio social</span>
             <small>Conecta · Comparte · Descubre</small>
         </div>
 
+        <!-- HISTORIAS -->
         <section class="cs-story-strip" id="csStoryStrip" aria-label="Historias">
             <button type="button" class="cs-story-item" onclick="crearHistoria()">
                 <span class="cs-story-ring story-add">
@@ -491,6 +787,7 @@
             </button>
         </section>
 
+        <!-- VALOR DE MERCADO -->
         <div class="valor-mercado" id="valorMercado">
             <div class="info">
                 <div class="titulo" data-clave="muro_valor_mercado">Valor de mercado Csariel's</div>
@@ -501,12 +798,14 @@
                     <span><span data-clave="muro_tendencia">Tendencia:</span> <strong id="tendenciaValor" style="color:var(--text-muted);">Estable</strong></span>
                 </div>
             </div>
+
             <button class="btn-vender-token" onclick="abrirModalVenta()" data-clave="muro_vender_tokens">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
                 Vender Es.stoks
             </button>
         </div>
 
+        <!-- TENDENCIAS -->
         <div class="trending-section">
             <div class="header">
                 <h3 data-clave="muro_tendencia_ahora">
@@ -515,11 +814,13 @@
                 </h3>
                 <span class="actualizado" id="trendingActualizado" data-clave="muro_actualizado">Actualizado</span>
             </div>
+
             <div class="trending-tags" id="trendingTags">
                 <span class="tag loading">Cargando tendencias...</span>
             </div>
         </div>
 
+        <!-- TOKENS DESTACADOS -->
         <div class="tokens-destacados" id="tokensDestacados" style="display:none;">
             <div class="header">
                 <h3>
@@ -530,6 +831,7 @@
             <div id="tokensDestacadosLista"></div>
         </div>
 
+        <!-- FILTRO DE TEMAS -->
         <div class="filtro-temas" id="filtroTemas">
             <span class="label">Filtro:</span>
             <button class="toggle-btn active" id="btnFiltroToggle" onclick="toggleFiltroTemas()">
@@ -539,8 +841,9 @@
             <span class="info" id="filtroInfo">Mostrando todo el muro</span>
         </div>
 
-        <!-- ===== COMPOSITOR WEB3 ===== -->
+        <!-- COMPOSITOR -->
         <div class="post-form">
+
             <div class="form-header">
                 <div class="avatar" id="userAvatar">◈</div>
                 <div>
@@ -554,10 +857,12 @@
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
                     Tema (opcional):
                 </label>
+
                 <button type="button" class="btn-tema" id="btnTemaSelector" onclick="toggleTemaDropdown()">
                     <span id="temaSelectorLabel">Sin tema</span>
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
+
                 <div class="tema-dropdown" id="temaDropdown"></div>
             </div>
 
@@ -565,30 +870,39 @@
 
             <div class="form-actions">
                 <div class="tools">
+
                     <button type="button" onclick="insertarHashtag()" title="Hashtag">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
                     </button>
+
                     <button type="button" onclick="toggleEmojiPicker()" id="btnEmoji" title="Emoji">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                     </button>
+
                     <button type="button" onclick="abrirSelectorImagen()" title="Imagen">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                     </button>
+
                     <button type="button" class="venta" onclick="abrirModalVenta()">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
                         Vender
                     </button>
+
                     <div class="emoji-picker" id="emojiPicker">
                         <div class="titulo" data-clave="muro_elige_emoji">Elige tu emoji</div>
                         <div class="grid" id="emojiGrid"></div>
                     </div>
+
                 </div>
+
                 <button class="btn-publicar" id="btnPublicar" data-clave="muro_publicar">
                     <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     Publicar
                 </button>
             </div>
+
             <input type="file" id="inputImagen" accept="image/*" style="display:none;" onchange="subirImagenMuro(event)" />
+
         </div>
 
         <div id="feedContainer"></div>
@@ -600,31 +914,38 @@
                 Polygon
             </span>
         </footer>
+
     </div>
 
-    <!-- ================= MODAL VENDER ================= -->
+    <!-- MODAL VENDER -->
     <div class="modal-overlay" id="modalVender">
         <div class="modal">
+
             <div class="modal-header">
                 <h2 data-clave="muro_vender_tokens">
                     <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg>
                     Vender Es.stoks
                 </h2>
+
                 <button type="button" class="btn-cerrar" onclick="cerrarModalVenta()" aria-label="Cerrar">
                     <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
+
             <div class="form-group">
                 <label data-clave="muro_cantidad">Cantidad de tokens</label>
                 <input type="number" id="inputCantidadTokens" min="1" max="100" step="1" value="1" />
                 <div style="font-size:0.65rem;color:var(--text-muted);margin-top:4px;">
-                    <span data-clave="muro_tokens_disponibles">Tokens disponibles:</span> <strong id="tokensDisponibles">0</strong>
+                    <span data-clave="muro_tokens_disponibles">Tokens disponibles:</span>
+                    <strong id="tokensDisponibles">0</strong>
                 </div>
             </div>
+
             <div class="form-group">
                 <label data-clave="muro_precio_token">Precio por token (MXN)</label>
                 <input type="number" id="inputPrecioToken" min="1" step="0.1" value="4.50" />
             </div>
+
             <div class="detalle-pago" style="background:rgba(0,0,0,0.2);border-radius:10px;padding:12px;margin-bottom:14px;">
                 <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:6px;">
                     <span style="color:var(--text-muted);">Recibirás en total:</span>
@@ -635,60 +956,77 @@
                     <span id="ventaComisionPlataforma" style="color:var(--warning);">$0.14 MXN</span>
                 </div>
             </div>
+
             <button class="btn-guardar" id="btnPublicarVenta" data-clave="muro_publicar_venta">
                 <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
                 Publicar venta
             </button>
+
         </div>
     </div>
 
-    <!-- ================= MODAL CONFIRMAR COMPRA ================= -->
+    <!-- MODAL CONFIRMAR COMPRA -->
     <div class="modal-overlay" id="modalConfirmarCompra">
         <div class="modal">
+
             <div class="modal-header">
                 <h2 data-clave="muro_confirmar_compra">
                     <svg class="icon" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     Confirmar compra
                 </h2>
+
                 <button type="button" class="btn-cerrar" onclick="cerrarModalConfirmacion()" aria-label="Cerrar">
                     <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
+
             <div class="modal-body">
+
                 <div class="form-group" style="text-align:left;">
                     <label data-clave="muro_cantidad_comprar">¿Cuántos tokens quieres comprar?</label>
                     <input type="number" id="inputCantidadCompra" min="1" step="1" value="1" />
+
                     <div style="display:flex;justify-content:space-between;font-size:0.6rem;color:var(--text-muted);margin-top:4px;">
                         <span>Disponibles: <strong id="confirmDisponibles">0</strong></span>
                         <button type="button" onclick="seleccionarTodosTokens()" style="background:none;border:none;color:var(--gold);font-size:0.6rem;cursor:pointer;text-decoration:underline;">Comprar todos</button>
                     </div>
                 </div>
+
                 <div class="detalle-pago">
+
                     <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:4px;">
                         <span style="color:var(--text-muted);">Precio unitario:</span>
                         <span id="confirmPrecioUnitario">$0.00 MXN</span>
                     </div>
+
                     <div style="display:flex;justify-content:space-between;font-size:0.7rem;margin-bottom:6px;">
                         <span style="color:var(--text-muted);">Cantidad:</span>
                         <span id="confirmCantidadLabel">1 token</span>
                     </div>
+
                     <div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:6px;margin-top:6px;">
+
                         <div style="display:flex;justify-content:space-between;font-size:0.75rem;margin-bottom:4px;">
                             <span style="color:var(--text-muted);">Total a pagar:</span>
                             <span id="confirmTotal" style="font-family:'Orbitron',monospace;color:var(--gold);font-weight:700;">$0.00 MXN</span>
                         </div>
+
                         <div style="display:flex;justify-content:space-between;font-size:0.6rem;margin-bottom:4px;">
                             <span style="color:var(--text-muted);">Comisión Csariel's (3%):</span>
                             <span id="confirmComision" style="color:var(--warning);">$0.00 MXN</span>
                         </div>
+
                         <div style="display:flex;justify-content:space-between;font-size:0.6rem;">
                             <span style="color:var(--text-muted);">Vendedor recibe:</span>
                             <span id="confirmVendedor" style="color:var(--success);">$0.00 MXN</span>
                         </div>
+
                     </div>
                 </div>
+
                 <div class="form-group" style="text-align:left;margin-top:12px;">
                     <label for="muro-pay-currency">Red de pago (cripto)</label>
+
                     <select id="muro-pay-currency" style="width:100%;padding:10px 14px;background:rgba(0,0,0,0.3);border:1px solid var(--glass-border);border-radius:10px;color:var(--text-primary);font-size:0.85rem;outline:none;">
                         <option value="usdttrc20">USDT · TRON (TRC20) — recomendado</option>
                         <option value="usdtbsc">USDT · BSC (BEP20)</option>
@@ -699,34 +1037,42 @@
                         <option value="usdcbsc">USDC · BSC (BEP20)</option>
                     </select>
                 </div>
+
                 <div style="background:rgba(212,175,55,0.06);border:1px solid rgba(212,175,55,0.15);border-radius:10px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:8px;">
                     <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:var(--gold);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     <span style="font-size:0.65rem;color:var(--text-muted);">Tendrás <strong style="color:var(--gold);">30 minutos</strong> para pagar.</span>
                 </div>
+
                 <div style="display:flex;gap:10px;margin-top:16px;">
                     <button type="button" class="btn-cancelar" onclick="cerrarModalConfirmacion()">Cancelar</button>
+
                     <button type="button" class="btn-confirmar" onclick="confirmarCompraCrypto()" id="btnConfirmarCompra">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                         Ir a pagar
                     </button>
                 </div>
+
             </div>
         </div>
     </div>
 
-    <!-- ================= MODAL PAGO CRYPTO ================= -->
+    <!-- MODAL PAGO CRYPTO -->
     <div class="modal-overlay" id="cryptoPaymentModal">
         <div class="modal modal-content">
+
             <div class="modal-header">
                 <h2 data-clave="muro_pagar_usdt">
                     <svg class="icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
                     Pagar con USDT/USDC
                 </h2>
+
                 <button type="button" class="btn-cerrar" onclick="cerrarModalPago()" aria-label="Cerrar">
                     <svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                 </button>
             </div>
+
             <div style="text-align:center;">
+
                 <div class="contador-pago" id="contadorPago">
                     <div class="label" data-clave="muro_tiempo_restante">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -734,8 +1080,13 @@
                     </div>
                     <div class="tiempo" id="tiempoRestante">30:00</div>
                 </div>
+
                 <p style="color:var(--text-secondary);font-size:0.85rem;margin:10px 0;">Escanea el QR o copia la dirección</p>
-                <div class="qr-container"><img id="cryptoQR" src="" alt="QR de pago" /></div>
+
+                <div class="qr-container">
+                    <img id="cryptoQR" src="" alt="QR de pago" />
+                </div>
+
                 <div class="address-box">
                     <div class="label">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
@@ -743,35 +1094,46 @@
                     </div>
                     <div class="address" id="cryptoAddress">Cargando...</div>
                 </div>
-                <div class="monto-final"><span id="cryptoMonto">0.00</span> <span id="cryptoMoneda">USDT</span></div>
+
+                <div class="monto-final">
+                    <span id="cryptoMonto">0.00</span>
+                    <span id="cryptoMoneda">USDT</span>
+                </div>
+
                 <div class="actions">
+
                     <button type="button" onclick="copiarDireccionCrypto()" style="background:transparent;color:var(--text-secondary);border:1px solid var(--glass-border);padding:8px 16px;border-radius:30px;font-size:0.65rem;cursor:pointer;">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
                         Copiar dirección
                     </button>
+
                     <button type="button" class="btn-gold" onclick="verificarPagoCrypto()" id="btnVerificarPago">
                         <svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                         Verificar pago
                     </button>
+
                 </div>
+
                 <div class="status" id="cryptoStatus">Esperando confirmación de pago...</div>
+
             </div>
         </div>
     </div>
 
-    <!-- Visor de historias (lo llena muro-historias.js) -->
+    <!-- VISOR DE HISTORIAS -->
     <div id="csHistoriaVisor"></div>
 
-    <!-- Toast -->
+    <!-- TOAST -->
     <div class="toast" id="toast" role="alert" aria-live="polite"></div>
 
-    <!-- Banner de errores -->
+    <!-- BANNER DE ERRORES -->
     <div id="errorBanner" style="display:none; position:fixed; top:0; left:0; right:0; z-index:99999; background:#ff3366; color:#fff; padding:12px 16px; font-family:monospace; font-size:0.75rem; word-break:break-word;">
-        <strong>Error:</strong> <span id="errorBannerText"></span>
+        <strong>Error:</strong>
+        <span id="errorBannerText"></span>
         <button type="button" onclick="document.getElementById('errorBanner').style.display='none'" style="float:right; background:none; border:1px solid #fff; color:#fff; border-radius:6px; padding:2px 10px; cursor:pointer;">Cerrar</button>
     </div>
 
-    <!-- ================= SCRIPTS ================= -->
+    <!-- SCRIPTS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js"></script>
 
@@ -786,29 +1148,34 @@
     <script src="/features/muro/js/muro-ventas.js"></script>
     <script src="/features/muro/js/muro-pagos.js"></script>
     <script src="/features/muro/js/muro-realtime.js"></script>
-    <!-- [v3.3] Script unificado de historias con soporte de video, RPC y filtro de origen -->
+
+    <!-- HISTORIAS -->
     <script src="/features/muro/js/muro-historias.js?v=3"></script>
     <script src="/features/muro/js/muro-init.js"></script>
 
-    <!-- ================= SCRIPT DE BÚSQUEDA GLOBAL CORREGIDO ================= -->
+    <!-- BÚSQUEDA GLOBAL -->
     <script>
-    // Función para abrir el perfil
     window.verPerfilDesdeMuro = function(usuarioId, handle) {
         if (!usuarioId) return;
-        const param = handle ? `?u=${encodeURIComponent(handle)}` : `?id=${encodeURIComponent(usuarioId)}`;
+
+        const param = handle
+            ? `?u=${encodeURIComponent(handle)}`
+            : `?id=${encodeURIComponent(usuarioId)}`;
+
         window.location.href = `/features/perfil/perfil-publico.html${param}`;
     };
 
-    // Función para agregar contacto
     window.agregarDesdeMuro = async function(contactoId) {
         const client = window.supabaseClient || null;
+
         if (!client) {
             console.error("Supabase no está listo");
             return;
         }
-        
+
         try {
             const session = await client.auth.getSession();
+
             if (!session || !session.data.session) return;
 
             const miId = session.data.session.user.id;
@@ -822,31 +1189,44 @@
 
             if (error) {
                 if (error.code === '23505') {
-                    if (window.showToast) window.showToast('Ya enviaste una solicitud a esta persona.', 'warning');
+                    if (window.showToast) {
+                        window.showToast('Ya enviaste una solicitud a esta persona.', 'warning');
+                    }
                 } else {
                     throw error;
                 }
             } else {
-                if (window.showToast) window.showToast('Solicitud de amistad enviada.', 'success');
+                if (window.showToast) {
+                    window.showToast('Solicitud de amistad enviada.', 'success');
+                }
+
                 const resultsContainer = document.getElementById('globalSearchResults');
-                if (resultsContainer) resultsContainer.classList.remove('active');
+
+                if (resultsContainer) {
+                    resultsContainer.classList.remove('active');
+                }
             }
+
         } catch (err) {
             console.error("Error al agregar:", err);
-            if (window.showToast) window.showToast('No se pudo enviar la solicitud.', 'error');
+
+            if (window.showToast) {
+                window.showToast('No se pudo enviar la solicitud.', 'error');
+            }
         }
     };
 
-    // Lógica del buscador
     (function() {
         const input = document.getElementById('globalSearchInput');
         const resultsContainer = document.getElementById('globalSearchResults');
+
         let debounceTimer;
 
         if (!input || !resultsContainer) return;
 
         input.addEventListener('input', function(e) {
             const query = e.target.value.trim();
+
             clearTimeout(debounceTimer);
 
             if (query.length < 2) {
@@ -860,13 +1240,19 @@
 
             debounceTimer = setTimeout(async () => {
                 const client = window.supabaseClient || null;
+
                 if (!client) return;
 
                 try {
-                    const { data, error } = await client.rpc('buscar_usuarios', { p_query: query });
+                    const { data, error } = await client.rpc('buscar_usuarios', {
+                        p_query: query
+                    });
+
                     if (error) throw error;
-                    
-                    const usuarios = Array.isArray(data) ? data : (data && Array.isArray(data.data) ? data.data : []);
+
+                    const usuarios = Array.isArray(data)
+                        ? data
+                        : (data && Array.isArray(data.data) ? data.data : []);
 
                     if (!usuarios.length) {
                         resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #8c949c; font-size: 0.8rem;">No se encontraron usuarios.</div>';
@@ -874,7 +1260,11 @@
                     }
 
                     const session = await client.auth.getSession();
-                    const miId = session && session.data && session.data.session ? session.data.session.user.id : null;
+
+                    const miId = session && session.data && session.data.session
+                        ? session.data.session.user.id
+                        : null;
+
                     const usuariosFiltrados = usuarios.filter(u => u.id !== miId);
 
                     if (!usuariosFiltrados.length) {
@@ -884,105 +1274,127 @@
 
                     resultsContainer.innerHTML = usuariosFiltrados.map(u => {
                         const nombre = u.nombre || u.handle || 'Usuario';
-                        const handle = u.handle ? '@' + u.handle.replace(/^@/, '') : '';
-                        
-                        const avatarImg = u.avatar_url 
-                            ? `<img src="${u.avatar_url}" alt="${nombre}" style="width:100%;height:100%;object-fit:cover;">` 
+
+                        const handle = u.handle
+                            ? '@' + u.handle.replace(/^@/, '')
+                            : '';
+
+                        const avatarImg = u.avatar_url
+                            ? `<img src="${u.avatar_url}" alt="${nombre}" style="width:100%;height:100%;object-fit:cover;">`
                             : nombre.charAt(0).toUpperCase();
 
                         return `
                             <div class="search-user-item" onclick="window.verPerfilDesdeMuro('${u.id}', '${u.handle || ''}')">
                                 <div class="search-user-avatar">${avatarImg}</div>
+
                                 <div class="search-user-info">
-                                    <div class="search-user-name">${nombre} ${u.verificado ? '<span style="color:var(--gold);font-size:0.7rem;">✓</span>' : ''}</div>
+                                    <div class="search-user-name">
+                                        ${nombre}
+                                        ${u.verificado ? '<span style="color:var(--gold);font-size:0.7rem;">✓</span>' : ''}
+                                    </div>
+
                                     <div class="search-user-handle">${handle}</div>
                                 </div>
-                                <button class="search-user-action" onclick="event.stopPropagation(); window.agregarDesdeMuro('${u.id}')">Agregar</button>
+
+                                <button class="search-user-action" onclick="event.stopPropagation(); window.agregarDesdeMuro('${u.id}')">
+                                    Agregar
+                                </button>
                             </div>
                         `;
                     }).join('');
 
                 } catch (err) {
                     console.error("Error buscando usuarios:", err);
+
                     resultsContainer.innerHTML = '<div style="padding: 12px; text-align: center; color: #ff3366; font-size: 0.8rem;">Error al buscar usuarios.</div>';
                 }
+
             }, 400);
         });
 
         document.addEventListener('click', function(e) {
             if (!e.target.closest('.global-search-container')) {
-                if (resultsContainer) resultsContainer.classList.remove('active');
+                if (resultsContainer) {
+                    resultsContainer.classList.remove('active');
+                }
             }
         });
+
     })();
     </script>
 
+    <!-- GUARDIAS Y FILTROS DEL MURO -->
     <script>
     (function () {
         'use strict';
 
-        // Guardia de enlaces principales
         var DESTINOS = {
-            inicio:    '/',
-            muro:      '/features/muro/muro.html',
-            perfil:    '/features/perfil/perfil.html',
+            inicio: '/',
+            muro: '/features/muro/muro.html',
+            perfil: '/features/perfil/perfil.html',
             contactos: '/features/mensajes/contactos.html',
-            live:      '/features/live/live.html',
-            internet:  '/features/internet/internet.html',
-            videos:    '/features/videos/videos.html',
-            grupos:    '/features/grupos/grupos.html',
-            mercado:   '/features/mercado/index.html'
+            live: '/features/live/live.html',
+            internet: '/features/internet/internet.html',
+            videos: '/features/videos/videos.html',
+            grupos: '/features/grupos/grupos.html',
+            mercado: '/features/mercado/index.html'
         };
 
         document.querySelectorAll('.main-nav a[data-nav]').forEach(function (enlace) {
             var destino = DESTINOS[enlace.getAttribute('data-nav')];
+
             if (destino && enlace.getAttribute('href') !== destino) {
                 enlace.setAttribute('href', destino);
             }
         });
 
-        // Guardia de la barra de secciones (oculta, pero con enlaces correctos)
         var DESTINOS_SECCIONES = {
-            inicio:    '/',
-            muro:      '/features/muro/muro.html',
-            perfil:    '/features/perfil/perfil.html',
+            inicio: '/',
+            muro: '/features/muro/muro.html',
+            perfil: '/features/perfil/perfil.html',
             contactos: '/features/mensajes/contactos.html',
-            live:      '/features/live/live.html'
+            live: '/features/live/live.html'
         };
 
         document.querySelectorAll('.muro-section-nav a[data-sec]').forEach(function (enlace) {
             var destino = DESTINOS_SECCIONES[enlace.getAttribute('data-sec')];
+
             if (destino && enlace.getAttribute('href') !== destino) {
                 enlace.setAttribute('href', destino);
             }
         });
 
-        // Filtros del Muro
         var filterTabs = document.querySelectorAll('.muro-filter-nav .filter-tab');
+
         filterTabs.forEach(function (tab) {
             tab.addEventListener('click', function (e) {
                 e.preventDefault();
+
                 filterTabs.forEach(function (t) {
                     t.classList.remove('active');
                     t.removeAttribute('aria-current');
                 });
+
                 tab.classList.add('active');
                 tab.setAttribute('aria-current', 'true');
 
                 var filtro = tab.getAttribute('data-filter');
                 var info = document.getElementById('filtroInfo');
+
                 var mensajes = {
-                    parati:    'Mostrando todo el muro',
-                    envivo:    'Contenido en vivo',
+                    parati: 'Mostrando todo el muro',
+                    envivo: 'Contenido en vivo',
                     siguiendo: 'Publicaciones de cuentas que sigues',
-                    explorar:  'Explorando todo el contenido',
-                    puebla:    'Contenido de Puebla'
+                    explorar: 'Explorando todo el contenido',
+                    puebla: 'Contenido de Puebla'
                 };
-                if (info) info.textContent = mensajes[filtro] || 'Mostrando todo el muro';
+
+                if (info) {
+                    info.textContent = mensajes[filtro] || 'Mostrando todo el muro';
+                }
             });
         });
 
-        // Cargar historias cuando el DOM esté listo
         function arrancarHistorias() {
             if (typeof cargarHistorias === 'function') {
                 cargarHistorias().catch(function (e) {
@@ -990,34 +1402,53 @@
                 });
             }
         }
+
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', arrancarHistorias);
         } else {
             arrancarHistorias();
         }
+
     })();
 
-    // Helpers de accesos rápidos
     function enfocarPublicacion() {
         var ta = document.getElementById('postContent');
+
         if (!ta) return;
-        ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        setTimeout(function () { ta.focus(); }, 300);
+
+        ta.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        });
+
+        setTimeout(function () {
+            ta.focus();
+        }, 300);
     }
 
     function compartirMuro() {
         var url = window.location.href;
         var titulo = "Csariel's · Muro WEB3";
+
         if (navigator.share) {
-            navigator.share({ title: titulo, url: url }).catch(function () {});
+            navigator.share({
+                title: titulo,
+                url: url
+            }).catch(function () {});
+
         } else if (navigator.clipboard) {
             navigator.clipboard.writeText(url).then(function () {
-                if (typeof showToast === 'function') showToast('Enlace copiado', 'success');
+                if (typeof showToast === 'function') {
+                    showToast('Enlace copiado', 'success');
+                }
             }).catch(function () {
-                if (typeof showToast === 'function') showToast('No se pudo copiar el enlace', 'error');
+                if (typeof showToast === 'function') {
+                    showToast('No se pudo copiar el enlace', 'error');
+                }
             });
         }
     }
     </script>
+
 </body>
 </html>
