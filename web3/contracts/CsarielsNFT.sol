@@ -2,19 +2,32 @@
 pragma solidity ^0.8.20;
 
 // ================================================================
-// CSARIEL'S NFT
+// CSARIEL'S NFT · PROPUESTA v1.1.0 (PARA REVISIÓN Y TESTNET)
 // ================================================================
-// NFT exclusivo del ecosistema Csariel's.
+// NO DESPLEGAR DIRECTO EN MAINNET. Probar primero en Polygon Amoy.
 //
-// REGLAS DE NEGOCIO:
-// - Se obtiene canjeando 12 ES.TOKS (se queman)
-// - El usuario puede acumular y canjear cuantos NFTs quiera
-// - Cada NFT tiene su propio reloj de 30 días
-// - Soulbound mientras activo (no transferible)
-// - Al caducar: conmemorativo, transferible (regalar), no canjeable
-// - El usuario paga el gas al canjear y al quemar
-// - Modificable vía proxy UUPS
-// - Pausable para emergencias
+// CAMBIOS RESPECTO A v1.0.0 (marcados con [v1.1]):
+//   1. approve() y setApprovalForAll() revierten: ningún marketplace
+//      puede listar el NFT para venta.
+//   2. transferFrom() y safeTransferFrom() revierten: el NFT solo se
+//      mueve mediante regalar().
+//   3. regalar(destinatario, tokenId): solo después de los 30 días
+//      de vigencia (cuando ya está caducado) y solo si no fue canjeado.
+//   4. Variable nueva _transferAutorizada al FINAL del storage: es
+//      compatible con el proxy UUPS ya desplegado (no mueve slots).
+//   5. version() devuelve "1.1.0".
+//
+// LO QUE ESTE CONTRATO NO PUEDE IMPEDIR (límite técnico):
+//   - Que alguien regale el NFT a cambio de dinero FUERA de la
+//     blockchain. La regla "no vender" se cumple en el contrato
+//     (no hay venta on-chain posible) y en la app (sin listado).
+//
+// REGLAS (según el negocio):
+//   - Días 0 a 30: congelado. No se puede transferir, regalar ni vender.
+//   - Día 31 en adelante: se puede regalar (gratis) a otro usuario.
+//   - Nunca se puede vender en el mercado.
+//   - Se puede canjear por domo solo mientras esté activo (día 0 a 30),
+//     con firma del backend (quemarPorDomo).
 // ================================================================
 
 import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
@@ -56,7 +69,7 @@ contract CsarielsNFT is
     uint256 public constant SEGUNDOS_VALIDEZ = DIAS_VALIDEZ * 24 * 60 * 60;
 
     // ================================================================
-    // STORAGE
+    // STORAGE (no cambiar el orden de estas variables: es el proxy vivo)
     // ================================================================
 
     string public baseURI;
@@ -75,6 +88,9 @@ contract CsarielsNFT is
     mapping(uint256 => InfoNFT) public infoNFT;
     mapping(address => uint256) public nonces;
 
+    // [v1.1] Se agrega AL FINAL del storage para compatibilidad UUPS.
+    bool private _transferAutorizada;
+
     // ================================================================
     // EVENTOS
     // ================================================================
@@ -88,6 +104,14 @@ contract CsarielsNFT is
 
     event NFTQuemadoPorDomo(
         address indexed usuario,
+        uint256 indexed tokenId,
+        uint256 timestamp
+    );
+
+    // [v1.1]
+    event NFTRegalado(
+        address indexed de,
+        address indexed para,
         uint256 indexed tokenId,
         uint256 timestamp
     );
@@ -152,10 +176,7 @@ contract CsarielsNFT is
     }
 
     // ================================================================
-    // CANJEAR 12 ES.TOKS POR NFT
-    // ================================================================
-    // El usuario (msg.sender) paga el gas.
-    // Cada canje genera un tokenId nuevo, con su propio reloj de 30 días.
+    // CANJEAR 12 ES.TOKS POR NFT (sin cambios)
     // ================================================================
 
     function canjearPorTokens() external nonReentrant whenNotPaused returns (uint256) {
@@ -187,10 +208,37 @@ contract CsarielsNFT is
     }
 
     // ================================================================
-    // QUEMAR NFT POR DOMO FÍSICO
+    // [v1.1] REGALAR (solo después de 30 días, nunca vender)
     // ================================================================
-    // El usuario (msg.sender) paga el gas. Requiere firma del backend.
-    // Solo funciona dentro de los 30 días de validez.
+
+    function regalar(address destinatario, uint256 tokenId)
+        external
+        nonReentrant
+        whenNotPaused
+    {
+        address de = msg.sender;
+
+        require(ownerOf(tokenId) == de, "No eres dueno de este NFT");
+        require(destinatario != address(0), "Destinatario invalido");
+        require(destinatario != de, "No puedes regalartelo a ti mismo");
+
+        InfoNFT storage info = infoNFT[tokenId];
+        require(info.fechaCanje > 0, "NFT no existe");
+        require(!info.quemadoPorDomo, "NFT ya canjeado por domo");
+        require(
+            block.timestamp >= info.fechaExpiracion,
+            "Congelado: se puede regalar solo despues de 30 dias"
+        );
+
+        _transferAutorizada = true;
+        _transfer(de, destinatario, tokenId);
+        _transferAutorizada = false;
+
+        emit NFTRegalado(de, destinatario, tokenId, block.timestamp);
+    }
+
+    // ================================================================
+    // QUEMAR NFT POR DOMO FÍSICO (sin cambios)
     // ================================================================
 
     function quemarPorDomo(
@@ -217,6 +265,19 @@ contract CsarielsNFT is
         _burn(tokenId);
 
         emit NFTQuemadoPorDomo(usuario, tokenId, block.timestamp);
+    }
+
+    // ================================================================
+    // [v1.1] BLOQUEO DE VENTA EN MERCADOS
+    // ================================================================
+    // Sin aprobaciones, ningún marketplace puede listar el NFT.
+
+    function approve(address, uint256) public pure override {
+        revert("Venta deshabilitada: los NFT no se pueden vender");
+    }
+
+    function setApprovalForAll(address, bool) public pure override {
+        revert("Venta deshabilitada: los NFT no se pueden vender");
     }
 
     // ================================================================
@@ -295,7 +356,7 @@ contract CsarielsNFT is
     }
 
     function version() external pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     // ================================================================
@@ -347,8 +408,8 @@ contract CsarielsNFT is
     // OVERRIDES
     // ================================================================
 
-    // Soulbound mientras activo. Mint y burn siempre permitidos.
-    // Transferencias solo si el NFT ya caducó.
+    // [v1.1] Mint y burn permitidos. Transferencias SOLO vía regalar().
+    // transferFrom y safeTransferFrom quedan bloqueados.
     function _update(
         address to,
         uint256 tokenId,
@@ -357,11 +418,8 @@ contract CsarielsNFT is
         address from = _ownerOf(tokenId);
 
         if (from != address(0) && to != address(0)) {
+            require(_transferAutorizada, "Solo se permite regalar, no transferir libremente");
             require(infoNFT[tokenId].fechaCanje > 0, "NFT sin metadata");
-            require(
-                block.timestamp >= infoNFT[tokenId].fechaExpiracion,
-                "NFT activo: no se puede transferir"
-            );
         }
 
         return super._update(to, tokenId, auth);
