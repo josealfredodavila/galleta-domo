@@ -66,10 +66,10 @@
         },
 
         nft: {
-            nombre: 'Galleta Dorada',
+            nombre: 'NFT de Sariel\'s',
             costo: '12 Es.stoks por NFT.',
-            vigencia: 'El NFT tiene vigencia de 1 año desde el canje.',
-            como: 'Se canjea desde la sección de NFT cuando tienes 12 Es.stoks disponibles. Solo se puede canjear uno por cuenta.'
+            vigencia: 'El NFT tiene vigencia de 30 días desde el canje. Durante ese plazo se puede canjear por un Domo físico. Al vencer queda como conmemorativo: ya no se puede canjear por un Domo, pero sí regalar o transferir.',
+            como: 'Se canjea desde la sección de NFT cuando tienes 12 Es.stoks disponibles. Puedes canjear varios si tienes Es.stoks suficientes.'
         },
 
         planes_ia_marquinhos: [
@@ -150,7 +150,7 @@
 
         { keys: ['nft', 'nfts', 'galleta dorada'],
           r: function () {
-              return 'Con 12 Es.stoks puedes canjear el NFT Galleta Dorada. Tiene vigencia de 1 año desde el canje.';
+              return 'Con 12 Es.stoks puedes canjear un NFT de Sariel\'s. Tiene vigencia de 30 días desde el canje; después queda como conmemorativo.';
           } },
 
         { keys: ['muro', 'el muro', 'p2p', 'mercado de tokens'],
