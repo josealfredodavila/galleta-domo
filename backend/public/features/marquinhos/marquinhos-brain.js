@@ -1,14 +1,15 @@
 // ================================================================
-// MARQUINHOS · BRAIN v7.4
+// MARQUINHOS · BRAIN v7.5
 // Memoria por usuario (RAG) + filtro de recuerdos + respuestas locales
 // + MÚSICA (Deezer: enlace de canción, sin audio)
 // + EVENTOS (Ticketmaster Discovery: solo lectura, enlace oficial)
 //
-// v7.4 — preguntar() devuelve { reply, musica, eventos } cuando el
-//        backend trae resultados; si no, devuelve solo texto.
-//        Asigna ultimaMusica y ultimosEventos.
-//        Emite 'marquinhos-musica' y 'marquinhos-eventos'.
-//        Los eventos solo se aceptan con enlace https de ticketmaster.com.
+// v7.5 — Conocimiento del ecosistema verificado contra Supabase
+//        (planes, precios, NFT, Es.stoks, Muro, Mercado, Live, IA).
+//        Precios y plazos corregidos. Se envía al backend en el
+//        campo "conocimiento" para que Marquinhos responda con datos.
+//        Estilo natural: sin saludos repetidos ni tono forzado.
+//        Se limpia el "Hola de nuevo" si el backend lo devuelve.
 // ================================================================
 
 'use strict';
@@ -16,7 +17,7 @@
 (function () {
     if (window.MarquinhosBrain) return;
 
-    const VERSION = '7.4';
+    const VERSION = '7.5';
     const TIMEOUT_MS = 30000;
     const HISTORIAL_ENVIO = 20;
     const HISTORIAL_CHARS = 2000;
@@ -28,6 +29,91 @@
     const CHAT_PET_ENDPOINT = '/api/ai/chat-pet';
     const CHAT_ENDPOINT = '/api/ai/chat';
     const CONTEXTO_PET = 'marquinhos_pet';
+
+    // ============================================================
+    // CONOCIMIENTO DEL ECOSISTEMA (solo información pública)
+    // Fuente: base de datos Csariels ecosistema (verificada).
+    // Los precios pueden cambiar: si el backend trae valores
+    // actualizados, esos tienen prioridad.
+    // ============================================================
+    const CONOCIMIENTO_ECOSISTEMA = {
+        nombre: 'Sariel\'s',
+        resumen: 'Sariel\'s es un ecosistema con red social, mensajería, llamadas, ' +
+                 'Muro con Es.stoks, Mercado de tiendas, Live, Internet por eSIM, noticias, ' +
+                 'videos y canales, y la mascota Marquinhos.',
+
+        modulos: {
+            muro: 'El Muro es la parte social: publicaciones, historias de 24 horas, tendencias y ' +
+                  'la compra y venta de Es.stoks entre usuarios.',
+            mensajes: 'Mensajes y llamadas entre contactos. Puedes configurar quién te puede ' +
+                      'escribir o llamar, y las solicitudes de mensaje se aceptan o rechazan.',
+            contactos: 'Agregas personas con una solicitud de amistad. Puedes buscarlas por nombre o @usuario. ' +
+                       'Por email o teléfono solo aparecen si la persona lo permite.',
+            live: 'Sariel\'s Live es para transmitir en vivo. Para transmitir necesitas Live Pass.',
+            internet: 'Internet vende paquetes de datos móviles por eSIM.',
+            videos: 'Videos y canales agrupados por categorías.',
+            mercado: 'Mercado es para tiendas: publicar productos, recibir pedidos y repartidores.',
+            noticias: 'Sección de noticias del ecosistema.',
+            marquinhos: 'Marquinhos es el asistente IA. Puedes personalizarlo con accesorios de la tienda.'
+        },
+
+        esToks: {
+            que_es: 'Los Es.stoks son el token interno de Sariel\'s.',
+            como_se_obtienen: 'Se obtienen reclamando el código QR de un producto Domo (galleta física de Sariel\'s).',
+            para_que_sirven: 'Se pueden vender en El Muro a otros usuarios, o canjear por un NFT.',
+            precio_referencia: 'El precio de referencia del Muro cambia con la oferta y la demanda. ' +
+                               'Al momento de la última actualización era de $6.20 MXN por Es.stok.'
+        },
+
+        nft: {
+            nombre: 'Galleta Dorada',
+            costo: '12 Es.stoks por NFT.',
+            vigencia: 'El NFT tiene vigencia de 1 año desde el canje.',
+            como: 'Se canjea desde la sección de NFT cuando tienes 12 Es.stoks disponibles. Solo se puede canjear uno por cuenta.'
+        },
+
+        planes_ia_marquinhos: [
+            { nombre: 'Gratis', precio: '$0 MXN', detalle: 'Acceso a Marquinhos. Sin búsqueda web.' },
+            { nombre: 'Prueba gratis (primer mes)', precio: '$0 MXN', detalle: 'Acceso a Marquinhos con 10 búsquedas web.' },
+            { nombre: 'Básico', precio: '$300 MXN al mes', detalle: 'Marquinhos, 100 mensajes al mes y 10 búsquedas web.' },
+            { nombre: 'Pro', precio: '$500 MXN al mes', detalle: 'Marquinhos, Maíz e Itlasuhua, 500 mensajes, 100 búsquedas web y 10 de búsqueda avanzada.' },
+            { nombre: 'Premium', precio: '$850 MXN al mes', detalle: 'Marquinhos, Maíz e Itlasuhua con mensajes sin límite, 500 búsquedas web y 100 de búsqueda avanzada.' }
+        ],
+
+        planes_almacenamiento: [
+            { nombre: 'Gratis', precio: '$0', detalle: '1 GB de almacenamiento y conservación de contenido por 90 días.' },
+            { nombre: 'Pro', precio: '$300 MXN al mes', detalle: '5 GB y conservación ampliada mientras la membresía esté activa.' }
+        ],
+
+        live_pass: [
+            { nombre: 'Live Básico', precio: '$300 MXN al mes', detalle: '2 horas al día para transmitir en vivo.' },
+            { nombre: 'Live Pro', precio: '$600 MXN al mes', detalle: '5 horas al día para transmitir en vivo.' }
+        ],
+
+        mercado_tiendas: [
+            { nombre: 'Básico', precio: '$300 MXN al mes', detalle: 'Hasta 10 productos y 20 pedidos al mes.' },
+            { nombre: 'Pro', precio: '$400 MXN al mes', detalle: 'Hasta 50 productos y 100 pedidos al mes. Destacado.' },
+            { nombre: 'Max', precio: '$500 MXN al mes', detalle: 'Hasta 500 productos, pedidos ilimitados, video y insignia verificada.' }
+        ],
+
+        pagos: 'Los pagos se hacen con tarjeta, SPEI o criptomonedas, según lo que muestre cada pantalla. ' +
+               'Las membresías de Live Pass se pagan con criptomonedas.',
+
+        reglas_generales: [
+            'La edad mínima para usar Sariel\'s es de 13 años.',
+            'Tu memoria con Marquinhos es privada: cada usuario tiene la suya.',
+            'Para problemas con la cuenta o un pago, el usuario debe usar la sección de ayuda o soporte de la app.'
+        ]
+    };
+
+    // Reglas de estilo que el backend debe seguir al responder
+    const ESTILO_RESPUESTA = {
+        idioma: 'español de México, natural y cercano',
+        longitud: 'breve: 1 a 3 frases salvo que el usuario pida detalle',
+        saludos: 'No repitas saludos. Si el usuario dice "hola" de nuevo, responde algo corto sin decir "de nuevo".',
+        precios: 'Usa solo los precios y plazos del campo conocimiento. Nunca inventes precios ni cifras.',
+        tono: 'Amable y directo. Sin exagerar, sin jerga de vendedor y sin frases forzadas.'
+    };
 
     // ============================================================
     // UTILIDADES DE TEXTO
@@ -47,75 +133,72 @@
 
     // ============================================================
     // RESPUESTAS LOCALES (fallback sin red)
+    // Solo datos verificados y tono natural.
     // ============================================================
     const RESPUESTAS_LOCALES = [
         { keys: ['es.stok', 'es.stoks', 'es stok', 'es stoks', 'estok', 'estoks', 'stoks'],
           r: function () {
-              return 'Los Es.stoks son el token interno de Sariel\'s. Se obtienen escaneando el QR de cada Domo, ' +
-                     'se pueden acumular, canjear por un NFT (12 Es.stoks = 1 NFT) o vender en El Muro.';
+              return 'Los Es.stoks son el token de Sariel\'s. Se obtienen reclamando el QR de un Domo, ' +
+                     'se pueden vender en El Muro o canjear por un NFT (12 Es.stoks).';
           } },
 
         { keys: ['domo', 'domos'],
           r: function () {
-              return 'Un Domo es un producto físico de galleta de Sariel\'s con un QR. Al escanearlo desde la app, ' +
-                     'se acredita 1 Es.stok en tu wallet. Los Es.stoks no existen sin una compra real de Domo.';
+              return 'Un Domo es una galleta física de Sariel\'s con un código QR. Al reclamar su QR desde la app, ' +
+                     'recibes Es.stoks en tu cuenta.';
           } },
 
-        { keys: ['nft', 'nfts'],
+        { keys: ['nft', 'nfts', 'galleta dorada'],
           r: function () {
-              return 'Con 12 Es.stoks puedes canjear un NFT Domo. Tienes 30 días para cambiarlo por un Domo físico; ' +
-                     'si no lo cambias, queda como NFT conmemorativo. Mientras esté activo no se puede vender ni transferir.';
+              return 'Con 12 Es.stoks puedes canjear el NFT Galleta Dorada. Tiene vigencia de 1 año desde el canje.';
           } },
 
-        { keys: ['muro', 'el muro', 'p2p', 'mercado'],
+        { keys: ['muro', 'el muro', 'p2p', 'mercado de tokens'],
           r: function () {
-              return 'El Muro es el mercado P2P de Sariel\'s: los usuarios compran y venden Es.stoks entre ellos. ' +
-                     'Por cada venta se cobra una comisión del 3%.';
+              return 'El Muro es donde publicas, sigues tendencias y compras o vendes Es.stoks con otros usuarios. ' +
+                     'La venta tiene una comisión del 3%.';
           } },
 
         { keys: ['wallet', 'billetera', 'metamask', 'walletconnect', 'polygon'],
           r: function () {
-              return 'La wallet se conecta desde la sección Wallet con MetaMask o WalletConnect, en la red Polygon.';
+              return 'Puedes conectar tu wallet desde la sección Wallet con MetaMask o WalletConnect, en la red Polygon.';
           } },
 
-        { keys: ['live pass', 'livepass', 'membresia live', 'membresía live'],
+        { keys: ['live pass', 'livepass', 'membresia live', 'membresía live', 'live basico', 'live pro'],
           r: function () {
-              return 'El Live Pass es la membresía de Sariel\'s Live, con planes Básico y Pro. Se paga con criptomonedas.';
+              return 'Live Básico cuesta $300 MXN al mes y te da 2 horas al día para transmitir. ' +
+                     'Live Pro cuesta $600 MXN al mes y da 5 horas al día.';
           } },
 
         { keys: ['live', 'en vivo', 'transmitir', 'transmision', 'transmisiones', 'donacion', 'donaciones'],
           r: function () {
-              return 'Sariel\'s Live es el módulo de transmisiones en vivo: puedes transmitir, ver a otros usuarios ' +
-                     'y recibir donaciones. Algunas transmisiones son de pago.';
+              return 'Sariel\'s Live es para transmitir en vivo y ver a otros. Para transmitir necesitas un Live Pass.';
           } },
 
-        { keys: ['plan', 'planes', 'premium', 'suscripcion', 'suscripciones', 'basico'],
+        { keys: ['plan', 'planes', 'premium', 'suscripcion', 'suscripciones', 'basico', 'pro'],
           r: function () {
-              return 'Marquinhos tiene estos planes: Gratis (el primer mes incluye búsqueda web), Básico $99 MXN, ' +
-                     'Pro $250 MXN y Premium $850 MXN.';
+              return 'Los planes de Marquinhos son: Gratis, Básico ($300 MXN al mes), Pro ($500 MXN al mes) ' +
+                     'y Premium ($850 MXN al mes). Cada uno cambia cuántos mensajes y búsquedas web incluye.';
           } },
 
         { keys: ['pagar', 'pago', 'pagos', 'spei', 'usdt', 'usdc', 'cripto', 'criptomoneda', 'tarjeta'],
           r: function () {
-              return 'Según la opción de cada pantalla, puedes pagar con tarjeta, SPEI (en México) o criptomonedas (USDT/USDC).';
+              return 'Según la pantalla, puedes pagar con tarjeta, SPEI o criptomonedas como USDT o USDC.';
           } },
 
         { keys: ['internet', 'esim', 'datos moviles', 'paquete de datos', 'paquetes de datos'],
           r: function () {
-              return 'El módulo Internet vende paquetes de datos móviles por eSIM, con cobertura declarada en Puebla, CDMX y Edomex.';
+              return 'En la sección Internet puedes comprar paquetes de datos móviles por eSIM.';
           } },
 
         { keys: ['quien eres', 'como te llamas', 'que puedes hacer', 'que haces', 'ayuda', 'ayudame'],
           r: function () {
-              return 'Soy Marquinhos, el asistente de Sariel\'s. Puedo platicar contigo y darte pistas sobre ' +
-                     'Es.stoks, Domos, El Muro, Wallet, Live e Internet.';
+              return 'Soy Marquinhos, el asistente de Sariel\'s. Te puedo explicar cómo funciona el Muro, ' +
+                     'los Es.stoks, los Domos, el Mercado, el Live, los planes y más.';
           } },
 
         { keys: ['sariels', 'sariel s', 'ecosistema'],
-          r: function () {
-              return 'Sariel\'s es un ecosistema con Domos de galleta, Es.stoks, El Muro, Wallet, Sariel\'s Live, ' +
-                     'Internet (eSIM) y mensajería.';
-          } },
+          r: function () { return CONOCIMIENTO_ECOSISTEMA.resumen; } },
 
         { keys: ['que hora', 'hora es', 'hora actual'],
           r: function () {
@@ -130,10 +213,10 @@
           } },
 
         { keys: ['gracias', 'muchas gracias'],
-          r: function () { return '¡De nada! Aquí estoy si necesitas algo más.'; } },
+          r: function () { return '¡De nada! Si necesitas algo más, aquí estoy.'; } },
 
         { keys: ['hola', 'buenas', 'buenos dias', 'buenas tardes', 'buenas noches', 'hey', 'que tal'],
-          r: function (c) { return '¡Hola' + (c && c.nombre ? ' ' + c.nombre : '') + '! ¿En qué te ayudo?'; } }
+          r: function (c) { return '¡Hola' + (c && c.nombre ? ' ' + c.nombre : '') + '! ¿Qué necesitas?'; } }
     ];
 
     const RESPUESTAS_COMPILADAS = RESPUESTAS_LOCALES.map(function (item) {
@@ -152,6 +235,21 @@
             }
         }
         return null;
+    }
+
+    // ============================================================
+    // LIMPIEZA DE SALUDOS REPETIDOS
+    // Si el backend responde "Hola de nuevo" y ya hubo conversación,
+    // se quita la frase "de nuevo" para no sonar robótico.
+    // ============================================================
+    function limpiarSaludoRepetido(reply, historial) {
+        if (!reply || typeof reply !== 'string') return reply;
+        const hayConversacion = Array.isArray(historial) &&
+            historial.some(function (m) { return m && m.role === 'assistant'; });
+        if (!hayConversacion) return reply;
+        return reply.replace(/^¡?\s*hola de nuevo(,?\s*[^!?.¿]*)?[!.]?\s*/i, function (_, nombre) {
+            return '¡Hola' + (nombre || '') + '! ';
+        }).trim();
     }
 
     // ============================================================
@@ -520,7 +618,9 @@
                     page: window.location.pathname,
                     user_name: ctx.nombre,
                     memoria: contextoMemoria,
-                    modo: modoEnvio
+                    modo: modoEnvio,
+                    conocimiento: CONOCIMIENTO_ECOSISTEMA,
+                    estilo: ESTILO_RESPUESTA
                 };
 
                 let r1 = await llamarEndpoint(CHAT_PET_ENDPOINT, payload1, token);
@@ -534,7 +634,7 @@
                 }
 
                 if (r1.ok) {
-                    return entregarRespuesta(r1.reply, r1.musica, r1.eventos);
+                    return entregarRespuesta(r1.reply, r1.musica, r1.eventos, historialEnvio);
                 }
 
                 const r2 = await llamarEndpoint(CHAT_ENDPOINT, {
@@ -542,11 +642,13 @@
                     context: CONTEXTO_PET,
                     history: historialEnvio,
                     memoria: contextoMemoria,
-                    modo: modoEnvio
+                    modo: modoEnvio,
+                    conocimiento: CONOCIMIENTO_ECOSISTEMA,
+                    estilo: ESTILO_RESPUESTA
                 }, token);
 
                 if (r2.ok) {
-                    return entregarRespuesta(r2.reply, r2.musica, r2.eventos);
+                    return entregarRespuesta(r2.reply, r2.musica, r2.eventos, historialEnvio);
                 }
 
                 motivoFallo = 'chat-pet: ' + describirFallo(r1) + ' | chat: ' + describirFallo(r2);
@@ -561,10 +663,10 @@
         return 'No pude conectarme ahora (' + motivoFallo.slice(0, 120) + '). Intenta de nuevo.';
     }
 
-    // Une la respuesta con música y eventos (si los hay) y los deja
-    // disponibles para el frontend por el valor devuelto y por las
-    // variables ultimaMusica / ultimosEventos.
-    function entregarRespuesta(reply, musica, eventos) {
+    // Une la respuesta con música y eventos (si los hay), limpia saludos
+    // repetidos y deja los resultados disponibles para el frontend.
+    function entregarRespuesta(reply, musica, eventos, historial) {
+        const replyLimpio = limpiarSaludoRepetido(reply, historial);
         const hayMusica = Array.isArray(musica) && musica.length > 0;
         const hayEventos = Array.isArray(eventos) && eventos.length > 0;
 
@@ -579,19 +681,20 @@
 
         if (hayMusica || hayEventos) {
             return {
-                reply: reply,
+                reply: replyLimpio,
                 musica: hayMusica ? musica : null,
                 eventos: hayEventos ? eventos : null
             };
         }
-        return reply;
+        return replyLimpio;
     }
 
     window.MarquinhosBrain = {
         version: VERSION,
         preguntar: preguntar,
+        conocimiento: CONOCIMIENTO_ECOSISTEMA,
         ultimaMusica: null,
         ultimosEventos: null
     };
-    console.log('[Marquinhos/Brain] ✅ v' + VERSION + ' cargado (memoria RAG + música + eventos)');
+    console.log('[Marquinhos/Brain] ✅ v' + VERSION + ' cargado (conocimiento + memoria RAG + música + eventos)');
 })();
