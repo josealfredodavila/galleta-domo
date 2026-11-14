@@ -1,12 +1,10 @@
 // ================================================================
-// MURO · HISTORIAS (tabla estados) — v4.0
+// MURO · HISTORIAS (tabla estados) — v4.1 (Timer Fix)
 // ================================================================
-// Cambios v4.0:
-//  - Renderizado con DOM seguro (el + createTextNode), sin innerHTML
-//  - Rol Dueño vs Espectador en el visor
-//  - Paneles de vistas / comentarios con RPCs SECURITY DEFINER
-//  - Registro de vistas únicas con upsert (sin contar al dueño)
-//  - Temporizador pausable / reanudable
+// Cambios v4.1:
+//  - Temporizador corregido usando marcas de tiempo (Date.now)
+//  - El campo de texto ya no interfiere con los eventos de la tarjeta
+//  - Pausa exacta al mantener presionado o enfocar el input
 // ================================================================
 
 var HISTORIA_MAX_IMAGEN_BYTES = 10 * 1024 * 1024;
@@ -20,6 +18,7 @@ var estadosVistosIds = new Set();
 var temporizadorHistoria = null;
 var timerPausado = false;
 var timerRestanteMs = 0;
+var timerInicioMs = 0; // NUEVO: Para calcular el tiempo exacto transcurrido
 var panelAbierto = null;
 
 // ----------------------------------------------------------------
@@ -408,8 +407,13 @@ function renderizarVisorHistoria() {
             maxlength: '200',
             placeholder: 'Escribe un comentario…'
         });
+        
+        // Pausar cuando el input tiene el foco, reanudar cuando lo pierde
         inputComentario.addEventListener('focus', pausarTimer);
-        inputComentario.addEventListener('blur', reanudarTimer);
+        inputComentario.addEventListener('blur', function(e) {
+            // Pequeño delay para evitar que al hacer clic en "Enviar" se reanude antes de procesar
+            setTimeout(reanudarTimer, 200); 
+        });
         inputComentario.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -417,10 +421,18 @@ function renderizarVisorHistoria() {
             }
         });
 
+        // Evitar que los clics en el área de comentarios activen los eventos de pausa de la tarjeta
+        inputComentario.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+        inputComentario.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
+
         var btnEnviar = el('button', {
             class: 'cs-historia-enviar',
             onclick: function () { enviarComentarioHistoria(inputComentario); }
         }, 'Enviar');
+
+        // Evitar que el botón de enviar active los eventos de la tarjeta
+        btnEnviar.addEventListener('mousedown', function(e) { e.stopPropagation(); });
+        btnEnviar.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
 
         pie = el('div', { class: 'cs-historia-pie' }, [
             el('div', { class: 'cs-historia-comentar' }, [inputComentario, btnEnviar])
@@ -469,22 +481,28 @@ function iniciarTimer(estado) {
     clearTimeout(temporizadorHistoria);
     timerPausado = false;
     var duracionMs = (estado.duracion_segundos || HISTORIA_DURACION_IMAGEN) * 1000;
-    timerRestanteMs = duracionMs;
-
+    
+    // Si es video, sumamos un pequeño margen extra
     if (estado.media_tipo === 'video') {
         var video = document.getElementById('csHistoriaVideo');
         if (video) {
+            // Limpiamos eventos anteriores para no duplicar
+            video.removeEventListener('ended', historiaSiguiente);
             video.addEventListener('ended', historiaSiguiente);
-            timerRestanteMs = duracionMs + 2000;
+            duracionMs = duracionMs + 2000;
         }
     }
+    
+    timerRestanteMs = duracionMs;
+    timerInicioMs = Date.now();
     programarTimer(timerRestanteMs);
 }
 
 function programarTimer(ms) {
     clearTimeout(temporizadorHistoria);
-    timerRestanteMs = ms;
     if (timerPausado) return;
+    
+    timerInicioMs = Date.now(); // Guardamos el momento exacto en que inicia
     temporizadorHistoria = setTimeout(historiaSiguiente, ms);
 }
 
@@ -492,16 +510,28 @@ function pausarTimer() {
     if (timerPausado) return;
     timerPausado = true;
     clearTimeout(temporizadorHistoria);
+    
+    // Calculamos cuánto tiempo pasó desde que inició este ciclo
+    var transcurrido = Date.now() - timerInicioMs;
+    timerRestanteMs = Math.max(0, timerRestanteMs - transcurrido);
+
     var video = document.getElementById('csHistoriaVideo');
-    if (video) video.pause();
+    if (video && !video.paused) video.pause();
 }
 
 function reanudarTimer() {
     if (!timerPausado) return;
     timerPausado = false;
+    
     var video = document.getElementById('csHistoriaVideo');
     if (video) video.play().catch(function () {});
-    programarTimer(timerRestanteMs);
+    
+    // Si por alguna razón el tiempo llegó a 0 mientras estaba pausado, avanzamos
+    if (timerRestanteMs <= 0) {
+        historiaSiguiente();
+    } else {
+        programarTimer(timerRestanteMs);
+    }
 }
 
 // ----------------------------------------------------------------
@@ -673,6 +703,9 @@ async function enviarComentarioHistoria(inputEl) {
         if (esMiHistoria(historiaSeleccionada.usuario)) {
             cargarResumenEstado(estado.id);
         }
+        
+        // Quitar el foco para que el temporizador se reanude automáticamente
+        inputEl.blur();
     } catch (e) {
         console.error('Error al enviar comentario:', e);
         showToast(e.message || 'No se pudo enviar el comentario', 'error');
