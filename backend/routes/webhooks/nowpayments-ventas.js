@@ -1,11 +1,14 @@
 // ================================================================
-// ROUTES/WEBHOOKS/NOWPAYMENTS-VENTAS.JS — Csariel's
+// ROUTES/WEBHOOKS/NOWPAYMENTS-VENTAS.JS — Csariel's (v2.0)
 // Handlers de IPN para Muro (muro_<venta_id>) y Marketing (MKT-<pago_id>).
 // NO define router: lo usa routes/webhooks.js, que ya verificó la firma.
 // Reglas:
 //   - Se valida moneda (MXN) y monto contra la orden antes de liberar nada.
 //   - Si el payment_id no coincide con el guardado, no se procesa.
-//   - Un pago que no coincide queda para revisión manual (log), no se cancela.
+//   - v2.0: un pago con monto o moneda incorrectos NO se ignora. Pasa a
+//     revision_manual y queda registrado para revisión humana o reembolso.
+//   - v2.0: un pago que llega sobre una venta cerrada (expirada, cancelada)
+//     también pasa a revision_manual. Nunca se acredita.
 //   - Marketing activa la campaña ANTES de marcar el pago como pagado.
 // 200 = procesado o no reintentable. 500 = NOWPayments reintenta.
 // ================================================================
@@ -62,24 +65,48 @@ async function procesarVentaMuro(ventaIdRaw, npStatus, data, res) {
         return res.status(200).json({ ok: true, ignorado: 'payment_id_no_coincide' });
     }
 
-    if (['pagado', 'completado'].includes(venta.estado)) {
-        return res.status(200).json({ ok: true, ignorado: 'ya_pagada' });
+    if (['pagado', 'completado', 'revision_manual'].includes(venta.estado)) {
+        return res.status(200).json({ ok: true, ignorado: 'ya_procesada', estado: venta.estado });
     }
 
     // ---------- Pago final ----------
     if (FINALES_OK.includes(npStatus)) {
+        // Monto o moneda incorrectos: no se acredita, se manda a revisión
         if (!coincideFactura(data, venta.precio_mxn)) {
             logError('REVISIÓN MANUAL — monto/moneda no coincide (muro):', ventaId, {
                 price_amount: data.price_amount,
                 price_currency: data.price_currency,
                 esperado_mxn: venta.precio_mxn
             });
-            return res.status(200).json({ ok: true, ignorado: 'monto_no_coincide' });
+            const { error: errRev } = await supabaseAdmin.rpc('marcar_pago_revision_manual', {
+                p_venta_id: ventaId,
+                p_payment_id: paymentId || 'sin_payment_id',
+                p_monto_recibido: Number(data.pay_amount) || 0,
+                p_moneda: String(data.pay_currency || 'desconocida'),
+                p_motivo: 'monto_no_coincide'
+            });
+            if (errRev) {
+                logError('marcar_pago_revision_manual (monto):', errRev.message);
+                return res.status(500).json({ ok: false, error: 'db' });
+            }
+            return res.status(200).json({ ok: true, estado: 'revision_manual', motivo: 'monto_no_coincide' });
         }
 
-        if (['cancelado', 'cancelada', 'expirado', 'expirada', 'fallido'].includes(venta.estado)) {
+        // Pago sobre venta cerrada (expirada o cancelada): revisión, nunca acreditar
+        if (['cancelado', 'cancelada', 'expirado', 'expirada', 'fallido', 'fallida'].includes(venta.estado)) {
             logError('REVISIÓN MANUAL — pago final en venta cerrada (muro):', ventaId, venta.estado);
-            return res.status(200).json({ ok: true, ignorado: 'venta_cerrada' });
+            const { error: errRev } = await supabaseAdmin.rpc('marcar_pago_revision_manual', {
+                p_venta_id: ventaId,
+                p_payment_id: paymentId || 'sin_payment_id',
+                p_monto_recibido: Number(data.pay_amount) || 0,
+                p_moneda: String(data.pay_currency || 'desconocida'),
+                p_motivo: 'pago_sobre_venta_cerrada'
+            });
+            if (errRev) {
+                logError('marcar_pago_revision_manual (cerrada):', errRev.message);
+                return res.status(500).json({ ok: false, error: 'db' });
+            }
+            return res.status(200).json({ ok: true, estado: 'revision_manual', motivo: 'venta_cerrada' });
         }
 
         const { error: errReg } = await supabaseAdmin.rpc('registrar_payment_muro', {
@@ -94,13 +121,17 @@ async function procesarVentaMuro(ventaIdRaw, npStatus, data, res) {
             return res.status(500).json({ ok: false, error: 'db' });
         }
 
-        // Idempotente: si ya estaba liquidada, responde already_processed
+        // Idempotente. Si el pago llega tarde, la propia función lo manda a revision_manual.
         const { data: liq, error: errLiq } = await supabaseAdmin.rpc('liquidar_venta_token_muro', {
             p_venta_id: ventaId
         });
         if (errLiq) {
             logError('liquidar_venta_token_muro:', errLiq.message);
             return res.status(500).json({ ok: false, error: 'liquidacion' });
+        }
+        if (liq?.revision_manual === true) {
+            logError('REVISIÓN MANUAL — pago tardío (muro):', ventaId);
+            return res.status(200).json({ ok: true, estado: 'revision_manual', motivo: liq.late ? 'pago_tardio' : 'venta_cerrada' });
         }
         if (liq?.expired === true) {
             return res.status(200).json({ ok: true, ignorado: 'expirada' });
@@ -165,19 +196,29 @@ async function procesarPagoMarketing(pagoIdRaw, npStatus, data, res) {
         return res.status(200).json({ ok: true, ignorado: 'payment_id_no_coincide' });
     }
 
-    if (pago.estado === 'pagado') {
-        return res.status(200).json({ ok: true, ignorado: 'ya_pagado' });
+    if (['pagado', 'revision_manual'].includes(pago.estado)) {
+        return res.status(200).json({ ok: true, ignorado: 'ya_procesado', estado: pago.estado });
     }
 
     // ---------- Pago final ----------
     if (FINALES_OK.includes(npStatus)) {
+        // Monto o moneda incorrectos: no se activa la campaña, se manda a revisión
         if (!coincideFactura(data, pago.monto_mxn)) {
             logError('REVISIÓN MANUAL — monto/moneda no coincide (marketing):', pagoId, {
                 price_amount: data.price_amount,
                 price_currency: data.price_currency,
                 esperado_mxn: pago.monto_mxn
             });
-            return res.status(200).json({ ok: true, ignorado: 'monto_no_coincide' });
+            const { error: errRev } = await supabaseAdmin
+                .from('marketing_pagos')
+                .update({ estado: 'revision_manual', nowpayments_status: npStatus })
+                .eq('id', pago.id)
+                .neq('estado', 'pagado');
+            if (errRev) {
+                logError('marcar revision marketing:', errRev.message);
+                return res.status(500).json({ ok: false, error: 'db' });
+            }
+            return res.status(200).json({ ok: true, estado: 'revision_manual', motivo: 'monto_no_coincide' });
         }
 
         const { data: camp, error: errC } = await supabaseAdmin
@@ -192,11 +233,19 @@ async function procesarPagoMarketing(pagoIdRaw, npStatus, data, res) {
         }
         if (!camp) {
             logError('REVISIÓN MANUAL — campaña no encontrada (marketing):', pagoId);
-            return res.status(200).json({ ok: true, ignorado: 'campana_no_encontrada' });
+            const { error: errRev } = await supabaseAdmin
+                .from('marketing_pagos')
+                .update({ estado: 'revision_manual', nowpayments_status: npStatus })
+                .eq('id', pago.id)
+                .neq('estado', 'pagado');
+            if (errRev) {
+                logError('marcar revision marketing (campaña):', errRev.message);
+                return res.status(500).json({ ok: false, error: 'db' });
+            }
+            return res.status(200).json({ ok: true, estado: 'revision_manual', motivo: 'campana_no_encontrada' });
         }
 
         // 1) Activar primero. Si falla, el pago NO se marca y NOWPayments reintenta.
-        //    Se omite si ya está activa (la función lanza error en ese caso).
         if (camp.estado !== 'activa') {
             const { error: errAct } = await supabaseAdmin.rpc('activar_campana_marketing', {
                 p_campaign_id: camp.id
