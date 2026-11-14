@@ -722,6 +722,41 @@
             font-size: .8rem; color: #d0d8e0; line-height: 1.4;
             word-break: break-word;
         }
+        /* ================================================================
+           FIX · menú de temas flotante (provisional, ver nota)
+           ================================================================ */
+        .pf-tema { position: relative; }
+        .tema-dropdown {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 200px;
+            max-height: 280px;
+            overflow-y: auto;
+            background: #0b1016;
+            border: 1px solid rgba(0,229,255,.25);
+            border-radius: 14px;
+            box-shadow: 0 10px 30px rgba(0,0,0,.8);
+            padding: 6px;
+            z-index: 40;
+            display: none;
+        }
+        .tema-dropdown.active,
+        .tema-dropdown.open,
+        .tema-dropdown.show { display: block; }
+        .tema-dropdown > * {
+            display: block;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: 0;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: .75rem;
+            color: #cfe9f5;
+            cursor: pointer;
+        }
+        .tema-dropdown > *:hover { background: rgba(0,229,255,.12); color: #cdf6ff; }
     </style>
 </head>
 
