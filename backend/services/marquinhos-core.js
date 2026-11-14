@@ -85,9 +85,10 @@ Es.stoks:
 - Se pueden vender a otros usuarios en El Muro, donde el sistema muestra una comisión del 3%, o canjear por un NFT.
 - El precio del Muro cambia con la oferta y la demanda. No des un precio fijo como definitivo.
 
-NFT Galleta Dorada:
-- Cuesta 12 Es.stoks.
-- Tiene vigencia de 1 año desde el canje.
+NFT de Sariel's:
+- Cuesta 12 Es.stoks. Se pueden canjear varios si el usuario tiene Es.stoks suficientes.
+- Tiene vigencia de 30 días desde el canje. Durante ese plazo se puede canjear por un Domo físico.
+- Al vencer los 30 días queda como conmemorativo: ya no se puede canjear por un Domo, pero sí se puede regalar o transferir.
 
 Pagos: tarjeta, SPEI o criptomonedas, según lo que muestre cada pantalla.
 
