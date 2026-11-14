@@ -1,11 +1,15 @@
 // ================================================================
-// backend/routes/payments.js — Csariel's (v3.3.2)
+// backend/routes/payments.js — Csariel's (v3.4)
 // Transmisiones (pay-per-view), Muro P2P, Marketing, Internet y Anuncios.
 // Método: NOWPayments. NO toca membresías, Live Pass ni donaciones de Live.
 // Estados de ordenes_internet permitidos: pendiente, pagado, activo, cancelado.
 // v3.3:   Módulo de pagos de anuncios del carrusel (ANU-).
 // v3.3.1: Carga del módulo de anuncios protegida con try/catch (no tumba la app).
 // v3.3.2: Endpoint POST /membresia/ocultar/:pagoId (oculta, NO cancela).
+// v3.4:   /muro/status valida monto y moneda ANTES de acreditar (polling).
+//         Si no coinciden, o si el pago llega tarde, la venta pasa a
+//         revision_manual y queda registrada en muro_pagos_revision.
+//         Pagos sobre ventas expiradas o canceladas también van a revisión.
 // ================================================================
 
 'use strict';
@@ -56,12 +60,25 @@ const REDES_PERMITIDAS = {
 
 const MXN_A_USD_APROX = 0.055;
 
+// Estados de venta que ya no se pueden acreditar por polling normal
+const VENTA_TERMINAL = ['expirado', 'expirada', 'cancelado', 'cancelada', 'fallido', 'fallida', 'reembolsada'];
+
 // ================================================================
 // HELPERS
 // ================================================================
 const numeroValido = (v) => Number.isFinite(Number(v)) && Number(v) >= 0;
 const enteroPositivo = (v) => Number.isInteger(Number(v)) && Number(v) > 0;
 const respuestaError = (res, status, error) => res.status(status).json({ success: false, error });
+
+// El monto y la moneda deben coincidir con la factura creada en MXN
+function pagoCoincideConOrden(payment, precioMxnEsperado) {
+    const moneda = String(payment?.price_currency || '').toLowerCase();
+    const precioPagado = Number(payment?.price_amount);
+    const esperado = Number(precioMxnEsperado);
+    if (moneda !== 'mxn') return false;
+    if (!Number.isFinite(precioPagado) || !Number.isFinite(esperado)) return false;
+    return Math.abs(precioPagado - esperado) <= 0.01;
+}
 
 function validarRedPago(payCurrency, montoMxn) {
     const red = REDES_PERMITIDAS[payCurrency];
@@ -542,6 +559,9 @@ router.get('/status/:ordenId', verificarToken, async (req, res) => {
 
 // ================================================================
 // GET /api/payments/muro/status/:ventaId
+// v3.4: el monto y la moneda se validan ANTES de acreditar.
+//       Si no coinciden o el pago llega tarde, la venta pasa a
+//       revision_manual y el dinero queda registrado en muro_pagos_revision.
 // ================================================================
 router.get('/muro/status/:ventaId', verificarToken, async (req, res) => {
     try {
@@ -562,13 +582,16 @@ router.get('/muro/status/:ventaId', verificarToken, async (req, res) => {
         if (['pagado', 'completado'].includes(venta.estado)) {
             return res.json({ success: true, data: venta, final: true, paid: true, liquidated: true });
         }
-        if (['expirado', 'expirada'].includes(venta.estado)) {
-            return res.json({ success: true, data: venta, final: true, paid: false, expired: true });
-        }
-        if (['cancelado', 'cancelada', 'fallido'].includes(venta.estado)) {
-            return res.json({ success: true, data: venta, final: true, paid: false, cancelled: true });
+        if (venta.estado === 'revision_manual') {
+            return res.json({ success: true, data: venta, final: true, paid: false, revision_manual: true,
+                message: 'Tu pago está en revisión. Te avisaremos cuando se resuelva.' });
         }
         if (!venta.payment_id) {
+            if (VENTA_TERMINAL.includes(venta.estado)) {
+                return res.json({ success: true, data: venta, final: true, paid: false,
+                    expired: ['expirado', 'expirada'].includes(venta.estado),
+                    cancelled: !['expirado', 'expirada'].includes(venta.estado) });
+            }
             return res.json({ success: true, data: venta, final: false, paid: false, message: 'El pago todavía no tiene payment_id' });
         }
 
@@ -587,10 +610,31 @@ router.get('/muro/status/:ventaId', verificarToken, async (req, res) => {
         const payAmount = numeroValido(payment?.pay_amount) ? Number(payment.pay_amount) : 0;
         const payCurrency = payment?.pay_currency || venta.moneda_pago || 'usdt';
 
+        // ---------- Pago confirmado por NOWPayments ----------
         if (['finished', 'confirmed'].includes(estadoNow)) {
+            // 1) Validar factura ANTES de tocar nada
+            if (!pagoCoincideConOrden(payment, venta.precio_mxn)) {
+                logger.error(`muro status ${ventaId}: monto/moneda no coincide`, {
+                    price_amount: payment?.price_amount,
+                    price_currency: payment?.price_currency,
+                    esperado_mxn: venta.precio_mxn
+                });
+                const { error: errRev } = await supabaseAdmin.rpc('marcar_pago_revision_manual', {
+                    p_venta_id: ventaId,
+                    p_payment_id: String(venta.payment_id),
+                    p_monto_recibido: payAmount,
+                    p_moneda: String(payCurrency),
+                    p_motivo: 'monto_no_coincide'
+                });
+                if (errRev) logger.error(`marcar_pago_revision_manual ${ventaId}: ${errRev.message}`);
+                return res.json({ success: true, data: venta, final: true, paid: false, revision_manual: true,
+                    message: 'El monto recibido no coincide con la orden. Quedó en revisión.' });
+            }
+
+            // 2) Registrar y liquidar (idempotente y con bloqueos en la base)
             const { error: errReg } = await supabaseAdmin.rpc('registrar_payment_muro', {
                 p_venta_id: ventaId, p_payment_id: String(venta.payment_id),
-                p_pay_amount: payAmount, p_pay_currency: String(payCurrency), p_payment_status: 'finished'
+                p_pay_amount: payAmount, p_pay_currency: String(payCurrency), p_payment_status: estadoNow
             });
             if (errReg) logger.warn(`registrar_payment_muro ${ventaId}: ${errReg.message}`);
 
@@ -600,9 +644,12 @@ router.get('/muro/status/:ventaId', verificarToken, async (req, res) => {
                 return res.json({ success: true, data: venta, final: true, paid: true, liquidated: false,
                     message: 'Pago confirmado. La liquidación está pendiente de procesamiento.' });
             }
-            if (liq && liq.success === false && liq.expired === true) {
-                return res.json({ success: true, data: venta, final: true, paid: false, expired: true,
-                    message: 'La orden expiró durante el procesamiento del pago' });
+
+            // Pago tardío o sobre venta cerrada: queda en revisión, no se acredita
+            if (liq && liq.revision_manual === true) {
+                const { data: ventaRev } = await supabaseAdmin.from('muro_ventas_tokens').select('*').eq('id', ventaId).single();
+                return res.json({ success: true, data: ventaRev || venta, final: true, paid: false, revision_manual: true,
+                    message: 'El pago llegó fuera de plazo. Quedó en revisión y se resolverá manualmente.' });
             }
 
             const { data: ventaFinal } = await supabaseAdmin.from('muro_ventas_tokens').select('*').eq('id', ventaId).single();
@@ -614,6 +661,15 @@ router.get('/muro/status/:ventaId', verificarToken, async (req, res) => {
             });
         }
 
+        // ---------- Pago no confirmado: venta ya cerrada, no tocar ----------
+        if (VENTA_TERMINAL.includes(venta.estado)) {
+            return res.json({ success: true, data: venta, final: true, paid: false,
+                expired: ['expirado', 'expirada'].includes(venta.estado),
+                cancelled: !['expirado', 'expirada'].includes(venta.estado),
+                nowpayments_status: estadoNow });
+        }
+
+        // ---------- Fallo en NOWPayments: cancelar venta activa ----------
         if (['failed', 'refunded', 'expired', 'canceled'].includes(estadoNow)) {
             const { error: errCan } = await supabaseAdmin.rpc('cancelar_venta_muro', {
                 p_venta_id: ventaId, p_estado: 'cancelado', p_nowpayments_status: estadoNow
@@ -623,6 +679,7 @@ router.get('/muro/status/:ventaId', verificarToken, async (req, res) => {
             return res.json({ success: true, data: ventaFinal || venta, final: true, paid: false, failed: true, nowpayments_status: estadoNow });
         }
 
+        // ---------- Intermedio ----------
         const { error: errProc } = await supabaseAdmin.rpc('registrar_payment_muro', {
             p_venta_id: ventaId, p_payment_id: String(venta.payment_id),
             p_pay_amount: payAmount, p_pay_currency: String(payCurrency), p_payment_status: estadoNow
