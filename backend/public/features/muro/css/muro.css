@@ -10,6 +10,10 @@
    - Toast / banner de error
    - Tema día
    - Responsive
+   Cambios v7 (PRO · WEB3):
+   - Historias y bloques compactados (menos alto, más contenido visible)
+   - Estética futurista: cristal, neón cyan/violeta, retícula holográfica
+   - Sección 14 al final: overrides, no cambia clases ni JS
    Cambios v6.1:
    - Menú de temas (.tema-dropdown) con estilos flotantes
    - Botón "Agregar" en estado :disabled (búsqueda global)
@@ -1106,4 +1110,212 @@ html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important
     .pf-pie { gap: 8px; }
     .pf-anillo { width: 32px; height: 32px; }
     #emojiPicker { max-width: 220px; left: 50%; transform: translateX(-50%); }
+}
+
+/* ================================================================
+   14. PRO · WEB3 FUTURISTA (v7)
+   Overrides al final: no cambian clases ni JS.
+   ================================================================ */
+:root {
+    --neon-cyan: #00e5ff;
+    --neon-violet: #8b5cf6;
+    --neon-gold: #D4AF37;
+    --glass-bg: linear-gradient(160deg, rgba(14,20,32,.86), rgba(7,11,19,.94));
+    --glass-line: rgba(0,229,255,.14);
+}
+
+/* Fondo: retícula holográfica sutil arriba */
+body { background-color: #04070d; }
+body::before {
+    content: '';
+    position: fixed; inset: 0;
+    pointer-events: none; z-index: 0;
+    background-image:
+        linear-gradient(rgba(0,229,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,229,255,.035) 1px, transparent 1px);
+    background-size: 36px 36px;
+    -webkit-mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%);
+            mask-image: radial-gradient(ellipse at 50% 0%, #000 30%, transparent 75%);
+}
+
+/* Header: cristal + línea neón inferior */
+.header {
+    background: rgba(4,7,13,.78);
+    padding: 8px 0 10px;
+    border-bottom: 0;
+}
+.header::after {
+    content: '';
+    position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-violet), transparent);
+    opacity: .55; pointer-events: none;
+}
+.logo-text { text-shadow: 0 0 14px rgba(0,229,255,.3); }
+.token-badge {
+    background: rgba(212,175,55,.07);
+    border-color: rgba(212,175,55,.35);
+    box-shadow: inset 0 0 12px rgba(212,175,55,.06);
+}
+
+/* Navegación: cristal y activo en neón */
+.main-nav {
+    background: rgba(10,15,24,.7);
+    border-color: var(--glass-line);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    margin: 8px 0 10px;
+    padding: 3px;
+}
+.main-nav .nav-link { padding: 8px 12px; }
+.main-nav .nav-link.active {
+    color: #7fdcff;
+    background: linear-gradient(135deg, rgba(0,229,255,.14), rgba(139,92,246,.12));
+    box-shadow: inset 0 0 0 1px rgba(0,229,255,.35), 0 0 16px rgba(0,229,255,.12);
+}
+
+/* Búsqueda: más compacta */
+.global-search-container { margin: 8px 0 10px; }
+.global-search-bar { padding: 8px 14px; background: rgba(10,15,24,.6); }
+
+/* ----- HISTORIAS COMPACTAS (antes ocupaban mucho alto) ----- */
+#csStoryStrip { gap: 12px; padding: 4px 0 6px; }
+.cs-story-item { width: 56px; gap: 4px; }
+.cs-story-item > span:last-child { font-size: .6rem; max-width: 56px; }
+.cs-story-ring {
+    width: 56px; height: 56px;
+    min-width: 56px; min-height: 56px;
+    padding: 2px;
+}
+.cs-story-ring.story-add svg { width: 20px; height: 20px; }
+
+/* Título de sección "Tu espacio social" compacto */
+.cs-social-section-title {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 8px; margin: 8px 2px 0;
+}
+.cs-social-section-title span {
+    font-family: 'Orbitron', monospace; font-size: .7rem;
+    letter-spacing: 1.5px; text-transform: uppercase; color: #cfe9f5;
+}
+.cs-social-section-title small { font-size: .6rem; color: #6f8ba0; }
+
+/* Valor de mercado: más denso y con neón */
+.valor-mercado {
+    position: relative; overflow: hidden;
+    padding: 14px 16px; margin-bottom: 12px;
+    background: var(--glass-bg);
+    border: 1px solid rgba(0,229,255,.12);
+    box-shadow: 0 12px 34px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.04);
+    gap: 10px;
+}
+.valor-mercado::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--neon-cyan), var(--neon-violet), transparent);
+    opacity: .7;
+}
+.valor-mercado .info .titulo { color: #6f8ba0; letter-spacing: 2px; font-size: .56rem; }
+.valor-mercado .info .precio {
+    font-size: 1.5rem;
+    text-shadow: 0 0 16px rgba(255,122,26,.35);
+}
+.valor-mercado .info .detalles { font-size: .62rem; gap: 10px; margin-top: 4px; }
+.valor-mercado .btn-vender-token {
+    padding: 9px 18px; font-size: .62rem;
+    background: linear-gradient(120deg, #00e5ff, #3b82f6 55%, #8b5cf6);
+    color: #04070d;
+    box-shadow: 0 6px 20px rgba(0,229,255,.25);
+}
+
+/* Bloques glass: tendencias, tokens, filtro */
+.trending-section,
+.tokens-destacados {
+    background: var(--glass-bg);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,.04);
+    padding: 12px 14px;
+    margin-bottom: 12px;
+}
+.trending-section .sec-head h3,
+.tokens-destacados .sec-head h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: .7rem; letter-spacing: 1.2px; text-transform: uppercase;
+    color: var(--neon-cyan);
+    text-shadow: 0 0 12px rgba(0,229,255,.35);
+}
+.trending-section .sec-head { margin-bottom: 8px; }
+.trending-tags { gap: 6px; }
+.trending-tags .tag {
+    padding: 4px 11px; font-size: .64rem;
+    background: rgba(0,229,255,.05);
+    border-color: rgba(0,229,255,.14);
+}
+.trending-tags .tag:hover {
+    color: #cdf6ff;
+    border-color: rgba(0,229,255,.45);
+    background: rgba(0,229,255,.08);
+    box-shadow: 0 0 12px rgba(0,229,255,.18);
+}
+.tokens-destacados .token-item { padding: 10px 12px; margin-bottom: 6px; }
+.tokens-destacados .token-item .avatar { border: 1px solid rgba(0,229,255,.3); }
+
+.filtro-temas {
+    background: rgba(10,15,24,.7);
+    border: 1px solid rgba(0,229,255,.1);
+    padding: 6px 10px; margin-bottom: 12px; border-radius: 16px;
+}
+.filtro-temas .toggle-btn { border-color: rgba(0,229,255,.45); color: #7fdcff; }
+.filtro-temas .toggle-btn.active {
+    background: linear-gradient(120deg, #00e5ff, #8b5cf6);
+    color: #04070d;
+}
+
+/* Posts: cristal y borde neón al pasar */
+.post-card {
+    background: var(--glass-bg);
+    border: 1px solid rgba(255,255,255,.04);
+    box-shadow: 0 10px 28px rgba(0,0,0,.35);
+    padding: 14px 16px;
+}
+.post-card:hover {
+    border-color: rgba(0,229,255,.16);
+    box-shadow: 0 12px 34px rgba(0,0,0,.45), 0 0 22px rgba(0,229,255,.05);
+}
+.post-card .post-avatar {
+    border: 1.5px solid rgba(0,229,255,.45);
+    box-shadow: 0 0 12px rgba(0,229,255,.18);
+}
+.post-card .post-author a { color: #e6fbff; }
+.post-card .post-author .badge-verificado {
+    color: #7fdcff;
+    background: rgba(0,229,255,.08);
+}
+.post-card .post-tema-badge { background: rgba(139,92,246,.14); color: #d8b4fe; }
+.post-card .post-venta {
+    background: linear-gradient(120deg, rgba(212,175,55,.08), rgba(139,92,246,.06));
+    border: 1px solid rgba(212,175,55,.14);
+}
+.post-card .post-venta .btn-comprar {
+    background: linear-gradient(120deg, #D4AF37, #f0d060);
+    color: #04070d;
+    box-shadow: 0 4px 14px rgba(212,175,55,.25);
+}
+
+/* Modales: cristal y neón */
+.modal-overlay { backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.modal {
+    background: rgba(10,15,24,.96);
+    border: 1px solid rgba(0,229,255,.18);
+    box-shadow: 0 0 40px rgba(0,229,255,.08), 0 20px 50px rgba(0,0,0,.6);
+}
+.modal .modal-header h2 { color: var(--neon-cyan); text-shadow: 0 0 12px rgba(0,229,255,.3); }
+
+/* Footer discreto */
+.footer { margin-top: 20px; padding-top: 12px; border-top: 1px solid rgba(0,229,255,.1); }
+
+/* Ritmo general más denso en móvil */
+@media (max-width: 480px) {
+    .app { padding: 8px 12px 24px; }
+    .trending-section, .tokens-destacados { padding: 10px 12px; }
 }
