@@ -1,12 +1,15 @@
-<!-- backend/public/legal/esstoks-riesgos.html -->
+
 <!DOCTYPE html>
 <html lang="es" data-public>
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#000000" />
     <title>¿Qué son los Es.stoks? · Csariel's</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet" />
     <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+
     <style>
         :root {
             --bg-main: #000000;
@@ -20,7 +23,13 @@
             --font-base: 'Inter', -apple-system, sans-serif;
             --font-title: 'Orbitron', monospace;
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
             background-color: var(--bg-main);
             color: var(--text-primary);
@@ -31,6 +40,7 @@
             display: flex;
             flex-direction: column;
         }
+
         .legal-header {
             position: sticky;
             top: 0;
@@ -44,6 +54,7 @@
             align-items: center;
             gap: 12px;
         }
+
         .back-btn {
             display: flex;
             align-items: center;
@@ -58,70 +69,285 @@
             transition: background 0.2s, border-color 0.2s;
             flex-shrink: 0;
         }
-        .back-btn:hover { background: rgba(34, 197, 94, 0.12); border-color: var(--green); }
-        .back-btn svg { width: 22px; height: 22px; fill: currentColor; }
-        .header-content { display: flex; flex-direction: column; }
-        .header-title { font-size: 1rem; font-weight: 700; line-height: 1.2; }
-        .header-subtitle { font-size: 0.72rem; color: var(--text-secondary); margin-top: 2px; }
-        .legal-main { max-width: 760px; width: 100%; margin: 0 auto; padding: 28px 20px 60px; flex: 1; }
-        .badge { display: inline-block; font-family: var(--font-title); font-size: 0.68rem; letter-spacing: 2px; color: var(--green); border: 1px solid var(--green); padding: 4px 12px; border-radius: 999px; margin-bottom: 14px; }
-        h1 { font-family: var(--font-title); font-size: 1.5rem; color: var(--green); margin-bottom: 18px; line-height: 1.25; text-shadow: 0 0 20px rgba(34, 197, 94, 0.25); }
-        .meta-grid { display: grid; grid-template-columns: 1fr; gap: 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 24px; font-size: 0.85rem; }
-        @media (min-width: 600px) { .meta-grid { grid-template-columns: 1fr 1fr 1fr; } }
-        .meta-grid div span { display: block; color: var(--text-secondary); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
-        .meta-grid div strong { color: var(--text-primary); font-weight: 600; }
-        .toc { background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--green); border-radius: 12px; padding: 16px 20px; margin-bottom: 28px; }
-        .toc h2 { font-family: var(--font-title); font-size: 0.85rem; color: var(--green); letter-spacing: 1px; margin-bottom: 10px; }
-        .toc ol { list-style: none; counter-reset: toc; }
-        .toc ol li { counter-increment: toc; margin-bottom: 6px; font-size: 0.88rem; }
-        .toc ol li::before { content: counter(toc) ". "; color: var(--purple); font-weight: 700; }
-        .toc a { color: var(--cyan); text-decoration: none; }
-        .toc a:hover { text-decoration: underline; }
-        section { margin-bottom: 26px; }
-        h2 { font-family: var(--font-title); font-size: 1.05rem; color: var(--green); margin-bottom: 10px; margin-top: 6px; letter-spacing: 0.5px; }
-        h3 { font-size: 0.95rem; color: var(--text-primary); margin: 14px 0 6px; font-weight: 600; }
-        p { margin-bottom: 10px; font-size: 0.92rem; color: #D1D5DB; }
-        ul, ol { padding-left: 22px; margin-bottom: 12px; }
-        li { font-size: 0.92rem; color: #D1D5DB; margin-bottom: 6px; }
-        .callout { background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(0, 229, 255, 0.06)); border: 1px solid rgba(34, 197, 94, 0.35); border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 0.88rem; }
-        .callout strong { color: var(--green); }
-        .alerta { background: rgba(248, 113, 113, 0.08); border: 1px solid rgba(248, 113, 113, 0.4); border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 0.9rem; color: #FCA5A5; }
-        .alerta strong { color: #F87171; }
-        .contacto { margin-top: 36px; border-top: 1px solid var(--border); padding-top: 18px; font-size: 0.85rem; color: var(--text-secondary); }
-        .contacto a { color: var(--cyan); text-decoration: none; }
-        .contacto a:hover { text-decoration: underline; }
-        .pendiente { color: #FBBF24; font-style: italic; }
+
+        .back-btn:hover {
+            background: rgba(34, 197, 94, 0.12);
+            border-color: var(--green);
+        }
+
+        .back-btn svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        .header-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-title {
+            font-size: 1rem;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .header-subtitle {
+            font-size: 0.72rem;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .legal-main {
+            max-width: 760px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 28px 20px 60px;
+            flex: 1;
+        }
+
+        .badge {
+            display: inline-block;
+            font-family: var(--font-title);
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            color: var(--green);
+            border: 1px solid var(--green);
+            padding: 4px 12px;
+            border-radius: 999px;
+            margin-bottom: 14px;
+        }
+
+        h1 {
+            font-family: var(--font-title);
+            font-size: 1.5rem;
+            color: var(--green);
+            margin-bottom: 18px;
+            line-height: 1.25;
+            text-shadow: 0 0 20px rgba(34, 197, 94, 0.25);
+        }
+
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+            font-size: 0.85rem;
+        }
+
+        @media (min-width: 600px) {
+            .meta-grid {
+                grid-template-columns: 1fr 1fr 1fr;
+            }
+        }
+
+        .meta-grid div span {
+            display: block;
+            color: var(--text-secondary);
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+
+        .meta-grid div strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .toc {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--green);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 28px;
+        }
+
+        .toc h2 {
+            font-family: var(--font-title);
+            font-size: 0.85rem;
+            color: var(--green);
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .toc ol {
+            list-style: none;
+            counter-reset: toc;
+        }
+
+        .toc ol li {
+            counter-increment: toc;
+            margin-bottom: 6px;
+            font-size: 0.88rem;
+        }
+
+        .toc ol li::before {
+            content: counter(toc) ". ";
+            color: var(--purple);
+            font-weight: 700;
+        }
+
+        .toc a {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        section {
+            margin-bottom: 26px;
+        }
+
+        h2 {
+            font-family: var(--font-title);
+            font-size: 1.05rem;
+            color: var(--green);
+            margin-bottom: 10px;
+            margin-top: 6px;
+            letter-spacing: 0.5px;
+        }
+
+        h3 {
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            margin: 14px 0 6px;
+            font-weight: 600;
+        }
+
+        p {
+            margin-bottom: 10px;
+            font-size: 0.92rem;
+            color: #D1D5DB;
+        }
+
+        ul, ol {
+            padding-left: 22px;
+            margin-bottom: 12px;
+        }
+
+        li {
+            font-size: 0.92rem;
+            color: #D1D5DB;
+            margin-bottom: 6px;
+        }
+
+        .callout {
+            background: linear-gradient(
+                135deg,
+                rgba(34, 197, 94, 0.08),
+                rgba(0, 229, 255, 0.06)
+            );
+            border: 1px solid rgba(34, 197, 94, 0.35);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin: 14px 0;
+            font-size: 0.88rem;
+        }
+
+        .callout strong {
+            color: var(--green);
+        }
+
+        .alerta {
+            background: rgba(248, 113, 113, 0.08);
+            border: 1px solid rgba(248, 113, 113, 0.4);
+            border-radius: 10px;
+            padding: 14px 16px;
+            margin: 14px 0;
+            font-size: 0.9rem;
+            color: #FCA5A5;
+        }
+
+        .alerta strong {
+            color: #F87171;
+        }
+
+        .contacto {
+            margin-top: 36px;
+            border-top: 1px solid var(--border);
+            padding-top: 18px;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .contacto a,
+        .legal-link {
+            color: var(--cyan);
+            text-decoration: none;
+        }
+
+        .contacto a:hover,
+        .legal-link:hover {
+            text-decoration: underline;
+        }
+
+        .pendiente {
+            color: #FBBF24;
+            font-style: italic;
+        }
     </style>
 </head>
+
 <body>
+
     <header class="legal-header">
-        <button class="back-btn" onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/features/centro-ayuda/index.html'; }" aria-label="Volver">
-            <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        <button
+            class="back-btn"
+            onclick="if(history.length > 1) { history.back(); } else { window.location.href = '/features/centro-ayuda/index.html'; }"
+            aria-label="Volver"
+        >
+            <svg viewBox="0 0 24 24">
+                <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
+            </svg>
         </button>
+
         <div class="header-content">
             <div class="header-title">¿Qué son los Es.stoks?</div>
             <div class="header-subtitle">Csariel's · Centro de Ayuda</div>
         </div>
     </header>
+
     <main class="legal-main">
-        <span class="badge">DOCUMENTO LEGAL</span>
-        <h1>Es.stoks: qué son y cuáles son sus riesgos</h1>
+
+        <span class="badge">DOCUMENTO INFORMATIVO Y DE RIESGOS</span>
+
+        <h1>Es.stoks: funcionamiento, recompensas y riesgos</h1>
 
         <div class="meta-grid">
-            <div><span>Versión</span><strong>1.0</strong></div>
-            <div><span>Vigencia</span><strong>15 de mayo de 2025</strong></div>
-            <div><span>Jurisdicción</span><strong>Puebla, México</strong></div>
+            <div>
+                <span>Versión</span>
+                <strong>2.0</strong>
+            </div>
+            <div>
+                <span>Actualización</span>
+                <strong>13 de noviembre de 2026</strong>
+            </div>
+            <div>
+                <span>Jurisdicción</span>
+                <strong>Puebla, México</strong>
+            </div>
         </div>
 
         <nav class="toc" aria-label="Índice de contenidos">
             <h2>ÍNDICE DE CONTENIDOS</h2>
             <ol>
                 <li><a href="#que-son">¿Qué son los Es.stoks?</a></li>
-                <li><a href="#no-son">Naturaleza del token: lo que NO son</a></li>
-                <li><a href="#blindaje">Blindaje del modelo de lealtad</a></li>
+                <li><a href="#funcionamiento">Cómo funciona el programa de recompensas</a></li>
+                <li><a href="#nft">Canje de Es.stoks por NFT y tarjeta de domo</a></li>
+                <li><a href="#p2p">Mercado P2P y transferencias</a></li>
+                <li><a href="#naturaleza">Naturaleza y derechos de los tokens</a></li>
                 <li><a href="#riesgos">Riesgos principales</a></li>
+                <li><a href="#seguridad">Seguridad y prevención de fraudes</a></li>
                 <li><a href="#legal">Marco legal y jurisdicción</a></li>
-                <li><a href="#privacidad">Aviso de privacidad y datos</a></li>
+                <li><a href="#privacidad">Protección de datos personales</a></li>
                 <li><a href="#recomendaciones">Recomendaciones</a></li>
                 <li><a href="#contacto">Contacto</a></li>
             </ol>
@@ -129,97 +355,769 @@
 
         <section id="que-son">
             <h2>1. ¿Qué son los Es.stoks?</h2>
-            <p>Los Es.stoks son tokens digitales de lealtad y consumo interno que se utilizan dentro de Csariel's como parte de un programa de recompensas de circuito cerrado. Su funcionamiento específico (emisión, uso, canje y transferencia) se describe en los términos del Mercado disponibles dentro de la app.</p>
-            <p>Los Es.stoks se generan como recompensa por la actividad del usuario en la Plataforma y están diseñados exclusivamente para ser canjeados por productos físicos de la marca, como alimentos y otros bienes de consumo, bajo las reglas operativas vigentes (incluyendo la retención de 12 tokens por cada 1 NFT, según se detalle en los términos del Mercado).</p>
+
+            <p>
+                Los Es.stoks son unidades digitales utilizadas dentro del
+                ecosistema Csariel's como parte de un programa de recompensas
+                relacionado con la compra de productos físicos de la marca.
+            </p>
+
+            <p>
+                El programa permite que los clientes reciban Es.stoks mediante
+                el escaneo y validación de códigos QR incorporados en los
+                productos participantes, acumulen sus unidades digitales y
+                accedan a mecanismos de canje establecidos por la Plataforma.
+            </p>
+
+            <p>
+                Los Es.stoks también pueden participar en operaciones entre
+                usuarios mediante el muro P2P de Csariel's, de acuerdo con
+                las funcionalidades, condiciones y restricciones vigentes.
+            </p>
+
+            <div class="callout">
+                <strong>Importante:</strong>
+                Es.stoks forma parte de un ecosistema digital que combina
+                productos físicos, recompensas digitales, tecnología
+                blockchain y funcionalidades de intercambio entre usuarios.
+                Su denominación comercial no determina por sí misma su
+                clasificación jurídica.
+            </div>
         </section>
 
-        <section id="no-son">
-            <h2>2. Naturaleza del token: lo que los Es.stoks NO son</h2>
-            <div class="alerta">
-                <strong>Importante:</strong> los Es.stoks <strong>no son criptomonedas, valores financieros, instrumentos de inversión ni moneda de curso legal</strong>. No cuentan con respaldo del Banco de México, no son depósitos bancarios y <strong>no garantizan rendimiento, valor ni liquidez</strong>.
-            </div>
+        <section id="funcionamiento">
+            <h2>2. Cómo funciona el programa de recompensas</h2>
+
+            <h3>2.1. Compra de productos</h3>
+
+            <p>
+                El programa está relacionado con la adquisición de domos
+                físicos de Csariel's.
+            </p>
+
+            <p>
+                Como referencia del programa descrito en esta versión,
+                cada domo tiene un precio comercial de $75.00 MXN.
+            </p>
+
+            <h3>2.2. Código QR y recepción de Es.stoks</h3>
+
+            <p>
+                Cada domo participante incorpora un código QR que permite
+                al cliente acceder al mecanismo de reclamación de su
+                recompensa digital.
+            </p>
+
+            <p>
+                Una vez escaneado el código y validada la operación por
+                la Plataforma, se acredita una unidad Es.stok a la cuenta
+                o dirección digital correspondiente, conforme al sistema
+                de emisión implementado por Csariel's.
+            </p>
+
             <ul>
-                <li>No son inversión garantizada.</li>
-                <li>No otorgan derechos corporativos, accionarios ni de participación sobre Csariel's ni sobre <strong>Comercializadora Gastronómica del Valle de Puebla, S.A. de C.V.</strong> (en adelante, "la Empresa").</li>
-                <li>No son convertibles a dinero fiat (efectivo) ni tienen recompra garantizada por la Empresa.</li>
-                <li>No están asegurados por ninguna institución financiera.</li>
-                <li>No constituyen un esquema de inversión colectiva ni un instrumento regulado por la Ley del Mercado de Valores.</li>
+                <li>Un domo participante puede generar una recompensa de 1 Es.stok.</li>
+                <li>La emisión está condicionada a la validación del código QR.</li>
+                <li>Cada código QR está sujeto a los controles de uso y prevención de duplicados.</li>
+                <li>La Plataforma puede rechazar códigos inválidos, previamente utilizados o que presenten indicios de fraude.</li>
+            </ul>
+
+            <h3>2.3. Acumulación de recompensas</h3>
+
+            <p>
+                El usuario puede acumular sus Es.stoks conforme a las
+                reglas del programa.
+            </p>
+
+            <div class="callout">
+                <strong>Ejemplo del funcionamiento:</strong>
+                <p>
+                    1 domo participante = 1 Es.stok.
+                </p>
+                <p>
+                    12 domos participantes = 12 Es.stoks.
+                </p>
+                <p>
+                    12 Es.stoks permiten solicitar el procedimiento de
+                    canje por un NFT, sujeto a las condiciones de la
+                    sección siguiente.
+                </p>
+            </div>
+
+            <p>
+                Los valores anteriores describen la mecánica comercial
+                del programa y no constituyen una promesa de rendimiento
+                financiero ni una garantía de apreciación de los activos
+                digitales.
+            </p>
+        </section>
+
+        <section id="nft">
+            <h2>3. Canje de Es.stoks por NFT y tarjeta de domo</h2>
+
+            <h3>3.1. Obtención del NFT</h3>
+
+            <p>
+                Cuando el usuario reúne 12 Es.stoks válidos, puede solicitar
+                su participación en el mecanismo de canje mediante el cual
+                se emite o entrega un NFT conforme a las reglas operativas
+                del ecosistema Csariel's.
+            </p>
+
+            <p>
+                Los 12 Es.stoks utilizados para completar este procedimiento
+                quedan sujetos a las condiciones de consumo o aplicación
+                establecidas por el sistema. No podrán utilizarse nuevamente
+                para reclamar otro NFT.
+            </p>
+
+            <h3>3.2. Entrega y quema del NFT</h3>
+
+            <p>
+                Para completar el canje del producto físico, el titular
+                presenta o transfiere el NFT correspondiente a Csariel's
+                mediante el procedimiento habilitado por la Plataforma.
+            </p>
+
+            <p>
+                Una vez comprobada la autenticidad, titularidad y validez
+                del NFT, Csariel's realiza el procedimiento de quema
+                (burn), cuando corresponda conforme a la implementación
+                técnica del activo digital.
+            </p>
+
+            <p>
+                La quema representa la retirada definitiva del NFT del
+                mecanismo de circulación y evita que ese mismo NFT pueda
+                volver a utilizarse para reclamar otra recompensa.
+            </p>
+
+            <h3>3.3. Entrega de la tarjeta de domo</h3>
+
+            <p>
+                Después de validar el NFT y completar correctamente
+                el procedimiento de canje, el usuario recibe una tarjeta
+                de domo con un valor de canje de referencia de $75.00 MXN.
+            </p>
+
+            <p>
+                La tarjeta permite solicitar el producto participante
+                correspondiente, de acuerdo con las condiciones de
+                utilización, disponibilidad y vigencia que se indiquen
+                en la propia tarjeta y en los términos del Mercado.
+            </p>
+
+            <div class="callout">
+                <strong>Ejemplo comercial:</strong>
+                Un cliente compra 12 domos a $75.00 MXN cada uno,
+                acumula 12 Es.stoks, completa el procedimiento de
+                obtención del NFT, entrega el NFT a Csariel's para
+                su validación y quema, y recibe una tarjeta de domo
+                con valor de canje de $75.00 MXN.
+            </div>
+
+            <div class="alerta">
+                <strong>Importante:</strong>
+                La tarjeta de domo no representa dinero en efectivo,
+                un depósito bancario ni una promesa de devolución
+                monetaria. Es un instrumento de canje por el producto
+                participante conforme a sus condiciones.
+            </div>
+
+            <h3>3.4. Condiciones del canje</h3>
+
+            <ul>
+                <li>El NFT debe ser auténtico y cumplir las condiciones del programa.</li>
+                <li>La titularidad debe poder verificarse.</li>
+                <li>Un NFT ya quemado o utilizado no puede volver a presentarse para otro canje.</li>
+                <li>La recompensa física está sujeta a las condiciones de entrega y disponibilidad del producto.</li>
+                <li>Los procedimientos técnicos de emisión, validación y quema deben completarse correctamente.</li>
             </ul>
         </section>
 
-        <section id="blindaje">
-            <h2>3. Blindaje del modelo de lealtad (Utility/Loyalty Token)</h2>
-            <p>Para todos los efectos legales, los Es.stoks se declaran formalmente como <strong>puntos de lealtad y consumo interno de circuito cerrado</strong>. Su única finalidad es premiar la preferencia del usuario y permitir el canje por productos físicos de la marca, como alimentos y bienes de consumo disponibles en la Plataforma.</p>
-            <div class="callout">
-                <strong>Declaración expresa:</strong> los Es.stoks no son criptomonedas, no son valores financieros, no son instrumentos de inversión y no representan una promesa de pago ni un derecho económico sobre la Empresa. Son, estrictamente, puntos de lealtad canjeables por productos físicos bajo las reglas del programa (incluyendo la retención de 12 tokens por 1 NFT). No son convertibles a dinero fiat (efectivo) ni tienen recompra garantizada por la Empresa.
+        <section id="p2p">
+            <h2>4. Mercado P2P y transferencias entre usuarios</h2>
+
+            <h3>4.1. Participación en el muro P2P</h3>
+
+            <p>
+                Csariel's puede habilitar un espacio de intercambio
+                entre usuarios conocido como muro P2P, donde los
+                participantes pueden publicar ofertas de venta o
+                intercambio de Es.stoks.
+            </p>
+
+            <p>
+                Esta funcionalidad permite que un usuario que no
+                desee utilizar sus Es.stoks en el procedimiento
+                de canje pueda ofrecerlos a otros participantes,
+                siempre que la operación esté permitida por las
+                reglas de la Plataforma.
+            </p>
+
+            <h3>4.2. Precio de las operaciones</h3>
+
+            <p>
+                El precio de una operación P2P puede ser establecido
+                por los participantes conforme a las condiciones
+                disponibles en el Mercado.
+            </p>
+
+            <p>
+                El precio comercial de un domo, el valor de canje
+                de una tarjeta y el precio acordado entre usuarios
+                en una operación P2P son conceptos diferentes.
+            </p>
+
+            <div class="alerta">
+                <strong>Advertencia:</strong>
+                El precio de compraventa entre usuarios no está
+                garantizado por Csariel's. No existe garantía de que
+                un Es.stok pueda venderse, de que exista un comprador
+                disponible o de que una operación produzca una
+                cantidad determinada de dinero.
             </div>
-            <p>La Empresa se reserva el derecho de modificar, suspender o cancelar el programa de lealtad en cualquier momento, así como de ajustar las reglas de canje, emisión y retención, sin que ello genere derecho a indemnización o compensación alguna a favor del usuario.</p>
+
+            <h3>4.3. Riesgos de las operaciones P2P</h3>
+
+            <ul>
+                <li>Un usuario puede no encontrar compradores para sus Es.stoks.</li>
+                <li>Los precios pueden variar según la oferta y la demanda.</li>
+                <li>Puede haber intentos de fraude, suplantación o incumplimiento de acuerdos.</li>
+                <li>Una transferencia blockchain confirmada puede ser irreversible.</li>
+                <li>La disponibilidad de la funcionalidad P2P puede verse afectada por mantenimiento, seguridad o requisitos legales.</li>
+            </ul>
+
+            <h3>4.4. Responsabilidad en las operaciones</h3>
+
+            <p>
+                Los participantes deben verificar cuidadosamente
+                la identidad de la contraparte, las condiciones
+                de la oferta y los datos de la operación antes
+                de confirmar una transferencia.
+            </p>
+
+            <p>
+                Csariel's podrá establecer mecanismos de verificación,
+                moderación, reportes y prevención de fraude. La
+                existencia de estas herramientas no representa
+                una garantía absoluta contra conductas fraudulentas
+                o incumplimientos de terceros.
+            </p>
+
+            <p>
+                Las responsabilidades que legalmente correspondan
+                a Csariel's como operador de la Plataforma no quedan
+                excluidas por esta disposición.
+            </p>
+        </section>
+
+        <section id="naturaleza">
+            <h2>5. Naturaleza y derechos de los Es.stoks</h2>
+
+            <div class="alerta">
+                <strong>Información importante:</strong>
+                Los Es.stoks no deben confundirse automáticamente
+                con acciones, participaciones societarias, depósitos
+                bancarios o instrumentos de inversión.
+            </div>
+
+            <p>
+                El programa Es.stoks está diseñado comercialmente
+                como un sistema de recompensas asociado al consumo
+                de productos físicos y a funcionalidades digitales
+                del ecosistema Csariel's.
+            </p>
+
+            <p>
+                Sin embargo, la existencia de tecnología blockchain,
+                transferencias electrónicas y operaciones P2P hace
+                necesario evaluar su clasificación jurídica de
+                acuerdo con su funcionamiento real y la legislación
+                aplicable.
+            </p>
+
+            <h3>5.1. Lo que no representan por sí solos</h3>
+
+            <ul>
+                <li>No otorgan acciones ni participación accionaria en Csariel's.</li>
+                <li>No conceden derechos de propiedad sobre la Empresa.</li>
+                <li>No otorgan participación en utilidades o dividendos.</li>
+                <li>No representan depósitos bancarios.</li>
+                <li>No garantizan rendimientos financieros.</li>
+                <li>No constituyen una promesa de recompra por parte de la Empresa.</li>
+                <li>No tienen garantía de conversión a pesos mexicanos.</li>
+                <li>No cuentan con respaldo del Banco de México por el simple hecho de existir en blockchain.</li>
+            </ul>
+
+            <h3>5.2. Diferencia entre recompensa y operación P2P</h3>
+
+            <p>
+                La recompensa obtenida mediante la compra de un domo
+                es distinta de una operación de compraventa posterior
+                entre usuarios.
+            </p>
+
+            <p>
+                El hecho de recibir un Es.stok como recompensa no
+                garantiza que el mismo pueda venderse posteriormente
+                por un precio determinado.
+            </p>
+
+            <p>
+                Tampoco significa que Csariel's deba recomprar los
+                Es.stoks o convertirlos a dinero en efectivo.
+            </p>
+
+            <h3>5.3. Clasificación jurídica</h3>
+
+            <p>
+                La denominación comercial de utilidad, recompensa,
+                token o activo digital no sustituye el análisis
+                jurídico de sus características, derechos, circulación
+                y utilización efectiva.
+            </p>
+
+            <p>
+                La Empresa deberá evaluar el funcionamiento del
+                sistema conforme a la legislación mexicana aplicable,
+                incluyendo, cuando corresponda, la Ley para Regular
+                las Instituciones de Tecnología Financiera y las
+                disposiciones relacionadas con activos virtuales.
+            </p>
         </section>
 
         <section id="riesgos">
-            <h2>4. Riesgos principales</h2>
-            <ul>
-                <li><strong>Volatilidad:</strong> el valor de un token puede subir o bajar drásticamente, incluso hasta cero.</li>
-                <li><strong>Liquidez:</strong> puede que no exista un mercado donde vender o intercambiar tus Es.stoks.</li>
-                <li><strong>Riesgo tecnológico:</strong> errores de software, vulnerabilidades o pérdida de acceso a la wallet pueden derivar en pérdida total.</li>
-                <li><strong>Riesgo regulatorio:</strong> cambios en la legislación mexicana o extranjera pueden afectar el uso o el valor de los tokens.</li>
-                <li><strong>Riesgo de fraude:</strong> terceros pueden intentar estafarte ofreciendo "rendimientos garantizados" o pidiendo tus claves privadas.</li>
-            </ul>
+            <h2>6. Riesgos principales</h2>
+
+            <h3>6.1. Riesgo de precio y mercado</h3>
+
+            <p>
+                Los Es.stoks ofrecidos en el mercado P2P pueden
+                experimentar variaciones de precio según la oferta,
+                demanda y condiciones de negociación.
+            </p>
+
+            <p>
+                No existe garantía de que un usuario pueda vender
+                sus unidades ni de que recupere una cantidad
+                determinada de dinero.
+            </p>
+
+            <h3>6.2. Riesgo tecnológico</h3>
+
+            <p>
+                Fallas de software, errores en contratos inteligentes,
+                interrupciones de red, vulnerabilidades y problemas
+                de infraestructura pueden afectar la emisión,
+                transferencia, consulta o utilización de activos
+                digitales.
+            </p>
+
+            <h3>6.3. Riesgo de wallet y acceso</h3>
+
+            <p>
+                La pérdida de acceso a una wallet, el robo de
+                credenciales o la divulgación de claves privadas
+                pueden impedir el control de los activos digitales.
+            </p>
+
+            <h3>6.4. Riesgo de QR</h3>
+
+            <p>
+                Los códigos QR pueden ser objeto de duplicación,
+                alteración, falsificación o utilización no autorizada.
+                La Plataforma podrá aplicar mecanismos de validación
+                para reducir estos riesgos.
+            </p>
+
+            <h3>6.5. Riesgo de canje</h3>
+
+            <p>
+                El procedimiento de canje requiere que los Es.stoks
+                y el NFT cumplan las condiciones establecidas.
+                Los errores de transferencia, falta de titularidad
+                o fallas de validación pueden retrasar o impedir
+                temporalmente el procedimiento.
+            </p>
+
+            <h3>6.6. Riesgo de disponibilidad</h3>
+
+            <p>
+                La disponibilidad de productos, servicios,
+                infraestructura tecnológica y funcionalidades
+                del Mercado puede cambiar por circunstancias
+                operativas, técnicas o legales.
+            </p>
+
+            <h3>6.7. Riesgo regulatorio</h3>
+
+            <p>
+                Los cambios en la legislación mexicana o en las
+                disposiciones aplicables a operaciones digitales
+                pueden requerir ajustes en el funcionamiento
+                del programa.
+            </p>
+
+            <h3>6.8. Riesgo de fraude</h3>
+
+            <p>
+                Terceros pueden intentar engañar a los usuarios
+                mediante ofertas falsas, solicitudes de transferencias,
+                suplantación de identidad o promesas de ganancias
+                garantizadas.
+            </p>
+        </section>
+
+        <section id="seguridad">
+            <h2>7. Seguridad y prevención de fraudes</h2>
+
             <div class="callout">
-                <strong>Nunca compartas tu clave privada.</strong> Csariel's nunca te pedirá tu clave privada ni tu contraseña por teléfono, mensajería o correo no solicitado.
+                <strong>Nunca compartas tu clave privada ni tu frase
+                de recuperación.</strong>
+                Csariel's no debe solicitar estos datos para validar
+                una recompensa, realizar un canje o atender una
+                solicitud de soporte.
             </div>
+
+            <p>
+                Para proteger sus activos y su cuenta, los usuarios
+                deben adoptar las siguientes medidas:
+            </p>
+
+            <ul>
+                <li>Utilizar únicamente los canales oficiales de Csariel's.</li>
+                <li>Verificar la dirección de la wallet antes de transferir activos.</li>
+                <li>Confirmar las condiciones de las publicaciones P2P.</li>
+                <li>No entregar códigos de verificación a terceros.</li>
+                <li>No confiar en promesas de rendimientos garantizados.</li>
+                <li>Reportar ofertas sospechosas y posibles intentos de fraude.</li>
+            </ul>
         </section>
 
         <section id="legal">
-            <h2>5. Marco legal y jurisdicción</h2>
-            <h3>5.1. Ley aplicable</h3>
-            <p>Este documento y el uso de los Es.stoks se rigen por las leyes aplicables de los Estados Unidos Mexicanos, con especial sujeción a la legislación del Estado de Puebla, México.</p>
+            <h2>8. Marco legal y jurisdicción</h2>
 
-            <h3>5.2. Arbitraje y resolución de controversias</h3>
-            <p>Cualquier controversia, disputa o reclamación derivada de o relacionada con los Es.stoks, este documento o el programa de lealtad se someterá a arbitraje ante los tribunales competentes de la ciudad de Puebla, México, renunciando las partes a cualquier otro fuero que pudiera corresponderles por razón de su domicilio presente o futuro.</p>
+            <h3>8.1. Legislación aplicable</h3>
 
-            <h3>5.3. Restricción de acceso internacional</h3>
-            <p>La Empresa prohíbe o limita el acceso a la Plataforma y a los Es.stoks a usuarios residentes en jurisdicciones sujetas a sanciones internacionales estrictas, incluyendo, de manera enunciativa mas no limitativa, aquellas incluidas en las listas de la Oficina de Control de Activos Extranjeros (OFAC) de los Estados Unidos, la Unión Europea, el Reino Unido o el Consejo de Seguridad de las Naciones Unidas.</p>
-            <p>El usuario declara y garantiza que no se encuentra en dichas jurisdicciones ni es sujeto de sanciones internacionales. La Empresa se reserva el derecho de bloquear, suspender o cancelar cuentas que incumplan esta disposición.</p>
+            <p>
+                El uso de los Es.stoks, los productos participantes
+                y las funcionalidades de la Plataforma se sujetan
+                a las disposiciones legales aplicables de los
+                Estados Unidos Mexicanos.
+            </p>
 
-            <h3>5.4. Marco regulatorio mexicano</h3>
-            <p>En México, los activos virtuales están regulados por la Ley para Regular las Instituciones de Tecnología Financiera (Ley Fintech) y las disposiciones del Banco de México. Si los Es.stoks llegaran a constituir valores conforme a la Ley del Mercado de Valores, su oferta podría requerir autorización de la Comisión Nacional Bancaria y de Valores (CNBV) o la intervención de un intermediario autorizado.</p>
-            <p><strong>Aviso:</strong> este documento es informativo y no constituye asesoría legal ni financiera. Antes de adquirir o usar Es.stoks, consulta a un profesional.</p>
+            <p>
+                Entre los ordenamientos que pueden resultar
+                aplicables, dependiendo de la operación concreta,
+                se encuentran:
+            </p>
+
+            <ul>
+                <li>Ley Federal de Protección al Consumidor.</li>
+                <li>Ley para Regular las Instituciones de Tecnología Financiera.</li>
+                <li>Ley del Mercado de Valores, cuando corresponda.</li>
+                <li>Legislación civil y mercantil aplicable.</li>
+                <li>Ley Federal de Protección de Datos Personales en Posesión de los Particulares.</li>
+                <li>Disposiciones y criterios emitidos por las autoridades competentes.</li>
+            </ul>
+
+            <h3>8.2. Protección al consumidor</h3>
+
+            <p>
+                Las condiciones del programa no pretenden eliminar
+                los derechos que correspondan a los consumidores
+                conforme a la legislación mexicana.
+            </p>
+
+            <p>
+                Ninguna disposición de este documento deberá
+                interpretarse como una renuncia anticipada a
+                derechos irrenunciables, ni como una liberación
+                general de responsabilidades que legalmente
+                correspondan a la Empresa.
+            </p>
+
+            <h3>8.3. Modificaciones al programa</h3>
+
+            <p>
+                Csariel's podrá actualizar las reglas operativas
+                del programa cuando existan razones comerciales,
+                técnicas, de seguridad o legales que lo justifiquen.
+            </p>
+
+            <p>
+                Las modificaciones deberán comunicarse mediante
+                los canales oficiales de la Plataforma, indicando
+                su fecha de entrada en vigor.
+            </p>
+
+            <p>
+                Las modificaciones no deberán desconocer
+                arbitrariamente derechos de consumidores ni
+                afectar retroactivamente obligaciones ya
+                adquiridas en contra de la legislación aplicable.
+            </p>
+
+            <p>
+                Cuando una modificación afecte las condiciones
+                de recompensas acumuladas, canjes pendientes
+                o tarjetas ya emitidas, deberán establecerse
+                medidas de transición razonables y respetarse
+                los derechos que correspondan.
+            </p>
+
+            <h3>8.4. Resolución de controversias</h3>
+
+            <p>
+                Las partes procurarán resolver cualquier
+                inconformidad mediante los canales oficiales
+                de atención de Csariel's.
+            </p>
+
+            <p>
+                Cuando no sea posible alcanzar una solución,
+                las controversias podrán someterse a las
+                autoridades y tribunales competentes conforme
+                a la legislación aplicable.
+            </p>
+
+            <p>
+                Se respetarán las disposiciones de protección
+                al consumidor y las reglas de competencia
+                territorial que resulten aplicables.
+            </p>
+
+            <h3>8.5. Operaciones internacionales</h3>
+
+            <p>
+                El acceso a determinadas funcionalidades
+                digitales podrá estar sujeto a restricciones
+                geográficas o legales cuando existan obligaciones
+                aplicables relacionadas con sanciones, prevención
+                de operaciones ilícitas o cumplimiento normativo.
+            </p>
+
+            <p>
+                Csariel's podrá implementar controles razonables
+                de acceso y verificación, conforme a la legislación
+                aplicable y sus políticas vigentes.
+            </p>
+
+            <h3>8.6. Alcance de este documento</h3>
+
+            <div class="alerta">
+                <strong>Aviso importante:</strong>
+                Este documento tiene carácter informativo y
+                de divulgación de riesgos. No sustituye los
+                términos completos del programa, los términos
+                del Mercado P2P, el aviso de privacidad ni
+                una opinión jurídica especializada.
+            </div>
+
+            <p>
+                La publicación de este documento no constituye
+                por sí misma una autorización, licencia o
+                reconocimiento de clasificación regulatoria
+                por parte de una autoridad financiera.
+            </p>
         </section>
 
         <section id="privacidad">
-            <h2>6. Aviso de privacidad y cumplimiento de datos (GDPR / LFPDPPP)</h2>
-            <p>La Empresa trata los datos personales de los usuarios con apego a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP) de México y, cuando resulte aplicable, al Reglamento General de Protección de Datos (GDPR) de la Unión Europea.</p>
-            <h3>6.1. Finalidad del tratamiento</h3>
-            <p>Los datos se recaban y tratan para la operación del programa de lealtad, la administración de la cuenta del usuario, la emisión y canje de Es.stoks, la prevención de fraudes y el cumplimiento de obligaciones legales.</p>
-            <h3>6.2. Almacenamiento seguro</h3>
-            <p>La información se almacena en bases de datos seguras alojadas en proveedores de infraestructura en la nube, incluyendo Supabase y Cloudflare, los cuales cuentan con medidas de seguridad técnicas y organizativas para proteger la información contra acceso no autorizado, pérdida o alteración.</p>
-            <h3>6.3. Derechos del usuario</h3>
-            <p>El usuario tiene derecho a acceder, rectificar, cancelar u oponerse al tratamiento de sus datos personales (derechos ARCO), así como a solicitar la baja o eliminación de su cuenta e información. Para ejercer estos derechos, el usuario puede enviar una solicitud al correo <a href="mailto:privacidad@csariels.com" style="color: var(--cyan);">privacidad@csariels.com</a> o a través del centro de ayuda dentro de la app.</p>
-            <p>La Empresa conservará los datos personales durante el tiempo necesario para cumplir con las finalidades descritas y las obligaciones legales aplicables, tras lo cual procederá a su eliminación segura.</p>
+            <h2>9. Protección de datos personales</h2>
+
+            <p>
+                El tratamiento de datos personales de los usuarios
+                deberá realizarse conforme a la Ley Federal de
+                Protección de Datos Personales en Posesión de los
+                Particulares vigente en México y demás disposiciones
+                aplicables.
+            </p>
+
+            <h3>9.1. Finalidades del tratamiento</h3>
+
+            <p>
+                Dependiendo de los servicios utilizados, los datos
+                personales podrán tratarse para:
+            </p>
+
+            <ul>
+                <li>Administrar las cuentas de los usuarios.</li>
+                <li>Validar compras y reclamaciones de recompensas mediante QR.</li>
+                <li>Registrar y administrar Es.stoks.</li>
+                <li>Gestionar operaciones de canje y emisión de NFT.</li>
+                <li>Administrar tarjetas de domo.</li>
+                <li>Facilitar operaciones P2P y mecanismos de seguridad.</li>
+                <li>Prevenir fraudes y accesos no autorizados.</li>
+                <li>Atender solicitudes y cumplir obligaciones legales.</li>
+            </ul>
+
+            <h3>9.2. Infraestructura tecnológica</h3>
+
+            <p>
+                La Plataforma puede utilizar proveedores de
+                infraestructura tecnológica, almacenamiento
+                y servicios digitales para operar sus sistemas.
+            </p>
+
+            <p>
+                Entre los proveedores de infraestructura utilizados
+                por el ecosistema pueden encontrarse Supabase y
+                Cloudflare, de acuerdo con la arquitectura y
+                configuración vigente.
+            </p>
+
+            <p>
+                La utilización de proveedores tecnológicos no
+                sustituye las obligaciones legales del responsable
+                del tratamiento de datos personales.
+            </p>
+
+            <h3>9.3. Derechos de los usuarios</h3>
+
+            <p>
+                Los titulares podrán ejercer los derechos de
+                acceso, rectificación, cancelación y oposición
+                (ARCO), así como los demás derechos reconocidos
+                por la legislación aplicable.
+            </p>
+
+            <p>
+                Para realizar solicitudes relacionadas con
+                datos personales, podrán comunicarse mediante:
+            </p>
+
+            <p>
+                <a class="legal-link" href="mailto:privacidad@csariels.com">
+                    privacidad@csariels.com
+                </a>
+            </p>
+
+            <p>
+                También podrán utilizar los canales de atención
+                habilitados dentro de la Plataforma.
+            </p>
+
+            <h3>9.4. Conservación de información</h3>
+
+            <p>
+                Los datos personales se conservarán durante el
+                tiempo necesario para cumplir las finalidades
+                informadas, atender obligaciones legales y
+                resolver responsabilidades derivadas de las
+                operaciones realizadas.
+            </p>
+
+            <p>
+                La conservación, bloqueo y eliminación de datos
+                deberán realizarse conforme a los plazos y
+                procedimientos previstos por la legislación
+                aplicable.
+            </p>
+
+            <h3>9.5. Aviso de privacidad integral</h3>
+
+            <p>
+                Este apartado no sustituye el aviso de privacidad
+                integral de Csariel's. Para conocer las finalidades
+                específicas, transferencias, mecanismos de ejercicio
+                de derechos y demás condiciones del tratamiento,
+                deberá consultarse el aviso de privacidad oficial
+                de la Plataforma.
+            </p>
         </section>
 
         <section id="recomendaciones">
-            <h2>7. Recomendaciones</h2>
+            <h2>10. Recomendaciones para los usuarios</h2>
+
             <ul>
-                <li>No inviertas dinero que no puedas permitirte perder.</li>
-                <li>Verifica siempre la información oficial dentro de la app.</li>
-                <li>Reporta cualquier intento de fraude a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</li>
+                <li>Conserva los comprobantes de compra de tus domos.</li>
+                <li>Escanea los códigos QR únicamente mediante los canales oficiales.</li>
+                <li>Verifica que la recompensa haya sido acreditada correctamente.</li>
+                <li>Consulta las condiciones antes de solicitar un canje.</li>
+                <li>Comprueba la autenticidad y titularidad de los NFT.</li>
+                <li>Revisa cuidadosamente las operaciones antes de utilizar el muro P2P.</li>
+                <li>No consideres el precio de una oferta P2P como un valor garantizado.</li>
+                <li>Protege tus claves privadas y credenciales.</li>
+                <li>Reporta cualquier anomalía o intento de fraude.</li>
             </ul>
+
+            <div class="callout">
+                <strong>Transparencia Csariel's:</strong>
+                El objetivo del programa es conectar el consumo
+                de productos físicos con recompensas digitales,
+                mecanismos de canje y herramientas de interacción
+                entre usuarios, proporcionando información clara
+                sobre sus condiciones y riesgos.
+            </div>
         </section>
 
         <section id="contacto">
-            <h2>8. Contacto</h2>
-            <p>Para dudas sobre los Es.stoks, escríbenos a <a href="mailto:soporte@csariels.com" style="color: var(--cyan);">soporte@csariels.com</a>.</p>
+            <h2>11. Contacto y atención</h2>
+
+            <p>
+                Para consultas relacionadas con Es.stoks,
+                recompensas QR, NFT, tarjetas de domo o
+                funcionalidades P2P, los usuarios pueden
+                comunicarse con el equipo de atención de Csariel's.
+            </p>
+
+            <p>
+                <strong>Soporte:</strong>
+                <a class="legal-link" href="mailto:soporte@csariels.com">
+                    soporte@csariels.com
+                </a>
+            </p>
+
+            <p>
+                <strong>Privacidad:</strong>
+                <a class="legal-link" href="mailto:privacidad@csariels.com">
+                    privacidad@csariels.com
+                </a>
+            </p>
         </section>
 
         <div class="contacto">
-            <p><strong>Responsable:</strong> Comercializadora Gastronómica del Valle de Puebla, S.A. de C.V.</p>
-            <p><strong>Domicilio:</strong> Av. Reforma 1234, Col. Centro, C.P. 72000, Puebla, Puebla, México</p>
-            <p><strong>Correo oficial:</strong> <a href="mailto:soporte@csariels.com">soporte@csariels.com</a></p>
-            <p><strong>Jurisdicción:</strong> Puebla, México</p>
-            <p><strong>Vigencia:</strong> 15 de mayo de 2025</p>
+            <p>
+                <strong>Responsable:</strong>
+                Comercializadora Gastronómica del Valle de Puebla, S.A. de C.V.
+            </p>
+
+            <p>
+                <strong>Domicilio:</strong>
+                Av. Reforma 1234, Col. Centro, C.P. 72000,
+                Puebla, Puebla, México.
+            </p>
+
+            <p>
+                <strong>Correo oficial:</strong>
+                <a href="mailto:soporte@csariels.com">
+                    soporte@csariels.com
+                </a>
+            </p>
+
+            <p>
+                <strong>Jurisdicción:</strong>
+                Puebla, México, sin perjuicio de las disposiciones
+                legales aplicables.
+            </p>
+
+            <p>
+                <strong>Versión:</strong> 2.0
+            </p>
+
+            <p>
+                <strong>Actualización:</strong>
+                13 de noviembre de 2026.
+            </p>
+
+            <p>
+                <strong>Csariel's</strong>
+                · Ecosistema digital y recompensas.
+            </p>
         </div>
+
     </main>
+
 </body>
 </html>
