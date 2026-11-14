@@ -1,16 +1,18 @@
 /* ================================================================
-   services/marquinhos-core.js — CEREBRO DE MARQUINHOS (v1.0)
+   services/marquinhos-core.js — CEREBRO DE MARQUINHOS (v1.1)
    ================================================================
-   Lógica extraída de routes/ai-chat-pet.js (v6.0) para que la usen:
+   Lógica compartida por:
      - La web (routes/ai-chat-pet.js).
      - WhatsApp (services/marquinhos-whatsapp.js) vía Telnyx.
 
    No depende de req/res ni de sesión de navegador. Recibe el userId
    ya verificado por quien llame (sesión web o vínculo de WhatsApp).
 
-   Mismas reglas que v6.0: candados de seguridad, crisis, música
-   (Deezer), eventos (Ticketmaster, solo lectura), búsqueda web y
-   límites por plan a través de planGuard.consumirMensaje.
+   v1.1 — Conocimiento verificado contra la base de datos, guardado
+          SOLO en el servidor (el cliente no puede modificarlo).
+          Precios y plazos corregidos. NFT Galleta Dorada (1 año).
+          Sin saludos repetidos: se limpia "Hola de nuevo" en la
+          respuesta, así el comportamiento es igual en web y WhatsApp.
 ================================================================ */
 
 'use strict';
@@ -47,6 +49,54 @@ const DEEZER_MAX_RESULTADOS = 3;
 const TICKETMASTER_ENDPOINT = 'https://app.ticketmaster.com/discovery/v2/events.json';
 const TICKETMASTER_TIMEOUT_MS = 8000;
 const TICKETMASTER_MAX_RESULTADOS = 3;
+
+/* ================================================================
+   CONOCIMIENTO VERIFICADO DEL ECOSISTEMA (solo servidor)
+   Fuente: base de datos Csariels ecosistema.
+   El cliente NO puede enviar ni modificar este bloque.
+================================================================ */
+
+const CONOCIMIENTO_VERIFICADO = `
+DATOS VERIFICADOS DEL ECOSISTEMA SARIEL'S (única fuente de precios y plazos; no inventes otros):
+
+Planes de Marquinhos (IA):
+- Gratis: acceso a Marquinhos, sin búsqueda web.
+- Prueba gratis del primer mes: Marquinhos con 10 búsquedas web.
+- Básico: 300 pesos al mes, 100 mensajes y 10 búsquedas web.
+- Pro: 500 pesos al mes, Marquinhos, Maíz e Itlasuhua, 500 mensajes y 100 búsquedas web.
+- Premium: 850 pesos al mes, Marquinhos, Maíz e Itlasuhua, mensajes sin límite y 500 búsquedas web.
+
+Almacenamiento:
+- Gratis: 1 GB y conservación de contenido por 90 días.
+- Pro: 300 pesos al mes, 5 GB y conservación ampliada mientras la membresía esté activa.
+
+Live Pass (transmisiones en vivo):
+- Live Básico: 300 pesos al mes, 2 horas al día para transmitir.
+- Live Pro: 600 pesos al mes, 5 horas al día para transmitir.
+
+Mercado (tiendas de vendedores):
+- Básico: 300 pesos al mes, hasta 10 productos y 20 pedidos al mes.
+- Pro: 400 pesos al mes, hasta 50 productos y 100 pedidos al mes, con destacado.
+- Max: 500 pesos al mes, hasta 500 productos, pedidos sin límite, video e insignia verificada.
+
+Es.stoks:
+- Son el token interno del ecosistema.
+- Se obtienen reclamando el código QR de un producto Domo (galleta física de Sariel's).
+- Se pueden vender a otros usuarios en El Muro, donde el sistema muestra una comisión del 3%, o canjear por un NFT.
+- El precio del Muro cambia con la oferta y la demanda. No des un precio fijo como definitivo.
+
+NFT Galleta Dorada:
+- Cuesta 12 Es.stoks.
+- Tiene vigencia de 1 año desde el canje.
+
+Pagos: tarjeta, SPEI o criptomonedas, según lo que muestre cada pantalla.
+
+Módulos de la app: Muro, Perfil, Mensajes, Contactos, Live, Internet (eSIM), Videos, Canales, Grupos, Mercado, Noticias, Wallet en Polygon y Marquinhos.
+
+Edad mínima para usar Sariel's: 13 años.
+
+Si el usuario pregunta por un precio, plazo o función que no aparece aquí, dile que lo revise en la app o con soporte. Nunca inventes cifras.
+`.trim();
 
 /* ================================================================
    CANDADOS DE SEGURIDAD
@@ -118,7 +168,7 @@ SÍ puedes:
 `.trim();
 
 /* ================================================================
-   PERSONALIDAD DE MARQUINHOS (idéntica a v6.0)
+   PERSONALIDAD DE MARQUINHOS
 ================================================================ */
 
 const SYSTEM_PROMPT = `
@@ -135,7 +185,10 @@ Eres un asistente conversacional GENERAL, tan capaz como Gemini, ChatGPT o Claud
 PERSONALIDAD:
 Cercano, cálido, natural y confiable, como un amigo muy inteligente.
 Hablas en el idioma del usuario; por defecto español mexicano neutro.
-No suenas como robot ni como manual técnico.
+No suenas como robot ni como manual técnico. Tampoco exageres ni uses frases forzadas de vendedor.
+
+SALUDOS:
+Si ya hubo conversación en el historial, NO vuelvas a saludar con "hola de nuevo" ni con frases parecidas. Responde directo a lo que te preguntan.
 
 MEMORIA Y CONTEXTO:
 Usa todo el historial de la conversación. Recuerda lo que el usuario dijo antes y refiérete a ello con naturalidad.
@@ -202,37 +255,8 @@ Si recibes el bloque [EVENTOS NO ENCONTRADOS], di algo como: "No encontré event
 FORMATO:
 Texto plano conversacional. Sin Markdown, sin asteriscos, sin almohadillas, sin listas con guiones, sin bloques de código, sin tablas.
 
-CONOCIMIENTO DEL ECOSISTEMA SARIEL'S (úsalo solo cuando pregunten por la app):
-
-Sariel's es un ecosistema Web3 construido sobre Polygon.
-
-Muro P2P: mercado peer-to-peer donde los usuarios compran y venden Es.stoks entre sí. El vendedor pone el precio. El sistema cobra 3% de comisión.
-
-Perfil: foto, video, portada, estadísticas.
-
-Wallet y Polygon: se conecta desde Configuración.
-
-Live: transmisiones en vivo.
-
-Canales: públicos, solo el creador publica.
-
-Grupos: privados, todos los miembros pueden publicar.
-
-Mensajes: chat uno a uno con texto, fotos, videos y notas de voz.
-
-Internet (eSIMs): compra y administración de eSIMs Telnyx.
-
-Videos: galería de videos de la comunidad.
-
-Domos: productos físicos del ecosistema. Cada Domo tiene un QR que se escanea para recibir Es.stoks.
-
-Es.stoks: tokens internos del ecosistema. 12 Es.stoks equivalen al objetivo de 1 NFT Domo.
-
-NFT Domo: activo digital en blockchain que se canjea al acumular 12 Es.stoks.
-
-REGLAS DE SEGURIDAD FINALES:
-No inventes precios, saldos, transacciones ni datos personales.
-No afirmes que ejecutaste una operación si no tienes acceso real para hacerla.
+REGLA DE DATOS:
+Para precios, planes, plazos y funciones de Sariel's usa SOLO el bloque de datos verificados que recibes aparte. Si algo no está ahí, dilo y sugiere revisarlo en la app o con soporte.
 
 OBJETIVO:
 Ser el mejor asistente y compañero del usuario.
@@ -295,6 +319,18 @@ function limpiarFormato(texto) {
     t = t.replace(/[ \t]{2,}/g, ' ');
     t = t.replace(/\r?\n{3,}/g, '\n\n');
     return t.trim();
+}
+
+/* Quita el "hola de nuevo" cuando ya hubo conversación. Así la
+   respuesta no suena robótica, en web y en WhatsApp. */
+function limpiarSaludoRepetido(texto, historial) {
+    if (typeof texto !== 'string' || !texto) return texto;
+    const hayConversacion = Array.isArray(historial) &&
+        historial.some(m => m && m.role === 'assistant');
+    if (!hayConversacion) return texto;
+    return texto
+        .replace(/^¡?\s*hola de nuevo(,?\s*[^!?.¿]*)?[!.]?\s*/i, (_, nombre) => '¡Hola' + (nombre || '') + '! ')
+        .trim();
 }
 
 function recortarRespuesta(texto, maximo) {
@@ -593,8 +629,9 @@ function esMensajeDeCrisis(mensaje) {
    FUNCIÓN PRINCIPAL REUTILIZABLE
    Entrada: usuario ya verificado por quien llama (sesión web o
    vínculo de WhatsApp). No toca req/res.
-   Salida: { ok, httpStatus, ...datos } — la ruta web la convierte
-   en respuesta HTTP y el canal de WhatsApp en mensaje de texto.
+   Salida: { ok, httpStatus, ...datos }.
+   Nota: no acepta conocimiento ni instrucciones del cliente. Todo
+   el contexto del ecosistema sale de este archivo.
 ================================================================ */
 
 async function responderMarquinhos({
@@ -767,6 +804,7 @@ async function responderMarquinhos({
         /* CONSTRUCCIÓN DE MENSAJES */
         const mensajes = [
             { role: 'system', content: SYSTEM_PROMPT },
+            { role: 'system', content: CONOCIMIENTO_VERIFICADO },
             { role: 'system', content: contextoDinamico(userName, page) }
         ];
 
@@ -877,6 +915,7 @@ async function responderMarquinhos({
             };
         }
 
+        respuestaTexto = limpiarSaludoRepetido(respuestaTexto, historialFinal);
         respuestaTexto = recortarRespuesta(respuestaTexto, limite.maxCaracteres);
 
         guardarMensaje(usuarioId, mensajeLimpio, respuestaTexto, origen);
