@@ -1,10 +1,15 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.6
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.7
    ============================================================
-   - Bug fix: La barra de búsqueda principal ahora busca en 
-     toda la red (Global), no solo en los contactos locales.
-   - Bug fix: Se fuerza la carga del nombre y avatar real en las 
-     solicitudes enviadas para evitar que diga "Usuario".
+   v25.7:
+   - Arreglo: 'Cargando...' ya no se queda para siempre en
+     "Solicitudes enviadas". Si el perfil no se carga, se muestra
+     "Perfil no disponible" con botón Reintentar.
+   - Errores visibles en pantalla (banner dentro de cada sección),
+     no solo en consola: se ve el código y el mensaje del error.
+   - Las consultas de solicitudes ya no ocultan la sección cuando
+     fallan; muestran el error.
+   - Búsqueda global, favoritos, bloqueos y sugerencias sin cambios.
    ============================================================ */
 
 (function () {
@@ -88,7 +93,7 @@
     }
 
     function normalizarTextoBusqueda(value) { return String(value == null ? '' : value).replace(/\u0000/g, '').trim().slice(0, CONFIG.MAX_CHARS_BUSQUEDA); }
-    
+
     function obtenerAvatarSeguro(url) {
         if (!url) return ''; var valor = String(url).trim(); if (!valor) return '';
         try {
@@ -98,10 +103,24 @@
             return parsed.href;
         } catch (error) { return ''; }
     }
-    
+
     function obtenerInicial(nombre) { var texto = String(nombre || 'U').trim(); return texto ? texto.charAt(0).toUpperCase() : 'U'; }
     function debounce(fn, ms) { var timer = null; return function () { var contexto = this; var args = arguments; clearTimeout(timer); timer = setTimeout(function () { fn.apply(contexto, args); }, ms); }; }
     function emitirListo() { try { window.dispatchEvent(new Event('contactos:listo')); } catch (error) {} }
+
+    // Texto legible de un error de Supabase o de JavaScript: código + mensaje
+    function detalleError(error) {
+        if (!error) return 'error desconocido';
+        var codigo = error.code ? error.code + ': ' : '';
+        var mensaje = error.message || String(error);
+        return codigo + mensaje;
+    }
+
+    // Nombre visible de un perfil. Nunca devuelve "Cargando...".
+    function nombrePerfil(perfil) {
+        if (!perfil) return 'Perfil no disponible';
+        return perfil.nombre || perfil.handle || 'Usuario';
+    }
 
     function showToast(mensaje, tipo) {
         var toast = document.getElementById('toast');
@@ -114,6 +133,45 @@
         window.__contactosToastTimer = setTimeout(function () { toast.classList.remove('show'); }, 3500);
     }
     window.showToast = showToast;
+
+    /* ============================================================
+       AVISOS VISIBLES DENTRO DE CADA SECCIÓN
+       ============================================================ */
+
+    function limpiarAvisoSeccion(seccion) {
+        if (!seccion) return;
+        var previo = seccion.querySelector('[data-aviso-contactos]');
+        if (previo) previo.remove();
+    }
+
+    function mostrarAvisoSeccion(seccion, mensaje, onRetry) {
+        if (!seccion) return;
+        limpiarAvisoSeccion(seccion);
+
+        var aviso = document.createElement('div');
+        aviso.setAttribute('data-aviso-contactos', '1');
+        aviso.setAttribute('role', 'alert');
+        aviso.style.cssText = 'margin:8px 0;padding:10px 12px;border:1px solid rgba(255,51,102,.45);border-radius:10px;color:#ff8197;font-size:.72rem;line-height:1.5;overflow-wrap:anywhere;';
+
+        var texto = document.createElement('span');
+        texto.textContent = mensaje;
+        aviso.appendChild(texto);
+
+        if (typeof onRetry === 'function') {
+            var boton = document.createElement('button');
+            boton.type = 'button';
+            boton.textContent = 'Reintentar';
+            boton.style.cssText = 'margin-left:10px;padding:4px 10px;border:1px solid #ff8197;border-radius:8px;background:transparent;color:#ff8197;cursor:pointer;font-size:.7rem;';
+            boton.addEventListener('click', onRetry);
+            aviso.appendChild(boton);
+        }
+
+        seccion.insertBefore(aviso, seccion.children[1] || null);
+    }
+
+    /* ============================================================
+       CONFIRMACIÓN
+       ============================================================ */
 
     async function showConfirm(opciones) {
         opciones = opciones || {};
@@ -161,15 +219,19 @@
         });
     }
 
+    /* ============================================================
+       SESIÓN Y REINTENTOS
+       ============================================================ */
+
     async function getSession() {
         var ahora = Date.now(); if (state.session && ahora < state.sessionExpira) return state.session;
         var client = sb(); if (!client || !client.auth) return null;
         try {
-            var resultado = await Promise.race([ client.auth.getSession(), new Promise(function (resolve) { setTimeout(function () { resolve({ data: null, error: new Error('Timeout') }); }, CONFIG.SESSION_TIMEOUT_MS); }) ]);
-            if (resultado.error) return null;
+            var resultado = await Promise.race([ client.auth.getSession(), new Promise(function (resolve) { setTimeout(function () { resolve({ data: null, error: new Error('Timeout de sesión') }); }, CONFIG.SESSION_TIMEOUT_MS); }) ]);
+            if (resultado.error) { console.error('[Contactos] Sesión:', detalleError(resultado.error)); return null; }
             state.session = resultado.data && resultado.data.session ? resultado.data.session : null;
             state.sessionExpira = ahora + 60000; return state.session;
-        } catch (error) { return null; }
+        } catch (error) { console.error('[Contactos] Sesión:', detalleError(error)); return null; }
     }
 
     async function withRetry(fn, contexto) {
@@ -184,12 +246,18 @@
                 }
                 return resultado;
             } catch (error) {
-                ultimoError = error; if (intento === CONFIG.RETRY_MAX - 1) break;
+                ultimoError = error;
+                console.warn('[Contactos] Reintento ' + (intento + 1) + ' (' + contexto + '):', detalleError(error));
+                if (intento === CONFIG.RETRY_MAX - 1) break;
                 await new Promise(function (resolve) { setTimeout(resolve, CONFIG.RETRY_BASE_MS * Math.pow(2, intento)); });
             }
         }
         throw ultimoError;
     }
+
+    /* ============================================================
+       CACHÉ DE PERFILES
+       ============================================================ */
 
     function getPerfilCacheado(id) {
         var entry = state.perfilCache.get(id); if (!entry) return null;
@@ -203,20 +271,48 @@
         state.perfilCache.set(id, { perfil: perfil, expira: Date.now() + CONFIG.PROFILE_CACHE_TTL_MS });
     }
 
+    /*
+     * v25.7: devuelve { errores, sinCargar } para que la pantalla
+     * pueda avisar al usuario en vez de quedarse con un texto de espera.
+     */
     async function cargarPerfilesEnLote(ids) {
-        var client = sb(); if (!client || !Array.isArray(ids)) return;
+        var resultadoLote = { errores: [], sinCargar: [] };
+        var client = sb(); if (!client || !Array.isArray(ids)) return resultadoLote;
+
         var unicos = Array.from(new Set(ids.filter(Boolean)));
         var faltantes = unicos.filter(function (id) { return !getPerfilCacheado(id); });
-        if (!faltantes.length) return;
+        if (!faltantes.length) return resultadoLote;
+
         var CHUNK_SIZE = 100;
         for (var i = 0; i < faltantes.length; i += CHUNK_SIZE) {
             var chunk = faltantes.slice(i, i + CHUNK_SIZE);
             try {
-                var resultado = await withRetry(function () { return client.from(CONFIG.PERFILES_VISTA).select(CONFIG.CAMPOS_PUBLICOS).in('id', chunk); }, 'cargar perfiles');
-                if (!resultado.error) { (resultado.data || []).forEach(function (p) { setPerfilCache(p.id, p); }); }
-            } catch (error) { console.error('[Contactos] Error cargando perfiles:', error); }
+                var resultado = await withRetry(function () {
+                    return client.from(CONFIG.PERFILES_VISTA).select(CONFIG.CAMPOS_PUBLICOS).in('id', chunk);
+                }, 'cargar perfiles');
+
+                if (resultado.error) {
+                    resultadoLote.errores.push(detalleError(resultado.error));
+                    console.error('[Contactos] Perfiles:', detalleError(resultado.error));
+                } else {
+                    (resultado.data || []).forEach(function (p) { setPerfilCache(p.id, p); });
+                }
+            } catch (error) {
+                resultadoLote.errores.push(detalleError(error));
+                console.error('[Contactos] Perfiles:', detalleError(error));
+            }
         }
+
+        resultadoLote.sinCargar = faltantes.filter(function (id) { return !getPerfilCacheado(id); });
+        if (resultadoLote.sinCargar.length) {
+            console.warn('[Contactos] Perfiles no encontrados en perfiles_publicos:', resultadoLote.sinCargar);
+        }
+        return resultadoLote;
     }
+
+    /* ============================================================
+       INICIALIZACIÓN
+       ============================================================ */
 
     async function inicializarContactos() {
         if (state.initialized || state.inicializando) return;
@@ -236,7 +332,6 @@
     function configurarEventos() {
         var searchInput = document.getElementById('searchInput');
         if (searchInput) {
-            // FIX: Ahora el buscador principal llama a la búsqueda GLOBAL
             searchInput.addEventListener('input', debounce(function (event) {
                 var texto = normalizarTextoBusqueda(event.target.value);
                 state.textoBusqueda = texto.toLowerCase();
@@ -269,13 +364,17 @@
         if (client && client.auth && client.auth.onAuthStateChange) {
             client.auth.onAuthStateChange(function (evento, session) {
                 state.session = session || null; state.sessionExpira = Date.now() + 60000;
-                if (evento === 'SIGNED_OUT') { state.contactos = []; state.totalContactos = 0; state.idsContactosSet.clear(); actualizarEstadisticas(0, 0); mostrarEstadoVacio('◈', 'Inicia sesión.'); } 
+                if (evento === 'SIGNED_OUT') { state.contactos = []; state.totalContactos = 0; state.idsContactosSet.clear(); actualizarEstadisticas(0, 0); mostrarEstadoVacio('◈', 'Inicia sesión.'); }
                 else if (evento === 'SIGNED_IN' && !state.initialized) { inicializarContactos(); }
             });
         }
     }
 
     function cleanup() { if (state.observerScroll) { state.observerScroll.disconnect(); state.observerScroll = null; } clearTimeout(state.busquedaTimer); clearTimeout(state.filtroTimer); }
+
+    /* ============================================================
+       BÚSQUEDA GLOBAL
+       ============================================================ */
 
     async function buscarUsuariosGlobal(texto, version) {
         var client = sb(); var session = await getSession();
@@ -290,14 +389,14 @@
 
             var crudo = resultado.data;
             var usuarios = Array.isArray(crudo) ? crudo : (crudo && Array.isArray(crudo.data) ? crudo.data : []);
-            usuarios = usuarios.filter(function(u) { return u.id !== session.user.id; });
+            usuarios = usuarios.filter(function (u) { return u.id !== session.user.id; });
 
             if (!usuarios.length) {
                 lista.innerHTML = '<div class="empty-state"><div class="icon">🛸</div><h3>No se encontraron usuarios.</h3></div>';
                 return;
             }
 
-            usuarios.forEach(function(u) {
+            usuarios.forEach(function (u) {
                 if (u.nombre || u.handle) setPerfilCache(u.id, u);
             });
 
@@ -307,8 +406,8 @@
                 var avatarUrl = obtenerAvatarSeguro(usuario.avatar_url);
                 var avatar = avatarUrl ? '<img class="contacto-avatar-img" src="' + escapeHtml(avatarUrl) + '" alt="">' : '<span class="avatar-fallback">' + escapeHtml(obtenerInicial(nombre)) + '</span>';
                 var yaEsContacto = state.idsContactosSet.has(usuario.id);
-                
-                var btnHTML = yaEsContacto 
+
+                var btnHTML = yaEsContacto
                     ? '<button type="button" class="btn-agregar" style="background:rgba(0,214,143,.1);border:1px solid var(--success);color:var(--success);cursor:default;" disabled>' + SVG_ICONS.check + ' Agregado</button>'
                     : '<button type="button" class="btn-agregar" style="background:linear-gradient(135deg, var(--cyan), #0055ff);border:0;color:#fff;" onclick="agregarContacto(\'' + usuario.id + '\')">' + SVG_ICONS.agregarAmigo + ' Agregar</button>';
 
@@ -323,8 +422,15 @@
                     </article>
                 `;
             }).join('');
-        } catch (error) { console.error('[Contactos] Error búsqueda global:', error); lista.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>Error al buscar.</h3></div>'; }
+        } catch (error) {
+            console.error('[Contactos] Búsqueda global:', detalleError(error));
+            lista.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>Error al buscar: ' + escapeHtml(detalleError(error)) + '</h3></div>';
+        }
     }
+
+    /* ============================================================
+       CONTACTOS
+       ============================================================ */
 
     async function cargarContactos(opciones) {
         opciones = opciones || {}; var reset = opciones.reset === true;
@@ -346,12 +452,11 @@
                 if (!conteo.error) state.totalContactos = conteo.count || 0;
             }
 
-            // Filtramos solo los activos para la lista general
             var resultado = await withRetry(function () {
                 return client.from(CONFIG.CONTACTOS_TABLE)
                     .select('id, usuario_id, contacto_id, es_favorito, estado, fecha, created_at')
                     .eq('usuario_id', session.user.id)
-                    .eq('estado', 'activo') 
+                    .eq('estado', 'activo')
                     .order('fecha', { ascending: false, nullsFirst: false })
                     .range(desde, hasta);
             }, 'cargar contactos');
@@ -374,7 +479,7 @@
                 return Object.assign({}, c, { contacto: perfil });
             });
 
-            if (reset) { state.contactos = enriquecidos; } 
+            if (reset) { state.contactos = enriquecidos; }
             else {
                 var idsExistentes = new Set(state.contactos.map(function (item) { return String(item.id); }));
                 enriquecidos.forEach(function (item) { if (!idsExistentes.has(String(item.id))) state.contactos.push(item); });
@@ -384,9 +489,12 @@
             recalcularEstadisticas(); renderizarContactos(); quitarCargandoMas();
             if (reset) emitirListo();
         } catch (error) {
-            console.error('[Contactos] Error cargando contactos:', error); quitarCargandoMas();
-            if (reset) { state.contactos = []; actualizarEstadisticas(0, 0); mostrarEstadoVacio('⚠️', 'Error cargando contactos.'); emitirListo(); } 
-            else { showToast('Error cargando más contactos.', 'error'); }
+            console.error('[Contactos] Cargando contactos:', detalleError(error)); quitarCargandoMas();
+            if (reset) {
+                state.contactos = []; actualizarEstadisticas(0, 0);
+                mostrarEstadoVacio('⚠️', 'Error cargando contactos: ' + detalleError(error));
+                emitirListo();
+            } else { showToast('Error cargando más contactos: ' + detalleError(error), 'error'); }
         } finally { state.cargando = false; }
     }
 
@@ -410,6 +518,10 @@
         };
     }
 
+    /* ============================================================
+       SOLICITUDES RECIBIDAS (pendientes)
+       ============================================================ */
+
     async function cargarSolicitudesPendientesUI() {
         var client = sb(); var session = await getSession(); if (!client || !session) return;
         var contenedor = document.getElementById('solicitudesPendientesLista');
@@ -417,20 +529,24 @@
         var contador = document.getElementById('solicitudesContador');
         if (!contenedor || !seccion || !contador) return;
 
+        limpiarAvisoSeccion(seccion);
+
         try {
             var res = await client.from(CONFIG.CONTACTOS_TABLE).select('id, usuario_id, contacto_id, estado').eq('contacto_id', session.user.id).eq('estado', 'pendiente');
+            if (res.error) throw res.error;
+
             var solicitudes = res.data || [];
             if (!solicitudes.length) { seccion.style.display = 'none'; return; }
 
-            await cargarPerfilesEnLote(solicitudes.map(function (s) { return s.usuario_id; }));
-            
+            var lote = await cargarPerfilesEnLote(solicitudes.map(function (s) { return s.usuario_id; }));
+
             seccion.style.display = 'block'; contador.textContent = String(solicitudes.length);
 
             contenedor.innerHTML = solicitudes.map(function (solicitud) {
-                var perfil = getPerfilCacheado(solicitud.usuario_id) || {};
-                var nombre = perfil.nombre || perfil.handle || 'Usuario';
-                var handle = perfil.handle ? '@' + String(perfil.handle).replace(/^@/, '') : '';
-                var avatarUrl = obtenerAvatarSeguro(perfil.avatar_url);
+                var perfil = getPerfilCacheado(solicitud.usuario_id);
+                var nombre = nombrePerfil(perfil);
+                var handle = perfil && perfil.handle ? '@' + String(perfil.handle).replace(/^@/, '') : '';
+                var avatarUrl = perfil ? obtenerAvatarSeguro(perfil.avatar_url) : '';
                 var avatar = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" loading="lazy">' : escapeHtml(obtenerInicial(nombre));
 
                 return `
@@ -446,9 +562,25 @@
 
             contenedor.querySelectorAll('[data-solicitud-aceptar]').forEach(function (b) { b.addEventListener('click', function () { aceptarSolicitud(b.getAttribute('data-solicitud-aceptar'), b.getAttribute('data-usuario-id')); }); });
             contenedor.querySelectorAll('[data-solicitud-rechazar]').forEach(function (b) { b.addEventListener('click', function () { rechazarSolicitud(b.getAttribute('data-solicitud-rechazar')); }); });
-        } catch (error) { seccion.style.display = 'none'; }
+
+            if (lote.sinCargar.length || lote.errores.length) {
+                mostrarAvisoSeccion(seccion, 'Algunos nombres no se pudieron cargar' + (lote.errores.length ? ' (' + lote.errores[0] + ')' : '') + '.', cargarSolicitudesPendientesUI);
+            }
+        } catch (error) {
+            console.error('[Contactos] Solicitudes recibidas:', detalleError(error));
+            seccion.style.display = 'block';
+            contenedor.innerHTML = '';
+            mostrarAvisoSeccion(seccion, 'No se pudieron cargar las solicitudes recibidas: ' + detalleError(error), cargarSolicitudesPendientesUI);
+        }
     }
     window.cargarSolicitudesPendientesUI = cargarSolicitudesPendientesUI;
+
+    /* ============================================================
+       SOLICITUDES ENVIADAS
+       v25.7: el nombre nunca queda en "Cargando...". Si el perfil
+       no llega, se muestra "Perfil no disponible" y un aviso con
+       botón Reintentar.
+       ============================================================ */
 
     async function cargarSolicitudesEnviadasUI() {
         var client = sb(); var session = await getSession(); if (!client || !session) return;
@@ -457,20 +589,22 @@
         var contador = document.getElementById('solicitudesEnviadasContador');
         if (!contenedor || !seccion || !contador) return;
 
+        limpiarAvisoSeccion(seccion);
+
         try {
             var res = await client.from(CONFIG.CONTACTOS_TABLE).select('id, usuario_id, contacto_id, estado').eq('usuario_id', session.user.id).eq('estado', 'pendiente');
+            if (res.error) throw res.error;
+
             var solicitudes = res.data || [];
             if (!solicitudes.length) { seccion.style.display = 'none'; return; }
 
-            // Forzamos la carga de los perfiles
-            await cargarPerfilesEnLote(solicitudes.map(function (s) { return s.contacto_id; }));
-            
+            var lote = await cargarPerfilesEnLote(solicitudes.map(function (s) { return s.contacto_id; }));
+
             seccion.style.display = 'block'; contador.textContent = String(solicitudes.length);
 
             contenedor.innerHTML = solicitudes.map(function (solicitud) {
                 var perfil = getPerfilCacheado(solicitud.contacto_id);
-                // Si el perfil no cargó, intentamos usar el handle o un texto por defecto, pero ya no dirá "Usuario" genérico si cargó bien
-                var nombre = perfil ? (perfil.nombre || perfil.handle) : 'Cargando...';
+                var nombre = nombrePerfil(perfil);
                 var handle = perfil && perfil.handle ? '@' + String(perfil.handle).replace(/^@/, '') : '';
                 var avatarUrl = perfil ? obtenerAvatarSeguro(perfil.avatar_url) : '';
                 var avatar = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" loading="lazy">' : escapeHtml(obtenerInicial(nombre));
@@ -479,7 +613,7 @@
                     <div class="solicitud-enviada-card">
                         <div class="avatar">${avatar}</div>
                         <div class="info">
-                            <div class="nombre">${escapeHtml(nombre || 'Usuario')}</div>
+                            <div class="nombre">${escapeHtml(nombre)}</div>
                             <div class="handle">${escapeHtml(handle)}</div>
                         </div>
                         <div class="acciones">
@@ -489,9 +623,23 @@
             }).join('');
 
             contenedor.querySelectorAll('[data-solicitud-cancelar]').forEach(function (b) { b.addEventListener('click', function () { cancelarSolicitudEnviada(b.getAttribute('data-solicitud-cancelar')); }); });
-        } catch (error) { seccion.style.display = 'none'; }
+
+            if (lote.sinCargar.length || lote.errores.length) {
+                var detalle = lote.errores.length ? ' Motivo: ' + lote.errores[0] + '.' : ' El perfil no existe o no es público.';
+                mostrarAvisoSeccion(seccion, 'No se pudo cargar el nombre de ' + lote.sinCargar.length + ' persona(s).' + detalle, cargarSolicitudesEnviadasUI);
+            }
+        } catch (error) {
+            console.error('[Contactos] Solicitudes enviadas:', detalleError(error));
+            seccion.style.display = 'block';
+            contenedor.innerHTML = '';
+            mostrarAvisoSeccion(seccion, 'No se pudieron cargar las solicitudes enviadas: ' + detalleError(error), cargarSolicitudesEnviadasUI);
+        }
     }
     window.cargarSolicitudesEnviadasUI = cargarSolicitudesEnviadasUI;
+
+    /* ============================================================
+       SUGERENCIAS
+       ============================================================ */
 
     async function cargarSugerenciasUI() {
         var client = sb(); var session = await getSession(); if (!client || !session) return;
@@ -507,12 +655,14 @@
             try {
                 var bloqueos = await client.from(CONFIG.BLOQUEOS_TABLE).select('bloqueado_id').eq('usuario_id', session.user.id);
                 (bloqueos.data || []).forEach(function (b) { if (b.bloqueado_id) idsExcluir.add(b.bloqueado_id); });
-            } catch (e) {}
+            } catch (e) { console.warn('[Contactos] Bloqueos (sugerencias):', detalleError(e)); }
 
             var idsArray = Array.from(idsExcluir);
             if (!idsArray.length) { seccion.style.display = 'none'; return; }
 
             var perfiles = await client.from(CONFIG.PERFILES_VISTA).select(CONFIG.CAMPOS_PUBLICOS).not('id', 'in', '(' + idsArray.join(',') + ')').order('online', { ascending: false }).limit(CONFIG.MAX_SUGERENCIAS);
+            if (perfiles.error) throw perfiles.error;
+
             var data = perfiles.data || [];
             if (!data.length) { seccion.style.display = 'none'; return; }
 
@@ -541,9 +691,18 @@
             }).join('');
 
             contenedor.querySelectorAll('[data-sugerencia-agregar]').forEach(function (b) { b.addEventListener('click', function () { agregarContacto(b.getAttribute('data-sugerencia-agregar')); }); });
-        } catch (error) { seccion.style.display = 'none'; }
+        } catch (error) {
+            console.error('[Contactos] Sugerencias:', detalleError(error));
+            seccion.style.display = 'block';
+            contenedor.innerHTML = '';
+            mostrarAvisoSeccion(seccion, 'No se pudieron cargar las sugerencias: ' + detalleError(error), cargarSugerenciasUI);
+        }
     }
     window.cargarSugerenciasUI = cargarSugerenciasUI;
+
+    /* ============================================================
+       BLOQUEADOS
+       ============================================================ */
 
     async function cargarBloqueadosUI() {
         var client = sb(); var session = await getSession(); if (!client || !session) return;
@@ -552,19 +711,23 @@
         var contador = document.getElementById('bloqueadosContador');
         if (!seccion || !contenedor || !contador) return;
 
+        limpiarAvisoSeccion(seccion);
+
         try {
             var res = await client.from(CONFIG.BLOQUEOS_TABLE).select('id, bloqueado_id, motivo, created_at').eq('usuario_id', session.user.id).order('created_at', { ascending: false });
+            if (res.error) throw res.error;
+
             var bloqueos = res.data || [];
             if (!bloqueos.length) { seccion.style.display = 'none'; return; }
 
-            await cargarPerfilesEnLote(bloqueos.map(function (b) { return b.bloqueado_id; }));
+            var lote = await cargarPerfilesEnLote(bloqueos.map(function (b) { return b.bloqueado_id; }));
             seccion.style.display = 'block'; contador.textContent = String(bloqueos.length);
 
             contenedor.innerHTML = bloqueos.map(function (bloqueo) {
-                var perfil = getPerfilCacheado(bloqueo.bloqueado_id) || {};
-                var nombre = perfil.nombre || perfil.handle || 'Usuario';
-                var handle = perfil.handle ? '@' + String(perfil.handle).replace(/^@/, '') : '';
-                var avatarUrl = obtenerAvatarSeguro(perfil.avatar_url);
+                var perfil = getPerfilCacheado(bloqueo.bloqueado_id);
+                var nombre = nombrePerfil(perfil);
+                var handle = perfil && perfil.handle ? '@' + String(perfil.handle).replace(/^@/, '') : '';
+                var avatarUrl = perfil ? obtenerAvatarSeguro(perfil.avatar_url) : '';
                 var avatar = avatarUrl ? '<img src="' + escapeHtml(avatarUrl) + '" alt="" loading="lazy">' : escapeHtml(obtenerInicial(nombre));
 
                 return `
@@ -578,9 +741,22 @@
             }).join('');
 
             contenedor.querySelectorAll('[data-bloqueado-desbloquear]').forEach(function (b) { b.addEventListener('click', function () { desbloquearContacto(b.getAttribute('data-bloqueado-desbloquear')); }); });
-        } catch (error) { seccion.style.display = 'none'; }
+
+            if (lote.sinCargar.length || lote.errores.length) {
+                mostrarAvisoSeccion(seccion, 'Algunos nombres no se pudieron cargar' + (lote.errores.length ? ' (' + lote.errores[0] + ')' : '') + '.', cargarBloqueadosUI);
+            }
+        } catch (error) {
+            console.error('[Contactos] Bloqueados:', detalleError(error));
+            seccion.style.display = 'block';
+            contenedor.innerHTML = '';
+            mostrarAvisoSeccion(seccion, 'No se pudieron cargar los bloqueados: ' + detalleError(error), cargarBloqueadosUI);
+        }
     }
     window.cargarBloqueadosUI = cargarBloqueadosUI;
+
+    /* ============================================================
+       RENDER DE LA LISTA PRINCIPAL
+       ============================================================ */
 
     function renderizarContactos() {
         var lista = document.getElementById('contactosList');
@@ -612,7 +788,7 @@
         var inicial = escapeHtml(obtenerInicial(contacto.nombre));
         var avatarUrl = obtenerAvatarSeguro(contacto.avatar_url);
         var avatar = avatarUrl ? '<img class="contacto-avatar-img" src="' + escapeHtml(avatarUrl) + '" alt="' + escapeHtml(contacto.nombre) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.classList.add(\'avatar-image-error\')"><span class="avatar-fallback avatar-fallback-hidden">' + inicial + '</span>' : '<span class="avatar-fallback">' + inicial + '</span>';
-        
+
         var pendiente = contacto.estado === 'pendiente';
         var enLinea = contacto.online === true;
         var handle = contacto.handle ? '@' + String(contacto.handle).replace(/^@/, '') : '';
@@ -744,6 +920,10 @@
         var oEl = document.getElementById('onlineContactos'); if (oEl) oEl.textContent = String(online || 0);
     }
 
+    /* ============================================================
+       MODALES
+       ============================================================ */
+
     function abrirAgregarContacto() {
         var modal = document.getElementById('modalBuscarContacto');
         if (!modal) return;
@@ -769,11 +949,15 @@
     }
     window.cerrarModalInvitacion = cerrarModalInvitacion;
 
+    /* ============================================================
+       BÚSQUEDA (modal)
+       ============================================================ */
+
     async function invocarBuscarUsuarios(client, termino, limite) {
         const { data, error } = await client.rpc(CONFIG.RPC_BUSCAR_USUARIOS, { p_query: termino });
         if (error) {
-            console.error('[Contactos] Error en RPC buscar_usuarios:', error);
-            if (error.code === '42501') return { data: null, error: new Error('Sesión expirada.') };
+            console.error('[Contactos] RPC buscar_usuarios:', detalleError(error));
+            if (error.code === '42501') return { data: null, error: new Error('Sesión expirada. Vuelve a iniciar sesión.') };
             return { data: null, error };
         }
         return { data: data, error: null };
@@ -808,7 +992,10 @@
             if (!disponibles.length) { mostrarMensajeBusqueda('Los usuarios ya están en tus contactos o bloqueados.'); return; }
 
             renderizarResultadosBusqueda(disponibles);
-        } catch (error) { console.error('[Contactos] Error buscando:', error); mostrarMensajeBusqueda('Error al buscar.'); }
+        } catch (error) {
+            console.error('[Contactos] Buscando:', detalleError(error));
+            mostrarMensajeBusqueda('Error al buscar: ' + detalleError(error));
+        }
     }
 
     function renderizarResultadosBusqueda(usuarios) {
@@ -840,6 +1027,10 @@
         contenedor.innerHTML = '<div class="busqueda-mensaje">' + escapeHtml(mensaje) + '</div>';
     }
 
+    /* ============================================================
+       ACCIONES SOBRE CONTACTOS
+       ============================================================ */
+
     async function agregarContacto(contactoId) {
         var client = sb(); var session = await getSession();
         if (!client || !session) { showToast('Inicia sesión.', 'error'); return; }
@@ -863,23 +1054,23 @@
 
             showToast('Solicitud enviada.', 'success');
             await cargarPerfilesEnLote([contactoId]);
-            
+
             var input = document.getElementById('searchInputModal'); if (input) input.value = '';
             var res = document.getElementById('resultadosBusqueda'); if (res) res.innerHTML = '';
             cerrarModalBuscar();
-            
+
             var inputGlobal = document.getElementById('searchInput'); if (inputGlobal) inputGlobal.value = '';
             state.textoBusqueda = '';
-            
+
             await cargarContactos({ reset: true });
             await cargarSolicitudesPendientesUI();
             await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
-        } catch (error) { 
-            console.error('[Contactos] Error agregando:', error); 
-            showToast('No se pudo enviar.', 'error'); 
-        } finally { 
-            state.operacionEnCurso.delete(clave); 
+        } catch (error) {
+            console.error('[Contactos] Agregando:', detalleError(error));
+            showToast('No se pudo enviar: ' + detalleError(error), 'error');
+        } finally {
+            state.operacionEnCurso.delete(clave);
         }
     }
     window.agregarContacto = agregarContacto;
@@ -899,8 +1090,10 @@
             await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
             await cargarBloqueadosUI();
-        } catch (error) { console.error('[Contactos] Error aceptando:', error); showToast('Error al aceptar.', 'error'); } 
-        finally { state.operacionEnCurso.delete(clave); }
+        } catch (error) {
+            console.error('[Contactos] Aceptando:', detalleError(error));
+            showToast('Error al aceptar: ' + detalleError(error), 'error');
+        } finally { state.operacionEnCurso.delete(clave); }
     }
     window.aceptarSolicitud = aceptarSolicitud;
 
@@ -917,8 +1110,10 @@
             await cargarContactos({ reset: true });
             await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
-        } catch (error) { showToast('Error al rechazar.', 'error'); } 
-        finally { state.operacionEnCurso.delete(clave); }
+        } catch (error) {
+            console.error('[Contactos] Rechazando:', detalleError(error));
+            showToast('Error al rechazar: ' + detalleError(error), 'error');
+        } finally { state.operacionEnCurso.delete(clave); }
     }
     window.rechazarSolicitud = rechazarSolicitud;
 
@@ -937,8 +1132,10 @@
             await cargarSolicitudesPendientesUI();
             await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
-        } catch (error) { showToast('Error al cancelar.', 'error'); } 
-        finally { state.operacionEnCurso.delete(clave); }
+        } catch (error) {
+            console.error('[Contactos] Cancelando:', detalleError(error));
+            showToast('Error al cancelar: ' + detalleError(error), 'error');
+        } finally { state.operacionEnCurso.delete(clave); }
     }
     window.cancelarSolicitudEnviada = cancelarSolicitudEnviada;
 
@@ -956,7 +1153,9 @@
             showToast(valorNuevo ? 'Favorito guardado.' : 'Favorito quitado.', 'success');
             renderizarContactos();
         } catch (error) {
-            item.es_favorito = valorAnterior; renderizarContactos(); showToast('Error al guardar favorito.', 'error');
+            console.error('[Contactos] Favorito:', detalleError(error));
+            item.es_favorito = valorAnterior; renderizarContactos();
+            showToast('Error al guardar favorito: ' + detalleError(error), 'error');
         } finally { state.operacionEnCurso.delete(clave); }
     }
     window.toggleFavorito = toggleFavorito;
@@ -982,8 +1181,10 @@
             await cargarSolicitudesEnviadasUI();
             await cargarSugerenciasUI();
         } catch (error) {
+            console.error('[Contactos] Eliminando:', detalleError(error));
             state.contactos = backup; state.idsContactosSet = backupSet; state.totalContactos = backupTotal;
-            renderizarContactos(); recalcularEstadisticas(); showToast('Error al eliminar.', 'error');
+            renderizarContactos(); recalcularEstadisticas();
+            showToast('Error al eliminar: ' + detalleError(error), 'error');
         } finally { state.operacionEnCurso.delete(clave); }
     }
     window.eliminarContacto = eliminarContacto;
@@ -1010,8 +1211,10 @@
             await cargarSugerenciasUI();
             await cargarBloqueadosUI();
         } catch (error) {
+            console.error('[Contactos] Bloqueando:', detalleError(error));
             state.contactos = backup; state.idsContactosSet = backupSet; state.totalContactos = backupTotal;
-            renderizarContactos(); recalcularEstadisticas(); showToast('Error al bloquear.', 'error');
+            renderizarContactos(); recalcularEstadisticas();
+            showToast('Error al bloquear: ' + detalleError(error), 'error');
         } finally { state.operacionEnCurso.delete(clave); }
     }
     window.bloquearContacto = bloquearContacto;
@@ -1031,10 +1234,16 @@
             await cargarSugerenciasUI();
             await cargarSolicitudesPendientesUI();
             await cargarSolicitudesEnviadasUI();
-        } catch (error) { showToast('Error al desbloquear.', 'error'); } 
-        finally { state.operacionEnCurso.delete(clave); }
+        } catch (error) {
+            console.error('[Contactos] Desbloqueando:', detalleError(error));
+            showToast('Error al desbloquear: ' + detalleError(error), 'error');
+        } finally { state.operacionEnCurso.delete(clave); }
     }
     window.desbloquearContacto = desbloquearContacto;
+
+    /* ============================================================
+       NAVEGACIÓN
+       ============================================================ */
 
     function llamarContacto(contactoId) { if (!contactoId) return; window.location.href = CONFIG.MENSAJES_URL + '?usuario=' + encodeURIComponent(contactoId) + '&accion=llamada'; }
     window.llamarContacto = llamarContacto;
@@ -1050,6 +1259,10 @@
     }
     window.abrirPerfil = abrirPerfil;
 
+    /* ============================================================
+       INVITACIÓN
+       ============================================================ */
+
     async function invitarContacto() {
         var client = sb(); var session = await getSession(); if (!client || !session) { showToast('Inicia sesión.', 'error'); return; }
         var modal = document.getElementById('modalInvitacion');
@@ -1061,9 +1274,13 @@
             var res = await withRetry(function () { return client.rpc(CONFIG.RPC_INVITACION); }, 'invitar');
             if (res.error) throw res.error;
             var inv = Array.isArray(res.data) ? res.data[0] : res.data;
-            if (!inv || !inv.codigo) throw new Error('Sin código');
+            if (!inv || !inv.codigo) throw new Error('El servidor no devolvió un código');
             if (codigoEl) codigoEl.textContent = String(inv.codigo);
-        } catch (error) { if (codigoEl) codigoEl.textContent = 'ERROR'; showToast('Error al generar invitación.', 'error'); }
+        } catch (error) {
+            console.error('[Contactos] Invitación:', detalleError(error));
+            if (codigoEl) codigoEl.textContent = 'ERROR';
+            showToast('Error al generar invitación: ' + detalleError(error), 'error');
+        }
     }
     window.invitarContacto = invitarContacto;
 
@@ -1071,16 +1288,23 @@
         var el = document.getElementById('codigoInvitacion'); if (!el) return;
         var cod = el.textContent.trim(); if (!cod || cod === 'Generando…' || cod === 'ERROR') return;
         try {
-            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') { await navigator.clipboard.writeText(cod); } 
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') { await navigator.clipboard.writeText(cod); }
             else {
                 var tmp = document.createElement('textarea'); tmp.value = cod; tmp.setAttribute('readonly', ''); tmp.style.position = 'fixed'; tmp.style.opacity = '0';
                 document.body.appendChild(tmp); tmp.select(); var ok = document.execCommand('copy'); tmp.remove();
-                if (!ok) throw new Error('Error');
+                if (!ok) throw new Error('execCommand copy devolvió false');
             }
             showToast('Código copiado.', 'success');
-        } catch (error) { showToast('No se pudo copiar.', 'error'); }
+        } catch (error) {
+            console.error('[Contactos] Copiar:', detalleError(error));
+            showToast('No se pudo copiar: ' + detalleError(error), 'error');
+        }
     }
     window.copiarCodigoInvitacion = copiarCodigoInvitacion;
+
+    /* ============================================================
+       ARRANQUE
+       ============================================================ */
 
     function esperarSupabase() {
         var intentos = 0;
@@ -1089,11 +1313,16 @@
             if (sb()) {
                 clearInterval(timer); configurarEventosTarjetas(); await inicializarContactos(); return;
             }
-            if (intentos >= 100) { clearInterval(timer); mostrarEstadoVacio('⚠️', 'Error de conexión.'); emitirListo(); }
+            if (intentos >= 100) {
+                clearInterval(timer);
+                console.error('[Contactos] window.supabaseClient no estuvo listo después de 10 s');
+                mostrarEstadoVacio('⚠️', 'Error de conexión: no se cargó el cliente de Supabase. Recarga la página.');
+                emitirListo();
+            }
         }, 100);
     }
 
-    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', esperarSupabase, { once: true }); } 
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', esperarSupabase, { once: true }); }
     else { esperarSupabase(); }
 
 })();
