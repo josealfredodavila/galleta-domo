@@ -1,8 +1,8 @@
 /* ================================================================
-   MURO · CSS v6 (consolidado)
+   MURO · CSS v6.1 (consolidado)
    - Base + layout + header + nav
    - Valor de mercado / tendencias / tokens / filtros
-   - Compositor unificado (.pf-composer)
+   - Compositor unificado (.pf-composer) + menú de temas
    - Feed de publicaciones (.post-card)
    - Búsqueda global
    - Historias (aro + visor + paneles)
@@ -10,6 +10,9 @@
    - Toast / banner de error
    - Tema día
    - Responsive
+   Cambios v6.1:
+   - Menú de temas (.tema-dropdown) con estilos flotantes
+   - Botón "Agregar" en estado :disabled (búsqueda global)
    ================================================================ */
 
 /* ================================================================
@@ -153,6 +156,7 @@ body {
     border: 1px solid rgba(0,229,255,0.3); cursor:pointer; transition: all 0.2s;
 }
 .search-user-action:hover { background: rgba(0,229,255,0.2); }
+.search-user-action:disabled { opacity: .55; cursor: default; }
 
 /* ================================================================
    4. SECCIONES (sec-head)
@@ -361,11 +365,13 @@ body {
     50% { opacity: .35; }
 }
 
+/* Fila de tema: relativa para anclar el menú flotante */
 .pf-tema {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-bottom: 12px;
+    position: relative;
 }
 .pf-tema label {
     display: flex;
@@ -393,6 +399,58 @@ body {
     background: rgba(0,229,255,.15);
     border-color: rgba(0,229,255,.4);
     color: #cdf6ff;
+}
+
+/* ----------------------------------------------------------------
+   MENÚ DE TEMAS (.tema-dropdown) · flotante, no empuja el compositor
+   ---------------------------------------------------------------- */
+.tema-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    min-width: 200px;
+    max-height: 280px;
+    overflow-y: auto;
+    background: #0b1016;
+    border: 1px solid rgba(0,229,255,.25);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.8);
+    padding: 6px;
+    z-index: 40;
+    display: none;
+}
+/* Clases de apertura habituales; ajustar si muro-temas.js usa otra */
+.tema-dropdown.active,
+.tema-dropdown.open,
+.tema-dropdown.show,
+.tema-dropdown.visible { display: block; }
+
+.tema-dropdown > * {
+    display: block;
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: 0;
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: .75rem;
+    line-height: 1.3;
+    color: #cfe9f5;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+}
+.tema-dropdown > *:hover,
+.tema-dropdown > *:focus-visible {
+    background: rgba(0,229,255,.12);
+    color: #cdf6ff;
+    outline: none;
+}
+.tema-dropdown > *.selected,
+.tema-dropdown > *[aria-selected="true"],
+.tema-dropdown > *.activo {
+    background: rgba(0,229,255,.18);
+    color: #ffffff;
 }
 
 textarea#postContent {
@@ -470,7 +528,7 @@ textarea#postContent:focus {
     box-shadow: 0 0 14px rgba(212,175,55,.2);
 }
 
-/* Emoji picker (nuevo · dentro de .pf-iconos) */
+/* Emoji picker (dentro de .pf-iconos) */
 #emojiPicker {
     position: absolute;
     bottom: 70px;
@@ -1009,7 +1067,9 @@ html.tema-dia .header, html[data-tema="dia"] .header { background: #f5f7fa !impo
 html.tema-dia .logo-text, html[data-tema="dia"] .logo-text { color: var(--text-primary) !important; }
 html.tema-dia .modal, html[data-tema="dia"] .modal,
 html.tema-dia .toast, html[data-tema="dia"] .toast,
-html.tema-dia .global-search-results, html[data-tema="dia"] .global-search-results { background: #ffffff !important; }
+html.tema-dia .global-search-results, html[data-tema="dia"] .global-search-results,
+html.tema-dia .tema-dropdown, html[data-tema="dia"] .tema-dropdown { background: #ffffff !important; }
+html.tema-dia .tema-dropdown > *, html[data-tema="dia"] .tema-dropdown > * { color: #1a2332; }
 html.tema-dia textarea#postContent, html[data-tema="dia"] textarea#postContent { color: var(--text-primary) !important; background: rgba(0,0,0,0.03) !important; }
 html.tema-dia .pf-nombre, html[data-tema="dia"] .pf-nombre { color: var(--text-primary) !important; }
 html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096 !important; }
