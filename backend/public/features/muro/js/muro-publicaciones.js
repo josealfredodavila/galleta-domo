@@ -4,11 +4,14 @@
 // Cargar feed, renderizar posts, scroll infinito, verificar like.
 // Depende de: muro-config.js, muro-utils.js
 //
-// v2.3:
-// - Iconos nuevos para comentar, compartir y eliminar (trazo fino,
-//   estilo moderno). Las funciones, IDs y clases no cambian.
-// - Me gusta, comentar y venta usan la clase .icon-ui para que
-//   muro-acciones.css les dé color y brillo.
+// v2.4:
+// - Paginación por CURSOR (created_at, id) en vez de offset (.range).
+//   Con offset, cada página profunda obliga a Postgres a leer y descartar
+//   todas las anteriores. Con cursor, el índice idx_muro_posts_feed_cursor
+//   entrega siempre la siguiente página directo.
+// - Orden estable por created_at DESC y id DESC (sin duplicados ni saltos
+//   cuando llegan publicaciones nuevas mientras el usuario hace scroll).
+// - Sin cambios visuales: mismas clases, iconos, IDs y funciones.
 // ================================================================
 
 // ================================================================
@@ -101,13 +104,31 @@ function manejarErrorModeracion(e) {
 window.manejarErrorModeracion = manejarErrorModeracion;
 
 // ================================================================
-// CARGAR PUBLICACIONES (con scroll infinito)
+// CURSOR DEL FEED
+// ================================================================
+// Guarda la posición de la última publicación cargada.
+// Se reinicia al recargar el feed desde cero.
+var feedCursor = null; // { created_at: string, id: number } | null
+
+// Condición de cursor para ORDER BY created_at DESC, id DESC:
+// trae las filas posteriores (más antiguas) a la última vista.
+function construirFiltroCursor(cursor) {
+    if (!cursor || !cursor.created_at || cursor.id == null) return null;
+    var ts = String(cursor.created_at);
+    var id = Number(cursor.id);
+    if (!Number.isInteger(id)) return null;
+    return 'created_at.lt."' + ts + '",and(created_at.eq."' + ts + '",id.lt.' + id + ')';
+}
+
+// ================================================================
+// CARGAR PUBLICACIONES (con scroll infinito por cursor)
 // ================================================================
 async function cargarPublicaciones(reset) {
     if (reset === undefined) reset = true;
     if (isLoading) return;
     if (reset) {
         currentPage = 0;
+        feedCursor = null;
         hasMorePosts = true;
         var fc = document.getElementById('feedContainer');
         if (fc) fc.innerHTML = '';
@@ -118,15 +139,18 @@ async function cargarPublicaciones(reset) {
     var feedContainer = document.getElementById('feedContainer');
 
     try {
-        var from = currentPage * POSTS_PER_PAGE;
-        var to = from + POSTS_PER_PAGE - 1;
-
         // La vista muro_posts_publicos ya expone aviso_moderacion.
         var query = supabaseClient
             .from('muro_posts_publicos')
             .select('*, temas:tema_id (id, nombre, emoji, slug), muro_likes(count), muro_comentarios(count)')
             .order('created_at', { ascending: false })
-            .range(from, to);
+            .order('id', { ascending: false })
+            .limit(POSTS_PER_PAGE);
+
+        var filtroCursor = construirFiltroCursor(feedCursor);
+        if (filtroCursor) {
+            query = query.or(filtroCursor);
+        }
 
         if (filtroTemasActivo && temasUsuario.length > 0) {
             query = query.in('tema_id', temasUsuario);
@@ -161,6 +185,10 @@ async function cargarPublicaciones(reset) {
             var postElement = renderizarPost(post);
             if (feedContainer) feedContainer.appendChild(postElement);
         });
+
+        // Avanzar el cursor a la última publicación recibida
+        var ultima = data[data.length - 1];
+        feedCursor = { created_at: ultima.created_at, id: ultima.id };
 
         currentPage++;
         hasMorePosts = data.length === POSTS_PER_PAGE;
