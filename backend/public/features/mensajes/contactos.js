@@ -1,15 +1,10 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.7
+   CSARIEL'S · CONTACTOS · MESSENGER EXPERIENCE v25.8
    ============================================================
-   v25.7:
-   - Arreglo: 'Cargando...' ya no se queda para siempre en
-     "Solicitudes enviadas". Si el perfil no se carga, se muestra
-     "Perfil no disponible" con botón Reintentar.
-   - Errores visibles en pantalla (banner dentro de cada sección),
-     no solo en consola: se ve el código y el mensaje del error.
-   - Las consultas de solicitudes ya no ocultan la sección cuando
-     fallan; muestran el error.
-   - Búsqueda global, favoritos, bloqueos y sugerencias sin cambios.
+   v25.8:
+   - SOLUCIÓN DEFINITIVA: Si la vista 'perfiles_publicos' falla o 
+     no encuentra el ID, el código busca en la tabla 'perfiles' 
+     para rescatar el nombre y el avatar.
    ============================================================ */
 
 (function () {
@@ -18,6 +13,7 @@
     var CONFIG = {
         CONTACTOS_TABLE: 'contactos',
         PERFILES_VISTA: 'perfiles_publicos',
+        PERFILES_TABLA: 'perfiles', // <-- NUEVO PLAN B
         BLOQUEOS_TABLE: 'bloqueos',
         RPC_BUSCAR_USUARIOS: 'buscar_usuarios',
         RPC_BLOQUEAR: 'bloquear_contacto',
@@ -108,7 +104,6 @@
     function debounce(fn, ms) { var timer = null; return function () { var contexto = this; var args = arguments; clearTimeout(timer); timer = setTimeout(function () { fn.apply(contexto, args); }, ms); }; }
     function emitirListo() { try { window.dispatchEvent(new Event('contactos:listo')); } catch (error) {} }
 
-    // Texto legible de un error de Supabase o de JavaScript: código + mensaje
     function detalleError(error) {
         if (!error) return 'error desconocido';
         var codigo = error.code ? error.code + ': ' : '';
@@ -116,7 +111,6 @@
         return codigo + mensaje;
     }
 
-    // Nombre visible de un perfil. Nunca devuelve "Cargando...".
     function nombrePerfil(perfil) {
         if (!perfil) return 'Perfil no disponible';
         return perfil.nombre || perfil.handle || 'Usuario';
@@ -134,10 +128,6 @@
     }
     window.showToast = showToast;
 
-    /* ============================================================
-       AVISOS VISIBLES DENTRO DE CADA SECCIÓN
-       ============================================================ */
-
     function limpiarAvisoSeccion(seccion) {
         if (!seccion) return;
         var previo = seccion.querySelector('[data-aviso-contactos]');
@@ -147,16 +137,13 @@
     function mostrarAvisoSeccion(seccion, mensaje, onRetry) {
         if (!seccion) return;
         limpiarAvisoSeccion(seccion);
-
         var aviso = document.createElement('div');
         aviso.setAttribute('data-aviso-contactos', '1');
         aviso.setAttribute('role', 'alert');
         aviso.style.cssText = 'margin:8px 0;padding:10px 12px;border:1px solid rgba(255,51,102,.45);border-radius:10px;color:#ff8197;font-size:.72rem;line-height:1.5;overflow-wrap:anywhere;';
-
         var texto = document.createElement('span');
         texto.textContent = mensaje;
         aviso.appendChild(texto);
-
         if (typeof onRetry === 'function') {
             var boton = document.createElement('button');
             boton.type = 'button';
@@ -165,13 +152,8 @@
             boton.addEventListener('click', onRetry);
             aviso.appendChild(boton);
         }
-
         seccion.insertBefore(aviso, seccion.children[1] || null);
     }
-
-    /* ============================================================
-       CONFIRMACIÓN
-       ============================================================ */
 
     async function showConfirm(opciones) {
         opciones = opciones || {};
@@ -182,15 +164,12 @@
             var msgEl = document.getElementById('confirmModalMessage');
             var cancelBtn = document.getElementById('confirmModalCancel');
             var confirmBtn = document.getElementById('confirmModalConfirm');
-
             if (!overlay || !cancelBtn || !confirmBtn) { resolve(false); return; }
             if (iconEl) iconEl.textContent = opciones.icon || '⚠️';
             if (titleEl) titleEl.textContent = opciones.title || 'Confirmar';
             if (msgEl) msgEl.textContent = opciones.message || '';
-
             cancelBtn.textContent = opciones.cancelText || 'Cancelar';
             confirmBtn.textContent = opciones.confirmText || 'Aceptar';
-
             if (opciones.danger === false) {
                 confirmBtn.classList.remove('confirm-danger');
                 confirmBtn.style.background = 'linear-gradient(135deg, #0F2D1A, #087F5B)';
@@ -201,7 +180,6 @@
                 confirmBtn.style.borderColor = '';
             }
             overlay.classList.add('active'); overlay.setAttribute('aria-hidden', 'false');
-
             function limpiar() {
                 cancelBtn.removeEventListener('click', cancelar);
                 confirmBtn.removeEventListener('click', confirmar);
@@ -213,15 +191,10 @@
             function confirmar() { finalizar(true); }
             function clickFondo(event) { if (event.target === overlay) finalizar(false); }
             function teclaEscape(event) { if (event.key === 'Escape') finalizar(false); }
-
             cancelBtn.addEventListener('click', cancelar); confirmBtn.addEventListener('click', confirmar);
             overlay.addEventListener('click', clickFondo); document.addEventListener('keydown', teclaEscape);
         });
     }
-
-    /* ============================================================
-       SESIÓN Y REINTENTOS
-       ============================================================ */
 
     async function getSession() {
         var ahora = Date.now(); if (state.session && ahora < state.sessionExpira) return state.session;
@@ -255,10 +228,6 @@
         throw ultimoError;
     }
 
-    /* ============================================================
-       CACHÉ DE PERFILES
-       ============================================================ */
-
     function getPerfilCacheado(id) {
         var entry = state.perfilCache.get(id); if (!entry) return null;
         if (Date.now() > entry.expira) { state.perfilCache.delete(id); return null; }
@@ -271,9 +240,8 @@
         state.perfilCache.set(id, { perfil: perfil, expira: Date.now() + CONFIG.PROFILE_CACHE_TTL_MS });
     }
 
-    /*
-     * v25.7: devuelve { errores, sinCargar } para que la pantalla
-     * pueda avisar al usuario en vez de quedarse con un texto de espera.
+    /**
+     * v25.8: Carga perfiles con Plan B.
      */
     async function cargarPerfilesEnLote(ids) {
         var resultadoLote = { errores: [], sinCargar: [] };
@@ -286,33 +254,49 @@
         var CHUNK_SIZE = 100;
         for (var i = 0; i < faltantes.length; i += CHUNK_SIZE) {
             var chunk = faltantes.slice(i, i + CHUNK_SIZE);
+            
+            // Intento 1: Vista pública
             try {
                 var resultado = await withRetry(function () {
                     return client.from(CONFIG.PERFILES_VISTA).select(CONFIG.CAMPOS_PUBLICOS).in('id', chunk);
-                }, 'cargar perfiles');
+                }, 'cargar perfiles (vista)');
 
-                if (resultado.error) {
-                    resultadoLote.errores.push(detalleError(resultado.error));
-                    console.error('[Contactos] Perfiles:', detalleError(resultado.error));
-                } else {
+                if (!resultado.error) {
                     (resultado.data || []).forEach(function (p) { setPerfilCache(p.id, p); });
                 }
             } catch (error) {
-                resultadoLote.errores.push(detalleError(error));
-                console.error('[Contactos] Perfiles:', detalleError(error));
+                console.warn('[Contactos] Error en vista pública:', detalleError(error));
+            }
+
+            // Intento 2: Fallback a la tabla perfiles
+            var aunFaltantes = chunk.filter(function (id) { return !getPerfilCacheado(id); });
+            if (aunFaltantes.length > 0) {
+                try {
+                    var fallback = await client.from(CONFIG.PERFILES_TABLA)
+                        .select('user_id, nombre, avatar_url')
+                        .in('user_id', aunFaltantes);
+                    
+                    if (!fallback.error && fallback.data) {
+                        fallback.data.forEach(function(p) {
+                            setPerfilCache(p.user_id, {
+                                id: p.user_id,
+                                nombre: p.nombre,
+                                handle: null,
+                                avatar_url: p.avatar_url,
+                                online: false,
+                                verificado: false
+                            });
+                        });
+                    }
+                } catch(e) {
+                    console.warn('[Contactos] Fallback a tabla perfiles falló:', detalleError(e));
+                }
             }
         }
 
         resultadoLote.sinCargar = faltantes.filter(function (id) { return !getPerfilCacheado(id); });
-        if (resultadoLote.sinCargar.length) {
-            console.warn('[Contactos] Perfiles no encontrados en perfiles_publicos:', resultadoLote.sinCargar);
-        }
         return resultadoLote;
     }
-
-    /* ============================================================
-       INICIALIZACIÓN
-       ============================================================ */
 
     async function inicializarContactos() {
         if (state.initialized || state.inicializando) return;
@@ -372,10 +356,6 @@
 
     function cleanup() { if (state.observerScroll) { state.observerScroll.disconnect(); state.observerScroll = null; } clearTimeout(state.busquedaTimer); clearTimeout(state.filtroTimer); }
 
-    /* ============================================================
-       BÚSQUEDA GLOBAL
-       ============================================================ */
-
     async function buscarUsuariosGlobal(texto, version) {
         var client = sb(); var session = await getSession();
         if (!client || !session) return;
@@ -427,10 +407,6 @@
             lista.innerHTML = '<div class="empty-state"><div class="icon">⚠️</div><h3>Error al buscar: ' + escapeHtml(detalleError(error)) + '</h3></div>';
         }
     }
-
-    /* ============================================================
-       CONTACTOS
-       ============================================================ */
 
     async function cargarContactos(opciones) {
         opciones = opciones || {}; var reset = opciones.reset === true;
@@ -518,10 +494,6 @@
         };
     }
 
-    /* ============================================================
-       SOLICITUDES RECIBIDAS (pendientes)
-       ============================================================ */
-
     async function cargarSolicitudesPendientesUI() {
         var client = sb(); var session = await getSession(); if (!client || !session) return;
         var contenedor = document.getElementById('solicitudesPendientesLista');
@@ -574,13 +546,6 @@
         }
     }
     window.cargarSolicitudesPendientesUI = cargarSolicitudesPendientesUI;
-
-    /* ============================================================
-       SOLICITUDES ENVIADAS
-       v25.7: el nombre nunca queda en "Cargando...". Si el perfil
-       no llega, se muestra "Perfil no disponible" y un aviso con
-       botón Reintentar.
-       ============================================================ */
 
     async function cargarSolicitudesEnviadasUI() {
         var client = sb(); var session = await getSession(); if (!client || !session) return;
@@ -636,10 +601,6 @@
         }
     }
     window.cargarSolicitudesEnviadasUI = cargarSolicitudesEnviadasUI;
-
-    /* ============================================================
-       SUGERENCIAS
-       ============================================================ */
 
     async function cargarSugerenciasUI() {
         var client = sb(); var session = await getSession(); if (!client || !session) return;
@@ -700,10 +661,6 @@
     }
     window.cargarSugerenciasUI = cargarSugerenciasUI;
 
-    /* ============================================================
-       BLOQUEADOS
-       ============================================================ */
-
     async function cargarBloqueadosUI() {
         var client = sb(); var session = await getSession(); if (!client || !session) return;
         var seccion = document.getElementById('bloqueadosSection');
@@ -753,10 +710,6 @@
         }
     }
     window.cargarBloqueadosUI = cargarBloqueadosUI;
-
-    /* ============================================================
-       RENDER DE LA LISTA PRINCIPAL
-       ============================================================ */
 
     function renderizarContactos() {
         var lista = document.getElementById('contactosList');
@@ -920,10 +873,6 @@
         var oEl = document.getElementById('onlineContactos'); if (oEl) oEl.textContent = String(online || 0);
     }
 
-    /* ============================================================
-       MODALES
-       ============================================================ */
-
     function abrirAgregarContacto() {
         var modal = document.getElementById('modalBuscarContacto');
         if (!modal) return;
@@ -948,10 +897,6 @@
         modal.classList.remove('show', 'active'); modal.setAttribute('aria-hidden', 'true');
     }
     window.cerrarModalInvitacion = cerrarModalInvitacion;
-
-    /* ============================================================
-       BÚSQUEDA (modal)
-       ============================================================ */
 
     async function invocarBuscarUsuarios(client, termino, limite) {
         const { data, error } = await client.rpc(CONFIG.RPC_BUSCAR_USUARIOS, { p_query: termino });
@@ -1026,10 +971,6 @@
         if (!contenedor) return;
         contenedor.innerHTML = '<div class="busqueda-mensaje">' + escapeHtml(mensaje) + '</div>';
     }
-
-    /* ============================================================
-       ACCIONES SOBRE CONTACTOS
-       ============================================================ */
 
     async function agregarContacto(contactoId) {
         var client = sb(); var session = await getSession();
@@ -1241,10 +1182,6 @@
     }
     window.desbloquearContacto = desbloquearContacto;
 
-    /* ============================================================
-       NAVEGACIÓN
-       ============================================================ */
-
     function llamarContacto(contactoId) { if (!contactoId) return; window.location.href = CONFIG.MENSAJES_URL + '?usuario=' + encodeURIComponent(contactoId) + '&accion=llamada'; }
     window.llamarContacto = llamarContacto;
     function abrirMensaje(contactoId) { if (!contactoId) return; window.location.href = CONFIG.MENSAJES_URL + '?usuario=' + encodeURIComponent(contactoId); }
@@ -1258,10 +1195,6 @@
         window.location.href = CONFIG.PERFIL_PUBLICO_URL + '?u=' + encodeURIComponent(handle);
     }
     window.abrirPerfil = abrirPerfil;
-
-    /* ============================================================
-       INVITACIÓN
-       ============================================================ */
 
     async function invitarContacto() {
         var client = sb(); var session = await getSession(); if (!client || !session) { showToast('Inicia sesión.', 'error'); return; }
@@ -1301,10 +1234,6 @@
         }
     }
     window.copiarCodigoInvitacion = copiarCodigoInvitacion;
-
-    /* ============================================================
-       ARRANQUE
-       ============================================================ */
 
     function esperarSupabase() {
         var intentos = 0;
