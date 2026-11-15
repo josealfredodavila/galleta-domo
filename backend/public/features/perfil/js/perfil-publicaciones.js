@@ -1,10 +1,10 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v11.0:
-//  - Visor Custom: Se eliminaron por completo los controles nativos de Android.
-//  - Visor Custom: Botón "X" central gigante cuando el video está pausado.
-//  - Visor Custom: Barra inferior personalizada (Velocidad y Pantalla completa).
+// v13.0:
+//  - FIX DEFINITIVO: Botón "Pantalla completa" ahora expande el visor
+//    propio sin llamar al modo nativo del navegador.
+//  - Se evita que el navegador inyecte el menú de 3 puntos.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -106,41 +106,37 @@ function pubVisorEl() {
     var svgBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"></polyline></svg>';
     var svgX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
     
-    // Iconos de control de video personalizados (Estilo Csariel's)
     var svgPlay = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
     var svgPause = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
     var svgExpand = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
+    var svgShrink = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>';
     var svgSpeed = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
 
     el.innerHTML =
-        // CABECERA (X y Menú)
         '<div class="pub-vf-header">' +
             '<button type="button" class="pub-vf-cerrar" aria-label="Cerrar">' + svgClose + '</button>' +
             '<button type="button" class="pub-vf-menu-btn" aria-label="Opciones">' + svgDots + '</button>' +
         '</div>' +
         
-        // CONTENEDOR DEL MEDIA
         '<div class="pub-vf-media"></div>' +
 
-        // BOTÓN DE PLAY/PAUSA Y X GIGANTE CENTRAL
         '<div class="pub-vf-center-controls" id="pubVfCenterControls" style="display:none;">' +
             '<button type="button" class="pub-vf-big-play" id="btnPubVfBigPlay">' + svgPlay + '</button>' +
             '<button type="button" class="pub-vf-big-close" id="btnPubVfBigClose">' + svgClose + '</button>' +
         '</div>' +
 
-        // CONTROLES INFERIORES PERSONALIZADOS
         '<div class="pub-vf-controls" id="pubVfControls" style="display:none;">' +
             '<div class="pub-vf-progress-bar"><div class="pub-vf-progress" id="pubVfProgress"></div></div>' +
             '<div class="pub-vf-bottom-row">' +
                 '<div class="pub-vf-time" id="pubVfTime">0:00 / 0:00</div>' +
                 '<div class="pub-vf-actions">' +
                     '<button type="button" class="pub-vf-ctrl-btn" id="btnPubVfSpeed" title="Velocidad">' + svgSpeed + '</button>' +
+                    // EL BOTÓN AHORA TIENE UN ID PARA CAMBIAR EL ICONO
                     '<button type="button" class="pub-vf-ctrl-btn" id="btnPubVfExpand" title="Pantalla completa">' + svgExpand + '</button>' +
                 '</div>' +
             '</div>' +
         '</div>' +
 
-        // HOJA INFERIOR (MENÚ)
         '<div class="pub-vf-bottom-sheet" id="pubVfSheet">' +
             '<div class="pub-vf-drag-handle"></div>' +
             '<button type="button" class="pub-vf-sheet-btn" id="btnPubVfGuardar"><span class="icon">' + svgDownload + '</span> Guardar</button>' +
@@ -149,7 +145,6 @@ function pubVisorEl() {
             '<button type="button" class="pub-vf-sheet-btn pub-vf-peligro" id="btnPubVfEliminar" data-solo-dueno="1"><span class="icon">' + svgTrash + '</span> Eliminar publicación</button>' +
         '</div>' +
 
-        // HOJAS DE REPORTE
         '<div class="pub-vf-report-sheet" id="pubVfReportSheet1">' +
             '<div class="pub-vf-report-header">' +
                 '<button type="button" class="pub-vf-report-back" id="btnPubVfBack1">' + svgBack + '</button>' +
@@ -190,7 +185,6 @@ function pubVisorEl() {
 
     document.body.appendChild(el);
 
-    // Lógica de botones superiores
     el.querySelector('.pub-vf-cerrar').addEventListener('click', function (e) { e.stopPropagation(); pubCerrarVisor(); });
     el.querySelector('.pub-vf-menu-btn').addEventListener('click', function (e) {
         e.stopPropagation();
@@ -198,7 +192,6 @@ function pubVisorEl() {
         document.getElementById('pubVfSheet').classList.add('show');
     });
 
-    // Lógica de la X y Play Gigantes del centro
     el.querySelector('#btnPubVfBigClose').addEventListener('click', function(e) {
         e.stopPropagation(); pubCerrarVisor();
     });
@@ -212,12 +205,31 @@ function pubVisorEl() {
         }
     });
 
-    // Lógica de controles inferiores
+    // ============================================================
+    // LÓGICA DEL BOTÓN DE PANTALLA COMPLETA (EXPANSIÓN DEL VISOR)
+    // ============================================================
     el.querySelector('#btnPubVfExpand').addEventListener('click', function (e) {
         e.stopPropagation();
+        
+        // Alternamos el estado
         pubVisor.modoLleno = !pubVisor.modoLleno;
+        
+        var visor = document.getElementById('pubVisorFull');
         var video = el.querySelector('video');
-        if (video) video.style.objectFit = pubVisor.modoLleno ? 'cover' : 'contain';
+        var btnExpand = this;
+
+        if (pubVisor.modoLleno) {
+            // MODO PANTALLA COMPLETA (Llenar todo)
+            visor.classList.add('is-fullscreen');
+            if (video) video.style.objectFit = 'cover'; // El video llena los bordes
+            btnExpand.innerHTML = svgShrink; // Cambiamos el icono al de encoger
+            if (window.showToast) window.showToast('Pantalla completa. Gira tu celular.', 'info', 2000);
+        } else {
+            // MODO NORMAL (Ajustar a la pantalla)
+            visor.classList.remove('is-fullscreen');
+            if (video) video.style.objectFit = 'contain'; // El video se ve completo sin recortar
+            btnExpand.innerHTML = svgExpand; // Volvemos al icono de expandir
+        }
     });
 
     el.querySelector('#btnPubVfSpeed').addEventListener('click', function (e) {
@@ -230,7 +242,6 @@ function pubVisorEl() {
         if (window.showToast) window.showToast(`Velocidad: ${video.playbackRate}x`, 'info', 1500);
     });
 
-    // Resto de la lógica del menú...
     el.querySelector('#btnPubVfGuardar').addEventListener('click', function (e) {
         e.stopPropagation();
         var item = pubVisor.items[pubVisor.index];
@@ -348,6 +359,7 @@ function pubMostrarItem() {
     var item = pubVisor.items[pubVisor.index];
     var controls = el.querySelector('#pubVfControls');
     var centerControls = el.querySelector('#pubVfCenterControls');
+    var btnExpand = el.querySelector('#btnPubVfExpand');
     
     if (!item) return;
 
@@ -355,7 +367,11 @@ function pubMostrarItem() {
     document.getElementById('pubVfReportSheet1').classList.remove('show');
     document.getElementById('pubVfReportSheet2').classList.remove('show');
 
+    // Resetear estado al cambiar de item
     pubVisor.modoLleno = false; 
+    el.classList.remove('is-fullscreen');
+    if (btnExpand) btnExpand.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
+
     caja.innerHTML = '';
     
     if (item.tipo === 'video') {
@@ -363,11 +379,17 @@ function pubMostrarItem() {
         centerControls.style.display = 'none'; // Oculto por defecto al darle play
         
         var video = document.createElement('video');
+        // ATRIBUTOS CRÍTICOS PARA EVITAR EL MENÚ NATIVO
         video.playsInline = true; 
+        video.setAttribute('playsinline', '');
+        video.setAttribute('webkit-playsinline', '');
+        video.setAttribute('disablePictureInPicture', ''); 
+        video.setAttribute('controlsList', 'nodownload noplaybackrate nofullscreen'); // Bloquea menú
+        video.controls = false; 
+        
         video.preload = 'auto'; 
         video.src = item.url;
         video.style.objectFit = 'contain'; 
-        video.controls = false; // MAGIA: Elimina los controles feos de Android
         
         // Actualizar barra de progreso
         video.addEventListener('timeupdate', function() {
@@ -390,11 +412,11 @@ function pubMostrarItem() {
             el.querySelector('#btnPubVfBigPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
         });
         video.addEventListener('pause', function() {
-            centerControls.style.display = 'flex'; // Aparecen los botones gigantes
+            centerControls.style.display = 'flex'; 
             el.querySelector('#btnPubVfBigPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
         });
 
-        // Doble clic para pausar/play
+        // Tocar el video para pausar/play
         video.addEventListener('click', function() {
             if (video.paused) video.play(); else video.pause();
         });
@@ -403,7 +425,6 @@ function pubMostrarItem() {
         var repro = video.play(); 
         if (repro && typeof repro.catch === 'function') {
             repro.catch(function () { 
-                // Si el navegador bloquea el autoplay, mostrar controles para que el usuario de play
                 centerControls.style.display = 'flex'; 
             });
         }
@@ -441,7 +462,9 @@ function pubCerrarVisor() {
     var video = el.querySelector('video');
     if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
     el.querySelector('.pub-vf-media').innerHTML = '';
-    el.classList.remove('show'); document.body.style.overflow = '';
+    el.classList.remove('show'); 
+    el.classList.remove('is-fullscreen'); // Quitar pantalla completa al cerrar
+    document.body.style.overflow = '';
     pubVisor.postIdActual = null;
     pubVisor.motivoSeleccionado = '';
     pubVisor.esDueno = false;
@@ -458,7 +481,6 @@ function pubCerrarVisor() {
     style.id = 'perfil-reacciones-fb-styles';
 
     style.appendChild(document.createTextNode(`
-        /* (Estilos base del perfil se mantienen) */
         #misPublicacionesList .publicacion-card {
             background: transparent !important; border: 0 !important; border-bottom: 1px solid rgba(255,255,255,.09) !important; border-radius: 0 !important; box-shadow: none !important; padding: 14px 0 12px !important; margin: 0 !important; width: 100%;
         }
@@ -479,6 +501,28 @@ function pubCerrarVisor() {
         .pub-vf.show { display: flex; }
         .pub-vf-media { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box; overflow: hidden; }
         .pub-vf-media img, .pub-vf-media video { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; transition: object-fit 0.2s; }
+
+        /* MODO PANTALLA COMPLETA (EXPANSIÓN TOTAL) */
+        .pub-vf.is-fullscreen {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 999999 !important;
+            background: #000 !important;
+        }
+        .pub-vf.is-fullscreen .pub-vf-media {
+            flex: 1 !important;
+            height: 100% !important;
+        }
+        .pub-vf.is-fullscreen .pub-vf-media video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important; /* Llena toda la pantalla */
+        }
+        .pub-vf.is-fullscreen .pub-vf-controls {
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
+        }
 
         /* CABECERA (X y Menú arriba) */
         .pub-vf-header { 
@@ -502,7 +546,7 @@ function pubCerrarVisor() {
         }
         .pub-vf-center-controls button:active { transform: scale(0.9); }
         .pub-vf-big-play { background: rgba(255, 255, 255, 0.2); color: #fff; }
-        .pub-vf-big-close { background: rgba(255, 0, 80, 0.8); color: #fff; box-shadow: 0 0 20px rgba(255,0,80,0.5); } /* Color de alerta/cierre */
+        .pub-vf-big-close { background: rgba(255, 0, 80, 0.8); color: #fff; box-shadow: 0 0 20px rgba(255,0,80,0.5); }
 
         /* CONTROLES INFERIORES */
         .pub-vf-controls {
