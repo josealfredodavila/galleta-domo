@@ -1,5 +1,5 @@
 /* ================================================================
-   ROUTES/MARKETING.JS — Csariel's
+   ROUTES/MARKETING.JS — Csariel's (v2)
    Targets soportados: 'live' (transmisiones.id, integer),
                        'grupo' (grupos_video.id, uuid),
                        'video' (videos.id, uuid)
@@ -7,6 +7,14 @@
                          registrar_vista_anuncio,
                          descontar_presupuesto_campana
    Fallback en JS si la función SQL de selección falla.
+
+   v2 (seguridad de cobro):
+   - POST /register-event ya NO acepta 'impresion' desde el cliente.
+     Las impresiones solo las registra el servidor en /get-ad.
+   - Cada evento cobrable (vista, vista_completa, clic, interaccion,
+     reproduccion, conversion) requiere una impresión previa del mismo
+     usuario y anuncio en las últimas 24 horas. Por cada impresión se
+     cobra como máximo un evento de cada tipo.
    ================================================================ */
 
 const express = require('express');
@@ -24,7 +32,8 @@ const COSTOS = {
     conversion: 1.00
 };
 
-const EVENTOS_VALIDOS = ['impresion', 'vista', 'vista_completa', 'clic', 'interaccion', 'reproduccion', 'conversion'];
+// Lo que el cliente puede reportar. 'impresion' NO está aquí.
+const EVENTOS_CLIENTE = ['vista', 'vista_completa', 'clic', 'interaccion', 'reproduccion', 'conversion'];
 const TARGETS_VALIDOS = ['live', 'grupo', 'video'];
 const MAX_IMPRESIONES_POR_USUARIO = 3;
 const VENTANA_FRECUENCIA_HORAS = 24;
@@ -260,13 +269,15 @@ router.post('/get-ad', autenticar, async (req, res) => {
 
 // ================================================================
 // POST /register-event
+// Solo eventos que el usuario realmente vio. Cada evento cobrable
+// necesita una impresión previa del servidor (últimas 24 h).
 // ================================================================
 router.post('/register-event', autenticar, async (req, res) => {
     try {
         const { ad_id, campaign_id, target_tipo, target_id, evento, session_id, metadata } = req.body || {};
         const usuarioId = req.user.id;
 
-        if (!EVENTOS_VALIDOS.includes(evento)) {
+        if (!EVENTOS_CLIENTE.includes(evento)) {
             return res.status(400).json({ success: false, error: 'Evento inválido' });
         }
         if (!ad_id || !campaign_id) {
@@ -283,6 +294,52 @@ router.post('/register-event', autenticar, async (req, res) => {
             .from('marketing_campaigns').select('estado').eq('id', campaign_id).maybeSingle();
         if (!campaña || campaña.estado !== 'activa') {
             return res.status(400).json({ success: false, error: 'Campaña no activa' });
+        }
+
+        // Verificación de cobro: el usuario debe haber recibido el anuncio
+        // y cada evento cobrable se empareja con una impresión previa.
+        const ventana = new Date(Date.now() - VENTANA_FRECUENCIA_HORAS * 3600 * 1000).toISOString();
+
+        const { count: impresiones, error: errImp } = await supabaseAdmin
+            .from('marketing_events')
+            .select('id', { count: 'exact', head: true })
+            .eq('usuario_id', usuarioId)
+            .eq('ad_id', ad_id)
+            .eq('evento', 'impresion')
+            .gte('created_at', ventana);
+
+        if (errImp) {
+            console.error('[Marketing] conteo impresiones:', errImp.message);
+            return res.status(500).json({ success: false, error: 'Error registrando evento' });
+        }
+
+        if (!impresiones) {
+            return res.status(409).json({
+                success: false,
+                error: 'sin_impresion_previa',
+                mensaje: 'Este evento no corresponde a un anuncio que hayas visto.'
+            });
+        }
+
+        const { count: yaCobrados, error: errCob } = await supabaseAdmin
+            .from('marketing_events')
+            .select('id', { count: 'exact', head: true })
+            .eq('usuario_id', usuarioId)
+            .eq('ad_id', ad_id)
+            .eq('evento', evento)
+            .gte('created_at', ventana);
+
+        if (errCob) {
+            console.error('[Marketing] conteo eventos:', errCob.message);
+            return res.status(500).json({ success: false, error: 'Error registrando evento' });
+        }
+
+        if ((yaCobrados || 0) >= impresiones) {
+            return res.status(409).json({
+                success: false,
+                error: 'evento_ya_registrado',
+                mensaje: 'Ya registraste este evento para este anuncio.'
+            });
         }
 
         const fila = {
@@ -302,7 +359,7 @@ router.post('/register-event', autenticar, async (req, res) => {
             return res.status(500).json({ success: false, error: 'Error registrando evento' });
         }
 
-        if (evento !== 'impresion' && COSTOS[evento] > 0) {
+        if (COSTOS[evento] > 0) {
             const { error: errCobro } = await supabaseAdmin.rpc('descontar_presupuesto_campana', {
                 p_campaign_id: campaign_id,
                 p_monto: COSTOS[evento]
