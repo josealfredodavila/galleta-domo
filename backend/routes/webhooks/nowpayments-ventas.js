@@ -1,21 +1,11 @@
 // ================================================================
-// ROUTES/WEBHOOKS/NOWPAYMENTS-VENTAS.JS — Csariel's (v2.0)
-// Handlers de IPN para Muro (muro_<venta_id>) y Marketing (MKT-<pago_id>).
-// NO define router: lo usa routes/webhooks.js, que ya verificó la firma.
-// Reglas:
-//   - Se valida moneda (MXN) y monto contra la orden antes de liberar nada.
-//   - Si el payment_id no coincide con el guardado, no se procesa.
-//   - v2.0: un pago con monto o moneda incorrectos NO se ignora. Pasa a
-//     revision_manual y queda registrado para revisión humana o reembolso.
-//   - v2.0: un pago que llega sobre una venta cerrada (expirada, cancelada)
-//     también pasa a revision_manual. Nunca se acredita.
-//   - Marketing activa la campaña ANTES de marcar el pago como pagado.
-// 200 = procesado o no reintentable. 500 = NOWPayments reintenta.
+// ROUTES/WEBHOOKS/NOWPAYMENTS-VENTAS.JS — Csariel's (v2.1)
 // ================================================================
 
 'use strict';
 
 const { supabaseAdmin } = require('../../config/supabase');
+const campanasRouter = require('../campanas'); // <- NUEVO: Importamos para publicar media
 
 const FINALES_OK = ['finished', 'confirmed'];
 const FINALES_FALLO = ['failed', 'refunded', 'expired', 'canceled', 'cancelled'];
@@ -28,7 +18,6 @@ function paymentIdDe(data) {
     return data.payment_id != null ? String(data.payment_id) : '';
 }
 
-// La factura se crea en MXN: el IPN debe regresar price_currency mxn y el monto exacto
 function coincideFactura(data, montoEsperadoMxn) {
     const moneda = String(data.price_currency || '').toLowerCase();
     const precio = Number(data.price_amount);
@@ -38,7 +27,7 @@ function coincideFactura(data, montoEsperadoMxn) {
 }
 
 // ================================================================
-// MURO — order_id "muro_<venta_id>"
+// MURO — order_id "muro_<venta_id>" (SIN CAMBIOS)
 // ================================================================
 async function procesarVentaMuro(ventaIdRaw, npStatus, data, res) {
     const ventaId = parseInt(String(ventaIdRaw), 10);
@@ -69,9 +58,7 @@ async function procesarVentaMuro(ventaIdRaw, npStatus, data, res) {
         return res.status(200).json({ ok: true, ignorado: 'ya_procesada', estado: venta.estado });
     }
 
-    // ---------- Pago final ----------
     if (FINALES_OK.includes(npStatus)) {
-        // Monto o moneda incorrectos: no se acredita, se manda a revisión
         if (!coincideFactura(data, venta.precio_mxn)) {
             logError('REVISIÓN MANUAL — monto/moneda no coincide (muro):', ventaId, {
                 price_amount: data.price_amount,
@@ -92,7 +79,6 @@ async function procesarVentaMuro(ventaIdRaw, npStatus, data, res) {
             return res.status(200).json({ ok: true, estado: 'revision_manual', motivo: 'monto_no_coincide' });
         }
 
-        // Pago sobre venta cerrada (expirada o cancelada): revisión, nunca acreditar
         if (['cancelado', 'cancelada', 'expirado', 'expirada', 'fallido', 'fallida'].includes(venta.estado)) {
             logError('REVISIÓN MANUAL — pago final en venta cerrada (muro):', ventaId, venta.estado);
             const { error: errRev } = await supabaseAdmin.rpc('marcar_pago_revision_manual', {
@@ -121,7 +107,6 @@ async function procesarVentaMuro(ventaIdRaw, npStatus, data, res) {
             return res.status(500).json({ ok: false, error: 'db' });
         }
 
-        // Idempotente. Si el pago llega tarde, la propia función lo manda a revision_manual.
         const { data: liq, error: errLiq } = await supabaseAdmin.rpc('liquidar_venta_token_muro', {
             p_venta_id: ventaId
         });
@@ -141,7 +126,6 @@ async function procesarVentaMuro(ventaIdRaw, npStatus, data, res) {
         return res.status(200).json({ ok: true, estado: 'pagado' });
     }
 
-    // ---------- Fallo ----------
     if (FINALES_FALLO.includes(npStatus)) {
         const { error: errCan } = await supabaseAdmin.rpc('cancelar_venta_muro', {
             p_venta_id: ventaId,
@@ -155,7 +139,6 @@ async function procesarVentaMuro(ventaIdRaw, npStatus, data, res) {
         return res.status(200).json({ ok: true, estado: 'cancelado' });
     }
 
-    // ---------- Intermedio: solo registrar el avance ----------
     const { error: errProc } = await supabaseAdmin.rpc('registrar_payment_muro', {
         p_venta_id: ventaId,
         p_payment_id: paymentId,
@@ -169,7 +152,7 @@ async function procesarVentaMuro(ventaIdRaw, npStatus, data, res) {
 }
 
 // ================================================================
-// MARKETING — order_id "MKT-<pago_id>" (uuid)
+// MARKETING — order_id "MKT-<pago_id>" (uuid) - v2.1
 // ================================================================
 async function procesarPagoMarketing(pagoIdRaw, npStatus, data, res) {
     const pagoId = String(pagoIdRaw || '');
@@ -200,9 +183,7 @@ async function procesarPagoMarketing(pagoIdRaw, npStatus, data, res) {
         return res.status(200).json({ ok: true, ignorado: 'ya_procesado', estado: pago.estado });
     }
 
-    // ---------- Pago final ----------
     if (FINALES_OK.includes(npStatus)) {
-        // Monto o moneda incorrectos: no se activa la campaña, se manda a revisión
         if (!coincideFactura(data, pago.monto_mxn)) {
             logError('REVISIÓN MANUAL — monto/moneda no coincide (marketing):', pagoId, {
                 price_amount: data.price_amount,
@@ -256,7 +237,20 @@ async function procesarPagoMarketing(pagoIdRaw, npStatus, data, res) {
             }
         }
 
-        // 2) Marcar pagado solo después de activar
+        // 2) NUEVO: Publicar media de IA en la carpeta pública de R2
+        try {
+            const pub = await campanasRouter.publicarMediaDeCampana(camp.id);
+            if (pub.publicado) {
+                log('media marketing publicada', { campaign_id: camp.id, url: pub.url, tipo: pub.tipo });
+            } else if (pub.razon !== 'sin media_id') {
+                log('media marketing sin cambios', { campaign_id: camp.id, razon: pub.razon });
+            }
+        } catch (e) {
+            logError('publicarMediaDeCampana (transitorio):', { campaign_id: camp.id, error: e.message });
+            return res.status(500).json({ ok: false, error: 'media_publish' });
+        }
+
+        // 3) Marcar pagado solo después de activar Y publicar
         const { error: errU } = await supabaseAdmin
             .from('marketing_pagos')
             .update({ estado: 'pagado', nowpayments_status: npStatus })
@@ -271,7 +265,6 @@ async function procesarPagoMarketing(pagoIdRaw, npStatus, data, res) {
         return res.status(200).json({ ok: true, estado: 'pagado' });
     }
 
-    // ---------- Fallo ----------
     if (FINALES_FALLO.includes(npStatus)) {
         const { error: errCan } = await supabaseAdmin
             .from('marketing_pagos')
@@ -285,7 +278,6 @@ async function procesarPagoMarketing(pagoIdRaw, npStatus, data, res) {
         return res.status(200).json({ ok: true, estado: 'cancelado' });
     }
 
-    // ---------- Intermedio ----------
     const estadoIntermedio = ['confirming', 'sending'].includes(npStatus) ? 'confirmando' : pago.estado;
     const { error: errI } = await supabaseAdmin
         .from('marketing_pagos')
