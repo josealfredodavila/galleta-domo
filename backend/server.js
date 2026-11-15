@@ -21,6 +21,9 @@
 // v4.4: Telnyx: webhook montado con montarRouter (no tumba el arranque
 //       si falta el archivo), excluido del rate limit, y ciclo de
 //       mantenimiento de eSIM cada 5 minutos con require protegido.
+// v4.5: Generación de imagen y video (/api/ai/media, Cosmos3 Nano).
+//       El seguimiento GET de /api/ai/media queda fuera del límite
+//       de peticiones, porque el video se consulta cada pocos segundos.
 // ================================================================
 
 require('dotenv').config();
@@ -146,6 +149,10 @@ if (process.env.TELNYX_ESIM_ENABLED !== 'true') {
 
 if (!process.env.TELNYX_PUBLIC_KEY) {
     console.warn('⚠️ Falta TELNYX_PUBLIC_KEY (los webhooks de Telnyx responderán 500 hasta configurarla)');
+}
+
+if (!process.env.NVIDIA_API_KEY) {
+    console.warn('⚠️ Falta NVIDIA_API_KEY (generación de imagen y video de Marketing deshabilitada)');
 }
 
 // Variables de Csariel's Pay: solo advertencias, para no tumbar el resto del backend.
@@ -431,7 +438,8 @@ const RUTA_WEBHOOK_TELNYX = '/api/telnyx/webhook';
 // que se pierdan eventos (IPN de NOWPayments, transfers de Fintoc,
 // eventos de Telnyx). Polling público de intenciones (GET): exento;
 // el frontend consulta cada pocos segundos y no debe bloquearse por
-// la cuota compartida de IP.
+// la cuota compartida de IP. El seguimiento de borradores de IA
+// (GET /api/ai/media/:id) también es polling, así que queda exento.
 
 const RUTAS_WEBHOOK_SIN_LIMITE = [
     '/api/webhook/',
@@ -451,7 +459,8 @@ const apiLimiter = rateLimit({
     },
     skip: (req) =>
         RUTAS_WEBHOOK_SIN_LIMITE.some((ruta) => req.originalUrl.startsWith(ruta)) ||
-        (req.method === 'GET' && req.originalUrl.startsWith('/api/pay/intenciones/'))
+        (req.method === 'GET' && req.originalUrl.startsWith('/api/pay/intenciones/')) ||
+        (req.method === 'GET' && req.originalUrl.startsWith('/api/ai/media/'))
 });
 
 app.use('/api/', apiLimiter);
@@ -969,6 +978,10 @@ montarRouter('/api/tendencias', './routes/tendencias', 'routes/tendencias');
 
 montarRouter('/api/video', './routes/video-processor', 'routes/video-processor');
 
+// Generación de imagen y video para Marketing (Cosmos3 Nano).
+// Va ANTES de /api/ai para que sea explícito; /api/ai no tiene rutas /media.
+montarRouter('/api/ai/media', './routes/ai-media', 'routes/ai-media');
+
 montarRouter('/api/ai', './routes/ai-chat', 'routes/ai-chat');
 
 montarRouter('/api/ai/voice', './routes/ai-voice', 'routes/ai-voice');
@@ -1201,6 +1214,7 @@ async function healthCheckDetalle(req, res) {
         push: { configured: pushConfigured },
         moderacion: { configured: moderacionImagenConfigured },
         moderacion_texto: { configured: moderacionTextoConfigured },
+        generacion_ia: { configured: Boolean(process.env.NVIDIA_API_KEY) },
         pay: {
             stripe: Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET),
             fintoc: Boolean(process.env.FINTOC_SECRET_KEY && process.env.FINTOC_WEBHOOK_SECRET && process.env.FINTOC_SOURCE_ACCOUNT_ID),
@@ -1326,6 +1340,11 @@ app.listen(PORT, () => {
             process.env.OPENAI_API_KEY
                 ? '✅ Configurado'
                 : '❌ No configurado'
+        }`
+    );
+    console.log(
+        `🎬 Generación de imagen y video (NVIDIA): ${
+            process.env.NVIDIA_API_KEY ? '✅ Configurado' : '❌ No configurado'
         }`
     );
     console.log(`🌐 Web3 URL canónica: ${PUBLIC_APP_URL}`);
