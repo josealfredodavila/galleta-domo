@@ -46,19 +46,8 @@ try {
 const NOWPAYMENTS_API_KEY = process.env.NOWPAYMENTS_API_KEY;
 const NOWPAYMENTS_API_URL = 'https://api.nowpayments.io/v1/payment';
 
-const REDES_PERMITIDAS = {
-    usdttrc20: { moneda: 'USDT', red: 'TRON',     minimo_usd: 16 },
-    usdtbsc:   { moneda: 'USDT', red: 'BSC',      minimo_usd: 16 },
-    usdtmatic: { moneda: 'USDT', red: 'Polygon',  minimo_usd: 16 },
-    usdtsol:   { moneda: 'USDT', red: 'Solana',   minimo_usd: 16 },
-    usdterc20: { moneda: 'USDT', red: 'Ethereum', minimo_usd: 20 },
-    usdcsol:   { moneda: 'USDC', red: 'Solana',   minimo_usd: 16 },
-    usdcmatic: { moneda: 'USDC', red: 'Polygon',  minimo_usd: 16 },
-    usdcbsc:   { moneda: 'USDC', red: 'BSC',      minimo_usd: 16 },
-    usdc:      { moneda: 'USDC', red: 'Ethereum', minimo_usd: 20 }
-};
-
-const MXN_A_USD_APROX = 0.055;
+// Fuente única compartida con routes/campanas.js (ver config/redes-pago.js)
+const { REDES_PERMITIDAS, MXN_A_USD_APROX } = require('../config/redes-pago');
 
 // Estados de venta que ya no se pueden acreditar por polling normal
 const VENTA_TERMINAL = ['expirado', 'expirada', 'cancelado', 'cancelada', 'fallido', 'fallida', 'reembolsada'];
