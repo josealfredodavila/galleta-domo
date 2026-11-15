@@ -15,6 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 
     <style>
+        /* [TODO EL CSS SE MANTIENE EXACTAMENTE IGUAL HASTA EL CHATBOT] */
         :root {
             --gold: #D4AF37; --gold-dark: #b8923a; --gold-light: #F5E6A8; --gold-glow: rgba(212, 175, 55, 0.5); --gold-soft: rgba(212, 175, 55, 0.12);
             --green-deep: #0F2D1A; --green-mid: #1a4a2a; --space: #04060d; --space-2: #080f1a;
@@ -173,9 +174,7 @@
         .red-info strong { color: var(--gold); }
         .red-info .warn { color: var(--warning); }
 
-        /* =========================================
-           CHATBOT "PROMI" FUTURISTA
-           ========================================= */
+        /* CHATBOT "PROMI" FUTURISTA */
         .promi-btn { position: fixed; bottom: 100px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background: #ff0050; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 999; box-shadow: 0 4px 20px rgba(255,0,80,0.4); transition: var(--transition); }
         .promi-btn:hover { transform: scale(1.1); }
         .promi-btn img { width: 30px; height: 30px; }
@@ -190,22 +189,20 @@
         .promi-welcome h1 { font-size: 1.5rem; margin-bottom: 8px; font-weight: 800; color: #fff; font-family: 'Orbitron', monospace; letter-spacing: 1px; }
         .promi-welcome p { font-size: 0.9rem; color: #9ca3af; line-height: 1.5; }
         
-        /* Burbujas de Chat */
         .promi-msg { max-width: 85%; padding: 14px 18px; border-radius: 20px; font-size: 0.9rem; line-height: 1.5; margin-bottom: 4px; position: relative; }
         .promi-msg.user { align-self: flex-end; background: linear-gradient(135deg, #ff0050, #d40040); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 4px 15px rgba(255,0,80,0.2); }
         .promi-msg.bot { align-self: flex-start; background: #1f2937; color: #e5e7eb; border-bottom-left-radius: 4px; border: 1px solid #374151; }
         
-        /* Opciones sugeridas */
         .promi-options { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .promi-option { display: flex; justify-content: space-between; align-items: center; background: #111827; border: 1px solid #374151; padding: 14px 18px; border-radius: 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: left; color: #e5e7eb; }
         .promi-option:hover { background: #1f2937; border-color: #ff0050; transform: translateY(-2px); }
 
-        /* Botones de acción creativa (Imagen/Video) */
         .promi-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; align-self: flex-start; }
         .promi-action-btn { background: rgba(255,0,80,0.1); border: 1px solid rgba(255,0,80,0.5); color: #ff0050; padding: 10px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
         .promi-action-btn:hover { background: rgba(255,0,80,0.2); box-shadow: 0 0 15px rgba(255,0,80,0.2); }
+        .promi-action-btn.use-campaign { background: rgba(212, 175, 55, 0.15); border-color: var(--gold); color: var(--gold); width: 100%; justify-content: center; padding: 12px; font-size: 0.9rem; }
+        .promi-action-btn.use-campaign:hover { background: rgba(212, 175, 55, 0.3); box-shadow: 0 0 15px rgba(212, 175, 55, 0.4); }
 
-        /* Animación Escribiendo... */
         .typing-indicator { display: flex; gap: 4px; padding: 14px 18px; background: #1f2937; border-radius: 20px; border-bottom-left-radius: 4px; align-self: flex-start; width: fit-content; margin-bottom: 4px; border: 1px solid #374151; }
         .typing-indicator span { width: 6px; height: 6px; background: #9ca3af; border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
         .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
@@ -314,19 +311,16 @@
             <h2>Promi</h2>
         </div>
         <div class="promi-body" id="promiBody">
-            <!-- Bienvenida -->
             <div class="promi-welcome" id="promiWelcome">
                 <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Promi Avatar" class="promi-avatar">
                 <h1>Hola, soy Promi</h1>
                 <p>Tu agente de ventas y estratega de Marketing. Pregúntame cómo mejorar tus campañas o pídeme que genere imágenes y videos para tus anuncios.</p>
             </div>
             
-            <!-- Opciones iniciales -->
             <div class="promi-options" id="promiInitialOptions">
                 <div class="promi-option" onclick="enviarMensajePromi('Dame ideas para una campaña de marketing')">💡 Dame ideas para una campaña <span>→</span></div>
                 <div class="promi-option" onclick="enviarMensajePromi('Genera una imagen para mi anuncio')">🖼️ Generar imagen para mi anuncio <span>→</span></div>
                 <div class="promi-option" onclick="enviarMensajePromi('Genera un video para mi campaña')">🎬 Generar video para mi campaña <span>→</span></div>
-                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo aumentar mi presupuesto?')">💰 ¿Cómo aumento mi presupuesto? <span>→</span></div>
             </div>
         </div>
         <div class="promi-footer">
@@ -413,17 +407,11 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
-    /* ============================================================
-       MARKETING · Sariel's — v9 (PRODUCCIÓN)
-       Integración con Promi + Generación de Imagen/Video vía Backend
-       ============================================================ */
-
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
     const DEBUG = false;
     const MXN_A_USD_APROX = 0.055;
     const MAX_POLL_INTENTOS = 80;
     const INTERVALO_POLL_MS = 15000;
-    const PRECIO_ANUNCIO_MXN = 60;
     
     const REDES_PAGO = [
         { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 1,  label: 'USDT · TRON (TRC20)' },
@@ -453,7 +441,7 @@
     function log(...a) { if (DEBUG) console.log('◈', ...a); }
     function logError(...a) { console.error('✕', ...a); }
     function escapeHTML(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
-    function isValidHttpUrl(s) { try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; } }
+    function isValidHttpUrl(s) { try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:' || u.protocol === 'blob:'; } catch { return false; } }
     function normalizeEstado(e) { return ESTADOS_VALIDOS.includes(e) ? e : 'borrador'; }
     function formatFecha(f) { if (!f) return '—'; try { return new Date(f).toLocaleDateString('es-MX'); } catch { return '—'; } }
 
@@ -488,7 +476,6 @@
                 <div class="promi-option" onclick="enviarMensajePromi('Dame ideas para una campaña de marketing')">💡 Dame ideas para una campaña <span>→</span></div>
                 <div class="promi-option" onclick="enviarMensajePromi('Genera una imagen para mi anuncio')">🖼️ Generar imagen para mi anuncio <span>→</span></div>
                 <div class="promi-option" onclick="enviarMensajePromi('Genera un video para mi campaña')">🎬 Generar video para mi campaña <span>→</span></div>
-                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo aumentar mi presupuesto?')">💰 ¿Cómo aumento mi presupuesto? <span>→</span></div>
             </div>
         `;
     }
@@ -580,7 +567,7 @@
         body.scrollTop = body.scrollHeight;
     }
 
-    // ✅ CONEXIÓN REAL A TU BACKEND (Imagen/Video)
+    // ✅ CONEXIÓN REAL A TU BACKEND Y LÓGICA ANTI-TRAMPA
     async function generarMediaReal(tipo, promptUsuario) {
         const body = document.getElementById('promiBody');
         
@@ -601,7 +588,6 @@
             const { data: { session } } = await supabaseClient.auth.getSession();
             if (!session) throw new Error('No hay sesión activa');
 
-            // Llamada a tu backend en Railway
             const endpoint = tipo === 'imagen' ? '/api/ai/generar-imagen' : '/api/ai/generar-video';
             const res = await fetch(`${BACKEND_URL}${endpoint}`, {
                 method: 'POST',
@@ -621,22 +607,37 @@
             mediaMsg.className = 'promi-msg bot';
             mediaMsg.style.padding = '16px';
             mediaMsg.style.textAlign = 'center';
+            mediaMsg.style.width = '100%';
             
-            if (tipo === 'imagen') {
-                const imageUrl = `data:image/jpeg;base64,${data.image_base64}`;
-                mediaMsg.innerHTML = `
-                    <img src="${imageUrl}" style="width:100%; border-radius:12px; margin-bottom:12px; border:1px solid #374151;">
-                    <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:12px;">Imagen generada para: "${escapeHTML(promptUsuario)}"</p>
-                    <a href="${imageUrl}" download="marketing-image.jpg" style="background:#ff0050; color:#fff; text-decoration:none; padding:10px 20px; border-radius:20px; font-weight:700; display:inline-block;">⬇️ Descargar Imagen</a>
-                `;
-            } else {
-                const videoUrl = `data:video/mp4;base64,${data.video_base64}`;
-                mediaMsg.innerHTML = `
-                    <video src="${videoUrl}" controls style="width:100%; border-radius:12px; margin-bottom:12px; border:1px solid #374151; background:#000;"></video>
-                    <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:12px;">Video generado para: "${escapeHTML(promptUsuario)}"</p>
-                    <a href="${videoUrl}" download="marketing-video.mp4" style="background:#ff0050; color:#fff; text-decoration:none; padding:10px 20px; border-radius:20px; font-weight:700; display:inline-block;">⬇️ Descargar Video</a>
-                `;
+            // Convertir base64 a un Blob local para simular la URL
+            const base64Data = tipo === 'imagen' ? data.image_base64 : data.video_base64;
+            const mimeType = tipo === 'imagen' ? 'image/jpeg' : 'video/mp4';
+            
+            // Convertir Base64 a Blob
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
             }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], {type: mimeType});
+            const blobUrl = URL.createObjectURL(blob);
+
+            let mediaHTML = '';
+            if (tipo === 'imagen') {
+                mediaHTML = `<img src="${blobUrl}" style="width:100%; border-radius:12px; margin-bottom:12px; border:1px solid #374151;">`;
+            } else {
+                mediaHTML = `<video src="${blobUrl}" controls style="width:100%; border-radius:12px; margin-bottom:12px; border:1px solid #374151; background:#000;"></video>`;
+            }
+
+            // Mostrar vista previa SIN botón de descarga, solo botón para usar en campaña
+            mediaMsg.innerHTML = `
+                ${mediaHTML}
+                <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:12px;">Vista previa generada. Así se verá en tu anuncio.</p>
+                <button class="promi-action-btn use-campaign" onclick="usarMediaEnCampana('${blobUrl}', '${tipo}')">
+                    ✅ Aceptar y Usar en mi Campaña
+                </button>
+            `;
             
             body.appendChild(mediaMsg);
         } catch (error) {
@@ -652,6 +653,45 @@
         body.scrollTop = body.scrollHeight;
     }
 
+    // ✅ FUNCIÓN PARA INYECTAR LA IMAGEN/VIDEO EN EL FORMULARIO DE CAMPAÑA
+    function usarMediaEnCampana(url, tipo) {
+        // 1. Cerrar el chat de Promi
+        togglePromi();
+        
+        // 2. Abrir el modal de crear campaña
+        abrirModalCrear();
+        
+        // 3. Saltar directo al paso 6 (Contenido del anuncio)
+        setTimeout(() => {
+            // Auto-rellenar el campo correspondiente
+            if (tipo === 'imagen') {
+                document.getElementById('ad-image').value = url;
+                document.getElementById('ad-video').value = '';
+            } else {
+                document.getElementById('ad-video').value = url;
+                document.getElementById('ad-image').value = '';
+            }
+            
+            // Poner un título y descripción de ejemplo
+            document.getElementById('ad-title').value = "¡Mira lo que tenemos para ti!";
+            document.getElementById('ad-description').value = "Descubre nuestras nuevas promociones exclusivas. Haz clic para saber más.";
+            document.getElementById('ad-cta').value = "Ver más";
+            
+            // Forzar el salto al paso 6 visualmente
+            document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
+            document.getElementById('wizard-step-6').classList.remove('hidden');
+            
+            // Simular que se seleccionó un destino para que el wizard no falle si el usuario retrocede
+            if (!wizard.target_tipo) {
+                wizard.target_tipo = 'video'; // valor por defecto
+                wizard.target_id = '__feed__';
+            }
+            
+            showToast('¡Contenido añadido a tu anuncio!', 'success');
+        }, 300);
+    }
+
+    /* [EL RESTO DE FUNCIONES SE MANTIENEN EXACTAMENTE IGUAL: renderParticles, loadChartJs, cargarConfig, init, etc.] */
     function renderParticles() {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const c = document.getElementById('particles'); if (!c) return;
@@ -1018,6 +1058,7 @@
     window.enviarMensajePromi = enviarMensajePromi;
     window.resetPromi = resetPromi;
     window.generarMediaReal = generarMediaReal;
+    window.usarMediaEnCampana = usarMediaEnCampana;
     </script>
 </body>
 </html>
