@@ -1,10 +1,18 @@
 // ================================================================
-// MURO · HISTORIAS (tabla estados) — v4.1 (Timer Fix)
+// MURO · HISTORIAS (tabla estados) — v4.1
 // ================================================================
 // Cambios v4.1:
-//  - Temporizador corregido usando marcas de tiempo (Date.now)
-//  - El campo de texto ya no interfiere con los eventos de la tarjeta
-//  - Pausa exacta al mantener presionado o enfocar el input
+//  - Corregido el nombre del parámetro del RPC estado_enviar_comentario:
+//    la función en la base recibe p_texto (antes se enviaba p_comentario,
+//    y Supabase respondía "Could not find the function").
+//  - Temporizador con tiempo transcurrido: al pausar se guarda cuánto
+//    tiempo llevaba la historia y al reanudar continúa desde ahí.
+//  - Mientras el campo de comentario tiene el foco, la historia no avanza
+//    ni se reanuda al soltar el dedo o el mouse.
+//  - Renderizado con DOM seguro (el + createTextNode), sin innerHTML
+//  - Rol Dueño vs Espectador en el visor
+//  - Paneles de vistas / comentarios con RPCs SECURITY DEFINER
+//  - Registro de vistas únicas con upsert (sin contar al dueño)
 // ================================================================
 
 var HISTORIA_MAX_IMAGEN_BYTES = 10 * 1024 * 1024;
@@ -18,7 +26,7 @@ var estadosVistosIds = new Set();
 var temporizadorHistoria = null;
 var timerPausado = false;
 var timerRestanteMs = 0;
-var timerInicioMs = 0; // NUEVO: Para calcular el tiempo exacto transcurrido
+var timerInicioMs = 0;
 var panelAbierto = null;
 
 // ----------------------------------------------------------------
@@ -407,13 +415,9 @@ function renderizarVisorHistoria() {
             maxlength: '200',
             placeholder: 'Escribe un comentario…'
         });
-        
-        // Pausar cuando el input tiene el foco, reanudar cuando lo pierde
+        // Al escribir, la historia se pausa. Al salir del campo, sigue.
         inputComentario.addEventListener('focus', pausarTimer);
-        inputComentario.addEventListener('blur', function(e) {
-            // Pequeño delay para evitar que al hacer clic en "Enviar" se reanude antes de procesar
-            setTimeout(reanudarTimer, 200); 
-        });
+        inputComentario.addEventListener('blur', reanudarTimer);
         inputComentario.addEventListener('keydown', function (e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -421,18 +425,10 @@ function renderizarVisorHistoria() {
             }
         });
 
-        // Evitar que los clics en el área de comentarios activen los eventos de pausa de la tarjeta
-        inputComentario.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-        inputComentario.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
-
         var btnEnviar = el('button', {
             class: 'cs-historia-enviar',
             onclick: function () { enviarComentarioHistoria(inputComentario); }
         }, 'Enviar');
-
-        // Evitar que el botón de enviar active los eventos de la tarjeta
-        btnEnviar.addEventListener('mousedown', function(e) { e.stopPropagation(); });
-        btnEnviar.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
 
         pie = el('div', { class: 'cs-historia-pie' }, [
             el('div', { class: 'cs-historia-comentar' }, [inputComentario, btnEnviar])
@@ -453,7 +449,8 @@ function renderizarVisorHistoria() {
         barras, header, media, caption, pie, nav
     ]);
 
-    // Mantener presionada la historia → pausar
+    // Mantener presionada la historia → pausar; al soltar → reanudar
+    // (reanudarTimer no hace nada si el campo de comentario tiene el foco)
     card.addEventListener('mousedown', pausarTimer);
     card.addEventListener('mouseup', reanudarTimer);
     card.addEventListener('mouseleave', reanudarTimer);
@@ -481,57 +478,51 @@ function iniciarTimer(estado) {
     clearTimeout(temporizadorHistoria);
     timerPausado = false;
     var duracionMs = (estado.duracion_segundos || HISTORIA_DURACION_IMAGEN) * 1000;
-    
-    // Si es video, sumamos un pequeño margen extra
+
     if (estado.media_tipo === 'video') {
         var video = document.getElementById('csHistoriaVideo');
         if (video) {
-            // Limpiamos eventos anteriores para no duplicar
-            video.removeEventListener('ended', historiaSiguiente);
             video.addEventListener('ended', historiaSiguiente);
             duracionMs = duracionMs + 2000;
         }
     }
-    
-    timerRestanteMs = duracionMs;
-    timerInicioMs = Date.now();
-    programarTimer(timerRestanteMs);
+    programarTimer(duracionMs);
 }
 
+// Programa el avance dentro de "ms" milisegundos y guarda cuándo empezó.
 function programarTimer(ms) {
     clearTimeout(temporizadorHistoria);
+    timerRestanteMs = ms;
+    timerInicioMs = Date.now();
     if (timerPausado) return;
-    
-    timerInicioMs = Date.now(); // Guardamos el momento exacto en que inicia
     temporizadorHistoria = setTimeout(historiaSiguiente, ms);
 }
 
+// Congela la historia: guarda cuánto tiempo le falta.
 function pausarTimer() {
     if (timerPausado) return;
     timerPausado = true;
     clearTimeout(temporizadorHistoria);
-    
-    // Calculamos cuánto tiempo pasó desde que inició este ciclo
     var transcurrido = Date.now() - timerInicioMs;
     timerRestanteMs = Math.max(0, timerRestanteMs - transcurrido);
-
     var video = document.getElementById('csHistoriaVideo');
-    if (video && !video.paused) video.pause();
+    if (video) video.pause();
 }
 
+// Indica si el usuario está escribiendo un comentario.
+function estaEscribiendoComentario() {
+    var input = document.getElementById('csComentarioInput');
+    return !!input && document.activeElement === input;
+}
+
+// Reanuda desde donde se quedó, salvo que se esté escribiendo.
 function reanudarTimer() {
     if (!timerPausado) return;
+    if (estaEscribiendoComentario()) return;
     timerPausado = false;
-    
     var video = document.getElementById('csHistoriaVideo');
     if (video) video.play().catch(function () {});
-    
-    // Si por alguna razón el tiempo llegó a 0 mientras estaba pausado, avanzamos
-    if (timerRestanteMs <= 0) {
-        historiaSiguiente();
-    } else {
-        programarTimer(timerRestanteMs);
-    }
+    programarTimer(timerRestanteMs);
 }
 
 // ----------------------------------------------------------------
@@ -604,7 +595,6 @@ function abrirPanel(tipo) {
     var prev = card.querySelector('.cs-historia-panel');
     if (prev) prev.remove();
 
-    var estado = historiaSeleccionada.usuario.estados[historiaSeleccionada.indice];
     var datos = tipo === 'vistas'
         ? (window.__csVistasCache || [])
         : (window.__csComentariosCache || []);
@@ -690,9 +680,10 @@ async function enviarComentarioHistoria(inputEl) {
     if (btn) btn.disabled = true;
 
     try {
+        // Nombre de parámetros según la función en la base: p_estado_id, p_texto
         var res = await supabaseClient.rpc('estado_enviar_comentario', {
             p_estado_id: estado.id,
-            p_comentario: texto
+            p_texto: texto
         });
         if (res.error) throw res.error;
 
@@ -703,9 +694,6 @@ async function enviarComentarioHistoria(inputEl) {
         if (esMiHistoria(historiaSeleccionada.usuario)) {
             cargarResumenEstado(estado.id);
         }
-        
-        // Quitar el foco para que el temporizador se reanude automáticamente
-        inputEl.blur();
     } catch (e) {
         console.error('Error al enviar comentario:', e);
         showToast(e.message || 'No se pudo enviar el comentario', 'error');
