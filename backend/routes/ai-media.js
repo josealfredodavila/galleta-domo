@@ -1,8 +1,9 @@
 /* ================================================================
-   routes/ai-media.js · GENERACIÓN DE IMAGEN Y VIDEO (v1.0)
+   routes/ai-media.js · GENERACIÓN DE IMAGEN Y VIDEO (v2.0)
    ================================================================
-   Modelo: NVIDIA Cosmos3 Nano (cosmos3-nano)
-   Endpoint: POST https://ai.api.nvidia.com/v1/cosmos/nvidia/cosmos3-nano
+   Modelos:
+   - Imagen: FLUX 3 Image Klein (black-forest-labs/flux-3-image-klein)
+   - Video:  Cosmos3 Nano (nvidia/cosmos3-nano)
 
    Flujo:
    1. El usuario pide una imagen o un video desde Promi.
@@ -10,19 +11,6 @@
    3. La vista previa usa un enlace firmado que caduca en 10 minutos.
    4. Solo al "Aceptar" el contenido queda como aceptado para campañas.
    5. No existe ningún endpoint de descarga para el usuario.
-
-   Montaje en el servidor principal:
-     app.use('/api/ai/media', require('./routes/ai-media'));
-
-   Dependencias nuevas:
-     npm install @aws-sdk/s3-request-presigner
-
-   Variables de entorno:
-     NVIDIA_API_KEY        (obligatoria)
-     NVIDIA_COSMOS_URL     (opcional, por defecto el endpoint oficial)
-     MEDIA_LIMITE_DIA      (opcional, por defecto 10)
-     R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY
-     SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 ================================================================ */
 
 'use strict';
@@ -44,9 +32,12 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 ================================================================ */
 
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
-const NVIDIA_COSMOS_URL =
-    process.env.NVIDIA_COSMOS_URL ||
-    'https://ai.api.nvidia.com/v1/cosmos/nvidia/cosmos3-nano';
+
+// Endpoint para imágenes (FLUX 3 Image Klein)
+const NVIDIA_IMAGE_URL = 'https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux-3-image-klein';
+
+// Endpoint para video (Cosmos3 Nano)
+const NVIDIA_VIDEO_URL = 'https://ai.api.nvidia.com/v1/cosmos/nvidia/cosmos3-nano';
 
 const MEDIA_LIMITE_DIA = Number(process.env.MEDIA_LIMITE_DIA) || 10;
 const PREVIEW_EXPIRA_SEG = 600;           // la vista previa caduca en 10 minutos
@@ -82,7 +73,7 @@ const supabaseAdmin =
         : null;
 
 /* ================================================================
-   AUTENTICACIÓN (igual que en ai-chat.js)
+   AUTENTICACIÓN
 ================================================================ */
 
 async function autenticar(req, res, next) {
@@ -125,28 +116,30 @@ function validarPrompt(prompt) {
     return null;
 }
 
-/*
- * Llama a Cosmos3 Nano. Devuelve el JSON de respuesta.
- * Lanza errores con:
- *   .rechazado = true  → el contenido fue denegado por seguridad (HTTP 422)
- *   .status            → código HTTP recibido
- * No reintenta automáticamente: un timeout no significa que se haya
- * detenido la generación, así que reenviar podría cobrar dos veces.
+/**
+ * Llama al endpoint de NVIDIA para generar una imagen (FLUX 3 Image Klein).
+ * Devuelve el JSON de respuesta.
  */
-async function llamarCosmos(payload, timeoutMs) {
+async function generarImagenFlux(prompt) {
     if (!NVIDIA_API_KEY) {
         const error = new Error('NVIDIA_API_KEY no está configurada');
         error.status = 500;
         throw error;
     }
 
-    const respuesta = await axios.post(NVIDIA_COSMOS_URL, payload, {
+    const respuesta = await axios.post(NVIDIA_IMAGE_URL, {
+        prompt: prompt,
+        // Parámetros recomendados para FLUX 3 Image Klein
+        seed: 0,
+        steps: 50,
+        cfg_scale: 3.5
+    }, {
         headers: {
             Authorization: `Bearer ${NVIDIA_API_KEY}`,
             Accept: 'application/json',
             'Content-Type': 'application/json'
         },
-        timeout: timeoutMs,
+        timeout: TIMEOUT_IMAGEN_MS,
         validateStatus: () => true
     });
 
@@ -160,7 +153,52 @@ async function llamarCosmos(payload, timeoutMs) {
     if (respuesta.status < 200 || respuesta.status >= 300) {
         const error = new Error(`NVIDIA respondió HTTP ${respuesta.status}`);
         error.status = respuesta.status;
-        console.error('❌ Cosmos3 error:', respuesta.status, JSON.stringify(respuesta.data).slice(0, 300));
+        console.error('❌ NVIDIA Imagen error:', respuesta.status, JSON.stringify(respuesta.data).slice(0, 300));
+        throw error;
+    }
+
+    return respuesta.data || {};
+}
+
+/**
+ * Llama al endpoint de NVIDIA para generar un video (Cosmos3 Nano).
+ * Devuelve el JSON de respuesta.
+ */
+async function generarVideoCosmos(prompt) {
+    if (!NVIDIA_API_KEY) {
+        const error = new Error('NVIDIA_API_KEY no está configurada');
+        error.status = 500;
+        throw error;
+    }
+
+    const respuesta = await axios.post(NVIDIA_VIDEO_URL, {
+        model_mode: 'text2video',
+        prompt: prompt,
+        resolution: '480_16_9',
+        num_frames: 25,
+        num_inference_steps: 35,
+        fps: 24
+    }, {
+        headers: {
+            Authorization: `Bearer ${NVIDIA_API_KEY}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json'
+        },
+        timeout: TIMEOUT_VIDEO_MS,
+        validateStatus: () => true
+    });
+
+    if (respuesta.status === 422) {
+        const error = new Error('contenido_rechazado');
+        error.rechazado = true;
+        error.status = 422;
+        throw error;
+    }
+
+    if (respuesta.status < 200 || respuesta.status >= 300) {
+        const error = new Error(`NVIDIA respondió HTTP ${respuesta.status}`);
+        error.status = respuesta.status;
+        console.error('❌ NVIDIA Video error:', respuesta.status, JSON.stringify(respuesta.data).slice(0, 300));
         throw error;
     }
 
@@ -224,7 +262,6 @@ function respuestaError(res, error, mensajeGenerico) {
 
 /* ================================================================
    POST /imagen
-   Genera una imagen (text2image) y la deja como borrador privado.
 ================================================================ */
 
 router.post('/imagen', autenticar, async (req, res) => {
@@ -246,16 +283,14 @@ router.post('/imagen', autenticar, async (req, res) => {
 
         let data;
         try {
-            data = await llamarCosmos({
-                model_mode: 'text2image',
-                prompt: promptLimpio,
-                resolution: '720_1_1'
-            }, TIMEOUT_IMAGEN_MS);
+            data = await generarImagenFlux(promptLimpio);
         } catch (error) {
             return respuestaError(res, error, 'No se pudo generar la imagen. Intenta de nuevo.');
         }
 
-        if (!data.b64_image) {
+        // FLUX devuelve la imagen en data.artifacts[0].base64 o data.data[0].b64_json
+        const base64Image = data.artifacts?.[0]?.base64 || data.data?.[0]?.b64_json;
+        if (!base64Image) {
             return res.status(502).json({ success: false, error: 'La respuesta no contenía una imagen.' });
         }
 
@@ -273,7 +308,7 @@ router.post('/imagen', autenticar, async (req, res) => {
         if (errInsert) throw errInsert;
 
         const key = `ia/borradores/${req.user.id}/${fila.id}.jpg`;
-        await subirPrivado(key, Buffer.from(data.b64_image, 'base64'), 'image/jpeg');
+        await subirPrivado(key, Buffer.from(base64Image, 'base64'), 'image/jpeg');
 
         await supabaseAdmin
             .from('ai_media_borradores')
@@ -296,21 +331,11 @@ router.post('/imagen', autenticar, async (req, res) => {
 
 /* ================================================================
    POST /video
-   Inicia la generación del video (text2video). El video tarda,
-   así que se procesa en segundo plano y el frontend consulta
-   GET /:id hasta que esté listo.
 ================================================================ */
 
 async function procesarVideo(filaId, usuarioId, promptLimpio) {
     try {
-        const data = await llamarCosmos({
-            model_mode: 'text2video',
-            prompt: promptLimpio,
-            resolution: '480_16_9',
-            num_frames: 25,
-            num_inference_steps: 35,
-            fps: 24
-        }, TIMEOUT_VIDEO_MS);
+        const data = await generarVideoCosmos(promptLimpio);
 
         if (!data.b64_video) throw new Error('La respuesta no contenía un video');
 
@@ -372,7 +397,6 @@ router.post('/video', autenticar, async (req, res) => {
 
         if (error) throw error;
 
-        // Respuesta inmediata; el trabajo sigue en segundo plano
         res.status(202).json({ success: true, id: fila.id, tipo: 'video', estado: 'procesando' });
 
         procesarVideo(fila.id, req.user.id, promptLimpio);
@@ -388,8 +412,6 @@ router.post('/video', autenticar, async (req, res) => {
 
 /* ================================================================
    GET /:id
-   Consulta el estado de un borrador. Si está listo, devuelve
-   una vista previa firmada que caduca.
 ================================================================ */
 
 router.get('/:id', autenticar, async (req, res) => {
@@ -422,8 +444,6 @@ router.get('/:id', autenticar, async (req, res) => {
 
 /* ================================================================
    POST /:id/aceptar
-   El usuario aprueba el contenido para su campaña.
-   Solo se puede aceptar algo que ya esté listo.
 ================================================================ */
 
 router.post('/:id/aceptar', autenticar, async (req, res) => {
@@ -457,7 +477,6 @@ router.post('/:id/aceptar', autenticar, async (req, res) => {
 
 /* ================================================================
    POST /:id/descartar
-   Borra el archivo de R2 y marca el borrador como descartado.
 ================================================================ */
 
 router.post('/:id/descartar', autenticar, async (req, res) => {
