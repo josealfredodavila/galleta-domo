@@ -390,8 +390,8 @@
                 <div id="ad-media-aceptada" class="red-info" style="display:none;"></div> <!-- NUEVO AVISO -->
                 <input type="text" id="ad-title" placeholder="Título" maxlength="150">
                 <textarea id="ad-description" placeholder="Descripción" maxlength="500"></textarea>
-                <input type="url" id="ad-image" placeholder="URL de Imagen (opcional, https://...)" maxlength="500">
-                <input type="url" id="ad-video" placeholder="URL de Video (opcional, https://...)" maxlength="500">
+                <input type="url" id="ad-image" placeholder="URL de tu imagen (Google, Instagram, etc.)" maxlength="500">
+                <input type="url" id="ad-video" placeholder="URL de tu video (TikTok, YouTube, FB, etc.)" maxlength="500">
                 <input type="text" id="ad-cta" placeholder="Texto del botón (Ej: Ver más)" maxlength="40">
                 <button class="btn btn-primary btn-next">Siguiente →</button>
             </div>
@@ -407,8 +407,8 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v9.2 (PRODUCCIÓN)
-       - Fix: Envío de media_id al backend al crear campaña.
+       MARKETING · Sariel's — v9.3 (PRODUCCIÓN)
+       - Fix: Flujo desde Promi conserva la imagen y abre modal.
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -471,6 +471,8 @@
 
     function resetPromi() {
         promiHistory = [];
+        wizard.media_id = null; // Limpiar media si empieza un nuevo chat
+        wizard.media_tipo = null;
         const body = document.getElementById('promiBody');
         body.innerHTML = `
             <div class="promi-welcome" id="promiWelcome">
@@ -645,13 +647,17 @@
                 return;
             }
 
-            // Guardamos el ID y el tipo en el objeto wizard para enviarlo al backend
+            // Guardamos el ID y el tipo en el objeto wizard
             wizard.media_id = id;
             wizard.media_tipo = tipo;
 
-            caja.querySelector('.acciones-media').innerHTML =
-                '<span style="color:#00d68f;font-size:0.8rem;font-weight:700;">✓ Aceptado. Se usará en tu campaña.</span>';
-            showToast('Contenido aceptado para tu campaña', 'success');
+            // Mostramos el mensaje de éxito y el botón para saltar directo a la campaña
+            const acciones = caja.querySelector('.acciones-media');
+            acciones.innerHTML = `
+                <span style="color:#00d68f;font-size:0.8rem;font-weight:700;display:block;margin-bottom:10px;">✓ Aceptado. Se usará en tu campaña.</span>
+                <button class="promi-action-btn" onclick="iniciarCampanaDesdePromi()" style="background:#00d68f; color:#04060d; border:none;">📋 Continuar con la campaña</button>
+            `;
+            showToast('Contenido aceptado', 'success');
         } catch (e) {
             botones.forEach((b) => { b.disabled = false; });
             showToast('Error de conexión al aceptar', 'error');
@@ -938,9 +944,56 @@
         resetWizard();
     }
 
+    function iniciarCampanaDesdePromi() {
+        // Cierra el panel de Promi para que el usuario vea el formulario
+        document.getElementById('promiPanel').classList.remove('active');
+        
+        // Abre el modal de crear campaña
+        document.getElementById('modal-create').classList.remove('hidden');
+        
+        // Limpiamos el wizard PERO conservamos el media_id
+        const mediaIdGuardada = wizard.media_id;
+        const mediaTipoGuardado = wizard.media_tipo;
+        
+        detenerPolling(); 
+        campañaCreada = null;
+        
+        wizard = {}; // Limpiamos
+        
+        // Restauramos la imagen aceptada
+        if (mediaIdGuardada) {
+            wizard.media_id = mediaIdGuardada;
+            wizard.media_tipo = mediaTipoGuardado;
+        }
+        
+        // Limpiamos los inputs visuales
+        document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea').forEach(el => { 
+            el.value = ''; 
+            el.disabled = false; 
+        });
+        poblarRedesDePago('');
+        const btnPay = document.getElementById('btn-pay'); 
+        if (btnPay) { btnPay.style.display = ''; btnPay.disabled = false; btnPay.textContent = '◈ Continuar al Pago'; }
+        
+        // Mostramos el paso 1 para que elija dónde anunciar
+        showWizardStep('1');
+    }
+
     async function cargarDestinos(tipo) {
-        wizard = { target_tipo: tipo };
-        const select = document.getElementById('select-target'); select.innerHTML = '<option value="">Cargando...</option>';
+        // EL TRUCO ESTÁ AQUÍ: Guardamos el media_id antes de reiniciar el wizard
+        const mediaIdGuardada = wizard.media_id;
+        const mediaTipoGuardado = wizard.media_tipo;
+
+        wizard = { target_tipo: tipo }; // Reinicia el wizard para el paso 1
+
+        // Restauramos la imagen
+        if (mediaIdGuardada) {
+            wizard.media_id = mediaIdGuardada;
+            wizard.media_tipo = mediaTipoGuardado;
+        }
+
+        const select = document.getElementById('select-target'); 
+        select.innerHTML = '<option value="">Cargando...</option>';
         try {
             let query;
             if (tipo === 'live') {
@@ -1068,7 +1121,7 @@
             if (!campañaCreada) {
                 btn.textContent = '◈ Creando campaña...';
                 
-                // NUEVO: Se agrega media_id al payload si existe
+                // Se agrega media_id al payload si existe
                 const bodyData = {
                     nombre: wizard.nombre, 
                     objetivo: wizard.objetivo, 
@@ -1142,6 +1195,7 @@
     window.enviarMensajePromi = enviarMensajePromi;
     window.resetPromi = resetPromi;
     window.generarMediaReal = generarMediaReal;
+    window.iniciarCampanaDesdePromi = iniciarCampanaDesdePromi;
     </script>
 </body>
 </html>
