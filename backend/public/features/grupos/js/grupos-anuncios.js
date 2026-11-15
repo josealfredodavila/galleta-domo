@@ -3,7 +3,7 @@
 // ================================================================
 // Sistema de anuncios patrocinados dentro de los grupos.
 // Depende de: grupos-config.js, grupos-utils.js
-// v2.1 (Añadido Menú de 3 Puntos, Reportes y Visor de Imagen)
+// v2.2 (Visor blindado + Swipe-to-close)
 // ================================================================
 
 // ================================================================
@@ -62,7 +62,7 @@ function cerrarAnuncio() {
 }
 
 // ================================================================
-// VISOR DE IMAGEN A PANTALLA COMPLETA (NUEVO)
+// VISOR DE IMAGEN A PANTALLA COMPLETA (CON SWIPE)
 // ================================================================
 function abrirVisorAnuncio(urlImagen) {
     let visor = document.getElementById('adVisorFull');
@@ -87,6 +87,14 @@ function abrirVisorAnuncio(urlImagen) {
 
     btnCerrar.onclick = cerrar;
     visor.onclick = function(e) { if (e.target === visor) cerrar(); };
+
+    // Gesto de deslizar hacia abajo
+    let tocoY = 0;
+    visor.addEventListener('touchstart', (e) => { tocoY = e.changedTouches[0].clientY; }, {passive: true});
+    visor.addEventListener('touchend', (e) => {
+        let dy = e.changedTouches[0].clientY - tocoY;
+        if (dy > 100) cerrar();
+    }, {passive: true});
 
     visor.appendChild(img);
     visor.appendChild(btnCerrar);
@@ -134,7 +142,7 @@ async function cargarAnuncioGrupo() {
 }
 
 // ================================================================
-// MOSTRAR ANUNCIO EN EL DOM (CON MENÚ Y VISOR)
+// MOSTRAR ANUNCIO EN EL DOM (CON MENÚ Y VISOR BLINDADO)
 // ================================================================
 function mostrarAnuncio(ad) {
     inyectarEstilosMenuAnuncios();
@@ -159,7 +167,12 @@ function mostrarAnuncio(ad) {
 
     if (img) {
         media.innerHTML = `<img src="${grpEscapeHTML(img)}" alt="${grpEscapeHTML(ad.titulo)}" loading="lazy" style="cursor:pointer;" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
-        media.querySelector('img').onclick = function() { abrirVisorAnuncio(this.src); };
+        
+        // BLINDAJE: Verificamos que el img exista antes de asignar el onclick
+        const imgEl = media.querySelector('img');
+        if (imgEl) {
+            imgEl.onclick = function() { abrirVisorAnuncio(this.src); };
+        }
     } else if (vid) {
         media.innerHTML = `<video src="${grpEscapeHTML(vid)}" muted autoplay loop playsinline></video>`;
     } else {
