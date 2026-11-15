@@ -41,17 +41,8 @@ const FEED_VIDEO = '__feed__';
 const MXN_A_USD_APROX = 0.055;
 
 // Mínimos por red. Debe coincidir con REDES_PERMITIDAS de routes/payments.js.
-const REDES_PERMITIDAS = {
-    usdttrc20: { moneda: 'USDT', red: 'TRON',     minimo_usd: 1  },
-    usdtbsc:   { moneda: 'USDT', red: 'BSC',      minimo_usd: 1  },
-    usdtmatic: { moneda: 'USDT', red: 'Polygon',  minimo_usd: 1  },
-    usdtsol:   { moneda: 'USDT', red: 'Solana',   minimo_usd: 1  },
-    usdterc20: { moneda: 'USDT', red: 'Ethereum', minimo_usd: 20 },
-    usdcsol:   { moneda: 'USDC', red: 'Solana',   minimo_usd: 1  },
-    usdcmatic: { moneda: 'USDC', red: 'Polygon',  minimo_usd: 1  },
-    usdcbsc:   { moneda: 'USDC', red: 'BSC',      minimo_usd: 1  },
-    usdc:      { moneda: 'USDC', red: 'Ethereum', minimo_usd: 20 }
-};
+// Fuente única compartida con routes/payments.js (ver config/redes-pago.js)
+const { REDES_PERMITIDAS } = require('../config/redes-pago');
 
 const MAX_MXN = 1000000;
 const MAX_PENDIENTES = 10;
