@@ -45,7 +45,7 @@
 
         .app { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 16px; }
 
-        /* HEADER Y NAV (Mantenidos) */
+        /* HEADER Y NAV */
         .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 100; background: rgba(4, 6, 13, 0.95); }
         @supports (backdrop-filter: blur(1px)) { .header { background: rgba(4, 6, 13, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); } }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -73,11 +73,9 @@
         .tab-btn.active { color: var(--gold); }
         .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px; background: var(--gold); border-radius: 3px 3px 0 0; }
 
-        /* CONTENIDO DE PESTAÑAS */
         .tab-content { display: none; }
         .tab-content.active { display: block; }
 
-        /* HERO (Solo en panel de control) */
         .marketing-hero { display: flex; justify-content: space-between; align-items: center; padding: 26px 28px; background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.7)); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); margin-bottom: 24px; position: relative; overflow: hidden; flex-wrap: wrap; gap: 16px; }
         .marketing-hero::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); animation: scanLine 4s linear infinite; }
         @keyframes scanLine { 0% { left: -100%; } 100% { left: 100%; } }
@@ -225,14 +223,12 @@
             <a href="/marketing/marketing.html" class="nav-link active">◈ Marketing</a>
         </nav>
 
-        <!-- ✅ NUEVAS PESTAÑAS INTERNAS -->
         <div class="tabs-container">
             <button class="tab-btn" data-tab="crear" onclick="cambiarTab('crear')">Crear</button>
             <button class="tab-btn active" data-tab="panel" onclick="cambiarTab('panel')">Panel de control</button>
             <button class="tab-btn" data-tab="minar" onclick="cambiarTab('minar')">Minar</button>
         </div>
 
-        <!-- ================= PESTAÑA: PANEL DE CONTROL ================= -->
         <div id="tab-panel" class="tab-content active">
             <div class="marketing-hero">
                 <div class="hero-title-wrap">
@@ -263,7 +259,6 @@
             </section>
         </div>
 
-        <!-- ================= PESTAÑA: CREAR ================= -->
         <div id="tab-crear" class="tab-content">
             <div class="empty-state">
                 <span class="icon">✦</span>
@@ -271,7 +266,6 @@
             </div>
         </div>
 
-        <!-- ================= PESTAÑA: MINAR ================= -->
         <div id="tab-minar" class="tab-content">
             <div class="empty-state">
                 <span class="icon">⛏️</span>
@@ -280,10 +274,8 @@
         </div>
     </div>
 
-    <!-- BOTÓN FLOTANTE -->
     <button class="fab-btn" onclick="abrirModalCrear()">+</button>
 
-    <!-- CHATBOT "PROMI" -->
     <button class="promi-btn" onclick="togglePromi()">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
     </button>
@@ -298,19 +290,18 @@
                 <h1>Hola, soy tu agente de ventas de Promoción</h1>
                 <p>Pregúntame lo que sea sobre Promoción de Sariel's: configuración de planes, problemas con revisiones, cupones o rendimiento. También puedo recomendarte un paquete según tu objetivo.</p>
             </div>
-            <div class="promi-option">¿Qué objetivo publicitario debo elegir? <span>→</span></div>
-            <div class="promi-option">¿Cómo crear un plan de Promoción? <span>→</span></div>
-            <div class="promi-option">¿Cómo puedo consultar mi gasto? <span>→</span></div>
-            <div class="promi-option">¿Cómo puedo aumentar mi presupuesto? <span>→</span></div>
+            <div class="promi-option" onclick="enviarMensajePromi('¿Qué objetivo publicitario debo elegir?')">¿Qué objetivo publicitario debo elegir? <span>→</span></div>
+            <div class="promi-option" onclick="enviarMensajePromi('¿Cómo crear un plan de Promoción?')">¿Cómo crear un plan de Promoción? <span>→</span></div>
+            <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo consultar mi gasto?')">¿Cómo puedo consultar mi gasto? <span>→</span></div>
+            <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo aumentar mi presupuesto?')">¿Cómo puedo aumentar mi presupuesto? <span>→</span></div>
         </div>
         <div class="promi-footer">
-            <input type="text" class="promi-input" placeholder="Pregúntame lo que quieras">
+            <input type="text" class="promi-input" id="promiInput" placeholder="Pregúntame lo que quieras" onkeypress="if(event.key==='Enter') enviarMensajePromi()">
         </div>
-        <button class="promi-new-chat">📝 Nuevo chat</button>
+        <button class="promi-new-chat" onclick="document.getElementById('promiInput').value=''">📝 Nuevo chat</button>
     </div>
 
 
-    <!-- MODAL DETALLE -->
     <div id="modal-detail" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" data-close="modal-detail" aria-label="Cerrar">&times;</button>
@@ -322,13 +313,10 @@
                 <div class="chart-box"><h4>◉ Impresiones por día</h4><canvas id="chart-impressions"></canvas></div>
                 <div class="chart-box"><h4>▼ Gasto por día</h4><canvas id="chart-spent"></canvas></div>
             </div>
-            <div class="detail-actions" id="detail-actions">
-                <!-- Aquí se inyectan dinámicamente los botones de Pausar/Cancelar -->
-            </div>
+            <div class="detail-actions" id="detail-actions"></div>
         </div>
     </div>
 
-    <!-- MODAL CREAR -->
     <div id="modal-create" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" data-close="modal-create" aria-label="Cerrar">&times;</button>
@@ -389,8 +377,8 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v5
-       Integración con TikTok UI (Promi, FAB, Tabs, Pausar/Cancelar)
+       MARKETING · Sariel's — v6
+       Integración completa con Backend de Producción
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -399,8 +387,7 @@
     const MAX_POLL_INTENTOS = 80;
     const INTERVALO_POLL_MS = 15000;
     const PRECIO_ANUNCIO_MXN = 60;
-    const DURACION_ANUNCIO_DIAS = 7;
-
+    
     const REDES_PAGO = [
         { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 1,  label: 'USDT · TRON (TRC20)' },
         { value: 'usdtbsc',   moneda: 'USDT', red: 'BSC',      min: 1,  label: 'USDT · BSC (BEP20)' },
@@ -424,7 +411,6 @@
     let wizard = {};
     let campañaCreada = null;
     let pollTimer = null;
-    let anuncioPendienteId = null;
 
     function log(...a) { if (DEBUG) console.log('◈', ...a); }
     function logError(...a) { console.error('✕', ...a); }
@@ -440,7 +426,6 @@
         toastTimeout = setTimeout(() => t.classList.remove('show'), duration || 3500);
     }
 
-    // PESTAÑAS
     function cambiarTab(tab) {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
@@ -448,9 +433,40 @@
         document.getElementById(`tab-${tab}`).classList.add('active');
     }
 
-    // PROMI CHATBOT
     function togglePromi() {
         document.getElementById('promiPanel').classList.toggle('active');
+    }
+
+    async function enviarMensajePromi(textoForzado) {
+        const input = document.getElementById('promiInput');
+        const texto = textoForzado || input.value.trim();
+        if (!texto) return;
+        
+        if (!textoForzado) input.value = '';
+        
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) { showToast('Inicia sesión para hablar con Promi', 'error'); return; }
+
+            const res = await fetch(`${BACKEND_URL}/api/ai/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session.access_token}`
+                },
+                body: JSON.stringify({ message: texto, context: 'marketing' })
+            });
+            
+            const data = await res.json();
+            if (data.success && data.reply) {
+                alert('Promi dice: ' + data.reply);
+            } else {
+                showToast('Promi no pudo responder', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Error de conexión con Promi', 'error');
+        }
     }
 
     function renderParticles() {
@@ -529,7 +545,6 @@
         setupWizard();
         setupFilters();
 
-        // Botón FAB
         document.querySelector('.fab-btn').addEventListener('click', () => abrirModalCrear());
         document.getElementById('btn-create-campaign-top').addEventListener('click', () => abrirModalCrear());
 
@@ -547,14 +562,6 @@
 
         currentUser = user;
         try { await loadCampaigns(); } catch (err) { logError('Campañas:', err); showCampaignsError(err.message); }
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const pendienteId = urlParams.get('anuncio_pendiente');
-
-        if (pendienteId) {
-            anuncioPendienteId = pendienteId;
-            await cargarAnuncioPendiente(pendienteId);
-        }
     }
 
     function showBootError(msg) { const el = document.getElementById('campaigns-list'); if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error inicializando Marketing</p><small>${escapeHTML(msg)}</small></div>`; }
@@ -564,6 +571,8 @@
     async function loadCampaigns() {
         const el = document.getElementById('campaigns-list'); if (!el || !supabaseClient || !currentUser) return;
         el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>Cargando campañas...</p></div>`;
+        
+        // Llamada directa a la ruta definida en backend/routes/marketing.js
         const { data, error } = await supabaseClient.from('marketing_campaigns').select('*').eq('anunciante_id', currentUser.id).order('created_at', { ascending: false });
         if (error) { showCampaignsError(error.message); return; }
         campaigns = data || [];
@@ -608,7 +617,6 @@
         document.getElementById('detail-title').textContent = '◈ ' + (campaign.nombre || 'Sin nombre');
         document.getElementById('detail-info').innerHTML = `<div class="detail-row"><span>Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div><div class="detail-row"><span>Presupuesto</span><span>$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${escapeHTML(campaign.moneda || 'MXN')}</span></div><div class="detail-row"><span>Gastado</span><span>$${parseFloat(campaign.gastado || 0).toFixed(2)}</span></div><div class="detail-row"><span>Restante</span><span>$${restante.toFixed(2)}</span></div><div class="detail-row"><span>Objetivo</span><span>${escapeHTML(campaign.objetivo || '—')}</span></div><div class="detail-row"><span>Inicio</span><span>${formatFecha(campaign.fecha_inicio)}</span></div><div class="detail-row"><span>Fin</span><span>${formatFecha(campaign.fecha_fin)}</span></div>`;
         
-        // ✅ INYECTAR BOTONES DE ACCIÓN
         const actionsEl = document.getElementById('detail-actions');
         actionsEl.innerHTML = '';
         if (estado === 'activa') {
@@ -639,7 +647,6 @@
         try { await loadChartJs(); renderCharts(stats); } catch (err) { logError('Chart.js:', err); }
     }
 
-    // Función para cambiar el estado de la campaña
     async function cambiarEstadoCampana(id, nuevoEstado) {
         if (!confirm(`¿Estás seguro de cambiar el estado a "${nuevoEstado}"?`)) return;
         try {
@@ -779,7 +786,7 @@
             btn.textContent = '◈ Generando pago...';
             const r2 = await fetch(`${BACKEND_URL}/api/payments/marketing/create`, {
                 method: 'POST', headers,
-                body: JSON.stringify({ campaignId: campañaCreada.campaign_id, payCurrency: wizard.pay_currency, anuncioId: wizard.anuncio_id || null })
+                body: JSON.stringify({ campaignId: campañaCreada.campaign_id, payCurrency: wizard.pay_currency })
             });
             const j2 = await r2.json().catch(() => ({}));
             if (!r2.ok || !j2.success || !j2.data?.payment_url) throw new Error(j2.error || 'No se pudo generar el pago. Intenta de nuevo.');
@@ -820,30 +827,13 @@
         }, INTERVALO_POLL_MS);
     }
 
-    // Función para cargar el anuncio pendiente
-    async function cargarAnuncioPendiente(id) {
-        try {
-            const { data, error } = await supabaseClient.from('anuncios').select('id, titulo, texto, media_url').eq('id', id).eq('usuario_id', currentUser.id).eq('estado_moderacion', 'pendiente_pago').maybeSingle();
-            if (error || !data) { showToast('No se encontró el anuncio pendiente.', 'error'); return; }
-            document.getElementById('modal-create').classList.remove('hidden');
-            resetWizard();
-            wizard = { nombre: data.titulo, objetivo: 'alcance', presupuesto: PRECIO_ANUNCIO_MXN, pay_currency: 'usdttrc20', ad: { titulo: data.titulo, descripcion: data.texto || null, imagen_url: data.media_url || null, video_url: null, cta_texto: 'Ver más' }, target_tipo: 'carrusel', target_id: data.id, anuncio_id: data.id };
-            document.getElementById('campaign-budget').value = PRECIO_ANUNCIO_MXN;
-            poblarRedesDePago(PRECIO_ANUNCIO_MXN);
-            mostrarResumen();
-            showWizardStep('7');
-        } catch (err) {
-            logError('Error cargando anuncio pendiente:', err);
-            showToast('Error al cargar el anuncio pendiente.', 'error');
-        }
-    }
-
     if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
     window.openDetail = openDetail;
     window.cambiarEstadoCampana = cambiarEstadoCampana;
     window.abrirModalCrear = abrirModalCrear;
     window.cambiarTab = cambiarTab;
     window.togglePromi = togglePromi;
+    window.enviarMensajePromi = enviarMensajePromi;
     </script>
 </body>
 </html>
