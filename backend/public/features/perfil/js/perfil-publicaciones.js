@@ -1,10 +1,11 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v8.3:
-//  - El dueño de una publicación NO puede ocultarla ni reportarla.
-//  - El menú de reacciones (emojis) ahora se despliega al hacer clic.
-//  - Los emojis tienen animación hover y contador individual.
+// v9.0:
+//  - Visor: Botones de control (X y menú) visibles al pausar video.
+//  - Visor: Botón para alternar entre "Ajustar" y "Llenar" pantalla.
+//  - Visor: Botón "X" con fondo oscuro para mejor visibilidad.
+//  - Reacciones: Menú desplegable ahora es VERTICAL.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -84,7 +85,7 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
 // VISOR A PANTALLA COMPLETA (menú, ocultar, reportar y eliminar)
 // ================================================================
 
-var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0, postIdActual: null, motivoSeleccionado: '', esDueno: false };
+var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0, postIdActual: null, motivoSeleccionado: '', esDueno: false, modoLleno: false };
 
 function pubVisorEl() {
     var el = document.getElementById('pubVisorFull');
@@ -105,11 +106,17 @@ function pubVisorEl() {
     var svgChevronRight = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><polyline points="9 18 15 12 9 6"></polyline></svg>';
     var svgBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"></polyline></svg>';
     var svgX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+    
+    // Nuevo ícono para pantalla completa
+    var svgExpand = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
 
     el.innerHTML =
         '<div class="pub-vf-header">' +
             '<button type="button" class="pub-vf-cerrar" aria-label="Cerrar">' + svgClose + '</button>' +
-            '<button type="button" class="pub-vf-menu-btn" aria-label="Opciones">' + svgDots + '</button>' +
+            '<div style="display:flex; gap:10px;">' +
+                '<button type="button" class="pub-vf-expand-btn" id="btnPubVfExpand" aria-label="Cambiar tamaño" style="display:none;">' + svgExpand + '</button>' +
+                '<button type="button" class="pub-vf-menu-btn" aria-label="Opciones">' + svgDots + '</button>' +
+            '</div>' +
         '</div>' +
         '<div class="pub-vf-media"></div>' +
 
@@ -167,6 +174,19 @@ function pubVisorEl() {
         e.stopPropagation();
         pubAjustarOpcionesMenu();
         document.getElementById('pubVfSheet').classList.add('show');
+    });
+
+    // Evento para cambiar el tamaño del video (Ajustar vs Llenar)
+    el.querySelector('#btnPubVfExpand').addEventListener('click', function (e) {
+        e.stopPropagation();
+        var mediaEl = el.querySelector('.pub-vf-media img, .pub-vf-media video');
+        if (!mediaEl) return;
+        pubVisor.modoLleno = !pubVisor.modoLleno;
+        if (pubVisor.modoLleno) {
+            mediaEl.style.objectFit = 'cover'; // Llena la pantalla recortando bordes
+        } else {
+            mediaEl.style.objectFit = 'contain'; // Ajusta a la pantalla sin recortar
+        }
     });
 
     el.querySelector('#btnPubVfGuardar').addEventListener('click', function (e) {
@@ -277,6 +297,7 @@ function pubVisorEl() {
     });
 
     el.querySelector('.pub-vf-media').addEventListener('click', function (e) {
+        // Si el clic es en el fondo negro, cierra menús o el visor
         if (e.target === e.currentTarget) {
             var sheet = document.getElementById('pubVfSheet');
             var rs1 = document.getElementById('pubVfReportSheet1');
@@ -319,15 +340,48 @@ function pubMostrarItem() {
     document.getElementById('pubVfReportSheet1').classList.remove('show');
     document.getElementById('pubVfReportSheet2').classList.remove('show');
 
+    // Ocultar botones de control por defecto (se mostrarán en video al pausar o siempre en imagen)
+    el.querySelector('.pub-vf-header').classList.remove('show-controls');
+    el.querySelector('#btnPubVfExpand').style.display = 'none';
+    pubVisor.modoLleno = false; // Resetear modo al cambiar de item
+
     caja.innerHTML = '';
     if (item.tipo === 'video') {
         var video = document.createElement('video');
         video.controls = true; video.playsInline = true; video.preload = 'auto'; video.src = item.url;
+        video.style.objectFit = 'contain'; // Modo por defecto
+        
+        // Lógica para mostrar botones al pausar
+        video.addEventListener('pause', function() {
+            el.querySelector('.pub-vf-header').classList.add('show-controls');
+        });
+        video.addEventListener('play', function() {
+            // Ocultar botones al reproducir para que no molesten, excepto si el menú está abierto
+            if (!document.getElementById('pubVfSheet').classList.contains('show')) {
+                el.querySelector('.pub-vf-header').classList.remove('show-controls');
+            }
+        });
+
         caja.appendChild(video);
-        var repro = video.play(); if (repro && typeof repro.catch === 'function') repro.catch(function () {});
+        
+        // Mostrar botón de expandir para videos
+        el.querySelector('#btnPubVfExpand').style.display = 'flex';
+
+        var repro = video.play(); 
+        if (repro && typeof repro.catch === 'function') {
+            repro.catch(function () {
+                // Si falla el autoplay, mostrar controles
+                el.querySelector('.pub-vf-header').classList.add('show-controls');
+            });
+        }
     } else {
-        var imagen = document.createElement('img'); imagen.alt = 'Publicación'; imagen.src = item.url;
+        var imagen = document.createElement('img'); 
+        imagen.alt = 'Publicación'; 
+        imagen.src = item.url;
+        imagen.style.objectFit = 'contain';
         caja.appendChild(imagen);
+        // Las imágenes siempre muestran los controles
+        el.querySelector('.pub-vf-header').classList.add('show-controls');
     }
 }
 
@@ -359,6 +413,7 @@ function pubCerrarVisor() {
     pubVisor.postIdActual = null;
     pubVisor.motivoSeleccionado = '';
     pubVisor.esDueno = false;
+    pubVisor.modoLleno = false;
 }
 
 document.addEventListener('keydown', function (e) {
@@ -406,10 +461,31 @@ document.addEventListener('keydown', function (e) {
         .pub-vf { position: fixed; inset: 0; z-index: 100060; background: #000; display: none; align-items: center; justify-content: center; touch-action: manipulation; }
         .pub-vf.show { display: flex; }
         .pub-vf-media { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
-        .pub-vf-media img, .pub-vf-media video { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; }
+        .pub-vf-media img, .pub-vf-media video { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; transition: object-fit 0.2s; }
 
-        .pub-vf-header { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; display: flex; justify-content: space-between; z-index: 10; }
-        .pub-vf-cerrar, .pub-vf-menu-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; color: #f0f4f8; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        /* CABECERA DEL VISOR CON FONDO PARA BOTONES */
+        .pub-vf-header { 
+            position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; 
+            display: flex; justify-content: space-between; align-items: flex-start; z-index: 10; 
+            pointer-events: none; /* Permitir clics a través del contenedor */
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        .pub-vf-header.show-controls {
+            opacity: 1;
+        }
+        .pub-vf-cerrar, .pub-vf-menu-btn, .pub-vf-expand-btn { 
+            width: 44px; height: 44px; border-radius: 50%; border: 0; 
+            background: rgba(0, 0, 0, 0.6); /* Fondo oscuro para que resalte en cualquier video */
+            color: #f0f4f8; cursor: pointer; display: flex; align-items: center; justify-content: center; 
+            pointer-events: auto; /* Reactivar clics en los botones */
+            backdrop-filter: blur(4px);
+            transition: background 0.2s, transform 0.2s;
+        }
+        .pub-vf-cerrar:hover, .pub-vf-menu-btn:hover, .pub-vf-expand-btn:hover {
+            background: rgba(212, 175, 55, 0.8); /* Color dorado al pasar el dedo */
+            color: #000;
+            transform: scale(1.05);
+        }
 
         /* HOJA INFERIOR (menú) */
         .pub-vf-bottom-sheet {
@@ -452,11 +528,25 @@ document.addEventListener('keydown', function (e) {
         .reaccion-trigger:hover { background: rgba(255,255,255,.05); }
         .reaccion-trigger.activa { color: var(--gold, #D4AF37); }
         
-        .reaccion-dropdown { position: absolute; bottom: 100%; left: 0; margin-bottom: 8px; display: flex; gap: 4px; max-width: min(320px, 90vw); padding: 6px 10px; background: #0b1016; border: 1px solid rgba(212,175,55,.16); border-radius: 24px; box-shadow: 0 6px 18px rgba(0,0,0,.6); opacity: 0; visibility: hidden; transform: translateY(8px) scale(.95); transition: opacity .18s ease, transform .18s ease; z-index: 100; }
+        /* DROPDOWN VERTICAL */
+        .reaccion-dropdown { 
+            position: absolute; bottom: 100%; left: 0; margin-bottom: 8px; 
+            display: flex; flex-direction: column; gap: 4px; /* Flex column para hacerlo vertical */
+            width: auto; padding: 6px; 
+            background: #0b1016; border: 1px solid rgba(212,175,55,.16); 
+            border-radius: 24px; box-shadow: 0 6px 18px rgba(0,0,0,.6); 
+            opacity: 0; visibility: hidden; transform: translateY(8px) scale(.95); 
+            transition: opacity .18s ease, transform .18s ease; z-index: 100; 
+        }
         .reaccion-dropdown.show { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1); }
         
-        .reaccion-dropdown button { width: 38px; height: 38px; border: 0; border-radius: 50%; background: transparent; font-size: 1.55rem; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s, background 0.2s; position: relative; }
-        .reaccion-dropdown button:hover { transform: scale(1.3); background: rgba(255,255,255,0.1); }
+        .reaccion-dropdown button { 
+            width: 40px; height: 40px; border: 0; border-radius: 50%; 
+            background: transparent; font-size: 1.55rem; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center; 
+            transition: transform 0.2s, background 0.2s; position: relative; 
+        }
+        .reaccion-dropdown button:hover { transform: scale(1.15); background: rgba(255,255,255,0.1); }
         .reaccion-dropdown button.activa { background: rgba(212, 175, 55, 0.2); }
         
         .reaccion-dropdown .mini-count { position: absolute; top: -2px; right: -2px; background: #D4AF37; color: #04070d; font-size: 0.55rem; font-weight: bold; padding: 2px 5px; border-radius: 10px; font-family: sans-serif; }
@@ -643,12 +733,11 @@ async function cargarMisPublicaciones(forzarRefresco) {
             var reaccionUsuario = reaccionesUsuario[p.id] || null; var conteos = conteosReacciones[p.id] || {}; var totalReacciones = 0; Object.keys(conteos).forEach(function (k) { totalReacciones += conteos[k] || 0; }); var emojiMostrado = reaccionUsuario || '❤️';
             var wrap = document.createElement('div'); wrap.className = 'reaccion-wrap'; var dropdown = document.createElement('div'); dropdown.className = 'reaccion-dropdown'; dropdown.id = 'reaccion-dropdown-' + p.id;
             
-            // CONSTRUIR EL DROPDOWN CON TODOS LOS EMOJIS
             pubEmojisReaccion().forEach(function (emoji) {
                 var b = document.createElement('button'); b.textContent = emoji; if (reaccionUsuario === emoji) b.classList.add('activa'); 
                 b.addEventListener('click', function (ev) { 
                     ev.stopPropagation(); 
-                    dropdown.classList.remove('show'); // Ocultar menú tras reaccionar
+                    dropdown.classList.remove('show'); 
                     reaccionarPublicacionPerfil(p.id, emoji); 
                 });
                 if (conteos[emoji] > 0) { var mini = document.createElement('span'); mini.className = 'mini-count'; mini.textContent = conteos[emoji]; b.appendChild(mini); } 
@@ -661,10 +750,8 @@ async function cargarMisPublicaciones(forzarRefresco) {
             var countActual = document.createElement('span'); countActual.className = 'count'; countActual.textContent = totalReacciones > 0 ? String(totalReacciones) : 'Reaccionar';
             trigger.appendChild(emojiActual); trigger.appendChild(countActual); 
             
-            // EVENTO PRINCIPAL: Al dar clic en el botón, se abre el menú de emojis
             trigger.addEventListener('click', function (e) { 
                 e.stopPropagation(); 
-                // Si el dropdown ya está abierto, lo cerramos. Si no, cerramos los demás y lo abrimos.
                 var estaAbierto = dropdown.classList.contains('show');
                 document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) { el.classList.remove('show'); });
                 if (!estaAbierto) dropdown.classList.add('show');
