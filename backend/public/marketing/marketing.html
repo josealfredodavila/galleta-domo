@@ -45,6 +45,7 @@
 
         .app { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 16px; }
 
+        /* HEADER Y NAV (Mantenidos) */
         .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 100; background: rgba(4, 6, 13, 0.95); }
         @supports (backdrop-filter: blur(1px)) { .header { background: rgba(4, 6, 13, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); } }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -65,10 +66,21 @@
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.06); }
         .main-nav .nav-link.active { background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.08)); color: var(--gold); border: 1px solid rgba(212, 175, 55, 0.3); }
 
+        /* PESTAÑAS INTERNAS (Crear, Panel de Control, Minar) */
+        .tabs-container { display: flex; justify-content: center; gap: 20px; border-bottom: 1px solid var(--glass-border); margin-bottom: 24px; padding: 0 10px; }
+        .tab-btn { background: transparent; border: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; padding: 10px 5px; cursor: pointer; position: relative; transition: var(--transition); }
+        .tab-btn:hover { color: var(--text-primary); }
+        .tab-btn.active { color: var(--gold); }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -1px; left: 0; width: 100%; height: 3px; background: var(--gold); border-radius: 3px 3px 0 0; }
+
+        /* CONTENIDO DE PESTAÑAS */
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        /* HERO (Solo en panel de control) */
         .marketing-hero { display: flex; justify-content: space-between; align-items: center; padding: 26px 28px; background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.7)); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); margin-bottom: 24px; position: relative; overflow: hidden; flex-wrap: wrap; gap: 16px; }
         .marketing-hero::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); animation: scanLine 4s linear infinite; }
         @keyframes scanLine { 0% { left: -100%; } 100% { left: 100%; } }
-
         .hero-title-wrap { position: relative; z-index: 1; }
         .hero-kicker { font-family: 'Space Mono', monospace; font-size: 0.58rem; color: var(--gold); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 6px; opacity: 0.8; }
         .marketing-hero h1 { font-family: 'Orbitron', monospace; font-size: 1.5rem; font-weight: 800; background: linear-gradient(135deg, #fff 30%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: 1px; }
@@ -79,6 +91,11 @@
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 35px rgba(212, 175, 55, 0.5); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
+        /* BOTÓN FLOTANTE (FAB) */
+        .fab-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 2rem; border: none; box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 999; transition: var(--transition); }
+        .fab-btn:hover { transform: scale(1.1) rotate(90deg); box-shadow: 0 12px 40px rgba(212, 175, 55, 0.7); }
+
+        /* TARJETAS DE RESUMEN */
         .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 28px; }
         .card { background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.6)); padding: 20px 22px; border-radius: var(--radius); border: 1px solid var(--glass-border); position: relative; overflow: hidden; transition: var(--transition); }
         .card:hover { transform: translateY(-4px); border-color: var(--glass-border-strong); }
@@ -86,6 +103,7 @@
         .card h3 { margin: 0 0 8px 0; font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
         .card p { margin: 0; font-size: 1.7rem; font-weight: 800; color: var(--gold); font-family: 'Orbitron', monospace; letter-spacing: 1px; }
 
+        /* FILTROS Y CAMPAÑAS */
         .filters { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 8px; scrollbar-width: none; }
         .filters::-webkit-scrollbar { display: none; }
         .filter-btn { background: var(--glass-bg-2); color: var(--text-muted); border: 1px solid var(--glass-border); padding: 9px 18px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.68rem; font-weight: 600; transition: var(--transition); font-family: 'Inter', sans-serif; }
@@ -101,22 +119,19 @@
         .campaign-card .info-row .label { color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.6rem; }
         .campaign-card .info-row .value { color: var(--text-primary); font-weight: 600; font-family: 'Space Mono', monospace; }
 
+        /* MODALES Y BOTONES DE ACCIÓN */
         .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-family: 'Space Mono', monospace; }
         .badge.borrador { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; border: 1px solid rgba(138, 168, 184, 0.3); }
         .badge.pendiente_pago { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.35); }
         .badge.pagada { background: rgba(0, 214, 143, 0.15); color: var(--success); border: 1px solid rgba(0, 214, 143, 0.35); }
-        .badge.pendiente_revision { background: rgba(168, 85, 247, 0.15); color: var(--purple); border: 1px solid rgba(168, 85, 247, 0.35); }
         .badge.activa { background: rgba(0, 214, 143, 0.18); color: var(--success); border: 1px solid rgba(0, 214, 143, 0.4); }
         .badge.pausada { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.35); }
         .badge.finalizada { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; border: 1px solid rgba(138, 168, 184, 0.3); }
-        .badge.rechazada { background: rgba(255, 51, 102, 0.15); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.35); }
         .badge.cancelada { background: rgba(255, 51, 102, 0.15); color: var(--danger); border: 1px solid rgba(255, 51, 102, 0.3); }
 
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); grid-column: 1 / -1; }
         .empty-state .icon { font-family: 'Orbitron', monospace; font-size: 3rem; display: block; margin-bottom: 16px; color: var(--gold); opacity: 0.4; }
         .empty-state p { font-size: 0.8rem; letter-spacing: 0.5px; }
-        .empty-state small { display: block; margin-top: 10px; font-size: 0.65rem; color: var(--text-muted); opacity: 0.7; }
-        .empty-state.error-state .icon { color: var(--danger); }
 
         .modal { position: fixed; inset: 0; background: rgba(2, 4, 10, 0.9); display: flex; justify-content: center; align-items: center; z-index: 1000; padding: 16px; }
         .modal.hidden { display: none; }
@@ -124,6 +139,9 @@
         .close-modal { position: absolute; top: 16px; right: 20px; font-size: 1.8rem; cursor: pointer; color: var(--text-muted); background: none; border: none; line-height: 1; }
         .close-modal:hover { color: var(--gold); }
         .modal-content h2 { color: var(--gold); font-family: 'Orbitron', monospace; font-size: 1.05rem; margin-bottom: 22px; letter-spacing: 1px; }
+
+        .detail-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; flex-wrap: wrap; }
+        .detail-actions .btn { padding: 8px 16px; font-size: 0.65rem; }
 
         .wizard-step { display: flex; flex-direction: column; gap: 14px; }
         .wizard-step.hidden { display: none; }
@@ -158,9 +176,25 @@
         .red-info strong { color: var(--gold); }
         .red-info .warn { color: var(--warning); }
 
-        .btn-retry { margin-top: 12px; background: transparent; border: 1px solid var(--gold); color: var(--gold); padding: 10px 18px; border-radius: 30px; cursor: pointer; font-size: 0.7rem; font-family: 'Inter', sans-serif; }
+        /* CHATBOT "PROMI" */
+        .promi-btn { position: fixed; bottom: 100px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background: #ff0050; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 999; box-shadow: 0 4px 20px rgba(255,0,80,0.4); transition: var(--transition); }
+        .promi-btn:hover { transform: scale(1.1); }
+        .promi-btn img { width: 30px; height: 30px; }
+        .promi-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 400px; height: 100vh; background: #fff; color: #000; z-index: 10000; transition: right 0.3s ease; display: flex; flex-direction: column; box-shadow: -5px 0 30px rgba(0,0,0,0.5); }
+        .promi-panel.active { right: 0; }
+        .promi-header { padding: 16px; display: flex; align-items: center; border-bottom: 1px solid #eee; gap: 12px; }
+        .promi-header h2 { font-size: 1.1rem; font-weight: 700; margin: 0; }
+        .promi-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
+        .promi-body { flex: 1; overflow-y: auto; padding: 20px; }
+        .promi-avatar { width: 80px; height: 80px; margin-bottom: 16px; }
+        .promi-welcome h1 { font-size: 1.6rem; margin-bottom: 8px; font-weight: 800; }
+        .promi-welcome p { font-size: 0.95rem; color: #666; margin-bottom: 24px; line-height: 1.4; }
+        .promi-option { display: flex; justify-content: space-between; align-items: center; background: #f5f5f5; padding: 16px; border-radius: 12px; margin-bottom: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+        .promi-footer { padding: 16px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 10px; background: #fafafa; }
+        .promi-input { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
+        .promi-new-chat { background: #ff0050; color: #fff; border: none; padding: 16px; border-radius: 30px; font-weight: 700; width: calc(100% - 32px); margin: 16px; cursor: pointer; }
 
-        @media (max-width: 640px) { .marketing-hero { flex-direction: column; text-align: center; padding: 22px; } .marketing-hero h1 { font-size: 1.15rem; } .summary-cards { grid-template-columns: 1fr 1fr; gap: 10px; } .card { padding: 16px; } .card p { font-size: 1.3rem; } .modal-content { padding: 24px 20px; } .toast { right: 16px; left: 16px; bottom: 20px; max-width: none; } }
+        @media (max-width: 640px) { .marketing-hero { flex-direction: column; text-align: center; padding: 22px; } .marketing-hero h1 { font-size: 1.15rem; } .summary-cards { grid-template-columns: 1fr 1fr; gap: 10px; } .card { padding: 16px; } .card p { font-size: 1.3rem; } .modal-content { padding: 24px 20px; } .toast { right: 16px; left: 16px; bottom: 20px; max-width: none; } .promi-panel { max-width: 100%; } }
         @media (max-width: 400px) { .summary-cards { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -191,35 +225,92 @@
             <a href="/marketing/marketing.html" class="nav-link active">◈ Marketing</a>
         </nav>
 
-        <div class="marketing-hero">
-            <div class="hero-title-wrap">
-                <div class="hero-kicker">// Sariel's Ecosystem · Ads Network</div>
-                <h1>◈ Panel de Marketing</h1>
-                <div class="hero-sub">Gestiona tus campañas publicitarias en LIVE, GRUPOS y VIDEOS</div>
-            </div>
-            <button id="btn-create-campaign" class="btn btn-primary">+ Crear Campaña</button>
+        <!-- ✅ NUEVAS PESTAÑAS INTERNAS -->
+        <div class="tabs-container">
+            <button class="tab-btn" data-tab="crear" onclick="cambiarTab('crear')">Crear</button>
+            <button class="tab-btn active" data-tab="panel" onclick="cambiarTab('panel')">Panel de control</button>
+            <button class="tab-btn" data-tab="minar" onclick="cambiarTab('minar')">Minar</button>
         </div>
 
-        <section id="dashboard-summary" class="summary-cards">
-            <div class="card"><div class="card-icon">◈</div><h3>Presupuesto Total</h3><p id="total-budget">$0.00</p></div>
-            <div class="card"><div class="card-icon">▲</div><h3>Campañas Activas</h3><p id="active-campaigns">0</p></div>
-            <div class="card"><div class="card-icon">▼</div><h3>Gasto Total</h3><p id="total-spent">$0.00</p></div>
-            <div class="card"><div class="card-icon">◉</div><h3>Alcance Total</h3><p id="total-reach">0</p></div>
-        </section>
-
-        <section id="campaigns-section">
-            <div class="filters">
-                <button class="filter-btn active" data-filter="all">Todas</button>
-                <button class="filter-btn" data-filter="activa">Activas</button>
-                <button class="filter-btn" data-filter="pendiente_pago">Pendientes</button>
-                <button class="filter-btn" data-filter="finalizada">Finalizadas</button>
-                <button class="filter-btn" data-filter="pausada">Pausadas</button>
-                <button class="filter-btn" data-filter="cancelada">Canceladas</button>
+        <!-- ================= PESTAÑA: PANEL DE CONTROL ================= -->
+        <div id="tab-panel" class="tab-content active">
+            <div class="marketing-hero">
+                <div class="hero-title-wrap">
+                    <div class="hero-kicker">// Sariel's Ecosystem · Ads Network</div>
+                    <h1>◈ Panel de Marketing</h1>
+                    <div class="hero-sub">Gestiona tus campañas publicitarias en LIVE, GRUPOS y VIDEOS</div>
+                </div>
+                <button id="btn-create-campaign-top" class="btn btn-primary">+ Crear Campaña</button>
             </div>
-            <div id="campaigns-list" class="campaigns-grid"><div class="empty-state"><span class="icon">◈</span><p>Inicializando...</p></div></div>
-        </section>
+
+            <section id="dashboard-summary" class="summary-cards">
+                <div class="card"><div class="card-icon">◈</div><h3>Presupuesto Total</h3><p id="total-budget">$0.00</p></div>
+                <div class="card"><div class="card-icon">▲</div><h3>Campañas Activas</h3><p id="active-campaigns">0</p></div>
+                <div class="card"><div class="card-icon">▼</div><h3>Gasto Total</h3><p id="total-spent">$0.00</p></div>
+                <div class="card"><div class="card-icon">◉</div><h3>Alcance Total</h3><p id="total-reach">0</p></div>
+            </section>
+
+            <section id="campaigns-section">
+                <div class="filters">
+                    <button class="filter-btn active" data-filter="all">Todas</button>
+                    <button class="filter-btn" data-filter="activa">Activas</button>
+                    <button class="filter-btn" data-filter="pendiente_pago">Pendientes</button>
+                    <button class="filter-btn" data-filter="finalizada">Finalizadas</button>
+                    <button class="filter-btn" data-filter="pausada">Pausadas</button>
+                    <button class="filter-btn" data-filter="cancelada">Canceladas</button>
+                </div>
+                <div id="campaigns-list" class="campaigns-grid"><div class="empty-state"><span class="icon">◈</span><p>Inicializando...</p></div></div>
+            </section>
+        </div>
+
+        <!-- ================= PESTAÑA: CREAR ================= -->
+        <div id="tab-crear" class="tab-content">
+            <div class="empty-state">
+                <span class="icon">✦</span>
+                <p>Haz clic en el botón dorado "+" de abajo a la derecha para crear una campaña.</p>
+            </div>
+        </div>
+
+        <!-- ================= PESTAÑA: MINAR ================= -->
+        <div id="tab-minar" class="tab-content">
+            <div class="empty-state">
+                <span class="icon">⛏️</span>
+                <p>Módulo de minería de tokens en construcción.</p>
+            </div>
+        </div>
     </div>
 
+    <!-- BOTÓN FLOTANTE -->
+    <button class="fab-btn" onclick="abrirModalCrear()">+</button>
+
+    <!-- CHATBOT "PROMI" -->
+    <button class="promi-btn" onclick="togglePromi()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+    </button>
+    <div class="promi-panel" id="promiPanel">
+        <div class="promi-header">
+            <button class="promi-close" onclick="togglePromi()">✕</button>
+            <h2>Promi</h2>
+        </div>
+        <div class="promi-body">
+            <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Promi Avatar" class="promi-avatar">
+            <div class="promi-welcome">
+                <h1>Hola, soy tu agente de ventas de Promoción</h1>
+                <p>Pregúntame lo que sea sobre Promoción de Sariel's: configuración de planes, problemas con revisiones, cupones o rendimiento. También puedo recomendarte un paquete según tu objetivo.</p>
+            </div>
+            <div class="promi-option">¿Qué objetivo publicitario debo elegir? <span>→</span></div>
+            <div class="promi-option">¿Cómo crear un plan de Promoción? <span>→</span></div>
+            <div class="promi-option">¿Cómo puedo consultar mi gasto? <span>→</span></div>
+            <div class="promi-option">¿Cómo puedo aumentar mi presupuesto? <span>→</span></div>
+        </div>
+        <div class="promi-footer">
+            <input type="text" class="promi-input" placeholder="Pregúntame lo que quieras">
+        </div>
+        <button class="promi-new-chat">📝 Nuevo chat</button>
+    </div>
+
+
+    <!-- MODAL DETALLE -->
     <div id="modal-detail" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" data-close="modal-detail" aria-label="Cerrar">&times;</button>
@@ -231,9 +322,13 @@
                 <div class="chart-box"><h4>◉ Impresiones por día</h4><canvas id="chart-impressions"></canvas></div>
                 <div class="chart-box"><h4>▼ Gasto por día</h4><canvas id="chart-spent"></canvas></div>
             </div>
+            <div class="detail-actions" id="detail-actions">
+                <!-- Aquí se inyectan dinámicamente los botones de Pausar/Cancelar -->
+            </div>
         </div>
     </div>
 
+    <!-- MODAL CREAR -->
     <div id="modal-create" class="modal hidden">
         <div class="modal-content">
             <button class="close-modal" data-close="modal-create" aria-label="Cerrar">&times;</button>
@@ -294,20 +389,16 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v4
-       - Integración con anuncios del carrusel (pago)
-       - Detecta ?anuncio_pendiente=ID y cobra directamente
+       MARKETING · Sariel's — v5
+       Integración con TikTok UI (Promi, FAB, Tabs, Pausar/Cancelar)
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
     const DEBUG = false;
-
     const MXN_A_USD_APROX = 0.055;
     const MAX_POLL_INTENTOS = 80;
     const INTERVALO_POLL_MS = 15000;
-
-    // ✅ COBRO DE ANUNCIOS DEL CARRUSEL
-    const PRECIO_ANUNCIO_MXN = 60; // Precio fijo para anuncios
+    const PRECIO_ANUNCIO_MXN = 60;
     const DURACION_ANUNCIO_DIAS = 7;
 
     const REDES_PAGO = [
@@ -315,11 +406,8 @@
         { value: 'usdtbsc',   moneda: 'USDT', red: 'BSC',      min: 1,  label: 'USDT · BSC (BEP20)' },
         { value: 'usdtmatic', moneda: 'USDT', red: 'Polygon',  min: 1,  label: 'USDT · Polygon' },
         { value: 'usdtsol',   moneda: 'USDT', red: 'Solana',   min: 1,  label: 'USDT · Solana' },
-        { value: 'usdcsol',   moneda: 'USDC', red: 'Solana',   min: 1,  label: 'USDC · Solana' },
         { value: 'usdcmatic', moneda: 'USDC', red: 'Polygon',  min: 1,  label: 'USDC · Polygon' },
-        { value: 'usdcbsc',   moneda: 'USDC', red: 'BSC',      min: 1,  label: 'USDC · BSC (BEP20)' },
-        { value: 'usdterc20', moneda: 'USDT', red: 'Ethereum', min: 20, label: 'USDT · Ethereum (ERC20) ⚠ gas alto' },
-        { value: 'usdc',      moneda: 'USDC', red: 'Ethereum', min: 20, label: 'USDC · Ethereum (ERC20) ⚠ gas alto' }
+        { value: 'usdterc20', moneda: 'USDT', red: 'Ethereum', min: 20, label: 'USDT · Ethereum (ERC20)' }
     ];
 
     const ESTADOS_VALIDOS = ['borrador', 'pendiente_pago', 'pagada', 'pendiente_revision', 'activa', 'pausada', 'finalizada', 'rechazada', 'cancelada'];
@@ -336,22 +424,12 @@
     let wizard = {};
     let campañaCreada = null;
     let pollTimer = null;
-
-    // ✅ Estado para anuncio pendiente
     let anuncioPendienteId = null;
-    let anuncioPendienteData = null;
 
     function log(...a) { if (DEBUG) console.log('◈', ...a); }
     function logError(...a) { console.error('✕', ...a); }
-
-    function escapeHTML(t) {
-        if (t === null || t === undefined) return '';
-        return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-    }
-    function isValidHttpUrl(s) {
-        if (!s || typeof s !== 'string') return false;
-        try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; }
-    }
+    function escapeHTML(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
+    function isValidHttpUrl(s) { try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; } }
     function normalizeEstado(e) { return ESTADOS_VALIDOS.includes(e) ? e : 'borrador'; }
     function formatFecha(f) { if (!f) return '—'; try { return new Date(f).toLocaleDateString('es-MX'); } catch { return '—'; } }
 
@@ -362,6 +440,19 @@
         toastTimeout = setTimeout(() => t.classList.remove('show'), duration || 3500);
     }
 
+    // PESTAÑAS
+    function cambiarTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        document.getElementById(`tab-${tab}`).classList.add('active');
+    }
+
+    // PROMI CHATBOT
+    function togglePromi() {
+        document.getElementById('promiPanel').classList.toggle('active');
+    }
+
     function renderParticles() {
         if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
         const c = document.getElementById('particles'); if (!c) return;
@@ -370,7 +461,6 @@
             p.style.left = Math.random() * 100 + '%';
             p.style.animationDuration = (8 + Math.random() * 12) + 's';
             p.style.animationDelay = (Math.random() * 10) + 's';
-            p.style.opacity = 0.2 + Math.random() * 0.4;
             const s = 1 + Math.random() * 2; p.style.width = s + 'px'; p.style.height = s + 'px';
             c.appendChild(p);
         }
@@ -434,13 +524,14 @@
         }
     }
 
-    // ------------------------------------------------------------
-    // INICIO
-    // ------------------------------------------------------------
     async function init() {
         renderParticles();
         setupWizard();
         setupFilters();
+
+        // Botón FAB
+        document.querySelector('.fab-btn').addEventListener('click', () => abrirModalCrear());
+        document.getElementById('btn-create-campaign-top').addEventListener('click', () => abrirModalCrear());
 
         if (!window.supabase || !window.supabase.createClient) { showBootError('El SDK de Supabase no cargó. Revisa tu conexión.'); return; }
 
@@ -457,65 +548,12 @@
         currentUser = user;
         try { await loadCampaigns(); } catch (err) { logError('Campañas:', err); showCampaignsError(err.message); }
 
-        // ✅ DETECTAR SI VIENE UN ANUNCIO PENDIENTE DE PAGO
         const urlParams = new URLSearchParams(window.location.search);
         const pendienteId = urlParams.get('anuncio_pendiente');
 
         if (pendienteId) {
             anuncioPendienteId = pendienteId;
             await cargarAnuncioPendiente(pendienteId);
-        }
-    }
-
-    // ✅ FUNCIÓN PARA CARGAR EL ANUNCIO PENDIENTE
-    async function cargarAnuncioPendiente(id) {
-        try {
-            const { data, error } = await supabaseClient
-                .from('anuncios')
-                .select('id, titulo, texto, media_url')
-                .eq('id', id)
-                .eq('usuario_id', currentUser.id)
-                .eq('estado_moderacion', 'pendiente_pago')
-                .maybeSingle();
-
-            if (error || !data) {
-                showToast('No se encontró el anuncio pendiente.', 'error');
-                return;
-            }
-
-            anuncioPendienteData = data;
-
-            // Abrir el wizard directo en el paso 5 (pago)
-            document.getElementById('modal-create').classList.remove('hidden');
-            resetWizard();
-
-            // Rellenar datos del anuncio
-            wizard = {
-                nombre: data.titulo,
-                objetivo: 'alcance',
-                presupuesto: PRECIO_ANUNCIO_MXN,
-                pay_currency: 'usdttrc20', // Moneda por defecto
-                ad: {
-                    titulo: data.titulo,
-                    descripcion: data.texto || null,
-                    imagen_url: data.media_url || null,
-                    video_url: null,
-                    cta_texto: 'Ver más'
-                },
-                target_tipo: 'carrusel',
-                target_id: data.id,
-                anuncio_id: data.id
-            };
-
-            // Saltar directo al paso de pago
-            document.getElementById('campaign-budget').value = PRECIO_ANUNCIO_MXN;
-            poblarRedesDePago(PRECIO_ANUNCIO_MXN);
-            mostrarResumen();
-            showWizardStep('7');
-
-        } catch (err) {
-            logError('Error cargando anuncio pendiente:', err);
-            showToast('Error al cargar el anuncio pendiente.', 'error');
         }
     }
 
@@ -569,6 +607,27 @@
         const restante = parseFloat(campaign.presupuesto || 0) - parseFloat(campaign.gastado || 0);
         document.getElementById('detail-title').textContent = '◈ ' + (campaign.nombre || 'Sin nombre');
         document.getElementById('detail-info').innerHTML = `<div class="detail-row"><span>Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div><div class="detail-row"><span>Presupuesto</span><span>$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${escapeHTML(campaign.moneda || 'MXN')}</span></div><div class="detail-row"><span>Gastado</span><span>$${parseFloat(campaign.gastado || 0).toFixed(2)}</span></div><div class="detail-row"><span>Restante</span><span>$${restante.toFixed(2)}</span></div><div class="detail-row"><span>Objetivo</span><span>${escapeHTML(campaign.objetivo || '—')}</span></div><div class="detail-row"><span>Inicio</span><span>${formatFecha(campaign.fecha_inicio)}</span></div><div class="detail-row"><span>Fin</span><span>${formatFecha(campaign.fecha_fin)}</span></div>`;
+        
+        // ✅ INYECTAR BOTONES DE ACCIÓN
+        const actionsEl = document.getElementById('detail-actions');
+        actionsEl.innerHTML = '';
+        if (estado === 'activa') {
+            actionsEl.innerHTML = `
+                <button class="btn btn-outline" onclick="cambiarEstadoCampana('${campaign.id}', 'pausada')">Pausar</button>
+                <button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger);" onclick="cambiarEstadoCampana('${campaign.id}', 'cancelada')">Cancelar</button>
+            `;
+        } else if (estado === 'pausada') {
+            actionsEl.innerHTML = `
+                <button class="btn btn-outline" style="border-color:var(--success); color:var(--success);" onclick="cambiarEstadoCampana('${campaign.id}', 'activa')">Reanudar</button>
+                <button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger);" onclick="cambiarEstadoCampana('${campaign.id}', 'cancelada')">Cancelar</button>
+            `;
+        } else if (estado === 'pendiente_pago') {
+            actionsEl.innerHTML = `
+                <button class="btn btn-primary" onclick="pagarCampanaPendiente('${campaign.id}')">Pagar Ahora</button>
+                <button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger);" onclick="cambiarEstadoCampana('${campaign.id}', 'cancelada')">Cancelar</button>
+            `;
+        }
+
         document.getElementById('modal-detail').classList.remove('hidden');
 
         const { data: stats, error } = await supabaseClient.from('marketing_daily_stats').select('*').eq('campaign_id', campaignId).order('fecha', { ascending: true });
@@ -578,6 +637,21 @@
 
         document.getElementById('detail-stats').innerHTML = `<div class="stat-item"><div class="label">Alcance</div><div class="value">${t.alcance.toLocaleString()}</div></div><div class="stat-item"><div class="label">Impresiones</div><div class="value">${t.impresiones.toLocaleString()}</div></div><div class="stat-item"><div class="label">Vistas</div><div class="value">${t.vistas.toLocaleString()}</div></div><div class="stat-item"><div class="label">Clics</div><div class="value">${t.clics.toLocaleString()}</div></div><div class="stat-item"><div class="label">Interacciones</div><div class="value">${t.interacciones.toLocaleString()}</div></div><div class="stat-item"><div class="label">Reproducciones</div><div class="value">${t.reproducciones.toLocaleString()}</div></div><div class="stat-item"><div class="label">Conversiones</div><div class="value">${t.conversiones.toLocaleString()}</div></div>`;
         try { await loadChartJs(); renderCharts(stats); } catch (err) { logError('Chart.js:', err); }
+    }
+
+    // Función para cambiar el estado de la campaña
+    async function cambiarEstadoCampana(id, nuevoEstado) {
+        if (!confirm(`¿Estás seguro de cambiar el estado a "${nuevoEstado}"?`)) return;
+        try {
+            const { error } = await supabaseClient.from('marketing_campaigns').update({ estado: nuevoEstado }).eq('id', id);
+            if (error) throw error;
+            showToast(`Campaña ${nuevoEstado}`, 'success');
+            document.getElementById('modal-detail').classList.add('hidden');
+            await loadCampaigns();
+        } catch (err) {
+            logError(err);
+            showToast('Error al actualizar la campaña', 'error');
+        }
     }
 
     function renderCharts(stats) {
@@ -600,9 +674,6 @@
     }
 
     function setupWizard() {
-        const btnCreate = document.getElementById('btn-create-campaign');
-        if (btnCreate && !btnCreate._bound) { btnCreate._bound = true; btnCreate.addEventListener('click', () => { if (!currentUser) { showToast('Inicia sesión para crear campañas', 'warning'); return; } document.getElementById('modal-create').classList.remove('hidden'); resetWizard(); }); }
-
         document.querySelectorAll('.close-modal').forEach(btn => { if (btn._bound) return; btn._bound = true; btn.addEventListener('click', (e) => { const target = e.currentTarget.dataset.close; document.getElementById(target).classList.add('hidden'); if (target === 'modal-create') detenerPolling(); }); });
 
         document.querySelectorAll('.btn-option').forEach(btn => { if (btn._bound) return; btn._bound = true; btn.addEventListener('click', (e) => cargarDestinos(e.currentTarget.dataset.type)); });
@@ -616,43 +687,32 @@
         if (payBtn && !payBtn._bound) { payBtn._bound = true; payBtn.addEventListener('click', onPagarClick); }
     }
 
+    function abrirModalCrear() {
+        if (!currentUser) { showToast('Inicia sesión para crear campañas', 'warning'); return; }
+        document.getElementById('modal-create').classList.remove('hidden');
+        resetWizard();
+    }
+
     async function cargarDestinos(tipo) {
         wizard = { target_tipo: tipo };
         const select = document.getElementById('select-target'); select.innerHTML = '<option value="">Cargando...</option>';
         try {
             let query;
             if (tipo === 'live') {
-                query = supabaseClient.from('transmisiones')
-                    .select('id, titulo')
-                    .eq('estado', 'en_vivo')
-                    .eq('is_live', true)
-                    .is('grupo_id', null)
-                    .order('fecha_inicio', { ascending: false })
-                    .limit(50);
+                query = supabaseClient.from('transmisiones').select('id, titulo').eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).order('fecha_inicio', { ascending: false }).limit(50);
             } else if (tipo === 'video') {
-                query = supabaseClient.from('videos')
-                    .select('id, titulo')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
+                query = supabaseClient.from('videos').select('id, titulo').order('created_at', { ascending: false }).limit(50);
             } else {
-                query = supabaseClient.from('grupos_video')
-                    .select('id, nombre')
-                    .order('created_at', { ascending: false })
-                    .limit(50);
+                query = supabaseClient.from('grupos_video').select('id, nombre').order('created_at', { ascending: false }).limit(50);
             }
             const { data, error } = await query; if (error) throw error;
 
             if (tipo === 'video') {
-                // ✅ Opción especial: patrocinar todo el feed viral
                 const opciones = ['<option value="__feed__">◈ Feed viral completo (todos los videos)</option>'];
-                if (data && data.length > 0) {
-                    opciones.push(...data.map(t => `<option value="${escapeHTML(t.id)}">▶ ${escapeHTML(t.titulo || 'Sin título')}</option>`));
-                }
+                if (data && data.length > 0) opciones.push(...data.map(t => `<option value="${escapeHTML(t.id)}">▶ ${escapeHTML(t.titulo || 'Sin título')}</option>`));
                 select.innerHTML = opciones.join('');
             } else if (!data || data.length === 0) {
-                select.innerHTML = tipo === 'live'
-                    ? '<option value="">No hay transmisiones en vivo ahora</option>'
-                    : '<option value="">No hay grupos disponibles</option>';
+                select.innerHTML = tipo === 'live' ? '<option value="">No hay transmisiones en vivo ahora</option>' : '<option value="">No hay grupos disponibles</option>';
             } else {
                 select.innerHTML = data.map(t => {
                     const label = tipo === 'live' ? t.titulo : t.nombre;
@@ -681,9 +741,8 @@
         if (n === '2') {
             const id = document.getElementById('select-target').value;
             if (!id) { showToast('Selecciona un destino', 'warning'); return; }
-            // ✅ '__feed__' se guarda como string; los IDs de video también como string (UUIDs)
             if (wizard.target_tipo === 'live') wizard.target_id = Number(id);
-            else wizard.target_id = id; // grupo, video, o '__feed__'
+            else wizard.target_id = id;
             showWizardStep('3');
         }
         else if (n === '3') { const nombre = document.getElementById('campaign-name').value.trim(); if (!nombre) { showToast('Escribe un nombre', 'warning'); return; } if (nombre.length > 120) { showToast('Máximo 120 caracteres', 'warning'); return; } wizard.nombre = nombre; showWizardStep('4'); }
@@ -706,35 +765,21 @@
             const token = await obtenerToken();
             const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
 
-            // 1. Crear la campaña solo si aún no existe
             if (!campañaCreada) {
                 btn.textContent = '◈ Creando campaña...';
                 const r1 = await fetch(`${BACKEND_URL}/api/campanas/crear`, {
                     method: 'POST', headers,
-                    body: JSON.stringify({
-                        nombre: wizard.nombre,
-                        objetivo: wizard.objetivo,
-                        presupuesto: wizard.presupuesto,
-                        destino_tipo: wizard.target_tipo,
-                        destino_id: wizard.target_id,
-                        pay_currency: wizard.pay_currency,
-                        ad: wizard.ad
-                    })
+                    body: JSON.stringify({ nombre: wizard.nombre, objetivo: wizard.objetivo, presupuesto: wizard.presupuesto, destino_tipo: wizard.target_tipo, destino_id: wizard.target_id, pay_currency: wizard.pay_currency, ad: wizard.ad })
                 });
                 const j1 = await r1.json().catch(() => ({}));
                 if (!r1.ok || !j1.success || !j1.data?.campaign_id) throw new Error(j1.error || 'No se pudo crear la campaña');
                 campañaCreada = { campaign_id: j1.data.campaign_id };
             }
 
-            // 2. Generar el pago
             btn.textContent = '◈ Generando pago...';
             const r2 = await fetch(`${BACKEND_URL}/api/payments/marketing/create`, {
                 method: 'POST', headers,
-                body: JSON.stringify({
-                    campaignId: campañaCreada.campaign_id,
-                    payCurrency: wizard.pay_currency,
-                    anuncioId: wizard.anuncio_id || null // ✅ Pasamos el ID del anuncio si existe
-                })
+                body: JSON.stringify({ campaignId: campañaCreada.campaign_id, payCurrency: wizard.pay_currency, anuncioId: wizard.anuncio_id || null })
             });
             const j2 = await r2.json().catch(() => ({}));
             if (!r2.ok || !j2.success || !j2.data?.payment_url) throw new Error(j2.error || 'No se pudo generar el pago. Intenta de nuevo.');
@@ -775,9 +820,30 @@
         }, INTERVALO_POLL_MS);
     }
 
-    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+    // Función para cargar el anuncio pendiente
+    async function cargarAnuncioPendiente(id) {
+        try {
+            const { data, error } = await supabaseClient.from('anuncios').select('id, titulo, texto, media_url').eq('id', id).eq('usuario_id', currentUser.id).eq('estado_moderacion', 'pendiente_pago').maybeSingle();
+            if (error || !data) { showToast('No se encontró el anuncio pendiente.', 'error'); return; }
+            document.getElementById('modal-create').classList.remove('hidden');
+            resetWizard();
+            wizard = { nombre: data.titulo, objetivo: 'alcance', presupuesto: PRECIO_ANUNCIO_MXN, pay_currency: 'usdttrc20', ad: { titulo: data.titulo, descripcion: data.texto || null, imagen_url: data.media_url || null, video_url: null, cta_texto: 'Ver más' }, target_tipo: 'carrusel', target_id: data.id, anuncio_id: data.id };
+            document.getElementById('campaign-budget').value = PRECIO_ANUNCIO_MXN;
+            poblarRedesDePago(PRECIO_ANUNCIO_MXN);
+            mostrarResumen();
+            showWizardStep('7');
+        } catch (err) {
+            logError('Error cargando anuncio pendiente:', err);
+            showToast('Error al cargar el anuncio pendiente.', 'error');
+        }
+    }
 
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
     window.openDetail = openDetail;
+    window.cambiarEstadoCampana = cambiarEstadoCampana;
+    window.abrirModalCrear = abrirModalCrear;
+    window.cambiarTab = cambiarTab;
+    window.togglePromi = togglePromi;
     </script>
 </body>
 </html>
