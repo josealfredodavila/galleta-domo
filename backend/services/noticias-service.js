@@ -167,11 +167,6 @@
             </div>`;
     }
 
-    /*
-     * Portada: foto del artículo si existe; si no, color por categoría
-     * con la inicial de la fuente. Si la foto falla, se reemplaza por la
-     * portada de respaldo (ver enlazarFotos).
-     */
     function coverHtml(item, cat) {
         const imagen = urlSegura(item.imagen);
         const fuente = item.fuentes?.[0]?.titulo || hostOf(item.fuentes?.[0]?.url || '');
@@ -409,7 +404,6 @@
             return;
         }
 
-        // Saludos y preguntas muy cortas: respuesta local, sin consultar al servidor
         if (SALUDOS.test(pregunta) || pregunta.length < 6) {
             mostrarRespuesta(RESPUESTA_SALUDO, false);
             el.answerSrc.innerHTML = '';
