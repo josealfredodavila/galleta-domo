@@ -23,6 +23,7 @@
         BLOQUEOS_TABLE: 'bloqueos',
         PERFILES_RPC: 'perfiles_por_ids',
         RPC_BUSCAR_USUARIOS: 'buscar_usuarios',
+        RPC_SUGERENCIAS: 'sugerencias_usuarios',
         RPC_BLOQUEAR: 'bloquear_contacto',
         RPC_INVITACION: 'obtener_o_crear_invitacion',
         RPC_RESPONDER_SOLICITUD: 'responder_solicitud_amistad',
@@ -700,7 +701,9 @@
             state.pendientesRecibidas.forEach(function (s) { excluir.add(s.usuario_id); });
             state.bloqueados.forEach(function (b) { excluir.add(b.bloqueado_id); });
 
-            var r = await client.rpc(CONFIG.RPC_BUSCAR_USUARIOS, { p_query: '' });
+            var r = await withRetry(function () {
+                return client.rpc(CONFIG.RPC_SUGERENCIAS, { p_limit: CONFIG.MAX_SUGERENCIAS });
+            }, 'sugerencias');
             if (r.error) throw r.error;
             var crudo = Array.isArray(r.data) ? r.data : [];
             var sugeridos = crudo.filter(function (u) { return u && u.id && !excluir.has(u.id); }).slice(0, CONFIG.MAX_SUGERENCIAS);
