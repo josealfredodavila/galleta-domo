@@ -1,0 +1,191 @@
+/* ================================================================
+   VIDEOS · COMPOSER PRO
+   Mismo lenguaje visual que el compositor del perfil (pf-composer).
+   Solo estilos: no cambia IDs, clases de JS ni comportamiento.
+   Para revertir: quitar el <link> de videos.html.
+   ================================================================ */
+
+/* ---------- Tarjeta contenedora ---------- */
+#uploadSection {
+    position: relative;
+    margin: 12px 0 20px;
+    padding: 18px 16px 16px;
+    border: 1px solid rgba(0, 229, 255, .16);
+    border-radius: 24px;
+    background:
+        radial-gradient(120% 90% at 0% 0%, rgba(0, 229, 255, .10), transparent 55%),
+        radial-gradient(120% 90% at 100% 100%, rgba(139, 92, 246, .12), transparent 55%),
+        linear-gradient(170deg, rgba(10, 18, 30, .96), rgba(4, 7, 13, .98));
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 0 40px rgba(0, 229, 255, .06);
+    overflow: hidden;
+}
+#uploadSection::after {
+    content: '';
+    position: absolute;
+    left: 18px; right: 18px; top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 229, 255, .8), rgba(139, 92, 246, .8), transparent);
+    opacity: .6;
+    pointer-events: none;
+}
+
+/* ---------- Título ---------- */
+#uploadSection h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: .72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #bfefff;
+    text-shadow: 0 0 12px rgba(0, 229, 255, .35);
+    margin-bottom: 14px;
+}
+
+/* ---------- Campos ---------- */
+#uploadSection .form-group { margin-bottom: 12px; }
+#uploadSection .form-group label {
+    font-size: .66rem;
+    letter-spacing: .3px;
+    color: #6f8ba0;
+    margin-bottom: 6px;
+}
+#uploadSection .form-group input,
+#uploadSection .form-group textarea {
+    background: rgba(0, 0, 0, .28);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 18px;
+    padding: 12px 14px;
+    color: #eef6ff;
+    font-size: .92rem;
+    line-height: 1.5;
+    transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
+}
+#uploadSection .form-group input::placeholder,
+#uploadSection .form-group textarea::placeholder { color: #4f6577; }
+#uploadSection .form-group input:focus,
+#uploadSection .form-group textarea:focus {
+    outline: none;
+    background: rgba(0, 0, 0, .42);
+    border-color: rgba(0, 229, 255, .55);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, .10), 0 0 26px rgba(0, 229, 255, .14);
+}
+#uploadSection .form-group textarea { min-height: 96px; }
+
+/* ---------- Botón grabar con cámara ---------- */
+#uploadSection .btn-camara {
+    background: transparent;
+    color: #7fdcff;
+    border: 1px solid rgba(0, 229, 255, .28);
+    border-radius: 14px;
+    font-family: 'Orbitron', monospace;
+    font-size: .66rem;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 11px 14px;
+    margin-bottom: 10px;
+    transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+}
+#uploadSection .btn-camara:hover {
+    background: rgba(0, 229, 255, .10);
+    border-color: rgba(0, 229, 255, .45);
+    box-shadow: 0 0 14px rgba(0, 229, 255, .22);
+}
+#uploadSection .btn-camara:active { transform: scale(.97); }
+
+/* ---------- Selector de archivo (lo inyecta videos-publicar.js) ---------- */
+#uploadSection .cs-file-btn-wrap { margin: 4px 0 10px; }
+#uploadSection #csFileBtnVideo {
+    border: 1px solid rgba(255, 255, 255, .07) !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, .03) !important;
+    color: #7fdcff !important;
+    padding: 18px 14px !important;
+    transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+#uploadSection #csFileBtnVideo:hover {
+    background: rgba(0, 229, 255, .08) !important;
+    border-color: rgba(0, 229, 255, .35) !important;
+    box-shadow: 0 0 14px rgba(0, 229, 255, .18);
+}
+#uploadSection .cs-file-btn-wrap.cs-file-con-archivo #csFileBtnTxt { color: #5ef0a8 !important; }
+
+/* ---------- Fila de subida y botón principal ---------- */
+#uploadSection .file-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+#uploadSection .btn-subir-video {
+    margin-left: auto;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border: 0;
+    border-radius: 14px;
+    background: linear-gradient(120deg, #00e5ff 0%, #3b82f6 55%, #8b5cf6 100%);
+    background-size: 200% 100%;
+    color: #04070d;
+    font-family: 'Orbitron', monospace;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
+    transition: background-position .6s ease, transform .15s ease, box-shadow .25s ease, opacity .2s ease;
+}
+#uploadSection .btn-subir-video:hover {
+    background-position: 100% 0;
+    box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4);
+}
+#uploadSection .btn-subir-video:active { transform: scale(.96); }
+#uploadSection .btn-subir-video:disabled { opacity: .5; box-shadow: none; cursor: not-allowed; }
+
+/* ---------- Botones de acción de la vista previa ---------- */
+#uploadSection .cs-btn-ghost {
+    border: 1px solid rgba(0, 229, 255, .22);
+    background: rgba(0, 229, 255, .05);
+    color: #7fdcff;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    transition: background .18s ease, border-color .18s ease, transform .14s ease;
+}
+#uploadSection .cs-btn-ghost:hover {
+    background: rgba(0, 229, 255, .14);
+    border-color: rgba(0, 229, 255, .55);
+}
+#uploadSection .cs-btn-ghost:active { transform: scale(.97); }
+#uploadSection .cs-btn-quitar {
+    color: #ff7a9a !important;
+    border-color: rgba(255, 51, 102, .4) !important;
+    background: rgba(255, 51, 102, .05) !important;
+}
+
+/* ---------- Progreso de subida ---------- */
+#uploadSection #progressFill {
+    background: linear-gradient(90deg, #00e5ff, #8b5cf6) !important;
+    box-shadow: 0 0 10px rgba(0, 229, 255, .5);
+}
+#uploadSection #progressText { color: #7fdcff !important; }
+
+/* ---------- Texto de formatos ---------- */
+#uploadSection .form-group > div[data-clave="videos_formatos"] {
+    color: #5f7b93 !important;
+    letter-spacing: .2px;
+}
+
+/* ---------- Movil: botón principal a todo el ancho ---------- */
+@media (max-width: 480px) {
+    #uploadSection .file-input-wrapper { flex-wrap: wrap; }
+    #uploadSection .btn-subir-video { width: 100%; justify-content: center; margin-left: 0; }
+}
+
+/* ---------- Respeto a preferencias de movimiento ---------- */
+@media (prefers-reduced-motion: reduce) {
+    #uploadSection .btn-subir-video,
+    #uploadSection .btn-camara,
+    #uploadSection .cs-btn-ghost { transition: none !important; }
+}
