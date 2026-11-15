@@ -1,16 +1,17 @@
 /* ================================================================
-   routes/ai-media.js · GENERACIÓN DE IMAGEN Y VIDEO (v2.0)
+   routes/ai-media.js · GENERACIÓN DE IMAGEN Y VIDEO (v3.0)
    ================================================================
    Modelos:
+   - Prompt Engineer: Nemotron (nvidia/nemotron-3-nano-omni-30b-a3b-reasoning)
    - Imagen: FLUX 3 Image Klein (black-forest-labs/flux-3-image-klein)
    - Video:  Cosmos3 Nano (nvidia/cosmos3-nano)
 
    Flujo:
    1. El usuario pide una imagen o un video desde Promi.
-   2. El backend genera el archivo y lo guarda en R2 en una ruta PRIVADA.
-   3. La vista previa usa un enlace firmado que caduca en 10 minutos.
-   4. Solo al "Aceptar" el contenido queda como aceptado para campañas.
-   5. No existe ningún endpoint de descarga para el usuario.
+   2. Nemotron mejora el prompt para que sea más detallado.
+   3. Se genera el archivo y se guarda en R2 en una ruta PRIVADA.
+   4. La vista previa usa un enlace firmado que caduca en 10 minutos.
+   5. Solo al "Aceptar" el contenido queda como aceptado para campañas.
 ================================================================ */
 
 'use strict';
@@ -33,16 +34,15 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
 
-// Endpoint para imágenes (FLUX 3 Image Klein)
+// URLs de NVIDIA
+const NVIDIA_NEMOTRON_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const NVIDIA_IMAGE_URL = 'https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux-3-image-klein';
-
-// Endpoint para video (Cosmos3 Nano)
 const NVIDIA_VIDEO_URL = 'https://ai.api.nvidia.com/v1/cosmos/nvidia/cosmos3-nano';
 
 const MEDIA_LIMITE_DIA = Number(process.env.MEDIA_LIMITE_DIA) || 10;
 const PREVIEW_EXPIRA_SEG = 600;           // la vista previa caduca en 10 minutos
 const TIMEOUT_IMAGEN_MS = 120000;         // 2 minutos
-const TIMEOUT_VIDEO_MS = 600000;          // 10 minutos, el video tarda más
+const TIMEOUT_VIDEO_MS = 600000;          // 10 minutos
 const PROMPT_MIN = 3;
 const PROMPT_MAX = 1000;
 
@@ -117,19 +117,54 @@ function validarPrompt(prompt) {
 }
 
 /**
- * Llama al endpoint de NVIDIA para generar una imagen (FLUX 3 Image Klein).
- * Devuelve el JSON de respuesta.
+ * Usa Nemotron para expandir y mejorar el prompt del usuario.
+ * Si falla, devuelve el prompt original para no bloquear la app.
+ */
+async function mejorarPromptConNemotron(promptUsuario, tipo) {
+    if (!NVIDIA_API_KEY) return promptUsuario;
+
+    try {
+        const instruccion = tipo === 'imagen' 
+            ? 'Eres un director de arte experto en publicidad. Expande este prompt en una sola frase altamente descriptiva para una IA generadora de imágenes (menciona iluminación, estilo, colores y detalles). Devuelve SOLO el prompt mejorado, sin introducciones.'
+            : 'Eres un director de cine experto. Expande este prompt en una sola frase descriptiva para una IA generadora de video (menciona movimiento, iluminación, estilo visual y composición). Devuelve SOLO el prompt mejorado, sin introducciones.';
+
+        const respuesta = await axios.post(NVIDIA_NEMOTRON_URL, {
+            model: 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning',
+            messages: [
+                { role: 'system', content: instruccion },
+                { role: 'user', content: promptUsuario }
+            ],
+            max_tokens: 150,
+            temperature: 0.5
+        }, {
+            headers: {
+                Authorization: `Bearer ${NVIDIA_API_KEY}`,
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            },
+            timeout: 15000 // 15 segundos máximo
+        });
+
+        const promptMejorado = respuesta.data?.choices?.[0]?.message?.content?.trim();
+        
+        if (promptMejorado) {
+            console.log(`✨ Prompt original: "${promptUsuario}"`);
+            console.log(`✨ Prompt mejorado por Nemotron: "${promptMejorado}"`);
+            return promptMejorado;
+        }
+        return promptUsuario;
+    } catch (error) {
+        console.error('⚠️ Error en Nemotron (usando prompt original):', error.message);
+        return promptUsuario;
+    }
+}
+
+/**
+ * Genera una imagen usando FLUX 3
  */
 async function generarImagenFlux(prompt) {
-    if (!NVIDIA_API_KEY) {
-        const error = new Error('NVIDIA_API_KEY no está configurada');
-        error.status = 500;
-        throw error;
-    }
-
     const respuesta = await axios.post(NVIDIA_IMAGE_URL, {
         prompt: prompt,
-        // Parámetros recomendados para FLUX 3 Image Klein
         seed: 0,
         steps: 50,
         cfg_scale: 3.5
@@ -146,31 +181,21 @@ async function generarImagenFlux(prompt) {
     if (respuesta.status === 422) {
         const error = new Error('contenido_rechazado');
         error.rechazado = true;
-        error.status = 422;
         throw error;
     }
-
     if (respuesta.status < 200 || respuesta.status >= 300) {
-        const error = new Error(`NVIDIA respondió HTTP ${respuesta.status}`);
+        const error = new Error(`NVIDIA Imagen respondió HTTP ${respuesta.status}`);
         error.status = respuesta.status;
         console.error('❌ NVIDIA Imagen error:', respuesta.status, JSON.stringify(respuesta.data).slice(0, 300));
         throw error;
     }
-
     return respuesta.data || {};
 }
 
 /**
- * Llama al endpoint de NVIDIA para generar un video (Cosmos3 Nano).
- * Devuelve el JSON de respuesta.
+ * Genera un video usando Cosmos3 Nano
  */
 async function generarVideoCosmos(prompt) {
-    if (!NVIDIA_API_KEY) {
-        const error = new Error('NVIDIA_API_KEY no está configurada');
-        error.status = 500;
-        throw error;
-    }
-
     const respuesta = await axios.post(NVIDIA_VIDEO_URL, {
         model_mode: 'text2video',
         prompt: prompt,
@@ -191,17 +216,14 @@ async function generarVideoCosmos(prompt) {
     if (respuesta.status === 422) {
         const error = new Error('contenido_rechazado');
         error.rechazado = true;
-        error.status = 422;
         throw error;
     }
-
     if (respuesta.status < 200 || respuesta.status >= 300) {
-        const error = new Error(`NVIDIA respondió HTTP ${respuesta.status}`);
+        const error = new Error(`NVIDIA Video respondió HTTP ${respuesta.status}`);
         error.status = respuesta.status;
         console.error('❌ NVIDIA Video error:', respuesta.status, JSON.stringify(respuesta.data).slice(0, 300));
         throw error;
     }
-
     return respuesta.data || {};
 }
 
@@ -279,8 +301,10 @@ router.post('/imagen', autenticar, async (req, res) => {
             });
         }
 
-        const promptLimpio = prompt.trim();
+        // 1. Mejorar el prompt con Nemotron
+        const promptLimpio = await mejorarPromptConNemotron(prompt.trim(), 'imagen');
 
+        // 2. Generar la imagen con FLUX
         let data;
         try {
             data = await generarImagenFlux(promptLimpio);
@@ -294,12 +318,13 @@ router.post('/imagen', autenticar, async (req, res) => {
             return res.status(502).json({ success: false, error: 'La respuesta no contenía una imagen.' });
         }
 
+        // 3. Guardar en Supabase y R2
         const { data: fila, error: errInsert } = await supabaseAdmin
             .from('ai_media_borradores')
             .insert({
                 usuario_id: req.user.id,
                 tipo: 'imagen',
-                prompt: promptLimpio,
+                prompt: prompt.trim(),
                 estado: 'procesando'
             })
             .select('id')
@@ -382,14 +407,15 @@ router.post('/video', autenticar, async (req, res) => {
             });
         }
 
-        const promptLimpio = prompt.trim();
+        const promptOriginal = prompt.trim();
 
+        // 1. Registrar en DB como procesando
         const { data: fila, error } = await supabaseAdmin
             .from('ai_media_borradores')
             .insert({
                 usuario_id: req.user.id,
                 tipo: 'video',
-                prompt: promptLimpio,
+                prompt: promptOriginal,
                 estado: 'procesando'
             })
             .select('id, estado')
@@ -397,9 +423,15 @@ router.post('/video', autenticar, async (req, res) => {
 
         if (error) throw error;
 
+        // 2. Responder inmediatamente al frontend (202 Accepted)
         res.status(202).json({ success: true, id: fila.id, tipo: 'video', estado: 'procesando' });
 
-        procesarVideo(fila.id, req.user.id, promptLimpio);
+        // 3. Procesar en segundo plano: Nemotron -> Cosmos -> R2 -> DB
+        (async () => {
+            const promptMejorado = await mejorarPromptConNemotron(promptOriginal, 'video');
+            await procesarVideo(fila.id, req.user.id, promptMejorado);
+        })();
+
         return undefined;
     } catch (error) {
         console.error('❌ Error /video:', error.message);
