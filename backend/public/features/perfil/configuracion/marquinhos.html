@@ -293,7 +293,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         <div class="wa-estado" id="waEstado" role="status" aria-live="polite"></div>
     </div>
 
-    <!-- TAMAÑO DEL MUÑECO -->
+    <!-- ✅ NUEVO: TAMAÑO DEL MUÑECO -->
     <div class="card">
         <h2>TAMAÑO DEL MUÑECO</h2>
 
@@ -366,6 +366,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 
 /* ================================================================
    WHATSAPP · GENERAR CÓDIGO DE VINCULACIÓN
+   POST /api/ai/chat-pet/whatsapp/codigo  (con token de sesión Supabase)
 ================================================================ */
 (function () {
     const ENDPOINT = '/api/ai/chat-pet/whatsapp/codigo';
@@ -574,7 +575,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         leer();
         pintar();
 
-        // Toggle modo voz
+        // Toggle modo voz ↔ subtítulos
         document.getElementById('toggleModoVoz').addEventListener('click', function() {
             leer();
             cfg.mostrar_subtitulos = false;
@@ -582,7 +583,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             pintar();
         });
 
-        // Toggle subtítulos
         document.getElementById('toggleSubtitulos').addEventListener('click', function() {
             leer();
             cfg.mostrar_subtitulos = true;
