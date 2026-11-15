@@ -108,7 +108,12 @@ async function algoritmoJS({ target_tipo, target_id, usuario_id, ciudadUsuario, 
             )
         `)
         .eq('target_tipo', target_tipo)
-        .eq(campoTarget(target_tipo), target_id);
+        // Video: campañas del video específico + campañas de feed completo (video_id NULL)
+        .or(
+            target_tipo === 'video'
+                ? `video_id.eq.${target_id},video_id.is.null`
+                : `${campoTarget(target_tipo)}.eq.${target_id}`
+        );
 
     if (error || !targets?.length) return [];
 
