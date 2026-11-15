@@ -1,7 +1,7 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v7.1 (Menú de reportes estilo Facebook + Ocultar publicaciones)
+// v8.1 (Flujo de reportes completo + Sin avatar en visor)
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -83,10 +83,10 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
 }
 
 // ================================================================
-// VISOR A PANTALLA COMPLETA (ESTILO FACEBOOK)
+// VISOR A PANTALLA COMPLETA (CON FLUJO DE REPORTES COMPLETO)
 // ================================================================
 
-var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0, postIdActual: null };
+var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0, postIdActual: null, motivoSeleccionado: '' };
 
 function pubVisorEl() {
     var el = document.getElementById('pubVisorFull');
@@ -113,6 +113,7 @@ function pubVisorEl() {
         `</div>` +
         `<div class="pub-vf-media"></div>` +
         
+        // MENÚ INFERIOR
         `<div class="pub-vf-bottom-sheet" id="pubVfSheet">` +
             `<div class="pub-vf-drag-handle"></div>` +
             `<button type="button" class="pub-vf-sheet-btn" id="btnPubVfGuardar">` +
@@ -126,28 +127,52 @@ function pubVisorEl() {
             `</button>` +
         `</div>` +
 
-        `<div class="pub-vf-report-sheet" id="pubVfReportSheet">` +
+        // PANTALLA 1: LISTA DE MOTIVOS
+        `<div class="pub-vf-report-sheet" id="pubVfReportSheet1">` +
             `<div class="pub-vf-report-header">` +
-                `<button type="button" class="pub-vf-report-back" id="btnPubVfBack">` +
+                `<button type="button" class="pub-vf-report-back" id="btnPubVfBack1">` +
                     `<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"></polyline></svg>` +
                 `</button>` +
                 `<span>Reportar</span>` +
-                `<button type="button" class="pub-vf-report-cerrar" onclick="document.getElementById('pubVfReportSheet').classList.remove('show');">` +
+                `<button type="button" class="pub-vf-report-cerrar" onclick="document.getElementById('pubVfReportSheet1').classList.remove('show');">` +
                     `<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>` +
                 `</button>` +
             `</div>` +
             `<div class="pub-vf-report-content">` +
                 `<h2>¿Por qué quieres reportar esta foto?</h2>` +
                 `<p>Si alguien se encuentra en peligro inminente, busca ayuda antes de enviar un reporte. No esperes.</p>` +
-                `<button class="pub-vf-report-option" data-motivo="Menor de 18 años">Problema que involucra a un menor de 18 años ${svgChevronRight}</button>` +
-                `<button class="pub-vf-report-option" data-motivo="Bullying o acoso">Bullying, acoso o abuso ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Problema que involucra a un menor de 18 años">Problema que involucra a un menor de 18 años ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Bullying, acoso o abuso">Bullying, acoso o abuso ${svgChevronRight}</button>` +
                 `<button class="pub-vf-report-option" data-motivo="Suicidio o autolesión">Suicidio o autolesión ${svgChevronRight}</button>` +
-                `<button class="pub-vf-report-option" data-motivo="Contenido violento">Contenido violento, perturbador o que incita al odio ${svgChevronRight}</button>` +
-                `<button class="pub-vf-report-option" data-motivo="Venta de artículos restringidos">Venta o promoción de artículos restringidos ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Contenido violento, perturbador o que incita al odio">Contenido violento, perturbador o que incita al odio ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Venta o promoción de artículos restringidos">Venta o promoción de artículos restringidos ${svgChevronRight}</button>` +
                 `<button class="pub-vf-report-option" data-motivo="Contenido para adultos">Contenido para adultos ${svgChevronRight}</button>` +
-                `<button class="pub-vf-report-option" data-motivo="Estafa o fraude">Estafa, fraude o información falsa ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Estafa, fraude o información falsa">Estafa, fraude o información falsa ${svgChevronRight}</button>` +
                 `<button class="pub-vf-report-option" data-motivo="Propiedad intelectual">Propiedad intelectual ${svgChevronRight}</button>` +
                 `<button class="pub-vf-report-option" data-motivo="No quiero ver esto">No quiero ver esto ${svgChevronRight}</button>` +
+            `</div>` +
+        `</div>` +
+
+        // PANTALLA 2: RESUMEN Y ENVIAR
+        `<div class="pub-vf-report-sheet" id="pubVfReportSheet2">` +
+            `<div class="pub-vf-report-header">` +
+                `<button type="button" class="pub-vf-report-back" id="btnPubVfBack2">` +
+                    `<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"></polyline></svg>` +
+                `</button>` +
+                `<span>Reportar</span>` +
+                `<button type="button" class="pub-vf-report-cerrar" onclick="document.getElementById('pubVfReportSheet2').classList.remove('show');">` +
+                    `<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>` +
+                `</button>` +
+            `</div>` +
+            `<div class="pub-vf-report-content" style="flex:1;">` +
+                `<h2 style="font-size:1.4rem;">Vas a enviar un reporte</h2>` +
+                `<p style="font-size:1rem;">Solo eliminamos contenido que infringe nuestras <strong>Normas comunitarias</strong>.</p>` +
+                `<h3 style="margin-top:20px; font-size:1.1rem; color:#000; margin-bottom:10px;">Detalles del reporte</h3>` +
+                `<p style="font-size:.9rem; color:#666; margin-bottom:5px;">¿Por qué quieres reportar esta foto?</p>` +
+                `<div id="pubVfResumenMotivo" style="font-weight:700; font-size:1.1rem; color:#000; margin-bottom:20px;"></div>` +
+            `</div>` +
+            `<div class="pub-vf-report-footer">` +
+                `<button type="button" class="pub-vf-btn-enviar" id="btnPubVfEnviarFinal">Enviar</button>` +
             `</div>` +
         `</div>`;
 
@@ -175,12 +200,11 @@ function pubVisorEl() {
             var session = sessionResult.data ? sessionResult.data.session : null;
             if (!session) throw new Error('No hay sesión');
             
-            var postId = pubVisor.postIdActual;
             const { error } = await client.from('publicaciones_ocultas').insert({
                 usuario_id: session.user.id,
-                publicacion_id: postId
+                publicacion_id: pubVisor.postIdActual
             });
-            if (error && error.code !== '23505') throw error; // Ignorar si ya lo había ocultado
+            if (error && error.code !== '23505') throw error;
 
             if (window.showToast) window.showToast('✅ Publicación oculta.', 'success');
             document.getElementById('pubVfSheet').classList.remove('show');
@@ -192,60 +216,84 @@ function pubVisorEl() {
         } finally { btn.disabled = false; }
     });
 
+    // Ir a pantalla de reportes
     el.querySelector('#btnPubVfReportar').addEventListener('click', function (e) {
         e.stopPropagation();
         document.getElementById('pubVfSheet').classList.remove('show');
-        document.getElementById('pubVfReportSheet').classList.add('show');
+        document.getElementById('pubVfReportSheet1').classList.add('show');
     });
 
-    el.querySelector('#btnPubVfBack').addEventListener('click', function (e) {
+    // Volver de reportes 1 al menú
+    el.querySelector('#btnPubVfBack1').addEventListener('click', function (e) {
         e.stopPropagation();
-        document.getElementById('pubVfReportSheet').classList.remove('show');
+        document.getElementById('pubVfReportSheet1').classList.remove('show');
         document.getElementById('pubVfSheet').classList.add('show');
     });
 
+    // Volver de reportes 2 a reportes 1
+    el.querySelector('#btnPubVfBack2').addEventListener('click', function (e) {
+        e.stopPropagation();
+        document.getElementById('pubVfReportSheet2').classList.remove('show');
+        document.getElementById('pubVfReportSheet1').classList.add('show');
+    });
+
+    // Seleccionar motivo
     el.querySelectorAll('.pub-vf-report-option').forEach(function(btn) {
-        btn.addEventListener('click', async function(e) {
+        btn.addEventListener('click', function(e) {
             e.stopPropagation();
             var motivo = this.getAttribute('data-motivo');
             
             if (motivo === 'No quiero ver esto') {
                 document.getElementById('btnPubVfOcultar').click();
-                document.getElementById('pubVfReportSheet').classList.remove('show');
+                document.getElementById('pubVfReportSheet1').classList.remove('show');
                 return;
             }
 
-            this.disabled = true;
-            try {
-                var client = window.supabaseClient;
-                var sessionResult = await client.auth.getSession();
-                var session = sessionResult.data ? sessionResult.data.session : null;
-                if (!session) throw new Error('No hay sesión');
-
-                const { error } = await client.from('publicacion_reportes').insert({
-                    publicacion_id: pubVisor.postIdActual,
-                    usuario_id: session.user.id,
-                    motivo: motivo,
-                    estado: 'pendiente'
-                });
-                if (error) throw error;
-
-                if (window.showToast) window.showToast('✅ Reporte enviado. Gracias.', 'success');
-                document.getElementById('pubVfReportSheet').classList.remove('show');
-                pubCerrarVisor();
-            } catch (err) {
-                console.error(err);
-                if (window.showToast) window.showToast('❌ Error al enviar el reporte.', 'error');
-            } finally { this.disabled = false; }
+            pubVisor.motivoSeleccionado = motivo;
+            document.getElementById('pubVfResumenMotivo').textContent = motivo;
+            document.getElementById('pubVfReportSheet1').classList.remove('show');
+            document.getElementById('pubVfReportSheet2').classList.add('show');
         });
+    });
+
+    // Botón Final: Enviar a Supabase
+    el.querySelector('#btnPubVfEnviarFinal').addEventListener('click', async function (e) {
+        e.stopPropagation();
+        var btn = this; btn.disabled = true; btn.textContent = 'Enviando...';
+        try {
+            var client = window.supabaseClient;
+            var sessionResult = await client.auth.getSession();
+            var session = sessionResult.data ? sessionResult.data.session : null;
+            if (!session) throw new Error('No hay sesión');
+
+            const { error } = await client.from('publicacion_reportes').insert({
+                publicacion_id: pubVisor.postIdActual,
+                usuario_id: session.user.id,
+                motivo: pubVisor.motivoSeleccionado,
+                estado: 'pendiente'
+            });
+            if (error) throw error;
+
+            if (window.showToast) window.showToast('✅ Reporte enviado con éxito.', 'success');
+            document.getElementById('pubVfReportSheet2').classList.remove('show');
+            pubCerrarVisor();
+        } catch (err) {
+            console.error(err);
+            if (window.showToast) window.showToast('❌ Error al enviar el reporte.', 'error');
+        } finally { 
+            btn.disabled = false; 
+            btn.textContent = 'Enviar';
+        }
     });
 
     el.querySelector('.pub-vf-media').addEventListener('click', function (e) {
         if (e.target === e.currentTarget) {
             var sheet = document.getElementById('pubVfSheet');
-            var reportSheet = document.getElementById('pubVfReportSheet');
+            var reportSheet1 = document.getElementById('pubVfReportSheet1');
+            var reportSheet2 = document.getElementById('pubVfReportSheet2');
             if (sheet.classList.contains('show')) sheet.classList.remove('show');
-            else if (reportSheet.classList.contains('show')) reportSheet.classList.remove('show');
+            else if (reportSheet1.classList.contains('show')) reportSheet1.classList.remove('show');
+            else if (reportSheet2.classList.contains('show')) reportSheet2.classList.remove('show');
             else pubCerrarVisor();
         }
     });
@@ -271,7 +319,8 @@ function pubMostrarItem() {
     if (!item) return;
 
     document.getElementById('pubVfSheet').classList.remove('show');
-    document.getElementById('pubVfReportSheet').classList.remove('show');
+    document.getElementById('pubVfReportSheet1').classList.remove('show');
+    document.getElementById('pubVfReportSheet2').classList.remove('show');
 
     caja.innerHTML = '';
     if (item.tipo === 'video') {
@@ -309,24 +358,27 @@ function pubCerrarVisor() {
     el.querySelector('.pub-vf-media').innerHTML = '';
     el.classList.remove('show'); document.body.style.overflow = '';
     pubVisor.postIdActual = null;
+    pubVisor.motivoSeleccionado = '';
 }
 
 document.addEventListener('keydown', function (e) {
     var el = document.getElementById('pubVisorFull');
     if (!el || !el.classList.contains('show')) return;
     if (e.key === 'Escape') {
-        var rSheet = document.getElementById('pubVfReportSheet');
+        var rs1 = document.getElementById('pubVfReportSheet1');
+        var rs2 = document.getElementById('pubVfReportSheet2');
         var sheet = document.getElementById('pubVfSheet');
-        if (rSheet.classList.contains('show')) rSheet.classList.remove('show');
-        else if (sheet.classList.contains('show')) sheet.classList.remove('show');
-        else pubCerrarVisor();
+        if (rs2.classList.contains('show')) { rs2.classList.remove('show'); rs1.classList.add('show'); }
+        else if (rs1.classList.contains('show')) { rs1.classList.remove('show'); sheet.classList.add('show'); }
+        else if (sheet.classList.contains('show')) { sheet.classList.remove('show'); }
+        else { pubCerrarVisor(); }
     }
     if (e.key === 'ArrowLeft') pubNavegar(-1);
     if (e.key === 'ArrowRight') pubNavegar(1);
 });
 
 // ================================================================
-// ESTILOS (Diseño plano + Visor + Hojas de menú)
+// ESTILOS CSS PARA TODO EL VISOR Y HOJAS
 // ================================================================
 
 (function inyectarEstilosReaccionesPerfil() {
@@ -359,7 +411,7 @@ document.addEventListener('keydown', function (e) {
         .pub-vf-header { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; display: flex; justify-content: space-between; z-index: 10; }
         .pub-vf-cerrar, .pub-vf-menu-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        /* HOJA INFERIOR */
+        /* HOJA INFERIOR (MENÚ) */
         .pub-vf-bottom-sheet {
             position: absolute; bottom: 0; left: 0; right: 0; background: #fff; border-top-left-radius: 16px; border-top-right-radius: 16px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 20; padding-bottom: env(safe-area-inset-bottom, 20px); display: flex; flex-direction: column;
         }
@@ -369,7 +421,7 @@ document.addEventListener('keydown', function (e) {
         .pub-vf-sheet-btn:last-child { border-bottom: 1px solid #eee; }
         .pub-vf-sheet-btn .icon { display: flex; align-items: center; justify-content: center; color: #333; }
 
-        /* PANTALLA DE REPORTES */
+        /* PANTALLAS DE REPORTE (HOJAS COMPLETAS) */
         .pub-vf-report-sheet {
             position: absolute; inset: 0; background: #fff; z-index: 30; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
@@ -382,6 +434,11 @@ document.addEventListener('keydown', function (e) {
         .pub-vf-report-content p { font-size: .85rem; color: #666; margin-bottom: 20px; }
         .pub-vf-report-option { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 16px 0; border: 0; border-bottom: 1px solid #eee; background: transparent; font-size: 1rem; font-weight: 600; color: #000; text-align: left; cursor: pointer; }
         .pub-vf-report-option:last-child { border-bottom: 0; }
+        
+        /* BOTÓN AZUL DE ENVIAR FINAL */
+        .pub-vf-report-footer { padding: 15px 20px; border-top: 1px solid #eee; background: #fff; padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)); }
+        .pub-vf-btn-enviar { width: 100%; padding: 16px; background: #1d7bf4; color: #fff; font-size: 1.1rem; font-weight: 700; border: 0; border-radius: 8px; cursor: pointer; }
+        .pub-vf-btn-enviar:disabled { opacity: 0.7; }
 
         /* Reacciones y Comentarios */
         .reaccion-wrap { position: relative; display: inline-block; margin: 8px 0 0 0; padding: 0; }
