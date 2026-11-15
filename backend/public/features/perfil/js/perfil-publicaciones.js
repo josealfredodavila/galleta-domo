@@ -1,11 +1,10 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v10.0:
-//  - Visor Custom: Se ocultaron los controles nativos del navegador.
-//  - Visor Custom: Controles propios (Play/Pausa, X, Menú, Pantalla Completa, Velocidad).
-//  - Visor Custom: La "X" y el menú siempre están visibles.
-//  - Diseño adaptado a la paleta de Csariel's.
+// v11.0:
+//  - Visor Custom: Se eliminaron por completo los controles nativos de Android.
+//  - Visor Custom: Botón "X" central gigante cuando el video está pausado.
+//  - Visor Custom: Barra inferior personalizada (Velocidad y Pantalla completa).
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -82,7 +81,7 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
 }
 
 // ================================================================
-// VISOR A PANTALLA COMPLETA (CONTROLES PERSONALIZADOS)
+// VISOR A PANTALLA COMPLETA (CONTROLES 100% PERSONALIZADOS)
 // ================================================================
 
 var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0, postIdActual: null, motivoSeleccionado: '', esDueno: false, modoLleno: false };
@@ -107,14 +106,14 @@ function pubVisorEl() {
     var svgBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"></polyline></svg>';
     var svgX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
     
-    // Iconos de control de video personalizados
-    var svgPlay = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px; opacity:0.8;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
-    var svgPause = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px; opacity:0.8;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+    // Iconos de control de video personalizados (Estilo Csariel's)
+    var svgPlay = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+    var svgPause = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
     var svgExpand = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
     var svgSpeed = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>';
 
     el.innerHTML =
-        // CABECERA (X y Menú siempre visibles)
+        // CABECERA (X y Menú)
         '<div class="pub-vf-header">' +
             '<button type="button" class="pub-vf-cerrar" aria-label="Cerrar">' + svgClose + '</button>' +
             '<button type="button" class="pub-vf-menu-btn" aria-label="Opciones">' + svgDots + '</button>' +
@@ -123,13 +122,22 @@ function pubVisorEl() {
         // CONTENEDOR DEL MEDIA
         '<div class="pub-vf-media"></div>' +
 
-        // CONTROLES INFERIORES PERSONALIZADOS PARA VIDEO
+        // BOTÓN DE PLAY/PAUSA Y X GIGANTE CENTRAL
+        '<div class="pub-vf-center-controls" id="pubVfCenterControls" style="display:none;">' +
+            '<button type="button" class="pub-vf-big-play" id="btnPubVfBigPlay">' + svgPlay + '</button>' +
+            '<button type="button" class="pub-vf-big-close" id="btnPubVfBigClose">' + svgClose + '</button>' +
+        '</div>' +
+
+        // CONTROLES INFERIORES PERSONALIZADOS
         '<div class="pub-vf-controls" id="pubVfControls" style="display:none;">' +
-            '<button type="button" class="pub-vf-play-btn" id="btnPubVfPlay">' + svgPause + '</button>' +
             '<div class="pub-vf-progress-bar"><div class="pub-vf-progress" id="pubVfProgress"></div></div>' +
-            '<div class="pub-vf-time" id="pubVfTime">0:00 / 0:00</div>' +
-            '<button type="button" class="pub-vf-ctrl-btn" id="btnPubVfSpeed" title="Velocidad">' + svgSpeed + '</button>' +
-            '<button type="button" class="pub-vf-ctrl-btn" id="btnPubVfExpand" title="Pantalla completa">' + svgExpand + '</button>' +
+            '<div class="pub-vf-bottom-row">' +
+                '<div class="pub-vf-time" id="pubVfTime">0:00 / 0:00</div>' +
+                '<div class="pub-vf-actions">' +
+                    '<button type="button" class="pub-vf-ctrl-btn" id="btnPubVfSpeed" title="Velocidad">' + svgSpeed + '</button>' +
+                    '<button type="button" class="pub-vf-ctrl-btn" id="btnPubVfExpand" title="Pantalla completa">' + svgExpand + '</button>' +
+                '</div>' +
+            '</div>' +
         '</div>' +
 
         // HOJA INFERIOR (MENÚ)
@@ -141,7 +149,7 @@ function pubVisorEl() {
             '<button type="button" class="pub-vf-sheet-btn pub-vf-peligro" id="btnPubVfEliminar" data-solo-dueno="1"><span class="icon">' + svgTrash + '</span> Eliminar publicación</button>' +
         '</div>' +
 
-        // HOJAS DE REPORTE (igual que antes)
+        // HOJAS DE REPORTE
         '<div class="pub-vf-report-sheet" id="pubVfReportSheet1">' +
             '<div class="pub-vf-report-header">' +
                 '<button type="button" class="pub-vf-report-back" id="btnPubVfBack1">' + svgBack + '</button>' +
@@ -190,49 +198,39 @@ function pubVisorEl() {
         document.getElementById('pubVfSheet').classList.add('show');
     });
 
-    // Lógica de controles de video personalizados
-    el.querySelector('#btnPubVfPlay').addEventListener('click', function() {
-        var video = el.querySelector('video');
-        if (video.paused) { video.play(); this.innerHTML = svgPause; }
-        else { video.pause(); this.innerHTML = svgPlay; }
+    // Lógica de la X y Play Gigantes del centro
+    el.querySelector('#btnPubVfBigClose').addEventListener('click', function(e) {
+        e.stopPropagation(); pubCerrarVisor();
     });
 
-    el.querySelector('#btnPubVfExpand').addEventListener('click', function () {
+    el.querySelector('#btnPubVfBigPlay').addEventListener('click', function(e) {
+        e.stopPropagation();
+        var video = el.querySelector('video');
+        if (video) {
+            if (video.paused) { video.play(); } 
+            else { video.pause(); }
+        }
+    });
+
+    // Lógica de controles inferiores
+    el.querySelector('#btnPubVfExpand').addEventListener('click', function (e) {
+        e.stopPropagation();
         pubVisor.modoLleno = !pubVisor.modoLleno;
         var video = el.querySelector('video');
         if (video) video.style.objectFit = pubVisor.modoLleno ? 'cover' : 'contain';
     });
 
-    el.querySelector('#btnPubVfSpeed').addEventListener('click', function () {
+    el.querySelector('#btnPubVfSpeed').addEventListener('click', function (e) {
+        e.stopPropagation();
         var video = el.querySelector('video');
         if (!video) return;
-        // Ciclo de velocidades
         if (video.playbackRate === 1) video.playbackRate = 1.5;
         else if (video.playbackRate === 1.5) video.playbackRate = 2;
         else video.playbackRate = 1;
-        
-        // Mostrar un toast temporal
         if (window.showToast) window.showToast(`Velocidad: ${video.playbackRate}x`, 'info', 1500);
     });
 
-    // Lógica para actualizar la barra de progreso
-    var updateProgress = function() {
-        var video = el.querySelector('video');
-        if (!video) return;
-        var prog = el.querySelector('#pubVfProgress');
-        var time = el.querySelector('#pubVfTime');
-        
-        var percent = (video.currentTime / video.duration) * 100;
-        prog.style.width = percent + '%';
-        
-        var curM = Math.floor(video.currentTime / 60);
-        var curS = Math.floor(video.currentTime % 60);
-        var durM = Math.floor(video.duration / 60);
-        var durS = Math.floor(video.duration % 60);
-        time.textContent = `${curM}:${curS.toString().padStart(2, '0')} / ${durM}:${durS.toString().padStart(2, '0')}`;
-    };
-
-    // (El resto de eventos de menús y reportes se mantienen igual)
+    // Resto de la lógica del menú...
     el.querySelector('#btnPubVfGuardar').addEventListener('click', function (e) {
         e.stopPropagation();
         var item = pubVisor.items[pubVisor.index];
@@ -349,6 +347,8 @@ function pubMostrarItem() {
     var caja = el.querySelector('.pub-vf-media');
     var item = pubVisor.items[pubVisor.index];
     var controls = el.querySelector('#pubVfControls');
+    var centerControls = el.querySelector('#pubVfCenterControls');
+    
     if (!item) return;
 
     document.getElementById('pubVfSheet').classList.remove('show');
@@ -359,14 +359,15 @@ function pubMostrarItem() {
     caja.innerHTML = '';
     
     if (item.tipo === 'video') {
-        controls.style.display = 'flex'; // Mostrar controles custom
+        controls.style.display = 'flex';
+        centerControls.style.display = 'none'; // Oculto por defecto al darle play
         
         var video = document.createElement('video');
         video.playsInline = true; 
         video.preload = 'auto'; 
         video.src = item.url;
         video.style.objectFit = 'contain'; 
-        video.controls = false; // IMPORTANTE: Ocultar controles genéricos del navegador
+        video.controls = false; // MAGIA: Elimina los controles feos de Android
         
         // Actualizar barra de progreso
         video.addEventListener('timeupdate', function() {
@@ -383,19 +384,32 @@ function pubMostrarItem() {
             }
         });
 
-        // Cambiar el ícono de play/pausa
+        // Mostrar u ocultar controles dependiendo del estado
         video.addEventListener('play', function() {
-            el.querySelector('#btnPubVfPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px; opacity:0.8;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+            centerControls.style.display = 'none';
+            el.querySelector('#btnPubVfBigPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
         });
         video.addEventListener('pause', function() {
-            el.querySelector('#btnPubVfPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px; opacity:0.8;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+            centerControls.style.display = 'flex'; // Aparecen los botones gigantes
+            el.querySelector('#btnPubVfBigPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+        });
+
+        // Doble clic para pausar/play
+        video.addEventListener('click', function() {
+            if (video.paused) video.play(); else video.pause();
         });
 
         caja.appendChild(video);
         var repro = video.play(); 
-        if (repro && typeof repro.catch === 'function') repro.catch(function () {});
+        if (repro && typeof repro.catch === 'function') {
+            repro.catch(function () { 
+                // Si el navegador bloquea el autoplay, mostrar controles para que el usuario de play
+                centerControls.style.display = 'flex'; 
+            });
+        }
     } else {
-        controls.style.display = 'none'; // Ocultar controles en imágenes
+        controls.style.display = 'none'; 
+        centerControls.style.display = 'none';
         var imagen = document.createElement('img'); 
         imagen.alt = 'Publicación'; 
         imagen.src = item.url;
@@ -434,8 +448,6 @@ function pubCerrarVisor() {
     pubVisor.modoLleno = false;
 }
 
-// (El resto de eventos del teclado se mantienen igual)
-
 // ================================================================
 // ESTILOS · paleta oscura global
 // ================================================================
@@ -468,7 +480,7 @@ function pubCerrarVisor() {
         .pub-vf-media { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box; overflow: hidden; }
         .pub-vf-media img, .pub-vf-media video { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; transition: object-fit 0.2s; }
 
-        /* CABECERA (X y Menú) */
+        /* CABECERA (X y Menú arriba) */
         .pub-vf-header { 
             position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; 
             display: flex; justify-content: space-between; align-items: flex-start; z-index: 10; 
@@ -481,20 +493,25 @@ function pubCerrarVisor() {
         }
         .pub-vf-cerrar:hover, .pub-vf-menu-btn:hover { background: rgba(212, 175, 55, 0.8); color: #000; }
 
-        /* CONTROLES DE VIDEO CUSTOM (Parte inferior) */
+        /* CONTROLES CENTRALES (X Gigante y Play Gigante) */
+        .pub-vf-center-controls {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 30px; z-index: 5; pointer-events: none;
+        }
+        .pub-vf-center-controls button {
+            pointer-events: auto; border: 0; border-radius: 50%; width: 70px; height: 70px; display: flex; align-items: center; justify-content: center; cursor: pointer; backdrop-filter: blur(8px); transition: transform 0.2s;
+        }
+        .pub-vf-center-controls button:active { transform: scale(0.9); }
+        .pub-vf-big-play { background: rgba(255, 255, 255, 0.2); color: #fff; }
+        .pub-vf-big-close { background: rgba(255, 0, 80, 0.8); color: #fff; box-shadow: 0 0 20px rgba(255,0,80,0.5); } /* Color de alerta/cierre */
+
+        /* CONTROLES INFERIORES */
         .pub-vf-controls {
             position: absolute; bottom: 0; left: 0; right: 0;
             background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
             padding: 20px 15px calc(15px + env(safe-area-inset-bottom, 0px)) 15px;
-            display: flex; flex-direction: column; gap: 10px; z-index: 15;
+            display: flex; flex-direction: column; gap: 12px; z-index: 15;
         }
         
-        .pub-vf-play-btn {
-            background: transparent; border: 0; color: #fff; cursor: pointer;
-            display: flex; align-items: center; justify-content: center;
-            width: 60px; height: 60px; margin: 0 auto;
-        }
-
         .pub-vf-progress-bar {
             width: 100%; height: 4px; background: rgba(255,255,255,0.3);
             border-radius: 2px; cursor: pointer; position: relative;
@@ -503,17 +520,13 @@ function pubCerrarVisor() {
             height: 100%; background: #D4AF37; border-radius: 2px; width: 0%;
         }
         
-        .pub-vf-time {
-            color: #ccc; font-size: 12px; font-family: monospace; text-align: right;
-            position: absolute; right: 100px; bottom: 15px;
-        }
-
+        .pub-vf-bottom-row { display: flex; justify-content: space-between; align-items: center; }
+        .pub-vf-time { color: #ccc; font-size: 12px; font-family: monospace; }
+        .pub-vf-actions { display: flex; gap: 15px; }
+        
         .pub-vf-ctrl-btn {
-            background: transparent; border: 0; color: #fff; cursor: pointer;
-            position: absolute; bottom: 10px; padding: 5px;
+            background: transparent; border: 0; color: #fff; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;
         }
-        #btnPubVfSpeed { right: 50px; }
-        #btnPubVfExpand { right: 15px; }
 
         /* HOJA INFERIOR (menú) */
         .pub-vf-bottom-sheet {
