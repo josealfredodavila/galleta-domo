@@ -417,12 +417,13 @@
     const INTERVALO_POLL_MS = 15000;
     const PRECIO_ANUNCIO_MXN = 60;
 
+    // Mínimos iguales a config/redes-pago.js del backend (fuente única)
     const REDES_PAGO = [
-        { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 1,  label: 'USDT · TRON (TRC20)' },
-        { value: 'usdtbsc',   moneda: 'USDT', red: 'BSC',      min: 1,  label: 'USDT · BSC (BEP20)' },
-        { value: 'usdtmatic', moneda: 'USDT', red: 'Polygon',  min: 1,  label: 'USDT · Polygon' },
-        { value: 'usdtsol',   moneda: 'USDT', red: 'Solana',   min: 1,  label: 'USDT · Solana' },
-        { value: 'usdcmatic', moneda: 'USDC', red: 'Polygon',  min: 1,  label: 'USDC · Polygon' },
+        { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 16, label: 'USDT · TRON (TRC20)' },
+        { value: 'usdtbsc',   moneda: 'USDT', red: 'BSC',      min: 16, label: 'USDT · BSC (BEP20)' },
+        { value: 'usdtmatic', moneda: 'USDT', red: 'Polygon',  min: 16, label: 'USDT · Polygon' },
+        { value: 'usdtsol',   moneda: 'USDT', red: 'Solana',   min: 16, label: 'USDT · Solana' },
+        { value: 'usdcmatic', moneda: 'USDC', red: 'Polygon',  min: 16, label: 'USDC · Polygon' },
         { value: 'usdterc20', moneda: 'USDT', red: 'Ethereum', min: 20, label: 'USDT · Ethereum (ERC20)' }
     ];
 
@@ -573,7 +574,8 @@
     }
 
     // CONEXIÓN AL BACKEND (imagen/video)
-    async function generarMediaReal(tipo, promptUsuario) {
+    // (Versión anterior, sin uso. Pendiente de eliminar. Ver generarMediaReal abajo.)
+    async function generarMediaLegacy(tipo, promptUsuario) {
         const body = document.getElementById('promiBody');
 
         const loadingMsg = document.createElement('div');
@@ -639,6 +641,142 @@
             errMsg.style.color = '#ff3366';
             errMsg.textContent = '❌ ' + (error.message || 'Error al generar el contenido.');
             body.appendChild(errMsg);
+        }
+        body.scrollTop = body.scrollHeight;
+    }
+
+    // ================================================================
+    // GENERACIÓN DE IMAGEN/VIDEO · vista previa y aceptación
+    // Backend: /api/ai/media (ai-media.js). Sin botón de descarga:
+    // el contenido solo existe en la campaña si el usuario lo acepta.
+    // ================================================================
+    function crearBurbujaMedia(texto) {
+        const b = document.createElement('div');
+        b.className = 'promi-msg bot';
+        b.textContent = texto;
+        return b;
+    }
+
+    // Consulta el estado de un borrador hasta que esté listo (máx. ~10 min)
+    async function esperarMedia(id, token, intentos = 0) {
+        const r = await fetch(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(id)}`, {
+            headers: { Authorization: 'Bearer ' + token }
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok || !j.success) throw new Error(j.error || 'No se pudo consultar el contenido');
+        if (j.estado === 'listo') return j;
+        if (j.estado === 'error') throw new Error(j.error || 'No se pudo generar el contenido');
+        if (intentos >= 120) throw new Error('La generación tardó demasiado. Intenta de nuevo.');
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+        return esperarMedia(id, token, intentos + 1);
+    }
+
+    function mostrarVistaPrevia(tipo, data, token) {
+        const body = document.getElementById('promiBody');
+        const id = data.id;
+
+        const caja = document.createElement('div');
+        caja.className = 'promi-msg bot';
+        caja.style.padding = '16px';
+        caja.style.textAlign = 'center';
+
+        const media = tipo === 'imagen'
+            ? `<img src="${escapeHTML(data.preview_url)}" alt="Vista previa" style="width:100%;border-radius:12px;border:1px solid #374151;">`
+            : `<video src="${escapeHTML(data.preview_url)}" controls playsinline style="width:100%;border-radius:12px;border:1px solid #374151;background:#000;"></video>`;
+
+        caja.innerHTML = `
+            ${media}
+            <p style="font-size:0.8rem;color:#9ca3af;margin:12px 0;">
+                Así se vería en tu anuncio. Si lo aceptas, quedará disponible para tu campaña.
+                La vista previa caduca en unos minutos.
+            </p>
+            <div class="acciones-media" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                <button class="promi-action-btn" data-accion="aceptar">✓ Aceptar para mi campaña</button>
+                <button class="promi-action-btn" data-accion="descartar" style="border-color:#374151;color:#9ca3af;">Descartar</button>
+            </div>
+        `;
+
+        caja.querySelector('[data-accion="aceptar"]').addEventListener('click', () => aceptarMedia(id, tipo, caja, token));
+        caja.querySelector('[data-accion="descartar"]').addEventListener('click', () => descartarMedia(id, caja, token));
+
+        body.appendChild(caja);
+        body.scrollTop = body.scrollHeight;
+    }
+
+    async function aceptarMedia(id, tipo, caja, token) {
+        const botones = caja.querySelectorAll('button');
+        botones.forEach((b) => { b.disabled = true; });
+
+        try {
+            const r = await fetch(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(id)}/aceptar`, {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token }
+            });
+            const j = await r.json().catch(() => ({}));
+            if (!r.ok || !j.success) {
+                botones.forEach((b) => { b.disabled = false; });
+                showToast(j.mensaje || j.error || 'No se pudo aceptar el contenido', 'error');
+                return;
+            }
+
+            window.mediaAceptadas = window.mediaAceptadas || [];
+            window.mediaAceptadas.push({ id, tipo });
+
+            caja.querySelector('.acciones-media').innerHTML =
+                '<span style="color:#00d68f;font-size:0.8rem;font-weight:700;">✓ Aceptado. Podrás usarlo en tu campaña.</span>';
+            showToast('Contenido aceptado para tu campaña', 'success');
+        } catch (e) {
+            botones.forEach((b) => { b.disabled = false; });
+            showToast('Error de conexión al aceptar', 'error');
+        }
+    }
+
+    async function descartarMedia(id, caja, token) {
+        try {
+            await fetch(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(id)}/descartar`, {
+                method: 'POST',
+                headers: { Authorization: 'Bearer ' + token }
+            });
+        } catch (e) { /* si falla, el archivo caduca solo */ }
+        caja.remove();
+    }
+
+    async function generarMediaReal(tipo, promptUsuario) {
+        const body = document.getElementById('promiBody');
+        const cargando = crearBurbujaMedia(
+            tipo === 'imagen' ? 'Generando imagen…' : 'Generando video… puede tardar varios minutos.'
+        );
+        body.appendChild(cargando);
+        body.scrollTop = body.scrollHeight;
+
+        try {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) throw new Error('No hay sesión activa');
+            const token = session.access_token;
+
+            const ruta = tipo === 'imagen' ? '/api/ai/media/imagen' : '/api/ai/media/video';
+            const res = await fetch(`${BACKEND_URL}${ruta}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+                body: JSON.stringify({ prompt: promptUsuario })
+            });
+            const data = await res.json().catch(() => ({}));
+
+            // 200 (imagen lista) o 202 (video en proceso)
+            if (!res.ok && res.status !== 202) {
+                throw new Error(data.mensaje || data.error || 'Error del servidor');
+            }
+
+            const listo = data.estado === 'listo' ? data : await esperarMedia(data.id, token);
+
+            cargando.remove();
+            mostrarVistaPrevia(tipo, { ...listo, id: data.id }, token);
+        } catch (error) {
+            cargando.remove();
+            const err = crearBurbujaMedia('❌ ' + (error.message || 'Error al generar el contenido.'));
+            err.style.borderColor = '#ff3366';
+            err.style.color = '#ff3366';
+            body.appendChild(err);
         }
         body.scrollTop = body.scrollHeight;
     }
