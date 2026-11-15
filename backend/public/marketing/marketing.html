@@ -387,6 +387,7 @@
             </div>
             <div id="wizard-step-6" class="wizard-step hidden">
                 <h3>▸ Paso 06 — Contenido del Anuncio</h3>
+                <div id="ad-media-aceptada" class="red-info" style="display:none;"></div> <!-- NUEVO AVISO -->
                 <input type="text" id="ad-title" placeholder="Título" maxlength="150">
                 <textarea id="ad-description" placeholder="Descripción" maxlength="500"></textarea>
                 <input type="url" id="ad-image" placeholder="URL de Imagen (opcional, https://...)" maxlength="500">
@@ -406,8 +407,8 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v9.1 (PRODUCCIÓN)
-       Pestaña Minar retirada. Integración con Promi + backend.
+       MARKETING · Sariel's — v9.2 (PRODUCCIÓN)
+       - Fix: Envío de media_id al backend al crear campaña.
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -573,82 +574,8 @@
         body.scrollTop = body.scrollHeight;
     }
 
-    // CONEXIÓN AL BACKEND (imagen/video)
-    // (Versión anterior, sin uso. Pendiente de eliminar. Ver generarMediaReal abajo.)
-    async function generarMediaLegacy(tipo, promptUsuario) {
-        const body = document.getElementById('promiBody');
-
-        const loadingMsg = document.createElement('div');
-        loadingMsg.className = 'promi-msg bot';
-        loadingMsg.style.background = 'transparent';
-        loadingMsg.style.border = 'none';
-        loadingMsg.innerHTML = `
-            <div class="typing-indicator" style="background:#1f2937; border:1px solid #374151; padding:12px; border-radius:16px; width:fit-content;">
-                <span style="background:#ff0050;"></span><span style="background:#ff0050;"></span><span style="background:#ff0050;"></span>
-                <span style="color:#9ca3af; font-size:0.75rem; margin-left:8px;">Generando ${tipo}...</span>
-            </div>
-        `;
-        body.appendChild(loadingMsg);
-        body.scrollTop = body.scrollHeight;
-
-        try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) throw new Error('No hay sesión activa');
-
-            const endpoint = tipo === 'imagen' ? '/api/ai/generar-imagen' : '/api/ai/generar-video';
-            const res = await fetch(`${BACKEND_URL}${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({ prompt: promptUsuario })
-            });
-
-            const data = await res.json();
-            if (!res.ok || !data.success) throw new Error(data.error || 'Error del servidor');
-
-            loadingMsg.remove();
-
-            const mediaMsg = document.createElement('div');
-            mediaMsg.className = 'promi-msg bot';
-            mediaMsg.style.padding = '16px';
-            mediaMsg.style.textAlign = 'center';
-
-            if (tipo === 'imagen') {
-                const imageUrl = `data:image/jpeg;base64,${data.image_base64}`;
-                mediaMsg.innerHTML = `
-                    <img src="${imageUrl}" style="width:100%; border-radius:12px; margin-bottom:12px; border:1px solid #374151;">
-                    <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:12px;">Imagen generada para: "${escapeHTML(promptUsuario)}"</p>
-                    <a href="${imageUrl}" download="marketing-image.jpg" style="background:#ff0050; color:#fff; text-decoration:none; padding:10px 20px; border-radius:20px; font-weight:700; display:inline-block;">⬇️ Descargar Imagen</a>
-                `;
-            } else {
-                const videoUrl = `data:video/mp4;base64,${data.video_base64}`;
-                mediaMsg.innerHTML = `
-                    <video src="${videoUrl}" controls style="width:100%; border-radius:12px; margin-bottom:12px; border:1px solid #374151; background:#000;"></video>
-                    <p style="font-size:0.8rem; color:#9ca3af; margin-bottom:12px;">Video generado para: "${escapeHTML(promptUsuario)}"</p>
-                    <a href="${videoUrl}" download="marketing-video.mp4" style="background:#ff0050; color:#fff; text-decoration:none; padding:10px 20px; border-radius:20px; font-weight:700; display:inline-block;">⬇️ Descargar Video</a>
-                `;
-            }
-
-            body.appendChild(mediaMsg);
-        } catch (error) {
-            console.error('Error generando media:', error);
-            loadingMsg.remove();
-            const errMsg = document.createElement('div');
-            errMsg.className = 'promi-msg bot';
-            errMsg.style.borderColor = '#ff3366';
-            errMsg.style.color = '#ff3366';
-            errMsg.textContent = '❌ ' + (error.message || 'Error al generar el contenido.');
-            body.appendChild(errMsg);
-        }
-        body.scrollTop = body.scrollHeight;
-    }
-
     // ================================================================
     // GENERACIÓN DE IMAGEN/VIDEO · vista previa y aceptación
-    // Backend: /api/ai/media (ai-media.js). Sin botón de descarga:
-    // el contenido solo existe en la campaña si el usuario lo acepta.
     // ================================================================
     function crearBurbujaMedia(texto) {
         const b = document.createElement('div');
@@ -657,7 +584,6 @@
         return b;
     }
 
-    // Consulta el estado de un borrador hasta que esté listo (máx. ~10 min)
     async function esperarMedia(id, token, intentos = 0) {
         const r = await fetch(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(id)}`, {
             headers: { Authorization: 'Bearer ' + token }
@@ -719,11 +645,12 @@
                 return;
             }
 
-            window.mediaAceptadas = window.mediaAceptadas || [];
-            window.mediaAceptadas.push({ id, tipo });
+            // Guardamos el ID y el tipo en el objeto wizard para enviarlo al backend
+            wizard.media_id = id;
+            wizard.media_tipo = tipo;
 
             caja.querySelector('.acciones-media').innerHTML =
-                '<span style="color:#00d68f;font-size:0.8rem;font-weight:700;">✓ Aceptado. Podrás usarlo en tu campaña.</span>';
+                '<span style="color:#00d68f;font-size:0.8rem;font-weight:700;">✓ Aceptado. Se usará en tu campaña.</span>';
             showToast('Contenido aceptado para tu campaña', 'success');
         } catch (e) {
             botones.forEach((b) => { b.disabled = false; });
@@ -1045,11 +972,33 @@
         showWizardStep('2');
     }
 
-    function showWizardStep(n) { document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden')); const t = document.getElementById(`wizard-step-${n}`); if (t) t.classList.remove('hidden'); }
+    function showWizardStep(n) { 
+        document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden')); 
+        const t = document.getElementById(`wizard-step-${n}`); 
+        if (t) t.classList.remove('hidden'); 
+
+        // Bloqueo y aviso de media aceptada en el paso 6
+        if (n === '6') {
+            const mediaEl = document.getElementById('ad-media-aceptada');
+            const imgInput = document.getElementById('ad-image');
+            const vidInput = document.getElementById('ad-video');
+            
+            if (wizard.media_id) {
+                mediaEl.style.display = 'block';
+                mediaEl.innerHTML = `✦ Usarás contenido <strong>${escapeHTML(wizard.media_tipo || 'IA')}</strong> aceptado. Las URL manuales se ignorarán.`;
+                imgInput.value = ''; imgInput.disabled = true;
+                vidInput.value = ''; vidInput.disabled = true;
+            } else {
+                mediaEl.style.display = 'none';
+                imgInput.disabled = false;
+                vidInput.disabled = false;
+            }
+        }
+    }
 
     function resetWizard() {
         detenerPolling(); wizard = {}; campañaCreada = null;
-        document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea').forEach(el => { el.value = ''; });
+        document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea').forEach(el => { el.value = ''; el.disabled = false; });
         poblarRedesDePago('');
         const btnPay = document.getElementById('btn-pay'); if (btnPay) { btnPay.style.display = ''; btnPay.disabled = false; btnPay.textContent = '◈ Continuar al Pago'; }
         showWizardStep('1');
@@ -1066,13 +1015,46 @@
         else if (n === '3') { const nombre = document.getElementById('campaign-name').value.trim(); if (!nombre) { showToast('Escribe un nombre', 'warning'); return; } if (nombre.length > 120) { showToast('Máximo 120 caracteres', 'warning'); return; } wizard.nombre = nombre; showWizardStep('4'); }
         else if (n === '4') { wizard.objetivo = document.getElementById('campaign-objective').value; showWizardStep('5'); }
         else if (n === '5') { const budget = parseFloat(document.getElementById('campaign-budget').value); if (!budget || budget <= 0) { showToast('Ingresa un presupuesto válido', 'warning'); return; } if (budget > 1000000) { showToast('Presupuesto demasiado alto', 'warning'); return; } const red = document.getElementById('pay-currency').value; if (!red) { showToast('Selecciona una red de pago válida para tu monto', 'warning'); return; } wizard.presupuesto = budget; wizard.pay_currency = red; showWizardStep('6'); }
-        else if (n === '6') { const titulo = document.getElementById('ad-title').value.trim(); const descripcion = document.getElementById('ad-description').value.trim(); const imagen = document.getElementById('ad-image').value.trim(); const video = document.getElementById('ad-video').value.trim(); const cta = document.getElementById('ad-cta').value.trim(); if (!titulo) { showToast('Escribe un título', 'warning'); return; } if (imagen && !isValidHttpUrl(imagen)) { showToast('URL de imagen inválida', 'warning'); return; } if (video && !isValidHttpUrl(video)) { showToast('URL de video inválida', 'warning'); return; } wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: imagen || null, video_url: video || null, cta_texto: cta || 'Ver más' }; mostrarResumen(); showWizardStep('7'); }
+        else if (n === '6') { 
+            const titulo = document.getElementById('ad-title').value.trim(); 
+            const descripcion = document.getElementById('ad-description').value.trim(); 
+            const imagen = document.getElementById('ad-image').value.trim(); 
+            const video = document.getElementById('ad-video').value.trim(); 
+            const cta = document.getElementById('ad-cta').value.trim(); 
+            
+            if (!titulo) { showToast('Escribe un título', 'warning'); return; } 
+
+            if (wizard.media_id) {
+                // Si hay media IA aceptada, ignoramos campos manuales
+                wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: null, video_url: null, cta_texto: cta || 'Ver más' };
+            } else {
+                if (imagen && !isValidHttpUrl(imagen)) { showToast('URL de imagen inválida', 'warning'); return; } 
+                if (video && !isValidHttpUrl(video)) { showToast('URL de video inválida', 'warning'); return; } 
+                if (!imagen && !video) { showToast('Incluye una imagen, un video o acepta una media IA', 'warning'); return; }
+                wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: imagen || null, video_url: video || null, cta_texto: cta || 'Ver más' };
+            }
+            mostrarResumen(); 
+            showWizardStep('7'); 
+        }
     }
 
     function mostrarResumen() {
         const red = REDES_PAGO.find(r => r.value === wizard.pay_currency);
         const usd = (wizard.presupuesto * MXN_A_USD_APROX).toFixed(2);
-        document.getElementById('summary-content').innerHTML = `<div class="detail-row"><span>Campaña</span><span>${escapeHTML(wizard.nombre)}</span></div><div class="detail-row"><span>Destino</span><span>${escapeHTML(wizard.target_tipo.toUpperCase())}</span></div><div class="detail-row"><span>Objetivo</span><span>${escapeHTML(wizard.objetivo)}</span></div><div class="detail-row"><span>Presupuesto</span><span>$${wizard.presupuesto.toFixed(2)} MXN</span></div><div class="detail-row"><span>Red de pago</span><span>${escapeHTML(red ? red.label : wizard.pay_currency)}</span></div><div class="detail-row"><span>A pagar aprox</span><span>~$${usd} USD</span></div><div class="detail-row"><span>Anuncio</span><span>${escapeHTML(wizard.ad.titulo)}</span></div>`;
+        const filaMedia = wizard.media_id
+            ? `<div class="detail-row"><span>Creativo</span><span>✦ Media IA (${escapeHTML(wizard.media_tipo || 'contenido')})</span></div>`
+            : '';
+
+        document.getElementById('summary-content').innerHTML = `
+            <div class="detail-row"><span>Campaña</span><span>${escapeHTML(wizard.nombre)}</span></div>
+            <div class="detail-row"><span>Destino</span><span>${escapeHTML(wizard.target_tipo.toUpperCase())}</span></div>
+            <div class="detail-row"><span>Objetivo</span><span>${escapeHTML(wizard.objetivo)}</span></div>
+            <div class="detail-row"><span>Presupuesto</span><span>$${wizard.presupuesto.toFixed(2)} MXN</span></div>
+            <div class="detail-row"><span>Red de pago</span><span>${escapeHTML(red ? red.label : wizard.pay_currency)}</span></div>
+            <div class="detail-row"><span>A pagar aprox</span><span>~$${usd} USD</span></div>
+            ${filaMedia}
+            <div class="detail-row"><span>Anuncio</span><span>${escapeHTML(wizard.ad.titulo)}</span></div>
+        `;
     }
 
     async function obtenerToken() { const { data } = await supabaseClient.auth.getSession(); const token = data?.session?.access_token; if (!token) throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); return token; }
@@ -1085,9 +1067,22 @@
 
             if (!campañaCreada) {
                 btn.textContent = '◈ Creando campaña...';
+                
+                // NUEVO: Se agrega media_id al payload si existe
+                const bodyData = {
+                    nombre: wizard.nombre, 
+                    objetivo: wizard.objetivo, 
+                    presupuesto: wizard.presupuesto, 
+                    destino_tipo: wizard.target_tipo, 
+                    destino_id: wizard.target_id, 
+                    pay_currency: wizard.pay_currency, 
+                    ad: wizard.ad
+                };
+                if (wizard.media_id) bodyData.media_id = wizard.media_id;
+
                 const r1 = await fetch(`${BACKEND_URL}/api/campanas/crear`, {
                     method: 'POST', headers,
-                    body: JSON.stringify({ nombre: wizard.nombre, objetivo: wizard.objetivo, presupuesto: wizard.presupuesto, destino_tipo: wizard.target_tipo, destino_id: wizard.target_id, pay_currency: wizard.pay_currency, ad: wizard.ad })
+                    body: JSON.stringify(bodyData)
                 });
                 const j1 = await r1.json().catch(() => ({}));
                 if (!r1.ok || !j1.success || !j1.data?.campaign_id) throw new Error(j1.error || 'No se pudo crear la campaña');
