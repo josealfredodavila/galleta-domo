@@ -3,7 +3,7 @@
 // ================================================================
 // Sistema de anuncios patrocinados dentro de los grupos.
 // Depende de: grupos-config.js, grupos-utils.js
-// v2.0 (Añadido Menú de Opciones 3 Puntos y Reportes)
+// v2.1 (Añadido Menú de 3 Puntos, Reportes y Visor de Imagen)
 // ================================================================
 
 // ================================================================
@@ -16,19 +16,23 @@ function getOrCreateAdSessionId() {
 }
 
 // ================================================================
-// INYECCIÓN DE ESTILOS PARA EL MENÚ DE OPCIONES
+// INYECCIÓN DE ESTILOS PARA EL MENÚ Y EL VISOR
 // ================================================================
 function inyectarEstilosMenuAnuncios() {
     if (document.getElementById('ad-menu-styles')) return;
     var style = document.createElement('style');
     style.id = 'ad-menu-styles';
     style.appendChild(document.createTextNode(`
+        /* Botón 3 puntos */
         .ad-menu-btn { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.5); border: 0; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        
+        /* Menú deslizante */
         .ad-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; border-top-left-radius: 16px; border-top-right-radius: 16px; transform: translateY(100%); transition: transform 0.3s; z-index: 20; padding-bottom: env(safe-area-inset-bottom, 10px); display: flex; flex-direction: column; }
         .ad-sheet.show { transform: translateY(0); }
         .ad-sheet-btn { display: flex; align-items: center; gap: 15px; width: 100%; padding: 15px 20px; border: 0; border-top: 1px solid #eee; background: transparent; color: #000; font-size: 16px; text-align: left; cursor: pointer; }
         .ad-sheet-btn .icon { display: flex; align-items: center; justify-content: center; color: #333; }
         
+        /* Pantalla de reporte */
         .ad-report-sheet { position: absolute; inset: 0; background: #fff; z-index: 30; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s; }
         .ad-report-sheet.show { transform: translateX(0); }
         .ad-report-header { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; }
@@ -37,6 +41,12 @@ function inyectarEstilosMenuAnuncios() {
         .ad-report-option { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 16px 0; border: 0; border-bottom: 1px solid #eee; background: transparent; font-size: 1rem; font-weight: 600; color: #000; text-align: left; cursor: pointer; }
         .ad-report-footer { padding: 15px 20px; border-top: 1px solid #eee; background: #fff; }
         .ad-btn-enviar { width: 100%; padding: 16px; background: #1d7bf4; color: #fff; font-size: 1.1rem; font-weight: 700; border: 0; border-radius: 8px; cursor: pointer; }
+        
+        /* Visor a pantalla completa */
+        .ad-visor-full { position: fixed; inset: 0; z-index: 100060; background: #000; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.3s; touch-action: manipulation; }
+        .ad-visor-full.show { opacity: 1; }
+        .ad-visor-full img { max-width: 100%; max-height: 100%; object-fit: contain; }
+        .ad-visor-cerrar { position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,0.1); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     `));
     document.head.appendChild(style);
 }
@@ -49,6 +59,41 @@ function cerrarAnuncio() {
     const container = document.getElementById('marketingAdContainer');
     if (container) container.classList.remove('visible');
     anuncioActual = null;
+}
+
+// ================================================================
+// VISOR DE IMAGEN A PANTALLA COMPLETA (NUEVO)
+// ================================================================
+function abrirVisorAnuncio(urlImagen) {
+    let visor = document.getElementById('adVisorFull');
+    if (visor) visor.remove();
+
+    visor = document.createElement('div');
+    visor.id = 'adVisorFull';
+    visor.className = 'ad-visor-full';
+
+    let img = document.createElement('img');
+    img.src = urlImagen;
+
+    let btnCerrar = document.createElement('button');
+    btnCerrar.className = 'ad-visor-cerrar';
+    btnCerrar.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+
+    let cerrar = function() {
+        visor.classList.remove('show');
+        setTimeout(() => visor.remove(), 300);
+        document.body.style.overflow = '';
+    };
+
+    btnCerrar.onclick = cerrar;
+    visor.onclick = function(e) { if (e.target === visor) cerrar(); };
+
+    visor.appendChild(img);
+    visor.appendChild(btnCerrar);
+    document.body.appendChild(visor);
+    document.body.style.overflow = 'hidden';
+
+    requestAnimationFrame(() => visor.classList.add('show'));
 }
 
 // ================================================================
@@ -89,7 +134,7 @@ async function cargarAnuncioGrupo() {
 }
 
 // ================================================================
-// MOSTRAR ANUNCIO EN EL DOM (CON MENÚ DE 3 PUNTOS)
+// MOSTRAR ANUNCIO EN EL DOM (CON MENÚ Y VISOR)
 // ================================================================
 function mostrarAnuncio(ad) {
     inyectarEstilosMenuAnuncios();
@@ -106,12 +151,15 @@ function mostrarAnuncio(ad) {
     if (oldBtn) oldBtn.remove();
     const oldSheet = container.querySelector('.ad-sheet');
     if (oldSheet) oldSheet.remove();
+    const oldReport = container.querySelector('.ad-report-sheet');
+    if (oldReport) oldReport.remove();
 
     var img = grpSafeUrl(ad.imagen_url);
     var vid = grpSafeUrl(ad.video_url);
 
     if (img) {
-        media.innerHTML = `<img src="${grpEscapeHTML(img)}" alt="${grpEscapeHTML(ad.titulo)}" loading="lazy" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
+        media.innerHTML = `<img src="${grpEscapeHTML(img)}" alt="${grpEscapeHTML(ad.titulo)}" loading="lazy" style="cursor:pointer;" onerror="this.parentElement.innerHTML='<span>◈</span>'">`;
+        media.querySelector('img').onclick = function() { abrirVisorAnuncio(this.src); };
     } else if (vid) {
         media.innerHTML = `<video src="${grpEscapeHTML(vid)}" muted autoplay loop playsinline></video>`;
     } else {
@@ -157,7 +205,7 @@ function mostrarAnuncio(ad) {
             <button class="ad-report-option" data-motivo="Spam">Spam ${svgChevron}</button>
         </div>
         <div class="ad-report-footer">
-            <button type="button" class="ad-btn-enviar" id="ad-enviar-final">Enviar</button>
+            <button type="button" class="ad-btn-enviar" id="ad-enviar-final" style="display:none;" disabled>Enviar</button>
         </div>
     `;
     container.appendChild(reportSheet);
@@ -167,7 +215,7 @@ function mostrarAnuncio(ad) {
     
     sheet.querySelector('#ad-btn-ocultar').onclick = () => {
         sheet.classList.remove('show');
-        cerrarAnuncio(); // Oculta el anuncio de la vista
+        cerrarAnuncio();
         if (window.showToast) window.showToast('Anuncio oculto', 'success');
     };
 
@@ -189,19 +237,12 @@ function mostrarAnuncio(ad) {
     let motivoSeleccionado = '';
     const botonesMotivo = reportSheet.querySelectorAll('.ad-report-option');
     const btnEnviarFinal = reportSheet.querySelector('#ad-enviar-final');
-    
-    // Ocultar botón de enviar al principio hasta que elija motivo
-    btnEnviarFinal.style.display = 'none';
-    btnEnviarFinal.disabled = true;
 
     botonesMotivo.forEach(btn => {
         btn.onclick = function() {
             motivoSeleccionado = this.getAttribute('data-motivo');
-            // Resaltar botón seleccionado
             botonesMotivo.forEach(b => b.style.background = 'transparent');
             this.style.background = '#f0f0f0';
-            
-            // Habilitar botón de enviar
             btnEnviarFinal.style.display = 'block';
             btnEnviarFinal.disabled = false;
         };
@@ -219,11 +260,9 @@ function mostrarAnuncio(ad) {
             const session = sessionResult.data ? sessionResult.data.session : null;
             
             if (session) {
-                // Insertar en la tabla de reportes de grupos
                 await client.from('grupos_video_reportes').insert({
                     usuario_id: session.user.id,
-                    motivo: motivoSeleccionado,
-                    // Nota: Si la tabla tiene un campo para el ID del grupo o anuncio, se podría añadir aquí
+                    motivo: motivoSeleccionado
                 });
             }
             
