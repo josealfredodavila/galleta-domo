@@ -1,14 +1,7 @@
 /* ================================================================
    routes/ai-chat.js - CHAT DE TEXTO CON MARQUINHOS + ESTUDIO IA (v2.5)
    PRODUCCIÓN - GROQ + OpenAI (Edición de Imagen / TTS)
-   ================================================================
-   Endpoint: POST /api/ai/chat
-   Modelo:   Groq (openai/gpt-oss-120b por defecto)
-
-   v2.5: agrega endpoints de Estudio IA:
-     - POST /editar-imagen (OpenAI GPT Image 1)
-     - POST /tts (OpenAI Text to Speech)
-================================================================ */
+   ================================================================ */
 
 'use strict';
 
@@ -207,6 +200,11 @@ Es.stoks son tokens del ecosistema.
 12 Es.stoks corresponden al objetivo de 1 NFT Domo.
 
 Puedes orientar sobre Domos, Es.stoks, NFT, Polygon, LIVE, canales, mensajes y funciones generales del ecosistema.
+
+CAPACIDADES DE CREACIÓN:
+Sí puedes crear imágenes y videos. Cuando el usuario te pida una imagen o un video, 
+indícale que use los botones de "Generar Imagen" o "Generar Video" que aparecen en la interfaz. 
+No le digas que use Canva, Figma ni herramientas externas. Tu interfaz ya tiene integrada la generación de contenido.
 
 REGLAS DE SEGURIDAD Y PRECISIÓN:
 
@@ -439,7 +437,6 @@ router.post('/editar-imagen', autenticar, async (req, res) => {
             return res.status(400).json({ success: false, error: 'El prompt no puede exceder 1000 caracteres.' });
         }
 
-        // Verificar cuota (3 gratis / 50 Pro al mes)
         let total = 0;
         let esPro = false;
         try {
@@ -451,7 +448,6 @@ router.post('/editar-imagen', autenticar, async (req, res) => {
             esPro = Boolean(m && m.activa && m.vence_at && new Date(m.vence_at) > new Date());
         } catch (e) {
             console.error('⚠️ Error consultando cuota IA:', e.message);
-            // Si falla la cuota, seguimos pero con límite gratuito conservador
             total = 0;
             esPro = false;
         }
@@ -466,7 +462,6 @@ router.post('/editar-imagen', autenticar, async (req, res) => {
             });
         }
 
-        // Descargar imagen original
         let bufferOriginal;
         try {
             const imgResp = await axios.get(imagen_url, {
@@ -480,7 +475,6 @@ router.post('/editar-imagen', autenticar, async (req, res) => {
             return res.status(400).json({ success: false, error: 'No se pudo descargar la imagen original.' });
         }
 
-        // Preparar FormData
         const formData = new FormData();
         formData.append('model', 'gpt-image-1');
         formData.append('image', bufferOriginal, { filename: 'original.png', contentType: 'image/png' });
@@ -488,7 +482,6 @@ router.post('/editar-imagen', autenticar, async (req, res) => {
         formData.append('n', '1');
         formData.append('size', '1024x1024');
 
-        // Llamar a OpenAI
         let respuestaOpenAI;
         try {
             respuestaOpenAI = await axios.post(
@@ -514,7 +507,6 @@ router.post('/editar-imagen', autenticar, async (req, res) => {
         const bufferResultado = Buffer.from(primer.b64_json, 'base64');
         const nombreArchivo = `ia/imagenes/${req.user.id}/${Date.now()}.png`;
 
-        // Subir a R2
         try {
             await s3.send(new PutObjectCommand({
                 Bucket: R2_BUCKET,
@@ -530,7 +522,6 @@ router.post('/editar-imagen', autenticar, async (req, res) => {
 
         const urlFinal = `${R2_PUBLIC_URL}/${nombreArchivo}`;
 
-        // Registrar en ai_jobs
         try {
             await supabaseAdmin.from('ai_jobs').insert({
                 usuario_id: req.user.id,
