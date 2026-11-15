@@ -6,16 +6,16 @@
 //       DON-    → donaciones de live
 //       TRX-    → accesos de pago a lives
 //       muro_   → ventas P2P del Muro
-//       MKT-    → pagos de campañas de marketing
+//       MKT-    → pagos de campañas de marketing  (nowpayments-marketing.js)
 //       MKC-    → compras del Marketplace de canales
 //       NET-    → paquetes de Internet
 //       PRO-    → membresía PRO
-//       ANU-    → pagos de anuncios del carrusel  ✅
+//       ANU-    → pagos de anuncios del carrusel
 //       resto   → membresía de Mercado (por payment_id)
 //   POST /api/webhook/membresia   → membresía PRO
 //   POST /api/webhook/stripe      → placeholder
 //   POST /api/webhook/fintoc      → placeholder
-// v2: carga del módulo de anuncios protegida con try/catch.
+// v3: MKT- usa el manejador de campañas con confirmación única.
 // ================================================================
 
 const express = require('express');
@@ -24,11 +24,12 @@ const router = express.Router();
 const { verificarFirmaNowPayments } = require('../utils/nowpayments-sig');
 const nowpayments = require('./webhooks/nowpayments');
 const ventas = require('./webhooks/nowpayments-ventas');
+const marketingPagos = require('./webhooks/nowpayments-marketing');
 const marketplaceCanal = require('./webhooks/nowpayments-marketplace');
 const { handleWebhookMembresia } = require('./membresia-webhook-handler');
 const { handleWebhookInternet } = require('./webhooks/nowpayments-internet');
 
-// ✅ Carga protegida del módulo de anuncios (no tumba la app si falta)
+// Carga protegida del módulo de anuncios (no tumba la app si falta)
 let anunciosPagos = null;
 try {
     anunciosPagos = require('../services/anuncios/pagos-anuncio');
@@ -82,7 +83,7 @@ router.post('/nowpayments', async (req, res) => {
             return ventas.procesarVentaMuro(orderId.slice(5), npStatus, data, res);
         }
         if (orderUpper.startsWith('MKT-')) {
-            return ventas.procesarPagoMarketing(orderId.slice(4), npStatus, data, res);
+            return marketingPagos.procesarPagoMarketing(orderId.slice(4), npStatus, data, res);
         }
         if (orderUpper.startsWith('MKC-')) {
             return marketplaceCanal.procesarCompraMarketplace(orderId, npStatus, data, res);
@@ -94,11 +95,9 @@ router.post('/nowpayments', async (req, res) => {
             return handleWebhookMembresia(req, res);
         }
 
-        // ✅ Rama ANU- para anuncios del carrusel (protegida)
         if (orderUpper.startsWith('ANU-')) {
             if (!anunciosPagos) {
                 logError(`ANU recibido pero módulo no disponible: ${orderId}`);
-                // Respondemos 200 para que NOWPayments no reintente en bucle.
                 return res.status(200).json({ ok: true, ignorado: 'modulo_anu_no_disponible' });
             }
             return anunciosPagos.procesarPagoAnuncio(orderId, npStatus, data, res);
