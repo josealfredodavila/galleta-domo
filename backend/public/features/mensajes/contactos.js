@@ -1,18 +1,16 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v26.0
+   CSARIEL'S · CONTACTOS · v26.1
    ============================================================
-   Arquitectura:
-   - Perfiles por LOTE: una sola llamada RPC `perfiles_por_ids`
-     (SECURITY DEFINER) trae nombre, handle y avatar de todas las
-     personas que aparecen en la pantalla. Sin consultas individuales.
-   - Caché en memoria por sesión: un perfil ya cargado no se vuelve
-     a pedir a la red. Los perfiles no encontrados también se guardan
-     (null) para no repetir la consulta.
-   - Un solo refresco (refrescarTodo) reúne contactos, solicitudes
-     recibidas, enviadas y bloqueados; luego pide los perfiles en un
-     solo lote y pinta todas las secciones a la vez.
+   v26.1:
+   - Sección renombrada a "Personas activas".
+   - Sugerencias muestran "N en común" cuando hay contactos compartidos.
+   - La función sugerencias_usuarios v2 prioriza contactos en común y
+     rota la muestra al azar entre personas activas.
+
+   Arquitectura (sin cambios de fondo):
+   - Perfiles por LOTE con RPC perfiles_por_ids y caché en memoria.
+   - Un solo refresco (refrescarTodo) para contactos, solicitudes y bloqueados.
    - Errores visibles en cada sección con botón Reintentar.
-   - Ninguna tarjeta muestra "Cargando..." de forma permanente.
    ============================================================ */
 
 (function () {
@@ -28,6 +26,8 @@
         RPC_INVITACION: 'obtener_o_crear_invitacion',
         RPC_RESPONDER_SOLICITUD: 'responder_solicitud_amistad',
         RPC_ELIMINAR_AMISTAD: 'eliminar_amistad',
+
+        TITULO_SUGERENCIAS: 'Personas activas',
 
         PERFIL_PUBLICO_URL: '/features/perfil/perfil-publico.html',
         MENSAJES_URL: '/features/mensajes/mensajes.html',
@@ -47,7 +47,6 @@
 
     var state = {
         initialized: false,
-        inicializando: false,
         cargando: false,
         session: null,
         sessionExpira: 0,
@@ -683,7 +682,8 @@
     }
 
     /* ============================================================
-       SUGERENCIAS (una consulta; los perfiles entran a la caché)
+       PERSONAS ACTIVAS (sugerencias)
+       Una consulta; prioriza contactos en común y rota la muestra.
        ============================================================ */
 
     async function cargarSugerencias() {
@@ -693,22 +693,24 @@
         var contenedor = document.getElementById('sugerenciasLista');
         if (!client || !session || !seccion || !contenedor) return;
 
+        // Título de la sección
+        var titulo = seccion.querySelector('.sugerencias-titulo');
+        if (titulo) titulo.textContent = CONFIG.TITULO_SUGERENCIAS;
+
         quitarAviso(seccion);
         try {
-            var excluir = new Set([session.user.id]);
-            state.idsContactosSet.forEach(function (id) { excluir.add(id); });
-            state.pendientesEnviadas.forEach(function (s) { excluir.add(s.contacto_id); });
-            state.pendientesRecibidas.forEach(function (s) { excluir.add(s.usuario_id); });
-            state.bloqueados.forEach(function (b) { excluir.add(b.bloqueado_id); });
-
             var r = await withRetry(function () {
                 return client.rpc(CONFIG.RPC_SUGERENCIAS, { p_limit: CONFIG.MAX_SUGERENCIAS });
-            }, 'sugerencias');
+            }, 'personas activas');
             if (r.error) throw r.error;
-            var crudo = Array.isArray(r.data) ? r.data : [];
-            var sugeridos = crudo.filter(function (u) { return u && u.id && !excluir.has(u.id); }).slice(0, CONFIG.MAX_SUGERENCIAS);
 
-            crudo.forEach(function (u) { if (u && u.id && !state.perfiles.has(u.id)) state.perfiles.set(u.id, normalizarPerfil(u)); });
+            var crudo = Array.isArray(r.data) ? r.data : [];
+            var sugeridos = crudo.filter(function (u) { return u && u.id; }).slice(0, CONFIG.MAX_SUGERENCIAS);
+
+            // Los perfiles devueltos entran a la caché para no volver a pedirlos
+            sugeridos.forEach(function (u) {
+                if (!state.perfiles.has(u.id)) state.perfiles.set(u.id, normalizarPerfil(u));
+            });
 
             if (!sugeridos.length) { seccion.style.display = 'none'; contenedor.innerHTML = ''; return; }
             seccion.style.display = 'block';
@@ -716,20 +718,25 @@
             contenedor.innerHTML = sugeridos.map(function (u) {
                 var d = datosPerfil(u.id);
                 var estado = d.online ? '<span class="estado online">● En línea</span>' : '<span class="estado">Desconectado</span>';
+                var enComun = Number(u.contactos_en_comun) || 0;
+                var nota = enComun > 0
+                    ? '<div class="handle">' + enComun + (enComun === 1 ? ' contacto en común' : ' contactos en común') + '</div>'
+                    : '';
                 return '<div class="sugerencia-card">' +
                     '<div class="avatar ' + (d.online ? 'online' : '') + '">' + avatarHtml(d) + '</div>' +
                     '<div class="info">' +
                         '<div class="nombre">' + escapeHtml(d.nombre) + (d.verificado ? ' <span class="verified">✓</span>' : '') + '</div>' +
-                        '<div class="handle">' + escapeHtml(d.handle) + '</div>' + estado +
+                        '<div class="handle">' + escapeHtml(d.handle) + '</div>' +
+                        nota + estado +
                     '</div>' +
                     '<div class="acciones"><button type="button" class="btn-agregar-sugerencia" data-sugerencia-agregar="' + escapeHtml(u.id) + '">Conectar</button></div>' +
                 '</div>';
             }).join('');
         } catch (error) {
-            console.error('[Contactos] Sugerencias:', detalleError(error));
+            console.error('[Contactos] Personas activas:', detalleError(error));
             seccion.style.display = 'block';
             contenedor.innerHTML = '';
-            avisoSeccion(seccion, 'No se pudieron cargar las sugerencias: ' + detalleError(error), cargarSugerencias);
+            avisoSeccion(seccion, 'No se pudieron cargar las personas activas: ' + detalleError(error), cargarSugerencias);
         }
     }
 
@@ -1235,7 +1242,7 @@
             });
         }
 
-        // Delegación para solicitudes, enviadas, bloqueados, sugerencias y modal
+        // Delegación para solicitudes, enviadas, bloqueados, personas activas y modal
         document.addEventListener('click', function (event) {
             var t = event.target;
 
