@@ -206,23 +206,35 @@
             </article>`;
     }
 
+    // ========================================================
+    // AQUÍ ESTÁ LA MAGIA: La tarjeta ahora usa la imagen de fondo
+    // ========================================================
     function cardHtml(item, index) {
         const cat = state.category;
+        const imagen = urlSegura(item.imagen);
+        const tieneImagen = imagen !== '#';
+        
+        // Fondo con la imagen (o color si falla)
+        const estiloFondo = tieneImagen 
+            ? `background-image: url('${escapeHtml(imagen)}'); background-size: cover; background-position: center;`
+            : '';
+
         return `
-            <article class="card" data-index="${index}">
-                <div style="position:relative; border-radius: 14px; overflow: hidden; margin-bottom: 14px; aspect-ratio: 16/10;">
-                    ${coverHtml(item, cat)}
-                    <div class="scrim" style="position:absolute; inset:0; background: linear-gradient(to top, rgba(15,15,16,0.9) 0%, transparent 60%);"></div>
-                    <div style="position:absolute; bottom: 12px; left: 12px; z-index: 3;">
-                        ${encabezadoHtml(item, cat)}
+            <article class="card" data-index="${index}" style="padding: 0; border: none; border-radius: 16px; overflow: hidden; margin-bottom: 20px; position: relative; min-height: 320px; display: flex; flex-direction: column; justify-content: flex-end; background-color: #111; ${estiloFondo}">
+                
+                <!-- Degradado oscuro para que el texto se lea -->
+                <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,15,16,0.95) 0%, rgba(15,15,16,0.4) 60%, transparent 100%); z-index: 1;"></div>
+                
+                <!-- Contenido encima -->
+                <div style="position: relative; z-index: 2; padding: 20px;">
+                    ${encabezadoHtml(item, cat)}
+                    <h2 style="margin: 8px 0 10px; font-size: 1.3rem; line-height: 1.25; color: #fff;">${escapeHtml(item.titulo)}</h2>
+                    <div class="summary-wrap">
+                        <p class="summary" data-role="resumen" style="color: #ccc; margin: 0; font-size: 0.95rem;">${escapeHtml(item.resumen)}</p>
+                        <button class="more" type="button" data-action="more" style="margin-top: 8px;">Ver más</button>
                     </div>
+                    ${actionsHtml(index, item.fuentes?.[0]?.url)}
                 </div>
-                <h2>${escapeHtml(item.titulo)}</h2>
-                <div class="summary-wrap">
-                    <p class="summary" data-role="resumen">${escapeHtml(item.resumen)}</p>
-                    <button class="more" type="button" data-action="more">Ver más</button>
-                </div>
-                ${actionsHtml(index, item.fuentes?.[0]?.url)}
             </article>`;
     }
 
