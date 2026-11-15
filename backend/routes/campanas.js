@@ -1,10 +1,19 @@
 // ================================================================
-// routes/campanas.js — Campañas de marketing (creación segura)
+// routes/campanas.js — Campañas de marketing (creación segura) v2
 // Endpoint: POST /api/campanas/crear
 //
-// El frontend envía los datos aquí. El backend:
+// Destinos soportados:
+//   live   → transmisiones.id (integer), debe estar en vivo
+//   grupo  → grupos_video.id (uuid)
+//   video  → videos.id (uuid), o '__feed__' para todo el feed de videos
+//
+// Dependencias validadas:
+//   middleware/auth.js      → verificarToken (req.usuario)
+//   middleware/rateLimit.js → limitadorPagos (por usuario)
+//
+// El backend:
 //   1. Valida campos (nombre, objetivo, presupuesto, destino, anuncio, red de pago).
-//   2. Verifica que el destino exista y esté en vivo (live) o exista (grupo).
+//   2. Verifica que el destino exista (y esté en vivo si es live).
 //   3. Inserta campaña, anuncio y destino; si algo falla, revierte todo.
 //   4. Devuelve campaign_id. El pago se pide después en
 //      POST /api/payments/marketing/create.
@@ -25,7 +34,8 @@ const { limitadorPagos } = require('../middleware/rateLimit');
 // ================================================================
 
 const OBJETIVOS = ['alcance', 'reproducciones', 'interacciones', 'clics'];
-const DESTINOS = ['live', 'grupo'];
+const DESTINOS = ['live', 'grupo', 'video'];
+const FEED_VIDEO = '__feed__';
 
 // Mismo valor que routes/payments.js. Mantener sincronizado.
 const MXN_A_USD_APROX = 0.055;
@@ -82,6 +92,63 @@ function validarRedPago(payCurrency, montoMxn) {
     return { valido: true, red };
 }
 
+// Convierte el destino recibido en la referencia que espera cada tabla.
+// Devuelve { error } o { ref } donde ref es null para el feed de videos.
+function parsearDestino(destinoTipo, destinoIdRaw) {
+    if (destinoTipo === 'live') {
+        const n = Number(destinoIdRaw);
+        if (!Number.isInteger(n) || n <= 0) return { error: 'ID de live inválido' };
+        return { ref: n };
+    }
+    if (destinoTipo === 'grupo') {
+        if (!UUID_REGEX.test(destinoIdRaw)) return { error: 'ID de grupo inválido' };
+        return { ref: destinoIdRaw };
+    }
+    // video
+    if (destinoIdRaw === FEED_VIDEO) return { ref: null };
+    if (!UUID_REGEX.test(destinoIdRaw)) return { error: 'ID de video inválido' };
+    return { ref: destinoIdRaw };
+}
+
+// Verifica que el destino exista y, si es live, que esté en vivo
+async function verificarDestino(destinoTipo, destinoRef) {
+    if (destinoTipo === 'video' && destinoRef === null) return { ok: true };
+
+    if (destinoTipo === 'live') {
+        const { data, error } = await supabaseAdmin
+            .from('transmisiones')
+            .select('id')
+            .eq('id', destinoRef)
+            .eq('estado', 'en_vivo')
+            .eq('is_live', true)
+            .maybeSingle();
+        if (error) return { error: 'Error verificando el destino', interno: error.message };
+        if (!data) return { error: 'El live no está en vivo' };
+        return { ok: true };
+    }
+
+    if (destinoTipo === 'grupo') {
+        const { data, error } = await supabaseAdmin
+            .from('grupos_video')
+            .select('id')
+            .eq('id', destinoRef)
+            .maybeSingle();
+        if (error) return { error: 'Error verificando el destino', interno: error.message };
+        if (!data) return { error: 'Grupo no encontrado' };
+        return { ok: true };
+    }
+
+    // video (uno específico)
+    const { data, error } = await supabaseAdmin
+        .from('videos')
+        .select('id')
+        .eq('id', destinoRef)
+        .maybeSingle();
+    if (error) return { error: 'Error verificando el destino', interno: error.message };
+    if (!data) return { error: 'Video no encontrado' };
+    return { ok: true };
+}
+
 // ================================================================
 // POST /api/campanas/crear
 // ================================================================
@@ -122,17 +189,9 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
         const validacionRed = validarRedPago(payCurrency, presupuesto);
         if (!validacionRed.valido) return respuestaError(res, 400, validacionRed.error);
 
-        // ---------- Destino: tipo de dato según la tabla ----------
-        // live → transmisiones.id (integer); grupo → grupos_video.id (uuid)
-        let destinoRef;
-        if (destinoTipo === 'live') {
-            const n = Number(destinoIdRaw);
-            if (!Number.isInteger(n) || n <= 0) return respuestaError(res, 400, 'ID de live inválido');
-            destinoRef = n;
-        } else {
-            if (!UUID_REGEX.test(destinoIdRaw)) return respuestaError(res, 400, 'ID de grupo inválido');
-            destinoRef = destinoIdRaw;
-        }
+        const destino = parsearDestino(destinoTipo, destinoIdRaw);
+        if (destino.error) return respuestaError(res, 400, destino.error);
+        const destinoRef = destino.ref; // null solo para el feed de videos
 
         // ---------- Límite de campañas sin pagar ----------
         const { count: pendientes, error: errCount } = await supabaseAdmin
@@ -151,33 +210,11 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
         }
 
         // ---------- Destino existente (y en vivo si es live) ----------
-        let destinoValido;
-        if (destinoTipo === 'live') {
-            const { data, error } = await supabaseAdmin
-                .from('transmisiones')
-                .select('id')
-                .eq('id', destinoRef)
-                .eq('estado', 'en_vivo')
-                .eq('is_live', true)
-                .maybeSingle();
-            if (error) {
-                logger.error(`campanas/crear live: ${error.message}`);
-                return respuestaError(res, 500, 'Error verificando el destino');
-            }
-            destinoValido = data;
-            if (!destinoValido) return respuestaError(res, 400, 'El live no está en vivo');
-        } else {
-            const { data, error } = await supabaseAdmin
-                .from('grupos_video')
-                .select('id')
-                .eq('id', destinoRef)
-                .maybeSingle();
-            if (error) {
-                logger.error(`campanas/crear grupo: ${error.message}`);
-                return respuestaError(res, 500, 'Error verificando el destino');
-            }
-            destinoValido = data;
-            if (!destinoValido) return respuestaError(res, 400, 'Grupo no encontrado');
+        const verif = await verificarDestino(destinoTipo, destinoRef);
+        if (verif.error) {
+            if (verif.interno) logger.error(`campanas/crear destino ${destinoTipo}: ${verif.interno}`);
+            const status = verif.interno ? 500 : 400;
+            return respuestaError(res, status, verif.error);
         }
 
         // ---------- Insert 1: campaña ----------
@@ -228,6 +265,7 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
                 destino_tipo: destinoTipo,
                 destino_live_id: destinoTipo === 'live' ? destinoRef : null,
                 destino_grupo_id: destinoTipo === 'grupo' ? destinoRef : null,
+                destino_video_id: destinoTipo === 'video' ? destinoRef : null,
                 activo: true
             });
 
@@ -244,7 +282,8 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
                 campaign_id: campaignId,
                 target_tipo: destinoTipo,
                 live_id: destinoTipo === 'live' ? destinoRef : null,
-                grupo_id: destinoTipo === 'grupo' ? destinoRef : null
+                grupo_id: destinoTipo === 'grupo' ? destinoRef : null,
+                video_id: destinoTipo === 'video' ? destinoRef : null
             });
 
         if (e3) {
@@ -253,7 +292,7 @@ router.post('/crear', verificarToken, limitadorPagos, async (req, res) => {
             return respuestaError(res, 500, 'No se pudo crear el destino de la campaña');
         }
 
-        logger.info(`Campaña creada: ${campaignId} (anunciante ${userId})`);
+        logger.info(`Campaña creada: ${campaignId} (anunciante ${userId}, destino ${destinoTipo})`);
 
         return res.status(201).json({
             success: true,
