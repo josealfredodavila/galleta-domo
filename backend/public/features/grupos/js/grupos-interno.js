@@ -5,7 +5,73 @@
 // reportes, etiquetas, comentarios, reacciones y acciones del canal.
 // Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js,
 //             grupos-marketplace.js (mkTarjetaCompraHTML)
+// v2.0 (Añadido Visor a Pantalla Completa para fotos de publicaciones)
 // ================================================================
+
+// ================================================================
+// VISOR DE IMÁGENES (PANTALLA COMPLETA)
+// ================================================================
+function abrirVisorGrupo(urlImagen) {
+    let visor = document.getElementById('visorGrupoFull');
+    if (visor) visor.remove();
+
+    visor = document.createElement('div');
+    visor.id = 'visorGrupoFull';
+    visor.style.cssText = `
+        position: fixed; inset: 0; z-index: 100000; background: #000;
+        display: flex; align-items: center; justify-content: center;
+        opacity: 0; transition: opacity 0.3s ease; touch-action: manipulation;
+    `;
+
+    let img = document.createElement('img');
+    img.src = urlImagen;
+    img.style.cssText = `
+        max-width: 100%; max-height: 100%; object-fit: contain;
+        transform: scale(0.95); transition: transform 0.3s ease;
+    `;
+
+    let btnCerrar = document.createElement('button');
+    btnCerrar.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">
+            <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+    `;
+    btnCerrar.style.cssText = `
+        position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px;
+        width: 44px; height: 44px; border-radius: 50%; border: 0;
+        background: rgba(255,255,255,0.1); cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+    `;
+
+    let cerrar = function() {
+        visor.style.opacity = '0';
+        img.style.transform = 'scale(0.95)';
+        setTimeout(() => visor.remove(), 300);
+        document.body.style.overflow = '';
+    };
+
+    btnCerrar.onclick = cerrar;
+    visor.onclick = function(e) {
+        if (e.target === visor) cerrar();
+    };
+
+    let tocoY = 0;
+    visor.addEventListener('touchstart', (e) => { tocoY = e.changedTouches[0].clientY; }, {passive: true});
+    visor.addEventListener('touchend', (e) => {
+        let dy = e.changedTouches[0].clientY - tocoY;
+        if (dy > 100) cerrar();
+    }, {passive: true});
+
+    visor.appendChild(img);
+    visor.appendChild(btnCerrar);
+    document.body.appendChild(visor);
+    document.body.style.overflow = 'hidden';
+
+    requestAnimationFrame(() => {
+        visor.style.opacity = '1';
+        img.style.transform = 'scale(1)';
+    });
+}
 
 // ================================================================
 // HELPERS — Moderación
@@ -419,7 +485,12 @@ function renderizarPublicacionHTML(p) {
     var contenido = grpEscapeHTML(p.contenido || '');
     var imgUrl = grpSafeUrl(p.imagen_url);
     var vidUrl = grpSafeUrl(p.video_url);
-    if (imgUrl) contenido += '<br><img src="' + grpEscapeHTML(imgUrl) + '" loading="lazy" />';
+
+    // ✅ CIRUGÍA: Agregar el onclick a la imagen para abrir el visor
+    if (imgUrl) {
+        contenido += '<br><img src="' + grpEscapeHTML(imgUrl) + '" loading="lazy" style="cursor: pointer;" onclick="abrirVisorGrupo(this.src)" />';
+    }
+    
     if (vidUrl) contenido += '<br><video src="' + grpEscapeHTML(vidUrl) + '" controls preload="metadata"></video>';
     var likesCount = p.likes_count || 0;
     var comentariosCount = p.comentarios_count || 0;
