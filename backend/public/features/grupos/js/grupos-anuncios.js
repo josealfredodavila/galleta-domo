@@ -3,6 +3,7 @@
 // ================================================================
 // Sistema de anuncios patrocinados dentro de los grupos.
 // Depende de: grupos-config.js, grupos-utils.js
+// v2.0 (Añadido Menú de Opciones 3 Puntos y Reportes)
 // ================================================================
 
 // ================================================================
@@ -12,6 +13,32 @@ function getOrCreateAdSessionId() {
     if (adSessionId) return adSessionId;
     adSessionId = `ads_grupo_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
     return adSessionId;
+}
+
+// ================================================================
+// INYECCIÓN DE ESTILOS PARA EL MENÚ DE OPCIONES
+// ================================================================
+function inyectarEstilosMenuAnuncios() {
+    if (document.getElementById('ad-menu-styles')) return;
+    var style = document.createElement('style');
+    style.id = 'ad-menu-styles';
+    style.appendChild(document.createTextNode(`
+        .ad-menu-btn { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,0.5); border: 0; color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .ad-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: #fff; border-top-left-radius: 16px; border-top-right-radius: 16px; transform: translateY(100%); transition: transform 0.3s; z-index: 20; padding-bottom: env(safe-area-inset-bottom, 10px); display: flex; flex-direction: column; }
+        .ad-sheet.show { transform: translateY(0); }
+        .ad-sheet-btn { display: flex; align-items: center; gap: 15px; width: 100%; padding: 15px 20px; border: 0; border-top: 1px solid #eee; background: transparent; color: #000; font-size: 16px; text-align: left; cursor: pointer; }
+        .ad-sheet-btn .icon { display: flex; align-items: center; justify-content: center; color: #333; }
+        
+        .ad-report-sheet { position: absolute; inset: 0; background: #fff; z-index: 30; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s; }
+        .ad-report-sheet.show { transform: translateX(0); }
+        .ad-report-header { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; }
+        .ad-report-header span { font-weight: 700; font-size: 1.1rem; color: #000; }
+        .ad-report-content { padding: 20px; overflow-y: auto; flex: 1; }
+        .ad-report-option { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 16px 0; border: 0; border-bottom: 1px solid #eee; background: transparent; font-size: 1rem; font-weight: 600; color: #000; text-align: left; cursor: pointer; }
+        .ad-report-footer { padding: 15px 20px; border-top: 1px solid #eee; background: #fff; }
+        .ad-btn-enviar { width: 100%; padding: 16px; background: #1d7bf4; color: #fff; font-size: 1.1rem; font-weight: 700; border: 0; border-radius: 8px; cursor: pointer; }
+    `));
+    document.head.appendChild(style);
 }
 
 // ================================================================
@@ -62,15 +89,23 @@ async function cargarAnuncioGrupo() {
 }
 
 // ================================================================
-// MOSTRAR ANUNCIO EN EL DOM
+// MOSTRAR ANUNCIO EN EL DOM (CON MENÚ DE 3 PUNTOS)
 // ================================================================
 function mostrarAnuncio(ad) {
+    inyectarEstilosMenuAnuncios();
+    
     const container = document.getElementById('marketingAdContainer');
     const media = document.getElementById('marketingAdMedia');
     const title = document.getElementById('marketingAdTitle');
     const desc = document.getElementById('marketingAdDesc');
     const cta = document.getElementById('marketingAdCta');
     if (!container || !media || !title || !desc || !cta) return;
+
+    // Limpiar botones previos si los hay
+    const oldBtn = container.querySelector('.ad-menu-btn');
+    if (oldBtn) oldBtn.remove();
+    const oldSheet = container.querySelector('.ad-sheet');
+    if (oldSheet) oldSheet.remove();
 
     var img = grpSafeUrl(ad.imagen_url);
     var vid = grpSafeUrl(ad.video_url);
@@ -82,6 +117,127 @@ function mostrarAnuncio(ad) {
     } else {
         media.innerHTML = '<span>◈</span>';
     }
+
+    // SVG del menú
+    var svgDots = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>`;
+    var svgEyeOff = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+    var svgReport = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+    var svgChevron = `<svg viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
+
+    // Botón de 3 puntos
+    const btnMenu = document.createElement('button');
+    btnMenu.className = 'ad-menu-btn';
+    btnMenu.innerHTML = svgDots;
+    container.appendChild(btnMenu);
+
+    // Hoja inferior (Menú)
+    const sheet = document.createElement('div');
+    sheet.className = 'ad-sheet';
+    sheet.innerHTML = `
+        <div style="width: 40px; height: 4px; background: #ccc; border-radius: 2px; margin: 10px auto 15px auto;"></div>
+        <button class="ad-sheet-btn" id="ad-btn-ocultar"><span class="icon">${svgEyeOff}</span> No quiero ver este anuncio</button>
+        <button class="ad-sheet-btn" id="ad-btn-reportar"><span class="icon">${svgReport}</span> Reportar anuncio</button>
+    `;
+    container.appendChild(sheet);
+
+    // Pantalla de reporte
+    const reportSheet = document.createElement('div');
+    reportSheet.className = 'ad-report-sheet';
+    reportSheet.innerHTML = `
+        <div class="ad-report-header">
+            <button type="button" class="ad-back-btn" style="background:transparent;border:0;padding:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"></polyline></svg></button>
+            <span>Reportar</span>
+            <button type="button" class="ad-close-btn" style="background:transparent;border:0;padding:5px;"><svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
+        </div>
+        <div class="ad-report-content">
+            <h2 style="font-size:1.2rem; color:#000; margin-bottom:20px;">¿Por qué quieres reportar este anuncio?</h2>
+            <button class="ad-report-option" data-motivo="Contenido ofensivo">Contenido ofensivo ${svgChevron}</button>
+            <button class="ad-report-option" data-motivo="Estafa o fraude">Estafa o fraude ${svgChevron}</button>
+            <button class="ad-report-option" data-motivo="Producto prohibido">Producto prohibido ${svgChevron}</button>
+            <button class="ad-report-option" data-motivo="Spam">Spam ${svgChevron}</button>
+        </div>
+        <div class="ad-report-footer">
+            <button type="button" class="ad-btn-enviar" id="ad-enviar-final">Enviar</button>
+        </div>
+    `;
+    container.appendChild(reportSheet);
+
+    // Lógica del menú
+    btnMenu.onclick = () => sheet.classList.add('show');
+    
+    sheet.querySelector('#ad-btn-ocultar').onclick = () => {
+        sheet.classList.remove('show');
+        cerrarAnuncio(); // Oculta el anuncio de la vista
+        if (window.showToast) window.showToast('Anuncio oculto', 'success');
+    };
+
+    sheet.querySelector('#ad-btn-reportar').onclick = () => {
+        sheet.classList.remove('show');
+        reportSheet.classList.add('show');
+    };
+
+    reportSheet.querySelector('.ad-back-btn').onclick = () => {
+        reportSheet.classList.remove('show');
+        sheet.classList.add('show');
+    };
+
+    reportSheet.querySelector('.ad-close-btn').onclick = () => {
+        reportSheet.classList.remove('show');
+    };
+
+    // Seleccionar motivo
+    let motivoSeleccionado = '';
+    const botonesMotivo = reportSheet.querySelectorAll('.ad-report-option');
+    const btnEnviarFinal = reportSheet.querySelector('#ad-enviar-final');
+    
+    // Ocultar botón de enviar al principio hasta que elija motivo
+    btnEnviarFinal.style.display = 'none';
+    btnEnviarFinal.disabled = true;
+
+    botonesMotivo.forEach(btn => {
+        btn.onclick = function() {
+            motivoSeleccionado = this.getAttribute('data-motivo');
+            // Resaltar botón seleccionado
+            botonesMotivo.forEach(b => b.style.background = 'transparent');
+            this.style.background = '#f0f0f0';
+            
+            // Habilitar botón de enviar
+            btnEnviarFinal.style.display = 'block';
+            btnEnviarFinal.disabled = false;
+        };
+    });
+
+    // Enviar reporte a Supabase
+    btnEnviarFinal.onclick = async function() {
+        if (!motivoSeleccionado) return;
+        this.disabled = true;
+        this.textContent = 'Enviando...';
+        
+        try {
+            const client = window.supabaseClient;
+            const sessionResult = await client.auth.getSession();
+            const session = sessionResult.data ? sessionResult.data.session : null;
+            
+            if (session) {
+                // Insertar en la tabla de reportes de grupos
+                await client.from('grupos_video_reportes').insert({
+                    usuario_id: session.user.id,
+                    motivo: motivoSeleccionado,
+                    // Nota: Si la tabla tiene un campo para el ID del grupo o anuncio, se podría añadir aquí
+                });
+            }
+            
+            if (window.showToast) window.showToast('✅ Reporte enviado. Gracias.', 'success');
+            reportSheet.classList.remove('show');
+            cerrarAnuncio();
+        } catch (e) {
+            console.error('Error reportando:', e);
+            if (window.showToast) window.showToast('❌ Error al reportar', 'error');
+        } finally {
+            this.disabled = false;
+            this.textContent = 'Enviar';
+        }
+    };
 
     title.textContent = ad.titulo || 'Patrocinado';
     desc.textContent = ad.descripcion || '';
