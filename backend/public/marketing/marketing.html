@@ -66,7 +66,7 @@
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.06); }
         .main-nav .nav-link.active { background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.08)); color: var(--gold); border: 1px solid rgba(212, 175, 55, 0.3); }
 
-        /* PESTAÑAS INTERNAS (Crear, Panel de Control, Minar) */
+        /* PESTAÑAS INTERNAS */
         .tabs-container { display: flex; justify-content: center; gap: 20px; border-bottom: 1px solid var(--glass-border); margin-bottom: 24px; padding: 0 10px; }
         .tab-btn { background: transparent; border: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; padding: 10px 5px; cursor: pointer; position: relative; transition: var(--transition); }
         .tab-btn:hover { color: var(--text-primary); }
@@ -89,11 +89,11 @@
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 35px rgba(212, 175, 55, 0.5); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
-        /* BOTÓN FLOTANTE (FAB) */
+        /* BOTÓN FLOTANTE */
         .fab-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 2rem; border: none; box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 999; transition: var(--transition); }
         .fab-btn:hover { transform: scale(1.1) rotate(90deg); box-shadow: 0 12px 40px rgba(212, 175, 55, 0.7); }
 
-        /* TARJETAS DE RESUMEN */
+        /* TARJETAS */
         .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 28px; }
         .card { background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.6)); padding: 20px 22px; border-radius: var(--radius); border: 1px solid var(--glass-border); position: relative; overflow: hidden; transition: var(--transition); }
         .card:hover { transform: translateY(-4px); border-color: var(--glass-border-strong); }
@@ -101,7 +101,6 @@
         .card h3 { margin: 0 0 8px 0; font-size: 0.58rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
         .card p { margin: 0; font-size: 1.7rem; font-weight: 800; color: var(--gold); font-family: 'Orbitron', monospace; letter-spacing: 1px; }
 
-        /* FILTROS Y CAMPAÑAS */
         .filters { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 20px; padding-bottom: 8px; scrollbar-width: none; }
         .filters::-webkit-scrollbar { display: none; }
         .filter-btn { background: var(--glass-bg-2); color: var(--text-muted); border: 1px solid var(--glass-border); padding: 9px 18px; border-radius: 20px; cursor: pointer; white-space: nowrap; font-size: 0.68rem; font-weight: 600; transition: var(--transition); font-family: 'Inter', sans-serif; }
@@ -117,7 +116,7 @@
         .campaign-card .info-row .label { color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.6rem; }
         .campaign-card .info-row .value { color: var(--text-primary); font-weight: 600; font-family: 'Space Mono', monospace; }
 
-        /* MODALES Y BOTONES DE ACCIÓN */
+        /* BADGES Y MODALES */
         .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-family: 'Space Mono', monospace; }
         .badge.borrador { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; border: 1px solid rgba(138, 168, 184, 0.3); }
         .badge.pendiente_pago { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.35); }
@@ -174,7 +173,9 @@
         .red-info strong { color: var(--gold); }
         .red-info .warn { color: var(--warning); }
 
-        /* CHATBOT "PROMI" */
+        /* =========================================
+           CHATBOT "PROMI" PROFESIONAL + HERRAMIENTAS
+           ========================================= */
         .promi-btn { position: fixed; bottom: 100px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background: #ff0050; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 999; box-shadow: 0 4px 20px rgba(255,0,80,0.4); transition: var(--transition); }
         .promi-btn:hover { transform: scale(1.1); }
         .promi-btn img { width: 30px; height: 30px; }
@@ -183,14 +184,38 @@
         .promi-header { padding: 16px; display: flex; align-items: center; border-bottom: 1px solid #eee; gap: 12px; }
         .promi-header h2 { font-size: 1.1rem; font-weight: 700; margin: 0; }
         .promi-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; }
-        .promi-body { flex: 1; overflow-y: auto; padding: 20px; }
-        .promi-avatar { width: 80px; height: 80px; margin-bottom: 16px; }
+        .promi-body { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .promi-welcome { text-align: center; margin-bottom: 20px; }
+        .promi-avatar { width: 80px; height: 80px; margin: 0 auto 16px auto; display: block; }
         .promi-welcome h1 { font-size: 1.6rem; margin-bottom: 8px; font-weight: 800; }
-        .promi-welcome p { font-size: 0.95rem; color: #666; margin-bottom: 24px; line-height: 1.4; }
-        .promi-option { display: flex; justify-content: space-between; align-items: center; background: #f5f5f5; padding: 16px; border-radius: 12px; margin-bottom: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
-        .promi-footer { padding: 16px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 10px; background: #fafafa; }
-        .promi-input { flex: 1; padding: 12px; border-radius: 20px; border: 1px solid #ddd; outline: none; }
-        .promi-new-chat { background: #ff0050; color: #fff; border: none; padding: 16px; border-radius: 30px; font-weight: 700; width: calc(100% - 32px); margin: 16px; cursor: pointer; }
+        .promi-welcome p { font-size: 0.95rem; color: #666; line-height: 1.4; }
+        
+        /* Burbujas de Chat */
+        .promi-msg { max-width: 85%; padding: 12px 16px; border-radius: 16px; font-size: 0.9rem; line-height: 1.4; margin-bottom: 4px; }
+        .promi-msg.user { align-self: flex-end; background: #ff0050; color: #fff; border-bottom-right-radius: 4px; }
+        .promi-msg.bot { align-self: flex-start; background: #f0f0f0; color: #000; border-bottom-left-radius: 4px; }
+        
+        /* Opciones sugeridas */
+        .promi-options { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+        .promi-option { display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; border: 1px solid #eee; padding: 14px; border-radius: 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.2s; text-align: left; }
+        .promi-option:hover { background: #f0f0f0; }
+
+        /* Botones de acción creativa (Imagen/Video) */
+        .promi-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; align-self: flex-start; }
+        .promi-action-btn { background: #fff; border: 1px solid #ff0050; color: #ff0050; padding: 8px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .promi-action-btn:hover { background: #ffebf0; }
+
+        /* Animación Escribiendo... */
+        .typing-indicator { display: flex; gap: 4px; padding: 12px 16px; background: #f0f0f0; border-radius: 16px; border-bottom-left-radius: 4px; align-self: flex-start; width: fit-content; margin-bottom: 4px; }
+        .typing-indicator span { width: 6px; height: 6px; background: #999; border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        .promi-footer { padding: 12px 16px; border-top: 1px solid #eee; display: flex; align-items: center; gap: 10px; background: #fafafa; }
+        .promi-input { flex: 1; padding: 12px 16px; border-radius: 24px; border: 1px solid #ddd; outline: none; font-size: 0.9rem; }
+        .promi-send-btn { background: #ff0050; color: #fff; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        .promi-new-chat { background: #fff; color: #ff0050; border: 1px solid #ff0050; padding: 14px; border-radius: 30px; font-weight: 700; width: calc(100% - 32px); margin: 0 16px 16px 16px; cursor: pointer; text-align: center; }
 
         @media (max-width: 640px) { .marketing-hero { flex-direction: column; text-align: center; padding: 22px; } .marketing-hero h1 { font-size: 1.15rem; } .summary-cards { grid-template-columns: 1fr 1fr; gap: 10px; } .card { padding: 16px; } .card p { font-size: 1.3rem; } .modal-content { padding: 24px 20px; } .toast { right: 16px; left: 16px; bottom: 20px; max-width: none; } .promi-panel { max-width: 100%; } }
         @media (max-width: 400px) { .summary-cards { grid-template-columns: 1fr; } }
@@ -279,26 +304,35 @@
     <button class="promi-btn" onclick="togglePromi()">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
     </button>
+    
     <div class="promi-panel" id="promiPanel">
         <div class="promi-header">
             <button class="promi-close" onclick="togglePromi()">✕</button>
             <h2>Promi</h2>
         </div>
-        <div class="promi-body">
-            <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Promi Avatar" class="promi-avatar">
-            <div class="promi-welcome">
+        <div class="promi-body" id="promiBody">
+            <!-- Bienvenida -->
+            <div class="promi-welcome" id="promiWelcome">
+                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Promi Avatar" class="promi-avatar">
                 <h1>Hola, soy tu agente de ventas de Promoción</h1>
                 <p>Pregúntame lo que sea sobre Promoción de Sariel's: configuración de planes, problemas con revisiones, cupones o rendimiento. También puedo recomendarte un paquete según tu objetivo.</p>
             </div>
-            <div class="promi-option" onclick="enviarMensajePromi('¿Qué objetivo publicitario debo elegir?')">¿Qué objetivo publicitario debo elegir? <span>→</span></div>
-            <div class="promi-option" onclick="enviarMensajePromi('¿Cómo crear un plan de Promoción?')">¿Cómo crear un plan de Promoción? <span>→</span></div>
-            <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo consultar mi gasto?')">¿Cómo puedo consultar mi gasto? <span>→</span></div>
-            <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo aumentar mi presupuesto?')">¿Cómo puedo aumentar mi presupuesto? <span>→</span></div>
+            
+            <!-- Opciones iniciales -->
+            <div class="promi-options" id="promiInitialOptions">
+                <div class="promi-option" onclick="enviarMensajePromi('¿Qué objetivo publicitario debo elegir?')">¿Qué objetivo publicitario debo elegir? <span>→</span></div>
+                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo crear un plan de Promoción?')">¿Cómo crear un plan de Promoción? <span>→</span></div>
+                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo consultar mi gasto?')">¿Cómo puedo consultar mi gasto? <span>→</span></div>
+                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo aumentar mi presupuesto?')">¿Cómo puedo aumentar mi presupuesto? <span>→</span></div>
+            </div>
         </div>
         <div class="promi-footer">
             <input type="text" class="promi-input" id="promiInput" placeholder="Pregúntame lo que quieras" onkeypress="if(event.key==='Enter') enviarMensajePromi()">
+            <button class="promi-send-btn" onclick="enviarMensajePromi()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            </button>
         </div>
-        <button class="promi-new-chat" onclick="document.getElementById('promiInput').value=''">📝 Nuevo chat</button>
+        <button class="promi-new-chat" onclick="resetPromi()">📝 Nuevo chat</button>
     </div>
 
 
@@ -377,8 +411,8 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v6
-       Integración completa con Backend de Producción
+       MARKETING · Sariel's — v8
+       Integración con Promi (Chatbot Creativo con Generación de Media)
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -411,6 +445,9 @@
     let wizard = {};
     let campañaCreada = null;
     let pollTimer = null;
+    
+    // Historial del chat de Promi
+    let promiHistory = [];
 
     function log(...a) { if (DEBUG) console.log('◈', ...a); }
     function logError(...a) { console.error('✕', ...a); }
@@ -437,36 +474,158 @@
         document.getElementById('promiPanel').classList.toggle('active');
     }
 
+    function resetPromi() {
+        promiHistory = [];
+        const body = document.getElementById('promiBody');
+        body.innerHTML = `
+            <div class="promi-welcome" id="promiWelcome">
+                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Promi Avatar" class="promi-avatar">
+                <h1>Hola, soy tu agente de ventas de Promoción</h1>
+                <p>Pregúntame lo que sea sobre Promoción de Sariel's: configuración de planes, problemas con revisiones, cupones o rendimiento. También puedo recomendarte un paquete según tu objetivo.</p>
+            </div>
+            <div class="promi-options" id="promiInitialOptions">
+                <div class="promi-option" onclick="enviarMensajePromi('¿Qué objetivo publicitario debo elegir?')">¿Qué objetivo publicitario debo elegir? <span>→</span></div>
+                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo crear un plan de Promoción?')">¿Cómo crear un plan de Promoción? <span>→</span></div>
+                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo consultar mi gasto?')">¿Cómo puedo consultar mi gasto? <span>→</span></div>
+                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo aumentar mi presupuesto?')">¿Cómo puedo aumentar mi presupuesto? <span>→</span></div>
+            </div>
+        `;
+    }
+
     async function enviarMensajePromi(textoForzado) {
         const input = document.getElementById('promiInput');
         const texto = textoForzado || input.value.trim();
         if (!texto) return;
         
+        const body = document.getElementById('promiBody');
+        const welcome = document.getElementById('promiWelcome');
+        const options = document.getElementById('promiInitialOptions');
+        
+        // Ocultar bienvenida y opciones iniciales al primer mensaje
+        if (welcome) welcome.style.display = 'none';
+        if (options) options.style.display = 'none';
+
+        // Agregar mensaje del usuario
+        const userMsg = document.createElement('div');
+        userMsg.className = 'promi-msg user';
+        userMsg.textContent = texto;
+        body.appendChild(userMsg);
+        
+        // Guardar en historial
+        promiHistory.push({ role: 'user', content: texto });
+        
         if (!textoForzado) input.value = '';
         
+        // Scroll al fondo
+        body.scrollTop = body.scrollHeight;
+
+        // Mostrar indicador de "Escribiendo..."
+        const typing = document.createElement('div');
+        typing.className = 'typing-indicator';
+        typing.innerHTML = '<span></span><span></span><span></span>';
+        body.appendChild(typing);
+        body.scrollTop = body.scrollHeight;
+
         try {
             const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) { showToast('Inicia sesión para hablar con Promi', 'error'); return; }
+            if (!session) { 
+                typing.remove();
+                showToast('Inicia sesión para hablar con Promi', 'error'); 
+                return; 
+            }
 
+            // Aquí enviamos el mensaje al backend real
             const res = await fetch(`${BACKEND_URL}/api/ai/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${session.access_token}`
                 },
-                body: JSON.stringify({ message: texto, context: 'marketing' })
+                body: JSON.stringify({ 
+                    message: texto, 
+                    context: 'marketing',
+                    history: promiHistory 
+                })
             });
             
             const data = await res.json();
+            typing.remove();
+
             if (data.success && data.reply) {
-                alert('Promi dice: ' + data.reply);
+                const botMsg = document.createElement('div');
+                botMsg.className = 'promi-msg bot';
+                botMsg.textContent = data.reply;
+                body.appendChild(botMsg);
+                
+                // Guardar respuesta en historial
+                promiHistory.push({ role: 'assistant', content: data.reply });
+
+                // ✅ SI EL USUARIO PIDE UNA IMAGEN O VIDEO, MOSTRAMOS LOS BOTONES DE ACCIÓN
+                const lowerText = texto.toLowerCase();
+                if (lowerText.includes('imagen') || lowerText.includes('foto') || lowerText.includes('video') || lowerText.includes('crea') || lowerText.includes('genera')) {
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'promi-actions';
+                    
+                    if (lowerText.includes('imagen') || lowerText.includes('foto') || lowerText.includes('crea') || lowerText.includes('genera')) {
+                        const btnImg = document.createElement('button');
+                        btnImg.className = 'promi-action-btn';
+                        btnImg.innerHTML = `🖼️ Generar Imagen`;
+                        btnImg.onclick = () => generarPlaceholderMedia('imagen', texto);
+                        actionsDiv.appendChild(btnImg);
+                    }
+                    
+                    if (lowerText.includes('video') || lowerText.includes('crea') || lowerText.includes('genera')) {
+                        const btnVid = document.createElement('button');
+                        btnVid.className = 'promi-action-btn';
+                        btnVid.innerHTML = `🎬 Generar Video`;
+                        btnVid.onclick = () => generarPlaceholderMedia('video', texto);
+                        actionsDiv.appendChild(btnVid);
+                    }
+                    
+                    body.appendChild(actionsDiv);
+                }
             } else {
                 showToast('Promi no pudo responder', 'error');
             }
         } catch (e) {
+            typing.remove();
             console.error(e);
             showToast('Error de conexión con Promi', 'error');
         }
+        
+        body.scrollTop = body.scrollHeight;
+    }
+
+    // ✅ FUNCIÓN PLACEHOLDER PARA GENERAR IMAGEN/VIDEO
+    // Cuando conectes tu API, aquí debes poner la lógica real (fetch a tu endpoint de generación)
+    function generarPlaceholderMedia(tipo, promptUsuario) {
+        const body = document.getElementById('promiBody');
+        
+        const mediaMsg = document.createElement('div');
+        mediaMsg.className = 'promi-msg bot';
+        mediaMsg.style.padding = '20px';
+        mediaMsg.style.textAlign = 'center';
+        
+        if (tipo === 'imagen') {
+            mediaMsg.innerHTML = `
+                <div style="background:#e0e0e0; width:100%; height:150px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
+                    <span style="color:#666; font-size:0.8rem;">[API de Imagen Aquí]</span>
+                </div>
+                <p style="font-size:0.8rem; margin-bottom:10px;">Imagen generada para: "${promptUsuario}"</p>
+                <button style="background:#ff0050; color:#fff; border:none; padding:8px 16px; border-radius:20px; font-weight:700; cursor:pointer;" onclick="alert('Descarga iniciada (simulación)')">⬇️ Descargar Imagen</button>
+            `;
+        } else {
+            mediaMsg.innerHTML = `
+                <div style="background:#e0e0e0; width:100%; height:150px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:10px;">
+                    <span style="color:#666; font-size:0.8rem;">[API de Video Aquí]</span>
+                </div>
+                <p style="font-size:0.8rem; margin-bottom:10px;">Video generado para: "${promptUsuario}"</p>
+                <button style="background:#ff0050; color:#fff; border:none; padding:8px 16px; border-radius:20px; font-weight:700; cursor:pointer;" onclick="alert('Descarga iniciada (simulación)')">⬇️ Descargar Video</button>
+            `;
+        }
+        
+        body.appendChild(mediaMsg);
+        body.scrollTop = body.scrollHeight;
     }
 
     function renderParticles() {
@@ -572,7 +731,6 @@
         const el = document.getElementById('campaigns-list'); if (!el || !supabaseClient || !currentUser) return;
         el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>Cargando campañas...</p></div>`;
         
-        // Llamada directa a la ruta definida en backend/routes/marketing.js
         const { data, error } = await supabaseClient.from('marketing_campaigns').select('*').eq('anunciante_id', currentUser.id).order('created_at', { ascending: false });
         if (error) { showCampaignsError(error.message); return; }
         campaigns = data || [];
@@ -834,6 +992,8 @@
     window.cambiarTab = cambiarTab;
     window.togglePromi = togglePromi;
     window.enviarMensajePromi = enviarMensajePromi;
+    window.resetPromi = resetPromi;
+    window.generarPlaceholderMedia = generarPlaceholderMedia;
     </script>
 </body>
 </html>
