@@ -6,11 +6,14 @@
 // Por eso se valida price_amount contra monto_mxn; actually_paid solo
 // confirma que hubo pago real. No se calcula ningún tipo de cambio aquí.
 // Estados de ordenes_internet: pendiente, pagado, activo, cancelado.
+//
+// v2: services/telnyx/esim se carga al momento de usarse, no al arrancar.
+// Antes, si ese archivo fallaba, routes/webhooks.js no cargaba y ningún
+// IPN de NOWPayments se procesaba (Live Pass, Muro, marketing, membresías).
 // ================================================================
 
 const { supabaseAdmin } = require('../../config/supabase');
 const { verificarFirmaNowPayments } = require('../../utils/nowpayments-sig');
-const { procesarOrdenInternet } = require('../../services/telnyx/esim');
 
 const NOWPAYMENTS_IPN_SECRET = process.env.NOWPAYMENTS_IPN_SECRET;
 
@@ -34,6 +37,17 @@ function montoCoincide(payload, orden) {
     if (!Number.isFinite(precio) || Math.abs(precio - Number(orden.monto_mxn)) > 0.01) return false;
     if (!Number.isFinite(cripto) || cripto <= 0) return false;
     return true;
+}
+
+// Carga diferida del aprovisionamiento eSIM. Devuelve null si el módulo no está.
+function cargarAprovisionamiento() {
+    try {
+        const { procesarOrdenInternet } = require('../../services/telnyx/esim');
+        return typeof procesarOrdenInternet === 'function' ? procesarOrdenInternet : null;
+    } catch (e) {
+        logError('services/telnyx/esim no disponible:', e.message);
+        return null;
+    }
 }
 
 async function handleWebhookInternet(req, res) {
@@ -131,8 +145,14 @@ async function handleWebhookInternet(req, res) {
         }
 
         // 3) Aprovisionar eSIM y acreditar datos (idempotente; se reintenta en cada IPN final)
+        const aprovisionar = cargarAprovisionamiento();
+        if (!aprovisionar) {
+            // 500 para que NOWPayments reintente cuando el módulo esté disponible
+            return res.status(500).json({ ok: false, error: 'aprovisionamiento_no_disponible' });
+        }
+
         try {
-            await procesarOrdenInternet(orden.id);
+            await aprovisionar(orden.id);
         } catch (e) {
             logError('aprovisionamiento eSIM:', e.message);
             return res.status(500).json({ ok: false, error: 'aprovisionamiento_pendiente' });
