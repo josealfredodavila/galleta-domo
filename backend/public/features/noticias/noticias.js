@@ -4,7 +4,6 @@
     const SAVED_KEY = 'sariels_noticias_guardadas';
     const REGION = 'MX';
 
-    // Saludos: no consumen búsquedas en el servidor
     const SALUDOS = /^(hola|buenas|buenos d[ií]as|buenas tardes|buenas noches|hey|hi|hello|qu[eé] onda|qu[eé] tal)[\s!¡?.,]*$/i;
     const RESPUESTA_SALUDO = '¡Hola! Pregúntame algo de la actualidad, por ejemplo: "¿Qué pasa hoy en México?"';
 
@@ -33,8 +32,6 @@
         toast: $('toast'),
     };
 
-    /* ================= Utilidades ================= */
-
     function escapeHtml(valor) {
         return String(valor ?? '').replace(/[&<>"']/g, (c) => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -45,17 +42,12 @@
         try {
             const url = new URL(String(valor || ''));
             return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '#';
-        } catch (_) {
-            return '#';
-        }
+        } catch (_) { return '#'; }
     }
 
     function hostOf(valor) {
-        try {
-            return new URL(valor).hostname.replace(/^www\./, '');
-        } catch (_) {
-            return 'Fuente';
-        }
+        try { return new URL(valor).hostname.replace(/^www\./, ''); } 
+        catch (_) { return 'Fuente'; }
     }
 
     function tiempoRelativo(valor) {
@@ -64,10 +56,7 @@
         if (Number.isNaN(fecha.getTime())) return 'Hoy';
         const seg = Math.round((fecha.getTime() - Date.now()) / 1000);
         const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
-        const umbrales = [
-            ['year', 31536000], ['month', 2592000], ['day', 86400],
-            ['hour', 3600], ['minute', 60],
-        ];
+        const umbrales = [['year', 31536000], ['month', 2592000], ['day', 86400], ['hour', 3600], ['minute', 60]];
         for (const [unidad, s] of umbrales) {
             if (Math.abs(seg) >= s) return rtf.format(Math.round(seg / s), unidad);
         }
@@ -85,17 +74,13 @@
     }
 
     function loadSaved() {
-        try {
-            return new Set(JSON.parse(localStorage.getItem(SAVED_KEY) || '[]'));
-        } catch (_) {
-            return new Set();
-        }
+        try { return new Set(JSON.parse(localStorage.getItem(SAVED_KEY) || '[]')); } 
+        catch (_) { return new Set(); }
     }
 
     function persistSaved() {
-        try {
-            localStorage.setItem(SAVED_KEY, JSON.stringify([...state.saved]));
-        } catch (_) { /* almacenamiento no disponible */ }
+        try { localStorage.setItem(SAVED_KEY, JSON.stringify([...state.saved])); } 
+        catch (_) { }
     }
 
     function toast(mensaje) {
@@ -113,8 +98,6 @@
         return null;
     }
 
-    /* ================= Sesión ================= */
-
     function setSession(texto, esError) {
         el.session.textContent = texto;
         el.session.classList.toggle('error', Boolean(esError));
@@ -122,17 +105,11 @@
 
     async function fetchSession() {
         const client = await waitForSupabase();
-        if (!client) {
-            setSession('Supabase no disponible', true);
-            return false;
-        }
+        if (!client) { setSession('Supabase no disponible', true); return false; }
         try {
             const { data, error } = await client.auth.getSession();
             if (error) throw error;
-            if (!data?.session) {
-                setSession('Sesión requerida', true);
-                return false;
-            }
+            if (!data?.session) { setSession('Sesión requerida', true); return false; }
             state.token = data.session.access_token;
             setSession(data.session.user?.email || 'Sesión activa');
             return true;
@@ -148,8 +125,6 @@
         if (state.token) h.Authorization = `Bearer ${state.token}`;
         return h;
     }
-
-    /* ================= Feed ================= */
 
     function renderSkeleton() {
         el.feed.innerHTML = `
@@ -167,11 +142,6 @@
             </div>`;
     }
 
-    /*
-     * Portada: foto del artículo si existe; si no, color por categoría
-     * con la inicial de la fuente. Si la foto falla, se reemplaza por la
-     * portada de respaldo (ver enlazarFotos).
-     */
     function coverHtml(item, cat) {
         const imagen = urlSegura(item.imagen);
         const fuente = item.fuentes?.[0]?.titulo || hostOf(item.fuentes?.[0]?.url || '');
@@ -182,7 +152,6 @@
                     <img class="photo" src="${escapeHtml(imagen)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer">
                 </div>`;
         }
-
         return `<div class="cover cat-${escapeHtml(cat)}"><span class="letra">${letraDe(fuente)}</span></div>`;
     }
 
@@ -241,8 +210,13 @@
         const cat = state.category;
         return `
             <article class="card" data-index="${index}">
-                ${coverHtml(item, cat)}
-                ${encabezadoHtml(item, cat)}
+                <div style="position:relative; border-radius: 14px; overflow: hidden; margin-bottom: 14px; aspect-ratio: 16/10;">
+                    ${coverHtml(item, cat)}
+                    <div class="scrim" style="position:absolute; inset:0; background: linear-gradient(to top, rgba(15,15,16,0.9) 0%, transparent 60%);"></div>
+                    <div style="position:absolute; bottom: 12px; left: 12px; z-index: 3;">
+                        ${encabezadoHtml(item, cat)}
+                    </div>
+                </div>
                 <h2>${escapeHtml(item.titulo)}</h2>
                 <div class="summary-wrap">
                     <p class="summary" data-role="resumen">${escapeHtml(item.resumen)}</p>
@@ -275,23 +249,12 @@
             const params = new URLSearchParams({ categoria: state.category, region: REGION });
             const response = await fetch(`/api/noticias?${params.toString()}`, { method: 'GET', headers: headers() });
 
-            if (response.status === 401) {
-                renderEmpty('Sesión expirada', 'Vuelve a iniciar sesión para continuar.', false);
-                return;
-            }
-            if (response.status === 404) {
-                renderEmpty('Servicio no disponible', 'La API de noticias aún no está activa en el servidor. Intenta más tarde.', true);
-                return;
-            }
-            if (response.status === 429) {
-                renderEmpty('Demasiadas consultas', 'Espera unos minutos antes de volver a intentar.', true);
-                return;
-            }
+            if (response.status === 401) { renderEmpty('Sesión expirada', 'Vuelve a iniciar sesión para continuar.', false); return; }
+            if (response.status === 404) { renderEmpty('Servicio no disponible', 'La API de noticias aún no está activa en el servidor. Intenta más tarde.', true); return; }
+            if (response.status === 429) { renderEmpty('Demasiadas consultas', 'Espera unos minutos antes de volver a intentar.', true); return; }
 
             const body = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                throw new Error(body.error || 'No se pudieron cargar las noticias');
-            }
+            if (!response.ok) throw new Error(body.error || 'No se pudieron cargar las noticias');
 
             state.items = Array.isArray(body.items) ? body.items : [];
             renderFeed();
@@ -303,17 +266,11 @@
         }
     }
 
-    /* ================= Acciones de tarjeta ================= */
-
     async function compartir(item) {
         const url = urlSegura(item.fuentes?.[0]?.url);
         try {
             if (navigator.share) {
-                await navigator.share({
-                    title: item.titulo,
-                    text: item.resumen,
-                    url: url !== '#' ? url : undefined,
-                });
+                await navigator.share({ title: item.titulo, text: item.resumen, url: url !== '#' ? url : undefined });
                 return;
             }
             const texto = url !== '#' ? `${item.titulo}\n${url}` : item.titulo;
@@ -344,10 +301,7 @@
         if (!boton) return;
         const accion = boton.dataset.action;
 
-        if (accion === 'retry') {
-            loadFeed();
-            return;
-        }
+        if (accion === 'retry') { loadFeed(); return; }
 
         const tarjeta = boton.closest('[data-index]');
         const index = Number(tarjeta?.dataset.index);
@@ -364,8 +318,6 @@
         }
     });
 
-    /* ================= Chips de categoría ================= */
-
     el.chips.addEventListener('click', (event) => {
         const chip = event.target.closest('.chip');
         if (!chip) return;
@@ -374,8 +326,6 @@
         state.category = chip.dataset.category;
         loadFeed();
     });
-
-    /* ================= Hoja de preguntas ================= */
 
     function abrirHoja() {
         el.sheet.classList.add('on');
@@ -403,24 +353,14 @@
 
     async function preguntar(texto) {
         const pregunta = String(texto || '').trim();
-
-        if (!pregunta) {
-            mostrarRespuesta('Escribe una pregunta antes de consultar.', true);
-            return;
-        }
-
-        // Saludos y preguntas muy cortas: respuesta local, sin consultar al servidor
+        if (!pregunta) { mostrarRespuesta('Escribe una pregunta antes de consultar.', true); return; }
         if (SALUDOS.test(pregunta) || pregunta.length < 6) {
             mostrarRespuesta(RESPUESTA_SALUDO, false);
             el.answerSrc.innerHTML = '';
             el.input.value = '';
             return;
         }
-
-        if (!state.token) {
-            mostrarRespuesta('Sesión no disponible. Vuelve a iniciar sesión.', true);
-            return;
-        }
+        if (!state.token) { mostrarRespuesta('Sesión no disponible. Vuelve a iniciar sesión.', true); return; }
 
         el.answer.hidden = false;
         el.answer.className = 'answer';
@@ -430,9 +370,7 @@
 
         try {
             const response = await fetch('/api/noticias/preguntar', {
-                method: 'POST',
-                headers: headers(),
-                body: JSON.stringify({ pregunta }),
+                method: 'POST', headers: headers(), body: JSON.stringify({ pregunta }),
             });
 
             if (response.status === 404) throw new Error('El servicio de preguntas aún no está activo en el servidor.');
@@ -454,14 +392,10 @@
     el.fab.addEventListener('click', abrirHoja);
     el.close.addEventListener('click', cerrarHoja);
     el.backdrop.addEventListener('click', cerrarHoja);
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') cerrarHoja();
-    });
+    document.addEventListener('keydown', (event) => { if (event.key === 'Escape') cerrarHoja(); });
 
     el.ask.addEventListener('click', () => preguntar(el.input.value));
-    el.input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') preguntar(el.input.value);
-    });
+    el.input.addEventListener('keydown', (event) => { if (event.key === 'Enter') preguntar(el.input.value); });
     el.suggest.addEventListener('click', (event) => {
         const boton = event.target.closest('[data-q]');
         if (!boton) return;
@@ -469,14 +403,9 @@
         preguntar(boton.dataset.q);
     });
 
-    /* ================= Arranque ================= */
-
     document.addEventListener('DOMContentLoaded', async () => {
         const ok = await fetchSession();
-        if (ok) {
-            await loadFeed();
-        } else {
-            renderEmpty('Inicia sesión', 'Debes iniciar sesión con Supabase para usar esta sección.', false);
-        }
+        if (ok) { await loadFeed(); } 
+        else { renderEmpty('Inicia sesión', 'Debes iniciar sesión con Supabase para usar esta sección.', false); }
     });
 })();
