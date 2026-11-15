@@ -1,14 +1,7 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
 // ================================================================
-// v8.2:
-//  - El dueño de una publicación NO puede ocultarla ni reportarla.
-//    En su propio post aparece "Eliminar publicación" en el menú.
-//  - Ocultar ("No quiero ver esto") solo aplica a publicaciones ajenas.
-//  - Hojas de reporte y menú con la paleta oscura global (dorado,
-//    espacio profundo y acentos cian), en lugar del blanco.
-//  - Se quitó el filtro de ocultas en la lista del dueño: ya no hay
-//    forma de que el dueño oculte lo suyo.
+// v8.2 (Flujo de reportes completo + Menú de reacciones desplegable)
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -57,6 +50,11 @@ function pubEsUrlSegura(url) {
     try { var parsed = new URL(url); return parsed.protocol === 'https:' && Boolean(parsed.hostname); } catch (e) { return false; }
 }
 
+function pubPerfilT(clave, defecto) {
+    if (typeof window.perfilT === 'function') return window.perfilT(clave, defecto);
+    return defecto || clave;
+}
+
 function pubCrearAvatar(nombre, url) {
     if (typeof window.crearAvatar === 'function') return window.crearAvatar(nombre, url);
     var avatar = document.createElement('div');
@@ -85,10 +83,10 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
 }
 
 // ================================================================
-// VISOR A PANTALLA COMPLETA (menú, ocultar, reportar y eliminar)
+// VISOR A PANTALLA COMPLETA (CON FLUJO DE REPORTES COMPLETO)
 // ================================================================
 
-var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0, postIdActual: null, motivoSeleccionado: '', esDueno: false };
+var pubVisor = { items: [], index: 0, tocoX: 0, tocoY: 0, postIdActual: null, motivoSeleccionado: '' };
 
 function pubVisorEl() {
     var el = document.getElementById('pubVisorFull');
@@ -99,78 +97,87 @@ function pubVisorEl() {
     el.className = 'pub-vf';
     el.setAttribute('role', 'dialog');
     el.setAttribute('aria-modal', 'true');
-
-    var svgClose = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
-    var svgDots = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>';
-    var svgDownload = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
-    var svgEyeOff = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>';
-    var svgReport = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>';
-    var svgTrash = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6M14 11v6"></path></svg>';
-    var svgChevronRight = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><polyline points="9 18 15 12 9 6"></polyline></svg>';
-    var svgBack = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"></polyline></svg>';
-    var svgX = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+    
+    var svgClose = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
+    var svgDots = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><circle cx="12" cy="12" r="1"></circle><circle cx="12" cy="5" r="1"></circle><circle cx="12" cy="19" r="1"></circle></svg>`;
+    var svgDownload = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+    var svgEyeOff = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>`;
+    var svgReport = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>`;
+    var svgChevronRight = `<svg viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><polyline points="9 18 15 12 9 6"></polyline></svg>`;
 
     el.innerHTML =
-        '<div class="pub-vf-header">' +
-            '<button type="button" class="pub-vf-cerrar" aria-label="Cerrar">' + svgClose + '</button>' +
-            '<button type="button" class="pub-vf-menu-btn" aria-label="Opciones">' + svgDots + '</button>' +
-        '</div>' +
-        '<div class="pub-vf-media"></div>' +
+        `<div class="pub-vf-header">` +
+            `<button type="button" class="pub-vf-cerrar" aria-label="Cerrar">${svgClose}</button>` +
+            `<button type="button" class="pub-vf-menu-btn" aria-label="Opciones">${svgDots}</button>` +
+        `</div>` +
+        `<div class="pub-vf-media"></div>` +
+        
+        `<div class="pub-vf-bottom-sheet" id="pubVfSheet">` +
+            `<div class="pub-vf-drag-handle"></div>` +
+            `<button type="button" class="pub-vf-sheet-btn" id="btnPubVfGuardar">` +
+                `<span class="icon">${svgDownload}</span> Guardar` +
+            `</button>` +
+            `<button type="button" class="pub-vf-sheet-btn" id="btnPubVfOcultar">` +
+                `<span class="icon">${svgEyeOff}</span> No quiero ver esto` +
+            `</button>` +
+            `<button type="button" class="pub-vf-sheet-btn" id="btnPubVfReportar">` +
+                `<span class="icon">${svgReport}</span> Buscar ayuda o reportar foto` +
+            `</button>` +
+        `</div>` +
 
-        '<div class="pub-vf-bottom-sheet" id="pubVfSheet">' +
-            '<div class="pub-vf-drag-handle"></div>' +
-            '<button type="button" class="pub-vf-sheet-btn" id="btnPubVfGuardar"><span class="icon">' + svgDownload + '</span> Guardar</button>' +
-            '<button type="button" class="pub-vf-sheet-btn" id="btnPubVfOcultar" data-solo-ajeno="1"><span class="icon">' + svgEyeOff + '</span> No quiero ver esto</button>' +
-            '<button type="button" class="pub-vf-sheet-btn" id="btnPubVfReportar" data-solo-ajeno="1"><span class="icon">' + svgReport + '</span> Buscar ayuda o reportar foto</button>' +
-            '<button type="button" class="pub-vf-sheet-btn pub-vf-peligro" id="btnPubVfEliminar" data-solo-dueno="1"><span class="icon">' + svgTrash + '</span> Eliminar publicación</button>' +
-        '</div>' +
+        `<div class="pub-vf-report-sheet" id="pubVfReportSheet1">` +
+            `<div class="pub-vf-report-header">` +
+                `<button type="button" class="pub-vf-report-back" id="btnPubVfBack1">` +
+                    `<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"></polyline></svg>` +
+                `</button>` +
+                `<span>Reportar</span>` +
+                `<button type="button" class="pub-vf-report-cerrar" onclick="document.getElementById('pubVfReportSheet1').classList.remove('show');">` +
+                    `<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>` +
+                `</button>` +
+            `</div>` +
+            `<div class="pub-vf-report-content">` +
+                `<h2>¿Por qué quieres reportar esta foto?</h2>` +
+                `<p>Si alguien se encuentra en peligro inminente, busca ayuda antes de enviar un reporte. No esperes.</p>` +
+                `<button class="pub-vf-report-option" data-motivo="Problema que involucra a un menor de 18 años">Problema que involucra a un menor de 18 años ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Bullying, acoso o abuso">Bullying, acoso o abuso ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Suicidio o autolesión">Suicidio o autolesión ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Contenido violento, perturbador o que incita al odio">Contenido violento, perturbador o que incita al odio ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Venta o promoción de artículos restringidos">Venta o promoción de artículos restringidos ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Contenido para adultos">Contenido para adultos ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Estafa, fraude o información falsa">Estafa, fraude o información falsa ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="Propiedad intelectual">Propiedad intelectual ${svgChevronRight}</button>` +
+                `<button class="pub-vf-report-option" data-motivo="No quiero ver esto">No quiero ver esto ${svgChevronRight}</button>` +
+            `</div>` +
+        `</div>` +
 
-        '<div class="pub-vf-report-sheet" id="pubVfReportSheet1">' +
-            '<div class="pub-vf-report-header">' +
-                '<button type="button" class="pub-vf-report-back" id="btnPubVfBack1">' + svgBack + '</button>' +
-                '<span>Reportar</span>' +
-                '<button type="button" class="pub-vf-report-cerrar" data-cerrar-hoja="pubVfReportSheet1">' + svgX + '</button>' +
-            '</div>' +
-            '<div class="pub-vf-report-content">' +
-                '<h2>¿Por qué quieres reportar esta foto?</h2>' +
-                '<p>Si alguien se encuentra en peligro inminente, busca ayuda antes de enviar un reporte. No esperes.</p>' +
-                '<button class="pub-vf-report-option" data-motivo="Problema que involucra a un menor de 18 años">Problema que involucra a un menor de 18 años ' + svgChevronRight + '</button>' +
-                '<button class="pub-vf-report-option" data-motivo="Bullying, acoso o abuso">Bullying, acoso o abuso ' + svgChevronRight + '</button>' +
-                '<button class="pub-vf-report-option" data-motivo="Suicidio o autolesión">Suicidio o autolesión ' + svgChevronRight + '</button>' +
-                '<button class="pub-vf-report-option" data-motivo="Contenido violento, perturbador o que incita al odio">Contenido violento, perturbador o que incita al odio ' + svgChevronRight + '</button>' +
-                '<button class="pub-vf-report-option" data-motivo="Venta o promoción de artículos restringidos">Venta o promoción de artículos restringidos ' + svgChevronRight + '</button>' +
-                '<button class="pub-vf-report-option" data-motivo="Contenido para adultos">Contenido para adultos ' + svgChevronRight + '</button>' +
-                '<button class="pub-vf-report-option" data-motivo="Estafa, fraude o información falsa">Estafa, fraude o información falsa ' + svgChevronRight + '</button>' +
-                '<button class="pub-vf-report-option" data-motivo="Propiedad intelectual">Propiedad intelectual ' + svgChevronRight + '</button>' +
-            '</div>' +
-        '</div>' +
-
-        '<div class="pub-vf-report-sheet" id="pubVfReportSheet2">' +
-            '<div class="pub-vf-report-header">' +
-                '<button type="button" class="pub-vf-report-back" id="btnPubVfBack2">' + svgBack + '</button>' +
-                '<span>Reportar</span>' +
-                '<button type="button" class="pub-vf-report-cerrar" data-cerrar-hoja="pubVfReportSheet2">' + svgX + '</button>' +
-            '</div>' +
-            '<div class="pub-vf-report-content pub-vf-report-resumen">' +
-                '<h2>Vas a enviar un reporte</h2>' +
-                '<p>Solo eliminamos contenido que infringe nuestras <strong>Normas comunitarias</strong>.</p>' +
-                '<h3>Detalles del reporte</h3>' +
-                '<p class="pub-vf-etiqueta">¿Por qué quieres reportar esta foto?</p>' +
-                '<div id="pubVfResumenMotivo" class="pub-vf-motivo"></div>' +
-            '</div>' +
-            '<div class="pub-vf-report-footer">' +
-                '<button type="button" class="pub-vf-btn-enviar" id="btnPubVfEnviarFinal">Enviar</button>' +
-            '</div>' +
-        '</div>';
+        `<div class="pub-vf-report-sheet" id="pubVfReportSheet2">` +
+            `<div class="pub-vf-report-header">` +
+                `<button type="button" class="pub-vf-report-back" id="btnPubVfBack2">` +
+                    `<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><polyline points="15 18 9 12 15 6"></polyline></svg>` +
+                `</button>` +
+                `<span>Reportar</span>` +
+                `<button type="button" class="pub-vf-report-cerrar" onclick="document.getElementById('pubVfReportSheet2').classList.remove('show');">` +
+                    `<svg viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>` +
+                `</button>` +
+            `</div>` +
+            `<div class="pub-vf-report-content" style="flex:1;">` +
+                `<h2 style="font-size:1.4rem;">Vas a enviar un reporte</h2>` +
+                `<p style="font-size:1rem;">Solo eliminamos contenido que infringe nuestras <strong>Normas comunitarias</strong>.</p>` +
+                `<h3 style="margin-top:20px; font-size:1.1rem; color:#000; margin-bottom:10px;">Detalles del reporte</h3>` +
+                `<p style="font-size:.9rem; color:#666; margin-bottom:5px;">¿Por qué quieres reportar esta foto?</p>` +
+                `<div id="pubVfResumenMotivo" style="font-weight:700; font-size:1.1rem; color:#000; margin-bottom:20px;"></div>` +
+            `</div>` +
+            `<div class="pub-vf-report-footer">` +
+                `<button type="button" class="pub-vf-btn-enviar" id="btnPubVfEnviarFinal">Enviar</button>` +
+            `</div>` +
+        `</div>`;
 
     document.body.appendChild(el);
 
     el.querySelector('.pub-vf-cerrar').addEventListener('click', function (e) { e.stopPropagation(); pubCerrarVisor(); });
-
+    
     el.querySelector('.pub-vf-menu-btn').addEventListener('click', function (e) {
-        e.stopPropagation();
-        pubAjustarOpcionesMenu();
-        document.getElementById('pubVfSheet').classList.add('show');
+        e.stopPropagation(); document.getElementById('pubVfSheet').classList.add('show');
     });
 
     el.querySelector('#btnPubVfGuardar').addEventListener('click', function (e) {
@@ -180,45 +187,33 @@ function pubVisorEl() {
         document.getElementById('pubVfSheet').classList.remove('show');
     });
 
-    // Ocultar: solo para publicaciones ajenas
     el.querySelector('#btnPubVfOcultar').addEventListener('click', async function (e) {
         e.stopPropagation();
-        if (pubVisor.esDueno) return;
         var btn = this; btn.disabled = true;
         try {
             var client = window.supabaseClient;
             var sessionResult = await client.auth.getSession();
             var session = sessionResult.data ? sessionResult.data.session : null;
             if (!session) throw new Error('No hay sesión');
-
-            var ins = await client.from('publicaciones_ocultas').insert({
+            
+            const { error } = await client.from('publicaciones_ocultas').insert({
                 usuario_id: session.user.id,
                 publicacion_id: pubVisor.postIdActual
             });
-            if (ins.error && ins.error.code !== '23505') throw ins.error;
+            if (error && error.code !== '23505') throw error;
 
-            if (window.showToast) window.showToast('Publicación oculta para ti.', 'success');
+            if (window.showToast) window.showToast('✅ Publicación oculta.', 'success');
             document.getElementById('pubVfSheet').classList.remove('show');
             pubCerrarVisor();
+            if (typeof window.cargarMisPublicaciones === 'function') window.cargarMisPublicaciones(true);
         } catch (err) {
             console.error(err);
-            if (window.showToast) window.showToast('Error al ocultar la publicación.', 'error');
+            if (window.showToast) window.showToast('❌ Error al ocultar.', 'error');
         } finally { btn.disabled = false; }
-    });
-
-    // Eliminar: solo para el dueño
-    el.querySelector('#btnPubVfEliminar').addEventListener('click', async function (e) {
-        e.stopPropagation();
-        if (!pubVisor.esDueno || !pubVisor.postIdActual) return;
-        var postId = pubVisor.postIdActual;
-        document.getElementById('pubVfSheet').classList.remove('show');
-        pubCerrarVisor();
-        await eliminarMiPublicacion(postId, null);
     });
 
     el.querySelector('#btnPubVfReportar').addEventListener('click', function (e) {
         e.stopPropagation();
-        if (pubVisor.esDueno) return;
         document.getElementById('pubVfSheet').classList.remove('show');
         document.getElementById('pubVfReportSheet1').classList.add('show');
     });
@@ -235,28 +230,26 @@ function pubVisorEl() {
         document.getElementById('pubVfReportSheet1').classList.add('show');
     });
 
-    el.querySelectorAll('[data-cerrar-hoja]').forEach(function (b) {
-        b.addEventListener('click', function (e) {
+    el.querySelectorAll('.pub-vf-report-option').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
             e.stopPropagation();
-            document.getElementById(b.getAttribute('data-cerrar-hoja')).classList.remove('show');
-        });
-    });
+            var motivo = this.getAttribute('data-motivo');
+            
+            if (motivo === 'No quiero ver esto') {
+                document.getElementById('btnPubVfOcultar').click();
+                document.getElementById('pubVfReportSheet1').classList.remove('show');
+                return;
+            }
 
-    // Seleccionar motivo de reporte
-    el.querySelectorAll('.pub-vf-report-option').forEach(function (btn) {
-        btn.addEventListener('click', function (e) {
-            e.stopPropagation();
-            pubVisor.motivoSeleccionado = this.getAttribute('data-motivo');
-            document.getElementById('pubVfResumenMotivo').textContent = pubVisor.motivoSeleccionado;
+            pubVisor.motivoSeleccionado = motivo;
+            document.getElementById('pubVfResumenMotivo').textContent = motivo;
             document.getElementById('pubVfReportSheet1').classList.remove('show');
             document.getElementById('pubVfReportSheet2').classList.add('show');
         });
     });
 
-    // Enviar reporte
     el.querySelector('#btnPubVfEnviarFinal').addEventListener('click', async function (e) {
         e.stopPropagation();
-        if (pubVisor.esDueno) return;
         var btn = this; btn.disabled = true; btn.textContent = 'Enviando...';
         try {
             var client = window.supabaseClient;
@@ -264,22 +257,22 @@ function pubVisorEl() {
             var session = sessionResult.data ? sessionResult.data.session : null;
             if (!session) throw new Error('No hay sesión');
 
-            var ins = await client.from('publicacion_reportes').insert({
+            const { error } = await client.from('publicacion_reportes').insert({
                 publicacion_id: pubVisor.postIdActual,
                 usuario_id: session.user.id,
                 motivo: pubVisor.motivoSeleccionado,
                 estado: 'pendiente'
             });
-            if (ins.error && ins.error.code !== '23505') throw ins.error;
+            if (error) throw error;
 
-            if (window.showToast) window.showToast(ins.error ? 'Ya habías reportado esta publicación.' : 'Reporte enviado con éxito.', ins.error ? 'warning' : 'success');
+            if (window.showToast) window.showToast('✅ Reporte enviado con éxito.', 'success');
             document.getElementById('pubVfReportSheet2').classList.remove('show');
             pubCerrarVisor();
         } catch (err) {
             console.error(err);
-            if (window.showToast) window.showToast('Error al enviar el reporte.', 'error');
-        } finally {
-            btn.disabled = false;
+            if (window.showToast) window.showToast('❌ Error al enviar el reporte.', 'error');
+        } finally { 
+            btn.disabled = false; 
             btn.textContent = 'Enviar';
         }
     });
@@ -287,11 +280,11 @@ function pubVisorEl() {
     el.querySelector('.pub-vf-media').addEventListener('click', function (e) {
         if (e.target === e.currentTarget) {
             var sheet = document.getElementById('pubVfSheet');
-            var rs1 = document.getElementById('pubVfReportSheet1');
-            var rs2 = document.getElementById('pubVfReportSheet2');
+            var reportSheet1 = document.getElementById('pubVfReportSheet1');
+            var reportSheet2 = document.getElementById('pubVfReportSheet2');
             if (sheet.classList.contains('show')) sheet.classList.remove('show');
-            else if (rs1.classList.contains('show')) rs1.classList.remove('show');
-            else if (rs2.classList.contains('show')) rs2.classList.remove('show');
+            else if (reportSheet1.classList.contains('show')) reportSheet1.classList.remove('show');
+            else if (reportSheet2.classList.contains('show')) reportSheet2.classList.remove('show');
             else pubCerrarVisor();
         }
     });
@@ -308,14 +301,6 @@ function pubVisorEl() {
     }, { passive: true });
 
     return el;
-}
-
-// Muestra solo las opciones que corresponden al tipo de usuario
-function pubAjustarOpcionesMenu() {
-    var el = document.getElementById('pubVisorFull');
-    if (!el) return;
-    el.querySelectorAll('[data-solo-ajeno]').forEach(function (b) { b.style.display = pubVisor.esDueno ? 'none' : ''; });
-    el.querySelectorAll('[data-solo-dueno]').forEach(function (b) { b.style.display = pubVisor.esDueno ? '' : 'none'; });
 }
 
 function pubMostrarItem() {
@@ -346,15 +331,13 @@ function pubNavegar(direccion) {
     pubVisor.index = nuevo; pubMostrarItem();
 }
 
-function pubAbrirVisor(indice, postId, esDueno) {
+function pubAbrirVisor(indice, postId) {
     var lista = Array.isArray(window.listaMultimediaPerfil) ? window.listaMultimediaPerfil : [];
     if (!lista[indice]) return;
-    pubVisor.items = lista.slice();
-    pubVisor.index = indice;
+    pubVisor.items = lista.slice(); 
+    pubVisor.index = indice; 
     pubVisor.postIdActual = postId;
-    pubVisor.esDueno = esDueno === true;
     pubMostrarItem();
-    pubAjustarOpcionesMenu();
     pubVisorEl().classList.add('show'); document.body.style.overflow = 'hidden';
 }
 
@@ -367,7 +350,6 @@ function pubCerrarVisor() {
     el.classList.remove('show'); document.body.style.overflow = '';
     pubVisor.postIdActual = null;
     pubVisor.motivoSeleccionado = '';
-    pubVisor.esDueno = false;
 }
 
 document.addEventListener('keydown', function (e) {
@@ -387,7 +369,7 @@ document.addEventListener('keydown', function (e) {
 });
 
 // ================================================================
-// ESTILOS · paleta oscura global
+// ESTILOS CSS PARA TODO EL VISOR Y HOJAS
 // ================================================================
 
 (function inyectarEstilosReaccionesPerfil() {
@@ -402,84 +384,115 @@ document.addEventListener('keydown', function (e) {
         #misPublicacionesList .publicacion-card .header { display: flex !important; flex-direction: row !important; align-items: center !important; gap: 10px !important; padding: 0 !important; margin: 0 0 10px 0 !important; background: transparent !important; }
         #misPublicacionesList .publicacion-card .header > .avatar { width: 40px !important; height: 40px !important; min-width: 40px !important; flex: 0 0 40px !important; border-radius: 50% !important; overflow: hidden !important; }
         #misPublicacionesList .publicacion-card .nombre { font-weight: 700 !important; font-size: .92rem !important; color: var(--text-primary, #f0f4f8) !important; }
-        #misPublicacionesList .publicacion-card .fecha { font-size: .72rem !important; color: var(--text-muted, #8c949c) !important; margin-top: 2px !important; }
+        #misPublicacionesList .publicacion-card .fecha { font-size: .72rem !important; color: var(--text-muted, #8aa8b8) !important; margin-top: 2px !important; }
 
         .pub-autor-enlace { color: inherit; text-decoration: none; }
-        .pub-autor-handle { color: var(--cyan, #00e5ff) !important; font-weight: 500 !important; font-size: .75rem !important; }
+        .pub-autor-handle { color: #3b82f6 !important; font-weight: 500 !important; font-size: .75rem !important; }
         .publicacion-card .contenido { display: flex; flex-direction: column; gap: 8px; color: var(--text-secondary, #c0d8e8); font-size: .95rem; line-height: 1.5; }
-
+        
         .pub-media-wrap { position: relative; margin-top: 6px; }
         .pub-media-wrap img, .pub-media-wrap video { display: block; width: 100%; max-height: 620px; object-fit: contain; background: #000; border-radius: 0 !important; margin: 0 !important; cursor: pointer; }
 
-        /* VISOR */
+        /* VISOR ESTILO FACEBOOK */
         .pub-vf { position: fixed; inset: 0; z-index: 100060; background: #000; display: none; align-items: center; justify-content: center; touch-action: manipulation; }
         .pub-vf.show { display: flex; }
         .pub-vf-media { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
         .pub-vf-media img, .pub-vf-media video { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; }
 
         .pub-vf-header { position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; display: flex; justify-content: space-between; z-index: 10; }
-        .pub-vf-cerrar, .pub-vf-menu-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; color: #f0f4f8; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .pub-vf-cerrar, .pub-vf-menu-btn { width: 44px; height: 44px; border-radius: 50%; border: 0; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 
-        /* HOJA INFERIOR (menú) · paleta global */
+        /* HOJA INFERIOR (MENÚ) */
         .pub-vf-bottom-sheet {
-            position: absolute; bottom: 0; left: 0; right: 0; background: #0b1016; border-top: 1px solid rgba(212,175,55,.16); border-top-left-radius: 18px; border-top-right-radius: 18px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 20; padding-bottom: env(safe-area-inset-bottom, 20px); display: flex; flex-direction: column;
+            position: absolute; bottom: 0; left: 0; right: 0; background: #fff; border-top-left-radius: 16px; border-top-right-radius: 16px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 20; padding-bottom: env(safe-area-inset-bottom, 20px); display: flex; flex-direction: column;
         }
         .pub-vf-bottom-sheet.show { transform: translateY(0); }
-        .pub-vf-drag-handle { width: 40px; height: 4px; background: rgba(255,255,255,.2); border-radius: 2px; margin: 10px auto 15px auto; }
-        .pub-vf-sheet-btn { display: flex; align-items: center; gap: 15px; width: 100%; padding: 16px 20px; border: 0; border-top: 1px solid rgba(255,255,255,.08); background: transparent; color: #f0f4f8; font-size: 16px; text-align: left; cursor: pointer; }
-        .pub-vf-sheet-btn:last-child { border-bottom: 1px solid rgba(255,255,255,.08); }
-        .pub-vf-sheet-btn .icon { display: flex; align-items: center; justify-content: center; color: #D4AF37; }
-        .pub-vf-sheet-btn.pub-vf-peligro, .pub-vf-sheet-btn.pub-vf-peligro .icon { color: #ff3366; }
+        .pub-vf-drag-handle { width: 40px; height: 4px; background: #ccc; border-radius: 2px; margin: 10px auto 15px auto; }
+        .pub-vf-sheet-btn { display: flex; align-items: center; gap: 15px; width: 100%; padding: 16px 20px; border: 0; border-top: 1px solid #eee; background: transparent; color: #000; font-size: 16px; text-align: left; cursor: pointer; }
+        .pub-vf-sheet-btn:last-child { border-bottom: 1px solid #eee; }
+        .pub-vf-sheet-btn .icon { display: flex; align-items: center; justify-content: center; color: #333; }
 
-        /* HOJAS DE REPORTE · paleta global */
+        /* PANTALLAS DE REPORTE (HOJAS COMPLETAS) */
         .pub-vf-report-sheet {
-            position: absolute; inset: 0; background: #05080f; z-index: 30; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); color: #f0f4f8;
+            position: absolute; inset: 0; background: #fff; z-index: 30; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .pub-vf-report-sheet.show { transform: translateX(0); }
-        .pub-vf-report-header { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid rgba(212,175,55,.16); }
-        .pub-vf-report-header span { font-weight: 700; font-size: 1.1rem; color: #D4AF37; }
-        .pub-vf-report-back, .pub-vf-report-cerrar { background: transparent; border: 0; color: #f0f4f8; cursor: pointer; padding: 5px; display: flex; align-items: center; }
+        .pub-vf-report-header { display: flex; align-items: center; justify-content: space-between; padding: 15px; border-bottom: 1px solid #eee; }
+        .pub-vf-report-header span { font-weight: 700; font-size: 1.1rem; color: #000; }
+        .pub-vf-report-back, .pub-vf-report-cerrar { background: transparent; border: 0; cursor: pointer; padding: 5px; }
         .pub-vf-report-content { padding: 20px; overflow-y: auto; }
-        .pub-vf-report-content h2 { font-size: 1.2rem; color: #f0f4f8; margin: 0 0 8px 0; }
-        .pub-vf-report-content h3 { margin: 20px 0 10px 0; font-size: 1.05rem; color: #f0f4f8; }
-        .pub-vf-report-content p { font-size: .85rem; color: #8c949c; margin: 0 0 20px 0; }
-        .pub-vf-report-content p strong { color: #00e5ff; }
-        .pub-vf-etiqueta { font-size: .9rem !important; margin-bottom: 5px !important; }
-        .pub-vf-motivo { font-weight: 700; font-size: 1.05rem; color: #D4AF37; margin-bottom: 20px; }
-        .pub-vf-report-option { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 16px 0; border: 0; border-bottom: 1px solid rgba(255,255,255,.08); background: transparent; font-size: 1rem; font-weight: 600; color: #f0f4f8; text-align: left; cursor: pointer; }
-        .pub-vf-report-option svg { color: #D4AF37; }
+        .pub-vf-report-content h2 { font-size: 1.2rem; color: #000; margin-bottom: 8px; }
+        .pub-vf-report-content p { font-size: .85rem; color: #666; margin-bottom: 20px; }
+        .pub-vf-report-option { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 16px 0; border: 0; border-bottom: 1px solid #eee; background: transparent; font-size: 1rem; font-weight: 600; color: #000; text-align: left; cursor: pointer; }
         .pub-vf-report-option:last-child { border-bottom: 0; }
+        
+        /* BOTÓN AZUL DE ENVIAR FINAL */
+        .pub-vf-report-footer { padding: 15px 20px; border-top: 1px solid #eee; background: #fff; padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)); }
+        .pub-vf-btn-enviar { width: 100%; padding: 16px; background: #1d7bf4; color: #fff; font-size: 1.1rem; font-weight: 700; border: 0; border-radius: 8px; cursor: pointer; }
+        .pub-vf-btn-enviar:disabled { opacity: 0.7; }
 
-        .pub-vf-report-footer { padding: 15px 20px; border-top: 1px solid rgba(212,175,55,.16); background: #0b1016; padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px)); }
-        .pub-vf-btn-enviar { width: 100%; padding: 16px; background: linear-gradient(120deg, #00e5ff 0%, #3b82f6 55%, #8b5cf6 100%); color: #04070d; font-size: 1.05rem; font-weight: 700; border: 0; border-radius: 12px; cursor: pointer; font-family: Orbitron, monospace; letter-spacing: 1px; }
-        .pub-vf-btn-enviar:disabled { opacity: 0.6; }
-
-        /* Reacciones y comentarios */
+        /* Reacciones y Comentarios */
         .reaccion-wrap { position: relative; display: inline-block; margin: 8px 0 0 0; padding: 0; }
-        .reaccion-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted, #8c949c); font-size: .82rem; font-weight: 600; cursor: pointer; }
+        
+        .reaccion-trigger { 
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px; 
+            padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; 
+            color: var(--text-muted, #8aa8b8); font-size: .82rem; font-weight: 600; 
+            cursor: pointer; transition: background 0.2s, color 0.2s;
+        }
         .reaccion-trigger:hover { background: rgba(255,255,255,.05); }
-        .reaccion-trigger.activa { color: var(--gold, #D4AF37); }
-        .reaccion-dropdown { position: absolute; bottom: 100%; left: 0; margin-bottom: 8px; display: flex; gap: 4px; max-width: min(280px, calc(100vw - 32px)); padding: 6px 10px; background: #0b1016; border: 1px solid rgba(212,175,55,.16); border-radius: 24px; box-shadow: 0 6px 18px rgba(0,0,0,.6); opacity: 0; visibility: hidden; transform: translateY(8px) scale(.95); transition: opacity .18s ease, transform .18s ease; z-index: 100; }
+        .reaccion-trigger.activa { color: #3b82f6; }
+        
+        .reaccion-dropdown { 
+            position: absolute; bottom: 100%; left: 0; margin-bottom: 8px; 
+            display: flex; gap: 4px; 
+            /* Ancho máximo ajustado para que quepan todos los emojis en móviles */
+            max-width: min(320px, 90vw); 
+            padding: 6px 10px; 
+            background: #1c1f24; border-radius: 24px; 
+            box-shadow: 0 6px 18px rgba(0,0,0,.5); 
+            opacity: 0; visibility: hidden; 
+            transform: translateY(8px) scale(.95); 
+            transition: opacity .18s ease, transform .18s ease; 
+            z-index: 100; 
+        }
         .reaccion-dropdown.show { opacity: 1; visibility: visible; pointer-events: auto; transform: translateY(0) scale(1); }
-        .reaccion-dropdown button { width: 38px; height: 38px; border: 0; border-radius: 50%; background: transparent; font-size: 1.55rem; cursor: pointer; }
+        
+        .reaccion-dropdown button { 
+            width: 38px; height: 38px; border: 0; border-radius: 50%; 
+            background: transparent; font-size: 1.55rem; cursor: pointer; 
+            display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s, background 0.2s;
+            position: relative;
+        }
+        .reaccion-dropdown button:hover { transform: scale(1.3); background: rgba(255,255,255,0.1); }
+        .reaccion-dropdown button.activa { background: rgba(59, 130, 246, 0.2); }
+        
+        /* Mini contador dentro del emoji */
+        .reaccion-dropdown .mini-count {
+            position: absolute; top: -2px; right: -2px;
+            background: #3b82f6; color: white; font-size: 0.55rem; 
+            font-weight: bold; padding: 2px 5px; border-radius: 10px;
+            font-family: sans-serif;
+        }
 
         .publicacion-card .stats { display: flex; align-items: center; gap: 4px; margin: 2px 0 0 0 !important; padding: 6px 0 0 0 !important; border-top: 1px solid rgba(255,255,255,.09); flex-wrap: wrap; }
-        .btn-accion-pub { background: transparent !important; border: 0 !important; border-radius: 6px !important; padding: 6px 10px !important; color: var(--text-muted, #8c949c) !important; font-size: .82rem !important; font-weight: 600 !important; }
+        .btn-accion-pub { background: transparent !important; border: 0 !important; border-radius: 6px !important; padding: 6px 10px !important; color: var(--text-muted, #8aa8b8) !important; font-size: .82rem !important; font-weight: 600 !important; }
         .btn-accion-pub.danger { color: var(--danger, #ff3366) !important; }
-
+        
         .comentarios-container { display: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.09); }
         .comentarios-container.show { display: block; }
         .comentario-item { border-bottom: 0; padding: 6px 0; }
-        .comentario-input-row input { background: transparent !important; border: 0 !important; border-bottom: 1px solid rgba(255,255,255,.12) !important; border-radius: 0 !important; padding: 6px 2px !important; color: #f0f4f8; }
+        .comentario-input-row input { background: transparent !important; border: 0 !important; border-bottom: 1px solid rgba(255,255,255,.12) !important; border-radius: 0 !important; padding: 6px 2px !important; }
         .comentario-input-row button { background: transparent !important; color: var(--gold, #D4AF37) !important; border: 0 !important; font-weight: 700 !important; }
 
-        .avatar-placeholder { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(135deg, #1a4a2a, #a855f7); color: #fff; font-weight: 600; overflow: hidden; }
+        .avatar-placeholder { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%; background: #3b82f6; color: #fff; font-weight: 600; overflow: hidden; }
     `));
     document.head.appendChild(style);
 })();
 
 // ================================================================
-// MODERACIÓN, SUBIDA Y PUBLICACIÓN
+// RESTO DE FUNCIONES (Moderación, Subida, Publicar, etc.)
 // ================================================================
 
 function esErrorModeracionPerfil(error) {
@@ -515,9 +528,9 @@ async function descargarArchivoForzado(url, nombreOriginal) {
         var nombreDescarga = 'descarga_' + Date.now() + '.' + extension;
         blobUrl = URL.createObjectURL(blob); var a = document.createElement('a'); a.href = blobUrl; a.download = nombreDescarga; a.style.display = 'none';
         document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        if (window.showToast) window.showToast('Descarga iniciada', 'success', 2000);
+        if (window.showToast) window.showToast('✅ Descarga iniciada', 'success', 2000);
     } catch (error) {
-        if (window.showToast) window.showToast('Error al descargar el archivo', 'error');
+        if (window.showToast) window.showToast('❌ Error al descargar el archivo', 'error');
     } finally { if (blobUrl) setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 1000); }
 }
 
@@ -569,9 +582,9 @@ async function publicarDesdePerfil() {
         else if (archivosSeleccionados.video) { var resVid = await subirArchivoConModeracion(archivosSeleccionados.video, 'muro-videos', 'video', token); mediaUrl = resVid.url; mediaType = 'video'; }
         var insertResult = await client.from('publicaciones').insert({ usuario_id: session.user.id, contenido: contenido, media_url: mediaUrl, media_type: mediaType, estado: 'publicado', permitir_descarga: permitirDescarga }).select().single();
         if (insertResult.error) throw insertResult.error;
-        if (window.showToast) window.showToast('Publicación creada', 'success');
+        if (window.showToast) window.showToast('¡Publicación creada!', 'success');
         if (input) input.value = ''; archivosSeleccionados.imagen = null; archivosSeleccionados.video = null; if (document.getElementById('inputFotoPerfilPost')) document.getElementById('inputFotoPerfilPost').value = ''; if (document.getElementById('inputVideoPerfilPost')) document.getElementById('inputVideoPerfilPost').value = ''; renderizarPreviewPerfil(); await cargarMisPublicaciones(true);
-    } catch (error) { if (window.showToast) window.showToast(esErrorModeracionPerfil(error) ? 'Contenido no permitido' : (error.message || 'No se pudo crear la publicación'), 'error'); }
+    } catch (error) { if (window.showToast) window.showToast(esErrorModeracionPerfil(error) ? '❌ Contenido no permitido' : '❌ ' + (error.message || 'No se pudo crear la publicación'), 'error'); }
     finally { if (btn) { btn.disabled = false; btn.innerHTML = textoOriginalBtn; } }
 }
 
@@ -585,10 +598,6 @@ if (typeof IntersectionObserver !== 'undefined') {
     }, { threshold: 0.5 });
 }
 
-// ================================================================
-// LISTA DE PUBLICACIONES DEL PERFIL
-// ================================================================
-
 var pubVersionRender = 0;
 async function cargarMisPublicaciones(forzarRefresco) {
     var container = document.getElementById('misPublicacionesList'); var contador = document.getElementById('misPostsCount'); if (!container) return;
@@ -599,13 +608,23 @@ async function cargarMisPublicaciones(forzarRefresco) {
         var session = sessionResult.data ? sessionResult.data.session : null; if (!session) { container.innerHTML = '<div class="empty-state"><h4>Inicia sesión</h4></div>'; if (contador) contador.textContent = '0'; return; }
         var result = await client.from('publicaciones_publicas').select('*').eq('usuario_id', session.user.id).order('created_at', { ascending: false }).limit(50); if (result.error) throw result.error;
         if (versionActual !== pubVersionRender) return;
+        
+        var publicaciones = result.data || []; 
+        
+        // FILTRAR PUBLICACIONES OCULTAS
+        try {
+            const { data: ocultas } = await client.from('publicaciones_ocultas').select('publicacion_id').eq('usuario_id', session.user.id);
+            if (ocultas && ocultas.length > 0) {
+                const idsOcultos = ocultas.map(o => o.publicacion_id);
+                publicaciones = publicaciones.filter(p => !idsOcultos.includes(p.id));
+            }
+        } catch (e) { console.warn('No se pudieron cargar ocultas', e); }
 
-        var publicaciones = result.data || [];
         if (contador) contador.textContent = publicaciones.length;
         if (publicaciones.length === 0) { container.innerHTML = '<div class="empty-state"><h4>Sin publicaciones aún</h4><p>Publica algo para verlo aquí</p></div>'; window.listaMultimediaPerfil = []; return; }
         container.innerHTML = ''; window.listaMultimediaPerfil = [];
         var reaccionesUsuario = {}; var conteosReacciones = {}; var idsPublicaciones = publicaciones.map(function (p) { return p.id; }).filter(Boolean);
-
+        
         if (idsPublicaciones.length > 0) {
             try {
                 var reaccResult = await client.from('publicaciones_reacciones').select('publicacion_id, tipo, usuario_id').in('publicacion_id', idsPublicaciones);
@@ -616,7 +635,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
         var miId = session.user.id;
         publicaciones.forEach(function (p) {
             var nombreReal = pubEscapeHtml(p.usuario_nombre || 'Explorador'); var handleSeguro = pubEscapeHtml(p.usuario_handle || ''); var urlAutor = pubUrlPerfilAutor(p.usuario_handle, p.usuario_id, miId);
-            var esDueno = String(p.usuario_id) === String(miId);
             var card = document.createElement('div'); card.className = 'publicacion-card'; card.dataset.id = p.id;
             var header = document.createElement('div'); header.className = 'header';
             var avatarBox = document.createElement(urlAutor ? 'a' : 'div'); avatarBox.className = 'avatar' + (urlAutor ? ' pub-autor-avatar-enlace' : '');
@@ -633,23 +651,45 @@ async function cargarMisPublicaciones(forzarRefresco) {
             if (pubEsUrlSegura(p.media_url)) {
                 var tipoMedia = p.media_type;
                 if (tipoMedia === 'video' || tipoMedia === 'imagen') {
-                    var indexEnLista = window.listaMultimediaPerfil.length; window.listaMultimediaPerfil.push({ url: p.media_url, tipo: tipoMedia, permiteDescarga: p.permitir_descarga !== false, postId: p.id, esDueno: esDueno });
+                    var indexEnLista = window.listaMultimediaPerfil.length; window.listaMultimediaPerfil.push({ url: p.media_url, tipo: tipoMedia, permiteDescarga: p.permitir_descarga !== false });
                     var wrapMedia = document.createElement('div'); wrapMedia.className = 'pub-media-wrap'; var mediaEl;
                     if (tipoMedia === 'video') { mediaEl = document.createElement('video'); mediaEl.controls = true; mediaEl.preload = 'metadata'; mediaEl.src = p.media_url; mediaEl.playsInline = true; var autoplayInicial = 'true'; try { autoplayInicial = localStorage.getItem('contenido_auto_reproducir'); } catch (e) {} mediaEl.muted = autoplayInicial !== 'false'; if (videoObserverPerfil) videoObserverPerfil.observe(mediaEl); }
-                    else { mediaEl = document.createElement('img'); mediaEl.alt = 'Imagen'; mediaEl.loading = 'lazy'; mediaEl.src = p.media_url; mediaEl.addEventListener('click', function (e) { e.stopPropagation(); pubAbrirVisor(indexEnLista, p.id, esDueno); }); }
-
+                    else { mediaEl = document.createElement('img'); mediaEl.alt = 'Imagen'; mediaEl.loading = 'lazy'; mediaEl.src = p.media_url; mediaEl.addEventListener('click', function (e) { e.stopPropagation(); pubAbrirVisor(indexEnLista, p.id); }); }
+                    
                     wrapMedia.appendChild(mediaEl); contenido.appendChild(wrapMedia);
                 }
             }
             card.appendChild(contenido);
             var reaccionUsuario = reaccionesUsuario[p.id] || null; var conteos = conteosReacciones[p.id] || {}; var totalReacciones = 0; Object.keys(conteos).forEach(function (k) { totalReacciones += conteos[k] || 0; }); var emojiMostrado = reaccionUsuario || '❤️';
             var wrap = document.createElement('div'); wrap.className = 'reaccion-wrap'; var dropdown = document.createElement('div'); dropdown.className = 'reaccion-dropdown'; dropdown.id = 'reaccion-dropdown-' + p.id;
+            
+            // CONSTRUIR EL DROPDOWN CON TODOS LOS EMOJIS
             pubEmojisReaccion().forEach(function (emoji) {
-                var b = document.createElement('button'); b.textContent = emoji; if (reaccionUsuario === emoji) b.classList.add('activa'); b.addEventListener('click', function (ev) { ev.stopPropagation(); reaccionarPublicacionPerfil(p.id, emoji); });
-                if (conteos[emoji] > 0) { var mini = document.createElement('span'); mini.className = 'mini-count'; mini.textContent = conteos[emoji]; b.appendChild(mini); } dropdown.appendChild(b);
+                var b = document.createElement('button'); b.textContent = emoji; if (reaccionUsuario === emoji) b.classList.add('activa'); 
+                b.addEventListener('click', function (ev) { 
+                    ev.stopPropagation(); 
+                    dropdown.classList.remove('show'); // Ocultar menú tras reaccionar
+                    reaccionarPublicacionPerfil(p.id, emoji); 
+                });
+                if (conteos[emoji] > 0) { var mini = document.createElement('span'); mini.className = 'mini-count'; mini.textContent = conteos[emoji]; b.appendChild(mini); } 
+                dropdown.appendChild(b);
             });
-            var trigger = document.createElement('button'); trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : ''); var emojiActual = document.createElement('span'); emojiActual.className = 'emoji-actual'; emojiActual.textContent = emojiMostrado; var countActual = document.createElement('span'); countActual.className = 'count'; countActual.textContent = totalReacciones > 0 ? String(totalReacciones) : 'Reaccionar';
-            trigger.appendChild(emojiActual); trigger.appendChild(countActual); trigger.addEventListener('click', function (e) { e.stopPropagation(); reaccionarPublicacionPerfil(p.id, reaccionUsuario || '❤️'); });
+            
+            var trigger = document.createElement('button'); 
+            trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : ''); 
+            var emojiActual = document.createElement('span'); emojiActual.className = 'emoji-actual'; emojiActual.textContent = emojiMostrado; 
+            var countActual = document.createElement('span'); countActual.className = 'count'; countActual.textContent = totalReacciones > 0 ? String(totalReacciones) : 'Reaccionar';
+            trigger.appendChild(emojiActual); trigger.appendChild(countActual); 
+            
+            // EVENTO PRINCIPAL: Al dar clic en el botón, se abre el menú de emojis
+            trigger.addEventListener('click', function (e) { 
+                e.stopPropagation(); 
+                // Si el dropdown ya está abierto, lo cerramos. Si no, cerramos los demás y lo abrimos.
+                var estaAbierto = dropdown.classList.contains('show');
+                document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) { el.classList.remove('show'); });
+                if (!estaAbierto) dropdown.classList.add('show');
+            });
+            
             wrap.appendChild(dropdown); wrap.appendChild(trigger);
             var stats = document.createElement('div'); stats.className = 'stats'; stats.appendChild(wrap);
             var btnComentarios = document.createElement('button'); btnComentarios.className = 'btn-accion-pub'; btnComentarios.textContent = 'Comentarios'; btnComentarios.addEventListener('click', function (ev) { ev.stopPropagation(); toggleComentariosPerfil(p.id); });
@@ -669,7 +709,10 @@ async function cargarMisPublicaciones(forzarRefresco) {
     }
 }
 
+// Función que antes no se usaba, pero la mantenemos para compatibilidad
 function toggleReaccionDropdown(postId, forzarApertura) { var dd = document.getElementById('reaccion-dropdown-' + postId); if (!dd) return; var esta = dd.classList.contains('show'); document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) { el.classList.remove('show'); }); if (forzarApertura === true || !esta) dd.classList.add('show'); }
+
+// Cerrar dropdowns al hacer clic fuera de ellos
 document.addEventListener('click', function (e) { if (!e.target.closest('.reaccion-wrap')) { document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) { el.classList.remove('show'); }); } });
 
 async function refrescarReaccionesPublicacion(postId) {
@@ -680,7 +723,14 @@ async function refrescarReaccionesPublicacion(postId) {
     (result.data || []).forEach(function (r) { conteos[r.tipo] = (conteos[r.tipo] || 0) + 1; if (uid && r.usuario_id === uid) usuarioTipo = r.tipo; });
     var total = 0; Object.keys(conteos).forEach(function (tipo) { total += conteos[tipo]; });
     var dominante = Object.keys(conteos).sort(function (a, b) { return conteos[b] - conteos[a]; })[0]; var emojiMostrado = usuarioTipo || dominante || '❤️';
-    var trigger = card.querySelector('.reaccion-trigger'); if (trigger) { trigger.classList.toggle('activa', Boolean(usuarioTipo)); var emojiActual = trigger.querySelector('.emoji-actual'); var countActual = trigger.querySelector('.count'); if (emojiActual) emojiActual.textContent = emojiMostrado; if (countActual) countActual.textContent = total > 0 ? String(total) : 'Reaccionar'; }
+    var trigger = card.querySelector('.reaccion-trigger'); 
+    if (trigger) { 
+        trigger.classList.toggle('activa', Boolean(usuarioTipo)); 
+        var emojiActual = trigger.querySelector('.emoji-actual'); 
+        var countActual = trigger.querySelector('.count'); 
+        if (emojiActual) emojiActual.textContent = emojiMostrado; 
+        if (countActual) countActual.textContent = total > 0 ? String(total) : 'Reaccionar'; 
+    }
 }
 
 var pubReaccionesEnProceso = {};
