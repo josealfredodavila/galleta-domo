@@ -1,0 +1,74 @@
+// ================================================================
+// routes/webhooks/nowpayments-marketing.js — Csariel's
+// IPN de pagos de campañas (order_id "MKT-<pago_id>").
+// NO define router: lo usa routes/webhooks.js, que ya verificó la firma.
+//
+// finished  → confirmarPagoCampana (valida, publica el creativo y activa)
+//             - ok o ya confirmado          → 200
+//             - error permanente (monto, payment_id, media) → 200 y revisión
+//             - error transitorio (R2, base) → 500, NOWPayments reintenta
+// failed/expired/canceled → pago cancelado (la campaña queda en pendiente_pago
+//             para que el usuario pueda volver a pagar)
+// intermedio → solo registra el avance
+// ================================================================
+
+'use strict';
+
+const { supabaseAdmin } = require('../../config/supabase');
+const { confirmarPagoCampana } = require('../../services/marketing/confirmar-pago-campana');
+
+const FINALES_OK = ['finished', 'confirmed'];
+const FINALES_FALLO = ['failed', 'refunded', 'expired', 'canceled', 'cancelled'];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+async function procesarPagoMarketing(pagoIdRaw, npStatus, data, res) {
+    const pagoId = String(pagoIdRaw || '');
+    if (!UUID_RE.test(pagoId)) {
+        return res.status(200).json({ ok: true, ignorado: 'order_id_invalido' });
+    }
+
+    if (FINALES_OK.includes(npStatus)) {
+        const r = await confirmarPagoCampana({
+            pagoId,
+            paymentData: { ...data, payment_status: npStatus },
+            source: 'ipn'
+        });
+
+        if (r.ok) {
+            return res.status(200).json({ ok: true, estado: 'pagado', ya_confirmado: r.yaConfirmado === true });
+        }
+        if (r.permanente) {
+            console.error(`[Marketing IPN] REVISIÓN MANUAL pago ${pagoId}: ${r.motivo}`);
+            return res.status(200).json({ ok: true, revision_manual: true, motivo: r.motivo });
+        }
+        console.error(`[Marketing IPN] reintentar pago ${pagoId}: ${r.motivo}`);
+        return res.status(500).json({ ok: false, error: 'reintentar', motivo: r.motivo });
+    }
+
+    if (FINALES_FALLO.includes(npStatus)) {
+        const { error } = await supabaseAdmin
+            .from('marketing_pagos')
+            .update({ estado: 'cancelado', nowpayments_status: npStatus })
+            .eq('id', pagoId)
+            .neq('estado', 'pagado');
+        if (error) {
+            console.error('[Marketing IPN] cancelar pago:', error.message);
+            return res.status(500).json({ ok: false, error: 'db' });
+        }
+        return res.status(200).json({ ok: true, estado: 'cancelado' });
+    }
+
+    const intermedio = ['confirming', 'sending'].includes(npStatus) ? 'confirmando' : null;
+    if (intermedio) {
+        const { error } = await supabaseAdmin
+            .from('marketing_pagos')
+            .update({ estado: intermedio, nowpayments_status: npStatus })
+            .eq('id', pagoId)
+            .neq('estado', 'pagado');
+        if (error) console.error('[Marketing IPN] estado intermedio:', error.message);
+    }
+
+    return res.status(200).json({ ok: true, estado: npStatus });
+}
+
+module.exports = { procesarPagoMarketing };
