@@ -4,10 +4,6 @@
     const SAVED_KEY = 'sariels_noticias_guardadas';
     const REGION = 'MX';
 
-    // Saludos: no consumen búsquedas en el servidor
-    const SALUDOS = /^(hola|buenas|buenos d[ií]as|buenas tardes|buenas noches|hey|hi|hello|qu[eé] onda|qu[eé] tal)[\s!¡?.,]*$/i;
-    const RESPUESTA_SALUDO = '¡Hola! Pregúntame algo de la actualidad, por ejemplo: "¿Qué pasa hoy en México?"';
-
     const state = {
         category: 'general',
         token: null,
@@ -167,6 +163,11 @@
             </div>`;
     }
 
+    /*
+     * Portada: foto del artículo si existe; si no, color por categoría
+     * con la inicial de la fuente. Si la foto falla, se reemplaza por la
+     * portada de respaldo (ver enlazarFotos).
+     */
     function coverHtml(item, cat) {
         const imagen = urlSegura(item.imagen);
         const fuente = item.fuentes?.[0]?.titulo || hostOf(item.fuentes?.[0]?.url || '');
@@ -398,19 +399,10 @@
 
     async function preguntar(texto) {
         const pregunta = String(texto || '').trim();
-
         if (!pregunta) {
             mostrarRespuesta('Escribe una pregunta antes de consultar.', true);
             return;
         }
-
-        if (SALUDOS.test(pregunta) || pregunta.length < 6) {
-            mostrarRespuesta(RESPUESTA_SALUDO, false);
-            el.answerSrc.innerHTML = '';
-            el.input.value = '';
-            return;
-        }
-
         if (!state.token) {
             mostrarRespuesta('Sesión no disponible. Vuelve a iniciar sesión.', true);
             return;
