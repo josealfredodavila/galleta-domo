@@ -1,4 +1,3 @@
-
 (function () {
     'use strict';
 
@@ -64,13 +63,8 @@
                 background: #101010;
             }
 
-            .sn-media img {
-                min-height: 100%;
-            }
-
-            .sn-media video {
-                object-fit: contain;
-            }
+            .sn-media img { min-height: 100%; }
+            .sn-media video { object-fit: contain; }
 
             .sn-media iframe {
                 position: absolute;
@@ -82,9 +76,7 @@
                 background: #000;
             }
 
-            .sn-media-image {
-                aspect-ratio: 16 / 9;
-            }
+            .sn-media-image { aspect-ratio: 16 / 9; }
 
             .hero .cover {
                 position: relative;
@@ -97,14 +89,8 @@
                 min-height: 240px;
             }
 
-            .hero .cover .sn-media img {
-                min-height: 240px;
-            }
-
-            .hero .cover .sn-media video {
-                min-height: 240px;
-            }
-
+            .hero .cover .sn-media img,
+            .hero .cover .sn-media video,
             .hero .cover .sn-media iframe {
                 min-height: 240px;
             }
@@ -121,9 +107,7 @@
                 border: 1px solid rgba(255,255,255,.08);
             }
 
-            .sn-card .sn-media {
-                flex: none;
-            }
+            .sn-card .sn-media { flex: none; }
 
             .sn-card-content {
                 position: relative;
@@ -145,9 +129,7 @@
                 line-height: 1.55;
             }
 
-            .sn-card-content .more {
-                margin-top: 8px;
-            }
+            .sn-card-content .more { margin-top: 8px; }
 
             .sn-media-fallback {
                 display: flex;
@@ -160,13 +142,9 @@
                 font-size: 2rem;
             }
 
-            .sn-media iframe {
-                aspect-ratio: 16 / 9;
-            }
+            .sn-media iframe { aspect-ratio: 16 / 9; }
 
-            .sn-media video::-webkit-media-controls {
-                opacity: 1;
-            }
+            .sn-media video::-webkit-media-controls { opacity: 1; }
 
             .sn-media video:focus-visible,
             .sn-media iframe:focus-visible {
@@ -175,13 +153,8 @@
             }
 
             @media (max-width: 600px) {
-                .sn-card-content {
-                    padding: 15px;
-                }
-
-                .sn-card-content h2 {
-                    font-size: 1.15rem;
-                }
+                .sn-card-content { padding: 15px; }
+                .sn-card-content h2 { font-size: 1.15rem; }
             }
         `;
 
@@ -205,7 +178,6 @@
     function urlSegura(valor) {
         try {
             const url = new URL(String(valor || ''), window.location.origin);
-
             return url.protocol === 'http:' || url.protocol === 'https:'
                 ? url.href
                 : '#';
@@ -226,14 +198,10 @@
         if (!valor) return 'Hoy';
 
         const fecha = new Date(valor);
-
         if (Number.isNaN(fecha.getTime())) return 'Hoy';
 
         const seg = Math.round((fecha.getTime() - Date.now()) / 1000);
-
-        const rtf = new Intl.RelativeTimeFormat('es', {
-            numeric: 'auto'
-        });
+        const rtf = new Intl.RelativeTimeFormat('es', { numeric: 'auto' });
 
         const umbrales = [
             ['year', 31536000],
@@ -263,17 +231,12 @@
 
     function letraDe(texto) {
         const limpio = String(texto || '').trim();
-
-        return escapeHtml(
-            limpio ? limpio.charAt(0).toUpperCase() : '•'
-        );
+        return escapeHtml(limpio ? limpio.charAt(0).toUpperCase() : '•');
     }
 
     function loadSaved() {
         try {
-            return new Set(
-                JSON.parse(localStorage.getItem(SAVED_KEY) || '[]')
-            );
+            return new Set(JSON.parse(localStorage.getItem(SAVED_KEY) || '[]'));
         } catch (_) {
             return new Set();
         }
@@ -281,10 +244,7 @@
 
     function persistSaved() {
         try {
-            localStorage.setItem(
-                SAVED_KEY,
-                JSON.stringify([...state.saved])
-            );
+            localStorage.setItem(SAVED_KEY, JSON.stringify([...state.saved]));
         } catch (_) {}
     }
 
@@ -307,19 +267,14 @@
 
     async function waitForSupabase() {
         for (let i = 0; i < 80; i++) {
-            if (window.supabaseClient) {
-                return window.supabaseClient;
-            }
-
-            await new Promise((resolve) => setTimeout(resolve, 100));
+            if (window.supabaseClient) return window.supabaseClient;
+            await new Promise((r) => setTimeout(r, 100));
         }
-
         return null;
     }
 
     function setSession(texto, esError) {
         if (!el.session) return;
-
         el.session.textContent = texto;
         el.session.classList.toggle('error', Boolean(esError));
     }
@@ -334,7 +289,6 @@
 
         try {
             const { data, error } = await client.auth.getSession();
-
             if (error) throw error;
 
             if (!data?.session) {
@@ -343,31 +297,19 @@
             }
 
             state.token = data.session.access_token;
-
-            setSession(
-                data.session.user?.email || 'Sesión activa'
-            );
-
+            setSession(data.session.user?.email || 'Sesión activa');
             return true;
 
         } catch (error) {
             console.error('Error cargando sesión:', error);
-
             setSession('No se pudo validar la sesión', true);
-
             return false;
         }
     }
 
     function headers() {
-        const h = {
-            'Content-Type': 'application/json'
-        };
-
-        if (state.token) {
-            h.Authorization = `Bearer ${state.token}`;
-        }
-
+        const h = { 'Content-Type': 'application/json' };
+        if (state.token) h.Authorization = `Bearer ${state.token}`;
         return h;
     }
 
@@ -392,13 +334,40 @@
 
         for (const valor of posibles) {
             const url = urlSegura(valor);
-
             if (url !== '#') return url;
         }
 
         return '#';
     }
 
+    /**
+     * Valida si una URL corresponde a un video DIRECTO reproducible
+     * (extensión conocida o MIME típico de archivo servido).
+     */
+    function esVideoDirecto(url) {
+        if (!url || url === '#') return false;
+
+        try {
+            const u = new URL(url);
+            const ruta = u.pathname.toLowerCase();
+
+            const extensiones = [
+                '.mp4', '.webm', '.ogg', '.ogv',
+                '.mov', '.m4v', '.m3u8', '.mpd'
+            ];
+
+            return extensiones.some((ext) => ruta.endsWith(ext));
+        } catch (_) {
+            return false;
+        }
+    }
+
+    /**
+     * Devuelve la URL del video SOLO si es un embed conocido
+     * (YouTube / Vimeo) o un archivo directo con extensión válida.
+     * Cualquier otra cosa (URL rota, JSON.stringify, blob sin extensión, etc.)
+     * se descarta para evitar el icono roto en 0:00.
+     */
     function obtenerVideo(item) {
         if (!item) return '#';
 
@@ -418,8 +387,15 @@
                 : valor;
 
             const url = urlSegura(candidato);
+            if (url === '#') continue;
 
-            if (url !== '#') return url;
+            // Es embed de YouTube/Vimeo → válido.
+            if (obtenerVideoExterno(url)) return url;
+
+            // Es archivo directo con extensión de video → válido.
+            if (esVideoDirecto(url)) return url;
+
+            // Cualquier otro caso se descarta (no es un video reproducible).
         }
 
         return '#';
@@ -430,7 +406,9 @@
             const ruta = new URL(url).pathname.toLowerCase();
 
             if (ruta.endsWith('.webm')) return 'video/webm';
+            if (ruta.endsWith('.ogg') || ruta.endsWith('.ogv')) return 'video/ogg';
             if (ruta.endsWith('.mov')) return 'video/quicktime';
+            if (ruta.endsWith('.m4v')) return 'video/x-m4v';
             if (ruta.endsWith('.m3u8')) return 'application/x-mpegURL';
 
             return 'video/mp4';
@@ -459,11 +437,7 @@
                     id = parsed.searchParams.get('v') || '';
                 } else {
                     const partes = parsed.pathname.split('/').filter(Boolean);
-
-                    if (
-                        partes[0] === 'embed' ||
-                        partes[0] === 'shorts'
-                    ) {
+                    if (partes[0] === 'embed' || partes[0] === 'shorts') {
                         id = partes[1] || '';
                     }
                 }
@@ -475,9 +449,7 @@
 
             if (host === 'vimeo.com' || host === 'player.vimeo.com') {
                 const partes = parsed.pathname.split('/').filter(Boolean);
-
-                const videoId = partes.find((parte) => /^\d+$/.test(parte));
-
+                const videoId = partes.find((p) => /^\d+$/.test(p));
                 if (videoId) {
                     return 'https://player.vimeo.com/video/' + videoId;
                 }
@@ -491,7 +463,7 @@
     }
 
     // ========================================================
-    // COMPONENTE MULTIMEDIA DE NOTICIAS
+    // COMPONENTE MULTIMEDIA
     // ========================================================
 
     function mediaHtml(item, categoria, opciones) {
@@ -499,12 +471,13 @@
 
         const imagen = obtenerImagen(item);
         const video = obtenerVideo(item);
+
         const fuente = item.fuentes?.[0]?.titulo ||
             hostOf(item.fuentes?.[0]?.url || '');
 
         const poster = imagen !== '#' ? imagen : '';
 
-        // Priorizar video cuando exista.
+        // 1) Video externo embebido (YouTube / Vimeo)
         if (video !== '#') {
             const externo = obtenerVideoExterno(video);
 
@@ -522,24 +495,29 @@
                     </div>`;
             }
 
-            return `
-                <div class="sn-media sn-media-video">
-                    <video
-                        controls
-                        playsinline
-                        preload="metadata"
-                        ${poster ? `poster="${escapeHtml(poster)}"` : ''}
-                        controlslist="nodownload"
-                        aria-label="${escapeHtml(item.titulo || 'Video de noticia')}">
-                        <source
-                            src="${escapeHtml(video)}"
-                            type="${escapeHtml(obtenerTipoVideo(video))}">
-                        Tu navegador no puede reproducir este video.
-                    </video>
-                </div>`;
+            // 2) Video directo con archivo reproducible
+            if (esVideoDirecto(video)) {
+                return `
+                    <div class="sn-media sn-media-video">
+                        <video
+                            controls
+                            playsinline
+                            preload="metadata"
+                            ${poster ? `poster="${escapeHtml(poster)}"` : ''}
+                            controlslist="nodownload"
+                            aria-label="${escapeHtml(item.titulo || 'Video de noticia')}"
+                            data-video-src="${escapeHtml(video)}"
+                            data-poster="${escapeHtml(poster)}">
+                            <source
+                                src="${escapeHtml(video)}"
+                                type="${escapeHtml(obtenerTipoVideo(video))}">
+                            Tu navegador no puede reproducir este video.
+                        </video>
+                    </div>`;
+            }
         }
 
-        // Si no existe video, mostrar imagen.
+        // 3) Imagen si no hay video válido
         if (imagen !== '#') {
             return `
                 <div class="sn-media sn-media-image">
@@ -553,7 +531,7 @@
                 </div>`;
         }
 
-        // Respaldo cuando no hay imagen ni video.
+        // 4) Fallback limpio
         return `
             <div class="sn-media-fallback cat-${escapeHtml(categoria)}">
                 <span class="letra">${letraDe(fuente)}</span>
@@ -561,61 +539,99 @@
     }
 
     // ========================================================
-    // CARGA Y FALLBACK DE IMÁGENES
+    // FALLBACKS DE MEDIA (imágenes + video)
     // ========================================================
 
-    function enlazarFotos() {
-        el.feed.querySelectorAll('img.photo').forEach((img) => {
+    function fallbackMedia(contenedor, opciones) {
+        opciones = opciones || {};
+
+        if (opciones.poster) {
+            const img = document.createElement('img');
+            img.className = 'photo';
+            img.src = opciones.poster;
+            img.alt = opciones.alt || 'Imagen de noticia';
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.referrerPolicy = 'no-referrer';
 
             img.addEventListener('error', () => {
-                const contenedor = img.closest('.sn-media');
-
-                if (!contenedor) return;
-
                 contenedor.innerHTML = `
                     <div class="sn-media-fallback">
                         <span>◈</span>
                     </div>`;
             }, { once: true });
 
+            contenedor.innerHTML = '';
+            contenedor.appendChild(img);
+
+        } else {
+            contenedor.innerHTML = `
+                <div class="sn-media-fallback">
+                    <span>◈</span>
+                </div>`;
+        }
+    }
+
+    function enlazarFotos() {
+        // Imágenes: fallback a placeholder si fallan.
+        el.feed.querySelectorAll('img.photo').forEach((img) => {
+            if (img.dataset.bound) return;
+            img.dataset.bound = '1';
+
+            img.addEventListener('error', () => {
+                const contenedor = img.closest('.sn-media');
+                if (!contenedor) return;
+                fallbackMedia(contenedor, {});
+            }, { once: true });
         });
 
+        // Videos: capturar error del <video>, del <source>, y del timeout de metadatos.
         el.feed.querySelectorAll('video').forEach((video) => {
+            if (video.dataset.bound) return;
+            video.dataset.bound = '1';
 
-            video.addEventListener('error', () => {
-                const contenedor = video.closest('.sn-media');
+            const contenedor = video.closest('.sn-media');
+            if (!contenedor) return;
 
-                if (!contenedor) return;
+            const poster = video.dataset.poster || '';
+            const alt = video.getAttribute('aria-label') || 'Noticia';
 
-                const item = state.items.find((noticia) => {
-                    return obtenerVideo(noticia) === video.querySelector('source')?.src;
-                });
+            // Marca de "video realmente cargó metadatos".
+            let listo = false;
 
-                if (item && obtenerImagen(item) !== '#') {
-                    contenedor.innerHTML = `
-                        <img
-                            class="photo"
-                            src="${escapeHtml(obtenerImagen(item))}"
-                            alt="${escapeHtml(item.titulo || 'Noticia')}"
-                            loading="lazy"
-                            decoding="async">`;
+            const aplicarFallback = () => {
+                if (listo) return;
 
-                    enlazarFotos();
+                const media = video.closest('.sn-media') || contenedor;
+                fallbackMedia(media, { poster, alt });
+            };
 
-                } else {
-                    contenedor.innerHTML = `
-                        <div class="sn-media-fallback">
-                            <span>◈</span>
-                        </div>`;
+            // Evento válido → desactiva fallbacks.
+            video.addEventListener('loadedmetadata', () => { listo = true; }, { once: true });
+            video.addEventListener('canplay', () => { listo = true; }, { once: true });
+
+            // Errores conocidos.
+            video.addEventListener('error', aplicarFallback, { once: true });
+
+            const source = video.querySelector('source');
+            if (source) {
+                source.addEventListener('error', aplicarFallback, { once: true });
+            }
+
+            // Timeout de seguridad: si en 8s no cargó metadatos ni sonó error,
+            // asumimos que el video está roto (icono 0:00).
+            setTimeout(() => {
+                if (listo) return;
+                // 0 = HAVE_NOTHING, 1 = HAVE_METADATA
+                if (video.readyState === 0) {
+                    aplicarFallback();
                 }
-
-            }, { once: true });
-
+            }, 8000);
         });
     }
 
     // ========================================================
-    // ESTRUCTURA VISUAL DE NOTICIAS
+    // RENDER
     // ========================================================
 
     function renderSkeleton() {
@@ -639,9 +655,7 @@
     function encabezadoHtml(item, cat) {
         return `
             <div class="eyebrow">
-                <span class="cat">
-                    ${escapeHtml(ETIQUETAS[cat] || 'Noticias')}
-                </span>
+                <span class="cat">${escapeHtml(ETIQUETAS[cat] || 'Noticias')}</span>
                 <span>· ${escapeHtml(tiempoRelativo(item.publicadoEn || item.publicado_en || item.fecha))}</span>
             </div>`;
     }
@@ -660,24 +674,15 @@
             <footer class="actions">
                 <span class="src">${escapeHtml(hostOf(url))}</span>
 
-                <button
-                    class="act"
-                    type="button"
-                    data-action="save"
-                    aria-pressed="${guardada}"
-                    aria-label="Guardar noticia">
-
+                <button class="act" type="button" data-action="save"
+                    aria-pressed="${guardada}" aria-label="Guardar noticia">
                     <svg viewBox="0 0 24 24">
                         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
                     </svg>
                 </button>
 
-                <button
-                    class="act"
-                    type="button"
-                    data-action="share"
+                <button class="act" type="button" data-action="share"
                     aria-label="Compartir noticia">
-
                     <svg viewBox="0 0 24 24">
                         <circle cx="18" cy="5" r="3"/>
                         <circle cx="6" cy="12" r="3"/>
@@ -697,25 +702,16 @@
 
         return `
             <article class="hero" data-index="${index}">
-
                 <div class="cover cat-${escapeHtml(cat)}">
                     ${mediaHtml(item, cat)}
                 </div>
-
                 <div class="scrim"></div>
-
                 <div class="content">
-
                     ${encabezadoHtml(item, cat)}
-
                     <h2>${escapeHtml(item.titulo || 'Noticia')}</h2>
-
                     <p>${escapeHtml(item.resumen || '')}</p>
-
                     ${actionsHtml(index, item.fuentes?.[0]?.url)}
-
                 </div>
-
             </article>`;
     }
 
@@ -724,36 +720,16 @@
 
         return `
             <article class="card sn-card" data-index="${index}">
-
                 ${mediaHtml(item, cat)}
-
                 <div class="sn-card-content">
-
                     ${encabezadoHtml(item, cat)}
-
                     <h2>${escapeHtml(item.titulo || 'Noticia')}</h2>
-
                     <div class="summary-wrap">
-
-                        <p
-                            class="summary"
-                            data-role="resumen">
-                            ${escapeHtml(item.resumen || '')}
-                        </p>
-
-                        <button
-                            class="more"
-                            type="button"
-                            data-action="more">
-                            Ver más
-                        </button>
-
+                        <p class="summary" data-role="resumen">${escapeHtml(item.resumen || '')}</p>
+                        <button class="more" type="button" data-action="more">Ver más</button>
                     </div>
-
                     ${actionsHtml(index, item.fuentes?.[0]?.url)}
-
                 </div>
-
             </article>`;
     }
 
@@ -764,7 +740,6 @@
                 'No hay contenido disponible en esta categoría.',
                 true
             );
-
             return;
         }
 
@@ -778,7 +753,7 @@
     }
 
     // ========================================================
-    // CARGA DE NOTICIAS DESDE RAILWAY
+    // CARGA DE NOTICIAS
     // ========================================================
 
     async function loadFeed() {
@@ -788,12 +763,10 @@
                 'Debes iniciar sesión con Supabase para ver las noticias.',
                 false
             );
-
             return;
         }
 
         if (state.busy) return;
-
         state.busy = true;
 
         renderSkeleton();
@@ -806,59 +779,36 @@
 
             const response = await fetch(
                 `/api/noticias?${params.toString()}`,
-                {
-                    method: 'GET',
-                    headers: headers()
-                }
+                { method: 'GET', headers: headers() }
             );
 
             if (response.status === 401) {
-                renderEmpty(
-                    'Sesión expirada',
-                    'Vuelve a iniciar sesión para continuar.',
-                    false
-                );
-
+                renderEmpty('Sesión expirada', 'Vuelve a iniciar sesión para continuar.', false);
                 return;
             }
 
             if (response.status === 404) {
-                renderEmpty(
-                    'Servicio no disponible',
-                    'La API de noticias aún no está activa en el servidor. Intenta más tarde.',
-                    true
-                );
-
+                renderEmpty('Servicio no disponible', 'La API de noticias aún no está activa en el servidor. Intenta más tarde.', true);
                 return;
             }
 
             if (response.status === 429) {
-                renderEmpty(
-                    'Demasiadas consultas',
-                    'Espera unos minutos antes de volver a intentar.',
-                    true
-                );
-
+                renderEmpty('Demasiadas consultas', 'Espera unos minutos antes de volver a intentar.', true);
                 return;
             }
 
             const body = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                throw new Error(
-                    body.error || 'No se pudieron cargar las noticias'
-                );
+                throw new Error(body.error || 'No se pudieron cargar las noticias');
             }
 
-            state.items = Array.isArray(body.items)
-                ? body.items
-                : [];
+            state.items = Array.isArray(body.items) ? body.items : [];
 
             renderFeed();
 
         } catch (error) {
             console.error('Error cargando noticias:', error);
-
             renderEmpty(
                 'Ocurrió un problema',
                 error.message || 'No se pudieron cargar las noticias.',
@@ -871,7 +821,7 @@
     }
 
     // ========================================================
-    // COMPARTIR NOTICIAS
+    // COMPARTIR
     // ========================================================
 
     async function compartir(item) {
@@ -886,13 +836,10 @@
                     text: item.resumen,
                     url: url !== '#' ? url : undefined
                 });
-
                 return;
             }
 
-            const texto = url !== '#'
-                ? `${item.titulo}\n${url}`
-                : item.titulo;
+            const texto = url !== '#' ? `${item.titulo}\n${url}` : item.titulo;
 
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(texto);
@@ -909,12 +856,11 @@
     }
 
     // ========================================================
-    // NOTICIAS GUARDADAS
+    // GUARDADAS
     // ========================================================
 
     function toggleSaved(index, boton) {
         const item = state.items[index];
-
         if (!item) return;
 
         const id = String(
@@ -923,16 +869,11 @@
 
         if (state.saved.has(id)) {
             state.saved.delete(id);
-
             boton.setAttribute('aria-pressed', 'false');
-
             toast('Quitada de guardadas');
-
         } else {
             state.saved.add(id);
-
             boton.setAttribute('aria-pressed', 'true');
-
             toast('Guardada');
         }
 
@@ -940,12 +881,11 @@
     }
 
     // ========================================================
-    // EVENTOS DEL FEED
+    // EVENTOS FEED
     // ========================================================
 
     el.feed.addEventListener('click', (event) => {
         const boton = event.target.closest('[data-action]');
-
         if (!boton) return;
 
         const accion = boton.dataset.action;
@@ -956,21 +896,15 @@
         }
 
         const tarjeta = boton.closest('[data-index]');
-
         const index = Number(tarjeta?.dataset.index);
-
         if (Number.isNaN(index)) return;
 
         if (accion === 'more') {
             const resumen = tarjeta.querySelector('[data-role="resumen"]');
-
             if (!resumen) return;
 
             const abierto = resumen.classList.toggle('open');
-
-            boton.textContent = abierto
-                ? 'Ver menos'
-                : 'Ver más';
+            boton.textContent = abierto ? 'Ver menos' : 'Ver más';
 
         } else if (accion === 'save') {
             toggleSaved(index, boton);
@@ -986,7 +920,6 @@
 
     el.chips.addEventListener('click', (event) => {
         const chip = event.target.closest('.chip');
-
         if (!chip) return;
 
         el.chips.querySelectorAll('.chip').forEach((c) => {
@@ -994,9 +927,7 @@
         });
 
         chip.setAttribute('aria-selected', 'true');
-
         state.category = chip.dataset.category;
-
         loadFeed();
     });
 
@@ -1007,10 +938,7 @@
     function abrirHoja() {
         el.sheet.classList.add('on');
         el.backdrop.classList.add('on');
-
-        setTimeout(() => {
-            el.input.focus();
-        }, 300);
+        setTimeout(() => el.input.focus(), 300);
     }
 
     function cerrarHoja() {
@@ -1019,15 +947,11 @@
     }
 
     function renderFuentes(fuentes) {
-        const seguras = (fuentes || []).filter((f) => {
-            return urlSegura(f.url) !== '#';
-        });
+        const seguras = (fuentes || []).filter((f) => urlSegura(f.url) !== '#');
 
         el.answerSrc.innerHTML = seguras.map((f) => `
-            <a
-                href="${escapeHtml(urlSegura(f.url))}"
-                target="_blank"
-                rel="noopener noreferrer">
+            <a href="${escapeHtml(urlSegura(f.url))}"
+               target="_blank" rel="noopener noreferrer">
                 ${escapeHtml(f.titulo || hostOf(f.url))}
             </a>
         `).join('');
@@ -1035,11 +959,7 @@
 
     function mostrarRespuesta(texto, esError) {
         el.answer.hidden = false;
-
-        el.answer.className = esError
-            ? 'answer err'
-            : 'answer';
-
+        el.answer.className = esError ? 'answer err' : 'answer';
         el.answer.textContent = texto;
     }
 
@@ -1047,35 +967,24 @@
         const pregunta = String(texto || '').trim();
 
         if (!pregunta) {
-            mostrarRespuesta(
-                'Escribe una pregunta antes de consultar.',
-                true
-            );
-
+            mostrarRespuesta('Escribe una pregunta antes de consultar.', true);
             return;
         }
 
         if (SALUDOS.test(pregunta) || pregunta.length < 6) {
             mostrarRespuesta(RESPUESTA_SALUDO, false);
-
             el.answerSrc.innerHTML = '';
             el.input.value = '';
-
             return;
         }
 
         if (!state.token) {
-            mostrarRespuesta(
-                'Sesión no disponible. Vuelve a iniciar sesión.',
-                true
-            );
-
+            mostrarRespuesta('Sesión no disponible. Vuelve a iniciar sesión.', true);
             return;
         }
 
         el.answer.hidden = false;
         el.answer.className = 'answer';
-
         el.answer.innerHTML = `
             <span class="thinking">
                 <i></i><i></i><i></i>
@@ -1083,54 +992,35 @@
             </span>`;
 
         el.answerSrc.innerHTML = '';
-
         el.ask.disabled = true;
 
         try {
-            const response = await fetch(
-                '/api/noticias/preguntar',
-                {
-                    method: 'POST',
-                    headers: headers(),
-                    body: JSON.stringify({
-                        pregunta: pregunta
-                    })
-                }
-            );
+            const response = await fetch('/api/noticias/preguntar', {
+                method: 'POST',
+                headers: headers(),
+                body: JSON.stringify({ pregunta })
+            });
 
             if (response.status === 404) {
-                throw new Error(
-                    'El servicio de preguntas aún no está activo en el servidor.'
-                );
+                throw new Error('El servicio de preguntas aún no está activo en el servidor.');
             }
 
             if (response.status === 429) {
-                throw new Error(
-                    'Llegaste al límite de consultas. Intenta en unos minutos.'
-                );
+                throw new Error('Llegaste al límite de consultas. Intenta en unos minutos.');
             }
 
             const body = await response.json().catch(() => ({}));
 
             if (!response.ok) {
-                throw new Error(
-                    body.error || 'No se pudo consultar'
-                );
+                throw new Error(body.error || 'No se pudo consultar');
             }
 
-            el.answer.textContent =
-                body.respuesta || 'No hubo respuesta disponible.';
-
+            el.answer.textContent = body.respuesta || 'No hubo respuesta disponible.';
             renderFuentes(body.fuentes);
-
             el.input.value = '';
 
         } catch (error) {
-            mostrarRespuesta(
-                error.message || 'Error al consultar',
-                true
-            );
-
+            mostrarRespuesta(error.message || 'Error al consultar', true);
         } finally {
             el.ask.disabled = false;
         }
@@ -1141,34 +1031,24 @@
     // ========================================================
 
     el.fab.addEventListener('click', abrirHoja);
-
     el.close.addEventListener('click', cerrarHoja);
-
     el.backdrop.addEventListener('click', cerrarHoja);
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            cerrarHoja();
-        }
+        if (event.key === 'Escape') cerrarHoja();
     });
 
-    el.ask.addEventListener('click', () => {
-        preguntar(el.input.value);
-    });
+    el.ask.addEventListener('click', () => preguntar(el.input.value));
 
     el.input.addEventListener('keydown', (event) => {
-        if (event.key === 'Enter') {
-            preguntar(el.input.value);
-        }
+        if (event.key === 'Enter') preguntar(el.input.value);
     });
 
     el.suggest.addEventListener('click', (event) => {
         const boton = event.target.closest('[data-q]');
-
         if (!boton) return;
 
         el.input.value = boton.dataset.q;
-
         preguntar(boton.dataset.q);
     });
 
@@ -1183,7 +1063,6 @@
 
         if (ok) {
             await loadFeed();
-
         } else {
             renderEmpty(
                 'Inicia sesión',
@@ -1194,11 +1073,7 @@
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener(
-            'DOMContentLoaded',
-            iniciarNoticias,
-            { once: true }
-        );
+        document.addEventListener('DOMContentLoaded', iniciarNoticias, { once: true });
     } else {
         iniciarNoticias();
     }
