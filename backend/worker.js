@@ -1,7 +1,7 @@
 /* ================================================================
    WORKER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN v5.2 - Producción: R2 + cuota consistente + borrado seguro
-                  + branding dinámico (logo al 50% + texto)
+   VERSIÓN v5.3 - Producción: R2 + cuota consistente + borrado seguro
+                  + branding (logo al 50%) SIN drawtext (Railway-safe)
    ================================================================
    - Jobs con storage: 'r2' (r2Key): descarga el original desde R2,
      procesa, sube el resultado a R2 y registra ambos en archivos_hash
@@ -16,17 +16,14 @@
    - Video con audio + música → original 40% + música 100%.
    - Video sin audio + música → solo música.
    - Sin música → solo marca de agua.
-   - v5.2: logo en public/watermark.png al 50% de opacidad y texto
-     "⚡ nombreUsuario @username" abajo a la izquierda (drawtext).
-     El texto se escribe en un archivo temporal (textfile), así no
-     hay problemas de escape con apóstrofes, comillas o emojis.
+   - v5.3: se eliminó el filtro `drawtext` porque la build de FFmpeg
+     en Railway no incluye libfreetype. El branding textual queda
+     almacenado en Supabase y se muestra en el frontend.
    ================================================================
    Variables requeridas (Railway, servicio del worker):
      SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REDIS_URL
      R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
      R2_ENDPOINT, R2_BUCKET, R2_PUBLIC_URL
-   Opcional:
-     FONT_PATH (ruta a la fuente .ttf; por defecto DejaVuSans)
    Dependencia: @aws-sdk/client-s3
    ================================================================ */
 
@@ -134,33 +131,6 @@ const COLA_NOMBRE = 'video-processing';
 const TEMP_DIR = os.tmpdir();
 const MAX_CONCURRENT = 1;
 const LOGO_PATH = path.join(__dirname, 'public', 'watermark.png');
-const FONT_PATH = process.env.FONT_PATH || '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf';
-const NOMBRE_DEFECTO = "Sariel's User";
-
-// ================================================================
-// HELPERS DE BRANDING (TEXTO)
-// ================================================================
-// Limpia un campo de texto: solo string, sin caracteres de control,
-// sin espacios sobrantes y máximo 40 caracteres.
-function limpiarCampo(valor) {
-    if (typeof valor !== 'string') return '';
-    return valor.replace(/[\x00-\x1F\x7F]/g, '').trim().slice(0, 40);
-}
-
-// Arma el texto del sello: "⚡ nombre @usuario".
-// Si el nombre viene vacío usa "Sariel's User".
-// Si el username viene vacío se omite la parte "@usuario".
-function construirTextoBranding(nombreUsuario, username) {
-    const nombre = limpiarCampo(nombreUsuario) || NOMBRE_DEFECTO;
-    const usuario = limpiarCampo(username);
-    return usuario ? `⚡ ${nombre} @${usuario}` : `⚡ ${nombre}`;
-}
-
-// Escapa una ruta para usarla dentro de un filtro de FFmpeg
-// (los ':' y las comillas simples tienen significado especial).
-function escaparRutaFiltro(ruta) {
-    return ruta.replace(/\\/g, '\\\\').replace(/:/g, '\\:').replace(/'/g, "\\'");
-}
 
 // ================================================================
 // HELPERS R2 Y CUOTA
@@ -193,8 +163,6 @@ async function borrarR2(key) {
     await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
 }
 
-// Registra un archivo en archivos_hash para que cuente en la cuota.
-// Si ya existe el mismo hash en el bucket, no se duplica.
 async function registrarArchivoHash({ bucket, sha256, path: key, publicUrl, size }) {
     const { error } = await supabaseAdmin
         .from('archivos_hash')
@@ -209,7 +177,6 @@ async function registrarArchivoHash({ bucket, sha256, path: key, publicUrl, size
     return true;
 }
 
-// ¿Otro video (distinto de este) apunta al mismo archivo original?
 async function archivoOriginalEnUso(urlOriginal, videoIdActual) {
     const { count, error } = await supabaseAdmin
         .from('videos')
@@ -225,8 +192,7 @@ async function archivoOriginalEnUso(urlOriginal, videoIdActual) {
 // ================================================================
 async function procesarVideo(job) {
     const {
-        videoId, videoUrl, userId, bucket, filePath, audioUrl, storage, r2Key,
-        nombreUsuario, username
+        videoId, videoUrl, userId, bucket, filePath, audioUrl, storage, r2Key
     } = job.data;
 
     const usaR2 = storage === 'r2';
@@ -241,7 +207,6 @@ async function procesarVideo(job) {
     const inputPath = path.join(TEMP_DIR, `sariels_input_${job.id}.mp4`);
     const outputPath = path.join(TEMP_DIR, `sariels_output_${job.id}.mp4`);
     const audioPath = path.join(TEMP_DIR, `sariels_audio_${job.id}.mp3`);
-    const textPath = path.join(TEMP_DIR, `sariels_text_${job.id}.txt`);
     let tieneAudioExterno = false;
 
     try {
@@ -316,7 +281,7 @@ async function procesarVideo(job) {
 
         await job.updateProgress(20);
 
-        // PASO 3: Filtro de video (marca de agua + texto de branding)
+        // PASO 3: Filtro de video (marca de agua, sin drawtext)
         const targetHeight = Math.min(720, height);
         const scaleFactor = targetHeight / height;
         const targetWidth = Math.round(width * scaleFactor);
@@ -333,38 +298,12 @@ async function procesarVideo(job) {
         const xBR = finalWidth - logoW - marginX;
         const yBR = finalHeight - logoH - marginY;
 
-        // Texto de branding: se escribe a un archivo temporal para evitar
-        // problemas de escape (apóstrofes, @, emojis).
-        const tieneFuente = fs.existsSync(FONT_PATH);
-        const textoBranding = construirTextoBranding(nombreUsuario, username);
-
-        let brandingFilter = null;
-        if (tieneFuente) {
-            fs.writeFileSync(textPath, textoBranding, 'utf8');
-            brandingFilter = [
-                `drawtext=fontfile=${escaparRutaFiltro(FONT_PATH)}`,
-                `textfile=${escaparRutaFiltro(textPath)}`,
-                'fontcolor=white@0.7',
-                'fontsize=24',
-                'shadowcolor=black@0.5',
-                'shadowx=2',
-                'shadowy=2',
-                'x=30',
-                'y=h-text_h-30'
-            ].join(':');
-        } else {
-            console.warn(`⚠️ [JOB ${job.id}] Fuente no encontrada en ${FONT_PATH}. Se omite el texto de branding.`);
-        }
-
         console.log(`🎨 [JOB ${job.id}] Aplicando overlay "✦ WEB3"...`);
         console.log(`   - Escala: ${finalWidth}x${finalHeight}`);
         console.log(`   - Logo: ${logoW}x${logoH} en posición (${xBR}, ${yBR}) al 50%`);
-        console.log(`   - Texto: "${textoBranding}" ${tieneFuente ? '' : '(omitido)'}`);
+        console.log(`   - Texto: omitido (drawtext deshabilitado, sin libfreetype)`);
 
-        // Logo al 50% de opacidad
         const logoChain = `[1:v]scale=${logoW}:${logoH},format=rgba,colorchannelmixer=aa=0.5[logo]`;
-        // Filtro de texto sobre el video ya con logo ('null' no altera nada)
-        const textChain = `[ov]${brandingFilter || 'null'}`;
 
         let filterComplex;
         let outputMaps = null;
@@ -374,8 +313,7 @@ async function procesarVideo(job) {
                 `[0:v]scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease[scaled]`,
                 `[scaled]pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black[pad]`,
                 logoChain,
-                `[pad][logo]overlay=${xBR}:${yBR}[ov]`,
-                `${textChain}[vout]`,
+                `[pad][logo]overlay=${xBR}:${yBR}[vout]`,
                 tieneAudio
                     ? `[0:a]volume=0.4[orig];[2:a]volume=1.0[music];[orig][music]amix=inputs=2:duration=first:dropout_transition=2[aout]`
                     : `[2:a]volume=1.0[aout]`
@@ -386,8 +324,7 @@ async function procesarVideo(job) {
                 `[0:v]scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease[scaled]`,
                 `[scaled]pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black[pad]`,
                 logoChain,
-                `[pad][logo]overlay=${xBR}:${yBR}[ov]`,
-                `${textChain}[out]`
+                `[pad][logo]overlay=${xBR}:${yBR}[out]`
             ].join(';');
         }
 
@@ -476,11 +413,9 @@ async function procesarVideo(job) {
         let processedUrl;
 
         if (usaR2) {
-            // Mismo prefijo que /api/media/upload: videos/<uid>/<archivo>
             const processedKey = `${bucketLogico}/${userId}/${videoId}_processed.mp4`;
             processedUrl = await subirBufferR2(processedKey, outputBuffer, 'video/mp4');
 
-            // Registrar el procesado para que cuente en la cuota
             await registrarArchivoHash({
                 bucket: bucketLogico,
                 sha256: outputSha256,
@@ -514,7 +449,7 @@ async function procesarVideo(job) {
 
         await job.updateProgress(95);
 
-        // PASO 6: Actualizar DB (si falla, NO se borra el original)
+        // PASO 6: Actualizar DB
         console.log(`💾 [JOB ${job.id}] Actualizando base de datos...`);
 
         const { error: dbError } = await supabaseAdmin
@@ -568,7 +503,6 @@ async function procesarVideo(job) {
             if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
             if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
             if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-            if (fs.existsSync(textPath)) fs.unlinkSync(textPath);
         } catch (cleanupError) {
             console.warn(`⚠️ [JOB ${job.id}] No se pudo limpiar temp:`, cleanupError.message);
         }
@@ -590,7 +524,6 @@ async function procesarVideo(job) {
             if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
             if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
             if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-            if (fs.existsSync(textPath)) fs.unlinkSync(textPath);
         } catch (cleanupError) {
             console.warn(`⚠️ No se pudo limpiar temp:`, cleanupError.message);
         }
@@ -661,7 +594,7 @@ const healthServer = http.createServer((req, res) => {
             service: 'worker-video',
             redis: redisConnection.status,
             r2: r2Configurado,
-            fuente: fs.existsSync(FONT_PATH),
+            drawtext: false,
             timestamp: new Date().toISOString()
         }));
     } else {
@@ -702,13 +635,12 @@ process.on('SIGTERM', async () => {
 });
 
 console.log('========================================');
-console.log("🎬 WORKER DE VIDEOS - SARIEL'S v5.2 (R2, branding dinámico)");
+console.log("🎬 WORKER DE VIDEOS - SARIEL'S v5.3 (R2, sin drawtext)");
 console.log('========================================');
 console.log('📡 Cola:', COLA_NOMBRE);
 console.log('🔢 Concurrencia:', MAX_CONCURRENT);
 console.log('📁 Temp dir:', TEMP_DIR);
 console.log('🖼️ Logo:', LOGO_PATH);
-console.log('🔤 Fuente:', FONT_PATH);
 console.log('☁️ R2:', r2Configurado ? 'configurado' : 'NO configurado');
 console.log('🎵 Audio: mezcla original 40% + fondo 100%');
 console.log('🎯 Limiter: 3 jobs/minuto');
