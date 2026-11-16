@@ -5,9 +5,6 @@
 //  - FIX DEFINITIVO: Botón "Pantalla completa" ahora expande el visor
 //    propio sin llamar al modo nativo del navegador.
 //  - Se evita que el navegador inyecte el menú de 3 puntos.
-// v13.1:
-//  - Implementación de vista tipo "Reels" (carrusel horizontal) para
-//    las publicaciones con multimedia en el perfil.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -134,6 +131,7 @@ function pubVisorEl() {
                 '<div class="pub-vf-time" id="pubVfTime">0:00 / 0:00</div>' +
                 '<div class="pub-vf-actions">' +
                     '<button type="button" class="pub-vf-ctrl-btn" id="btnPubVfSpeed" title="Velocidad">' + svgSpeed + '</button>' +
+                    // EL BOTÓN AHORA TIENE UN ID PARA CAMBIAR EL ICONO
                     '<button type="button" class="pub-vf-ctrl-btn" id="btnPubVfExpand" title="Pantalla completa">' + svgExpand + '</button>' +
                 '</div>' +
             '</div>' +
@@ -207,9 +205,13 @@ function pubVisorEl() {
         }
     });
 
+    // ============================================================
+    // LÓGICA DEL BOTÓN DE PANTALLA COMPLETA (EXPANSIÓN DEL VISOR)
+    // ============================================================
     el.querySelector('#btnPubVfExpand').addEventListener('click', function (e) {
         e.stopPropagation();
         
+        // Alternamos el estado
         pubVisor.modoLleno = !pubVisor.modoLleno;
         
         var visor = document.getElementById('pubVisorFull');
@@ -217,14 +219,16 @@ function pubVisorEl() {
         var btnExpand = this;
 
         if (pubVisor.modoLleno) {
+            // MODO PANTALLA COMPLETA (Llenar todo)
             visor.classList.add('is-fullscreen');
-            if (video) video.style.objectFit = 'cover';
-            btnExpand.innerHTML = svgShrink;
+            if (video) video.style.objectFit = 'cover'; // El video llena los bordes
+            btnExpand.innerHTML = svgShrink; // Cambiamos el icono al de encoger
             if (window.showToast) window.showToast('Pantalla completa. Gira tu celular.', 'info', 2000);
         } else {
+            // MODO NORMAL (Ajustar a la pantalla)
             visor.classList.remove('is-fullscreen');
-            if (video) video.style.objectFit = 'contain';
-            btnExpand.innerHTML = svgExpand;
+            if (video) video.style.objectFit = 'contain'; // El video se ve completo sin recortar
+            btnExpand.innerHTML = svgExpand; // Volvemos al icono de expandir
         }
     });
 
@@ -363,6 +367,7 @@ function pubMostrarItem() {
     document.getElementById('pubVfReportSheet1').classList.remove('show');
     document.getElementById('pubVfReportSheet2').classList.remove('show');
 
+    // Resetear estado al cambiar de item
     pubVisor.modoLleno = false; 
     el.classList.remove('is-fullscreen');
     if (btnExpand) btnExpand.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
@@ -371,20 +376,22 @@ function pubMostrarItem() {
     
     if (item.tipo === 'video') {
         controls.style.display = 'flex';
-        centerControls.style.display = 'none';
+        centerControls.style.display = 'none'; // Oculto por defecto al darle play
         
         var video = document.createElement('video');
+        // ATRIBUTOS CRÍTICOS PARA EVITAR EL MENÚ NATIVO
         video.playsInline = true; 
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
         video.setAttribute('disablePictureInPicture', ''); 
-        video.setAttribute('controlsList', 'nodownload noplaybackrate nofullscreen');
+        video.setAttribute('controlsList', 'nodownload noplaybackrate nofullscreen'); // Bloquea menú
         video.controls = false; 
         
         video.preload = 'auto'; 
         video.src = item.url;
         video.style.objectFit = 'contain'; 
         
+        // Actualizar barra de progreso
         video.addEventListener('timeupdate', function() {
             var prog = el.querySelector('#pubVfProgress');
             var time = el.querySelector('#pubVfTime');
@@ -399,6 +406,7 @@ function pubMostrarItem() {
             }
         });
 
+        // Mostrar u ocultar controles dependiendo del estado
         video.addEventListener('play', function() {
             centerControls.style.display = 'none';
             el.querySelector('#btnPubVfBigPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
@@ -408,6 +416,7 @@ function pubMostrarItem() {
             el.querySelector('#btnPubVfBigPlay').innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" style="width:48px;height:48px;"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
         });
 
+        // Tocar el video para pausar/play
         video.addEventListener('click', function() {
             if (video.paused) video.play(); else video.pause();
         });
@@ -454,7 +463,7 @@ function pubCerrarVisor() {
     if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
     el.querySelector('.pub-vf-media').innerHTML = '';
     el.classList.remove('show'); 
-    el.classList.remove('is-fullscreen');
+    el.classList.remove('is-fullscreen'); // Quitar pantalla completa al cerrar
     document.body.style.overflow = '';
     pubVisor.postIdActual = null;
     pubVisor.motivoSeleccionado = '';
@@ -493,6 +502,7 @@ function pubCerrarVisor() {
         .pub-vf-media { flex: 1; width: 100%; display: flex; align-items: center; justify-content: center; box-sizing: border-box; overflow: hidden; }
         .pub-vf-media img, .pub-vf-media video { max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; transition: object-fit 0.2s; }
 
+        /* MODO PANTALLA COMPLETA (EXPANSIÓN TOTAL) */
         .pub-vf.is-fullscreen {
             position: fixed !important;
             inset: 0 !important;
@@ -508,12 +518,13 @@ function pubCerrarVisor() {
         .pub-vf.is-fullscreen .pub-vf-media video {
             width: 100% !important;
             height: 100% !important;
-            object-fit: cover !important;
+            object-fit: cover !important; /* Llena toda la pantalla */
         }
         .pub-vf.is-fullscreen .pub-vf-controls {
             padding-bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
         }
 
+        /* CABECERA (X y Menú arriba) */
         .pub-vf-header { 
             position: absolute; top: calc(12px + env(safe-area-inset-top, 0px)); left: 12px; right: 12px; 
             display: flex; justify-content: space-between; align-items: flex-start; z-index: 10; 
@@ -526,6 +537,7 @@ function pubCerrarVisor() {
         }
         .pub-vf-cerrar:hover, .pub-vf-menu-btn:hover { background: rgba(212, 175, 55, 0.8); color: #000; }
 
+        /* CONTROLES CENTRALES (X Gigante y Play Gigante) */
         .pub-vf-center-controls {
             position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 30px; z-index: 5; pointer-events: none;
         }
@@ -536,6 +548,7 @@ function pubCerrarVisor() {
         .pub-vf-big-play { background: rgba(255, 255, 255, 0.2); color: #fff; }
         .pub-vf-big-close { background: rgba(255, 0, 80, 0.8); color: #fff; box-shadow: 0 0 20px rgba(255,0,80,0.5); }
 
+        /* CONTROLES INFERIORES */
         .pub-vf-controls {
             position: absolute; bottom: 0; left: 0; right: 0;
             background: linear-gradient(to top, rgba(0,0,0,0.9), transparent);
@@ -559,6 +572,7 @@ function pubCerrarVisor() {
             background: transparent; border: 0; color: #fff; cursor: pointer; padding: 5px; display: flex; align-items: center; justify-content: center;
         }
 
+        /* HOJA INFERIOR (menú) */
         .pub-vf-bottom-sheet {
             position: absolute; bottom: 0; left: 0; right: 0; background: #0b1016; border-top: 1px solid rgba(212,175,55,.16); border-top-left-radius: 18px; border-top-right-radius: 18px; transform: translateY(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); z-index: 20; padding-bottom: env(safe-area-inset-bottom, 20px); display: flex; flex-direction: column;
         }
@@ -569,6 +583,7 @@ function pubCerrarVisor() {
         .pub-vf-sheet-btn .icon { display: flex; align-items: center; justify-content: center; color: #D4AF37; }
         .pub-vf-sheet-btn.pub-vf-peligro, .pub-vf-sheet-btn.pub-vf-peligro .icon { color: #ff3366; }
 
+        /* HOJAS DE REPORTE (Se mantienen igual) */
         .pub-vf-report-sheet {
             position: absolute; inset: 0; background: #05080f; z-index: 30; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); color: #f0f4f8;
         }
@@ -590,6 +605,7 @@ function pubCerrarVisor() {
         .pub-vf-btn-enviar { width: 100%; padding: 16px; background: linear-gradient(120deg, #00e5ff 0%, #3b82f6 55%, #8b5cf6 100%); color: #04070d; font-size: 1.05rem; font-weight: 700; border: 0; border-radius: 12px; cursor: pointer; font-family: Orbitron, monospace; letter-spacing: 1px; }
         .pub-vf-btn-enviar:disabled { opacity: 0.6; }
 
+        /* Reacciones y comentarios (Se mantienen igual) */
         .reaccion-wrap { position: relative; display: inline-block; margin: 8px 0 0 0; padding: 0; }
         .reaccion-trigger { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text-muted, #8c949c); font-size: .82rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
         .reaccion-trigger:hover { background: rgba(255,255,255,.05); }
@@ -763,53 +779,17 @@ async function cargarMisPublicaciones(forzarRefresco) {
             if (p.aviso_moderacion === 'lenguaje_inapropiado') card.appendChild(htmlAvisoModeracionPerfil());
             var contenido = document.createElement('div'); contenido.className = 'contenido'; contenido.setAttribute('data-no-traducir', '1');
             if (p.contenido) { var texto = document.createElement('div'); texto.textContent = p.contenido; contenido.appendChild(texto); }
-            
-            // ============================================================
-            // MODIFICACIÓN REELS: MULTIMEDIA
-            // ============================================================
             if (pubEsUrlSegura(p.media_url)) {
                 var tipoMedia = p.media_type;
                 if (tipoMedia === 'video' || tipoMedia === 'imagen') {
-                    var indexEnLista = window.listaMultimediaPerfil.length; 
-                    window.listaMultimediaPerfil.push({ url: p.media_url, tipo: tipoMedia, permiteDescarga: p.permitir_descarga !== false, postId: p.id, esDueno: esDueno });
-                    
-                    var wrapMedia = document.createElement('div'); 
-                    wrapMedia.className = 'pub-media-wrap'; 
-                    var mediaEl;
-                    
-                    if (tipoMedia === 'video') { 
-                        mediaEl = document.createElement('video'); 
-                        mediaEl.preload = 'metadata'; 
-                        mediaEl.src = p.media_url; 
-                        mediaEl.playsInline = true; 
-                        mediaEl.muted = true; 
-                        mediaEl.loop = true; 
-                        
-                        mediaEl.addEventListener('click', function (e) { e.stopPropagation(); pubAbrirVisor(indexEnLista, p.id, esDueno); });
-                        
-                        if (typeof IntersectionObserver !== 'undefined') {
-                            var obs = new IntersectionObserver(function(entries) {
-                                entries.forEach(function(entry) {
-                                    if (entry.isIntersecting) { mediaEl.play().catch(function(){}); } 
-                                    else { mediaEl.pause(); }
-                                });
-                            }, { threshold: 0.5 });
-                            obs.observe(mediaEl);
-                        }
-                    }
-                    else { 
-                        mediaEl = document.createElement('img'); 
-                        mediaEl.alt = 'Imagen'; 
-                        mediaEl.loading = 'lazy'; 
-                        mediaEl.src = p.media_url; 
-                        mediaEl.addEventListener('click', function (e) { e.stopPropagation(); pubAbrirVisor(indexEnLista, p.id, esDueno); }); 
-                    }
+                    var indexEnLista = window.listaMultimediaPerfil.length; window.listaMultimediaPerfil.push({ url: p.media_url, tipo: tipoMedia, permiteDescarga: p.permitir_descarga !== false, postId: p.id, esDueno: esDueno });
+                    var wrapMedia = document.createElement('div'); wrapMedia.className = 'pub-media-wrap'; var mediaEl;
+                    if (tipoMedia === 'video') { mediaEl = document.createElement('video'); mediaEl.controls = true; mediaEl.preload = 'metadata'; mediaEl.src = p.media_url; mediaEl.playsInline = true; var autoplayInicial = 'true'; try { autoplayInicial = localStorage.getItem('contenido_auto_reproducir'); } catch (e) {} mediaEl.muted = autoplayInicial !== 'false'; if (videoObserverPerfil) videoObserverPerfil.observe(mediaEl); }
+                    else { mediaEl = document.createElement('img'); mediaEl.alt = 'Imagen'; mediaEl.loading = 'lazy'; mediaEl.src = p.media_url; mediaEl.addEventListener('click', function (e) { e.stopPropagation(); pubAbrirVisor(indexEnLista, p.id, esDueno); }); }
 
-                    wrapMedia.appendChild(mediaEl); 
-                    contenido.appendChild(wrapMedia);
+                    wrapMedia.appendChild(mediaEl); contenido.appendChild(wrapMedia);
                 }
             }
-            
             card.appendChild(contenido);
             var reaccionUsuario = reaccionesUsuario[p.id] || null; var conteos = conteosReacciones[p.id] || {}; var totalReacciones = 0; Object.keys(conteos).forEach(function (k) { totalReacciones += conteos[k] || 0; }); var emojiMostrado = reaccionUsuario || '❤️';
             var wrap = document.createElement('div'); wrap.className = 'reaccion-wrap'; var dropdown = document.createElement('div'); dropdown.className = 'reaccion-dropdown'; dropdown.id = 'reaccion-dropdown-' + p.id;
