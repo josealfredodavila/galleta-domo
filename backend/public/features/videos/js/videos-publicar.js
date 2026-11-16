@@ -1,10 +1,13 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.2
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.3
    ================================================================
-   Cambios respecto a v3.1:
-   - Validación previa de cuota en guardarBorrador: se bloquea solo
-     cuando el uso supera el límite (usado_mb > limite_mb), igual que
-     el trigger de la base de datos.
+   Cambios respecto a v3.2:
+   - Publicar desde la vista previa usa el formulario real
+     (#formSubirVideo / #btnSubirVideo) en vez de buscar un botón
+     por texto. Ya no aparece "No se encontró el botón de publicar".
+   - Solo se envía audioUrl si apunta al bucket de audios permitido
+     (evita el 400 "audioUrl inválido" del backend).
+   - Helper único para el texto de ubicación.
    ================================================================ */
 
 (function () {
@@ -55,6 +58,8 @@
 
     const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     const SUPABASE_STORAGE_URL = SUPABASE_URL + '/storage/v1/object/public/audios';
+    // Debe coincidir con AUDIO_URL_PREFIX de routes/video-processor.js
+    const AUDIO_PREFIJO_PERMITIDO = SUPABASE_STORAGE_URL + '/';
 
     const SONIDOS_SEED = {
         parati: [
@@ -120,6 +125,19 @@
     }
     function log(...args) { console.log('[VideosPublicar]', ...args); }
     function warn(...args) { console.warn('[VideosPublicar]', ...args); }
+
+    // ============================================================
+    // HELPERS DE DATOS (ubicación y sonido)
+    // ============================================================
+    function textoUbicacion(u) {
+        return u ? `${u.nombre}, ${u.pais}` : null;
+    }
+
+    function urlSonidoValida(url) {
+        return typeof url === 'string' &&
+            url.indexOf(AUDIO_PREFIJO_PERMITIDO) === 0 &&
+            url.indexOf('..') === -1;
+    }
 
     function getSupabaseClient() {
         if (state.sbCliente) return state.sbCliente;
@@ -897,14 +915,16 @@
             const videoEl = $('csPreviewVideo');
             if (videoEl && isFinite(videoEl.duration) && videoEl.duration > 0) duracion = Math.round(videoEl.duration);
 
+            const sonidoValido = sonido && urlSonidoValida(sonido.url) ? sonido : null;
+
             const fila = {
                 usuario_id: usuarioId,
                 titulo: titulo || null,
                 descripcion: descripcion || null,
-                sonido_id: sonido ? sonido.id : null,
-                sonido_nombre: sonido ? `${sonido.nombre} — ${sonido.artista}` : null,
-                sonido_url: sonido ? sonido.url : null,
-                ubicacion_nombre: ubicacion ? `${ubicacion.nombre}, ${ubicacion.pais}` : null,
+                sonido_id: sonidoValido ? sonidoValido.id : null,
+                sonido_nombre: sonidoValido ? `${sonidoValido.nombre} — ${sonidoValido.artista}` : null,
+                sonido_url: sonidoValido ? sonidoValido.url : null,
+                ubicacion_nombre: textoUbicacion(ubicacion),
                 archivo_path: archivoPath || null,
                 portada_path: portadaPath || null,
                 duracion_seg: duracion,
@@ -1018,14 +1038,14 @@
         if (data.sonido_id) {
             const s = buscarSonidoPorId(data.sonido_id);
             if (s) seleccionarSonidoSinSonar(s);
+            else state.sonidoSeleccionado = null;
         } else {
             state.sonidoSeleccionado = null;
         }
 
-        const ubic = data.ubicacion_nombre
-            ? UBICACIONES_SEED.find(u => `${u.nombre}, ${u.pais}` === data.ubicacion_nombre) || null
+        state.ubicacionSeleccionada = data.ubicacion_nombre
+            ? UBICACIONES_SEED.find(u => textoUbicacion(u) === data.ubicacion_nombre) || null
             : null;
-        state.ubicacionSeleccionada = ubic;
 
         if (data.archivo_path) {
             try {
@@ -1099,7 +1119,7 @@
         }
         if (pUb) {
             const txt = pUb.querySelector('.cs-preview-txt');
-            if (txt) { txt.removeAttribute('data-clave'); txt.textContent = u ? `${u.nombre}, ${u.pais}` : vt('videos_preview_sin_ubicacion', 'Sin ubicación'); }
+            if (txt) { txt.removeAttribute('data-clave'); txt.textContent = u ? textoUbicacion(u) : vt('videos_preview_sin_ubicacion', 'Sin ubicación'); }
         }
         actualizarBadgePreview();
     }
@@ -1339,7 +1359,7 @@
         v.muted = !!sonido;
         v.currentTime = 0;
 
-        if (sonido && sonido.url) {
+        if (sonido && urlSonidoValida(sonido.url)) {
             pistaPreviewAudio = new Audio(sonido.url);
             pistaPreviewAudio.preload = 'auto';
             pistaPreviewAudio.crossOrigin = 'anonymous';
@@ -1364,27 +1384,23 @@
         document.body.style.overflow = '';
     }
 
-    function encontrarBotonPublicar() {
-        const sec = $('uploadSection');
-        if (!sec) return null;
-        const candidatos = Array.from(sec.querySelectorAll('button')).filter(b =>
-            !b.closest('#csPreviewWrap') &&
-            !b.closest('.cs-file-btn-wrap') &&
-            !b.classList.contains('cs-btn-ghost') &&
-            !(b.id || '').startsWith('csFile') &&
-            /subir/i.test(b.textContent || '')
-        );
-        return candidatos[0] || null;
+    // Botón real de publicar: el submit del formulario (#btnSubirVideo).
+    // subirVideo() vive en videos.html y se dispara por el onsubmit del form.
+    function obtenerBotonPublicar() {
+        const form = $('formSubirVideo');
+        return $('btnSubirVideo') || (form ? form.querySelector('button[type="submit"]') : null);
     }
 
     function publicarDesdePreview() {
-        const boton = encontrarBotonPublicar();
-        if (!boton) {
+        const form = $('formSubirVideo');
+        const boton = obtenerBotonPublicar();
+        if (!form || !boton) {
             csToast('No se encontró el botón de publicar', 'error');
             return;
         }
         cerrarPreview();
-        boton.click();
+        if (typeof form.requestSubmit === 'function') form.requestSubmit(boton);
+        else boton.click();
     }
 
     // ============================================================
@@ -1497,8 +1513,7 @@
             .video-card .cs-pausa-btn .icono { display: flex; align-items: center; justify-content: center; }
             .video-card .cs-pausa-btn svg { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
         `;
-        document.head.appendChild(st);
-    }
+        document.head.appendChild(st);}
 
     function decorarTarjeta(card) {
         if (!card || card.dataset.csDecorada === '1') return;
@@ -2064,8 +2079,9 @@
         actualizarBotonesSonidoUbicacion();
         persistirMetaDebounced();
         const s = state.sonidoSeleccionado;
+        const valido = s && urlSonidoValida(s.url) ? s : null;
         window.dispatchEvent(new CustomEvent('csariels:sonido:seleccionado', {
-            detail: s ? { id: s.id, nombre: s.nombre, artista: s.artista, url: s.url, duracion: s.duracion } : null
+            detail: valido ? { id: valido.id, nombre: valido.nombre, artista: valido.artista, url: valido.url, duracion: valido.duracion } : null
         }));
         cerrarTodosLosSheets();
     }
@@ -2105,7 +2121,7 @@
         const info = $('csUbicacionActualInfo');
         if (info) {
             info.removeAttribute('data-clave');
-            info.textContent = `${u.nombre}, ${u.pais}`;
+            info.textContent = textoUbicacion(u);
         }
         const btn = $('csBtnConfirmarUbicacion');
         if (btn) btn.disabled = false;
@@ -2305,13 +2321,22 @@
         getConfig: () => ({ ...CONFIG, FEED_UI: { ...FEED_UI }, LIMITE_BORRADORES, RUTA_MEMBRESIA_PRO }),
         setProvider: (p) => { CONFIG.PROVIDER = p; },
         setFeedUI: (parcial) => { Object.assign(FEED_UI, parcial || {}); const old = $('cs-feed-ui'); if (old) old.remove(); inyectarEstilosFeed(); },
-        getState: () => ({
-            sonido: state.sonidoSeleccionado,
-            ubicacion: state.ubicacionSeleccionada,
-            archivoVideo: state.archivoVideo ? state.archivoVideo.name : null,
-            archivoConAudioMezclado: state.archivoConAudioMezclado === true,
-            borradorId: state.borradorEditandoId
-        }),
+        // Datos listos para enviar al publicar. El sonido solo sale si su URL es válida.
+        getState: () => {
+            const sonido = state.sonidoSeleccionado && urlSonidoValida(state.sonidoSeleccionado.url)
+                ? state.sonidoSeleccionado
+                : null;
+            return {
+                sonido,
+                sonidoUrl: sonido ? sonido.url : null,
+                sonidoNombre: sonido ? `${sonido.nombre} — ${sonido.artista}` : null,
+                ubicacion: state.ubicacionSeleccionada,
+                ubicacionNombre: textoUbicacion(state.ubicacionSeleccionada),
+                archivoVideo: state.archivoVideo ? state.archivoVideo.name : null,
+                archivoConAudioMezclado: state.archivoConAudioMezclado === true,
+                borradorId: state.borradorEditandoId
+            };
+        },
         _seed: { SONIDOS_SEED, UBICACIONES_SEED },
         Z
     };
@@ -2331,7 +2356,7 @@
         observarFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v3.2 listo');
+        log('✅ Módulo Publicar v3.3 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
