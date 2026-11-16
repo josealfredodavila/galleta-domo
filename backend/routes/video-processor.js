@@ -21,6 +21,12 @@
      descargue desde R2 en vez de Supabase Storage.
    - Se mantienen las validaciones de v3: audioUrl (SSRF),
      dueño del video, deduplicación de jobs activos y jobId estable.
+
+   v4.1 (branding dinámico):
+   - Antes de encolar, se busca el perfil del usuario para enviar
+     nombreUsuario y username al Worker. Si no hay perfil o los datos
+     son nulos, se envían cadenas vacías y el Worker usa su valor
+     por defecto. Un fallo en esta consulta no detiene la cola.
    ================================================================ */
 
 const express = require('express');
@@ -53,6 +59,11 @@ const BUCKET_VIDEOS = 'videos';
 
 // Prefijo permitido para audioUrl (protección SSRF)
 const AUDIO_URL_PREFIX = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios/';
+
+// Estructura de la tabla de perfiles (ajustar si tu tabla se llama distinto)
+const PERFIL_TABLA = 'perfiles';
+const PERFIL_COL_NOMBRE = 'nombre';
+const PERFIL_COL_USERNAME = 'username';
 
 const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
@@ -101,6 +112,39 @@ function filePathValido(filePath, userId) {
 
     const prefijo = `${BUCKET_VIDEOS}/${userId}/`;
     return filePath.startsWith(prefijo) && filePath.length > prefijo.length;
+}
+
+// ================================================================
+// BRANDING: OBTENER PERFIL DEL USUARIO
+// ================================================================
+// Devuelve { nombreUsuario, username }. Nunca lanza error: si no hay
+// perfil o la consulta falla, devuelve cadenas vacías para que el
+// Worker use su valor por defecto.
+async function obtenerDatosBranding(userId) {
+    const vacio = { nombreUsuario: '', username: '' };
+
+    try {
+        const { data: perfil, error } = await supabaseAdmin
+            .from(PERFIL_TABLA)
+            .select(`${PERFIL_COL_NOMBRE}, ${PERFIL_COL_USERNAME}`)
+            .eq('id', userId)
+            .maybeSingle();
+
+        if (error) {
+            console.warn('⚠️ [QUEUE] No se pudo leer el perfil para branding:', error.message);
+            return vacio;
+        }
+
+        if (!perfil) return vacio;
+
+        return {
+            nombreUsuario: typeof perfil[PERFIL_COL_NOMBRE] === 'string' ? perfil[PERFIL_COL_NOMBRE] : '',
+            username: typeof perfil[PERFIL_COL_USERNAME] === 'string' ? perfil[PERFIL_COL_USERNAME] : ''
+        };
+    } catch (err) {
+        console.warn('⚠️ [QUEUE] Error inesperado al leer el perfil:', err.message);
+        return vacio;
+    }
 }
 
 // ================================================================
@@ -213,6 +257,9 @@ router.post('/queue', autenticar, async (req, res) => {
             });
         }
 
+        // Datos de branding del usuario (nunca falla: si no hay, van vacíos)
+        const { nombreUsuario, username } = await obtenerDatosBranding(req.user.id);
+
         const stableJobId = `video_${videoId}`;
 
         const job = await videoQueue.add('process-video', {
@@ -223,12 +270,15 @@ router.post('/queue', autenticar, async (req, res) => {
             filePath,
             storage: 'r2',
             r2Key: filePath,
-            audioUrl: audioUrl || null
+            audioUrl: audioUrl || null,
+            nombreUsuario,
+            username
         }, {
             jobId: stableJobId
         });
 
         console.log(`📥 [QUEUE] Job creado: ${job.id} para video: ${videoId} (R2: ${filePath})`);
+        console.log(`🏷️ [QUEUE] Branding: "${nombreUsuario || '(vacío)'}" / "@${username || '(vacío)'}"`);
         if (audioUrl) {
             console.log(`🎵 [QUEUE] Audio de fondo: ${audioUrl}`);
         }
