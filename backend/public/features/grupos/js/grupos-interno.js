@@ -5,6 +5,7 @@
 // reportes, etiquetas, comentarios, reacciones y acciones del canal.
 // Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js,
 //             grupos-marketplace.js (mkTarjetaCompraHTML)
+// v3.1: menú completo para el autor (+ eliminar); borrado por RPC.
 // v3.0:
 //   - El dueño puede eliminar su propia publicación (borrado lógico).
 //   - Reacciones: 👍 🥰 😱 🤨 🤣 😆, una por persona, con conteo real.
@@ -660,25 +661,21 @@ function renderizarPublicacionHTML(p) {
     var claseMK = p.tipo_marketplace ? ' marketplace ' + p.tipo_marketplace : '';
 
     // Menú: el dueño ve "Eliminar mi publicación"; los demás ven las opciones de lectura y reporte
-    var menuItems = '';
-    if (esMia) {
-        menuItems =
-            '<button class="post-menu-item danger" onclick="eliminarMiPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Eliminar mi publicación</button>' +
-            '<button class="post-menu-item" onclick="copiarEnlacePost(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar enlace</button>' +
-            '<button class="post-menu-item" onclick="compartirPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg> Compartir</button>';
-    } else {
-        menuItems =
-            '<button class="post-menu-item" onclick="toggleMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> Me interesa</button>' +
-            '<button class="post-menu-item" onclick="toggleNoMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No me interesa</button>' +
-            '<button class="post-menu-item" onclick="abrirModalEtiquetar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Etiquetar foto</button>' +
-            '<button class="post-menu-item" onclick="toggleNotificacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> ' + (misNotificaciones[p.id] ? 'Desactivar notificaciones' : 'Activar notificaciones') + '</button>' +
-            '<button class="post-menu-item" onclick="ocultarPublicacionUsuario(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> No quiero ver esto</button>' +
-            '<button class="post-menu-item" onclick="copiarEnlacePost(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar enlace</button>' +
-            '<button class="post-menu-item" onclick="compartirPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg> Compartir</button>' +
-            '<div class="post-menu-separator"></div>' +
-            '<button class="post-menu-item danger" onclick="abrirModalReportar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Reportar publicación</button>' +
-            '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reportar al administrador</button>';
-    }
+    // Menú completo para todos. Al autor se le agrega arriba "Eliminar mi publicación".
+    var eliminarItem = esMia
+        ? '<button class="post-menu-item danger" onclick="eliminarMiPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Eliminar mi publicación</button><div class="post-menu-separator"></div>'
+        : '';
+    var menuItems = eliminarItem +
+        '<button class="post-menu-item" onclick="toggleMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> Me interesa</button>' +
+        '<button class="post-menu-item" onclick="toggleNoMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No me interesa</button>' +
+        '<button class="post-menu-item" onclick="abrirModalEtiquetar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Etiquetar foto</button>' +
+        '<button class="post-menu-item" onclick="toggleNotificacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> ' + (misNotificaciones[p.id] ? 'Desactivar notificaciones' : 'Activar notificaciones') + '</button>' +
+        '<button class="post-menu-item" onclick="ocultarPublicacionUsuario(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> No quiero ver esto</button>' +
+        '<button class="post-menu-item" onclick="copiarEnlacePost(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar enlace</button>' +
+        '<button class="post-menu-item" onclick="compartirPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg> Compartir</button>' +
+        '<div class="post-menu-separator"></div>' +
+        '<button class="post-menu-item danger" onclick="abrirModalReportar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Reportar publicación</button>' +
+        '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reportar al administrador</button>';
 
     return '<div class="publicacion-card' + claseMK + '" data-pub-id="' + p.id + '">' +
         '<div class="header">' +
@@ -722,17 +719,16 @@ function renderizarPublicacionHTML(p) {
 async function eliminarMiPublicacion(publicacionId) {
     document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
-    var pub = publicacionesCache.find(function(p) { return p.id === publicacionId; });
-    if (!pub || pub.usuario_id !== sessionUser.id) {
-        grpShowToast('Solo puedes eliminar tus propias publicaciones', 'error');
-        return;
-    }
     if (!confirm('¿Eliminar esta publicación? Ya no se verá en el canal.')) return;
     try {
-        grpOk(await window.supabaseClient.from('grupos_video_publicaciones')
-            .update({ estado: 'eliminado', updated_at: new Date().toISOString() })
-            .eq('id', publicacionId)
-            .eq('usuario_id', sessionUser.id));
+        var r = await window.supabaseClient.rpc('eliminar_mi_publicacion', { p_publicacion_id: String(publicacionId) });
+        if (r.error) throw r.error;
+        if (!r.data || r.data.ok !== true) {
+            var motivo = r.data && r.data.error === 'no_es_dueno'
+                ? 'Solo el autor puede eliminar esta publicación'
+                : 'No se pudo eliminar la publicación';
+            throw new Error(motivo);
+        }
         grpShowToast('Publicación eliminada', 'success');
         await cargarPublicacionesGrupo(grupoActualId);
     } catch (e) {
