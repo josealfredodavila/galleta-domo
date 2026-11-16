@@ -4,8 +4,6 @@
        sin sombras de tarjeta. Separadores de 1px. Medios a todo
        el ancho. Estadísticas limpias: solo número y etiqueta.
        Conserva todas las clases e IDs de los scripts.
-   v6: Se agrega bloque final para convertir "Mis publicaciones"
-       en un carrusel horizontal tipo Reels.
    ================================================================ */
 
 :root {
@@ -446,92 +444,3 @@ body { background: var(--space); color: var(--text-primary); font-family: 'Inter
 
 .carrusel-fullscreen-overlay:not(.open):not(.show):not(.is-open):not(.active):not(.visible) { display: none !important; }
 .btn-abrir-carrusel-fullscreen { display: none !important; }
-
-/* =========================================================
-   CARRUSEL TIPO REELS (FACEBOOK) - SOLO EN MIS PUBLICACIONES
-   ========================================================= */
-
-/* Hacemos que el contenedor principal sea un carrusel horizontal */
-#misPublicacionesList {
-    display: flex !important;
-    flex-direction: row !important;
-    overflow-x: auto !important;
-    gap: 12px;
-    padding-bottom: 15px;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none; /* Firefox */
-}
-#misPublicacionesList::-webkit-scrollbar {
-    display: none; /* Chrome/Safari */
-}
-
-/* La tarjeta se vuelve vertical (tipo Reel) SOLO dentro de la lista */
-#misPublicacionesList .publicacion-card {
-    flex: 0 0 220px !important; /* Ancho fijo */
-    max-width: 220px;
-    height: auto;
-    display: flex;
-    flex-direction: column;
-    scroll-snap-align: start;
-    border: 1px solid rgba(212, 175, 55, 0.2) !important;
-    border-radius: 16px !important;
-    overflow: hidden;
-    background: #0b1016 !important;
-    padding: 0 !important;
-    margin: 0 !important;
-}
-
-/* El header (avatar y nombre) se ajusta al tamaño del Reel */
-#misPublicacionesList .publicacion-card .header {
-    padding: 10px !important;
-    margin: 0 !important;
-    border-bottom: 1px solid rgba(255,255,255,0.05) !important;
-}
-#misPublicacionesList .publicacion-card .header > .avatar {
-    width: 32px !important; 
-    height: 32px !important; 
-    min-width: 32px !important; 
-    flex: 0 0 32px !important; 
-}
-
-/* El contenido (video o imagen) ocupa el resto de la tarjeta */
-#misPublicacionesList .publicacion-card .contenido {
-    flex-grow: 1;
-    padding: 0 !important;
-    margin: 0 !important;
-    display: block !important;
-}
-
-#misPublicacionesList .publicacion-card .pub-media-wrap {
-    width: 100%;
-    height: 280px; /* Altura fija tipo Reel */
-    margin: 0 !important;
-    border-radius: 0 !important;
-}
-
-#misPublicacionesList .publicacion-card .pub-media-wrap video,
-#misPublicacionesList .publicacion-card .pub-media-wrap img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover; /* Para que llene el espacio sin deformarse */
-    border-radius: 0 !important;
-}
-
-/* Ocultamos el texto de la publicación en el carrusel para que se vea limpio como Reel */
-#misPublicacionesList .publicacion-card .contenido > div:not(.pub-media-wrap) {
-    display: none;
-}
-
-/* Los botones de reaccionar, comentar y eliminar se ponen abajo */
-#misPublicacionesList .publicacion-card .stats {
-    padding: 8px !important;
-    margin: 0 !important;
-    display: flex;
-    justify-content: space-between;
-    border-top: 1px solid rgba(255,255,255,0.1) !important;
-}
-#misPublicacionesList .publicacion-card .reaccion-trigger,
-#misPublicacionesList .publicacion-card .btn-accion-pub {
-    font-size: 0.7rem !important;
-    padding: 4px 6px !important;
-}
