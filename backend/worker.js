@@ -1,19 +1,22 @@
 
 /* ================================================================
    WORKER.JS - CSARIEL'S ECOSYSTEM
-   VERSIÓN v5.4 - FFmpeg FIX / R2 / SUPABASE / BULLMQ
+   VERSIÓN v5.5 - DYNAMIC FILTER GRAPH / FFmpeg FIX
 
-   CORRECCIONES:
-   - Eliminación total del filtro FFmpeg drawtext.
-   - No requiere libfreetype.
-   - Overlay gráfico WEB3 mediante PNG.
-   - Logo al 50% de opacidad.
-   - Audio original y música externa.
-   - Música externa en bucle cuando sea necesario.
+   ACTUALIZACIONES:
+   - Construcción dinámica de entradas FFmpeg.
+   - Índices explícitos para video, logo y música.
+   - Grafo de filtros generado según las entradas reales.
+   - Etiquetas de filtros únicas y consistentes.
+   - Eliminación total de drawtext.
+   - Marca de agua PNG al 50%.
+   - Audio original 40% + música externa 100%.
+   - Música externa en bucle.
+   - Compatibilidad R2 y Supabase Storage.
    - Conservación segura del original.
-   - R2 + Supabase Storage legacy.
-   - Limpieza garantizada de temporales.
-   - Mapeo explícito de streams FFmpeg.
+   - Actualización de base de datos.
+   - Limpieza de temporales.
+   - BullMQ + Redis.
    ================================================================ */
 
 const { Worker } = require('bullmq');
@@ -21,6 +24,7 @@ const IORedis = require('ioredis');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const { createClient } = require('@supabase/supabase-js');
+
 const {
     S3Client,
     GetObjectCommand,
@@ -30,6 +34,7 @@ const {
 
 const { pipeline } = require('stream/promises');
 const { createHash } = require('crypto');
+
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
@@ -71,7 +76,7 @@ const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || '')
 
 const R2_ENDPOINT = process.env.R2_ENDPOINT ||
     (R2_ACCOUNT_ID
-        ? `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+        ? 'https://' + R2_ACCOUNT_ID + '.r2.cloudflarestorage.com'
         : '');
 
 const faltantes = [];
@@ -80,8 +85,8 @@ if (!SUPABASE_URL) faltantes.push('SUPABASE_URL');
 if (!SUPABASE_SERVICE_ROLE_KEY) faltantes.push('SUPABASE_SERVICE_ROLE_KEY');
 if (!REDIS_URL) faltantes.push('REDIS_URL');
 
-if (faltantes.length) {
-    console.error('❌ Variables críticas faltantes:');
+if (faltantes.length > 0) {
+    console.error('❌ Faltan variables críticas:');
 
     faltantes.forEach(function (variable) {
         console.error(' - ' + variable);
@@ -152,22 +157,22 @@ const redisConnection = new IORedis(REDIS_URL, {
 
         const delay = Math.min(times * 500, 10000);
 
-        console.log('🔁 Redis reintentando en ' + delay + 'ms');
+        console.log('🔁 Reintentando Redis en ' + delay + 'ms');
 
         return delay;
     }
 });
 
 redisConnection.on('connect', function () {
-    console.log('✅ Redis conectado');
+    console.log('✅ Redis conectado.');
 });
 
 redisConnection.on('ready', function () {
-    console.log('✅ Redis listo');
+    console.log('✅ Redis listo.');
 });
 
 redisConnection.on('error', function (err) {
-    console.error('❌ Redis:', err.message);
+    console.error('❌ Error Redis:', err.message);
 });
 
 // ================================================================
@@ -206,24 +211,6 @@ function obtenerRutasTemporales(jobId) {
     };
 }
 
-function limpiarTemporales(rutas) {
-    if (!rutas) return;
-
-    Object.keys(rutas).forEach(function (key) {
-        try {
-            if (fs.existsSync(rutas[key])) {
-                fs.unlinkSync(rutas[key]);
-            }
-        } catch (err) {
-            console.warn(
-                '⚠️ No se pudo limpiar temporal:',
-                rutas[key],
-                err.message
-            );
-        }
-    });
-}
-
 function validarArchivo(ruta, nombre) {
     if (!fs.existsSync(ruta)) {
         throw new Error(nombre + ' no existe.');
@@ -238,12 +225,29 @@ function validarArchivo(ruta, nombre) {
     return stat.size;
 }
 
+function limpiarTemporales(rutas) {
+    if (!rutas) return;
+
+    Object.keys(rutas).forEach(function (key) {
+        try {
+            if (fs.existsSync(rutas[key])) {
+                fs.unlinkSync(rutas[key]);
+            }
+        } catch (err) {
+            console.warn(
+                '⚠️ Error limpiando temporal:',
+                err.message
+            );
+        }
+    });
+}
+
 function urlPublicaR2(key) {
     return R2_PUBLIC_URL + '/' + key;
 }
 
 // ================================================================
-// R2: DESCARGA
+// R2: DESCARGAR
 // ================================================================
 
 async function descargarR2ADisco(key, destino) {
@@ -267,11 +271,14 @@ async function descargarR2ADisco(key, destino) {
         fs.createWriteStream(destino)
     );
 
-    return validarArchivo(destino, 'Video descargado de R2');
+    return validarArchivo(
+        destino,
+        'Video descargado de R2'
+    );
 }
 
 // ================================================================
-// R2: SUBIDA
+// R2: SUBIR
 // ================================================================
 
 async function subirBufferR2(key, buffer, contentType) {
@@ -293,7 +300,7 @@ async function subirBufferR2(key, buffer, contentType) {
 }
 
 // ================================================================
-// R2: BORRADO
+// R2: BORRAR
 // ================================================================
 
 async function borrarR2(key) {
@@ -332,7 +339,7 @@ async function registrarArchivoHash(datos) {
 
     if (error) {
         console.warn(
-            '⚠️ No se registró archivos_hash:',
+            '⚠️ Error archivos_hash:',
             error.message
         );
 
@@ -343,7 +350,7 @@ async function registrarArchivoHash(datos) {
 }
 
 // ================================================================
-// VERIFICAR USO DEL VIDEO ORIGINAL
+// COMPROBAR SI EL ORIGINAL ESTÁ COMPARTIDO
 // ================================================================
 
 async function archivoOriginalEnUso(urlOriginal, videoIdActual) {
@@ -358,7 +365,7 @@ async function archivoOriginalEnUso(urlOriginal, videoIdActual) {
 
     if (error) {
         throw new Error(
-            'No se pudo verificar uso del original: ' +
+            'Error comprobando el original: ' +
             error.message
         );
     }
@@ -367,15 +374,14 @@ async function archivoOriginalEnUso(urlOriginal, videoIdActual) {
 }
 
 // ================================================================
-// DESCARGA DE VIDEO ORIGINAL
+// DESCARGAR VIDEO ORIGINAL
 // ================================================================
 
 async function descargarVideoOriginal(
     videoUrl,
     storage,
     keyOriginal,
-    destino,
-    jobId
+    destino
 ) {
     if (storage === 'r2') {
         const bytes = await descargarR2ADisco(
@@ -393,7 +399,7 @@ async function descargarVideoOriginal(
     }
 
     if (!videoUrl) {
-        throw new Error('No existe URL del video original.');
+        throw new Error('Falta videoUrl.');
     }
 
     const response = await axios.get(videoUrl, {
@@ -402,7 +408,7 @@ async function descargarVideoOriginal(
         maxContentLength: 200 * 1024 * 1024,
         maxBodyLength: 200 * 1024 * 1024,
         headers: {
-            'User-Agent': 'Csariels-Video-Worker/5.4'
+            'User-Agent': 'Csariels-Video-Worker/5.5'
         }
     });
 
@@ -424,7 +430,7 @@ async function descargarVideoOriginal(
 }
 
 // ================================================================
-// DESCARGA DE AUDIO EXTERNO
+// DESCARGAR AUDIO EXTERNO
 // ================================================================
 
 async function descargarAudioExterno(audioUrl, destino, jobId) {
@@ -452,13 +458,13 @@ async function descargarAudioExterno(audioUrl, destino, jobId) {
 
         validarArchivo(destino, 'Audio externo');
 
-        console.log('✅ Música descargada');
+        console.log('✅ Música descargada.');
 
         return true;
 
     } catch (error) {
         console.warn(
-            '⚠️ Música no disponible. Se continuará sin música:',
+            '⚠️ Música no disponible:',
             error.message
         );
 
@@ -484,8 +490,7 @@ function obtenerMetadata(ruta) {
             if (err) {
                 reject(
                     new Error(
-                        'Error leyendo metadata FFprobe: ' +
-                        err.message
+                        'Error FFprobe: ' + err.message
                     )
                 );
 
@@ -498,7 +503,60 @@ function obtenerMetadata(ruta) {
 }
 
 // ================================================================
-// CONSTRUIR FILTRO DE VIDEO
+// CONSTRUCTOR DINÁMICO DE ENTRADAS FFMPEG
+// ================================================================
+
+function construirEntradasFFmpeg(
+    tieneAudioExterno
+) {
+    /*
+       ÍNDICES CONTROLADOS:
+
+       Entrada 0: video original.
+       Entrada 1: logo PNG.
+       Entrada 2: música externa, únicamente cuando existe.
+
+       Los índices se generan dinámicamente.
+       Ningún filtro utiliza una entrada inexistente.
+    */
+
+    const entradas = [];
+
+    const indices = {};
+
+    indices.video = entradas.length;
+
+    entradas.push({
+        tipo: 'video',
+        indice: indices.video
+    });
+
+    indices.logo = entradas.length;
+
+    entradas.push({
+        tipo: 'logo',
+        indice: indices.logo
+    });
+
+    if (tieneAudioExterno) {
+        indices.musica = entradas.length;
+
+        entradas.push({
+            tipo: 'musica',
+            indice: indices.musica
+        });
+    } else {
+        indices.musica = null;
+    }
+
+    return {
+        entradas: entradas,
+        indices: indices
+    };
+}
+
+// ================================================================
+// CONSTRUIR FILTRO COMPLETO
 // ================================================================
 
 function construirFiltroVideo(
@@ -506,13 +564,13 @@ function construirFiltroVideo(
     height,
     tieneAudio,
     tieneAudioExterno,
-    duration
+    indices
 ) {
     const targetHeight = Math.min(720, height);
 
-    const scaleFactor = targetHeight / height;
+    const factor = targetHeight / height;
 
-    const targetWidth = Math.round(width * scaleFactor);
+    const targetWidth = Math.round(width * factor);
 
     const finalWidth = targetWidth % 2 === 0
         ? targetWidth
@@ -523,7 +581,7 @@ function construirFiltroVideo(
         : targetHeight - 1;
 
     if (finalWidth < 2 || finalHeight < 2) {
-        throw new Error('Dimensiones de video no válidas.');
+        throw new Error('Dimensiones inválidas.');
     }
 
     const logoW = Math.max(
@@ -542,73 +600,155 @@ function construirFiltroVideo(
     const xBR = finalWidth - logoW - marginX;
     const yBR = finalHeight - logoH - marginY;
 
+    const videoIndex = indices.video;
+    const logoIndex = indices.logo;
+    const musicIndex = indices.musica;
+
+    const filtros = [];
+
     /*
-       IMPORTANTE:
+       ETIQUETAS ÚNICAS:
 
-       El filtro utiliza exclusivamente:
-       scale
-       pad
-       format
-       colorchannelmixer
-       overlay
+       scaled_v55
+       base_v55
+       logo_v55
+       vout_v55
+       orig_a55
+       music_a55
+       aout_v55
 
-       No se ejecuta drawtext.
-       No se requiere libfreetype.
+       Se evita reutilizar etiquetas ambiguas.
     */
 
-    const filtros = [
-        '[0:v]scale=' +
-            finalWidth + ':' + finalHeight +
-            ':force_original_aspect_ratio=decrease[scaled]',
+    // ------------------------------------------------------------
+    // VIDEO ORIGINAL
+    // ------------------------------------------------------------
 
-        '[scaled]pad=' +
-            finalWidth + ':' + finalHeight +
-            ':(ow-iw)/2:(oh-ih)/2:color=black[base]',
+    filtros.push(
+        '[' + videoIndex + ':v]' +
+        'scale=' + finalWidth + ':' + finalHeight +
+        ':force_original_aspect_ratio=decrease' +
+        '[scaled_v55]'
+    );
 
-        '[1:v]scale=' +
-            logoW + ':' + logoH +
-            ',format=rgba,' +
-            'colorchannelmixer=aa=0.5[logo]',
+    // ------------------------------------------------------------
+    // PAD
+    // ------------------------------------------------------------
 
-        '[base][logo]overlay=' +
-            xBR + ':' + yBR +
-            ':shortest=1[vout]'
-    ];
+    filtros.push(
+        '[scaled_v55]' +
+        'pad=' + finalWidth + ':' + finalHeight +
+        ':(ow-iw)/2:(oh-ih)/2:color=black' +
+        '[base_v55]'
+    );
+
+    // ------------------------------------------------------------
+    // LOGO PNG
+    // ------------------------------------------------------------
+
+    filtros.push(
+        '[' + logoIndex + ':v]' +
+        'scale=' + logoW + ':' + logoH +
+        ',format=rgba' +
+        ',colorchannelmixer=aa=0.5' +
+        '[logo_v55]'
+    );
+
+    // ------------------------------------------------------------
+    // OVERLAY
+    // ------------------------------------------------------------
+
+    filtros.push(
+        '[base_v55][logo_v55]' +
+        'overlay=' + xBR + ':' + yBR +
+        ':shortest=1' +
+        '[vout_v55]'
+    );
+
+    // ------------------------------------------------------------
+    // AUDIO DINÁMICO
+    // ------------------------------------------------------------
+
+    let tieneSalidaAudio = false;
 
     if (tieneAudioExterno) {
+        if (musicIndex === null || musicIndex === undefined) {
+            throw new Error(
+                'La música externa no tiene entrada FFmpeg válida.'
+            );
+        }
+
         if (tieneAudio) {
             filtros.push(
-                '[0:a]volume=0.4[orig]'
+                '[' + videoIndex + ':a]' +
+                'volume=0.4' +
+                '[orig_a55]'
             );
 
             filtros.push(
-                '[2:a]volume=1.0[music]'
+                '[' + musicIndex + ':a]' +
+                'volume=1.0' +
+                '[music_a55]'
             );
 
             filtros.push(
-                '[orig][music]amix=' +
-                'inputs=2:duration=first:dropout_transition=2[aout]'
+                '[orig_a55][music_a55]' +
+                'amix=inputs=2:duration=first:dropout_transition=2' +
+                '[aout_v55]'
             );
+
+            tieneSalidaAudio = true;
+
         } else {
             filtros.push(
-                '[2:a]volume=1.0[aout]'
+                '[' + musicIndex + ':a]' +
+                'volume=1.0' +
+                '[aout_v55]'
             );
+
+            tieneSalidaAudio = true;
         }
     }
 
-    return {
+    const resultado = {
         filterComplex: filtros.join(';'),
+        outputVideo: '[vout_v55]',
+        outputAudio: tieneSalidaAudio ? '[aout_v55]' : null,
         width: finalWidth,
         height: finalHeight,
         logoWidth: logoW,
         logoHeight: logoH,
         logoX: xBR,
-        logoY: yBR
+        logoY: yBR,
+        indices: indices
     };
+
+    // ------------------------------------------------------------
+    // VALIDACIÓN DEL GRAFO
+    // ------------------------------------------------------------
+
+    if (!resultado.filterComplex) {
+        throw new Error('El filtro FFmpeg está vacío.');
+    }
+
+    if (resultado.filterComplex.indexOf('drawtext') !== -1) {
+        throw new Error(
+            'Se detectó drawtext en el filtro. Operación cancelada.'
+        );
+    }
+
+    console.log('🔗 Grafo FFmpeg generado:');
+    console.log(resultado.filterComplex);
+
+    console.log('📥 Índice video:', videoIndex);
+    console.log('📥 Índice logo:', logoIndex);
+    console.log('📥 Índice música:', musicIndex);
+
+    return resultado;
 }
 
 // ================================================================
-// PROCESAMIENTO FFMPEG
+// EJECUTAR FFMPEG CON ENTRADAS EXPLÍCITAS
 // ================================================================
 
 function ejecutarFFmpeg(
@@ -621,150 +761,204 @@ function ejecutarFFmpeg(
     job
 ) {
     return new Promise(function (resolve, reject) {
-        let command = ffmpeg();
+        try {
+            const comando = ffmpeg();
 
-        // Entrada 0: video original.
-        command = command.input(inputPath);
+            /*
+               Se construyen las entradas en el mismo orden
+               utilizado por construirFiltroVideo.
+            */
 
-        // Entrada 1: logo gráfico.
-        // Se mantiene durante toda la reproducción.
-        command = command.input(LOGO_PATH);
-        command = command.inputOptions(['-loop', '1']);
+            // ENTRADA 0: VIDEO ORIGINAL
+            comando.input(inputPath);
 
-        // Entrada 2: música externa.
-        if (tieneAudioExterno) {
-            command = command.input(audioPath);
-            command = command.inputOptions([
-                '-stream_loop',
-                '-1'
-            ]);
-        }
+            // ENTRADA 1: LOGO PNG
+            comando.input(LOGO_PATH);
+            comando.inputOptions('-loop 1');
 
-        // Filtro gráfico y mezcla de audio.
-        command = command.complexFilter(
-            filtro.filterComplex
-        );
-
-        const opciones = [
-            '-map',
-            '[vout]',
-
-            '-c:v',
-            'libx264',
-
-            '-preset',
-            'veryfast',
-
-            '-crf',
-            '26',
-
-            '-pix_fmt',
-            'yuv420p',
-
-            '-profile:v',
-            'baseline',
-
-            '-level',
-            '3.1',
-
-            '-movflags',
-            '+faststart',
-
-            '-max_muxing_queue_size',
-            '1024'
-        ];
-
-        if (tieneAudioExterno) {
-            opciones.push('-map', '[aout]');
-
-            opciones.push(
-                '-c:a',
-                'aac',
-                '-b:a',
-                '128k',
-                '-ac',
-                '2'
-            );
-
-            if (!tieneAudio) {
-                // El video determina el final del resultado.
-                opciones.push('-shortest');
+            // ENTRADA 2: MÚSICA (SI EXISTE)
+            if (tieneAudioExterno) {
+                comando.input(audioPath);
+                comando.inputOptions('-stream_loop -1');
             }
 
-        } else if (tieneAudio) {
-            opciones.push(
-                '-map',
-                '0:a?',
-                '-c:a',
-                'aac',
-                '-b:a',
-                '128k',
-                '-ac',
-                '2'
+            // ----------------------------------------------------
+            // COMPROBAR ÍNDICES ANTES DE EJECUTAR
+            // ----------------------------------------------------
+
+            const entradasEsperadas = tieneAudioExterno ? 3 : 2;
+
+            if (filtro.indices.video !== 0) {
+                throw new Error('Índice de video incorrecto.');
+            }
+
+            if (filtro.indices.logo !== 1) {
+                throw new Error('Índice de logo incorrecto.');
+            }
+
+            if (
+                tieneAudioExterno &&
+                filtro.indices.musica !== 2
+            ) {
+                throw new Error('Índice de música incorrecto.');
+            }
+
+            console.log(
+                '🎬 Entradas FFmpeg verificadas:',
+                entradasEsperadas
             );
 
-        } else {
-            opciones.push('-an');
-        }
+            // ----------------------------------------------------
+            // APLICAR GRAFO
+            // ----------------------------------------------------
 
-        command = command.outputOptions(opciones);
+            comando.complexFilter(
+                filtro.filterComplex
+            );
 
-        command = command.output(outputPath);
+            // ----------------------------------------------------
+            // MAPEO EXPLÍCITO
+            // ----------------------------------------------------
 
-        command
-            .on('start', function (commandLine) {
-                console.log(
-                    '▶️ [JOB ' + job.id + '] FFmpeg iniciado'
+            const opciones = [
+                '-map',
+                filtro.outputVideo,
+
+                '-c:v',
+                'libx264',
+
+                '-preset',
+                'veryfast',
+
+                '-crf',
+                '26',
+
+                '-pix_fmt',
+                'yuv420p',
+
+                '-profile:v',
+                'baseline',
+
+                '-level',
+                '3.1',
+
+                '-movflags',
+                '+faststart',
+
+                '-max_muxing_queue_size',
+                '1024'
+            ];
+
+            if (filtro.outputAudio) {
+                opciones.push(
+                    '-map',
+                    filtro.outputAudio
                 );
 
-                console.log(
-                    '🎬 [JOB ' + job.id + '] Comando:',
-                    commandLine
+                opciones.push(
+                    '-c:a',
+                    'aac',
+                    '-b:a',
+                    '128k',
+                    '-ac',
+                    '2'
                 );
-            })
 
-            .on('progress', function (progress) {
-                if (progress.percent) {
-                    const porcentaje = Math.max(
-                        25,
-                        Math.min(
-                            80,
-                            25 + Math.floor(
-                                progress.percent * 0.55
+                // Solo música: el video determina la duración.
+                if (!tieneAudio) {
+                    opciones.push('-shortest');
+                }
+
+                console.log(
+                    '🎵 Audio: música 100% + original 40% cuando existe.'
+                );
+
+            } else if (tieneAudio) {
+                opciones.push(
+                    '-map',
+                    '0:a?',
+                    '-c:a',
+                    'aac',
+                    '-b:a',
+                    '128k',
+                    '-ac',
+                    '2'
+                );
+
+                console.log('🔊 Audio original conservado.');
+
+            } else {
+                opciones.push('-an');
+
+                console.log('🔇 Video sin audio.');
+            }
+
+            comando.outputOptions(opciones);
+
+            comando.output(outputPath);
+
+            // ----------------------------------------------------
+            // EVENTOS
+            // ----------------------------------------------------
+
+            comando
+                .on('start', function (commandLine) {
+                    console.log(
+                        '▶️ [JOB ' + job.id + '] FFmpeg iniciado.'
+                    );
+
+                    console.log(
+                        '🎬 Comando FFmpeg:',
+                        commandLine
+                    );
+                })
+
+                .on('progress', function (progress) {
+                    if (progress.percent) {
+                        const porcentaje = Math.max(
+                            25,
+                            Math.min(
+                                80,
+                                25 + Math.floor(
+                                    progress.percent * 0.55
+                                )
                             )
-                        )
+                        );
+
+                        job.updateProgress(porcentaje)
+                            .catch(function () {});
+                    }
+                })
+
+                .on('end', function () {
+                    console.log(
+                        '✅ [JOB ' + job.id + '] FFmpeg finalizado.'
                     );
 
-                    job.updateProgress(porcentaje)
-                        .catch(function () {});
-                }
-            })
+                    resolve();
+                })
 
-            .on('end', function () {
-                console.log(
-                    '✅ [JOB ' + job.id + '] FFmpeg finalizado'
-                );
-
-                resolve();
-            })
-
-            .on('error', function (err, stdout, stderr) {
-                console.error(
-                    '❌ [JOB ' + job.id + '] FFmpeg:',
-                    err.message
-                );
-
-                if (stderr) {
+                .on('error', function (err, stdout, stderr) {
                     console.error(
-                        '❌ FFmpeg STDERR:',
-                        stderr
+                        '❌ [JOB ' + job.id + '] FFmpeg:',
+                        err.message
                     );
-                }
 
-                reject(err);
-            })
+                    if (stderr) {
+                        console.error(
+                            '❌ FFmpeg STDERR:',
+                            stderr
+                        );
+                    }
 
-            .run();
+                    reject(err);
+                })
+
+                .run();
+
+        } catch (error) {
+            reject(error);
+        }
     });
 }
 
@@ -782,7 +976,7 @@ async function subirVideoProcesado(
     const outputBuffer = fs.readFileSync(outputPath);
 
     if (!outputBuffer.length) {
-        throw new Error('El video procesado está vacío.');
+        throw new Error('Video procesado vacío.');
     }
 
     const sha256 = createHash('sha256')
@@ -790,7 +984,6 @@ async function subirVideoProcesado(
         .digest('hex');
 
     let processedUrl;
-
     let processedKey;
 
     if (usaR2) {
@@ -815,7 +1008,7 @@ async function subirVideoProcesado(
 
         if (!registrado) {
             console.warn(
-                '⚠️ Video subido, pero no se confirmó su registro hash.'
+                '⚠️ No se confirmó el registro hash del resultado.'
             );
         }
 
@@ -834,8 +1027,7 @@ async function subirVideoProcesado(
 
         if (error) {
             throw new Error(
-                'Error subiendo video a Supabase: ' +
-                error.message
+                'Error subiendo video: ' + error.message
             );
         }
 
@@ -845,7 +1037,7 @@ async function subirVideoProcesado(
 
         if (!data || !data.publicUrl) {
             throw new Error(
-                'No se pudo obtener la URL pública del video.'
+                'No se obtuvo la URL pública.'
             );
         }
 
@@ -865,26 +1057,19 @@ async function subirVideoProcesado(
 // ================================================================
 
 async function actualizarVideoDB(videoId, processedUrl) {
-    const { data, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
         .from('videos')
         .update({
             url_video: processedUrl,
             estado: 'publicado',
             updated_at: new Date().toISOString()
         })
-        .eq('id', videoId)
-        .select('id');
+        .eq('id', videoId);
 
     if (error) {
         throw new Error(
-            'No se pudo actualizar la base de datos: ' +
+            'Error actualizando videos: ' +
             error.message
-        );
-    }
-
-    if (!data || data.length === 0) {
-        throw new Error(
-            'La actualización no confirmó ningún registro de video.'
         );
     }
 
@@ -906,10 +1091,9 @@ async function borrarOriginalSeguro(
 
     try {
         if (usaR2) {
-            // Sin URL original no se puede comprobar si está compartido.
             if (!videoUrl) {
                 console.warn(
-                    '⚠️ No se borra original: falta URL para comprobar referencias.'
+                    '⚠️ No se borra R2: falta URL para verificar referencias.'
                 );
 
                 return;
@@ -922,7 +1106,7 @@ async function borrarOriginalSeguro(
 
             if (enUso) {
                 console.log(
-                    'ℹ️ Original compartido. Se conserva en R2.'
+                    'ℹ️ Original compartido. Se conserva.'
                 );
 
                 return;
@@ -938,7 +1122,7 @@ async function borrarOriginalSeguro(
 
             if (error) {
                 console.warn(
-                    '⚠️ No se pudo eliminar el registro hash:',
+                    '⚠️ Error eliminando hash:',
                     error.message
                 );
             }
@@ -959,14 +1143,14 @@ async function borrarOriginalSeguro(
 
     } catch (error) {
         console.warn(
-            '⚠️ No se pudo borrar el original:',
+            '⚠️ No se pudo borrar original:',
             error.message
         );
     }
 }
 
 // ================================================================
-// FUNCIÓN PRINCIPAL
+// FUNCIÓN PRINCIPAL DE PROCESAMIENTO
 // ================================================================
 
 async function procesarVideo(job) {
@@ -998,13 +1182,17 @@ async function procesarVideo(job) {
 
     console.log('');
     console.log('========================================');
-    console.log('📹 JOB:', job.id);
-    console.log('🎞️ VIDEO:', videoId);
-    console.log('☁️ STORAGE:', usaR2 ? 'R2' : 'SUPABASE');
-    console.log('🎵 AUDIO EXTERNO:', audioUrl ? 'SÍ' : 'NO');
+    console.log("🎬 CSARIEL'S VIDEO WORKER v5.5");
+    console.log('JOB:', job.id);
+    console.log('VIDEO:', videoId);
+    console.log('STORAGE:', usaR2 ? 'R2' : 'SUPABASE');
     console.log('========================================');
 
     try {
+        // --------------------------------------------------------
+        // VALIDACIONES
+        // --------------------------------------------------------
+
         if (!videoId) {
             throw new Error('Falta videoId.');
         }
@@ -1014,39 +1202,38 @@ async function procesarVideo(job) {
         }
 
         if (usaR2 && !r2Client) {
-            throw new Error('El job requiere R2, pero R2 no está configurado.');
+            throw new Error('R2 no está configurado.');
+        }
+
+        if (usaR2 && !keyOriginal) {
+            throw new Error('Falta la clave original de R2.');
         }
 
         if (!usaR2 && !videoUrl) {
-            throw new Error('Falta videoUrl para almacenamiento legacy.');
-        }
-
-        if (!keyOriginal && usaR2) {
-            throw new Error('Falta la clave original de R2.');
+            throw new Error('Falta videoUrl.');
         }
 
         if (!fs.existsSync(LOGO_PATH)) {
             throw new Error(
-                'No existe el logo gráfico: ' + LOGO_PATH
+                'No existe watermark.png: ' + LOGO_PATH
             );
         }
 
         validarArchivo(LOGO_PATH, 'Logo WEB3');
 
+        // --------------------------------------------------------
+        // PASO 1: VIDEO ORIGINAL
+        // --------------------------------------------------------
+
         await job.updateProgress(5);
 
-        // --------------------------------------------------------
-        // PASO 1: DESCARGAR VIDEO
-        // --------------------------------------------------------
-
-        console.log('📥 Descargando video original...');
+        console.log('📥 Descargando video...');
 
         await descargarVideoOriginal(
             videoUrl,
             storage,
             keyOriginal,
-            rutas.input,
-            job.id
+            rutas.input
         );
 
         await job.updateProgress(10);
@@ -1067,10 +1254,12 @@ async function procesarVideo(job) {
         // PASO 3: METADATA
         // --------------------------------------------------------
 
-        const metadata = await obtenerMetadata(rutas.input);
+        const metadata = await obtenerMetadata(
+            rutas.input
+        );
 
         if (!metadata || !metadata.streams) {
-            throw new Error('FFprobe no devolvió streams válidos.');
+            throw new Error('Metadata FFprobe inválida.');
         }
 
         const videoStream = metadata.streams.find(
@@ -1086,7 +1275,7 @@ async function procesarVideo(job) {
         );
 
         if (!videoStream) {
-            throw new Error('El archivo no contiene video.');
+            throw new Error('No existe stream de video.');
         }
 
         const width = Number(videoStream.width);
@@ -1100,16 +1289,19 @@ async function procesarVideo(job) {
             width < 2 ||
             height < 2
         ) {
-            throw new Error('Dimensiones de video inválidas.');
+            throw new Error('Dimensiones inválidas.');
         }
 
-        if (!Number.isFinite(duration) || duration <= 0) {
-            throw new Error('Duración del video inválida.');
+        if (
+            !Number.isFinite(duration) ||
+            duration <= 0
+        ) {
+            throw new Error('Duración inválida.');
         }
 
         tieneAudio = Boolean(audioStream);
 
-        console.log('📐 Dimensiones:', width + 'x' + height);
+        console.log('📐 Resolución:', width + 'x' + height);
         console.log('⏱️ Duración:', duration);
         console.log('🔊 Audio original:', tieneAudio);
         console.log('🎵 Música externa:', tieneAudioExterno);
@@ -1117,7 +1309,24 @@ async function procesarVideo(job) {
         await job.updateProgress(20);
 
         // --------------------------------------------------------
-        // PASO 4: CONSTRUIR FILTROS
+        // PASO 4: REGISTRO DINÁMICO DE ENTRADAS
+        // --------------------------------------------------------
+
+        const estructura = construirEntradasFFmpeg(
+            tieneAudioExterno
+        );
+
+        console.log('🔗 Entradas registradas:');
+
+        estructura.entradas.forEach(function (entrada) {
+            console.log(
+                ' - ' + entrada.tipo +
+                ': entrada ' + entrada.indice
+            );
+        });
+
+        // --------------------------------------------------------
+        // PASO 5: CONSTRUIR FILTRO
         // --------------------------------------------------------
 
         const filtro = construirFiltroVideo(
@@ -1125,10 +1334,10 @@ async function procesarVideo(job) {
             height,
             tieneAudio,
             tieneAudioExterno,
-            duration
+            estructura.indices
         );
 
-        console.log('🎨 Aplicando marca de agua gráfica.');
+        console.log('🎨 Filtro dinámico preparado.');
         console.log(
             '📐 Salida:',
             filtro.width + 'x' + filtro.height
@@ -1139,12 +1348,13 @@ async function procesarVideo(job) {
             filtro.logoWidth + 'x' + filtro.logoHeight
         );
 
-        console.log('🔒 Opacidad del logo: 50%');
+        console.log('🔒 Opacidad: 50%');
+        console.log('🚫 drawtext: DESACTIVADO');
 
         await job.updateProgress(25);
 
         // --------------------------------------------------------
-        // PASO 5: PROCESAMIENTO FFMPEG
+        // PASO 6: PROCESAMIENTO
         // --------------------------------------------------------
 
         console.log('🎬 Iniciando FFmpeg...');
@@ -1165,7 +1375,7 @@ async function procesarVideo(job) {
         );
 
         console.log(
-            '✅ Video procesado:',
+            '✅ Resultado:',
             (outputSize / 1048576).toFixed(2),
             'MB'
         );
@@ -1173,7 +1383,7 @@ async function procesarVideo(job) {
         await job.updateProgress(80);
 
         // --------------------------------------------------------
-        // PASO 6: SUBIR RESULTADO
+        // PASO 7: SUBIR RESULTADO
         // --------------------------------------------------------
 
         console.log('📤 Subiendo video procesado...');
@@ -1186,15 +1396,18 @@ async function procesarVideo(job) {
             usaR2
         );
 
-        console.log('✅ Video subido:', resultado.url);
+        console.log(
+            '✅ Video subido:',
+            resultado.url
+        );
 
         await job.updateProgress(90);
 
         // --------------------------------------------------------
-        // PASO 7: ACTUALIZAR BASE DE DATOS
+        // PASO 8: ACTUALIZAR BASE DE DATOS
         // --------------------------------------------------------
 
-        console.log('💾 Actualizando registro de video...');
+        console.log('💾 Actualizando base de datos...');
 
         await actualizarVideoDB(
             videoId,
@@ -1208,7 +1421,7 @@ async function procesarVideo(job) {
         await job.updateProgress(95);
 
         // --------------------------------------------------------
-        // PASO 8: BORRADO SEGURO
+        // PASO 9: BORRADO SEGURO
         // --------------------------------------------------------
 
         if (keyOriginal) {
@@ -1259,32 +1472,28 @@ async function procesarVideo(job) {
 
                 if (dbError) {
                     console.warn(
-                        '⚠️ No se pudo marcar el video como error:',
+                        '⚠️ Error actualizando estado:',
                         dbError.message
                     );
                 } else {
                     console.log(
-                        '📝 Video marcado con error_procesamiento.'
+                        '📝 Video marcado como error_procesamiento.'
                     );
                 }
 
             } catch (dbError) {
-                console.warn(
-                    '⚠️ Error actualizando estado:',
-                    dbError.message
-                );
+                console.warn(dbError.message);
             }
 
         } else if (!esUltimoIntento) {
             console.log(
-                '🔄 Se reintentará el procesamiento.'
+                '🔄 BullMQ volverá a intentar el procesamiento.'
             );
         }
 
         throw error;
 
     } finally {
-        // Los temporales se eliminan tanto en éxito como en error.
         limpiarTemporales(rutas);
     }
 }
@@ -1320,14 +1529,15 @@ worker.on('completed', function (job, result) {
     );
 
     console.log(
-        'Audio externo:',
+        'Música externa:',
         result.tieneAudioExterno ? 'SÍ' : 'NO'
     );
 });
 
 worker.on('failed', function (job, err) {
     console.error(
-        '❌ Worker: Job ' + (job ? job.id : 'desconocido') +
+        '❌ Worker: Job ' +
+        (job ? job.id : 'desconocido') +
         ' falló:',
         err.message
     );
@@ -1335,13 +1545,13 @@ worker.on('failed', function (job, err) {
 
 worker.on('error', function (err) {
     console.error(
-        '❌ Error general del Worker:',
+        '❌ Worker general:',
         err.message
     );
 });
 
 worker.on('ready', function () {
-    console.log('✅ Worker listo para procesar videos.');
+    console.log('✅ Worker listo.');
 });
 
 // ================================================================
@@ -1365,11 +1575,13 @@ const healthServer = http.createServer(
                 JSON.stringify({
                     status: 'ok',
                     service: 'worker-video',
-                    version: '5.4',
+                    version: '5.5',
                     redis: redisConnection.status,
                     r2: r2Configurado,
+                    dynamicFilterGraph: true,
+                    explicitInputIndexes: true,
                     watermark: true,
-                    ffmpegDrawtextRequired: false,
+                    drawtext: false,
                     timestamp: new Date().toISOString()
                 })
             );
@@ -1404,7 +1616,7 @@ async function cerrarWorker(signal) {
     cerrando = true;
 
     console.log(
-        '🛑 ' + signal + ' recibido. Cerrando servicios...'
+        '🛑 ' + signal + ' recibido. Cerrando Worker...'
     );
 
     try {
@@ -1469,7 +1681,7 @@ process.on('unhandledRejection', function (reason) {
 
 console.log('');
 console.log('========================================');
-console.log("🎬 WORKER CSARIEL'S v5.4");
+console.log("🎬 WORKER CSARIEL'S v5.5");
 console.log('========================================');
 
 console.log('📡 Cola:', COLA_NOMBRE);
@@ -1479,9 +1691,11 @@ console.log('🖼️ Logo:', LOGO_PATH);
 console.log('☁️ R2:', r2Configurado ? 'CONFIGURADO' : 'NO CONFIGURADO');
 console.log('🎵 Audio original: 40%');
 console.log('🎵 Música externa: 100%');
-console.log('🖼️ Marca de agua: PNG al 50%');
+console.log('🖼️ Marca de agua: PNG 50%');
+console.log('🔗 Filtros: GRAFO DINÁMICO');
+console.log('🔢 Entradas: ÍNDICES EXPLÍCITOS');
+console.log('🚫 drawtext: DESACTIVADO');
 console.log('🎯 Limiter: 3 trabajos/minuto');
-console.log('🔒 Dependencia drawtext: NO');
 console.log('========================================');
 console.log('🚀 WORKER LISTO');
 console.log('========================================');
