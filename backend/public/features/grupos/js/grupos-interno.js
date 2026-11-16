@@ -5,8 +5,51 @@
 // reportes, etiquetas, comentarios, reacciones y acciones del canal.
 // Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js,
 //             grupos-marketplace.js (mkTarjetaCompraHTML)
-// v2.0 (Añadido Visor a Pantalla Completa para fotos de publicaciones)
+// v3.0:
+//   - El dueño puede eliminar su propia publicación (borrado lógico).
+//   - Reacciones: 👍 🥰 😱 🤨 🤣 😆, una por persona, con conteo real.
+//   - Avatar del autor visible para todos; sin foto, muestra la inicial.
+//   - Caja de comentarios más grande.
 // ================================================================
+
+// ================================================================
+// REACCIONES Y AVATARES
+// ================================================================
+var REACCIONES_DISPONIBLES = ['👍', '🥰', '😱', '🤨', '🤣', '😆'];
+var misReacciones = {};
+
+// Normaliza el registro antiguo 'like' al emoji 👍
+function normalizarReaccion(tipo) {
+    return tipo === 'like' ? '👍' : tipo;
+}
+
+// Avatar: foto si existe; si no, la inicial del nombre (nunca un símbolo vacío)
+function avatarHTML(url, nombre) {
+    var safe = grpSafeUrl(url);
+    if (safe) {
+        return '<img src="' + grpEscapeHTML(safe) + '" alt="" style="width:100%;height:100%;object-fit:cover;">';
+    }
+    var inicial = (String(nombre || '?').trim().charAt(0) || '?').toUpperCase();
+    return '<span style="font-weight:800;color:#fff;">' + grpEscapeHTML(inicial) + '</span>';
+}
+
+async function cargarMisReacciones() {
+    misReacciones = {};
+    if (!sessionUser) return;
+    try {
+        var result = await window.supabaseClient
+            .from('grupos_video_reacciones')
+            .select('publicacion_id, tipo')
+            .eq('usuario_id', sessionUser.id);
+        if (!result.error && result.data) {
+            result.data.forEach(function(r) {
+                misReacciones[r.publicacion_id] = normalizarReaccion(r.tipo);
+            });
+        }
+    } catch (e) {
+        console.warn('Error reacciones:', e);
+    }
+}
 
 // ================================================================
 // VISOR DE IMÁGENES (PANTALLA COMPLETA)
@@ -458,17 +501,94 @@ function renderizarPublicacionesCache() {
 }
 
 // ================================================================
+// REACCIONES · barra de emojis y conteo
+// ================================================================
+function htmlBarraReacciones(p) {
+    var mia = misReacciones[p.id] || null;
+    var total = p.likes_count || 0;
+
+    // Resumen por emoji (normaliza el antiguo 'like' a 👍)
+    var resumen = {};
+    var crudo = p.reacciones_resumen || {};
+    Object.keys(crudo).forEach(function(k) {
+        var e = normalizarReaccion(k);
+        resumen[e] = (resumen[e] || 0) + (Number(crudo[k]) || 0);
+    });
+    var resumenTxt = Object.keys(resumen).filter(function(e) { return resumen[e] > 0; })
+        .map(function(e) { return e + ' ' + resumen[e]; }).join('  ');
+
+    var opciones = REACCIONES_DISPONIBLES.map(function(e) {
+        var activa = mia === e;
+        return '<button type="button" onclick="reaccionarPublicacion(' + p.id + ', \'' + e + '\')" ' +
+            'style="font-size:1.35rem;background:' + (activa ? 'rgba(212,175,55,0.25)' : 'transparent') + ';' +
+            'border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;line-height:1;">' + e + '</button>';
+    }).join('');
+
+    return '<div class="grp-react-wrap" style="position:relative;display:inline-flex;align-items:center;gap:8px;">' +
+        '<button type="button" onclick="toggleReaccionPicker(' + p.id + ')" ' +
+            'style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:22px;' +
+            'border:1px solid var(--glass-border);background:rgba(0,0,0,0.25);color:var(--text-primary);font-size:0.95rem;cursor:pointer;">' +
+            '<span style="font-size:1.15rem;">' + (mia || '🙂') + '</span>' +
+            '<span style="font-size:0.85rem;">' + total + '</span>' +
+        '</button>' +
+        (resumenTxt ? '<span style="font-size:0.85rem;color:var(--text-muted);">' + grpEscapeHTML(resumenTxt) + '</span>' : '') +
+        '<div id="reactPicker-' + p.id + '" class="grp-react-picker" style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;' +
+            'background:rgba(8,15,26,0.97);border:1px solid var(--glass-border-strong);border-radius:26px;' +
+            'padding:6px 8px;gap:4px;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,0.5);">' +
+            opciones +
+        '</div>' +
+    '</div>';
+}
+
+function toggleReaccionPicker(publicacionId) {
+    var picker = document.getElementById('reactPicker-' + publicacionId);
+    if (!picker) return;
+    var abierto = picker.style.display !== 'none';
+    document.querySelectorAll('.grp-react-picker').forEach(function(p) { p.style.display = 'none'; });
+    picker.style.display = abierto ? 'none' : 'flex';
+}
+
+// Una reacción por persona: misma reacción la quita; otra la cambia; ninguna la agrega
+async function reaccionarPublicacion(publicacionId, emoji) {
+    if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+    if (REACCIONES_DISPONIBLES.indexOf(emoji) === -1) return;
+    document.querySelectorAll('.grp-react-picker').forEach(function(p) { p.style.display = 'none'; });
+
+    var actual = misReacciones[publicacionId] || null;
+    try {
+        if (actual === emoji) {
+            grpOk(await window.supabaseClient.from('grupos_video_reacciones').delete()
+                .eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id));
+            delete misReacciones[publicacionId];
+        } else if (actual) {
+            grpOk(await window.supabaseClient.from('grupos_video_reacciones').update({ tipo: emoji })
+                .eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id));
+            misReacciones[publicacionId] = emoji;
+        } else {
+            grpOk(await window.supabaseClient.from('grupos_video_reacciones').insert({
+                publicacion_id: publicacionId,
+                usuario_id: sessionUser.id,
+                tipo: emoji
+            }));
+            misReacciones[publicacionId] = emoji;
+        }
+        await cargarPublicacionesGrupo(grupoActualId);
+    } catch (e) {
+        console.warn('Error reaccionando:', e);
+        grpShowToast('Error: ' + (e.message || e), 'error');
+    }
+}
+
+// ================================================================
 // RENDERIZAR PUBLICACIÓN (HTML)
 // ================================================================
 function renderizarPublicacionHTML(p) {
-    // --- NUEVO DISEÑO: Avatar y Handle WEB3 ---
-    var avatarUrl = p.usuario_avatar_url && grpSafeUrl(p.usuario_avatar_url)
-        ? '<img src="' + grpEscapeHTML(grpSafeUrl(p.usuario_avatar_url)) + '">'
-        : '◈';
-    
+    var esMia = !!(sessionUser && p.usuario_id === sessionUser.id);
+
+    var avatarUrl = avatarHTML(p.usuario_avatar_url, p.usuario_nombre);
+
     var nombre = grpEscapeHTML(p.usuario_nombre || 'Usuario');
-    
-    // Diseño de la píldora cian con el rayo
+
     var handleHTML = '';
     if (p.usuario_handle) {
         handleHTML = '<span class="grp-post-handle" style="' +
@@ -478,7 +598,7 @@ function renderizarPublicacionHTML(p) {
             'border: 1px solid rgba(0, 229, 255, .35) !important; text-shadow: 0 0 8px rgba(0, 229, 255, .55); ' +
             'white-space: nowrap;' +
         '">' +
-            '<span style="font-size:.65rem; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));">⚡</span> @' + grpEscapeHTML(p.usuario_handle) + 
+            '<span style="font-size:.65rem; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));">⚡</span> @' + grpEscapeHTML(p.usuario_handle) +
         '</span>';
     }
 
@@ -486,19 +606,16 @@ function renderizarPublicacionHTML(p) {
     var imgUrl = grpSafeUrl(p.imagen_url);
     var vidUrl = grpSafeUrl(p.video_url);
 
-    // ✅ CIRUGÍA: Agregar el onclick a la imagen para abrir el visor
     if (imgUrl) {
         contenido += '<br><img src="' + grpEscapeHTML(imgUrl) + '" loading="lazy" style="cursor: pointer;" onclick="abrirVisorGrupo(this.src)" />';
     }
-    
+
     if (vidUrl) contenido += '<br><video src="' + grpEscapeHTML(vidUrl) + '" controls preload="metadata"></video>';
-    var likesCount = p.likes_count || 0;
+
     var comentariosCount = p.comentarios_count || 0;
 
     var mias = misInteracciones[p.id] || {};
-    var tengoMeInteresa = mias.me_interesa ? ' interesado' : '';
 
-    // ✅ Cartel amarillo si hay aviso_moderacion
     var avisoHTML = '';
     if (p.aviso_moderacion === 'lenguaje_inapropiado') {
         avisoHTML = htmlAvisoModeracionGrupo();
@@ -537,48 +654,90 @@ function renderizarPublicacionHTML(p) {
             descripcionHTML +
             '<div>' + precioHTML + '</div>' + ubicacionHTML + contactoDiv + '</div>';
 
-        // Tarjeta de compra (precio, stock y botón "Comprar"). Vacío si no hay precio.
         mkHTML += mkTarjetaCompraHTML(p);
     }
 
     var claseMK = p.tipo_marketplace ? ' marketplace ' + p.tipo_marketplace : '';
 
+    // Menú: el dueño ve "Eliminar mi publicación"; los demás ven las opciones de lectura y reporte
+    var menuItems = '';
+    if (esMia) {
+        menuItems =
+            '<button class="post-menu-item danger" onclick="eliminarMiPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Eliminar mi publicación</button>' +
+            '<button class="post-menu-item" onclick="copiarEnlacePost(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar enlace</button>' +
+            '<button class="post-menu-item" onclick="compartirPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg> Compartir</button>';
+    } else {
+        menuItems =
+            '<button class="post-menu-item" onclick="toggleMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> Me interesa</button>' +
+            '<button class="post-menu-item" onclick="toggleNoMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No me interesa</button>' +
+            '<button class="post-menu-item" onclick="abrirModalEtiquetar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Etiquetar foto</button>' +
+            '<button class="post-menu-item" onclick="toggleNotificacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> ' + (misNotificaciones[p.id] ? 'Desactivar notificaciones' : 'Activar notificaciones') + '</button>' +
+            '<button class="post-menu-item" onclick="ocultarPublicacionUsuario(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> No quiero ver esto</button>' +
+            '<button class="post-menu-item" onclick="copiarEnlacePost(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar enlace</button>' +
+            '<button class="post-menu-item" onclick="compartirPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg> Compartir</button>' +
+            '<div class="post-menu-separator"></div>' +
+            '<button class="post-menu-item danger" onclick="abrirModalReportar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Reportar publicación</button>' +
+            '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reportar al administrador</button>';
+    }
+
     return '<div class="publicacion-card' + claseMK + '" data-pub-id="' + p.id + '">' +
         '<div class="header">' +
-        '<div class="avatar">' + avatarUrl + '</div>' +
+        '<div class="avatar" style="overflow:hidden;display:flex;align-items:center;justify-content:center;">' + avatarUrl + '</div>' +
         '<div style="flex:1;min-width:0;">' +
-        // Aquí inyectamos el nombre y el nuevo handle
         '<div class="nombre" style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">' + nombre + handleHTML + '</div>' +
         '<div class="fecha">' + new Date(p.created_at).toLocaleString() + '</div>' +
         '</div>' +
         '<div class="post-menu-wrapper">' +
         '<button class="post-menu-btn" onclick="togglePostMenu(event, ' + p.id + ')" title="Opciones">⋯</button>' +
         '<div class="post-menu-dropdown" id="postMenu-' + p.id + '">' +
-        '<button class="post-menu-item" onclick="toggleMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> Me interesa</button>' +
-        '<button class="post-menu-item" onclick="toggleNoMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No me interesa</button>' +
-        '<button class="post-menu-item" onclick="abrirModalEtiquetar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Etiquetar foto</button>' +
-        '<button class="post-menu-item" onclick="toggleNotificacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> ' + (misNotificaciones[p.id] ? 'Desactivar notificaciones' : 'Activar notificaciones') + '</button>' +
-        '<button class="post-menu-item" onclick="ocultarPublicacionUsuario(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> No quiero ver esto</button>' +
-        '<button class="post-menu-item" onclick="copiarEnlacePost(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar enlace</button>' +
-        '<button class="post-menu-item" onclick="compartirPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg> Compartir</button>' +
-        '<div class="post-menu-separator"></div>' +
-        '<button class="post-menu-item danger" onclick="abrirModalReportar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Reportar publicación</button>' +
-        '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reportar al administrador</button>' +
+        menuItems +
         '</div></div></div>' +
         avisoHTML +
         '<div class="contenido">' + contenido + '</div>' + mkHTML +
-        '<div class="stats">' +
-        '<span onclick="reaccionarPublicacion(' + p.id + ')" id="like-btn-' + p.id + '"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> <span id="likes-' + p.id + '">' + likesCount + '</span></span>' +
-        '<span onclick="toggleComentariosPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> <span id="comentarios-' + p.id + '">' + comentariosCount + '</span></span>' +
-        '<span class="' + tengoMeInteresa.trim() + '" onclick="toggleMeInteresa(' + p.id + ')" id="interesa-' + p.id + '"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> ' + (mias.me_interesa ? 'Interesado' : 'Me interesa') + '</span>' +
+        '<div class="stats" style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;">' +
+        htmlBarraReacciones(p) +
+        '<span onclick="toggleComentariosPublicacion(' + p.id + ')" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border-radius:22px;border:1px solid var(--glass-border);">' +
+            '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> ' +
+            '<span id="comentarios-' + p.id + '">' + comentariosCount + '</span>' +
+        '</span>' +
+        '<span class="' + (mias.me_interesa ? 'interesado' : '') + '" onclick="toggleMeInteresa(' + p.id + ')" id="interesa-' + p.id + '" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border-radius:22px;border:1px solid var(--glass-border);">' +
+            '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> ' + (mias.me_interesa ? 'Interesado' : 'Me interesa') +
+        '</span>' +
         (misNotificaciones[p.id] ? '<span style="color:var(--gold);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg> Notificado</span>' : '') +
         '</div>' +
-        '<div class="comentarios-container" id="comentariosContainer-' + p.id + '" style="display:none;margin-top:8px;">' +
+        '<div class="comentarios-container" id="comentariosContainer-' + p.id + '" style="display:none;margin-top:12px;">' +
         '<div id="comentariosLista-' + p.id + '"></div>' +
-        '<div style="display:flex;gap:6px;margin-top:6px;">' +
-        '<input type="text" id="inputComentario-' + p.id + '" placeholder="Comentar..." style="flex:1;padding:4px 10px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:20px;color:var(--text-primary);font-size:0.65rem;outline:none;">' +
-        '<button onclick="enviarComentarioPublicacion(' + p.id + ')" style="background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:4px 14px;border-radius:20px;font-weight:700;font-size:0.65rem;cursor:pointer;">Enviar</button>' +
+        '<div style="display:flex;gap:10px;margin-top:10px;align-items:center;">' +
+        '<input type="text" id="inputComentario-' + p.id + '" placeholder="Escribe un comentario…" maxlength="500" ' +
+            'style="flex:1;min-height:44px;padding:10px 18px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:24px;color:var(--text-primary);font-size:0.95rem;outline:none;">' +
+        '<button onclick="enviarComentarioPublicacion(' + p.id + ')" ' +
+            'style="min-height:44px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:10px 22px;border-radius:24px;font-weight:700;font-size:0.9rem;cursor:pointer;">Enviar</button>' +
         '</div></div></div>';
+}
+
+// ================================================================
+// ELIMINAR MI PUBLICACIÓN (solo el dueño)
+// Borrado lógico: estado = 'eliminado'. La vista ya no la muestra.
+// ================================================================
+async function eliminarMiPublicacion(publicacionId) {
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
+    if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+    var pub = publicacionesCache.find(function(p) { return p.id === publicacionId; });
+    if (!pub || pub.usuario_id !== sessionUser.id) {
+        grpShowToast('Solo puedes eliminar tus propias publicaciones', 'error');
+        return;
+    }
+    if (!confirm('¿Eliminar esta publicación? Ya no se verá en el canal.')) return;
+    try {
+        grpOk(await window.supabaseClient.from('grupos_video_publicaciones')
+            .update({ estado: 'eliminado', updated_at: new Date().toISOString() })
+            .eq('id', publicacionId)
+            .eq('usuario_id', sessionUser.id));
+        grpShowToast('Publicación eliminada', 'success');
+        await cargarPublicacionesGrupo(grupoActualId);
+    } catch (e) {
+        grpShowToast('Error: ' + (e.message || e), 'error');
+    }
 }
 
 // ================================================================
@@ -595,6 +754,9 @@ function togglePostMenu(event, publicacionId) {
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.post-menu-wrapper')) {
         document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
+    }
+    if (!e.target.closest('.grp-react-wrap')) {
+        document.querySelectorAll('.grp-react-picker').forEach(function(p) { p.style.display = 'none'; });
     }
 });
 
@@ -849,9 +1011,7 @@ async function buscarUsuariosEtiqueta() {
         }
         container.innerHTML = result.data.map(function(u) {
             var yaSel = etiquetadosSeleccionados.find(function(e) { return e.id === u.id; });
-            var avatar = u.avatar_url && grpSafeUrl(u.avatar_url)
-                ? '<img src="' + grpEscapeHTML(grpSafeUrl(u.avatar_url)) + '" style="width:100%;height:100%;object-fit:cover;">'
-                : '◈';
+            var avatar = avatarHTML(u.avatar_url, u.nombre);
             return '<div class="usuario-etiqueta-item" data-id="' + grpEscapeHTML(u.id) + '" data-nombre="' + grpEscapeHTML(u.nombre || '') + '" data-handle="' + grpEscapeHTML(u.handle || '') + '" data-avatar="' + grpEscapeHTML(grpSafeUrl(u.avatar_url) || '') + '" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
                 '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:700;">' + avatar + '</div>' +
                 '<div><div style="font-size:0.75rem;font-weight:600;">' + grpEscapeHTML(u.nombre || 'Usuario') + '</div>' +
@@ -935,6 +1095,7 @@ async function cargarPublicacionesGrupo(grupoId) {
         publicacionesCache = result.data || [];
         await cargarMisInteracciones();
         await cargarMisNotificaciones();
+        await cargarMisReacciones();
         filtrarFeed(filtroFeedActual);
     } catch (e) {
         console.warn('Error publicaciones:', e);
@@ -1066,36 +1227,8 @@ async function subirVideoGrupo() {
 }
 
 // ================================================================
-// REACCIONES Y COMENTARIOS
+// COMENTARIOS
 // ================================================================
-async function reaccionarPublicacion(publicacionId) {
-    if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
-    try {
-        var existing = await window.supabaseClient
-            .from('grupos_video_reacciones')
-            .select('id')
-            .eq('publicacion_id', publicacionId)
-            .eq('usuario_id', sessionUser.id)
-            .maybeSingle();
-        var likesSpan = document.getElementById('likes-' + publicacionId);
-        var currentLikes = parseInt(likesSpan?.textContent || 0);
-        if (existing.data) {
-            grpOk(await window.supabaseClient.from('grupos_video_reacciones').delete().eq('id', existing.data.id));
-            if (likesSpan) likesSpan.textContent = Math.max(0, currentLikes - 1);
-        } else {
-            grpOk(await window.supabaseClient.from('grupos_video_reacciones').insert({
-                publicacion_id: publicacionId,
-                usuario_id: sessionUser.id,
-                tipo: 'like'
-            }));
-            if (likesSpan) likesSpan.textContent = currentLikes + 1;
-        }
-    } catch (e) {
-        console.warn('Error reaccionando:', e);
-        grpShowToast('Error: ' + (e.message || e), 'error');
-    }
-}
-
 function toggleComentariosPublicacion(publicacionId) {
     var container = document.getElementById('comentariosContainer-' + publicacionId);
     if (!container) return;
@@ -1116,20 +1249,18 @@ async function cargarComentariosPublicacion(publicacionId) {
         if (result.error) throw result.error;
         var data = result.data || [];
         if (data.length === 0) {
-            lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.65rem;padding:4px 0;">Sin comentarios</div>';
+            lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:6px 0;">Sin comentarios aún. Sé el primero.</div>';
             return;
         }
         lista.innerHTML = data.map(function(c) {
-            var avatar = c.usuario_avatar_url && grpSafeUrl(c.usuario_avatar_url)
-                ? '<img src="' + grpEscapeHTML(grpSafeUrl(c.usuario_avatar_url)) + '">'
-                : '◈';
-            return '<div style="display:flex;gap:6px;padding:4px 0;border-bottom:1px solid rgba(212,175,55,0.04);">' +
-                '<div style="width:20px;height:20px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.5rem;color:#fff;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
-                '<div style="flex:1;font-size:0.65rem;"><strong style="color:var(--gold);">' + grpEscapeHTML(c.usuario_nombre || 'Usuario') + '</strong> ' + grpEscapeHTML(c.contenido || '') +
-                '<div style="font-size:0.5rem;color:var(--text-muted);">' + new Date(c.created_at).toLocaleString() + '</div></div></div>';
+            var avatar = avatarHTML(c.usuario_avatar_url, c.usuario_nombre);
+            return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(212,175,55,0.06);">' +
+                '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.8rem;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
+                '<div style="flex:1;font-size:0.9rem;line-height:1.45;"><strong style="color:var(--gold);">' + grpEscapeHTML(c.usuario_nombre || 'Usuario') + '</strong> ' + grpEscapeHTML(c.contenido || '') +
+                '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">' + new Date(c.created_at).toLocaleString() + '</div></div></div>';
         }).join('');
     } catch (e) {
-        lista.innerHTML = '<div style="color:var(--danger);font-size:0.65rem;">Error</div>';
+        lista.innerHTML = '<div style="color:var(--danger);font-size:0.85rem;">No se pudieron cargar los comentarios</div>';
     }
 }
 
