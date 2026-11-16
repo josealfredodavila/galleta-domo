@@ -429,8 +429,8 @@
 
                     <div class="form-group-old">
                         <label>Título del video</label>
-                        <!-- Se quitó el required para evitar bloqueos cuando se oculta o vacía tras subir el primer video -->
-                        <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Csariel's" maxlength="200" value="Video de Csariel's" />
+                        <!-- Título opcional: sin value por defecto para evitar que siempre llegue "Video de Csariel's" -->
+                        <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Csariel's" maxlength="200" />
                     </div>
 
                     <textarea id="inputDescripcionVideo" placeholder="¿Qué piensas?" maxlength="2000"></textarea>
@@ -594,8 +594,6 @@
     var vistasContadas = {};
     var audioGlobalActivado = false;
 
-    // Restaurada por seguridad, aunque no se use directamente aquí,
-    // otros scripts pueden depender de esta función global.
     function tr(clave, fallback) {
         if (typeof window.tConFallback === 'function') return window.tConFallback(clave, fallback);
         return fallback !== undefined ? fallback : clave;
@@ -899,12 +897,10 @@
         var sonidoNombre = v.sonido_nombre ? escapeHTML(v.sonido_nombre) : null;
         var ubicacionNombre = v.ubicacion_nombre ? escapeHTML(v.ubicacion_nombre) : null;
 
-        // Creación del contenedor
         var card = document.createElement('div');
         card.className = 'video-card';
         card.dataset.videoId = v.id;
 
-        // Construcción del HTML
         var html = '';
         if (esMio) html += '<button class="btn-eliminar-card" onclick="event.stopPropagation(); eliminarMiVideo(\'' + v.id + '\')" title="Eliminar publicación">' + iconoBasuraSVG() + '</button>';
 
@@ -953,7 +949,6 @@
 
         card.innerHTML = html;
 
-        // Hidratación de eventos
         var hintEl = document.createElement('div');
         hintEl.className = 'doble-tap-hint';
         hintEl.innerHTML = getIconoFullscreenSVG();
@@ -1312,100 +1307,170 @@
     async function subirVideo() {
         if (subiendoVideo) return;
         subiendoVideo = true;
+
         var btn = document.getElementById('btnSubirVideo');
         var fileInput = document.getElementById('inputArchivoVideo');
         var progressEl = document.getElementById('uploadProgress');
         var progressFill = document.getElementById('progressFill');
         var progressText = document.getElementById('progressText');
-        var filePath = null;
         var videoId = null;
+        var jobCreado = false;
+
+        function restaurarBoton() {
+            if (!btn) return;
+            btn.disabled = false;
+            btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;margin-right:6px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Publicar';
+        }
 
         function liberar() {
             subiendoVideo = false;
-            if (btn) { btn.disabled = false; btn.innerHTML = '<svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;margin-right:6px;"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Publicar'; }
+            restaurarBoton();
             if (progressEl) progressEl.style.display = 'none';
             if (progressFill) progressFill.style.width = '0%';
         }
 
+        async function marcarVideoConError(id) {
+            try {
+                if (sbVideos && id) {
+                    await sbVideos.from('videos').update({ estado: 'error_procesamiento' }).eq('id', id);
+                }
+            } catch (eMarca) { console.warn('[Videos] No se pudo marcar el error', eMarca); }
+        }
+
         if (btn) btn.disabled = true;
+
         try {
             if (!sbVideos) throw new Error('Cliente no disponible');
-            var titulo = document.getElementById('inputTituloVideo').value.trim();
-            var descripcion = document.getElementById('inputDescripcionVideo').value.trim();
-            if (!titulo) throw new Error('Escribe un título');
-            if (!fileInput || !fileInput.files || fileInput.files.length === 0) throw new Error('Selecciona un video');
+
+            // Título y descripción son opcionales. El título se guarda como texto
+            // vacío porque la columna videos.titulo es NOT NULL.
+            var titulo = (document.getElementById('inputTituloVideo').value || '').trim();
+            var descripcion = (document.getElementById('inputDescripcionVideo').value || '').trim();
+
+            if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                throw new Error('Selecciona un video');
+            }
             var file = fileInput.files[0];
             if (file.size > 100 * 1024 * 1024) throw new Error('Video muy grande (máx 100 MB)');
+
             var session = await getSession();
             if (!session) throw new Error('Inicia sesión');
 
+            // Sonido y ubicación ya validados por el módulo de publicación
             var pub = (window.VideosPublicar && window.VideosPublicar.getState) ? window.VideosPublicar.getState() : {};
-            var sonido = pub.sonido || null;
-            var ubicacion = pub.ubicacion || null;
+            var sonidoUrl = pub.sonidoUrl || null;
+            var sonidoNombre = pub.sonidoNombre || null;
+            var ubicacionNombre = pub.ubicacionNombre || null;
 
             if (btn) btn.textContent = 'Subiendo...';
             if (progressEl) progressEl.style.display = 'block';
             if (progressFill) progressFill.style.width = '20%';
             if (progressText) progressText.textContent = 'Subiendo y moderando...';
 
+            // 1) Subida del archivo original a R2
             var fd = new FormData();
             fd.append('file', file);
             fd.append('destino', 'videos');
             fd.append('tipo', 'video');
 
-            var subidaResp = await fetchConTimeout('/api/media/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + session.access_token }, body: fd }, 120000);
+            var subidaResp = await fetchConTimeout('/api/media/upload', {
+                method: 'POST',
+                headers: { 'Authorization': 'Bearer ' + session.access_token },
+                body: fd
+            }, 120000);
             var subidaJson = await leerJSONSeguro(subidaResp);
-            
+
             if (subidaResp.status === 413 && subidaJson && subidaJson.error === 'cuota_excedida') {
-                if (window.VideosPublicar && typeof window.VideosPublicar.mostrarAvisoCuota === 'function') window.VideosPublicar.mostrarAvisoCuota(subidaJson);
-                var errCuota = new Error('__cuota__'); errCuota.silencioso = true; throw errCuota;
+                if (window.VideosPublicar && typeof window.VideosPublicar.mostrarAvisoCuota === 'function') {
+                    window.VideosPublicar.mostrarAvisoCuota(subidaJson);
+                }
+                var errCuota = new Error('__cuota__');
+                errCuota.silencioso = true;
+                throw errCuota;
             }
-            if (!subidaResp.ok || !subidaJson.ok) throw new Error(mensajeDeError('Subida', subidaResp, subidaJson));
+            if (!subidaResp.ok || !subidaJson.ok) {
+                throw new Error(mensajeDeError('Subida', subidaResp, subidaJson));
+            }
 
             var videoUrl = subidaJson.url;
-            filePath = subidaJson.path;
+            var filePath = subidaJson.path;
 
             if (progressFill) progressFill.style.width = '60%';
             if (progressText) progressText.textContent = 'Creando registro...';
 
+            // 2) Registro del video en la base
             var ins = await sbVideos.from('videos').insert({
-                usuario_id: session.user.id, titulo: titulo, descripcion: descripcion || null, url_video: videoUrl,
-                estado: 'procesando', duracion: 0, es_borrador: false, sonido_id: null,
-                sonido_nombre: sonido ? sonido.nombre : null, sonido_url: sonido ? sonido.url : null,
-                ubicacion_nombre: ubicacion ? (ubicacion.nombre + ', ' + ubicacion.pais) : null
+                usuario_id: session.user.id,
+                titulo: titulo,
+                descripcion: descripcion || null,
+                url_video: videoUrl,
+                estado: 'procesando',
+                duracion: 0,
+                es_borrador: false,
+                sonido_id: null,
+                sonido_nombre: sonidoNombre,
+                sonido_url: sonidoUrl,
+                ubicacion_nombre: ubicacionNombre
             }).select().single();
 
             if (ins.error) {
                 var msgIns = String(ins.error.message || '');
                 if (msgIns.indexOf('cuota_excedida') !== -1) {
-                    try { await fetch('/api/media/liberar', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token }, body: JSON.stringify({ url: videoUrl }) }); } catch (eLib) {}
-                    if (window.VideosPublicar && typeof window.VideosPublicar.mostrarAvisoCuota === 'function') window.VideosPublicar.mostrarAvisoCuota({ plan: null, limite_mb: null, usado_mb: null, disponible_mb: 0 });
-                    var errCuota2 = new Error('__cuota__'); errCuota2.silencioso = true; throw errCuota2;
+                    try {
+                        await fetch('/api/media/liberar', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                            body: JSON.stringify({ url: videoUrl })
+                        });
+                    } catch (eLib) { console.warn('[Videos] No se pudo liberar el archivo', eLib); }
+                    if (window.VideosPublicar && typeof window.VideosPublicar.mostrarAvisoCuota === 'function') {
+                        window.VideosPublicar.mostrarAvisoCuota({ plan: null, limite_mb: null, usado_mb: null, disponible_mb: 0 });
+                    }
+                    var errCuota2 = new Error('__cuota__');
+                    errCuota2.silencioso = true;
+                    throw errCuota2;
                 }
                 throw new Error('Registro: ' + (msgIns || 'no se pudo crear'));
             }
             videoId = ins.data.id;
 
+            // 3) Encolar el procesamiento (marca de agua + audio)
             if (progressFill) progressFill.style.width = '85%';
             var queueResp = await fetchConTimeout('/api/video/queue', {
-                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
-                body: JSON.stringify({ videoId: videoId, videoUrl: videoUrl, bucket: 'videos', filePath: filePath, audioUrl: sonido ? sonido.url : null })
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session.access_token },
+                body: JSON.stringify({
+                    videoId: videoId,
+                    videoUrl: videoUrl,
+                    bucket: 'videos',
+                    filePath: filePath,
+                    audioUrl: sonidoUrl
+                })
             }, 60000);
             var queueData = await leerJSONSeguro(queueResp);
-            if (!queueResp.ok || !queueData.success) throw new Error(mensajeDeError('Procesamiento', queueResp, queueData));
+            if (!queueResp.ok || !queueData.success) {
+                throw new Error(mensajeDeError('Procesamiento', queueResp, queueData));
+            }
+            jobCreado = true;
 
+            // 4) Interfaz de procesamiento
             document.getElementById('uploadSection').style.display = 'none';
             document.getElementById('processingState').classList.add('visible');
             showToast('◈ Procesando video', 'success', 3000);
+
             document.getElementById('inputTituloVideo').value = '';
             document.getElementById('inputDescripcionVideo').value = '';
             if (fileInput) { try { fileInput.value = ''; } catch (e) {} }
             if (progressEl) progressEl.style.display = 'none';
+
             subiendoVideo = false;
             iniciarPollingProcesamiento(queueData.jobId, videoId);
         } catch (e) {
+            if (videoId && !jobCreado) await marcarVideoConError(videoId);
             if (e && e.silencioso) { liberar(); return; }
-            var msg = e && e.name === 'AbortError' ? 'La subida tardó demasiado. Revisa tu conexión e intenta de nuevo.' : (e.message || 'Error al subir');
+            var msg = e && e.name === 'AbortError'
+                ? 'La subida tardó demasiado. Revisa tu conexión e intenta de nuevo.'
+                : (e.message || 'Error al subir');
             console.error('[Videos] Error al subir:', e);
             showToast('◈ ' + msg, 'error', 6000);
             liberar();
@@ -1458,19 +1523,16 @@
 
     function verTokens() { window.location.href = '/features/perfil/perfil.html'; }
 
-    // Unificación de inicialización
     document.addEventListener('DOMContentLoaded', function() {
         aplicarI18N();
         configurarTecladoMovil();
 
-        // Inicialización de la app
         cargarUsuarioActual().then(async function() {
             try { if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas(); } catch (err) { console.warn('[Videos] Error inicializando idiomas', err); }
             aplicarI18N();
             await cargarVideos();
         });
 
-        // Botón cámara
         const btnCamara = document.getElementById('btnAbrirCamara');
         if (btnCamara) {
             btnCamara.addEventListener('click', function(e) {
@@ -1480,7 +1542,6 @@
             });
         }
 
-        // Fallback de galería (por si videos-publicar.js falla o no lo maneja)
         const btnFoto = document.getElementById('btnFotoVideo');
         if (btnFoto) {
             btnFoto.addEventListener('click', function(e) {
@@ -1503,7 +1564,6 @@
             input.dispatchEvent(new Event('input', { bubbles: true }));
         }
 
-        // Fallback de emoji y hashtag (evita conflicto si videos-publicar.js los maneja)
         const btnEmoji = document.getElementById('btnEmoji');
         if (btnEmoji && !btnEmoji.onclick) {
             btnEmoji.addEventListener('click', function(e) { e.preventDefault(); if(descInput) insertarTextoEnCursor(descInput, '😀'); });
@@ -1514,7 +1574,6 @@
             btnHashtag.addEventListener('click', function(e) { e.preventDefault(); if(descInput) insertarTextoEnCursor(descInput, '#'); });
         }
 
-        // Integración de la cámara
         window.csCamaraOnVideoGrabado = function(file) {
             const input = document.getElementById('inputArchivoVideo');
             if (!input) return;
@@ -1529,7 +1588,6 @@
             }
         };
 
-        // Contador de texto con clases CSS (sin style en línea para los colores)
         const contador = document.getElementById('pfContador');
         const anilloPadre = document.getElementById('pfAnillo');
         const anilloProgreso = document.getElementById('pfAnilloProgreso');
@@ -1543,7 +1601,6 @@
                     const ratio = Math.min(len / max, 1);
                     anilloProgreso.style.strokeDashoffset = 94.25 * (1 - ratio);
                     
-                    // Control de colores usando clases CSS, no style en línea
                     if (anilloPadre) {
                         anilloPadre.classList.remove('cerca', 'lleno');
                         if (len >= max) {
@@ -1563,7 +1620,6 @@
         }
     });
 
-    // Exponer funciones al scope global
     window.subirVideo = subirVideo;
     window.cargarVideos = cargarVideos;
     window.toggleLikeVideo = toggleLikeVideo;
