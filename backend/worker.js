@@ -589,7 +589,7 @@ function construirFiltroVideo(
 
     const logoW = Math.max(
         2,
-        Math.floor(finalWidth * 0.20 / 2) * 2
+        Math.floor(finalWidth * 0.10 / 2) * 2
     );
 
     const logoH = Math.max(
