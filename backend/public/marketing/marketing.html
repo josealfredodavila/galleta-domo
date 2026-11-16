@@ -387,7 +387,7 @@
             </div>
             <div id="wizard-step-6" class="wizard-step hidden">
                 <h3>▸ Paso 06 — Contenido del Anuncio</h3>
-                <div id="ad-media-aceptada" class="red-info" style="display:none;"></div> <!-- NUEVO AVISO -->
+                <div id="ad-media-aceptada" class="red-info" style="display:none;"></div>
                 <input type="text" id="ad-title" placeholder="Título" maxlength="150">
                 <textarea id="ad-description" placeholder="Descripción" maxlength="500"></textarea>
                 <input type="url" id="ad-image" placeholder="URL de tu imagen (Google, Instagram, etc.)" maxlength="500">
@@ -407,8 +407,12 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v9.3 (PRODUCCIÓN)
-       - Fix: Flujo desde Promi conserva la imagen y abre modal.
+       MARKETING · Sariel's — v9.4 (PRODUCCIÓN)
+       - Objetivo siempre válido: el select nunca se vacía.
+       - Envío con /api/campanas/crear (campaña y pago en una operación).
+       - Muestra la dirección y el monto a pagar (NOWPayments no da payment_url).
+       - Reintentos reutilizan la campaña pendiente (sin duplicados).
+       - Presupuesto del panel solo con campañas confirmadas.
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -416,7 +420,7 @@
     const MXN_A_USD_APROX = 0.055;
     const MAX_POLL_INTENTOS = 80;
     const INTERVALO_POLL_MS = 15000;
-    const PRECIO_ANUNCIO_MXN = 60;
+    const OBJETIVOS_VALIDOS = ['alcance', 'reproducciones', 'interacciones', 'clics'];
 
     // Mínimos iguales a config/redes-pago.js del backend (fuente única)
     const REDES_PAGO = [
@@ -440,6 +444,7 @@
     let chartJsLoading = false;
 
     let wizard = {};
+    // campañaCreada: { campaign_id, pago } — pago es la dirección y monto a pagar
     let campañaCreada = null;
     let pollTimer = null;
     let promiHistory = [];
@@ -471,7 +476,7 @@
 
     function resetPromi() {
         promiHistory = [];
-        wizard.media_id = null; // Limpiar media si empieza un nuevo chat
+        wizard.media_id = null;
         wizard.media_tipo = null;
         const body = document.getElementById('promiBody');
         body.innerHTML = `
@@ -647,11 +652,9 @@
                 return;
             }
 
-            // Guardamos el ID y el tipo en el objeto wizard
             wizard.media_id = id;
             wizard.media_tipo = tipo;
 
-            // Mostramos el mensaje de éxito y el botón para saltar directo a la campaña
             const acciones = caja.querySelector('.acciones-media');
             acciones.innerHTML = `
                 <span style="color:#00d68f;font-size:0.8rem;font-weight:700;display:block;margin-bottom:10px;">✓ Aceptado. Se usará en tu campaña.</span>
@@ -695,7 +698,6 @@
             });
             const data = await res.json().catch(() => ({}));
 
-            // 200 (imagen lista) o 202 (video en proceso)
             if (!res.ok && res.status !== 202) {
                 throw new Error(data.mensaje || data.error || 'Error del servidor');
             }
@@ -767,9 +769,9 @@
 
         const redes = getRedesDisponibles(monto);
         if (redes.length === 0) {
-            const minimoMxn = Math.ceil(1 / MXN_A_USD_APROX);
+            const minimoMxn = Math.ceil(16 / MXN_A_USD_APROX);
             select.innerHTML = '<option value="">Monto insuficiente</option>';
-            if (info) info.innerHTML = `<span class="warn">⚠ Tu presupuesto ($${monto.toFixed(2)} MXN) es menor al mínimo. Mínimo sugerido: ~$${minimoMxn} MXN (1 USD).</span>`;
+            if (info) info.innerHTML = `<span class="warn">⚠ Tu presupuesto ($${monto.toFixed(2)} MXN) es menor al mínimo. Mínimo: ~$${minimoMxn} MXN (16 USD).</span>`;
             return;
         }
 
@@ -835,9 +837,14 @@
         if (!container._clickBound) { container._clickBound = true; container.addEventListener('click', (e) => { const card = e.target.closest('.campaign-card'); if (card && card.dataset.id) openDetail(card.dataset.id); }); }
     }
 
+    // Solo cuentan las campañas confirmadas: las pendientes o canceladas no inflan el panel
     function calculateSummary() {
         let budget = 0, active = 0, spent = 0;
-        campaigns.forEach(c => { budget += parseFloat(c.presupuesto || 0); spent += parseFloat(c.gastado || 0); if (c.estado === 'activa') active++; });
+        campaigns.forEach(c => {
+            if (['activa', 'pausada', 'finalizada'].includes(c.estado)) budget += parseFloat(c.presupuesto || 0);
+            spent += parseFloat(c.gastado || 0);
+            if (c.estado === 'activa') active++;
+        });
         document.getElementById('total-budget').textContent = `$${budget.toFixed(2)}`;
         document.getElementById('active-campaigns').textContent = active;
         document.getElementById('total-spent').textContent = `$${spent.toFixed(2)}`;
@@ -944,55 +951,49 @@
         resetWizard();
     }
 
+    // Limpia los campos SIN vaciar los select: el objetivo siempre queda con una opción válida
+    function limpiarCamposWizard() {
+        document.querySelectorAll('.wizard-step input, .wizard-step textarea').forEach(el => { el.value = ''; el.disabled = false; });
+        document.querySelectorAll('.wizard-step select').forEach(el => {
+            if (el.id === 'campaign-objective') el.selectedIndex = 0;
+            else if (el.id !== 'select-target' && el.id !== 'pay-currency') el.value = '';
+            el.disabled = false;
+        });
+        poblarRedesDePago('');
+        const btnPay = document.getElementById('btn-pay');
+        if (btnPay) { btnPay.style.display = ''; btnPay.disabled = false; btnPay.textContent = '◈ Continuar al Pago'; }
+    }
+
     function iniciarCampanaDesdePromi() {
-        // Cierra el panel de Promi para que el usuario vea el formulario
         document.getElementById('promiPanel').classList.remove('active');
-        
-        // Abre el modal de crear campaña
         document.getElementById('modal-create').classList.remove('hidden');
-        
-        // Limpiamos el wizard PERO conservamos el media_id
+
         const mediaIdGuardada = wizard.media_id;
         const mediaTipoGuardado = wizard.media_tipo;
-        
-        detenerPolling(); 
+
+        detenerPolling();
         campañaCreada = null;
-        
-        wizard = {}; // Limpiamos
-        
-        // Restauramos la imagen aceptada
+        wizard = {};
         if (mediaIdGuardada) {
             wizard.media_id = mediaIdGuardada;
             wizard.media_tipo = mediaTipoGuardado;
         }
-        
-        // Limpiamos los inputs visuales
-        document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea').forEach(el => { 
-            el.value = ''; 
-            el.disabled = false; 
-        });
-        poblarRedesDePago('');
-        const btnPay = document.getElementById('btn-pay'); 
-        if (btnPay) { btnPay.style.display = ''; btnPay.disabled = false; btnPay.textContent = '◈ Continuar al Pago'; }
-        
-        // Mostramos el paso 1 para que elija dónde anunciar
+
+        limpiarCamposWizard();
         showWizardStep('1');
     }
 
     async function cargarDestinos(tipo) {
-        // EL TRUCO ESTÁ AQUÍ: Guardamos el media_id antes de reiniciar el wizard
         const mediaIdGuardada = wizard.media_id;
         const mediaTipoGuardado = wizard.media_tipo;
 
-        wizard = { target_tipo: tipo }; // Reinicia el wizard para el paso 1
-
-        // Restauramos la imagen
+        wizard = { target_tipo: tipo };
         if (mediaIdGuardada) {
             wizard.media_id = mediaIdGuardada;
             wizard.media_tipo = mediaTipoGuardado;
         }
 
-        const select = document.getElementById('select-target'); 
+        const select = document.getElementById('select-target');
         select.innerHTML = '<option value="">Cargando...</option>';
         try {
             let query;
@@ -1025,17 +1026,16 @@
         showWizardStep('2');
     }
 
-    function showWizardStep(n) { 
-        document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden')); 
-        const t = document.getElementById(`wizard-step-${n}`); 
-        if (t) t.classList.remove('hidden'); 
+    function showWizardStep(n) {
+        document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
+        const t = document.getElementById(`wizard-step-${n}`);
+        if (t) t.classList.remove('hidden');
 
-        // Bloqueo y aviso de media aceptada en el paso 6
         if (n === '6') {
             const mediaEl = document.getElementById('ad-media-aceptada');
             const imgInput = document.getElementById('ad-image');
             const vidInput = document.getElementById('ad-video');
-            
+
             if (wizard.media_id) {
                 mediaEl.style.display = 'block';
                 mediaEl.innerHTML = `✦ Usarás contenido <strong>${escapeHTML(wizard.media_tipo || 'IA')}</strong> aceptado. Las URL manuales se ignorarán.`;
@@ -1051,9 +1051,7 @@
 
     function resetWizard() {
         detenerPolling(); wizard = {}; campañaCreada = null;
-        document.querySelectorAll('.wizard-step input, .wizard-step select, .wizard-step textarea').forEach(el => { el.value = ''; el.disabled = false; });
-        poblarRedesDePago('');
-        const btnPay = document.getElementById('btn-pay'); if (btnPay) { btnPay.style.display = ''; btnPay.disabled = false; btnPay.textContent = '◈ Continuar al Pago'; }
+        limpiarCamposWizard();
         showWizardStep('1');
     }
 
@@ -1066,28 +1064,32 @@
             showWizardStep('3');
         }
         else if (n === '3') { const nombre = document.getElementById('campaign-name').value.trim(); if (!nombre) { showToast('Escribe un nombre', 'warning'); return; } if (nombre.length > 120) { showToast('Máximo 120 caracteres', 'warning'); return; } wizard.nombre = nombre; showWizardStep('4'); }
-        else if (n === '4') { wizard.objetivo = document.getElementById('campaign-objective').value; showWizardStep('5'); }
+        else if (n === '4') {
+            const objetivo = document.getElementById('campaign-objective').value;
+            if (!OBJETIVOS_VALIDOS.includes(objetivo)) { showToast('Elige un objetivo', 'warning'); return; }
+            wizard.objetivo = objetivo;
+            showWizardStep('5');
+        }
         else if (n === '5') { const budget = parseFloat(document.getElementById('campaign-budget').value); if (!budget || budget <= 0) { showToast('Ingresa un presupuesto válido', 'warning'); return; } if (budget > 1000000) { showToast('Presupuesto demasiado alto', 'warning'); return; } const red = document.getElementById('pay-currency').value; if (!red) { showToast('Selecciona una red de pago válida para tu monto', 'warning'); return; } wizard.presupuesto = budget; wizard.pay_currency = red; showWizardStep('6'); }
-        else if (n === '6') { 
-            const titulo = document.getElementById('ad-title').value.trim(); 
-            const descripcion = document.getElementById('ad-description').value.trim(); 
-            const imagen = document.getElementById('ad-image').value.trim(); 
-            const video = document.getElementById('ad-video').value.trim(); 
-            const cta = document.getElementById('ad-cta').value.trim(); 
-            
-            if (!titulo) { showToast('Escribe un título', 'warning'); return; } 
+        else if (n === '6') {
+            const titulo = document.getElementById('ad-title').value.trim();
+            const descripcion = document.getElementById('ad-description').value.trim();
+            const imagen = document.getElementById('ad-image').value.trim();
+            const video = document.getElementById('ad-video').value.trim();
+            const cta = document.getElementById('ad-cta').value.trim();
+
+            if (!titulo) { showToast('Escribe un título', 'warning'); return; }
 
             if (wizard.media_id) {
-                // Si hay media IA aceptada, ignoramos campos manuales
                 wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: null, video_url: null, cta_texto: cta || 'Ver más' };
             } else {
-                if (imagen && !isValidHttpUrl(imagen)) { showToast('URL de imagen inválida', 'warning'); return; } 
-                if (video && !isValidHttpUrl(video)) { showToast('URL de video inválida', 'warning'); return; } 
+                if (imagen && !isValidHttpUrl(imagen)) { showToast('URL de imagen inválida', 'warning'); return; }
+                if (video && !isValidHttpUrl(video)) { showToast('URL de video inválida', 'warning'); return; }
                 if (!imagen && !video) { showToast('Incluye una imagen, un video o acepta una media IA', 'warning'); return; }
                 wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: imagen || null, video_url: video || null, cta_texto: cta || 'Ver más' };
             }
-            mostrarResumen(); 
-            showWizardStep('7'); 
+            mostrarResumen();
+            showWizardStep('7');
         }
     }
 
@@ -1100,7 +1102,7 @@
 
         document.getElementById('summary-content').innerHTML = `
             <div class="detail-row"><span>Campaña</span><span>${escapeHTML(wizard.nombre)}</span></div>
-            <div class="detail-row"><span>Destino</span><span>${escapeHTML(wizard.target_tipo.toUpperCase())}</span></div>
+            <div class="detail-row"><span>Destino</span><span>${escapeHTML((wizard.target_tipo || '').toUpperCase())}</span></div>
             <div class="detail-row"><span>Objetivo</span><span>${escapeHTML(wizard.objetivo)}</span></div>
             <div class="detail-row"><span>Presupuesto</span><span>$${wizard.presupuesto.toFixed(2)} MXN</span></div>
             <div class="detail-row"><span>Red de pago</span><span>${escapeHTML(red ? red.label : wizard.pay_currency)}</span></div>
@@ -1112,59 +1114,96 @@
 
     async function obtenerToken() { const { data } = await supabaseClient.auth.getSession(); const token = data?.session?.access_token; if (!token) throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); return token; }
 
+    // Primer envío: crea campaña y pago en una sola operación (el backend revierte si NOWPayments falla).
+    // Reintento: la campaña ya existe en pendiente_pago; solo se genera un pago nuevo.
     async function onPagarClick() {
         const btn = document.getElementById('btn-pay'); btn.disabled = true;
         try {
             const token = await obtenerToken();
             const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
+            let pago;
 
-            if (!campañaCreada) {
-                btn.textContent = '◈ Creando campaña...';
-                
-                // Se agrega media_id al payload si existe
-                const bodyData = {
-                    nombre: wizard.nombre, 
-                    objetivo: wizard.objetivo, 
-                    presupuesto: wizard.presupuesto, 
-                    destino_tipo: wizard.target_tipo, 
-                    destino_id: wizard.target_id, 
-                    pay_currency: wizard.pay_currency, 
+            if (campañaCreada && campañaCreada.pago) {
+                pago = campañaCreada.pago;
+            } else if (campañaCreada && campañaCreada.campaign_id) {
+                btn.textContent = '◈ Generando pago...';
+                const r = await fetch(`${BACKEND_URL}/api/payments/marketing/create`, {
+                    method: 'POST', headers,
+                    body: JSON.stringify({ campaignId: campañaCreada.campaign_id, payCurrency: wizard.pay_currency })
+                });
+                const j = await r.json().catch(() => ({}));
+                if (!r.ok || !j.success || !j.data?.pay_address) throw new Error(j.error || 'No se pudo generar el pago. Intenta de nuevo.');
+                pago = {
+                    pago_id: j.data.pago_id,
+                    payment_id: j.data.payment_id,
+                    pay_address: j.data.pay_address,
+                    pay_amount: j.data.pay_amount,
+                    pay_currency: j.data.pay_currency,
+                    monto_mxn: j.data.monto_mxn
+                };
+                campañaCreada.pago = pago;
+            } else {
+                if (!OBJETIVOS_VALIDOS.includes(wizard.objetivo)) {
+                    showToast('Vuelve al Paso 04 y elige un objetivo', 'warning', 5000);
+                    btn.disabled = false;
+                    return;
+                }
+
+                btn.textContent = '◈ Generando pago...';
+                const body = {
+                    nombre: wizard.nombre,
+                    objetivo: wizard.objetivo,
+                    presupuesto: wizard.presupuesto,
+                    destino_tipo: wizard.target_tipo,
+                    destino_id: wizard.target_id,
+                    pay_currency: wizard.pay_currency,
                     ad: wizard.ad
                 };
-                if (wizard.media_id) bodyData.media_id = wizard.media_id;
+                if (wizard.media_id) body.media_id = wizard.media_id;
 
-                const r1 = await fetch(`${BACKEND_URL}/api/campanas/crear`, {
+                const r = await fetch(`${BACKEND_URL}/api/campanas/crear`, {
                     method: 'POST', headers,
-                    body: JSON.stringify(bodyData)
+                    body: JSON.stringify(body)
                 });
-                const j1 = await r1.json().catch(() => ({}));
-                if (!r1.ok || !j1.success || !j1.data?.campaign_id) throw new Error(j1.error || 'No se pudo crear la campaña');
-                campañaCreada = { campaign_id: j1.data.campaign_id };
+                const j = await r.json().catch(() => ({}));
+                if (!r.ok || !j.success || !j.data?.pago?.pay_address) throw new Error(j.error || 'No se pudo generar el pago. Intenta de nuevo.');
+
+                campañaCreada = { campaign_id: j.data.campaign_id, pago: j.data.pago };
+                pago = j.data.pago;
             }
 
-            btn.textContent = '◈ Generando pago...';
-            const r2 = await fetch(`${BACKEND_URL}/api/payments/marketing/create`, {
-                method: 'POST', headers,
-                body: JSON.stringify({ campaignId: campañaCreada.campaign_id, payCurrency: wizard.pay_currency })
-            });
-            const j2 = await r2.json().catch(() => ({}));
-            if (!r2.ok || !j2.success || !j2.data?.payment_url) throw new Error(j2.error || 'No se pudo generar el pago. Intenta de nuevo.');
-
-            campañaCreada.pagoId = j2.data.pago_id;
-            mostrarPagoPendiente(j2.data.payment_url, j2.data.pago_id);
+            mostrarPagoPendiente(pago);
             loadCampaigns();
         } catch (err) {
             logError('Pago:', err);
             showToast(err.message, 'error', 5000);
-            btn.disabled = false; btn.textContent = campañaCreada ? '◈ Reintentar pago' : '◈ Continuar al Pago';
+            btn.disabled = false;
+            btn.textContent = campañaCreada ? '◈ Reintentar pago' : '◈ Continuar al Pago';
         }
     }
 
-    function mostrarPagoPendiente(paymentUrl, pagoId) {
-        if (!isValidHttpUrl(paymentUrl)) { showToast('Enlace de pago inválido', 'error'); return; }
-        document.getElementById('summary-content').innerHTML = `<div class="red-info">◈ Tu pago está en espera. Complétalo para activar tu anuncio.</div><a class="btn btn-primary" href="${escapeHTML(paymentUrl)}" target="_blank" rel="noopener noreferrer" style="text-decoration:none;margin-top:12px;">Abrir página de pago</a><div id="pago-estado" class="red-info" style="margin-top:12px;">Esperando confirmación…</div>`;
+    function mostrarPagoPendiente(pago) {
+        const monto = Number(pago.pay_amount);
+        const montoTxt = Number.isFinite(monto) && monto > 0 ? monto.toString() : '—';
+        const moneda = escapeHTML(String(pago.pay_currency || '').toUpperCase());
+        document.getElementById('summary-content').innerHTML = `
+            <div class="red-info">◈ Envía exactamente <strong>${escapeHTML(montoTxt)} ${moneda}</strong> a la dirección de abajo. Tu campaña se activa al confirmarse el pago.</div>
+            <div class="red-info" style="word-break:break-all;margin-top:10px;font-family:'Space Mono',monospace;">${escapeHTML(pago.pay_address)}</div>
+            <button class="btn btn-primary" style="margin-top:12px;" onclick="copiarDireccionPago('${escapeHTML(pago.pay_address)}')">Copiar dirección</button>
+            <div id="pago-estado" class="red-info" style="margin-top:12px;">Esperando confirmación de la red…</div>
+        `;
         document.getElementById('btn-pay').style.display = 'none';
-        pollearPago(pagoId);
+        pollearPago(pago.pago_id);
+    }
+
+    function copiarDireccionPago(direccion) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(direccion)
+                .then(() => showToast('Dirección copiada', 'success'))
+                .catch(() => showToast('No se pudo copiar. Selecciónala manualmente.', 'warning'));
+        } else {
+            showToast('Selecciona la dirección y cópiala manualmente.', 'warning');
+        }
     }
 
     function detenerPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
@@ -1179,16 +1218,60 @@
                 const r = await fetch(`${BACKEND_URL}/api/payments/marketing/status/${encodeURIComponent(pagoId)}`, { headers: { Authorization: 'Bearer ' + token } });
                 const j = await r.json().catch(() => ({}));
                 if (j.paid) { detenerPolling(); setEstado('✓ Pago confirmado. Tu anuncio está activo.'); showToast('Pago confirmado', 'success'); loadCampaigns(); return; }
-                if (j.failed) { detenerPolling(); setEstado('✕ El pago falló o expiró.'); const btn = document.getElementById('btn-pay'); if (btn) { btn.style.display = ''; btn.disabled = false; btn.textContent = '◈ Reintentar pago'; } campañaCreada.pagoId = null; return; }
+                if (j.revision_manual) { detenerPolling(); setEstado('El pago está en revisión. Te avisaremos al resolverse.'); return; }
+                if (j.failed) {
+                    detenerPolling();
+                    setEstado('✕ El pago falló o expiró. Puedes reintentar con otra dirección.');
+                    const btn = document.getElementById('btn-pay');
+                    if (btn) { btn.style.display = ''; btn.disabled = false; btn.textContent = '◈ Reintentar pago'; }
+                    // La campaña sigue pendiente; el reintento genera un pago nuevo para ella
+                    if (campañaCreada) campañaCreada.pago = null;
+                    return;
+                }
                 setEstado('Esperando confirmación de la red…');
             } catch (e) {}
             if (intentos >= MAX_POLL_INTENTOS) { detenerPolling(); setEstado('Aún sin confirmar. Revisa "Pendientes" más tarde.'); }
         }, INTERVALO_POLL_MS);
     }
 
+    async function pagarCampanaPendiente(campaignId) {
+        // Desde el panel: reabre el paso 7 con la campaña pendiente, sin crear otra
+        const campaign = campaigns.find(c => c.id === campaignId);
+        if (!campaign) return;
+        document.getElementById('modal-detail').classList.add('hidden');
+        document.getElementById('modal-create').classList.remove('hidden');
+        campañaCreada = { campaign_id: campaign.id, pago: null };
+        wizard = {
+            nombre: campaign.nombre,
+            objetivo: campaign.objetivo,
+            presupuesto: Number(campaign.presupuesto),
+            pay_currency: null,
+            target_tipo: null,
+            ad: { titulo: campaign.nombre }
+        };
+        document.getElementById('summary-content').innerHTML = `
+            <div class="detail-row"><span>Campaña</span><span>${escapeHTML(campaign.nombre)}</span></div>
+            <div class="detail-row"><span>Presupuesto</span><span>$${Number(campaign.presupuesto).toFixed(2)} MXN</span></div>
+            <div class="red-info">◈ Elige la red de pago para generar la dirección.</div>
+        `;
+        showWizardStep('7');
+        const btn = document.getElementById('btn-pay');
+        btn.style.display = '';
+        btn.disabled = false;
+        btn.textContent = '◈ Generar dirección de pago';
+        btn.onclick = async () => {
+            const red = prompt('Red de pago (ej: usdttrc20, usdtbsc, usdtmatic, usdtsol, usdcmatic, usdterc20):');
+            if (!red) return;
+            wizard.pay_currency = red.trim().toLowerCase();
+            btn.onclick = null;
+            onPagarClick();
+        };
+    }
+
     if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
     window.openDetail = openDetail;
     window.cambiarEstadoCampana = cambiarEstadoCampana;
+    window.pagarCampanaPendiente = pagarCampanaPendiente;
     window.abrirModalCrear = abrirModalCrear;
     window.cambiarTab = cambiarTab;
     window.togglePromi = togglePromi;
@@ -1196,6 +1279,7 @@
     window.resetPromi = resetPromi;
     window.generarMediaReal = generarMediaReal;
     window.iniciarCampanaDesdePromi = iniciarCampanaDesdePromi;
+    window.copiarDireccionPago = copiarDireccionPago;
     </script>
 </body>
 </html>
