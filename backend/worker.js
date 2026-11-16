@@ -1,30 +1,19 @@
+
 /* ================================================================
-   WORKER.JS - SARIEL'S ECOSYSTEM
-   VERSIÓN v5.3 - Producción: R2 + cuota consistente + borrado seguro
-                  + branding (logo al 50%) SIN drawtext (Railway-safe)
-   ================================================================
-   - Jobs con storage: 'r2' (r2Key): descarga el original desde R2,
-     procesa, sube el resultado a R2 y registra ambos en archivos_hash
-     para que la cuota del usuario sea correcta.
-   - El original SOLO se borra si: la base se actualizó bien y ningún
-     otro video apunta a ese archivo (la deduplicación puede reutilizarlo).
-   - Si falla la actualización de la base, el job falla y el original
-     se conserva (no se pierde el video).
-   - Jobs sin storage (anteriores): flujo legacy con Supabase Storage.
-   - Audio de fondo: descarga en try/catch independiente (si falla
-     → sin música).
-   - Video con audio + música → original 40% + música 100%.
-   - Video sin audio + música → solo música.
-   - Sin música → solo marca de agua.
-   - v5.3: se eliminó el filtro `drawtext` porque la build de FFmpeg
-     en Railway no incluye libfreetype. El branding textual queda
-     almacenado en Supabase y se muestra en el frontend.
-   ================================================================
-   Variables requeridas (Railway, servicio del worker):
-     SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REDIS_URL
-     R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
-     R2_ENDPOINT, R2_BUCKET, R2_PUBLIC_URL
-   Dependencia: @aws-sdk/client-s3
+   WORKER.JS - CSARIEL'S ECOSYSTEM
+   VERSIÓN v5.4 - FFmpeg FIX / R2 / SUPABASE / BULLMQ
+
+   CORRECCIONES:
+   - Eliminación total del filtro FFmpeg drawtext.
+   - No requiere libfreetype.
+   - Overlay gráfico WEB3 mediante PNG.
+   - Logo al 50% de opacidad.
+   - Audio original y música externa.
+   - Música externa en bucle cuando sea necesario.
+   - Conservación segura del original.
+   - R2 + Supabase Storage legacy.
+   - Limpieza garantizada de temporales.
+   - Mapeo explícito de streams FFmpeg.
    ================================================================ */
 
 const { Worker } = require('bullmq');
@@ -32,60 +21,104 @@ const IORedis = require('ioredis');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegPath = require('ffmpeg-static');
 const { createClient } = require('@supabase/supabase-js');
-const { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const {
+    S3Client,
+    GetObjectCommand,
+    PutObjectCommand,
+    DeleteObjectCommand
+} = require('@aws-sdk/client-s3');
+
 const { pipeline } = require('stream/promises');
 const { createHash } = require('crypto');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
 const axios = require('axios');
+
 require('dotenv').config();
 
 // ================================================================
-// CONFIGURACIÓN DE FFMPEG
+// CONFIGURACIÓN FFMPEG
 // ================================================================
+
+if (!ffmpegPath) {
+    console.error('❌ No se encontró ffmpeg-static.');
+    process.exit(1);
+}
+
 ffmpeg.setFfmpegPath(ffmpegPath);
-console.log('🎬 FFmpeg path:', ffmpegPath);
+
+console.log('🎬 FFmpeg:', ffmpegPath);
 
 // ================================================================
-// VALIDACIÓN DE VARIABLES DE ENTORNO
+// VARIABLES DE ENTORNO
 // ================================================================
+
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const REDIS_URL = process.env.REDIS_URL;
-const PORT = process.env.PORT || 3001;
+
+const PORT = Number(process.env.PORT) || 3001;
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
 const R2_ACCESS_KEY_ID = process.env.R2_ACCESS_KEY_ID;
 const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
+
 const R2_BUCKET = process.env.R2_BUCKET || 'csariels-media';
-const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || '').replace(/\/$/, '');
-const R2_ENDPOINT = process.env.R2_ENDPOINT || (R2_ACCOUNT_ID ? `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com` : '');
+
+const R2_PUBLIC_URL = (process.env.R2_PUBLIC_URL || '')
+    .replace(/\/$/, '');
+
+const R2_ENDPOINT = process.env.R2_ENDPOINT ||
+    (R2_ACCOUNT_ID
+        ? `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
+        : '');
 
 const faltantes = [];
+
 if (!SUPABASE_URL) faltantes.push('SUPABASE_URL');
 if (!SUPABASE_SERVICE_ROLE_KEY) faltantes.push('SUPABASE_SERVICE_ROLE_KEY');
 if (!REDIS_URL) faltantes.push('REDIS_URL');
 
-if (faltantes.length > 0) {
-    console.error('❌ Faltan variables de entorno críticas:');
-    faltantes.forEach(v => console.error(`   - ${v}`));
-    console.error('');
-    console.error('👉 En Railway, agrega estas variables al servicio del worker.');
+if (faltantes.length) {
+    console.error('❌ Variables críticas faltantes:');
+
+    faltantes.forEach(function (variable) {
+        console.error(' - ' + variable);
+    });
+
     process.exit(1);
 }
 
-const r2Configurado = Boolean(R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_ENDPOINT && R2_PUBLIC_URL);
+const r2Configurado = Boolean(
+    R2_ACCESS_KEY_ID &&
+    R2_SECRET_ACCESS_KEY &&
+    R2_ENDPOINT &&
+    R2_PUBLIC_URL
+);
+
 if (!r2Configurado) {
-    console.warn('⚠️ R2 no configurado completamente en el worker. Los jobs con storage: "r2" fallarán.');
+    console.warn('⚠️ R2 no está completamente configurado.');
 }
 
 // ================================================================
-// CLIENTES
+// CLIENTE SUPABASE
 // ================================================================
-const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { autoRefreshToken: false, persistSession: false }
-});
+
+const supabaseAdmin = createClient(
+    SUPABASE_URL,
+    SUPABASE_SERVICE_ROLE_KEY,
+    {
+        auth: {
+            autoRefreshToken: false,
+            persistSession: false
+        }
+    }
+);
+
+// ================================================================
+// CLIENTE CLOUDFLARE R2
+// ================================================================
 
 const r2Client = r2Configurado
     ? new S3Client({
@@ -101,547 +134,1354 @@ const r2Client = r2Configurado
     : null;
 
 // ================================================================
-// CONFIGURACIÓN DE REDIS
+// REDIS
 // ================================================================
+
 console.log('📡 Conectando a Redis...');
 
 const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
     family: 0,
-    retryStrategy: (times) => {
+
+    retryStrategy: function (times) {
         if (times > 20) {
-            console.error('❌ Redis no responde tras 20 intentos. Abortando.');
+            console.error('❌ Redis no responde después de 20 intentos.');
             return null;
         }
+
         const delay = Math.min(times * 500, 10000);
-        console.log(`🔁 Reintentando Redis en ${delay}ms (intento ${times})`);
+
+        console.log('🔁 Redis reintentando en ' + delay + 'ms');
+
         return delay;
     }
 });
 
-redisConnection.on('connect', () => { console.log('✅ Conectado a Redis'); });
-redisConnection.on('ready', () => { console.log('✅ Redis listo para operar'); });
-redisConnection.on('error', (err) => { console.error('❌ Error de Redis:', err.message); });
+redisConnection.on('connect', function () {
+    console.log('✅ Redis conectado');
+});
+
+redisConnection.on('ready', function () {
+    console.log('✅ Redis listo');
+});
+
+redisConnection.on('error', function (err) {
+    console.error('❌ Redis:', err.message);
+});
 
 // ================================================================
 // CONSTANTES
 // ================================================================
+
 const COLA_NOMBRE = 'video-processing';
+
 const TEMP_DIR = os.tmpdir();
+
 const MAX_CONCURRENT = 1;
-const LOGO_PATH = path.join(__dirname, 'public', 'watermark.png');
+
+const LOGO_PATH = path.join(
+    __dirname,
+    'public',
+    'watermark.png'
+);
 
 // ================================================================
-// HELPERS R2 Y CUOTA
+// UTILIDADES
 // ================================================================
-function urlPublicaR2(key) {
-    return `${R2_PUBLIC_URL}/${key}`;
+
+function obtenerRutasTemporales(jobId) {
+    const identificador = String(jobId)
+        .replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    const base = 'sariels_' +
+        identificador + '_' +
+        process.pid + '_' +
+        Date.now();
+
+    return {
+        input: path.join(TEMP_DIR, base + '_input.mp4'),
+        output: path.join(TEMP_DIR, base + '_output.mp4'),
+        audio: path.join(TEMP_DIR, base + '_audio.mp3')
+    };
 }
+
+function limpiarTemporales(rutas) {
+    if (!rutas) return;
+
+    Object.keys(rutas).forEach(function (key) {
+        try {
+            if (fs.existsSync(rutas[key])) {
+                fs.unlinkSync(rutas[key]);
+            }
+        } catch (err) {
+            console.warn(
+                '⚠️ No se pudo limpiar temporal:',
+                rutas[key],
+                err.message
+            );
+        }
+    });
+}
+
+function validarArchivo(ruta, nombre) {
+    if (!fs.existsSync(ruta)) {
+        throw new Error(nombre + ' no existe.');
+    }
+
+    const stat = fs.statSync(ruta);
+
+    if (!stat.isFile() || stat.size <= 0) {
+        throw new Error(nombre + ' está vacío o no es válido.');
+    }
+
+    return stat.size;
+}
+
+function urlPublicaR2(key) {
+    return R2_PUBLIC_URL + '/' + key;
+}
+
+// ================================================================
+// R2: DESCARGA
+// ================================================================
 
 async function descargarR2ADisco(key, destino) {
-    if (!r2Client) throw new Error('R2 no configurado en el worker');
-    const resp = await r2Client.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: key }));
-    await pipeline(resp.Body, fs.createWriteStream(destino));
-    return fs.statSync(destino).size;
+    if (!r2Client) {
+        throw new Error('R2 no está configurado.');
+    }
+
+    const response = await r2Client.send(
+        new GetObjectCommand({
+            Bucket: R2_BUCKET,
+            Key: key
+        })
+    );
+
+    if (!response.Body) {
+        throw new Error('R2 devolvió un archivo vacío.');
+    }
+
+    await pipeline(
+        response.Body,
+        fs.createWriteStream(destino)
+    );
+
+    return validarArchivo(destino, 'Video descargado de R2');
 }
 
+// ================================================================
+// R2: SUBIDA
+// ================================================================
+
 async function subirBufferR2(key, buffer, contentType) {
-    if (!r2Client) throw new Error('R2 no configurado en el worker');
-    await r2Client.send(new PutObjectCommand({
-        Bucket: R2_BUCKET,
-        Key: key,
-        Body: buffer,
-        ContentType: contentType,
-        CacheControl: 'public, max-age=31536000'
-    }));
+    if (!r2Client) {
+        throw new Error('R2 no está configurado.');
+    }
+
+    await r2Client.send(
+        new PutObjectCommand({
+            Bucket: R2_BUCKET,
+            Key: key,
+            Body: buffer,
+            ContentType: contentType,
+            CacheControl: 'public, max-age=31536000'
+        })
+    );
+
     return urlPublicaR2(key);
 }
 
+// ================================================================
+// R2: BORRADO
+// ================================================================
+
 async function borrarR2(key) {
-    if (!r2Client) throw new Error('R2 no configurado en el worker');
-    await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+    if (!r2Client) {
+        throw new Error('R2 no está configurado.');
+    }
+
+    await r2Client.send(
+        new DeleteObjectCommand({
+            Bucket: R2_BUCKET,
+            Key: key
+        })
+    );
 }
 
-async function registrarArchivoHash({ bucket, sha256, path: key, publicUrl, size }) {
+// ================================================================
+// REGISTRO DE HASH
+// ================================================================
+
+async function registrarArchivoHash(datos) {
     const { error } = await supabaseAdmin
         .from('archivos_hash')
         .upsert(
-            { bucket, sha256, path: key, public_url: publicUrl, size },
-            { onConflict: 'bucket,sha256', ignoreDuplicates: true }
+            {
+                bucket: datos.bucket,
+                sha256: datos.sha256,
+                path: datos.path,
+                public_url: datos.publicUrl,
+                size: datos.size
+            },
+            {
+                onConflict: 'bucket,sha256',
+                ignoreDuplicates: true
+            }
         );
+
     if (error) {
-        console.warn(`⚠️ No se registró archivos_hash (${key}):`, error.message);
+        console.warn(
+            '⚠️ No se registró archivos_hash:',
+            error.message
+        );
+
         return false;
     }
+
     return true;
 }
+
+// ================================================================
+// VERIFICAR USO DEL VIDEO ORIGINAL
+// ================================================================
 
 async function archivoOriginalEnUso(urlOriginal, videoIdActual) {
     const { count, error } = await supabaseAdmin
         .from('videos')
-        .select('id', { count: 'exact', head: true })
+        .select('id', {
+            count: 'exact',
+            head: true
+        })
         .eq('url_video', urlOriginal)
         .neq('id', videoIdActual);
-    if (error) throw new Error(`No se pudo verificar uso del original: ${error.message}`);
+
+    if (error) {
+        throw new Error(
+            'No se pudo verificar uso del original: ' +
+            error.message
+        );
+    }
+
     return (count || 0) > 0;
 }
 
 // ================================================================
-// FUNCIÓN PRINCIPAL: PROCESAR VIDEO
+// DESCARGA DE VIDEO ORIGINAL
 // ================================================================
-async function procesarVideo(job) {
-    const {
-        videoId, videoUrl, userId, bucket, filePath, audioUrl, storage, r2Key
-    } = job.data;
 
-    const usaR2 = storage === 'r2';
-    const keyOriginal = r2Key || filePath;
-    const bucketLogico = bucket || 'videos';
+async function descargarVideoOriginal(
+    videoUrl,
+    storage,
+    keyOriginal,
+    destino,
+    jobId
+) {
+    if (storage === 'r2') {
+        const bytes = await descargarR2ADisco(
+            keyOriginal,
+            destino
+        );
 
-    console.log(`\n📹 [JOB ${job.id}] Procesando video: ${videoId}`);
-    console.log(`   Attempt: ${job.attemptsMade + 1}/${job.opts.attempts}`);
-    console.log(`   Almacenamiento: ${usaR2 ? 'R2 (' + keyOriginal + ')' : 'Supabase (legacy)'}`);
-    console.log(`   Audio externo: ${audioUrl ? 'SÍ' : 'NO'}`);
+        console.log(
+            '✅ Video R2:',
+            (bytes / 1048576).toFixed(2),
+            'MB'
+        );
 
-    const inputPath = path.join(TEMP_DIR, `sariels_input_${job.id}.mp4`);
-    const outputPath = path.join(TEMP_DIR, `sariels_output_${job.id}.mp4`);
-    const audioPath = path.join(TEMP_DIR, `sariels_audio_${job.id}.mp3`);
-    let tieneAudioExterno = false;
+        return;
+    }
+
+    if (!videoUrl) {
+        throw new Error('No existe URL del video original.');
+    }
+
+    const response = await axios.get(videoUrl, {
+        responseType: 'stream',
+        timeout: 120000,
+        maxContentLength: 200 * 1024 * 1024,
+        maxBodyLength: 200 * 1024 * 1024,
+        headers: {
+            'User-Agent': 'Csariels-Video-Worker/5.4'
+        }
+    });
+
+    await pipeline(
+        response.data,
+        fs.createWriteStream(destino)
+    );
+
+    const bytes = validarArchivo(
+        destino,
+        'Video original'
+    );
+
+    console.log(
+        '✅ Video descargado:',
+        (bytes / 1048576).toFixed(2),
+        'MB'
+    );
+}
+
+// ================================================================
+// DESCARGA DE AUDIO EXTERNO
+// ================================================================
+
+async function descargarAudioExterno(audioUrl, destino, jobId) {
+    if (!audioUrl) return false;
 
     try {
-        if (!fs.existsSync(LOGO_PATH)) {
-            throw new Error(`❌ El logo no existe en: ${LOGO_PATH}`);
+        console.log(
+            '🎵 [JOB ' + jobId + '] Descargando música...'
+        );
+
+        const response = await axios.get(audioUrl, {
+            responseType: 'stream',
+            timeout: 30000,
+            maxContentLength: 20 * 1024 * 1024,
+            maxBodyLength: 20 * 1024 * 1024,
+            headers: {
+                'User-Agent': 'Mozilla/5.0'
+            }
+        });
+
+        await pipeline(
+            response.data,
+            fs.createWriteStream(destino)
+        );
+
+        validarArchivo(destino, 'Audio externo');
+
+        console.log('✅ Música descargada');
+
+        return true;
+
+    } catch (error) {
+        console.warn(
+            '⚠️ Música no disponible. Se continuará sin música:',
+            error.message
+        );
+
+        try {
+            if (fs.existsSync(destino)) {
+                fs.unlinkSync(destino);
+            }
+        } catch (cleanupError) {
+            console.warn(cleanupError.message);
         }
 
-        // PASO 1: Descargar video original
-        await job.updateProgress(5);
-        console.log(`📥 [JOB ${job.id}] Descargando video...`);
+        return false;
+    }
+}
 
-        if (usaR2) {
-            const bytes = await descargarR2ADisco(keyOriginal, inputPath);
-            console.log(`✅ [JOB ${job.id}] Video descargado de R2 (${(bytes / 1024 / 1024).toFixed(2)} MB)`);
+// ================================================================
+// METADATA FFPROBE
+// ================================================================
+
+function obtenerMetadata(ruta) {
+    return new Promise(function (resolve, reject) {
+        ffmpeg.ffprobe(ruta, function (err, metadata) {
+            if (err) {
+                reject(
+                    new Error(
+                        'Error leyendo metadata FFprobe: ' +
+                        err.message
+                    )
+                );
+
+                return;
+            }
+
+            resolve(metadata);
+        });
+    });
+}
+
+// ================================================================
+// CONSTRUIR FILTRO DE VIDEO
+// ================================================================
+
+function construirFiltroVideo(
+    width,
+    height,
+    tieneAudio,
+    tieneAudioExterno,
+    duration
+) {
+    const targetHeight = Math.min(720, height);
+
+    const scaleFactor = targetHeight / height;
+
+    const targetWidth = Math.round(width * scaleFactor);
+
+    const finalWidth = targetWidth % 2 === 0
+        ? targetWidth
+        : targetWidth - 1;
+
+    const finalHeight = targetHeight % 2 === 0
+        ? targetHeight
+        : targetHeight - 1;
+
+    if (finalWidth < 2 || finalHeight < 2) {
+        throw new Error('Dimensiones de video no válidas.');
+    }
+
+    const logoW = Math.max(
+        2,
+        Math.floor(finalWidth * 0.20 / 2) * 2
+    );
+
+    const logoH = Math.max(
+        2,
+        Math.floor(logoW * 0.2083 / 2) * 2
+    );
+
+    const marginX = Math.floor(finalWidth * 0.03);
+    const marginY = Math.floor(finalHeight * 0.03);
+
+    const xBR = finalWidth - logoW - marginX;
+    const yBR = finalHeight - logoH - marginY;
+
+    /*
+       IMPORTANTE:
+
+       El filtro utiliza exclusivamente:
+       scale
+       pad
+       format
+       colorchannelmixer
+       overlay
+
+       No se ejecuta drawtext.
+       No se requiere libfreetype.
+    */
+
+    const filtros = [
+        '[0:v]scale=' +
+            finalWidth + ':' + finalHeight +
+            ':force_original_aspect_ratio=decrease[scaled]',
+
+        '[scaled]pad=' +
+            finalWidth + ':' + finalHeight +
+            ':(ow-iw)/2:(oh-ih)/2:color=black[base]',
+
+        '[1:v]scale=' +
+            logoW + ':' + logoH +
+            ',format=rgba,' +
+            'colorchannelmixer=aa=0.5[logo]',
+
+        '[base][logo]overlay=' +
+            xBR + ':' + yBR +
+            ':shortest=1[vout]'
+    ];
+
+    if (tieneAudioExterno) {
+        if (tieneAudio) {
+            filtros.push(
+                '[0:a]volume=0.4[orig]'
+            );
+
+            filtros.push(
+                '[2:a]volume=1.0[music]'
+            );
+
+            filtros.push(
+                '[orig][music]amix=' +
+                'inputs=2:duration=first:dropout_transition=2[aout]'
+            );
         } else {
-            const response = await axios.get(videoUrl, {
-                responseType: 'arraybuffer',
-                timeout: 120000,
-                maxContentLength: 200 * 1024 * 1024
-            });
-            fs.writeFileSync(inputPath, Buffer.from(response.data));
-            console.log(`✅ [JOB ${job.id}] Video descargado (${(response.data.length / 1024 / 1024).toFixed(2)} MB)`);
+            filtros.push(
+                '[2:a]volume=1.0[aout]'
+            );
         }
+    }
+
+    return {
+        filterComplex: filtros.join(';'),
+        width: finalWidth,
+        height: finalHeight,
+        logoWidth: logoW,
+        logoHeight: logoH,
+        logoX: xBR,
+        logoY: yBR
+    };
+}
+
+// ================================================================
+// PROCESAMIENTO FFMPEG
+// ================================================================
+
+function ejecutarFFmpeg(
+    inputPath,
+    outputPath,
+    audioPath,
+    tieneAudio,
+    tieneAudioExterno,
+    filtro,
+    job
+) {
+    return new Promise(function (resolve, reject) {
+        let command = ffmpeg();
+
+        // Entrada 0: video original.
+        command = command.input(inputPath);
+
+        // Entrada 1: logo gráfico.
+        // Se mantiene durante toda la reproducción.
+        command = command.input(LOGO_PATH);
+        command = command.inputOptions(['-loop', '1']);
+
+        // Entrada 2: música externa.
+        if (tieneAudioExterno) {
+            command = command.input(audioPath);
+            command = command.inputOptions([
+                '-stream_loop',
+                '-1'
+            ]);
+        }
+
+        // Filtro gráfico y mezcla de audio.
+        command = command.complexFilter(
+            filtro.filterComplex
+        );
+
+        const opciones = [
+            '-map',
+            '[vout]',
+
+            '-c:v',
+            'libx264',
+
+            '-preset',
+            'veryfast',
+
+            '-crf',
+            '26',
+
+            '-pix_fmt',
+            'yuv420p',
+
+            '-profile:v',
+            'baseline',
+
+            '-level',
+            '3.1',
+
+            '-movflags',
+            '+faststart',
+
+            '-max_muxing_queue_size',
+            '1024'
+        ];
+
+        if (tieneAudioExterno) {
+            opciones.push('-map', '[aout]');
+
+            opciones.push(
+                '-c:a',
+                'aac',
+                '-b:a',
+                '128k',
+                '-ac',
+                '2'
+            );
+
+            if (!tieneAudio) {
+                // El video determina el final del resultado.
+                opciones.push('-shortest');
+            }
+
+        } else if (tieneAudio) {
+            opciones.push(
+                '-map',
+                '0:a?',
+                '-c:a',
+                'aac',
+                '-b:a',
+                '128k',
+                '-ac',
+                '2'
+            );
+
+        } else {
+            opciones.push('-an');
+        }
+
+        command = command.outputOptions(opciones);
+
+        command = command.output(outputPath);
+
+        command
+            .on('start', function (commandLine) {
+                console.log(
+                    '▶️ [JOB ' + job.id + '] FFmpeg iniciado'
+                );
+
+                console.log(
+                    '🎬 [JOB ' + job.id + '] Comando:',
+                    commandLine
+                );
+            })
+
+            .on('progress', function (progress) {
+                if (progress.percent) {
+                    const porcentaje = Math.max(
+                        25,
+                        Math.min(
+                            80,
+                            25 + Math.floor(
+                                progress.percent * 0.55
+                            )
+                        )
+                    );
+
+                    job.updateProgress(porcentaje)
+                        .catch(function () {});
+                }
+            })
+
+            .on('end', function () {
+                console.log(
+                    '✅ [JOB ' + job.id + '] FFmpeg finalizado'
+                );
+
+                resolve();
+            })
+
+            .on('error', function (err, stdout, stderr) {
+                console.error(
+                    '❌ [JOB ' + job.id + '] FFmpeg:',
+                    err.message
+                );
+
+                if (stderr) {
+                    console.error(
+                        '❌ FFmpeg STDERR:',
+                        stderr
+                    );
+                }
+
+                reject(err);
+            })
+
+            .run();
+    });
+}
+
+// ================================================================
+// SUBIR VIDEO PROCESADO
+// ================================================================
+
+async function subirVideoProcesado(
+    outputPath,
+    userId,
+    videoId,
+    bucket,
+    usaR2
+) {
+    const outputBuffer = fs.readFileSync(outputPath);
+
+    if (!outputBuffer.length) {
+        throw new Error('El video procesado está vacío.');
+    }
+
+    const sha256 = createHash('sha256')
+        .update(outputBuffer)
+        .digest('hex');
+
+    let processedUrl;
+
+    let processedKey;
+
+    if (usaR2) {
+        processedKey =
+            bucket + '/' +
+            userId + '/' +
+            videoId + '_processed.mp4';
+
+        processedUrl = await subirBufferR2(
+            processedKey,
+            outputBuffer,
+            'video/mp4'
+        );
+
+        const registrado = await registrarArchivoHash({
+            bucket: bucket,
+            sha256: sha256,
+            path: processedKey,
+            publicUrl: processedUrl,
+            size: outputBuffer.length
+        });
+
+        if (!registrado) {
+            console.warn(
+                '⚠️ Video subido, pero no se confirmó su registro hash.'
+            );
+        }
+
+    } else {
+        processedKey =
+            userId + '/' +
+            videoId + '_processed.mp4';
+
+        const { error } = await supabaseAdmin.storage
+            .from(bucket)
+            .upload(processedKey, outputBuffer, {
+                contentType: 'video/mp4',
+                cacheControl: '31536000',
+                upsert: true
+            });
+
+        if (error) {
+            throw new Error(
+                'Error subiendo video a Supabase: ' +
+                error.message
+            );
+        }
+
+        const { data } = supabaseAdmin.storage
+            .from(bucket)
+            .getPublicUrl(processedKey);
+
+        if (!data || !data.publicUrl) {
+            throw new Error(
+                'No se pudo obtener la URL pública del video.'
+            );
+        }
+
+        processedUrl = data.publicUrl;
+    }
+
+    return {
+        url: processedUrl,
+        key: processedKey,
+        size: outputBuffer.length,
+        sha256: sha256
+    };
+}
+
+// ================================================================
+// ACTUALIZAR BASE DE DATOS
+// ================================================================
+
+async function actualizarVideoDB(videoId, processedUrl) {
+    const { data, error } = await supabaseAdmin
+        .from('videos')
+        .update({
+            url_video: processedUrl,
+            estado: 'publicado',
+            updated_at: new Date().toISOString()
+        })
+        .eq('id', videoId)
+        .select('id');
+
+    if (error) {
+        throw new Error(
+            'No se pudo actualizar la base de datos: ' +
+            error.message
+        );
+    }
+
+    if (!data || data.length === 0) {
+        throw new Error(
+            'La actualización no confirmó ningún registro de video.'
+        );
+    }
+
+    return true;
+}
+
+// ================================================================
+// BORRADO SEGURO DEL ORIGINAL
+// ================================================================
+
+async function borrarOriginalSeguro(
+    usaR2,
+    keyOriginal,
+    bucket,
+    videoUrl,
+    videoId
+) {
+    if (!keyOriginal) return;
+
+    try {
+        if (usaR2) {
+            // Sin URL original no se puede comprobar si está compartido.
+            if (!videoUrl) {
+                console.warn(
+                    '⚠️ No se borra original: falta URL para comprobar referencias.'
+                );
+
+                return;
+            }
+
+            const enUso = await archivoOriginalEnUso(
+                videoUrl,
+                videoId
+            );
+
+            if (enUso) {
+                console.log(
+                    'ℹ️ Original compartido. Se conserva en R2.'
+                );
+
+                return;
+            }
+
+            await borrarR2(keyOriginal);
+
+            const { error } = await supabaseAdmin
+                .from('archivos_hash')
+                .delete()
+                .eq('bucket', bucket)
+                .eq('path', keyOriginal);
+
+            if (error) {
+                console.warn(
+                    '⚠️ No se pudo eliminar el registro hash:',
+                    error.message
+                );
+            }
+
+            console.log('✅ Original eliminado de R2.');
+
+        } else {
+            const { error } = await supabaseAdmin.storage
+                .from(bucket)
+                .remove([keyOriginal]);
+
+            if (error) {
+                throw new Error(error.message);
+            }
+
+            console.log('✅ Original eliminado de Supabase.');
+        }
+
+    } catch (error) {
+        console.warn(
+            '⚠️ No se pudo borrar el original:',
+            error.message
+        );
+    }
+}
+
+// ================================================================
+// FUNCIÓN PRINCIPAL
+// ================================================================
+
+async function procesarVideo(job) {
+    const datos = job.data || {};
+
+    const videoId = datos.videoId;
+    const videoUrl = datos.videoUrl;
+    const userId = datos.userId;
+
+    const bucket = datos.bucket || 'videos';
+
+    const filePath = datos.filePath;
+    const audioUrl = datos.audioUrl;
+
+    const storage = datos.storage;
+
+    const r2Key = datos.r2Key;
+
+    const usaR2 = storage === 'r2';
+
+    const keyOriginal = r2Key || filePath;
+
+    const rutas = obtenerRutasTemporales(job.id);
+
+    let tieneAudio = false;
+    let tieneAudioExterno = false;
+
+    let procesado = false;
+
+    console.log('');
+    console.log('========================================');
+    console.log('📹 JOB:', job.id);
+    console.log('🎞️ VIDEO:', videoId);
+    console.log('☁️ STORAGE:', usaR2 ? 'R2' : 'SUPABASE');
+    console.log('🎵 AUDIO EXTERNO:', audioUrl ? 'SÍ' : 'NO');
+    console.log('========================================');
+
+    try {
+        if (!videoId) {
+            throw new Error('Falta videoId.');
+        }
+
+        if (!userId) {
+            throw new Error('Falta userId.');
+        }
+
+        if (usaR2 && !r2Client) {
+            throw new Error('El job requiere R2, pero R2 no está configurado.');
+        }
+
+        if (!usaR2 && !videoUrl) {
+            throw new Error('Falta videoUrl para almacenamiento legacy.');
+        }
+
+        if (!keyOriginal && usaR2) {
+            throw new Error('Falta la clave original de R2.');
+        }
+
+        if (!fs.existsSync(LOGO_PATH)) {
+            throw new Error(
+                'No existe el logo gráfico: ' + LOGO_PATH
+            );
+        }
+
+        validarArchivo(LOGO_PATH, 'Logo WEB3');
+
+        await job.updateProgress(5);
+
+        // --------------------------------------------------------
+        // PASO 1: DESCARGAR VIDEO
+        // --------------------------------------------------------
+
+        console.log('📥 Descargando video original...');
+
+        await descargarVideoOriginal(
+            videoUrl,
+            storage,
+            keyOriginal,
+            rutas.input,
+            job.id
+        );
 
         await job.updateProgress(10);
 
-        // PASO 1.5: Descargar audio de fondo (si viene)
-        if (audioUrl) {
-            try {
-                console.log(`🎵 [JOB ${job.id}] Descargando audio de fondo...`);
-                const audioResp = await axios.get(audioUrl, {
-                    responseType: 'arraybuffer',
-                    timeout: 30000,
-                    maxContentLength: 20 * 1024 * 1024,
-                    headers: { 'User-Agent': 'Mozilla/5.0' }
-                });
-                fs.writeFileSync(audioPath, Buffer.from(audioResp.data));
-                tieneAudioExterno = true;
-                console.log(`✅ [JOB ${job.id}] Audio descargado (${(audioResp.data.length / 1024).toFixed(0)} KB)`);
-            } catch (audioErr) {
-                console.warn(`⚠️ [JOB ${job.id}] No se pudo descargar audio (continuando sin él):`, audioErr.message);
-                tieneAudioExterno = false;
-            }
-        }
+        // --------------------------------------------------------
+        // PASO 2: AUDIO EXTERNO
+        // --------------------------------------------------------
+
+        tieneAudioExterno = await descargarAudioExterno(
+            audioUrl,
+            rutas.audio,
+            job.id
+        );
 
         await job.updateProgress(15);
 
-        // PASO 2: Metadata
-        const metadata = await new Promise((resolve, reject) => {
-            ffmpeg.ffprobe(inputPath, (err, data) => {
-                if (err) reject(err);
-                else resolve(data);
-            });
-        });
+        // --------------------------------------------------------
+        // PASO 3: METADATA
+        // --------------------------------------------------------
 
-        const videoStream = metadata.streams.find(s => s.codec_type === 'video');
-        const audioStream = metadata.streams.find(s => s.codec_type === 'audio');
+        const metadata = await obtenerMetadata(rutas.input);
 
-        if (!videoStream) {
-            throw new Error('No se encontró stream de video');
+        if (!metadata || !metadata.streams) {
+            throw new Error('FFprobe no devolvió streams válidos.');
         }
 
-        const width = videoStream.width;
-        const height = videoStream.height;
-        const duration = metadata.format.duration;
-        const tieneAudio = !!audioStream;
+        const videoStream = metadata.streams.find(
+            function (stream) {
+                return stream.codec_type === 'video';
+            }
+        );
 
-        console.log(`📐 [JOB ${job.id}] Dimensiones: ${width}x${height}`);
-        console.log(`⏱️ [JOB ${job.id}] Duración: ${duration}s`);
-        console.log(`🔊 [JOB ${job.id}] Audio original: ${tieneAudio ? 'SÍ (' + audioStream.codec_name + ')' : 'NO'}`);
-        console.log(`🎵 [JOB ${job.id}] Audio de fondo: ${tieneAudioExterno ? 'SÍ' : 'NO'}`);
+        const audioStream = metadata.streams.find(
+            function (stream) {
+                return stream.codec_type === 'audio';
+            }
+        );
+
+        if (!videoStream) {
+            throw new Error('El archivo no contiene video.');
+        }
+
+        const width = Number(videoStream.width);
+        const height = Number(videoStream.height);
+
+        const duration = Number(metadata.format.duration);
+
+        if (
+            !Number.isFinite(width) ||
+            !Number.isFinite(height) ||
+            width < 2 ||
+            height < 2
+        ) {
+            throw new Error('Dimensiones de video inválidas.');
+        }
+
+        if (!Number.isFinite(duration) || duration <= 0) {
+            throw new Error('Duración del video inválida.');
+        }
+
+        tieneAudio = Boolean(audioStream);
+
+        console.log('📐 Dimensiones:', width + 'x' + height);
+        console.log('⏱️ Duración:', duration);
+        console.log('🔊 Audio original:', tieneAudio);
+        console.log('🎵 Música externa:', tieneAudioExterno);
 
         await job.updateProgress(20);
 
-        // PASO 3: Filtro de video (marca de agua, sin drawtext)
-        const targetHeight = Math.min(720, height);
-        const scaleFactor = targetHeight / height;
-        const targetWidth = Math.round(width * scaleFactor);
+        // --------------------------------------------------------
+        // PASO 4: CONSTRUIR FILTROS
+        // --------------------------------------------------------
 
-        const finalWidth = targetWidth % 2 === 0 ? targetWidth : targetWidth - 1;
-        const finalHeight = targetHeight % 2 === 0 ? targetHeight : targetHeight - 1;
+        const filtro = construirFiltroVideo(
+            width,
+            height,
+            tieneAudio,
+            tieneAudioExterno,
+            duration
+        );
 
-        const logoW = Math.floor(finalWidth * 0.20);
-        const logoH = Math.floor(logoW * 0.2083);
+        console.log('🎨 Aplicando marca de agua gráfica.');
+        console.log(
+            '📐 Salida:',
+            filtro.width + 'x' + filtro.height
+        );
 
-        const marginX = Math.floor(finalWidth * 0.03);
-        const marginY = Math.floor(finalHeight * 0.03);
+        console.log(
+            '🖼️ Logo:',
+            filtro.logoWidth + 'x' + filtro.logoHeight
+        );
 
-        const xBR = finalWidth - logoW - marginX;
-        const yBR = finalHeight - logoH - marginY;
-
-        console.log(`🎨 [JOB ${job.id}] Aplicando overlay "✦ WEB3"...`);
-        console.log(`   - Escala: ${finalWidth}x${finalHeight}`);
-        console.log(`   - Logo: ${logoW}x${logoH} en posición (${xBR}, ${yBR}) al 50%`);
-        console.log(`   - Texto: omitido (drawtext deshabilitado, sin libfreetype)`);
-
-        const logoChain = `[1:v]scale=${logoW}:${logoH},format=rgba,colorchannelmixer=aa=0.5[logo]`;
-
-        let filterComplex;
-        let outputMaps = null;
-
-        if (tieneAudioExterno) {
-            filterComplex = [
-                `[0:v]scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease[scaled]`,
-                `[scaled]pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black[pad]`,
-                logoChain,
-                `[pad][logo]overlay=${xBR}:${yBR}[vout]`,
-                tieneAudio
-                    ? `[0:a]volume=0.4[orig];[2:a]volume=1.0[music];[orig][music]amix=inputs=2:duration=first:dropout_transition=2[aout]`
-                    : `[2:a]volume=1.0[aout]`
-            ].join(';');
-            outputMaps = ['-map', '[vout]', '-map', '[aout]'];
-        } else {
-            filterComplex = [
-                `[0:v]scale=${finalWidth}:${finalHeight}:force_original_aspect_ratio=decrease[scaled]`,
-                `[scaled]pad=${finalWidth}:${finalHeight}:(ow-iw)/2:(oh-ih)/2:color=black[pad]`,
-                logoChain,
-                `[pad][logo]overlay=${xBR}:${yBR}[out]`
-            ].join(';');
-        }
+        console.log('🔒 Opacidad del logo: 50%');
 
         await job.updateProgress(25);
 
-        // PASO 4: FFmpeg
-        console.log(`🎬 [JOB ${job.id}] Iniciando FFmpeg...`);
+        // --------------------------------------------------------
+        // PASO 5: PROCESAMIENTO FFMPEG
+        // --------------------------------------------------------
 
-        await new Promise((resolve, reject) => {
-            const command = ffmpeg()
-                .input(inputPath)
-                .input(LOGO_PATH);
+        console.log('🎬 Iniciando FFmpeg...');
 
-            if (tieneAudioExterno) {
-                command.input(audioPath);
-            }
+        await ejecutarFFmpeg(
+            rutas.input,
+            rutas.output,
+            rutas.audio,
+            tieneAudio,
+            tieneAudioExterno,
+            filtro,
+            job
+        );
 
-            if (tieneAudioExterno) {
-                command.complexFilter(filterComplex);
-            } else {
-                command.complexFilter(filterComplex, 'out');
-            }
+        const outputSize = validarArchivo(
+            rutas.output,
+            'Video procesado'
+        );
 
-            command.outputOptions([
-                '-c:v libx264',
-                '-preset veryfast',
-                '-crf 26',
-                '-pix_fmt yuv420p',
-                '-profile:v baseline',
-                '-level 3.1',
-                '-movflags +faststart',
-                '-max_muxing_queue_size 1024'
-            ]);
-
-            if (tieneAudioExterno) {
-                command.outputOptions(outputMaps);
-                command.outputOptions([
-                    '-c:a', 'aac',
-                    '-b:a', '128k',
-                    '-ac', '2'
-                ]);
-                console.log(`🎵 [JOB ${job.id}] Audio: original (40%) + fondo (100%) mezclados`);
-            } else if (tieneAudio) {
-                command.outputOptions([
-                    '-map', '0:a?',
-                    '-c:a', 'aac',
-                    '-b:a', '128k',
-                    '-ac', '2'
-                ]);
-                console.log(`🔊 [JOB ${job.id}] Audio: original AAC 128k`);
-            } else {
-                command.outputOptions(['-an']);
-                console.log(`🔇 [JOB ${job.id}] Sin audio`);
-            }
-
-            command
-                .output(outputPath)
-                .on('start', () => {
-                    console.log(`▶️ [JOB ${job.id}] FFmpeg iniciado`);
-                })
-                .on('progress', (progress) => {
-                    if (progress.percent) {
-                        const pct = 25 + Math.floor(progress.percent * 0.55);
-                        job.updateProgress(pct).catch(() => {});
-                    }
-                })
-                .on('end', () => {
-                    console.log(`✅ [JOB ${job.id}] FFmpeg terminó`);
-                    resolve();
-                })
-                .on('error', (err, stdout, stderr) => {
-                    console.error(`❌ [JOB ${job.id}] FFmpeg error:`, err.message);
-                    console.error(`❌ [JOB ${job.id}] STDERR:`, stderr);
-                    reject(err);
-                })
-                .run();
-        });
+        console.log(
+            '✅ Video procesado:',
+            (outputSize / 1048576).toFixed(2),
+            'MB'
+        );
 
         await job.updateProgress(80);
 
-        // PASO 5: Subir video procesado
-        console.log(`📤 [JOB ${job.id}] Subiendo video procesado...`);
+        // --------------------------------------------------------
+        // PASO 6: SUBIR RESULTADO
+        // --------------------------------------------------------
 
-        const outputBuffer = fs.readFileSync(outputPath);
-        const outputSha256 = createHash('sha256').update(outputBuffer).digest('hex');
-        let processedUrl;
+        console.log('📤 Subiendo video procesado...');
 
-        if (usaR2) {
-            const processedKey = `${bucketLogico}/${userId}/${videoId}_processed.mp4`;
-            processedUrl = await subirBufferR2(processedKey, outputBuffer, 'video/mp4');
+        const resultado = await subirVideoProcesado(
+            rutas.output,
+            userId,
+            videoId,
+            bucket,
+            usaR2
+        );
 
-            await registrarArchivoHash({
-                bucket: bucketLogico,
-                sha256: outputSha256,
-                path: processedKey,
-                publicUrl: processedUrl,
-                size: outputBuffer.length
-            });
+        console.log('✅ Video subido:', resultado.url);
 
-            console.log(`✅ [JOB ${job.id}] Video subido a R2: ${processedUrl}`);
-        } else {
-            const processedPath = `${userId}/${videoId}_processed.mp4`;
-            const { error: uploadError } = await supabaseAdmin.storage
-                .from(bucketLogico)
-                .upload(processedPath, outputBuffer, {
-                    contentType: 'video/mp4',
-                    cacheControl: '31536000',
-                    upsert: true
-                });
+        await job.updateProgress(90);
 
-            if (uploadError) {
-                throw new Error(`Error subiendo video procesado: ${uploadError.message}`);
-            }
+        // --------------------------------------------------------
+        // PASO 7: ACTUALIZAR BASE DE DATOS
+        // --------------------------------------------------------
 
-            const { data: urlData } = supabaseAdmin.storage
-                .from(bucketLogico)
-                .getPublicUrl(processedPath);
+        console.log('💾 Actualizando registro de video...');
 
-            processedUrl = urlData.publicUrl;
-            console.log(`✅ [JOB ${job.id}] Video subido (Supabase): ${processedUrl}`);
-        }
+        await actualizarVideoDB(
+            videoId,
+            resultado.url
+        );
+
+        procesado = true;
+
+        console.log('✅ Base de datos actualizada.');
 
         await job.updateProgress(95);
 
-        // PASO 6: Actualizar DB
-        console.log(`💾 [JOB ${job.id}] Actualizando base de datos...`);
+        // --------------------------------------------------------
+        // PASO 8: BORRADO SEGURO
+        // --------------------------------------------------------
 
-        const { error: dbError } = await supabaseAdmin
-            .from('videos')
-            .update({
-                url_video: processedUrl,
-                estado: 'publicado',
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', videoId);
-
-        if (dbError) {
-            throw new Error(`No se pudo actualizar el video en la base: ${dbError.message}`);
-        }
-        console.log(`✅ [JOB ${job.id}] DB actualizada`);
-
-        // PASO 7: Borrar original solo si nadie más lo usa
         if (keyOriginal) {
-            console.log(`🗑️ [JOB ${job.id}] Revisando si el original puede borrarse...`);
-            try {
-                if (usaR2) {
-                    const enUso = videoUrl ? await archivoOriginalEnUso(videoUrl, videoId) : true;
-
-                    if (enUso) {
-                        console.log(`ℹ️ [JOB ${job.id}] Original compartido con otro video. No se borra.`);
-                    } else {
-                        await borrarR2(keyOriginal);
-                        await supabaseAdmin
-                            .from('archivos_hash')
-                            .delete()
-                            .eq('bucket', bucketLogico)
-                            .eq('path', keyOriginal);
-                        console.log(`✅ [JOB ${job.id}] Original borrado de R2 y de archivos_hash`);
-                    }
-                } else {
-                    const { error: removeError } = await supabaseAdmin.storage
-                        .from(bucketLogico)
-                        .remove([keyOriginal]);
-                    if (removeError) throw new Error(removeError.message);
-                    console.log(`✅ [JOB ${job.id}] Original borrado (Supabase)`);
-                }
-            } catch (removeError) {
-                console.warn(`⚠️ [JOB ${job.id}] No se pudo borrar original:`, removeError.message);
-            }
+            await borrarOriginalSeguro(
+                usaR2,
+                keyOriginal,
+                bucket,
+                videoUrl,
+                videoId
+            );
         }
 
         await job.updateProgress(100);
 
-        // Cleanup
-        try {
-            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-            if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-        } catch (cleanupError) {
-            console.warn(`⚠️ [JOB ${job.id}] No se pudo limpiar temp:`, cleanupError.message);
-        }
-
-        console.log(`✅ [JOB ${job.id}] COMPLETADO\n`);
+        console.log('');
+        console.log('========================================');
+        console.log('✅ JOB COMPLETADO:', job.id);
+        console.log('========================================');
 
         return {
             success: true,
-            processedUrl,
-            videoId,
-            tieneAudio,
-            tieneAudioExterno
+            processedUrl: resultado.url,
+            videoId: videoId,
+            tieneAudio: tieneAudio,
+            tieneAudioExterno: tieneAudioExterno,
+            size: resultado.size
         };
 
     } catch (error) {
-        console.error(`❌ [JOB ${job.id}] Error:`, error.message);
+        console.error('');
+        console.error('❌ JOB FALLIDO:', job.id);
+        console.error('❌ ERROR:', error.message);
 
-        try {
-            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-            if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);
-            if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
-        } catch (cleanupError) {
-            console.warn(`⚠️ No se pudo limpiar temp:`, cleanupError.message);
-        }
+        const maxIntentos = job.opts.attempts || 1;
 
-        const esUltimoIntento = (job.attemptsMade + 1) >= (job.opts.attempts || 1);
-        if (esUltimoIntento) {
+        const esUltimoIntento =
+            (job.attemptsMade + 1) >= maxIntentos;
+
+        if (esUltimoIntento && !procesado) {
             try {
-                await supabaseAdmin
+                const { error: dbError } = await supabaseAdmin
                     .from('videos')
                     .update({
                         estado: 'error_procesamiento',
                         updated_at: new Date().toISOString()
                     })
                     .eq('id', videoId);
-                console.log(`📝 [JOB ${job.id}] Marcado como error en DB (último intento)`);
-            } catch (dbErr) {
-                console.warn(`⚠️ No se pudo marcar error en DB:`, dbErr.message);
+
+                if (dbError) {
+                    console.warn(
+                        '⚠️ No se pudo marcar el video como error:',
+                        dbError.message
+                    );
+                } else {
+                    console.log(
+                        '📝 Video marcado con error_procesamiento.'
+                    );
+                }
+
+            } catch (dbError) {
+                console.warn(
+                    '⚠️ Error actualizando estado:',
+                    dbError.message
+                );
             }
-        } else {
-            console.log(`🔄 [JOB ${job.id}] Se reintentará (${job.attemptsMade + 1}/${job.opts.attempts})`);
+
+        } else if (!esUltimoIntento) {
+            console.log(
+                '🔄 Se reintentará el procesamiento.'
+            );
         }
 
         throw error;
+
+    } finally {
+        // Los temporales se eliminan tanto en éxito como en error.
+        limpiarTemporales(rutas);
     }
 }
 
 // ================================================================
 // WORKER BULLMQ
 // ================================================================
-const worker = new Worker(COLA_NOMBRE, procesarVideo, {
-    connection: redisConnection,
-    concurrency: MAX_CONCURRENT,
-    limiter: {
-        max: 3,
-        duration: 60000
+
+const worker = new Worker(
+    COLA_NOMBRE,
+    procesarVideo,
+    {
+        connection: redisConnection,
+        concurrency: MAX_CONCURRENT,
+
+        limiter: {
+            max: 3,
+            duration: 60000
+        }
     }
+);
+
+worker.on('completed', function (job, result) {
+    console.log(
+        '✅ Worker: Job ' + job.id + ' completado.'
+    );
+
+    console.log('URL:', result.processedUrl);
+
+    console.log(
+        'Audio original:',
+        result.tieneAudio ? 'SÍ' : 'NO'
+    );
+
+    console.log(
+        'Audio externo:',
+        result.tieneAudioExterno ? 'SÍ' : 'NO'
+    );
 });
 
-worker.on('completed', (job, result) => {
-    console.log(`✅ Worker: Job ${job.id} completado`);
-    console.log(`   URL: ${result.processedUrl}`);
-    console.log(`   Audio original: ${result.tieneAudio ? 'sí' : 'no'}`);
-    console.log(`   Audio externo: ${result.tieneAudioExterno ? 'sí' : 'no'}`);
+worker.on('failed', function (job, err) {
+    console.error(
+        '❌ Worker: Job ' + (job ? job.id : 'desconocido') +
+        ' falló:',
+        err.message
+    );
 });
 
-worker.on('failed', (job, err) => {
-    console.error(`❌ Worker: Job ${job?.id} falló:`, err.message);
+worker.on('error', function (err) {
+    console.error(
+        '❌ Error general del Worker:',
+        err.message
+    );
 });
 
-worker.on('error', (err) => {
-    console.error('❌ Worker error general:', err.message);
-});
-
-worker.on('ready', () => {
-    console.log('✅ Worker listo, esperando trabajos...');
+worker.on('ready', function () {
+    console.log('✅ Worker listo para procesar videos.');
 });
 
 // ================================================================
 // HEALTH CHECK
 // ================================================================
+
 const http = require('http');
 
-const healthServer = http.createServer((req, res) => {
-    if (req.url === '/health' || req.url === '/') {
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-            status: 'ok',
-            service: 'worker-video',
-            redis: redisConnection.status,
-            r2: r2Configurado,
-            drawtext: false,
-            timestamp: new Date().toISOString()
-        }));
-    } else {
+const healthServer = http.createServer(
+    function (req, res) {
+        if (
+            req.url === '/health' ||
+            req.url === '/'
+        ) {
+            res.writeHead(200, {
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-store'
+            });
+
+            res.end(
+                JSON.stringify({
+                    status: 'ok',
+                    service: 'worker-video',
+                    version: '5.4',
+                    redis: redisConnection.status,
+                    r2: r2Configurado,
+                    watermark: true,
+                    ffmpegDrawtextRequired: false,
+                    timestamp: new Date().toISOString()
+                })
+            );
+
+            return;
+        }
+
         res.writeHead(404);
         res.end('Not found');
     }
+);
+
+healthServer.listen(
+    PORT,
+    '0.0.0.0',
+    function () {
+        console.log(
+            '🏥 Health check en puerto ' + PORT
+        );
+    }
+);
+
+// ================================================================
+// CIERRE CONTROLADO
+// ================================================================
+
+let cerrando = false;
+
+async function cerrarWorker(signal) {
+    if (cerrando) return;
+
+    cerrando = true;
+
+    console.log(
+        '🛑 ' + signal + ' recibido. Cerrando servicios...'
+    );
+
+    try {
+        await worker.close();
+    } catch (error) {
+        console.error(
+            '⚠️ Error cerrando Worker:',
+            error.message
+        );
+    }
+
+    try {
+        await redisConnection.quit();
+    } catch (error) {
+        console.error(
+            '⚠️ Error cerrando Redis:',
+            error.message
+        );
+    }
+
+    healthServer.close(function () {
+        console.log('✅ Servicios cerrados.');
+        process.exit(0);
+    });
+}
+
+process.on('SIGTERM', function () {
+    cerrarWorker('SIGTERM');
 });
 
-healthServer.listen(PORT, '0.0.0.0', () => {
-    console.log(`🏥 Health check en http://0.0.0.0:${PORT}/health`);
+process.on('SIGINT', function () {
+    cerrarWorker('SIGINT');
 });
 
 // ================================================================
-// MANEJO DE ERRORES GLOBALES
+// ERRORES GLOBALES
 // ================================================================
-process.on('uncaughtException', (err) => {
-    console.error('❌ Uncaught exception:', err);
-    console.error('🔴 Cerrando worker para que Railway reinicie el contenedor...');
+
+process.on('uncaughtException', function (err) {
+    console.error(
+        '❌ UNCAUGHT EXCEPTION:',
+        err
+    );
+
+    console.error(
+        '🔴 Railway reiniciará el contenedor.'
+    );
+
     process.exit(1);
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-    console.error('❌ Unhandled rejection en:', promise);
-    console.error('   Razón:', reason);
+process.on('unhandledRejection', function (reason) {
+    console.error(
+        '❌ UNHANDLED REJECTION:',
+        reason
+    );
 });
 
-process.on('SIGTERM', async () => {
-    console.log('🛑 SIGTERM recibido, cerrando worker...');
-    try {
-        await worker.close();
-        await redisConnection.quit();
-    } catch (err) {
-        console.error('⚠️ Error cerrando:', err.message);
-    }
-    healthServer.close(() => {
-        process.exit(0);
-    });
-});
+// ================================================================
+// INICIO
+// ================================================================
 
+console.log('');
 console.log('========================================');
-console.log("🎬 WORKER DE VIDEOS - SARIEL'S v5.3 (R2, sin drawtext)");
+console.log("🎬 WORKER CSARIEL'S v5.4");
 console.log('========================================');
+
 console.log('📡 Cola:', COLA_NOMBRE);
 console.log('🔢 Concurrencia:', MAX_CONCURRENT);
-console.log('📁 Temp dir:', TEMP_DIR);
+console.log('📁 Temporales:', TEMP_DIR);
 console.log('🖼️ Logo:', LOGO_PATH);
-console.log('☁️ R2:', r2Configurado ? 'configurado' : 'NO configurado');
-console.log('🎵 Audio: mezcla original 40% + fondo 100%');
-console.log('🎯 Limiter: 3 jobs/minuto');
+console.log('☁️ R2:', r2Configurado ? 'CONFIGURADO' : 'NO CONFIGURADO');
+console.log('🎵 Audio original: 40%');
+console.log('🎵 Música externa: 100%');
+console.log('🖼️ Marca de agua: PNG al 50%');
+console.log('🎯 Limiter: 3 trabajos/minuto');
+console.log('🔒 Dependencia drawtext: NO');
+console.log('========================================');
+console.log('🚀 WORKER LISTO');
 console.log('========================================');
