@@ -1,4 +1,3 @@
-
 /* ================================================================
    WORKER.JS - CSARIEL'S ECOSYSTEM
    VERSIÓN v5.5 - DYNAMIC FILTER GRAPH / FFmpeg FIX
@@ -22,7 +21,7 @@
 const { Worker } = require('bullmq');
 const IORedis = require('ioredis');
 const ffmpeg = require('fluent-ffmpeg');
-const ffmpegPath = require('ffmpeg-static');
+// ELIMINADO: const ffmpegPath = require('ffmpeg-static');
 const { createClient } = require('@supabase/supabase-js');
 
 const {
@@ -46,14 +45,18 @@ require('dotenv').config();
 // CONFIGURACIÓN FFMPEG
 // ================================================================
 
-if (!ffmpegPath) {
-    console.error('❌ No se encontró ffmpeg-static.');
+// Usamos la variable de entorno de Railway o el binario del sistema por defecto
+const ffmpegPath = process.env.FFMPEG_PATH || '/usr/bin/ffmpeg';
+
+if (!fs.existsSync(ffmpegPath)) {
+    console.error('❌ No se encontró FFmpeg en la ruta:', ffmpegPath);
+    console.error('Asegúrate de haber instalado ffmpeg en el sistema (apt-get install -y ffmpeg).');
     process.exit(1);
 }
 
 ffmpeg.setFfmpegPath(ffmpegPath);
 
-console.log('🎬 FFmpeg:', ffmpegPath);
+console.log('🎬 FFmpeg configurado en:', ffmpegPath);
 
 // ================================================================
 // VARIABLES DE ENTORNO
