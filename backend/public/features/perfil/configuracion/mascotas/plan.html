@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -13,6 +14,7 @@
 <style>
 :root { color-scheme: dark; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
+
 body {
     margin: 0;
     min-height: 100vh;
@@ -24,11 +26,25 @@ body {
         radial-gradient(ellipse at 80% 80%, rgba(0, 212, 255, 0.1), transparent 55%);
     padding: 20px;
 }
+
 .app { max-width: 640px; margin: 0 auto; }
 
-h1 { font-size: 1.3rem; color: #00D4FF; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+h1 {
+    font-size: 1.3rem;
+    color: #00D4FF;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 h1 .hex { font-family: 'Orbitron', monospace; }
-.sub { color: #8aa8b8; font-size: .8rem; margin-bottom: 24px; }
+
+.sub {
+    color: #8aa8b8;
+    font-size: .8rem;
+    margin-bottom: 24px;
+}
 
 .btn-back {
     display: inline-flex;
@@ -43,7 +59,11 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     border-radius: 99px;
     transition: all .2s;
 }
-.btn-back:hover { color: #00D4FF; border-color: #00D4FF; }
+
+.btn-back:hover {
+    color: #00D4FF;
+    border-color: #00D4FF;
+}
 
 .card {
     background: rgba(10, 10, 10, 0.6);
@@ -53,6 +73,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     margin-bottom: 16px;
     box-shadow: 0 4px 20px rgba(0, 212, 255, 0.05);
 }
+
 .card h2 {
     font-size: .95rem;
     color: #00D4FF;
@@ -63,6 +84,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     align-items: center;
     gap: 8px;
 }
+
 .card h2 .simbolo { font-family: 'Orbitron', monospace; }
 
 .fila {
@@ -73,6 +95,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     font-size: .85rem;
 }
+
 .fila:last-child { border-bottom: 0; }
 .fila span:first-child { color: #8aa8b8; }
 .fila span:last-child { color: #f0f4f8; font-weight: 500; }
@@ -84,6 +107,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     overflow: hidden;
     margin: 4px 0 8px;
 }
+
 .barra > i {
     display: block;
     height: 100%;
@@ -98,12 +122,14 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     margin-top: 8px;
     background: rgba(0, 0, 0, 0.4);
 }
+
 .plan-item .titulo {
     font-weight: 700;
     font-size: .9rem;
     color: #f0f4f8;
     margin-bottom: 4px;
 }
+
 .plan-item .desc {
     font-size: .75rem;
     color: #8aa8b8;
@@ -126,38 +152,81 @@ button {
     transition: all .2s;
     letter-spacing: 0.3px;
 }
+
 button:hover:not(:disabled) {
     transform: scale(1.02);
     box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
 }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 
 button.sec {
     background: transparent;
     border: 1px solid rgba(255, 51, 102, 0.5);
     color: #ffb3b3;
 }
+
 button.sec:hover:not(:disabled) {
     background: rgba(255, 51, 102, 0.1);
     border-color: #ff3366;
     box-shadow: none;
 }
 
-.msg { margin-top: 10px; font-size: 13px; color: #8aa8b8; min-height: 18px; line-height: 1.4; }
+.msg {
+    margin-top: 10px;
+    font-size: 13px;
+    color: #8aa8b8;
+    min-height: 18px;
+    line-height: 1.4;
+}
+
 .msg.error { color: #ff6b8a; }
 .msg.success { color: #00d68f; }
 
-.loading { color: #8aa8b8; font-size: .85rem; padding: 10px 0; }
+.loading {
+    color: #8aa8b8;
+    font-size: .85rem;
+    padding: 10px 0;
+}
 
 .zona-cancelar { display: none; }
 .zona-cancelar.visible { display: block; }
 
 /* Depósito dentro de la app */
 .deposito { text-align: center; }
-.deposito .monto { font-family: 'Orbitron', monospace; font-size: 1.1rem; color: #00D4FF; margin-bottom: 6px; }
-.deposito .red { font-size: .78rem; color: #f7d44a; margin-bottom: 14px; }
-.deposito .qr { margin: 0 auto 14px; min-height: 200px; display: flex; justify-content: center; align-items: center; }
-.deposito .qr img { width: 200px; height: 200px; border-radius: 10px; background: #fff; padding: 6px; }
+
+.deposito .monto {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.1rem;
+    color: #00D4FF;
+    margin-bottom: 6px;
+}
+
+.deposito .red {
+    font-size: .78rem;
+    color: #f7d44a;
+    margin-bottom: 14px;
+}
+
+.deposito .qr {
+    margin: 0 auto 14px;
+    min-height: 200px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.deposito .qr img {
+    width: 200px;
+    height: 200px;
+    border-radius: 10px;
+    background: #fff;
+    padding: 6px;
+}
+
 .deposito .direccion {
     font-family: monospace;
     font-size: .78rem;
@@ -168,9 +237,15 @@ button.sec:hover:not(:disabled) {
     padding: 10px;
     margin-bottom: 10px;
 }
-.deposito .estado { font-size: .8rem; color: #8aa8b8; margin: 10px 0; }
+
+.deposito .estado {
+    font-size: .8rem;
+    color: #8aa8b8;
+    margin: 10px 0;
+}
 </style>
 </head>
+
 <body>
 <div class="app">
 
@@ -181,26 +256,34 @@ button.sec:hover:not(:disabled) {
 
     <div class="card">
         <h2><span class="simbolo">◈</span> PLAN ACTUAL</h2>
-        <div id="estado"><div class="loading">Cargando…</div></div>
+        <div id="estado">
+            <div class="loading">Cargando…</div>
+        </div>
     </div>
 
     <div class="card">
         <h2><span class="simbolo">◈</span> USO DE ESTE PERIODO</h2>
-        <div id="uso"><div class="loading">Cargando…</div></div>
+        <div id="uso">
+            <div class="loading">Cargando…</div>
+        </div>
     </div>
 
     <div class="card">
         <h2><span class="simbolo">◈</span> PLANES DISPONIBLES</h2>
-        <div id="catalogo"><div class="loading">Cargando…</div></div>
+        <div id="catalogo">
+            <div class="loading">Cargando…</div>
+        </div>
         <div class="msg" id="msgCheckout"></div>
         <div id="depositoIA" style="display:none;"></div>
     </div>
 
     <div class="card zona-cancelar" id="zonaCancelar">
         <h2><span class="simbolo">◈</span> RENOVACIÓN</h2>
+
         <p style="color:#8aa8b8;font-size:.8rem;line-height:1.5;margin-bottom:10px;">
             Si cancelas, conservas el acceso hasta la fecha de fin. No hay reembolso.
         </p>
+
         <button class="sec" id="btnCancelar">Cancelar renovación</button>
         <div class="msg" id="msgCancelar"></div>
     </div>
@@ -211,6 +294,7 @@ button.sec:hover:not(:disabled) {
 'use strict';
 
 (function() {
+
     const API = '';
     let codigoPlanActual = null;
     let timerPago = null;
@@ -220,29 +304,46 @@ button.sec:hover:not(:disabled) {
     // ═══════════════════════════════════════════════════════
 
     async function obtenerToken() {
-        if (window.supabaseClient?.auth) {
+
+        if (window.supabaseClient && window.supabaseClient.auth) {
+
             const { data } = await window.supabaseClient.auth.getSession();
-            const token = data?.session?.access_token;
+            const token = data && data.session && data.session.access_token;
+
             if (token) return token;
         }
 
         if (typeof window.getSupabase === 'function') {
+
             try {
+
                 const sb = await window.getSupabase();
-                if (sb?.auth) {
+
+                if (sb && sb.auth) {
+
                     const { data } = await sb.auth.getSession();
-                    const token = data?.session?.access_token;
+                    const token = data && data.session && data.session.access_token;
+
                     if (token) return token;
                 }
+
             } catch (e) {}
         }
 
         for (let i = 0; i < localStorage.length; i++) {
+
             const clave = localStorage.key(i);
+
             if (clave && clave.startsWith('sb-') && clave.endsWith('-auth-token')) {
+
                 try {
+
                     const sesion = JSON.parse(localStorage.getItem(clave));
-                    if (sesion?.access_token) return sesion.access_token;
+
+                    if (sesion && sesion.access_token) {
+                        return sesion.access_token;
+                    }
+
                 } catch (e) {}
             }
         }
@@ -251,11 +352,13 @@ button.sec:hover:not(:disabled) {
     }
 
     // ═══════════════════════════════════════════════════════
-    // API helper
+    // API HELPER
     // ═══════════════════════════════════════════════════════
 
     async function api(ruta, opciones = {}) {
+
         const token = await obtenerToken();
+
         const res = await fetch(API + ruta, {
             ...opciones,
             headers: {
@@ -264,91 +367,169 @@ button.sec:hover:not(:disabled) {
                 ...(opciones.headers || {})
             }
         });
+
         const json = await res.json().catch(() => ({}));
+
         if (!res.ok || json.success === false) {
             throw new Error(json.error || `Error ${res.status}`);
         }
+
         return json.data;
     }
 
     // ═══════════════════════════════════════════════════════
-    // Helpers de UI
+    // HELPERS DE UI
     // ═══════════════════════════════════════════════════════
 
     function el(tag, texto, clase) {
+
         const e = document.createElement(tag);
         e.textContent = texto;
-        if (clase) e.className = clase;
+
+        if (clase) {
+            e.className = clase;
+        }
+
         return e;
     }
 
     function fila(etiqueta, valor) {
+
         const f = document.createElement('div');
         f.className = 'fila';
-        f.append(el('span', etiqueta), el('span', valor));
+
+        f.append(
+            el('span', etiqueta),
+            el('span', valor)
+        );
+
         return f;
     }
 
     function fecha(iso) {
+
         if (!iso) return '—';
+
         try {
+
             return new Date(iso).toLocaleDateString('es-MX', {
-                day: 'numeric', month: 'short', year: 'numeric'
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
             });
-        } catch (e) { return '—'; }
+
+        } catch (e) {
+            return '—';
+        }
     }
 
     function limite(usados, max) {
+
         return max === null || max === undefined
             ? `${usados} / ilimitado`
             : `${usados} / ${max}`;
     }
 
     function barra(usados, max) {
+
         const b = document.createElement('div');
         b.className = 'barra';
+
         const i = document.createElement('i');
+
         i.style.width = max
             ? Math.min(100, Math.round((usados / max) * 100)) + '%'
             : '0%';
+
         b.appendChild(i);
+
         return b;
     }
 
     // ═══════════════════════════════════════════════════════
-    // Cargar plan actual
+    // CARGAR PLAN ACTUAL
     // ═══════════════════════════════════════════════════════
 
     async function cargarPlan() {
+
         const estado = document.getElementById('estado');
 
         try {
+
             const data = await api('/api/ai/plan');
-            const { plan, uso } = data;
+
+            const plan = data.plan;
+            const uso = data.uso;
+
             codigoPlanActual = plan.codigo;
 
+            // Se conservan exclusivamente los nombres
+            // de los avatares oficiales de la plataforma.
+
+            const personajes = Array.isArray(plan.personajes)
+                ? plan.personajes.join(', ')
+                : '—';
+
             estado.replaceChildren(
+
                 fila('Plan', plan.nombre),
+
                 fila('Desde', fecha(plan.fecha_inicio)),
+
                 fila('Hasta', fecha(plan.fecha_fin)),
-                fila('Días restantes', plan.dias_restantes != null ? String(plan.dias_restantes) : '—'),
-                fila('Personajes', (plan.personajes || []).join(', ') || '—')
+
+                fila(
+                    'Días restantes',
+                    plan.dias_restantes != null
+                        ? String(plan.dias_restantes)
+                        : '—'
+                ),
+
+                fila('Avatares oficiales', personajes || '—')
             );
 
             if (plan.cancelada_at) {
-                const aviso = el('div', `No se renovará. Termina el ${fecha(plan.fecha_fin)}.`, 'msg');
+
+                const aviso = el(
+                    'div',
+                    `No se renovará. Termina el ${fecha(plan.fecha_fin)}.`,
+                    'msg'
+                );
+
                 aviso.style.color = '#ffb3b3';
                 estado.appendChild(aviso);
             }
 
-            document.getElementById('uso').replaceChildren(
-                fila('Mensajes', limite(uso.mensajes.usados, uso.mensajes.limite)),
-                barra(uso.mensajes.usados, uso.mensajes.limite),
-                fila('Búsquedas Tavily', limite(uso.tavily.usados, uso.tavily.limite)),
-                barra(uso.tavily.usados, uso.tavily.limite),
-                fila('Búsquedas Perplexity', limite(uso.perplexity.usados, uso.perplexity.limite)),
-                barra(uso.perplexity.usados, uso.perplexity.limite)
-            );
+            // Se muestra únicamente el consumo de mensajes.
+            // Los servicios internos no aparecen en la interfaz.
+
+            const usoCont = document.getElementById('uso');
+
+            usoCont.replaceChildren();
+
+            if (uso && uso.mensajes) {
+
+                usoCont.append(
+                    fila(
+                        'Mensajes utilizados',
+                        limite(
+                            uso.mensajes.usados,
+                            uso.mensajes.limite
+                        )
+                    ),
+
+                    barra(
+                        uso.mensajes.usados,
+                        uso.mensajes.limite
+                    )
+                );
+
+            } else {
+
+                usoCont.appendChild(
+                    el('div', 'Información de uso no disponible.', 'msg')
+                );
+            }
 
             const puedeCancelar =
                 !plan.es_prueba &&
@@ -359,206 +540,351 @@ button.sec:hover:not(:disabled) {
                 .classList.toggle('visible', puedeCancelar);
 
         } catch (e) {
+
             estado.replaceChildren(
-                el('div', 'No se pudo cargar tu plan: ' + e.message, 'msg error')
+                el(
+                    'div',
+                    'No se pudo cargar tu plan: ' + e.message,
+                    'msg error'
+                )
             );
         }
     }
 
     // ═══════════════════════════════════════════════════════
-    // Cargar catálogo de planes
+    // CARGAR CATÁLOGO DE PLANES
     // ═══════════════════════════════════════════════════════
 
     async function cargarCatalogo() {
+
         const cont = document.getElementById('catalogo');
 
         try {
+
             const data = await api('/api/ai/plan/catalogo');
             const planes = data.planes || [];
 
             if (planes.length === 0) {
-                cont.replaceChildren(el('div', 'No hay planes disponibles.', 'msg'));
+
+                cont.replaceChildren(
+                    el('div', 'No hay planes disponibles.', 'msg')
+                );
+
                 return;
             }
 
             cont.replaceChildren(...planes.map((p) => {
+
                 const caja = document.createElement('div');
                 caja.className = 'plan-item';
 
-                const titulo = el('div', `${p.nombre} · $${p.precio_mxn} MXN`, 'titulo');
+                const titulo = el(
+                    'div',
+                    `${p.nombre} · $${p.precio_mxn} MXN`,
+                    'titulo'
+                );
 
-                const personajes = (p.personajes || []).join(', ');
-                const desc = el('div',
-                    `${personajes} · ${p.mensajes_max ?? 'ilimitados'} mensajes · ` +
-                    `${p.tavily_max ?? '∞'} Tavily · ${p.perplexity_max ?? '∞'} Perplexity`,
+                // Únicamente se muestran los avatares oficiales.
+                const personajes = Array.isArray(p.personajes)
+                    ? p.personajes.join(', ')
+                    : '';
+
+                const desc = el(
+                    'div',
+                    `${personajes || 'Avatares oficiales'} · ` +
+                    `${p.mensajes_max ?? 'ilimitados'} mensajes`,
                     'desc'
                 );
 
                 const boton = document.createElement('button');
+
                 boton.textContent = `Contratar ${p.nombre}`;
+
                 boton.onclick = () => contratar(p.plan, boton);
 
                 caja.append(titulo, desc, boton);
+
                 return caja;
             }));
 
         } catch (e) {
+
             cont.replaceChildren(
-                el('div', 'No se pudo cargar el catálogo: ' + e.message, 'msg error')
+                el(
+                    'div',
+                    'No se pudo cargar el catálogo: ' + e.message,
+                    'msg error'
+                )
             );
         }
     }
 
     // ═══════════════════════════════════════════════════════
-    // Depósito dentro de la app
+    // DEPÓSITO DENTRO DE LA APP
     // ═══════════════════════════════════════════════════════
 
     function mostrarDeposito(data) {
+
         const cont = document.getElementById('depositoIA');
+
         cont.style.display = 'block';
         cont.replaceChildren();
 
         const caja = document.createElement('div');
         caja.className = 'deposito';
 
-        const monto = el('div', `Envía exactamente ${data.pay_amount ?? '—'} USDT`, 'monto');
-        const red = el('div', 'Red: TRON (TRC20). Solo USDT por esta red.', 'red');
+        const monto = el(
+            'div',
+            `Envía exactamente ${data.pay_amount ?? '—'} USDT`,
+            'monto'
+        );
+
+        const red = el(
+            'div',
+            'Red: TRON (TRC20). Solo USDT por esta red.',
+            'red'
+        );
 
         const qr = document.createElement('div');
         qr.className = 'qr';
         qr.textContent = 'Generando QR…';
 
-        const direccion = el('div', data.pay_address || '', 'direccion');
+        const direccion = el(
+            'div',
+            data.pay_address || '',
+            'direccion'
+        );
 
         const copiar = document.createElement('button');
+
         copiar.type = 'button';
         copiar.textContent = 'Copiar dirección';
-        copiar.onclick = async function () {
+
+        copiar.onclick = async function() {
+
             try {
-                await navigator.clipboard.writeText(data.pay_address || '');
+
+                await navigator.clipboard.writeText(
+                    data.pay_address || ''
+                );
+
                 copiar.textContent = '✓ Copiada';
+
             } catch (e) {
+
                 copiar.textContent = 'No se pudo copiar';
             }
         };
 
-        const estado = el('div', 'Esperando tu pago… se activa solo al confirmarse.', 'estado');
+        const estado = el(
+            'div',
+            'Esperando tu pago… se activa solo al confirmarse.',
+            'estado'
+        );
+
         estado.id = 'estadoPagoIA';
 
-        caja.append(monto, red, qr, direccion, copiar, estado);
+        caja.append(
+            monto,
+            red,
+            qr,
+            direccion,
+            copiar,
+            estado
+        );
+
         cont.appendChild(caja);
 
-        if (data.pay_address && typeof QRCode !== 'undefined' && QRCode.toDataURL) {
-            QRCode.toDataURL(data.pay_address, { width: 200, margin: 1 })
-                .then(function (url) {
-                    qr.replaceChildren();
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.alt = 'QR de pago';
-                    qr.appendChild(img);
-                })
-                .catch(function () { qr.textContent = 'QR no disponible. Copia la dirección.'; });
+        if (
+            data.pay_address &&
+            typeof QRCode !== 'undefined' &&
+            QRCode.toDataURL
+        ) {
+
+            QRCode.toDataURL(
+                data.pay_address,
+                { width: 200, margin: 1 }
+            )
+            .then(function(url) {
+
+                qr.replaceChildren();
+
+                const img = document.createElement('img');
+
+                img.src = url;
+                img.alt = 'QR de pago';
+
+                qr.appendChild(img);
+
+            })
+            .catch(function() {
+
+                qr.textContent = 'QR no disponible. Copia la dirección.';
+            });
+
         } else {
+
             qr.textContent = 'QR no disponible. Copia la dirección.';
         }
     }
 
+    // ═══════════════════════════════════════════════════════
+    // ESPERAR ACTIVACIÓN
+    // ═══════════════════════════════════════════════════════
+
     function esperarActivacion() {
-        if (timerPago) clearInterval(timerPago);
+
+        if (timerPago) {
+            clearInterval(timerPago);
+        }
+
         const planInicial = codigoPlanActual;
+
         let intentos = 0;
 
         timerPago = setInterval(async () => {
+
             intentos++;
+
             try {
+
                 const d = await api('/api/ai/plan');
+
                 if (d.plan.codigo !== planInicial) {
+
                     clearInterval(timerPago);
                     timerPago = null;
-                    document.getElementById('depositoIA').style.display = 'none';
+
+                    document.getElementById('depositoIA')
+                        .style.display = 'none';
+
                     const msg = document.getElementById('msgCheckout');
+
                     msg.className = 'msg success';
                     msg.textContent = '✅ Pago confirmado. Tu plan ya está activo.';
+
                     await cargarPlan();
+
                     return;
                 }
+
             } catch (e) {}
 
             const estado = document.getElementById('estadoPagoIA');
+
             if (estado && intentos % 4 === 0) {
-                estado.textContent = 'Esperando confirmación de la red… puede tardar unos minutos.';
+
+                estado.textContent =
+                    'Esperando confirmación de la red… puede tardar unos minutos.';
             }
+
             if (intentos >= 120) {
+
                 clearInterval(timerPago);
                 timerPago = null;
+
                 const msg = document.getElementById('msgCheckout');
+
                 msg.className = 'msg';
                 msg.textContent = 'El pago aún no se confirma. Revisa más tarde.';
             }
+
         }, 15000);
     }
 
     // ═══════════════════════════════════════════════════════
-    // Contratar plan
+    // CONTRATAR PLAN
     // ═══════════════════════════════════════════════════════
 
     async function contratar(plan, boton) {
+
         const msg = document.getElementById('msgCheckout');
 
         boton.disabled = true;
+
         msg.className = 'msg';
         msg.textContent = 'Creando tu pago…';
+
         document.getElementById('depositoIA').style.display = 'none';
 
         try {
+
             const data = await api('/api/ai/plan/checkout', {
+
                 method: 'POST',
-                body: JSON.stringify({ plan, proveedor: 'nowpayments' })
+
+                body: JSON.stringify({
+                    plan,
+                    proveedor: 'nowpayments'
+                })
             });
 
-            if (!data?.pay_address) {
+            if (!data || !data.pay_address) {
+
                 throw new Error('No se recibió la dirección de pago.');
             }
 
             msg.className = 'msg';
             msg.textContent = 'Envía el pago a la dirección de abajo.';
+
             mostrarDeposito(data);
+
             esperarActivacion();
 
         } catch (e) {
+
             msg.className = 'msg error';
             msg.textContent = 'Error: ' + e.message;
+
         } finally {
+
             boton.disabled = false;
         }
     }
 
     // ═══════════════════════════════════════════════════════
-    // Cancelar renovación
+    // CANCELAR RENOVACIÓN
     // ═══════════════════════════════════════════════════════
 
-    document.getElementById('btnCancelar').addEventListener('click', async () => {
-        if (!confirm('¿Cancelar la renovación?\nConservas el acceso hasta la fecha de fin. No hay reembolso.')) {
-            return;
-        }
+    document.getElementById('btnCancelar')
+        .addEventListener('click', async () => {
 
-        const msg = document.getElementById('msgCancelar');
-        msg.className = 'msg';
-        msg.textContent = 'Cancelando…';
+            if (!confirm(
+                '¿Cancelar la renovación?\n' +
+                'Conservas el acceso hasta la fecha de fin. No hay reembolso.'
+            )) {
 
-        try {
-            const data = await api('/api/ai/plan/cancelar', { method: 'POST' });
-            msg.className = 'msg success';
-            msg.textContent = data.mensaje || 'Plan cancelado correctamente.';
-            await cargarPlan();
-        } catch (e) {
-            msg.className = 'msg error';
-            msg.textContent = 'Error: ' + e.message;
-        }
-    });
+                return;
+            }
+
+            const msg = document.getElementById('msgCancelar');
+
+            msg.className = 'msg';
+            msg.textContent = 'Cancelando…';
+
+            try {
+
+                const data = await api(
+                    '/api/ai/plan/cancelar',
+                    { method: 'POST' }
+                );
+
+                msg.className = 'msg success';
+
+                msg.textContent =
+                    data.mensaje || 'Plan cancelado correctamente.';
+
+                await cargarPlan();
+
+            } catch (e) {
+
+                msg.className = 'msg error';
+                msg.textContent = 'Error: ' + e.message;
+            }
+        });
 
     // ═══════════════════════════════════════════════════════
-    // Init
+    // INICIALIZACIÓN
     // ═══════════════════════════════════════════════════════
 
     cargarPlan();
@@ -566,5 +892,6 @@ button.sec:hover:not(:disabled) {
 
 })();
 </script>
+
 </body>
 </html>
