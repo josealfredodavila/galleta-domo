@@ -27,6 +27,10 @@
      nombreUsuario y username al Worker. Si no hay perfil o los datos
      son nulos, se envían cadenas vacías y el Worker usa su valor
      por defecto. Un fallo en esta consulta no detiene la cola.
+
+   v4.2 (respaldo handle):
+   - La tabla de perfiles es public.usuarios.
+   - Si username viene vacío, se usa handle como respaldo.
    ================================================================ */
 
 const express = require('express');
@@ -60,10 +64,11 @@ const BUCKET_VIDEOS = 'videos';
 // Prefijo permitido para audioUrl (protección SSRF)
 const AUDIO_URL_PREFIX = 'https://zultnlogdoajehbswlih.supabase.co/storage/v1/object/public/audios/';
 
-// Estructura de la tabla de perfiles (ajustar si tu tabla se llama distinto)
-const PERFIL_TABLA = 'perfiles';
+// Estructura de la tabla de perfiles (verificada en Supabase)
+const PERFIL_TABLA = 'usuarios';
 const PERFIL_COL_NOMBRE = 'nombre';
 const PERFIL_COL_USERNAME = 'username';
+const PERFIL_COL_HANDLE = 'handle'; // respaldo si username está vacío
 
 const redisConnection = new IORedis(REDIS_URL, {
     maxRetriesPerRequest: null,
@@ -119,14 +124,18 @@ function filePathValido(filePath, userId) {
 // ================================================================
 // Devuelve { nombreUsuario, username }. Nunca lanza error: si no hay
 // perfil o la consulta falla, devuelve cadenas vacías para que el
-// Worker use su valor por defecto.
+// Worker use su valor por defecto. Si username está vacío, usa handle.
+function textoOVacio(valor) {
+    return typeof valor === 'string' ? valor.trim() : '';
+}
+
 async function obtenerDatosBranding(userId) {
     const vacio = { nombreUsuario: '', username: '' };
 
     try {
         const { data: perfil, error } = await supabaseAdmin
             .from(PERFIL_TABLA)
-            .select(`${PERFIL_COL_NOMBRE}, ${PERFIL_COL_USERNAME}`)
+            .select(`${PERFIL_COL_NOMBRE}, ${PERFIL_COL_USERNAME}, ${PERFIL_COL_HANDLE}`)
             .eq('id', userId)
             .maybeSingle();
 
@@ -137,9 +146,12 @@ async function obtenerDatosBranding(userId) {
 
         if (!perfil) return vacio;
 
+        const username = textoOVacio(perfil[PERFIL_COL_USERNAME])
+            || textoOVacio(perfil[PERFIL_COL_HANDLE]);
+
         return {
-            nombreUsuario: typeof perfil[PERFIL_COL_NOMBRE] === 'string' ? perfil[PERFIL_COL_NOMBRE] : '',
-            username: typeof perfil[PERFIL_COL_USERNAME] === 'string' ? perfil[PERFIL_COL_USERNAME] : ''
+            nombreUsuario: textoOVacio(perfil[PERFIL_COL_NOMBRE]),
+            username
         };
     } catch (err) {
         console.warn('⚠️ [QUEUE] Error inesperado al leer el perfil:', err.message);
