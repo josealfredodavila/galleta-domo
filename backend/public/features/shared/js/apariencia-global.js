@@ -1,5 +1,5 @@
 /* ================================================================
-   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.7
+   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.8
    Archivo: backend/public/features/shared/js/apariencia-global.js
 
    Conserva sin cambios:
@@ -7,12 +7,15 @@
    - Tema, color de acento y tamaño de fuente (80–140 %).
    - window.SarielApariencia y todas sus funciones públicas.
 
+   v3.8:
+   - Se quita '/features/perfil' de RUTAS_EXCLUIDAS_BASE. La mascota
+     activa vuelve a aparecer en perfil.html y perfil-publico.html.
+     (La v3.7 la ocultaba en perfil para evitar que estorbara en la
+     publicación de fotos. Si vuelve a estorbar, se corrige el z-index
+     en marquinhos-pet.css; no hace falta excluir la página.)
+
    v3.7:
-   - '/features/perfil' agregado a RUTAS_EXCLUIDAS_BASE.
-     La mascota flotante ya no se inyecta en perfil.html ni en
-     perfil-publico.html. Ahí están la publicación de fotos, el visor
-     y los modales de reporte, donde la mascota estorbaba.
-     Las demás páginas no cambian.
+   - '/features/perfil' agregado a RUTAS_EXCLUIDAS_BASE (ya revertido en v3.8).
 
    v3.6:
    - '/features/mensajes' agregado a RUTAS_EXCLUIDAS_BASE.
@@ -899,11 +902,9 @@
         '/centro-ayuda',
         // v3.6: la pantalla de Mensajes tiene su propia interfaz;
         // la mascota flotante no se muestra allí.
-        '/features/mensajes',
-        // v3.7: perfil propio y público. Ahí están la publicación de
-        // fotos, el visor de fotos y los modales de reporte, donde la
-        // mascota flotante estorbaba.
-        '/features/perfil'
+        '/features/mensajes'
+        // v3.8: '/features/perfil' ya no se excluye. La mascota activa
+        // aparece en perfil.html y perfil-publico.html.
     ];
 
     function puedeInyectarMascota(rutaTienda) {
@@ -1041,7 +1042,7 @@
         inyectarItlasuhuaPet();
 
         console.log(
-            '[Apariencia] Módulo global v3.7 cargado. Mascota activa:',
+            '[Apariencia] Módulo global v3.8 cargado. Mascota activa:',
             getMascotaActiva()
         );
     }
