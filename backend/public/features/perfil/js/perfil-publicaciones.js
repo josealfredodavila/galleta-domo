@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.0 GLOBAL VIDEO PLAYER ENGINE
+// v14.1 GLOBAL VIDEO PLAYER ENGINE + EMOJI ANIMATIONS
 // ================================================================
 // ACTUALIZACIONES:
 // 1. Reproducción continua al cambiar entre modo normal y expandido.
@@ -18,6 +18,7 @@
 // 13. Mejoras de accesibilidad y compatibilidad móvil.
 // 14. Limpieza de recursos al cerrar el visor.
 // 15. Se conserva la integración existente con Supabase.
+// 16. Animaciones CSS puras (flotación, pop y brinco) para los emojis del menú de reacciones.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -1473,6 +1474,29 @@ function pubCerrarVisor() {
         transform: translateY(0) scale(1);
     }
 
+    /* ANIMACIONES DE EMOJIS */
+
+    @keyframes pubEmojiFloat {
+        0%   { transform: translateY(0) rotate(0deg); }
+        25%  { transform: translateY(-2px) rotate(-2deg); }
+        50%  { transform: translateY(-4px) rotate(0deg); }
+        75%  { transform: translateY(-2px) rotate(2deg); }
+        100% { transform: translateY(0) rotate(0deg); }
+    }
+
+    @keyframes pubEmojiPop {
+        0%   { transform: scale(.6) translateY(0); opacity: 0; }
+        60%  { transform: scale(1.15) translateY(-2px); opacity: 1; }
+        100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    @keyframes pubEmojiBounce {
+        0%   { transform: scale(1) translateY(0); }
+        30%  { transform: scale(1.3) translateY(-6px); }
+        60%  { transform: scale(1.1) translateY(2px); }
+        100% { transform: scale(1) translateY(0); }
+    }
+
     .reaccion-dropdown button {
         width: 40px;
         height: 40px;
@@ -1485,6 +1509,33 @@ function pubCerrarVisor() {
         align-items: center;
         justify-content: center;
         position: relative;
+        animation: pubEmojiFloat 3s ease-in-out infinite;
+        transition: background-color .2s ease;
+        will-change: transform;
+    }
+
+    .reaccion-dropdown button:nth-child(1) { animation-delay: 0s; }
+    .reaccion-dropdown button:nth-child(2) { animation-delay: .15s; }
+    .reaccion-dropdown button:nth-child(3) { animation-delay: .3s; }
+    .reaccion-dropdown button:nth-child(4) { animation-delay: .45s; }
+    .reaccion-dropdown button:nth-child(5) { animation-delay: .6s; }
+    .reaccion-dropdown button:nth-child(6) { animation-delay: .75s; }
+    .reaccion-dropdown button:nth-child(7) { animation-delay: .9s; }
+    .reaccion-dropdown button:nth-child(8) { animation-delay: 1.05s; }
+    .reaccion-dropdown button:nth-child(9) { animation-delay: 1.2s; }
+
+    .reaccion-dropdown.show button {
+        animation: pubEmojiPop .3s ease-out both, pubEmojiFloat 3s ease-in-out infinite;
+    }
+
+    .reaccion-dropdown button:hover {
+        background: rgba(212,175,55,.2);
+        animation: pubEmojiBounce .4s ease-in-out;
+    }
+
+    .reaccion-dropdown button:active {
+        background: rgba(212,175,55,.3);
+        transform: scale(.9);
     }
 
     .reaccion-dropdown button.activa {
@@ -3048,5 +3099,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.0
+// FIN · PERFIL PUBLICACIONES v14.1
 // ================================================================
