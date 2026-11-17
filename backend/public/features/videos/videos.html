@@ -68,16 +68,91 @@
         .main-nav .nav-link.active { color: var(--gold); border-bottom: 2px solid var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        .cola-estado {
-            display: flex; align-items: center; justify-content: space-between; gap: 10px;
-            margin: 10px 2px 0; padding: 8px 4px; border-top: 1px solid var(--linea);
-            font-size: 0.72rem; color: var(--text-muted);
+        /* ================================================================
+           COMPOSER (mismo lenguaje visual que el perfil)
+           ================================================================ */
+        .pf-composer {
+            position: relative;
+            border-radius: 24px;
+            padding: 18px 16px 16px;
+            background:
+                radial-gradient(120% 90% at 0% 0%, rgba(0, 229, 255, .10), transparent 55%),
+                radial-gradient(120% 90% at 100% 100%, rgba(139, 92, 246, .12), transparent 55%),
+                linear-gradient(170deg, rgba(10, 18, 30, .96), rgba(4, 7, 13, .98));
+            border: 1px solid rgba(0, 229, 255, .16);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, .02) inset, 0 18px 50px rgba(0, 0, 0, .55), 0 0 40px rgba(0, 229, 255, .06);
+            overflow: hidden;
+            transition: box-shadow .35s ease, border-color .35s ease;
+            margin-bottom: 20px;
         }
-        .cola-estado[hidden] { display: none; }
-        .cola-estado button { background: none; border: 0; color: var(--text-muted); font-size: 0.7rem; cursor: pointer; text-decoration: underline; padding: 4px; }
-        .cola-estado button[hidden] { display: none; }
+        .pf-composer::after {
+            content: '';
+            position: absolute; left: 18px; right: 18px; top: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(0, 229, 255, .8), rgba(139, 92, 246, .8), transparent);
+            opacity: .6; pointer-events: none;
+        }
+        .pf-composer:focus-within {
+            border-color: rgba(0, 229, 255, .45);
+            box-shadow: 0 0 0 1px rgba(255, 255, 255, .02) inset, 0 18px 50px rgba(0, 0, 0, .55), 0 0 48px rgba(0, 229, 255, .18);
+        }
+        .pf-composer-cabecera { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+        .pf-composer-pulso {
+            width: 8px; height: 8px; border-radius: 50%; background: #00e5ff; box-shadow: 0 0 0 0 rgba(0, 229, 255, .6);
+            animation: pfPulso 2.2s ease-out infinite; flex: 0 0 8px;
+        }
+        @keyframes pfPulso { 0% { box-shadow: 0 0 0 0 rgba(0, 229, 255, .55); } 70% { box-shadow: 0 0 0 10px rgba(0, 229, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); } }
+        .pf-composer-titulo { font-family: 'Orbitron', monospace; font-size: .72rem; letter-spacing: 2px; text-transform: uppercase; color: #bfefff; text-shadow: 0 0 12px rgba(0, 229, 255, .35); }
+        .pf-composer-sub { font-size: .66rem; color: #6f8ba0; margin-top: 3px; letter-spacing: .2px; }
 
-        .processing-state, .marketing-ad-container { display: none; }
+        .pf-composer .form-group-old { display: none !important; }
+
+        .pf-composer textarea#inputDescripcionVideo {
+            width: 100%; min-height: 96px; resize: vertical; background: rgba(0, 0, 0, .28);
+            border: 1px solid rgba(255, 255, 255, .06); border-radius: 18px; padding: 14px 16px;
+            color: #eef6ff; font-family: 'Inter', sans-serif; font-size: .96rem; line-height: 1.55;
+            box-sizing: border-box; transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
+        }
+        .pf-composer textarea#inputDescripcionVideo::placeholder { color: #4f6577; }
+        .pf-composer textarea#inputDescripcionVideo:focus { outline: none; background: rgba(0, 0, 0, .42); border-color: rgba(0, 229, 255, .55); box-shadow: 0 0 0 3px rgba(0, 229, 255, .10), 0 0 26px rgba(0, 229, 255, .14); }
+
+        .pf-composer-barra { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+        .pf-composer-iconos { display: flex; gap: 8px; }
+        .pf-composer-icono {
+            position: relative; width: 40px; height: 40px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .07);
+            background: rgba(255, 255, 255, .03); color: #7fdcff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+            transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease, color .2s ease;
+        }
+        .pf-composer-icono svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+        .pf-composer-icono:hover { background: rgba(0, 229, 255, .10); border-color: rgba(0, 229, 255, .35); box-shadow: 0 0 14px rgba(0, 229, 255, .22); color: #cdf6ff; }
+        .pf-composer-icono:active { transform: scale(.92); }
+
+        .pf-composer-pie { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+        .pf-composer-anillo { position: relative; width: 36px; height: 36px; flex: 0 0 36px; }
+        .pf-composer-anillo svg { width: 36px; height: 36px; transform: rotate(-90deg); display: block; }
+        .pf-composer-anillo circle { fill: none; stroke-width: 3; }
+        .pf-composer-anillo .fondo { stroke: rgba(255, 255, 255, .08); }
+        .pf-composer-anillo .progreso { stroke: #00e5ff; stroke-linecap: round; stroke-dasharray: 94.25; stroke-dashoffset: 94.25; transition: stroke-dashoffset .3s ease, stroke .3s ease; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .6)); }
+        .pf-composer-anillo.cerca .progreso { stroke: #D4AF37; filter: drop-shadow(0 0 4px rgba(212, 175, 55, .6)); }
+        .pf-composer-anillo.lleno .progreso { stroke: #ff3366; filter: drop-shadow(0 0 4px rgba(255, 51, 102, .6)); }
+        .pf-composer-contador { font-family: 'Orbitron', monospace; font-size: .58rem; color: #6f8ba0; min-width: 58px; text-align: right; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
+        .pf-composer-contador.cerca { color: #D4AF37; }
+        .pf-composer-contador.lleno { color: #ff3366; }
+
+        .pf-composer #btnSubirVideo {
+            position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px;
+            border-radius: 14px; border: 0;
+            background: linear-gradient(120deg, #00e5ff 0%, #3b82f6 55%, #8b5cf6 100%);
+            background-size: 200% 100%; color: #04070d; font-family: 'Orbitron', monospace;
+            font-size: .68rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+            cursor: pointer; box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
+            transition: background-position .6s ease, transform .15s ease, box-shadow .25s ease, opacity .2s ease; overflow: hidden;
+        }
+        .pf-composer #btnSubirVideo svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+        .pf-composer #btnSubirVideo:hover { background-position: 100% 0; box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4); }
+        .pf-composer #btnSubirVideo:active { transform: scale(.96); }
+        .pf-composer #btnSubirVideo:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+        .marketing-ad-container, .processing-state { display: none; }
 
         #videosContainer.videos-grid {
             display: flex; flex-direction: column; gap: 20px; margin-top: 20px;
@@ -684,7 +759,6 @@
 
         html += '<div class="overlay-info">';
         html += '<div class="autor-row"><div class="autor-avatar">' + avatar + '</div><div class="autor-nombre">@' + autorHandle + '</div></div>';
-        if (autorNombre && autorNombre !== 'Usuario') html += '';
         if (titulo) html += '<div class="titulo">' + titulo + '</div>';
         if (desc) html += '<div class="descripcion-corta">' + desc + '</div>';
         if (chipSonido || chipUbic) html += '<div class="chips">' + chipSonido + chipUbic + '</div>';
