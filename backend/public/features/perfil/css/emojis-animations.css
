@@ -1,15 +1,16 @@
 /* ================================================================
    EMOJIS ANIMATIONS · Motor visual de reacciones · Csariel's
    Solo animaciones. No contiene lógica ni datos.
-   Cada emoji recibe su clase desde perfil-publicaciones.js.
    Variables que llegan desde JS:
      --delay  retraso aleatorio negativo (entropía visual)
      --dur    duración aleatoria (entropía visual)
    ================================================================ */
 
+/* 1. Configuración Base (Crucial para que el transform funcione) */
 .reaccion-dropdown button,
-.emoji-actual {
-    display: inline-flex;
+.emoji-actual,
+.reaccion-trigger {
+    display: inline-flex !important;
     align-items: center;
     justify-content: center;
     transform-origin: 50% 60%;
@@ -21,8 +22,10 @@
     animation-timing-function: ease-in-out;
 }
 
-.reaccion-dropdown button {
-    overflow: visible;
+/* 2. Aseguramos que el span interno del emoji también se comporte bien */
+.emoji-actual {
+    font-size: 1.2em; /* Ajusta según necesites */
+    line-height: 1;
 }
 
 /* ❤️ · Corazón: latido suave y constante, sin desbordarse */
@@ -32,9 +35,9 @@
 
 @keyframes emoCorazon {
     0%, 100% { transform: scale(1); }
-    12%      { transform: scale(1.12); }
+    12%      { transform: scale(1.18); }
     24%      { transform: scale(1); }
-    36%      { transform: scale(1.08); }
+    36%      { transform: scale(1.12); }
     50%      { transform: scale(1); }
 }
 
@@ -45,23 +48,22 @@
 
 @keyframes emoRisa {
     0%, 100% { transform: translateY(0) rotate(0deg); }
-    20%      { transform: translateY(-3px) rotate(6deg); }
-    40%      { transform: translateY(0) rotate(-5deg); }
-    60%      { transform: translateY(-2px) rotate(4deg); }
-    80%      { transform: translateY(0) rotate(-3deg); }
+    20%      { transform: translateY(-4px) rotate(8deg); }
+    40%      { transform: translateY(0) rotate(-6deg); }
+    60%      { transform: translateY(-3px) rotate(5deg); }
+    80%      { transform: translateY(0) rotate(-4deg); }
 }
 
-/* 🥺 · Carita suplicante: brillo intermitente y escala mínima.
-   El tamaño se mantiene dentro del botón (máximo 1.04). */
+/* 🥺 · Carita suplicante: brillo intermitente y escala mínima. */
 .emo-brillo {
     animation-name: emoBrillo;
 }
 
 @keyframes emoBrillo {
     0%, 100% { filter: brightness(1);    transform: scale(1); }
-    40%      { filter: brightness(1.35); transform: scale(1.04); }
+    40%      { filter: brightness(1.4);  transform: scale(1.06); }
     46%      { filter: brightness(1);    transform: scale(1); }
-    58%      { filter: brightness(1.28); transform: scale(1.03); }
+    58%      { filter: brightness(1.3);  transform: scale(1.04); }
     66%      { filter: brightness(1);    transform: scale(1); }
 }
 
@@ -72,9 +74,9 @@
 
 @keyframes emoDiamante {
     0%, 100% { filter: brightness(1) saturate(1);      transform: rotate(0deg) scale(1); }
-    30%      { filter: brightness(1.6) saturate(1.2); transform: rotate(4deg) scale(1.05); }
-    55%      { filter: brightness(1) saturate(1);      transform: rotate(-2deg) scale(1); }
-    80%      { filter: brightness(1.45) saturate(1.1); transform: rotate(2deg) scale(1.03); }
+    30%      { filter: brightness(1.7) saturate(1.3); transform: rotate(5deg) scale(1.08); }
+    55%      { filter: brightness(1) saturate(1);      transform: rotate(-3deg) scale(1); }
+    80%      { filter: brightness(1.5) saturate(1.2); transform: rotate(3deg) scale(1.05); }
 }
 
 /* 🤩 · Carita de estrellas: balanceo suave */
@@ -84,9 +86,9 @@
 
 @keyframes emoEstrellas {
     0%, 100% { transform: scale(1) rotate(0deg); }
-    25%      { transform: scale(1.06) rotate(-4deg); }
-    50%      { transform: scale(1) rotate(3deg); }
-    75%      { transform: scale(1.05) rotate(-2deg); }
+    25%      { transform: scale(1.08) rotate(-5deg); }
+    50%      { transform: scale(1) rotate(4deg); }
+    75%      { transform: scale(1.06) rotate(-3deg); }
 }
 
 /* Resto de emojis: flotación fluida y orgánica */
@@ -96,14 +98,15 @@
 
 @keyframes emoFluido {
     0%, 100% { transform: translateY(0) scale(1); }
-    35%      { transform: translateY(-3px) scale(1.03); }
-    65%      { transform: translateY(-1px) scale(0.99); }
+    35%      { transform: translateY(-4px) scale(1.04); }
+    65%      { transform: translateY(-1px) scale(0.98); }
 }
 
 /* Accesibilidad: sin movimiento para quien lo desactiva en el sistema */
 @media (prefers-reduced-motion: reduce) {
     .reaccion-dropdown button,
-    .emoji-actual {
+    .emoji-actual,
+    .reaccion-trigger {
         animation: none !important;
     }
 }
