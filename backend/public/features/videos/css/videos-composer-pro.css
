@@ -177,6 +177,41 @@
     letter-spacing: .2px;
 }
 
+/* ---------- Barra de cola (subida en segundo plano) ---------- */
+#uploadSection .cola-estado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 12px 2px 0;
+    padding: 10px 4px 2px;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    font-size: .74rem;
+    color: #8aa8b8;
+    letter-spacing: .2px;
+}
+#uploadSection .cola-estado[hidden] { display: none !important; }
+#uploadSection .cola-estado #colaTexto { color: #9fdcff; }
+#uploadSection .cola-estado #colaCancelar {
+    flex-shrink: 0;
+    background: rgba(255, 51, 102, .06);
+    border: 1px solid rgba(255, 51, 102, .4);
+    border-radius: 999px;
+    color: #ff7a9a;
+    font-family: 'Inter', sans-serif;
+    font-size: .7rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background .18s ease, border-color .18s ease, transform .14s ease;
+}
+#uploadSection .cola-estado #colaCancelar:hover {
+    background: rgba(255, 51, 102, .14);
+    border-color: rgba(255, 51, 102, .65);
+}
+#uploadSection .cola-estado #colaCancelar:active { transform: scale(.97); }
+#uploadSection .cola-estado #colaCancelar[hidden] { display: none !important; }
+
 /* ---------- Movil: botón principal a todo el ancho ---------- */
 @media (max-width: 480px) {
     #uploadSection .file-input-wrapper { flex-wrap: wrap; }
@@ -187,5 +222,6 @@
 @media (prefers-reduced-motion: reduce) {
     #uploadSection .btn-subir-video,
     #uploadSection .btn-camara,
-    #uploadSection .cs-btn-ghost { transition: none !important; }
+    #uploadSection .cs-btn-ghost,
+    #uploadSection .cola-estado #colaCancelar { transition: none !important; }
 }
