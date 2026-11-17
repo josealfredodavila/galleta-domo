@@ -2,12 +2,84 @@
 // GRUPOS · DASHBOARD
 // ================================================================
 // Carga "Mis Canales" y "En Vivo Ahora" + switch de tabs.
-// v2: tarjeta "Tu tiempo de hoy" (120 min al día, total por persona),
-//     se actualiza cada minuto y se reinicia a medianoche (hora de México).
+// v3: Uniform Video Display Engine (UVDE) aplicado a las tarjetas en vivo.
+//     Contenedor 9:16 estricto, object-fit: cover, sin deformación.
+//     Compatible con el reproductor existente (no se toca la lógica de video).
+//     Se mantiene la lógica de tiempo, canales y transmisiones.
 // Depende de: grupos-config.js, grupos-utils.js
 // ================================================================
 
 var _timerTarjetaTiempo = null;
+
+// ================================================================
+// INYECCIÓN DE ESTILOS UVDE (UNIFORM VIDEO DISPLAY ENGINE)
+// ================================================================
+(function inyectarEstilosUVDE() {
+    if (document.getElementById('uvde-grupos-styles')) return;
+    var style = document.createElement('style');
+    style.id = 'uvde-grupos-styles';
+    style.textContent = `
+        /* CONTENEDOR UNIFORME 9:16 PARA TARJETAS EN VIVO */
+        .uvde-live-container {
+            width: 100%;
+            aspect-ratio: 9 / 16;
+            position: relative;
+            overflow: hidden;
+            background: #000;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* ELEMENTO VIDEO DENTRO DEL CONTENEDOR */
+        .uvde-live-container video {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+            max-width: 100%;
+            /* Sin filtros que deterioren la calidad */
+            filter: none !important;
+        }
+
+        /* IMAGEN DE PORTADA (AVATAR DEL CANAL) DENTRO DEL CONTENEDOR */
+        .uvde-live-container img {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            inset: 0;
+            object-fit: cover;
+            object-position: center;
+            display: block;
+            max-width: 100%;
+        }
+
+        /* OVERLAY PARA EL AVATAR CIRCULAR (MANTENER DISEÑO ACTUAL) */
+        .uvde-live-overlay {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+
+        /* AJUSTE PARA LA TARJETA DE EN VIVO */
+        .en-vivo-card {
+            /* Asegurar que el contenedor padre no rompa la proporción */
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+    `;
+    document.head.appendChild(style);
+})();
 
 // ================================================================
 // TARJETA DE TIEMPO DEL CREADOR
@@ -187,13 +259,18 @@ async function cargarDashboard() {
             enVivoDiv.innerHTML = lives.map(function(l) {
                 var g = l.grupo || {};
                 var img = grpSafeUrl(g.avatar_url);
+                // UVDE: Se aplica el contenedor uniforme 9:16 a la tarjeta en vivo.
+                // El avatar circular se mantiene como overlay dentro del contenedor.
                 return `<div class="en-vivo-card" onclick="abrirGrupo('${g.id}')">
                     <div class="live-tag-small">
                         <svg class="icon icon-sm" viewBox="0 0 24 24" style="color:#fff;fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>
                         EN VIVO
                     </div>
-                    <div style="width:100%; height:130px; background:#000; display:flex; align-items:center; justify-content:center; color:#fff; font-size:2rem; position:relative;">
-                        ${img ? `<img src="${grpEscapeHTML(img)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.6);">` : '◈'}
+                    <div class="uvde-live-container">
+                        ${img ? `<img src="${grpEscapeHTML(img)}" alt="Portada">` : '<div style="color:#fff;font-size:2rem;">◈</div>'}
+                        <div class="uvde-live-overlay">
+                            ${img ? `<img src="${grpEscapeHTML(img)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.6); object-fit:cover;">` : ''}
+                        </div>
                     </div>
                     <div class="info">
                         <div class="titulo">${grpEscapeHTML(l.titulo || 'Sin título')}</div>
