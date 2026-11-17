@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.1 GLOBAL VIDEO PLAYER ENGINE + EMOJI ANIMATIONS
+// v14.2 GLOBAL VIDEO PLAYER ENGINE + EMOJI ANIMATIONS CUSTOM
 // ================================================================
 // ACTUALIZACIONES:
 // 1. Reproducción continua al cambiar entre modo normal y expandido.
@@ -18,7 +18,9 @@
 // 13. Mejoras de accesibilidad y compatibilidad móvil.
 // 14. Limpieza de recursos al cerrar el visor.
 // 15. Se conserva la integración existente con Supabase.
-// 16. Animaciones CSS puras (flotación, pop y brinco) para los emojis del menú de reacciones.
+// 16. Animaciones CSS individuales y personalizadas por emoji:
+//     ❤️ latido, 😂 risa/rebote, 🔥 oscilación de flama,
+//     💎 brillo intermitente, resto flotación sutil.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -381,7 +383,6 @@ function pubVisorEl() {
         if (video) {
             video.style.objectFit = pubVisor.modoLleno ? 'cover' : 'contain';
 
-            // Restaurar posición únicamente si el navegador la modificó.
             if (Math.abs(video.currentTime - tiempo) > 0.5) {
                 try {
                     video.currentTime = tiempo;
@@ -659,7 +660,6 @@ function pubVisorEl() {
     el.addEventListener('touchend', function (e) {
         if (!e.changedTouches || !e.changedTouches[0]) return;
 
-        // No navegar si el usuario interactuó con controles.
         if (e.target.closest('button, .pub-vf-progress-bar, .pub-vf-bottom-sheet, .pub-vf-report-sheet')) {
             return;
         }
@@ -714,7 +714,6 @@ function pubMostrarItem() {
     document.getElementById('pubVfReportSheet1').classList.remove('show');
     document.getElementById('pubVfReportSheet2').classList.remove('show');
 
-    // Al cambiar de contenido se libera el vídeo anterior.
     if (pubVisor.videoActual) {
         try {
             pubVisor.videoActual.pause();
@@ -745,9 +744,6 @@ function pubMostrarItem() {
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
 
-        // IMPORTANTE:
-        // No deshabilitamos Picture-in-Picture.
-        // No utilizamos controles nativos que introduzcan menús adicionales.
         video.controls = false;
         video.preload = 'auto';
         video.autoplay = true;
@@ -817,7 +813,6 @@ function pubMostrarItem() {
             }
         });
 
-        // El toque sobre el vídeo alterna reproducción.
         video.addEventListener('click', function (e) {
             e.stopPropagation();
 
@@ -835,7 +830,6 @@ function pubMostrarItem() {
         });
 
         video.addEventListener('leavepictureinpicture', function () {
-            // No se pausa al salir de la ventana flotante.
             if (video.isConnected && video.paused && pubMotorVideo.reproduccionSolicitada) {
                 pubReproducirVideo(video);
             }
@@ -846,7 +840,6 @@ function pubMostrarItem() {
         pubVisor.videoActual = video;
         pubMotorVideo.videoActivo = video;
 
-        // La reproducción comienza después de la interacción de apertura.
         pubReproducirVideo(video);
 
     } else {
@@ -904,7 +897,6 @@ function pubCerrarVisor() {
 
     var video = pubVisor.videoActual;
 
-    // Si está en PiP, se intenta salir antes de liberar el recurso.
     if (video && document.pictureInPictureElement === video) {
         try {
             document.exitPictureInPicture();
@@ -1474,7 +1466,7 @@ function pubCerrarVisor() {
         transform: translateY(0) scale(1);
     }
 
-    /* ANIMACIONES DE EMOJIS */
+    /* ANIMACIONES BASE PARA TODOS LOS EMOJIS */
 
     @keyframes pubEmojiFloat {
         0%   { transform: translateY(0) rotate(0deg); }
@@ -1542,6 +1534,81 @@ function pubCerrarVisor() {
         background: rgba(212,175,55,.2);
     }
 
+    /* ============================================================
+       ANIMACIONES INDIVIDUALES POR EMOJI (CON RÓTULOS ARIA)
+       ============================================================ */
+
+    /* ❤️ Corazón: latido constante, sin salir de su tamaño */
+    @keyframes pubEmojiHeartbeat {
+        0%, 100% { transform: scale(1); }
+        25% { transform: scale(1.08); }
+        40% { transform: scale(0.98); }
+        55% { transform: scale(1.06); }
+        70% { transform: scale(1); }
+    }
+
+    .reaccion-dropdown button[data-emoji="❤️"] {
+        animation: pubEmojiHeartbeat 1.4s ease-in-out infinite;
+    }
+
+    /* 😂 Carita riéndose: risa / rebote sutil */
+    @keyframes pubEmojiLaugh {
+        0%, 100% { transform: translateY(0) rotate(0deg); }
+        20% { transform: translateY(-3px) rotate(-3deg); }
+        40% { transform: translateY(1px) rotate(2deg); }
+        60% { transform: translateY(-2px) rotate(-2deg); }
+        80% { transform: translateY(0) rotate(0deg); }
+    }
+
+    .reaccion-dropdown button[data-emoji="😂"] {
+        animation: pubEmojiLaugh 1.1s ease-in-out infinite;
+    }
+
+    /* 🔥 Fuego: oscilación de flama */
+    @keyframes pubEmojiFlame {
+        0%, 100% { transform: rotate(0deg) scale(1); }
+        15% { transform: rotate(-4deg) scale(1.03); }
+        30% { transform: rotate(4deg) scale(0.98); }
+        45% { transform: rotate(-3deg) scale(1.04); }
+        60% { transform: rotate(3deg) scale(0.97); }
+        75% { transform: rotate(-2deg) scale(1.02); }
+        90% { transform: rotate(2deg) scale(1); }
+    }
+
+    .reaccion-dropdown button[data-emoji="🔥"] {
+        animation: pubEmojiFlame 1.6s ease-in-out infinite;
+    }
+
+    /* 💎 Diamante: brillo intermitente */
+    @keyframes pubEmojiDiamond {
+        0%, 100% { filter: brightness(1); opacity: 1; }
+        30% { filter: brightness(1.6); opacity: .85; }
+        60% { filter: brightness(1.2); opacity: 1; }
+        80% { filter: brightness(1.8); opacity: .9; }
+    }
+
+    .reaccion-dropdown button[data-emoji="💎"] {
+        animation: pubEmojiDiamond 2.2s ease-in-out infinite;
+    }
+
+    /* Resto de emojis: flotación base (ya definida) */
+    .reaccion-dropdown button:not([data-emoji="❤️"]):not([data-emoji="😂"]):not([data-emoji="🔥"]):not([data-emoji="💎"]) {
+        animation: pubEmojiFloat 3s ease-in-out infinite;
+    }
+
+    /* Pausar animación individual mientras el cursor está encima
+       (el hover general ya define pubEmojiBounce para todos) */
+    .reaccion-dropdown button:hover {
+        animation: pubEmojiBounce .4s ease-in-out;
+    }
+
+    /* Ajuste para que las animaciones personalizadas no se salgan del contenedor */
+    .reaccion-dropdown button {
+        overflow: visible;
+        contain: layout style;
+    }
+
+    /* Contador pequeño */
     .reaccion-dropdown .mini-count {
         position: absolute;
         top: -2px;
@@ -2140,14 +2207,10 @@ if (typeof IntersectionObserver !== 'undefined') {
 
             if (!video || !video.isConnected) return;
 
-            // Nunca detener el vídeo activo del visor.
             if (pubEsVideoDelVisor(video)) return;
 
-            // Nunca detener un vídeo que esté en ventana flotante.
             if (pubEsVideoFlotante(video)) return;
 
-            // Si el usuario está viendo el vídeo dentro de su ventana,
-            // no intervenir en su reproducción.
             if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
                 var autoPlayPref = 'true';
 
@@ -2164,8 +2227,6 @@ if (typeof IntersectionObserver !== 'undefined') {
                 }
 
             } else {
-                // Solo se pausa el vídeo del feed que salió de pantalla.
-                // No se modifica el visor ni los vídeos flotantes.
                 if (
                     video !== pubMotorVideo.videoActivo &&
                     document.pictureInPictureElement !== video
@@ -2182,9 +2243,6 @@ if (typeof IntersectionObserver !== 'undefined') {
 // ================================================================
 // VISIBILIDAD DE LA PÁGINA
 // ================================================================
-
-// No pausar automáticamente cuando Android cambia temporalmente
-// de aplicación o el usuario abre otra ventana.
 
 document.addEventListener('visibilitychange', function () {
     if (!document.hidden) return;
@@ -2423,12 +2481,10 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
                         mediaEl.muted = autoplayInicial !== 'false';
 
-                        // No se permite que el observer gestione el vídeo del visor.
                         if (videoObserverPerfil) {
                             videoObserverPerfil.observe(mediaEl);
                         }
 
-                        // Evitar reproducción accidental de varios vídeos.
                         mediaEl.addEventListener('play', function () {
                             if (pubMotorVideo.videoActivo && pubMotorVideo.videoActivo !== mediaEl) {
                                 var anterior = pubMotorVideo.videoActivo;
@@ -2490,6 +2546,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 var b = document.createElement('button');
 
                 b.textContent = emoji;
+                b.setAttribute('data-emoji', emoji);
 
                 if (reaccionUsuario === emoji) {
                     b.classList.add('activa');
@@ -3099,5 +3156,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.1
+// FIN · PERFIL PUBLICACIONES v14.2
 // ================================================================
