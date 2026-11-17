@@ -1,10 +1,12 @@
 /* ================================================================
    PERFIL · CSS
-   v5.1: diseño plano tipo Facebook/X. Sin cajas con borde grueso,
+   v5.2: diseño plano tipo Facebook/X. Sin cajas con borde grueso,
          sin sombras de tarjeta. Separadores de 1px. Medios a todo
          el ancho. Estadísticas limpias: solo número y etiqueta.
          El menú de reacciones no se recorta y los emojis conservan
          su animación (emojis-animations.css).
+         El contador de reacciones y el botón de reacción no tienen
+         fondo ni caja.
          Conserva todas las clases e IDs de los scripts.
    ================================================================ */
 
@@ -18,10 +20,6 @@
     --success: #00d68f; --danger: #ff3366; --warning: #f7d44a; --cyan: #00e5ff;
     --purple: #a855f7; --pink: #ec4899;
     --bg-card: transparent; --bg-dark: rgba(5, 8, 15, 0.8); --border-color: rgba(212, 175, 55, 0.08);
-    --line-black: #000000;
-    --line-black-soft: rgba(0, 0, 0, 0.85);
-    --line-black-mid: rgba(0, 0, 0, 0.65);
-    --line-black-light: rgba(0, 0, 0, 0.45);
     --flat-line: rgba(255, 255, 255, 0.09);
     --flat-bg: #0b1410;
 }
@@ -176,26 +174,27 @@ body { background: var(--space); color: var(--text-primary); font-family: 'Inter
 .publicacion-card .header .fecha { font-size: 0.65rem; color: var(--text-muted); }
 .publicacion-card .contenido { color: var(--text-secondary); font-size: 0.92rem; line-height: 1.55; margin-bottom: 8px; word-wrap: break-word; }
 .publicacion-card .contenido img, .publicacion-card .contenido video { display: block; width: 100%; max-width: 100%; max-height: 620px; object-fit: contain; border-radius: 0; margin-top: 8px; border: 0; background: #000; }
-.publicacion-card .stats { display: flex; gap: 8px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; padding-top: 4px; border-top: 0; flex-wrap: wrap; overflow: visible; }
-.btn-accion-pub { background: transparent; border: 0; color: var(--text-muted); cursor: pointer; padding: 4px 10px; border-radius: 16px; transition: var(--transition); display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 600; font-family: 'Inter', sans-serif; }
-.btn-accion-pub:hover { color: var(--gold); background: rgba(212, 175, 55, 0.08); }
+.publicacion-card .stats { display: flex; gap: 8px; font-size: 0.65rem; color: var(--text-muted); margin-top: 6px; padding-top: 4px; border-top: 0; flex-wrap: wrap; overflow: visible; background: transparent; }
+.btn-accion-pub { background: transparent; border: 0; color: var(--text-muted); cursor: pointer; padding: 4px 10px; border-radius: 16px; transition: color 0.2s ease; display: inline-flex; align-items: center; gap: 4px; font-size: 0.7rem; font-weight: 600; font-family: 'Inter', sans-serif; }
+.btn-accion-pub:hover { color: var(--gold); background: transparent; }
 .btn-accion-pub.danger { color: var(--danger); }
-.btn-accion-pub.danger:hover { background: rgba(255, 51, 102, 0.1); color: var(--danger); }
+.btn-accion-pub.danger:hover { background: transparent; color: var(--danger); }
 
 /* Contenedor de reacciones: no recorta el menú flotante ni los emojis animados */
-.reaccion-wrap { position: relative; display: inline-block; margin-top: 6px; padding-top: 6px; overflow: visible; }
-.reaccion-trigger { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 0; border-radius: 16px; padding: 4px 10px; cursor: pointer; transition: var(--transition); font-family: 'Inter', sans-serif; color: var(--text-secondary); font-size: 0.7rem; font-weight: 600; }
-.reaccion-trigger:hover { color: var(--gold); background: rgba(212, 175, 55, 0.08); }
+.reaccion-wrap { position: relative; display: inline-block; margin-top: 6px; padding-top: 6px; overflow: visible; background: transparent; }
+.reaccion-trigger { display: inline-flex; align-items: center; gap: 6px; background: transparent; border: 0; box-shadow: none; border-radius: 16px; padding: 4px 10px; cursor: pointer; transition: color 0.2s ease; font-family: 'Inter', sans-serif; color: var(--text-secondary); font-size: 0.7rem; font-weight: 600; }
+.reaccion-trigger:hover { color: var(--gold); background: transparent; }
 .reaccion-trigger.activa { color: var(--gold); }
 .reaccion-trigger .emoji-actual { font-size: 1.05rem; line-height: 1; }
 .reaccion-trigger .count { color: var(--text-muted); font-weight: 500; font-size: 0.65rem; }
 .reaccion-trigger.activa .count { color: var(--gold); }
 .reaccion-dropdown { display: none; position: absolute; bottom: calc(100% + 6px); left: 0; background: var(--flat-bg); border: 1px solid var(--flat-line); border-radius: 30px; padding: 4px 6px; z-index: 200; box-shadow: 0 8px 24px rgba(0,0,0,0.6); white-space: nowrap; overflow: visible; }
 .reaccion-dropdown.show { display: flex; gap: 2px; }
-.reaccion-dropdown button { background: transparent; border: none; font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 6px 4px; border-radius: 50%; transition: background 0.2s ease; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; position: relative; overflow: visible; }
+.reaccion-dropdown button { background: transparent; border: none; font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 6px 4px; border-radius: 50%; transition: background 0.2s ease; display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px; position: relative; overflow: visible; box-shadow: none; }
 .reaccion-dropdown button:hover { background: rgba(212,175,55,0.15); }
 .reaccion-dropdown button.activa { background: rgba(212,175,55,0.2); }
-.reaccion-dropdown button .mini-count { position: absolute; bottom: -2px; right: -2px; font-size: 0.5rem; color: var(--gold); background: rgba(0,0,0,0.9); border-radius: 8px; padding: 0 3px; font-weight: 700; min-width: 12px; text-align: center; line-height: 1.2; }
+/* Contador sobre cada emoji: solo número dorado, sin fondo ni borde */
+.reaccion-dropdown button .mini-count { position: absolute; bottom: -4px; right: -4px; font-size: 0.6rem; color: var(--gold); background: none; border: 0; box-shadow: none; border-radius: 0; padding: 0; font-weight: 800; min-width: 0; text-align: center; line-height: 1; text-shadow: 0 1px 2px rgba(0, 0, 0, 0.75), 0 0 6px rgba(212, 175, 55, 0.35); pointer-events: none; }
 @media (max-width: 480px) { .reaccion-dropdown button { width: 34px; height: 34px; font-size: 1.2rem; } }
 
 .comentarios-container { display: none; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--flat-line); }
