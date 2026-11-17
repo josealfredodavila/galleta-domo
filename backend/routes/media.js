@@ -3,13 +3,11 @@
 // Subida centralizada con moderación, deduplicación por SHA-256
 // y cuota de almacenamiento por plan.
 // ================================================================
-// v2.1: migración de Supabase Storage a Cloudflare R2 (con diagnóstico).
-//       - Se conserva intacta la lógica de cuota, deduplicación,
-//         borradores y liberación de archivos huérfanos.
-//       - Solo cambia el "almacén" (Supabase → R2).
-//       - Las URLs públicas ahora apuntan a R2_PUBLIC_URL.
-//       - 🔍 Se agregaron logs de diagnóstico en subirAR2 para
-//         identificar errores de CORS, credenciales o endpoint.
+// v2.2: la deduplicación verifica que el archivo exista en R2 antes
+//       de reutilizarlo. Si la fila de archivos_hash apunta a un
+//       objeto borrado, se elimina y el archivo se sube de nuevo.
+//       El resto de la lógica (cuota, moderación, borradores y
+//       liberación de archivos) no cambia.
 // ================================================================
 
 'use strict';
@@ -18,7 +16,6 @@ const express = require('express');
 const multer = require('multer');
 const { createHash } = require('node:crypto');
 
-// 🆕 R2: cliente S3-compatible
 const { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 
 const { verificarToken } = require('../middleware/auth');
@@ -29,7 +26,7 @@ const { moderarVideo } = require('../services/moderacion/moderarVideo');
 const router = express.Router();
 
 // ================================================================
-// 🆕 R2 — CONFIGURACIÓN
+// R2 — CONFIGURACIÓN
 // ================================================================
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
@@ -48,13 +45,10 @@ if (R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY && R2_ENDPOINT) {
             accessKeyId: R2_ACCESS_KEY_ID,
             secretAccessKey: R2_SECRET_ACCESS_KEY
         },
-        // 🔍 DIAG: deshabilitar checksums nuevos que pueden romper con R2
-        // (algunos SDKs modernos añaden checksum CRC32 por defecto y R2 lo rechaza).
         requestChecksumCalculation: 'WHEN_REQUIRED',
         responseChecksumValidation: 'WHEN_REQUIRED'
     });
     console.log('✅ [media] Cliente R2 configurado');
-    console.log('🔍 [media] R2 endpoint:', R2_ENDPOINT);
     console.log('🔍 [media] R2 bucket:', R2_BUCKET);
     console.log('🔍 [media] R2 public URL:', R2_PUBLIC_URL || '(vacío)');
 } else {
@@ -70,7 +64,7 @@ if (!R2_PUBLIC_URL) {
 }
 
 // ================================================================
-// CONFIGURACIÓN (sin cambios)
+// CONFIGURACIÓN
 // ================================================================
 
 const LIMITE_IMAGEN_MB = 5;
@@ -213,19 +207,11 @@ function logSubida(req, destino, resultado) {
 }
 
 // ================================================================
-// 🆕 R2: SUBIR / BORRAR / EXISTE
+// R2: SUBIR / BORRAR / EXISTE
 // ================================================================
 
 async function subirAR2(path, buffer, contentType) {
     if (!r2Client) throw new Error('R2 no configurado');
-
-    // 🔍 DIAG: logs detallados antes de subir
-    console.log('🔍 [R2] Iniciando subida');
-    console.log('🔍 [R2] path:', path);
-    console.log('🔍 [R2] bucket:', R2_BUCKET);
-    console.log('🔍 [R2] contentType:', contentType);
-    console.log('🔍 [R2] size:', buffer.length, 'bytes');
-    console.log('🔍 [R2] endpoint:', R2_ENDPOINT);
 
     const cmd = new PutObjectCommand({
         Bucket: R2_BUCKET,
@@ -240,14 +226,11 @@ async function subirAR2(path, buffer, contentType) {
         console.log('✅ [R2] Subida exitosa. ETag:', result.ETag);
         return path;
     } catch (err) {
-        // 🔍 DIAG: error detallado con todos los campos útiles
-        console.error('❌ [R2] Error detallado:');
+        console.error('❌ [R2] Error al subir:');
         console.error('  name:', err.name);
         console.error('  message:', err.message);
-        console.error('  code:', err.Code || err.code);
         console.error('  httpStatusCode:', err.$metadata && err.$metadata.httpStatusCode);
         console.error('  requestId:', err.$metadata && err.$metadata.requestId);
-        console.error('  stack:', err.stack ? err.stack.split('\n').slice(0, 5).join('\n') : 'sin stack');
         throw err;
     }
 }
@@ -264,7 +247,7 @@ async function existeEnR2(path) {
         await r2Client.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: path }));
         return true;
     } catch (e) {
-        if (e.name === 'NotFound' || e.$metadata?.httpStatusCode === 404) return false;
+        if (e.name === 'NotFound' || (e.$metadata && e.$metadata.httpStatusCode === 404)) return false;
         throw e;
     }
 }
@@ -328,10 +311,37 @@ router.post(
             logSubida(req, destino, 'error_busqueda_hash');
             return res.status(500).json({ ok: false, error: 'Error al guardar el archivo' });
         }
+
+        let reutilizable = null;
         if (existente) {
+            let vigente = false;
+            try {
+                vigente = await existeEnR2(existente.path);
+            } catch (errHead) {
+                console.error('⚠️ [media] No se pudo verificar el archivo existente:', errHead.message);
+                vigente = false;
+            }
+
+            if (vigente) {
+                reutilizable = existente;
+            } else {
+                const { error: errLimpieza } = await supabaseAdmin
+                    .from('archivos_hash')
+                    .delete()
+                    .eq('bucket', destino)
+                    .eq('sha256', hash);
+                if (errLimpieza) {
+                    console.error('⚠️ [media] No se borró el hash obsoleto:', errLimpieza.message);
+                } else {
+                    console.log('🧹 [media] Hash obsoleto eliminado:', existente.path);
+                }
+            }
+        }
+
+        if (reutilizable) {
             logSubida(req, destino, 'reutilizado');
             return res.status(200).json({
-                ok: true, url: existente.public_url, path: existente.path, reutilizado: true
+                ok: true, url: reutilizable.public_url, path: reutilizable.path, reutilizado: true
             });
         }
 
@@ -400,17 +410,7 @@ router.post(
         } catch (upErr) {
             console.error('❌ [media] Error subiendo a R2:', upErr.message || upErr);
             logSubida(req, destino, 'error_subida');
-            return res.status(500).json({
-                ok: false,
-                error: 'Error al guardar el archivo',
-                // 🔍 DIAG: incluir el error real para verlo en la UI y en curl
-                debug: {
-                    name: upErr.name || null,
-                    message: upErr.message || null,
-                    code: upErr.Code || upErr.code || null,
-                    httpStatusCode: upErr.$metadata ? upErr.$metadata.httpStatusCode : null
-                }
-            });
+            return res.status(500).json({ ok: false, error: 'Error al guardar el archivo' });
         }
 
         const url = construirUrlPublicaR2(nombreArchivo);
@@ -503,7 +503,7 @@ router.post('/liberar', verificarToken, async (req, res) => {
 });
 
 // ================================================================
-// GET /api/media/cuota (sin cambios)
+// GET /api/media/cuota
 // ================================================================
 
 router.get('/cuota', verificarToken, async (req, res) => {
@@ -523,7 +523,7 @@ router.get('/cuota', verificarToken, async (req, res) => {
 });
 
 // ================================================================
-// MANEJO DE ERRORES DE MULTER (sin cambios)
+// MANEJO DE ERRORES DE MULTER
 // ================================================================
 
 router.use((err, req, res, next) => {
