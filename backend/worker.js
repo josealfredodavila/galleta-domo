@@ -9,6 +9,7 @@
    - Etiquetas de filtros únicas y consistentes.
    - Eliminación total de drawtext.
    - Marca de agua PNG al 50%.
+   - Marca de agua en esquina superior izquierda.
    - Audio original 40% + música externa 100%.
    - Música externa en bucle.
    - Compatibilidad R2 y Supabase Storage.
@@ -600,8 +601,9 @@ function construirFiltroVideo(
     const marginX = Math.floor(finalWidth * 0.03);
     const marginY = Math.floor(finalHeight * 0.03);
 
-    const xBR = finalWidth - logoW - marginX;
-    const yBR = finalHeight - logoH - marginY;
+    // Logo en la esquina superior izquierda, con el mismo margen de 3 %.
+    const xTL = marginX;
+    const yTL = marginY;
 
     const videoIndex = indices.video;
     const logoIndex = indices.logo;
@@ -658,12 +660,12 @@ function construirFiltroVideo(
     );
 
     // ------------------------------------------------------------
-    // OVERLAY
+    // OVERLAY (esquina superior izquierda)
     // ------------------------------------------------------------
 
     filtros.push(
         '[base_v55][logo_v55]' +
-        'overlay=' + xBR + ':' + yBR +
+        'overlay=' + xTL + ':' + yTL +
         ':shortest=1' +
         '[vout_v55]'
     );
@@ -721,8 +723,8 @@ function construirFiltroVideo(
         height: finalHeight,
         logoWidth: logoW,
         logoHeight: logoH,
-        logoX: xBR,
-        logoY: yBR,
+        logoX: xTL,
+        logoY: yTL,
         indices: indices
     };
 
@@ -1351,6 +1353,7 @@ async function procesarVideo(job) {
             filtro.logoWidth + 'x' + filtro.logoHeight
         );
 
+        console.log('📍 Logo: esquina superior izquierda');
         console.log('🔒 Opacidad: 50%');
         console.log('🚫 drawtext: DESACTIVADO');
 
@@ -1584,6 +1587,7 @@ const healthServer = http.createServer(
                     dynamicFilterGraph: true,
                     explicitInputIndexes: true,
                     watermark: true,
+                    watermarkPosition: 'top-left',
                     drawtext: false,
                     timestamp: new Date().toISOString()
                 })
@@ -1691,6 +1695,7 @@ console.log('📡 Cola:', COLA_NOMBRE);
 console.log('🔢 Concurrencia:', MAX_CONCURRENT);
 console.log('📁 Temporales:', TEMP_DIR);
 console.log('🖼️ Logo:', LOGO_PATH);
+console.log('📍 Logo: esquina superior izquierda');
 console.log('☁️ R2:', r2Configurado ? 'CONFIGURADO' : 'NO CONFIGURADO');
 console.log('🎵 Audio original: 40%');
 console.log('🎵 Música externa: 100%');
