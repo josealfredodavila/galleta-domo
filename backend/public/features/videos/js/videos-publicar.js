@@ -1,13 +1,14 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.3
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.4
    ================================================================
-   Cambios respecto a v3.2:
-   - Publicar desde la vista previa usa el formulario real
-     (#formSubirVideo / #btnSubirVideo) en vez de buscar un botón
-     por texto. Ya no aparece "No se encontró el botón de publicar".
-   - Solo se envía audioUrl si apunta al bucket de audios permitido
-     (evita el 400 "audioUrl inválido" del backend).
-   - Helper único para el texto de ubicación.
+   Cambios respecto a v3.3:
+   - Uniform Video Display Engine (UVDE):
+     * Contenedor 9:16 estricto para todos los videos del feed y preview.
+     * object-fit: cover para recorte inteligente sin deformación.
+     * Sin franjas negras.
+     * Calidad original del archivo intacta.
+   - El resto de la lógica (subida, borradores, sonidos, Supabase)
+     se mantiene exactamente igual a la v3.3.
    ================================================================ */
 
 (function () {
@@ -1588,11 +1589,46 @@
             .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,43,214,0.25); border-top-color: #ff2bd6; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
 
+            /* ----- NUEVO: UNIFORM VIDEO DISPLAY ENGINE (9:16) ----- */
+            .pub-media-container {
+                width: 100%;
+                aspect-ratio: 9 / 16;
+                position: relative;
+                overflow: hidden;
+                background: #000;
+                border-radius: 14px; /* Respetar el diseño actual de publicaciones */
+            }
+
+            .pub-media-container video {
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                inset: 0;
+                object-fit: cover;
+                object-position: center;
+                display: block;
+                max-width: 100%;
+                /* Asegurar que no se apliquen filtros que deterioren la calidad */
+                filter: none !important;
+            }
+
+            .pub-media-container img {
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                inset: 0;
+                object-fit: cover;
+                object-position: center;
+                display: block;
+            }
+
             /* ----- Vista previa del formulario ----- */
             .cs-preview-video {
                 position: relative; width: 100%; height: min(78vh, 720px);
                 background: #000; border-radius: 14px; overflow: hidden;
                 box-shadow: 0 0 18px rgba(255,43,214,.18);
+                /* Forzar proporción uniforme para la vista previa */
+                aspect-ratio: 9 / 16;
             }
             #csPreviewVideo {
                 position: absolute; inset: 0; width: 100%; height: 100%;
@@ -2356,7 +2392,7 @@
         observarFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v3.3 listo');
+        log('✅ Módulo Publicar v3.4 (UVDE) listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
