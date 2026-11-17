@@ -18,6 +18,7 @@
 // 13. Mejoras de accesibilidad y compatibilidad móvil.
 // 14. Limpieza de recursos al cerrar el visor.
 // 15. Se conserva la integración existente con Supabase.
+// 16. Animaciones CSS individuales y fluidas para cada emoji del menú.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -1485,6 +1486,7 @@ function pubCerrarVisor() {
         align-items: center;
         justify-content: center;
         position: relative;
+        animation: pubEmojiBounce 2s infinite ease-in-out;
     }
 
     .reaccion-dropdown button.activa {
@@ -1501,6 +1503,79 @@ function pubCerrarVisor() {
         font-weight: bold;
         padding: 2px 5px;
         border-radius: 10px;
+    }
+
+    /* Animaciones base y para emojis específicos */
+    @keyframes pubEmojiBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-3px); }
+    }
+
+    /* ❤️ Corazón: latido fuerte, dinámico y constante */
+    .reaccion-dropdown button[data-emoji="❤️"] {
+        animation: pubHeartBeat 0.8s infinite ease-in-out;
+    }
+
+    @keyframes pubHeartBeat {
+        0% { transform: scale(1) rotate(0deg); }
+        15% { transform: scale(1.25) rotate(-3deg); }
+        30% { transform: scale(1) rotate(2deg); }
+        45% { transform: scale(1.2) rotate(-2deg); }
+        60% { transform: scale(1) rotate(1deg); }
+        75% { transform: scale(1.15) rotate(-1deg); }
+        100% { transform: scale(1) rotate(0deg); }
+    }
+
+    /* 😂 Carita riéndose: rebote y oscilación lateral */
+    .reaccion-dropdown button[data-emoji="😂"] {
+        animation: pubLaughing 1.2s infinite ease-in-out;
+    }
+
+    @keyframes pubLaughing {
+        0% { transform: translateY(0) rotate(0deg); }
+        20% { transform: translateY(-5px) rotate(10deg); }
+        40% { transform: translateY(0) rotate(-8deg); }
+        60% { transform: translateY(-3px) rotate(7deg); }
+        80% { transform: translateY(0) rotate(-5deg); }
+        100% { transform: translateY(0) rotate(0deg); }
+    }
+
+    /* 🔥 Fuego: movimiento fluido de flama */
+    .reaccion-dropdown button[data-emoji="🔥"] {
+        animation: pubFireFlicker 0.9s infinite alternate ease-in-out;
+    }
+
+    @keyframes pubFireFlicker {
+        0% { transform: translateY(0) scale(1) rotate(0deg); }
+        25% { transform: translateY(-4px) scale(1.1) rotate(-5deg); }
+        50% { transform: translateY(-2px) scale(0.95) rotate(3deg); }
+        75% { transform: translateY(-6px) scale(1.15) rotate(-3deg); }
+        100% { transform: translateY(-3px) scale(1.05) rotate(2deg); }
+    }
+
+    /* 💎 Diamante: rotación leve + destello intermitente */
+    .reaccion-dropdown button[data-emoji="💎"] {
+        animation: pubDiamondSparkle 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pubDiamondSparkle {
+        0% { transform: rotate(0deg) scale(1); filter: brightness(1); opacity: 1; }
+        25% { transform: rotate(5deg) scale(1.08); filter: brightness(1.5); opacity: 1; }
+        50% { transform: rotate(-3deg) scale(1); filter: brightness(1); opacity: 0.9; }
+        75% { transform: rotate(4deg) scale(1.1); filter: brightness(1.6); opacity: 1; }
+        100% { transform: rotate(0deg) scale(1); filter: brightness(1); opacity: 1; }
+    }
+
+    /* 😊, 👏, 😍, 🎉, 🤩 y resto: flotación/rebote constante */
+    .reaccion-dropdown button:not([data-emoji="❤️"]):not([data-emoji="😂"]):not([data-emoji="🔥"]):not([data-emoji="💎"]) {
+        animation: pubFloatBounce 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pubFloatBounce {
+        0%, 100% { transform: translateY(0) scale(1); }
+        30% { transform: translateY(-4px) scale(1.05); }
+        60% { transform: translateY(-2px) scale(0.98); }
+        80% { transform: translateY(-5px) scale(1.02); }
     }
 
     .publicacion-card .stats {
@@ -2439,6 +2514,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 var b = document.createElement('button');
 
                 b.textContent = emoji;
+                b.setAttribute('data-emoji', emoji);
 
                 if (reaccionUsuario === emoji) {
                     b.classList.add('activa');
