@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.1 GLOBAL VIDEO PLAYER ENGINE + MOTOR VISUAL DE REACCIONES
+// v14.2 GLOBAL VIDEO PLAYER ENGINE + MOTOR VISUAL DE REACCIONES
 // ================================================================
 // ACTUALIZACIONES:
 // 1. Reproducción continua al cambiar entre modo normal y expandido.
@@ -21,6 +21,8 @@
 // 16. Animaciones movidas a emojis-animations.css (motor visual).
 // 17. Entropía visual: retraso y duración aleatorios por emoji.
 // 18. Menú de reacciones limitado a ❤️ 😂 🥺 💎.
+// 19. Los conteos por emoji se actualizan al reaccionar.
+// 20. Errores de reacción visibles para el usuario.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -2489,6 +2491,9 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 var b = document.createElement('button');
 
                 b.textContent = emoji;
+                // Identificador fijo del emoji: no depende del texto del botón
+                // (que cambia cuando se muestra el contador).
+                b.setAttribute('data-emoji', emoji);
 
                 // El motor visual asigna clase y entropía (--delay / --dur).
                 pubAplicarMotorEmoji(b, emoji);
@@ -2657,8 +2662,35 @@ document.addEventListener('click', function (e) {
 });
 
 // ================================================================
-// ACTUALIZAR REACCIONES
+// ACTUALIZAR REACCIONES (barra, contadores por emoji y resaltado)
 // ================================================================
+
+// Repinta los contadores pequeños de cada emoji del menú y marca
+// cuál es la reacción elegida por el usuario.
+function pubActualizarMenuReacciones(card, conteos, usuarioTipo) {
+    if (!card) return;
+
+    card.querySelectorAll('.reaccion-dropdown button[data-emoji]').forEach(function (b) {
+        var emoji = b.getAttribute('data-emoji');
+
+        b.classList.toggle('activa', emoji === usuarioTipo);
+
+        var anterior = b.querySelector('.mini-count');
+
+        if (anterior) anterior.remove();
+
+        var cantidad = conteos[emoji] || 0;
+
+        if (cantidad > 0) {
+            var mini = document.createElement('span');
+
+            mini.className = 'mini-count';
+            mini.textContent = String(cantidad);
+
+            b.appendChild(mini);
+        }
+    });
+}
 
 async function refrescarReaccionesPublicacion(postId) {
     var client = window.supabaseClient;
@@ -2723,6 +2755,8 @@ async function refrescarReaccionesPublicacion(postId) {
             countActual.textContent = total > 0 ? String(total) : 'Reaccionar';
         }
     }
+
+    pubActualizarMenuReacciones(card, conteos, usuarioTipo);
 }
 
 // ================================================================
@@ -2741,7 +2775,13 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
 
     var client = window.supabaseClient;
 
-    if (!client) return;
+    if (!client) {
+        if (window.showToast) {
+            window.showToast('No se pudo conectar. Recarga la página.', 'error');
+        }
+
+        return;
+    }
 
     pubReaccionesEnProceso[postId] = true;
 
@@ -2749,7 +2789,13 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
         var sessionResult = await client.auth.getSession();
         var session = sessionResult.data ? sessionResult.data.session : null;
 
-        if (!session) return;
+        if (!session) {
+            if (window.showToast) {
+                window.showToast('Inicia sesión para reaccionar.', 'warning');
+            }
+
+            return;
+        }
 
         var existing = await client
             .from('publicaciones_reacciones')
@@ -2791,7 +2837,14 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
         await refrescarReaccionesPublicacion(postId);
 
     } catch (error) {
-        console.error(error);
+        // Se registra el detalle para depuración y se avisa al usuario.
+        console.error('[Reacciones] Error al guardar la reacción:', error);
+
+        if (window.showToast) {
+            var detalle = error && error.message ? ' (' + error.message + ')' : '';
+
+            window.showToast('No se pudo guardar tu reacción' + detalle, 'error');
+        }
     } finally {
         delete pubReaccionesEnProceso[postId];
     }
@@ -3106,5 +3159,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.1
+// FIN · PERFIL PUBLICACIONES v14.2
 // ================================================================
