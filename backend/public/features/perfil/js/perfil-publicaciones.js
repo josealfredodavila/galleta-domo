@@ -19,6 +19,7 @@
 // 14. Limpieza de recursos al cerrar el visor.
 // 15. Se conserva la integración existente con Supabase.
 // 16. Animaciones CSS individuales y fluidas para cada emoji del menú.
+// 17. Animación constante en el emoji seleccionado que se muestra en la barra.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -1512,7 +1513,9 @@ function pubCerrarVisor() {
     }
 
     /* ❤️ Corazón: latido fuerte, dinámico y constante */
-    .reaccion-dropdown button[data-emoji="❤️"] {
+    .reaccion-dropdown button[data-emoji="❤️"],
+    .emoji-actual[data-emoji-anim="❤️"] {
+        display: inline-block;
         animation: pubHeartBeat 0.8s infinite ease-in-out;
     }
 
@@ -1527,7 +1530,9 @@ function pubCerrarVisor() {
     }
 
     /* 😂 Carita riéndose: rebote y oscilación lateral */
-    .reaccion-dropdown button[data-emoji="😂"] {
+    .reaccion-dropdown button[data-emoji="😂"],
+    .emoji-actual[data-emoji-anim="😂"] {
+        display: inline-block;
         animation: pubLaughing 1.2s infinite ease-in-out;
     }
 
@@ -1541,7 +1546,9 @@ function pubCerrarVisor() {
     }
 
     /* 🔥 Fuego: movimiento fluido de flama */
-    .reaccion-dropdown button[data-emoji="🔥"] {
+    .reaccion-dropdown button[data-emoji="🔥"],
+    .emoji-actual[data-emoji-anim="🔥"] {
+        display: inline-block;
         animation: pubFireFlicker 0.9s infinite alternate ease-in-out;
     }
 
@@ -1554,7 +1561,9 @@ function pubCerrarVisor() {
     }
 
     /* 💎 Diamante: rotación leve + destello intermitente */
-    .reaccion-dropdown button[data-emoji="💎"] {
+    .reaccion-dropdown button[data-emoji="💎"],
+    .emoji-actual[data-emoji-anim="💎"] {
+        display: inline-block;
         animation: pubDiamondSparkle 1.8s infinite ease-in-out;
     }
 
@@ -1567,7 +1576,9 @@ function pubCerrarVisor() {
     }
 
     /* 😊, 👏, 😍, 🎉, 🤩 y resto: flotación/rebote constante */
-    .reaccion-dropdown button:not([data-emoji="❤️"]):not([data-emoji="😂"]):not([data-emoji="🔥"]):not([data-emoji="💎"]) {
+    .reaccion-dropdown button:not([data-emoji="❤️"]):not([data-emoji="😂"]):not([data-emoji="🔥"]):not([data-emoji="💎"]),
+    .emoji-actual.emoji-animado:not([data-emoji-anim="❤️"]):not([data-emoji-anim="😂"]):not([data-emoji-anim="🔥"]):not([data-emoji-anim="💎"]) {
+        display: inline-block;
         animation: pubFloatBounce 1.8s infinite ease-in-out;
     }
 
@@ -2548,6 +2559,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             emojiActual.className = 'emoji-actual';
             emojiActual.textContent = emojiMostrado;
+            emojiActual.setAttribute('data-emoji-anim', emojiMostrado);
 
             var countActual = document.createElement('span');
 
@@ -2735,7 +2747,10 @@ async function refrescarReaccionesPublicacion(postId) {
         var emojiActual = trigger.querySelector('.emoji-actual');
         var countActual = trigger.querySelector('.count');
 
-        if (emojiActual) emojiActual.textContent = emojiMostrado;
+        if (emojiActual) {
+            emojiActual.textContent = emojiMostrado;
+            emojiActual.setAttribute('data-emoji-anim', emojiMostrado);
+        }
 
         if (countActual) {
             countActual.textContent = total > 0 ? String(total) : 'Reaccionar';
