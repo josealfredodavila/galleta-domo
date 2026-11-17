@@ -1,19 +1,26 @@
 // ================================================================
 // ROUTES/MEDIA.JS — Sariel's Ecosystem
-// Subida centralizada con moderación, deduplicación por SHA-256
-// y cuota de almacenamiento por plan.
+// Subida centralizada con moderación, deduplicación por SHA-256,
+// cuota de almacenamiento por plan y marca de agua visual en el muro.
 // ================================================================
-// v2.2: la deduplicación verifica que el archivo exista en R2 antes
-//       de reutilizarlo. Si la fila de archivos_hash apunta a un
-//       objeto borrado, se elimina y el archivo se sube de nuevo.
-//       El resto de la lógica (cuota, moderación, borradores y
-//       liberación de archivos) no cambia.
+// v2.3:
+//   - Marca de agua grabada en imágenes y videos de 'muro-videos' y
+//     'muro-imagenes' (perfil y feed de publicaciones).
+//   - La moderación revisa el archivo original antes de marcarlo.
+//   - La deduplicación y la cuota usan el archivo final (ya marcado).
+//   - Incluye la verificación de hashes obsoletos de la v2.2.
+//   - Requiere: npm install sharp, y FFmpeg en el servidor
+//     (variable opcional FFMPEG_PATH; por defecto 'ffmpeg').
 // ================================================================
 
 'use strict';
 
 const express = require('express');
 const multer = require('multer');
+const path = require('path');
+const os = require('os');
+const fs = require('fs');
+const { spawn } = require('child_process');
 const { createHash } = require('node:crypto');
 
 const { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
@@ -22,6 +29,13 @@ const { verificarToken } = require('../middleware/auth');
 const { supabaseAdmin } = require('../config/supabase');
 const { moderarImagen } = require('../services/moderacion/moderarImagen');
 const { moderarVideo } = require('../services/moderacion/moderarVideo');
+
+let sharp = null;
+try {
+    sharp = require('sharp');
+} catch (e) {
+    console.error('❌ [media] Falta la dependencia "sharp". Ejecuta: npm install sharp');
+}
 
 const router = express.Router();
 
@@ -82,6 +96,16 @@ const DESTINOS = {
     'chat-attachments': { tipo: 'auto', limiteMBImagen: LIMITE_IMAGEN_MB, limiteMBVideo: LIMITE_CHAT_VIDEO_MB },
     'mercado': { tipo: 'imagen', limiteMB: 3 }
 };
+
+// Destinos del muro (perfil y feed de publicaciones) que llevan marca de agua.
+const DESTINOS_CON_MARCA = new Set(['muro-videos', 'muro-imagenes']);
+
+const MARCA_RUTA = path.join(__dirname, '..', 'public', 'watermark.png');
+const MARCA_ANCHO_RELATIVO = 0.12;
+const MARCA_OPACIDAD = 0.6;
+const MARCA_MARGEN_RELATIVO = 0.03;
+const FFMPEG_BIN = process.env.FFMPEG_PATH || 'ffmpeg';
+const FFMPEG_TIMEOUT_MS = 180000;
 
 const COLUMNAS_CON_URL = [
     ['publicaciones', 'media_url'], ['publicaciones_publicas', 'media_url'],
@@ -207,6 +231,148 @@ function logSubida(req, destino, resultado) {
 }
 
 // ================================================================
+// MARCA DE AGUA
+// ================================================================
+
+// Imagen: se reescala el logo al 12 % del ancho, se baja su opacidad
+// y se compone en la esquina superior izquierda. Conserva el formato.
+async function aplicarMarcaImagen(buffer, mime) {
+    if (!sharp) throw new Error('sharp no está instalado');
+
+    const normalizada = await sharp(buffer).rotate().toBuffer();
+    const meta = await sharp(normalizada).metadata();
+    const ancho = meta.width;
+
+    const logoAncho = Math.max(40, Math.round(ancho * MARCA_ANCHO_RELATIVO));
+
+    const logoRaw = await sharp(MARCA_RUTA)
+        .resize({ width: logoAncho })
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+
+    const pixeles = logoRaw.data;
+    for (let i = 3; i < pixeles.length; i += 4) {
+        pixeles[i] = Math.round(pixeles[i] * MARCA_OPACIDAD);
+    }
+
+    const logo = await sharp(pixeles, {
+        raw: { width: logoRaw.info.width, height: logoRaw.info.height, channels: 4 }
+    }).png().toBuffer();
+
+    const margen = Math.round(ancho * MARCA_MARGEN_RELATIVO);
+
+    let salida = sharp(normalizada).composite([{ input: logo, top: margen, left: margen }]);
+
+    if (mime === 'image/png') {
+        salida = salida.png();
+    } else if (mime === 'image/webp') {
+        salida = salida.webp({ quality: 90 });
+    } else {
+        salida = salida.jpeg({ quality: 90 });
+    }
+
+    const buffer2 = await salida.toBuffer();
+
+    return {
+        buffer: buffer2,
+        mime: mime === 'image/png' || mime === 'image/webp' ? mime : 'image/jpeg'
+    };
+}
+
+// Video: FFmpeg superpone el logo (12 % del ancho, opacidad 60 %) en la
+// esquina superior izquierda. Video recodificado a H.264 y audio a AAC.
+function aplicarMarcaVideo(buffer) {
+    return new Promise(async function (resolve, reject) {
+        let dir = null;
+
+        try {
+            dir = await fs.promises.mkdtemp(path.join(os.tmpdir(), 'media-wm-'));
+
+            const entrada = path.join(dir, 'entrada');
+            const salida = path.join(dir, 'salida.mp4');
+
+            await fs.promises.writeFile(entrada, buffer);
+
+            const filtro =
+                '[1:v]format=rgba,colorchannelmixer=aa=' + MARCA_OPACIDAD + '[lg];' +
+                '[lg][0:v]scale2ref=w=\'main_w*' + MARCA_ANCHO_RELATIVO + '\':h=-1[logo][base];' +
+                '[base][logo]overlay=x=\'main_w*' + MARCA_MARGEN_RELATIVO + '\':y=\'main_h*' + MARCA_MARGEN_RELATIVO + '\':shortest=1[vout]';
+
+            const args = [
+                '-y',
+                '-i', entrada,
+                '-loop', '1', '-i', MARCA_RUTA,
+                '-filter_complex', filtro,
+                '-map', '[vout]',
+                '-map', '0:a?',
+                '-c:v', 'libx264',
+                '-preset', 'veryfast',
+                '-crf', '26',
+                '-pix_fmt', 'yuv420p',
+                '-movflags', '+faststart',
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-shortest',
+                salida
+            ];
+
+            const proceso = spawn(FFMPEG_BIN, args);
+
+            let stderr = '';
+            proceso.stderr.on('data', function (chunk) {
+                stderr += chunk.toString();
+                if (stderr.length > 8000) stderr = stderr.slice(-8000);
+            });
+
+            const temporizador = setTimeout(function () {
+                proceso.kill('SIGKILL');
+            }, FFMPEG_TIMEOUT_MS);
+
+            proceso.on('error', async function (err) {
+                clearTimeout(temporizador);
+                await limpiarDirectorio(dir);
+                reject(new Error('No se pudo ejecutar FFmpeg: ' + err.message));
+            });
+
+            proceso.on('close', async function (codigo) {
+                clearTimeout(temporizador);
+
+                try {
+                    if (codigo !== 0) {
+                        throw new Error('FFmpeg terminó con código ' + codigo + ': ' + stderr.slice(-400));
+                    }
+
+                    const resultado = await fs.promises.readFile(salida);
+                    await limpiarDirectorio(dir);
+
+                    resolve({ buffer: resultado, mime: 'video/mp4' });
+                } catch (err) {
+                    await limpiarDirectorio(dir);
+                    reject(err);
+                }
+            });
+
+        } catch (err) {
+            if (dir) await limpiarDirectorio(dir);
+            reject(err);
+        }
+    });
+}
+
+async function limpiarDirectorio(dir) {
+    if (!dir) return;
+    try {
+        await fs.promises.rm(dir, { recursive: true, force: true });
+    } catch (e) {}
+}
+
+async function aplicarMarcaSegunTipo(buffer, mime, tipo) {
+    if (tipo === 'imagen') return aplicarMarcaImagen(buffer, mime);
+    return aplicarMarcaVideo(buffer);
+}
+
+// ================================================================
 // R2: SUBIR / BORRAR / EXISTE
 // ================================================================
 
@@ -298,7 +464,59 @@ router.post(
             return res.status(413).json({ ok: false, error: `El archivo supera el límite de ${limiteMB} MB` });
         }
 
-        const hash = sha256Hex(req.file.buffer);
+        // 1) Moderación sobre el archivo original, antes de cualquier cambio.
+        let resultadoModeracion;
+        try {
+            if (tipo === 'imagen') resultadoModeracion = await moderarImagen(req.file.buffer);
+            else resultadoModeracion = await moderarVideo(req.file.buffer, req.file.mimetype);
+        } catch (modErr) {
+            console.error('❌ [media] Error en moderación:', modErr.message || modErr);
+            logSubida(req, destino, 'error_moderacion');
+            return res.status(503).json({ ok: false, error: 'No pudimos revisar el contenido. Intenta de nuevo.' });
+        }
+        if (!resultadoModeracion || !resultadoModeracion.ok) {
+            const motivo = resultadoModeracion && resultadoModeracion.motivo;
+            if (motivo === 'contenido_no_permitido') {
+                logSubida(req, destino, 'rechazado_contenido');
+                return res.status(422).json({ ok: false, error: 'Contenido no permitido' });
+            }
+            if (motivo === 'timeout' || motivo === 'servicio_no_disponible') {
+                logSubida(req, destino, 'servicio_no_disponible');
+                return res.status(503).json({ ok: false, error: 'No pudimos revisar el contenido. Intenta de nuevo.' });
+            }
+            if (motivo === 'tipo_invalido') {
+                logSubida(req, destino, 'tipo_archivo_invalido');
+                return res.status(400).json({ ok: false, error: 'Tipo de archivo inválido' });
+            }
+            if (motivo === 'tamano_invalido') {
+                logSubida(req, destino, 'tamano_invalido');
+                return res.status(413).json({ ok: false, error: 'Archivo demasiado grande' });
+            }
+            logSubida(req, destino, 'rechazado_otro');
+            return res.status(422).json({ ok: false, error: 'Contenido no permitido' });
+        }
+
+        // 2) Marca de agua (solo destinos del muro).
+        let archivoFinal = { buffer: req.file.buffer, mime: req.file.mimetype };
+
+        if (DESTINOS_CON_MARCA.has(destino)) {
+            try {
+                archivoFinal = await aplicarMarcaSegunTipo(req.file.buffer, req.file.mimetype, tipo);
+            } catch (wmErr) {
+                console.error('❌ [media] Error aplicando marca de agua:', wmErr.message || wmErr);
+                logSubida(req, destino, 'error_marca_agua');
+                return res.status(503).json({ ok: false, error: 'No pudimos procesar el archivo. Intenta de nuevo.' });
+            }
+        }
+
+        const extension = extensionSegura(archivoFinal.mime);
+        if (!extension) {
+            logSubida(req, destino, 'extension_no_soportada');
+            return res.status(400).json({ ok: false, error: 'Formato no soportado' });
+        }
+
+        // 3) Deduplicación sobre el archivo final (ya marcado).
+        const hash = sha256Hex(archivoFinal.buffer);
         const { data: existente, error: errBusqueda } = await supabaseAdmin
             .from('archivos_hash')
             .select('public_url, path')
@@ -345,13 +563,14 @@ router.post(
             });
         }
 
+        // 4) Cuota sobre el tamaño final.
         const cuota = await consultarCuotaUsuario(usuarioId);
         if (!cuota.ok) {
             console.error('❌ [media] Error consultando cuota:', cuota.error);
             logSubida(req, destino, 'error_cuota');
             return res.status(503).json({ ok: false, error: 'No pudimos verificar tu espacio. Intenta de nuevo.' });
         }
-        if (req.file.size > cuota.disponibleBytes) {
+        if (archivoFinal.buffer.length > cuota.disponibleBytes) {
             logSubida(req, destino, 'cuota_excedida');
             return res.status(413).json({
                 ok: false,
@@ -366,47 +585,11 @@ router.post(
             });
         }
 
-        let resultadoModeracion;
-        try {
-            if (tipo === 'imagen') resultadoModeracion = await moderarImagen(req.file.buffer);
-            else resultadoModeracion = await moderarVideo(req.file.buffer, req.file.mimetype);
-        } catch (modErr) {
-            console.error('❌ [media] Error en moderación:', modErr.message || modErr);
-            logSubida(req, destino, 'error_moderacion');
-            return res.status(503).json({ ok: false, error: 'No pudimos revisar el contenido. Intenta de nuevo.' });
-        }
-        if (!resultadoModeracion || !resultadoModeracion.ok) {
-            const motivo = resultadoModeracion && resultadoModeracion.motivo;
-            if (motivo === 'contenido_no_permitido') {
-                logSubida(req, destino, 'rechazado_contenido');
-                return res.status(422).json({ ok: false, error: 'Contenido no permitido' });
-            }
-            if (motivo === 'timeout' || motivo === 'servicio_no_disponible') {
-                logSubida(req, destino, 'servicio_no_disponible');
-                return res.status(503).json({ ok: false, error: 'No pudimos revisar el contenido. Intenta de nuevo.' });
-            }
-            if (motivo === 'tipo_invalido') {
-                logSubida(req, destino, 'tipo_archivo_invalido');
-                return res.status(400).json({ ok: false, error: 'Tipo de archivo inválido' });
-            }
-            if (motivo === 'tamano_invalido') {
-                logSubida(req, destino, 'tamano_invalido');
-                return res.status(413).json({ ok: false, error: 'Archivo demasiado grande' });
-            }
-            logSubida(req, destino, 'rechazado_otro');
-            return res.status(422).json({ ok: false, error: 'Contenido no permitido' });
-        }
-
-        const extension = extensionSegura(req.file.mimetype);
-        if (!extension) {
-            logSubida(req, destino, 'extension_no_soportada');
-            return res.status(400).json({ ok: false, error: 'Formato no soportado' });
-        }
-
+        // 5) Subida a R2.
         const nombreArchivo = generarNombreArchivo(destino, usuarioId, extension);
 
         try {
-            await subirAR2(nombreArchivo, req.file.buffer, req.file.mimetype);
+            await subirAR2(nombreArchivo, archivoFinal.buffer, archivoFinal.mime);
         } catch (upErr) {
             console.error('❌ [media] Error subiendo a R2:', upErr.message || upErr);
             logSubida(req, destino, 'error_subida');
@@ -419,6 +602,7 @@ router.post(
             return res.status(500).json({ ok: false, error: 'Error generando URL' });
         }
 
+        // 6) Registro del hash.
         const { error: errInsert } = await supabaseAdmin
             .from('archivos_hash')
             .insert({
@@ -426,7 +610,7 @@ router.post(
                 sha256: hash,
                 path: nombreArchivo,
                 public_url: url,
-                size: req.file.size
+                size: archivoFinal.buffer.length
             });
 
         if (errInsert) {
