@@ -1,11 +1,14 @@
 // ================================================================
-// LIVE · JS v4.2 — Csariel's
+// LIVE · JS v4.3 — Csariel's
 // Cliente de transmisión en vivo. El SERVIDOR decide roles, publicación,
 // Live Pass, dueño del live, acceso de pago y autor de los mensajes.
 // Las validaciones del navegador son solo experiencia de usuario.
 // v4.1: donaciones de 20, 50, 100 y 200 USD (mínimo de la pasarela).
 // v4.2: detección móvil (esMovil), compartir pantalla solo en escritorio,
 //       abrirAppJuegos() para lanzar la app Android con sariels://stream.
+// v4.3: Uniform Video Display Engine (UVDE) integrado.
+//       El video se renderiza dentro de un contenedor 9:16.
+//       Sin deformación, object-fit: cover.
 // ================================================================
 'use strict';
 
