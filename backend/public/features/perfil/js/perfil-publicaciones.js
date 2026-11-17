@@ -1,6 +1,6 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.2 GLOBAL VIDEO PLAYER ENGINE + MOTOR VISUAL DE REACCIONES
+// v14.3 GLOBAL VIDEO PLAYER ENGINE + UNIFORM VISUAL ENGINE
 // ================================================================
 // ACTUALIZACIONES:
 // 1. Reproducción continua al cambiar entre modo normal y expandido.
@@ -23,6 +23,9 @@
 // 18. Menú de reacciones limitado a ❤️ 😂 🥺 💎.
 // 19. Los conteos por emoji se actualizan al reaccionar.
 // 20. Errores de reacción visibles para el usuario.
+// 21. UNIFORMIDAD VISUAL: Contenedor 9:16 fijo para todos los videos.
+// 22. Recorte inteligente (object-fit: cover) sin deformación.
+// 23. Máxima calidad visual conservada.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -991,7 +994,7 @@ function pubCerrarVisor() {
 }
 
 // ================================================================
-// ESTILOS (solo estructura; las animaciones viven en emojis-animations.css)
+// ESTILOS (UNIFORMIDAD VISUAL 9:16 Y OTROS)
 // ================================================================
 
 (function inyectarEstilosReaccionesPerfil() {
@@ -1067,18 +1070,35 @@ function pubCerrarVisor() {
     .pub-media-wrap {
         position: relative;
         margin-top: 6px;
+        display: flex;
+        justify-content: center;
     }
 
-    .pub-media-wrap img,
-    .pub-media-wrap video {
+    /* NUEVO: CONTENEDOR UNIFORME 9:16 PARA VIDEOS */
+    .pub-media-container {
+        width: 100%;
+        aspect-ratio: 9 / 16;
+        position: relative;
+        overflow: hidden;
+        background: #000;
+        border-radius: 8px; /* Respetar el diseño actual de publicaciones */
+    }
+
+    .pub-media-container video {
         display: block;
         width: 100%;
-        max-height: 620px;
-        object-fit: contain;
-        background: #000;
-        border-radius: 0 !important;
-        margin: 0 !important;
-        cursor: pointer;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        max-width: 100%;
+    }
+
+    .pub-media-container img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
     }
 
     /* VISOR */
@@ -2404,12 +2424,17 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
                     wrapMedia.className = 'pub-media-wrap';
 
+                    // NUEVO: Contenedor uniforme 9:16
+                    var mediaContainer = document.createElement('div');
+                    mediaContainer.className = 'pub-media-container';
+
                     var mediaEl;
 
                     if (tipoMedia === 'video') {
                         mediaEl = document.createElement('video');
 
-                        mediaEl.controls = true;
+                        // Deshabilitar controles nativos para que el visor tenga el control
+                        mediaEl.controls = false;
                         mediaEl.preload = 'metadata';
                         mediaEl.src = p.media_url;
                         mediaEl.playsInline = true;
@@ -2446,6 +2471,12 @@ async function cargarMisPublicaciones(forzarRefresco) {
                             pubMotorVideo.videoActivo = mediaEl;
                         });
 
+                        // Abrir visor al hacer clic en el video
+                        mediaEl.addEventListener('click', function (e) {
+                            e.stopPropagation();
+                            pubAbrirVisor(indexEnLista, p.id, esDueno);
+                        });
+
                     } else {
                         mediaEl = document.createElement('img');
 
@@ -2460,7 +2491,8 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         });
                     }
 
-                    wrapMedia.appendChild(mediaEl);
+                    mediaContainer.appendChild(mediaEl);
+                    wrapMedia.appendChild(mediaContainer);
                     contenido.appendChild(wrapMedia);
                 }
             }
@@ -3159,5 +3191,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.2
+// FIN · PERFIL PUBLICACIONES v14.3
 // ================================================================
