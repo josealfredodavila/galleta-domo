@@ -1,6 +1,6 @@
 /* ================================================================
    EMOJIS ANIMATIONS · MOTOR VISUAL DE REACCIONES
-   CSARIEL'S · GALACTIC REACTION ENGINE v3.0
+   CSARIEL'S · GALACTIC REACTION ENGINE v3.1
    ================================================================
    RESPONSABILIDAD:
    - Animaciones visuales independientes.
@@ -12,15 +12,12 @@
      --delay : retraso de animación.
      --dur   : duración personalizada.
 
-   MEJORAS v3.0:
-   1. ❤️ Latido doble orgánico con pulso luminoso.
-   2. 😂 Carcajada irregular con rebote, giro y vibración.
-   3. 🥺 Brillo respiratorio, mirada viva y destellos.
-   4. 💎 Rotación fluida, destello interno y reflejo lateral.
-   5. 🤩 Expansión expresiva con balanceo y chispas.
-   6. 🌊 Flotación más natural para el resto de emojis.
-   7. Realce táctil más vivo al presionar.
-   8. Optimización para móviles y movimiento reducido.
+   CAMBIOS v3.1:
+   1. Más movimiento y más realismo en todos los emojis.
+   2. El contador (.mini-count) ya no tiene fondo ni borde negro.
+   3. El efecto al tocar usa la propiedad "scale", que no choca
+      con las animaciones.
+   4. Destellos y chispas en 💎 y 🤩.
    ================================================================ */
 
 
@@ -44,7 +41,7 @@
     animation-iteration-count: infinite;
     animation-timing-function: cubic-bezier(0.36, 0.07, 0.19, 0.97);
 
-    will-change: transform, opacity;
+    will-change: transform, opacity, filter;
 }
 
 .reaccion-dropdown button {
@@ -74,7 +71,7 @@
 
 /* ================================================================
    02 · ❤️ CORAZÓN
-   Latido doble, expansión elástica y pulso cálido.
+   Doble latido con expansión elástica y pulso cálido.
    ================================================================ */
 
 .emo-corazon {
@@ -87,46 +84,45 @@
     0%,
     100% {
         transform: scale(1) translateY(0);
-        opacity: 1;
         filter: drop-shadow(0 0 0 rgba(255, 45, 85, 0));
     }
 
     /* Primer latido fuerte */
     8% {
-        transform: scale(1.18, 1.14) translateY(-1px);
-        filter: drop-shadow(0 0 4px rgba(255, 45, 85, 0.55));
+        transform: scale(1.24, 1.2) translateY(-2px);
+        filter: drop-shadow(0 0 6px rgba(255, 45, 85, 0.75));
     }
 
-    14% {
-        transform: scale(0.96, 0.99) translateY(0);
+    15% {
+        transform: scale(0.95, 0.97) translateY(1px);
         filter: drop-shadow(0 0 1px rgba(255, 45, 85, 0.2));
     }
 
-    /* Segundo latido */
+    /* Segundo latido, algo más suave */
     24% {
-        transform: scale(1.14, 1.1) translateY(-1px);
-        filter: drop-shadow(0 0 7px rgba(255, 45, 85, 0.8));
+        transform: scale(1.18, 1.15) translateY(-2px);
+        filter: drop-shadow(0 0 8px rgba(255, 45, 85, 0.85));
     }
 
-    32% {
-        transform: scale(0.99, 1.01) translateY(0);
+    33% {
+        transform: scale(0.98, 1.01) translateY(0.5px);
         filter: drop-shadow(0 0 2px rgba(255, 45, 85, 0.3));
     }
 
-    /* Recuperación orgánica */
+    /* Recuperación con pequeño rebote */
     46% {
-        transform: scale(1.03, 1.01) translateY(-0.5px);
-        filter: drop-shadow(0 0 3px rgba(255, 45, 85, 0.4));
+        transform: scale(1.04, 1.02) translateY(-1px);
+        filter: drop-shadow(0 0 4px rgba(255, 45, 85, 0.45));
     }
 
     58% {
-        transform: scale(0.995, 1) translateY(0);
+        transform: scale(0.995, 1) translateY(0.5px);
         filter: drop-shadow(0 0 1px rgba(255, 45, 85, 0.15));
     }
 
     72% {
-        transform: scale(1.02, 1.005) translateY(-0.5px);
-        filter: drop-shadow(0 0 2px rgba(255, 45, 85, 0.3));
+        transform: scale(1.02, 1.01) translateY(-0.5px);
+        filter: drop-shadow(0 0 3px rgba(255, 45, 85, 0.3));
     }
 
     86% {
@@ -138,7 +134,7 @@
 
 /* ================================================================
    03 · 😂 CARCAJADA
-   Movimiento irregular, rebote, sacudida y expresividad.
+   Rebotes marcados, sacudidas y giros irregulares.
    ================================================================ */
 
 .emo-risa {
@@ -154,84 +150,60 @@
     }
 
     6% {
-        transform: translate3d(-1px, -2px, 0)
-                   rotate(-6deg)
-                   scale(1.06, 0.94);
+        transform: translate3d(-1.5px, -4px, 0) rotate(-9deg) scale(1.08, 0.92);
     }
 
     12% {
-        transform: translate3d(1px, -4px, 0)
-                   rotate(7deg)
-                   scale(0.95, 1.08);
+        transform: translate3d(1.5px, -6px, 0) rotate(10deg) scale(0.93, 1.1);
     }
 
     18% {
-        transform: translate3d(-1px, -2px, 0)
-                   rotate(-8deg)
-                   scale(1.05, 0.95);
+        transform: translate3d(-1px, -4px, 0) rotate(-11deg) scale(1.07, 0.93);
     }
 
     25% {
-        transform: translate3d(1px, -3px, 0)
-                   rotate(6deg)
-                   scale(0.96, 1.06);
+        transform: translate3d(1.5px, -5px, 0) rotate(8deg) scale(0.94, 1.08);
     }
 
-    /* Rebote de caída */
+    /* Caída con rebote */
     33% {
-        transform: translate3d(0, 1px, 0)
-                   rotate(-2deg)
-                   scale(1.04, 0.98);
+        transform: translate3d(0, 1.5px, 0) rotate(-3deg) scale(1.05, 0.97);
     }
 
     40% {
-        transform: translate3d(-1px, -1px, 0)
-                   rotate(4deg)
-                   scale(0.98, 1.04);
+        transform: translate3d(-1.5px, -2px, 0) rotate(6deg) scale(0.97, 1.05);
     }
 
     48% {
-        transform: translate3d(1px, -2px, 0)
-                   rotate(-5deg)
-                   scale(1.03, 0.98);
+        transform: translate3d(1.5px, -3.5px, 0) rotate(-7deg) scale(1.05, 0.96);
     }
 
     56% {
-        transform: translate3d(-1px, 0, 0)
-                   rotate(3deg)
-                   scale(0.99, 1.03);
+        transform: translate3d(-1px, -0.5px, 0) rotate(4deg) scale(0.98, 1.04);
     }
 
-    /* Micro-vibración de risa */
+    /* Vibración de risa */
     64% {
-        transform: translate3d(0.5px, -1px, 0)
-                   rotate(-2deg)
-                   scale(1.02, 0.99);
+        transform: translate3d(0.8px, -1.5px, 0) rotate(-3deg) scale(1.03, 0.98);
     }
 
-    70% {
-        transform: translate3d(-0.5px, 0, 0)
-                   rotate(2deg)
-                   scale(0.99, 1.02);
+    72% {
+        transform: translate3d(-0.8px, -0.5px, 0) rotate(2.5deg) scale(0.99, 1.02);
     }
 
-    78% {
-        transform: translate3d(0.5px, -0.5px, 0)
-                   rotate(-1deg)
-                   scale(1.01, 1);
+    80% {
+        transform: translate3d(0.6px, -1px, 0) rotate(-1.5deg) scale(1.01, 1);
     }
 
-    88% {
-        transform: translate3d(0, -0.5px, 0)
-                   rotate(1deg)
-                   scale(1.005, 1.005);
+    90% {
+        transform: translate3d(0, -0.5px, 0) rotate(1deg) scale(1.005, 1.005);
     }
 }
 
 
 /* ================================================================
    04 · 🥺 BRILLO
-   Movimiento suave, respiración luminosa y mirada viva.
+   Temblor suave, respiración y halo cálido.
    ================================================================ */
 
 .emo-brillo {
@@ -243,57 +215,65 @@
 
     0%,
     100% {
-        transform: scale(1) translateY(0) rotate(0deg);
-        opacity: 1;
+        transform: scale(1) translate3d(0, 0, 0) rotate(0deg);
         filter:
             drop-shadow(0 0 0 rgba(255, 214, 64, 0))
             brightness(1);
     }
 
-    14% {
-        transform: scale(1.03) translateY(-1px) rotate(-1deg);
+    12% {
+        transform: scale(1.04) translate3d(0, -1.5px, 0) rotate(-1.5deg);
         filter:
-            drop-shadow(0 0 3px rgba(255, 214, 64, 0.4))
-            brightness(1.08);
+            drop-shadow(0 0 4px rgba(255, 214, 64, 0.5))
+            brightness(1.1);
     }
 
-    28% {
-        transform: scale(0.99) translateY(0) rotate(1deg);
+    /* Temblor leve de labio */
+    22% {
+        transform: scale(0.99) translate3d(0.5px, 0, 0) rotate(1deg);
         filter:
             drop-shadow(0 0 1px rgba(255, 214, 64, 0.15))
             brightness(1.02);
     }
 
-    42% {
-        transform: scale(1.08) translateY(-2px) rotate(-1.5deg);
+    30% {
+        transform: scale(1.02) translate3d(-0.5px, 0, 0) rotate(-1deg);
         filter:
-            drop-shadow(0 0 8px rgba(255, 214, 64, 0.85))
-            brightness(1.2);
-    }
-
-    52% {
-        transform: scale(1.02) translateY(0) rotate(0deg);
-        filter:
-            drop-shadow(0 0 3px rgba(255, 214, 64, 0.4))
+            drop-shadow(0 0 2px rgba(255, 214, 64, 0.3))
             brightness(1.05);
     }
 
-    66% {
-        transform: scale(1.06) translateY(-1px) rotate(1deg);
+    /* Pico de brillo */
+    42% {
+        transform: scale(1.09) translate3d(0, -2.5px, 0) rotate(-2deg);
         filter:
-            drop-shadow(0 0 6px rgba(255, 214, 64, 0.7))
-            brightness(1.15);
+            drop-shadow(0 0 9px rgba(255, 214, 64, 0.9))
+            brightness(1.25);
+    }
+
+    52% {
+        transform: scale(1.02) translate3d(0, 0, 0) rotate(0deg);
+        filter:
+            drop-shadow(0 0 3px rgba(255, 214, 64, 0.4))
+            brightness(1.06);
+    }
+
+    66% {
+        transform: scale(1.07) translate3d(0, -1.5px, 0) rotate(1.5deg);
+        filter:
+            drop-shadow(0 0 7px rgba(255, 214, 64, 0.75))
+            brightness(1.18);
     }
 
     78% {
-        transform: scale(0.995) translateY(0) rotate(-0.5deg);
+        transform: scale(0.995) translate3d(0, 0, 0) rotate(-0.5deg);
         filter:
             drop-shadow(0 0 1px rgba(255, 214, 64, 0.15))
             brightness(1.02);
     }
 
     90% {
-        transform: scale(1.02) translateY(-0.5px) rotate(0.5deg);
+        transform: scale(1.02) translate3d(0, -0.5px, 0) rotate(0.5deg);
         filter:
             drop-shadow(0 0 3px rgba(255, 214, 64, 0.35))
             brightness(1.06);
@@ -302,8 +282,7 @@
 
 
 /* ================================================================
-   05 · 🥺 DESTELLOS
-   Ojos brillantes, respiración y reflejos luminosos.
+   05 · 🥺 DESTELLOS EN LA MIRADA
    ================================================================ */
 
 .emo-brillo::after {
@@ -332,16 +311,6 @@
             circle at 50% 64%,
             rgba(255, 220, 100, 0.65) 0,
             transparent 6px
-        ),
-        radial-gradient(
-            circle at 24% 28%,
-            rgba(255, 255, 255, 0.55) 0,
-            transparent 4px
-        ),
-        radial-gradient(
-            circle at 76% 28%,
-            rgba(255, 255, 255, 0.55) 0,
-            transparent 4px
         );
 
     opacity: 0;
@@ -363,38 +332,38 @@
         transform: scale(0.86) translateY(0);
     }
 
-    12% {
-        opacity: 0.25;
+    14% {
+        opacity: 0.35;
         transform: scale(0.92) translateY(-0.5px);
     }
 
-    26% {
-        opacity: 0.65;
-        transform: scale(0.98) translateY(-1px);
+    30% {
+        opacity: 0.8;
+        transform: scale(1.02) translateY(-1px);
     }
 
-    40% {
+    42% {
         opacity: 1;
-        transform: scale(1.1) translateY(-2px);
+        transform: scale(1.12) translateY(-2px);
     }
 
-    47% {
-        opacity: 0.3;
+    50% {
+        opacity: 0.25;
         transform: scale(0.95) translateY(-0.5px);
     }
 
-    60% {
-        opacity: 0.9;
-        transform: scale(1.06) translateY(-1px);
+    64% {
+        opacity: 0.95;
+        transform: scale(1.07) translateY(-1px);
     }
 
-    72% {
-        opacity: 0.45;
-        transform: scale(0.97) translateY(0);
+    78% {
+        opacity: 0.35;
+        transform: scale(0.96) translateY(0);
     }
 
-    84% {
-        opacity: 0.15;
+    90% {
+        opacity: 0.1;
         transform: scale(0.9) translateY(0);
     }
 }
@@ -402,7 +371,7 @@
 
 /* ================================================================
    06 · 💎 DIAMANTE
-   Rotación suave, brillo, destello interno y reflejo lateral.
+   Rotación con brillo que recorre la piedra y destellos.
    ================================================================ */
 
 .emo-diamante {
@@ -415,7 +384,6 @@
     0%,
     100% {
         transform: rotate(0deg) scale(1) translateY(0);
-        opacity: 1;
         filter:
             brightness(1)
             saturate(1)
@@ -423,66 +391,99 @@
     }
 
     10% {
-        transform: rotate(-4deg) scale(1.03) translateY(-0.5px);
+        transform: rotate(-5deg) scale(1.04) translateY(-1px);
         filter:
-            brightness(1.15)
+            brightness(1.2)
             saturate(1.1)
-            drop-shadow(0 0 3px rgba(110, 220, 255, 0.35));
+            drop-shadow(0 0 4px rgba(110, 220, 255, 0.45));
     }
 
     22% {
-        transform: rotate(3deg) scale(1.07) translateY(-1px);
+        transform: rotate(4deg) scale(1.09) translateY(-1.5px);
         filter:
-            brightness(1.35)
-            saturate(1.2)
-            drop-shadow(0 0 6px rgba(110, 220, 255, 0.65));
+            brightness(1.45)
+            saturate(1.25)
+            drop-shadow(0 0 8px rgba(110, 220, 255, 0.8));
     }
 
     34% {
-        transform: rotate(-2deg) scale(1.1) translateY(-1.5px);
+        transform: rotate(-3deg) scale(1.12) translateY(-2px);
         filter:
-            brightness(1.6)
-            saturate(1.35)
-            drop-shadow(0 0 10px rgba(120, 220, 255, 0.9));
+            brightness(1.7)
+            saturate(1.4)
+            drop-shadow(0 0 12px rgba(120, 220, 255, 0.95));
     }
 
     44% {
-        transform: rotate(1deg) scale(1.02) translateY(0);
+        transform: rotate(1deg) scale(1.03) translateY(0);
         filter:
-            brightness(1.1)
+            brightness(1.12)
             saturate(1.05)
             drop-shadow(0 0 2px rgba(255, 255, 255, 0.4));
     }
 
     58% {
-        transform: rotate(-3deg) scale(1.06) translateY(-1px);
+        transform: rotate(-4deg) scale(1.08) translateY(-1.5px);
         filter:
-            brightness(1.45)
-            saturate(1.25)
-            drop-shadow(0 0 8px rgba(120, 220, 255, 0.75));
+            brightness(1.5)
+            saturate(1.3)
+            drop-shadow(0 0 9px rgba(120, 220, 255, 0.8));
     }
 
     70% {
-        transform: rotate(2deg) scale(1.01) translateY(0);
+        transform: rotate(2deg) scale(1.02) translateY(0);
         filter:
-            brightness(1.08)
-            saturate(1.04)
+            brightness(1.1)
+            saturate(1.05)
             drop-shadow(0 0 2px rgba(255, 255, 255, 0.25));
     }
 
     84% {
-        transform: rotate(-1deg) scale(1.03) translateY(-0.5px);
+        transform: rotate(-1.5deg) scale(1.05) translateY(-1px);
         filter:
-            brightness(1.2)
-            saturate(1.1)
-            drop-shadow(0 0 4px rgba(110, 220, 255, 0.45));
+            brightness(1.25)
+            saturate(1.12)
+            drop-shadow(0 0 5px rgba(110, 220, 255, 0.5));
+    }
+}
+
+/* 💎 · Chispa que recorre la piedra */
+.emo-diamante::after {
+    content: '';
+    position: absolute;
+    top: 14%;
+    left: 22%;
+    width: 6px;
+    height: 6px;
+    pointer-events: none;
+    background: radial-gradient(circle, #ffffff 0, rgba(255, 255, 255, 0.9) 30%, transparent 70%);
+    opacity: 0;
+    animation: emoChispaDiamante var(--dur, 2.4s) ease-in-out var(--delay, 0s) infinite;
+}
+
+@keyframes emoChispaDiamante {
+
+    0%,
+    100% {
+        opacity: 0;
+        transform: scale(0.4) rotate(0deg);
+    }
+
+    30% {
+        opacity: 1;
+        transform: scale(1.1) rotate(45deg);
+    }
+
+    42% {
+        opacity: 0;
+        transform: scale(0.5) rotate(90deg);
     }
 }
 
 
 /* ================================================================
    07 · 🤩 ESTRELLAS
-   Expansión expresiva, balanceo y chispas dinámicas.
+   Expansión expresiva, balanceo y chispas.
    ================================================================ */
 
 .emo-estrellas {
@@ -499,32 +500,32 @@
     }
 
     10% {
-        transform: scale(1.04) rotate(-3deg) translateY(-0.5px);
+        transform: scale(1.07) rotate(-4deg) translateY(-1px);
         opacity: 0.98;
     }
 
     20% {
-        transform: scale(1.09) rotate(4deg) translateY(-1.5px);
+        transform: scale(1.14) rotate(5deg) translateY(-2.5px);
         opacity: 1;
     }
 
     30% {
-        transform: scale(1.01) rotate(-2deg) translateY(0);
-        opacity: 0.97;
+        transform: scale(1.02) rotate(-3deg) translateY(0);
+        opacity: 0.96;
     }
 
     42% {
-        transform: scale(1.11) rotate(5deg) translateY(-2px);
+        transform: scale(1.16) rotate(6deg) translateY(-3px);
         opacity: 1;
     }
 
     54% {
-        transform: scale(1.02) rotate(-1deg) translateY(-0.5px);
-        opacity: 0.98;
+        transform: scale(1.03) rotate(-1.5deg) translateY(-1px);
+        opacity: 0.97;
     }
 
     66% {
-        transform: scale(1.08) rotate(3deg) translateY(-1.5px);
+        transform: scale(1.11) rotate(3.5deg) translateY(-2px);
         opacity: 1;
     }
 
@@ -534,8 +535,41 @@
     }
 
     90% {
-        transform: scale(1.03) rotate(1deg) translateY(-0.5px);
+        transform: scale(1.05) rotate(1.5deg) translateY(-1px);
         opacity: 1;
+    }
+}
+
+/* 🤩 · Chispas alrededor */
+.emo-estrellas::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 7px;
+    height: 7px;
+    pointer-events: none;
+    background: radial-gradient(circle, #fff7b0 0, rgba(255, 230, 120, 0.9) 35%, transparent 70%);
+    opacity: 0;
+    animation: emoChispaEstrella var(--dur, 2.4s) ease-out var(--delay, 0s) infinite;
+}
+
+@keyframes emoChispaEstrella {
+
+    0%,
+    100% {
+        opacity: 0;
+        transform: scale(0.3);
+    }
+
+    20% {
+        opacity: 1;
+        transform: scale(1.2);
+    }
+
+    40% {
+        opacity: 0;
+        transform: scale(0.6) translate(3px, -3px);
     }
 }
 
@@ -558,49 +592,84 @@
     }
 
     18% {
-        transform: translate3d(0.5px, -1.5px, 0) scale(1.02) rotate(-1deg);
+        transform: translate3d(0.8px, -2px, 0) scale(1.03) rotate(-1.5deg);
         opacity: 0.99;
     }
 
     35% {
-        transform: translate3d(-0.5px, -3px, 0) scale(1.04) rotate(1deg);
+        transform: translate3d(-0.8px, -4px, 0) scale(1.06) rotate(1.5deg);
         opacity: 1;
     }
 
     52% {
-        transform: translate3d(0.5px, -1px, 0) scale(0.99) rotate(-0.5deg);
+        transform: translate3d(0.6px, -1.5px, 0) scale(0.98) rotate(-0.8deg);
         opacity: 0.98;
     }
 
     70% {
-        transform: translate3d(-0.5px, -2.5px, 0) scale(1.03) rotate(0.5deg);
+        transform: translate3d(-0.6px, -3.5px, 0) scale(1.04) rotate(0.8deg);
         opacity: 1;
     }
 
     85% {
-        transform: translate3d(0, -0.5px, 0) scale(1.005) rotate(0deg);
+        transform: translate3d(0, -0.8px, 0) scale(1.01) rotate(0deg);
         opacity: 0.99;
     }
 }
 
 
 /* ================================================================
-   09 · ACTIVACIÓN POR INTERACCIÓN
-   Realce táctil más vivo cuando el usuario toca una reacción.
+   09 · CONTADOR (.mini-count)
+   Sin fondo ni borde negro: solo el número, con sombra suave.
+   ================================================================ */
+
+.reaccion-dropdown button .mini-count {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    bottom: auto;
+    left: auto;
+
+    background: none !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+
+    color: #D4AF37 !important;
+    font-size: 0.62rem;
+    font-weight: 800;
+    line-height: 1;
+    text-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.75),
+        0 0 6px rgba(212, 175, 55, 0.35);
+
+    pointer-events: none;
+    transform: none !important;
+    animation: none !important;
+}
+
+
+/* ================================================================
+   10 · ACTIVACIÓN POR INTERACCIÓN
+   Usa "scale", que se combina con las animaciones en lugar de
+   anularlas.
    ================================================================ */
 
 .reaccion-dropdown button:active {
-    transform: scale(0.9) translateY(1px);
-    filter: brightness(1.08);
-    transition: transform 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
-                filter 120ms ease;
+    scale: 0.86;
+    filter: brightness(1.12);
+    transition:
+        scale 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        filter 120ms ease;
 }
 
 .emoji-actual:active {
-    transform: scale(0.94);
+    scale: 0.92;
     filter: brightness(1.18) saturate(1.1);
-    transition: transform 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
-                filter 120ms ease;
+    transition:
+        scale 90ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        filter 120ms ease;
 }
 
 .reaccion-dropdown button:focus-visible,
@@ -612,8 +681,8 @@
 
 
 /* ================================================================
-   10 · ACCESIBILIDAD
-   Respeta la preferencia de movimiento reducido.
+   11 · ACCESIBILIDAD
+   Respeta la preferencia de movimiento reducido del sistema.
    ================================================================ */
 
 @media (prefers-reduced-motion: reduce) {
@@ -626,7 +695,9 @@
         will-change: auto;
     }
 
-    .emo-brillo::after {
+    .emo-brillo::after,
+    .emo-diamante::after,
+    .emo-estrellas::after {
         animation: none !important;
         opacity: 0 !important;
     }
@@ -634,7 +705,7 @@
 
 
 /* ================================================================
-   11 · OPTIMIZACIÓN PARA DISPOSITIVOS PEQUEÑOS
+   12 · OPTIMIZACIÓN PARA DISPOSITIVOS PEQUEÑOS
    ================================================================ */
 
 @media (max-width: 480px) {
@@ -646,12 +717,14 @@
         will-change: transform, opacity;
     }
 
-    .emo-brillo::after {
+    .emo-brillo::after,
+    .emo-diamante::after,
+    .emo-estrellas::after {
         will-change: opacity, transform;
     }
 }
 
 
 /* ================================================================
-   FIN · CSARIEL'S GALACTIC REACTION ENGINE v3.0
+   FIN · CSARIEL'S GALACTIC REACTION ENGINE v3.1
    ================================================================ */
