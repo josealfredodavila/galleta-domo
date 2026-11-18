@@ -407,12 +407,7 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v9.4 (PRODUCCIÓN)
-       - Objetivo siempre válido: el select nunca se vacía.
-       - Envío con /api/campanas/crear (campaña y pago en una operación).
-       - Muestra la dirección y el monto a pagar (NOWPayments no da payment_url).
-       - Reintentos reutilizan la campaña pendiente (sin duplicados).
-       - Presupuesto del panel solo con campañas confirmadas.
+       MARKETING · Sariel's — v9.5 (PRODUCCIÓN + PROMI INTEGRATION)
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -529,49 +524,52 @@
                 return;
             }
 
-            const res = await fetch(`${BACKEND_URL}/api/ai/chat`, {
+            // Conexión al nuevo endpoint estructurado de Promi
+            const res = await fetch(`${BACKEND_URL}/api/promi/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${session.access_token}`
                 },
-                body: JSON.stringify({ message: texto, context: 'marketing', history: promiHistory })
+                body: JSON.stringify({ message: texto, history: promiHistory })
             });
 
             const data = await res.json();
             typing.remove();
 
-            if (data.success && data.reply) {
+            if (data.success && data.contrato) {
                 const botMsg = document.createElement('div');
                 botMsg.className = 'promi-msg bot';
-                botMsg.textContent = data.reply;
-                body.appendChild(botMsg);
-                promiHistory.push({ role: 'assistant', content: data.reply });
-
-                const lowerText = texto.toLowerCase();
-                if (lowerText.includes('imagen') || lowerText.includes('foto') || lowerText.includes('video') || lowerText.includes('crea') || lowerText.includes('genera')) {
-                    const actionsDiv = document.createElement('div');
-                    actionsDiv.className = 'promi-actions';
-
-                    if (lowerText.includes('imagen') || lowerText.includes('foto') || lowerText.includes('crea') || lowerText.includes('genera')) {
-                        const btnImg = document.createElement('button');
-                        btnImg.className = 'promi-action-btn';
-                        btnImg.innerHTML = `🖼️ Generar Imagen`;
-                        btnImg.onclick = () => generarMediaReal('imagen', texto);
-                        actionsDiv.appendChild(btnImg);
+                
+                // Renderizado por contrato
+                const c = data.contrato;
+                if (c.type === 'chat') {
+                    botMsg.innerHTML = escapeHTML(c.message).replace(/\n/g, '<br>');
+                } else if (c.type === 'copywriting') {
+                    botMsg.innerHTML = c.variants.map(v => `<strong>${escapeHTML(v.channel)} (${escapeHTML(v.format)}):</strong><br>${escapeHTML(v.text)}<br><br>`).join('');
+                } else if (c.type === 'campaign_strategy') {
+                    botMsg.innerHTML = `<strong>🎯 ${escapeHTML(c.campaign.name)}</strong><br><br>${escapeHTML(c.campaign.creative_concept)}<br><br><em>Objetivo: ${escapeHTML(c.campaign.business_objective)}</em>`;
+                } else if (c.type === 'campaign_analysis') {
+                    botMsg.innerHTML = `<strong>📊 Análisis:</strong><br>${c.diagnosis.map(d => escapeHTML(d)).join('<br>')}`;
+                } else if (c.type === 'image_generation' || c.type === 'video_generation') {
+                    // Manejo de Media IA
+                    if (data.preview_url_seg) {
+                        const isVideo = c.type === 'video_generation';
+                        const mediaTag = isVideo 
+                            ? `<video src="${escapeHTML(data.preview_url_seg)}" controls playsinline style="width:100%;border-radius:12px;margin-bottom:12px;background:#000;"></video>` 
+                            : `<img src="${escapeHTML(data.preview_url_seg)}" style="width:100%;border-radius:12px;margin-bottom:12px;">`;
+                        botMsg.innerHTML = `${mediaTag}
+                            <button class="promi-action-btn" onclick="aceptarMedia(${c.asset_id}, '${isVideo ? 'video' : 'imagen'}', this, '${session.access_token}')">✓ Aceptar para mi campaña</button>`;
+                    } else {
+                        botMsg.textContent = `Generando ${c.type === 'image_generation' ? 'imagen' : 'video'}... (ID: ${c.asset_id})`;
                     }
-
-                    if (lowerText.includes('video') || lowerText.includes('crea') || lowerText.includes('genera')) {
-                        const btnVid = document.createElement('button');
-                        btnVid.className = 'promi-action-btn';
-                        btnVid.innerHTML = `🎬 Generar Video`;
-                        btnVid.onclick = () => generarMediaReal('video', texto);
-                        actionsDiv.appendChild(btnVid);
-                    }
-                    body.appendChild(actionsDiv);
                 }
+
+                body.appendChild(botMsg);
+                promiHistory.push({ role: 'assistant', content: c.message || `[Acción: ${c.type}]` });
+
             } else {
-                showToast('Promi no pudo responder', 'error');
+                showToast(data.mensaje || 'Promi no pudo procesar la respuesta.', 'error');
             }
         } catch (e) {
             typing.remove();
@@ -637,7 +635,7 @@
     }
 
     async function aceptarMedia(id, tipo, caja, token) {
-        const botones = caja.querySelectorAll('button');
+        const botones = caja.parentElement.querySelectorAll('button');
         botones.forEach((b) => { b.disabled = true; });
 
         try {
@@ -655,7 +653,7 @@
             wizard.media_id = id;
             wizard.media_tipo = tipo;
 
-            const acciones = caja.querySelector('.acciones-media');
+            const acciones = caja.parentElement.querySelector('.acciones-media') || caja.parentElement;
             acciones.innerHTML = `
                 <span style="color:#00d68f;font-size:0.8rem;font-weight:700;display:block;margin-bottom:10px;">✓ Aceptado. Se usará en tu campaña.</span>
                 <button class="promi-action-btn" onclick="iniciarCampanaDesdePromi()" style="background:#00d68f; color:#04060d; border:none;">📋 Continuar con la campaña</button>
