@@ -4,11 +4,13 @@
 // Abrir grupo, membresía, feed de publicaciones, interacciones,
 // reportes, etiquetas, comentarios, reacciones y acciones del canal.
 // Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js,
-//             grupos-marketplace.js (mkTarjetaCompraHTML)
+//             grupos-marketplace.js (mkTarjetaCompraHTML),
+//             reacciones-global.js (ReaccionesGlobal)
+// v3.2: reacciones unificadas a ❤️ 😂 🥺 💎 (reacciones-global.js),
+//       con animación de emojis y normalización de valores antiguos.
 // v3.1: menú completo para el autor (+ eliminar); borrado por RPC.
 // v3.0:
 //   - El dueño puede eliminar su propia publicación (borrado lógico).
-//   - Reacciones: 👍 🥰 😱 🤨 🤣 😆, una por persona, con conteo real.
 //   - Avatar del autor visible para todos; sin foto, muestra la inicial.
 //   - Caja de comentarios más grande.
 // ================================================================
@@ -16,12 +18,18 @@
 // ================================================================
 // REACCIONES Y AVATARES
 // ================================================================
-var REACCIONES_DISPONIBLES = ['👍', '🥰', '😱', '🤨', '🤣', '😆'];
+var RG_GRUPOS = window.ReaccionesGlobal;
+var REACCIONES_DISPONIBLES = RG_GRUPOS ? RG_GRUPOS.EMOJIS.slice() : ['❤️', '😂', '🥺', '💎'];
 var misReacciones = {};
 
-// Normaliza el registro antiguo 'like' al emoji 👍
+// Normaliza cualquier valor guardado (👍, 🥰, like, nulos) a uno de los 4 emojis
 function normalizarReaccion(tipo) {
-    return tipo === 'like' ? '👍' : tipo;
+    return RG_GRUPOS ? RG_GRUPOS.normalizar(tipo) : (REACCIONES_DISPONIBLES.indexOf(tipo) !== -1 ? tipo : '❤️');
+}
+
+// Aplica la animación del emoji (clase + duración aleatoria)
+function animarEmojiGrupo(el, emoji) {
+    if (RG_GRUPOS && el) RG_GRUPOS.aplicarMotor(el, emoji);
 }
 
 // Avatar: foto si existe; si no, la inicial del nombre (nunca un símbolo vacío)
@@ -499,6 +507,14 @@ function renderizarPublicacionesCache() {
     }
 
     container.innerHTML = filtradas.map(function(p) { return renderizarPublicacionHTML(p); }).join('');
+
+    // Aplica la animación a cada emoji del menú y de la barra
+    container.querySelectorAll('.grp-react-picker button[data-emoji]').forEach(function(b) {
+        animarEmojiGrupo(b, b.getAttribute('data-emoji'));
+    });
+    container.querySelectorAll('.grp-react-trigger-emoji').forEach(function(el) {
+        animarEmojiGrupo(el, el.getAttribute('data-emoji'));
+    });
 }
 
 // ================================================================
@@ -508,7 +524,7 @@ function htmlBarraReacciones(p) {
     var mia = misReacciones[p.id] || null;
     var total = p.likes_count || 0;
 
-    // Resumen por emoji (normaliza el antiguo 'like' a 👍)
+    // Resumen por emoji (normaliza valores antiguos a ❤️)
     var resumen = {};
     var crudo = p.reacciones_resumen || {};
     Object.keys(crudo).forEach(function(k) {
@@ -520,7 +536,7 @@ function htmlBarraReacciones(p) {
 
     var opciones = REACCIONES_DISPONIBLES.map(function(e) {
         var activa = mia === e;
-        return '<button type="button" onclick="reaccionarPublicacion(' + p.id + ', \'' + e + '\')" ' +
+        return '<button type="button" data-emoji="' + e + '" onclick="reaccionarPublicacion(' + p.id + ', \'' + e + '\')" ' +
             'style="font-size:1.35rem;background:' + (activa ? 'rgba(212,175,55,0.25)' : 'transparent') + ';' +
             'border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;line-height:1;">' + e + '</button>';
     }).join('');
@@ -529,7 +545,7 @@ function htmlBarraReacciones(p) {
         '<button type="button" onclick="toggleReaccionPicker(' + p.id + ')" ' +
             'style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:22px;' +
             'border:1px solid var(--glass-border);background:rgba(0,0,0,0.25);color:var(--text-primary);font-size:0.95rem;cursor:pointer;">' +
-            '<span style="font-size:1.15rem;">' + (mia || '🙂') + '</span>' +
+            '<span class="grp-react-trigger-emoji" data-emoji="' + (mia || '❤️') + '" style="font-size:1.15rem;">' + (mia || '🙂') + '</span>' +
             '<span style="font-size:0.85rem;">' + total + '</span>' +
         '</button>' +
         (resumenTxt ? '<span style="font-size:0.85rem;color:var(--text-muted);">' + grpEscapeHTML(resumenTxt) + '</span>' : '') +
