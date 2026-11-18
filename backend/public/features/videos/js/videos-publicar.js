@@ -1,14 +1,16 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.4
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.5
    ================================================================
-   Cambios respecto a v3.3:
-   - Uniform Video Display Engine (UVDE):
-     * Contenedor 9:16 estricto para todos los videos del feed y preview.
-     * object-fit: cover para recorte inteligente sin deformación.
-     * Sin franjas negras.
-     * Calidad original del archivo intacta.
-   - El resto de la lógica (subida, borradores, sonidos, Supabase)
-     se mantiene exactamente igual a la v3.3.
+   Cambios respecto a v3.4:
+   - Refactorización de seguridad y rendimiento.
+   - Fuga de memoria AudioContext solucionada.
+   - Optimización de IndexedDB (límite de peso para no bloquear).
+   - Limpieza global de Object URLs (evita fugas en RAM).
+   - Validación de URL de audio con new URL().
+   - Protección contra doble subida (Race Condition).
+   - MutationObserver optimizado (#videosContainer).
+   - Pausa global de videos en visibilitychange.
+   - Corrección de validación de cuota (>=).
    ================================================================ */
 
 (function () {
@@ -19,7 +21,6 @@
 
     const Z = { CAMARA: 99999, SHEET_BACKDROP: 100000, SHEET: 100001, PREVIEW: 100030, CONFIRM: 100010, TOAST: 100020 };
 
-    // Controles del feed. Pon true para volver a mostrar cada botón.
     const FEED_UI = {
         ocultarLikes: true,
         ocultarCompartir: true,
@@ -32,6 +33,8 @@
     const IDB_STORE = 'kv';
     const KEY_META = 'meta';
     const KEY_FILE = 'file';
+
+    const MAX_FILE_SIZE_FOR_IDB = 15 * 1024 * 1024; // 15 MB para evitar bloqueo de UI
 
     const ICONO_PAUSA = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
     const ICONO_PLAY = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><polygon points="7 5 19 12 7 19 7 5"/></svg>';
@@ -59,7 +62,6 @@
 
     const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     const SUPABASE_STORAGE_URL = SUPABASE_URL + '/storage/v1/object/public/audios';
-    // Debe coincidir con AUDIO_URL_PREFIX de routes/video-processor.js
     const AUDIO_PREFIJO_PERMITIDO = SUPABASE_STORAGE_URL + '/';
 
     const SONIDOS_SEED = {
@@ -113,10 +115,12 @@
         guardandoBorrador: false,
         archivoPathRemoto: null,
         portadaPathRemoto: null,
-        borradorPaths: null
+        borradorPaths: null,
+        subiendo: false // PROTECCIÓN RACE CONDITION
     };
 
     let pistaPreviewAudio = null;
+    const objectURLsActivas = new Set(); // RASTREO GLOBAL DE URLS
 
     function $(id) { return document.getElementById(id); }
     function esc(v) {
@@ -127,6 +131,26 @@
     function log(...args) { console.log('[VideosPublicar]', ...args); }
     function warn(...args) { console.warn('[VideosPublicar]', ...args); }
 
+    // HELPERS DE SEGURIDAD Y URL
+    function crearObjectURL(blob) {
+        const url = URL.createObjectURL(blob);
+        objectURLsActivas.add(url);
+        return url;
+    }
+    function revocarObjectURL(url) {
+        if (!url) return;
+        try { URL.revokeObjectURL(url); } catch (e) {}
+        objectURLsActivas.delete(url);
+    }
+    function limpiarTodasLasURLs() {
+        objectURLsActivas.forEach(url => {
+            try { URL.revokeObjectURL(url); } catch (e) {}
+        });
+        objectURLsActivas.clear();
+        state.previewURL = null;
+        state.portadaURL = null;
+    }
+
     // ============================================================
     // HELPERS DE DATOS (ubicación y sonido)
     // ============================================================
@@ -135,9 +159,15 @@
     }
 
     function urlSonidoValida(url) {
-        return typeof url === 'string' &&
-            url.indexOf(AUDIO_PREFIJO_PERMITIDO) === 0 &&
-            url.indexOf('..') === -1;
+        if (typeof url !== 'string') return false;
+        try {
+            const u = new URL(url);
+            if (u.origin !== SUPABASE_URL) return false;
+            const prefijoPath = '/storage/v1/object/public/audios/';
+            return u.pathname.startsWith(prefijoPath) && u.pathname.length > prefijoPath.length;
+        } catch (e) {
+            return false;
+        }
     }
 
     function getSupabaseClient() {
@@ -223,23 +253,21 @@
     }
 
     function descargarBlob(blob, nombre) {
-        const url = URL.createObjectURL(blob);
+        const url = crearObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = nombre || ('video-' + Date.now() + '.webm');
         document.body.appendChild(a);
         a.click();
         a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        setTimeout(() => revocarObjectURL(url), 4000);
     }
 
     async function descargarVideoActual() {
-        // Caso 1: archivo recién elegido o grabado (sigue en memoria)
         if (state.archivoVideo) {
             descargarBlob(state.archivoVideo, state.archivoVideo.name);
             return;
         }
-        // Caso 2: borrador guardado en Storage
         if (state.archivoPathRemoto) {
             try {
                 const resp = await fetch(urlPublicaBorrador(state.archivoPathRemoto));
@@ -390,8 +418,16 @@
 
     async function persistirArchivo() {
         try {
-            if (state.archivoVideo) await idbSet(KEY_FILE, state.archivoVideo);
-            else await idbDel(KEY_FILE);
+            if (state.archivoVideo) {
+                if (state.archivoVideo.size > MAX_FILE_SIZE_FOR_IDB) {
+                    warn('Archivo demasiado grande para guardar en IndexedDB. Se omitirá.');
+                    await idbDel(KEY_FILE);
+                    return;
+                }
+                await idbSet(KEY_FILE, state.archivoVideo);
+            } else {
+                await idbDel(KEY_FILE);
+            }
         } catch (e) { warn('No se pudo guardar el video local:', e); }
     }
 
@@ -409,7 +445,7 @@
             const dt = new DataTransfer();
             dt.items.add(file);
             input.files = dt.files;
-        } catch (e) { /* algunos navegadores no permiten asignar files; no es crítico */ }
+        } catch (e) { }
     }
 
     function actualizarTextoBotonArchivo(file) {
@@ -432,7 +468,15 @@
     async function restaurarLocal() {
         try {
             const meta = await idbGet(KEY_META);
-            const file = await idbGet(KEY_FILE);
+            let file = await idbGet(KEY_FILE);
+
+            if (file && file.size > MAX_FILE_SIZE_FOR_IDB) {
+                warn('Archivo recuperado excede límite. Se descarta.');
+                await idbDel(KEY_FILE);
+                file = null;
+                csToast('El video era demasiado grande para recuperarlo automáticamente.', 'info', 4000);
+            }
+
             if (!meta && !file) return;
 
             if (meta) {
@@ -521,7 +565,7 @@
         }
 
         function iniciar(elementoEq, elementoAudio) {
-            detener();
+            detener(); // Limpia siempre antes de iniciar
             const barras = elementoEq ? Array.from(elementoEq.querySelectorAll('.cs-eq-bar')) : [];
             const conAnalizador = elementoAudio ? asegurarContexto(elementoAudio) : false;
             activo = true;
@@ -537,6 +581,14 @@
             activo = false;
             if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
             if (fuente) { try { fuente.disconnect(); } catch (e) {} fuente = null; }
+            
+            // CRÍTICO: Cerrar y anular el contexto de audio para liberar hardware
+            if (ctx) {
+                try { ctx.close(); } catch (e) {}
+                ctx = null;
+            }
+            analyser = null;
+            datos = null;
         }
 
         return { iniciar, detener };
@@ -712,11 +764,47 @@
         }
     }
 
+    // VALIDACIÓN PRELIMINAR DE INTEGRIDAD
+    function validarIntegridadVideo(file) {
+        return new Promise((resolve) => {
+            const url = crearObjectURL(file);
+            const v = document.createElement('video');
+            v.preload = 'metadata';
+            v.muted = true;
+            
+            const timeout = setTimeout(() => {
+                revocarObjectURL(url);
+                resolve(false); // Timeout, probablemente corrupto
+            }, 2000);
+
+            v.onloadedmetadata = () => {
+                clearTimeout(timeout);
+                revocarObjectURL(url);
+                resolve(true);
+            };
+            v.onerror = () => {
+                clearTimeout(timeout);
+                revocarObjectURL(url);
+                resolve(false);
+            };
+
+            v.src = url;
+        });
+    }
+
     async function subirMultimediaSupabase(archivo, tipo) {
         const session = await obtenerSesion();
         if (!session) return { ok: false, error: 'Sin sesión activa' };
         const token = session.access_token;
         if (!token) return { ok: false, error: 'Sin token de sesión' };
+
+        // Validación preliminar de integridad para videos
+        if (tipo === 'video') {
+            const esValido = await validarIntegridadVideo(archivo);
+            if (!esValido) {
+                return { ok: false, error: 'El archivo de video está corrupto o no es válido.' };
+            }
+        }
 
         const fd = new FormData();
         fd.append('file', archivo);
@@ -842,8 +930,6 @@
         return count || 0;
     }
 
-    // Devuelve la cuota del usuario o null si no se pudo consultar.
-    // Si no se puede consultar, la UI no bloquea: el servidor sigue aplicando la regla.
     async function consultarCuotaCliente(session) {
         try {
             const resp = await fetch('/api/media/cuota', {
@@ -875,8 +961,6 @@
             return;
         }
 
-        // Validación previa: tope de borradores y retención por cuota.
-        // La cuota se bloquea solo cuando el uso supera el límite (igual que el trigger).
         if (!state.borradorEditandoId) {
             const total = await contarBorradores(sb, session.user.id);
             if (total >= LIMITE_BORRADORES) {
@@ -884,7 +968,8 @@
                 return;
             }
             const cuota = await consultarCuotaCliente(session);
-            if (cuota && Number(cuota.usado_mb) > Number(cuota.limite_mb)) {
+            // CORRECCIÓN: Usar >= en lugar de >
+            if (cuota && Number(cuota.usado_mb) >= Number(cuota.limite_mb)) {
                 mostrarAvisoCuota(cuota);
                 return;
             }
@@ -1136,7 +1221,7 @@
                 return;
             }
 
-            const url = URL.createObjectURL(file);
+            const url = crearObjectURL(file);
             const v = document.createElement('video');
             v.muted = true;
             v.playsInline = true;
@@ -1150,7 +1235,7 @@
                 try { v.pause(); } catch (e) {}
                 v.removeAttribute('src');
                 try { v.load(); } catch (e) {}
-                URL.revokeObjectURL(url);
+                revocarObjectURL(url);
                 resolve(blob || null);
             }
 
@@ -1190,12 +1275,12 @@
         const img = $('csPreviewPortada');
         if (!img) return;
         if (state.portadaURL) {
-            try { URL.revokeObjectURL(state.portadaURL); } catch (e) {}
+            revocarObjectURL(state.portadaURL);
             state.portadaURL = null;
         }
         state.portadaBlob = blob || null;
         if (blob) {
-            state.portadaURL = URL.createObjectURL(blob);
+            state.portadaURL = crearObjectURL(blob);
             img.src = state.portadaURL;
             img.style.display = 'block';
         } else {
@@ -1212,10 +1297,10 @@
         if (wrap) wrap.style.display = 'block';
 
         if (state.previewURL) {
-            try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
+            revocarObjectURL(state.previewURL);
             state.previewURL = null;
         }
-        state.previewURL = URL.createObjectURL(file);
+        state.previewURL = crearObjectURL(file);
 
         v.src = state.previewURL;
         v.muted = false;
@@ -1268,7 +1353,7 @@
             try { videoEl.load(); } catch (e) {}
         }
         if (state.previewURL) {
-            try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
+            revocarObjectURL(state.previewURL);
             state.previewURL = null;
         }
         mostrarPortadaEnPreview(null);
@@ -1385,29 +1470,47 @@
         document.body.style.overflow = '';
     }
 
-    // Botón real de publicar: el submit del formulario (#btnSubirVideo).
-    // subirVideo() vive en videos.html y se dispara por el onsubmit del form.
     function obtenerBotonPublicar() {
         const form = $('formSubirVideo');
         return $('btnSubirVideo') || (form ? form.querySelector('button[type="submit"]') : null);
     }
 
     function publicarDesdePreview() {
+        if (state.subiendo) {
+            csToast('Ya hay una publicación en curso', 'warning');
+            return;
+        }
+
         const form = $('formSubirVideo');
         const boton = obtenerBotonPublicar();
         if (!form || !boton) {
             csToast('No se encontró el botón de publicar', 'error');
             return;
         }
+
+        state.subiendo = true;
+        if (boton) boton.disabled = true;
+
         cerrarPreview();
-        if (typeof form.requestSubmit === 'function') form.requestSubmit(boton);
-        else boton.click();
+        
+        try {
+            if (typeof form.requestSubmit === 'function') form.requestSubmit(boton);
+            else boton.click();
+        } catch (e) {
+            state.subiendo = false;
+            if (boton) boton.disabled = false;
+            csToast('Error al iniciar publicación', 'error');
+        }
     }
 
     // ============================================================
     // RESET DEL FORMULARIO
     // ============================================================
     function resetFormularioPublicacion() {
+        state.subiendo = false;
+        const btnPub = obtenerBotonPublicar();
+        if (btnPub) btnPub.disabled = false;
+
         const inputTitulo = $('inputTituloVideo');
         const inputDesc = $('inputDescripcionVideo');
         if (inputTitulo) inputTitulo.value = '';
@@ -1429,7 +1532,7 @@
         mostrarPortadaEnPreview(null);
 
         if (state.previewURL) {
-            try { URL.revokeObjectURL(state.previewURL); } catch (e) {}
+            revocarObjectURL(state.previewURL);
             state.previewURL = null;
         }
         state.archivoVideo = null;
@@ -2214,6 +2317,7 @@
         window.__csPublicacionListener = true;
         window.addEventListener('csariels:videos:publicado', () => {
             log('✅ Evento publicado recibido — reseteando formulario y refrescando feed');
+            state.subiendo = false; // Liberar bloqueo
             resetFormularioPublicacion();
             setTimeout(refrescarFeedAutomatico, 300);
         });
@@ -2225,6 +2329,7 @@
     let _autoplayObserver = null;
     let _autoplayInterval = null;
     let _intersectionObserver = null;
+    let _visibilityListener = null;
 
     function iniciarVigilanteAutoplay() {
         if (_intersectionObserver) return;
@@ -2249,7 +2354,7 @@
                 const video = entry.target;
                 if (!esVideoDelFeed(video)) return;
                 if (entry.isIntersecting) {
-                    if (usuarioQuiereAutoplay()) {
+                    if (usuarioQuiereAutoplay() && !document.hidden) {
                         video.muted = true;
                         video.play().catch(e => {
                             if (e.name !== 'AbortError') console.log('Autoplay bloqueado:', e.name);
@@ -2269,21 +2374,25 @@
         }
 
         function observarTodos() {
-            document.querySelectorAll('video').forEach(observarVideo);
+            const contenedor = $('videosContainer');
+            if (contenedor) contenedor.querySelectorAll('video').forEach(observarVideo);
         }
 
         observarTodos();
 
-        _autoplayObserver = new MutationObserver((mutations) => {
-            mutations.forEach(m => {
-                m.addedNodes.forEach(nodo => {
-                    if (nodo.nodeType !== 1) return;
-                    if (nodo.tagName === 'VIDEO') observarVideo(nodo);
-                    else if (nodo.querySelectorAll) nodo.querySelectorAll('video').forEach(observarVideo);
+        const contenedorFeed = $('videosContainer');
+        if (contenedorFeed) {
+            _autoplayObserver = new MutationObserver((mutations) => {
+                mutations.forEach(m => {
+                    m.addedNodes.forEach(nodo => {
+                        if (nodo.nodeType !== 1) return;
+                        if (nodo.tagName === 'VIDEO') observarVideo(nodo);
+                        else if (nodo.querySelectorAll) nodo.querySelectorAll('video').forEach(observarVideo);
+                    });
                 });
             });
-        });
-        _autoplayObserver.observe(document.body, { childList: true, subtree: true });
+            _autoplayObserver.observe(contenedorFeed, { childList: true, subtree: true });
+        }
 
         window.addEventListener('csariels:videos:refresh', () => {
             setTimeout(observarTodos, 300);
@@ -2291,12 +2400,27 @@
 
         _autoplayInterval = setInterval(observarTodos, 15000);
 
+        // PAUSA GLOBAL EN VISIBILITYCHANGE
+        _visibilityListener = () => {
+            if (document.hidden) {
+                const contenedor = $('videosContainer');
+                if (contenedor) {
+                    contenedor.querySelectorAll('video').forEach(v => {
+                        try { v.pause(); } catch (e) {}
+                    });
+                }
+            }
+        };
+        document.addEventListener('visibilitychange', _visibilityListener);
+
         window.addEventListener('beforeunload', () => {
             if (_autoplayObserver) { _autoplayObserver.disconnect(); _autoplayObserver = null; }
             if (_autoplayInterval) { clearInterval(_autoplayInterval); _autoplayInterval = null; }
             if (_intersectionObserver) { _intersectionObserver.disconnect(); _intersectionObserver = null; }
+            if (_visibilityListener) { document.removeEventListener('visibilitychange', _visibilityListener); _visibilityListener = null; }
             AudioPreview.detener();
             detenerPistaPreview();
+            limpiarTodasLasURLs();
         });
     }
 
@@ -2357,7 +2481,6 @@
         getConfig: () => ({ ...CONFIG, FEED_UI: { ...FEED_UI }, LIMITE_BORRADORES, RUTA_MEMBRESIA_PRO }),
         setProvider: (p) => { CONFIG.PROVIDER = p; },
         setFeedUI: (parcial) => { Object.assign(FEED_UI, parcial || {}); const old = $('cs-feed-ui'); if (old) old.remove(); inyectarEstilosFeed(); },
-        // Datos listos para enviar al publicar. El sonido solo sale si su URL es válida.
         getState: () => {
             const sonido = state.sonidoSeleccionado && urlSonidoValida(state.sonidoSeleccionado.url)
                 ? state.sonidoSeleccionado
@@ -2370,7 +2493,8 @@
                 ubicacionNombre: textoUbicacion(state.ubicacionSeleccionada),
                 archivoVideo: state.archivoVideo ? state.archivoVideo.name : null,
                 archivoConAudioMezclado: state.archivoConAudioMezclado === true,
-                borradorId: state.borradorEditandoId
+                borradorId: state.borradorEditandoId,
+                subiendo: state.subiendo // Exportar estado para control
             };
         },
         _seed: { SONIDOS_SEED, UBICACIONES_SEED },
@@ -2392,7 +2516,7 @@
         observarFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v3.4 (UVDE) listo');
+        log('✅ Módulo Publicar v3.5 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
