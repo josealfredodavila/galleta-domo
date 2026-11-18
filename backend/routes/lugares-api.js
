@@ -1,0 +1,1846 @@
+// ================================================================
+// CSARIEL'S TURISMO · SMART DESTINATION ENGINE
+// backend/lugares-api.js
+// Version 5.4 · GEO + SMART DESTINATION ENGINE
+// ================================================================
+// - Google Places API (New)
+// - Reverse Geocoding de ubicación
+// - Privacidad de ubicación aproximada (~1 km)
+// - Intelligent Search & Tourism Relevance Engine
+// - Bounded Concurrency + Queue + Semaphore
+// - Adaptive Circuit Breaker
+// - LRU / TTL Cache
+// - SingleFlight Deduplication
+// - Signed, Query-Bound Pagination
+// - Sliding Window Rate Limiter
+// - Geographic Ranking
+// - Resilient Retry Strategy
+// - Operational Metrics
+// ================================================================
+// RUTAS:
+// GET  /buscar
+// GET  /salud
+// POST /ubicacion (requiere verificarToken)
+//
+// VARIABLES RAILWAY:
+// GOOGLE_MAPS_API_KEY
+// TURISMO_CURSOR_SECRET (secreto fijo y compartido entre instancias)
+//
+// En server.js:
+// app.set('trust proxy', 1);
+// ================================================================
+
+'use strict';
+
+const express = require('express');
+const crypto = require('crypto');
+const { supabaseAdmin } = require('../config/supabase');
+const { verificarToken } = require('../middleware/auth');
+const logger = require('../utils/logger');
+
+const router = express.Router();
+
+// ================================================================
+// CONFIGURACIÓN CENTRAL
+// ================================================================
+
+const CONFIG = Object.freeze({
+    PLACES_ENDPOINT: 'https://places.googleapis.com/v1/places:searchText',
+    GEOCODE_ENDPOINT: 'https://maps.googleapis.com/maps/api/geocode/json',
+
+    DEFAULT_LANGUAGE: 'es',
+    DEFAULT_REGION: 'mx',
+
+    MIN_QUERY_LENGTH: 2,
+    MAX_QUERY_LENGTH: 180,
+
+    MAX_RADIUS_METERS: 50000,
+    DEFAULT_RADIUS_METERS: 15000,
+
+    MAX_PAGE_SIZE: 40,
+    DEFAULT_PAGE_SIZE: 20,
+    GOOGLE_PAGE_SIZE: 20,
+    MAX_PAGES_PER_SEARCH: 2,
+
+    CURSOR_TTL_MS: 10 * 60 * 1000,
+
+    MAX_UPSTREAM_CONCURRENCY: 20,
+    MAX_QUEUE_SIZE: 200,
+    MAX_QUEUE_WAIT_MS: 5000,
+
+    REQUEST_TIMEOUT_MS: 8000,
+    MAX_RETRIES: 2,
+    RETRY_BASE_DELAY_MS: 300,
+    RETRY_MAX_DELAY_MS: 2000,
+
+    CIRCUIT_FAILURE_THRESHOLD: 8,
+    CIRCUIT_OPEN_MS: 30000,
+    CIRCUIT_HALF_OPEN_MAX: 3,
+
+    PLACE_ID_CACHE_MAX: 25000,
+    PLACE_ID_CACHE_TTL_MS: 24 * 60 * 60 * 1000,
+
+    RESPONSE_CACHE_ENABLED: process.env.TURISMO_CACHE_ENABLED === 'true',
+    RESPONSE_CACHE_MAX: 3000,
+    RESPONSE_CACHE_TTL_MS: 30000,
+
+    RATE_LIMIT_WINDOW_MS: 60000,
+    RATE_LIMIT_ANONYMOUS_MAX: 30,
+    RATE_LIMIT_AUTHENTICATED_MAX: 120,
+    RATE_LIMIT_MAX_CLIENTS: 20000,
+    RATE_LIMIT_CLEANUP_INTERVAL_MS: 60000,
+
+    UPSTREAM_HARD_LIMIT_PER_MINUTE: 900,
+
+    GEO_CACHE_TTL_MS: 24 * 60 * 60 * 1000,
+    GEO_CACHE_MAX: 500,
+    GEO_RATE_LIMIT_PER_MINUTE: 10,
+    GEO_RATE_LIMIT_MAX_USERS: 5000,
+
+    SCORING: Object.freeze({
+        EXACT_NAME_MATCH: 45,
+        WORD_MATCH: 8,
+        ADDRESS_MATCH: 8,
+        RATING_WEIGHT: 12,
+        REVIEW_WEIGHT: 0.004,
+        MAX_REVIEW_BOOST: 25,
+        HIGH_VALUE_TYPE: 14,
+        OPERATIONAL_BONUS: 8,
+        CLOSED_PENALTY: 25,
+        DISTANCE_1KM: 30,
+        DISTANCE_3KM: 24,
+        DISTANCE_5KM: 18,
+        DISTANCE_10KM: 12,
+        DISTANCE_25KM: 6,
+        DISTANCE_OVER_25KM: 0
+    })
+});
+
+// ================================================================
+// SECRET DE CURSORES
+// ================================================================
+
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const CURSOR_SECRET = process.env.TURISMO_CURSOR_SECRET;
+
+if (!CURSOR_SECRET) {
+    const msg = '[Csariel Turismo] FALTA TURISMO_CURSOR_SECRET en variables de entorno.';
+    if (IS_PRODUCTION) {
+        throw new Error(msg + ' No se puede arrancar en producción sin secreto.');
+    } else {
+        console.warn('⚠️ ' + msg + ' Se usará secreto de desarrollo.');
+    }
+}
+
+const EFFECTIVE_CURSOR_SECRET = CURSOR_SECRET ||
+    'dev-only-secret-no-usar-en-produccion-cambiar-en-railway';
+
+// ================================================================
+// UTILIDADES
+// ================================================================
+
+function normalizeText(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ');
+}
+
+function toInt(value, fallback, min, max) {
+    const parsed = Number.parseInt(value, 10);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.max(min, Math.min(max, parsed));
+}
+
+function toFloat(value, fallback) {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function isValidCoordinate(lat, lng) {
+    return Number.isFinite(lat) &&
+        Number.isFinite(lng) &&
+        lat >= -90 && lat <= 90 &&
+        lng >= -180 && lng <= 180;
+}
+
+function getClientIp(req) {
+    return req.ip || req.socket?.remoteAddress || 'unknown';
+}
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function hashString(value) {
+    return crypto.createHash('sha256').update(String(value)).digest('hex');
+}
+
+function safeJson(res, status, payload) {
+    return res.status(status).json(payload);
+}
+
+function clampNumber(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
+
+function redondear(valor, decimales) {
+    const factor = Math.pow(10, decimales);
+    return Math.round(valor * factor) / factor;
+}
+
+// ================================================================
+// GEOGRAFÍA
+// ================================================================
+
+function haversineMeters(lat1, lng1, lat2, lng2) {
+    const EARTH_RADIUS = 6371000;
+    const toRad = degrees => degrees * Math.PI / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+
+    const a = Math.sin(dLat / 2) ** 2 +
+        Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLng / 2) ** 2;
+
+    return Math.round(
+        EARTH_RADIUS * 2 *
+        Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    );
+}
+
+// ================================================================
+// TIPOS DE LUGAR PERMITIDOS
+// ================================================================
+
+const ALLOWED_PLACE_TYPES = new Set([
+    'restaurant', 'cafe', 'bakery', 'bar',
+    'hotel', 'lodging', 'resort',
+    'museum', 'art_gallery', 'church', 'historical_landmark',
+    'park', 'natural_feature', 'national_park', 'hiking_area',
+    'tourist_attraction', 'amusement_park', 'aquarium', 'zoo',
+    'movie_theater', 'bowling_alley',
+    'shopping_mall', 'store',
+    'campground', 'food', 'point_of_interest', 'establishment'
+]);
+
+function sanitizeIncludedType(raw) {
+    const type = normalizeText(raw || '');
+    if (!type || !ALLOWED_PLACE_TYPES.has(type)) return null;
+    return type;
+}
+
+// ================================================================
+// FILTROS DE PRECIO
+// ================================================================
+
+const PRICE_LEVEL_MAP = Object.freeze({
+    '1': 'PRICE_LEVEL_INEXPENSIVE',
+    '2': 'PRICE_LEVEL_MODERATE',
+    '3': 'PRICE_LEVEL_EXPENSIVE',
+    '4': 'PRICE_LEVEL_VERY_EXPENSIVE',
+
+    'inexpensive': 'PRICE_LEVEL_INEXPENSIVE',
+    'barato': 'PRICE_LEVEL_INEXPENSIVE',
+    'moderate': 'PRICE_LEVEL_MODERATE',
+    'moderado': 'PRICE_LEVEL_MODERATE',
+    'expensive': 'PRICE_LEVEL_EXPENSIVE',
+    'caro': 'PRICE_LEVEL_EXPENSIVE',
+    'very_expensive': 'PRICE_LEVEL_VERY_EXPENSIVE',
+    'muy_caro': 'PRICE_LEVEL_VERY_EXPENSIVE',
+
+    'price_level_inexpensive': 'PRICE_LEVEL_INEXPENSIVE',
+    'price_level_moderate': 'PRICE_LEVEL_MODERATE',
+    'price_level_expensive': 'PRICE_LEVEL_EXPENSIVE',
+    'price_level_very_expensive': 'PRICE_LEVEL_VERY_EXPENSIVE'
+});
+
+function normalizePriceLevels(raw) {
+    return String(raw || '')
+        .split(',')
+        .map(normalizeText)
+        .map(value => PRICE_LEVEL_MAP[value] || value.toUpperCase())
+        .filter(value => Object.values(PRICE_LEVEL_MAP).includes(value))
+        .filter((value, index, array) => array.indexOf(value) === index)
+        .slice(0, 4);
+}
+
+// ================================================================
+// MÉTRICAS
+// ================================================================
+
+const metrics = {
+    startedAt: new Date().toISOString(),
+    searches: 0,
+    successfulSearches: 0,
+    failedSearches: 0,
+    cacheHits: 0,
+    cacheMisses: 0,
+    singleFlightHits: 0,
+    upstreamRequests: 0,
+    upstreamErrors: 0,
+    upstreamTimeouts: 0,
+    upstreamRetries: 0,
+    rateLimited: 0,
+    circuitOpenRejections: 0,
+    concurrencyQueueRejections: 0,
+    resultsReturned: 0,
+    placeIdCacheHits: 0,
+    latencyMs: { last: 0, p50: 0, p95: 0, p99: 0 },
+    lastError: null
+};
+
+const LATENCY_BUFFER_SIZE = 500;
+const latencyBuffer = new Float64Array(LATENCY_BUFFER_SIZE);
+let latencyIndex = 0;
+let latencyCount = 0;
+
+function recordLatency(milliseconds) {
+    metrics.latencyMs.last = milliseconds;
+    latencyBuffer[latencyIndex] = milliseconds;
+    latencyIndex = (latencyIndex + 1) % LATENCY_BUFFER_SIZE;
+
+    if (latencyCount < LATENCY_BUFFER_SIZE) latencyCount++;
+    if (metrics.searches % 10 !== 0) return;
+
+    const values = Array.from(latencyBuffer.slice(0, latencyCount))
+        .sort((a, b) => a - b);
+
+    if (!values.length) return;
+
+    function percentile(p) {
+        const index = Math.min(
+            values.length - 1,
+            Math.ceil((p / 100) * values.length) - 1
+        );
+        return values[Math.max(0, index)];
+    }
+
+    metrics.latencyMs.p50 = percentile(50);
+    metrics.latencyMs.p95 = percentile(95);
+    metrics.latencyMs.p99 = percentile(99);
+}
+
+// ================================================================
+// CACHE LRU + TTL
+// ================================================================
+
+class LruTtlCache {
+    constructor(options) {
+        this.maxSize = options.maxSize;
+        this.defaultTtlMs = options.defaultTtlMs;
+        this.map = new Map();
+        this.cleanedAt = Date.now();
+    }
+
+    get(key) {
+        const entry = this.map.get(key);
+        if (!entry) return undefined;
+
+        if (entry.expiresAt <= Date.now()) {
+            this.map.delete(key);
+            return undefined;
+        }
+
+        this.map.delete(key);
+        this.map.set(key, entry);
+        return entry.value;
+    }
+
+    set(key, value, ttlMs) {
+        if (this.maxSize <= 0) return;
+
+        this.map.delete(key);
+        this.map.set(key, {
+            value,
+            expiresAt: Date.now() + (ttlMs || this.defaultTtlMs)
+        });
+
+        this.evictIfNeeded();
+        this.cleanupExpired();
+    }
+
+    has(key) {
+        return this.get(key) !== undefined;
+    }
+
+    delete(key) {
+        this.map.delete(key);
+    }
+
+    clear() {
+        this.map.clear();
+    }
+
+    get size() {
+        return this.map.size;
+    }
+
+    evictIfNeeded() {
+        while (this.map.size > this.maxSize) {
+            const oldestKey = this.map.keys().next().value;
+            if (oldestKey === undefined) break;
+            this.map.delete(oldestKey);
+        }
+    }
+
+    cleanupExpired() {
+        const now = Date.now();
+        if (now - this.cleanedAt < 5000) return;
+        this.cleanedAt = now;
+
+        let inspected = 0;
+        for (const [key, entry] of this.map) {
+            if (entry.expiresAt <= now) this.map.delete(key);
+            inspected++;
+            if (inspected >= 256) break;
+        }
+    }
+}
+
+const placeIdCache = new LruTtlCache({
+    maxSize: CONFIG.PLACE_ID_CACHE_MAX,
+    defaultTtlMs: CONFIG.PLACE_ID_CACHE_TTL_MS
+});
+
+const responseCache = new LruTtlCache({
+    maxSize: CONFIG.RESPONSE_CACHE_MAX,
+    defaultTtlMs: CONFIG.RESPONSE_CACHE_TTL_MS
+});
+
+const singleFlight = new Map();
+
+// Cache exclusivo de geocodificación
+const cacheDirecciones = new LruTtlCache({
+    maxSize: CONFIG.GEO_CACHE_MAX,
+    defaultTtlMs: CONFIG.GEO_CACHE_TTL_MS
+});
+
+const conteoPorUsuario = new Map();
+
+// ================================================================
+// RATE LIMITER · SLIDING WINDOW
+// ================================================================
+
+const rateLimitStore = new Map();
+
+function rateLimitFor(req) {
+    const authenticated = Boolean(req.user && req.user.id);
+    return {
+        limit: authenticated ?
+            CONFIG.RATE_LIMIT_AUTHENTICATED_MAX :
+            CONFIG.RATE_LIMIT_ANONYMOUS_MAX,
+        windowMs: CONFIG.RATE_LIMIT_WINDOW_MS
+    };
+}
+
+function cleanupRateLimitStore(now) {
+    let removed = 0;
+
+    for (const [key, entry] of rateLimitStore) {
+        if (!entry.hits.length ||
+            now - entry.lastSeen > CONFIG.RATE_LIMIT_WINDOW_MS) {
+            rateLimitStore.delete(key);
+            removed++;
+        }
+        if (removed >= 1000) break;
+    }
+}
+
+function rateLimiter(req, res, next) {
+    const now = Date.now();
+    const clientId = req.user && req.user.id ?
+        'user:' + String(req.user.id) :
+        'ip:' + getClientIp(req);
+
+    const { limit, windowMs } = rateLimitFor(req);
+    let entry = rateLimitStore.get(clientId);
+
+    if (!entry) entry = { hits: [], lastSeen: now };
+
+    let firstValidIndex = 0;
+    while (
+        firstValidIndex < entry.hits.length &&
+        now - entry.hits[firstValidIndex] >= windowMs
+    ) {
+        firstValidIndex++;
+    }
+
+    if (firstValidIndex > 0) {
+        entry.hits = entry.hits.slice(firstValidIndex);
+    }
+
+    entry.lastSeen = now;
+
+    if (entry.hits.length >= limit) {
+        metrics.rateLimited++;
+
+        const oldest = entry.hits[0];
+        const retryAfter = Math.max(
+            1,
+            Math.ceil((windowMs - (now - oldest)) / 1000)
+        );
+
+        res.setHeader('RateLimit-Limit', limit);
+        res.setHeader('RateLimit-Remaining', 0);
+        res.setHeader('Retry-After', retryAfter);
+
+        return safeJson(res, 429, {
+            error: 'TOO_MANY_REQUESTS',
+            message: 'Has alcanzado el límite temporal de búsquedas.',
+            retryAfterSeconds: retryAfter
+        });
+    }
+
+    entry.hits.push(now);
+    rateLimitStore.set(clientId, entry);
+
+    res.setHeader('RateLimit-Limit', limit);
+    res.setHeader(
+        'RateLimit-Remaining',
+        Math.max(0, limit - entry.hits.length)
+    );
+
+    if (rateLimitStore.size > CONFIG.RATE_LIMIT_MAX_CLIENTS) {
+        cleanupRateLimitStore(now);
+    }
+
+    return next();
+}
+
+// ================================================================
+// RATE LIMIT GEO POR USUARIO
+// ================================================================
+
+function dentroDelLimite(uid) {
+    const ahora = Date.now();
+
+    if (conteoPorUsuario.size > CONFIG.GEO_RATE_LIMIT_MAX_USERS) {
+        conteoPorUsuario.clear();
+    }
+
+    const registro = conteoPorUsuario.get(uid);
+
+    if (!registro || ahora - registro.inicio > 60000) {
+        conteoPorUsuario.set(uid, { inicio: ahora, n: 1 });
+        return true;
+    }
+
+    if (registro.n >= CONFIG.GEO_RATE_LIMIT_PER_MINUTE) {
+        return false;
+    }
+
+    registro.n++;
+    return true;
+}
+
+// ================================================================
+// SEMÁFORO
+// ================================================================
+
+class Semaphore {
+    constructor(max, maxQueue) {
+        this.max = max;
+        this.maxQueue = maxQueue;
+        this.active = 0;
+        this.queue = [];
+    }
+
+    async acquire(waitMs) {
+        if (this.active < this.max) {
+            this.active++;
+            return true;
+        }
+
+        if (this.queue.length >= this.maxQueue) {
+            const error = new Error('CONCURRENCY_LIMIT');
+            error.code = 'CONCURRENCY_LIMIT';
+            throw error;
+        }
+
+        if (waitMs <= 0) {
+            const error = new Error('CONCURRENCY_LIMIT');
+            error.code = 'CONCURRENCY_LIMIT';
+            throw error;
+        }
+
+        return new Promise((resolve, reject) => {
+            const entry = { resolve: null, reject: null, timer: null };
+
+            entry.timer = setTimeout(() => {
+                const index = this.queue.indexOf(entry);
+                if (index !== -1) this.queue.splice(index, 1);
+
+                const error = new Error('CONCURRENCY_TIMEOUT');
+                error.code = 'CONCURRENCY_TIMEOUT';
+                reject(error);
+            }, waitMs);
+
+            entry.resolve = () => {
+                clearTimeout(entry.timer);
+                this.active++;
+                resolve(true);
+            };
+
+            entry.reject = reject;
+            this.queue.push(entry);
+        });
+    }
+
+    release() {
+        if (this.active > 0) this.active--;
+
+        const next = this.queue.shift();
+        if (next) next.resolve();
+    }
+}
+
+const upstreamSemaphore = new Semaphore(
+    CONFIG.MAX_UPSTREAM_CONCURRENCY,
+    CONFIG.MAX_QUEUE_SIZE
+);
+
+// ================================================================
+// CIRCUIT BREAKER
+// ================================================================
+
+const circuit = {
+    state: 'CLOSED',
+    failures: 0,
+    openedAt: 0,
+    halfOpenAttempts: 0
+};
+
+function circuitAllowsRequest() {
+    const now = Date.now();
+
+    if (circuit.state === 'CLOSED') return true;
+
+    if (circuit.state === 'OPEN') {
+        if (now - circuit.openedAt < CONFIG.CIRCUIT_OPEN_MS) {
+            return false;
+        }
+
+        circuit.state = 'HALF_OPEN';
+        circuit.halfOpenAttempts = 0;
+    }
+
+    if (circuit.state === 'HALF_OPEN') {
+        return circuit.halfOpenAttempts < CONFIG.CIRCUIT_HALF_OPEN_MAX;
+    }
+
+    return false;
+}
+
+function circuitRegisterAttempt() {
+    if (circuit.state === 'HALF_OPEN') {
+        circuit.halfOpenAttempts++;
+    }
+}
+
+function circuitRegisterSuccess() {
+    circuit.state = 'CLOSED';
+    circuit.failures = 0;
+    circuit.halfOpenAttempts = 0;
+    circuit.openedAt = 0;
+}
+
+function circuitRegisterFailure() {
+    circuit.failures++;
+
+    if (
+        circuit.state === 'HALF_OPEN' ||
+        circuit.failures >= CONFIG.CIRCUIT_FAILURE_THRESHOLD
+    ) {
+        circuit.state = 'OPEN';
+        circuit.openedAt = Date.now();
+        circuit.halfOpenAttempts = 0;
+    }
+}
+
+// ================================================================
+// INTENCIONES TURÍSTICAS
+// ================================================================
+
+const INTENTS = Object.freeze({
+    nature: {
+        keywords: [
+            'cascada', 'cascadas', 'montana', 'montanas', 'bosque',
+            'laguna', 'lago', 'playa', 'parque', 'senderismo',
+            'naturaleza', 'cueva', 'gruta', 'volcan', 'rio', 'mirador'
+        ],
+        includedTypes: ['park', 'natural_feature', 'hiking_area']
+    },
+    food: {
+        keywords: [
+            'comer', 'comida', 'restaurante', 'restaurantes',
+            'desayuno', 'comida tipica', 'antojitos', 'tacos',
+            'cafe', 'cafeteria', 'postres', 'bar', 'cantina',
+            'cenar', 'gastronomia'
+        ],
+        includedTypes: ['restaurant', 'cafe', 'bakery']
+    },
+    lodging: {
+        keywords: [
+            'hotel', 'hoteles', 'hospedaje', 'hostal', 'hostales',
+            'resort', 'alojamiento', 'donde dormir'
+        ],
+        includedTypes: ['hotel', 'lodging', 'resort']
+    },
+    culture: {
+        keywords: [
+            'museo', 'museos', 'cultura', 'historia', 'iglesia',
+            'templo', 'zona arqueologica', 'piramide', 'monumento',
+            'galeria', 'arte', 'arquitectura'
+        ],
+        includedTypes: [
+            'museum', 'art_gallery', 'church', 'historical_landmark'
+        ]
+    },
+    entertainment: {
+        keywords: [
+            'diversion', 'entretenimiento', 'parque de diversiones',
+            'cine', 'zoo', 'acuario', 'boliche', 'actividades',
+            'familia', 'ninos'
+        ],
+        includedTypes: [
+            'amusement_park', 'aquarium', 'zoo', 'movie_theater'
+        ]
+    },
+    shopping: {
+        keywords: [
+            'compras', 'tiendas', 'mercado', 'mercados',
+            'souvenirs', 'artesanias', 'centro comercial'
+        ],
+        includedTypes: ['shopping_mall', 'store']
+    },
+    adventure: {
+        keywords: [
+            'aventura', 'senderismo', 'camping', 'rappel',
+            'cicloturismo', 'excursion', 'tour', 'tours',
+            'rafting', 'escalada'
+        ],
+        includedTypes: ['campground', 'hiking_area', 'tourist_attraction']
+    }
+});
+
+function detectIntent(normalizedQuery) {
+    for (const [intent, definition] of Object.entries(INTENTS)) {
+        if (definition.keywords.some(keyword =>
+            normalizedQuery.includes(keyword)
+        )) {
+            return {
+                intent,
+                includedTypes: definition.includedTypes
+            };
+        }
+    }
+
+    return { intent: 'general', includedTypes: [] };
+}
+
+// ================================================================
+// CATÁLOGO DE CATEGORÍAS
+// ================================================================
+
+const TYPE_LABELS = Object.freeze({
+    tourist_attraction: 'Atracción turística',
+    museum: 'Museo',
+    park: 'Parque',
+    natural_feature: 'Sitio natural',
+    restaurant: 'Restaurante',
+    cafe: 'Cafetería',
+    bakery: 'Panadería',
+    lodging: 'Hospedaje',
+    hotel: 'Hotel',
+    resort: 'Resort',
+    campground: 'Campamento',
+    hiking_area: 'Senderismo',
+    national_park: 'Parque nacional',
+    art_gallery: 'Galería de arte',
+    church: 'Iglesia',
+    amusement_park: 'Parque de diversiones',
+    aquarium: 'Acuario',
+    zoo: 'Zoológico',
+    shopping_mall: 'Centro comercial',
+    store: 'Tienda',
+    food: 'Comida',
+    movie_theater: 'Cine',
+    bowling_alley: 'Boliche',
+    historical_landmark: 'Monumento histórico',
+    point_of_interest: 'Punto de interés',
+    establishment: 'Establecimiento'
+});
+
+const HIGH_VALUE_TYPES = new Set([
+    'tourist_attraction', 'museum', 'park', 'natural_feature',
+    'amusement_park', 'aquarium', 'zoo', 'art_gallery', 'church',
+    'historical_landmark', 'national_park', 'hiking_area'
+]);
+
+function translateType(type) {
+    return TYPE_LABELS[type] || String(type || '').replace(/_/g, ' ');
+}
+
+function getPrimaryCategory(types) {
+    types = types || [];
+
+    const priority = [
+        'tourist_attraction', 'museum', 'historical_landmark',
+        'natural_feature', 'national_park', 'hiking_area',
+        'amusement_park', 'aquarium', 'zoo', 'park',
+        'hotel', 'lodging', 'restaurant', 'cafe', 'bakery',
+        'art_gallery', 'church', 'shopping_mall',
+        'movie_theater', 'store'
+    ];
+
+    for (const type of priority) {
+        if (types.includes(type)) return translateType(type);
+    }
+
+    return types.length ? translateType(types[0]) : 'Lugar';
+}
+
+// ================================================================
+// RANKING TURÍSTICO
+// ================================================================
+
+function calculateTourismScore(place, normalizedQuery, origin) {
+    const weights = CONFIG.SCORING;
+    let score = 0;
+
+    const name = normalizeText(place.displayName?.text || '');
+    const address = normalizeText(place.formattedAddress || '');
+    const rating = place.rating || 0;
+    const reviews = place.userRatingCount || 0;
+    const types = place.types || [];
+
+    if (name && normalizedQuery) {
+        if (name === normalizedQuery) {
+            score += weights.EXACT_NAME_MATCH * 1.5;
+        } else if (name.includes(normalizedQuery)) {
+            score += weights.EXACT_NAME_MATCH;
+        } else {
+            const words = normalizedQuery.split(' ').filter(w => w.length > 2);
+            score += words.filter(w => name.includes(w)).length *
+                weights.WORD_MATCH;
+        }
+    }
+
+    if (address && normalizedQuery && address.includes(normalizedQuery)) {
+        score += weights.ADDRESS_MATCH;
+    }
+
+    if (rating > 0) score += rating * weights.RATING_WEIGHT;
+    score += Math.min(reviews * weights.REVIEW_WEIGHT, weights.MAX_REVIEW_BOOST);
+
+    for (const type of types) {
+        if (HIGH_VALUE_TYPES.has(type)) {
+            score += weights.HIGH_VALUE_TYPE;
+            break;
+        }
+    }
+
+    if (place.businessStatus === 'OPERATIONAL') {
+        score += weights.OPERATIONAL_BONUS;
+    } else if (
+        place.businessStatus === 'CLOSED_PERMANENTLY' ||
+        place.businessStatus === 'CLOSED_TEMPORARILY'
+    ) {
+        score -= weights.CLOSED_PENALTY;
+    }
+
+    if (origin && place.location) {
+        const distance = haversineMeters(
+            origin.lat,
+            origin.lng,
+            place.location.latitude,
+            place.location.longitude
+        );
+
+        place._distanceMeters = distance;
+
+        if (distance <= 1000) score += weights.DISTANCE_1KM;
+        else if (distance <= 3000) score += weights.DISTANCE_3KM;
+        else if (distance <= 5000) score += weights.DISTANCE_5KM;
+        else if (distance <= 10000) score += weights.DISTANCE_10KM;
+        else if (distance <= 25000) score += weights.DISTANCE_25KM;
+    }
+
+    return Math.round(score);
+}
+
+// ================================================================
+// TRANSFORMACIÓN DE RESULTADOS
+// ================================================================
+
+function transformPlace(place, normalizedQuery, origin) {
+    const location = place.location || null;
+    const types = place.types || [];
+    const placeId = place.id || null;
+
+    const photos = (place.photos || []).slice(0, 5).map(photo => ({
+        name: photo.name || null,
+        width: photo.widthPx || null,
+        height: photo.heightPx || null,
+        authorAttributions: photo.authorAttributions || []
+    }));
+
+    const wasSeenBefore = placeId ? placeIdCache.has(placeId) : false;
+    if (wasSeenBefore) metrics.placeIdCacheHits++;
+
+    const transformed = {
+        placeId,
+        name: place.displayName?.text || 'Lugar sin nombre',
+        address: place.formattedAddress || '',
+        location: location ? {
+            lat: location.latitude,
+            lng: location.longitude
+        } : null,
+        category: getPrimaryCategory(types),
+        types,
+        typeLabels: types.map(translateType),
+        rating: place.rating || null,
+        reviewCount: place.userRatingCount || 0,
+        priceLevel: place.priceLevel || null,
+        openNow: place.currentOpeningHours?.openNow ?? null,
+        businessStatus: place.businessStatus || 'UNKNOWN',
+        photos,
+        distanceMeters: origin && location ?
+            haversineMeters(
+                origin.lat, origin.lng,
+                location.latitude, location.longitude
+            ) : null,
+        mapUrl: placeId ?
+            'https://www.google.com/maps/search/?api=1&query_place_id=' +
+            encodeURIComponent(placeId) : null,
+        score: 0,
+        seenBefore: wasSeenBefore
+    };
+
+    transformed.score = calculateTourismScore(
+        place, normalizedQuery, origin
+    );
+
+    return transformed;
+}
+
+// ================================================================
+// CONSTRUCCIÓN DE CONSULTAS
+// ================================================================
+
+function buildQuery(req) {
+    const rawQuery = String(req.query.q || '').trim();
+    const normalizedQuery = normalizeText(rawQuery);
+    const intent = detectIntent(normalizedQuery);
+
+    const sanitizedType = sanitizeIncludedType(req.query.tipo);
+    const includedTypes = sanitizedType ?
+        [sanitizedType] : intent.includedTypes;
+
+    const ignoredTipo = req.query.tipo && !sanitizedType ?
+        String(req.query.tipo) : null;
+
+    const latRaw = req.query.lat;
+    const lngRaw = req.query.lng;
+    const hasLatLngParams = latRaw !== undefined || lngRaw !== undefined;
+
+    const lat = hasLatLngParams ? toFloat(latRaw, NaN) : NaN;
+    const lng = hasLatLngParams ? toFloat(lngRaw, NaN) : NaN;
+
+    let hasLocation = false;
+    let invalidCoordinates = false;
+
+    if (hasLatLngParams) {
+        if (!isValidCoordinate(lat, lng)) invalidCoordinates = true;
+        else hasLocation = true;
+    }
+
+    const radius = toInt(
+        req.query.radio,
+        CONFIG.DEFAULT_RADIUS_METERS,
+        100,
+        CONFIG.MAX_RADIUS_METERS
+    );
+
+    const pageSize = toInt(
+        req.query.max,
+        CONFIG.DEFAULT_PAGE_SIZE,
+        1,
+        CONFIG.MAX_PAGE_SIZE
+    );
+
+    const minRating = clampNumber(toFloat(req.query.rating, 0), 0, 5);
+    const priceLevels = normalizePriceLevels(req.query.precio);
+    const openNow = String(req.query.abierto || '').toLowerCase() === 'true';
+
+    const sort = normalizeText(req.query.orden || 'relevancia');
+    const allowedSorts = ['relevancia', 'distancia', 'rating', 'populares'];
+    const safeSort = allowedSorts.includes(sort) ? sort : 'relevancia';
+
+    const cursor = req.query.cursor || null;
+
+    return {
+        rawQuery,
+        normalizedQuery,
+        includedTypes,
+        intent: intent.intent,
+        ignoredTipo,
+        lat: hasLocation ? lat : null,
+        lng: hasLocation ? lng : null,
+        hasLocation,
+        invalidCoordinates,
+        radius,
+        pageSize,
+        minRating,
+        priceLevels,
+        openNow,
+        sort: safeSort,
+        cursor
+    };
+}
+
+// ================================================================
+// CURSOR FIRMADO
+// ================================================================
+
+function buildQueryFingerprint(query) {
+    return hashString([
+        query.normalizedQuery,
+        query.includedTypes.join(','),
+        query.lat ?? '',
+        query.lng ?? '',
+        query.radius,
+        query.pageSize,
+        query.minRating,
+        query.priceLevels.join(','),
+        query.openNow,
+        query.sort
+    ].join('|'));
+}
+
+function buildCacheKey(query) {
+    return hashString(
+        buildQueryFingerprint(query) + '|' + (query.cursor || '')
+    );
+}
+
+function signCursor(payload) {
+    return crypto.createHmac('sha256', EFFECTIVE_CURSOR_SECRET)
+        .update(payload)
+        .digest('base64url');
+}
+
+function encodeCursor(nextPageToken, query) {
+    if (!nextPageToken) return null;
+
+    const payload = JSON.stringify({
+        token: nextPageToken,
+        expiresAt: Date.now() + CONFIG.CURSOR_TTL_MS,
+        fingerprint: buildQueryFingerprint(query)
+    });
+
+    const encoded = Buffer.from(payload).toString('base64url');
+    return encoded + '.' + signCursor(encoded);
+}
+
+function decodeCursor(cursor, query) {
+    if (!cursor) return null;
+
+    try {
+        const parts = String(cursor).split('.');
+        if (parts.length !== 2) return null;
+
+        const encoded = parts[0];
+        const suppliedSignature = parts[1];
+        const expectedSignature = signCursor(encoded);
+
+        const suppliedBuffer = Buffer.from(suppliedSignature);
+        const expectedBuffer = Buffer.from(expectedSignature);
+
+        if (suppliedBuffer.length !== expectedBuffer.length) return null;
+
+        if (!crypto.timingSafeEqual(suppliedBuffer, expectedBuffer) ) {
+            return null;
+        }
+
+        const decoded = JSON.parse(
+            Buffer.from(encoded, 'base64url').toString('utf8')
+        );
+
+        if (!decoded.token || decoded.expiresAt < Date.now()) return null;
+        if (decoded.fingerprint !== buildQueryFingerprint(query)) return null;
+
+        return decoded.token;
+    } catch (error) {
+        return null;
+    }
+}
+
+// ================================================================
+// GOOGLE PLACES API
+// ================================================================
+
+const PLACES_FIELD_MASK = [
+    'places.id',
+    'places.displayName',
+    'places.formattedAddress',
+    'places.location',
+    'places.types',
+    'places.rating',
+    'places.userRatingCount',
+    'places.priceLevel',
+    'places.currentOpeningHours.openNow',
+    'places.businessStatus',
+    'places.photos'
+].join(',');
+
+function buildPlacesPayload(query, pageToken) {
+    const payload = {
+        textQuery: query.rawQuery,
+        languageCode: CONFIG.DEFAULT_LANGUAGE,
+        regionCode: CONFIG.DEFAULT_REGION,
+        maxResultCount: CONFIG.GOOGLE_PAGE_SIZE
+    };
+
+    if (query.includedTypes.length) {
+        payload.includedType = query.includedTypes[0];
+    }
+
+    if (query.hasLocation) {
+        payload.locationBias = {
+            circle: {
+                center: {
+                    latitude: query.lat,
+                    longitude: query.lng
+                },
+                radius: query.radius
+            }
+        };
+    }
+
+    if (pageToken) payload.pageToken = pageToken;
+    return payload;
+}
+
+function isRetryableError(error) {
+    if (error.name === 'AbortError') return true;
+    if (error.retryable === true) return true;
+
+    return [
+        'UNAVAILABLE',
+        'DEADLINE_EXCEEDED',
+        'RESOURCE_EXHAUSTED',
+        'INTERNAL',
+        'UPSTREAM_TIMEOUT'
+    ].includes(error.code);
+}
+
+function getRetryDelay(attempt) {
+    const exponential = CONFIG.RETRY_BASE_DELAY_MS * (2 ** attempt);
+    const jitter = Math.random() * exponential * 0.25;
+    return Math.min(CONFIG.RETRY_MAX_DELAY_MS, exponential + jitter);
+}
+
+async function callGooglePlaces(query, pageToken) {
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+
+    if (!apiKey) {
+        const error = new Error('MISSING_GOOGLE_MAPS_API_KEY');
+        error.code = 'MISSING_GOOGLE_MAPS_API_KEY';
+        throw error;
+    }
+
+    if (!circuitAllowsRequest()) {
+        metrics.circuitOpenRejections++;
+        const error = new Error('CIRCUIT_OPEN');
+        error.code = 'CIRCUIT_OPEN';
+        throw error;
+    }
+
+    let semaphoreAcquired = false;
+
+    try {
+        await upstreamSemaphore.acquire(CONFIG.MAX_QUEUE_WAIT_MS);
+        semaphoreAcquired = true;
+
+        circuitRegisterAttempt();
+
+        let lastError = null;
+
+        for (let attempt = 0; attempt <= CONFIG.MAX_RETRIES; attempt++) {
+            const controller = new AbortController();
+            const timeout = setTimeout(
+                () => controller.abort(),
+                CONFIG.REQUEST_TIMEOUT_MS
+            );
+
+            try {
+                metrics.upstreamRequests++;
+
+                const response = await fetch(CONFIG.PLACES_ENDPOINT, {
+                    method: 'POST',
+                    signal: controller.signal,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Goog-Api-Key': apiKey,
+                        'X-Goog-FieldMask': PLACES_FIELD_MASK
+                    },
+                    body: JSON.stringify(buildPlacesPayload(query, pageToken))
+                });
+
+                if (!response.ok) {
+                    const error = new Error('GOOGLE_HTTP_' + response.status);
+                    error.code = 'GOOGLE_HTTP_' + response.status;
+                    error.retryable = response.status === 429 || response.status >= 500;
+
+                    if (response.status === 401 || response.status === 403) {
+                        error.code = 'PERMISSION_DENIED';
+                        error.retryable = false;
+                    }
+
+                    if (response.status === 400) {
+                        error.code = 'INVALID_ARGUMENT';
+                        error.retryable = false;
+                    }
+
+                    throw error;
+                }
+
+                const data = await response.json();
+
+                if (data.error) {
+                    const error = new Error(data.error.message || 'GOOGLE_API_ERROR');
+                    error.code = data.error.status || 'GOOGLE_API_ERROR';
+                    error.retryable = [
+                        'UNAVAILABLE',
+                        'DEADLINE_EXCEEDED',
+                        'RESOURCE_EXHAUSTED',
+                        'INTERNAL'
+                    ].includes(error.code);
+                    throw error;
+                }
+
+                circuitRegisterSuccess();
+                return data;
+            } catch (error) {
+                lastError = error;
+                metrics.upstreamErrors++;
+
+                if (error.name === 'AbortError') {
+                    metrics.upstreamTimeouts++;
+                    error.code = 'UPSTREAM_TIMEOUT';
+                    error.retryable = true;
+                }
+
+                const retryable = isRetryableError(error);
+
+                if (!retryable || attempt >= CONFIG.MAX_RETRIES) break;
+
+                metrics.upstreamRetries++;
+                await sleep(getRetryDelay(attempt));
+            } finally {
+                clearTimeout(timeout);
+            }
+        }
+
+        circuitRegisterFailure();
+        throw lastError || new Error('UPSTREAM_REQUEST_FAILED');
+    } finally {
+        if (semaphoreAcquired) upstreamSemaphore.release();
+    }
+}
+
+// ================================================================
+// FILTRADO, ORDEN Y DEDUPLICACIÓN
+// ================================================================
+
+function applyFilters(places, query) {
+    let filtered = places;
+
+    if (query.minRating > 0) {
+        filtered = filtered.filter(place =>
+            (place.rating || 0) >= query.minRating
+        );
+    }
+
+    if (query.priceLevels.length) {
+        filtered = filtered.filter(place =>
+            !place.priceLevel ||
+            query.priceLevels.includes(place.priceLevel)
+        );
+    }
+
+    if (query.openNow) {
+        filtered = filtered.filter(place => place.openNow === true);
+    }
+
+    return filtered;
+}
+
+function sortPlaces(places, sort) {
+    const sorted = [...places];
+
+    if (sort === 'distancia') {
+        sorted.sort((a, b) =>
+            (a.distanceMeters ?? Number.MAX_SAFE_INTEGER) -
+            (b.distanceMeters ?? Number.MAX_SAFE_INTEGER)
+        );
+        return sorted;
+    }
+
+    if (sort === 'rating') {
+        sorted.sort((a, b) => {
+            if ((b.rating || 0) !== (a.rating || 0)) {
+                return (b.rating || 0) - (a.rating || 0);
+            }
+            return b.reviewCount - a.reviewCount;
+        });
+        return sorted;
+    }
+
+    if (sort === 'populares') {
+        sorted.sort((a, b) => b.reviewCount - a.reviewCount);
+        return sorted;
+    }
+
+    sorted.sort((a, b) => {
+        if (b.score !== a.score) return b.score - a.score;
+        return String(a.placeId).localeCompare(String(b.placeId));
+    });
+
+    return sorted;
+}
+
+function deduplicatePlaces(places) {
+    const seen = new Set();
+    const unique = [];
+
+    for (const place of places) {
+        const key = place.id ||
+            (normalizeText(place.displayName?.text) + '|' +
+            normalizeText(place.formattedAddress));
+
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push(place);
+    }
+
+    return unique;
+}
+
+// ================================================================
+// EJECUCIÓN DE BÚSQUEDA
+// ================================================================
+
+async function executeSearch(query) {
+    const cacheKey = buildCacheKey(query);
+
+    if (CONFIG.RESPONSE_CACHE_ENABLED) {
+        const cached = responseCache.get(cacheKey);
+
+        if (cached) {
+            metrics.cacheHits++;
+            return {
+                ...cached,
+                meta: { ...cached.meta, cache: 'HIT' }
+            };
+        }
+    }
+
+    metrics.cacheMisses++;
+
+    if (singleFlight.has(cacheKey)) {
+        metrics.singleFlightHits++;
+        return singleFlight.get(cacheKey);
+    }
+
+    const execution = (async function() {
+        let pageToken = decodeCursor(query.cursor, query);
+
+        if (query.cursor && !pageToken) {
+            const error = new Error('INVALID_CURSOR');
+            error.code = 'INVALID_CURSOR';
+            throw error;
+        }
+
+        let allRawPlaces = [];
+        let lastNextPageToken = null;
+        let pagesFetched = 0;
+
+        while (
+            allRawPlaces.length < query.pageSize &&
+            pagesFetched < CONFIG.MAX_PAGES_PER_SEARCH
+        ) {
+            const data = await callGooglePlaces(query, pageToken);
+            const batch = data.places || [];
+
+            allRawPlaces.push(...batch);
+            lastNextPageToken = data.nextPageToken || null;
+            pageToken = lastNextPageToken;
+            pagesFetched++;
+
+            if (!lastNextPageToken || !batch.length) break;
+        }
+
+        allRawPlaces = deduplicatePlaces(allRawPlaces);
+
+        const origin = query.hasLocation ?
+            { lat: query.lat, lng: query.lng } : null;
+
+        let places = allRawPlaces.map(place =>
+            transformPlace(place, query.normalizedQuery, origin)
+        );
+
+        places = applyFilters(places, query);
+        places = sortPlaces(places, query.sort);
+        places = places.slice(0, query.pageSize);
+
+        for (const place of places) {
+            if (place.placeId) {
+                placeIdCache.set(place.placeId, { cachedAt: Date.now() });
+            }
+        }
+
+        const nextCursor = encodeCursor(lastNextPageToken, query);
+
+        const response = {
+            results: places,
+            meta: {
+                total: places.length,
+                query: query.rawQuery,
+                detectedIntent: query.intent,
+                appliedTypes: query.includedTypes,
+                ignoredTipo: query.ignoredTipo || null,
+                sort: query.sort,
+                provider: 'Google Places API (New)',
+                version: '5.4',
+                timestamp: new Date().toISOString(),
+                locationApplied: query.hasLocation,
+                radiusMeters: query.hasLocation ? query.radius : null,
+                filters: {
+                    minRating: query.minRating || null,
+                    priceLevels: query.priceLevels.length ?
+                        query.priceLevels : null,
+                    openNow: query.openNow
+                },
+                pagination: {
+                    hasNextPage: Boolean(nextCursor),
+                    nextCursor
+                },
+                pagesFetched,
+                cache: CONFIG.RESPONSE_CACHE_ENABLED ? 'MISS' : 'DISABLED'
+            }
+        };
+
+        metrics.resultsReturned += places.length;
+
+        if (CONFIG.RESPONSE_CACHE_ENABLED) {
+            responseCache.set(cacheKey, response);
+        }
+
+        return response;
+    })();
+
+    singleFlight.set(cacheKey, execution);
+
+    try {
+        return await execution;
+    } finally {
+        singleFlight.delete(cacheKey);
+    }
+}
+
+// ================================================================
+// GEOCODIFICACIÓN INVERSA
+// ================================================================
+
+async function obtenerDireccion(lat, lng) {
+    const clave = lat + ',' + lng;
+
+    const cached = cacheDirecciones.get(clave);
+    if (cached) return cached;
+
+    const apiKey = process.env.GOOGLE_MAPS_API_KEY;
+    if (!apiKey) throw new Error('MISSING_GOOGLE_MAPS_API_KEY');
+
+    const url = new URL(CONFIG.GEOCODE_ENDPOINT);
+    url.searchParams.set('latlng', clave);
+    url.searchParams.set('language', 'es');
+    url.searchParams.set('key', apiKey);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(
+        () => controller.abort(),
+        CONFIG.REQUEST_TIMEOUT_MS
+    );
+
+    let data;
+
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) throw new Error('GEOCODE_HTTP_' + response.status);
+        data = await response.json();
+    } finally {
+        clearTimeout(timeout);
+    }
+
+    if (data.status === 'ZERO_RESULTS') {
+        return {
+            ciudad: null,
+            municipio: null,
+            estado_region: null,
+            pais: null
+        };
+    }
+
+    if (data.status !== 'OK' || !Array.isArray(data.results)) {
+        throw new Error('geocode_' + (data.status || 'desconocido'));
+    }
+
+    const components = data.results.flatMap(result =>
+        result.address_components || []
+    );
+
+    const buscar = function(type) {
+        const component = components.find(item =>
+            Array.isArray(item.types) && item.types.includes(type)
+        );
+        return component ? component.long_name : null;
+    };
+
+    const value = {
+        ciudad: buscar('locality') ||
+            buscar('sublocality') ||
+            buscar('administrative_area_level_3'),
+        municipio: buscar('administrative_area_level_2'),
+        estado_region: buscar('administrative_area_level_1'),
+        pais: buscar('country')
+    };
+
+    cacheDirecciones.set(clave, value);
+    return value;
+}
+
+// ================================================================
+// ERRORES CENTRALIZADOS
+// ================================================================
+
+function handleSearchError(error, res) {
+    const code = error.code || error.name || 'UNKNOWN';
+
+    if (code === 'CONCURRENCY_LIMIT' || code === 'CONCURRENCY_TIMEOUT') {
+        metrics.concurrencyQueueRejections++;
+        return safeJson(res, 503, {
+            error: 'SERVICE_BUSY',
+            message: 'El motor está procesando muchas búsquedas. Intenta nuevamente en unos segundos.'
+        });
+    }
+
+    if (code === 'CIRCUIT_OPEN') {
+        return safeJson(res, 503, {
+            error: 'UPSTREAM_PROTECTED',
+            message: 'El servicio está protegiendo el sistema temporalmente.'
+        });
+    }
+
+    if (code === 'UPSTREAM_TIMEOUT') {
+        return safeJson(res, 504, {
+            error: 'UPSTREAM_TIMEOUT',
+            message: 'La búsqueda tardó demasiado. Intenta nuevamente.'
+        });
+    }
+
+    if (code === 'RESOURCE_EXHAUSTED' || code === 'GOOGLE_HTTP_429') {
+        return safeJson(res, 429, {
+            error: 'PROVIDER_QUOTA',
+            message: 'El proveedor alcanzó temporalmente su límite.'
+        });
+    }
+
+    if (
+        code === 'PERMISSION_DENIED' ||
+        code === 'GOOGLE_HTTP_401' ||
+        code === 'GOOGLE_HTTP_403'
+    ) {
+        return safeJson(res, 502, {
+            error: 'PROVIDER_UNAUTHORIZED',
+            message: 'Revisa la configuración de Google Maps Platform.'
+        });
+    }
+
+    if (code === 'INVALID_ARGUMENT' || code === 'GOOGLE_HTTP_400') {
+        return safeJson(res, 400, {
+            error: 'INVALID_QUERY',
+            message: 'No fue posible interpretar la búsqueda.'
+        });
+    }
+
+    if (code === 'INVALID_CURSOR') {
+        return safeJson(res, 400, {
+            error: 'INVALID_CURSOR',
+            message: 'El cursor expiró o no corresponde a esta búsqueda. Inicia nuevamente.'
+        });
+    }
+
+    if (code === 'MISSING_GOOGLE_MAPS_API_KEY') {
+        return safeJson(res, 500, {
+            error: 'MAP_PROVIDER_NOT_CONFIGURED',
+            message: 'El servicio de mapas no está configurado.'
+        });
+    }
+
+    logger.error('[Csariel Turismo]', {
+        code,
+        message: error.message
+    });
+
+    return safeJson(res, 500, {
+        error: 'INTERNAL_ERROR',
+        message: 'No fue posible completar la búsqueda turística.'
+    });
+}
+
+// ================================================================
+// GET /SALUD
+// ================================================================
+
+router.get('/salud', function(req, res) {
+    res.json({
+        status: 'ok',
+        service: 'Csariel’s Turismo · Smart Destination Engine',
+        version: '5.4',
+
+        circuit: {
+            state: circuit.state,
+            failures: circuit.failures,
+            openedAt: circuit.openedAt || null,
+            halfOpenAttempts: circuit.halfOpenAttempts
+        },
+
+        concurrency: {
+            active: upstreamSemaphore.active,
+            max: upstreamSemaphore.max,
+            queued: upstreamSemaphore.queue.length,
+            queueMax: upstreamSemaphore.maxQueue
+        },
+
+        cache: {
+            placeIds: placeIdCache.size,
+            placeIdCacheHits: metrics.placeIdCacheHits,
+            responseCacheEnabled: CONFIG.RESPONSE_CACHE_ENABLED,
+            responseCacheEntries: responseCache.size,
+            geoEntries: cacheDirecciones.size,
+            singleFlightActive: singleFlight.size
+        },
+
+        rateLimit: {
+            trackedClients: rateLimitStore.size,
+            geoTrackedUsers: conteoPorUsuario.size
+        },
+
+        config: {
+            cursorSecretConfigured: Boolean(CURSOR_SECRET),
+            isProduction: IS_PRODUCTION
+        },
+
+        metrics,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// ================================================================
+// GET /BUSCAR
+// ================================================================
+
+router.get('/buscar', rateLimiter, async function(req, res) {
+    const startedAt = Date.now();
+    metrics.searches++;
+
+    try {
+        const rawQuery = String(req.query.q || '').trim();
+
+        if (rawQuery.length < CONFIG.MIN_QUERY_LENGTH) {
+            metrics.failedSearches++;
+            return safeJson(res, 400, {
+                error: 'QUERY_TOO_SHORT',
+                message: 'Escribe al menos ' + CONFIG.MIN_QUERY_LENGTH + ' caracteres.'
+            });
+        }
+
+        if (rawQuery.length > CONFIG.MAX_QUERY_LENGTH) {
+            metrics.failedSearches++;
+            return safeJson(res, 400, {
+                error: 'QUERY_TOO_LONG',
+                message: 'La consulta no puede superar ' + CONFIG.MAX_QUERY_LENGTH + ' caracteres.'
+            });
+        }
+
+        const query = buildQuery(req);
+
+        if (query.invalidCoordinates) {
+            metrics.failedSearches++;
+            return safeJson(res, 400, {
+                error: 'INVALID_COORDINATES',
+                message: 'Latitud debe estar entre -90 y 90 y longitud entre -180 y 180.'
+            });
+        }
+
+        const response = await executeSearch(query);
+
+        metrics.successfulSearches++;
+        recordLatency(Date.now() - startedAt);
+
+        return res.json(response);
+    } catch (error) {
+        metrics.failedSearches++;
+        recordLatency(Date.now() - startedAt);
+
+        metrics.lastError = {
+            code: error.code || error.name || 'UNKNOWN',
+            timestamp: new Date().toISOString()
+        };
+
+        return handleSearchError(error, res);
+    }
+});
+
+// ================================================================
+// POST /UBICACION
+// Body:
+// { lat, lng, precision: 'exacta' | 'aproximada',
+//   guardar_historial: boolean }
+//
+// Privacidad:
+// - Aproximada: redondeo a 2 decimales (~1 km).
+// - Exacta: redondeo a 5 decimales (~1 m).
+// ================================================================
+
+router.post('/ubicacion', verificarToken, async function(req, res) {
+    try {
+        if (!process.env.GOOGLE_MAPS_API_KEY) {
+            logger.error('[Geo] GOOGLE_MAPS_API_KEY no configurada');
+            return res.status(500).json({
+                success: false,
+                error: 'geo_no_configurado'
+            });
+        }
+
+        const uid = req.usuario.id;
+        const lat = Number(req.body && req.body.lat);
+        const lng = Number(req.body && req.body.lng);
+
+        const precision = req.body && req.body.precision === 'exacta' ?
+            'exacta' : 'aproximada';
+
+        const guardarHistorial = !req.body ||
+            req.body.guardar_historial !== false;
+
+        if (!isValidCoordinate(lat, lng)) {
+            return res.status(400).json({
+                success: false,
+                error: 'coordenadas_invalidas'
+            });
+        }
+
+        if (!dentroDelLimite(uid)) {
+            return res.status(429).json({
+                success: false,
+                error: 'demasiadas_solicitudes'
+            });
+        }
+
+        const decimals = precision === 'exacta' ? 5 : 2;
+        const latG = redondear(lat, decimals);
+        const lngG = redondear(lng, decimals);
+
+        let dir = {
+            ciudad: null,
+            municipio: null,
+            estado_region: null,
+            pais: null
+        };
+
+        let aviso = null;
+
+        try {
+            dir = await obtenerDireccion(latG, lngG);
+        } catch (error) {
+            logger.warn('[Geo] No se pudo obtener dirección: ' + error.message);
+            aviso = 'sin_direccion';
+        }
+
+        if (!guardarHistorial) {
+            const deletion = await supabaseAdmin
+                .from('usuarios_ubicaciones')
+                .delete()
+                .eq('usuario_id', uid);
+
+            if (deletion.error) {
+                logger.error('[Geo] delete historial: ' + deletion.error.message);
+                return res.status(500).json({
+                    success: false,
+                    error: 'db'
+                });
+            }
+        }
+
+        const result = await supabaseAdmin
+            .from('usuarios_ubicaciones')
+            .insert({
+                usuario_id: uid,
+                latitud: latG,
+                longitud: lngG,
+                precision: precision,
+                ciudad: dir.ciudad,
+                municipio: dir.municipio,
+                estado_region: dir.estado_region,
+                pais: dir.pais || 'Desconocido',
+                fuente: 'navegador'
+            })
+            .select()
+            .single();
+
+        if (result.error) {
+            logger.error('[Geo] insert: ' + result.error.message);
+            return res.status(500).json({
+                success: false,
+                error: 'db'
+            });
+        }
+
+        const data = result.data;
+
+        return res.json({
+            success: true,
+            aviso,
+            ubicacion: {
+                id: data.id,
+                latitud: data.latitud,
+                longitud: data.longitud,
+                ciudad: data.ciudad,
+                municipio: data.municipio,
+                estado_region: data.estado_region,
+                pais: data.pais,
+                precision: data.precision,
+                created_at: data.created_at
+            }
+        });
+    } catch (error) {
+        logger.error('[Geo] ubicacion: ' + error.message);
+        return res.status(500).json({
+            success: false,
+            error: 'servidor'
+        });
+    }
+});
+
+// ================================================================
+// EXPORTACIÓN
+// ================================================================
+
+module.exports = router;
