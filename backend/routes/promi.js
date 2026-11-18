@@ -1,5 +1,5 @@
 /* ================================================================
-   routes/promi.js · PROMI · AGENTE COMERCIAL (MVP v1.0)
+   routes/promi.js · PROMI · AGENTE COMERCIAL (MVP v1.1)
    ================================================================
    Módulo independiente de Marquinhos (routes/ai-chat.js).
    Ruta: POST /api/promi/chat
@@ -15,9 +15,16 @@
    - El modelo solo clasifica y redacta; la generación de imagen y
      video se delega a /api/ai/media/imagen y /api/ai/media/video.
 
+   Cambios v1.1:
+   - PROMI_BASE_URL con fallback a PUBLIC_APP_URL y a la URL de
+     producción, para que imagen/video no fallen si la env var no
+     está definida.
+   - Rate limit propio de Promi por usuario (60 msgs / 15 min),
+     separado del apiLimiter global. No amplía el global.
+
    Variables de entorno:
      OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
-     PROMI_BASE_URL (opcional; por defecto el mismo host)
+     PROMI_BASE_URL (opcional; fallback a PUBLIC_APP_URL)
 ================================================================ */
 
 'use strict';
@@ -25,6 +32,7 @@
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
+const rateLimit = require('express-rate-limit');
 const { createClient } = require('@supabase/supabase-js');
 
 /* ================================================================
@@ -37,9 +45,21 @@ const OPENAI_MODEL = 'gpt-4o-mini';
 const OPENAI_TIMEOUT_MS = 30000;
 const OPENAI_MAX_TOKENS = 1200;
 
-const PROMI_BASE_URL = (process.env.PROMI_BASE_URL || '').replace(/\/$/, '');
+const DEFAULT_PROMI_BASE_URL = 'https://galleta-domo-production.up.railway.app';
+
+const PROMI_BASE_URL = (
+    process.env.PROMI_BASE_URL ||
+    process.env.PUBLIC_APP_URL ||
+    DEFAULT_PROMI_BASE_URL
+).replace(/\/$/, '');
+
 const HISTORIAL_MAX = 8;
 const MENSAJE_MAX = 2000;
+
+// Rate limit propio de Promi: 60 mensajes / 15 min por usuario.
+// No compite con el apiLimiter global (300 / 15 min por IP).
+const PROMI_RATE_WINDOW_MS = 15 * 60 * 1000;
+const PROMI_RATE_MAX = 60;
 
 const CAPACIDADES = [
     'chat',
@@ -132,6 +152,23 @@ async function autenticar(req, res, next) {
 }
 
 /* ================================================================
+   RATE LIMIT POR USUARIO (no por IP)
+   Se monta DESPUÉS de autenticar para que req.user.id exista.
+   ================================================================ */
+
+const promiLimiter = rateLimit({
+    windowMs: PROMI_RATE_WINDOW_MS,
+    max: PROMI_RATE_MAX,
+    standardHeaders: true,
+    legacyHeaders: false,
+    keyGenerator: (req) => (req.user && req.user.id) || req.ip,
+    message: {
+        success: false,
+        error: 'Demasiados mensajes a Promi. Espera unos minutos e intenta de nuevo.'
+    }
+});
+
+/* ================================================================
    HELPERS
 ================================================================ */
 
@@ -182,17 +219,15 @@ function contiene(texto, lista) {
 /**
  * Clasifica el mensaje en una capacidad.
  * Reglas (en orden de precedencia):
- *   10 fuera de alcance -> chat (límite)
- *   9  dato crítico faltante -> chat (preguntas)
  *   8  presupuesto -> chat (preguntas) o campaign_analysis
- *   5  campaña completa -> campaign_strategy
  *   4  video -> video_generation
  *   3  imagen -> image_generation
- *   6  texto publicitario -> copywriting
+ *   5  campaña completa -> campaign_strategy
  *   (analisis) -> campaign_analysis
+ *   6  texto publicitario -> copywriting
  *   default -> chat
  */
-function clasificarIntencion(mensaje, historial) {
+function clasificarIntencion(mensaje) {
     const t = mensaje.toLowerCase();
 
     // Regla 8: presupuesto
@@ -350,9 +385,11 @@ async function ejecutarMedia(tipo, prompt, token) {
 
 /* ================================================================
    POST /api/promi/chat
+   Orden de middlewares: autenticar → promiLimiter → handler
+   (promiLimiter necesita req.user.id, por eso va después de autenticar)
 ================================================================ */
 
-router.post('/chat', autenticar, async (req, res) => {
+router.post('/chat', autenticar, promiLimiter, async (req, res) => {
     try {
         const { message, history = [] } = req.body || {};
 
@@ -361,7 +398,7 @@ router.post('/chat', autenticar, async (req, res) => {
         }
 
         const mensaje = message.trim().slice(0, MENSAJE_MAX);
-        const { capacidad, motivo } = clasificarIntencion(mensaje, history);
+        const { capacidad } = clasificarIntencion(mensaje);
 
         // Capacidades de media: se delegan a los endpoints existentes.
         if (capacidad === 'image_generation' || capacidad === 'video_generation') {
@@ -395,31 +432,18 @@ router.post('/chat', autenticar, async (req, res) => {
             });
         }
 
-        // Capacidades de texto
-        if (capacidad !== 'chat' || motivo === 'conversacion') {
-            const r = await ejecutarTexto(capacidad, mensaje, history);
-            if (!r.ok) {
-                return res.status(502).json({
-                    success: false,
-                    type: capacidad,
-                    error: r.error,
-                    mensaje: 'La respuesta de Promi no cumplió el formato esperado. Intenta de nuevo.'
-                });
-            }
-            return res.json({ success: true, type: capacidad, contrato: r.data });
-        }
-
-        // Regla 8 / 9: preguntas (chat)
-        const r = await ejecutarTexto('chat', mensaje, history);
+        // Capacidades de texto (chat, copywriting, campaign_strategy, campaign_analysis)
+        const r = await ejecutarTexto(capacidad, mensaje, history);
         if (!r.ok) {
             return res.status(502).json({
                 success: false,
-                type: 'chat',
+                type: capacidad,
                 error: r.error,
                 mensaje: 'La respuesta de Promi no cumplió el formato esperado. Intenta de nuevo.'
             });
         }
-        return res.json({ success: true, type: 'chat', contrato: r.data });
+
+        return res.json({ success: true, type: capacidad, contrato: r.data });
 
     } catch (error) {
         console.error('❌ Error /api/promi/chat:', error.message);
