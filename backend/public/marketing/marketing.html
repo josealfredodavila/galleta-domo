@@ -45,7 +45,6 @@
 
         .app { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 0 16px; }
 
-        /* HEADER Y NAV */
         .header { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--glass-border); position: sticky; top: 0; z-index: 100; background: rgba(4, 6, 13, 0.95); }
         @supports (backdrop-filter: blur(1px)) { .header { background: rgba(4, 6, 13, 0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); } }
         .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
@@ -66,7 +65,6 @@
         .main-nav .nav-link:hover { color: var(--text-primary); background: rgba(212, 175, 55, 0.06); }
         .main-nav .nav-link.active { background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(212, 175, 55, 0.08)); color: var(--gold); border: 1px solid rgba(212, 175, 55, 0.3); }
 
-        /* PESTAÑAS INTERNAS */
         .tabs-container { display: flex; justify-content: center; gap: 20px; border-bottom: 1px solid var(--glass-border); margin-bottom: 24px; padding: 0 10px; }
         .tab-btn { background: transparent; border: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 600; padding: 10px 5px; cursor: pointer; position: relative; transition: var(--transition); }
         .tab-btn:hover { color: var(--text-primary); }
@@ -88,12 +86,12 @@
         .btn-primary { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); box-shadow: 0 4px 25px rgba(212, 175, 55, 0.35); }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 35px rgba(212, 175, 55, 0.5); }
         .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+        .btn-outline { background: transparent; color: var(--text-primary); border: 1px solid var(--glass-border-strong); }
+        .btn-outline:hover { border-color: var(--gold); color: var(--gold); }
 
-        /* BOTÓN FLOTANTE */
         .fab-btn { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); font-size: 2rem; border: none; box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5); cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 999; transition: var(--transition); }
         .fab-btn:hover { transform: scale(1.1) rotate(90deg); box-shadow: 0 12px 40px rgba(212, 175, 55, 0.7); }
 
-        /* TARJETAS */
         .summary-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-bottom: 28px; }
         .card { background: linear-gradient(135deg, rgba(15, 45, 26, 0.5), rgba(8, 15, 26, 0.6)); padding: 20px 22px; border-radius: var(--radius); border: 1px solid var(--glass-border); position: relative; overflow: hidden; transition: var(--transition); }
         .card:hover { transform: translateY(-4px); border-color: var(--glass-border-strong); }
@@ -116,7 +114,6 @@
         .campaign-card .info-row .label { color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; font-size: 0.6rem; }
         .campaign-card .info-row .value { color: var(--text-primary); font-weight: 600; font-family: 'Space Mono', monospace; }
 
-        /* BADGES Y MODALES */
         .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-family: 'Space Mono', monospace; }
         .badge.borrador { background: rgba(138, 168, 184, 0.15); color: #8aa8b8; border: 1px solid rgba(138, 168, 184, 0.3); }
         .badge.pendiente_pago { background: rgba(245, 158, 11, 0.15); color: var(--warning); border: 1px solid rgba(245, 158, 11, 0.35); }
@@ -173,12 +170,9 @@
         .red-info strong { color: var(--gold); }
         .red-info .warn { color: var(--warning); }
 
-        /* =========================================
-           CHATBOT "PROMI" FUTURISTA
-           ========================================= */
+        /* PROMI */
         .promi-btn { position: fixed; bottom: 100px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background: #ff0050; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 999; box-shadow: 0 4px 20px rgba(255,0,80,0.4); transition: var(--transition); }
         .promi-btn:hover { transform: scale(1.1); }
-        .promi-btn img { width: 30px; height: 30px; }
         .promi-panel { position: fixed; top: 0; right: -100%; width: 100%; max-width: 420px; height: 100vh; background: #0b111a; color: #fff; z-index: 10000; transition: right 0.3s ease; display: flex; flex-direction: column; box-shadow: -10px 0 40px rgba(0,0,0,0.8); border-left: 1px solid rgba(255,0,80,0.3); }
         .promi-panel.active { right: 0; }
         .promi-header { padding: 16px; display: flex; align-items: center; border-bottom: 1px solid #1f2937; gap: 12px; background: linear-gradient(90deg, rgba(255,0,80,0.1), transparent); }
@@ -190,24 +184,27 @@
         .promi-welcome h1 { font-size: 1.5rem; margin-bottom: 8px; font-weight: 800; color: #fff; font-family: 'Orbitron', monospace; letter-spacing: 1px; }
         .promi-welcome p { font-size: 0.9rem; color: #9ca3af; line-height: 1.5; }
 
-        /* Burbujas de Chat */
         .promi-msg { max-width: 85%; padding: 14px 18px; border-radius: 20px; font-size: 0.9rem; line-height: 1.5; margin-bottom: 4px; position: relative; }
         .promi-msg.user { align-self: flex-end; background: linear-gradient(135deg, #ff0050, #d40040); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 4px 15px rgba(255,0,80,0.2); }
         .promi-msg.bot { align-self: flex-start; background: #1f2937; color: #e5e7eb; border-bottom-left-radius: 4px; border: 1px solid #374151; }
-        .promi-msg.bot.error { border-color: var(--danger); color: var(--danger); }
+        .promi-msg.bot.promi-err { border-color: var(--danger); color: #ff9db4; }
 
-        /* Opciones sugeridas */
         .promi-options { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
         .promi-option { display: flex; justify-content: space-between; align-items: center; background: #111827; border: 1px solid #374151; padding: 14px 18px; border-radius: 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: left; color: #e5e7eb; }
         .promi-option:hover { background: #1f2937; border-color: #ff0050; transform: translateY(-2px); }
 
-        /* Botones de acción creativa */
-        .promi-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; align-self: flex-start; }
+        .promi-acciones { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
         .promi-action-btn { background: rgba(255,0,80,0.1); border: 1px solid rgba(255,0,80,0.5); color: #ff0050; padding: 10px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
         .promi-action-btn:hover { background: rgba(255,0,80,0.2); box-shadow: 0 0 15px rgba(255,0,80,0.2); }
         .promi-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .promi-action-btn.promi-ghost { border-color: #374151; color: #9ca3af; background: transparent; }
+        .promi-action-btn.promi-ok { background: #00d68f; color: #04060d; border: none; }
+        .promi-media { width: 100%; border-radius: 12px; border: 1px solid #374151; background: #000; display: block; margin-bottom: 10px; cursor: zoom-in; }
+        .promi-hint { font-size: 0.75rem; color: #9ca3af; margin-top: 8px; }
+        .promi-copy-bloque { border-top: 1px solid #374151; padding-top: 10px; margin-top: 10px; }
+        .promi-aviso { color: #f59e0b; font-size: 0.75rem; margin-top: 6px; }
+        .promi-aprobacion { color: #00d68f; font-size: 0.7rem; }
 
-        /* Animación Escribiendo... */
         .typing-indicator { display: flex; gap: 4px; padding: 14px 18px; background: #1f2937; border-radius: 20px; border-bottom-left-radius: 4px; align-self: flex-start; width: fit-content; margin-bottom: 4px; border: 1px solid #374151; }
         .typing-indicator span { width: 6px; height: 6px; background: #9ca3af; border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; }
         .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
@@ -219,24 +216,20 @@
         .promi-input:focus { border-color: #ff0050; box-shadow: 0 0 10px rgba(255,0,80,0.2); }
         .promi-send-btn { background: #ff0050; color: #fff; border: none; width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: transform 0.2s; }
         .promi-send-btn:hover { transform: scale(1.1); }
+        .promi-send-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
         .promi-new-chat { background: transparent; color: #9ca3af; border: 1px solid #374151; padding: 14px; border-radius: 30px; font-weight: 700; width: calc(100% - 32px); margin: 0 16px 16px 16px; cursor: pointer; text-align: center; transition: all 0.2s; }
         .promi-new-chat:hover { border-color: #ff0050; color: #ff0050; }
 
-        /* =========================================
-           VISOR INMERSIVO (LIGHTBOX) SIN DESCARGA
-           ========================================= */
+        /* VISOR INMERSIVO */
         .lightbox-modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95); z-index: 100000; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
         .lightbox-modal.active { display: flex; }
         .lightbox-content { position: relative; max-width: 90vw; max-height: 85vh; display: flex; justify-content: center; align-items: center; }
-        .lightbox-content img, .lightbox-content video { max-width: 100%; max-height: 85vh; border-radius: 12px; box-shadow: 0 0 50px rgba(0, 0, 0, 0.8); pointer-events: none; user-select: none; -webkit-user-drag: none; }
-        .lightbox-content video { pointer-events: auto; }
+        .lightbox-content img, .lightbox-content video { max-width: 100%; max-height: 85vh; border-radius: 12px; box-shadow: 0 0 50px rgba(0, 0, 0, 0.8); user-select: none; -webkit-user-drag: none; }
         .lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 2.5rem; cursor: pointer; line-height: 1; background: none; border: none; transition: color 0.2s; z-index: 100001; }
         .lightbox-close:hover { color: var(--gold); }
         .lightbox-caption { margin-top: 15px; color: #9ca3af; font-size: 0.9rem; text-align: center; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; }
 
-        /* =========================================
-           SECCIÓN DE ESTRELLAS (RECOMENDACIÓN)
-           ========================================= */
+        /* ESTRELLAS */
         .recommendation-section { margin: 40px 0; padding: 30px 20px; background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(15, 45, 26, 0.4)); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); text-align: center; position: relative; overflow: hidden; }
         .recommendation-section::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(212,175,55,0.1) 0%, transparent 70%); pointer-events: none; }
         .recommendation-title { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: 1px; position: relative; z-index: 1; }
@@ -289,8 +282,8 @@
         </nav>
 
         <div class="tabs-container">
-            <button class="tab-btn" data-tab="crear" onclick="cambiarTab('crear')">Crear</button>
-            <button class="tab-btn active" data-tab="panel" onclick="cambiarTab('panel')">Panel de control</button>
+            <button class="tab-btn" data-tab="crear" type="button">Crear</button>
+            <button class="tab-btn active" data-tab="panel" type="button">Panel de control</button>
         </div>
 
         <div id="tab-panel" class="tab-content active">
@@ -300,30 +293,29 @@
                     <h1>◈ Panel de Marketing</h1>
                     <div class="hero-sub">Gestiona tus campañas publicitarias en LIVE, GRUPOS y VIDEOS</div>
                 </div>
-                <button id="btn-create-campaign-top" class="btn btn-primary">+ Crear Campaña</button>
+                <button id="btnCreateCampaignTop" class="btn btn-primary" type="button">+ Crear Campaña</button>
             </div>
 
-            <section id="dashboard-summary" class="summary-cards">
+            <section class="summary-cards">
                 <div class="card"><div class="card-icon">◈</div><h3>Presupuesto Total</h3><p id="total-budget">$0.00</p></div>
                 <div class="card"><div class="card-icon">▲</div><h3>Campañas Activas</h3><p id="active-campaigns">0</p></div>
                 <div class="card"><div class="card-icon">▼</div><h3>Gasto Total</h3><p id="total-spent">$0.00</p></div>
                 <div class="card"><div class="card-icon">◉</div><h3>Alcance Total</h3><p id="total-reach">0</p></div>
             </section>
 
-            <section id="campaigns-section">
-                <div class="filters">
-                    <button class="filter-btn active" data-filter="all">Todas</button>
-                    <button class="filter-btn" data-filter="activa">Activas</button>
-                    <button class="filter-btn" data-filter="pendiente_pago">Pendientes</button>
-                    <button class="filter-btn" data-filter="finalizada">Finalizadas</button>
-                    <button class="filter-btn" data-filter="pausada">Pausadas</button>
-                    <button class="filter-btn" data-filter="cancelada">Canceladas</button>
+            <section>
+                <div class="filters" id="campaignFilters">
+                    <button class="filter-btn active" data-filter="all" type="button">Todas</button>
+                    <button class="filter-btn" data-filter="activa" type="button">Activas</button>
+                    <button class="filter-btn" data-filter="pendiente_pago" type="button">Pendientes</button>
+                    <button class="filter-btn" data-filter="finalizada" type="button">Finalizadas</button>
+                    <button class="filter-btn" data-filter="pausada" type="button">Pausadas</button>
+                    <button class="filter-btn" data-filter="cancelada" type="button">Canceladas</button>
                 </div>
-                <div id="campaigns-list" class="campaigns-grid"><div class="empty-state"><span class="icon">◈</span><p>Inicializando...</p></div></div>
+                <div id="campaigns-list" class="campaigns-grid"><div class="empty-state"><span class="icon">◈</span><p>Verificando sesión...</p></div></div>
             </section>
 
-            <!-- SECCIÓN DE ESTRELLAS Y RECOMENDACIÓN -->
-            <section class="recommendation-section" id="recommendationSection">
+            <section class="recommendation-section">
                 <h2 class="recommendation-title">✦ Califica tu experiencia ✦</h2>
                 <p class="recommendation-sub">Tu opinión ayuda a que más negocios descubran el poder de Csariel's.</p>
 
@@ -332,7 +324,7 @@
                 <div class="stars-wrap" id="starsWrap">
                     <div class="stars-container" id="starsContainer"></div>
                     <div class="share-buttons" id="shareButtons" style="display: none;">
-                        <button class="share-btn native" onclick="compartirNativo()">
+                        <button class="share-btn native" id="btnCompartirNativo" type="button">
                             <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
                             Compartir
                         </button>
@@ -356,55 +348,53 @@
         <div id="tab-crear" class="tab-content">
             <div class="empty-state">
                 <span class="icon">✦</span>
-                <p>Haz clic en el botón dorado "+" de abajo a la derecha para crear una campaña.</p>
+                <p>Toca el botón dorado "+" de abajo a la derecha para crear una campaña.</p>
             </div>
         </div>
     </div>
 
-    <button class="fab-btn" onclick="abrirModalCrear()">+</button>
+    <button class="fab-btn" id="fabCrear" type="button" aria-label="Crear campaña">+</button>
 
-    <button class="promi-btn" onclick="togglePromi()">
+    <button class="promi-btn" id="promiToggle" type="button" aria-label="Abrir Promi">
         <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:24px;height:24px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
     </button>
 
     <div class="promi-panel" id="promiPanel">
         <div class="promi-header">
-            <button class="promi-close" onclick="togglePromi()">✕</button>
+            <button class="promi-close" id="promiClose" type="button" aria-label="Cerrar Promi">✕</button>
             <h2>Promi</h2>
         </div>
         <div class="promi-body" id="promiBody">
             <div class="promi-welcome" id="promiWelcome">
-                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Promi Avatar" class="promi-avatar">
+                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="" class="promi-avatar">
                 <h1>Hola, soy Promi</h1>
-                <p>Tu agente de ventas y estratega de Marketing. Pregúntame cómo mejorar tus campañas o pídeme que genere imágenes y videos para tus anuncios.</p>
+                <p>Tu agente de ventas y estratega de Marketing. Pregúntame cómo mejorar tus campañas o pídeme imágenes y videos para tus anuncios.</p>
             </div>
-
             <div class="promi-options" id="promiInitialOptions">
-                <div class="promi-option" onclick="enviarMensajePromi('Dame ideas para una campaña de marketing')">💡 Dame ideas para una campaña <span>→</span></div>
-                <div class="promi-option" onclick="enviarMensajePromi('Genera una imagen para mi anuncio')">🖼️ Generar imagen para mi anuncio <span>→</span></div>
-                <div class="promi-option" onclick="enviarMensajePromi('Genera un video para mi campaña')">🎬 Generar video para mi campaña <span>→</span></div>
-                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo aumentar mi presupuesto?')">💰 ¿Cómo aumento mi presupuesto? <span>→</span></div>
+                <div class="promi-option" data-prompt="Dame ideas para una campaña de marketing">💡 Dame ideas para una campaña <span>→</span></div>
+                <div class="promi-option" data-prompt="Genera una imagen para mi anuncio">🖼️ Generar imagen para mi anuncio <span>→</span></div>
+                <div class="promi-option" data-prompt="Genera un video para mi campaña">🎬 Generar video para mi campaña <span>→</span></div>
+                <div class="promi-option" data-prompt="¿Cómo puedo aumentar mi presupuesto?">💰 ¿Cómo aumento mi presupuesto? <span>→</span></div>
             </div>
         </div>
         <div class="promi-footer">
-            <input type="text" class="promi-input" id="promiInput" placeholder="Pregúntame lo que quieras" onkeypress="if(event.key==='Enter') enviarMensajePromi()">
-            <button class="promi-send-btn" onclick="enviarMensajePromi()">
+            <input type="text" class="promi-input" id="promiInput" placeholder="Pregúntame lo que quieras" maxlength="2000">
+            <button class="promi-send-btn" id="promiSend" type="button" aria-label="Enviar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
             </button>
         </div>
-        <button class="promi-new-chat" onclick="resetPromi()">📝 Nuevo chat</button>
+        <button class="promi-new-chat" id="promiNewChat" type="button">📝 Nuevo chat</button>
     </div>
 
-    <!-- VISOR INMERSIVO -->
-    <div class="lightbox-modal" id="lightboxModal" onclick="cerrarLightbox(event)">
-        <button class="lightbox-close" onclick="cerrarLightbox(event)">&times;</button>
+    <div class="lightbox-modal" id="lightboxModal">
+        <button class="lightbox-close" id="lightboxClose" type="button" aria-label="Cerrar">&times;</button>
         <div class="lightbox-content" id="lightboxContent"></div>
         <div class="lightbox-caption" id="lightboxCaption"></div>
     </div>
 
     <div id="modal-detail" class="modal hidden">
         <div class="modal-content">
-            <button class="close-modal" data-close="modal-detail" aria-label="Cerrar">&times;</button>
+            <button class="close-modal" data-close="modal-detail" type="button" aria-label="Cerrar">&times;</button>
             <h2 id="detail-title">◈ Detalle de Campaña</h2>
             <div id="detail-info"></div>
             <div class="stats-grid" id="detail-stats"></div>
@@ -419,23 +409,23 @@
 
     <div id="modal-create" class="modal hidden">
         <div class="modal-content">
-            <button class="close-modal" data-close="modal-create" aria-label="Cerrar">&times;</button>
+            <button class="close-modal" data-close="modal-create" type="button" aria-label="Cerrar">&times;</button>
             <h2>◈ Nueva Campaña</h2>
             <div id="wizard-step-1" class="wizard-step">
                 <h3>▸ Paso 01 — ¿Dónde anunciar?</h3>
-                <button class="btn-option" data-type="live">◉ LIVE</button>
-                <button class="btn-option" data-type="grupo">◇ GRUPO</button>
-                <button class="btn-option" data-type="video">▶ VIDEOS</button>
+                <button class="btn-option" data-type="live" type="button">◉ LIVE</button>
+                <button class="btn-option" data-type="grupo" type="button">◇ GRUPO</button>
+                <button class="btn-option" data-type="video" type="button">▶ VIDEOS</button>
             </div>
             <div id="wizard-step-2" class="wizard-step hidden">
                 <h3>▸ Paso 02 — Seleccionar destino</h3>
                 <select id="select-target"></select>
-                <button class="btn btn-primary btn-next">Siguiente →</button>
+                <button class="btn btn-primary btn-next" type="button">Siguiente →</button>
             </div>
             <div id="wizard-step-3" class="wizard-step hidden">
                 <h3>▸ Paso 03 — Nombre de campaña</h3>
                 <input type="text" id="campaign-name" placeholder="Ej: Promo Verano 2026" maxlength="120">
-                <button class="btn btn-primary btn-next">Siguiente →</button>
+                <button class="btn btn-primary btn-next" type="button">Siguiente →</button>
             </div>
             <div id="wizard-step-4" class="wizard-step hidden">
                 <h3>▸ Paso 04 — Objetivo</h3>
@@ -445,7 +435,7 @@
                     <option value="interacciones">◆ Interacciones</option>
                     <option value="clics">▲ Clics</option>
                 </select>
-                <button class="btn btn-primary btn-next">Siguiente →</button>
+                <button class="btn btn-primary btn-next" type="button">Siguiente →</button>
             </div>
             <div id="wizard-step-5" class="wizard-step hidden">
                 <h3>▸ Paso 05 — Presupuesto y Red de Pago</h3>
@@ -454,7 +444,7 @@
                 <label for="pay-currency">Red de pago (cripto)</label>
                 <select id="pay-currency"><option value="">Ingresa un presupuesto primero…</option></select>
                 <div class="red-info" id="red-info">◈ Elige cuánto vas a invertir para ver las redes disponibles.</div>
-                <button class="btn btn-primary btn-next">Siguiente →</button>
+                <button class="btn btn-primary btn-next" type="button">Siguiente →</button>
             </div>
             <div id="wizard-step-6" class="wizard-step hidden">
                 <h3>▸ Paso 06 — Contenido del Anuncio</h3>
@@ -464,12 +454,12 @@
                 <input type="url" id="ad-image" placeholder="URL de tu imagen (Google, Instagram, etc.)" maxlength="500">
                 <input type="url" id="ad-video" placeholder="URL de tu video (TikTok, YouTube, FB, etc.)" maxlength="500">
                 <input type="text" id="ad-cta" placeholder="Texto del botón (Ej: Ver más)" maxlength="40">
-                <button class="btn btn-primary btn-next">Siguiente →</button>
+                <button class="btn btn-primary btn-next" type="button">Siguiente →</button>
             </div>
             <div id="wizard-step-7" class="wizard-step hidden">
                 <h3>▸ Paso 07 — Resumen y Pago</h3>
                 <div id="summary-content"></div>
-                <button id="btn-pay" class="btn btn-primary">◈ Continuar al Pago</button>
+                <button id="btn-pay" class="btn btn-primary" type="button">◈ Continuar al Pago</button>
             </div>
         </div>
     </div>
@@ -477,965 +467,1194 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
     <script>
-    /* ============================================================
-       MARKETING · Csariel's — v9.8 (PRODUCTION AUDITED)
-       ============================================================ */
+    (function () {
+        'use strict';
 
-    const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
-    const DEBUG = false;
-    const MXN_A_USD_APROX = 0.055;
-    const MAX_POLL_INTENTOS = 80;
-    const INTERVALO_POLL_MS = 15000;
-    const OBJETIVOS_VALIDOS = ['alcance', 'reproducciones', 'interacciones', 'clics'];
+        /* ============================================================
+           MARKETING · Csariel's — v10.1 (limpio)
+           - Sin sesión: redirige a inicio.
+           - Promi: valida cada contrato antes de renderizar; si no
+             cumple, muestra el motivo en el chat.
+           - Imagen/video: usa data.contrato.url. Video en proceso
+             (url null, pending_review) se consulta en GET /api/ai/media/:id.
+           - El token se lee de la sesión al momento; nunca va en el HTML.
+           - Sin handlers inline: todo con addEventListener.
+           ============================================================ */
 
-    const URL_INVITACION = BACKEND_URL + '/';
-    const MARCA = "Csariel's";
+        const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
+        const MXN_A_USD_APROX = 0.055;
+        const MAX_POLL_INTENTOS = 80;
+        const INTERVALO_POLL_MS = 15000;
+        const VIDEO_POLL_MS = 6000;
+        const VIDEO_POLL_MAX = 60;
+        const PROMI_HISTORIAL_MAX = 8;
+        const OBJETIVOS_VALIDOS = ['alcance', 'reproducciones', 'interacciones', 'clics'];
+        const OBJETIVOS_NEGOCIO = ['awareness', 'leads', 'sales', 'retention'];
+        const TIPOS_CONTRATO = ['chat', 'copywriting', 'campaign_strategy', 'campaign_analysis', 'image_generation', 'video_generation'];
+        const ESTADOS_MEDIA = ['generated', 'pending_review', 'failed'];
+        const ESTADOS_VALIDOS = ['borrador', 'pendiente_pago', 'pagada', 'pendiente_revision', 'activa', 'pausada', 'finalizada', 'rechazada', 'cancelada'];
+        const URL_INVITACION = BACKEND_URL + '/';
+        const MARCA = "Csariel's";
 
-    const REDES_PAGO = [
-        { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 16, label: 'USDT · TRON (TRC20)' },
-        { value: 'usdtbsc',   moneda: 'USDT', red: 'BSC',      min: 16, label: 'USDT · BSC (BEP20)' },
-        { value: 'usdtmatic', moneda: 'USDT', red: 'Polygon',  min: 16, label: 'USDT · Polygon' },
-        { value: 'usdtsol',   moneda: 'USDT', red: 'Solana',   min: 16, label: 'USDT · Solana' },
-        { value: 'usdcmatic', moneda: 'USDC', red: 'Polygon',  min: 16, label: 'USDC · Polygon' },
-        { value: 'usdterc20', moneda: 'USDT', red: 'Ethereum', min: 20, label: 'USDT · Ethereum (ERC20)' }
-    ];
+        const REDES_PAGO = [
+            { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 16, label: 'USDT · TRON (TRC20)' },
+            { value: 'usdtbsc',   moneda: 'USDT', red: 'BSC',      min: 16, label: 'USDT · BSC (BEP20)' },
+            { value: 'usdtmatic', moneda: 'USDT', red: 'Polygon',  min: 16, label: 'USDT · Polygon' },
+            { value: 'usdtsol',   moneda: 'USDT', red: 'Solana',   min: 16, label: 'USDT · Solana' },
+            { value: 'usdcmatic', moneda: 'USDC', red: 'Polygon',  min: 16, label: 'USDC · Polygon' },
+            { value: 'usdterc20', moneda: 'USDT', red: 'Ethereum', min: 20, label: 'USDT · Ethereum (ERC20)' }
+        ];
 
-    const ESTADOS_VALIDOS = ['borrador', 'pendiente_pago', 'pagada', 'pendiente_revision', 'activa', 'pausada', 'finalizada', 'rechazada', 'cancelada'];
+        let supabaseClient = null;
+        let currentUser = null;
+        let campaigns = [];
+        let currentFilter = 'all';
+        let currentChartInstances = {};
+        let toastTimeout = null;
+        let chartJsLoaded = false;
+        let chartJsLoading = false;
 
-    let supabaseClient = null;
-    let currentUser = null;
-    let campaigns = [];
-    let currentFilter = 'all';
-    let currentChartInstances = {};
-    let toastTimeout = null;
-    let chartJsLoaded = false;
-    let chartJsLoading = false;
+        let wizard = {};
+        let campanaCreada = null;
+        let pollTimer = null;
+        let promiHistory = [];
+        let promiOcupado = false;
+        const videoPollers = new Map();
 
-    let wizard = {};
-    let campañaCreada = null;
-    let pollTimer = null;
-    let promiHistory = [];
-    let ultimoAssetIdPromi = null;
+        const $ = (id) => document.getElementById(id);
 
-    function logError(...a) { console.error('✕', ...a); }
-    function escapeHTML(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
-    function isValidHttpUrl(s) { try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; } }
-    function normalizeEstado(e) { return ESTADOS_VALIDOS.includes(e) ? e : 'borrador'; }
-    function formatFecha(f) { if (!f) return '—'; try { return new Date(f).toLocaleDateString('es-MX'); } catch { return '—'; } }
-
-    function showToast(msg, type, duration) {
-        const t = document.getElementById('toast'); if (!t) return;
-        t.textContent = msg; t.className = 'toast show ' + (type || '');
-        clearTimeout(toastTimeout);
-        toastTimeout = setTimeout(() => t.classList.remove('show'), duration || 3500);
-    }
-
-    function cambiarTab(tab) {
-        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-        document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        document.getElementById(`tab-${tab}`).classList.add('active');
-    }
-
-    function togglePromi() {
-        document.getElementById('promiPanel').classList.toggle('active');
-    }
-
-    function resetPromi() {
-        promiHistory = [];
-        ultimoAssetIdPromi = null;
-        wizard.media_id = null;
-        wizard.media_tipo = null;
-        const body = document.getElementById('promiBody');
-        body.innerHTML = `
-            <div class="promi-welcome" id="promiWelcome">
-                <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Promi Avatar" class="promi-avatar">
-                <h1>Hola, soy Promi</h1>
-                <p>Tu agente de ventas y estratega de Marketing. Pregúntame cómo mejorar tus campañas o pídeme que genere imágenes y videos para tus anuncios.</p>
-            </div>
-            <div class="promi-options" id="promiInitialOptions">
-                <div class="promi-option" onclick="enviarMensajePromi('Dame ideas para una campaña de marketing')">💡 Dame ideas para una campaña <span>→</span></div>
-                <div class="promi-option" onclick="enviarMensajePromi('Genera una imagen para mi anuncio')">🖼️ Generar imagen para mi anuncio <span>→</span></div>
-                <div class="promi-option" onclick="enviarMensajePromi('Genera un video para mi campaña')">🎬 Generar video para mi campaña <span>→</span></div>
-                <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo aumentar mi presupuesto?')">💰 ¿Cómo aumento mi presupuesto? <span>→</span></div>
-            </div>
-        `;
-    }
-
-    function abrirLightbox(url, tipo) {
-        const modal = document.getElementById('lightboxModal');
-        const content = document.getElementById('lightboxContent');
-        const caption = document.getElementById('lightboxCaption');
-
-        if (tipo === 'video') {
-            content.innerHTML = `<video src="${escapeHTML(url)}" controls autoplay playsinline controlsList="nodownload"></video>`;
-            caption.textContent = 'Vista previa del video generado por Promi';
-        } else {
-            content.innerHTML = `<img src="${escapeHTML(url)}" alt="Vista previa de imagen">`;
-            caption.textContent = "Vista previa del creativo. Protegido por Csariel's.";
-        }
-        modal.classList.add('active');
-    }
-
-    function cerrarLightbox(e) {
-        if (e) e.stopPropagation();
-        const modal = document.getElementById('lightboxModal');
-        const content = document.getElementById('lightboxContent');
-        modal.classList.remove('active');
-        content.innerHTML = '';
-    }
-
-    // ----------------------------------------------------------------
-    // VALIDACIÓN ESTRICTA DE CONTRATOS PROMI
-    // ----------------------------------------------------------------
-    function validarContratoPromi(contrato) {
-        if (!contrato || typeof contrato !== 'object' || !contrato.type) {
-            throw new Error('Respuesta inválida: falta el campo type.');
-        }
-        const t = contrato.type;
-        if (t === 'chat') {
-            if (typeof contrato.message !== 'string' || !contrato.message.trim()) throw new Error('Contrato chat inválido: falta message.');
-        } else if (t === 'copywriting') {
-            if (!Array.isArray(contrato.variants) || contrato.variants.length === 0) throw new Error('Contrato copywriting inválido: variants vacío.');
-            contrato.variants.forEach((v, i) => {
-                if (typeof v.text !== 'string' || typeof v.cta !== 'string') throw new Error(`Contrato copywriting inválido en la variante ${i}.`);
-            });
-        } else if (t === 'campaign_strategy') {
-            if (!contrato.campaign || typeof contrato.campaign !== 'object' || typeof contrato.campaign.name !== 'string') throw new Error('Contrato campaign_strategy inválido: falta campaign.name.');
-        } else if (t === 'campaign_analysis') {
-            if (typeof contrato.metrics_summary !== 'object' || !Array.isArray(contrato.diagnosis) || !Array.isArray(contrato.recommended_actions)) throw new Error('Contrato campaign_analysis inválido: estructura incorrecta.');
-        } else if (t === 'image_generation' || t === 'video_generation') {
-            if (!contrato.url) throw new Error('Contrato de media inválido: falta el campo url.');
-        } else {
-            throw new Error(`Tipo de contrato desconocido: ${t}`);
-        }
-        return true;
-    }
-
-    async function enviarMensajePromi(textoForzado) {
-        const input = document.getElementById('promiInput');
-        const texto = textoForzado || input.value.trim();
-        if (!texto) return;
-
-        const body = document.getElementById('promiBody');
-        const welcome = document.getElementById('promiWelcome');
-        const options = document.getElementById('promiInitialOptions');
-
-        if (welcome) welcome.style.display = 'none';
-        if (options) options.style.display = 'none';
-
-        const userMsg = document.createElement('div');
-        userMsg.className = 'promi-msg user';
-        userMsg.textContent = texto;
-        body.appendChild(userMsg);
-
-        promiHistory.push({ role: 'user', content: texto });
-        if (!textoForzado) input.value = '';
-        body.scrollTop = body.scrollHeight;
-
-        const typing = document.createElement('div');
-        typing.className = 'typing-indicator';
-        typing.innerHTML = '<span></span><span></span><span></span>';
-        body.appendChild(typing);
-        body.scrollTop = body.scrollHeight;
-
-        try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) {
-                typing.remove();
-                showToast('Inicia sesión para hablar con Promi', 'error');
-                return;
-            }
-
-            const res = await fetch(`${BACKEND_URL}/api/promi/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${session.access_token}`
-                },
-                body: JSON.stringify({ message: texto, history: promiHistory, asset_id: ultimoAssetIdPromi })
-            });
-
-            const data = await res.json().catch(() => ({}));
-            typing.remove();
-
-            if (data.success && data.contrato) {
-                // VALIDACIÓN ESTRICTA AQUÍ
-                try {
-                    validarContratoPromi(data.contrato);
-                } catch (valError) {
-                    const botMsg = document.createElement('div');
-                    botMsg.className = 'promi-msg bot error';
-                    botMsg.textContent = `⚠️ Error de formato en la respuesta de Promi: ${valError.message}`;
-                    body.appendChild(botMsg);
-                    return; // Se detiene para no renderizar algo roto
+        /* ---------- Utilidades DOM (sin innerHTML con datos del servidor) ---------- */
+        function el(tag, attrs, ...hijos) {
+            const n = document.createElement(tag);
+            if (attrs) {
+                for (const [k, v] of Object.entries(attrs)) {
+                    if (v === undefined || v === null || v === false) continue;
+                    if (k === 'class') n.className = v;
+                    else if (k === 'text') n.textContent = v;
+                    else n.setAttribute(k, v === true ? '' : String(v));
                 }
-
-                const botMsg = document.createElement('div');
-                botMsg.className = 'promi-msg bot';
-
-                const c = data.contrato;
-                if (c.type === 'chat') {
-                    botMsg.innerHTML = escapeHTML(c.message).replace(/\n/g, '<br>');
-                } else if (c.type === 'copywriting') {
-                    botMsg.innerHTML = c.variants.map(v => `<strong>${escapeHTML(v.channel)} (${escapeHTML(v.format)}):</strong><br>${escapeHTML(v.text)}<br><br>`).join('');
-                } else if (c.type === 'campaign_strategy') {
-                    botMsg.innerHTML = `<strong>🎯 ${escapeHTML(c.campaign.name)}</strong><br><br>${escapeHTML(c.campaign.creative_concept)}<br><br><em>Objetivo: ${escapeHTML(c.campaign.business_objective)}</em>`;
-                } else if (c.type === 'campaign_analysis') {
-                    botMsg.innerHTML = `<strong>📊 Análisis:</strong><br>${c.diagnosis.map(d => escapeHTML(d)).join('<br>')}`;
-                } else if (c.type === 'image_generation' || c.type === 'video_generation') {
-                    // URL correcta leída del contrato
-                    const urlAsset = c.url; 
-                    
-                    // Guardamos el ID para edición conversacional
-                    if (c.asset_id) ultimoAssetIdPromi = c.asset_id;
-
-                    const isVideo = c.type === 'video_generation';
-                    const url = escapeHTML(urlAsset);
-                    const tipo = isVideo ? 'video' : 'imagen';
-
-                    const mediaTag = isVideo
-                        ? `<video src="${url}" onclick="abrirLightbox('${url}', 'video')" style="width:100%;border-radius:12px;margin-bottom:12px;background:#000;cursor:pointer;" muted playsinline controlsList="nodownload"></video>`
-                        : `<img src="${url}" onclick="abrirLightbox('${url}', 'imagen')" style="width:100%;border-radius:12px;margin-bottom:12px;cursor:pointer;user-select:none;-webkit-user-drag:none;">`;
-
-                    // Seguridad: No exponemos el token en el onclick. Usamos un evento delegado o capturamos el token al momento.
-                    botMsg.innerHTML = `${mediaTag}
-                        <div class="acciones-media" style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="promi-action-btn" onclick="aceptarMedia(${Number(c.asset_id)}, '${tipo}', this)">✓ Aceptar para mi campaña</button>
-                        </div>
-                        <p style="font-size:0.75rem; color:#9ca3af; margin-top:8px;">💡 <em>Puedes decirme "hazlo más elegante" o "cambia el fondo" para modificarlo.</em></p>`;
-                }
-
-                body.appendChild(botMsg);
-                promiHistory.push({ role: 'assistant', content: c.message || `[Acción: ${c.type}]` });
-
-            } else {
-                showToast(data.mensaje || 'Promi no pudo procesar la respuesta.', 'error');
             }
-        } catch (e) {
-            typing.remove();
-            logError(e);
-            showToast('Error de conexión con Promi', 'error');
+            for (const h of hijos) {
+                if (h === undefined || h === null || h === false) continue;
+                n.append(typeof h === 'string' ? document.createTextNode(h) : h);
+            }
+            return n;
         }
-        body.scrollTop = body.scrollHeight;
-    }
 
-    // ================================================================
-    // GENERACIÓN DE IMAGEN/VIDEO · vista previa y aceptación
-    // ================================================================
-    function crearBurbujaMedia(texto) {
-        const b = document.createElement('div');
-        b.className = 'promi-msg bot';
-        b.textContent = texto;
-        return b;
-    }
-
-    async function esperarMedia(id, token, intentos = 0) {
-        const r = await fetch(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(id)}`, {
-            headers: { Authorization: 'Bearer ' + token }
-        });
-        const j = await r.json().catch(() => ({}));
-        if (!r.ok || !j.success) throw new Error(j.error || 'No se pudo consultar el contenido');
-        if (j.estado === 'listo') return j;
-        if (j.estado === 'error') throw new Error(j.error || 'No se pudo generar el contenido');
-        if (intentos >= 120) throw new Error('La generación tardó demasiado. Intenta de nuevo.');
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-        return esperarMedia(id, token, intentos + 1);
-    }
-
-    function mostrarVistaPrevia(tipo, data, token) {
-        const body = document.getElementById('promiBody');
-        const id = data.id;
-        ultimoAssetIdPromi = id;
-
-        const caja = document.createElement('div');
-        caja.className = 'promi-msg bot';
-        caja.style.padding = '16px';
-        caja.style.textAlign = 'center';
-
-        const url = escapeHTML(data.preview_url);
-        const media = tipo === 'imagen'
-            ? `<img src="${url}" onclick="abrirLightbox('${url}', 'imagen')" alt="Vista previa" style="width:100%;border-radius:12px;border:1px solid #374151;cursor:pointer;user-select:none;-webkit-user-drag:none;">`
-            : `<video src="${url}" onclick="abrirLightbox('${url}', 'video')" controls playsinline controlsList="nodownload" style="width:100%;border-radius:12px;border:1px solid #374151;background:#000;cursor:pointer;"></video>`;
-
-        caja.innerHTML = `
-            ${media}
-            <p style="font-size:0.8rem;color:#9ca3af;margin:12px 0;">
-                Así se vería en tu anuncio. Si lo aceptas, quedará disponible para tu campaña.
-                La vista previa caduca en unos minutos.
-            </p>
-            <div class="acciones-media" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-                <button class="promi-action-btn" data-accion="aceptar">✓ Aceptar para mi campaña</button>
-                <button class="promi-action-btn" data-accion="descartar" style="border-color:#374151;color:#9ca3af;">Descartar</button>
-            </div>
-        `;
-
-        caja.querySelector('[data-accion="aceptar"]').addEventListener('click', (ev) => aceptarMedia(id, tipo, ev.currentTarget, token));
-        caja.querySelector('[data-accion="descartar"]').addEventListener('click', () => descartarMedia(id, caja, token));
-
-        body.appendChild(caja);
-        body.scrollTop = body.scrollHeight;
-    }
-
-    // Acepta el contenido. Obtiene el token internamente (sin exponerlo en onclick).
-    async function aceptarMedia(id, tipo, elementoBoton) {
-        const burbuja = elementoBoton.closest('.promi-msg');
-        const bloque = burbuja.querySelector('.acciones-media');
-        const botones = bloque ? bloque.querySelectorAll('button') : burbuja.querySelectorAll('button');
-        botones.forEach((b) => { b.disabled = true; });
-
-        try {
-            // Obtenemos el token AQUÍ, de forma segura.
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) throw new Error('Sesión expirada');
-
-            const r = await fetch(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(id)}/aceptar`, {
-                method: 'POST',
-                headers: { Authorization: `Bearer ${session.access_token}` }
+        function textoConSaltos(texto) {
+            const f = document.createDocumentFragment();
+            String(texto == null ? '' : texto).split('\n').forEach((linea, i) => {
+                if (i > 0) f.append(document.createElement('br'));
+                f.append(document.createTextNode(linea));
             });
-            const j = await r.json().catch(() => ({}));
-            if (!r.ok || !j.success) {
-                botones.forEach((b) => { b.disabled = false; });
-                showToast(j.mensaje || j.error || 'No se pudo aceptar el contenido', 'error');
-                return;
-            }
-
-            wizard.media_id = id;
-            wizard.media_tipo = tipo;
-
-            const destino = bloque || burbuja;
-            destino.innerHTML = `
-                <span style="color:#00d68f;font-size:0.8rem;font-weight:700;display:block;margin-bottom:10px;">✓ Aceptado. Se usará en tu campaña.</span>
-                <button class="promi-action-btn" onclick="iniciarCampanaDesdePromi()" style="background:#00d68f; color:#04060d; border:none;">📋 Continuar con la campaña</button>
-            `;
-            showToast('Contenido aceptado', 'success');
-        } catch (e) {
-            botones.forEach((b) => { b.disabled = false; });
-            showToast('Error de conexión al aceptar', 'error');
-        }
-    }
-
-    async function descartarMedia(id, caja, token) {
-        try {
-            await fetch(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(id)}/descartar`, {
-                method: 'POST',
-                headers: { Authorization: 'Bearer ' + token }
-            });
-        } catch (e) { /* si falla, el archivo caduca solo */ }
-        caja.remove();
-    }
-
-    function renderParticles() {
-        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-        const c = document.getElementById('particles'); if (!c) return;
-        for (let i = 0; i < 25; i++) {
-            const p = document.createElement('div'); p.className = 'particle';
-            p.style.left = Math.random() * 100 + '%';
-            p.style.animationDuration = (8 + Math.random() * 12) + 's';
-            p.style.animationDelay = (Math.random() * 10) + 's';
-            const s = 1 + Math.random() * 2; p.style.width = s + 'px'; p.style.height = s + 'px';
-            c.appendChild(p);
-        }
-    }
-
-    function loadChartJs() {
-        return new Promise((resolve, reject) => {
-            if (chartJsLoaded) return resolve();
-            if (chartJsLoading) { const check = setInterval(() => { if (chartJsLoaded) { clearInterval(check); resolve(); } }, 100); return; }
-            chartJsLoading = true;
-            const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js';
-            s.onload = () => { chartJsLoaded = true; chartJsLoading = false; resolve(); };
-            s.onerror = () => { chartJsLoading = false; reject(new Error('No se pudo cargar Chart.js')); };
-            document.head.appendChild(s);
-        });
-    }
-
-    async function cargarConfig() {
-        const r = await fetch(`${BACKEND_URL}/api/config/public`, { cache: 'no-store' });
-        const j = await r.json();
-        if (!r.ok || !j.supabaseUrl || !j.supabaseAnonKey) throw new Error('Configuración pública no disponible');
-        return { url: j.supabaseUrl, key: j.supabaseAnonKey };
-    }
-
-    function getRedesDisponibles(montoMxn) {
-        const monto = Number(montoMxn);
-        if (!Number.isFinite(monto) || monto <= 0) return [];
-        const usd = monto * MXN_A_USD_APROX;
-        return REDES_PAGO.filter(r => usd >= r.min);
-    }
-
-    function poblarRedesDePago(montoMxn) {
-        const select = document.getElementById('pay-currency');
-        const info = document.getElementById('red-info');
-        if (!select) return;
-        const monto = Number(montoMxn);
-
-        if (!Number.isFinite(monto) || monto <= 0) {
-            select.innerHTML = '<option value="">Ingresa un presupuesto primero…</option>';
-            if (info) info.innerHTML = '◈ Elige cuánto vas a invertir para ver las redes disponibles.';
-            return;
+            return f;
         }
 
-        const redes = getRedesDisponibles(monto);
-        if (redes.length === 0) {
-            const minimoMxn = Math.ceil(16 / MXN_A_USD_APROX);
-            select.innerHTML = '<option value="">Monto insuficiente</option>';
-            if (info) info.innerHTML = `<span class="warn">⚠ Tu presupuesto ($${monto.toFixed(2)} MXN) es menor al mínimo. Mínimo: ~$${minimoMxn} MXN (16 USD).</span>`;
-            return;
+        function esUrlHttps(v) {
+            if (typeof v !== 'string') return false;
+            try { return new URL(v).protocol === 'https:'; } catch { return false; }
         }
 
-        const previo = select.value;
-        select.innerHTML = redes.map(r => `<option value="${escapeHTML(r.value)}">${escapeHTML(r.label)} · mín ${r.min} USD</option>`).join('');
-        if (redes.some(r => r.value === previo)) select.value = previo;
-
-        const usd = (monto * MXN_A_USD_APROX).toFixed(2);
-        const ocultas = REDES_PAGO.length - redes.length;
-        if (info) {
-            info.innerHTML = `◈ Presupuesto: <strong>$${monto.toFixed(2)} MXN</strong> ≈ <strong>$${usd} USD</strong><br>` +
-                             `◈ ${redes.length} red(es) disponibles${ocultas > 0 ? ` · ${ocultas} ocultas por mínimo` : ''}`;
-        }
-    }
-
-    function irAInicioDeSesion() {
-        window.location.replace('/');
-    }
-
-    async function init() {
-        renderParticles();
-        setupWizard();
-        setupFilters();
-        initStarsRecommendation();
-
-        document.querySelector('.fab-btn').addEventListener('click', () => abrirModalCrear());
-        document.getElementById('btn-create-campaign-top').addEventListener('click', () => abrirModalCrear());
-
-        if (!window.supabase || !window.supabase.createClient) { showBootError('El SDK de Supabase no cargó. Revisa tu conexión.'); return; }
-
-        let cfg;
-        try { cfg = await cargarConfig(); } catch (err) { logError(err); showBootError('No se pudo obtener la configuración del servidor.'); return; }
-
-        try { supabaseClient = window.supabase.createClient(cfg.url, cfg.key); } catch (err) { logError(err); showBootError('Error creando el cliente de Supabase.'); return; }
-
-        let user = null;
-        try { const { data, error } = await supabaseClient.auth.getUser(); if (error) throw error; user = data?.user || null; } catch (err) { logError('Usuario:', err); }
-
-        if (!user) { irAInicioDeSesion(); return; }
-
-        currentUser = user;
-        try { await loadCampaigns(); } catch (err) { logError('Campañas:', err); showCampaignsError(err.message); }
-    }
-
-    function showBootError(msg) { const el = document.getElementById('campaigns-list'); if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error inicializando Marketing</p><small>${escapeHTML(msg)}</small></div>`; }
-    function showCampaignsError(msg) { const el = document.getElementById('campaigns-list'); if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error cargando campañas</p><small>${escapeHTML(msg || 'Error desconocido')}</small></div>`; }
-
-    async function loadCampaigns() {
-        const el = document.getElementById('campaigns-list'); if (!el || !supabaseClient || !currentUser) return;
-        el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>Cargando campañas...</p></div>`;
-
-        const { data, error } = await supabaseClient.from('marketing_campaigns').select('*').eq('anunciante_id', currentUser.id).order('created_at', { ascending: false });
-        if (error) { showCampaignsError(error.message); return; }
-        campaigns = data || [];
-        if (campaigns.length === 0) { el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>No hay campañas creadas aún</p></div>`; calculateSummary(); return; }
-        renderCampaigns(); calculateSummary();
-    }
-
-    function renderCampaigns() {
-        const container = document.getElementById('campaigns-list'); if (!container) return;
-        const filtered = currentFilter === 'all' ? campaigns : campaigns.filter(c => c.estado === currentFilter);
-        if (filtered.length === 0) { container.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>No hay campañas ${currentFilter === 'all' ? 'creadas aún' : 'con este estado'}.</p></div>`; return; }
-        container.innerHTML = filtered.map(camp => {
-            const estado = normalizeEstado(camp.estado);
-            return `<div class="campaign-card" data-id="${escapeHTML(camp.id)}"><h3>${escapeHTML(camp.nombre) || 'Sin nombre'}</h3><div class="info-row"><span class="label">Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div><div class="info-row"><span class="label">Presupuesto</span><span class="value">$${parseFloat(camp.presupuesto || 0).toFixed(2)} ${escapeHTML(camp.moneda || 'MXN')}</span></div><div class="info-row"><span class="label">Gastado</span><span class="value">$${parseFloat(camp.gastado || 0).toFixed(2)}</span></div><div class="info-row"><span class="label">Inicio</span><span class="value">${formatFecha(camp.fecha_inicio)}</span></div><div class="info-row"><span class="label">Fin</span><span class="value">${formatFecha(camp.fecha_fin)}</span></div></div>`;
-        }).join('');
-        if (!container._clickBound) { container._clickBound = true; container.addEventListener('click', (e) => { const card = e.target.closest('.campaign-card'); if (card && card.dataset.id) openDetail(card.dataset.id); }); }
-    }
-
-    function calculateSummary() {
-        let budget = 0, active = 0, spent = 0;
-        campaigns.forEach(c => {
-            if (['activa', 'pausada', 'finalizada'].includes(c.estado)) budget += parseFloat(c.presupuesto || 0);
-            spent += parseFloat(c.gastado || 0);
-            if (c.estado === 'activa') active++;
-        });
-        document.getElementById('total-budget').textContent = `$${budget.toFixed(2)}`;
-        document.getElementById('active-campaigns').textContent = active;
-        document.getElementById('total-spent').textContent = `$${spent.toFixed(2)}`;
-        document.getElementById('total-reach').textContent = '0';
-    }
-
-    function setupFilters() {
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            if (btn._bound) return; btn._bound = true;
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active'); currentFilter = btn.dataset.filter; renderCampaigns();
-            });
-        });
-    }
-
-    function initStarsRecommendation() {
-        const container = document.getElementById('starsContainer');
-        const shareSection = document.getElementById('shareButtons');
-        const starsWrap = document.getElementById('starsWrap');
-        const btnToggle = document.getElementById('btnToggleEstrellas');
-        if (!container) return;
-
-        for (let i = 0; i < 12; i++) {
-            const star = document.createElement('span');
-            star.className = 'star-icon';
-            star.textContent = '💫';
-            star.style.animationDelay = `${i * 0.1}s`;
-            container.appendChild(star);
+        function isValidHttpUrl(s) {
+            try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; }
         }
 
-        btnToggle.addEventListener('click', () => {
-            const oculto = starsWrap.classList.toggle('oculto');
-            btnToggle.textContent = oculto ? '👉 Mostrar estrellas' : '👉 Minimizar estrellas';
-        });
+        function normalizeEstado(e) { return ESTADOS_VALIDOS.includes(e) ? e : 'borrador'; }
+        function formatFecha(f) { if (!f) return '—'; try { return new Date(f).toLocaleDateString('es-MX'); } catch { return '—'; } }
+        function logError(...a) { console.error('✕', ...a); }
 
-        const urlEnlace = encodeURIComponent(URL_INVITACION);
-        const textoCompartir = encodeURIComponent(`Únete a ${MARCA}: crea tu cuenta y entra al ecosistema 🚀 💫`);
-
-        document.getElementById('shareWa').href = `https://api.whatsapp.com/send?text=${textoCompartir}%20${urlEnlace}`;
-        document.getElementById('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${urlEnlace}`;
-        document.getElementById('shareTw').href = `https://twitter.com/intent/tweet?text=${textoCompartir}&url=${urlEnlace}`;
-
-        container.addEventListener('click', () => {
-            shareSection.style.display = 'flex';
-            showToast(`¡Gracias por recomendar ${MARCA}! 💫`, 'success');
-        });
-    }
-
-    function compartirNativo() {
-        if (navigator.share) {
-            navigator.share({
-                title: MARCA,
-                text: `Únete a ${MARCA}: crea tu cuenta y entra al ecosistema 🚀 💫`,
-                url: URL_INVITACION
-            }).catch(() => {});
-        } else {
-            showToast('Tu navegador no soporta compartir nativo. Usa los botones de abajo.', 'warning');
-        }
-    }
-
-    async function openDetail(campaignId) {
-        const campaign = campaigns.find(c => c.id === campaignId); if (!campaign) return;
-        const estado = normalizeEstado(campaign.estado);
-        const restante = parseFloat(campaign.presupuesto || 0) - parseFloat(campaign.gastado || 0);
-        document.getElementById('detail-title').textContent = '◈ ' + (campaign.nombre || 'Sin nombre');
-        document.getElementById('detail-info').innerHTML = `<div class="detail-row"><span>Estado</span><span class="badge ${estado}">${estado.replace(/_/g, ' ')}</span></div><div class="detail-row"><span>Presupuesto</span><span>$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${escapeHTML(campaign.moneda || 'MXN')}</span></div><div class="detail-row"><span>Gastado</span><span>$${parseFloat(campaign.gastado || 0).toFixed(2)}</span></div><div class="detail-row"><span>Restante</span><span>$${restante.toFixed(2)}</span></div><div class="detail-row"><span>Objetivo</span><span>${escapeHTML(campaign.objetivo || '—')}</span></div><div class="detail-row"><span>Inicio</span><span>${formatFecha(campaign.fecha_inicio)}</span></div><div class="detail-row"><span>Fin</span><span>${formatFecha(campaign.fecha_fin)}</span></div>`;
-
-        const actionsEl = document.getElementById('detail-actions');
-        actionsEl.innerHTML = '';
-        if (estado === 'activa') {
-            actionsEl.innerHTML = `
-                <button class="btn btn-outline" onclick="cambiarEstadoCampana('${campaign.id}', 'pausada')">Pausar</button>
-                <button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger);" onclick="cambiarEstadoCampana('${campaign.id}', 'cancelada')">Cancelar</button>
-            `;
-        } else if (estado === 'pausada') {
-            actionsEl.innerHTML = `
-                <button class="btn btn-outline" style="border-color:var(--success); color:var(--success);" onclick="cambiarEstadoCampana('${campaign.id}', 'activa')">Reanudar</button>
-                <button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger);" onclick="cambiarEstadoCampana('${campaign.id}', 'cancelada')">Cancelar</button>
-            `;
-        } else if (estado === 'pendiente_pago') {
-            actionsEl.innerHTML = `
-                <button class="btn btn-primary" onclick="pagarCampanaPendiente('${campaign.id}')">Pagar Ahora</button>
-                <button class="btn btn-outline" style="border-color:var(--danger); color:var(--danger);" onclick="cambiarEstadoCampana('${campaign.id}', 'cancelada')">Cancelar</button>
-            `;
+        function showToast(msg, type, duration) {
+            const t = $('toast'); if (!t) return;
+            t.textContent = msg;
+            t.className = 'toast show ' + (type || '');
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => t.classList.remove('show'), duration || 3500);
         }
 
-        document.getElementById('modal-detail').classList.remove('hidden');
-
-        const { data: stats, error } = await supabaseClient.from('marketing_daily_stats').select('*').eq('campaign_id', campaignId).order('fecha', { ascending: true });
-        if (error || !stats || stats.length === 0) { document.getElementById('detail-stats').innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--warning);font-size:0.72rem;line-height:1.6;">Las estadísticas aparecerán cuando la campaña<br>comience a recibir tráfico.</div>`; return; }
-
-        const t = stats.reduce((a, s) => ({ impresiones: a.impresiones + (s.impresiones || 0), alcance: a.alcance + (s.alcance || 0), vistas: a.vistas + (s.vistas || 0), clics: a.clics + (s.clics || 0), interacciones: a.interacciones + (s.interacciones || 0), reproducciones: a.reproducciones + (s.reproducciones || 0), conversiones: a.conversiones + (s.conversiones || 0) }), { impresiones: 0, alcance: 0, vistas: 0, clics: 0, interacciones: 0, reproducciones: 0, conversiones: 0 });
-
-        document.getElementById('detail-stats').innerHTML = `<div class="stat-item"><div class="label">Alcance</div><div class="value">${t.alcance.toLocaleString()}</div></div><div class="stat-item"><div class="label">Impresiones</div><div class="value">${t.impresiones.toLocaleString()}</div></div><div class="stat-item"><div class="label">Vistas</div><div class="value">${t.vistas.toLocaleString()}</div></div><div class="stat-item"><div class="label">Clics</div><div class="value">${t.clics.toLocaleString()}</div></div><div class="stat-item"><div class="label">Interacciones</div><div class="value">${t.interacciones.toLocaleString()}</div></div><div class="stat-item"><div class="label">Reproducciones</div><div class="value">${t.reproducciones.toLocaleString()}</div></div><div class="stat-item"><div class="label">Conversiones</div><div class="value">${t.conversiones.toLocaleString()}</div></div>`;
-        try { await loadChartJs(); renderCharts(stats); } catch (err) { logError('Chart.js:', err); }
-    }
-
-    async function cambiarEstadoCampana(id, nuevoEstado) {
-        if (!confirm(`¿Estás seguro de cambiar el estado a "${nuevoEstado}"?`)) return;
-        try {
-            const { error } = await supabaseClient.from('marketing_campaigns').update({ estado: nuevoEstado }).eq('id', id);
-            if (error) throw error;
-            showToast(`Campaña ${nuevoEstado}`, 'success');
-            document.getElementById('modal-detail').classList.add('hidden');
-            await loadCampaigns();
-        } catch (err) {
-            logError(err);
-            showToast('Error al actualizar la campaña', 'error');
-        }
-    }
-
-    function renderCharts(stats) {
-        if (typeof Chart === 'undefined') return;
-        Object.values(currentChartInstances).forEach(c => { try { c.destroy(); } catch (e) {} });
-        currentChartInstances = {};
-        Chart.defaults.color = '#6b8a9e'; Chart.defaults.font.family = 'Inter, sans-serif'; Chart.defaults.font.size = 10;
-        const labels = stats.map(s => { try { return new Date(s.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }); } catch { return ''; } });
-        const opts = { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(4, 6, 13, 0.95)', borderColor: '#D4AF37', borderWidth: 1, titleColor: '#D4AF37', bodyColor: '#f0f4f8', padding: 10, cornerRadius: 8 } }, scales: { x: { ticks: { color: '#6b8a9e', font: { size: 9 } }, grid: { color: 'rgba(212, 175, 55, 0.05)' } }, y: { ticks: { color: '#6b8a9e', font: { size: 9 } }, grid: { color: 'rgba(212, 175, 55, 0.05)' } } } };
-
-        const ctxReach = document.getElementById('chart-reach').getContext('2d');
-        const gradReach = ctxReach.createLinearGradient(0, 0, 0, 200); gradReach.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradReach.addColorStop(1, 'rgba(212, 175, 55, 0)');
-        currentChartInstances.reach = new Chart(ctxReach, { type: 'line', data: { labels, datasets: [{ data: stats.map(s => s.alcance || 0), borderColor: '#D4AF37', backgroundColor: gradReach, fill: true, tension: 0.4, pointBackgroundColor: '#D4AF37', pointRadius: 4, borderWidth: 2 }] }, options: opts });
-
-        currentChartInstances.impressions = new Chart(document.getElementById('chart-impressions'), { type: 'bar', data: { labels, datasets: [{ data: stats.map(s => s.impresiones || 0), backgroundColor: 'rgba(0, 214, 143, 0.7)', borderRadius: 6 }] }, options: opts });
-
-        const ctxSpent = document.getElementById('chart-spent').getContext('2d');
-        const gradSpent = ctxSpent.createLinearGradient(0, 0, 0, 200); gradSpent.addColorStop(0, 'rgba(255, 51, 102, 0.5)'); gradSpent.addColorStop(1, 'rgba(255, 51, 102, 0)');
-        currentChartInstances.spent = new Chart(ctxSpent, { type: 'line', data: { labels, datasets: [{ data: stats.map(s => s.gasto || 0), borderColor: '#ff3366', backgroundColor: gradSpent, fill: true, tension: 0.4, pointBackgroundColor: '#ff3366', pointRadius: 4, borderWidth: 2 }] }, options: opts });
-    }
-
-    function setupWizard() {
-        document.querySelectorAll('.close-modal').forEach(btn => { if (btn._bound) return; btn._bound = true; btn.addEventListener('click', (e) => { const target = e.currentTarget.dataset.close; document.getElementById(target).classList.add('hidden'); if (target === 'modal-create') detenerPolling(); }); });
-
-        document.querySelectorAll('.btn-option').forEach(btn => { if (btn._bound) return; btn._bound = true; btn.addEventListener('click', (e) => cargarDestinos(e.currentTarget.dataset.type)); });
-
-        const budgetInput = document.getElementById('campaign-budget');
-        if (budgetInput && !budgetInput._bound) { budgetInput._bound = true; budgetInput.addEventListener('input', (e) => poblarRedesDePago(e.target.value)); budgetInput.addEventListener('change', (e) => poblarRedesDePago(e.target.value)); }
-
-        ['2', '3', '4', '5', '6'].forEach(n => { const btn = document.querySelector(`#wizard-step-${n} .btn-next`); if (btn && !btn._bound) { btn._bound = true; btn.addEventListener('click', () => handleWizardStep(n)); } });
-
-        const payBtn = document.getElementById('btn-pay');
-        if (payBtn && !payBtn._bound) { payBtn._bound = true; payBtn.addEventListener('click', onPagarClick); }
-    }
-
-    function abrirModalCrear() {
-        if (!currentUser) { showToast('Inicia sesión para crear campañas', 'warning'); return; }
-        document.getElementById('modal-create').classList.remove('hidden');
-        resetWizard();
-    }
-
-    function limpiarCamposWizard() {
-        document.querySelectorAll('.wizard-step input, .wizard-step textarea').forEach(el => { el.value = ''; el.disabled = false; });
-        document.querySelectorAll('.wizard-step select').forEach(el => {
-            if (el.id === 'campaign-objective') el.selectedIndex = 0;
-            else if (el.id !== 'select-target' && el.id !== 'pay-currency') el.value = '';
-            el.disabled = false;
-        });
-        poblarRedesDePago('');
-        const btnPay = document.getElementById('btn-pay');
-        if (btnPay) { btnPay.style.display = ''; btnPay.disabled = false; btnPay.textContent = '◈ Continuar al Pago'; }
-    }
-
-    function iniciarCampanaDesdePromi() {
-        document.getElementById('promiPanel').classList.remove('active');
-        document.getElementById('modal-create').classList.remove('hidden');
-
-        const mediaIdGuardada = wizard.media_id;
-        const mediaTipoGuardado = wizard.media_tipo;
-
-        detenerPolling();
-        campañaCreada = null;
-        wizard = {};
-        if (mediaIdGuardada) {
-            wizard.media_id = mediaIdGuardada;
-            wizard.media_tipo = mediaTipoGuardado;
+        /* ---------- Sesión ---------- */
+        function irAInicio() {
+            location.replace('/');
         }
 
-        limpiarCamposWizard();
-        showWizardStep('1');
-    }
-
-    async function cargarDestinos(tipo) {
-        const mediaIdGuardada = wizard.media_id;
-        const mediaTipoGuardado = wizard.media_tipo;
-
-        wizard = { target_tipo: tipo };
-        if (mediaIdGuardada) {
-            wizard.media_id = mediaIdGuardada;
-            wizard.media_tipo = mediaTipoGuardado;
+        async function obtenerToken() {
+            if (!supabaseClient) { irAInicio(); throw new Error('Sesión no disponible.'); }
+            const { data } = await supabaseClient.auth.getSession();
+            const token = data && data.session && data.session.access_token;
+            if (!token) { irAInicio(); throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); }
+            return token;
         }
 
-        const select = document.getElementById('select-target');
-        select.innerHTML = '<option value="">Cargando...</option>';
-        try {
-            let query;
-            if (tipo === 'live') {
-                query = supabaseClient.from('transmisiones').select('id, titulo').eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).order('fecha_inicio', { ascending: false }).limit(50);
-            } else if (tipo === 'video') {
-                query = supabaseClient.from('videos').select('id, titulo').order('created_at', { ascending: false }).limit(50);
-            } else {
-                query = supabaseClient.from('grupos_video').select('id, nombre').order('created_at', { ascending: false }).limit(50);
-            }
-            const { data, error } = await query; if (error) throw error;
-
-            if (tipo === 'video') {
-                const opciones = ['<option value="__feed__">◈ Feed viral completo (todos los videos)</option>'];
-                if (data && data.length > 0) opciones.push(...data.map(t => `<option value="${escapeHTML(t.id)}">▶ ${escapeHTML(t.titulo || 'Sin título')}</option>`));
-                select.innerHTML = opciones.join('');
-            } else if (!data || data.length === 0) {
-                select.innerHTML = tipo === 'live' ? '<option value="">No hay transmisiones en vivo ahora</option>' : '<option value="">No hay grupos disponibles</option>';
-            } else {
-                select.innerHTML = data.map(t => {
-                    const label = tipo === 'live' ? t.titulo : t.nombre;
-                    return `<option value="${escapeHTML(t.id)}">${escapeHTML(label || 'Sin nombre')}</option>`;
-                }).join('');
-            }
-        } catch (err) {
-            logError('Destinos:', err);
-            select.innerHTML = '<option value="">No se pudieron cargar los destinos</option>';
-            showToast('No se pudieron cargar los destinos. Intenta de nuevo.', 'error');
-        }
-        showWizardStep('2');
-    }
-
-    function showWizardStep(n) {
-        document.querySelectorAll('.wizard-step').forEach(el => el.classList.add('hidden'));
-        const t = document.getElementById(`wizard-step-${n}`);
-        if (t) t.classList.remove('hidden');
-
-        if (n === '6') {
-            const mediaEl = document.getElementById('ad-media-aceptada');
-            const imgInput = document.getElementById('ad-image');
-            const vidInput = document.getElementById('ad-video');
-
-            if (wizard.media_id) {
-                mediaEl.style.display = 'block';
-                mediaEl.innerHTML = `✦ Usarás contenido <strong>${escapeHTML(wizard.media_tipo || 'IA')}</strong> aceptado. Las URL manuales se ignorarán.`;
-                imgInput.value = ''; imgInput.disabled = true;
-                vidInput.value = ''; vidInput.disabled = true;
-            } else {
-                mediaEl.style.display = 'none';
-                imgInput.disabled = false;
-                vidInput.disabled = false;
-            }
-        }
-    }
-
-    function resetWizard() {
-        detenerPolling(); wizard = {}; campañaCreada = null;
-        limpiarCamposWizard();
-        showWizardStep('1');
-    }
-
-    function handleWizardStep(n) {
-        if (n === '2') {
-            const id = document.getElementById('select-target').value;
-            if (!id) { showToast('Selecciona un destino', 'warning'); return; }
-            if (wizard.target_tipo === 'live') wizard.target_id = Number(id);
-            else wizard.target_id = id;
-            showWizardStep('3');
-        }
-        else if (n === '3') { const nombre = document.getElementById('campaign-name').value.trim(); if (!nombre) { showToast('Escribe un nombre', 'warning'); return; } if (nombre.length > 120) { showToast('Máximo 120 caracteres', 'warning'); return; } wizard.nombre = nombre; showWizardStep('4'); }
-        else if (n === '4') {
-            const objetivo = document.getElementById('campaign-objective').value;
-            if (!OBJETIVOS_VALIDOS.includes(objetivo)) { showToast('Elige un objetivo', 'warning'); return; }
-            wizard.objetivo = objetivo;
-            showWizardStep('5');
-        }
-        else if (n === '5') { const budget = parseFloat(document.getElementById('campaign-budget').value); if (!budget || budget <= 0) { showToast('Ingresa un presupuesto válido', 'warning'); return; } if (budget > 1000000) { showToast('Presupuesto demasiado alto', 'warning'); return; } const red = document.getElementById('pay-currency').value; if (!red) { showToast('Selecciona una red de pago válida para tu monto', 'warning'); return; } wizard.presupuesto = budget; wizard.pay_currency = red; showWizardStep('6'); }
-        else if (n === '6') {
-            const titulo = document.getElementById('ad-title').value.trim();
-            const descripcion = document.getElementById('ad-description').value.trim();
-            const imagen = document.getElementById('ad-image').value.trim();
-            const video = document.getElementById('ad-video').value.trim();
-            const cta = document.getElementById('ad-cta').value.trim();
-
-            if (!titulo) { showToast('Escribe un título', 'warning'); return; }
-
-            if (wizard.media_id) {
-                wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: null, video_url: null, cta_texto: cta || 'Ver más' };
-            } else {
-                if (imagen && !isValidHttpUrl(imagen)) { showToast('URL de imagen inválida', 'warning'); return; }
-                if (video && !isValidHttpUrl(video)) { showToast('URL de video inválida', 'warning'); return; }
-                if (!imagen && !video) { showToast('Incluye una imagen, un video o acepta una media IA', 'warning'); return; }
-                wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: imagen || null, video_url: video || null, cta_texto: cta || 'Ver más' };
-            }
-            mostrarResumen();
-            showWizardStep('7');
-        }
-    }
-
-    function mostrarResumen() {
-        const red = REDES_PAGO.find(r => r.value === wizard.pay_currency);
-        const usd = (wizard.presupuesto * MXN_A_USD_APROX).toFixed(2);
-        const filaMedia = wizard.media_id
-            ? `<div class="detail-row"><span>Creativo</span><span>✦ Media IA (${escapeHTML(wizard.media_tipo || 'contenido')})</span></div>`
-            : '';
-
-        document.getElementById('summary-content').innerHTML = `
-            <div class="detail-row"><span>Campaña</span><span>${escapeHTML(wizard.nombre)}</span></div>
-            <div class="detail-row"><span>Destino</span><span>${escapeHTML((wizard.target_tipo || '').toUpperCase())}</span></div>
-            <div class="detail-row"><span>Objetivo</span><span>${escapeHTML(wizard.objetivo)}</span></div>
-            <div class="detail-row"><span>Presupuesto</span><span>$${wizard.presupuesto.toFixed(2)} MXN</span></div>
-            <div class="detail-row"><span>Red de pago</span><span>${escapeHTML(red ? red.label : wizard.pay_currency)}</span></div>
-            <div class="detail-row"><span>A pagar aprox</span><span>~$${usd} USD</span></div>
-            ${filaMedia}
-            <div class="detail-row"><span>Anuncio</span><span>${escapeHTML(wizard.ad.titulo)}</span></div>
-        `;
-    }
-
-    async function obtenerToken() { const { data } = await supabaseClient.auth.getSession(); const token = data?.session?.access_token; if (!token) throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); return token; }
-
-    async function onPagarClick() {
-        const btn = document.getElementById('btn-pay'); btn.disabled = true;
-        try {
+        // Único punto de salida al backend: el token se lee en el momento.
+        async function fetchAutorizado(url, opciones) {
             const token = await obtenerToken();
-            const headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token };
-            let pago;
+            const o = opciones || {};
+            const headers = Object.assign({}, o.headers || {}, { Authorization: 'Bearer ' + token });
+            const r = await fetch(url, Object.assign({}, o, { headers }));
+            if (r.status === 401) { irAInicio(); throw new Error('Sesión expirada.'); }
+            return r;
+        }
 
-            if (campañaCreada && campañaCreada.pago) {
-                pago = campañaCreada.pago;
-            } else if (campañaCreada && campañaCreada.campaign_id) {
-                btn.textContent = '◈ Generando pago...';
-                const r = await fetch(`${BACKEND_URL}/api/payments/marketing/create`, {
-                    method: 'POST', headers,
-                    body: JSON.stringify({ campaignId: campañaCreada.campaign_id, payCurrency: wizard.pay_currency })
-                });
+        /* ---------- Pestañas ---------- */
+        function cambiarTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + tab));
+        }
+
+        /* ---------- Promi: panel ---------- */
+        function togglePromi() { $('promiPanel').classList.toggle('active'); }
+        function scrollPromi() { const b = $('promiBody'); b.scrollTop = b.scrollHeight; }
+
+        function ocultarBienvenida() {
+            const w = $('promiWelcome'); if (w) w.style.display = 'none';
+            const o = $('promiInitialOptions'); if (o) o.style.display = 'none';
+        }
+
+        function setPromiOcupado(on) {
+            promiOcupado = on;
+            $('promiSend').disabled = on;
+            $('promiInput').disabled = on;
+        }
+
+        function detenerVideoPollers() {
+            videoPollers.forEach((id) => clearInterval(id));
+            videoPollers.clear();
+        }
+
+        function resetPromi() {
+            promiHistory = [];
+            detenerVideoPollers();
+            const body = $('promiBody');
+            body.replaceChildren(
+                el('div', { class: 'promi-welcome', id: 'promiWelcome' },
+                    el('img', { src: 'https://cdn-icons-png.flaticon.com/512/4712/4712035.png', alt: '', class: 'promi-avatar' }),
+                    el('h1', { text: 'Hola, soy Promi' }),
+                    el('p', { text: 'Tu agente de ventas y estratega de Marketing. Pregúntame cómo mejorar tus campañas o pídeme imágenes y videos para tus anuncios.' })
+                ),
+                el('div', { class: 'promi-options', id: 'promiInitialOptions' },
+                    ...[
+                        'Dame ideas para una campaña de marketing',
+                        'Genera una imagen para mi anuncio',
+                        'Genera un video para mi campaña',
+                        '¿Cómo puedo aumentar mi presupuesto?'
+                    ].map(p => el('div', { class: 'promi-option', 'data-prompt': p }, p + ' ', el('span', { text: '→' })))
+                )
+            );
+        }
+
+        /* ---------- Visor inmersivo ---------- */
+        function abrirLightbox(url, tipo) {
+            if (!esUrlHttps(url)) return;
+            const cont = $('lightboxContent');
+            cont.replaceChildren(
+                tipo === 'video'
+                    ? el('video', { src: url, controls: true, autoplay: true, playsinline: true, controlsList: 'nodownload' })
+                    : el('img', { src: url, alt: 'Vista previa' })
+            );
+            $('lightboxCaption').textContent = tipo === 'video'
+                ? 'Vista previa del video generado por Promi'
+                : 'Vista previa del creativo';
+            $('lightboxModal').classList.add('active');
+        }
+
+        function cerrarLightbox() {
+            $('lightboxModal').classList.remove('active');
+            $('lightboxContent').replaceChildren();
+        }
+
+        /* ---------- Validación estricta de contratos (espejo de ESQUEMAS en routes/promi.js) ---------- */
+        function validarMedia(c, esVideo) {
+            const idValido = (typeof c.asset_id === 'string' && c.asset_id.length > 0) || Number.isInteger(c.asset_id);
+            if (!idValido) return 'falta "asset_id"';
+            if (!ESTADOS_MEDIA.includes(c.status)) return 'status inválido';
+            if (c.approval_required !== true) return 'approval_required debe ser true';
+            if (c.url === null || c.url === undefined) {
+                if (esVideo && c.status === 'pending_review') return true; // video en proceso
+                return 'falta la URL de la vista previa';
+            }
+            if (!esUrlHttps(c.url)) return 'la URL de la vista previa no es https válida';
+            return true;
+        }
+
+        const VALIDADORES = {
+            chat: (c) => (typeof c.message === 'string' && c.message.trim()) ? true : 'falta "message" (texto)',
+            copywriting: (c) => {
+                if (!Array.isArray(c.variants) || c.variants.length === 0) return 'falta "variants" (lista vacía)';
+                for (let i = 0; i < c.variants.length; i++) {
+                    const v = c.variants[i];
+                    if (!v || typeof v !== 'object') return `variante ${i + 1} inválida`;
+                    if (!(typeof v.text === 'string' && v.text.trim())) return `variante ${i + 1} sin "text"`;
+                    if (typeof v.cta !== 'string') return `variante ${i + 1} sin "cta"`;
+                }
+                return true;
+            },
+            campaign_strategy: (c) => {
+                const k = c.campaign;
+                if (!k || typeof k !== 'object') return 'falta "campaign"';
+                if (!(typeof k.name === 'string' && k.name.trim())) return 'falta campaign.name';
+                if (!OBJETIVOS_NEGOCIO.includes(k.business_objective)) return 'business_objective inválido';
+                if (!['complete', 'incomplete'].includes(k.status)) return 'status inválido';
+                return true;
+            },
+            campaign_analysis: (c) => {
+                if (!c.metrics_summary || typeof c.metrics_summary !== 'object' || Array.isArray(c.metrics_summary)) return 'falta metrics_summary';
+                if (!Array.isArray(c.diagnosis)) return 'falta diagnosis';
+                if (!Array.isArray(c.recommended_actions)) return 'falta recommended_actions';
+                if (!c.recommended_actions.every(a => a && a.approval_required === true)) return 'una acción no requiere aprobación (política violada)';
+                return true;
+            },
+            image_generation: (c) => validarMedia(c, false),
+            video_generation: (c) => validarMedia(c, true)
+        };
+
+        // Devuelve { ok: true, c } o { ok: false, motivo, tipo }
+        function validarRespuestaPromi(data) {
+            if (!data || typeof data !== 'object') return { ok: false, motivo: 'la respuesta no es JSON válido' };
+            if (data.success !== true) {
+                return { ok: false, motivo: data.mensaje || data.error || 'error del servidor' };
+            }
+            const c = data.contrato;
+            if (!c || typeof c !== 'object') return { ok: false, motivo: 'falta el campo "contrato"' };
+            if (typeof c.type !== 'string') return { ok: false, motivo: 'falta "type" en el contrato' };
+            if (!TIPOS_CONTRATO.includes(c.type)) return { ok: false, motivo: `tipo desconocido "${c.type}"` };
+            if (data.type !== undefined && data.type !== c.type) {
+                return { ok: false, tipo: c.type, motivo: `el tipo de la respuesta ("${data.type}") no coincide con el contrato ("${c.type}")` };
+            }
+            const r = VALIDADORES[c.type](c);
+            if (r !== true) return { ok: false, tipo: c.type, motivo: r };
+            return { ok: true, c };
+        }
+
+        /* ---------- Render de contratos ---------- */
+        function burbuja(clase) { return el('div', { class: 'promi-msg ' + clase }); }
+
+        function mostrarErrorPromi(motivo, tipo) {
+            const texto = tipo
+                ? `⚠ La respuesta de Promi (${tipo}) no cumple el formato esperado. Motivo: ${motivo}.`
+                : `⚠ ${motivo}.`;
+            const b = burbuja('bot promi-err');
+            b.append(textoConSaltos(texto));
+            $('promiBody').append(b);
+            scrollPromi();
+        }
+
+        function renderChat(c) {
+            const b = burbuja('bot');
+            b.append(textoConSaltos(c.message));
+            return b;
+        }
+
+        function renderCopy(c) {
+            const b = burbuja('bot');
+            c.variants.forEach(v => {
+                const bloque = el('div', { class: 'promi-copy-bloque' });
+                bloque.append(el('strong', { text: `${v.channel || 'Canal'} · ${v.format || 'texto'}` }));
+                bloque.append(el('div', {}, textoConSaltos(v.text)));
+                if (v.cta) bloque.append(el('div', { class: 'promi-hint', text: 'CTA: ' + v.cta }));
+                if (Array.isArray(v.hashtags) && v.hashtags.length) bloque.append(el('div', { class: 'promi-hint', text: v.hashtags.join(' ') }));
+                b.append(bloque);
+            });
+            return b;
+        }
+
+        function renderEstrategia(c) {
+            const k = c.campaign;
+            const b = burbuja('bot');
+            b.append(el('strong', { text: '🎯 ' + k.name }));
+            b.append(el('div', { class: 'promi-hint', text: 'Objetivo: ' + k.business_objective }));
+            if (k.creative_concept) b.append(el('div', { class: 'promi-copy-bloque' }, textoConSaltos(k.creative_concept)));
+            if (Array.isArray(k.channels) && k.channels.length) b.append(el('div', { class: 'promi-hint', text: 'Canales: ' + k.channels.join(', ') }));
+            if (Array.isArray(k.kpis) && k.kpis.length) b.append(el('div', { class: 'promi-hint', text: 'KPIs: ' + k.kpis.join(', ') }));
+            if (k.status === 'incomplete') {
+                const faltan = Array.isArray(k.missing) && k.missing.length ? k.missing.join(', ') : 'datos adicionales';
+                b.append(el('div', { class: 'promi-aviso', text: '⚠ Plan incompleto. Faltan: ' + faltan }));
+            }
+            return b;
+        }
+
+        function renderAnalisis(c) {
+            const b = burbuja('bot');
+            b.append(el('strong', { text: '📊 Análisis' }));
+            c.diagnosis.forEach(d => b.append(el('div', { class: 'promi-copy-bloque' }, textoConSaltos(d))));
+            if (c.recommended_actions.length) {
+                b.append(el('div', { class: 'promi-hint', text: 'Acciones recomendadas (requieren tu aprobación):' }));
+                c.recommended_actions.forEach(a => b.append(el('div', { class: 'promi-copy-bloque' },
+                    el('div', { text: a.action || '' }),
+                    el('div', { class: 'promi-hint', text: a.expected_impact || '' }),
+                    el('div', { class: 'promi-aprobacion', text: '✓ Requiere tu aprobación' })
+                )));
+            }
+            if (Array.isArray(c.data_gaps) && c.data_gaps.length) {
+                b.append(el('div', { class: 'promi-aviso', text: 'Datos faltantes: ' + c.data_gaps.join(', ') }));
+            }
+            return b;
+        }
+
+        function crearElementoMedia(tipo, url) {
+            if (tipo === 'video') {
+                return el('video', { class: 'promi-media', src: url, controls: true, playsinline: true, preload: 'metadata', controlsList: 'nodownload' });
+            }
+            const img = el('img', { class: 'promi-media', src: url, alt: 'Vista previa generada por Promi', draggable: 'false' });
+            img.addEventListener('click', () => abrirLightbox(url, 'imagen'));
+            return img;
+        }
+
+        function renderMedia(c, tipo) {
+            const b = burbuja('bot');
+            if (!c.url) {
+                b.append(el('div', { text: 'Generando video… puede tardar varios minutos.' }));
+                seguirVideo(c.asset_id, b);
+                return b;
+            }
+            b.append(crearElementoMedia(tipo, c.url));
+            const acciones = el('div', { class: 'promi-acciones' });
+            const btnAceptar = el('button', { class: 'promi-action-btn', type: 'button', text: '✓ Aceptar para mi campaña' });
+            btnAceptar.addEventListener('click', () => aceptarContenido(c.asset_id, tipo, acciones));
+            const btnDescartar = el('button', { class: 'promi-action-btn promi-ghost', type: 'button', text: 'Descartar' });
+            btnDescartar.addEventListener('click', () => descartarContenido(c.asset_id, b));
+            acciones.append(btnAceptar, btnDescartar);
+            if (tipo === 'video') {
+                const btnVer = el('button', { class: 'promi-action-btn promi-ghost', type: 'button', text: '⛶ Pantalla completa' });
+                btnVer.addEventListener('click', () => abrirLightbox(c.url, 'video'));
+                acciones.append(btnVer);
+            }
+            b.append(acciones, el('p', { class: 'promi-hint', text: 'Puedes pedirme cambios, por ejemplo: "hazlo más elegante".' }));
+            return b;
+        }
+
+        /* ---------- Video en proceso: consulta GET /api/ai/media/:id ---------- */
+        function seguirVideo(assetId, burbuja) {
+            const clave = String(assetId);
+            if (videoPollers.has(clave)) return;
+            let intentos = 0;
+            const id = setInterval(async () => {
+                intentos++;
+                try {
+                    const r = await fetchAutorizado(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(assetId)}`);
+                    const j = await r.json().catch(() => ({}));
+                    if (j.estado === 'listo' && j.preview_url && esUrlHttps(j.preview_url)) {
+                        clearInterval(id); videoPollers.delete(clave);
+                        const c = { asset_id: assetId, url: j.preview_url, status: 'generated', approval_required: true };
+                        burbuja.replaceWith(renderMedia(c, 'video'));
+                        return;
+                    }
+                    if (j.estado === 'error') {
+                        clearInterval(id); videoPollers.delete(clave);
+                        burbuja.replaceChildren(el('div', { class: 'promi-aviso', text: '⚠ No se pudo generar el video: ' + (j.error || 'error desconocido') }));
+                        return;
+                    }
+                } catch (e) { /* reintenta en el siguiente ciclo */ }
+                if (intentos >= VIDEO_POLL_MAX) {
+                    clearInterval(id); videoPollers.delete(clave);
+                    burbuja.replaceChildren(el('div', { class: 'promi-aviso', text: 'El video sigue en proceso. Vuelve a pedirlo más tarde.' }));
+                }
+            }, VIDEO_POLL_MS);
+            videoPollers.set(clave, id);
+        }
+
+        /* ---------- Aceptar / descartar contenido ---------- */
+        async function aceptarContenido(assetId, tipo, contenedorAcciones) {
+            const botones = contenedorAcciones.querySelectorAll('button');
+            botones.forEach(b => { b.disabled = true; });
+            try {
+                const r = await fetchAutorizado(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(assetId)}/aceptar`, { method: 'POST' });
                 const j = await r.json().catch(() => ({}));
-                if (!r.ok || !j.success || !j.data?.pay_address) throw new Error(j.error || 'No se pudo generar el pago. Intenta de nuevo.');
-                pago = {
-                    pago_id: j.data.pago_id,
-                    payment_id: j.data.payment_id,
-                    pay_address: j.data.pay_address,
-                    pay_amount: j.data.pay_amount,
-                    pay_currency: j.data.pay_currency,
-                    monto_mxn: j.data.monto_mxn
-                };
-                campañaCreada.pago = pago;
-            } else {
-                if (!OBJETIVOS_VALIDOS.includes(wizard.objetivo)) {
-                    showToast('Vuelve al Paso 04 y elige un objetivo', 'warning', 5000);
-                    btn.disabled = false;
+                if (!r.ok || !j.success) {
+                    botones.forEach(b => { b.disabled = false; });
+                    showToast(j.mensaje || j.error || 'No se pudo aceptar el contenido', 'error');
+                    return;
+                }
+                wizard.media_id = assetId;
+                wizard.media_tipo = tipo;
+                const continuar = el('button', { class: 'promi-action-btn promi-ok', type: 'button', text: '📋 Continuar con la campaña' });
+                continuar.addEventListener('click', iniciarCampanaDesdePromi);
+                contenedorAcciones.replaceChildren(
+                    el('span', { style: 'color:#00d68f;font-size:0.8rem;font-weight:700;display:block;margin-bottom:10px;', text: '✓ Aceptado. Se usará en tu campaña.' }),
+                    continuar
+                );
+                showToast('Contenido aceptado', 'success');
+            } catch (e) {
+                botones.forEach(b => { b.disabled = false; });
+                showToast('Error de conexión al aceptar', 'error');
+            }
+        }
+
+        async function descartarContenido(assetId, burbuja) {
+            try {
+                await fetchAutorizado(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(assetId)}/descartar`, { method: 'POST' });
+            } catch (e) { /* si falla, el archivo caduca solo */ }
+            burbuja.remove();
+        }
+
+        /* ---------- Envío de mensajes a Promi ---------- */
+        async function enviarMensajePromi(textoForzado) {
+            if (promiOcupado) return;
+            const input = $('promiInput');
+            const texto = (textoForzado || input.value || '').trim();
+            if (!texto) return;
+
+            ocultarBienvenida();
+
+            const body = $('promiBody');
+            body.append(el('div', { class: 'promi-msg user', text: texto }));
+            promiHistory.push({ role: 'user', content: texto });
+            if (!textoForzado) input.value = '';
+            scrollPromi();
+
+            const typing = el('div', { class: 'typing-indicator' }, el('span'), el('span'), el('span'));
+            body.append(typing);
+            scrollPromi();
+
+            setPromiOcupado(true);
+            try {
+                const r = await fetchAutorizado(`${BACKEND_URL}/api/promi/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: texto, history: promiHistory.slice(-PROMI_HISTORIAL_MAX) })
+                });
+                const data = await r.json().catch(() => null);
+                typing.remove();
+
+                const v = validarRespuestaPromi(data);
+                if (!v.ok) {
+                    mostrarErrorPromi(v.motivo, v.tipo);
                     return;
                 }
 
-                btn.textContent = '◈ Generando pago...';
-                const body = {
-                    nombre: wizard.nombre,
-                    objetivo: wizard.objetivo,
-                    presupuesto: wizard.presupuesto,
-                    destino_tipo: wizard.target_tipo,
-                    destino_id: wizard.target_id,
-                    pay_currency: wizard.pay_currency,
-                    ad: wizard.ad
-                };
-                if (wizard.media_id) body.media_id = wizard.media_id;
+                const c = v.c;
+                let burbujaRespuesta;
+                if (c.type === 'chat') burbujaRespuesta = renderChat(c);
+                else if (c.type === 'copywriting') burbujaRespuesta = renderCopy(c);
+                else if (c.type === 'campaign_strategy') burbujaRespuesta = renderEstrategia(c);
+                else if (c.type === 'campaign_analysis') burbujaRespuesta = renderAnalisis(c);
+                else if (c.type === 'image_generation') burbujaRespuesta = renderMedia(c, 'imagen');
+                else if (c.type === 'video_generation') burbujaRespuesta = renderMedia(c, 'video');
 
-                const r = await fetch(`${BACKEND_URL}/api/campanas/crear`, {
-                    method: 'POST', headers,
-                    body: JSON.stringify(body)
-                });
-                const j = await r.json().catch(() => ({}));
-                if (!r.ok || !j.success || !j.data?.pago?.pay_address) throw new Error(j.error || 'No se pudo generar el pago. Intenta de nuevo.');
+                body.append(burbujaRespuesta);
+                promiHistory.push({ role: 'assistant', content: c.message || `[Acción: ${c.type}]` });
+            } catch (e) {
+                typing.remove();
+                if (!(e && (e.message || '').startsWith('Sesión'))) {
+                    showToast('Error de conexión con Promi', 'error');
+                }
+            } finally {
+                setPromiOcupado(false);
+                scrollPromi();
+            }
+        }
 
-                campañaCreada = { campaign_id: j.data.campaign_id, pago: j.data.pago };
-                pago = j.data.pago;
+        /* ---------- Carga de dependencias y datos ---------- */
+        function renderParticles() {
+            if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+            const c = $('particles'); if (!c) return;
+            for (let i = 0; i < 25; i++) {
+                const p = el('div', { class: 'particle' });
+                p.style.left = Math.random() * 100 + '%';
+                p.style.animationDuration = (8 + Math.random() * 12) + 's';
+                p.style.animationDelay = (Math.random() * 10) + 's';
+                const s = 1 + Math.random() * 2; p.style.width = s + 'px'; p.style.height = s + 'px';
+                c.append(p);
+            }
+        }
+
+        function loadChartJs() {
+            return new Promise((resolve, reject) => {
+                if (chartJsLoaded) return resolve();
+                if (chartJsLoading) { const check = setInterval(() => { if (chartJsLoaded) { clearInterval(check); resolve(); } }, 100); return; }
+                chartJsLoading = true;
+                const s = el('script', { src: 'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js' });
+                s.onload = () => { chartJsLoaded = true; chartJsLoading = false; resolve(); };
+                s.onerror = () => { chartJsLoading = false; reject(new Error('No se pudo cargar Chart.js')); };
+                document.head.append(s);
+            });
+        }
+
+        async function cargarConfig() {
+            const r = await fetch(`${BACKEND_URL}/api/config/public`, { cache: 'no-store' });
+            const j = await r.json();
+            if (!r.ok || !j.supabaseUrl || !j.supabaseAnonKey) throw new Error('Configuración pública no disponible');
+            return { url: j.supabaseUrl, key: j.supabaseAnonKey };
+        }
+
+        function getRedesDisponibles(montoMxn) {
+            const monto = Number(montoMxn);
+            if (!Number.isFinite(monto) || monto <= 0) return [];
+            const usd = monto * MXN_A_USD_APROX;
+            return REDES_PAGO.filter(r => usd >= r.min);
+        }
+
+        function poblarRedesDePago(montoMxn) {
+            const select = $('pay-currency');
+            const info = $('red-info');
+            if (!select) return;
+            const monto = Number(montoMxn);
+
+            if (!Number.isFinite(monto) || monto <= 0) {
+                select.replaceChildren(el('option', { value: '', text: 'Ingresa un presupuesto primero…' }));
+                if (info) info.textContent = '◈ Elige cuánto vas a invertir para ver las redes disponibles.';
+                return;
             }
 
-            mostrarPagoPendiente(pago);
-            loadCampaigns();
-        } catch (err) {
-            logError('Pago:', err);
-            showToast(err.message, 'error', 5000);
-            btn.disabled = false;
-            btn.textContent = campañaCreada ? '◈ Reintentar pago' : '◈ Continuar al Pago';
+            const redes = getRedesDisponibles(monto);
+            if (redes.length === 0) {
+                const minimoMxn = Math.ceil(16 / MXN_A_USD_APROX);
+                select.replaceChildren(el('option', { value: '', text: 'Monto insuficiente' }));
+                if (info) info.replaceChildren(el('span', { class: 'warn', text: `⚠ Tu presupuesto ($${monto.toFixed(2)} MXN) es menor al mínimo. Mínimo: ~$${minimoMxn} MXN (16 USD).` }));
+                return;
+            }
+
+            const previo = select.value;
+            select.replaceChildren(...redes.map(r => el('option', { value: r.value, text: `${r.label} · mín ${r.min} USD` })));
+            if (redes.some(r => r.value === previo)) select.value = previo;
+
+            const usd = (monto * MXN_A_USD_APROX).toFixed(2);
+            const ocultas = REDES_PAGO.length - redes.length;
+            if (info) {
+                info.replaceChildren(
+                    document.createTextNode('◈ Presupuesto: '),
+                    el('strong', { text: `$${monto.toFixed(2)} MXN` }),
+                    document.createTextNode(' ≈ '),
+                    el('strong', { text: `$${usd} USD` }),
+                    el('br'),
+                    document.createTextNode(`◈ ${redes.length} red(es) disponibles${ocultas > 0 ? ` · ${ocultas} ocultas por mínimo` : ''}`)
+                );
+            }
         }
-    }
 
-    function mostrarPagoPendiente(pago) {
-        const monto = Number(pago.pay_amount);
-        const montoTxt = Number.isFinite(monto) && monto > 0 ? monto.toString() : '—';
-        const moneda = escapeHTML(String(pago.pay_currency || '').toUpperCase());
-        document.getElementById('summary-content').innerHTML = `
-            <div class="red-info">◈ Envía exactamente <strong>${escapeHTML(montoTxt)} ${moneda}</strong> a la dirección de abajo. Tu campaña se activa al confirmarse el pago.</div>
-            <div class="red-info" style="word-break:break-all;margin-top:10px;font-family:'Space Mono',monospace;">${escapeHTML(pago.pay_address)}</div>
-            <button class="btn btn-primary" style="margin-top:12px;" onclick="copiarDireccionPago('${escapeHTML(pago.pay_address)}')">Copiar dirección</button>
-            <div id="pago-estado" class="red-info" style="margin-top:12px;">Esperando confirmación de la red…</div>
-        `;
-        document.getElementById('btn-pay').style.display = 'none';
-        pollearPago(pago.pago_id);
-    }
+        async function init() {
+            renderParticles();
+            setupWizard();
+            setupFilters();
+            setupPromiEventos();
+            initStarsRecommendation();
 
-    function copiarDireccionPago(direccion) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(direccion)
-                .then(() => showToast('Dirección copiada', 'success'))
-                .catch(() => showToast('No se pudo copiar. Selecciónala manualmente.', 'warning'));
-        } else {
-            showToast('Selecciona la dirección y cópiala manualmente.', 'warning');
+            $('fabCrear').addEventListener('click', abrirModalCrear);
+            $('btnCreateCampaignTop').addEventListener('click', abrirModalCrear);
+
+            if (!window.supabase || !window.supabase.createClient) { showBootError('El SDK de Supabase no cargó. Revisa tu conexión.'); return; }
+
+            let cfg;
+            try { cfg = await cargarConfig(); } catch (err) { logError(err); showBootError('No se pudo obtener la configuración del servidor.'); return; }
+
+            try { supabaseClient = window.supabase.createClient(cfg.url, cfg.key); } catch (err) { logError(err); showBootError('Error creando el cliente de Supabase.'); return; }
+
+            let user = null;
+            try { const { data, error } = await supabaseClient.auth.getUser(); if (error) throw error; user = data?.user || null; } catch (err) { logError('Usuario:', err); }
+
+            if (!user) { irAInicio(); return; }
+
+            currentUser = user;
+            try { await loadCampaigns(); } catch (err) { logError('Campañas:', err); showCampaignsError(err.message); }
         }
-    }
 
-    function detenerPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+        function showBootError(msg) {
+            const el0 = $('campaigns-list'); if (!el0) return;
+            el0.replaceChildren(el('div', { class: 'empty-state' },
+                el('span', { class: 'icon', text: '✕' }),
+                el('p', { text: 'Error inicializando Marketing' }),
+                el('small', { text: msg })
+            ));
+        }
 
-    function pollearPago(pagoId) {
-        detenerPolling(); let intentos = 0;
-        const setEstado = (txt) => { const e = document.getElementById('pago-estado'); if (e) e.textContent = txt; };
-        pollTimer = setInterval(async () => {
-            intentos++;
+        function showCampaignsError(msg) {
+            const el0 = $('campaigns-list'); if (!el0) return;
+            el0.replaceChildren(el('div', { class: 'empty-state' },
+                el('span', { class: 'icon', text: '✕' }),
+                el('p', { text: 'Error cargando campañas' }),
+                el('small', { text: msg || 'Error desconocido' })
+            ));
+        }
+
+        async function loadCampaigns() {
+            const el0 = $('campaigns-list'); if (!el0 || !supabaseClient || !currentUser) return;
+            el0.replaceChildren(el('div', { class: 'empty-state' }, el('span', { class: 'icon', text: '◈' }), el('p', { text: 'Cargando campañas...' })));
+
+            const { data, error } = await supabaseClient.from('marketing_campaigns').select('*').eq('anunciante_id', currentUser.id).order('created_at', { ascending: false });
+            if (error) { showCampaignsError(error.message); return; }
+            campaigns = data || [];
+            if (campaigns.length === 0) {
+                el0.replaceChildren(el('div', { class: 'empty-state' }, el('span', { class: 'icon', text: '◈' }), el('p', { text: 'No hay campañas creadas aún' })));
+                calculateSummary();
+                return;
+            }
+            renderCampaigns();
+            calculateSummary();
+        }
+
+        function renderCampaigns() {
+            const container = $('campaigns-list'); if (!container) return;
+            const filtered = currentFilter === 'all' ? campaigns : campaigns.filter(c => c.estado === currentFilter);
+            if (filtered.length === 0) {
+                container.replaceChildren(el('div', { class: 'empty-state' }, el('span', { class: 'icon', text: '◈' }), el('p', { text: `No hay campañas ${currentFilter === 'all' ? 'creadas aún' : 'con este estado'}.` })));
+                return;
+            }
+            container.replaceChildren(...filtered.map(camp => {
+                const estado = normalizeEstado(camp.estado);
+                const fila = (label, value) => el('div', { class: 'info-row' }, el('span', { class: 'label', text: label }), el('span', { class: 'value', text: value }));
+                return el('div', { class: 'campaign-card', 'data-id': camp.id },
+                    el('h3', { text: camp.nombre || 'Sin nombre' }),
+                    el('div', { class: 'info-row' }, el('span', { class: 'label', text: 'Estado' }), el('span', { class: 'badge ' + estado, text: estado.replace(/_/g, ' ') })),
+                    fila('Presupuesto', `$${parseFloat(camp.presupuesto || 0).toFixed(2)} ${camp.moneda || 'MXN'}`),
+                    fila('Gastado', `$${parseFloat(camp.gastado || 0).toFixed(2)}`),
+                    fila('Inicio', formatFecha(camp.fecha_inicio)),
+                    fila('Fin', formatFecha(camp.fecha_fin))
+                );
+            }));
+        }
+
+        function calculateSummary() {
+            let budget = 0, active = 0, spent = 0;
+            campaigns.forEach(c => {
+                if (['activa', 'pausada', 'finalizada'].includes(c.estado)) budget += parseFloat(c.presupuesto || 0);
+                spent += parseFloat(c.gastado || 0);
+                if (c.estado === 'activa') active++;
+            });
+            $('total-budget').textContent = `$${budget.toFixed(2)}`;
+            $('active-campaigns').textContent = active;
+            $('total-spent').textContent = `$${spent.toFixed(2)}`;
+            $('total-reach').textContent = '0';
+        }
+
+        function setupFilters() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.filter;
+                    renderCampaigns();
+                });
+            });
+            $('campaigns-list').addEventListener('click', (e) => {
+                const card = e.target.closest('.campaign-card');
+                if (card && card.dataset.id) openDetail(card.dataset.id);
+            });
+        }
+
+        function setupPromiEventos() {
+            $('promiToggle').addEventListener('click', togglePromi);
+            $('promiClose').addEventListener('click', togglePromi);
+            $('promiSend').addEventListener('click', () => enviarMensajePromi());
+            $('promiNewChat').addEventListener('click', resetPromi);
+            $('promiInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') enviarMensajePromi(); });
+            $('promiInitialOptions').addEventListener('click', (e) => {
+                const op = e.target.closest('.promi-option');
+                if (op && op.dataset.prompt) enviarMensajePromi(op.dataset.prompt);
+            });
+            $('lightboxClose').addEventListener('click', (e) => { e.stopPropagation(); cerrarLightbox(); });
+            $('lightboxModal').addEventListener('click', (e) => { if (e.target === $('lightboxModal')) cerrarLightbox(); });
+        }
+
+        /* ---------- Estrellas y compartir ---------- */
+        function initStarsRecommendation() {
+            const container = $('starsContainer');
+            const shareSection = $('shareButtons');
+            const starsWrap = $('starsWrap');
+            const btnToggle = $('btnToggleEstrellas');
+            if (!container) return;
+
+            for (let i = 0; i < 12; i++) {
+                const star = el('span', { class: 'star-icon', text: '💫' });
+                star.style.animationDelay = `${i * 0.1}s`;
+                container.append(star);
+            }
+
+            btnToggle.addEventListener('click', () => {
+                const oculto = starsWrap.classList.toggle('oculto');
+                btnToggle.textContent = oculto ? '👉 Mostrar estrellas' : '👉 Minimizar estrellas';
+            });
+
+            const urlEnlace = encodeURIComponent(URL_INVITACION);
+            const textoCompartir = encodeURIComponent(`Únete a ${MARCA}: crea tu cuenta y entra al ecosistema 🚀 💫`);
+
+            $('shareWa').href = `https://api.whatsapp.com/send?text=${textoCompartir}%20${urlEnlace}`;
+            $('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${urlEnlace}`;
+            $('shareTw').href = `https://twitter.com/intent/tweet?text=${textoCompartir}&url=${urlEnlace}`;
+
+            $('btnCompartirNativo').addEventListener('click', compartirNativo);
+
+            container.addEventListener('click', () => {
+                shareSection.style.display = 'flex';
+                showToast(`¡Gracias por recomendar ${MARCA}! 💫`, 'success');
+            });
+        }
+
+        function compartirNativo() {
+            if (navigator.share) {
+                navigator.share({
+                    title: MARCA,
+                    text: `Únete a ${MARCA}: crea tu cuenta y entra al ecosistema 🚀 💫`,
+                    url: URL_INVITACION
+                }).catch(() => {});
+            } else {
+                showToast('Tu navegador no soporta compartir nativo. Usa los botones de abajo.', 'warning');
+            }
+        }
+
+        /* ---------- Detalle de campaña ---------- */
+        async function openDetail(campaignId) {
+            const campaign = campaigns.find(c => c.id === campaignId); if (!campaign) return;
+            const estado = normalizeEstado(campaign.estado);
+            const restante = parseFloat(campaign.presupuesto || 0) - parseFloat(campaign.gastado || 0);
+
+            $('detail-title').textContent = '◈ ' + (campaign.nombre || 'Sin nombre');
+            const fila = (label, value) => el('div', { class: 'detail-row' }, el('span', { text: label }), el('span', { text: value }));
+            $('detail-info').replaceChildren(
+                el('div', { class: 'detail-row' }, el('span', { text: 'Estado' }), el('span', { class: 'badge ' + estado, text: estado.replace(/_/g, ' ') })),
+                fila('Presupuesto', `$${parseFloat(campaign.presupuesto || 0).toFixed(2)} ${campaign.moneda || 'MXN'}`),
+                fila('Gastado', `$${parseFloat(campaign.gastado || 0).toFixed(2)}`),
+                fila('Restante', `$${restante.toFixed(2)}`),
+                fila('Objetivo', campaign.objetivo || '—'),
+                fila('Inicio', formatFecha(campaign.fecha_inicio)),
+                fila('Fin', formatFecha(campaign.fecha_fin))
+            );
+
+            const actionsEl = $('detail-actions');
+            actionsEl.replaceChildren();
+            const boton = (texto, clase, onClick, estiloExtra) => {
+                const b = el('button', { class: clase, type: 'button', text: texto, style: estiloExtra || null });
+                b.addEventListener('click', onClick);
+                return b;
+            };
+            const peligro = 'border-color:var(--danger); color:var(--danger);';
+            if (estado === 'activa') {
+                actionsEl.append(
+                    boton('Pausar', 'btn btn-outline', () => cambiarEstadoCampana(campaign.id, 'pausada')),
+                    boton('Cancelar', 'btn btn-outline', () => cambiarEstadoCampana(campaign.id, 'cancelada'), peligro)
+                );
+            } else if (estado === 'pausada') {
+                actionsEl.append(
+                    boton('Reanudar', 'btn btn-outline', () => cambiarEstadoCampana(campaign.id, 'activa'), 'border-color:var(--success); color:var(--success);'),
+                    boton('Cancelar', 'btn btn-outline', () => cambiarEstadoCampana(campaign.id, 'cancelada'), peligro)
+                );
+            } else if (estado === 'pendiente_pago') {
+                actionsEl.append(
+                    boton('Pagar Ahora', 'btn btn-primary', () => pagarCampanaPendiente(campaign.id)),
+                    boton('Cancelar', 'btn btn-outline', () => cambiarEstadoCampana(campaign.id, 'cancelada'), peligro)
+                );
+            }
+
+            $('modal-detail').classList.remove('hidden');
+
+            const { data: stats, error } = await supabaseClient.from('marketing_daily_stats').select('*').eq('campaign_id', campaignId).order('fecha', { ascending: true });
+            if (error || !stats || stats.length === 0) {
+                $('detail-stats').replaceChildren(el('div', { style: 'grid-column:1/-1;text-align:center;padding:24px;color:var(--warning);font-size:0.72rem;line-height:1.6;' },
+                    'Las estadísticas aparecerán cuando la campaña', el('br'), 'comience a recibir tráfico.'));
+                return;
+            }
+
+            const t = stats.reduce((a, s) => ({
+                impresiones: a.impresiones + (s.impresiones || 0), alcance: a.alcance + (s.alcance || 0),
+                vistas: a.vistas + (s.vistas || 0), clics: a.clics + (s.clics || 0),
+                interacciones: a.interacciones + (s.interacciones || 0), reproducciones: a.reproducciones + (s.reproducciones || 0),
+                conversiones: a.conversiones + (s.conversiones || 0)
+            }), { impresiones: 0, alcance: 0, vistas: 0, clics: 0, interacciones: 0, reproducciones: 0, conversiones: 0 });
+
+            const item = (label, v) => el('div', { class: 'stat-item' }, el('div', { class: 'label', text: label }), el('div', { class: 'value', text: v.toLocaleString() }));
+            $('detail-stats').replaceChildren(
+                item('Alcance', t.alcance), item('Impresiones', t.impresiones), item('Vistas', t.vistas),
+                item('Clics', t.clics), item('Interacciones', t.interacciones), item('Reproducciones', t.reproducciones),
+                item('Conversiones', t.conversiones)
+            );
+            try { await loadChartJs(); renderCharts(stats); } catch (err) { logError('Chart.js:', err); }
+        }
+
+        async function cambiarEstadoCampana(id, nuevoEstado) {
+            if (!confirm(`¿Estás seguro de cambiar el estado a "${nuevoEstado}"?`)) return;
             try {
-                const token = await obtenerToken();
-                const r = await fetch(`${BACKEND_URL}/api/payments/marketing/status/${encodeURIComponent(pagoId)}`, { headers: { Authorization: 'Bearer ' + token } });
-                const j = await r.json().catch(() => ({}));
-                if (j.paid) { detenerPolling(); setEstado('✓ Pago confirmado. Tu anuncio está activo.'); showToast('Pago confirmado', 'success'); loadCampaigns(); return; }
-                if (j.revision_manual) { detenerPolling(); setEstado('El pago está en revisión. Te avisaremos al resolverse.'); return; }
-                if (j.failed) {
-                    detenerPolling();
-                    setEstado('✕ El pago falló o expiró. Puedes reintentar con otra dirección.');
-                    const btn = document.getElementById('btn-pay');
-                    if (btn) { btn.style.display = ''; btn.disabled = false; btn.textContent = '◈ Reintentar pago'; }
-                    if (campañaCreada) campañaCreada.pago = null;
-                    return;
+                const { error } = await supabaseClient.from('marketing_campaigns').update({ estado: nuevoEstado }).eq('id', id);
+                if (error) throw error;
+                showToast(`Campaña ${nuevoEstado}`, 'success');
+                $('modal-detail').classList.add('hidden');
+                await loadCampaigns();
+            } catch (err) {
+                logError(err);
+                showToast('Error al actualizar la campaña', 'error');
+            }
+        }
+
+        function renderCharts(stats) {
+            if (typeof Chart === 'undefined') return;
+            Object.values(currentChartInstances).forEach(c => { try { c.destroy(); } catch (e) {} });
+            currentChartInstances = {};
+            Chart.defaults.color = '#6b8a9e'; Chart.defaults.font.family = 'Inter, sans-serif'; Chart.defaults.font.size = 10;
+            const labels = stats.map(s => { try { return new Date(s.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' }); } catch { return ''; } });
+            const opts = { responsive: true, maintainAspectRatio: true, plugins: { legend: { display: false }, tooltip: { backgroundColor: 'rgba(4, 6, 13, 0.95)', borderColor: '#D4AF37', borderWidth: 1, titleColor: '#D4AF37', bodyColor: '#f0f4f8', padding: 10, cornerRadius: 8 } }, scales: { x: { ticks: { color: '#6b8a9e', font: { size: 9 } }, grid: { color: 'rgba(212, 175, 55, 0.05)' } }, y: { ticks: { color: '#6b8a9e', font: { size: 9 } }, grid: { color: 'rgba(212, 175, 55, 0.05)' } } } };
+
+            const ctxReach = $('chart-reach').getContext('2d');
+            const gradReach = ctxReach.createLinearGradient(0, 0, 0, 200); gradReach.addColorStop(0, 'rgba(212, 175, 55, 0.5)'); gradReach.addColorStop(1, 'rgba(212, 175, 55, 0)');
+            currentChartInstances.reach = new Chart(ctxReach, { type: 'line', data: { labels, datasets: [{ data: stats.map(s => s.alcance || 0), borderColor: '#D4AF37', backgroundColor: gradReach, fill: true, tension: 0.4, pointBackgroundColor: '#D4AF37', pointRadius: 4, borderWidth: 2 }] }, options: opts });
+
+            currentChartInstances.impressions = new Chart($('chart-impressions'), { type: 'bar', data: { labels, datasets: [{ data: stats.map(s => s.impresiones || 0), backgroundColor: 'rgba(0, 214, 143, 0.7)', borderRadius: 6 }] }, options: opts });
+
+            const ctxSpent = $('chart-spent').getContext('2d');
+            const gradSpent = ctxSpent.createLinearGradient(0, 0, 0, 200); gradSpent.addColorStop(0, 'rgba(255, 51, 102, 0.5)'); gradSpent.addColorStop(1, 'rgba(255, 51, 102, 0)');
+            currentChartInstances.spent = new Chart(ctxSpent, { type: 'line', data: { labels, datasets: [{ data: stats.map(s => s.gasto || 0), borderColor: '#ff3366', backgroundColor: gradSpent, fill: true, tension: 0.4, pointBackgroundColor: '#ff3366', pointRadius: 4, borderWidth: 2 }] }, options: opts });
+        }
+
+        /* ---------- Wizard de campañas ---------- */
+        function setupWizard() {
+            document.querySelectorAll('.close-modal').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const target = btn.dataset.close;
+                    $(target).classList.add('hidden');
+                    if (target === 'modal-create') detenerPolling();
+                });
+            });
+
+            document.querySelectorAll('.btn-option').forEach(btn => {
+                btn.addEventListener('click', () => cargarDestinos(btn.dataset.type));
+            });
+
+            const budgetInput = $('campaign-budget');
+            budgetInput.addEventListener('input', (e) => poblarRedesDePago(e.target.value));
+            budgetInput.addEventListener('change', (e) => poblarRedesDePago(e.target.value));
+
+            ['2', '3', '4', '5', '6'].forEach(n => {
+                const btn = document.querySelector(`#wizard-step-${n} .btn-next`);
+                if (btn) btn.addEventListener('click', () => handleWizardStep(n));
+            });
+
+            $('btn-pay').addEventListener('click', onPagarClick);
+        }
+
+        function abrirModalCrear() {
+            if (!currentUser) { showToast('Inicia sesión para crear campañas', 'warning'); return; }
+            $('modal-create').classList.remove('hidden');
+            resetWizard();
+        }
+
+        function limpiarCamposWizard() {
+            document.querySelectorAll('.wizard-step input, .wizard-step textarea').forEach(el0 => { el0.value = ''; el0.disabled = false; });
+            document.querySelectorAll('.wizard-step select').forEach(el0 => {
+                if (el0.id === 'campaign-objective') el0.selectedIndex = 0;
+                else if (el0.id !== 'select-target' && el0.id !== 'pay-currency') el0.value = '';
+                el0.disabled = false;
+            });
+            poblarRedesDePago('');
+            const btnPay = $('btn-pay');
+            btnPay.style.display = ''; btnPay.disabled = false; btnPay.textContent = '◈ Continuar al Pago';
+        }
+
+        function iniciarCampanaDesdePromi() {
+            $('promiPanel').classList.remove('active');
+            $('modal-create').classList.remove('hidden');
+
+            const mediaIdGuardada = wizard.media_id;
+            const mediaTipoGuardado = wizard.media_tipo;
+
+            detenerPolling();
+            campanaCreada = null;
+            wizard = {};
+            if (mediaIdGuardada) {
+                wizard.media_id = mediaIdGuardada;
+                wizard.media_tipo = mediaTipoGuardado;
+            }
+
+            limpiarCamposWizard();
+            showWizardStep('1');
+        }
+
+        async function cargarDestinos(tipo) {
+            const mediaIdGuardada = wizard.media_id;
+            const mediaTipoGuardado = wizard.media_tipo;
+
+            wizard = { target_tipo: tipo };
+            if (mediaIdGuardada) {
+                wizard.media_id = mediaIdGuardada;
+                wizard.media_tipo = mediaTipoGuardado;
+            }
+
+            const select = $('select-target');
+            select.replaceChildren(el('option', { value: '', text: 'Cargando...' }));
+            try {
+                let query;
+                if (tipo === 'live') {
+                    query = supabaseClient.from('transmisiones').select('id, titulo').eq('estado', 'en_vivo').eq('is_live', true).is('grupo_id', null).order('fecha_inicio', { ascending: false }).limit(50);
+                } else if (tipo === 'video') {
+                    query = supabaseClient.from('videos').select('id, titulo').order('created_at', { ascending: false }).limit(50);
+                } else {
+                    query = supabaseClient.from('grupos_video').select('id, nombre').order('created_at', { ascending: false }).limit(50);
                 }
-                setEstado('Esperando confirmación de la red…');
-            } catch (e) {}
-            if (intentos >= MAX_POLL_INTENTOS) { detenerPolling(); setEstado('Aún sin confirmar. Revisa "Pendientes" más tarde.'); }
-        }, INTERVALO_POLL_MS);
-    }
+                const { data, error } = await query; if (error) throw error;
 
-    async function pagarCampanaPendiente(campaignId) {
-        const campaign = campaigns.find(c => c.id === campaignId);
-        if (!campaign) return;
-        document.getElementById('modal-detail').classList.add('hidden');
-        document.getElementById('modal-create').classList.remove('hidden');
-        campañaCreada = { campaign_id: campaign.id, pago: null };
-        wizard = {
-            nombre: campaign.nombre,
-            objetivo: campaign.objetivo,
-            presupuesto: Number(campaign.presupuesto),
-            pay_currency: null,
-            target_tipo: null,
-            ad: { titulo: campaign.nombre }
-        };
-        document.getElementById('summary-content').innerHTML = `
-            <div class="detail-row"><span>Campaña</span><span>${escapeHTML(campaign.nombre)}</span></div>
-            <div class="detail-row"><span>Presupuesto</span><span>$${Number(campaign.presupuesto).toFixed(2)} MXN</span></div>
-            <div class="red-info">◈ Elige la red de pago para generar la dirección.</div>
-        `;
-        showWizardStep('7');
-        const btn = document.getElementById('btn-pay');
-        btn.style.display = '';
-        btn.disabled = false;
-        btn.textContent = '◈ Generar dirección de pago';
-        btn.onclick = async () => {
-            const red = prompt('Red de pago (ej: usdttrc20, usdtbsc, usdtmatic, usdtsol, usdcmatic, usdterc20):');
-            if (!red) return;
-            wizard.pay_currency = red.trim().toLowerCase();
-            btn.onclick = null;
-            onPagarClick();
-        };
-    }
+                if (tipo === 'video') {
+                    const opciones = [el('option', { value: '__feed__', text: '◈ Feed viral completo (todos los videos)' })];
+                    (data || []).forEach(t => opciones.push(el('option', { value: t.id, text: '▶ ' + (t.titulo || 'Sin título') })));
+                    select.replaceChildren(...opciones);
+                } else if (!data || data.length === 0) {
+                    select.replaceChildren(el('option', { value: '', text: tipo === 'live' ? 'No hay transmisiones en vivo ahora' : 'No hay grupos disponibles' }));
+                } else {
+                    select.replaceChildren(...data.map(t => el('option', { value: t.id, text: (tipo === 'live' ? t.titulo : t.nombre) || 'Sin nombre' })));
+                }
+            } catch (err) {
+                logError('Destinos:', err);
+                select.replaceChildren(el('option', { value: '', text: 'No se pudieron cargar los destinos' }));
+                showToast('No se pudieron cargar los destinos. Intenta de nuevo.', 'error');
+            }
+            showWizardStep('2');
+        }
 
-    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+        function showWizardStep(n) {
+            document.querySelectorAll('.wizard-step').forEach(el0 => el0.classList.add('hidden'));
+            const t = $(`wizard-step-${n}`);
+            if (t) t.classList.remove('hidden');
 
-    window.openDetail = openDetail;
-    window.cambiarEstadoCampana = cambiarEstadoCampana;
-    window.pagarCampanaPendiente = pagarCampanaPendiente;
-    window.abrirModalCrear = abrirModalCrear;
-    window.cambiarTab = cambiarTab;
-    window.togglePromi = togglePromi;
-    window.enviarMensajePromi = enviarMensajePromi;
-    window.resetPromi = resetPromi;
-    window.aceptarMedia = aceptarMedia;
-    window.iniciarCampanaDesdePromi = iniciarCampanaDesdePromi;
-    window.copiarDireccionPago = copiarDireccionPago;
-    window.abrirLightbox = abrirLightbox;
-    window.cerrarLightbox = cerrarLightbox;
-    window.compartirNativo = compartirNativo;
+            if (n === '6') {
+                const mediaEl = $('ad-media-aceptada');
+                const imgInput = $('ad-image');
+                const vidInput = $('ad-video');
+
+                if (wizard.media_id) {
+                    mediaEl.style.display = 'block';
+                    mediaEl.replaceChildren(
+                        document.createTextNode('✦ Usarás contenido '),
+                        el('strong', { text: wizard.media_tipo || 'IA' }),
+                        document.createTextNode(' aceptado. Las URL manuales se ignorarán.')
+                    );
+                    imgInput.value = ''; imgInput.disabled = true;
+                    vidInput.value = ''; vidInput.disabled = true;
+                } else {
+                    mediaEl.style.display = 'none';
+                    imgInput.disabled = false;
+                    vidInput.disabled = false;
+                }
+            }
+        }
+
+        function resetWizard() {
+            detenerPolling(); wizard = {}; campanaCreada = null;
+            limpiarCamposWizard();
+            showWizardStep('1');
+        }
+
+        function handleWizardStep(n) {
+            if (n === '2') {
+                const id = $('select-target').value;
+                if (!id) { showToast('Selecciona un destino', 'warning'); return; }
+                wizard.target_id = wizard.target_tipo === 'live' ? Number(id) : id;
+                showWizardStep('3');
+            }
+            else if (n === '3') {
+                const nombre = $('campaign-name').value.trim();
+                if (!nombre) { showToast('Escribe un nombre', 'warning'); return; }
+                if (nombre.length > 120) { showToast('Máximo 120 caracteres', 'warning'); return; }
+                wizard.nombre = nombre;
+                showWizardStep('4');
+            }
+            else if (n === '4') {
+                const objetivo = $('campaign-objective').value;
+                if (!OBJETIVOS_VALIDOS.includes(objetivo)) { showToast('Elige un objetivo', 'warning'); return; }
+                wizard.objetivo = objetivo;
+                showWizardStep('5');
+            }
+            else if (n === '5') {
+                const budget = parseFloat($('campaign-budget').value);
+                if (!budget || budget <= 0) { showToast('Ingresa un presupuesto válido', 'warning'); return; }
+                if (budget > 1000000) { showToast('Presupuesto demasiado alto', 'warning'); return; }
+                const red = $('pay-currency').value;
+                if (!red) { showToast('Selecciona una red de pago válida para tu monto', 'warning'); return; }
+                wizard.presupuesto = budget;
+                wizard.pay_currency = red;
+                showWizardStep('6');
+            }
+            else if (n === '6') {
+                const titulo = $('ad-title').value.trim();
+                const descripcion = $('ad-description').value.trim();
+                const imagen = $('ad-image').value.trim();
+                const video = $('ad-video').value.trim();
+                const cta = $('ad-cta').value.trim();
+
+                if (!titulo) { showToast('Escribe un título', 'warning'); return; }
+
+                if (wizard.media_id) {
+                    wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: null, video_url: null, cta_texto: cta || 'Ver más' };
+                } else {
+                    if (imagen && !isValidHttpUrl(imagen)) { showToast('URL de imagen inválida', 'warning'); return; }
+                    if (video && !isValidHttpUrl(video)) { showToast('URL de video inválida', 'warning'); return; }
+                    if (!imagen && !video) { showToast('Incluye una imagen, un video o acepta una media IA', 'warning'); return; }
+                    wizard.ad = { titulo, descripcion: descripcion || null, imagen_url: imagen || null, video_url: video || null, cta_texto: cta || 'Ver más' };
+                }
+                mostrarResumen();
+                showWizardStep('7');
+            }
+        }
+
+        function mostrarResumen() {
+            const red = REDES_PAGO.find(r => r.value === wizard.pay_currency);
+            const usd = (wizard.presupuesto * MXN_A_USD_APROX).toFixed(2);
+            const filas = [
+                ['Campaña', wizard.nombre],
+                ['Destino', (wizard.target_tipo || '').toUpperCase()],
+                ['Objetivo', wizard.objetivo],
+                ['Presupuesto', `$${wizard.presupuesto.toFixed(2)} MXN`],
+                ['Red de pago', red ? red.label : wizard.pay_currency],
+                ['A pagar aprox', `~$${usd} USD`]
+            ];
+            if (wizard.media_id) filas.push(['Creativo', `✦ Media IA (${wizard.media_tipo || 'contenido'})`]);
+            filas.push(['Anuncio', wizard.ad.titulo]);
+            $('summary-content').replaceChildren(...filas.map(([l, v]) =>
+                el('div', { class: 'detail-row' }, el('span', { text: l }), el('span', { text: String(v || '') }))
+            ));
+        }
+
+        /* ---------- Pago ---------- */
+        async function onPagarClick() {
+            const btn = $('btn-pay'); btn.disabled = true;
+            try {
+                let pago;
+                if (campanaCreada && campanaCreada.pago) {
+                    pago = campanaCreada.pago;
+                } else if (campanaCreada && campanaCreada.campaign_id) {
+                    btn.textContent = '◈ Generando pago...';
+                    const r = await fetchAutorizado(`${BACKEND_URL}/api/payments/marketing/create`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ campaignId: campanaCreada.campaign_id, payCurrency: wizard.pay_currency })
+                    });
+                    const j = await r.json().catch(() => ({}));
+                    if (!r.ok || !j.success || !j.data?.pay_address) throw new Error(j.error || 'No se pudo generar el pago. Intenta de nuevo.');
+                    pago = {
+                        pago_id: j.data.pago_id,
+                        payment_id: j.data.payment_id,
+                        pay_address: j.data.pay_address,
+                        pay_amount: j.data.pay_amount,
+                        pay_currency: j.data.pay_currency,
+                        monto_mxn: j.data.monto_mxn
+                    };
+                    campanaCreada.pago = pago;
+                } else {
+                    if (!OBJETIVOS_VALIDOS.includes(wizard.objetivo)) {
+                        showToast('Vuelve al Paso 04 y elige un objetivo', 'warning', 5000);
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    btn.textContent = '◈ Generando pago...';
+                    const body = {
+                        nombre: wizard.nombre,
+                        objetivo: wizard.objetivo,
+                        presupuesto: wizard.presupuesto,
+                        destino_tipo: wizard.target_tipo,
+                        destino_id: wizard.target_id,
+                        pay_currency: wizard.pay_currency,
+                        ad: wizard.ad
+                    };
+                    if (wizard.media_id) body.media_id = wizard.media_id;
+
+                    const r = await fetchAutorizado(`${BACKEND_URL}/api/campanas/crear`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(body)
+                    });
+                    const j = await r.json().catch(() => ({}));
+                    if (!r.ok || !j.success || !j.data?.pago?.pay_address) throw new Error(j.error || 'No se pudo generar el pago. Intenta de nuevo.');
+
+                    campanaCreada = { campaign_id: j.data.campaign_id, pago: j.data.pago };
+                    pago = j.data.pago;
+                }
+
+                mostrarPagoPendiente(pago);
+                loadCampaigns();
+            } catch (err) {
+                logError('Pago:', err);
+                showToast(err.message, 'error', 5000);
+                btn.disabled = false;
+                btn.textContent = campanaCreada ? '◈ Reintentar pago' : '◈ Continuar al Pago';
+            }
+        }
+
+        function mostrarPagoPendiente(pago) {
+            const monto = Number(pago.pay_amount);
+            const montoTxt = Number.isFinite(monto) && monto > 0 ? monto.toString() : '—';
+            const moneda = String(pago.pay_currency || '').toUpperCase();
+
+            const copiarBtn = el('button', { class: 'btn btn-primary', type: 'button', style: 'margin-top:12px;', text: 'Copiar dirección' });
+            copiarBtn.addEventListener('click', () => copiarDireccionPago(pago.pay_address));
+
+            $('summary-content').replaceChildren(
+                el('div', { class: 'red-info' }, '◈ Envía exactamente ', el('strong', { text: `${montoTxt} ${moneda}` }), ' a la dirección de abajo. Tu campaña se activa al confirmarse el pago.'),
+                el('div', { class: 'red-info', style: 'word-break:break-all;margin-top:10px;font-family:Space Mono,monospace;', text: pago.pay_address }),
+                copiarBtn,
+                el('div', { id: 'pago-estado', class: 'red-info', style: 'margin-top:12px;', text: 'Esperando confirmación de la red…' })
+            );
+            $('btn-pay').style.display = 'none';
+            pollearPago(pago.pago_id);
+        }
+
+        function copiarDireccionPago(direccion) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(direccion)
+                    .then(() => showToast('Dirección copiada', 'success'))
+                    .catch(() => showToast('No se pudo copiar. Selecciónala manualmente.', 'warning'));
+            } else {
+                showToast('Selecciona la dirección y cópiala manualmente.', 'warning');
+            }
+        }
+
+        function detenerPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+        function pollearPago(pagoId) {
+            detenerPolling();
+            let intentos = 0;
+            const setEstado = (txt) => { const e0 = $('pago-estado'); if (e0) e0.textContent = txt; };
+            pollTimer = setInterval(async () => {
+                intentos++;
+                try {
+                    const r = await fetchAutorizado(`${BACKEND_URL}/api/payments/marketing/status/${encodeURIComponent(pagoId)}`);
+                    const j = await r.json().catch(() => ({}));
+                    if (j.paid) { detenerPolling(); setEstado('✓ Pago confirmado. Tu anuncio está activo.'); showToast('Pago confirmado', 'success'); loadCampaigns(); return; }
+                    if (j.revision_manual) { detenerPolling(); setEstado('El pago está en revisión. Te avisaremos al resolverse.'); return; }
+                    if (j.failed) {
+                        detenerPolling();
+                        setEstado('✕ El pago falló o expiró. Puedes reintentar con otra dirección.');
+                        const btn = $('btn-pay');
+                        btn.style.display = ''; btn.disabled = false; btn.textContent = '◈ Reintentar pago';
+                        if (campanaCreada) campanaCreada.pago = null;
+                        return;
+                    }
+                    setEstado('Esperando confirmación de la red…');
+                } catch (e) { /* reintenta en el siguiente ciclo */ }
+                if (intentos >= MAX_POLL_INTENTOS) { detenerPolling(); setEstado('Aún sin confirmar. Revisa "Pendientes" más tarde.'); }
+            }, INTERVALO_POLL_MS);
+        }
+
+        async function pagarCampanaPendiente(campaignId) {
+            const campaign = campaigns.find(c => c.id === campaignId);
+            if (!campaign) return;
+            $('modal-detail').classList.add('hidden');
+            $('modal-create').classList.remove('hidden');
+            campanaCreada = { campaign_id: campaign.id, pago: null };
+            wizard = {
+                nombre: campaign.nombre,
+                objetivo: campaign.objetivo,
+                presupuesto: Number(campaign.presupuesto),
+                pay_currency: null,
+                target_tipo: null,
+                ad: { titulo: campaign.nombre }
+            };
+            $('summary-content').replaceChildren(
+                el('div', { class: 'detail-row' }, el('span', { text: 'Campaña' }), el('span', { text: campaign.nombre || '' })),
+                el('div', { class: 'detail-row' }, el('span', { text: 'Presupuesto' }), el('span', { text: `$${Number(campaign.presupuesto).toFixed(2)} MXN` })),
+                el('div', { class: 'red-info', text: '◈ Elige la red de pago para generar la dirección.' })
+            );
+            showWizardStep('7');
+            const btn = $('btn-pay');
+            btn.style.display = ''; btn.disabled = false; btn.textContent = '◈ Generar dirección de pago';
+            btn.onclick = async () => {
+                const red = prompt('Red de pago (ej: usdttrc20, usdtbsc, usdtmatic, usdtsol, usdcmatic, usdterc20):');
+                if (!red) return;
+                wizard.pay_currency = red.trim().toLowerCase();
+                btn.onclick = null;
+                onPagarClick();
+            };
+        }
+
+        /* ---------- Arranque ---------- */
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
     </script>
 </body>
 </html>
