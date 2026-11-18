@@ -6,6 +6,8 @@
 // Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js,
 //             grupos-marketplace.js (mkTarjetaCompraHTML),
 //             reacciones-global.js (ReaccionesGlobal)
+// v3.3: emojis unificados con perfil-publicaciones.js
+//       (mismo picker, mismas clases de animación, mismo CSS).
 // v3.2: reacciones unificadas a ❤️ 😂 🥺 💎 (reacciones-global.js),
 //       con animación de emojis y normalización de valores antiguos.
 // v3.1: menú completo para el autor (+ eliminar); borrado por RPC.
@@ -14,6 +16,56 @@
 //   - Avatar del autor visible para todos; sin foto, muestra la inicial.
 //   - Caja de comentarios más grande.
 // ================================================================
+
+// ================================================================
+// EMOJIS · CONFIGURACIÓN COMPARTIDA CON PERFIL
+// ================================================================
+var GRP_CSS_EMOJIS = '/features/perfil/css/emojis-animations.css';
+
+var GRP_CLASES_EMOJI = {
+    '❤️': 'emo-corazon',
+    '😂': 'emo-risa',
+    '🥺': 'emo-brillo',
+    '💎': 'emo-diamante',
+    '🤩': 'emo-estrellas'
+};
+
+var GRP_CLASES_EMOJI_TODAS = ['emo-corazon', 'emo-risa', 'emo-brillo', 'emo-diamante', 'emo-estrellas', 'emo-fluido'];
+
+var GRP_EMOJIS_PICKER_DEFAULT = [
+'😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😋','😛','😜',
+'🤪','😎','🥳','😏','😒','😞','😔','😟','😕','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤯',
+'😳','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🙄','😴','🤒','👍','👎','👏','🙌','🙏','🤝','💪','✌️',
+'🤞','👌','❤️','🧡','💛','💚','💙','💜','🖤','💔','💯','🤩','⭐','✨','🎉','🎊','🎈','🎁','🏆','🥇',
+'☕','🍕','🍔','🌮','🍩','🎵','🎶','🐶','🐱','🌹','🌈','☀️','🌙','⚡','💰','🚀','📸'
+];
+
+function grpCargarCssEmojis() {
+    if (document.querySelector('link[href="' + GRP_CSS_EMOJIS + '"]')) return;
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = GRP_CSS_EMOJIS;
+    document.head.appendChild(link);
+}
+
+grpCargarCssEmojis();
+
+function grpClaseEmoji(emoji) {
+    return GRP_CLASES_EMOJI[emoji] || 'emo-fluido';
+}
+
+// Motor local (fallback si ReaccionesGlobal no está disponible)
+function grpAplicarMotorEmojiLocal(el, emoji) {
+    if (!el) return;
+    GRP_CLASES_EMOJI_TODAS.forEach(function (clase) {
+        el.classList.remove(clase);
+    });
+    el.classList.add(grpClaseEmoji(emoji));
+    var duracion = 1.6 + Math.random() * 1.2;
+    var retraso = -Math.random() * duracion;
+    el.style.setProperty('--dur', duracion.toFixed(2) + 's');
+    el.style.setProperty('--delay', retraso.toFixed(2) + 's');
+}
 
 // ================================================================
 // REACCIONES Y AVATARES
@@ -27,9 +79,15 @@ function normalizarReaccion(tipo) {
     return RG_GRUPOS ? RG_GRUPOS.normalizar(tipo) : (REACCIONES_DISPONIBLES.indexOf(tipo) !== -1 ? tipo : '❤️');
 }
 
-// Aplica la animación del emoji (clase + duración aleatoria)
+// Aplica la animación del emoji (clase + duración aleatoria).
+// Usa ReaccionesGlobal si está disponible; si no, el motor local.
 function animarEmojiGrupo(el, emoji) {
-    if (RG_GRUPOS && el) RG_GRUPOS.aplicarMotor(el, emoji);
+    if (!el) return;
+    if (RG_GRUPOS && typeof RG_GRUPOS.aplicarMotor === 'function') {
+        RG_GRUPOS.aplicarMotor(el, emoji);
+    } else {
+        grpAplicarMotorEmojiLocal(el, emoji);
+    }
 }
 
 // Avatar: foto si existe; si no, la inicial del nombre (nunca un símbolo vacío)
@@ -1315,15 +1373,23 @@ function abrirFormPublicacion() {
     if (form.style.display === 'block') document.getElementById('inputPublicacion').focus();
 }
 
+function grpEmojisPicker() {
+    return (Array.isArray(window.emojisDisponibles) && window.emojisDisponibles.length)
+        ? window.emojisDisponibles
+        : GRP_EMOJIS_PICKER_DEFAULT;
+}
+
 function toggleEmojiPickerGrupo() {
     var picker = document.getElementById('emojiPickerGrupo');
     if (!picker) return;
     if (picker.classList.contains('show')) { picker.classList.remove('show'); return; }
     var grid = document.getElementById('emojiGridGrupo');
     if (grid && grid.children.length === 0) {
-        emojisDisponibles.forEach(function(emoji) {
+        grpEmojisPicker().forEach(function(emoji) {
             var btn = document.createElement('button');
             btn.textContent = emoji;
+            // Aplica la animación del emoji también en el picker
+            animarEmojiGrupo(btn, emoji);
             btn.addEventListener('click', function(e) {
                 e.stopPropagation();
                 insertarEmojiSeleccionadoGrupo(emoji);
