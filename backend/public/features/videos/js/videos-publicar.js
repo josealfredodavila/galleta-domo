@@ -1,16 +1,10 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.5
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.6
    ================================================================
-   Cambios respecto a v3.4:
-   - Refactorización de seguridad y rendimiento.
-   - Fuga de memoria AudioContext solucionada.
-   - Optimización de IndexedDB (límite de peso para no bloquear).
-   - Limpieza global de Object URLs (evita fugas en RAM).
-   - Validación de URL de audio con new URL().
-   - Protección contra doble subida (Race Condition).
-   - MutationObserver optimizado (#videosContainer).
-   - Pausa global de videos en visibilitychange.
-   - Corrección de validación de cuota (>=).
+   Cambios respecto a v3.5:
+   - Añadido menú funcional de 3 puntos en el feed (Guardar, Compartir, Reportar).
+   - El video se pausa automáticamente al abrir el menú del feed.
+   - Se mantiene toda la base de seguridad, rendimiento y memoria.
    ================================================================ */
 
 (function () {
@@ -1601,7 +1595,7 @@
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
     // ============================================================
-    // FEED · controles (sin reacciones/compartir, con pausa)
+    // FEED · controles (menú funcional de 3 puntos)
     // ============================================================
     function inyectarEstilosFeed() {
         if ($('cs-feed-ui')) return;
@@ -1616,8 +1610,104 @@
             .video-card .cs-pausa-btn { cursor: pointer; }
             .video-card .cs-pausa-btn .icono { display: flex; align-items: center; justify-content: center; }
             .video-card .cs-pausa-btn svg { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
+            
+            /* NUEVO: Estilos del menú de opciones del feed */
+            .cs-feed-options-menu {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: #1a1a1a;
+                border-top-left-radius: 20px;
+                border-top-right-radius: 20px;
+                padding: 20px;
+                z-index: 999999;
+                transform: translateY(100%);
+                transition: transform 0.3s ease;
+                display: flex;
+                flex-direction: column;
+                gap: 15px;
+            }
+            .cs-feed-options-menu.show {
+                transform: translateY(0);
+            }
+            .cs-feed-options-menu button {
+                background: transparent;
+                border: none;
+                color: #fff;
+                font-size: 1rem;
+                text-align: left;
+                padding: 10px;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+            .cs-feed-options-menu button:hover {
+                background: rgba(255,255,255,0.1);
+                border-radius: 8px;
+            }
         `;
-        document.head.appendChild(st);}
+        document.head.appendChild(st);
+    }
+
+    // Función para abrir el menú de opciones
+    function abrirMenuOpcionesFeed(videoSrc) {
+        document.querySelector('.cs-feed-options-menu')?.remove();
+
+        const menu = document.createElement('div');
+        menu.className = 'cs-feed-options-menu';
+        menu.innerHTML = `
+            <button id="csBtnGuardarFeed"><span>⬇️</span> Guardar video</button>
+            <button id="csBtnCompartirFeed"><span>↗️</span> Compartir</button>
+            <button id="csBtnReportarFeed"><span>🚩</span> Reportar</button>
+            <button id="csBtnCerrarMenuFeed" style="color: #ff4d4d; justify-content: center; margin-top: 10px; font-weight: bold;">Cancelar</button>
+        `;
+        document.body.appendChild(menu);
+        
+        // Forzar reflow para que la animación funcione
+        void menu.offsetWidth;
+        menu.classList.add('show');
+
+        const cerrar = () => {
+            menu.classList.remove('show');
+            setTimeout(() => menu.remove(), 300);
+        };
+
+        menu.querySelector('#csBtnGuardarFeed').addEventListener('click', () => {
+            csToast('Función de guardar en desarrollo', 'info');
+            cerrar();
+        });
+
+        menu.querySelector('#csBtnCompartirFeed').addEventListener('click', () => {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'Mira este video en Csariel\'s',
+                    url: videoSrc
+                }).catch(() => {});
+            } else {
+                navigator.clipboard.writeText(videoSrc);
+                csToast('Enlace copiado al portapapeles', 'success');
+            }
+            cerrar();
+        });
+
+        menu.querySelector('#csBtnReportarFeed').addEventListener('click', () => {
+            csToast('Función de reporte en desarrollo', 'info');
+            cerrar();
+        });
+
+        menu.querySelector('#csBtnCerrarMenuFeed').addEventListener('click', cerrar);
+
+        // Cerrar al hacer clic fuera
+        const overlayClick = (e) => {
+            if (!menu.contains(e.target)) {
+                cerrar();
+                document.removeEventListener('click', overlayClick);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', overlayClick), 100);
+    }
 
     function decorarTarjeta(card) {
         if (!card || card.dataset.csDecorada === '1') return;
@@ -1657,6 +1747,32 @@
             }
             pintar();
         });
+
+        // NUEVO: Inyectar botón de 3 puntos si no existe
+        if (!acciones.querySelector('.cs-btn-opciones-feed')) {
+            const btnOpciones = document.createElement('button');
+            btnOpciones.type = 'button';
+            btnOpciones.className = 'sidebar-btn cs-btn-opciones-feed';
+            btnOpciones.setAttribute('aria-label', 'Más opciones');
+            // Icono de 3 puntos
+            btnOpciones.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
+            
+            // Insertar al final de las acciones (debajo del icono de compartir o similar)
+            acciones.appendChild(btnOpciones);
+
+            btnOpciones.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                // Pausar el video al abrir el menú para evitar distracciones
+                video.pause();
+                card.classList.remove('playing');
+                pintar();
+                
+                // Obtener la URL del video actual
+                const videoSrc = video.src || video.dataset.src || '';
+                abrirMenuOpcionesFeed(videoSrc);
+            });
+        }
     }
 
     function observarFeed() {
@@ -2516,7 +2632,7 @@
         observarFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v3.5 listo');
+        log('✅ Módulo Publicar v3.6 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
