@@ -214,9 +214,18 @@
         }
         .reac-barra.show { display: flex; animation: reacIn 0.18s ease; }
         @keyframes reacIn { from { opacity: 0; transform: translateX(8px) scale(0.92); } to { opacity: 1; transform: none; } }
-        .reac-op { width: 38px; height: 38px; border-radius: 50%; background: transparent; border: 0; font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .reac-op { width: 38px; height: 38px; border-radius: 50%; background: transparent; border: 0; font-size: 1.3rem; cursor: pointer; display: flex; align-items: center; justify-content: center; overflow: visible; }
         .reac-op:active { transform: scale(0.88); }
         .reac-op.activa { background: rgba(255,255,255,0.12); }
+
+        /* Animación de emojis (la clase de motor la aplica reacciones-global.js) */
+        .reac-op, .reac-emoji {
+            transform-origin: 50% 60%;
+            animation-duration: var(--dur, 2.4s);
+            animation-delay: var(--delay, 0s);
+            animation-iteration-count: infinite;
+            animation-timing-function: cubic-bezier(0.36, 0.07, 0.19, 0.97);
+        }
 
         .video-card .barra-inferior { position: absolute; left: 0; right: 0; bottom: 0; z-index: 6; padding: 8px 12px 10px; background: linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 100%); }
         .video-card .fila-tiempo { display: flex; align-items: center; justify-content: space-between; font-size: 0.65rem; font-family: 'Orbitron', monospace; color: #fff; margin-bottom: 4px; }
@@ -450,6 +459,7 @@
     <script src="/features/videos/js/videos-camara.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js?v=6"></script>
+    <script src="/features/shared/js/reacciones-global.js"></script>
     <script src="/features/videos/js/videos-publicar.js" defer></script>
 
     <script>
@@ -466,8 +476,10 @@
         } catch (e) { console.error('[Videos] Error creando cliente:', e); }
     })();
 
-    var REACCIONES = ['👍', '🥰', '🥺', '😳', '😆', '😠'];
-    var REACCION_DEFAULT = '👍';
+    // Lista de reacciones única para todo el ecosistema (reacciones-global.js)
+    var RG = window.ReaccionesGlobal;
+    var REACCIONES = RG ? RG.EMOJIS.slice() : ['❤️', '😂', '🥺', '💎'];
+    var REACCION_DEFAULT = RG ? RG.POR_DEFECTO : '❤️';
     var NAV_PERFIL = '/features/perfil/perfil.html';
     var MOTIVOS_REPORTE = ['Spam', 'Contenido inapropiado', 'Violencia', 'Acoso', 'Otro'];
 
@@ -509,6 +521,11 @@
 
     function svgIcono(contenido) {
         return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + contenido + '</svg>';
+    }
+
+    // Aplica la animación del emoji a un elemento (clase + duración aleatoria)
+    function animarEmoji(el, emoji) {
+        if (RG && el) RG.aplicarMotor(el, emoji);
     }
 
     function pausarOtrosVideos(videoQueSuena) {
@@ -721,7 +738,8 @@
             likeCache.clear();
             reaccionesCache.clear();
             (result.data || []).forEach(function (r) {
-                var tipo = r.tipo || REACCION_DEFAULT;
+                // Valores antiguos (👍, 🥰, nulos) se muestran como ❤️
+                var tipo = RG ? RG.normalizar(r.tipo) : (r.tipo || REACCION_DEFAULT);
                 likeCache.set(r.video_id + '_' + r.usuario_id, tipo);
                 if (!reaccionesCache.has(r.video_id)) reaccionesCache.set(r.video_id, { totales: {} });
                 var obj = reaccionesCache.get(r.video_id);
@@ -767,7 +785,7 @@
         html += '<div class="sidebar-acciones">';
         html += '<div class="acc-grupo">';
         html += '<button type="button" class="acc-btn reac-btn" data-video-id="' + id + '" aria-label="Reaccionar">';
-        html += miTipo ? '<span class="reac-emoji">' + escapeHTML(miTipo) + '</span>' : ICONO.corazon;
+        html += miTipo ? '<span class="reac-emoji emoji-actual">' + escapeHTML(miTipo) + '</span>' : ICONO.corazon;
         html += '</button>';
         html += '<span class="acc-n" id="likeCount-' + id + '">' + formatContador(total) + '</span>';
         html += '<div class="reac-barra" id="reac-' + id + '">';
@@ -789,6 +807,11 @@
         card.className = 'video-card';
         card.dataset.videoId = v.id;
         card.innerHTML = html;
+
+        // Animación de cada emoji del menú y del botón de reacción
+        card.querySelectorAll('.reac-op').forEach(function (op) { animarEmoji(op, op.dataset.e); });
+        var emojiBtn = card.querySelector('.reac-emoji');
+        if (emojiBtn) animarEmoji(emojiBtn, miTipo);
 
         var videoEl = card.querySelector('video');
         videoEl.muted = false; videoEl.volume = 1; videoEl.removeAttribute('muted');
@@ -814,7 +837,11 @@
         if (!card) return;
         var miTipo = sessionUser ? likeCache.get(videoId + '_' + sessionUser.id) : null;
         var btn = card.querySelector('.reac-btn');
-        if (btn) btn.innerHTML = miTipo ? '<span class="reac-emoji">' + escapeHTML(miTipo) + '</span>' : ICONO.corazon;
+        if (btn) {
+            btn.innerHTML = miTipo ? '<span class="reac-emoji emoji-actual">' + escapeHTML(miTipo) + '</span>' : ICONO.corazon;
+            var nuevo = btn.querySelector('.reac-emoji');
+            if (nuevo) animarEmoji(nuevo, miTipo);
+        }
         var conteo = document.getElementById('likeCount-' + videoId);
         if (conteo) conteo.textContent = formatContador(contarReacciones(videoId, 0));
         card.querySelectorAll('.reac-op').forEach(function (op) {
