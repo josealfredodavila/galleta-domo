@@ -1,12 +1,12 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.5 IMMERSIVE PLAYER + SCRUBBING FLUIDO + SECURE DOM
+// v14.6 IMMERSIVE PLAYER + SCRUBBING FLUIDO + SECURE DOM + PIP FIX
 // ================================================================
-// ACTUALIZACIONES v14.5:
-// 1. Auto-hide controls (2.5s) para efecto inmersivo.
-// 2. Tap to toggle Play/Pause en toda la pantalla.
-// 3. Barra de progreso interactiva con pointermove (scrubbing).
-// 4. Se mantiene toda la base de seguridad y memoria de v14.4.
+// ACTUALIZACIONES v14.6:
+// 1. Eliminado botón rojo de cierre en el centro.
+// 2. Play/Pause central unificado (solo aparece al pausar).
+// 3. El visor se oculta automáticamente al entrar a PiP para navegar por el ecosistema.
+// 4. Se mantiene la base de seguridad, memoria y emojis de v14.5.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -264,7 +264,8 @@ var pubVisor = {
     modoLleno: false,
     videoActual: null,
     timeoutOcultarControles: null,
-    arrastrandoProgreso: false
+    arrastrandoProgreso: false,
+    estabaVisibleAntesDePip: false
 };
 
 // Controla la visibilidad de los controles (Header + Progress Bar)
@@ -341,13 +342,11 @@ function pubVisorEl() {
 
         '<div class="pub-vf-media"></div>' +
 
-        // Se mantiene el contenedor central por compatibilidad, pero ahora es invisible
-        // y solo se usa para alojar los iconos si el video está pausado.
+        // Controles centrales (solo Play/Pausa)
         '<div class="pub-vf-center-controls" id="pubVfCenterControls" style="display:none;">' +
-            '<button type="button" class="pub-vf-big-play" id="btnPubVfBigPlay" aria-label="Reproducir">' +
+            '<button type="button" class="pub-vf-big-play" id="btnPubVfBigPlay" aria-label="Reproducir / Pausar">' +
                 '<svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>' +
             '</button>' +
-            '<button type="button" class="pub-vf-big-close" id="btnPubVfBigClose" aria-label="Cerrar">' + svgClose + '</button>' +
         '</div>' +
 
         '<div class="pub-vf-controls" id="pubVfControls" style="display:none;">' +
@@ -425,12 +424,7 @@ function pubVisorEl() {
         document.getElementById('pubVfSheet').classList.add('show');
     });
 
-    el.querySelector('#btnPubVfBigClose').addEventListener('click', function (e) {
-        e.stopPropagation();
-        pubCerrarVisor();
-    });
-
-    // Play / pausa manual (botón central oculto)
+    // Play / pausa manual (botón central unificado)
     el.querySelector('#btnPubVfBigPlay').addEventListener('click', function (e) {
         e.stopPropagation();
 
@@ -440,8 +434,11 @@ function pubVisorEl() {
 
         if (video.paused) {
             pubReproducirVideo(video);
+            // Ocultar controles automáticamente al reanudar
+            setTimeout(function () { pubOcultarControles(); }, 300);
         } else {
             video.pause();
+            pubMostrarControles();
         }
     });
 
@@ -932,17 +929,25 @@ function pubMostrarItem() {
             }
         });
 
-        // Ya no se maneja click en video directamente para alternar play,
-        // ahora el gesto táctil maneja la reproducción sin molestar con botones gigantes.
-
         video.addEventListener('enterpictureinpicture', function () {
             pubOcultarControles();
+            
+            // Ocultar el visor completo para poder navegar en el ecosistema
+            el.classList.remove('show');
+            pubVisor.estabaVisibleAntesDePip = true;
+
             if (window.showToast) {
-                window.showToast('Vídeo en ventana flotante.', 'success', 1500);
+                window.showToast('Vídeo en ventana flotante. Puedes navegar libremente.', 'success', 2000);
             }
         });
 
         video.addEventListener('leavepictureinpicture', function () {
+            // Restaurar el visor si se estaba mostrando
+            if (pubVisor.estabaVisibleAntesDePip) {
+                el.classList.add('show');
+                pubVisor.estabaVisibleAntesDePip = false;
+            }
+
             // No se pausa al salir de la ventana flotante.
             if (video.isConnected && video.paused && pubMotorVideo.reproduccionSolicitada) {
                 pubReproducirVideo(video);
@@ -1001,6 +1006,7 @@ function pubAbrirVisor(indice, postId, esDueno) {
     pubVisor.postIdActual = postId;
     pubVisor.esDueno = esDueno === true;
     pubVisor.arrastrandoProgreso = false;
+    pubVisor.estabaVisibleAntesDePip = false;
 
     pubMostrarItem();
     pubAjustarOpcionesMenu();
@@ -1053,6 +1059,7 @@ function pubCerrarVisor() {
     pubVisor.esDueno = false;
     pubVisor.modoLleno = false;
     pubVisor.arrastrandoProgreso = false;
+    pubVisor.estabaVisibleAntesDePip = false;
 }
 
 // ================================================================
@@ -1285,14 +1292,13 @@ function pubCerrarVisor() {
         color: #000;
     }
 
-    /* CONTROLES CENTRALES (Ocultos por defecto, solo accesibles por código) */
+    /* CONTROLES CENTRALES (Unificados: Solo Play/Pausa) */
     .pub-vf-center-controls {
         position: absolute;
         inset: 0;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 30px;
         z-index: 5;
         pointer-events: none;
     }
@@ -1301,23 +1307,21 @@ function pubCerrarVisor() {
         pointer-events: auto;
         border: 0;
         border-radius: 50%;
-        width: 70px;
-        height: 70px;
+        width: 80px;
+        height: 80px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
-    }
-
-    .pub-vf-big-play {
-        background: rgba(255,255,255,.2);
+        background: rgba(0,0,0,.5);
         color: #fff;
         backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        transition: transform 0.2s ease;
     }
 
-    .pub-vf-big-close {
-        background: rgba(255,0,80,.8);
-        color: #fff;
+    .pub-vf-center-controls button:active {
+        transform: scale(0.9);
     }
 
     /* CONTROLES INFERIORES */
@@ -3292,5 +3296,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.5
+// FIN · PERFIL PUBLICACIONES v14.6
 // ================================================================
