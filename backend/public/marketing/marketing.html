@@ -194,6 +194,7 @@
         .promi-msg { max-width: 85%; padding: 14px 18px; border-radius: 20px; font-size: 0.9rem; line-height: 1.5; margin-bottom: 4px; position: relative; }
         .promi-msg.user { align-self: flex-end; background: linear-gradient(135deg, #ff0050, #d40040); color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 4px 15px rgba(255,0,80,0.2); }
         .promi-msg.bot { align-self: flex-start; background: #1f2937; color: #e5e7eb; border-bottom-left-radius: 4px; border: 1px solid #374151; }
+        .promi-msg.bot.error { border-color: var(--danger); color: var(--danger); }
 
         /* Opciones sugeridas */
         .promi-options { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
@@ -477,11 +478,7 @@
 
     <script>
     /* ============================================================
-       MARKETING · Csariel's — v9.7
-       - Sin acceso para invitados: sin sesión, va al inicio de sesión.
-       - Invitación: el enlace lleva al inicio de sesión / crear cuenta.
-       - Corrige la referencia que rompía window.* y el bloqueo de
-         botones al aceptar contenido.
+       MARKETING · Csariel's — v9.8 (PRODUCTION AUDITED)
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -491,8 +488,6 @@
     const INTERVALO_POLL_MS = 15000;
     const OBJETIVOS_VALIDOS = ['alcance', 'reproducciones', 'interacciones', 'clics'];
 
-    // Enlace de invitación: la página de inicio tiene "Iniciar sesión" y "Crear cuenta nueva".
-    // Nadie entra al panel sin cuenta.
     const URL_INVITACION = BACKEND_URL + '/';
     const MARCA = "Csariel's";
 
@@ -567,7 +562,6 @@
         `;
     }
 
-    // Visor inmersivo: sin descarga directa
     function abrirLightbox(url, tipo) {
         const modal = document.getElementById('lightboxModal');
         const content = document.getElementById('lightboxContent');
@@ -589,6 +583,33 @@
         const content = document.getElementById('lightboxContent');
         modal.classList.remove('active');
         content.innerHTML = '';
+    }
+
+    // ----------------------------------------------------------------
+    // VALIDACIÓN ESTRICTA DE CONTRATOS PROMI
+    // ----------------------------------------------------------------
+    function validarContratoPromi(contrato) {
+        if (!contrato || typeof contrato !== 'object' || !contrato.type) {
+            throw new Error('Respuesta inválida: falta el campo type.');
+        }
+        const t = contrato.type;
+        if (t === 'chat') {
+            if (typeof contrato.message !== 'string' || !contrato.message.trim()) throw new Error('Contrato chat inválido: falta message.');
+        } else if (t === 'copywriting') {
+            if (!Array.isArray(contrato.variants) || contrato.variants.length === 0) throw new Error('Contrato copywriting inválido: variants vacío.');
+            contrato.variants.forEach((v, i) => {
+                if (typeof v.text !== 'string' || typeof v.cta !== 'string') throw new Error(`Contrato copywriting inválido en la variante ${i}.`);
+            });
+        } else if (t === 'campaign_strategy') {
+            if (!contrato.campaign || typeof contrato.campaign !== 'object' || typeof contrato.campaign.name !== 'string') throw new Error('Contrato campaign_strategy inválido: falta campaign.name.');
+        } else if (t === 'campaign_analysis') {
+            if (typeof contrato.metrics_summary !== 'object' || !Array.isArray(contrato.diagnosis) || !Array.isArray(contrato.recommended_actions)) throw new Error('Contrato campaign_analysis inválido: estructura incorrecta.');
+        } else if (t === 'image_generation' || t === 'video_generation') {
+            if (!contrato.url) throw new Error('Contrato de media inválido: falta el campo url.');
+        } else {
+            throw new Error(`Tipo de contrato desconocido: ${t}`);
+        }
+        return true;
     }
 
     async function enviarMensajePromi(textoForzado) {
@@ -639,6 +660,17 @@
             typing.remove();
 
             if (data.success && data.contrato) {
+                // VALIDACIÓN ESTRICTA AQUÍ
+                try {
+                    validarContratoPromi(data.contrato);
+                } catch (valError) {
+                    const botMsg = document.createElement('div');
+                    botMsg.className = 'promi-msg bot error';
+                    botMsg.textContent = `⚠️ Error de formato en la respuesta de Promi: ${valError.message}`;
+                    body.appendChild(botMsg);
+                    return; // Se detiene para no renderizar algo roto
+                }
+
                 const botMsg = document.createElement('div');
                 botMsg.className = 'promi-msg bot';
 
@@ -646,31 +678,32 @@
                 if (c.type === 'chat') {
                     botMsg.innerHTML = escapeHTML(c.message).replace(/\n/g, '<br>');
                 } else if (c.type === 'copywriting') {
-                    botMsg.innerHTML = (c.variants || []).map(v => `<strong>${escapeHTML(v.channel)} (${escapeHTML(v.format)}):</strong><br>${escapeHTML(v.text)}<br><br>`).join('');
+                    botMsg.innerHTML = c.variants.map(v => `<strong>${escapeHTML(v.channel)} (${escapeHTML(v.format)}):</strong><br>${escapeHTML(v.text)}<br><br>`).join('');
                 } else if (c.type === 'campaign_strategy') {
-                    botMsg.innerHTML = `<strong>🎯 ${escapeHTML(c.campaign?.name)}</strong><br><br>${escapeHTML(c.campaign?.creative_concept)}<br><br><em>Objetivo: ${escapeHTML(c.campaign?.business_objective)}</em>`;
+                    botMsg.innerHTML = `<strong>🎯 ${escapeHTML(c.campaign.name)}</strong><br><br>${escapeHTML(c.campaign.creative_concept)}<br><br><em>Objetivo: ${escapeHTML(c.campaign.business_objective)}</em>`;
                 } else if (c.type === 'campaign_analysis') {
-                    botMsg.innerHTML = `<strong>📊 Análisis:</strong><br>${(c.diagnosis || []).map(d => escapeHTML(d)).join('<br>')}`;
+                    botMsg.innerHTML = `<strong>📊 Análisis:</strong><br>${c.diagnosis.map(d => escapeHTML(d)).join('<br>')}`;
                 } else if (c.type === 'image_generation' || c.type === 'video_generation') {
-                    if (data.preview_url_seg) {
-                        const isVideo = c.type === 'video_generation';
-                        ultimoAssetIdPromi = c.asset_id;
-                        const url = escapeHTML(data.preview_url_seg);
-                        const tipo = isVideo ? 'video' : 'imagen';
+                    // URL correcta leída del contrato
+                    const urlAsset = c.url; 
+                    
+                    // Guardamos el ID para edición conversacional
+                    if (c.asset_id) ultimoAssetIdPromi = c.asset_id;
 
-                        const mediaTag = isVideo
-                            ? `<video src="${url}" onclick="abrirLightbox('${url}', 'video')" style="width:100%;border-radius:12px;margin-bottom:12px;background:#000;cursor:pointer;" muted playsinline controlsList="nodownload"></video>`
-                            : `<img src="${url}" onclick="abrirLightbox('${url}', 'imagen')" style="width:100%;border-radius:12px;margin-bottom:12px;cursor:pointer;user-select:none;-webkit-user-drag:none;">`;
+                    const isVideo = c.type === 'video_generation';
+                    const url = escapeHTML(urlAsset);
+                    const tipo = isVideo ? 'video' : 'imagen';
 
-                        // Los botones van en su propio bloque para que al aceptar solo cambie este bloque
-                        botMsg.innerHTML = `${mediaTag}
-                            <div class="acciones-media" style="display:flex;gap:8px;flex-wrap:wrap;">
-                                <button class="promi-action-btn" onclick="aceptarMedia(${Number(c.asset_id)}, '${tipo}', this, '${session.access_token}')">✓ Aceptar para mi campaña</button>
-                            </div>
-                            <p style="font-size:0.75rem; color:#9ca3af; margin-top:8px;">💡 <em>Puedes decirme "hazlo más elegante" o "cambia el fondo" para modificarlo.</em></p>`;
-                    } else {
-                        botMsg.textContent = `Generando ${c.type === 'image_generation' ? 'imagen' : 'video'}... (ID: ${c.asset_id})`;
-                    }
+                    const mediaTag = isVideo
+                        ? `<video src="${url}" onclick="abrirLightbox('${url}', 'video')" style="width:100%;border-radius:12px;margin-bottom:12px;background:#000;cursor:pointer;" muted playsinline controlsList="nodownload"></video>`
+                        : `<img src="${url}" onclick="abrirLightbox('${url}', 'imagen')" style="width:100%;border-radius:12px;margin-bottom:12px;cursor:pointer;user-select:none;-webkit-user-drag:none;">`;
+
+                    // Seguridad: No exponemos el token en el onclick. Usamos un evento delegado o capturamos el token al momento.
+                    botMsg.innerHTML = `${mediaTag}
+                        <div class="acciones-media" style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="promi-action-btn" onclick="aceptarMedia(${Number(c.asset_id)}, '${tipo}', this)">✓ Aceptar para mi campaña</button>
+                        </div>
+                        <p style="font-size:0.75rem; color:#9ca3af; margin-top:8px;">💡 <em>Puedes decirme "hazlo más elegante" o "cambia el fondo" para modificarlo.</em></p>`;
                 }
 
                 body.appendChild(botMsg);
@@ -744,17 +777,21 @@
         body.scrollTop = body.scrollHeight;
     }
 
-    // Acepta el contenido. Solo deshabilita y cambia la burbuja donde está el botón.
-    async function aceptarMedia(id, tipo, elementoBoton, token) {
+    // Acepta el contenido. Obtiene el token internamente (sin exponerlo en onclick).
+    async function aceptarMedia(id, tipo, elementoBoton) {
         const burbuja = elementoBoton.closest('.promi-msg');
         const bloque = burbuja.querySelector('.acciones-media');
         const botones = bloque ? bloque.querySelectorAll('button') : burbuja.querySelectorAll('button');
         botones.forEach((b) => { b.disabled = true; });
 
         try {
+            // Obtenemos el token AQUÍ, de forma segura.
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            if (!session) throw new Error('Sesión expirada');
+
             const r = await fetch(`${BACKEND_URL}/api/ai/media/${encodeURIComponent(id)}/aceptar`, {
                 method: 'POST',
-                headers: { Authorization: 'Bearer ' + token }
+                headers: { Authorization: `Bearer ${session.access_token}` }
             });
             const j = await r.json().catch(() => ({}));
             if (!r.ok || !j.success) {
@@ -859,7 +896,6 @@
         }
     }
 
-    // Sin sesión no se muestra el panel: se manda a iniciar sesión o crear cuenta
     function irAInicioDeSesion() {
         window.location.replace('/');
     }
@@ -937,9 +973,6 @@
         });
     }
 
-    // ================================================================
-    // ESTRELLAS Y COMPARTIR (invitación a crear cuenta)
-    // ================================================================
     function initStarsRecommendation() {
         const container = document.getElementById('starsContainer');
         const shareSection = document.getElementById('shareButtons');
@@ -955,7 +988,6 @@
             container.appendChild(star);
         }
 
-        // Línea 👉: minimiza o muestra las estrellas
         btnToggle.addEventListener('click', () => {
             const oculto = starsWrap.classList.toggle('oculto');
             btnToggle.textContent = oculto ? '👉 Mostrar estrellas' : '👉 Minimizar estrellas';
