@@ -1,33 +1,22 @@
 /* ================================================================
-   routes/ai-media.js · GENERACIÓN DE IMAGEN Y VIDEO (v3.1)
+   routes/ai-media.js · GENERACIÓN DE IMAGEN Y VIDEO (v4.0)
    ================================================================
-   Modelos (verificados en build.nvidia.com):
-   - Prompt: nvidia/nemotron-3-nano-omni-30b-a3b-reasoning
-             (modelo de razonamiento: se limpia el razonamiento de la respuesta)
-   - Imagen: black-forest-labs/flux-3-image-klein
-   - Video:  nvidia/cosmos3-nano
+   Imagen: OpenAI gpt-image-1 (mismo modelo que /editar-imagen en ai-chat.js).
+   Video:  NVIDIA Cosmos3 Nano (sin cambios por ahora).
 
-   Cambios v3.1 respecto a v3.0:
-   - Nemotron: más tokens (el razonamiento consume tokens), se quitan los
-     bloques <think>, y si la salida no sirve se usa el prompt original.
-   - Imagen: si falla después de insertar el borrador, queda en "error"
-     (antes se quedaba en "procesando" y contaba para el límite diario).
-   - Video: el procesamiento en segundo plano tiene catch; ya no hay
-     rechazos no controlados.
-   - Consulta: un borrador en "procesando" por más de 15 minutos se marca
-     como error (un reinicio de Railway no deja registros colgados).
-
-   Pendiente de confirmar con NVIDIA (no verificable desde aquí):
-   - Campos exactos de FLUX 3 Image Klein (steps / cfg_scale).
-     El endpoint alojado puede usar el modelo destilado (16 pasos, sin guía).
-     Copia el ejemplo del botón "Get API Key" de build.nvidia.com.
-   - Que el endpoint alojado sea de pago: su uso está bajo los términos
-     de prueba de la API de NVIDIA.
+   Cambios v4.0 respecto a v3.1:
+   - Imagen migrada a gpt-image-1. Se eliminan Nemotron y FLUX.
+   - El prompt se envía directo al modelo (sin reescritura previa),
+     para no introducir términos que disparen filtros.
+   - Un rechazo de moderación de OpenAI devuelve "contenido_rechazado".
+   - Estados de Supabase sin cambios: procesando, listo, error,
+     aceptada, descartada.
+   - /video conserva Cosmos y la reescritura con Nemotron, sin cambios.
 
    Variables de entorno:
-     NVIDIA_API_KEY, MEDIA_LIMITE_DIA (opcional), R2_BUCKET, R2_ENDPOINT,
-     R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, SUPABASE_URL,
-     SUPABASE_SERVICE_ROLE_KEY
+     OPENAI_API_KEY, NVIDIA_API_KEY, MEDIA_LIMITE_DIA (opcional),
+     R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY,
+     SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 ================================================================ */
 
 'use strict';
@@ -48,11 +37,14 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
    CONFIGURACIÓN
 ================================================================ */
 
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const NVIDIA_API_KEY = process.env.NVIDIA_API_KEY;
+
+const OPENAI_IMAGE_URL = 'https://api.openai.com/v1/images/generations';
+const OPENAI_IMAGE_MODEL = 'gpt-image-1';
 
 const NVIDIA_NEMOTRON_URL = 'https://integrate.api.nvidia.com/v1/chat/completions';
 const NVIDIA_NEMOTRON_MODEL = 'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning';
-const NVIDIA_IMAGE_URL = 'https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux-3-image-klein';
 const NVIDIA_VIDEO_URL = 'https://ai.api.nvidia.com/v1/cosmos/nvidia/cosmos3-nano';
 
 const MEDIA_LIMITE_DIA = Number(process.env.MEDIA_LIMITE_DIA) || 10;
@@ -133,22 +125,20 @@ function limpiarRazonamiento(texto) {
     if (typeof texto !== 'string') return '';
     return texto
         .replace(/<think>[\s\S]*?<\/think>/gi, '')
-        .replace(/<think>[\s\S]*$/i, '')          // razonamiento sin cerrar
+        .replace(/<think>[\s\S]*$/i, '')
         .replace(/^\s*(prompt mejorado|respuesta|final)\s*:\s*/i, '')
         .replace(/^["'“”]+|["'“”]+$/g, '')
         .trim();
 }
 
 /**
- * Expande el prompt con Nemotron. Si la salida no sirve, usa el prompt
- * original: nunca bloquea la generación.
+ * Expande el prompt de video con Nemotron. Si la salida no sirve,
+ * usa el prompt original. Solo lo usa /video.
  */
-async function mejorarPromptConNemotron(promptUsuario, tipo) {
+async function mejorarPromptVideo(promptUsuario) {
     if (!NVIDIA_API_KEY) return promptUsuario;
 
-    const instruccion = tipo === 'imagen'
-        ? 'Eres director de arte publicitario. Reescribe el pedido del usuario como UNA frase descriptiva para generar una imagen (menciona composición, iluminación, colores y estilo). Responde solo con la frase, sin explicaciones.'
-        : 'Eres director de cine publicitario. Reescribe el pedido del usuario como UNA frase descriptiva para generar un video corto (menciona movimiento, iluminación, estilo y encuadre). Responde solo con la frase, sin explicaciones.';
+    const instruccion = 'Eres director de cine publicitario. Reescribe el pedido del usuario como UNA frase descriptiva para generar un video corto (menciona movimiento, iluminación, estilo y encuadre). Responde solo con la frase, sin explicaciones.';
 
     try {
         const respuesta = await axios.post(NVIDIA_NEMOTRON_URL, {
@@ -157,7 +147,6 @@ async function mejorarPromptConNemotron(promptUsuario, tipo) {
                 { role: 'system', content: instruccion },
                 { role: 'user', content: promptUsuario }
             ],
-            // Modelo de razonamiento: necesita margen para pensar antes de responder
             max_tokens: 1024,
             temperature: 0.5
         }, {
@@ -176,8 +165,6 @@ async function mejorarPromptConNemotron(promptUsuario, tipo) {
             console.warn('⚠️ Nemotron devolvió una salida no utilizable; se usa el prompt original.');
             return promptUsuario;
         }
-
-        console.log(`✨ Prompt: "${promptUsuario}" → "${mejorado}"`);
         return mejorado;
     } catch (error) {
         console.error('⚠️ Nemotron no disponible; se usa el prompt original:', error.message);
@@ -186,43 +173,51 @@ async function mejorarPromptConNemotron(promptUsuario, tipo) {
 }
 
 /**
- * FLUX 3 Image Klein. Devuelve la imagen en base64.
+ * Genera la imagen con OpenAI gpt-image-1.
+ * Devuelve el PNG en base64 (b64_json).
  */
-async function generarImagenFlux(prompt) {
-    const respuesta = await axios.post(NVIDIA_IMAGE_URL, {
+async function generarImagenOpenAI(prompt) {
+    if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY no configurada');
+
+    const respuesta = await axios.post(OPENAI_IMAGE_URL, {
+        model: OPENAI_IMAGE_MODEL,
         prompt,
-        seed: 0,
-        steps: 50,
-        cfg_scale: 3.5
+        n: 1,
+        size: '1024x1024'
     }, {
         headers: {
-            Authorization: `Bearer ${NVIDIA_API_KEY}`,
-            Accept: 'application/json',
+            Authorization: `Bearer ${OPENAI_API_KEY}`,
             'Content-Type': 'application/json'
         },
         timeout: TIMEOUT_IMAGEN_MS,
         validateStatus: () => true
     });
 
-    if (respuesta.status === 422) {
-        const error = new Error('contenido_rechazado');
-        error.rechazado = true;
-        throw error;
+    if (respuesta.status === 400 || respuesta.status === 403) {
+        const codigo = respuesta.data?.error?.code;
+        const tipo = respuesta.data?.error?.type;
+        if (codigo === 'moderation_blocked' || tipo === 'image_generation_user_error' || codigo === 'content_policy_violation') {
+            const error = new Error('contenido_rechazado');
+            error.rechazado = true;
+            throw error;
+        }
     }
+
     if (respuesta.status < 200 || respuesta.status >= 300) {
-        const error = new Error(`NVIDIA Imagen respondió HTTP ${respuesta.status}`);
+        const error = new Error(`OpenAI Imagen respondió HTTP ${respuesta.status}`);
         error.status = respuesta.status;
-        console.error('❌ NVIDIA Imagen:', respuesta.status, JSON.stringify(respuesta.data).slice(0, 300));
+        console.error('❌ OpenAI Imagen:', respuesta.status, JSON.stringify(respuesta.data).slice(0, 300));
         throw error;
     }
 
-    const base64 = respuesta.data?.artifacts?.[0]?.base64 || respuesta.data?.data?.[0]?.b64_json;
+    const base64 = respuesta.data?.data?.[0]?.b64_json;
     if (!base64) throw new Error('La respuesta de imagen no contenía datos');
     return base64;
 }
 
 /**
  * Cosmos3 Nano, video. Devuelve el MP4 en base64.
+ * Sin cambios respecto a v3.1.
  */
 async function generarVideoCosmos(prompt) {
     const respuesta = await axios.post(NVIDIA_VIDEO_URL, {
@@ -321,7 +316,7 @@ function respuestaError(res, error, mensajeGenerico) {
 }
 
 /* ================================================================
-   POST /imagen
+   POST /imagen (OpenAI gpt-image-1)
 ================================================================ */
 
 router.post('/imagen', autenticar, async (req, res) => {
@@ -341,7 +336,6 @@ router.post('/imagen', autenticar, async (req, res) => {
         }
 
         const promptOriginal = prompt.trim();
-        const promptMejorado = await mejorarPromptConNemotron(promptOriginal, 'imagen');
 
         // Se registra primero para que el límite diario cuente el intento
         const { data: fila, error: errInsert } = await supabaseAdmin
@@ -354,14 +348,14 @@ router.post('/imagen', autenticar, async (req, res) => {
 
         let base64;
         try {
-            base64 = await generarImagenFlux(promptMejorado);
+            base64 = await generarImagenOpenAI(promptOriginal);
         } catch (error) {
             await marcarError(filaId, error.rechazado ? 'contenido_rechazado' : 'No se pudo generar la imagen.');
             return respuestaError(res, error, 'No se pudo generar la imagen. Intenta de nuevo.');
         }
 
-        const key = `ia/borradores/${req.user.id}/${filaId}.jpg`;
-        await subirPrivado(key, Buffer.from(base64, 'base64'), 'image/jpeg');
+        const key = `ia/borradores/${req.user.id}/${filaId}.png`;
+        await subirPrivado(key, Buffer.from(base64, 'base64'), 'image/png');
 
         await supabaseAdmin
             .from('ai_media_borradores')
@@ -384,12 +378,12 @@ router.post('/imagen', autenticar, async (req, res) => {
 });
 
 /* ================================================================
-   POST /video
+   POST /video (Cosmos3 Nano, sin cambios)
 ================================================================ */
 
 async function procesarVideo(filaId, usuarioId, promptOriginal) {
     try {
-        const promptMejorado = await mejorarPromptConNemotron(promptOriginal, 'video');
+        const promptMejorado = await mejorarPromptVideo(promptOriginal);
         const base64 = await generarVideoCosmos(promptMejorado);
 
         const buffer = Buffer.from(base64, 'base64');
@@ -441,7 +435,6 @@ router.post('/video', autenticar, async (req, res) => {
 
         res.status(202).json({ success: true, id: fila.id, tipo: 'video', estado: 'procesando' });
 
-        // Segundo plano: Nemotron -> Cosmos -> R2 -> base. Errores ya capturados dentro.
         procesarVideo(fila.id, req.user.id, promptOriginal).catch((e) =>
             console.error('❌ Fallo inesperado en procesarVideo:', e.message)
         );
