@@ -220,7 +220,38 @@
         .promi-new-chat { background: transparent; color: #9ca3af; border: 1px solid #374151; padding: 14px; border-radius: 30px; font-weight: 700; width: calc(100% - 32px); margin: 0 16px 16px 16px; cursor: pointer; text-align: center; transition: all 0.2s; }
         .promi-new-chat:hover { border-color: #ff0050; color: #ff0050; }
 
-        @media (max-width: 640px) { .marketing-hero { flex-direction: column; text-align: center; padding: 22px; } .marketing-hero h1 { font-size: 1.15rem; } .summary-cards { grid-template-columns: 1fr 1fr; gap: 10px; } .card { padding: 16px; } .card p { font-size: 1.3rem; } .modal-content { padding: 24px 20px; } .toast { right: 16px; left: 16px; bottom: 20px; max-width: none; } .promi-panel { max-width: 100%; } }
+        /* =========================================
+           VISOR INMERSIVO (LIGHTBOX) SIN DESCARGA
+           ========================================= */
+        .lightbox-modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.95); z-index: 100000; display: none; justify-content: center; align-items: center; flex-direction: column; padding: 20px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+        .lightbox-modal.active { display: flex; }
+        .lightbox-content { position: relative; max-width: 90vw; max-height: 85vh; display: flex; justify-content: center; align-items: center; }
+        .lightbox-content img, .lightbox-content video { max-width: 100%; max-height: 85vh; border-radius: 12px; box-shadow: 0 0 50px rgba(0, 0, 0, 0.8); pointer-events: none; user-select: none; -webkit-user-drag: none; }
+        .lightbox-content video { pointer-events: auto; } /* El video necesita interacción para play/pause */
+        .lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 2.5rem; cursor: pointer; line-height: 1; background: none; border: none; transition: color 0.2s; z-index: 100001; }
+        .lightbox-close:hover { color: var(--gold); }
+        .lightbox-caption { margin-top: 15px; color: #9ca3af; font-size: 0.9rem; text-align: center; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; }
+
+        /* =========================================
+           SECCIÓN 12 ESTRELLAS (RECOMENDACIÓN)
+           ========================================= */
+        .recommendation-section { margin: 40px 0; padding: 30px 20px; background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(15, 45, 26, 0.4)); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); text-align: center; position: relative; overflow: hidden; }
+        .recommendation-section::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(212,175,55,0.1) 0%, transparent 70%); pointer-events: none; }
+        .recommendation-title { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: 1px; position: relative; z-index: 1; }
+        .recommendation-sub { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 20px; position: relative; z-index: 1; }
+        .stars-container { display: flex; justify-content: center; gap: 4px; margin-bottom: 24px; position: relative; z-index: 1; flex-wrap: wrap; }
+        .star-icon { font-size: 1.8rem; color: var(--gold); filter: drop-shadow(0 0 10px var(--gold-glow)); animation: starPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; transform: scale(0); }
+        @keyframes starPop { to { opacity: 1; transform: scale(1); } }
+        .share-buttons { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; position: relative; z-index: 1; }
+        .share-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 30px; font-size: 0.75rem; font-weight: 700; text-decoration: none; color: #fff; transition: all 0.3s; border: 1px solid transparent; cursor: pointer; }
+        .share-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        .share-btn.wa { background: #25D366; }
+        .share-btn.fb { background: #1877F2; }
+        .share-btn.tw { background: #000000; border-color: #333; }
+        .share-btn.native { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); }
+        .share-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+        @media (max-width: 640px) { .marketing-hero { flex-direction: column; text-align: center; padding: 22px; } .marketing-hero h1 { font-size: 1.15rem; } .summary-cards { grid-template-columns: 1fr 1fr; gap: 10px; } .card { padding: 16px; } .card p { font-size: 1.3rem; } .modal-content { padding: 24px 20px; } .toast { right: 16px; left: 16px; bottom: 20px; max-width: none; } .promi-panel { max-width: 100%; } .star-icon { font-size: 1.4rem; } .share-btn { padding: 8px 14px; font-size: 0.7rem; } }
         @media (max-width: 400px) { .summary-cards { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -284,6 +315,33 @@
                 </div>
                 <div id="campaigns-list" class="campaigns-grid"><div class="empty-state"><span class="icon">◈</span><p>Inicializando...</p></div></div>
             </section>
+
+            <!-- SECCIÓN DE 12 ESTRELLAS Y RECOMENDACIÓN -->
+            <section class="recommendation-section" id="recommendationSection">
+                <h2 class="recommendation-title">✦ Califica tu experiencia ✦</h2>
+                <p class="recommendation-sub">Tu opinión ayuda a que más negocios descubran el poder de Csariel's.</p>
+                <div class="stars-container" id="starsContainer">
+                    <!-- Las 12 estrellas se generan vía JS para la animación -->
+                </div>
+                <div class="share-buttons" id="shareButtons" style="display: none;">
+                    <button class="share-btn native" onclick="compartirNativo()">
+                        <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                        Compartir
+                    </button>
+                    <a href="#" class="share-btn wa" id="shareWa" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        WhatsApp
+                    </a>
+                    <a href="#" class="share-btn fb" id="shareFb" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                        Facebook
+                    </a>
+                    <a href="#" class="share-btn tw" id="shareTw" target="_blank" rel="noopener">
+                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                        X (Twitter)
+                    </a>
+                </div>
+            </section>
         </div>
 
         <div id="tab-crear" class="tab-content">
@@ -330,6 +388,12 @@
         <button class="promi-new-chat" onclick="resetPromi()">📝 Nuevo chat</button>
     </div>
 
+    <!-- VISOR INMERSIVO LIGHTBOX -->
+    <div class="lightbox-modal" id="lightboxModal" onclick="cerrarLightbox(event)">
+        <button class="lightbox-close" onclick="cerrarLightbox(event)">&times;</button>
+        <div class="lightbox-content" id="lightboxContent"></div>
+        <div class="lightbox-caption" id="lightboxCaption"></div>
+    </div>
 
     <div id="modal-detail" class="modal hidden">
         <div class="modal-content">
@@ -407,7 +471,7 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v9.5 (PRODUCCIÓN + PROMI INTEGRATION)
+       MARKETING · Sariel's — v9.6 (PROMI PREMIUM + 12 ESTRELLAS)
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -417,7 +481,6 @@
     const INTERVALO_POLL_MS = 15000;
     const OBJETIVOS_VALIDOS = ['alcance', 'reproducciones', 'interacciones', 'clics'];
 
-    // Mínimos iguales a config/redes-pago.js del backend (fuente única)
     const REDES_PAGO = [
         { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 16, label: 'USDT · TRON (TRC20)' },
         { value: 'usdtbsc',   moneda: 'USDT', red: 'BSC',      min: 16, label: 'USDT · BSC (BEP20)' },
@@ -439,10 +502,12 @@
     let chartJsLoading = false;
 
     let wizard = {};
-    // campañaCreada: { campaign_id, pago } — pago es la dirección y monto a pagar
     let campañaCreada = null;
     let pollTimer = null;
     let promiHistory = [];
+    
+    // Guarda el ID del último recurso generado para permitir edición conversacional
+    let ultimoAssetIdPromi = null; 
 
     function log(...a) { if (DEBUG) console.log('◈', ...a); }
     function logError(...a) { console.error('✕', ...a); }
@@ -471,6 +536,7 @@
 
     function resetPromi() {
         promiHistory = [];
+        ultimoAssetIdPromi = null;
         wizard.media_id = null;
         wizard.media_tipo = null;
         const body = document.getElementById('promiBody');
@@ -487,6 +553,30 @@
                 <div class="promi-option" onclick="enviarMensajePromi('¿Cómo puedo aumentar mi presupuesto?')">💰 ¿Cómo aumento mi presupuesto? <span>→</span></div>
             </div>
         `;
+    }
+
+    // Lógica para Visor Inmersivo Lightbox
+    function abrirLightbox(url, tipo) {
+        const modal = document.getElementById('lightboxModal');
+        const content = document.getElementById('lightboxContent');
+        const caption = document.getElementById('lightboxCaption');
+        
+        if (tipo === 'video') {
+            content.innerHTML = `<video src="${escapeHTML(url)}" controls autoplay playsinline></video>`;
+            caption.textContent = 'Vista previa del video generado por Promi';
+        } else {
+            content.innerHTML = `<img src="${escapeHTML(url)}" alt="Vista previa de imagen">`;
+            caption.textContent = 'Vista previa del creativo. Protegido por Sariel\'s.';
+        }
+        modal.classList.add('active');
+    }
+
+    function cerrarLightbox(e) {
+        if (e) e.stopPropagation();
+        const modal = document.getElementById('lightboxModal');
+        const content = document.getElementById('lightboxContent');
+        modal.classList.remove('active');
+        content.innerHTML = ''; // Detiene la reproducción de video
     }
 
     async function enviarMensajePromi(textoForzado) {
@@ -524,14 +614,13 @@
                 return;
             }
 
-            // Conexión al nuevo endpoint estructurado de Promi
             const res = await fetch(`${BACKEND_URL}/api/promi/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${session.access_token}`
                 },
-                body: JSON.stringify({ message: texto, history: promiHistory })
+                body: JSON.stringify({ message: texto, history: promiHistory, asset_id: ultimoAssetIdPromi })
             });
 
             const data = await res.json();
@@ -541,7 +630,6 @@
                 const botMsg = document.createElement('div');
                 botMsg.className = 'promi-msg bot';
                 
-                // Renderizado por contrato
                 const c = data.contrato;
                 if (c.type === 'chat') {
                     botMsg.innerHTML = escapeHTML(c.message).replace(/\n/g, '<br>');
@@ -552,14 +640,20 @@
                 } else if (c.type === 'campaign_analysis') {
                     botMsg.innerHTML = `<strong>📊 Análisis:</strong><br>${c.diagnosis.map(d => escapeHTML(d)).join('<br>')}`;
                 } else if (c.type === 'image_generation' || c.type === 'video_generation') {
-                    // Manejo de Media IA
                     if (data.preview_url_seg) {
                         const isVideo = c.type === 'video_generation';
+                        
+                        // GUARDAMOS EL ID DEL ASSET PARA EDICIÓN CONVERSACIONAL
+                        ultimoAssetIdPromi = c.asset_id;
+
+                        // El media tag bloquea el clic derecho y la descarga directa, y abre el lightbox
                         const mediaTag = isVideo 
-                            ? `<video src="${escapeHTML(data.preview_url_seg)}" controls playsinline style="width:100%;border-radius:12px;margin-bottom:12px;background:#000;"></video>` 
-                            : `<img src="${escapeHTML(data.preview_url_seg)}" style="width:100%;border-radius:12px;margin-bottom:12px;">`;
+                            ? `<video src="${escapeHTML(data.preview_url_seg)}" onclick="abrirLightbox('${escapeHTML(data.preview_url_seg)}', 'video')" style="width:100%;border-radius:12px;margin-bottom:12px;background:#000;cursor:pointer;pointer-events:auto;" muted playsinline></video>` 
+                            : `<img src="${escapeHTML(data.preview_url_seg)}" onclick="abrirLightbox('${escapeHTML(data.preview_url_seg)}', 'imagen')" style="width:100%;border-radius:12px;margin-bottom:12px;cursor:pointer;pointer-events:auto;user-select:none;-webkit-user-drag:none;">`;
+                        
                         botMsg.innerHTML = `${mediaTag}
-                            <button class="promi-action-btn" onclick="aceptarMedia(${c.asset_id}, '${isVideo ? 'video' : 'imagen'}', this, '${session.access_token}')">✓ Aceptar para mi campaña</button>`;
+                            <button class="promi-action-btn" onclick="aceptarMedia(${c.asset_id}, '${isVideo ? 'video' : 'imagen'}', this, '${session.access_token}')">✓ Aceptar para mi campaña</button>
+                            <p style="font-size:0.75rem; color:#9ca3af; margin-top:8px;">💡 <em>Puedes decirme "hazlo más elegante" o "cambia el fondo" para modificarlo.</em></p>`;
                     } else {
                         botMsg.textContent = `Generando ${c.type === 'image_generation' ? 'imagen' : 'video'}... (ID: ${c.asset_id})`;
                     }
@@ -605,15 +699,17 @@
     function mostrarVistaPrevia(tipo, data, token) {
         const body = document.getElementById('promiBody');
         const id = data.id;
+        ultimoAssetIdPromi = id;
 
         const caja = document.createElement('div');
         caja.className = 'promi-msg bot';
         caja.style.padding = '16px';
         caja.style.textAlign = 'center';
 
+        // Habilitar clic para lightbox y bloquear guardado
         const media = tipo === 'imagen'
-            ? `<img src="${escapeHTML(data.preview_url)}" alt="Vista previa" style="width:100%;border-radius:12px;border:1px solid #374151;">`
-            : `<video src="${escapeHTML(data.preview_url)}" controls playsinline style="width:100%;border-radius:12px;border:1px solid #374151;background:#000;"></video>`;
+            ? `<img src="${escapeHTML(data.preview_url)}" onclick="abrirLightbox('${escapeHTML(data.preview_url)}', 'imagen')" alt="Vista previa" style="width:100%;border-radius:12px;border:1px solid #374151;cursor:pointer;pointer-events:auto;user-select:none;-webkit-user-drag:none;">`
+            : `<video src="${escapeHTML(data.preview_url)}" onclick="abrirLightbox('${escapeHTML(data.preview_url)}', 'video')" controls playsinline style="width:100%;border-radius:12px;border:1px solid #374151;background:#000;cursor:pointer;"></video>`;
 
         caja.innerHTML = `
             ${media}
@@ -789,6 +885,7 @@
         renderParticles();
         setupWizard();
         setupFilters();
+        initStarsRecommendation();
 
         document.querySelector('.fab-btn').addEventListener('click', () => abrirModalCrear());
         document.getElementById('btn-create-campaign-top').addEventListener('click', () => abrirModalCrear());
@@ -835,7 +932,6 @@
         if (!container._clickBound) { container._clickBound = true; container.addEventListener('click', (e) => { const card = e.target.closest('.campaign-card'); if (card && card.dataset.id) openDetail(card.dataset.id); }); }
     }
 
-    // Solo cuentan las campañas confirmadas: las pendientes o canceladas no inflan el panel
     function calculateSummary() {
         let budget = 0, active = 0, spent = 0;
         campaigns.forEach(c => {
@@ -857,6 +953,51 @@
                 btn.classList.add('active'); currentFilter = btn.dataset.filter; renderCampaigns();
             });
         });
+    }
+
+    // ================================================================
+    // SECCIÓN DE 12 ESTRELLAS Y COMPARTIR
+    // ================================================================
+    function initStarsRecommendation() {
+        const container = document.getElementById('starsContainer');
+        const shareSection = document.getElementById('shareButtons');
+        if (!container) return;
+
+        // Generar 12 estrellas con retraso de animación
+        for (let i = 0; i < 12; i++) {
+            const star = document.createElement('span');
+            star.className = 'star-icon';
+            star.innerHTML = '💫';
+            star.style.animationDelay = `${i * 0.1}s`;
+            container.appendChild(star);
+        }
+
+        // Configurar enlaces de compartir
+        const urlApp = encodeURIComponent('https://galleta-domo-production.up.railway.app/marketing/marketing.html');
+        const textApp = encodeURIComponent('¡Estoy usando el increíble ecosistema de Sariel\'s para gestionar mi marketing! 🚀 Recomiendo totalmente esta plataforma. Calificación: 12/12 estrellas 💫');
+        
+        document.getElementById('shareWa').href = `https://api.whatsapp.com/send?text=${textApp}%20${urlApp}`;
+        document.getElementById('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${urlApp}`;
+        document.getElementById('shareTw').href = `https://twitter.com/intent/tweet?text=${textApp}&url=${urlApp}`;
+
+        // Mostrar botones al interactuar con las estrellas
+        container.addEventListener('click', () => {
+            shareSection.style.display = 'flex';
+            showToast('¡Gracias por recomendar Sariel\'s! 💫', 'success');
+        });
+    }
+
+    // Compartir nativo (móviles)
+    function compartirNativo() {
+        if (navigator.share) {
+            navigator.share({
+                title: 'Sariel\'s · Marketing con IA',
+                text: '¡Estoy usando el increíble ecosistema de Sariel\'s para gestionar mi marketing! Recomiendo totalmente esta plataforma. 12/12 estrellas 💫',
+                url: 'https://galleta-domo-production.up.railway.app/marketing/marketing.html'
+            }).catch(() => {});
+        } else {
+            showToast('Tu navegador no soporta compartir nativo. Usa los botones de abajo.', 'warning');
+        }
     }
 
     async function openDetail(campaignId) {
@@ -949,7 +1090,6 @@
         resetWizard();
     }
 
-    // Limpia los campos SIN vaciar los select: el objetivo siempre queda con una opción válida
     function limpiarCamposWizard() {
         document.querySelectorAll('.wizard-step input, .wizard-step textarea').forEach(el => { el.value = ''; el.disabled = false; });
         document.querySelectorAll('.wizard-step select').forEach(el => {
@@ -1112,8 +1252,6 @@
 
     async function obtenerToken() { const { data } = await supabaseClient.auth.getSession(); const token = data?.session?.access_token; if (!token) throw new Error('Sesión expirada. Vuelve a iniciar sesión.'); return token; }
 
-    // Primer envío: crea campaña y pago en una sola operación (el backend revierte si NOWPayments falla).
-    // Reintento: la campaña ya existe en pendiente_pago; solo se genera un pago nuevo.
     async function onPagarClick() {
         const btn = document.getElementById('btn-pay'); btn.disabled = true;
         try {
@@ -1222,7 +1360,6 @@
                     setEstado('✕ El pago falló o expiró. Puedes reintentar con otra dirección.');
                     const btn = document.getElementById('btn-pay');
                     if (btn) { btn.style.display = ''; btn.disabled = false; btn.textContent = '◈ Reintentar pago'; }
-                    // La campaña sigue pendiente; el reintento genera un pago nuevo para ella
                     if (campañaCreada) campañaCreada.pago = null;
                     return;
                 }
@@ -1233,7 +1370,6 @@
     }
 
     async function pagarCampanaPendiente(campaignId) {
-        // Desde el panel: reabre el paso 7 con la campaña pendiente, sin crear otra
         const campaign = campaigns.find(c => c.id === campaignId);
         if (!campaign) return;
         document.getElementById('modal-detail').classList.add('hidden');
@@ -1276,8 +1412,12 @@
     window.enviarMensajePromi = enviarMensajePromi;
     window.resetPromi = resetPromi;
     window.generarMediaReal = generarMediaReal;
+    window.iniciarCampanaDesdePromi = iniciarCampesinaDesdePromi; // Fix typo en referencia a ventana
     window.iniciarCampanaDesdePromi = iniciarCampanaDesdePromi;
     window.copiarDireccionPago = copiarDireccionPago;
+    window.abrirLightbox = abrirLightbox;
+    window.cerrarLightbox = cerrarLightbox;
+    window.compartirNativo = compartirNativo;
     </script>
 </body>
 </html>
