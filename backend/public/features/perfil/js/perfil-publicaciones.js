@@ -1,12 +1,12 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.6 IMMERSIVE PLAYER + SCRUBBING FLUIDO + SECURE DOM + PIP FIX
+// v14.7 IMMERSIVE PLAYER + PIP FLOATING NAVIGATION FIX
 // ================================================================
-// ACTUALIZACIONES v14.6:
-// 1. Eliminado botón rojo de cierre en el centro.
-// 2. Play/Pause central unificado (solo aparece al pausar).
-// 3. El visor se oculta automáticamente al entrar a PiP para navegar por el ecosistema.
-// 4. Se mantiene la base de seguridad, memoria y emojis de v14.5.
+// ACTUALIZACIONES v14.7:
+// 1. El visor web se oculta completamente al entrar a PiP (display: none).
+// 2. Permite navegar por el ecosistema dejando la ventana flotante encima.
+// 3. Al cerrar el PiP (X del sistema), el visor web se restaura solo.
+// 4. Se mantiene toda la base de seguridad, memoria y emojis de v14.6.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -272,7 +272,7 @@ var pubVisor = {
 function pubMostrarControles() {
     var el = document.getElementById('pubVisorFull');
 
-    if (!el) return;
+    if (!el || !el.classList.contains('show')) return;
 
     el.classList.remove('controls-hidden');
 
@@ -932,19 +932,22 @@ function pubMostrarItem() {
         video.addEventListener('enterpictureinpicture', function () {
             pubOcultarControles();
             
-            // Ocultar el visor completo para poder navegar en el ecosistema
-            el.classList.remove('show');
+            // FIX v14.7: Ocultar el visor web por completo (display: none) para que el usuario pueda navegar
+            el.style.display = 'none';
             pubVisor.estabaVisibleAntesDePip = true;
+            document.body.style.overflow = ''; // Restaurar el scroll del cuerpo para que navegue normal
 
             if (window.showToast) {
-                window.showToast('Vídeo en ventana flotante. Puedes navegar libremente.', 'success', 2000);
+                window.showToast('Vídeo en ventana flotante. Navega libremente.', 'success', 2000);
             }
         });
 
         video.addEventListener('leavepictureinpicture', function () {
-            // Restaurar el visor si se estaba mostrando
+            // FIX v14.7: Restaurar el visor si se estaba mostrando
             if (pubVisor.estabaVisibleAntesDePip) {
+                el.style.display = '';
                 el.classList.add('show');
+                document.body.style.overflow = 'hidden'; // Volver a bloquear el scroll
                 pubVisor.estabaVisibleAntesDePip = false;
             }
 
@@ -1051,6 +1054,7 @@ function pubCerrarVisor() {
     el.classList.remove('show');
     el.classList.remove('is-fullscreen');
     el.classList.remove('controls-hidden');
+    el.style.display = ''; // Asegurar que el estilo en línea de PiP se limpie
 
     document.body.style.overflow = '';
 
@@ -3296,5 +3300,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.6
+// FIN · PERFIL PUBLICACIONES v14.7
 // ================================================================
