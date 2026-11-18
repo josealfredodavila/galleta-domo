@@ -24,6 +24,8 @@
 // v4.5: Generación de imagen y video (/api/ai/media, Cosmos3 Nano).
 //       El seguimiento GET de /api/ai/media queda fuera del límite
 //       de peticiones, porque el video se consulta cada pocos segundos.
+// v4.6: Promi montado en /api/promi (después de /api/ai/media y antes
+//       de /api/ai, para que /api/promi/chat no caiga en el 404 de /api).
 // ================================================================
 
 require('dotenv').config();
@@ -981,6 +983,10 @@ montarRouter('/api/video', './routes/video-processor', 'routes/video-processor')
 // Generación de imagen y video para Marketing (Cosmos3 Nano).
 // Va ANTES de /api/ai para que sea explícito; /api/ai no tiene rutas /media.
 montarRouter('/api/ai/media', './routes/ai-media', 'routes/ai-media');
+
+// Promi (chat de mascotas IA). Debe montarse DESPUÉS de /api/ai/media y
+// ANTES de /api/ai, para que /api/promi/chat no caiga en el 404 de /api.
+montarRouter('/api/promi', './routes/promi', 'routes/promi');
 
 montarRouter('/api/ai', './routes/ai-chat', 'routes/ai-chat');
 
