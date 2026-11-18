@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>◈ Marketing · Sariel's</title>
+    <title>◈ Marketing · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -200,10 +200,11 @@
         .promi-option { display: flex; justify-content: space-between; align-items: center; background: #111827; border: 1px solid #374151; padding: 14px 18px; border-radius: 16px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: left; color: #e5e7eb; }
         .promi-option:hover { background: #1f2937; border-color: #ff0050; transform: translateY(-2px); }
 
-        /* Botones de acción creativa (Imagen/Video) */
+        /* Botones de acción creativa */
         .promi-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; margin-bottom: 15px; align-self: flex-start; }
         .promi-action-btn { background: rgba(255,0,80,0.1); border: 1px solid rgba(255,0,80,0.5); color: #ff0050; padding: 10px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s; }
         .promi-action-btn:hover { background: rgba(255,0,80,0.2); box-shadow: 0 0 15px rgba(255,0,80,0.2); }
+        .promi-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
         /* Animación Escribiendo... */
         .typing-indicator { display: flex; gap: 4px; padding: 14px 18px; background: #1f2937; border-radius: 20px; border-bottom-left-radius: 4px; align-self: flex-start; width: fit-content; margin-bottom: 4px; border: 1px solid #374151; }
@@ -227,22 +228,26 @@
         .lightbox-modal.active { display: flex; }
         .lightbox-content { position: relative; max-width: 90vw; max-height: 85vh; display: flex; justify-content: center; align-items: center; }
         .lightbox-content img, .lightbox-content video { max-width: 100%; max-height: 85vh; border-radius: 12px; box-shadow: 0 0 50px rgba(0, 0, 0, 0.8); pointer-events: none; user-select: none; -webkit-user-drag: none; }
-        .lightbox-content video { pointer-events: auto; } /* El video necesita interacción para play/pause */
+        .lightbox-content video { pointer-events: auto; }
         .lightbox-close { position: absolute; top: 20px; right: 30px; color: #fff; font-size: 2.5rem; cursor: pointer; line-height: 1; background: none; border: none; transition: color 0.2s; z-index: 100001; }
         .lightbox-close:hover { color: var(--gold); }
         .lightbox-caption { margin-top: 15px; color: #9ca3af; font-size: 0.9rem; text-align: center; background: rgba(0,0,0,0.5); padding: 8px 16px; border-radius: 20px; }
 
         /* =========================================
-           SECCIÓN 12 ESTRELLAS (RECOMENDACIÓN)
+           SECCIÓN DE ESTRELLAS (RECOMENDACIÓN)
            ========================================= */
         .recommendation-section { margin: 40px 0; padding: 30px 20px; background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(15, 45, 26, 0.4)); border: 1px solid var(--glass-border); border-radius: var(--radius-xl); text-align: center; position: relative; overflow: hidden; }
         .recommendation-section::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, rgba(212,175,55,0.1) 0%, transparent 70%); pointer-events: none; }
         .recommendation-title { font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.2rem; font-weight: 800; margin-bottom: 8px; letter-spacing: 1px; position: relative; z-index: 1; }
         .recommendation-sub { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 20px; position: relative; z-index: 1; }
-        .stars-container { display: flex; justify-content: center; gap: 4px; margin-bottom: 24px; position: relative; z-index: 1; flex-wrap: wrap; }
-        .star-icon { font-size: 1.8rem; color: var(--gold); filter: drop-shadow(0 0 10px var(--gold-glow)); animation: starPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; transform: scale(0); }
+        .estrellas-toggle { position: relative; z-index: 1; background: transparent; border: 1px solid var(--glass-border-strong); color: var(--gold); padding: 8px 18px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; cursor: pointer; margin-bottom: 14px; font-family: 'Inter', sans-serif; letter-spacing: 0.4px; transition: var(--transition); }
+        .estrellas-toggle:hover { background: rgba(212, 175, 55, 0.1); }
+        .stars-wrap { position: relative; z-index: 1; }
+        .stars-wrap.oculto { display: none; }
+        .stars-container { display: flex; justify-content: center; gap: 4px; margin-bottom: 24px; flex-wrap: wrap; }
+        .star-icon { font-size: 1.8rem; color: var(--gold); filter: drop-shadow(0 0 10px var(--gold-glow)); animation: starPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; opacity: 0; transform: scale(0); cursor: pointer; }
         @keyframes starPop { to { opacity: 1; transform: scale(1); } }
-        .share-buttons { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; position: relative; z-index: 1; }
+        .share-buttons { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; }
         .share-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 30px; font-size: 0.75rem; font-weight: 700; text-decoration: none; color: #fff; transition: all 0.3s; border: 1px solid transparent; cursor: pointer; }
         .share-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
         .share-btn.wa { background: #25D366; }
@@ -266,7 +271,7 @@
 
     <div class="app">
         <header class="header">
-            <a href="/" class="logo"><span class="logo-hex">◈</span><span class="logo-text">Sariel<span>'s</span></span><span class="logo-badge">✦ WEB3</span></a>
+            <a href="/" class="logo"><span class="logo-hex">◈</span><span class="logo-text">Csariel<span>'s</span></span><span class="logo-badge">✦ WEB3</span></a>
             <div class="header-right"><span class="status-pill"><span class="dot"></span> ONLINE</span></div>
         </header>
 
@@ -290,7 +295,7 @@
         <div id="tab-panel" class="tab-content active">
             <div class="marketing-hero">
                 <div class="hero-title-wrap">
-                    <div class="hero-kicker">// Sariel's Ecosystem · Ads Network</div>
+                    <div class="hero-kicker">// Csariel's Ecosystem · Ads Network</div>
                     <h1>◈ Panel de Marketing</h1>
                     <div class="hero-sub">Gestiona tus campañas publicitarias en LIVE, GRUPOS y VIDEOS</div>
                 </div>
@@ -316,30 +321,33 @@
                 <div id="campaigns-list" class="campaigns-grid"><div class="empty-state"><span class="icon">◈</span><p>Inicializando...</p></div></div>
             </section>
 
-            <!-- SECCIÓN DE 12 ESTRELLAS Y RECOMENDACIÓN -->
+            <!-- SECCIÓN DE ESTRELLAS Y RECOMENDACIÓN -->
             <section class="recommendation-section" id="recommendationSection">
                 <h2 class="recommendation-title">✦ Califica tu experiencia ✦</h2>
                 <p class="recommendation-sub">Tu opinión ayuda a que más negocios descubran el poder de Csariel's.</p>
-                <div class="stars-container" id="starsContainer">
-                    <!-- Las 12 estrellas se generan vía JS para la animación -->
-                </div>
-                <div class="share-buttons" id="shareButtons" style="display: none;">
-                    <button class="share-btn native" onclick="compartirNativo()">
-                        <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
-                        Compartir
-                    </button>
-                    <a href="#" class="share-btn wa" id="shareWa" target="_blank" rel="noopener">
-                        <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-                        WhatsApp
-                    </a>
-                    <a href="#" class="share-btn fb" id="shareFb" target="_blank" rel="noopener">
-                        <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
-                        Facebook
-                    </a>
-                    <a href="#" class="share-btn tw" id="shareTw" target="_blank" rel="noopener">
-                        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                        X (Twitter)
-                    </a>
+
+                <button type="button" class="estrellas-toggle" id="btnToggleEstrellas">👉 Minimizar estrellas</button>
+
+                <div class="stars-wrap" id="starsWrap">
+                    <div class="stars-container" id="starsContainer"></div>
+                    <div class="share-buttons" id="shareButtons" style="display: none;">
+                        <button class="share-btn native" onclick="compartirNativo()">
+                            <svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+                            Compartir
+                        </button>
+                        <a href="#" class="share-btn wa" id="shareWa" target="_blank" rel="noopener">
+                            <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                            WhatsApp
+                        </a>
+                        <a href="#" class="share-btn fb" id="shareFb" target="_blank" rel="noopener">
+                            <svg viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                            Facebook
+                        </a>
+                        <a href="#" class="share-btn tw" id="shareTw" target="_blank" rel="noopener">
+                            <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                            X (Twitter)
+                        </a>
+                    </div>
                 </div>
             </section>
         </div>
@@ -364,14 +372,12 @@
             <h2>Promi</h2>
         </div>
         <div class="promi-body" id="promiBody">
-            <!-- Bienvenida -->
             <div class="promi-welcome" id="promiWelcome">
                 <img src="https://cdn-icons-png.flaticon.com/512/4712/4712035.png" alt="Promi Avatar" class="promi-avatar">
                 <h1>Hola, soy Promi</h1>
                 <p>Tu agente de ventas y estratega de Marketing. Pregúntame cómo mejorar tus campañas o pídeme que genere imágenes y videos para tus anuncios.</p>
             </div>
 
-            <!-- Opciones iniciales -->
             <div class="promi-options" id="promiInitialOptions">
                 <div class="promi-option" onclick="enviarMensajePromi('Dame ideas para una campaña de marketing')">💡 Dame ideas para una campaña <span>→</span></div>
                 <div class="promi-option" onclick="enviarMensajePromi('Genera una imagen para mi anuncio')">🖼️ Generar imagen para mi anuncio <span>→</span></div>
@@ -388,7 +394,7 @@
         <button class="promi-new-chat" onclick="resetPromi()">📝 Nuevo chat</button>
     </div>
 
-    <!-- VISOR INMERSIVO LIGHTBOX -->
+    <!-- VISOR INMERSIVO -->
     <div class="lightbox-modal" id="lightboxModal" onclick="cerrarLightbox(event)">
         <button class="lightbox-close" onclick="cerrarLightbox(event)">&times;</button>
         <div class="lightbox-content" id="lightboxContent"></div>
@@ -471,7 +477,11 @@
 
     <script>
     /* ============================================================
-       MARKETING · Sariel's — v9.6 (PROMI PREMIUM + 12 ESTRELLAS)
+       MARKETING · Csariel's — v9.7
+       - Sin acceso para invitados: sin sesión, va al inicio de sesión.
+       - Invitación: el enlace lleva al inicio de sesión / crear cuenta.
+       - Corrige la referencia que rompía window.* y el bloqueo de
+         botones al aceptar contenido.
        ============================================================ */
 
     const BACKEND_URL = 'https://galleta-domo-production.up.railway.app';
@@ -480,6 +490,11 @@
     const MAX_POLL_INTENTOS = 80;
     const INTERVALO_POLL_MS = 15000;
     const OBJETIVOS_VALIDOS = ['alcance', 'reproducciones', 'interacciones', 'clics'];
+
+    // Enlace de invitación: la página de inicio tiene "Iniciar sesión" y "Crear cuenta nueva".
+    // Nadie entra al panel sin cuenta.
+    const URL_INVITACION = BACKEND_URL + '/';
+    const MARCA = "Csariel's";
 
     const REDES_PAGO = [
         { value: 'usdttrc20', moneda: 'USDT', red: 'TRON',     min: 16, label: 'USDT · TRON (TRC20)' },
@@ -505,11 +520,8 @@
     let campañaCreada = null;
     let pollTimer = null;
     let promiHistory = [];
-    
-    // Guarda el ID del último recurso generado para permitir edición conversacional
-    let ultimoAssetIdPromi = null; 
+    let ultimoAssetIdPromi = null;
 
-    function log(...a) { if (DEBUG) console.log('◈', ...a); }
     function logError(...a) { console.error('✕', ...a); }
     function escapeHTML(t) { return t ? String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') : ''; }
     function isValidHttpUrl(s) { try { const u = new URL(s); return u.protocol === 'http:' || u.protocol === 'https:'; } catch { return false; } }
@@ -555,18 +567,18 @@
         `;
     }
 
-    // Lógica para Visor Inmersivo Lightbox
+    // Visor inmersivo: sin descarga directa
     function abrirLightbox(url, tipo) {
         const modal = document.getElementById('lightboxModal');
         const content = document.getElementById('lightboxContent');
         const caption = document.getElementById('lightboxCaption');
-        
+
         if (tipo === 'video') {
-            content.innerHTML = `<video src="${escapeHTML(url)}" controls autoplay playsinline></video>`;
+            content.innerHTML = `<video src="${escapeHTML(url)}" controls autoplay playsinline controlsList="nodownload"></video>`;
             caption.textContent = 'Vista previa del video generado por Promi';
         } else {
             content.innerHTML = `<img src="${escapeHTML(url)}" alt="Vista previa de imagen">`;
-            caption.textContent = 'Vista previa del creativo. Protegido por Sariel\'s.';
+            caption.textContent = "Vista previa del creativo. Protegido por Csariel's.";
         }
         modal.classList.add('active');
     }
@@ -576,7 +588,7 @@
         const modal = document.getElementById('lightboxModal');
         const content = document.getElementById('lightboxContent');
         modal.classList.remove('active');
-        content.innerHTML = ''; // Detiene la reproducción de video
+        content.innerHTML = '';
     }
 
     async function enviarMensajePromi(textoForzado) {
@@ -623,36 +635,38 @@
                 body: JSON.stringify({ message: texto, history: promiHistory, asset_id: ultimoAssetIdPromi })
             });
 
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
             typing.remove();
 
             if (data.success && data.contrato) {
                 const botMsg = document.createElement('div');
                 botMsg.className = 'promi-msg bot';
-                
+
                 const c = data.contrato;
                 if (c.type === 'chat') {
                     botMsg.innerHTML = escapeHTML(c.message).replace(/\n/g, '<br>');
                 } else if (c.type === 'copywriting') {
-                    botMsg.innerHTML = c.variants.map(v => `<strong>${escapeHTML(v.channel)} (${escapeHTML(v.format)}):</strong><br>${escapeHTML(v.text)}<br><br>`).join('');
+                    botMsg.innerHTML = (c.variants || []).map(v => `<strong>${escapeHTML(v.channel)} (${escapeHTML(v.format)}):</strong><br>${escapeHTML(v.text)}<br><br>`).join('');
                 } else if (c.type === 'campaign_strategy') {
-                    botMsg.innerHTML = `<strong>🎯 ${escapeHTML(c.campaign.name)}</strong><br><br>${escapeHTML(c.campaign.creative_concept)}<br><br><em>Objetivo: ${escapeHTML(c.campaign.business_objective)}</em>`;
+                    botMsg.innerHTML = `<strong>🎯 ${escapeHTML(c.campaign?.name)}</strong><br><br>${escapeHTML(c.campaign?.creative_concept)}<br><br><em>Objetivo: ${escapeHTML(c.campaign?.business_objective)}</em>`;
                 } else if (c.type === 'campaign_analysis') {
-                    botMsg.innerHTML = `<strong>📊 Análisis:</strong><br>${c.diagnosis.map(d => escapeHTML(d)).join('<br>')}`;
+                    botMsg.innerHTML = `<strong>📊 Análisis:</strong><br>${(c.diagnosis || []).map(d => escapeHTML(d)).join('<br>')}`;
                 } else if (c.type === 'image_generation' || c.type === 'video_generation') {
                     if (data.preview_url_seg) {
                         const isVideo = c.type === 'video_generation';
-                        
-                        // GUARDAMOS EL ID DEL ASSET PARA EDICIÓN CONVERSACIONAL
                         ultimoAssetIdPromi = c.asset_id;
+                        const url = escapeHTML(data.preview_url_seg);
+                        const tipo = isVideo ? 'video' : 'imagen';
 
-                        // El media tag bloquea el clic derecho y la descarga directa, y abre el lightbox
-                        const mediaTag = isVideo 
-                            ? `<video src="${escapeHTML(data.preview_url_seg)}" onclick="abrirLightbox('${escapeHTML(data.preview_url_seg)}', 'video')" style="width:100%;border-radius:12px;margin-bottom:12px;background:#000;cursor:pointer;pointer-events:auto;" muted playsinline></video>` 
-                            : `<img src="${escapeHTML(data.preview_url_seg)}" onclick="abrirLightbox('${escapeHTML(data.preview_url_seg)}', 'imagen')" style="width:100%;border-radius:12px;margin-bottom:12px;cursor:pointer;pointer-events:auto;user-select:none;-webkit-user-drag:none;">`;
-                        
+                        const mediaTag = isVideo
+                            ? `<video src="${url}" onclick="abrirLightbox('${url}', 'video')" style="width:100%;border-radius:12px;margin-bottom:12px;background:#000;cursor:pointer;" muted playsinline controlsList="nodownload"></video>`
+                            : `<img src="${url}" onclick="abrirLightbox('${url}', 'imagen')" style="width:100%;border-radius:12px;margin-bottom:12px;cursor:pointer;user-select:none;-webkit-user-drag:none;">`;
+
+                        // Los botones van en su propio bloque para que al aceptar solo cambie este bloque
                         botMsg.innerHTML = `${mediaTag}
-                            <button class="promi-action-btn" onclick="aceptarMedia(${c.asset_id}, '${isVideo ? 'video' : 'imagen'}', this, '${session.access_token}')">✓ Aceptar para mi campaña</button>
+                            <div class="acciones-media" style="display:flex;gap:8px;flex-wrap:wrap;">
+                                <button class="promi-action-btn" onclick="aceptarMedia(${Number(c.asset_id)}, '${tipo}', this, '${session.access_token}')">✓ Aceptar para mi campaña</button>
+                            </div>
                             <p style="font-size:0.75rem; color:#9ca3af; margin-top:8px;">💡 <em>Puedes decirme "hazlo más elegante" o "cambia el fondo" para modificarlo.</em></p>`;
                     } else {
                         botMsg.textContent = `Generando ${c.type === 'image_generation' ? 'imagen' : 'video'}... (ID: ${c.asset_id})`;
@@ -667,7 +681,7 @@
             }
         } catch (e) {
             typing.remove();
-            console.error(e);
+            logError(e);
             showToast('Error de conexión con Promi', 'error');
         }
         body.scrollTop = body.scrollHeight;
@@ -706,10 +720,10 @@
         caja.style.padding = '16px';
         caja.style.textAlign = 'center';
 
-        // Habilitar clic para lightbox y bloquear guardado
+        const url = escapeHTML(data.preview_url);
         const media = tipo === 'imagen'
-            ? `<img src="${escapeHTML(data.preview_url)}" onclick="abrirLightbox('${escapeHTML(data.preview_url)}', 'imagen')" alt="Vista previa" style="width:100%;border-radius:12px;border:1px solid #374151;cursor:pointer;pointer-events:auto;user-select:none;-webkit-user-drag:none;">`
-            : `<video src="${escapeHTML(data.preview_url)}" onclick="abrirLightbox('${escapeHTML(data.preview_url)}', 'video')" controls playsinline style="width:100%;border-radius:12px;border:1px solid #374151;background:#000;cursor:pointer;"></video>`;
+            ? `<img src="${url}" onclick="abrirLightbox('${url}', 'imagen')" alt="Vista previa" style="width:100%;border-radius:12px;border:1px solid #374151;cursor:pointer;user-select:none;-webkit-user-drag:none;">`
+            : `<video src="${url}" onclick="abrirLightbox('${url}', 'video')" controls playsinline controlsList="nodownload" style="width:100%;border-radius:12px;border:1px solid #374151;background:#000;cursor:pointer;"></video>`;
 
         caja.innerHTML = `
             ${media}
@@ -723,15 +737,18 @@
             </div>
         `;
 
-        caja.querySelector('[data-accion="aceptar"]').addEventListener('click', () => aceptarMedia(id, tipo, caja, token));
+        caja.querySelector('[data-accion="aceptar"]').addEventListener('click', (ev) => aceptarMedia(id, tipo, ev.currentTarget, token));
         caja.querySelector('[data-accion="descartar"]').addEventListener('click', () => descartarMedia(id, caja, token));
 
         body.appendChild(caja);
         body.scrollTop = body.scrollHeight;
     }
 
-    async function aceptarMedia(id, tipo, caja, token) {
-        const botones = caja.parentElement.querySelectorAll('button');
+    // Acepta el contenido. Solo deshabilita y cambia la burbuja donde está el botón.
+    async function aceptarMedia(id, tipo, elementoBoton, token) {
+        const burbuja = elementoBoton.closest('.promi-msg');
+        const bloque = burbuja.querySelector('.acciones-media');
+        const botones = bloque ? bloque.querySelectorAll('button') : burbuja.querySelectorAll('button');
         botones.forEach((b) => { b.disabled = true; });
 
         try {
@@ -749,8 +766,8 @@
             wizard.media_id = id;
             wizard.media_tipo = tipo;
 
-            const acciones = caja.parentElement.querySelector('.acciones-media') || caja.parentElement;
-            acciones.innerHTML = `
+            const destino = bloque || burbuja;
+            destino.innerHTML = `
                 <span style="color:#00d68f;font-size:0.8rem;font-weight:700;display:block;margin-bottom:10px;">✓ Aceptado. Se usará en tu campaña.</span>
                 <button class="promi-action-btn" onclick="iniciarCampanaDesdePromi()" style="background:#00d68f; color:#04060d; border:none;">📋 Continuar con la campaña</button>
             `;
@@ -769,45 +786,6 @@
             });
         } catch (e) { /* si falla, el archivo caduca solo */ }
         caja.remove();
-    }
-
-    async function generarMediaReal(tipo, promptUsuario) {
-        const body = document.getElementById('promiBody');
-        const cargando = crearBurbujaMedia(
-            tipo === 'imagen' ? 'Generando imagen…' : 'Generando video… puede tardar varios minutos.'
-        );
-        body.appendChild(cargando);
-        body.scrollTop = body.scrollHeight;
-
-        try {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            if (!session) throw new Error('No hay sesión activa');
-            const token = session.access_token;
-
-            const ruta = tipo === 'imagen' ? '/api/ai/media/imagen' : '/api/ai/media/video';
-            const res = await fetch(`${BACKEND_URL}${ruta}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-                body: JSON.stringify({ prompt: promptUsuario })
-            });
-            const data = await res.json().catch(() => ({}));
-
-            if (!res.ok && res.status !== 202) {
-                throw new Error(data.mensaje || data.error || 'Error del servidor');
-            }
-
-            const listo = data.estado === 'listo' ? data : await esperarMedia(data.id, token);
-
-            cargando.remove();
-            mostrarVistaPrevia(tipo, { ...listo, id: data.id }, token);
-        } catch (error) {
-            cargando.remove();
-            const err = crearBurbujaMedia('❌ ' + (error.message || 'Error al generar el contenido.'));
-            err.style.borderColor = '#ff3366';
-            err.style.color = '#ff3366';
-            body.appendChild(err);
-        }
-        body.scrollTop = body.scrollHeight;
     }
 
     function renderParticles() {
@@ -881,6 +859,11 @@
         }
     }
 
+    // Sin sesión no se muestra el panel: se manda a iniciar sesión o crear cuenta
+    function irAInicioDeSesion() {
+        window.location.replace('/');
+    }
+
     async function init() {
         renderParticles();
         setupWizard();
@@ -900,14 +883,13 @@
         let user = null;
         try { const { data, error } = await supabaseClient.auth.getUser(); if (error) throw error; user = data?.user || null; } catch (err) { logError('Usuario:', err); }
 
-        if (!user) { showNoSession(); return; }
+        if (!user) { irAInicioDeSesion(); return; }
 
         currentUser = user;
         try { await loadCampaigns(); } catch (err) { logError('Campañas:', err); showCampaignsError(err.message); }
     }
 
     function showBootError(msg) { const el = document.getElementById('campaigns-list'); if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error inicializando Marketing</p><small>${escapeHTML(msg)}</small></div>`; }
-    function showNoSession() { const el = document.getElementById('campaigns-list'); if (el) el.innerHTML = `<div class="empty-state"><span class="icon">◈</span><p>Inicia sesión para ver tus campañas</p><a href="/" class="btn btn-primary" style="margin-top:20px;text-decoration:none;">Ir al inicio</a></div>`; }
     function showCampaignsError(msg) { const el = document.getElementById('campaigns-list'); if (el) el.innerHTML = `<div class="empty-state error-state"><span class="icon">✕</span><p>Error cargando campañas</p><small>${escapeHTML(msg || 'Error desconocido')}</small></div>`; }
 
     async function loadCampaigns() {
@@ -956,44 +938,48 @@
     }
 
     // ================================================================
-    // SECCIÓN DE 12 ESTRELLAS Y COMPARTIR
+    // ESTRELLAS Y COMPARTIR (invitación a crear cuenta)
     // ================================================================
     function initStarsRecommendation() {
         const container = document.getElementById('starsContainer');
         const shareSection = document.getElementById('shareButtons');
+        const starsWrap = document.getElementById('starsWrap');
+        const btnToggle = document.getElementById('btnToggleEstrellas');
         if (!container) return;
 
-        // Generar 12 estrellas con retraso de animación
         for (let i = 0; i < 12; i++) {
             const star = document.createElement('span');
             star.className = 'star-icon';
-            star.innerHTML = '💫';
+            star.textContent = '💫';
             star.style.animationDelay = `${i * 0.1}s`;
             container.appendChild(star);
         }
 
-        // Configurar enlaces de compartir
-        const urlApp = encodeURIComponent('https://galleta-domo-production.up.railway.app/marketing/marketing.html');
-        const textApp = encodeURIComponent('¡Estoy usando el increíble ecosistema de Sariel\'s para gestionar mi marketing! 🚀 Recomiendo totalmente esta plataforma. Calificación: 12/12 estrellas 💫');
-        
-        document.getElementById('shareWa').href = `https://api.whatsapp.com/send?text=${textApp}%20${urlApp}`;
-        document.getElementById('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${urlApp}`;
-        document.getElementById('shareTw').href = `https://twitter.com/intent/tweet?text=${textApp}&url=${urlApp}`;
+        // Línea 👉: minimiza o muestra las estrellas
+        btnToggle.addEventListener('click', () => {
+            const oculto = starsWrap.classList.toggle('oculto');
+            btnToggle.textContent = oculto ? '👉 Mostrar estrellas' : '👉 Minimizar estrellas';
+        });
 
-        // Mostrar botones al interactuar con las estrellas
+        const urlEnlace = encodeURIComponent(URL_INVITACION);
+        const textoCompartir = encodeURIComponent(`Únete a ${MARCA}: crea tu cuenta y entra al ecosistema 🚀 💫`);
+
+        document.getElementById('shareWa').href = `https://api.whatsapp.com/send?text=${textoCompartir}%20${urlEnlace}`;
+        document.getElementById('shareFb').href = `https://www.facebook.com/sharer/sharer.php?u=${urlEnlace}`;
+        document.getElementById('shareTw').href = `https://twitter.com/intent/tweet?text=${textoCompartir}&url=${urlEnlace}`;
+
         container.addEventListener('click', () => {
             shareSection.style.display = 'flex';
-            showToast('¡Gracias por recomendar Sariel\'s! 💫', 'success');
+            showToast(`¡Gracias por recomendar ${MARCA}! 💫`, 'success');
         });
     }
 
-    // Compartir nativo (móviles)
     function compartirNativo() {
         if (navigator.share) {
             navigator.share({
-                title: 'Sariel\'s · Marketing con IA',
-                text: '¡Estoy usando el increíble ecosistema de Sariel\'s para gestionar mi marketing! Recomiendo totalmente esta plataforma. 12/12 estrellas 💫',
-                url: 'https://galleta-domo-production.up.railway.app/marketing/marketing.html'
+                title: MARCA,
+                text: `Únete a ${MARCA}: crea tu cuenta y entra al ecosistema 🚀 💫`,
+                url: URL_INVITACION
             }).catch(() => {});
         } else {
             showToast('Tu navegador no soporta compartir nativo. Usa los botones de abajo.', 'warning');
@@ -1403,6 +1389,7 @@
     }
 
     if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+
     window.openDetail = openDetail;
     window.cambiarEstadoCampana = cambiarEstadoCampana;
     window.pagarCampanaPendiente = pagarCampanaPendiente;
@@ -1411,8 +1398,7 @@
     window.togglePromi = togglePromi;
     window.enviarMensajePromi = enviarMensajePromi;
     window.resetPromi = resetPromi;
-    window.generarMediaReal = generarMediaReal;
-    window.iniciarCampanaDesdePromi = iniciarCampesinaDesdePromi; // Fix typo en referencia a ventana
+    window.aceptarMedia = aceptarMedia;
     window.iniciarCampanaDesdePromi = iniciarCampanaDesdePromi;
     window.copiarDireccionPago = copiarDireccionPago;
     window.abrirLightbox = abrirLightbox;
