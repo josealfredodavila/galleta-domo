@@ -1,12 +1,12 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.4 GLOBAL VIDEO PLAYER ENGINE + UNIFORM VISUAL ENGINE + SECURE DOM
+// v14.5 IMMERSIVE PLAYER + SCRUBBING FLUIDO + SECURE DOM
 // ================================================================
-// ACTUALIZACIONES v14.4:
-// 1. Seguridad XSS: Cero innerHTML en el renderizado de autores y fechas.
-// 2. Memoria: FileReader reemplazado por URL.createObjectURL.
-// 3. Memoria: Implementación de URL.revokeObjectURL en limpieza de previews.
-// 4. Se mantiene toda la lógica de Visor, PiP y Motor de Emojis intacta.
+// ACTUALIZACIONES v14.5:
+// 1. Auto-hide controls (2.5s) para efecto inmersivo.
+// 2. Tap to toggle Play/Pause en toda la pantalla.
+// 3. Barra de progreso interactiva con pointermove (scrubbing).
+// 4. Se mantiene toda la base de seguridad y memoria de v14.4.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -262,8 +262,44 @@ var pubVisor = {
     motivoSeleccionado: '',
     esDueno: false,
     modoLleno: false,
-    videoActual: null
+    videoActual: null,
+    timeoutOcultarControles: null,
+    arrastrandoProgreso: false
 };
+
+// Controla la visibilidad de los controles (Header + Progress Bar)
+function pubMostrarControles() {
+    var el = document.getElementById('pubVisorFull');
+
+    if (!el) return;
+
+    el.classList.remove('controls-hidden');
+
+    if (pubVisor.timeoutOcultarControles) {
+        clearTimeout(pubVisor.timeoutOcultarControles);
+    }
+
+    var video = pubVisor.videoActual;
+
+    // Solo ocultar si el video se está reproduciendo y no estamos arrastrando
+    if (video && !video.paused && !pubVisor.arrastrandoProgreso) {
+        pubVisor.timeoutOcultarControles = setTimeout(function () {
+            el.classList.add('controls-hidden');
+        }, 2500); // 2.5 segundos de inactividad
+    }
+}
+
+function pubOcultarControles() {
+    var el = document.getElementById('pubVisorFull');
+
+    if (!el) return;
+
+    el.classList.add('controls-hidden');
+
+    if (pubVisor.timeoutOcultarControles) {
+        clearTimeout(pubVisor.timeoutOcultarControles);
+    }
+}
 
 function pubVisorEl() {
     var el = document.getElementById('pubVisorFull');
@@ -305,6 +341,8 @@ function pubVisorEl() {
 
         '<div class="pub-vf-media"></div>' +
 
+        // Se mantiene el contenedor central por compatibilidad, pero ahora es invisible
+        // y solo se usa para alojar los iconos si el video está pausado.
         '<div class="pub-vf-center-controls" id="pubVfCenterControls" style="display:none;">' +
             '<button type="button" class="pub-vf-big-play" id="btnPubVfBigPlay" aria-label="Reproducir">' +
                 '<svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>' +
@@ -392,7 +430,7 @@ function pubVisorEl() {
         pubCerrarVisor();
     });
 
-    // Play / pausa manual
+    // Play / pausa manual (botón central oculto)
     el.querySelector('#btnPubVfBigPlay').addEventListener('click', function (e) {
         e.stopPropagation();
 
@@ -422,7 +460,6 @@ function pubVisorEl() {
         if (video) {
             video.style.objectFit = pubVisor.modoLleno ? 'cover' : 'contain';
 
-            // Restaurar posición únicamente si el navegador la modificó.
             if (Math.abs(video.currentTime - tiempo) > 0.5) {
                 try {
                     video.currentTime = tiempo;
@@ -502,25 +539,46 @@ function pubVisorEl() {
         }
     });
 
-    // Barra de progreso
+    // Barra de progreso interactiva (Scrubbing fluido)
     var progressBar = el.querySelector('#pubVfProgressBar');
 
-    function pubCambiarTiempoDesdeEvento(e) {
+    function pubActualizarTiempoDesdePosicion(clientX) {
         var video = pubVisor.videoActual;
 
         if (!video || !video.duration || !isFinite(video.duration)) return;
 
         var rect = progressBar.getBoundingClientRect();
-        var posicion = (e.clientX - rect.left) / rect.width;
+        var posicion = (clientX - rect.left) / rect.width;
 
         posicion = Math.max(0, Math.min(1, posicion));
 
         video.currentTime = posicion * video.duration;
     }
 
-    progressBar.addEventListener('click', function (e) {
+    progressBar.addEventListener('pointerdown', function (e) {
         e.stopPropagation();
-        pubCambiarTiempoDesdeEvento(e);
+        pubVisor.arrastrandoProgreso = true;
+        pubMostrarControles();
+        pubActualizarTiempoDesdePosicion(e.clientX);
+        progressBar.setPointerCapture(e.pointerId);
+    });
+
+    progressBar.addEventListener('pointermove', function (e) {
+        if (!pubVisor.arrastrandoProgreso) return;
+        e.stopPropagation();
+        pubActualizarTiempoDesdePosicion(e.clientX);
+    });
+
+    progressBar.addEventListener('pointerup', function (e) {
+        e.stopPropagation();
+        pubVisor.arrastrandoProgreso = false;
+        pubMostrarControles(); // Reinicia el temporizador de auto-ocultar
+    });
+
+    progressBar.addEventListener('pointercancel', function (e) {
+        e.stopPropagation();
+        pubVisor.arrastrandoProgreso = false;
+        pubMostrarControles();
     });
 
     // Guardar
@@ -689,7 +747,7 @@ function pubVisorEl() {
         }
     });
 
-    // Gestos táctiles
+    // Gestos táctiles (Tap to toggle)
     el.addEventListener('touchstart', function (e) {
         if (!e.changedTouches || !e.changedTouches[0]) return;
 
@@ -712,6 +770,21 @@ function pubVisorEl() {
             pubNavegar(dx < 0 ? 1 : -1);
         } else if (dy > 120 && Math.abs(dy) > Math.abs(dx)) {
             pubCerrarVisor();
+        } else if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
+            // TAP SIMPLE: Alternar Play/Pause y mostrar controles
+            var video = pubVisor.videoActual;
+
+            if (video) {
+                if (video.paused) {
+                    pubReproducirVideo(video);
+                    // Si el video arranca, ocultamos los controles automáticamente
+                    setTimeout(function () { pubOcultarControles(); }, 300);
+                } else {
+                    video.pause();
+                    // Si el video se pausa, forzamos los controles a mostrarse
+                    pubMostrarControles();
+                }
+            }
         }
     }, { passive: true });
 
@@ -769,6 +842,7 @@ function pubMostrarItem() {
     pubVisor.modoLleno = false;
 
     el.classList.remove('is-fullscreen');
+    el.classList.remove('controls-hidden');
 
     if (btnExpand) {
         btnExpand.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
@@ -786,9 +860,6 @@ function pubMostrarItem() {
         video.setAttribute('playsinline', '');
         video.setAttribute('webkit-playsinline', '');
 
-        // IMPORTANTE:
-        // No deshabilitamos Picture-in-Picture.
-        // No utilizamos controles nativos que introduzcan menús adicionales.
         video.controls = false;
         video.preload = 'auto';
         video.autoplay = true;
@@ -841,15 +912,18 @@ function pubMostrarItem() {
             pubMotorVideo.reproduccionSolicitada = true;
 
             pubActualizarBotonReproduccion(video);
+            pubMostrarControles();
         });
 
         video.addEventListener('pause', function () {
             pubActualizarBotonReproduccion(video);
+            pubMostrarControles();
         });
 
         video.addEventListener('ended', function () {
             pubMotorVideo.reproduccionSolicitada = false;
             pubActualizarBotonReproduccion(video);
+            pubMostrarControles();
         });
 
         video.addEventListener('error', function () {
@@ -858,18 +932,11 @@ function pubMostrarItem() {
             }
         });
 
-        // El toque sobre el vídeo alterna reproducción.
-        video.addEventListener('click', function (e) {
-            e.stopPropagation();
-
-            if (video.paused) {
-                pubReproducirVideo(video);
-            } else {
-                video.pause();
-            }
-        });
+        // Ya no se maneja click en video directamente para alternar play,
+        // ahora el gesto táctil maneja la reproducción sin molestar con botones gigantes.
 
         video.addEventListener('enterpictureinpicture', function () {
+            pubOcultarControles();
             if (window.showToast) {
                 window.showToast('Vídeo en ventana flotante.', 'success', 1500);
             }
@@ -880,6 +947,7 @@ function pubMostrarItem() {
             if (video.isConnected && video.paused && pubMotorVideo.reproduccionSolicitada) {
                 pubReproducirVideo(video);
             }
+            pubMostrarControles();
         });
 
         caja.appendChild(video);
@@ -889,6 +957,9 @@ function pubMostrarItem() {
 
         // La reproducción comienza después de la interacción de apertura.
         pubReproducirVideo(video);
+
+        // Iniciar el timer para ocultar controles tras 2.5 segundos.
+        pubMostrarControles();
 
     } else {
         controls.style.display = 'none';
@@ -929,6 +1000,7 @@ function pubAbrirVisor(indice, postId, esDueno) {
     pubVisor.index = indice;
     pubVisor.postIdActual = postId;
     pubVisor.esDueno = esDueno === true;
+    pubVisor.arrastrandoProgreso = false;
 
     pubMostrarItem();
     pubAjustarOpcionesMenu();
@@ -942,6 +1014,10 @@ function pubCerrarVisor() {
     var el = document.getElementById('pubVisorFull');
 
     if (!el) return;
+
+    if (pubVisor.timeoutOcultarControles) {
+        clearTimeout(pubVisor.timeoutOcultarControles);
+    }
 
     var video = pubVisor.videoActual;
 
@@ -968,6 +1044,7 @@ function pubCerrarVisor() {
 
     el.classList.remove('show');
     el.classList.remove('is-fullscreen');
+    el.classList.remove('controls-hidden');
 
     document.body.style.overflow = '';
 
@@ -975,6 +1052,7 @@ function pubCerrarVisor() {
     pubVisor.motivoSeleccionado = '';
     pubVisor.esDueno = false;
     pubVisor.modoLleno = false;
+    pubVisor.arrastrandoProgreso = false;
 }
 
 // ================================================================
@@ -1058,7 +1136,6 @@ function pubCerrarVisor() {
         justify-content: center;
     }
 
-    /* NUEVO: CONTENEDOR UNIFORME 9:16 PARA VIDEOS */
     .pub-media-container {
         width: 100%;
         aspect-ratio: 9 / 16;
@@ -1158,6 +1235,19 @@ function pubCerrarVisor() {
         padding-bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
     }
 
+    /* AUTO-HIDE (IMMERSIVE) */
+    .pub-vf-header,
+    .pub-vf-controls {
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+
+    .pub-vf.controls-hidden .pub-vf-header,
+    .pub-vf.controls-hidden .pub-vf-controls {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+    }
+
     /* CABECERA */
 
     .pub-vf-header {
@@ -1195,8 +1285,7 @@ function pubCerrarVisor() {
         color: #000;
     }
 
-    /* CONTROLES CENTRALES */
-
+    /* CONTROLES CENTRALES (Ocultos por defecto, solo accesibles por código) */
     .pub-vf-center-controls {
         position: absolute;
         inset: 0;
@@ -1254,6 +1343,16 @@ function pubCerrarVisor() {
         cursor: pointer;
         position: relative;
         touch-action: none;
+    }
+
+    /* Ampliar el área de toque para hacer más fácil el scrubbing en móvil */
+    .pub-vf-progress-bar::after {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 0;
+        right: 0;
+        bottom: -10px;
     }
 
     .pub-vf-progress {
@@ -3193,5 +3292,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.4
+// FIN · PERFIL PUBLICACIONES v14.5
 // ================================================================
