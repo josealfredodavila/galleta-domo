@@ -1,31 +1,12 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.3 GLOBAL VIDEO PLAYER ENGINE + UNIFORM VISUAL ENGINE
+// v14.4 GLOBAL VIDEO PLAYER ENGINE + UNIFORM VISUAL ENGINE + SECURE DOM
 // ================================================================
-// ACTUALIZACIONES:
-// 1. Reproducción continua al cambiar entre modo normal y expandido.
-// 2. Picture-in-Picture real para mantener el vídeo en ventana flotante.
-// 3. No pausa vídeos que estén en Picture-in-Picture.
-// 4. No pausa el vídeo activo del visor por cambios de pantalla.
-// 5. IntersectionObserver optimizado para evitar pausas innecesarias.
-// 6. Protección contra reproducciones simultáneas accidentales.
-// 7. Conservación del tiempo de reproducción al cambiar de modo.
-// 8. Recuperación de reproducción después de interrupciones temporales.
-// 9. Controles de reproducción personalizados.
-// 10. Barra de progreso interactiva.
-// 11. Control de volumen y silencio.
-// 12. Velocidades 1x, 1.5x y 2x.
-// 13. Mejoras de accesibilidad y compatibilidad móvil.
-// 14. Limpieza de recursos al cerrar el visor.
-// 15. Se conserva la integración existente con Supabase.
-// 16. Animaciones movidas a emojis-animations.css (motor visual).
-// 17. Entropía visual: retraso y duración aleatorios por emoji.
-// 18. Menú de reacciones limitado a ❤️ 😂 🥺 💎.
-// 19. Los conteos por emoji se actualizan al reaccionar.
-// 20. Errores de reacción visibles para el usuario.
-// 21. UNIFORMIDAD VISUAL: Contenedor 9:16 fijo para todos los videos.
-// 22. Recorte inteligente (object-fit: cover) sin deformación.
-// 23. Máxima calidad visual conservada.
+// ACTUALIZACIONES v14.4:
+// 1. Seguridad XSS: Cero innerHTML en el renderizado de autores y fechas.
+// 2. Memoria: FileReader reemplazado por URL.createObjectURL.
+// 3. Memoria: Implementación de URL.revokeObjectURL en limpieza de previews.
+// 4. Se mantiene toda la lógica de Visor, PiP y Motor de Emojis intacta.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -60,6 +41,9 @@ if (typeof window.archivosSeleccionados === 'undefined') {
 }
 
 var archivosSeleccionados = window.archivosSeleccionados;
+
+// Almacena las URLs generadas por createObjectURL para poder revocarlas
+var pubPreviewObjectUrls = {};
 
 // ================================================================
 // MOTOR VISUAL DE REACCIONES
@@ -1081,7 +1065,7 @@ function pubCerrarVisor() {
         position: relative;
         overflow: hidden;
         background: #000;
-        border-radius: 8px; /* Respetar el diseño actual de publicaciones */
+        border-radius: 8px;
     }
 
     .pub-media-container video {
@@ -1928,12 +1912,27 @@ function seleccionarArchivoPerfil(event, tipo) {
 // PREVISUALIZACIÓN
 // ================================================================
 
+// Función auxiliar para revocar URLs de objeto y liberar memoria RAM
+function pubRevocarUrlPreview(tipo) {
+    if (pubPreviewObjectUrls[tipo]) {
+        try {
+            URL.revokeObjectURL(pubPreviewObjectUrls[tipo]);
+        } catch (e) {}
+        pubPreviewObjectUrls[tipo] = null;
+    }
+}
+
 function renderizarPreviewPerfil() {
     var container = document.getElementById('previewArchivosPerfil');
 
     if (!container) return;
 
     container.innerHTML = '';
+
+    // Revocar cualquier URL previa antes de volver a renderizar
+    Object.keys(pubPreviewObjectUrls).forEach(function (t) {
+        pubRevocarUrlPreview(t);
+    });
 
     Object.keys(archivosSeleccionados).forEach(function (tipo) {
         var file = archivosSeleccionados[tipo];
@@ -1943,44 +1942,38 @@ function renderizarPreviewPerfil() {
         var wrapper = document.createElement('div');
         wrapper.className = 'preview-item';
 
-        var reader = new FileReader();
+        var media;
 
-        reader.onload = function (e) {
-            if (!e.target || typeof e.target.result !== 'string') return;
+        if (tipo === 'imagen') {
+            media = document.createElement('img');
+            media.alt = 'Vista previa';
+        } else if (tipo === 'video') {
+            media = document.createElement('video');
+            media.muted = true;
+            media.controls = true;
+            media.playsInline = true;
+        } else {
+            return;
+        }
 
-            wrapper.innerHTML = '';
+        // Se usa createObjectURL para no saturar la RAM (evita base64 masivo)
+        var objectUrl = URL.createObjectURL(file);
+        pubPreviewObjectUrls[tipo] = objectUrl;
 
-            var media;
+        media.src = objectUrl;
 
-            if (tipo === 'imagen') {
-                media = document.createElement('img');
-                media.alt = 'Vista previa';
-            } else if (tipo === 'video') {
-                media = document.createElement('video');
-                media.muted = true;
-                media.controls = true;
-                media.playsInline = true;
-            } else {
-                return;
-            }
+        var quitar = document.createElement('button');
 
-            media.src = e.target.result;
+        quitar.type = 'button';
+        quitar.className = 'remove-btn';
+        quitar.textContent = '×';
 
-            var quitar = document.createElement('button');
+        quitar.addEventListener('click', function () {
+            quitarArchivoPerfil(tipo);
+        });
 
-            quitar.type = 'button';
-            quitar.className = 'remove-btn';
-            quitar.textContent = '×';
-
-            quitar.addEventListener('click', function () {
-                quitarArchivoPerfil(tipo);
-            });
-
-            wrapper.appendChild(media);
-            wrapper.appendChild(quitar);
-        };
-
-        reader.readAsDataURL(file);
+        wrapper.appendChild(media);
+        wrapper.appendChild(quitar);
 
         container.appendChild(wrapper);
     });
@@ -2011,6 +2004,8 @@ function quitarArchivoPerfil(tipo) {
     if (tipo !== 'imagen' && tipo !== 'video') return;
 
     archivosSeleccionados[tipo] = null;
+
+    pubRevocarUrlPreview(tipo); // Liberar la RAM de esa previsualización
 
     var inputId = tipo === 'imagen'
         ? 'inputFotoPerfilPost'
@@ -2119,6 +2114,10 @@ async function publicarDesdePerfil() {
         archivosSeleccionados.imagen = null;
         archivosSeleccionados.video = null;
 
+        // Liberar memoria de las previews
+        pubRevocarUrlPreview('imagen');
+        pubRevocarUrlPreview('video');
+
         if (document.getElementById('inputFotoPerfilPost')) {
             document.getElementById('inputFotoPerfilPost').value = '';
         }
@@ -2167,8 +2166,6 @@ if (typeof IntersectionObserver !== 'undefined') {
             // Nunca detener un vídeo que esté en ventana flotante.
             if (pubEsVideoFlotante(video)) return;
 
-            // Si el usuario está viendo el vídeo dentro de su ventana,
-            // no intervenir en su reproducción.
             if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
                 var autoPlayPref = 'true';
 
@@ -2185,8 +2182,6 @@ if (typeof IntersectionObserver !== 'undefined') {
                 }
 
             } else {
-                // Solo se pausa el vídeo del feed que salió de pantalla.
-                // No se modifica el visor ni los vídeos flotantes.
                 if (
                     video !== pubMotorVideo.videoActivo &&
                     document.pictureInPictureElement !== video
@@ -2203,9 +2198,6 @@ if (typeof IntersectionObserver !== 'undefined') {
 // ================================================================
 // VISIBILIDAD DE LA PÁGINA
 // ================================================================
-
-// No pausar automáticamente cuando Android cambia temporalmente
-// de aplicación o el usuario abre otra ventana.
 
 document.addEventListener('visibilitychange', function () {
     if (!document.hidden) return;
@@ -2331,8 +2323,11 @@ async function cargarMisPublicaciones(forzarRefresco) {
         var miId = session.user.id;
 
         publicaciones.forEach(function (p) {
-            var nombreReal = pubEscapeHtml(p.usuario_nombre || 'Explorador');
-            var handleSeguro = pubEscapeHtml(p.usuario_handle || '');
+            // ========================================================
+            // REFACTORIZACIÓN DE SEGURIDAD (XSS MITIGATION)
+            // ========================================================
+            var nombreReal = p.usuario_nombre || 'Explorador';
+            var handleSeguro = p.usuario_handle || '';
 
             var urlAutor = pubUrlPerfilAutor(
                 p.usuario_handle,
@@ -2364,27 +2359,36 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             var headerMeta = document.createElement('div');
 
-            var handleHtml = handleSeguro
-                ? ' <span class="pub-autor-handle">@' + handleSeguro + '</span>'
+            var nombreBloque = document.createElement(urlAutor ? 'a' : 'div');
+            nombreBloque.className = urlAutor ? 'pub-autor-enlace' : 'nombre';
+            nombreBloque.setAttribute('data-no-traducir', '1');
+
+            if (urlAutor) {
+                nombreBloque.href = urlAutor;
+            }
+
+            var spanNombre = document.createElement('span');
+            spanNombre.className = urlAutor ? 'nombre' : 'pub-autor-nombre';
+            spanNombre.setAttribute('data-no-traducir', '1');
+            spanNombre.textContent = nombreReal;
+            nombreBloque.appendChild(spanNombre);
+
+            if (handleSeguro) {
+                var spanHandle = document.createElement('span');
+                spanHandle.className = 'pub-autor-handle';
+                spanHandle.textContent = ' @' + handleSeguro;
+                nombreBloque.appendChild(spanHandle);
+            }
+
+            var fechaDiv = document.createElement('div');
+            fechaDiv.className = 'fecha';
+            fechaDiv.setAttribute('data-no-traducir', '1');
+            fechaDiv.textContent = p.created_at
+                ? new Date(p.created_at).toLocaleString(pubCodigoIdioma())
                 : '';
 
-            var nombreHtml =
-                '<span class="nombre" data-no-traducir="1">' +
-                    '<span class="pub-autor-nombre">' + nombreReal + '</span>' +
-                    handleHtml +
-                '</span>';
-
-            var nombreBloque = urlAutor
-                ? '<a class="pub-autor-enlace" href="' + pubEscapeHtml(urlAutor) + '">' + nombreHtml + '</a>'
-                : '<div class="nombre" data-no-traducir="1">' + nombreReal + handleHtml + '</div>';
-
-            headerMeta.innerHTML =
-                nombreBloque +
-                '<div class="fecha" data-no-traducir="1">' +
-                (p.created_at
-                    ? pubEscaparHTML(new Date(p.created_at).toLocaleString(pubCodigoIdioma()))
-                    : '') +
-                '</div>';
+            headerMeta.appendChild(nombreBloque);
+            headerMeta.appendChild(fechaDiv);
 
             header.appendChild(headerMeta);
             card.appendChild(header);
@@ -2697,8 +2701,6 @@ document.addEventListener('click', function (e) {
 // ACTUALIZAR REACCIONES (barra, contadores por emoji y resaltado)
 // ================================================================
 
-// Repinta los contadores pequeños de cada emoji del menú y marca
-// cuál es la reacción elegida por el usuario.
 function pubActualizarMenuReacciones(card, conteos, usuarioTipo) {
     if (!card) return;
 
@@ -3191,5 +3193,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.3
+// FIN · PERFIL PUBLICACIONES v14.4
 // ================================================================
