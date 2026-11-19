@@ -1,5 +1,5 @@
 // ================================================================
-// MARQUINHOS · PET v9.10.0 "GALACTIC PRO"
+// MARQUINHOS · PET v9.11.0 "GALACTIC PRO"
 // v9.8.3:
 // - FIX DEFINITIVO: helper obtenerClienteSupabase()
 // - Fallback de uid leyendo localStorage (sb-*-auth-token)
@@ -20,6 +20,15 @@
 // - Si el store no carga a tiempo, usa un respaldo en memoria: el
 //   widget nunca deja de funcionar por el orden de carga.
 // - El olvido de la conversación limpia el store, no solo la memoria.
+// v9.11.0:
+// - Burbuja compacta con altura máxima. Las respuestas largas se
+//   desplazan solas, sincronizadas con la voz, y se pueden deslizar
+//   a mano. Tocar la burbuja pausa el desplazamiento automático.
+// - Sin recorte de texto: la burbuja muestra la respuesta completa.
+// - Enlace de acción en la burbuja (p. ej. "Abrir Mensajes") cuando
+//   el brain lo devuelve.
+// - window.Marquinhos.consultaRapida(tipo) conectado a
+//   MarquinhosBrain.consultarEstado(tipo) (chips de configuración).
 // ================================================================
 
 'use strict';
@@ -70,6 +79,11 @@
     const STORE_ESPERA_MAX_MS = 3000;
     const STORE_ESPERA_PASO_MS = 50;
 
+    // Burbuja: tiempos de lectura y velocidad de desplazamiento
+    const BURBUJA_MS_POR_CARACTER = 60;
+    const BURBUJA_MIN_MS = 4000;
+    const BURBUJA_MIN_CON_ACCION_MS = 7000;
+
     const TERMINOS_VERSION = '1.1';
     const TERMINOS_KEY = 'marquinhos_terminos_aceptados_' + TERMINOS_VERSION;
     const TERMINOS_URL = '/legal/marquinhos.html';
@@ -110,6 +124,12 @@
     let _terminosProcesando = false;
     let _terminosOkPara = null;
 
+    // Burbuja: estado del desplazamiento y del ocultado automático
+    let _scrollRaf = null;
+    let _scrollPausado = false;
+    let _ocultarTimer = null;
+    let _ultimoTextoBurbuja = '';
+
     let isDragging = false;
     let dragStartX = 0;
     let dragStartY = 0;
@@ -122,7 +142,7 @@
         return RUTAS_EXCLUIDAS.some(r => path.indexOf(r) !== -1);
     }
 
-    function log(msg) { console.log('[Marquinhos v9.10.0]', msg); }
+    function log(msg) { console.log('[Marquinhos v9.11.0]', msg); }
 
     function esc(v) {
         const d = document.createElement('div');
@@ -405,6 +425,146 @@
             _bocaTimeouts.push(t);
         }
         siguiente();
+    }
+
+    // ============================================================
+    // BURBUJA: compacta, con desplazamiento para textos largos
+    // ============================================================
+
+    function asegurarEstilosBurbuja() {
+        if (document.getElementById('mq-burbuja-estilos')) return;
+        const s = document.createElement('style');
+        s.id = 'mq-burbuja-estilos';
+        s.textContent = `
+            #mq-bubble{
+                max-width:min(240px, calc(100vw - 40px)) !important;
+                max-height:170px !important;
+                box-sizing:border-box;
+            }
+            #mq-bubble .mq-pet-bubble-text{
+                max-height:118px;
+                overflow-y:auto;
+                overflow-x:hidden;
+                white-space:pre-line;
+                word-break:break-word;
+                line-height:1.4;
+                padding-right:4px;
+                overscroll-behavior:contain;
+                -webkit-overflow-scrolling:touch;
+                scrollbar-width:thin;
+                scrollbar-color:rgba(124,77,255,.6) transparent;
+            }
+            #mq-bubble .mq-pet-bubble-text::-webkit-scrollbar{width:4px}
+            #mq-bubble .mq-pet-bubble-text::-webkit-scrollbar-thumb{background:rgba(124,77,255,.6);border-radius:4px}
+            #mq-bubble-accion{
+                display:none;
+                margin-top:6px;
+                padding:4px 10px;
+                border-radius:99px;
+                font-size:.72rem;
+                font-weight:700;
+                color:#00121A;
+                background:#00E5FF;
+                text-decoration:none;
+                align-self:flex-start;
+            }
+            #mq-bubble-accion.visible{display:inline-block}
+        `;
+        document.head.appendChild(s);
+    }
+
+    function detenerDesplazamientoBurbuja() {
+        _scrollPausado = true;
+        if (_scrollRaf) {
+            cancelAnimationFrame(_scrollRaf);
+            _scrollRaf = null;
+        }
+    }
+
+    /* Desplaza el texto de la burbuja de arriba a abajo en la duración
+       estimada de la lectura en voz. Se pausa si la persona la toca. */
+    function iniciarDesplazamientoBurbuja(duracionMs) {
+        detenerDesplazamientoBurbuja();
+        _scrollPausado = false;
+
+        const el = document.getElementById('mq-bubble-text');
+        if (!el) return;
+        el.scrollTop = 0;
+
+        const maximo = el.scrollHeight - el.clientHeight;
+        if (maximo <= 0) return;
+
+        const duracion = Math.max(1500, duracionMs || maximo * 40);
+        const inicio = performance.now();
+
+        function paso(t) {
+            if (_scrollPausado) { _scrollRaf = null; return; }
+            const p = Math.min(1, (t - inicio) / duracion);
+            el.scrollTop = maximo * p;
+            _scrollRaf = p < 1 ? requestAnimationFrame(paso) : null;
+        }
+        _scrollRaf = requestAnimationFrame(paso);
+    }
+
+    function mostrarAccionBurbuja(enlace, etiqueta) {
+        const a = document.getElementById('mq-bubble-accion');
+        if (!a) return false;
+        if (typeof enlace === 'string' && enlace.charAt(0) === '/' && enlace.indexOf('//') !== 0) {
+            a.setAttribute('href', enlace);
+            a.textContent = etiqueta || 'Abrir';
+            a.classList.add('visible');
+            return true;
+        }
+        a.removeAttribute('href');
+        a.textContent = '';
+        a.classList.remove('visible');
+        return false;
+    }
+
+    function cancelarOcultarBurbuja() {
+        if (_ocultarTimer) {
+            clearTimeout(_ocultarTimer);
+            _ocultarTimer = null;
+        }
+    }
+
+    function programarOcultarBurbuja(conAccion) {
+        cancelarOcultarBurbuja();
+        const base = Math.max(
+            conAccion ? BURBUJA_MIN_CON_ACCION_MS : BURBUJA_MIN_MS,
+            _ultimoTextoBurbuja.length * BURBUJA_MS_POR_CARACTER
+        );
+        const espera = config.mostrar_subtitulos || conAccion ? base : 2500;
+        _ocultarTimer = setTimeout(function() {
+            _ocultarTimer = null;
+            if (!isSpeaking && !isListening && !procesando) ocultarBurbuja();
+        }, espera);
+    }
+
+    /* Muestra la burbuja con el texto completo. Se muestra si el modo
+       subtítulos está activo o si la respuesta trae una acción (enlace). */
+    function mostrarBurbuja(texto, opciones) {
+        const o = opciones || {};
+        const hayAccion = !!o.enlace;
+        if (!config.mostrar_subtitulos && !o.forzar && !hayAccion) return;
+        if (!bubble) return;
+
+        cancelarOcultarBurbuja();
+        const t = document.getElementById('mq-bubble-text');
+        _ultimoTextoBurbuja = String(texto || '');
+        if (t) {
+            t.textContent = _ultimoTextoBurbuja;
+            t.scrollTop = 0;
+        }
+        mostrarAccionBurbuja(o.enlace, o.etiqueta);
+        bubble.classList.add('mq-bubble-visible');
+    }
+
+    function ocultarBurbuja() {
+        cancelarOcultarBurbuja();
+        detenerDesplazamientoBurbuja();
+        mostrarAccionBurbuja(null);
+        if (bubble) bubble.classList.remove('mq-bubble-visible');
     }
 
     // ============================================================
@@ -836,6 +996,8 @@
     function crearWidget() {
         if (document.getElementById('marquinhos-pet')) return;
 
+        asegurarEstilosBurbuja();
+
         container = document.createElement('div');
         container.id = 'marquinhos-pet';
         container.className = 'mq-pet';
@@ -850,6 +1012,7 @@
         container.innerHTML = `
             <div class="mq-pet-bubble" id="mq-bubble">
                 <div class="mq-pet-bubble-text" id="mq-bubble-text"></div>
+                <a id="mq-bubble-accion" class="mq-bubble-accion" href="#" target="_self" rel="noopener"></a>
             </div>
 
             <div class="mq-pet-avatar" id="mq-avatar" role="button" tabindex="0" aria-label="Hablar con Marquinhos">
@@ -1104,6 +1267,15 @@
         bubble = document.getElementById('mq-bubble');
         bocaEl = document.getElementById('mq-boca');
 
+        /* El usuario puede tocar o deslizar el texto: el desplazamiento
+           automático se detiene y el texto queda en manos de la persona. */
+        const burbujaTexto = document.getElementById('mq-bubble-text');
+        if (burbujaTexto) {
+            ['pointerdown', 'wheel', 'touchstart'].forEach(function (ev) {
+                burbujaTexto.addEventListener(ev, detenerDesplazamientoBurbuja, { passive: true });
+            });
+        }
+
         const avatar = document.getElementById('mq-avatar');
 
         avatar.addEventListener('click', async function () {
@@ -1183,7 +1355,7 @@
             }
         }, 500);
 
-        log('Widget v9.10.0 Galactic Pro creado');
+        log('Widget v9.11.0 Galactic Pro creado');
     }
 
     function setEstado(e) {
@@ -1200,19 +1372,6 @@
         if (window.MarquinhosAnim && typeof window.MarquinhosAnim.setEstado === 'function') {
             window.MarquinhosAnim.setEstado(e);
         }
-    }
-
-    function mostrarBurbuja(texto) {
-        if (!config.mostrar_subtitulos) return;
-        if (!bubble) return;
-        const t = document.getElementById('mq-bubble-text');
-        const corto = texto.length > 160 ? texto.slice(0, 157) + '…' : texto;
-        if (t) t.textContent = corto;
-        bubble.classList.add('mq-bubble-visible');
-    }
-
-    function ocultarBurbuja() {
-        if (bubble) bubble.classList.remove('mq-bubble-visible');
     }
 
     function detenerConversacion() {
@@ -1234,16 +1393,19 @@
         const ok = iniciarReconocimiento();
         if (!ok) {
             conversacionActiva = false;
-            if (config.mostrar_subtitulos) {
-                mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.');
-                setTimeout(ocultarBurbuja, 4000);
-            }
+            mostrarBurbuja('Tu navegador no soporta reconocimiento de voz.', { forzar: true });
+            programarOcultarBurbuja(false);
         }
     }
 
-    async function hablar(texto) {
+    /* Habla y muestra la respuesta. Opciones:
+       - forzar: muestra la burbuja aunque los subtítulos estén apagados.
+       - enlace / etiqueta: botón de acción dentro de la burbuja. */
+    async function hablar(texto, opciones) {
         if (!texto) return false;
+        const o = opciones || {};
         detenerTTS();
+        cancelarOcultarBurbuja();
         const miToken = ++ttsToken;
 
         const estilo = VOZ_ESTILOS[config.estilo_voz] || VOZ_ESTILOS.natural;
@@ -1252,7 +1414,12 @@
         const pitch = estilo.pitch * pitchBase;
         const volumen = Math.max(0, Math.min(1, config.volumen || 1.0));
 
-        if (config.mostrar_subtitulos) mostrarBurbuja(texto);
+        mostrarBurbuja(texto, o);
+        const duracionEstimada = (texto.length * 65) / Math.max(0.5, rate);
+        if (bubble && bubble.classList.contains('mq-bubble-visible')) {
+            iniciarDesplazamientoBurbuja(duracionEstimada);
+        }
+
         isSpeaking = true;
         setEstado('hablando');
 
@@ -1303,9 +1470,7 @@
             isSpeaking = false;
             setEstado('idle');
             detenerAnimacionBoca();
-            setTimeout(function() {
-                if (!isSpeaking && !isListening && !procesando) ocultarBurbuja();
-            }, 2500);
+            programarOcultarBurbuja(!!o.enlace);
         }
         return completo;
     }
@@ -1411,10 +1576,8 @@
                 if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
                     conversacionActiva = false;
                     setEstado('idle');
-                    if (config.mostrar_subtitulos) {
-                        mostrarBurbuja('Permite el micrófono.');
-                        setTimeout(ocultarBurbuja, 5000);
-                    }
+                    mostrarBurbuja('Permite el micrófono.', { forzar: true });
+                    programarOcultarBurbuja(false);
                 } else if (event.error === 'no-speech' || event.error === 'aborted') {
                     conversacionActiva = false;
                     setEstado('idle');
@@ -1469,6 +1632,7 @@
             let respuesta = '';
             let musica = null;
             let eventos = null;
+            let enlace = null;
 
             if (window.MarquinhosBrain && typeof window.MarquinhosBrain.preguntar === 'function') {
                 try {
@@ -1482,6 +1646,7 @@
                         respuesta = resp.reply || resp.respuesta || '';
                         musica = Array.isArray(resp.musica) ? resp.musica : null;
                         eventos = Array.isArray(resp.eventos) ? resp.eventos : null;
+                        enlace = typeof resp.enlace === 'string' ? resp.enlace : null;
                     } else {
                         respuesta = resp || '';
                         musica = Array.isArray(window.MarquinhosBrain.ultimaMusica)
@@ -1514,7 +1679,10 @@
             }
 
             procesando = false;
-            const completo = await hablar(respuesta);
+            const completo = await hablar(respuesta, {
+                enlace: enlace,
+                etiqueta: 'Abrir'
+            });
 
             if (completo && conversacionActiva && miConversacionToken === conversationToken) {
                 recibioResultado = false;
@@ -1530,6 +1698,56 @@
             procesando = false;
             if (!isSpeaking && !isListening) setEstado('idle');
         }
+    }
+
+    /* ============================================================
+       CONSULTAS RÁPIDAS (chips de configuración)
+       Usa MarquinhosBrain.consultarEstado(tipo): conteo real de
+       mensajes, solicitudes o bloqueados, con enlace a la vista.
+    ============================================================ */
+    const ETIQUETAS_CONSULTA = {
+        mensajes: 'Abrir Mensajes',
+        solicitudes: 'Abrir Contactos',
+        bloqueados: 'Abrir Contactos'
+    };
+
+    async function consultaRapida(tipo) {
+        if (!tipo) return;
+        const miConversacionToken = ++conversationToken;
+
+        detenerTTS();
+        cerrarTodosLosPaneles();
+        procesando = true;
+        setEstado('pensando');
+        cambiarVisema('M');
+
+        let texto = 'No pude revisar eso ahora.';
+        let enlace = null;
+
+        try {
+            if (window.MarquinhosBrain && typeof window.MarquinhosBrain.consultarEstado === 'function') {
+                const r = await window.MarquinhosBrain.consultarEstado(tipo);
+                if (r && typeof r.reply === 'string' && r.reply) texto = r.reply;
+                enlace = r && typeof r.enlace === 'string' ? r.enlace : null;
+            } else {
+                texto = 'Todavía no estoy listo para revisar eso. Intenta de nuevo en un momento.';
+            }
+        } catch (e) {
+            texto = 'No pude revisar eso ahora.';
+        }
+
+        if (miConversacionToken !== conversationToken) return;
+
+        procesando = false;
+        registrarMensaje('assistant', texto);
+
+        const completo = await hablar(texto, {
+            forzar: true,
+            enlace: enlace,
+            etiqueta: ETIQUETAS_CONSULTA[tipo] || 'Abrir'
+        });
+
+        if (!completo) return;
     }
 
     function instalarVisibility() {
@@ -1564,6 +1782,7 @@
     window.Marquinhos = {
         hablar: hablar,
         procesar: procesarComando,
+        consultaRapida: consultaRapida,
         olvidar: olvidarTodo,
         mostrarMusica: renderizarMusica,
         mostrarEventos: renderizarEventos,
@@ -1627,7 +1846,7 @@
         await cargarAccesorios();
         crearWidget();
         instalarVisibility();
-        log('✅ Marquinhos v9.10.0 Galactic Pro activo');
+        log('✅ Marquinhos v9.11.0 Galactic Pro activo');
     }
 
     if (document.readyState === 'loading') {
