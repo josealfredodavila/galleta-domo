@@ -1,12 +1,15 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.7 IMMERSIVE PLAYER + PIP FLOATING NAVIGATION FIX
+// v14.8 IMMERSIVE PLAYER 100% PANTALLA + AUTO-HIDE CONTROLES
 // ================================================================
-// ACTUALIZACIONES v14.7:
-// 1. El visor web se oculta completamente al entrar a PiP (display: none).
-// 2. Permite navegar por el ecosistema dejando la ventana flotante encima.
-// 3. Al cerrar el PiP (X del sistema), el visor web se restaura solo.
-// 4. Se mantiene toda la base de seguridad, memoria y emojis de v14.6.
+// ACTUALIZACIONES v14.8:
+// 1. El visor ocupa TODA la pantalla del celular (sin cuadros negros),
+//    usando object-fit: cover y altura 100dvh desde el inicio.
+// 2. Los controles superpuestos se ocultan solos tras 2.5s al reproducir
+//    y vuelven a mostrarse al tocar la pantalla.
+// 3. Se conservan los controles propios de comentarios, reacciones,
+//    publicar y PiP.
+// 4. Se mantiene la navegación PiP flotante de v14.7.
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -29,11 +32,11 @@ var PUB_CLASES_EMOJI = {
 var PUB_CLASES_EMOJI_TODAS = ['emo-corazon', 'emo-risa', 'emo-brillo', 'emo-diamante', 'emo-estrellas', 'emo-fluido'];
 
 var PUB_EMOJIS_PICKER_DEFAULT = [
-'😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😋','😛','😜',
-'🤪','😎','🥳','😏','😒','😞','😔','😟','😕','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤯',
-'😳','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🙄','😴','🤒','👍','👎','👏','🙌','🙏','🤝','💪','✌️',
-'🤞','👌','❤️','🧡','💛','💚','💙','💜','🖤','💔','💯','🤩','⭐','✨','🎉','🎊','🎈','🎁','🏆','🥇',
-'☕','🍕','🍔','🌮','🍩','🎵','🎶','🐶','🐱','🌹','🌈','☀️','🌙','⚡','💰','🚀','📸'
+    '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😋','😛','😜',
+    '🤪','😎','🥳','😏','😒','😞','😔','😟','😕','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤯',
+    '😳','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🙄','😴','🤒','👍','👎','👏','🙌','🙏','🤝','💪','✌️',
+    '🤞','👌','❤️','🧡','💛','💚','💙','💜','🖤','💔','💯','🤩','⭐','✨','🎉','🎊','🎈','🎁','🏆','🥇',
+    '☕','🍕','🍔','🌮','🍩','🎵','🎶','🐶','🐱','🌹','🌈','☀️','🌙','⚡','💰','🚀','📸'
 ];
 
 if (typeof window.archivosSeleccionados === 'undefined') {
@@ -42,7 +45,6 @@ if (typeof window.archivosSeleccionados === 'undefined') {
 
 var archivosSeleccionados = window.archivosSeleccionados;
 
-// Almacena las URLs generadas por createObjectURL para poder revocarlas
 var pubPreviewObjectUrls = {};
 
 // ================================================================
@@ -66,9 +68,6 @@ function pubClaseEmoji(emoji) {
     return PUB_CLASES_EMOJI[emoji] || 'emo-fluido';
 }
 
-// Asigna la clase de animación del emoji y una combinación aleatoria
-// de duración y retraso. Así los emojis nunca se mueven al mismo
-// tiempo de forma robótica.
 function pubAplicarMotorEmoji(el, emoji) {
     if (!el) return;
 
@@ -268,7 +267,7 @@ var pubVisor = {
     estabaVisibleAntesDePip: false
 };
 
-// Controla la visibilidad de los controles (Header + Progress Bar)
+// Muestra los controles y programa su auto-ocultado si el vídeo se está reproduciendo.
 function pubMostrarControles() {
     var el = document.getElementById('pubVisorFull');
 
@@ -282,11 +281,10 @@ function pubMostrarControles() {
 
     var video = pubVisor.videoActual;
 
-    // Solo ocultar si el video se está reproduciendo y no estamos arrastrando
     if (video && !video.paused && !pubVisor.arrastrandoProgreso) {
         pubVisor.timeoutOcultarControles = setTimeout(function () {
             el.classList.add('controls-hidden');
-        }, 2500); // 2.5 segundos de inactividad
+        }, 2500);
     }
 }
 
@@ -342,7 +340,6 @@ function pubVisorEl() {
 
         '<div class="pub-vf-media"></div>' +
 
-        // Controles centrales (solo Play/Pausa)
         '<div class="pub-vf-center-controls" id="pubVfCenterControls" style="display:none;">' +
             '<button type="button" class="pub-vf-big-play" id="btnPubVfBigPlay" aria-label="Reproducir / Pausar">' +
                 '<svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>' +
@@ -411,20 +408,17 @@ function pubVisorEl() {
 
     document.body.appendChild(el);
 
-    // Cerrar visor
     el.querySelector('.pub-vf-cerrar').addEventListener('click', function (e) {
         e.stopPropagation();
         pubCerrarVisor();
     });
 
-    // Menú
     el.querySelector('.pub-vf-menu-btn').addEventListener('click', function (e) {
         e.stopPropagation();
         pubAjustarOpcionesMenu();
         document.getElementById('pubVfSheet').classList.add('show');
     });
 
-    // Play / pausa manual (botón central unificado)
     el.querySelector('#btnPubVfBigPlay').addEventListener('click', function (e) {
         e.stopPropagation();
 
@@ -434,7 +428,6 @@ function pubVisorEl() {
 
         if (video.paused) {
             pubReproducirVideo(video);
-            // Ocultar controles automáticamente al reanudar
             setTimeout(function () { pubOcultarControles(); }, 300);
         } else {
             video.pause();
@@ -442,7 +435,6 @@ function pubVisorEl() {
         }
     });
 
-    // Expandir sin reconstruir ni reiniciar el vídeo
     el.querySelector('#btnPubVfExpand').addEventListener('click', function (e) {
         e.stopPropagation();
 
@@ -479,7 +471,6 @@ function pubVisorEl() {
         }
     });
 
-    // Picture-in-Picture real
     el.querySelector('#btnPubVfPip').addEventListener('click', async function (e) {
         e.stopPropagation();
 
@@ -515,7 +506,6 @@ function pubVisorEl() {
         }
     });
 
-    // Velocidad
     el.querySelector('#btnPubVfSpeed').addEventListener('click', function (e) {
         e.stopPropagation();
 
@@ -536,7 +526,6 @@ function pubVisorEl() {
         }
     });
 
-    // Barra de progreso interactiva (Scrubbing fluido)
     var progressBar = el.querySelector('#pubVfProgressBar');
 
     function pubActualizarTiempoDesdePosicion(clientX) {
@@ -569,7 +558,7 @@ function pubVisorEl() {
     progressBar.addEventListener('pointerup', function (e) {
         e.stopPropagation();
         pubVisor.arrastrandoProgreso = false;
-        pubMostrarControles(); // Reinicia el temporizador de auto-ocultar
+        pubMostrarControles();
     });
 
     progressBar.addEventListener('pointercancel', function (e) {
@@ -578,7 +567,6 @@ function pubVisorEl() {
         pubMostrarControles();
     });
 
-    // Guardar
     el.querySelector('#btnPubVfGuardar').addEventListener('click', function (e) {
         e.stopPropagation();
 
@@ -595,7 +583,6 @@ function pubVisorEl() {
         document.getElementById('pubVfSheet').classList.remove('show');
     });
 
-    // Ocultar
     el.querySelector('#btnPubVfOcultar').addEventListener('click', async function (e) {
         e.stopPropagation();
 
@@ -637,7 +624,6 @@ function pubVisorEl() {
         }
     });
 
-    // Eliminar
     el.querySelector('#btnPubVfEliminar').addEventListener('click', async function (e) {
         e.stopPropagation();
 
@@ -651,7 +637,6 @@ function pubVisorEl() {
         await eliminarMiPublicacion(postId, null);
     });
 
-    // Reportar
     el.querySelector('#btnPubVfReportar').addEventListener('click', function (e) {
         e.stopPropagation();
 
@@ -695,7 +680,6 @@ function pubVisorEl() {
         });
     });
 
-    // Enviar reporte
     el.querySelector('#btnPubVfEnviarFinal').addEventListener('click', async function (e) {
         e.stopPropagation();
 
@@ -744,7 +728,6 @@ function pubVisorEl() {
         }
     });
 
-    // Gestos táctiles (Tap to toggle)
     el.addEventListener('touchstart', function (e) {
         if (!e.changedTouches || !e.changedTouches[0]) return;
 
@@ -755,7 +738,6 @@ function pubVisorEl() {
     el.addEventListener('touchend', function (e) {
         if (!e.changedTouches || !e.changedTouches[0]) return;
 
-        // No navegar si el usuario interactuó con controles.
         if (e.target.closest('button, .pub-vf-progress-bar, .pub-vf-bottom-sheet, .pub-vf-report-sheet')) {
             return;
         }
@@ -768,17 +750,14 @@ function pubVisorEl() {
         } else if (dy > 120 && Math.abs(dy) > Math.abs(dx)) {
             pubCerrarVisor();
         } else if (Math.abs(dx) < 15 && Math.abs(dy) < 15) {
-            // TAP SIMPLE: Alternar Play/Pause y mostrar controles
             var video = pubVisor.videoActual;
 
             if (video) {
                 if (video.paused) {
                     pubReproducirVideo(video);
-                    // Si el video arranca, ocultamos los controles automáticamente
                     setTimeout(function () { pubOcultarControles(); }, 300);
                 } else {
                     video.pause();
-                    // Si el video se pausa, forzamos los controles a mostrarse
                     pubMostrarControles();
                 }
             }
@@ -807,7 +786,7 @@ function pubAjustarOpcionesMenu() {
 }
 
 // ================================================================
-// MOSTRAR ELEMENTO DEL VISOR
+// MOSTRAR ELEMENTO DEL VISOR (con 100% pantalla para video)
 // ================================================================
 
 function pubMostrarItem() {
@@ -825,7 +804,6 @@ function pubMostrarItem() {
     document.getElementById('pubVfReportSheet1').classList.remove('show');
     document.getElementById('pubVfReportSheet2').classList.remove('show');
 
-    // Al cambiar de contenido se libera el vídeo anterior.
     if (pubVisor.videoActual) {
         try {
             pubVisor.videoActual.pause();
@@ -835,7 +813,6 @@ function pubMostrarItem() {
     }
 
     pubVisor.videoActual = null;
-
     pubVisor.modoLleno = false;
 
     el.classList.remove('is-fullscreen');
@@ -865,9 +842,10 @@ function pubMostrarItem() {
 
         video.src = item.url;
 
+        // Forzar pantalla completa sin cuadros negros
         video.style.width = '100%';
         video.style.height = '100%';
-        video.style.objectFit = 'contain';
+        video.style.objectFit = 'cover';
         video.style.background = '#000';
 
         video.addEventListener('loadedmetadata', function () {
@@ -932,10 +910,9 @@ function pubMostrarItem() {
         video.addEventListener('enterpictureinpicture', function () {
             pubOcultarControles();
             
-            // FIX v14.7: Ocultar el visor web por completo (display: none) para que el usuario pueda navegar
             el.style.display = 'none';
             pubVisor.estabaVisibleAntesDePip = true;
-            document.body.style.overflow = ''; // Restaurar el scroll del cuerpo para que navegue normal
+            document.body.style.overflow = '';
 
             if (window.showToast) {
                 window.showToast('Vídeo en ventana flotante. Navega libremente.', 'success', 2000);
@@ -943,15 +920,13 @@ function pubMostrarItem() {
         });
 
         video.addEventListener('leavepictureinpicture', function () {
-            // FIX v14.7: Restaurar el visor si se estaba mostrando
             if (pubVisor.estabaVisibleAntesDePip) {
                 el.style.display = '';
                 el.classList.add('show');
-                document.body.style.overflow = 'hidden'; // Volver a bloquear el scroll
+                document.body.style.overflow = 'hidden';
                 pubVisor.estabaVisibleAntesDePip = false;
             }
 
-            // No se pausa al salir de la ventana flotante.
             if (video.isConnected && video.paused && pubMotorVideo.reproduccionSolicitada) {
                 pubReproducirVideo(video);
             }
@@ -963,10 +938,7 @@ function pubMostrarItem() {
         pubVisor.videoActual = video;
         pubMotorVideo.videoActivo = video;
 
-        // La reproducción comienza después de la interacción de apertura.
         pubReproducirVideo(video);
-
-        // Iniciar el timer para ocultar controles tras 2.5 segundos.
         pubMostrarControles();
 
     } else {
@@ -1030,7 +1002,6 @@ function pubCerrarVisor() {
 
     var video = pubVisor.videoActual;
 
-    // Si está en PiP, se intenta salir antes de liberar el recurso.
     if (video && document.pictureInPictureElement === video) {
         try {
             document.exitPictureInPicture();
@@ -1054,7 +1025,7 @@ function pubCerrarVisor() {
     el.classList.remove('show');
     el.classList.remove('is-fullscreen');
     el.classList.remove('controls-hidden');
-    el.style.display = ''; // Asegurar que el estilo en línea de PiP se limpie
+    el.style.display = '';
 
     document.body.style.overflow = '';
 
@@ -1067,7 +1038,7 @@ function pubCerrarVisor() {
 }
 
 // ================================================================
-// ESTILOS (UNIFORMIDAD VISUAL 9:16 Y OTROS)
+// ESTILOS (VISOR INMERSIVO 100% PANTALLA)
 // ================================================================
 
 (function inyectarEstilosReaccionesPerfil() {
@@ -1173,7 +1144,7 @@ function pubCerrarVisor() {
         object-position: center;
     }
 
-    /* VISOR */
+    /* VISOR INMERSIVO */
 
     .pub-vf {
         position: fixed;
@@ -1186,6 +1157,9 @@ function pubCerrarVisor() {
         touch-action: pan-y;
         flex-direction: column;
         overflow: hidden;
+        width: 100%;
+        height: 100%;
+        height: 100dvh;
     }
 
     .pub-vf.show {
@@ -1208,17 +1182,14 @@ function pubCerrarVisor() {
     .pub-vf-media img,
     .pub-vf-media video {
         display: block;
+        width: 100%;
+        height: 100%;
         max-width: 100%;
         max-height: 100%;
-        object-fit: contain;
+        object-fit: cover;
         user-select: none;
         -webkit-user-select: none;
         background: #000;
-    }
-
-    .pub-vf-media video {
-        width: 100%;
-        height: 100%;
     }
 
     .pub-vf.is-fullscreen {
@@ -1246,7 +1217,7 @@ function pubCerrarVisor() {
         padding-bottom: calc(20px + env(safe-area-inset-bottom, 20px)) !important;
     }
 
-    /* AUTO-HIDE (IMMERSIVE) */
+    /* AUTO-HIDE (INMERSIVO) */
     .pub-vf-header,
     .pub-vf-controls {
         transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -1296,7 +1267,6 @@ function pubCerrarVisor() {
         color: #000;
     }
 
-    /* CONTROLES CENTRALES (Unificados: Solo Play/Pausa) */
     .pub-vf-center-controls {
         position: absolute;
         inset: 0;
@@ -1328,8 +1298,6 @@ function pubCerrarVisor() {
         transform: scale(0.9);
     }
 
-    /* CONTROLES INFERIORES */
-
     .pub-vf-controls {
         position: absolute;
         bottom: 0;
@@ -1353,7 +1321,6 @@ function pubCerrarVisor() {
         touch-action: none;
     }
 
-    /* Ampliar el área de toque para hacer más fácil el scrubbing en móvil */
     .pub-vf-progress-bar::after {
         content: '';
         position: absolute;
@@ -1404,8 +1371,6 @@ function pubCerrarVisor() {
         color: #D4AF37;
         transform: scale(.94);
     }
-
-    /* MENÚ INFERIOR */
 
     .pub-vf-bottom-sheet {
         position: absolute;
@@ -1462,8 +1427,6 @@ function pubCerrarVisor() {
     .pub-vf-sheet-btn.pub-vf-peligro .icon {
         color: #ff3366;
     }
-
-    /* REPORTES */
 
     .pub-vf-report-sheet {
         position: absolute;
@@ -1582,8 +1545,6 @@ function pubCerrarVisor() {
     .pub-vf-btn-enviar:disabled {
         opacity: .6;
     }
-
-    /* REACCIONES (estructura; animaciones en emojis-animations.css) */
 
     .reaccion-wrap {
         position: relative;
@@ -2019,7 +1980,6 @@ function seleccionarArchivoPerfil(event, tipo) {
 // PREVISUALIZACIÓN
 // ================================================================
 
-// Función auxiliar para revocar URLs de objeto y liberar memoria RAM
 function pubRevocarUrlPreview(tipo) {
     if (pubPreviewObjectUrls[tipo]) {
         try {
@@ -2036,7 +1996,6 @@ function renderizarPreviewPerfil() {
 
     container.innerHTML = '';
 
-    // Revocar cualquier URL previa antes de volver a renderizar
     Object.keys(pubPreviewObjectUrls).forEach(function (t) {
         pubRevocarUrlPreview(t);
     });
@@ -2063,7 +2022,6 @@ function renderizarPreviewPerfil() {
             return;
         }
 
-        // Se usa createObjectURL para no saturar la RAM (evita base64 masivo)
         var objectUrl = URL.createObjectURL(file);
         pubPreviewObjectUrls[tipo] = objectUrl;
 
@@ -2112,7 +2070,7 @@ function quitarArchivoPerfil(tipo) {
 
     archivosSeleccionados[tipo] = null;
 
-    pubRevocarUrlPreview(tipo); // Liberar la RAM de esa previsualización
+    pubRevocarUrlPreview(tipo);
 
     var inputId = tipo === 'imagen'
         ? 'inputFotoPerfilPost'
@@ -2221,7 +2179,6 @@ async function publicarDesdePerfil() {
         archivosSeleccionados.imagen = null;
         archivosSeleccionados.video = null;
 
-        // Liberar memoria de las previews
         pubRevocarUrlPreview('imagen');
         pubRevocarUrlPreview('video');
 
@@ -2267,10 +2224,8 @@ if (typeof IntersectionObserver !== 'undefined') {
 
             if (!video || !video.isConnected) return;
 
-            // Nunca detener el vídeo activo del visor.
             if (pubEsVideoDelVisor(video)) return;
 
-            // Nunca detener un vídeo que esté en ventana flotante.
             if (pubEsVideoFlotante(video)) return;
 
             if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
@@ -2430,9 +2385,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
         var miId = session.user.id;
 
         publicaciones.forEach(function (p) {
-            // ========================================================
-            // REFACTORIZACIÓN DE SEGURIDAD (XSS MITIGATION)
-            // ========================================================
             var nombreReal = p.usuario_nombre || 'Explorador';
             var handleSeguro = p.usuario_handle || '';
 
@@ -2535,7 +2487,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
                     wrapMedia.className = 'pub-media-wrap';
 
-                    // NUEVO: Contenedor uniforme 9:16
                     var mediaContainer = document.createElement('div');
                     mediaContainer.className = 'pub-media-container';
 
@@ -2544,7 +2495,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
                     if (tipoMedia === 'video') {
                         mediaEl = document.createElement('video');
 
-                        // Deshabilitar controles nativos para que el visor tenga el control
                         mediaEl.controls = false;
                         mediaEl.preload = 'metadata';
                         mediaEl.src = p.media_url;
@@ -2560,12 +2510,10 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
                         mediaEl.muted = autoplayInicial !== 'false';
 
-                        // No se permite que el observer gestione el vídeo del visor.
                         if (videoObserverPerfil) {
                             videoObserverPerfil.observe(mediaEl);
                         }
 
-                        // Evitar reproducción accidental de varios vídeos.
                         mediaEl.addEventListener('play', function () {
                             if (pubMotorVideo.videoActivo && pubMotorVideo.videoActivo !== mediaEl) {
                                 var anterior = pubMotorVideo.videoActivo;
@@ -2582,7 +2530,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
                             pubMotorVideo.videoActivo = mediaEl;
                         });
 
-                        // Abrir visor al hacer clic en el video
                         mediaEl.addEventListener('click', function (e) {
                             e.stopPropagation();
                             pubAbrirVisor(indexEnLista, p.id, esDueno);
@@ -2610,7 +2557,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             card.appendChild(contenido);
 
-            // Reacciones
             var reaccionUsuario = reaccionesUsuario[p.id] || null;
             var conteos = conteosReacciones[p.id] || {};
 
@@ -2634,11 +2580,8 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 var b = document.createElement('button');
 
                 b.textContent = emoji;
-                // Identificador fijo del emoji: no depende del texto del botón
-                // (que cambia cuando se muestra el contador).
                 b.setAttribute('data-emoji', emoji);
 
-                // El motor visual asigna clase y entropía (--delay / --dur).
                 pubAplicarMotorEmoji(b, emoji);
 
                 if (reaccionUsuario === emoji) {
@@ -2733,7 +2676,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             card.appendChild(stats);
 
-            // Comentarios
             var comentariosContainer = document.createElement('div');
 
             comentariosContainer.className = 'comentarios-container';
@@ -2805,7 +2747,7 @@ document.addEventListener('click', function (e) {
 });
 
 // ================================================================
-// ACTUALIZAR REACCIONES (barra, contadores por emoji y resaltado)
+// ACTUALIZAR REACCIONES
 // ================================================================
 
 function pubActualizarMenuReacciones(card, conteos, usuarioTipo) {
@@ -2978,7 +2920,6 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
         await refrescarReaccionesPublicacion(postId);
 
     } catch (error) {
-        // Se registra el detalle para depuración y se avisa al usuario.
         console.error('[Reacciones] Error al guardar la reacción:', error);
 
         if (window.showToast) {
@@ -3300,5 +3241,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.7
+// FIN · PERFIL PUBLICACIONES v14.8
 // ================================================================
