@@ -151,6 +151,23 @@
     }
 
     function urlSonidoValida(url) {
+        if (typeof url !== 'string') return false;
+        try {
+            const u = new URL(url);
+            if (u.origin !== SUPABASE_URL) return false;
+            const prefijoPath = '/storage/v1/object/public/audios/';
+            return u.pathname.startsWith(prefijoPath) && u.pathname.length > prefijoPath.length;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    function getSupabaseClient() {
+        if (state.sbCliente) return state.sbCliente;
+        try {
+            if (window.sbVideos && typeof window.sbVideos.from === 'function') {
+                state.sbCliente = window.sbVideos;
+                return state.sbCliente;
             }
             if (window.supabaseClient) {
                 state.sbCliente = window.supabaseClient;
@@ -276,6 +293,13 @@
         const detalle = document.createElement('div');
         detalle.className = 'cs-confirm-mensaje';
         const tieneCifras = c.limite_mb != null;
+        detalle.textContent = esPro
+            ? (tieneCifras
+                ? `Tu plan Pro incluye ${formatearEspacio(c.limite_mb)} y ya lo usaste. Libera espacio para seguir subiendo.`
+                : 'Ya usaste el espacio de tu plan Pro. Libera espacio para seguir subiendo.')
+            : (tieneCifras
+                ? `Tu plan gratuito incluye ${formatearEspacio(c.limite_mb)} y ya lo usaste. `
+                : 'Ya usaste el espacio de tu plan gratuito. ') +
               'Tus videos y borradores siguen guardados. Para subir más, amplía a Pro o libera espacio.';
 
         const acciones = document.createElement('div');
@@ -322,6 +346,7 @@
     async function idbSet(clave, valor) {
         const db = await abrirIDB();
         return new Promise((resolve, reject) => {
+            const tx = db.transaction(IDB_STORE, 'readwrite');
             tx.objectStore(IDB_STORE).put(valor, clave);
             tx.oncomplete = () => { db.close(); resolve(); };
             tx.onerror = () => { db.close(); reject(tx.error); };
@@ -367,6 +392,8 @@
             await idbSet(KEY_META, {
                 titulo,
                 descripcion,
+                sonidoId: state.sonidoSeleccionado ? state.sonidoSeleccionado.id : null,
+                ubicacionId: state.ubicacionSeleccionada ? state.ubicacionSeleccionada.id : null,
                 borradorId: state.borradorEditandoId,
                 archivoPathRemoto: state.archivoPathRemoto,
                 portadaPathRemoto: state.portadaPathRemoto,
@@ -412,6 +439,27 @@
         const hint = $('csFileBtnHint');
         const btnWrap = document.querySelector('.cs-file-btn-wrap');
         if (file) {
+            if (txt) { txt.removeAttribute('data-clave'); txt.textContent = 'Video seleccionado'; }
+            if (hint) { hint.removeAttribute('data-clave'); hint.textContent = 'Listo para subir'; }
+            if (btnWrap) btnWrap.classList.add('cs-file-con-archivo');
+            const pWrap = $('csPreviewWrap');
+            if (pWrap) pWrap.style.display = 'block';
+        } else {
+            if (txt) { txt.setAttribute('data-clave', 'videos_elegir_galeria'); txt.textContent = vt('videos_elegir_galeria', 'Elegir video de la galería'); }
+            if (hint) { hint.setAttribute('data-clave', 'videos_archivo_hint'); hint.textContent = vt('videos_archivo_hint', 'MP4 · WebM · MOV · Máx 100 MB'); }
+            if (btnWrap) btnWrap.classList.remove('cs-file-con-archivo');
+        }
+    }
+
+    async function restaurarLocal() {
+        try {
+            const meta = await idbGet(KEY_META);
+            let file = await idbGet(KEY_FILE);
+
+            if (file && file.size > MAX_FILE_SIZE_FOR_IDB) {
+                warn('Archivo recuperado excede límite. Se descarta.');
+                await idbDel(KEY_FILE);
+                file = null;
                 csToast('El video era demasiado grande para recuperarlo automáticamente.', 'info', 4000);
             }
 
@@ -1449,6 +1497,7 @@
         resetEstadoBorrador();
         window.__csMiniaturaCamara = null;
         window.__csArchivoConAudioMezclado = false;
+
         AudioPreview.detener();
         cerrarPreview();
 
@@ -2244,6 +2293,7 @@
         }
 
         observarTodos();
+
         const contenedorFeed = $('videosContainer');
         if (contenedorFeed) {
             _autoplayObserver = new MutationObserver((mutations) => {
