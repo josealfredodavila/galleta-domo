@@ -177,7 +177,7 @@
         .video-card .play-btn svg { width: 26px; height: 26px; }
         .video-card.playing .play-btn { display: none; }
 
-        /* ---------- Controles que se ocultan solos ---------- */
+        /* Controles que se ocultan solos */
         .video-card .overlay-info,
         .video-card .sidebar-acciones,
         .video-card .barra-inferior,
@@ -1366,7 +1366,8 @@
         txt.textContent = mensaje;
         if (btn) btn.hidden = !hayCola;
     }
-async function procesarCola() {
+
+    async function procesarCola() {
         if (colaOcupada || !sbVideos) return;
         if (navigator.onLine === false) { actualizarEstadoCola(); return; }
         colaOcupada = true;
@@ -1668,7 +1669,6 @@ async function procesarCola() {
         var contenedor = document.getElementById('videosContainer');
         if (!contenedor) return;
 
-        // Cualquier toque reactiva los controles
         contenedor.addEventListener('pointerdown', function (e) {
             var card = e.target.closest('.video-card');
             if (card) mostrarControles(card);
@@ -1716,7 +1716,6 @@ async function procesarCola() {
             var cardTap = t.closest('.video-card');
             if (cardTap) {
                 manejarDobleTap(cardTap, e);
-                // Un toque sobre el video alterna reproducción y reactiva controles
                 if (e.target.tagName === 'VIDEO') mostrarControles(cardTap);
             }
         });
