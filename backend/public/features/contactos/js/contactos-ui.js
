@@ -1,0 +1,718 @@
+/* ============================================================
+   CSARIEL'S · CONTACTOS · contactos-ui.js · v1.0
+   ============================================================
+   Módulo: capa de interfaz de usuario para la vista Contactos.
+   - Buscador global (input principal) y buscador del modal.
+   - Modales: buscar contacto e invitación (abrir/cerrar).
+   - Delegación de eventos: filtros, tarjetas, acciones,
+     solicitudes, sugerencias, bloqueados, confirmaciones.
+   - Toasts, avisos inline y estados visuales.
+   - Expone helpers que usa la vista (window.ContactosUI).
+
+   NO reimplementa lógica de negocio: delega en
+     - window.ContactosAmigos
+     - window.ContactosSolicitudes
+     - window.ContactosSugerencias
+     - window.SocialAcciones (si existe)
+   y en el ctx inyectado por contactos.js.
+
+   API pública (window.ContactosUI):
+     - init(ctx)
+     - showToast(msg, tipo)
+     - showConfirm(opciones) → Promise<boolean>
+     - abrirModalBuscar() / cerrarModalBuscar()
+     - abrirModalInvitacion() / cerrarModalInvitacion()
+     - copiarCodigoInvitacion()
+     - avisoSeccion(seccion, msg, retry)
+     - quitarAviso(seccion)
+     - configurarEventos()
+     - enlazarFiltros()
+     - enlazarBuscadorGlobal()
+     - enlazarBuscadorModal()
+     - enlazarBotonesModal()
+     - enlazarDelegacionGlobal()
+     - debounce(fn, ms)
+
+   ctx esperado (proporcionado por contactos.js):
+     {
+       getClient, getSession, getPerfil, getPerfiles,
+       escapeHtml, obtenerInicial, mostrarEstadoVacio,
+       refrescarTodo, refrescarTodoReset,
+       withRetry, detalleError,
+       // Métodos de negocio que aún viven en contactos.js:
+       agregarContacto,
+       buscarUsuariosGlobal,
+       buscarEnModal,
+       invitarContacto,     // opcional; si no viene, se hace aquí
+       onCambioFiltro,      // opcional
+       onCambioBusqueda     // opcional
+     }
+   ============================================================ */
+
+(function () {
+    'use strict';
+
+    if (window.ContactosUI) return;
+
+    var ctx = null;
+    var estado = {
+        toastTimer: null,
+        busquedaVersion: 0,
+        confirmResolve: null,
+        configurado: false
+    };
+
+    var CONFIG = {
+        DEBOUNCE_BUSQUEDA_MS: 350,
+        MIN_CHARS_BUSQUEDA: 2,
+        MAX_CHARS_BUSQUEDA: 80,
+        RPC_INVITACION: 'obtener_o_crear_invitacion',
+        TOAST_MS: 3500
+    };
+
+    /* ============================================================
+       UTILIDADES INTERNAS
+       ============================================================ */
+
+    function _sb() {
+        if (ctx && typeof ctx.getClient === 'function') return ctx.getClient();
+        return window.supabaseClient || null;
+    }
+
+    function _session() {
+        if (ctx && typeof ctx.getSession === 'function') return ctx.getSession();
+        return Promise.resolve(null);
+    }
+
+    function _err(err) {
+        if (ctx && typeof ctx.detalleError === 'function') return ctx.detalleError(err);
+        if (!err) return 'error desconocido';
+        return (err.code ? err.code + ': ' : '') + (err.message || String(err));
+    }
+
+    function _escape(v) {
+        if (ctx && typeof ctx.escapeHtml === 'function') return ctx.escapeHtml(v);
+        return String(v == null ? '' : v)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function _withRetry(fn, contexto) {
+        if (ctx && typeof ctx.withRetry === 'function') return ctx.withRetry(fn, contexto);
+        return fn();
+    }
+
+    function _refrescar(opts) {
+        if (ctx && typeof ctx.refrescarTodo === 'function') return ctx.refrescarTodo(opts || { reset: true });
+        return Promise.resolve();
+    }
+
+    function _refrescarReset() {
+        if (ctx && typeof ctx.refrescarTodoReset === 'function') return ctx.refrescarTodoReset();
+        return _refrescar({ reset: true });
+    }
+
+    function debounce(fn, ms) {
+        var timer = null;
+        return function () {
+            var self = this, args = arguments;
+            clearTimeout(timer);
+            timer = setTimeout(function () { fn.apply(self, args); }, ms);
+        };
+    }
+
+    function normalizarTextoBusqueda(valor) {
+        return String(valor == null ? '' : valor)
+            .replace(/\u0000/g, '')
+            .trim()
+            .slice(0, CONFIG.MAX_CHARS_BUSQUEDA);
+    }
+
+    /* ============================================================
+       TOAST
+       ============================================================ */
+
+    function showToast(mensaje, tipo) {
+        var toast = document.getElementById('toast');
+        if (!toast) return;
+        toast.textContent = String(mensaje || '');
+        toast.className = 'toast';
+        if (tipo) toast.classList.add(tipo);
+        requestAnimationFrame(function () { toast.classList.add('show'); });
+        clearTimeout(estado.toastTimer);
+        estado.toastTimer = setTimeout(function () {
+            toast.classList.remove('show');
+        }, CONFIG.TOAST_MS);
+    }
+
+    /* ============================================================
+       CONFIRMACIÓN
+       ============================================================ */
+
+    function showConfirm(opciones) {
+        opciones = opciones || {};
+        return new Promise(function (resolve) {
+            var overlay = document.getElementById('confirmModalOverlay');
+            var iconEl = document.getElementById('confirmModalIcon');
+            var titleEl = document.getElementById('confirmModalTitle');
+            var msgEl = document.getElementById('confirmModalMessage');
+            var cancelBtn = document.getElementById('confirmModalCancel');
+            var confirmBtn = document.getElementById('confirmModalConfirm');
+
+            if (!overlay || !cancelBtn || !confirmBtn) { resolve(false); return; }
+
+            if (iconEl) iconEl.textContent = opciones.icon || '⚠️';
+            if (titleEl) titleEl.textContent = opciones.title || 'Confirmar';
+            if (msgEl) msgEl.textContent = opciones.message || '';
+            cancelBtn.textContent = opciones.cancelText || 'Cancelar';
+            confirmBtn.textContent = opciones.confirmText || 'Aceptar';
+
+            if (opciones.danger === false) {
+                confirmBtn.classList.remove('confirm-danger');
+                confirmBtn.style.background = 'linear-gradient(135deg, #0F2D1A, #087F5B)';
+                confirmBtn.style.borderColor = '#D4AF37';
+            } else {
+                confirmBtn.classList.add('confirm-danger');
+                confirmBtn.style.background = '';
+                confirmBtn.style.borderColor = '';
+            }
+
+            overlay.classList.add('active');
+            overlay.setAttribute('aria-hidden', 'false');
+
+            function limpiar() {
+                cancelBtn.removeEventListener('click', cancelar);
+                confirmBtn.removeEventListener('click', confirmar);
+                overlay.removeEventListener('click', clickFondo);
+                document.removeEventListener('keydown', teclaEscape);
+                estado.confirmResolve = null;
+            }
+            function finalizar(valor) {
+                limpiar();
+                overlay.classList.remove('active');
+                overlay.setAttribute('aria-hidden', 'true');
+                resolve(valor);
+            }
+            function cancelar() { finalizar(false); }
+            function confirmar() { finalizar(true); }
+            function clickFondo(e) { if (e.target === overlay) finalizar(false); }
+            function teclaEscape(e) { if (e.key === 'Escape') finalizar(false); }
+
+            estado.confirmResolve = finalizar;
+
+            cancelBtn.addEventListener('click', cancelar);
+            confirmBtn.addEventListener('click', confirmar);
+            overlay.addEventListener('click', clickFondo);
+            document.addEventListener('keydown', teclaEscape);
+        });
+    }
+
+    /* ============================================================
+       AVISOS INLINE
+       ============================================================ */
+
+    function avisoSeccion(seccion, mensaje, onRetry) {
+        if (!seccion) return;
+        var previo = seccion.querySelector('[data-aviso-contactos]');
+        if (previo) previo.remove();
+
+        var aviso = document.createElement('div');
+        aviso.setAttribute('data-aviso-contactos', '1');
+        aviso.setAttribute('role', 'alert');
+        aviso.className = 'aviso-contactos';
+
+        var texto = document.createElement('span');
+        texto.textContent = mensaje;
+        aviso.appendChild(texto);
+
+        if (typeof onRetry === 'function') {
+            var boton = document.createElement('button');
+            boton.type = 'button';
+            boton.textContent = 'Reintentar';
+            boton.className = 'aviso-contactos__retry';
+            boton.addEventListener('click', onRetry);
+            aviso.appendChild(boton);
+        }
+        seccion.insertBefore(aviso, seccion.children[1] || null);
+    }
+
+    function quitarAviso(seccion) {
+        if (!seccion) return;
+        var previo = seccion.querySelector('[data-aviso-contactos]');
+        if (previo) previo.remove();
+    }
+
+    /* ============================================================
+       MODAL: BUSCAR CONTACTO
+       ============================================================ */
+
+    function abrirModalBuscar() {
+        var modal = document.getElementById('modalBuscarContacto');
+        if (!modal) return;
+        modal.classList.add('show', 'active');
+        modal.setAttribute('aria-hidden', 'false');
+        var input = document.getElementById('searchInputModal');
+        if (input) { input.value = ''; setTimeout(function () { input.focus(); }, 100); }
+        var res = document.getElementById('resultadosBusqueda');
+        if (res) {
+            res.innerHTML = '<div class="busqueda-mensaje">Escribe un nombre, @handle, correo o teléfono.</div>';
+        }
+    }
+
+    function cerrarModalBuscar() {
+        var modal = document.getElementById('modalBuscarContacto');
+        if (!modal) return;
+        modal.classList.remove('show', 'active');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    /* ============================================================
+       MODAL: INVITACIÓN
+       ============================================================ */
+
+    function abrirModalInvitacion() {
+        var modal = document.getElementById('modalInvitacion');
+        if (!modal) return;
+        modal.classList.add('show', 'active');
+        modal.setAttribute('aria-hidden', 'false');
+        var codigoEl = document.getElementById('codigoInvitacion');
+        if (codigoEl) codigoEl.textContent = 'Generando…';
+        _generarCodigoInvitacion(codigoEl);
+    }
+
+    function cerrarModalInvitacion() {
+        var modal = document.getElementById('modalInvitacion');
+        if (!modal) return;
+        modal.classList.remove('show', 'active');
+        modal.setAttribute('aria-hidden', 'true');
+    }
+
+    async function _generarCodigoInvitacion(codigoEl) {
+        var client = _sb();
+        var session = await _session();
+        if (!client || !session) {
+            if (codigoEl) codigoEl.textContent = 'ERROR';
+            showToast('Inicia sesión para generar una invitación.', 'error');
+            return;
+        }
+        try {
+            var r = await _withRetry(function () {
+                return client.rpc(CONFIG.RPC_INVITACION);
+            }, 'invitación');
+            if (r.error) throw r.error;
+            var inv = Array.isArray(r.data) ? r.data[0] : r.data;
+            if (!inv || !inv.codigo) throw new Error('El servidor no devolvió un código');
+            if (codigoEl) codigoEl.textContent = String(inv.codigo);
+        } catch (err) {
+            console.error('[ContactosUI] Invitación:', _err(err));
+            if (codigoEl) codigoEl.textContent = 'ERROR';
+            showToast('Error al generar invitación: ' + _err(err), 'error');
+        }
+    }
+
+    async function copiarCodigoInvitacion() {
+        var el = document.getElementById('codigoInvitacion');
+        if (!el) return;
+        var cod = el.textContent.trim();
+        if (!cod || cod === 'Generando…' || cod === 'ERROR') return;
+
+        try {
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+                await navigator.clipboard.writeText(cod);
+            } else {
+                var tmp = document.createElement('textarea');
+                tmp.value = cod;
+                tmp.setAttribute('readonly', '');
+                tmp.style.position = 'fixed';
+                tmp.style.opacity = '0';
+                document.body.appendChild(tmp);
+                tmp.select();
+                var ok = document.execCommand('copy');
+                tmp.remove();
+                if (!ok) throw new Error('execCommand copy devolvió false');
+            }
+            showToast('Código copiado.', 'success');
+        } catch (err) {
+            console.error('[ContactosUI] Copiar:', _err(err));
+            showToast('No se pudo copiar: ' + _err(err), 'error');
+        }
+    }
+
+    /* ============================================================
+       BUSCADOR GLOBAL (input principal)
+       ============================================================ */
+
+    function enlazarBuscadorGlobal() {
+        var input = document.getElementById('searchInput');
+        if (!input || input.dataset.uiBound === '1') return;
+        input.dataset.uiBound = '1';
+
+        input.addEventListener('input', debounce(function (event) {
+            var texto = normalizarTextoBusqueda(event.target.value);
+            estado.busquedaVersion++;
+
+            if (typeof ctx.onCambioBusqueda === 'function') {
+                ctx.onCambioBusqueda(texto, estado.busquedaVersion);
+                return;
+            }
+            // Fallback: si contactos.js expone buscarUsuariosGlobal
+            if (typeof ctx.buscarUsuariosGlobal === 'function' && texto.length >= CONFIG.MIN_CHARS_BUSQUEDA) {
+                ctx.buscarUsuariosGlobal(texto, estado.busquedaVersion);
+            } else if (window.ContactosAmigos && typeof window.ContactosAmigos.setBusqueda === 'function') {
+                window.ContactosAmigos.setBusqueda(texto);
+            }
+        }, CONFIG.DEBOUNCE_BUSQUEDA_MS));
+    }
+
+    /* ============================================================
+       BUSCADOR DEL MODAL
+       ============================================================ */
+
+    function enlazarBuscadorModal() {
+        var input = document.getElementById('searchInputModal');
+        if (!input || input.dataset.uiBound === '1') return;
+        input.dataset.uiBound = '1';
+
+        input.addEventListener('input', debounce(function (event) {
+            var termino = normalizarTextoBusqueda(event.target.value).replace(/^@+/, '');
+            var v = ++estado.busquedaVersion;
+
+            if (typeof ctx.buscarEnModal === 'function') {
+                ctx.buscarEnModal(termino, v);
+                return;
+            }
+            _buscarEnModalFallback(termino, v);
+        }, CONFIG.DEBOUNCE_BUSQUEDA_MS));
+    }
+
+    async function _buscarEnModalFallback(termino, version) {
+        var client = _sb();
+        var session = await _session();
+        var res = document.getElementById('resultadosBusqueda');
+        if (!res) return;
+
+        if (!client || !session) {
+            res.innerHTML = '<div class="busqueda-mensaje">Inicia sesión para buscar.</div>';
+            return;
+        }
+        if (termino.length < CONFIG.MIN_CHARS_BUSQUEDA) {
+            res.innerHTML = '<div class="busqueda-mensaje">Escribe al menos 2 caracteres.</div>';
+            return;
+        }
+
+        try {
+            var r = await _withRetry(function () {
+                return client.rpc('buscar_usuarios', { p_query: termino });
+            }, 'buscar en modal');
+            if (version !== estado.busquedaVersion) return;
+            if (r.error) throw r.error;
+
+            var lista = (Array.isArray(r.data) ? r.data : [])
+                .filter(function (u) { return u && u.id && u.id !== session.user.id; })
+                .slice(0, 20);
+
+            if (!lista.length) {
+                res.innerHTML = '<div class="busqueda-mensaje">No se encontraron usuarios disponibles.</div>';
+                return;
+            }
+
+            res.innerHTML = lista.map(function (u) {
+                var nombre = u.nombre || u.handle || 'Usuario';
+                var handle = u.handle ? '@' + String(u.handle).replace(/^@/, '') : '';
+                var avatar = u.avatar_url
+                    ? '<img src="' + _escape(u.avatar_url) + '" alt="">'
+                    : _escape(String(nombre).charAt(0).toUpperCase());
+                var verificado = u.verificado === true ? ' <span class="verified">✓</span>' : '';
+                return '<div class="resultado-usuario">' +
+                    '<div class="avatar">' + avatar + '</div>' +
+                    '<div class="resultado-info">' +
+                        '<div class="resultado-nombre">' + _escape(nombre) + verificado + '</div>' +
+                        '<div class="resultado-handle">' + _escape(handle) + '</div>' +
+                    '</div>' +
+                    '<button type="button" class="btn-agregar" data-agregar-id="' + _escape(u.id) + '">Conectar</button>' +
+                '</div>';
+            }).join('');
+        } catch (err) {
+            console.error('[ContactosUI] Buscar modal:', _err(err));
+            res.innerHTML = '<div class="busqueda-mensaje">Error al buscar: ' + _escape(_err(err)) + '</div>';
+        }
+    }
+
+    /* ============================================================
+       FILTROS
+       ============================================================ */
+
+    function enlazarFiltros() {
+        document.querySelectorAll('.filtros .filtro').forEach(function (boton) {
+            if (boton.dataset.uiBound === '1') return;
+            boton.dataset.uiBound = '1';
+            boton.addEventListener('click', function () {
+                document.querySelectorAll('.filtros .filtro').forEach(function (item) {
+                    item.classList.remove('active');
+                    item.setAttribute('aria-pressed', 'false');
+                });
+                boton.classList.add('active');
+                boton.setAttribute('aria-pressed', 'true');
+
+                var filtro = boton.dataset.filtro || 'todos';
+
+                if (typeof ctx.onCambioFiltro === 'function') {
+                    ctx.onCambioFiltro(filtro);
+                    return;
+                }
+                if (window.ContactosAmigos && typeof window.ContactosAmigos.aplicarFiltro === 'function') {
+                    window.ContactosAmigos.aplicarFiltro(filtro);
+                }
+            });
+        });
+    }
+
+    /* ============================================================
+       BOTONES DE MODALES (data-action)
+       ============================================================ */
+
+    function enlazarBotonesModal() {
+        document.querySelectorAll('[data-action]').forEach(function (el) {
+            if (el.dataset.uiBound === '1') return;
+            el.dataset.uiBound = '1';
+            el.addEventListener('click', function (event) {
+                var action = el.getAttribute('data-action');
+                if (action === 'invitar') {
+                    if (typeof ctx.invitarContacto === 'function') ctx.invitarContacto();
+                    else abrirModalInvitacion();
+                } else if (action === 'cerrar-buscar') {
+                    cerrarModalBuscar();
+                } else if (action === 'cerrar-invitacion') {
+                    cerrarModalInvitacion();
+                } else if (action === 'copiar-codigo') {
+                    copiarCodigoInvitacion();
+                } else {
+                    return;
+                }
+                event.preventDefault();
+            });
+        });
+    }
+
+    /* ============================================================
+       DELEGACIÓN GLOBAL DE CLICS
+       ============================================================ */
+
+    function enlazarDelegacionGlobal() {
+        if (document.body.dataset.contactosDelegado === '1') return;
+        document.body.dataset.contactosDelegado = '1';
+
+        document.addEventListener('click', function (event) {
+            var t = event.target;
+
+            // Cierre de modales al clic en overlay
+            if (document.getElementById('modalBuscarContacto') === t) { cerrarModalBuscar(); return; }
+            if (document.getElementById('modalInvitacion') === t) { cerrarModalInvitacion(); return; }
+
+            // Avisos: reintentar contactos
+            var reintentarLista = t.closest('[data-reintentar-contactos]');
+            if (reintentarLista) { _refrescarReset(); return; }
+
+            // Empty state: abrir buscador
+            var agregarVacio = t.closest('[data-contactos-action="agregar"]');
+            if (agregarVacio) { abrirModalBuscar(); return; }
+
+            // Botón "Agregar" en búsqueda global y modal
+            var agregar = t.closest('[data-agregar-id]');
+            if (agregar) {
+                var idAgregar = agregar.getAttribute('data-agregar-id');
+                if (typeof ctx.agregarContacto === 'function') ctx.agregarContacto(idAgregar);
+                else if (window.ContactosSugerencias && typeof window.ContactosSugerencias.conectar === 'function') {
+                    window.ContactosSugerencias.conectar(idAgregar);
+                }
+                return;
+            }
+
+            // Solicitudes: aceptar / rechazar / cancelar
+            var aceptar = t.closest('[data-solicitud-aceptar]');
+            if (aceptar && window.ContactosSolicitudes) {
+                window.ContactosSolicitudes.aceptar(aceptar.getAttribute('data-solicitud-aceptar'));
+                return;
+            }
+            var rechazar = t.closest('[data-solicitud-rechazar]');
+            if (rechazar && window.ContactosSolicitudes) {
+                window.ContactosSolicitudes.rechazar(rechazar.getAttribute('data-solicitud-rechazar'));
+                return;
+            }
+            var cancelarEnvio = t.closest('[data-solicitud-cancelar]');
+            if (cancelarEnvio && window.ContactosSolicitudes) {
+                window.ContactosSolicitudes.cancelarEnviada(cancelarEnvio.getAttribute('data-solicitud-cancelar'));
+                return;
+            }
+
+            // Reintentar perfil (en solicitudes enviadas)
+            var reintPerfil = t.closest('[data-reintentar-perfil]');
+            if (reintPerfil && typeof ctx.reintentarPerfil === 'function') {
+                ctx.reintentarPerfil(reintPerfil.getAttribute('data-reintentar-perfil'));
+                return;
+            }
+
+            // Bloqueados: desbloquear
+            var desbloquear = t.closest('[data-bloqueado-desbloquear]');
+            if (desbloquear) {
+                var idDes = desbloquear.getAttribute('data-bloqueado-desbloquear');
+                if (typeof ctx.desbloquearContacto === 'function') ctx.desbloquearContacto(idDes);
+                else if (window.SocialAcciones && typeof window.SocialAcciones.desbloquear === 'function') {
+                    window.SocialAcciones.desbloquear(idDes).then(function (res) {
+                        if (res && res.ok) _refrescarReset();
+                    });
+                }
+                return;
+            }
+
+            // Sugerencias: conectar
+            var sugerencia = t.closest('[data-sugerencia-agregar]');
+            if (sugerencia && window.ContactosSugerencias) {
+                window.ContactosSugerencias.conectar(sugerencia.getAttribute('data-sugerencia-agregar'));
+                return;
+            }
+
+            // Tarjeta de contacto: acciones
+            var tarjeta = t.closest('.contacto-card[data-contacto-id]');
+            if (!tarjeta) return;
+
+            var contactoId = tarjeta.getAttribute('data-contacto-id');
+            var filaId = tarjeta.getAttribute('data-fila-id');
+            var boton = t.closest('[data-accion]');
+
+            if (boton) {
+                event.preventDefault();
+                event.stopPropagation();
+                var accion = boton.getAttribute('data-accion');
+
+                if (accion === 'mensaje' && window.ContactosAmigos) window.ContactosAmigos.abrirMensaje(contactoId);
+                else if (accion === 'llamar' && window.ContactosAmigos) window.ContactosAmigos.llamar(contactoId);
+                else if (accion === 'favorito' && window.ContactosAmigos) {
+                    var item = estadoItemPorFila(filaId);
+                    var actual = item && item.es_favorito === true;
+                    window.ContactosAmigos.toggleFavorito(filaId, !actual);
+                } else if (accion === 'bloquear' && window.ContactosAmigos) window.ContactosAmigos.bloquear(contactoId);
+                else if (accion === 'eliminar' && window.ContactosAmigos) window.ContactosAmigos.eliminar(contactoId);
+                else if (typeof ctx.onAccionContacto === 'function') {
+                    ctx.onAccionContacto(accion, contactoId, filaId);
+                }
+                return;
+            }
+
+            // Clic en avatar → perfil, clic en tarjeta → mensaje
+            if (t.closest('.contacto-avatar') && window.ContactosAmigos) {
+                window.ContactosAmigos.abrirPerfil(contactoId);
+                return;
+            }
+            if (window.ContactosAmigos) window.ContactosAmigos.abrirMensaje(contactoId);
+        });
+
+        document.addEventListener('keydown', function (event) {
+            if (event.key === 'Escape') {
+                cerrarModalBuscar();
+                cerrarModalInvitacion();
+            }
+        });
+    }
+
+    function estadoItemPorFila(filaId) {
+        if (window.ContactosAmigos && typeof window.ContactosAmigos.getEstado === 'function') {
+            var est = window.ContactosAmigos.getEstado();
+            if (est && Array.isArray(est.contactos)) {
+                return est.contactos.find(function (c) {
+                    return String(c.id) === String(filaId);
+                });
+            }
+        }
+        return null;
+    }
+
+    /* ============================================================
+       CONFIGURACIÓN GLOBAL
+       ============================================================ */
+
+    function configurarEventos() {
+        if (estado.configurado) return;
+        estado.configurado = true;
+
+        enlazarBuscadorGlobal();
+        enlazarBuscadorModal();
+        enlazarFiltros();
+        enlazarBotonesModal();
+        enlazarDelegacionGlobal();
+
+        // Exponer en window para compatibilidad con onclick antiguos (si quedan)
+        window.showToast = window.showToast || showToast;
+        window.cerrarModalBuscar = window.cerrarModalBuscar || cerrarModalBuscar;
+        window.cerrarModalInvitacion = window.cerrarModalInvitacion || cerrarModalInvitacion;
+        window.copiarCodigoInvitacion = window.copiarCodigoInvitacion || copiarCodigoInvitacion;
+        window.abrirAgregarContacto = window.abrirAgregarContacto || abrirModalBuscar;
+
+        // Cierre por click en overlay genérico (redundancia segura)
+        var overlayBuscar = document.getElementById('modalBuscarContacto');
+        if (overlayBuscar && overlayBuscar.dataset.uiBound !== '1') {
+            overlayBuscar.dataset.uiBound = '1';
+            overlayBuscar.addEventListener('click', function (event) {
+                if (event.target === overlayBuscar) cerrarModalBuscar();
+            });
+        }
+        var overlayInvitacion = document.getElementById('modalInvitacion');
+        if (overlayInvitacion && overlayInvitacion.dataset.uiBound !== '1') {
+            overlayInvitacion.dataset.uiBound = '1';
+            overlayInvitacion.addEventListener('click', function (event) {
+                if (event.target === overlayInvitacion) cerrarModalInvitacion();
+            });
+        }
+    }
+
+    /* ============================================================
+       INICIALIZACIÓN
+       ============================================================ */
+
+    function init(contexto) {
+        ctx = contexto || null;
+        return { ok: true, api: window.ContactosUI };
+    }
+
+    /* ============================================================
+       API PÚBLICA
+       ============================================================ */
+
+    window.ContactosUI = {
+        CONFIG: CONFIG,
+
+        init: init,
+        configurarEventos: configurarEventos,
+
+        // UI básicos
+        showToast: showToast,
+        showConfirm: showConfirm,
+        debounce: debounce,
+
+        // Avisos
+        avisoSeccion: avisoSeccion,
+        quitarAviso: quitarAviso,
+
+        // Modales
+        abrirModalBuscar: abrirModalBuscar,
+        cerrarModalBuscar: cerrarModalBuscar,
+        abrirModalInvitacion: abrirModalInvitacion,
+        cerrarModalInvitacion: cerrarModalInvitacion,
+        copiarCodigoInvitacion: copiarCodigoInvitacion,
+
+        // Enlaces individuales (por si se necesitan reconfigurar)
+        enlazarBuscadorGlobal: enlazarBuscadorGlobal,
+        enlazarBuscadorModal: enlazarBuscadorModal,
+        enlazarFiltros: enlazarFiltros,
+        enlazarBotonesModal: enlazarBotonesModal,
+        enlazarDelegacionGlobal: enlazarDelegacionGlobal,
+
+        // Estado (solo lectura recomendada)
+        getEstado: function () {
+            return {
+                configurado: estado.configurado,
+                busquedaVersion: estado.busquedaVersion
+            };
+        }
+    };
+})();
