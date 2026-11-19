@@ -1,15 +1,23 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v14.8 IMMERSIVE PLAYER 100% PANTALLA + AUTO-HIDE CONTROLES
+// v14.9 — PLAYER ESTABLE AL CAMBIAR DE MODO (FULL/INLINE/PiP)
 // ================================================================
-// ACTUALIZACIONES v14.8:
-// 1. El visor ocupa TODA la pantalla del celular (sin cuadros negros),
-//    usando object-fit: cover y altura 100dvh desde el inicio.
-// 2. Los controles superpuestos se ocultan solos tras 2.5s al reproducir
-//    y vuelven a mostrarse al tocar la pantalla.
-// 3. Se conservan los controles propios de comentarios, reacciones,
-//    publicar y PiP.
-// 4. Se mantiene la navegación PiP flotante de v14.7.
+// CAMBIOS v14.9:
+// 1. El motor de reproducción respeta SIEMPRE el estado manual del
+//    usuario: si estaba pausado, sigue pausado al cambiar de modo.
+// 2. PiP ya no fuerza play() si el usuario lo tenía pausado.
+// 3. Entrar/salir de PiP ya NO destruye el visor ni reinicia el video.
+// 4. El botón de expandir conserva currentTime y playbackRate; no
+//    alterna play/pause ni reinicia el tiempo.
+// 5. resize / orientationchange ya NO tocan play/pause.
+// 6. visibilitychange ya NO marca reproduccionSolicitada (respeto
+//    al estado manual).
+// 7. IntersectionObserver ignora todo video si el visor está abierto,
+//    evitando pausas cruzadas feed ↔ visor.
+// 8. pubCerrarVisor ya no destruye un video que está en PiP: sale
+//    primero del PiP y luego limpia.
+// 9. pubMostrarItem() solo destruye el video anterior cuando
+//    realmente se cambia de ítem (compara URL).
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -188,6 +196,10 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
 // ================================================================
 // MOTOR DE REPRODUCCIÓN
 // ================================================================
+// reproduccionSolicitada = estado MANUAL deseado por el usuario.
+// Solo se modifica desde acciones explícitas de la UI (play/pause),
+// NUNCA por cambios de layout, resize, orientación, PiP o visibilidad.
+// ================================================================
 
 var pubMotorVideo = {
     videoActivo: null,
@@ -212,6 +224,11 @@ function pubEsVideoFlotante(video) {
         video &&
         document.pictureInPictureElement === video
     );
+}
+
+function pubVisorEstaAbierto() {
+    var visor = document.getElementById('pubVisorFull');
+    return Boolean(visor && visor.classList.contains('show'));
 }
 
 function pubReproducirVideo(video) {
@@ -264,7 +281,15 @@ var pubVisor = {
     videoActual: null,
     timeoutOcultarControles: null,
     arrastrandoProgreso: false,
-    estabaVisibleAntesDePip: false
+    estabaVisibleAntesDePip: false,
+    urlVideoActual: null,
+    // Estado del video al entrar a PiP para restaurar sin cambios:
+    estadoPip: {
+        activo: false,
+        reproduciendo: false,
+        currentTime: 0,
+        playbackRate: 1
+    }
 };
 
 // Muestra los controles y programa su auto-ocultado si el vídeo se está reproduciendo.
@@ -427,9 +452,11 @@ function pubVisorEl() {
         if (!video) return;
 
         if (video.paused) {
+            pubMotorVideo.reproduccionSolicitada = true;
             pubReproducirVideo(video);
             setTimeout(function () { pubOcultarControles(); }, 300);
         } else {
+            pubMotorVideo.reproduccionSolicitada = false;
             video.pause();
             pubMostrarControles();
         }
@@ -439,7 +466,10 @@ function pubVisorEl() {
         e.stopPropagation();
 
         var video = pubVisor.videoActual;
+
+        // Captura estado ANTES del cambio de layout
         var tiempo = video ? video.currentTime : 0;
+        var tasa = video ? video.playbackRate : 1;
         var estabaReproduciendo = video ? !video.paused : false;
 
         pubVisor.modoLleno = !pubVisor.modoLleno;
@@ -449,13 +479,22 @@ function pubVisorEl() {
         if (video) {
             video.style.objectFit = pubVisor.modoLleno ? 'cover' : 'contain';
 
-            if (Math.abs(video.currentTime - tiempo) > 0.5) {
+            // Restaurar tiempo exacto (algunos navegadores lo alteran al cambiar tamaño)
+            if (Math.abs(video.currentTime - tiempo) > 0.1) {
                 try {
                     video.currentTime = tiempo;
                 } catch (error) {}
             }
 
-            if (estabaReproduciendo && video.paused) {
+            // Restaurar tasa si el navegador la reinició
+            if (video.playbackRate !== tasa) {
+                try {
+                    video.playbackRate = tasa;
+                } catch (error) {}
+            }
+
+            // Solo reanudar si el usuario lo tenía reproduciendo y el navegador lo pausó por el cambio
+            if (estabaReproduciendo && video.paused && pubMotorVideo.reproduccionSolicitada) {
                 pubReproducirVideo(video);
             }
         }
@@ -491,10 +530,16 @@ function pubVisorEl() {
                 return;
             }
 
-            if (video.paused) {
-                await video.play();
-            }
+            // Recordar estado ANTES de PiP — no forzamos play si estaba pausado.
+            pubVisor.estadoPip = {
+                activo: true,
+                reproduciendo: !video.paused,
+                currentTime: video.currentTime,
+                playbackRate: video.playbackRate
+            };
 
+            // Si estaba pausado, PiP se abre pausado (comportamiento nativo).
+            // Si estaba reproduciendo, NO hacemos nada — el navegador continúa.
             await video.requestPictureInPicture();
 
         } catch (error) {
@@ -754,9 +799,11 @@ function pubVisorEl() {
 
             if (video) {
                 if (video.paused) {
+                    pubMotorVideo.reproduccionSolicitada = true;
                     pubReproducirVideo(video);
                     setTimeout(function () { pubOcultarControles(); }, 300);
                 } else {
+                    pubMotorVideo.reproduccionSolicitada = false;
                     video.pause();
                     pubMostrarControles();
                 }
@@ -786,7 +833,7 @@ function pubAjustarOpcionesMenu() {
 }
 
 // ================================================================
-// MOSTRAR ELEMENTO DEL VISOR (con 100% pantalla para video)
+// MOSTRAR ELEMENTO DEL VISOR
 // ================================================================
 
 function pubMostrarItem() {
@@ -800,11 +847,26 @@ function pubMostrarItem() {
 
     if (!item) return;
 
+    // Si el visor estaba mostrando EL MISMO video, no lo destruimos.
+    var mismoVideo = (
+        item.tipo === 'video' &&
+        pubVisor.urlVideoActual === item.url &&
+        pubVisor.videoActual &&
+        pubVisor.videoActual.isConnected
+    );
+
     document.getElementById('pubVfSheet').classList.remove('show');
     document.getElementById('pubVfReportSheet1').classList.remove('show');
     document.getElementById('pubVfReportSheet2').classList.remove('show');
 
-    if (pubVisor.videoActual) {
+    if (!mismoVideo && pubVisor.videoActual) {
+        // Antes de destruir: si está en PiP, salir de PiP.
+        if (document.pictureInPictureElement === pubVisor.videoActual) {
+            try {
+                document.exitPictureInPicture();
+            } catch (e) {}
+        }
+
         try {
             pubVisor.videoActual.pause();
             pubVisor.videoActual.removeAttribute('src');
@@ -812,14 +874,26 @@ function pubMostrarItem() {
         } catch (e) {}
     }
 
-    pubVisor.videoActual = null;
-    pubVisor.modoLleno = false;
+    if (!mismoVideo) {
+        pubVisor.videoActual = null;
+        pubVisor.urlVideoActual = null;
+        pubVisor.modoLleno = false;
+        el.classList.remove('is-fullscreen');
+    }
 
-    el.classList.remove('is-fullscreen');
     el.classList.remove('controls-hidden');
 
     if (btnExpand) {
-        btnExpand.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
+        btnExpand.innerHTML = pubVisor.modoLleno
+            ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"></path></svg>'
+            : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>';
+    }
+
+    // Si es el mismo video, no recreamos nada.
+    if (mismoVideo) {
+        controls.style.display = 'flex';
+        centerControls.style.display = 'none';
+        return;
     }
 
     caja.innerHTML = '';
@@ -842,7 +916,6 @@ function pubMostrarItem() {
 
         video.src = item.url;
 
-        // Forzar pantalla completa sin cuadros negros
         video.style.width = '100%';
         video.style.height = '100%';
         video.style.objectFit = 'cover';
@@ -884,13 +957,15 @@ function pubMostrarItem() {
 
         video.addEventListener('play', function () {
             pubMotorVideo.videoActivo = video;
-            pubMotorVideo.reproduccionSolicitada = true;
 
+            // No reescribimos reproduccionSolicitada aquí; solo lo hace la UI.
             pubActualizarBotonReproduccion(video);
             pubMostrarControles();
         });
 
         video.addEventListener('pause', function () {
+            // Si la pausa vino del navegador (cambio de layout), NO cambiamos el estado deseado.
+            // Solo respetamos el estado manual reflejándolo visualmente.
             pubActualizarBotonReproduccion(video);
             pubMostrarControles();
         });
@@ -909,9 +984,20 @@ function pubMostrarItem() {
 
         video.addEventListener('enterpictureinpicture', function () {
             pubOcultarControles();
-            
-            el.style.display = 'none';
+
+            // Guardamos estado al entrar a PiP (por si el navegador pausa/atrasa).
+            pubVisor.estadoPip = {
+                activo: true,
+                reproduciendo: !video.paused,
+                currentTime: video.currentTime,
+                playbackRate: video.playbackRate
+            };
+
             pubVisor.estabaVisibleAntesDePip = true;
+
+            // NO ocultamos el visor con display:none — evitamos disparar
+            // IntersectionObserver y race-conditions con el video del feed.
+            el.classList.add('pub-vf-pip-active');
             document.body.style.overflow = '';
 
             if (window.showToast) {
@@ -921,22 +1007,59 @@ function pubMostrarItem() {
 
         video.addEventListener('leavepictureinpicture', function () {
             if (pubVisor.estabaVisibleAntesDePip) {
+                el.classList.remove('pub-vf-pip-active');
                 el.style.display = '';
                 el.classList.add('show');
                 document.body.style.overflow = 'hidden';
                 pubVisor.estabaVisibleAntesDePip = false;
             }
 
-            if (video.isConnected && video.paused && pubMotorVideo.reproduccionSolicitada) {
+            var estado = pubVisor.estadoPip;
+
+            // Restaurar posición exacta si el navegador la movió
+            if (
+                estado &&
+                estado.activo &&
+                isFinite(estado.currentTime) &&
+                Math.abs(video.currentTime - estado.currentTime) > 0.3
+            ) {
+                try {
+                    video.currentTime = estado.currentTime;
+                } catch (e) {}
+            }
+
+            // Restaurar tasa
+            if (estado && estado.playbackRate && video.playbackRate !== estado.playbackRate) {
+                try {
+                    video.playbackRate = estado.playbackRate;
+                } catch (e) {}
+            }
+
+            // Reanudar SOLO si estaba reproduciendo antes de PiP y el navegador lo pausó.
+            if (
+                estado &&
+                estado.activo &&
+                estado.reproduciendo &&
+                video.paused &&
+                pubMotorVideo.reproduccionSolicitada
+            ) {
                 pubReproducirVideo(video);
             }
+
+            // Si estaba pausado, NO hacemos nada: se queda pausado.
+            estado.activo = false;
+
             pubMostrarControles();
         });
 
         caja.appendChild(video);
 
         pubVisor.videoActual = video;
+        pubVisor.urlVideoActual = item.url;
         pubMotorVideo.videoActivo = video;
+
+        // Estado deseado inicial: reproduciendo (autoplay).
+        pubMotorVideo.reproduccionSolicitada = true;
 
         pubReproducirVideo(video);
         pubMostrarControles();
@@ -952,6 +1075,9 @@ function pubMostrarItem() {
         imagen.draggable = false;
 
         caja.appendChild(imagen);
+
+        pubVisor.videoActual = null;
+        pubVisor.urlVideoActual = null;
     }
 }
 
@@ -982,6 +1108,13 @@ function pubAbrirVisor(indice, postId, esDueno) {
     pubVisor.esDueno = esDueno === true;
     pubVisor.arrastrandoProgreso = false;
     pubVisor.estabaVisibleAntesDePip = false;
+    pubVisor.urlVideoActual = null;
+    pubVisor.estadoPip = {
+        activo: false,
+        reproduciendo: false,
+        currentTime: 0,
+        playbackRate: 1
+    };
 
     pubMostrarItem();
     pubAjustarOpcionesMenu();
@@ -1002,6 +1135,7 @@ function pubCerrarVisor() {
 
     var video = pubVisor.videoActual;
 
+    // Si está en PiP, salir primero (no destruir hasta terminar el evento).
     if (video && document.pictureInPictureElement === video) {
         try {
             document.exitPictureInPicture();
@@ -1017,6 +1151,7 @@ function pubCerrarVisor() {
     }
 
     pubVisor.videoActual = null;
+    pubVisor.urlVideoActual = null;
     pubMotorVideo.videoActivo = null;
     pubMotorVideo.reproduccionSolicitada = false;
 
@@ -1025,6 +1160,7 @@ function pubCerrarVisor() {
     el.classList.remove('show');
     el.classList.remove('is-fullscreen');
     el.classList.remove('controls-hidden');
+    el.classList.remove('pub-vf-pip-active');
     el.style.display = '';
 
     document.body.style.overflow = '';
@@ -1035,6 +1171,12 @@ function pubCerrarVisor() {
     pubVisor.modoLleno = false;
     pubVisor.arrastrandoProgreso = false;
     pubVisor.estabaVisibleAntesDePip = false;
+    pubVisor.estadoPip = {
+        activo: false,
+        reproduciendo: false,
+        currentTime: 0,
+        playbackRate: 1
+    };
 }
 
 // ================================================================
@@ -1164,6 +1306,13 @@ function pubCerrarVisor() {
 
     .pub-vf.show {
         display: flex;
+    }
+
+    /* Cuando el video está en PiP: el visor permanece montado pero invisible,
+       sin display:none para no perder el video ni disparar observers. */
+    .pub-vf.pub-vf-pip-active {
+        opacity: 0;
+        pointer-events: none;
     }
 
     .pub-vf-media {
@@ -2214,6 +2363,9 @@ async function publicarDesdePerfil() {
 // ================================================================
 // OBSERVADOR DE VÍDEOS DEL FEED
 // ================================================================
+// Importante: si el visor está abierto, NO tocamos los videos del feed.
+// Así evitamos pausas cruzadas entre el video del feed y el del visor.
+// ================================================================
 
 var videoObserverPerfil = null;
 
@@ -2223,6 +2375,9 @@ if (typeof IntersectionObserver !== 'undefined') {
             var video = entry.target;
 
             if (!video || !video.isConnected) return;
+
+            // Si el visor está abierto, no interferir con videos de fondo.
+            if (pubVisorEstaAbierto()) return;
 
             if (pubEsVideoDelVisor(video)) return;
 
@@ -2260,22 +2415,49 @@ if (typeof IntersectionObserver !== 'undefined') {
 // ================================================================
 // VISIBILIDAD DE LA PÁGINA
 // ================================================================
+// Ya NO marcamos reproduccionSolicitada aquí. Solo registramos que
+// el usuario no está mirando para no forzar reanudaciones.
+// Si el video del visor está en PiP, no hacemos nada.
+// ================================================================
 
 document.addEventListener('visibilitychange', function () {
     if (!document.hidden) return;
 
-    var visor = document.getElementById('pubVisorFull');
     var video = pubVisor.videoActual;
 
     if (
         video &&
-        visor &&
-        visor.classList.contains('show') &&
+        pubVisorEstaAbierto() &&
         !video.paused &&
         document.pictureInPictureElement !== video
     ) {
-        pubMotorVideo.reproduccionSolicitada = true;
+        // Solo informativo; NO tocamos play/pause ni reproduccionSolicitada.
+        pubMotorVideo.ultimaInteraccion = Date.now();
     }
+});
+
+// ================================================================
+// RESIZE / ORIENTACIÓN
+// ================================================================
+// Solo ajustamos visualmente. Nunca llamamos pause() ni play().
+// ================================================================
+
+function pubAjustarVideoVisual() {
+    var el = document.getElementById('pubVisorFull');
+    var video = pubVisor.videoActual;
+
+    if (!el || !video || !el.classList.contains('show')) return;
+
+    // Si está en PiP, no tocamos estilos (el navegador controla el video flotante).
+    if (document.pictureInPictureElement === video) return;
+
+    video.style.objectFit = pubVisor.modoLleno ? 'cover' : 'contain';
+}
+
+window.addEventListener('resize', pubAjustarVideoVisual);
+window.addEventListener('orientationchange', function () {
+    // Esperar a que el navegador termine de reposicionar.
+    setTimeout(pubAjustarVideoVisual, 250);
 });
 
 // ================================================================
@@ -3241,5 +3423,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v14.8
+// FIN · PERFIL PUBLICACIONES v14.9
 // ================================================================
