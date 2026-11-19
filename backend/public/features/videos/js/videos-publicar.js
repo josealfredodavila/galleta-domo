@@ -1,12 +1,11 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.7
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.7 · PARTE 1 DE 2
    ================================================================
    Cambios respecto a v3.6:
    - Eliminado el menú de 3 puntos duplicado del feed. Ahora el único
      menú de opciones vive en videos.html.
    - El botón de pausa del feed se integra con los controles que se
      ocultan solos (no tapa el video cuando están ocultos).
-   - Se mantiene toda la base de seguridad, rendimiento y memoria.
    ================================================================ */
 
 (function () {
@@ -912,8 +911,7 @@
             return null;
         }
     }
-
-    async function guardarBorrador() {
+       async function guardarBorrador() {
         if (state.guardandoBorrador) return;
         const session = await obtenerSesion();
         if (!session) { csToast('Inicia sesión para guardar borradores', 'error'); return; }
@@ -1557,10 +1555,6 @@
     }
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
-    // ============================================================
-    // FEED · botón de pausa integrado con los controles automáticos
-    // (el menú de tres puntos ya NO se crea aquí: vive en videos.html)
-    // ============================================================
     function inyectarEstilosFeed() {
         if ($('cs-feed-ui')) return;
         const ocultar = [];
