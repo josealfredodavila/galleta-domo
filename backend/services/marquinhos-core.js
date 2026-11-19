@@ -1,5 +1,5 @@
 /* ================================================================
-   services/marquinhos-core.js — CEREBRO DE MARQUINHOS (v1.1)
+   services/marquinhos-core.js — CEREBRO DE MARQUINHOS (v1.2)
    ================================================================
    Lógica compartida por:
      - La web (routes/ai-chat-pet.js).
@@ -8,11 +8,13 @@
    No depende de req/res ni de sesión de navegador. Recibe el userId
    ya verificado por quien llame (sesión web o vínculo de WhatsApp).
 
-   v1.1 — Conocimiento verificado contra la base de datos, guardado
-          SOLO en el servidor (el cliente no puede modificarlo).
-          Precios y plazos corregidos. NFT Galleta Dorada (1 año).
-          Sin saludos repetidos: se limpia "Hola de nuevo" en la
-          respuesta, así el comportamiento es igual en web y WhatsApp.
+   v1.2 — Sin límites cortos ni recortes de salida. Presupuesto de
+          tokens amplio y reintento automático si el modelo se queda
+          sin espacio (evita respuestas vacías o cortadas).
+          Tono adaptativo: Marquinhos refleja el registro de cada
+          persona (relajado, formal, rápido o paso a paso).
+          Formato de chat configurable (FORMATO_CHAT).
+          Conocimiento verificado y candados de seguridad sin cambios.
 ================================================================ */
 
 'use strict';
@@ -32,12 +34,27 @@ const TICKETMASTER_API_KEY = process.env.TICKETMASTER_API_KEY;
 
 const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
-const GROQ_TIMEOUT_MS = 30000;
+const GROQ_TIMEOUT_MS = 60000;
 
+/*
+   FORMATO_CHAT:
+   'texto_plano' → sin Markdown (asteriscos, almohadillas, viñetas).
+                   Es lo que usa el chat y la lectura en voz.
+   'markdown'    → permite negritas y listas si ayudan a leer.
+*/
+const FORMATO_CHAT = 'texto_plano';
+
+/*
+   Presupuesto de tokens. En gpt-oss el razonamiento también consume
+   tokens, así que damos margen amplio para que la respuesta no quede
+   vacía ni cortada. Si aun así el modelo se queda sin espacio, se
+   reintenta una vez con MAX_TOKENS_REINTENTO.
+*/
 const LIMITES = {
-    voz:   { maxTokens: 400,  maxCaracteres: 600  },
-    texto: { maxTokens: 1800, maxCaracteres: 1600 }
+    voz:   { maxTokens: 1500 },
+    texto: { maxTokens: 6000 }
 };
+const MAX_TOKENS_REINTENTO = 12000;
 
 const HISTORIAL_MAX = 20;
 
@@ -178,96 +195,97 @@ Eres Marquinhos, la mascota virtual y asistente personal del ecosistema Sariel's
 ${CANDADOS_SEGURIDAD}
 
 ───────────────────────────────────────────────────────────────
-PERSONALIDAD Y CAPACIDADES
+QUIÉN ERES
 ───────────────────────────────────────────────────────────────
 
-Eres un asistente conversacional GENERAL, tan capaz como Gemini, ChatGPT o Claude. Puedes hablar de CUALQUIER tema: ciencia, tecnología, programación, matemáticas, salud general, cocina, historia, negocios, finanzas, idiomas, redacción, traducción, consejos personales, entretenimiento, ideas, etc. No te limites al ecosistema Sariel's cuando la pregunta no es del ecosistema.
+Eres un asistente conversacional general, tan capaz como los mejores asistentes de IA. Puedes hablar de cualquier tema: ciencia, tecnología, programación, matemáticas, salud general, cocina, historia, negocios, finanzas, idiomas, redacción, traducción, consejos personales, entretenimiento, ideas, etc. No te limites al ecosistema Sariel's cuando la pregunta no es del ecosistema.
 
-PERSONALIDAD:
-Cercano, cálido, natural y confiable, como un amigo muy inteligente.
-Hablas en el idioma del usuario; por defecto español mexicano neutro.
-No suenas como robot ni como manual técnico. Tampoco exageres ni uses frases forzadas de vendedor.
-
-SALUDOS:
-Si ya hubo conversación en el historial, NO vuelvas a saludar con "hola de nuevo" ni con frases parecidas. Responde directo a lo que te preguntan.
-
-MEMORIA Y CONTEXTO:
-Usa todo el historial de la conversación. Recuerda lo que el usuario dijo antes y refiérete a ello con naturalidad.
-Si dice "eso", "y el otro", "explícamelo mejor", entiende a qué se refiere por el contexto.
-Si el mensaje parece mal transcrito por voz, interpreta lo más probable en vez de pedir que lo repita.
-Si recibes un bloque de "Recuerdos relevantes de este usuario", ÚSALOS para personalizar tu respuesta cuando sean pertinentes.
-
-CÓMO RESPONDER:
-1. Tus respuestas se LEEN EN VOZ ALTA. Habla de forma natural, directa y sin rodeos.
-2. Por defecto responde en 2 a 4 frases. Si la pregunta es simple, responde simple.
-3. Si el usuario pide una explicación, una historia, comparar, enseñar o más detalle, extiéndete lo necesario (hasta unas 12 frases).
-4. Si es un procedimiento paso a paso dentro de la app, da solo el siguiente paso y espera.
-5. Si no sabes algo, dilo con honestidad. No inventes.
-6. En temas médicos, legales o financieros da información útil y menciona brevemente que conviene un profesional cuando de verdad importe.
-7. Rechaza con amabilidad contenido dañino o ilegal y ofrece una alternativa.
+Tu personalidad es cercana, cálida e inteligente, como un amigo muy preparado que además sabe escuchar.
 
 ───────────────────────────────────────────────────────────────
-🌐 BÚSQUEDA WEB EN TIEMPO REAL — REGLAS (v5.1)
+TONO: TE ADAPTAS A CADA PERSONA
+───────────────────────────────────────────────────────────────
+
+Lee cómo escribe la persona y responde en ese mismo registro, sin forzarlo ni exagerarlo:
+- Si te escribe relajado, con jerga, "güey", "compa", "wey" o emojis, responde natural y cercano, como plática entre cuates.
+- Si te escribe formal o con cortesía, responde con respeto y claridad, sin sonar frío.
+- Si tiene prisa o pide algo directo, ve al grano y da la respuesta primero.
+- Si pide paso a paso, dalo ordenado y completo.
+- Si pide una explicación profunda, dásela con calma y con ejemplos.
+- Si escribe con errores o por voz (mal transcrito), interpreta lo más probable sin pedir que repita.
+
+Cambia de registro cuando la persona cambie. No te quedes pegado a un solo estilo.
+
+Usa español mexicano natural. Evita las frases de vendedor, las exclamaciones de relleno y las muletillas repetidas.
+
+───────────────────────────────────────────────────────────────
+CÓMO RESPONDES
+───────────────────────────────────────────────────────────────
+
+1. Entiende primero qué necesita realmente la persona y responde a eso.
+2. Da la longitud que la pregunta necesita: ni cortes ni relleno. Una pregunta simple merece una respuesta simple; una compleja merece una respuesta completa y bien organizada.
+3. Explica con lenguaje sencillo, como lo haría un buen amigo experto. No uses jerga técnica a menos que la persona la use primero.
+4. Si el usuario está haciendo un procedimiento dentro de la app y pide guía, puedes darle el paso que sigue y, si conviene, ofrecerle los siguientes.
+5. Usa el historial de la conversación. Entiende referencias como "eso", "el otro", "explícamelo mejor" o "y si…" según lo que se habló antes.
+6. Si no sabes algo, dilo con honestidad. No inventes.
+7. En temas médicos, legales o financieros da información útil y menciona brevemente que conviene un profesional cuando de verdad importe.
+8. Si algo no puedes hacer, dilo con amabilidad y ofrece la alternativa más útil.
+
+${FORMATO_CHAT === 'texto_plano'
+    ? `FORMATO (OBLIGATORIO):
+Escribe en texto plano. No uses Markdown: nada de asteriscos, almohadillas, guiones de lista, tablas ni bloques de código.
+Para ordenar pasos o ideas, usa frases de transición: "primero", "después", "por último", o párrafos cortos separados por una línea en blanco.
+No uses emojis salvo que la persona los use primero o sean realmente necesarios.`
+    : `FORMATO:
+Puedes usar negritas, listas y pasos numerados cuando ayuden a leer mejor. No abuses del formato: la conversación debe sentirse natural.`}
+
+───────────────────────────────────────────────────────────────
+BÚSQUEDA WEB EN TIEMPO REAL
 ───────────────────────────────────────────────────────────────
 
 A veces recibirás un bloque llamado [CONTEXTO ACTUAL DE INTERNET] con información fresca de la web.
 
-SI RECIBES EL CONTEXTO:
-  ✅ ÚSALO para responder con datos precisos y actualizados.
-  ✅ Menciona brevemente la fuente cuando sea relevante ("según las noticias de hoy...", "el precio actual es...").
-  ✅ Integra la información con tu personalidad cálida y natural.
-  ✅ NO inventes datos que no estén en el contexto.
-  ✅ NO leas URLs completas ni listes fuentes.
+Si lo recibes:
+  - Úsalo para responder con datos precisos y actualizados.
+  - Menciona la fuente de forma natural cuando aporte ("según las noticias de hoy...").
+  - No inventes datos que no estén en el contexto.
+  - No leas URLs completas ni hagas listas de fuentes.
 
-SI NO RECIBES EL CONTEXTO y la pregunta es sobre algo que cambia con el tiempo:
-
-  ❌ NO digas frases cortantes como "estoy desconectado" o "no tengo acceso".
-
-  ✅ En su lugar, responde así:
-     - Si puedes responder con conocimiento base útil → hazlo primero.
-     - Luego menciona con naturalidad: "Oye, no tengo la info al día ahora mismo, pero puedo revisarlo si activas un plan con búsqueda web."
-     - Si el usuario insiste, ofrece alternativas: "¿Quieres que te platique de algo más? Historia, consejos, cómo funciona la app…"
-
-  ✅ Suena como un amigo que no tiene el periódico abierto, pero sabe mucho igual.
-  ✅ NUNCA suenes como robot diciendo "no tengo acceso a datos en tiempo real".
-
-EJEMPLO BUENO cuando preguntan "¿Qué me cuentas del mundo real?" sin contexto:
-"¡Órale! Pues estamos en tiempos bien movidos: la IA está transformando todo, la tecnología avanza rapidísimo, y la banda anda aprendiendo a navegar eso. Eso sí, no tengo el detalle en vivo ahora mismo. Si quieres algo específico —precios, noticias, deportes— actívame un plan con búsqueda web y te lo reviso. Mientras, ¿de qué quieres que platiquemos?"
-
-EJEMPLO MALO (nunca hacer esto):
-"No tengo acceso a datos en tiempo real ahora mismo."
+Si no lo recibes y la pregunta depende de información que cambia con el tiempo:
+  - Responde primero con lo que sí sabes que sea útil.
+  - Después, menciona con naturalidad que no tienes la información al día en este momento, y que puedes revisarla si la persona tiene un plan con búsqueda web.
+  - Nunca digas "no tengo acceso a datos en tiempo real" como respuesta seca.
 
 ───────────────────────────────────────────────────────────────
-🎵 MÚSICA — HABILIDAD ESPECIAL (v5.5)
+MÚSICA
 ───────────────────────────────────────────────────────────────
 
-Si el usuario te pide música y el sistema te entrega un bloque [MÚSICA ENCONTRADA], responde con naturalidad que encontraste esas canciones y que puede tocar la que quiera para abrirla en Deezer. Por ejemplo: "¡Va! Encontré estas canciones de Bad Bunny. Toca la que quieras para abrirla en Deezer." Nunca digas que estás reproduciendo la música, porque la reproducción ocurre en Deezer, no en Csariel's.
+Si recibes [MÚSICA ENCONTRADA], di con naturalidad que encontraste esas canciones y que puede tocar la que quiera para abrirla en Deezer. Nunca digas que la estás reproduciendo: la reproducción ocurre en Deezer.
 
-Si recibes el bloque [MÚSICA NO ENCONTRADA], di algo como: "No encontré esa canción, ¿me la repites o me das otro nombre?" No inventes canciones ni artistas.
+Si recibes [MÚSICA NO ENCONTRADA], pide con naturalidad que repita el nombre o que te dé otro. No inventes canciones ni artistas.
 
 ───────────────────────────────────────────────────────────────
-🎟️ EVENTOS — HABILIDAD ESPECIAL (v6.0)
+EVENTOS
 ───────────────────────────────────────────────────────────────
 
-Si el usuario pregunta por conciertos, deportes o espectáculos y el sistema te entrega un bloque [EVENTOS ENCONTRADOS], responde con naturalidad que encontraste esos eventos y que puede tocar "Ver en Ticketmaster" para revisar fechas, precios y comprar directamente en Ticketmaster. Nunca digas que compraste boletos ni que los reservaste: Csariel's no vende boletos desde el chat.
+Si recibes [EVENTOS ENCONTRADOS], di que encontraste esos eventos y que puede tocar "Ver en Ticketmaster" para revisar fechas, precios y comprar allí. Nunca digas que compraste o reservaste boletos: Sariel's no vende boletos desde el chat.
 
-Si recibes el bloque [EVENTOS NO ENCONTRADOS], di algo como: "No encontré eventos con ese nombre, ¿me das otro artista, equipo o ciudad?" No inventes fechas, lugares ni precios.
+Si recibes [EVENTOS NO ENCONTRADOS], pide con naturalidad otro artista, equipo o ciudad. No inventes fechas, lugares ni precios.
 
-FORMATO:
-Texto plano conversacional. Sin Markdown, sin asteriscos, sin almohadillas, sin listas con guiones, sin bloques de código, sin tablas.
+───────────────────────────────────────────────────────────────
+DATOS DEL ECOSISTEMA
+───────────────────────────────────────────────────────────────
 
-REGLA DE DATOS:
 Para precios, planes, plazos y funciones de Sariel's usa SOLO el bloque de datos verificados que recibes aparte. Si algo no está ahí, dilo y sugiere revisarlo en la app o con soporte.
 
-OBJETIVO:
-Ser el mejor asistente y compañero del usuario.
+OBJETIVO: que la persona sienta que habla con el mejor asistente y compañero que puede tener, y que cada respuesta le resuelva algo.
 `.trim();
 
 /* ================================================================
    UTILIDADES DE CONTEXTO E HISTORIAL
 ================================================================ */
 
-function contextoDinamico(user_name, page) {
+function contextoDinamico(user_name, page, modo) {
     const fecha = new Date().toLocaleString('es-MX', {
         timeZone: 'America/Mexico_City',
         dateStyle: 'full',
@@ -275,7 +293,8 @@ function contextoDinamico(user_name, page) {
     });
     let t = `Fecha y hora actual (México): ${fecha}. `;
     if (user_name) t += `El usuario se llama ${user_name}. `;
-    if (page) t += `Está navegando en ${page}.`;
+    if (page) t += `Está navegando en ${page}. `;
+    if (modo === 'voz') t += 'La respuesta se leerá en voz alta: evita símbolos, siglas sueltas y enlaces.';
     return t.trim();
 }
 
@@ -297,26 +316,32 @@ function limpiarHistorial(history) {
         }));
 }
 
-function limpiarFormato(texto) {
+function limpiarFormato(texto, modo) {
     if (typeof texto !== 'string') return '';
     let t = texto.trim();
 
-    t = t.replace(/```[\s\S]*?```/g, '');
-    t = t.replace(/^\s{0,3}#{1,6}\s*/gm, '');
-    t = t.replace(/\*\*\*(.*?)\*\*\*/g, '$1');
-    t = t.replace(/\*\*(.*?)\*\*/g, '$1');
-    t = t.replace(/\*(.*?)\*/g, '$1');
-    t = t.replace(/___(.*?)___/g, '$1');
-    t = t.replace(/__(.*?)__/g, '$1');
-    t = t.replace(/`([^`]+)`/g, '$1');
-    t = t.replace(/^\s{0,3}[-*+]\s+/gm, '');
-    t = t.replace(/^\s{0,3}>\s?/gm, '');
-    t = t.replace(/^\s{0,3}[-*_]{3,}\s*$/gm, '');
-    t = t.replace(/^\s*\|.*\|\s*$/gm, '');
-    t = t.replace(/\|/g, ' ');
-    t = t.replace(/[→»➤•◈✦]/g, ' ');
-    t = t.replace(/[\u{1F300}-\u{1FAFF}]/gu, '');
-    t = t.replace(/[\u{2600}-\u{27BF}]/gu, '');
+    if (FORMATO_CHAT === 'texto_plano') {
+        t = t.replace(/```[\s\S]*?```/g, '');
+        t = t.replace(/^\s{0,3}#{1,6}\s*/gm, '');
+        t = t.replace(/\*\*\*(.*?)\*\*\*/g, '$1');
+        t = t.replace(/\*\*(.*?)\*\*/g, '$1');
+        t = t.replace(/\*(.*?)\*/g, '$1');
+        t = t.replace(/___(.*?)___/g, '$1');
+        t = t.replace(/__(.*?)__/g, '$1');
+        t = t.replace(/`([^`]+)`/g, '$1');
+        t = t.replace(/^\s{0,3}[-*+]\s+/gm, '');
+        t = t.replace(/^\s{0,3}>\s?/gm, '');
+        t = t.replace(/^\s{0,3}[-*_]{3,}\s*$/gm, '');
+        t = t.replace(/^\s*\|.*\|\s*$/gm, '');
+        t = t.replace(/\|/g, ' ');
+        t = t.replace(/[→»➤•◈✦]/g, ' ');
+    }
+
+    if (modo === 'voz') {
+        t = t.replace(/[\u{1F300}-\u{1FAFF}]/gu, '');
+        t = t.replace(/[\u{2600}-\u{27BF}]/gu, '');
+    }
+
     t = t.replace(/[ \t]{2,}/g, ' ');
     t = t.replace(/\r?\n{3,}/g, '\n\n');
     return t.trim();
@@ -332,28 +357,6 @@ function limpiarSaludoRepetido(texto, historial) {
     return texto
         .replace(/^¡?\s*hola de nuevo(,?\s*[^!?.¿]*)?[!.]?\s*/i, (_, nombre) => '¡Hola' + (nombre || '') + '! ')
         .trim();
-}
-
-function recortarRespuesta(texto, maximo) {
-    if (typeof texto !== 'string') return '';
-    if (texto.length <= maximo) return texto;
-    const recorte = texto.slice(0, maximo);
-    const ultimoPunto = Math.max(
-        recorte.lastIndexOf('.'),
-        recorte.lastIndexOf('?'),
-        recorte.lastIndexOf('!')
-    );
-    if (ultimoPunto > maximo * 0.6) {
-        return recorte.slice(0, ultimoPunto + 1).trim();
-    }
-    const ultimoEspacio = recorte.lastIndexOf(' ');
-    if (ultimoEspacio > maximo * 0.6) {
-        return recorte.slice(0, ultimoEspacio).trim() + '...';
-    }
-    if (ultimoEspacio > 0) {
-        return recorte.slice(0, ultimoEspacio).trim() + '...';
-    }
-    return recorte.trim() + '...';
 }
 
 async function guardarMensaje(usuarioId, transcripcion, respuesta, origen = 'texto') {
@@ -627,6 +630,73 @@ function esMensajeDeCrisis(mensaje) {
 }
 
 /* ================================================================
+   LLAMADA A GROQ
+   Si el modelo se queda sin espacio (finish_reason = 'length') o
+   devuelve vacío, se reintenta una vez con más presupuesto.
+================================================================ */
+
+async function llamarGroq(mensajes, maxTokens) {
+    return axios.post(
+        GROQ_ENDPOINT,
+        {
+            model: GROQ_MODEL,
+            messages: mensajes,
+            max_tokens: maxTokens,
+            temperature: 0.7,
+            reasoning_effort: 'low',
+            stream: false
+        },
+        {
+            headers: {
+                Authorization: `Bearer ${GROQ_API_KEY}`,
+                Accept: 'application/json',
+                'Content-Type': 'application/json'
+            },
+            timeout: GROQ_TIMEOUT_MS,
+            validateStatus: () => true
+        }
+    );
+}
+
+function extraerChoice(respuesta) {
+    return respuesta && respuesta.data && respuesta.data.choices
+        ? respuesta.data.choices[0]
+        : null;
+}
+
+async function obtenerRespuestaCompleta(mensajes, maxTokensInicial) {
+    let resp = await llamarGroq(mensajes, maxTokensInicial);
+
+    if (resp.status < 200 || resp.status >= 300) {
+        return { ok: false, resp };
+    }
+
+    let choice = extraerChoice(resp);
+    let contenido = choice && choice.message ? (choice.message.content || '') : '';
+    const sinEspacio = choice && choice.finish_reason === 'length';
+
+    if (sinEspacio || !contenido.trim()) {
+        console.warn('⚠️ Respuesta incompleta, reintentando con más tokens. finish_reason:', choice && choice.finish_reason);
+        const reintento = await llamarGroq(mensajes, MAX_TOKENS_REINTENTO);
+        if (reintento.status >= 200 && reintento.status < 300) {
+            const choiceReintento = extraerChoice(reintento);
+            const contenidoReintento = choiceReintento && choiceReintento.message
+                ? (choiceReintento.message.content || '')
+                : '';
+            if (contenidoReintento.trim()) {
+                return { ok: true, contenido: contenidoReintento, finishReason: choiceReintento.finish_reason };
+            }
+        }
+    }
+
+    return {
+        ok: true,
+        contenido: contenido,
+        finishReason: choice ? choice.finish_reason : null
+    };
+}
+
+/* ================================================================
    FUNCIÓN PRINCIPAL REUTILIZABLE
    Entrada: usuario ya verificado por quien llama (sesión web o
    vínculo de WhatsApp). No toca req/res.
@@ -806,7 +876,7 @@ async function responderMarquinhos({
         const mensajes = [
             { role: 'system', content: SYSTEM_PROMPT },
             { role: 'system', content: CONOCIMIENTO_VERIFICADO },
-            { role: 'system', content: contextoDinamico(userName, page) }
+            { role: 'system', content: contextoDinamico(userName, page, modo) }
         ];
 
         if (memoriaLimpia) {
@@ -862,68 +932,39 @@ async function responderMarquinhos({
         mensajes.push(...historialFinal);
         mensajes.push({ role: 'user', content: mensajeLimpio });
 
-        /* LLAMADA A GROQ */
-        const groqResponse = await axios.post(
-            GROQ_ENDPOINT,
-            {
-                model: GROQ_MODEL,
-                messages: mensajes,
-                max_tokens: limite.maxTokens,
-                temperature: 0.6,
-                reasoning_effort: 'low',
-                stream: false
-            },
-            {
-                headers: {
-                    Authorization: `Bearer ${GROQ_API_KEY}`,
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                timeout: GROQ_TIMEOUT_MS,
-                validateStatus: () => true
-            }
-        );
+        /* LLAMADA AL MODELO (con reintento si se queda sin espacio) */
+        const resultado = await obtenerRespuestaCompleta(mensajes, limite.maxTokens);
 
-        const status = groqResponse.status;
-        const responseData = groqResponse.data;
-
-        if (status < 200 || status >= 300) {
+        if (!resultado.ok) {
+            const status = resultado.resp.status;
+            const responseData = resultado.resp.data;
             console.error('❌ Groq error:', { status, data: responseData });
             let mensajeError = 'El servicio de IA no respondió correctamente.';
-            if (responseData?.error?.message) mensajeError = responseData.error.message;
+            if (responseData && responseData.error && responseData.error.message) {
+                mensajeError = responseData.error.message;
+            }
             return { ok: false, httpStatus: 502, error: mensajeError };
         }
 
-        const choice = responseData?.choices?.[0];
-        const respuestaOriginal = choice?.message?.content || '';
-
-        if (!respuestaOriginal) {
-            console.error('❌ Groq sin contenido. finish_reason:', choice?.finish_reason);
-            return {
-                ok: false,
-                httpStatus: 502,
-                error: 'Marquinhos recibió una respuesta vacía.'
-            };
-        }
-
-        let respuestaTexto = limpiarFormato(respuestaOriginal);
+        let respuestaTexto = limpiarFormato(resultado.contenido, modo);
 
         if (!respuestaTexto) {
+            console.error('❌ Groq sin contenido utilizable. finish_reason:', resultado.finishReason);
             return {
                 ok: false,
                 httpStatus: 502,
-                error: 'Marquinhos generó una respuesta vacía.'
+                error: 'Marquinhos no alcanzó a formular la respuesta. Intenta de nuevo.'
             };
         }
 
         respuestaTexto = limpiarSaludoRepetido(respuestaTexto, historialFinal);
-        respuestaTexto = recortarRespuesta(respuestaTexto, limite.maxCaracteres);
 
         guardarMensaje(usuarioId, mensajeLimpio, respuestaTexto, origen);
 
         console.log('✅ Marquinhos respondió:', {
             ms: Date.now() - inicio,
             chars: respuestaTexto.length,
+            finish: resultado.finishReason,
             memoria: memoriaLimpia ? 'sí' : 'no',
             origen,
             musica: musicaEncontrada ? musicaEncontrada.length : 0,
