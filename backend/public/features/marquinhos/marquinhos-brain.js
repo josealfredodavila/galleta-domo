@@ -1,16 +1,17 @@
 // ================================================================
-// MARQUINHOS · BRAIN v7.7
+// MARQUINHOS · BRAIN v7.8
 // Memoria por usuario (RAG) + filtro de recuerdos + respuestas locales
 // + MÚSICA (Deezer: enlace de canción, sin audio)
 // + EVENTOS (Ticketmaster Discovery: solo lectura, enlace oficial)
 // + ESTADO REAL DE MENSAJES / SOLICITUDES / BLOQUEADOS (Supabase)
 //
+// v7.8 — Solicitudes de amistad se cuentan en la tabla "contactos"
+//        (contacto_id = usuario de la sesión, estado = 'pendiente'),
+//        igual que en solicitudes.js. Rutas de Contactos apuntan a
+//        /features/contactos/contactos.html.
+//        Mensajes (mensajes_chat) y bloqueados (bloqueos) sin cambios.
 // v7.7 — Nombres de tablas y columnas verificados contra Supabase
-//        (proyecto Csariels ecosistema):
-//          mensajes     → mensajes_chat (leido, eliminado, es_bot)
-//          solicitudes  → solicitudes_amistad (receptor_id, estado)
-//          bloqueados   → bloqueos (usuario_id = quien bloquea)
-//        El conteo de mensajes excluye eliminados y mensajes del bot.
+//        (proyecto Csariels ecosistema).
 // v7.6 — Las preguntas sobre mensajes ya no pasan al backend ni a
 //        las respuestas comerciales (planes, precios, cobros).
 //        Se consulta el estado real de la sesión del usuario
@@ -29,7 +30,7 @@
 (function () {
     if (window.MarquinhosBrain) return;
 
-    const VERSION = '7.7';
+    const VERSION = '7.8';
     const TIMEOUT_MS = 30000;
     const HISTORIAL_ENVIO = 20;
     const HISTORIAL_CHARS = 2000;
@@ -44,13 +45,20 @@
     const CONFIG_KEY = 'marquinhos_config';
 
     // ============================================================
+    // RUTAS
+    // ============================================================
+    const RUTA_MENSAJES = '/features/mensajes/mensajes.html';
+    const RUTA_CONTACTOS = '/features/contactos/contactos.html';
+    const RUTA_CONFIGURACION = '/features/perfil/configuracion/index.html';
+
+    // ============================================================
     // MENSAJES: mapa de tablas y columnas (verificado en Supabase)
     //   tabla           → nombre de la tabla en Supabase
     //   colDestinatario → columna con el id del usuario dueño de la bandeja
     //   colEstado       → columna de estado (null = sin filtro de estado)
     //   valorPendiente  → valor de colEstado que significa "por revisar"
     //   filtrosExtra    → filtros fijos adicionales (eq) para contar bien
-    //   ruta            → vista de Mensajes a enlazar
+    //   ruta            → vista a enlazar
     // ============================================================
     const MENSAJES_CONFIG = {
         mensajes: {
@@ -59,16 +67,16 @@
             colEstado: 'leido',
             valorPendiente: false,
             filtrosExtra: { eliminado: false, es_bot: false },
-            ruta: '/features/mensajes/mensajes.html',
+            ruta: RUTA_MENSAJES,
             etiqueta: 'mensaje'
         },
         solicitudes: {
-            tabla: 'solicitudes_amistad',
-            colDestinatario: 'receptor_id',
+            tabla: 'contactos',
+            colDestinatario: 'contacto_id',
             colEstado: 'estado',
             valorPendiente: 'pendiente',
             filtrosExtra: null,
-            ruta: '/features/mensajes/contactos.html',
+            ruta: RUTA_CONTACTOS,
             etiqueta: 'solicitud'
         },
         bloqueados: {
@@ -77,7 +85,7 @@
             colEstado: null,
             valorPendiente: null,
             filtrosExtra: null,
-            ruta: '/features/mensajes/contactos.html',
+            ruta: RUTA_CONTACTOS,
             etiqueta: 'bloqueado'
         }
     };
@@ -485,7 +493,7 @@
         if (!consultasRapidasActivas()) {
             return {
                 reply: 'Activa "Consultas rápidas al usuario" en la configuración de Marquinhos para que pueda revisar tus mensajes.',
-                enlace: '/features/perfil/configuracion/index.html'
+                enlace: RUTA_CONFIGURACION
             };
         }
 
