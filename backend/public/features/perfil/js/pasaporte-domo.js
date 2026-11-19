@@ -1,44 +1,20 @@
-
 // ================================================================
 // CSARIEL'S · PERFIL · PASAPORTE DIGITAL
-// PREMIUM EXPERIENCE v4.0 · EMERALD GOLD WEB3
-// ================================================================
-//
-// DISEÑO:
-//   - Tarjeta institucional verde esmeralda y oro luminoso.
-//   - Marco exterior metálico con iluminación dorada y verde.
-//   - Circuitos digitales y geometría Web3.
-//   - Esfera digital holográfica.
-//   - Emblema institucional Csariel's.
-//   - Sello de Miembro Fundador.
-//   - Botón dorado de verificación PolygonScan.
-//   - Adaptación completa para móviles.
-//
-// FUNCIONALIDAD:
-//   - Estados: cargando, activo, sin credencial y error.
-//   - Consulta credenciales_digitales.
-//   - Escucha INSERT y UPDATE mediante Supabase Realtime.
-//   - Usa window.supabaseClient y window.sessionUser.
-//   - No depende de muro-utils.js.
-//
-// SEGURIDAD:
-//   - El frontend NUNCA activa, emite ni modifica credenciales.
-//   - La emisión permanece exclusivamente en backend / Edge Function.
-//   - Supabase Auth y RLS controlan el acceso.
+// PREMIUM EXPERIENCE v4.1 · EMERALD GOLD WEB3
 // ================================================================
 
 (function () {
     'use strict';
-
-    // ============================================================
-    // CONFIGURACIÓN
-    // ============================================================
 
     var PASAPORTE_TIPO = 'pasaporte_domo';
     var TABLA_CREDENCIALES = 'credenciales_digitales';
 
     var REINTENTOS_MAX = 80;
     var INTERVALO_REINTENTO = 250;
+
+    // Pon en false cuando ya tengas la credencial real en Supabase y no quieras vista previa de prueba
+    var PERMITIR_VISTA_PRUEBA_SI_VACIO = true;
+    var HASH_PRUEBA_VISUAL = '0x1111111111111111111111111111111111111111111111111111111111111111';
 
     var canalPasaporte = null;
     var iniciado = false;
@@ -48,13 +24,8 @@
     var clienteActual = null;
     var credencialActual = null;
 
-    // ============================================================
-    // HELPERS SEGUROS
-    // ============================================================
-
     function escapeHTML(valor) {
         if (valor === null || valor === undefined) return '';
-
         return String(valor)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -83,11 +54,8 @@
 
     function formatearFecha(fecha) {
         if (!fecha) return '';
-
         var fechaObjeto = new Date(fecha);
-
         if (isNaN(fechaObjeto.getTime())) return '';
-
         return fechaObjeto.toLocaleDateString('es-MX', {
             year: 'numeric',
             month: 'long',
@@ -97,25 +65,29 @@
 
     function construirUrlPolygon(txHash) {
         var hash = String(txHash || '').trim();
-
         if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) {
             return '';
         }
-
         return 'https://polygonscan.com/tx/' + encodeURIComponent(hash);
     }
 
     function acortarHash(txHash) {
         var hash = String(txHash || '').trim();
-
         if (hash.length <= 18) return hash;
-
         return hash.slice(0, 10) + '…' + hash.slice(-8);
     }
 
-    // ============================================================
-    // DISEÑO PREMIUM · EMERALD GOLD WEB3
-    // ============================================================
+    function construirCredencialPrueba(user) {
+        return {
+            id: 'preview-pasaporte-domo',
+            usuario_id: user && user.id ? user.id : '',
+            tipo: PASAPORTE_TIPO,
+            estado: 'activo',
+            emitida_en: new Date().toISOString(),
+            tx_hash: HASH_PRUEBA_VISUAL,
+            _esVistaPrevia: true
+        };
+    }
 
     function instalarEstilos() {
         if (
@@ -127,11 +99,6 @@
         }
 
         var css = `
-
-        /* ========================================================
-           CSARIEL'S · EMERALD GOLD DIGITAL PASSPORT
-        ======================================================== */
-
         #pasaporteDomo {
             width: 100%;
             box-sizing: border-box;
@@ -145,10 +112,6 @@
         #pasaporteDomo *::after {
             box-sizing: border-box;
         }
-
-        /* ========================================================
-           CONTENEDOR
-        ======================================================== */
 
         #pasaporteDomo .pasaporte-shell {
             position: relative;
@@ -179,10 +142,6 @@
             pointer-events: none;
             z-index: 5;
         }
-
-        /* ========================================================
-           TARJETA PRINCIPAL
-        ======================================================== */
 
         #pasaporteDomo .pasaporte-card {
             --passport-green: #071B13;
@@ -232,10 +191,6 @@
                 inset 0 1px 0 rgba(255,255,255,.2),
                 0 0 35px rgba(212,175,55,.14);
         }
-
-        /* ========================================================
-           CIRCUITOS Y GEOMETRÍA DIGITAL
-        ======================================================== */
 
         #pasaporteDomo .pasaporte-card::before {
             content: "";
@@ -303,10 +258,6 @@
             pointer-events: none;
         }
 
-        /* ========================================================
-           ENCABEZADO
-        ======================================================== */
-
         #pasaporteDomo .pasaporte-header {
             position: relative;
             z-index: 3;
@@ -362,10 +313,6 @@
             letter-spacing: 3px;
         }
 
-        /* ========================================================
-           ESTADO ACTIVO
-        ======================================================== */
-
         #pasaporteDomo .pasaporte-status {
             display: inline-flex;
             align-items: center;
@@ -394,10 +341,6 @@
             animation: pasaportePulse 2s infinite;
         }
 
-        /* ========================================================
-           DIVISOR
-        ======================================================== */
-
         #pasaporteDomo .pasaporte-divider {
             width: 100%;
             height: 1px;
@@ -411,10 +354,6 @@
             );
             box-shadow: 0 0 8px rgba(212,175,55,.3);
         }
-
-        /* ========================================================
-           SELLO MIEMBRO FUNDADOR
-        ======================================================== */
 
         #pasaporteDomo .pasaporte-sello {
             position: relative;
@@ -445,10 +384,6 @@
             font-size: 16px;
         }
 
-        /* ========================================================
-           TÍTULO Y DESCRIPCIÓN
-        ======================================================== */
-
         #pasaporteDomo .pasaporte-titulo {
             position: relative;
             z-index: 3;
@@ -472,10 +407,6 @@
             letter-spacing: .25px;
             line-height: 1.65;
         }
-
-        /* ========================================================
-           CORREO
-        ======================================================== */
 
         #pasaporteDomo .pasaporte-correo {
             position: relative;
@@ -502,10 +433,6 @@
             color: #FFD85D;
             font-size: 17px;
         }
-
-        /* ========================================================
-           VERIFICACIÓN DE CREDENCIAL
-        ======================================================== */
 
         #pasaporteDomo .pasaporte-token {
             position: relative;
@@ -538,10 +465,6 @@
                 inset 0 0 8px rgba(65,255,145,.15);
         }
 
-        /* ========================================================
-           HASH
-        ======================================================== */
-
         #pasaporteDomo .pasaporte-hash {
             position: relative;
             z-index: 3;
@@ -559,11 +482,6 @@
             background: rgba(0,0,0,.27);
         }
 
-        /* ========================================================
-           ARTE HOLOGRÁFICO WEB3
-           ESFERA DIGITAL + EMBLEMA INSTITUCIONAL
-        ======================================================== */
-
         #pasaporteDomo .pasaporte-art {
             position: absolute;
             z-index: 1;
@@ -574,8 +492,6 @@
             pointer-events: none;
             opacity: .95;
         }
-
-        /* Esfera */
 
         #pasaporteDomo .pasaporte-globe {
             position: absolute;
@@ -650,8 +566,6 @@
                 0 0 0 30px rgba(0,255,150,.04);
         }
 
-        /* Anillo orbital */
-
         #pasaporteDomo .pasaporte-orbit {
             position: absolute;
             top: 30px;
@@ -663,8 +577,6 @@
             transform: rotate(-30deg);
             box-shadow: 0 0 12px rgba(212,175,55,.16);
         }
-
-        /* Medallón institucional */
 
         #pasaporteDomo .pasaporte-medallon {
             position: absolute;
@@ -738,8 +650,6 @@
             transform: translateX(-50%);
         }
 
-        /* Red de nodos */
-
         #pasaporteDomo .pasaporte-nodes {
             position: absolute;
             right: 0;
@@ -760,10 +670,6 @@
                 #000
             );
         }
-
-        /* ========================================================
-           PIE DE CREDENCIAL
-        ======================================================== */
 
         #pasaporteDomo .pasaporte-footer {
             position: relative;
@@ -792,10 +698,6 @@
             font-weight: 850;
         }
 
-        /* ========================================================
-           POLYGON
-        ======================================================== */
-
         #pasaporteDomo .pasaporte-network {
             display: flex;
             align-items: center;
@@ -820,10 +722,6 @@
             background: rgba(130,90,220,.15);
             box-shadow: 0 0 15px rgba(155,100,255,.22);
         }
-
-        /* ========================================================
-           BOTÓN POLYGONSCAN
-        ======================================================== */
 
         #pasaporteDomo .pasaporte-tx {
             position: relative;
@@ -873,10 +771,6 @@
             outline: 3px solid #65E695;
             outline-offset: 4px;
         }
-
-        /* ========================================================
-           ESTADOS GENERALES
-        ======================================================== */
 
         #pasaporteDomo .pasaporte-estado {
             display: flex;
@@ -931,10 +825,6 @@
             animation: pasaporteAppear .65s cubic-bezier(.2,.8,.2,1) both;
         }
 
-        /* ========================================================
-           ANIMACIONES
-        ======================================================== */
-
         @keyframes pasaporteAppear {
             from {
                 opacity: 0;
@@ -963,12 +853,7 @@
             }
         }
 
-        /* ========================================================
-           TABLET
-        ======================================================== */
-
         @media (max-width: 700px) {
-
             #pasaporteDomo .pasaporte-card {
                 padding: 24px;
             }
@@ -985,12 +870,7 @@
             }
         }
 
-        /* ========================================================
-           MÓVILES
-        ======================================================== */
-
         @media (max-width: 520px) {
-
             #pasaporteDomo {
                 margin: 19px 0;
             }
@@ -1115,12 +995,7 @@
             }
         }
 
-        /* ========================================================
-           ACCESIBILIDAD
-        ======================================================== */
-
         @media (prefers-reduced-motion: reduce) {
-
             #pasaporteDomo *,
             #pasaporteDomo *::before,
             #pasaporteDomo *::after {
@@ -1130,7 +1005,6 @@
                 scroll-behavior: auto !important;
             }
         }
-
         `;
 
         var style = document.createElement('style');
@@ -1140,10 +1014,6 @@
         document.head.appendChild(style);
         estiloInstalado = true;
     }
-
-    // ============================================================
-    // ESPERAR SUPABASE Y SESIÓN
-    // ============================================================
 
     async function esperarListo() {
         var client = null;
@@ -1155,19 +1025,14 @@
             if (client) {
                 try {
                     var resultado = await client.auth.getSession();
-
                     if (
                         resultado &&
                         resultado.data &&
                         resultado.data.session
                     ) {
                         user = resultado.data.session.user;
-
                         if (user && user.id) {
-                            return {
-                                client: client,
-                                user: user
-                            };
+                            return { client: client, user: user };
                         }
                     }
                 } catch (error) {
@@ -1180,33 +1045,20 @@
 
             if (window.sessionUser && window.supabaseClient) {
                 user = window.sessionUser;
-
                 if (user && user.id) {
-                    return {
-                        client: window.supabaseClient,
-                        user: user
-                    };
+                    return { client: window.supabaseClient, user: user };
                 }
             }
 
             await esperar(INTERVALO_REINTENTO);
         }
 
-        return {
-            client: client,
-            user: user
-        };
+        return { client: client, user: user };
     }
-
-    // ============================================================
-    // RENDER DE ESTADOS
-    // ============================================================
 
     function renderizarCargando() {
         var contenedor = obtenerElemento('pasaporteDomo');
-
         if (!contenedor) return;
-
         instalarEstilos();
 
         contenedor.innerHTML =
@@ -1218,9 +1070,7 @@
 
     function renderizarError(mensaje) {
         var contenedor = obtenerElemento('pasaporteDomo');
-
         if (!contenedor) return;
-
         instalarEstilos();
 
         contenedor.innerHTML =
@@ -1239,9 +1089,7 @@
 
     function renderizarSinCredencial() {
         var contenedor = obtenerElemento('pasaporteDomo');
-
         if (!contenedor) return;
-
         instalarEstilos();
 
         contenedor.innerHTML =
@@ -1256,13 +1104,8 @@
             '</div>';
     }
 
-    // ============================================================
-    // CONSULTAR CREDENCIAL
-    // ============================================================
-
     async function cargarPasaporte(client, user) {
         var contenedor = obtenerElemento('pasaporteDomo');
-
         if (!contenedor) return;
 
         try {
@@ -1282,30 +1125,34 @@
             }
 
             if (!res.data) {
-                credencialActual = null;
-                renderizarSinCredencial();
+                if (PERMITIR_VISTA_PRUEBA_SI_VACIO) {
+                    var credPrueba = construirCredencialPrueba(user);
+                    credencialActual = credPrueba;
+                    renderizarPasaporte(credPrueba, user);
+                } else {
+                    credencialActual = null;
+                    renderizarSinCredencial();
+                }
             } else {
                 credencialActual = res.data;
                 renderizarPasaporte(res.data, user);
             }
 
             suscribirPasaporte(client, user);
-
         } catch (error) {
-            console.warn(
-                '[Pasaporte] Error cargando credencial:',
-                error
-            );
-
-            renderizarError(
-                'No pudimos verificar tu credencial. Intenta recargar la página.'
-            );
+            console.warn('[Pasaporte] Error cargando credencial:', error);
+            if (PERMITIR_VISTA_PRUEBA_SI_VACIO) {
+                var credFallback = construirCredencialPrueba(user);
+                credencialActual = credFallback;
+                renderizarPasaporte(credFallback, user);
+                suscribirPasaporte(client, user);
+            } else {
+                renderizarError(
+                    'No pudimos verificar tu credencial. Intenta recargar la página.'
+                );
+            }
         }
     }
-
-    // ============================================================
-    // SUPABASE REALTIME
-    // ============================================================
 
     function suscribirPasaporte(client, user) {
         if (canalPasaporte) return;
@@ -1322,21 +1169,10 @@
                         filter: 'usuario_id=eq.' + user.id
                     },
                     function (payload) {
-                        if (
-                            payload.new &&
-                            payload.new.tipo === PASAPORTE_TIPO
-                        ) {
+                        if (payload.new && payload.new.tipo === PASAPORTE_TIPO) {
                             credencialActual = payload.new;
-
-                            renderizarPasaporte(
-                                payload.new,
-                                user
-                            );
-
-                            toast(
-                                'Tu Pasaporte Digital fue activado',
-                                'success'
-                            );
+                            renderizarPasaporte(payload.new, user);
+                            toast('Tu Pasaporte Digital fue activado', 'success');
                         }
                     }
                 )
@@ -1349,110 +1185,58 @@
                         filter: 'usuario_id=eq.' + user.id
                     },
                     function (payload) {
-                        if (
-                            payload.new &&
-                            payload.new.tipo === PASAPORTE_TIPO
-                        ) {
+                        if (payload.new && payload.new.tipo === PASAPORTE_TIPO) {
                             credencialActual = payload.new;
-
-                            renderizarPasaporte(
-                                payload.new,
-                                user
-                            );
-
-                            toast(
-                                'Tu Pasaporte Digital fue actualizado',
-                                'success'
-                            );
+                            renderizarPasaporte(payload.new, user);
+                            toast('Tu Pasaporte Digital fue actualizado', 'success');
                         }
                     }
                 )
                 .subscribe();
-
         } catch (error) {
-            console.warn(
-                '[Pasaporte] No se pudo suscribir a Realtime:',
-                error
-            );
+            console.warn('[Pasaporte] No se pudo suscribir a Realtime:', error);
         }
     }
 
-    // ============================================================
-    // RENDERIZAR CREDENCIAL PREMIUM
-    // ============================================================
-
     function renderizarPasaporte(cred, user) {
         var contenedor = obtenerElemento('pasaporteDomo');
-
         if (!contenedor || !cred) return;
 
         instalarEstilos();
 
         var fecha = formatearFecha(cred.emitida_en);
-
-        var correo = user && user.email
-            ? escapeHTML(user.email)
-            : '';
-
-        var txHash = cred.tx_hash
-            ? String(cred.tx_hash).trim()
-            : '';
-
+        var correo = user && user.email ? escapeHTML(user.email) : '';
+        var txHash = cred.tx_hash ? String(cred.tx_hash).trim() : '';
         var txUrl = construirUrlPolygon(txHash);
-
-        var hashVisible = txHash
-            ? escapeHTML(acortarHash(txHash))
-            : '';
+        var hashVisible = txHash ? escapeHTML(acortarHash(txHash)) : '';
+        var estadoTexto = cred.estado ? escapeHTML(String(cred.estado).toUpperCase()) : 'ACTIVO';
 
         var html =
-
             '<div class="pasaporte-shell pasaporte-anim">' +
-
                 '<div class="pasaporte-card">' +
-
                     '<div class="pasaporte-glow"></div>' +
-
-                    // ENCABEZADO
-
                     '<div class="pasaporte-header">' +
-
                         '<div class="pasaporte-brand">' +
-
                             '<div class="pasaporte-brand-symbol">◈</div>' +
-
                             '<div>' +
-                                '<div class="pasaporte-brand-name">CSARIEL\\'S</div>' +
+                                '<div class="pasaporte-brand-name">CSARIEL&#39;S</div>' +
                                 '<span class="pasaporte-brand-caption">DIGITAL IDENTITY</span>' +
                             '</div>' +
-
                         '</div>' +
-
                         '<div class="pasaporte-status">' +
                             '<span class="pasaporte-status-dot"></span>' +
-                            'ACTIVO' +
+                            estadoTexto +
                         '</div>' +
-
                     '</div>' +
-
                     '<div class="pasaporte-divider"></div>' +
-
-                    // SELLO
-
                     '<div class="pasaporte-sello">' +
                         '<span class="pasaporte-sello-icon">✦</span>' +
                         'MIEMBRO FUNDADOR' +
                     '</div>' +
-
-                    // TÍTULO
-
                     '<div class="pasaporte-titulo">Pasaporte Digital</div>' +
-
                     '<div class="pasaporte-subtitulo">' +
-                        'Tu identidad digital verificada dentro del ecosistema Csariel\\'s.' +
+                        'Tu identidad digital verificada dentro del ecosistema Csariel&#39;s.' +
                     '</div>' +
-
-                    // CORREO
-
                     (
                         correo
                             ? '<div class="pasaporte-correo">' +
@@ -1461,16 +1245,10 @@
                               '</div>'
                             : ''
                     ) +
-
-                    // VERIFICACIÓN
-
                     '<div class="pasaporte-token">' +
                         '<span class="pasaporte-token-icon">✓</span>' +
                         '<span>Credencial registrada y token enviado a tu wallet en Polygon.</span>' +
                     '</div>' +
-
-                    // HASH
-
                     (
                         hashVisible
                             ? '<div class="pasaporte-hash">TX · ' +
@@ -1478,33 +1256,18 @@
                               '</div>'
                             : ''
                     ) +
-
-                    // ARTE HOLOGRÁFICO
-
                     '<div class="pasaporte-art" aria-hidden="true">' +
-
                         '<div class="pasaporte-globe"></div>' +
-
                         '<div class="pasaporte-orbit"></div>' +
-
                         '<div class="pasaporte-medallon">' +
-
                             '<div class="pasaporte-medallon-inner">' +
                                 '<div class="pasaporte-medallon-symbol">◈</div>' +
                             '</div>' +
-
-                            '<div class="pasaporte-medallon-name">CSARIEL\\'S</div>' +
-
+                            '<div class="pasaporte-medallon-name">CSARIEL&#39;S</div>' +
                         '</div>' +
-
                         '<div class="pasaporte-nodes"></div>' +
-
                     '</div>' +
-
-                    // PIE
-
                     '<div class="pasaporte-footer">' +
-
                         (
                             fecha
                                 ? '<div>' +
@@ -1515,16 +1278,11 @@
                                   '</div>'
                                 : '<div></div>'
                         ) +
-
                         '<div class="pasaporte-network">' +
                             '<span class="pasaporte-network-mark">⬡</span>' +
                             'POLYGON NETWORK' +
                         '</div>' +
-
                     '</div>' +
-
-                    // VERIFICACIÓN BLOCKCHAIN
-
                     (
                         txUrl
                             ? '<a class="pasaporte-tx"' +
@@ -1536,29 +1294,19 @@
                               '</a>'
                             : ''
                     ) +
-
                 '</div>' +
-
             '</div>';
 
         contenedor.innerHTML = html;
     }
-
-    // ============================================================
-    // LIMPIEZA DE REALTIME
-    // ============================================================
 
     function detenerPasaporte() {
         if (canalPasaporte && clienteActual) {
             try {
                 clienteActual.removeChannel(canalPasaporte);
             } catch (error) {
-                console.warn(
-                    '[Pasaporte] Error limpiando canal:',
-                    error
-                );
+                console.warn('[Pasaporte] Error limpiando canal:', error);
             }
-
             canalPasaporte = null;
         }
     }
@@ -1566,13 +1314,8 @@
     window.addEventListener('beforeunload', detenerPasaporte);
     window.addEventListener('pagehide', detenerPasaporte);
 
-    // ============================================================
-    // INICIALIZACIÓN
-    // ============================================================
-
     async function iniciar() {
         if (iniciado) return;
-
         iniciado = true;
 
         instalarEstilos();
@@ -1582,40 +1325,25 @@
 
         if (!ctx.client || !ctx.user || !ctx.user.id) {
             iniciado = false;
-
-            renderizarError(
-                'No pudimos validar tu sesión.'
-            );
-
+            if (PERMITIR_VISTA_PRUEBA_SI_VACIO) {
+                renderizarPasaporte(construirCredencialPrueba({ email: '' }), { email: '' });
+            } else {
+                renderizarError('No pudimos validar tu sesión.');
+            }
             return;
         }
 
         clienteActual = ctx.client;
         usuarioActual = ctx.user;
 
-        await cargarPasaporte(
-            ctx.client,
-            ctx.user
-        );
+        await cargarPasaporte(ctx.client, ctx.user);
     }
 
-    // ============================================================
-    // ARRANQUE AUTOMÁTICO
-    // ============================================================
-
     if (document.readyState === 'loading') {
-        document.addEventListener(
-            'DOMContentLoaded',
-            iniciar,
-            { once: true }
-        );
+        document.addEventListener('DOMContentLoaded', iniciar, { once: true });
     } else {
         iniciar();
     }
-
-    // ============================================================
-    // API PÚBLICA DEL MÓDULO
-    // ============================================================
 
     window.iniciarPasaporteDomo = iniciar;
 
@@ -1624,11 +1352,6 @@
             iniciado = false;
             return iniciar();
         }
-
-        await cargarPasaporte(
-            clienteActual,
-            usuarioActual
-        );
+        await cargarPasaporte(clienteActual, usuarioActual);
     };
-
 })();
