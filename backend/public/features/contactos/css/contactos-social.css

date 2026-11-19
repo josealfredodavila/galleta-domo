@@ -1,0 +1,209 @@
+/* ============================================================
+   CSARIEL'S · CONTACTOS · contactos-social.css · v1.0
+   ============================================================
+   Capa de estilos sociales específica de Contactos.
+   Complementa a css/contactos.css (layout/base) y se enfoca en:
+     - Avisos inline ([data-aviso-contactos] / .aviso-contactos)
+     - Botones sociales reutilizables (.btn-agregar y variantes)
+     - Botones de reintento de perfil (.btn-reintentar-perfil)
+     - Estados online/offline en sugerencias
+     - Detalles de tarjetas que maneja contactos-ui.js
+   Enlazado DESPUÉS de css/contactos.css en contactos.html:
+     <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=1">
+     <link rel="stylesheet" href="/features/contactos/css/contactos-social.css?v=1">
+   ============================================================ */
+
+/* ===== 1. AVISOS INLINE (inyectados por contactos-ui.js) ===== */
+.aviso-contactos {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 51, 102, .45);
+    border-radius: 10px;
+    color: #ff8197;
+    background: rgba(255, 51, 102, .04);
+    font-size: .72rem;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.aviso-contactos__retry {
+    margin-left: auto;
+    padding: 4px 10px;
+    border: 1px solid #ff8197;
+    border-radius: 8px;
+    color: #ff8197;
+    background: transparent;
+    font-size: .7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease;
+}
+
+.aviso-contactos__retry:hover {
+    background: rgba(255, 129, 151, .1);
+    color: #ffb0c0;
+}
+
+.aviso-contactos__retry:focus-visible {
+    outline: 2px solid var(--cyan, #00e5ff);
+    outline-offset: 2px;
+}
+
+/* ===== 2. BOTÓN "AGREGAR / CONECTAR" (búsqueda global y modal) ===== */
+.btn-agregar {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 8px 14px;
+    border: 1px solid transparent;
+    border-radius: 8px;
+    color: #ffffff;
+    background: linear-gradient(135deg, var(--cyan, #00e5ff), #0055ff);
+    font-size: .72rem;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: filter .2s ease, background .2s ease, color .2s ease;
+}
+
+.btn-agregar:hover:not([disabled]):not(.is-added) {
+    filter: brightness(1.1);
+}
+
+.btn-agregar:focus-visible {
+    outline: 2px solid var(--cyan, #00e5ff);
+    outline-offset: 2px;
+}
+
+.btn-agregar svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Estado "ya agregado" (disabled) */
+.btn-agregar.is-added,
+.btn-agregar[disabled] {
+    background: rgba(0, 214, 143, .1);
+    border-color: var(--success, #00d68f);
+    color: var(--success, #00d68f);
+    cursor: default;
+    filter: none;
+}
+
+/* ===== 3. BOTÓN "REINTENTAR PERFIL" (solicitudes enviadas) ===== */
+.btn-reintentar-perfil {
+    padding: 6px 10px;
+    border: 1px solid var(--orange-soft, #ffa04d);
+    border-radius: 8px;
+    color: var(--orange-soft, #ffa04d);
+    background: transparent;
+    font-size: .68rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease;
+}
+
+.btn-reintentar-perfil:hover {
+    background: rgba(255, 160, 77, .08);
+    color: #ffc389;
+}
+
+.btn-reintentar-perfil:focus-visible {
+    outline: 2px solid var(--cyan, #00e5ff);
+    outline-offset: 2px;
+}
+
+/* ===== 4. SUGERENCIAS (personas activas) ===== */
+/* Ajustes finos sobre .sugerencia-card (definida en contactos.css) */
+.sugerencia-card .avatar.online {
+    box-shadow: 0 0 0 2px var(--success, #00d68f) inset;
+}
+
+.sugerencia-card .estado {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-muted, #8c949c);
+    font-size: .64rem;
+    line-height: 1.4;
+}
+
+.sugerencia-card .estado.online {
+    color: var(--success, #00d68f);
+}
+
+.sugerencia-card .info .handle + .estado {
+    margin-top: 4px;
+}
+
+/* Nota "N contactos en común" (usa .handle, ya estilizado en contactos.css) */
+.sugerencia-card .info .handle {
+    display: block;
+    margin-top: 2px;
+    color: var(--text-muted, #8c949c);
+    font-size: .7rem;
+    overflow-wrap: anywhere;
+}
+
+/* ===== 5. TARJETAS DE SOLICITUDES (recibidas / enviadas) ===== */
+/* Refuerzos puntuales sobre .solicitud-card y .solicitud-enviada-card */
+.solicitud-card .acciones .btn-aceptar,
+.solicitud-card .acciones .btn-rechazar {
+    min-width: 78px;
+    justify-content: center;
+}
+
+.solicitud-enviada-card .acciones {
+    flex-wrap: wrap;
+}
+
+.solicitud-enviada-card .acciones .btn-reintentar-perfil + .btn-cancelar-envio {
+    margin-left: 4px;
+}
+
+/* ===== 6. ESTADOS DE CARGA / VACÍO específicos ===== */
+/* Reutiliza .empty-state y .contactos-loading-more de contactos.css.
+   Añadimos solo refuerzos para el mensaje de error con reintento. */
+.empty-state .btn-accion[data-reintentar-contactos] {
+    margin-top: 4px;
+}
+
+/* ===== 7. TOASTS (refuerzo tipográfico) ===== */
+/* .toast base ya está en contactos.css; solo afinamos el estado success. */
+.toast.success {
+    color: var(--success, #00d68f);
+}
+
+/* ===== 8. ACCESIBILIDAD / MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+    .aviso-contactos__retry,
+    .btn-agregar,
+    .btn-reintentar-perfil {
+        transition-duration: .01ms !important;
+    }
+}
+
+/* ===== 9. RESPONSIVE FINO ===== */
+@media (max-width: 480px) {
+    .aviso-contactos {
+        align-items: flex-start;
+        font-size: .7rem;
+    }
+    .aviso-contactos__retry {
+        margin-left: 0;
+        padding: 3px 8px;
+    }
+    .btn-agregar {
+        padding: 7px 11px;
+        font-size: .68rem;
+    }
+    .solicitud-card .acciones .btn-aceptar,
+    .solicitud-card .acciones .btn-rechazar {
+        min-width: 68px;
+        padding: 7px 10px;
+        font-size: .7rem;
+    }
+}
