@@ -1,5 +1,5 @@
 /* ================================================================
-   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.8
+   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v3.9
    Archivo: backend/public/features/shared/js/apariencia-global.js
 
    Conserva sin cambios:
@@ -7,12 +7,15 @@
    - Tema, color de acento y tamaño de fuente (80–140 %).
    - window.SarielApariencia y todas sus funciones públicas.
 
+   v3.9:
+   - Se agregan '/features/videos', '/features/live' y 
+     '/features/grupos' a RUTAS_EXCLUIDAS_BASE. La mascota activa
+     ya no se inyecta ni estorba en el feed de videos, cámara,
+     transmisiones en vivo ni en la vista interna de los grupos.
+
    v3.8:
    - Se quita '/features/perfil' de RUTAS_EXCLUIDAS_BASE. La mascota
      activa vuelve a aparecer en perfil.html y perfil-publico.html.
-     (La v3.7 la ocultaba en perfil para evitar que estorbara en la
-     publicación de fotos. Si vuelve a estorbar, se corrige el z-index
-     en marquinhos-pet.css; no hace falta excluir la página.)
 
    v3.7:
    - '/features/perfil' agregado a RUTAS_EXCLUIDAS_BASE (ya revertido en v3.8).
@@ -31,11 +34,6 @@
 
    v3.3:
    - Tema "bn" (Blanco y negro).
-
-   v3.2:
-   - Microinteracciones táctiles y prefers-reduced-motion.
-
-   No modifica anchos, alturas, márgenes ni escalas de contenedores.
    ================================================================ */
 
 (function () {
@@ -314,8 +312,6 @@
         }
     }
 
-    // Lee prefs.mascota_activa de Supabase. Devuelve null si no hay
-    // sesión, no hay fila o no hay valor guardado.
     async function leerMascotaSupabase() {
         try {
             const client = getSupabase();
@@ -344,7 +340,6 @@
         }
     }
 
-    // Si Supabase tiene una mascota guardada, esa manda sobre localStorage.
     async function sincronizarMascota() {
         const remota = await leerMascotaSupabase();
         if (!remota) return;
@@ -354,11 +349,6 @@
         } catch (_) {}
     }
 
-    // Guarda la mascota en local y en Supabase.
-    // Devuelve { local, remoto }:
-    //   local:  true/false según localStorage
-    //   remoto: true si se guardó en Supabase, false si falló,
-    //           null si no hay sesión (solo queda local)
     async function guardarMascota(mascota) {
         const valor = normalizarMascota(mascota);
         let local = false;
@@ -461,11 +451,6 @@
        TEMA
        ================================================================ */
 
-    /*
-     * Tema "bn" (Blanco y negro): fondo negro puro y textos grises
-     * claros, al estilo del modo negro de X. Solo cambia colores;
-     * no toca dimensiones ni layout.
-     */
     const CSS_TEMA_BN = `
         html.tema-bn {
             color-scheme: dark;
@@ -560,12 +545,6 @@
         const html = document.documentElement;
         const valor = normalizarFuente(porcentaje);
 
-        /*
-         * Se conserva el ajuste original de Configuración.
-         * No se modifica el ancho, alto, zoom ni escala de los
-         * contenedores. El tamaño raíz sigue siendo compatible
-         * con los diseños que usan rem.
-         */
         html.style.fontSize = (16 * valor / 100) + 'px';
         html.setAttribute('data-font-size', String(valor));
 
@@ -587,12 +566,8 @@
 
     /* ================================================================
        MICROINTERACCIONES
-       Solo transform, brillo, color y sombra: nunca dimensiones,
-       márgenes ni escalas de contenedores.
        ================================================================ */
 
-    // Solo elementos de Configuración: nunca botones ni enlaces globales,
-    // para no afectar a la mascota ni al resto de la app.
     const SELECTOR_INTERACTIVO = [
         '.cfg-item',
         '.cfg-btn',
@@ -600,10 +575,8 @@
         '.cfg-header-action'
     ].join(',');
 
-    // Elementos que reaccionan al toque con una compresión sutil
     const SELECTOR_PRESIONABLE = SELECTOR_INTERACTIVO;
 
-    // Elementos que se animan al entrar (solo opacidad, nunca ocultan contenido)
     const SELECTOR_ENTRADA = '.cfg-item, .cfg-header';
 
     const CSS_MICROINTERACCIONES = `
@@ -728,7 +701,6 @@
                 }
             }
 
-            // La mascota también debe venir de Supabase antes de inyectarse
             await sincronizarMascota();
 
             syncConSupabaseListo = true;
@@ -900,11 +872,12 @@
         '/eliminar-cuenta',
         '/actualizar-contrasena',
         '/centro-ayuda',
-        // v3.6: la pantalla de Mensajes tiene su propia interfaz;
-        // la mascota flotante no se muestra allí.
-        '/features/mensajes'
-        // v3.8: '/features/perfil' ya no se excluye. La mascota activa
-        // aparece en perfil.html y perfil-publico.html.
+        '/features/mensajes',
+        // v3.9: Exclusiones para evitar que la mascota estorbe en pantallas
+        // de contenido puro o cámaras (videos, live y grupos).
+        '/features/videos',
+        '/features/live',
+        '/features/grupos'
     ];
 
     function puedeInyectarMascota(rutaTienda) {
@@ -1042,7 +1015,7 @@
         inyectarItlasuhuaPet();
 
         console.log(
-            '[Apariencia] Módulo global v3.8 cargado. Mascota activa:',
+            '[Apariencia] Módulo global v3.9 cargado. Mascota activa:',
             getMascotaActiva()
         );
     }
