@@ -336,6 +336,17 @@
             .video-card { min-height: 68vh; max-height: 68vh; }
             .acc-btn { width: 40px; height: 40px; }
             .video-card .overlay-info { right: 76px; bottom: 80px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="nebula nebula-1"></div>
+    <div class="nebula nebula-2"></div>
+    <div class="nebula nebula-3"></div>
+
+    <div class="app">
+        <header class="header">
+            <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
@@ -518,6 +529,10 @@
     var MOTIVOS_REPORTE = ['Spam', 'Contenido inapropiado', 'Violencia', 'Acoso', 'Otro'];
     var OCULTAR_CONTROLES_MS = 3000;
 
+    var COLA_DB = 'csVideosCola';
+    var COLA_STORE = 'items';
+    var MAX_INTENTOS = 8;
+
     var sessionUser = null;
     var videosPublicados = [];
     var likeCache = new Map();
@@ -562,6 +577,8 @@
             if (v === videoQueSuena) return;
             if (!v.paused) v.pause();
             var card = v.closest('.video-card');
+            if (card) card.classList.remove('playing');
+        });
     }
 
     document.addEventListener('play', function (e) {
@@ -642,6 +659,9 @@
     }
 
     // ============================================================
+    // CONTROLES QUE SE OCULTAN SOLOS
+    // ============================================================
+    function mostrarControles(card) {
         if (!card) return;
         card.classList.remove('controles-ocultos');
         clearTimeout(timersOcultar.get(card));
@@ -686,6 +706,18 @@
     function activarAudioGlobal() {
         audioGlobalActivado = true;
         document.querySelectorAll('.video-card video').forEach(function (v) {
+            v.muted = false; v.volume = 1; v.removeAttribute('muted');
+            var card = v.closest('.video-card');
+            if (card && card.classList.contains('visible')) v.play().catch(function () {});
+        });
+        var btn = document.getElementById('btnAudioGlobal');
+        if (btn) { btn.classList.remove('visible'); btn.classList.add('activo'); }
+    }
+    function reproducirVideoConSonido(video) {
+        if (!video) return;
+        pausarOtrosVideos(video);
+        if (!video.getAttribute('src') && video.dataset.src) { video.src = video.dataset.src; video.load(); }
+        video.muted = false; video.volume = 1; video.removeAttribute('muted');
         var promesa = video.play();
         if (promesa && typeof promesa.then === 'function') {
             promesa.catch(function (err) {
@@ -866,6 +898,23 @@
             var tTotal = card.querySelector('.tiempo-total');
             if (tTotal) tTotal.textContent = formatearTiempo(videoEl.duration);
         });
+        videoEl.addEventListener('play', function () { mostrarControles(card); });
+        videoEl.addEventListener('pause', function () { ocultarControlesYa(card); });
+        return card;
+    }
+
+    // ============================================================
+    // REACCIONES
+    // ============================================================
+    function refrescarReaccionUI(videoId) {
+        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
+        if (!card) return;
+        var miTipo = sessionUser ? likeCache.get(videoId + '_' + sessionUser.id) : null;
+        var btn = card.querySelector('.reac-btn');
+        if (btn) {
+            btn.innerHTML = miTipo ? '<span class="reac-emoji emoji-actual">' + escapeHTML(miTipo) + '</span>' : ICONO.corazon;
+            var nuevo = btn.querySelector('.reac-emoji');
+            if (nuevo) animarEmoji(nuevo, miTipo);
         }
         var conteo = document.getElementById('likeCount-' + videoId);
         if (conteo) conteo.textContent = formatContador(contarReacciones(videoId, 0));
@@ -1025,6 +1074,7 @@
             var c = await sbVideos.from('videos_comentarios').select('usuario_id').eq('id', comentarioId).maybeSingle();
             if (!c.data) return;
             var v = await sbVideos.from('videos').select('usuario_id').eq('id', videoId).maybeSingle();
+            var soyAutor = c.data.usuario_id === sessionUser.id;
             var soyDueno = !!(v.data && v.data.usuario_id === sessionUser.id);
             if (!soyAutor && !soyDueno) { showToast('No tienes permiso', 'error'); return; }
             var del = await sbVideos.from('videos_comentarios').delete().eq('id', comentarioId);
@@ -1150,6 +1200,9 @@
     // ============================================================
     // REPRODUCCIÓN, AUTOPLAY Y DOBLE TAP
     // ============================================================
+    function togglePlayCard(event, videoId) {
+        if (event) event.stopPropagation();
+        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
         if (!card) return;
         var video = card.querySelector('video');
         if (!video) return;
@@ -1313,8 +1366,7 @@
         txt.textContent = mensaje;
         if (btn) btn.hidden = !hayCola;
     }
-
-    async function procesarCola() {
+async function procesarCola() {
         if (colaOcupada || !sbVideos) return;
         if (navigator.onLine === false) { actualizarEstadoCola(); return; }
         colaOcupada = true;
@@ -1610,6 +1662,23 @@
     }
 
     // ============================================================
+    // EVENTOS DEL FEED
+    // ============================================================
+    function engancharFeed() {
+        var contenedor = document.getElementById('videosContainer');
+        if (!contenedor) return;
+
+        // Cualquier toque reactiva los controles
+        contenedor.addEventListener('pointerdown', function (e) {
+            var card = e.target.closest('.video-card');
+            if (card) mostrarControles(card);
+        });
+
+        contenedor.addEventListener('click', function (e) {
+            var t = e.target;
+
+            var op = t.closest('.reac-op');
+            if (op) {
                 e.stopPropagation();
                 var card = op.closest('.video-card');
                 elegirReaccion(card.dataset.videoId, op.dataset.e);
