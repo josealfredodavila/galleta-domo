@@ -1,0 +1,352 @@
+/* ============================================================
+   CSARIEL'S · CONTACTOS · sugerencias.js · v1.0
+   ============================================================
+   Módulo: personas activas / sugerencias de amistad.
+   - Carga vía RPC `sugerencias_usuarios` (prioriza contactos
+     en común y rota la muestra al azar entre personas activas).
+   - Renderiza tarjetas con estado en línea / desconectado y
+     nota "N contactos en común" cuando aplica.
+   - Botón "Conectar" → envía solicitud de amistad (delegando
+     en window.SocialAcciones si está disponible; si no,
+     INSERT directo a la tabla contactos).
+   - Refresca listas y contadores sin romper el estado global.
+
+   API pública (window.ContactosSugerencias):
+     - init(ctx)
+     - cargar()                         → { lista, error }
+     - refrescar()                      → alias de cargar() + render
+     - render(lista, error)
+     - conectar(usuarioId)              → { ok }
+     - getLista()                       → copia del último resultado
+
+   ctx esperado (proporcionado por contactos.js / contactos-ui.js):
+     {
+       getClient(): SupabaseClient,
+       getSession(): Promise<Session|null>,
+       getPerfiles(): Map<id, perfil>,
+       getPerfil(id): datosPerfil(id),
+       cargarPerfiles(ids): Promise<{errores: []}>,
+       normalizarPerfil(p): perfilNormalizado,
+       escapeHtml(v): string,
+       obtenerInicial(nombre): string,
+       avatarHtml(datos): string,
+       showToast(msg, tipo): void,
+       showConfirm(opts): Promise<boolean>,
+       refrescarTodo(opts): Promise<void>,
+       refrescarTodoReset(): void,
+       avisoSeccion(seccion, msg, onRetry): void,
+       quitarAviso(seccion): void,
+       withRetry(fn, contexto): Promise<any>,
+       detalleError(err): string
+     }
+   ============================================================ */
+
+(function () {
+    'use strict';
+
+    if (window.ContactosSugerencias) return;
+
+    var CONFIG = {
+        RPC_SUGERENCIAS: 'sugerencias_usuarios',
+        TABLA_CONTACTOS: 'contactos',
+        TITULO_SECCION: 'Personas activas',
+        MAX_SUGERENCIAS: 10
+    };
+
+    var ctx = null;
+    var estado = {
+        sugeridos: [],
+        operacionesEnCurso: new Set()
+    };
+
+    /* ============================================================
+       UTILIDADES INTERNAS
+       ============================================================ */
+
+    function _sb() {
+        if (ctx && typeof ctx.getClient === 'function') return ctx.getClient();
+        return window.supabaseClient || null;
+    }
+
+    function _session() {
+        if (ctx && typeof ctx.getSession === 'function') return ctx.getSession();
+        return Promise.resolve(null);
+    }
+
+    function _toast(msg, tipo) {
+        if (ctx && typeof ctx.showToast === 'function') return ctx.showToast(msg, tipo);
+        if (typeof window.showToast === 'function') return window.showToast(msg, tipo);
+        console.log('[Sugerencias]', msg);
+    }
+
+    function _err(err) {
+        if (ctx && typeof ctx.detalleError === 'function') return ctx.detalleError(err);
+        if (!err) return 'error desconocido';
+        return (err.code ? err.code + ': ' : '') + (err.message || String(err));
+    }
+
+    function _escape(v) {
+        if (ctx && typeof ctx.escapeHtml === 'function') return ctx.escapeHtml(v);
+        return String(v == null ? '' : v)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function _inicial(nombre) {
+        if (ctx && typeof ctx.obtenerInicial === 'function') return ctx.obtenerInicial(nombre);
+        var t = String(nombre || 'U').trim();
+        return t ? t.charAt(0).toUpperCase() : 'U';
+    }
+
+    function _avatarHtml(d) {
+        if (ctx && typeof ctx.avatarHtml === 'function') return ctx.avatarHtml(d);
+        if (d && d.avatar) return '<img src="' + _escape(d.avatar) + '" alt="" loading="lazy">';
+        return _escape(_inicial(d && d.nombre));
+    }
+
+    function _datosPerfil(id) {
+        if (ctx && typeof ctx.getPerfil === 'function') return ctx.getPerfil(id);
+        return { nombre: 'Usuario', handle: '', avatar: '', estado: 'ok', verificado: false, online: false };
+    }
+
+    function _normalizarPerfil(p) {
+        if (ctx && typeof ctx.normalizarPerfil === 'function') return ctx.normalizarPerfil(p);
+        return {
+            id: p.id,
+            nombre: p.nombre || null,
+            handle: p.handle || null,
+            avatar_url: p.avatar_url || '',
+            online: p.online === true,
+            verificado: p.verificado === true,
+            ultima_conexion: p.ultima_conexion || null
+        };
+    }
+
+    function _setPerfilCache(id, perfil) {
+        if (!ctx) return;
+        if (typeof ctx.getPerfiles !== 'function') return;
+        var mapa = ctx.getPerfiles();
+        if (mapa && typeof mapa.set === 'function' && !mapa.has(id)) {
+            mapa.set(id, perfil);
+        }
+    }
+
+    function _withRetry(fn, contexto) {
+        if (ctx && typeof ctx.withRetry === 'function') return ctx.withRetry(fn, contexto);
+        return fn();
+    }
+
+    function _refrescar(opts) {
+        if (ctx && typeof ctx.refrescarTodo === 'function') return ctx.refrescarTodo(opts || { reset: true });
+        return Promise.resolve();
+    }
+
+    function _refrescarReset() {
+        if (ctx && typeof ctx.refrescarTodoReset === 'function') return ctx.refrescarTodoReset();
+        return _refrescar({ reset: true });
+    }
+
+    function _aviso(seccion, msg, retry) {
+        if (ctx && typeof ctx.avisoSeccion === 'function') return ctx.avisoSeccion(seccion, msg, retry);
+        console.warn('[Sugerencias] Aviso:', msg);
+    }
+
+    function _quitarAviso(seccion) {
+        if (ctx && typeof ctx.quitarAviso === 'function') return ctx.quitarAviso(seccion);
+    }
+
+    function _clave(op, id) { return op + ':' + String(id); }
+    function _bloqueado(clave) { return estado.operacionesEnCurso.has(clave); }
+    function _marcar(clave) { estado.operacionesEnCurso.add(clave); }
+    function _liberar(clave) { estado.operacionesEnCurso.delete(clave); }
+
+    /* ============================================================
+       CARGA DE SUGERENCIAS
+       ============================================================ */
+
+    async function cargar() {
+        var client = _sb();
+        var session = await _session();
+        if (!client || !session) return { lista: [], error: null };
+
+        try {
+            var r = await _withRetry(function () {
+                return client.rpc(CONFIG.RPC_SUGERENCIAS, { p_limit: CONFIG.MAX_SUGERENCIAS });
+            }, 'personas activas');
+
+            if (r.error) throw r.error;
+
+            var crudo = Array.isArray(r.data) ? r.data : [];
+            var sugeridos = crudo
+                .filter(function (u) { return u && u.id; })
+                .slice(0, CONFIG.MAX_SUGERENCIAS);
+
+            // Enriquecer caché de perfiles con lo devuelto por el RPC
+            sugeridos.forEach(function (u) {
+                _setPerfilCache(u.id, _normalizarPerfil(u));
+            });
+
+            estado.sugeridos = sugeridos;
+            return { lista: sugeridos, error: null };
+        } catch (err) {
+            console.error('[Sugerencias] Cargar:', _err(err));
+            return { lista: [], error: _err(err) };
+        }
+    }
+
+    /* ============================================================
+       RENDER
+       ============================================================ */
+
+    function render(lista, errorConsulta) {
+        var seccion = document.getElementById('sugerenciasSection');
+        var contenedor = document.getElementById('sugerenciasLista');
+        if (!seccion || !contenedor) return;
+
+        // Título coherente
+        var titulo = seccion.querySelector('.sugerencias-titulo');
+        if (titulo) titulo.textContent = CONFIG.TITULO_SECCION;
+
+        _quitarAviso(seccion);
+
+        if (errorConsulta) {
+            seccion.style.display = 'block';
+            contenedor.innerHTML = '';
+            _aviso(seccion, 'No se pudieron cargar las personas activas: ' + errorConsulta, _refrescarReset);
+            return;
+        }
+
+        var items = Array.isArray(lista) ? lista : [];
+        if (!items.length) {
+            seccion.style.display = 'none';
+            contenedor.innerHTML = '';
+            return;
+        }
+
+        seccion.style.display = 'block';
+
+        contenedor.innerHTML = items.map(function (u) {
+            var d = _datosPerfil(u.id);
+            var enComun = Number(u.contactos_en_comun) || 0;
+            var nota = enComun > 0
+                ? '<div class="handle">' + enComun + (enComun === 1 ? ' contacto en común' : ' contactos en común') + '</div>'
+                : '';
+            var estadoTxt = d.online
+                ? '<span class="estado online">● En línea</span>'
+                : '<span class="estado">Desconectado</span>';
+            var verificado = d.verificado ? ' <span class="verified" title="Perfil verificado">✓</span>' : '';
+
+            return '<div class="sugerencia-card" data-sugerencia-id="' + _escape(u.id) + '">' +
+                '<div class="avatar ' + (d.online ? 'online' : '') + '">' + _avatarHtml(d) + '</div>' +
+                '<div class="info">' +
+                    '<div class="nombre">' + _escape(d.nombre) + verificado + '</div>' +
+                    '<div class="handle">' + _escape(d.handle) + '</div>' +
+                    nota + estadoTxt +
+                '</div>' +
+                '<div class="acciones">' +
+                    '<button type="button" class="btn-agregar-sugerencia" data-sugerencia-agregar="' + _escape(u.id) + '">Conectar</button>' +
+                '</div>' +
+            '</div>';
+        }).join('');
+    }
+
+    /* ============================================================
+       REFRESCO COMPLETO (cargar + render)
+       ============================================================ */
+
+    async function refrescar() {
+        var res = await cargar();
+        render(res.lista, res.error);
+        return res;
+    }
+
+    /* ============================================================
+       ACCIÓN: conectar (enviar solicitud de amistad)
+       ============================================================ */
+
+    async function conectar(usuarioId) {
+        var client = _sb();
+        var session = await _session();
+        if (!client || !session) {
+            _toast('Inicia sesión.', 'error');
+            return { ok: false };
+        }
+        if (!usuarioId) return { ok: false };
+        if (usuarioId === session.user.id) {
+            _toast('No puedes agregarte.', 'warning');
+            return { ok: false };
+        }
+
+        var clave = _clave('conectar', usuarioId);
+        if (_bloqueado(clave)) return { ok: false };
+        _marcar(clave);
+
+        try {
+            if (window.SocialAcciones && typeof window.SocialAcciones.enviarSolicitud === 'function') {
+                var resSocial = await window.SocialAcciones.enviarSolicitud(session.user.id, usuarioId);
+                if (!resSocial || !resSocial.ok) {
+                    // SocialAcciones ya muestra su propio toast
+                    return { ok: false };
+                }
+            } else {
+                var r = await _withRetry(function () {
+                    return client.from(CONFIG.TABLA_CONTACTOS).insert({
+                        usuario_id: session.user.id,
+                        contacto_id: usuarioId,
+                        estado: 'pendiente',
+                        es_favorito: false
+                    });
+                }, 'enviar solicitud');
+
+                if (r.error) {
+                    if (r.error.code === '23505') {
+                        _toast('Ya enviaste solicitud.', 'warning');
+                        return { ok: false };
+                    }
+                    throw r.error;
+                }
+                _toast('Solicitud enviada.', 'success');
+            }
+
+            // Refrescar todo el estado del módulo de contactos
+            await _refrescar({ reset: true });
+            return { ok: true };
+        } catch (err) {
+            console.error('[Sugerencias] Conectar:', _err(err));
+            _toast('No se pudo enviar: ' + _err(err), 'error');
+            return { ok: false };
+        } finally {
+            _liberar(clave);
+        }
+    }
+
+    /* ============================================================
+       INICIALIZACIÓN
+       ============================================================ */
+
+    function init(contexto) {
+        ctx = contexto || null;
+        return { ok: true, api: window.ContactosSugerencias };
+    }
+
+    /* ============================================================
+       API PÚBLICA
+       ============================================================ */
+
+    window.ContactosSugerencias = {
+        CONFIG: CONFIG,
+
+        init: init,
+
+        // Datos
+        cargar: cargar,
+        refrescar: refrescar,
+        render: render,
+
+        // Acciones
+        conectar: conectar,
+
+        // Utilidades
+        getLista: function () { return estado.sugeridos.slice(); }
+    };
+})();
