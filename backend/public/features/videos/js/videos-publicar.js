@@ -1,9 +1,11 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.6
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.7
    ================================================================
-   Cambios respecto a v3.5:
-   - Añadido menú funcional de 3 puntos en el feed (Guardar, Compartir, Reportar).
-   - El video se pausa automáticamente al abrir el menú del feed.
+   Cambios respecto a v3.6:
+   - Eliminado el menú de 3 puntos duplicado del feed. Ahora el único
+     menú de opciones vive en videos.html.
+   - El botón de pausa del feed se integra con los controles que se
+     ocultan solos (no tapa el video cuando están ocultos).
    - Se mantiene toda la base de seguridad, rendimiento y memoria.
    ================================================================ */
 
@@ -28,7 +30,7 @@
     const KEY_META = 'meta';
     const KEY_FILE = 'file';
 
-    const MAX_FILE_SIZE_FOR_IDB = 15 * 1024 * 1024; // 15 MB para evitar bloqueo de UI
+    const MAX_FILE_SIZE_FOR_IDB = 15 * 1024 * 1024;
 
     const ICONO_PAUSA = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
     const ICONO_PLAY = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><polygon points="7 5 19 12 7 19 7 5"/></svg>';
@@ -110,11 +112,11 @@
         archivoPathRemoto: null,
         portadaPathRemoto: null,
         borradorPaths: null,
-        subiendo: false // PROTECCIÓN RACE CONDITION
+        subiendo: false
     };
 
     let pistaPreviewAudio = null;
-    const objectURLsActivas = new Set(); // RASTREO GLOBAL DE URLS
+    const objectURLsActivas = new Set();
 
     function $(id) { return document.getElementById(id); }
     function esc(v) {
@@ -125,7 +127,6 @@
     function log(...args) { console.log('[VideosPublicar]', ...args); }
     function warn(...args) { console.warn('[VideosPublicar]', ...args); }
 
-    // HELPERS DE SEGURIDAD Y URL
     function crearObjectURL(blob) {
         const url = URL.createObjectURL(blob);
         objectURLsActivas.add(url);
@@ -145,31 +146,11 @@
         state.portadaURL = null;
     }
 
-    // ============================================================
-    // HELPERS DE DATOS (ubicación y sonido)
-    // ============================================================
     function textoUbicacion(u) {
         return u ? `${u.nombre}, ${u.pais}` : null;
     }
 
     function urlSonidoValida(url) {
-        if (typeof url !== 'string') return false;
-        try {
-            const u = new URL(url);
-            if (u.origin !== SUPABASE_URL) return false;
-            const prefijoPath = '/storage/v1/object/public/audios/';
-            return u.pathname.startsWith(prefijoPath) && u.pathname.length > prefijoPath.length;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    function getSupabaseClient() {
-        if (state.sbCliente) return state.sbCliente;
-        try {
-            if (window.sbVideos && typeof window.sbVideos.from === 'function') {
-                state.sbCliente = window.sbVideos;
-                return state.sbCliente;
             }
             if (window.supabaseClient) {
                 state.sbCliente = window.supabaseClient;
@@ -238,9 +219,6 @@
     window.csToast = csToast;
     window.csConfirm = csConfirm;
 
-    // ============================================================
-    // MODAL DE CUOTA AGOTADA
-    // ============================================================
     function formatearEspacio(mb) {
         const n = Number(mb) || 0;
         return n >= 1024 ? (Math.round((n / 1024) * 10) / 10) + ' GB' : Math.round(n) + ' MB';
@@ -298,13 +276,6 @@
         const detalle = document.createElement('div');
         detalle.className = 'cs-confirm-mensaje';
         const tieneCifras = c.limite_mb != null;
-        detalle.textContent = esPro
-            ? (tieneCifras
-                ? `Tu plan Pro incluye ${formatearEspacio(c.limite_mb)} y ya lo usaste. Libera espacio para seguir subiendo.`
-                : 'Ya usaste el espacio de tu plan Pro. Libera espacio para seguir subiendo.')
-            : (tieneCifras
-                ? `Tu plan gratuito incluye ${formatearEspacio(c.limite_mb)} y ya lo usaste. `
-                : 'Ya usaste el espacio de tu plan gratuito. ') +
               'Tus videos y borradores siguen guardados. Para subir más, amplía a Pro o libera espacio.';
 
         const acciones = document.createElement('div');
@@ -339,9 +310,6 @@
         document.body.appendChild(overlay);
     }
 
-    // ============================================================
-    // PERSISTENCIA LOCAL · IndexedDB (sobrevive a recargas)
-    // ============================================================
     function abrirIDB() {
         return new Promise((resolve, reject) => {
             const req = indexedDB.open(IDB_NAME, 1);
@@ -354,7 +322,6 @@
     async function idbSet(clave, valor) {
         const db = await abrirIDB();
         return new Promise((resolve, reject) => {
-            const tx = db.transaction(IDB_STORE, 'readwrite');
             tx.objectStore(IDB_STORE).put(valor, clave);
             tx.oncomplete = () => { db.close(); resolve(); };
             tx.onerror = () => { db.close(); reject(tx.error); };
@@ -400,8 +367,6 @@
             await idbSet(KEY_META, {
                 titulo,
                 descripcion,
-                sonidoId: state.sonidoSeleccionado ? state.sonidoSeleccionado.id : null,
-                ubicacionId: state.ubicacionSeleccionada ? state.ubicacionSeleccionada.id : null,
                 borradorId: state.borradorEditandoId,
                 archivoPathRemoto: state.archivoPathRemoto,
                 portadaPathRemoto: state.portadaPathRemoto,
@@ -447,27 +412,6 @@
         const hint = $('csFileBtnHint');
         const btnWrap = document.querySelector('.cs-file-btn-wrap');
         if (file) {
-            if (txt) { txt.removeAttribute('data-clave'); txt.textContent = 'Video seleccionado'; }
-            if (hint) { hint.removeAttribute('data-clave'); hint.textContent = 'Listo para subir'; }
-            if (btnWrap) btnWrap.classList.add('cs-file-con-archivo');
-            const pWrap = $('csPreviewWrap');
-            if (pWrap) pWrap.style.display = 'block';
-        } else {
-            if (txt) { txt.setAttribute('data-clave', 'videos_elegir_galeria'); txt.textContent = vt('videos_elegir_galeria', 'Elegir video de la galería'); }
-            if (hint) { hint.setAttribute('data-clave', 'videos_archivo_hint'); hint.textContent = vt('videos_archivo_hint', 'MP4 · WebM · MOV · Máx 100 MB'); }
-            if (btnWrap) btnWrap.classList.remove('cs-file-con-archivo');
-        }
-    }
-
-    async function restaurarLocal() {
-        try {
-            const meta = await idbGet(KEY_META);
-            let file = await idbGet(KEY_FILE);
-
-            if (file && file.size > MAX_FILE_SIZE_FOR_IDB) {
-                warn('Archivo recuperado excede límite. Se descarta.');
-                await idbDel(KEY_FILE);
-                file = null;
                 csToast('El video era demasiado grande para recuperarlo automáticamente.', 'info', 4000);
             }
 
@@ -511,9 +455,6 @@
         }
     }
 
-    // ============================================================
-    // ANALIZADOR PARA EL ECUALIZADOR (Web Audio API)
-    // ============================================================
     const Visualizador = (function () {
         let ctx = null;
         let analyser = null;
@@ -559,7 +500,7 @@
         }
 
         function iniciar(elementoEq, elementoAudio) {
-            detener(); // Limpia siempre antes de iniciar
+            detener();
             const barras = elementoEq ? Array.from(elementoEq.querySelectorAll('.cs-eq-bar')) : [];
             const conAnalizador = elementoAudio ? asegurarContexto(elementoAudio) : false;
             activo = true;
@@ -575,8 +516,6 @@
             activo = false;
             if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
             if (fuente) { try { fuente.disconnect(); } catch (e) {} fuente = null; }
-            
-            // CRÍTICO: Cerrar y anular el contexto de audio para liberar hardware
             if (ctx) {
                 try { ctx.close(); } catch (e) {}
                 ctx = null;
@@ -588,9 +527,6 @@
         return { iniciar, detener };
     })();
 
-    // ============================================================
-    // MOTOR DE PREVIEW DE PISTAS (selector)
-    // ============================================================
     const AudioPreview = (function () {
         let audio = null;
         let timerId = null;
@@ -731,9 +667,6 @@
         return { reproducir, detener, pausar, reanudar, getEstado };
     })();
 
-    // ============================================================
-    // SUBIDA DE ARCHIVOS (flujo de publicación con moderación)
-    // ============================================================
     async function subirMultimedia(archivo, tipo, opciones) {
         const opts = opciones || {};
         if (!archivo) return { ok: false, error: 'Archivo vacío' };
@@ -758,17 +691,16 @@
         }
     }
 
-    // VALIDACIÓN PRELIMINAR DE INTEGRIDAD
     function validarIntegridadVideo(file) {
         return new Promise((resolve) => {
             const url = crearObjectURL(file);
             const v = document.createElement('video');
             v.preload = 'metadata';
             v.muted = true;
-            
+
             const timeout = setTimeout(() => {
                 revocarObjectURL(url);
-                resolve(false); // Timeout, probablemente corrupto
+                resolve(false);
             }, 2000);
 
             v.onloadedmetadata = () => {
@@ -792,7 +724,6 @@
         const token = session.access_token;
         if (!token) return { ok: false, error: 'Sin token de sesión' };
 
-        // Validación preliminar de integridad para videos
         if (tipo === 'video') {
             const esValido = await validarIntegridadVideo(archivo);
             if (!esValido) {
@@ -850,9 +781,6 @@
         return { ok: false, error: 'Proveedor S3 aún no habilitado (Fase 3 del proyecto)' };
     }
 
-    // ============================================================
-    // BORRADORES · STORAGE DIRECTO EN EL BUCKET "videos"
-    // ============================================================
     function rutaBorrador(usuarioId, nombre) {
         const limpio = String(nombre || 'archivo').replace(/[^\w.\-]/g, '_');
         return `${CONFIG.CARPETA_BORRADORES}/${usuarioId}/${Date.now()}-${limpio}`;
@@ -962,7 +890,6 @@
                 return;
             }
             const cuota = await consultarCuotaCliente(session);
-            // CORRECCIÓN: Usar >= en lugar de >
             if (cuota && Number(cuota.usado_mb) >= Number(cuota.limite_mb)) {
                 mostrarAvisoCuota(cuota);
                 return;
@@ -1204,9 +1131,6 @@
         actualizarBadgePreview();
     }
 
-    // ============================================================
-    // PORTADA / PREVIEW
-    // ============================================================
     function obtenerPortada(file) {
         return new Promise((resolve) => {
             const desdeCamara = window.__csMiniaturaCamara;
@@ -1308,9 +1232,6 @@
         obtenerPortada(file).then(mostrarPortadaEnPreview);
     }
 
-    // ============================================================
-    // QUITAR VIDEO SELECCIONADO (antes de publicar)
-    // ============================================================
     function actualizarBotonQuitar(tieneVideo) {
         const tiene = typeof tieneVideo === 'boolean' ? tieneVideo : !!state.archivoVideo;
         const overlay = $('csQuitarVideo');
@@ -1366,9 +1287,6 @@
         csToast('Video quitado', 'success');
     }
 
-    // ============================================================
-    // VISTA PREVIA A PANTALLA COMPLETA (antes de publicar)
-    // ============================================================
     function inyectarModalPreview() {
         if ($('csModalPreview')) return;
         const d = document.createElement('div');
@@ -1486,7 +1404,7 @@
         if (boton) boton.disabled = true;
 
         cerrarPreview();
-        
+
         try {
             if (typeof form.requestSubmit === 'function') form.requestSubmit(boton);
             else boton.click();
@@ -1497,9 +1415,6 @@
         }
     }
 
-    // ============================================================
-    // RESET DEL FORMULARIO
-    // ============================================================
     function resetFormularioPublicacion() {
         state.subiendo = false;
         const btnPub = obtenerBotonPublicar();
@@ -1534,7 +1449,6 @@
         resetEstadoBorrador();
         window.__csMiniaturaCamara = null;
         window.__csArchivoConAudioMezclado = false;
-
         AudioPreview.detener();
         cerrarPreview();
 
@@ -1595,7 +1509,8 @@
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
     // ============================================================
-    // FEED · controles (menú funcional de 3 puntos)
+    // FEED · botón de pausa integrado con los controles automáticos
+    // (el menú de tres puntos ya NO se crea aquí: vive en videos.html)
     // ============================================================
     function inyectarEstilosFeed() {
         if ($('cs-feed-ui')) return;
@@ -1610,103 +1525,8 @@
             .video-card .cs-pausa-btn { cursor: pointer; }
             .video-card .cs-pausa-btn .icono { display: flex; align-items: center; justify-content: center; }
             .video-card .cs-pausa-btn svg { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
-            
-            /* NUEVO: Estilos del menú de opciones del feed */
-            .cs-feed-options-menu {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background: #1a1a1a;
-                border-top-left-radius: 20px;
-                border-top-right-radius: 20px;
-                padding: 20px;
-                z-index: 999999;
-                transform: translateY(100%);
-                transition: transform 0.3s ease;
-                display: flex;
-                flex-direction: column;
-                gap: 15px;
-            }
-            .cs-feed-options-menu.show {
-                transform: translateY(0);
-            }
-            .cs-feed-options-menu button {
-                background: transparent;
-                border: none;
-                color: #fff;
-                font-size: 1rem;
-                text-align: left;
-                padding: 10px;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                gap: 10px;
-            }
-            .cs-feed-options-menu button:hover {
-                background: rgba(255,255,255,0.1);
-                border-radius: 8px;
-            }
         `;
         document.head.appendChild(st);
-    }
-
-    // Función para abrir el menú de opciones
-    function abrirMenuOpcionesFeed(videoSrc) {
-        document.querySelector('.cs-feed-options-menu')?.remove();
-
-        const menu = document.createElement('div');
-        menu.className = 'cs-feed-options-menu';
-        menu.innerHTML = `
-            <button id="csBtnGuardarFeed"><span>⬇️</span> Guardar video</button>
-            <button id="csBtnCompartirFeed"><span>↗️</span> Compartir</button>
-            <button id="csBtnReportarFeed"><span>🚩</span> Reportar</button>
-            <button id="csBtnCerrarMenuFeed" style="color: #ff4d4d; justify-content: center; margin-top: 10px; font-weight: bold;">Cancelar</button>
-        `;
-        document.body.appendChild(menu);
-        
-        // Forzar reflow para que la animación funcione
-        void menu.offsetWidth;
-        menu.classList.add('show');
-
-        const cerrar = () => {
-            menu.classList.remove('show');
-            setTimeout(() => menu.remove(), 300);
-        };
-
-        menu.querySelector('#csBtnGuardarFeed').addEventListener('click', () => {
-            csToast('Función de guardar en desarrollo', 'info');
-            cerrar();
-        });
-
-        menu.querySelector('#csBtnCompartirFeed').addEventListener('click', () => {
-            if (navigator.share) {
-                navigator.share({
-                    title: 'Mira este video en Csariel\'s',
-                    url: videoSrc
-                }).catch(() => {});
-            } else {
-                navigator.clipboard.writeText(videoSrc);
-                csToast('Enlace copiado al portapapeles', 'success');
-            }
-            cerrar();
-        });
-
-        menu.querySelector('#csBtnReportarFeed').addEventListener('click', () => {
-            csToast('Función de reporte en desarrollo', 'info');
-            cerrar();
-        });
-
-        menu.querySelector('#csBtnCerrarMenuFeed').addEventListener('click', cerrar);
-
-        // Cerrar al hacer clic fuera
-        const overlayClick = (e) => {
-            if (!menu.contains(e.target)) {
-                cerrar();
-                document.removeEventListener('click', overlayClick);
-            }
-        };
-        setTimeout(() => document.addEventListener('click', overlayClick), 100);
     }
 
     function decorarTarjeta(card) {
@@ -1718,7 +1538,7 @@
 
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'sidebar-btn cs-pausa-btn';
+        btn.className = 'acc-btn cs-pausa-btn';
         btn.setAttribute('aria-label', 'Pausar o reproducir');
         btn.innerHTML = '<span class="icono cs-pausa-ico"></span>';
         acciones.insertBefore(btn, acciones.firstChild);
@@ -1747,32 +1567,6 @@
             }
             pintar();
         });
-
-        // NUEVO: Inyectar botón de 3 puntos si no existe
-        if (!acciones.querySelector('.cs-btn-opciones-feed')) {
-            const btnOpciones = document.createElement('button');
-            btnOpciones.type = 'button';
-            btnOpciones.className = 'sidebar-btn cs-btn-opciones-feed';
-            btnOpciones.setAttribute('aria-label', 'Más opciones');
-            // Icono de 3 puntos
-            btnOpciones.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" fill="#fff"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>';
-            
-            // Insertar al final de las acciones (debajo del icono de compartir o similar)
-            acciones.appendChild(btnOpciones);
-
-            btnOpciones.addEventListener('click', function (e) {
-                e.preventDefault();
-                e.stopPropagation();
-                // Pausar el video al abrir el menú para evitar distracciones
-                video.pause();
-                card.classList.remove('playing');
-                pintar();
-                
-                // Obtener la URL del video actual
-                const videoSrc = video.src || video.dataset.src || '';
-                abrirMenuOpcionesFeed(videoSrc);
-            });
-        }
     }
 
     function observarFeed() {
@@ -1785,9 +1579,6 @@
         obs.observe(cont, { childList: true });
     }
 
-    // ============================================================
-    // ESTILOS
-    // ============================================================
     function inyectarEstilosExtra() {
         if ($('cs-videos-publicar-inline')) return;
         const st = document.createElement('style');
@@ -1808,45 +1599,14 @@
             .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,43,214,0.25); border-top-color: #ff2bd6; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
 
-            /* ----- NUEVO: UNIFORM VIDEO DISPLAY ENGINE (9:16) ----- */
-            .pub-media-container {
-                width: 100%;
-                aspect-ratio: 9 / 16;
-                position: relative;
-                overflow: hidden;
-                background: #000;
-                border-radius: 14px; /* Respetar el diseño actual de publicaciones */
-            }
+            .pub-media-container { width: 100%; aspect-ratio: 9 / 16; position: relative; overflow: hidden; background: #000; border-radius: 14px; }
+            .pub-media-container video { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; object-position: center; display: block; max-width: 100%; filter: none !important; }
+            .pub-media-container img { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; object-position: center; display: block; }
 
-            .pub-media-container video {
-                width: 100%;
-                height: 100%;
-                position: absolute;
-                inset: 0;
-                object-fit: cover;
-                object-position: center;
-                display: block;
-                max-width: 100%;
-                /* Asegurar que no se apliquen filtros que deterioren la calidad */
-                filter: none !important;
-            }
-
-            .pub-media-container img {
-                width: 100%;
-                height: 100%;
-                position: absolute;
-                inset: 0;
-                object-fit: cover;
-                object-position: center;
-                display: block;
-            }
-
-            /* ----- Vista previa del formulario ----- */
             .cs-preview-video {
                 position: relative; width: 100%; height: min(78vh, 720px);
                 background: #000; border-radius: 14px; overflow: hidden;
                 box-shadow: 0 0 18px rgba(255,43,214,.18);
-                /* Forzar proporción uniforme para la vista previa */
                 aspect-ratio: 9 / 16;
             }
             #csPreviewVideo {
@@ -1876,7 +1636,6 @@
             #csQuitarVideo:active { transform: scale(.92); }
             .cs-btn-quitar { color: #ff3366 !important; border-color: rgba(255,51,102,.6) !important; }
 
-            /* ----- Vista previa a pantalla completa ----- */
             .cs-prev-modal { position: fixed; inset: 0; z-index: ${Z.PREVIEW}; background: #000; display: none; flex-direction: column; color: #fff; }
             .cs-prev-modal.show { display: flex; }
             .cs-prev-top { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: max(12px, env(safe-area-inset-top)) 14px 10px; background: linear-gradient(to bottom, rgba(0,0,0,.6), transparent); }
@@ -1889,7 +1648,6 @@
             .cs-prev-acciones { display: flex; gap: 10px; padding: 12px 14px max(16px, env(safe-area-inset-bottom)); background: #000; }
             .cs-prev-acciones button { flex: 1; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; }
 
-            /* ----- Botón de reproducir con anillo neón ----- */
             .cs-sonido-play {
                 position: relative; width: 44px; height: 44px; border-radius: 50%; margin-right: 12px; flex-shrink: 0;
                 display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;
@@ -2179,9 +1937,6 @@
         log('✅ Input file transformado en botón plano');
     }
 
-    // ============================================================
-    // MODALES · LÓGICA
-    // ============================================================
     function abrirModalSonidos() {
         renderSonidos(state.tabSonidosActiva, '');
         mostrarSheet('csModalSonidos', 'csSheetSonidosBackdrop');
@@ -2395,9 +2150,6 @@
         badge.style.display = state.sonidoSeleccionado ? 'inline-flex' : 'none';
     }
 
-    // ============================================================
-    // INPUT DE ARCHIVO (galería) Y CAMPOS DEL FORMULARIO
-    // ============================================================
     function engancharInputArchivo() {
         const input = $('inputArchivoVideo');
         if (!input) return;
@@ -2433,15 +2185,12 @@
         window.__csPublicacionListener = true;
         window.addEventListener('csariels:videos:publicado', () => {
             log('✅ Evento publicado recibido — reseteando formulario y refrescando feed');
-            state.subiendo = false; // Liberar bloqueo
+            state.subiendo = false;
             resetFormularioPublicacion();
             setTimeout(refrescarFeedAutomatico, 300);
         });
     }
 
-    // ============================================================
-    // AUTOPLAY DEL FEED
-    // ============================================================
     let _autoplayObserver = null;
     let _autoplayInterval = null;
     let _intersectionObserver = null;
@@ -2495,7 +2244,6 @@
         }
 
         observarTodos();
-
         const contenedorFeed = $('videosContainer');
         if (contenedorFeed) {
             _autoplayObserver = new MutationObserver((mutations) => {
@@ -2516,7 +2264,6 @@
 
         _autoplayInterval = setInterval(observarTodos, 15000);
 
-        // PAUSA GLOBAL EN VISIBILITYCHANGE
         _visibilityListener = () => {
             if (document.hidden) {
                 const contenedor = $('videosContainer');
@@ -2610,7 +2357,7 @@
                 archivoVideo: state.archivoVideo ? state.archivoVideo.name : null,
                 archivoConAudioMezclado: state.archivoConAudioMezclado === true,
                 borradorId: state.borradorEditandoId,
-                subiendo: state.subiendo // Exportar estado para control
+                subiendo: state.subiendo
             };
         },
         _seed: { SONIDOS_SEED, UBICACIONES_SEED },
@@ -2632,7 +2379,7 @@
         observarFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v3.6 listo');
+        log('✅ Módulo Publicar v3.7 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
