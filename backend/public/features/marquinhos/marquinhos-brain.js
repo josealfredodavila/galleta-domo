@@ -1,9 +1,15 @@
 // ================================================================
-// MARQUINHOS · BRAIN v7.5
+// MARQUINHOS · BRAIN v7.6
 // Memoria por usuario (RAG) + filtro de recuerdos + respuestas locales
 // + MÚSICA (Deezer: enlace de canción, sin audio)
 // + EVENTOS (Ticketmaster Discovery: solo lectura, enlace oficial)
+// + ESTADO REAL DE MENSAJES / SOLICITUDES / BLOQUEADOS (Supabase)
 //
+// v7.6 — Las preguntas sobre mensajes ya no pasan al backend ni a
+//        las respuestas comerciales (planes, precios, cobros).
+//        Se consulta el estado real de la sesión del usuario
+//        (conteos) y se enlaza a la vista de Mensajes.
+//        Respeta el interruptor "Consultas rápidas al usuario".
 // v7.5 — Conocimiento del ecosistema verificado contra Supabase
 //        (planes, precios, NFT, Es.stoks, Muro, Mercado, Live, IA).
 //        Precios y plazos corregidos. Se envía al backend en el
@@ -17,7 +23,7 @@
 (function () {
     if (window.MarquinhosBrain) return;
 
-    const VERSION = '7.5';
+    const VERSION = '7.6';
     const TIMEOUT_MS = 30000;
     const HISTORIAL_ENVIO = 20;
     const HISTORIAL_CHARS = 2000;
@@ -29,6 +35,44 @@
     const CHAT_PET_ENDPOINT = '/api/ai/chat-pet';
     const CHAT_ENDPOINT = '/api/ai/chat';
     const CONTEXTO_PET = 'marquinhos_pet';
+    const CONFIG_KEY = 'marquinhos_config';
+
+    // ============================================================
+    // MENSAJES: mapa de tablas y columnas
+    // ⚠️ NOMBRES PROVISIONALES. Confirmar contra mensajes.js / Supabase.
+    // Solo se cambian aquí; el resto del archivo no depende de ellos.
+    //   tabla           → nombre de la tabla en Supabase
+    //   colDestinatario → columna con el id del usuario dueño de la bandeja
+    //   colEstado       → columna de estado (null = sin filtro de estado)
+    //   valorPendiente  → valor de colEstado que significa "por revisar"
+    //   ruta            → vista de Mensajes a enlazar
+    // ============================================================
+    const MENSAJES_CONFIG = {
+        mensajes: {
+            tabla: 'mensajes',
+            colDestinatario: 'destinatario_id',
+            colEstado: 'leido',
+            valorPendiente: false,
+            ruta: '/features/mensajes/mensajes.html',
+            etiqueta: 'mensaje'
+        },
+        solicitudes: {
+            tabla: 'solicitudes_contacto',
+            colDestinatario: 'destinatario_id',
+            colEstado: 'estado',
+            valorPendiente: 'pendiente',
+            ruta: '/features/mensajes/contactos.html',
+            etiqueta: 'solicitud'
+        },
+        bloqueados: {
+            tabla: 'bloqueos',
+            colDestinatario: 'bloqueador_id',
+            colEstado: null,
+            valorPendiente: null,
+            ruta: '/features/mensajes/contactos.html',
+            etiqueta: 'bloqueado'
+        }
+    };
 
     // ============================================================
     // CONOCIMIENTO DEL ECOSISTEMA (solo información pública)
@@ -129,6 +173,42 @@
 
     function paraCoincidencia(t) {
         return ' ' + normalizar(t).replace(/[^a-z0-9. ]/g, ' ').replace(/\s+/g, ' ').trim() + ' ';
+    }
+
+    // ============================================================
+    // INTENCIÓN: ESTADO DE MENSAJES / SOLICITUDES / BLOQUEADOS
+    // Se evalúa ANTES de cualquier llamada al backend.
+    // Si la pregunta suena comercial (planes, precios, cobros),
+    // no es una consulta de estado: se deja al flujo normal.
+    // ============================================================
+    const RE_COMERCIAL = /\b(plan|planes|precio|precios|cuesta|cuanto cuesta|costo|cobr\w*|pag(ar|o|os|a)|mensual\w*|suscrip\w*|membres\w*|incluye\w*|limite\w*|premium|basico|pro|gratis|tarifa\w*)\b/;
+    const RE_TEMA_BLOQUEADOS = /\b(bloquead[oa]s?|bloquear|bloqueo|bloqueos)\b/;
+    const RE_TEMA_SOLICITUDES = /\b(solicitud|solicitudes|peticion|peticiones)\b/;
+    const RE_TEMA_MENSAJES = /\b(mensaje|mensajes|chat|chats|bandeja|llegaron|llego)\b/;
+    const RE_ESTADO = /\b(tengo|tienes|hay|llego|llegaron|llegado|nuevo|nuevos|nueva|nuevas|pendiente|pendientes|revisar|revisa|revisame|sin leer|no leido|no leidos|cuantos|cuantas|alguno|alguna|algun|algunos|algunas|checar|avisame|falta|faltan|quien|quienes|abrir|abre|entrar|entra|mostrar|muestra|muestrame|ver)\b/;
+
+    function detectarIntencionMensajes(texto) {
+        const t = normalizar(texto);
+        if (!t) return null;
+        if (RE_COMERCIAL.test(t)) return null;
+        if (!RE_ESTADO.test(t)) return null;
+
+        if (RE_TEMA_BLOQUEADOS.test(t)) return 'bloqueados';
+        if (RE_TEMA_SOLICITUDES.test(t)) return 'solicitudes';
+        if (RE_TEMA_MENSAJES.test(t)) return 'mensajes';
+        return null;
+    }
+
+    // ============================================================
+    // CONFIGURACIÓN DEL USUARIO (interruptor de consultas rápidas)
+    // ============================================================
+    function consultasRapidasActivas() {
+        try {
+            const cfg = JSON.parse(localStorage.getItem(CONFIG_KEY) || '{}') || {};
+            return !!cfg.consultas_rapidas;
+        } catch (e) {
+            return false;
+        }
     }
 
     // ============================================================
@@ -339,6 +419,88 @@
             return null;
         } catch (e) {
             return null;
+        }
+    }
+
+    // ============================================================
+    // ESTADO REAL DE MENSAJES / SOLICITUDES / BLOQUEADOS
+    // Solo cuenta filas del usuario de la sesión (head: true, sin
+    // traer contenido, para no gastar egress).
+    // ============================================================
+    async function obtenerUsuarioId(cliente) {
+        try {
+            if (!cliente || !cliente.auth || typeof cliente.auth.getSession !== 'function') return null;
+            const s = await cliente.auth.getSession();
+            return (s && s.data && s.data.session && s.data.session.user && s.data.session.user.id) || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    async function contarEstado(cliente, tipo, uid) {
+        const c = MENSAJES_CONFIG[tipo];
+        let q = cliente.from(c.tabla)
+            .select('*', { count: 'exact', head: true })
+            .eq(c.colDestinatario, uid);
+        if (c.colEstado) {
+            q = q.eq(c.colEstado, c.valorPendiente);
+        }
+        const { count, error } = await q;
+        if (error) throw new Error(error.message || 'error de consulta');
+        return typeof count === 'number' ? count : 0;
+    }
+
+    function plural(n, singular, plur) {
+        return n === 1 ? singular : plur;
+    }
+
+    function construirRespuestaEstado(tipo, n) {
+        const c = MENSAJES_CONFIG[tipo];
+        if (tipo === 'mensajes') {
+            if (n === 0) return 'No tienes mensajes por revisar ahora.';
+            return 'Tienes ' + n + ' ' + plural(n, 'mensaje', 'mensajes') + ' por revisar. Puedes abrirlos en Mensajes.';
+        }
+        if (tipo === 'solicitudes') {
+            if (n === 0) return 'No tienes solicitudes pendientes.';
+            return 'Tienes ' + n + ' ' + plural(n, 'solicitud pendiente', 'solicitudes pendientes') + '. Puedes revisarlas en Contactos.';
+        }
+        // bloqueados
+        if (n === 0) return 'No tienes usuarios bloqueados.';
+        return 'Tienes ' + n + ' ' + plural(n, 'usuario bloqueado', 'usuarios bloqueados') + '. Puedes revisarlos en Contactos.';
+    }
+
+    async function responderEstadoMensajes(tipo) {
+        if (!consultasRapidasActivas()) {
+            return {
+                reply: 'Activa "Consultas rápidas al usuario" en la configuración de Marquinhos para que pueda revisar tus mensajes.',
+                enlace: '/features/perfil/configuracion/index.html'
+            };
+        }
+
+        const c = MENSAJES_CONFIG[tipo];
+        try {
+            const cliente = await obtenerClienteSupabase();
+            if (!cliente || typeof cliente.from !== 'function') {
+                throw new Error('sin cliente');
+            }
+            const uid = await obtenerUsuarioId(cliente);
+            if (!uid) {
+                return {
+                    reply: 'Inicia sesión para que pueda revisar tus mensajes.',
+                    enlace: null
+                };
+            }
+            const n = await contarEstado(cliente, tipo, uid);
+            return {
+                reply: construirRespuestaEstado(tipo, n),
+                enlace: c.ruta
+            };
+        } catch (e) {
+            console.warn('[Marquinhos/Brain] Error consultando estado:', e.message);
+            return {
+                reply: 'No pude revisar tus ' + (tipo === 'mensajes' ? 'mensajes' : tipo) + ' ahora. Intenta de nuevo o entra directo a esa sección.',
+                enlace: c.ruta
+            };
         }
     }
 
@@ -573,6 +735,7 @@
     // ============================================================
     // PREGUNTAR
     // Devuelve { reply, musica, eventos } si hay resultados; si no, texto.
+    // Las preguntas de estado de mensajes se resuelven aquí, sin backend.
     // ============================================================
     async function preguntar(texto, historialLocal, modo) {
         if (!texto || typeof texto !== 'string') return '';
@@ -581,6 +744,13 @@
 
         window.MarquinhosBrain.ultimaMusica = null;
         window.MarquinhosBrain.ultimosEventos = null;
+
+        // 1) Estado real de mensajes / solicitudes / bloqueados
+        const intencion = detectarIntencionMensajes(limpio);
+        if (intencion) {
+            const resultado = await responderEstadoMensajes(intencion);
+            return { reply: resultado.reply, enlace: resultado.enlace, musica: null, eventos: null };
+        }
 
         const userInfo = window.Marquinhos && window.Marquinhos.getUserInfo
             ? window.Marquinhos.getUserInfo() : null;
@@ -692,9 +862,13 @@
     window.MarquinhosBrain = {
         version: VERSION,
         preguntar: preguntar,
+        consultarEstado: function (tipo) {
+            if (!MENSAJES_CONFIG[tipo]) return Promise.resolve({ reply: 'Consulta no disponible.', enlace: null });
+            return responderEstadoMensajes(tipo);
+        },
         conocimiento: CONOCIMIENTO_ECOSISTEMA,
         ultimaMusica: null,
         ultimosEventos: null
     };
-    console.log('[Marquinhos/Brain] ✅ v' + VERSION + ' cargado (conocimiento + memoria RAG + música + eventos)');
+    console.log('[Marquinhos/Brain] ✅ v' + VERSION + ' cargado (conocimiento + memoria RAG + música + eventos + estado de mensajes)');
 })();
