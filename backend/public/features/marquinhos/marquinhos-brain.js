@@ -1,10 +1,16 @@
 // ================================================================
-// MARQUINHOS · BRAIN v7.6
+// MARQUINHOS · BRAIN v7.7
 // Memoria por usuario (RAG) + filtro de recuerdos + respuestas locales
 // + MÚSICA (Deezer: enlace de canción, sin audio)
 // + EVENTOS (Ticketmaster Discovery: solo lectura, enlace oficial)
 // + ESTADO REAL DE MENSAJES / SOLICITUDES / BLOQUEADOS (Supabase)
 //
+// v7.7 — Nombres de tablas y columnas verificados contra Supabase
+//        (proyecto Csariels ecosistema):
+//          mensajes     → mensajes_chat (leido, eliminado, es_bot)
+//          solicitudes  → solicitudes_amistad (receptor_id, estado)
+//          bloqueados   → bloqueos (usuario_id = quien bloquea)
+//        El conteo de mensajes excluye eliminados y mensajes del bot.
 // v7.6 — Las preguntas sobre mensajes ya no pasan al backend ni a
 //        las respuestas comerciales (planes, precios, cobros).
 //        Se consulta el estado real de la sesión del usuario
@@ -23,7 +29,7 @@
 (function () {
     if (window.MarquinhosBrain) return;
 
-    const VERSION = '7.6';
+    const VERSION = '7.7';
     const TIMEOUT_MS = 30000;
     const HISTORIAL_ENVIO = 20;
     const HISTORIAL_CHARS = 2000;
@@ -38,37 +44,39 @@
     const CONFIG_KEY = 'marquinhos_config';
 
     // ============================================================
-    // MENSAJES: mapa de tablas y columnas
-    // ⚠️ NOMBRES PROVISIONALES. Confirmar contra mensajes.js / Supabase.
-    // Solo se cambian aquí; el resto del archivo no depende de ellos.
+    // MENSAJES: mapa de tablas y columnas (verificado en Supabase)
     //   tabla           → nombre de la tabla en Supabase
     //   colDestinatario → columna con el id del usuario dueño de la bandeja
     //   colEstado       → columna de estado (null = sin filtro de estado)
     //   valorPendiente  → valor de colEstado que significa "por revisar"
+    //   filtrosExtra    → filtros fijos adicionales (eq) para contar bien
     //   ruta            → vista de Mensajes a enlazar
     // ============================================================
     const MENSAJES_CONFIG = {
         mensajes: {
-            tabla: 'mensajes',
+            tabla: 'mensajes_chat',
             colDestinatario: 'destinatario_id',
             colEstado: 'leido',
             valorPendiente: false,
+            filtrosExtra: { eliminado: false, es_bot: false },
             ruta: '/features/mensajes/mensajes.html',
             etiqueta: 'mensaje'
         },
         solicitudes: {
-            tabla: 'solicitudes_contacto',
-            colDestinatario: 'destinatario_id',
+            tabla: 'solicitudes_amistad',
+            colDestinatario: 'receptor_id',
             colEstado: 'estado',
             valorPendiente: 'pendiente',
+            filtrosExtra: null,
             ruta: '/features/mensajes/contactos.html',
             etiqueta: 'solicitud'
         },
         bloqueados: {
             tabla: 'bloqueos',
-            colDestinatario: 'bloqueador_id',
+            colDestinatario: 'usuario_id',
             colEstado: null,
             valorPendiente: null,
+            filtrosExtra: null,
             ruta: '/features/mensajes/contactos.html',
             etiqueta: 'bloqueado'
         }
@@ -445,6 +453,11 @@
         if (c.colEstado) {
             q = q.eq(c.colEstado, c.valorPendiente);
         }
+        if (c.filtrosExtra) {
+            Object.keys(c.filtrosExtra).forEach(function (col) {
+                q = q.eq(col, c.filtrosExtra[col]);
+            });
+        }
         const { count, error } = await q;
         if (error) throw new Error(error.message || 'error de consulta');
         return typeof count === 'number' ? count : 0;
@@ -455,7 +468,6 @@
     }
 
     function construirRespuestaEstado(tipo, n) {
-        const c = MENSAJES_CONFIG[tipo];
         if (tipo === 'mensajes') {
             if (n === 0) return 'No tienes mensajes por revisar ahora.';
             return 'Tienes ' + n + ' ' + plural(n, 'mensaje', 'mensajes') + ' por revisar. Puedes abrirlos en Mensajes.';
