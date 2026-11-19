@@ -40,7 +40,6 @@ body {
 .app { max-width: 640px; margin: 0 auto; }
 h1 { font-size: 1.3rem; color: var(--cm-azul); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
 h1 .hex { font-family: 'Orbitron', monospace; }
-h1 .corn { font-size: 1.5rem; }
 .sub { color: var(--cm-muted); font-size: .8rem; margin-bottom: 24px; }
 
 .btn-back {
@@ -92,10 +91,15 @@ h1 .corn { font-size: 1.5rem; }
     transition: all 0.25s ease;
     position: relative;
     overflow: hidden;
+    outline: none;
 }
 .mascota-item:hover {
     background: rgba(0, 0, 0, 0.55);
     border-color: var(--cm-azul-border);
+}
+.mascota-item:focus-visible {
+    border-color: var(--cm-azul);
+    box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.25);
 }
 .mascota-item.activa {
     background: var(--cm-azul-bg);
@@ -236,13 +240,12 @@ h1 .corn { font-size: 1.5rem; }
     letter-spacing: 0.3px;
     margin-top: 8px;
 }
-.btn-guardar:hover {
+.btn-guardar:hover:not(:disabled) {
     transform: scale(1.02);
     box-shadow: 0 6px 20px rgba(0, 212, 255, 0.4);
 }
-.btn-guardar:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-guardar:disabled { opacity: 0.55; cursor: not-allowed; }
 
-/* 🆕 v2.4: botón "Ver mi plan IA" */
 .btn-ver-plan {
     display: inline-flex;
     align-items: center;
@@ -273,7 +276,7 @@ h1 .corn { font-size: 1.5rem; }
     top: 20px;
     left: 50%;
     transform: translateX(-50%) translateY(-80px);
-    background: var(--cm-azul-bg);
+    background: rgba(10, 20, 28, 0.96);
     border: 1px solid var(--cm-azul);
     color: var(--cm-azul);
     padding: 12px 22px;
@@ -299,7 +302,7 @@ h1 .corn { font-size: 1.5rem; }
         <h2><span class="simbolo">◈</span> MASCOTAS DISPONIBLES</h2>
 
         <!-- MARQUINHOS -->
-        <div class="mascota-item" data-mascota="marquinhos">
+        <div class="mascota-item" data-mascota="marquinhos" role="button" tabindex="0" aria-pressed="false">
             <div class="mascota-icon" data-mascota="marquinhos">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <defs>
@@ -351,7 +354,7 @@ h1 .corn { font-size: 1.5rem; }
         </div>
 
         <!-- CAPITÁN MAÍZ -->
-        <div class="mascota-item" data-mascota="capitan-maiz">
+        <div class="mascota-item" data-mascota="capitan-maiz" role="button" tabindex="0" aria-pressed="false">
             <div class="mascota-icon" data-mascota="capitan-maiz">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <defs>
@@ -405,7 +408,7 @@ h1 .corn { font-size: 1.5rem; }
         </div>
 
         <!-- REY ITLASUHUA -->
-        <div class="mascota-item" data-mascota="itlasuhua">
+        <div class="mascota-item" data-mascota="itlasuhua" role="button" tabindex="0" aria-pressed="false">
             <div class="mascota-icon" data-mascota="itlasuhua">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <defs>
@@ -460,7 +463,7 @@ h1 .corn { font-size: 1.5rem; }
         </div>
 
         <!-- SIN MASCOTA -->
-        <div class="mascota-item" data-mascota="ninguna">
+        <div class="mascota-item" data-mascota="ninguna" role="button" tabindex="0" aria-pressed="false">
             <div class="mascota-icon" data-mascota="ninguna">
                 <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                     <circle cx="50" cy="50" r="22" fill="none" stroke="#8aa8b8" stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/>
@@ -483,14 +486,13 @@ h1 .corn { font-size: 1.5rem; }
         ◈ Guardar selección
     </button>
 
-    <!-- 🆕 v2.4: enlace al panel de plan IA -->
     <a href="/features/perfil/configuracion/mascotas/plan.html" class="btn-ver-plan">
         ◈ Ver mi plan IA →
     </a>
 
 </div>
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 'use strict';
@@ -501,9 +503,11 @@ h1 .corn { font-size: 1.5rem; }
     const VALIDAS = ['marquinhos', 'capitan-maiz', 'itlasuhua', 'ninguna'];
 
     let mascotaSeleccionada = DEFAULT_MASCOTA;
+    let guardando = false;
 
     function toast(msg) {
         const el = document.getElementById('toast');
+        if (!el) return;
         el.textContent = msg;
         el.className = 'toast visible';
         clearTimeout(el._timer);
@@ -519,21 +523,35 @@ h1 .corn { font-size: 1.5rem; }
         }
     }
 
+    function escribirLocal(valor) {
+        try {
+            localStorage.setItem(KEY, valor);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
     function pintar() {
         document.querySelectorAll('.mascota-item').forEach(item => {
             const m = item.dataset.mascota;
             const activa = m === mascotaSeleccionada;
             item.classList.toggle('activa', activa);
+            item.setAttribute('aria-pressed', activa ? 'true' : 'false');
             const tag = item.querySelector('[data-tag]');
             if (tag) tag.hidden = !activa;
         });
     }
 
+    function seleccionarMascota(valor) {
+        if (!VALIDAS.includes(valor)) return;
+        mascotaSeleccionada = valor;
+        pintar();
+    }
+
     async function init() {
-        // Espera a que apariencia-global lea Supabase, así la selección
-        // mostrada es la guardada en la cuenta y no la de otro dispositivo.
         try {
-            if (window.SarielApariencia && window.SarielApariencia.recargar) {
+            if (window.SarielApariencia && typeof window.SarielApariencia.recargar === 'function') {
                 await window.SarielApariencia.recargar();
             }
         } catch (e) {
@@ -544,51 +562,73 @@ h1 .corn { font-size: 1.5rem; }
         pintar();
 
         document.querySelectorAll('.mascota-item').forEach(item => {
-            item.addEventListener('click', () => {
-                mascotaSeleccionada = item.dataset.mascota;
-                pintar();
+            item.addEventListener('click', () => seleccionarMascota(item.dataset.mascota));
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    seleccionarMascota(item.dataset.mascota);
+                }
             });
         });
 
-        document.getElementById('btnGuardar').addEventListener('click', async () => {
-            const btn = document.getElementById('btnGuardar');
+        const btn = document.getElementById('btnGuardar');
+        if (!btn) return;
+
+        btn.addEventListener('click', async () => {
+            if (guardando) return;
+            guardando = true;
             btn.disabled = true;
             btn.textContent = 'Guardando...';
 
-            let resultado = { local: false, remoto: null };
+            let guardadoLocal = false;
+            let guardadoRemoto = null;
 
             try {
-                if (window.SarielApariencia && window.SarielApariencia.setMascota) {
-                    resultado = await window.SarielApariencia.setMascota(mascotaSeleccionada);
-                } else {
-                    localStorage.setItem(KEY, mascotaSeleccionada);
-                    resultado.local = true;
+                if (window.SarielApariencia && typeof window.SarielApariencia.setMascota === 'function') {
+                    const res = await window.SarielApariencia.setMascota(mascotaSeleccionada);
+                    if (res && typeof res === 'object') {
+                        guardadoLocal = Boolean(res.local);
+                        guardadoRemoto = res.remoto ?? null;
+                    } else if (res === true) {
+                        guardadoLocal = true;
+                    }
+                }
+
+                if (!guardadoLocal) {
+                    guardadoLocal = escribirLocal(mascotaSeleccionada);
                 }
             } catch (e) {
                 console.warn('[Mascota Activa] Error al guardar:', e);
+                guardadoLocal = escribirLocal(mascotaSeleccionada);
             }
 
-            if (!resultado.local) {
+            if (!guardadoLocal) {
                 toast('⚠️ No se pudo guardar');
+                guardando = false;
                 btn.disabled = false;
                 btn.textContent = '◈ Guardar selección';
                 return;
             }
 
-            if (resultado.remoto === false) {
+            if (guardadoRemoto === false) {
                 toast('⚠️ Guardado solo en este dispositivo');
             } else {
                 toast('✅ Mascota actualizada');
             }
 
-            setTimeout(() => window.location.reload(), 1000);
+            setTimeout(() => {
+                guardando = false;
+                btn.disabled = false;
+                btn.textContent = '◈ Guardar selección';
+                window.location.reload();
+            }, 900);
         });
 
         console.log('[Mascota Activa] ✅ Cargada. Seleccionada:', mascotaSeleccionada);
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', init, { once: true });
     } else {
         init();
     }
