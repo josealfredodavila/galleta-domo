@@ -6,10 +6,8 @@
     <title data-clave="videos_titulo_pagina">◈ Videos · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-    
-    <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <link rel="stylesheet" href="/features/videos/css/videos-publicar.css">
     <link rel="stylesheet" href="/features/videos/css/videos-composer-pro.css">
 
@@ -71,9 +69,6 @@
         .main-nav .nav-link.active { color: var(--gold); border-bottom: 2px solid var(--gold); }
         .main-nav .nav-link.live { color: var(--danger); }
 
-        /* ================================================================
-           COMPOSER (mismo lenguaje visual que el perfil)
-           ================================================================ */
         .pf-composer {
             position: relative;
             border-radius: 24px;
@@ -182,6 +177,20 @@
         .video-card .play-btn svg { width: 26px; height: 26px; }
         .video-card.playing .play-btn { display: none; }
 
+        /* ---------- Controles que se ocultan solos ---------- */
+        .video-card .overlay-info,
+        .video-card .sidebar-acciones,
+        .video-card .barra-inferior,
+        .video-card .reac-barra {
+            transition: opacity .35s ease, transform .35s ease;
+        }
+        .video-card.controles-ocultos .overlay-info,
+        .video-card.controles-ocultos .sidebar-acciones,
+        .video-card.controles-ocultos .barra-inferior {
+            opacity: 0; pointer-events: none;
+        }
+        .video-card.controles-ocultos .reac-barra { display: none !important; }
+
         .video-card .overlay-info { position: absolute; left: 14px; bottom: 90px; right: 90px; z-index: 4; pointer-events: none; text-shadow: 0 2px 8px rgba(0,0,0,0.9); }
         .video-card .autor-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; pointer-events: auto; }
         .video-card .autor-avatar { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 1px solid rgba(255,255,255,0.25); background: var(--green-deep); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; flex-shrink: 0; }
@@ -193,7 +202,7 @@
         }
         .video-card .titulo { font-size: 0.8rem; color: rgba(255,255,255,0.92); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 4px; }
         .video-card .descripcion-corta { font-size: 0.7rem; color: rgba(255,255,255,0.72); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        
+
         .video-card .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; pointer-events: auto; }
         .video-card .chip { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 12px; font-size: 0.62rem; font-weight: 600; font-family: 'Orbitron', monospace; white-space: nowrap; border: none; outline: none; }
         .video-card .chip-sonido { background: rgba(212,175,55,0.18); border: 1px solid rgba(212,175,55,0.45); color: #D4AF37; }
@@ -223,7 +232,6 @@
         .reac-op:active { transform: scale(0.88); }
         .reac-op.activa { background: rgba(255,255,255,0.12); }
 
-        /* Animación de emojis */
         .reac-op, .reac-emoji {
             transform-origin: 50% 60%;
             animation-duration: var(--dur, 2.4s);
@@ -244,9 +252,6 @@
         .btn-audio-global.activo { background: rgba(212,175,55,0.15); }
         .btn-audio-global .ico svg { width: 20px; height: 20px; stroke: #D4AF37; fill: none; stroke-width: 2; }
 
-        /* ================================================================
-           HOJAS (BOTTOM SHEETS)
-           ================================================================ */
         .hoja-fondo { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9000; opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s ease; }
         .hoja-fondo.show { opacity: 1; visibility: visible; }
         .hoja {
@@ -271,31 +276,19 @@
         .hoja-op.peligro svg { color: var(--danger); }
         .hoja-op:active { background: rgba(255,255,255,0.03); }
 
-        /* ================================================================
-           MAPA TURÍSTICO (LEAFLET DARK)
-           ================================================================ */
         #hojaMapa { max-height: 82vh; }
         .mapa-container { position: relative; width: 100%; height: 55vh; min-height: 300px; flex-shrink: 0; }
         #mapaLeaflet { width: 100%; height: 100%; background: #05080f; }
-        
-        /* Fix para que Leaflet no se vea gris */
         .leaflet-container { background: #05080f !important; font-family: 'Inter', sans-serif; }
-        
-        /* Pin Flotante de Lujo */
         .pin-lujo { position: relative; width: 40px; height: 40px; border-radius: 50% 50% 50% 0; background: linear-gradient(135deg, #00e5ff, #3b82f6); transform: rotate(-45deg); box-shadow: 0 10px 20px rgba(0, 229, 255, 0.4), inset 0 0 10px rgba(255,255,255,0.5); border: 2px solid #fff; animation: pinFloat 2s ease-in-out infinite alternate; display: flex; align-items: center; justify-content: center; }
         .pin-lujo::after { content: '◆'; transform: rotate(45deg); color: #fff; font-size: 1.1rem; font-weight: bold; text-shadow: 0 0 5px rgba(0,0,0,0.5); }
         @keyframes pinFloat { from { transform: rotate(-45deg) translateY(0); } to { transform: rotate(-45deg) translateY(-8px); } }
-
-        /* Popups de Lujo */
         .leaflet-popup-content-wrapper { background: rgba(11, 20, 16, 0.85) !important; backdrop-filter: blur(12px) !important; -webkit-backdrop-filter: blur(12px) !important; border: 1px solid rgba(0, 229, 255, 0.4) !important; border-radius: 16px !important; color: var(--text-primary) !important; box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0,229,255,0.2) !important; padding: 0 !important; }
         .leaflet-popup-content { margin: 16px !important; font-family: 'Inter', sans-serif !important; }
         .leaflet-popup-tip { background: rgba(11, 20, 16, 0.85) !important; border-left: 1px solid rgba(0, 229, 255, 0.4) !important; border-bottom: 1px solid rgba(0, 229, 255, 0.4) !important; backdrop-filter: blur(12px) !important; }
         .leaflet-popup-close-button { color: #00e5ff !important; top: 8px !important; right: 8px !important; font-size: 20px !important; padding: 4px !important; }
-
         .popup-titulo { font-family: 'Orbitron', monospace; font-size: 1rem; color: #00e5ff; margin-bottom: 6px; font-weight: 700; letter-spacing: 0.5px; }
         .popup-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; }
-
-        /* Controles de Leaflet */
         .leaflet-control-zoom { border: none !important; box-shadow: 0 5px 15px rgba(0,0,0,0.5) !important; }
         .leaflet-control-zoom a { background: rgba(11, 20, 16, 0.9) !important; color: #00e5ff !important; border: 1px solid rgba(0,229,255,0.3) !important; backdrop-filter: blur(5px); }
         .leaflet-control-zoom a:hover { background: rgba(0, 229, 255, 0.2) !important; color: #fff !important; }
@@ -343,24 +336,13 @@
             .video-card { min-height: 68vh; max-height: 68vh; }
             .acc-btn { width: 40px; height: 40px; }
             .video-card .overlay-info { right: 76px; bottom: 80px; }
-        }
-    </style>
-</head>
-<body>
-    <div class="nebula nebula-1"></div>
-    <div class="nebula nebula-2"></div>
-    <div class="nebula nebula-3"></div>
-
-    <div class="app">
-        <header class="header">
-            <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Csariel<span>'s</span></span>
                 <span class="logo-badge">✦ WEB3</span>
             </a>
             <div class="header-actions">
                 <span class="network-badge"><span class="dot"></span> Polygon</span>
-                <span class="token-badge" id="tokenBadge" onclick="verTokens()">◈ <span id="tokenBadgeCantidad">0</span> Es.stoks</span>
+                <span class="token-badge" id="tokenBadge">◈ <span id="tokenBadgeCantidad">0</span> Es.stoks</span>
                 <a href="/features/perfil/perfil.html" class="header-avatar" id="headerAvatar" title="Mi perfil">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 </a>
@@ -488,7 +470,6 @@
         <div class="hoja-lista" id="menuLista"></div>
     </div>
 
-    <!-- NUEVA HOJA: MAPA TURÍSTICO -->
     <div class="hoja" id="hojaMapa" role="dialog" aria-modal="true" aria-label="Mapa de ubicación">
         <div class="hoja-tirador"></div>
         <div class="hoja-cab">
@@ -502,14 +483,13 @@
         </div>
     </div>
 
-    <button class="btn-audio-global" id="btnAudioGlobal" onclick="activarAudioGlobal()" title="Activar sonido">
+    <button class="btn-audio-global" id="btnAudioGlobal" type="button" title="Activar sonido">
         <span class="ico"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg></span>
         <span class="txt">Activar sonido</span>
     </button>
 
     <div class="toast" id="toast"></div>
 
-    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/features/videos/js/videos-camara.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -531,16 +511,12 @@
         } catch (e) { console.error('[Videos] Error creando cliente:', e); }
     })();
 
-    // Lista de reacciones única para todo el ecosistema (reacciones-global.js)
     var RG = window.ReaccionesGlobal;
     var REACCIONES = RG ? RG.EMOJIS.slice() : ['❤️', '😂', '🥺', '💎'];
     var REACCION_DEFAULT = RG ? RG.POR_DEFECTO : '❤️';
     var NAV_PERFIL = '/features/perfil/perfil.html';
     var MOTIVOS_REPORTE = ['Spam', 'Contenido inapropiado', 'Violencia', 'Acoso', 'Otro'];
-
-    var COLA_DB = 'csVideosCola';
-    var COLA_STORE = 'items';
-    var MAX_INTENTOS = 8;
+    var OCULTAR_CONTROLES_MS = 3000;
 
     var sessionUser = null;
     var videosPublicados = [];
@@ -551,7 +527,6 @@
     var videoPausadoManualmente = null;
     var videoIdComentariosActual = null;
     var vistasContadas = {};
-    var longPressTimers = {};
     var ultimoTapCard = {};
     var audioGlobalActivado = false;
     var colaCache = [];
@@ -560,6 +535,7 @@
     var jobsSeguidos = {};
     var progresoJob = null;
     var mapaLeaflet = null;
+    var timersOcultar = new WeakMap();
 
     var ICONO = {
         corazon: svgIcono('<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'),
@@ -570,9 +546,7 @@
         descargar: svgIcono('<path d="M12 3v12M7 10l5 5 5-5M5 21h14"/>'),
         reportar: svgIcono('<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>'),
         eliminar: svgIcono('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>'),
-        compartirMenu: svgIcono('<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8 15.8 6.2M8.2 13.2 15.8 17.8"/>'),
-        cerrar: svgIcono('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
-        enviar: svgIcono('<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>')
+        compartirMenu: svgIcono('<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="M8.2 10.8 15.8 6.2M8.2 13.2 15.8 17.8"/>')
     };
 
     function svgIcono(contenido) {
@@ -588,8 +562,6 @@
             if (v === videoQueSuena) return;
             if (!v.paused) v.pause();
             var card = v.closest('.video-card');
-            if (card) card.classList.remove('playing');
-        });
     }
 
     document.addEventListener('play', function (e) {
@@ -670,6 +642,25 @@
     }
 
     // ============================================================
+        if (!card) return;
+        card.classList.remove('controles-ocultos');
+        clearTimeout(timersOcultar.get(card));
+        var video = card.querySelector('video');
+        if (video && !video.paused) {
+            timersOcultar.set(card, setTimeout(function () {
+                card.classList.add('controles-ocultos');
+                cerrarBarrasReacciones();
+            }, OCULTAR_CONTROLES_MS));
+        }
+    }
+
+    function ocultarControlesYa(card) {
+        if (!card) return;
+        clearTimeout(timersOcultar.get(card));
+        card.classList.add('controles-ocultos');
+    }
+
+    // ============================================================
     // AUDIO DEL FEED
     // ============================================================
     (function detectarPrimerGesto() {
@@ -695,18 +686,6 @@
     function activarAudioGlobal() {
         audioGlobalActivado = true;
         document.querySelectorAll('.video-card video').forEach(function (v) {
-            v.muted = false; v.volume = 1; v.removeAttribute('muted');
-            var card = v.closest('.video-card');
-            if (card && card.classList.contains('visible')) v.play().catch(function () {});
-        });
-        var btn = document.getElementById('btnAudioGlobal');
-        if (btn) { btn.classList.remove('visible'); btn.classList.add('activo'); }
-    }
-    function reproducirVideoConSonido(video) {
-        if (!video) return;
-        pausarOtrosVideos(video);
-        if (!video.getAttribute('src') && video.dataset.src) { video.src = video.dataset.src; video.load(); }
-        video.muted = false; video.volume = 1; video.removeAttribute('muted');
         var promesa = video.play();
         if (promesa && typeof promesa.then === 'function') {
             promesa.catch(function (err) {
@@ -754,7 +733,6 @@
         var container = document.getElementById('videosContainer');
         try {
             if (!sbVideos) throw new Error('Cliente no disponible');
-            // AÑADIDO: latitud, longitud a la consulta
             var result = await sbVideos
                 .from('videos')
                 .select('id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, sonido_id, sonido_nombre, ubicacion_nombre, latitud, longitud, usuarios:usuario_id (id, nombre, handle, avatar_url)')
@@ -818,13 +796,11 @@
         var total = contarReacciones(v.id, v.likes);
         var videoUrl = escapeHTML(safeAttr(v.url_video));
         var poster = (v.url_miniatura && typeof v.url_miniatura === 'string' && v.url_miniatura.indexOf('https://') === 0) ? escapeHTML(v.url_miniatura) : '';
-        var autorNombre = escapeHTML(autor.nombre || 'Usuario');
         var autorHandle = escapeHTML(autor.handle || 'usuario');
         var avatar = autor.avatar_url ? '<img src="' + safeAttr(autor.avatar_url) + '" alt="">' : escapeHTML((autor.nombre || '◈').charAt(0).toUpperCase());
         var titulo = escapeHTML(v.titulo || '');
         var desc = escapeHTML((v.descripcion || '').substring(0, 140));
-        
-        // CHIP DE UBICACIÓN INTERACTIVO
+
         var chipSonido = v.sonido_nombre ? '<span class="chip chip-sonido">♪ ' + escapeHTML(v.sonido_nombre) + '</span>' : '';
         var chipUbic = '';
         if (v.ubicacion_nombre) {
@@ -862,7 +838,6 @@
 
         html += '<div class="acc-grupo"><button type="button" class="acc-btn com-btn" data-video-id="' + id + '" aria-label="Comentarios">' + ICONO.comentario + '</button>';
         html += '<span class="acc-n" id="comentCount-' + id + '">' + formatContador(v.comentarios || 0) + '</span></div>';
-        html += '<div class="acc-grupo"><button type="button" class="acc-btn" data-accion="compartir" aria-label="Compartir">' + ICONO.compartir + '</button></div>';
         html += '<div class="acc-grupo"><button type="button" class="acc-btn" data-accion="menu" aria-label="Más opciones">' + ICONO.mas + '</button></div>';
         html += '</div>';
 
@@ -891,21 +866,6 @@
             var tTotal = card.querySelector('.tiempo-total');
             if (tTotal) tTotal.textContent = formatearTiempo(videoEl.duration);
         });
-        return card;
-    }
-
-    // ============================================================
-    // REACCIONES
-    // ============================================================
-    function refrescarReaccionUI(videoId) {
-        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
-        if (!card) return;
-        var miTipo = sessionUser ? likeCache.get(videoId + '_' + sessionUser.id) : null;
-        var btn = card.querySelector('.reac-btn');
-        if (btn) {
-            btn.innerHTML = miTipo ? '<span class="reac-emoji emoji-actual">' + escapeHTML(miTipo) + '</span>' : ICONO.corazon;
-            var nuevo = btn.querySelector('.reac-emoji');
-            if (nuevo) animarEmoji(nuevo, miTipo);
         }
         var conteo = document.getElementById('likeCount-' + videoId);
         if (conteo) conteo.textContent = formatContador(contarReacciones(videoId, 0));
@@ -964,7 +924,7 @@
     }
 
     // ============================================================
-    // COMENTARIOS
+    // HOJAS Y COMENTARIOS
     // ============================================================
     function abrirHoja(id) {
         var hoja = document.getElementById(id);
@@ -1065,7 +1025,6 @@
             var c = await sbVideos.from('videos_comentarios').select('usuario_id').eq('id', comentarioId).maybeSingle();
             if (!c.data) return;
             var v = await sbVideos.from('videos').select('usuario_id').eq('id', videoId).maybeSingle();
-            var soyAutor = c.data.usuario_id === sessionUser.id;
             var soyDueno = !!(v.data && v.data.usuario_id === sessionUser.id);
             if (!soyAutor && !soyDueno) { showToast('No tienes permiso', 'error'); return; }
             var del = await sbVideos.from('videos_comentarios').delete().eq('id', comentarioId);
@@ -1079,7 +1038,7 @@
     }
 
     // ============================================================
-    // MENÚ, DESCARGA, REPORTE Y COMPARTIR
+    // MENÚ ÚNICO DE TRES PUNTOS (Descargar, Compartir, Reportar, Eliminar)
     // ============================================================
     function opcionMenu(lista, icono, texto, accion, peligro) {
         var b = document.createElement('button');
@@ -1093,6 +1052,10 @@
     function abrirMenuVideo(videoId) {
         var v = videosPublicados.find(function (x) { return x.id === videoId; });
         if (!v) return;
+        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
+        var video = card ? card.querySelector('video') : null;
+        if (video && !video.paused) video.pause();
+
         var titulo = document.getElementById('menuTitulo');
         if (titulo) titulo.textContent = 'Opciones';
         var lista = document.getElementById('menuLista');
@@ -1187,9 +1150,6 @@
     // ============================================================
     // REPRODUCCIÓN, AUTOPLAY Y DOBLE TAP
     // ============================================================
-    function togglePlayCard(event, videoId) {
-        if (event) event.stopPropagation();
-        var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
         if (!card) return;
         var video = card.querySelector('video');
         if (!video) return;
@@ -1252,6 +1212,7 @@
                     }
                 } else {
                     card.classList.remove('visible');
+                    ocultarControlesYa(card);
                     if (!card.classList.contains('pantalla-completa')) { video.pause(); card.classList.remove('playing'); }
                 }
             });
@@ -1261,43 +1222,24 @@
     }
 
     // ============================================================
-    // FUNCIÓN PARA ABRIR EL MAPA TURÍSTICO
+    // MAPA TURÍSTICO
     // ============================================================
     function abrirMapa(lat, lng, nombre) {
         if (!lat || !lng) return;
         abrirHoja('hojaMapa');
-        
-        // Pequeño delay para que la hoja termine su animación CSS y el contenedor tenga tamaño real
         setTimeout(function() {
             if (!mapaLeaflet) {
-                mapaLeaflet = L.map('mapaLeaflet', {
-                    zoomControl: false,
-                    attributionControl: false
-                }).setView([lat, lng], 15);
-
-                // Capa oscura CARTO
-                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                    maxZoom: 19,
-                    subdomains: 'abcd'
-                }).addTo(mapaLeaflet);
-
-                // Controles de zoom personalizados
+                mapaLeaflet = L.map('mapaLeaflet', { zoomControl: false, attributionControl: false }).setView([lat, lng], 15);
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19, subdomains: 'abcd' }).addTo(mapaLeaflet);
                 L.control.zoom({ position: 'bottomright' }).addTo(mapaLeaflet);
-
-                // Atribuciones
                 L.control.attribution({ position: 'bottomleft', prefix: false }).addTo(mapaLeaflet)
                     .addAttribution('&copy; <a href="https://carto.com/">CARTO</a>');
-
             } else {
                 mapaLeaflet.setView([lat, lng], 15);
             }
-
-            // Limpiar marcadores previos
             mapaLeaflet.eachLayer(function (layer) {
                 if (layer instanceof L.Marker) mapaLeaflet.removeLayer(layer);
             });
-
-            // Icono personalizado de lujo
             var pinLujo = L.divIcon({
                 className: 'pin-lujo-wrapper',
                 html: '<div class="pin-lujo"></div>',
@@ -1305,23 +1247,12 @@
                 iconAnchor: [20, 40],
                 popupAnchor: [0, -40]
             });
-
-            // Marcador
             var marcador = L.marker([lat, lng], { icon: pinLujo }).addTo(mapaLeaflet);
-
-            // Popup de Lujo
             var popupHtml = '<div class="popup-titulo">' + escapeHTML(nombre) + '</div>' +
                             '<div class="popup-desc">Coordenadas: ' + lat.toFixed(4) + ', ' + lng.toFixed(4) + '</div>';
-            marcador.bindPopup(popupHtml, {
-                className: 'popup-lujo',
-                maxWidth: 260,
-                closeButton: true
-            }).openPopup();
-
-            // Fix crucial para renderizado en contenedores animados
+            marcador.bindPopup(popupHtml, { className: 'popup-lujo', maxWidth: 260, closeButton: true }).openPopup();
             mapaLeaflet.invalidateSize();
-            
-        }, 350); // 350ms coincide con la transición de la hoja
+        }, 350);
     }
 
     // ============================================================
@@ -1444,7 +1375,6 @@
                     sonido_nombre: it.sonidoNombre || null,
                     sonido_url: it.sonidoUrl || null,
                     ubicacion_nombre: it.ubicacionNombre || null,
-                    // AÑADIDO: latitud y longitud si vienen del publicador
                     latitud: it.latitud || null,
                     longitud: it.longitud || null
                 }).select().single();
@@ -1680,38 +1610,6 @@
     }
 
     // ============================================================
-    // EVENTOS DEL FEED Y DE LA PÁGINA
-    // ============================================================
-    function engancharFeed() {
-        var contenedor = document.getElementById('videosContainer');
-        if (!contenedor) return;
-
-        var pulsacion = null;
-        var pulsacionDisparada = null;
-
-        contenedor.addEventListener('pointerdown', function (e) {
-            var btn = e.target.closest('.reac-btn');
-            if (!btn) return;
-            var id = btn.dataset.videoId;
-            pulsacionDisparada = null;
-            clearTimeout(pulsacion);
-            pulsacion = setTimeout(function () {
-                pulsacionDisparada = id;
-                vibrar(18);
-                cerrarBarrasReacciones();
-                var barra = document.getElementById('reac-' + id);
-                if (barra) barra.classList.add('show');
-            }, 450);
-        });
-        ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
-            contenedor.addEventListener(ev, function () { clearTimeout(pulsacion); });
-        });
-
-        contenedor.addEventListener('click', function (e) {
-            var t = e.target;
-
-            var op = t.closest('.reac-op');
-            if (op) {
                 e.stopPropagation();
                 var card = op.closest('.video-card');
                 elegirReaccion(card.dataset.videoId, op.dataset.e);
@@ -1721,7 +1619,6 @@
             var rb = t.closest('.reac-btn');
             if (rb) {
                 e.stopPropagation();
-                if (pulsacionDisparada === rb.dataset.videoId) { pulsacionDisparada = null; return; }
                 alternarBarraReacciones(rb.dataset.videoId);
                 return;
             }
@@ -1729,7 +1626,6 @@
             var cb = t.closest('.com-btn');
             if (cb) { e.stopPropagation(); abrirComentarios(cb.dataset.videoId); return; }
 
-            // MANEJO DE CLIC EN CHIP DE UBICACIÓN
             var btnMapa = t.closest('.btn-abrir-mapa');
             if (btnMapa) {
                 e.stopPropagation();
@@ -1741,9 +1637,7 @@
             if (acc) {
                 e.stopPropagation();
                 var cardAcc = acc.closest('.video-card');
-                var vid = cardAcc.dataset.videoId;
-                if (acc.dataset.accion === 'menu') abrirMenuVideo(vid);
-                if (acc.dataset.accion === 'compartir') compartirVideo(vid);
+                if (acc.dataset.accion === 'menu') abrirMenuVideo(cardAcc.dataset.videoId);
                 return;
             }
 
@@ -1751,7 +1645,11 @@
             if (pb) { e.stopPropagation(); togglePlayCard(e, pb.closest('.video-card').dataset.videoId); return; }
 
             var cardTap = t.closest('.video-card');
-            if (cardTap) manejarDobleTap(cardTap, e);
+            if (cardTap) {
+                manejarDobleTap(cardTap, e);
+                // Un toque sobre el video alterna reproducción y reactiva controles
+                if (e.target.tagName === 'VIDEO') mostrarControles(cardTap);
+            }
         });
     }
 
@@ -1771,6 +1669,10 @@
         });
         document.addEventListener('click', function (e) {
             if (!e.target.closest('.reac-barra, .reac-btn')) cerrarBarrasReacciones();
+        });
+        document.getElementById('btnAudioGlobal').addEventListener('click', activarAudioGlobal);
+        document.getElementById('tokenBadge').addEventListener('click', function () {
+            window.location.href = NAV_PERFIL;
         });
     }
 
@@ -1896,7 +1798,6 @@
     window.compartirVideo = compartirVideo;
     window.togglePlayCard = togglePlayCard;
     window.eliminarMiVideo = eliminarMiVideo;
-    window.verTokens = function () { window.location.href = NAV_PERFIL; };
     window.showToast = showToast;
     window.activarAudioGlobal = activarAudioGlobal;
     </script>
