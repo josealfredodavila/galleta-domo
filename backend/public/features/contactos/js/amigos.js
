@@ -1,0 +1,683 @@
+/* ============================================================
+   CSARIEL'S · CONTACTOS · amigos.js · v1.0
+   ============================================================
+   Módulo: gestión de la lista de amigos confirmados.
+   - Renderiza la lista de contactos activos (amigos).
+   - Filtros: todos / online / favoritos / recientes.
+   - Scroll infinito (paginación por PAGE_SIZE).
+   - Acciones por contacto: mensaje, llamar, favorito,
+     eliminar, bloquear (delega en window.SocialAcciones si
+     está disponible; si no, fallback directo a Supabase).
+   - Actualiza contadores globales (Total y En línea).
+
+   API pública (window.ContactosAmigos):
+     - init(ctx)
+     - refrescar(opts)                  → { reset: bool }
+     - cargarPagina(desde, hasta)       → { lista, total }
+     - render(lista, error)
+     - aplicarFiltro(nombre)
+     - setBusqueda(texto)
+     - actualizarEstadisticas()
+     - toggleFavorito(filaId, nuevoValor)
+     - eliminar(contactoId)
+     - bloquear(contactoId)
+     - abrirMensaje(contactoId)
+     - llamar(contactoId)
+     - abrirPerfil(contactoId)
+
+   ctx esperado (proporcionado por contactos.js / contactos-ui.js):
+     {
+       getClient(): SupabaseClient,
+       getSession(): Promise<Session|null>,
+       getPerfiles(): Map<id, perfil>,
+       getPerfil(id): datosPerfil(id),
+       cargarPerfiles(ids): Promise<{errores: []}>,
+       escapeHtml(v): string,
+       obtenerInicial(nombre): string,
+       mostrarCargando(): void,
+       mostrarEstadoVacio(icono, mensaje): void,
+       showToast(msg, tipo): void,
+       showConfirm(opts): Promise<boolean>,
+       refrescarTodo(opts): Promise<void>,
+       withRetry(fn, contexto): Promise<any>,
+       detalleError(err): string,
+       SVG: { mensaje, llamar, favorito, favoritoOutline, bloquear, eliminar }
+     }
+   ============================================================ */
+
+(function () {
+    'use strict';
+
+    if (window.ContactosAmigos) return;
+
+    var CONFIG = {
+        TABLA: 'contactos',
+        RPC_ELIMINAR: 'eliminar_amistad',
+        RPC_BLOQUEAR: 'bloquear_contacto',
+        PAGE_SIZE: 30,
+        RECIENTES_LIMITE: 10,
+        MENSAJES_URL: '/features/mensajes/mensajes.html',
+        PERFIL_PUBLICO_URL: '/features/perfil/perfil-publico.html'
+    };
+
+    var ctx = null;
+    var estado = {
+        contactos: [],
+        totalContactos: 0,
+        paginaActual: 0,
+        hayMas: true,
+        filtroActual: 'todos',
+        textoBusqueda: '',
+        idsContactosSet: new Set(),
+        observerScroll: null,
+        operacionesEnCurso: new Set()
+    };
+
+    /* ============================================================
+       UTILIDADES INTERNAS
+       ============================================================ */
+
+    function _sb() {
+        if (ctx && typeof ctx.getClient === 'function') return ctx.getClient();
+        return window.supabaseClient || null;
+    }
+
+    function _session() {
+        if (ctx && typeof ctx.getSession === 'function') return ctx.getSession();
+        return Promise.resolve(null);
+    }
+
+    function _toast(msg, tipo) {
+        if (ctx && typeof ctx.showToast === 'function') return ctx.showToast(msg, tipo);
+        if (typeof window.showToast === 'function') return window.showToast(msg, tipo);
+        console.log('[Amigos]', msg);
+    }
+
+    function _confirm(opts) {
+        if (ctx && typeof ctx.showConfirm === 'function') return ctx.showConfirm(opts);
+        return Promise.resolve(window.confirm((opts.title || '') + '\n\n' + (opts.message || '')));
+    }
+
+    function _err(err) {
+        if (ctx && typeof ctx.detalleError === 'function') return ctx.detalleError(err);
+        if (!err) return 'error desconocido';
+        return (err.code ? err.code + ': ' : '') + (err.message || String(err));
+    }
+
+    function _escape(v) {
+        if (ctx && typeof ctx.escapeHtml === 'function') return ctx.escapeHtml(v);
+        return String(v == null ? '' : v)
+            .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    }
+
+    function _inicial(nombre) {
+        if (ctx && typeof ctx.obtenerInicial === 'function') return ctx.obtenerInicial(nombre);
+        var t = String(nombre || 'U').trim();
+        return t ? t.charAt(0).toUpperCase() : 'U';
+    }
+
+    function _datosPerfil(id) {
+        if (ctx && typeof ctx.getPerfil === 'function') return ctx.getPerfil(id);
+        return { nombre: 'Usuario', handle: '', avatar: '', estado: 'ok', verificado: false, online: false };
+    }
+
+    function _getPerfiles() {
+        if (ctx && typeof ctx.getPerfiles === 'function') return ctx.getPerfiles();
+        return new Map();
+    }
+
+    function _cargarPerfiles(ids) {
+        if (ctx && typeof ctx.cargarPerfiles === 'function') return ctx.cargarPerfiles(ids);
+        return Promise.resolve({ errores: [] });
+    }
+
+    function _withRetry(fn, contexto) {
+        if (ctx && typeof ctx.withRetry === 'function') return ctx.withRetry(fn, contexto);
+        return fn();
+    }
+
+    function _refrescar(opts) {
+        if (ctx && typeof ctx.refrescarTodo === 'function') return ctx.refrescarTodo(opts || { reset: true });
+        return Promise.resolve();
+    }
+
+    function _mostrarCargando() {
+        if (ctx && typeof ctx.mostrarCargando === 'function') return ctx.mostrarCargando();
+        var lista = document.getElementById('contactosList');
+        if (!lista) return;
+        lista.setAttribute('aria-busy', 'true');
+        lista.innerHTML = Array(4).fill('').map(function () {
+            return '<div class="contacto-card skeleton"><div class="contacto-avatar skeleton-avatar"></div><div class="contacto-info skeleton-info"><div class="skeleton-line skeleton-line-name"></div><div class="skeleton-line skeleton-line-meta"></div></div></div>';
+        }).join('');
+    }
+
+    function _mostrarEstadoVacio(icono, mensaje) {
+        if (ctx && typeof ctx.mostrarEstadoVacio === 'function') return ctx.mostrarEstadoVacio(icono, mensaje);
+        var lista = document.getElementById('contactosList');
+        if (!lista) return;
+        lista.setAttribute('aria-busy', 'false');
+        lista.innerHTML = '<div class="empty-state"><div class="icon" aria-hidden="true">' + _escape(icono) + '</div><h3>' + _escape(mensaje) + '</h3></div>';
+    }
+
+    function _svg(nombre) {
+        if (ctx && ctx.SVG && ctx.SVG[nombre]) return ctx.SVG[nombre];
+        return '';
+    }
+
+    function _clave(op, id) { return op + ':' + String(id); }
+    function _bloqueado(clave) { return estado.operacionesEnCurso.has(clave); }
+    function _marcar(clave) { estado.operacionesEnCurso.add(clave); }
+    function _liberar(clave) { estado.operacionesEnCurso.delete(clave); }
+
+    /* ============================================================
+       CONSULTA: cargar página de contactos activos
+       ============================================================ */
+
+    async function cargarPagina(desde, hasta) {
+        var client = _sb();
+        var session = await _session();
+        if (!client || !session) return { lista: [], total: 0, error: null };
+
+        var miId = session.user.id;
+        var desdeNum = Math.max(0, Number(desde) || 0);
+        var hastaNum = Math.max(desdeNum, Number(hasta) || (desdeNum + CONFIG.PAGE_SIZE - 1));
+
+        try {
+            var consultas = await Promise.all([
+                desdeNum === 0
+                    ? _withRetry(function () {
+                        return client.from(CONFIG.TABLA)
+                            .select('id', { count: 'exact', head: true })
+                            .eq('usuario_id', miId)
+                            .eq('estado', 'activo');
+                    }, 'contar amigos').catch(function () { return { count: null }; })
+                    : Promise.resolve(null),
+                _withRetry(function () {
+                    return client.from(CONFIG.TABLA)
+                        .select('id, usuario_id, contacto_id, es_favorito, estado, fecha, created_at')
+                        .eq('usuario_id', miId)
+                        .eq('estado', 'activo')
+                        .order('fecha', { ascending: false, nullsFirst: false })
+                        .range(desdeNum, hastaNum);
+                }, 'amigos')
+            ]);
+
+            var rConteo = consultas[0];
+            var rAmigos = consultas[1];
+
+            if (rAmigos.error) throw rAmigos.error;
+
+            var total = (rConteo && !rConteo.error && rConteo.count != null)
+                ? rConteo.count
+                : estado.totalContactos;
+
+            if (desdeNum === 0) estado.totalContactos = total;
+
+            var lista = (rAmigos.data || []).map(function (c) {
+                return {
+                    id: c.id,
+                    contacto_id: c.contacto_id,
+                    es_favorito: c.es_favorito === true,
+                    fecha: c.fecha || c.created_at || null
+                };
+            });
+
+            // Cargar perfiles faltantes en un solo lote
+            var ids = lista.map(function (c) { return c.contacto_id; }).filter(Boolean);
+            await _cargarPerfiles(ids);
+
+            return { lista: lista, total: total, error: null };
+        } catch (err) {
+            console.error('[Amigos] Cargar página:', _err(err));
+            return { lista: [], total: 0, error: _err(err) };
+        }
+    }
+
+    /* ============================================================
+       REFRESCO PRINCIPAL
+       ============================================================ */
+
+    async function refrescar(opciones) {
+        opciones = opciones || {};
+        var reset = opciones.reset !== false;
+
+        if (reset) {
+            estado.paginaActual = 0;
+            estado.contactos = [];
+            estado.hayMas = true;
+            _mostrarCargando();
+        }
+
+        var desde = estado.paginaActual * CONFIG.PAGE_SIZE;
+        var hasta = desde + CONFIG.PAGE_SIZE - 1;
+
+        var res = await cargarPagina(desde, hasta);
+
+        if (res.error) {
+            render([], res.error);
+            return res;
+        }
+
+        if (reset) {
+            estado.contactos = res.lista;
+        } else {
+            var nuevos = res.lista.filter(function (n) {
+                return !estado.contactos.some(function (e) { return String(e.id) === String(n.id); });
+            });
+            estado.contactos = estado.contactos.concat(nuevos);
+        }
+
+        estado.idsContactosSet = new Set(
+            estado.contactos.map(function (c) { return c.contacto_id; }).filter(Boolean)
+        );
+        estado.paginaActual = reset ? 1 : estado.paginaActual + 1;
+        estado.hayMas = res.lista.length === CONFIG.PAGE_SIZE;
+
+        render(estado.contactos, null);
+        actualizarEstadisticas();
+        return res;
+    }
+
+    /* ============================================================
+       RENDER
+       ============================================================ */
+
+    function render(lista, errorConsulta) {
+        var contenedor = document.getElementById('contactosList');
+        if (!contenedor) return;
+
+        if (errorConsulta) {
+            contenedor.setAttribute('aria-busy', 'false');
+            contenedor.innerHTML = '<div class="empty-state">' +
+                '<div class="icon" aria-hidden="true">⚠️</div>' +
+                '<h3>Error cargando contactos: ' + _escape(errorConsulta) + '</h3>' +
+                '<button type="button" class="btn-accion" data-reintentar-contactos="1">Reintentar</button>' +
+                '</div>';
+            return;
+        }
+
+        var items = (Array.isArray(lista) ? lista : []).map(function (c) {
+            var d = _datosPerfil(c.contacto_id);
+            return {
+                id: c.id,
+                contacto_id: c.contacto_id,
+                es_favorito: c.es_favorito === true,
+                fecha: c.fecha || null,
+                nombre: d.nombre,
+                handle: d.handle,
+                avatar: d.avatar,
+                online: d.online === true,
+                verificado: d.verificado === true
+            };
+        });
+
+        items = aplicarFiltrosYBusqueda(items);
+
+        if (!items.length) {
+            var msg = estado.textoBusqueda
+                ? 'No se encontraron contactos.'
+                : estado.filtroActual === 'online'
+                    ? 'No hay contactos conectados ahora.'
+                    : estado.filtroActual === 'favoritos'
+                        ? 'Todavía no tienes favoritos.'
+                        : 'Tu red está vacía. Busca personas para conectar.';
+            _mostrarEstadoVacio('🪐', msg);
+            return;
+        }
+
+        contenedor.setAttribute('aria-busy', 'false');
+        contenedor.innerHTML = items.map(_tarjetaContacto).join('') +
+            (estado.hayMas && !estado.textoBusqueda
+                ? '<div id="cargandoMasSentinel" class="contactos-sentinel"></div>'
+                : '');
+
+        _configurarScrollInfinito();
+    }
+
+    function aplicarFiltrosYBusqueda(items) {
+        if (estado.filtroActual === 'online') {
+            items = items.filter(function (c) { return c.online; });
+        }
+        if (estado.filtroActual === 'favoritos') {
+            items = items.filter(function (c) { return c.es_favorito; });
+        }
+        if (estado.filtroActual === 'recientes') {
+            items = items
+                .filter(function (c) { return Boolean(c.fecha); })
+                .sort(function (a, b) {
+                    return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+                })
+                .slice(0, CONFIG.RECIENTES_LIMITE);
+        }
+        if (estado.textoBusqueda) {
+            var q = estado.textoBusqueda;
+            items = items.filter(function (c) {
+                return c.nombre.toLowerCase().indexOf(q) !== -1 ||
+                    c.handle.toLowerCase().indexOf(q) !== -1;
+            });
+        }
+        return items;
+    }
+
+    function _tarjetaContacto(c) {
+        var enLinea = c.online;
+        var estadoTexto = enLinea ? 'En línea ahora' : 'Desconectado';
+        var favClase = c.es_favorito ? 'active' : '';
+        var favIcono = c.es_favorito ? _svg('favorito') : _svg('favoritoOutline');
+        var verificado = c.verificado ? '<span class="verified" title="Perfil verificado">✓</span>' : '';
+        var avatar = c.avatar
+            ? '<img class="contacto-avatar-img" src="' + _escape(c.avatar) + '" alt="' + _escape(c.nombre) + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.classList.add(\'avatar-image-error\')"><span class="avatar-fallback avatar-fallback-hidden">' + _escape(_inicial(c.nombre)) + '</span>'
+            : '<span class="avatar-fallback">' + _escape(_inicial(c.nombre)) + '</span>';
+
+        return '<article class="contacto-card" data-contacto-id="' + _escape(c.contacto_id) + '" data-fila-id="' + _escape(c.id) + '" tabindex="0" role="button" aria-label="Abrir conversación con ' + _escape(c.nombre) + '">' +
+            '<div class="contacto-avatar ' + (enLinea ? 'online' : 'offline') + '" role="button" tabindex="0" aria-label="Ver perfil de ' + _escape(c.nombre) + '">' +
+                avatar +
+                '<span class="online-dot ' + (enLinea ? 'visible' : 'hidden') + '"></span>' +
+                (c.es_favorito ? '<span class="favorito-badge" aria-hidden="true">★</span>' : '') +
+            '</div>' +
+            '<div class="contacto-info">' +
+                '<div class="nombre">' + _escape(c.nombre) + ' ' + verificado + '</div>' +
+                '<div class="estado ' + (enLinea ? 'online' : 'offline') + '"><span class="estado-indicador"></span> ' + _escape(estadoTexto) + '</div>' +
+                (c.handle ? '<div class="contacto-meta">' + _escape(c.handle) + '</div>' : '') +
+            '</div>' +
+            '<div class="contacto-actions">' +
+                '<button type="button" class="mensaje" data-accion="mensaje" aria-label="Enviar mensaje">' + _svg('mensaje') + '<span>Mensaje</span></button>' +
+                '<button type="button" class="llamar" data-accion="llamar" aria-label="Llamar">' + _svg('llamar') + '</button>' +
+                '<button type="button" class="favorito ' + favClase + '" data-accion="favorito" aria-label="Cambiar favorito">' + favIcono + '</button>' +
+                '<button type="button" class="bloquear" data-accion="bloquear" aria-label="Bloquear">' + _svg('bloquear') + '</button>' +
+                '<button type="button" class="eliminar" data-accion="eliminar" aria-label="Eliminar">' + _svg('eliminar') + '</button>' +
+            '</div>' +
+        '</article>';
+    }
+
+    /* ============================================================
+       ESTADÍSTICAS
+       ============================================================ */
+
+    function actualizarEstadisticas() {
+        var total = Math.max(estado.totalContactos, estado.contactos.length);
+        var perfiles = _getPerfiles();
+        var online = estado.contactos.filter(function (c) {
+            var p = perfiles.get(c.contacto_id);
+            return p && p.online === true;
+        }).length;
+
+        var tEl = document.getElementById('totalContactos');
+        if (tEl) tEl.textContent = String(total || 0);
+        var oEl = document.getElementById('onlineContactos');
+        if (oEl) oEl.textContent = String(online || 0);
+
+        return { total: total, online: online };
+    }
+
+    /* ============================================================
+       FILTROS Y BÚSQUEDA
+       ============================================================ */
+
+    function aplicarFiltro(nombre) {
+        var valor = String(nombre || 'todos').toLowerCase();
+        if (['todos', 'online', 'favoritos', 'recientes'].indexOf(valor) === -1) {
+            valor = 'todos';
+        }
+        estado.filtroActual = valor;
+
+        document.querySelectorAll('.filtros .filtro').forEach(function (boton) {
+            var activo = (boton.dataset.filtro || 'todos') === valor;
+            boton.classList.toggle('active', activo);
+            boton.setAttribute('aria-pressed', activo ? 'true' : 'false');
+        });
+
+        render(estado.contactos, null);
+        return valor;
+    }
+
+    function setBusqueda(texto) {
+        estado.textoBusqueda = String(texto || '').trim().toLowerCase();
+        render(estado.contactos, null);
+        return estado.textoBusqueda;
+    }
+
+    /* ============================================================
+       SCROLL INFINITO
+       ============================================================ */
+
+    function _configurarScrollInfinito() {
+        if (estado.observerScroll) {
+            estado.observerScroll.disconnect();
+            estado.observerScroll = null;
+        }
+        var sentinel = document.getElementById('cargandoMasSentinel');
+        if (!sentinel || !('IntersectionObserver' in window)) return;
+
+        estado.observerScroll = new IntersectionObserver(function (entries) {
+            if (entries[0] && entries[0].isIntersecting && estado.hayMas && !estado.textoBusqueda) {
+                refrescar({ reset: false });
+            }
+        }, { rootMargin: '300px', threshold: 0 });
+        estado.observerScroll.observe(sentinel);
+    }
+
+    function destruirScrollInfinito() {
+        if (estado.observerScroll) {
+            estado.observerScroll.disconnect();
+            estado.observerScroll = null;
+        }
+    }
+
+    /* ============================================================
+       ACCIONES POR CONTACTO
+       ============================================================ */
+
+    async function toggleFavorito(filaId, nuevoValor) {
+        var client = _sb();
+        var session = await _session();
+        if (!client || !session) return { ok: false };
+
+        var item = estado.contactos.find(function (c) {
+            return String(c.id) === String(filaId);
+        });
+        if (!item) return { ok: false };
+
+        var anterior = item.es_favorito;
+        var clave = _clave('favorito', filaId);
+        if (_bloqueado(clave)) return { ok: false };
+        _marcar(clave);
+
+        item.es_favorito = nuevoValor === true;
+        render(estado.contactos, null);
+
+        try {
+            if (window.SocialAcciones && typeof window.SocialAcciones.toggleFavorito === 'function') {
+                var resSocial = await window.SocialAcciones.toggleFavorito(filaId, item.es_favorito);
+                if (!resSocial || !resSocial.ok) throw new Error('No se pudo guardar favorito');
+            } else {
+                var r = await _withRetry(function () {
+                    return client.from(CONFIG.TABLA)
+                        .update({ es_favorito: item.es_favorito })
+                        .eq('id', filaId)
+                        .eq('usuario_id', session.user.id);
+                }, 'favorito');
+                if (r.error) throw r.error;
+                _toast(item.es_favorito ? 'Favorito guardado.' : 'Favorito quitado.', 'success');
+            }
+            return { ok: true };
+        } catch (err) {
+            console.error('[Amigos] Favorito:', _err(err));
+            item.es_favorito = anterior;
+            render(estado.contactos, null);
+            _toast('Error al guardar favorito: ' + _err(err), 'error');
+            return { ok: false };
+        } finally {
+            _liberar(clave);
+        }
+    }
+
+    async function eliminar(contactoId) {
+        var client = _sb();
+        var session = await _session();
+        if (!client || !session) {
+            _toast('Inicia sesión.', 'error');
+            return { ok: false };
+        }
+        if (!contactoId) return { ok: false };
+
+        var confirmado = await _confirm({
+            title: 'Eliminar contacto',
+            message: '¿Eliminar a este contacto de tu red?',
+            icon: '🗑️',
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+        if (!confirmado) return { ok: false };
+
+        var clave = _clave('eliminar', contactoId);
+        if (_bloqueado(clave)) return { ok: false };
+        _marcar(clave);
+
+        try {
+            if (window.SocialAcciones && typeof window.SocialAcciones.eliminarAmistad === 'function') {
+                var resSocial = await window.SocialAcciones.eliminarAmistad(contactoId);
+                if (!resSocial || !resSocial.ok) throw new Error('No se pudo eliminar el contacto');
+            } else {
+                var r = await _withRetry(function () {
+                    return client.rpc(CONFIG.RPC_ELIMINAR, { p_contacto_id: contactoId });
+                }, 'eliminar amistad');
+                if (r.error) throw r.error;
+                _toast('Contacto eliminado.', 'success');
+            }
+
+            await _refrescar({ reset: true });
+            return { ok: true };
+        } catch (err) {
+            console.error('[Amigos] Eliminar:', _err(err));
+            _toast('Error al eliminar: ' + _err(err), 'error');
+            return { ok: false };
+        } finally {
+            _liberar(clave);
+        }
+    }
+
+    async function bloquear(contactoId) {
+        var client = _sb();
+        var session = await _session();
+        if (!client || !session) {
+            _toast('Inicia sesión.', 'error');
+            return { ok: false };
+        }
+        if (!contactoId) return { ok: false };
+        if (contactoId === session.user.id) {
+            _toast('No puedes bloquearte.', 'warning');
+            return { ok: false };
+        }
+
+        var confirmado = await _confirm({
+            title: 'Bloquear usuario',
+            message: '¿Bloquear a este usuario? No podrá llamarte ni escribirte.',
+            icon: '⛔',
+            confirmText: 'Bloquear',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+        if (!confirmado) return { ok: false };
+
+        var clave = _clave('bloquear', contactoId);
+        if (_bloqueado(clave)) return { ok: false };
+        _marcar(clave);
+
+        try {
+            if (window.SocialAcciones && typeof window.SocialAcciones.bloquear === 'function') {
+                var resSocial = await window.SocialAcciones.bloquear(contactoId);
+                if (!resSocial || !resSocial.ok) throw new Error('No se pudo bloquear el contacto');
+            } else {
+                var r = await _withRetry(function () {
+                    return client.rpc(CONFIG.RPC_BLOQUEAR, { p_contacto_id: contactoId });
+                }, 'bloquear');
+                if (r.error) throw r.error;
+                _toast('Usuario bloqueado.', 'success');
+            }
+
+            await _refrescar({ reset: true });
+            return { ok: true };
+        } catch (err) {
+            console.error('[Amigos] Bloquear:', _err(err));
+            _toast('Error al bloquear: ' + _err(err), 'error');
+            return { ok: false };
+        } finally {
+            _liberar(clave);
+        }
+    }
+
+    function abrirMensaje(contactoId) {
+        if (!contactoId) return;
+        window.location.href = CONFIG.MENSAJES_URL + '?usuario=' + encodeURIComponent(contactoId);
+    }
+
+    function llamar(contactoId) {
+        if (!contactoId) return;
+        window.location.href = CONFIG.MENSAJES_URL + '?usuario=' + encodeURIComponent(contactoId) + '&accion=llamada';
+    }
+
+    function abrirPerfil(contactoId) {
+        var perfiles = _getPerfiles();
+        var p = perfiles.get(contactoId);
+        if (!p || !p.handle) {
+            _toast('Perfil no disponible.', 'warning');
+            return;
+        }
+        window.location.href = CONFIG.PERFIL_PUBLICO_URL + '?u=' + encodeURIComponent(p.handle);
+    }
+
+    /* ============================================================
+       INICIALIZACIÓN
+       ============================================================ */
+
+    function init(contexto) {
+        ctx = contexto || null;
+        return { ok: true, api: window.ContactosAmigos };
+    }
+
+    /* ============================================================
+       API PÚBLICA
+       ============================================================ */
+
+    window.ContactosAmigos = {
+        CONFIG: CONFIG,
+
+        init: init,
+
+        // Datos
+        refrescar: refrescar,
+        cargarPagina: cargarPagina,
+        render: render,
+        actualizarEstadisticas: actualizarEstadisticas,
+
+        // Filtros y búsqueda
+        aplicarFiltro: aplicarFiltro,
+        setBusqueda: setBusqueda,
+
+        // Acciones
+        toggleFavorito: toggleFavorito,
+        eliminar: eliminar,
+        bloquear: bloquear,
+        abrirMensaje: abrirMensaje,
+        llamar: llamar,
+        abrirPerfil: abrirPerfil,
+
+        // Scroll
+        destruirScrollInfinito: destruirScrollInfinito,
+
+        // Estado interno (solo lectura recomendada)
+        getEstado: function () {
+            return {
+                total: estado.totalContactos,
+                paginaActual: estado.paginaActual,
+                hayMas: estado.hayMas,
+                filtroActual: estado.filtroActual,
+                textoBusqueda: estado.textoBusqueda,
+                contactos: estado.contactos.slice()
+            };
+        }
+    };
+})();
