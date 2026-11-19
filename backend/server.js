@@ -26,6 +26,10 @@
 //       de peticiones, porque el video se consulta cada pocos segundos.
 // v4.6: Promi montado en /api/promi (después de /api/ai/media y antes
 //       de /api/ai, para que /api/promi/chat no caiga en el 404 de /api).
+// v4.7: Turismo montado en /api/turismo (buscador turístico, versión
+//       5.5 de routes/lugares-api). El módulo no lanza al cargarse:
+//       si falta TURISMO_CURSOR_SECRET o GOOGLE_MAPS_API_KEY, la ruta
+//       responde con error claro y el servidor sigue arrancando.
 // ================================================================
 
 require('dotenv').config();
@@ -1028,6 +1032,11 @@ montarNoticias();
 
 // Geo
 montarRouter('/api/geo', './routes/geo', 'routes/geo');
+
+// Turismo · Buscador turístico (routes/lugares-api.js, versión 5.5)
+// Sin throw al cargar: si falta TURISMO_CURSOR_SECRET se usa un secreto
+// temporal; si falta GOOGLE_MAPS_API_KEY, /buscar responde 503 con detalle.
+montarRouter('/api/turismo', './routes/lugares-api', 'routes/lugares-api');
 
 // Media (moderación de imagen/video + subida centralizada + liberación)
 montarRouter('/api/media', './routes/media', 'routes/media');
