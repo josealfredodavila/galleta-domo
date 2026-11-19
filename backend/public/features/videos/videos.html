@@ -57,7 +57,7 @@
         .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
         .logo-text span { color: var(--gold); }
         .logo-badge { font-size: 0.45rem; background: linear-gradient(135deg, var(--gold), var(--gold-light)); color: var(--space); padding: 2px 10px; border-radius: 20px; font-weight: 700; }
-        .header-actions { display: flex; align-items: center; gap: 10px; }
+        .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
         .network-badge { display: flex; align-items: center; gap: 6px; font-size: 0.6rem; color: var(--gold); padding: 4px 12px; border-radius: 20px; border: 1px solid rgba(212,175,55,0.2); }
         .token-badge { display: flex; align-items: center; gap: 6px; border: 1px solid rgba(212,175,55,0.25); padding: 4px 14px; border-radius: 20px; font-size: 0.7rem; color: var(--gold); font-family: 'Orbitron', monospace; cursor: pointer; }
         .header-avatar { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; border: 1.5px solid var(--cyan); background: var(--green-deep); display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; color: #fff; text-decoration: none; flex-shrink: 0; }
@@ -149,6 +149,18 @@
         .pf-composer #btnSubirVideo:hover { background-position: 100% 0; box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4); }
         .pf-composer #btnSubirVideo:active { transform: scale(.96); }
         .pf-composer #btnSubirVideo:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+        .cola-estado {
+            margin-top: 12px; padding: 10px 14px; border-radius: 12px;
+            background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.3);
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            font-size: 0.76rem; color: #bfefff;
+        }
+        .cola-estado[hidden] { display: none !important; }
+        .cola-estado button {
+            background: rgba(255, 51, 102, 0.15); border: 1px solid rgba(255, 51, 102, 0.5);
+            color: #ff3366; padding: 4px 10px; border-radius: 8px; font-size: 0.7rem; cursor: pointer;
+        }
 
         .marketing-ad-container, .processing-state { display: none; }
 
@@ -340,7 +352,6 @@
     </style>
 </head>
 
-
 <body>
     <div class="nebula nebula-1"></div>
     <div class="nebula nebula-2"></div>
@@ -433,6 +444,8 @@
                     <div id="uploadProgress" style="display:none;"></div>
                     <div id="progressFill" style="display:none;"></div>
                     <div id="progressText" style="display:none;"></div>
+                    <div id="processingProgressFill" style="display:none;"></div>
+                    <div id="processingProgressText" style="display:none;"></div>
                 </form>
             </div>
         </div>
@@ -521,6 +534,7 @@
                 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu',
                 { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } }
             );
+            window.sbVideos = sbVideos;
         } catch (e) { console.error('[Videos] Error creando cliente:', e); }
     })();
 
@@ -848,7 +862,7 @@
         }
 
         var html = '';
-        html += '<div class="thumbnail"><video preload="metadata" playsinline webkit-playsinline data-src="' + videoUrl + '" poster="' + poster + '"></video>';
+        html += '<div class="thumbnail"><video preload="metadata" playsinline webkit-playsinline data-src="' + videoUrl + '" poster="' + poster + '" data-cs-autoplay-ignorar="true"></video>';
         html += '<div class="play-btn" role="button" aria-label="Reproducir">' + ICONO.play + '</div></div>';
 
         html += '<div class="overlay-info">';
@@ -1426,7 +1440,7 @@
                     estado: 'procesando',
                     duracion: 0,
                     es_borrador: false,
-                    sonido_id: null,
+                    sonido_id: it.sonidoId || null,
                     sonido_nombre: it.sonidoNombre || null,
                     sonido_url: it.sonidoUrl || null,
                     ubicacion_nombre: it.ubicacionNombre || null,
@@ -1535,6 +1549,7 @@
         if (!session) { showToast('Inicia sesión para publicar', 'error'); return; }
 
         var pub = (window.VideosPublicar && window.VideosPublicar.getState) ? window.VideosPublicar.getState() : {};
+        var ubic = pub.ubicacion || null;
         var titulo = (document.getElementById('inputTituloVideo').value || '').trim();
         var descripcion = (document.getElementById('inputDescripcionVideo').value || '').trim();
 
@@ -1546,11 +1561,12 @@
             nombre: file.name || ('video-' + Date.now() + '.mp4'),
             titulo: titulo,
             descripcion: descripcion,
+            sonidoId: (pub.sonido && pub.sonido.id) ? pub.sonido.id : null,
             sonidoUrl: pub.sonidoUrl || null,
             sonidoNombre: pub.sonidoNombre || null,
             ubicacionNombre: pub.ubicacionNombre || null,
-            latitud: pub.latitud || null,
-            longitud: pub.longitud || null,
+            latitud: ubic ? Number(ubic.lat) : null,
+            longitud: ubic ? Number(ubic.lng) : null,
             etapa: 'pendiente',
             intentos: 0,
             siguienteIntento: 0,
@@ -1568,7 +1584,7 @@
             return;
         }
 
-        if (window.csResetFormularioPublicacion) window.csResetFormularioPublicacion();
+        window.dispatchEvent(new CustomEvent('csariels:videos:publicado'));
         showToast('Tu video se está publicando', 'success', 2500);
         await cargarColaEnMemoria();
         actualizarEstadoCola();
