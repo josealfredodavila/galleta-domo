@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.7 · PARTE 1 DE 2
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.7
    ================================================================
    Cambios respecto a v3.6:
    - Eliminado el menú de 3 puntos duplicado del feed. Ahora el único
@@ -911,7 +911,8 @@
             return null;
         }
     }
-       async function guardarBorrador() {
+
+    async function guardarBorrador() {
         if (state.guardandoBorrador) return;
         const session = await obtenerSesion();
         if (!session) { csToast('Inicia sesión para guardar borradores', 'error'); return; }
