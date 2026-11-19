@@ -1,48 +1,56 @@
-
 // ================================================================
 // CSARIEL'S · PERFIL · PASAPORTE DIGITAL
-// PREMIUM EXPERIENCE v2.0
+// PREMIUM EXPERIENCE v3.0 · MAXI PRO
 // ================================================================
-// Diseño premium:
-//   - Credencial digital con estética institucional Web3.
-//   - Verde bosque, oro metálico y detalles luminosos.
-//   - Jerarquía visual mejorada y tipografía premium.
-//   - Sello de miembro fundador destacado.
-//   - Indicador visual de autenticidad y estado activo.
-//   - Información de emisión y wallet.
-//   - Acceso directo a la transacción en PolygonScan.
-//   - Animaciones sutiles y efectos de profundidad.
-//   - Diseño adaptable a móviles y escritorio.
 //
-// SEGURIDAD Y FUNCIONAMIENTO:
-//   - El frontend NUNCA activa ni emite credenciales.
+//   - Credencial digital premium, radiante e institucional Web3.
+//   - Verde bosque profundo, oro metálico, brillo luminoso y profundidad.
+//   - Estados: cargando, activo, sin credencial y error.
+//   - Sello de Miembro Fundador.
+//   - Indicador de autenticidad y red Polygon.
+//   - Enlace directo y seguro a PolygonScan.
+//   - Animaciones elegantes, accesibles y adaptables.
 //   - Consulta credenciales_digitales.
-//   - Escucha nuevas credenciales mediante Supabase Realtime.
-//   - Usa window.supabaseClient.
-//   - Usa window.sessionUser como alternativa de sesión.
+//   - Escucha INSERT y UPDATE mediante Supabase Realtime.
+//   - Usa window.supabaseClient y window.sessionUser.
 //   - No depende de muro-utils.js.
+//
+// SEGURIDAD:
+//   - El frontend NUNCA activa, emite ni modifica credenciales.
+//   - La emisión debe permanecer exclusivamente en backend / Edge Function.
+//   - La sesión se obtiene con Supabase Auth; para decisiones sensibles,
+//     el backend siempre debe validar el token y aplicar RLS.
 // ================================================================
 
 (function () {
     'use strict';
 
+    // ============================================================
+    // CONFIGURACIÓN
+    // ============================================================
+
     var PASAPORTE_TIPO = 'pasaporte_domo';
+    var TABLA_CREDENCIALES = 'credenciales_digitales';
+
+    var REINTENTOS_MAX = 80;
+    var INTERVALO_REINTENTO = 250;
+
     var canalPasaporte = null;
     var iniciado = false;
-    var REINTENTOS_MAX = 60;
-    var INTERVALO_REINTENTO = 250;
     var estiloInstalado = false;
+
     var usuarioActual = null;
     var clienteActual = null;
+    var credencialActual = null;
 
     // ============================================================
-    // HELPERS
+    // HELPERS SEGUROS
     // ============================================================
 
-    function escapeHTML(texto) {
-        if (texto === null || texto === undefined) return '';
+    function escapeHTML(valor) {
+        if (valor === null || valor === undefined) return '';
 
-        return String(texto)
+        return String(valor)
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;')
@@ -82,25 +90,43 @@
         });
     }
 
+    function construirUrlPolygon(txHash) {
+        var hash = String(txHash || '').trim();
+
+        if (!/^0x[a-fA-F0-9]{64}$/.test(hash)) {
+            return '';
+        }
+
+        return 'https://polygonscan.com/tx/' + encodeURIComponent(hash);
+    }
+
+    function acortarHash(txHash) {
+        var hash = String(txHash || '').trim();
+
+        if (hash.length <= 18) return hash;
+
+        return hash.slice(0, 10) + '…' + hash.slice(-8);
+    }
+
     // ============================================================
     // DISEÑO PREMIUM
     // ============================================================
 
     function instalarEstilos() {
-        if (estiloInstalado || document.getElementById('csarielPasaportePremiumCSS')) {
+        if (estiloInstalado || document.getElementById('csarielPasaporteMaxiProCSS')) {
             estiloInstalado = true;
             return;
         }
 
         var css = `
         /* ========================================================
-           CSARIEL'S · DIGITAL PASSPORT · PREMIUM DESIGN
+           CSARIEL'S · DIGITAL PASSPORT · MAXI PRO
         ======================================================== */
 
         #pasaporteDomo {
             width: 100%;
             box-sizing: border-box;
-            margin: 22px 0;
+            margin: 26px 0;
             font-family: inherit;
         }
 
@@ -110,71 +136,84 @@
             box-sizing: border-box;
         }
 
+        #pasaporteDomo .pasaporte-shell {
+            position: relative;
+            width: 100%;
+            border-radius: 26px;
+        }
+
         #pasaporteDomo .pasaporte-card {
-            --passport-green: #0B2419;
-            --passport-green-light: #153C2B;
+            --passport-green: #071B13;
+            --passport-green-soft: #102E21;
             --passport-gold: #D4AF37;
             --passport-gold-light: #F7E6A1;
+            --passport-emerald: #65E695;
 
             position: relative;
             width: 100%;
-            min-height: 255px;
-            padding: 25px;
+            min-height: 300px;
+            padding: 30px;
             overflow: hidden;
             isolation: isolate;
             color: #F8F7F0;
-            border: 1px solid rgba(212, 175, 55, .48);
-            border-radius: 21px;
+            border: 1px solid rgba(212, 175, 55, .50);
+            border-radius: 26px;
             background:
                 radial-gradient(
-                    ellipse at 90% 5%,
-                    rgba(212, 175, 55, .17),
-                    transparent 43%
+                    ellipse 75% 55% at 92% 3%,
+                    rgba(212, 175, 55, .20),
+                    transparent 48%
                 ),
                 radial-gradient(
-                    ellipse at 5% 100%,
-                    rgba(35, 116, 77, .28),
-                    transparent 48%
+                    ellipse 85% 60% at 4% 104%,
+                    rgba(35, 116, 77, .30),
+                    transparent 52%
+                ),
+                radial-gradient(
+                    ellipse 60% 45% at 55% 0%,
+                    rgba(255, 255, 255, .05),
+                    transparent 60%
                 ),
                 linear-gradient(
                     135deg,
-                    #102E21 0%,
-                    #071B13 48%,
+                    #123326 0%,
+                    #071B13 46%,
                     #0B251A 100%
                 );
             box-shadow:
-                0 16px 45px rgba(0, 0, 0, .25),
-                inset 0 1px 0 rgba(255, 255, 255, .09),
-                inset 0 -1px 0 rgba(212, 175, 55, .12);
+                0 22px 60px rgba(0, 0, 0, .30),
+                0 0 0 1px rgba(255, 255, 255, .03) inset,
+                0 1px 0 rgba(255, 255, 255, .10) inset,
+                0 -1px 0 rgba(212, 175, 55, .13) inset;
             transition:
-                transform .3s ease,
-                box-shadow .3s ease,
-                border-color .3s ease;
+                transform .35s cubic-bezier(.2, .8, .2, 1),
+                box-shadow .35s ease,
+                border-color .35s ease;
         }
 
         #pasaporteDomo .pasaporte-card:hover {
-            transform: translateY(-3px);
-            border-color: rgba(247, 230, 161, .8);
+            transform: translateY(-4px);
+            border-color: rgba(247, 230, 161, .85);
             box-shadow:
-                0 22px 55px rgba(0, 0, 0, .34),
-                0 0 25px rgba(212, 175, 55, .10),
-                inset 0 1px 0 rgba(255, 255, 255, .12);
+                0 28px 70px rgba(0, 0, 0, .38),
+                0 0 34px rgba(212, 175, 55, .13),
+                0 1px 0 rgba(255, 255, 255, .14) inset;
         }
 
         #pasaporteDomo .pasaporte-card::before {
             content: "";
             position: absolute;
             z-index: -1;
-            top: -105px;
-            right: -90px;
-            width: 270px;
-            height: 270px;
-            border: 1px solid rgba(212, 175, 55, .20);
+            top: -120px;
+            right: -95px;
+            width: 310px;
+            height: 310px;
+            border: 1px solid rgba(212, 175, 55, .22);
             border-radius: 50%;
             box-shadow:
-                0 0 0 17px rgba(212, 175, 55, .025),
-                0 0 0 35px rgba(212, 175, 55, .025),
-                0 0 0 53px rgba(212, 175, 55, .018);
+                0 0 0 18px rgba(212, 175, 55, .03),
+                0 0 0 38px rgba(212, 175, 55, .028),
+                0 0 0 58px rgba(212, 175, 55, .02);
             pointer-events: none;
         }
 
@@ -189,25 +228,42 @@
             background: linear-gradient(
                 180deg,
                 transparent,
-                #F7E6A1 22%,
-                #D4AF37 75%,
+                #F7E6A1 20%,
+                #D4AF37 74%,
                 transparent
             );
-            opacity: .9;
+            opacity: .95;
+        }
+
+        #pasaporteDomo .pasaporte-glow {
+            position: absolute;
+            z-index: -1;
+            top: -70px;
+            left: -60px;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: radial-gradient(
+                circle,
+                rgba(101, 230, 149, .13),
+                transparent 66%
+            );
+            filter: blur(18px);
+            pointer-events: none;
         }
 
         #pasaporteDomo .pasaporte-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
-            margin-bottom: 27px;
+            gap: 14px;
+            margin-bottom: 30px;
         }
 
         #pasaporteDomo .pasaporte-brand {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             min-width: 0;
         }
 
@@ -216,67 +272,75 @@
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
-            width: 37px;
-            height: 37px;
+            width: 42px;
+            height: 42px;
             color: #F7E6A1;
-            font-size: 23px;
-            border: 1px solid rgba(212, 175, 55, .55);
-            border-radius: 11px;
-            background: rgba(212, 175, 55, .09);
-            box-shadow: 0 0 18px rgba(212, 175, 55, .10);
+            font-size: 25px;
+            border: 1px solid rgba(212, 175, 55, .60);
+            border-radius: 13px;
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(212, 175, 55, .16),
+                    rgba(212, 175, 55, .04)
+                );
+            box-shadow:
+                0 0 22px rgba(212, 175, 55, .13),
+                inset 0 1px 0 rgba(255, 255, 255, .12);
         }
 
         #pasaporteDomo .pasaporte-brand-name {
             color: #FFFFFF;
-            font-size: 12px;
-            font-weight: 850;
-            letter-spacing: 2.4px;
-            line-height: 1.4;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 2.6px;
+            line-height: 1.35;
         }
 
         #pasaporteDomo .pasaporte-brand-caption {
             display: block;
             margin-top: 3px;
-            color: rgba(255, 255, 255, .48);
+            color: rgba(255, 255, 255, .50);
             font-size: 8px;
-            font-weight: 700;
-            letter-spacing: 1.8px;
+            font-weight: 800;
+            letter-spacing: 2px;
         }
 
         #pasaporteDomo .pasaporte-status {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
+            gap: 8px;
             flex-shrink: 0;
-            padding: 7px 11px;
+            padding: 8px 13px;
             color: #A8F0BD;
             font-size: 9px;
-            font-weight: 800;
-            letter-spacing: 1px;
+            font-weight: 900;
+            letter-spacing: 1.1px;
             text-transform: uppercase;
-            border: 1px solid rgba(105, 220, 139, .27);
+            border: 1px solid rgba(105, 220, 139, .30);
             border-radius: 30px;
-            background: rgba(46, 160, 91, .12);
+            background: rgba(46, 160, 91, .13);
+            box-shadow: 0 0 18px rgba(101, 230, 149, .08);
         }
 
         #pasaporteDomo .pasaporte-status-dot {
-            width: 7px;
-            height: 7px;
+            width: 8px;
+            height: 8px;
             flex-shrink: 0;
             border-radius: 50%;
             background: #65E695;
-            box-shadow: 0 0 9px rgba(101, 230, 149, .8);
-            animation: pasaportePulse 2s infinite;
+            box-shadow: 0 0 11px rgba(101, 230, 149, .85);
+            animation: pasaportePulse 2.2s infinite;
         }
 
         #pasaporteDomo .pasaporte-divider {
             width: 100%;
             height: 1px;
-            margin: 0 0 22px;
+            margin: 0 0 25px;
             background: linear-gradient(
                 90deg,
-                rgba(212, 175, 55, .65),
-                rgba(212, 175, 55, .12),
+                rgba(212, 175, 55, .70),
+                rgba(212, 175, 55, .14),
                 transparent
             );
         }
@@ -284,13 +348,17 @@
         #pasaporteDomo .pasaporte-sello {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
-            margin-bottom: 11px;
+            gap: 8px;
+            margin-bottom: 13px;
+            padding: 7px 12px;
             color: #F7D977;
             font-size: 9px;
-            font-weight: 850;
-            letter-spacing: 2px;
+            font-weight: 900;
+            letter-spacing: 2.1px;
             text-transform: uppercase;
+            border: 1px solid rgba(212, 175, 55, .30);
+            border-radius: 30px;
+            background: rgba(212, 175, 55, .08);
         }
 
         #pasaporteDomo .pasaporte-sello-icon {
@@ -298,38 +366,41 @@
         }
 
         #pasaporteDomo .pasaporte-titulo {
-            max-width: 440px;
+            max-width: 500px;
             color: #FFFFFF;
-            font-size: clamp(21px, 5vw, 29px);
-            font-weight: 850;
-            line-height: 1.2;
-            letter-spacing: -.7px;
+            font-size: clamp(23px, 5.4vw, 33px);
+            font-weight: 900;
+            line-height: 1.15;
+            letter-spacing: -.8px;
             text-wrap: balance;
-            text-shadow: 0 2px 15px rgba(0, 0, 0, .2);
+            text-shadow: 0 3px 18px rgba(0, 0, 0, .25);
         }
 
         #pasaporteDomo .pasaporte-subtitulo {
-            margin-top: 8px;
-            color: rgba(255, 255, 255, .57);
-            font-size: 11px;
+            margin-top: 10px;
+            max-width: 480px;
+            color: rgba(255, 255, 255, .60);
+            font-size: 12px;
             font-weight: 500;
             letter-spacing: .35px;
+            line-height: 1.55;
         }
 
         #pasaporteDomo .pasaporte-correo {
             display: inline-flex;
             align-items: center;
-            gap: 7px;
+            gap: 8px;
             max-width: 100%;
-            margin-top: 19px;
-            padding: 9px 12px;
+            margin-top: 22px;
+            padding: 10px 14px;
             overflow-wrap: anywhere;
             color: #F5E9C3;
             font-size: 11px;
-            font-weight: 600;
-            border: 1px solid rgba(212, 175, 55, .20);
-            border-radius: 9px;
-            background: rgba(0, 0, 0, .15);
+            font-weight: 650;
+            border: 1px solid rgba(212, 175, 55, .22);
+            border-radius: 11px;
+            background: rgba(0, 0, 0, .18);
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05);
         }
 
         #pasaporteDomo .pasaporte-correo-icon {
@@ -337,65 +408,66 @@
             font-size: 13px;
         }
 
-        #pasaporteDomo .pasaporte-footer {
-            display: flex;
-            align-items: flex-end;
-            justify-content: space-between;
-            gap: 14px;
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid rgba(255, 255, 255, .10);
-        }
-
-        #pasaporteDomo .pasaporte-meta-label {
-            display: block;
-            margin-bottom: 5px;
-            color: rgba(255, 255, 255, .43);
-            font-size: 8px;
-            font-weight: 800;
-            letter-spacing: 1.6px;
-            text-transform: uppercase;
-        }
-
-        #pasaporteDomo .pasaporte-meta {
-            color: #F1E8D0;
-            font-size: 11px;
-            font-weight: 600;
-        }
-
         #pasaporteDomo .pasaporte-token {
             display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 17px;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 20px;
             color: #B5F0C7;
-            font-size: 10px;
-            font-weight: 650;
-            line-height: 1.5;
+            font-size: 10.5px;
+            font-weight: 700;
+            line-height: 1.55;
         }
 
         #pasaporteDomo .pasaporte-token-icon {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            width: 20px;
-            height: 20px;
+            width: 22px;
+            height: 22px;
             flex-shrink: 0;
             color: #A8F0BD;
             font-size: 12px;
-            border: 1px solid rgba(105, 220, 139, .35);
+            border: 1px solid rgba(105, 220, 139, .38);
             border-radius: 50%;
-            background: rgba(46, 160, 91, .12);
+            background: rgba(46, 160, 91, .14);
+            box-shadow: 0 0 12px rgba(101, 230, 149, .10);
+        }
+
+        #pasaporteDomo .pasaporte-footer {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            gap: 16px;
+            margin-top: 27px;
+            padding-top: 18px;
+            border-top: 1px solid rgba(255, 255, 255, .10);
+        }
+
+        #pasaporteDomo .pasaporte-meta-label {
+            display: block;
+            margin-bottom: 6px;
+            color: rgba(255, 255, 255, .45);
+            font-size: 8px;
+            font-weight: 900;
+            letter-spacing: 1.7px;
+            text-transform: uppercase;
+        }
+
+        #pasaporteDomo .pasaporte-meta {
+            color: #F1E8D0;
+            font-size: 11.5px;
+            font-weight: 700;
         }
 
         #pasaporteDomo .pasaporte-network {
             display: flex;
             align-items: center;
-            gap: 7px;
-            color: rgba(255, 255, 255, .57);
+            gap: 8px;
+            color: rgba(255, 255, 255, .60);
             font-size: 9px;
-            font-weight: 700;
-            letter-spacing: .8px;
+            font-weight: 800;
+            letter-spacing: .9px;
             white-space: nowrap;
         }
 
@@ -403,36 +475,38 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             color: #C3A0FF;
-            font-size: 12px;
-            border: 1px solid rgba(160, 120, 255, .3);
-            border-radius: 7px;
-            background: rgba(130, 90, 220, .12);
+            font-size: 13px;
+            border: 1px solid rgba(160, 120, 255, .32);
+            border-radius: 8px;
+            background: rgba(130, 90, 220, .13);
         }
 
         #pasaporteDomo .pasaporte-tx {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            min-height: 39px;
-            margin-top: 18px;
-            padding: 0 15px;
+            gap: 9px;
+            min-height: 42px;
+            margin-top: 20px;
+            padding: 0 17px;
             color: #172315 !important;
             font-size: 10px;
-            font-weight: 850;
-            letter-spacing: .5px;
+            font-weight: 900;
+            letter-spacing: .6px;
             text-decoration: none !important;
             border: 1px solid #F0D47C;
-            border-radius: 9px;
+            border-radius: 11px;
             background: linear-gradient(
                 135deg,
-                #F7E6A1,
+                #FFF0B9,
                 #D4AF37
             );
-            box-shadow: 0 5px 16px rgba(212, 175, 55, .14);
+            box-shadow:
+                0 7px 20px rgba(212, 175, 55, .17),
+                inset 0 1px 0 rgba(255, 255, 255, .45);
             transition: all .25s ease;
         }
 
@@ -441,20 +515,82 @@
             transform: translateY(-2px);
             background: linear-gradient(
                 135deg,
-                #FFF0B9,
+                #FFF7D2,
                 #E7C34C
             );
-            box-shadow: 0 8px 22px rgba(212, 175, 55, .25);
+            box-shadow:
+                0 10px 26px rgba(212, 175, 55, .28),
+                inset 0 1px 0 rgba(255, 255, 255, .55);
+        }
+
+        #pasaporteDomo .pasaporte-hash {
+            margin-top: 15px;
+            color: rgba(255, 255, 255, .42);
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 9.5px;
+            letter-spacing: .3px;
+            overflow-wrap: anywhere;
+        }
+
+        #pasaporteDomo .pasaporte-estado {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+            padding: 30px;
+            color: rgba(255, 255, 255, .62);
+            font-size: 12px;
+            font-weight: 600;
+            text-align: center;
+            border: 1px dashed rgba(212, 175, 55, .28);
+            border-radius: 26px;
+            background:
+                radial-gradient(
+                    ellipse at 50% 0%,
+                    rgba(212, 175, 55, .06),
+                    transparent 60%
+                ),
+                linear-gradient(
+                    135deg,
+                    rgba(16, 46, 33, .75),
+                    rgba(7, 27, 19, .85)
+                );
+        }
+
+        #pasaporteDomo .pasaporte-estado-error {
+            color: #FFC7C7;
+            border-color: rgba(255, 120, 120, .30);
+            background:
+                radial-gradient(
+                    ellipse at 50% 0%,
+                    rgba(255, 90, 90, .08),
+                    transparent 60%
+                ),
+                linear-gradient(
+                    135deg,
+                    rgba(30, 16, 16, .78),
+                    rgba(10, 8, 8, .88)
+                );
+        }
+
+        #pasaporteDomo .pasaporte-spinner {
+            width: 25px;
+            height: 25px;
+            margin-bottom: 14px;
+            border: 2px solid rgba(212, 175, 55, .18);
+            border-top-color: #D4AF37;
+            border-radius: 50%;
+            animation: pasaporteSpin .8s linear infinite;
         }
 
         #pasaporteDomo .pasaporte-anim {
-            animation: pasaporteAppear .65s cubic-bezier(.2, .8, .2, 1) both;
+            animation: pasaporteAppear .7s cubic-bezier(.2, .8, .2, 1) both;
         }
 
         @keyframes pasaporteAppear {
             from {
                 opacity: 0;
-                transform: translateY(13px) scale(.985);
+                transform: translateY(15px) scale(.985);
             }
             to {
                 opacity: 1;
@@ -465,43 +601,55 @@
         @keyframes pasaportePulse {
             0%, 100% {
                 opacity: 1;
-                box-shadow: 0 0 9px rgba(101, 230, 149, .8);
+                box-shadow: 0 0 11px rgba(101, 230, 149, .85);
             }
             50% {
                 opacity: .55;
-                box-shadow: 0 0 3px rgba(101, 230, 149, .3);
+                box-shadow: 0 0 4px rgba(101, 230, 149, .30);
             }
         }
 
-        @media (max-width: 480px) {
+        @keyframes pasaporteSpin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 520px) {
             #pasaporteDomo {
-                margin: 17px 0;
+                margin: 19px 0;
             }
 
             #pasaporteDomo .pasaporte-card {
-                padding: 19px;
-                border-radius: 17px;
+                padding: 22px;
+                border-radius: 20px;
                 min-height: 0;
             }
 
+            #pasaporteDomo .pasaporte-estado {
+                padding: 22px;
+                border-radius: 20px;
+                min-height: 230px;
+            }
+
             #pasaporteDomo .pasaporte-header {
-                margin-bottom: 21px;
-                gap: 7px;
+                margin-bottom: 23px;
+                gap: 9px;
             }
 
             #pasaporteDomo .pasaporte-brand {
-                gap: 8px;
+                gap: 9px;
             }
 
             #pasaporteDomo .pasaporte-brand-symbol {
-                width: 32px;
-                height: 32px;
+                width: 34px;
+                height: 34px;
                 font-size: 20px;
             }
 
             #pasaporteDomo .pasaporte-brand-name {
                 font-size: 10px;
-                letter-spacing: 1.8px;
+                letter-spacing: 1.9px;
             }
 
             #pasaporteDomo .pasaporte-brand-caption {
@@ -509,7 +657,7 @@
             }
 
             #pasaporteDomo .pasaporte-status {
-                padding: 6px 8px;
+                padding: 6px 9px;
                 font-size: 8px;
                 letter-spacing: .5px;
             }
@@ -517,7 +665,7 @@
             #pasaporteDomo .pasaporte-footer {
                 align-items: flex-start;
                 flex-direction: column;
-                gap: 12px;
+                gap: 13px;
             }
 
             #pasaporteDomo .pasaporte-network {
@@ -537,7 +685,7 @@
         `;
 
         var style = document.createElement('style');
-        style.id = 'csarielPasaportePremiumCSS';
+        style.id = 'csarielPasaporteMaxiProCSS';
         style.textContent = css;
 
         document.head.appendChild(style);
@@ -545,7 +693,7 @@
     }
 
     // ============================================================
-    // ESPERAR A SUPABASE Y SESIÓN
+    // ESPERAR SUPABASE Y SESIÓN
     // ============================================================
 
     async function esperarListo() {
@@ -566,17 +714,17 @@
                     ) {
                         user = resultado.data.session.user;
 
-                        if (user) {
+                        if (user && user.id) {
                             return {
                                 client: client,
                                 user: user
                             };
                         }
                     }
-                } catch (e) {
+                } catch (error) {
                     console.warn(
                         '[Pasaporte] Esperando sesión:',
-                        e.message || e
+                        error && error.message ? error.message : error
                     );
                 }
             }
@@ -602,36 +750,101 @@
     }
 
     // ============================================================
+    // RENDER DE ESTADOS
+    // ============================================================
+
+    function renderizarCargando() {
+        var contenedor = obtenerElemento('pasaporteDomo');
+
+        if (!contenedor) return;
+
+        instalarEstilos();
+
+        contenedor.innerHTML =
+            '<div class="pasaporte-estado pasaporte-anim">' +
+                '<div class="pasaporte-spinner"></div>' +
+                '<div>Verificando tu Pasaporte Digital…</div>' +
+            '</div>';
+    }
+
+    function renderizarError(mensaje) {
+        var contenedor = obtenerElemento('pasaporteDomo');
+
+        if (!contenedor) return;
+
+        instalarEstilos();
+
+        contenedor.innerHTML =
+            '<div class="pasaporte-estado pasaporte-estado-error pasaporte-anim">' +
+                '<div>' +
+                    '<div style="font-size:22px; margin-bottom:10px;">⚠️</div>' +
+                    '<div>' + escapeHTML(mensaje || 'No pudimos cargar tu Pasaporte Digital.') + '</div>' +
+                '</div>' +
+            '</div>';
+    }
+
+    function renderizarSinCredencial() {
+        var contenedor = obtenerElemento('pasaporteDomo');
+
+        if (!contenedor) return;
+
+        instalarEstilos();
+
+        contenedor.innerHTML =
+            '<div class="pasaporte-estado pasaporte-anim">' +
+                '<div>' +
+                    '<div style="font-size:26px; margin-bottom:11px;">◈</div>' +
+                    '<div style="color:#F7E6A1; font-weight:800; letter-spacing:1.4px; text-transform:uppercase; font-size:10px; margin-bottom:8px;">' +
+                        'PASAPORTE DIGITAL' +
+                    '</div>' +
+                    '<div>Aún no tienes una credencial activa en este ecosistema.</div>' +
+                '</div>' +
+            '</div>';
+    }
+
+    // ============================================================
     // CONSULTAR CREDENCIAL
     // ============================================================
 
     async function cargarPasaporte(client, user) {
+        var contenedor = obtenerElemento('pasaporteDomo');
+
+        if (!contenedor) return;
+
         try {
+            renderizarCargando();
+
             var res = await client
-                .from('credenciales_digitales')
-                .select('id, tipo, tx_hash, emitida_en')
+                .from(TABLA_CREDENCIALES)
+                .select('id, tipo, tx_hash, emitida_en, estado')
                 .eq('usuario_id', user.id)
                 .eq('tipo', PASAPORTE_TIPO)
+                .order('emitida_en', { ascending: false })
+                .limit(1)
                 .maybeSingle();
 
-            if (res.error) throw res.error;
+            if (res.error) {
+                throw res.error;
+            }
 
-            var contenedor = obtenerElemento('pasaporteDomo');
-
-            if (!contenedor) return;
-
-            if (res.data) {
-                renderizarPasaporte(res.data, user);
+            if (!res.data) {
+                credencialActual = null;
+                renderizarSinCredencial();
             } else {
-                contenedor.innerHTML = '';
+                credencialActual = res.data;
+                renderizarPasaporte(res.data, user);
             }
 
             suscribirPasaporte(client, user);
 
-        } catch (e) {
+        } catch (error) {
             console.warn(
                 '[Pasaporte] Error cargando credencial:',
-                e
+                error
+            );
+
+            renderizarError(
+                'No pudimos verificar tu credencial. Intenta recargar la página.'
             );
         }
     }
@@ -651,7 +864,7 @@
                     {
                         event: 'INSERT',
                         schema: 'public',
-                        table: 'credenciales_digitales',
+                        table: TABLA_CREDENCIALES,
                         filter: 'usuario_id=eq.' + user.id
                     },
                     function (payload) {
@@ -659,6 +872,7 @@
                             payload.new &&
                             payload.new.tipo === PASAPORTE_TIPO
                         ) {
+                            credencialActual = payload.new;
                             renderizarPasaporte(payload.new, user);
 
                             toast(
@@ -668,12 +882,35 @@
                         }
                     }
                 )
+                .on(
+                    'postgres_changes',
+                    {
+                        event: 'UPDATE',
+                        schema: 'public',
+                        table: TABLA_CREDENCIALES,
+                        filter: 'usuario_id=eq.' + user.id
+                    },
+                    function (payload) {
+                        if (
+                            payload.new &&
+                            payload.new.tipo === PASAPORTE_TIPO
+                        ) {
+                            credencialActual = payload.new;
+                            renderizarPasaporte(payload.new, user);
+
+                            toast(
+                                'Tu Pasaporte Digital fue actualizado',
+                                'success'
+                            );
+                        }
+                    }
+                )
                 .subscribe();
 
-        } catch (e) {
+        } catch (error) {
             console.warn(
                 '[Pasaporte] No se pudo suscribir a Realtime:',
-                e
+                error
             );
         }
     }
@@ -690,115 +927,102 @@
         instalarEstilos();
 
         var fecha = formatearFecha(cred.emitida_en);
-
-        var correo = (
-            user &&
-            user.email
-        )
-            ? escapeHTML(user.email)
-            : '';
-
-        var txHash = cred.tx_hash
-            ? String(cred.tx_hash).trim()
-            : '';
-
-        var txUrl = '';
-
-        if (/^0x[a-fA-F0-9]{64}$/.test(txHash)) {
-            txUrl = 'https://polygonscan.com/tx/' +
-                encodeURIComponent(txHash);
-        }
+        var correo = user && user.email ? escapeHTML(user.email) : '';
+        var txHash = cred.tx_hash ? String(cred.tx_hash).trim() : '';
+        var txUrl = construirUrlPolygon(txHash);
+        var hashVisible = txHash ? escapeHTML(acortarHash(txHash)) : '';
 
         var html =
-            '<div class="pasaporte-card pasaporte-anim">' +
+            '<div class="pasaporte-shell pasaporte-anim">' +
 
-                '<div class="pasaporte-header">' +
+                '<div class="pasaporte-card">' +
 
-                    '<div class="pasaporte-brand">' +
+                    '<div class="pasaporte-glow"></div>' +
 
-                        '<div class="pasaporte-brand-symbol">◈</div>' +
+                    '<div class="pasaporte-header">' +
 
-                        '<div>' +
-                            '<div class="pasaporte-brand-name">' +
-                                'CSARIEL\'S' +
+                        '<div class="pasaporte-brand">' +
+
+                            '<div class="pasaporte-brand-symbol">◈</div>' +
+
+                            '<div>' +
+                                '<div class="pasaporte-brand-name">CSARIEL\'S</div>' +
+                                '<span class="pasaporte-brand-caption">DIGITAL IDENTITY</span>' +
                             '</div>' +
 
-                            '<span class="pasaporte-brand-caption">' +
-                                'DIGITAL IDENTITY' +
-                            '</span>' +
+                        '</div>' +
+
+                        '<div class="pasaporte-status">' +
+                            '<span class="pasaporte-status-dot"></span>' +
+                            'ACTIVO' +
                         '</div>' +
 
                     '</div>' +
 
-                    '<div class="pasaporte-status">' +
-                        '<span class="pasaporte-status-dot"></span>' +
-                        'ACTIVO' +
+                    '<div class="pasaporte-divider"></div>' +
+
+                    '<div class="pasaporte-sello">' +
+                        '<span class="pasaporte-sello-icon">✧</span>' +
+                        'MIEMBRO FUNDADOR' +
                     '</div>' +
 
-                '</div>' +
+                    '<div class="pasaporte-titulo">Pasaporte Digital</div>' +
 
-                '<div class="pasaporte-divider"></div>' +
-
-                '<div class="pasaporte-sello">' +
-                    '<span class="pasaporte-sello-icon">✧</span>' +
-                    'MIEMBRO FUNDADOR' +
-                '</div>' +
-
-                '<div class="pasaporte-titulo">' +
-                    'Pasaporte Digital' +
-                '</div>' +
-
-                '<div class="pasaporte-subtitulo">' +
-                    'Tu identidad digital dentro del ecosistema Csariel\'s' +
-                '</div>' +
-
-                (
-                    correo
-                        ? '<div class="pasaporte-correo">' +
-                            '<span class="pasaporte-correo-icon">◉</span>' +
-                            correo +
-                          '</div>'
-                        : ''
-                ) +
-
-                '<div class="pasaporte-token">' +
-                    '<span class="pasaporte-token-icon">✓</span>' +
-                    'Credencial registrada y token enviado a tu wallet en Polygon' +
-                '</div>' +
-
-                '<div class="pasaporte-footer">' +
+                    '<div class="pasaporte-subtitulo">' +
+                        'Tu identidad digital verificada dentro del ecosistema Csariel\'s.' +
+                    '</div>' +
 
                     (
-                        fecha
-                            ? '<div>' +
-                                '<span class="pasaporte-meta-label">' +
-                                    'FECHA DE EMISIÓN' +
-                                '</span>' +
-                                '<div class="pasaporte-meta">' +
-                                    escapeHTML(fecha) +
-                                '</div>' +
+                        correo
+                            ? '<div class="pasaporte-correo">' +
+                                '<span class="pasaporte-correo-icon">◉</span>' +
+                                correo +
                               '</div>'
                             : ''
                     ) +
 
-                    '<div class="pasaporte-network">' +
-                        '<span class="pasaporte-network-mark">⬡</span>' +
-                        'POLYGON NETWORK' +
+                    '<div class="pasaporte-token">' +
+                        '<span class="pasaporte-token-icon">✓</span>' +
+                        '<span>Credencial registrada y token enviado a tu wallet en Polygon.</span>' +
                     '</div>' +
 
-                '</div>' +
+                    (
+                        hashVisible
+                            ? '<div class="pasaporte-hash">TX · ' + hashVisible + '</div>'
+                            : ''
+                    ) +
 
-                (
-                    txUrl
-                        ? '<a class="pasaporte-tx"' +
-                            ' href="' + escapeHTML(txUrl) + '"' +
-                            ' target="_blank"' +
-                            ' rel="noopener noreferrer">' +
-                            'VERIFICAR TRANSACCIÓN' +
-                            '<span>↗</span>' +
-                          '</a>'
-                        : ''
-                ) +
+                    '<div class="pasaporte-footer">' +
+
+                        (
+                            fecha
+                                ? '<div>' +
+                                    '<span class="pasaporte-meta-label">FECHA DE EMISIÓN</span>' +
+                                    '<div class="pasaporte-meta">' + escapeHTML(fecha) + '</div>' +
+                                  '</div>'
+                                : '<div></div>'
+                        ) +
+
+                        '<div class="pasaporte-network">' +
+                            '<span class="pasaporte-network-mark">⬡</span>' +
+                            'POLYGON NETWORK' +
+                        '</div>' +
+
+                    '</div>' +
+
+                    (
+                        txUrl
+                            ? '<a class="pasaporte-tx"' +
+                                ' href="' + escapeHTML(txUrl) + '"' +
+                                ' target="_blank"' +
+                                ' rel="noopener noreferrer">' +
+                                'VERIFICAR TRANSACCIÓN' +
+                                '<span>↗</span>' +
+                              '</a>'
+                            : ''
+                    ) +
+
+                '</div>' +
 
             '</div>';
 
@@ -813,10 +1037,10 @@
         if (canalPasaporte && clienteActual) {
             try {
                 clienteActual.removeChannel(canalPasaporte);
-            } catch (e) {
+            } catch (error) {
                 console.warn(
                     '[Pasaporte] Error limpiando canal:',
-                    e
+                    error
                 );
             }
 
@@ -824,15 +1048,8 @@
         }
     }
 
-    window.addEventListener(
-        'beforeunload',
-        detenerPasaporte
-    );
-
-    window.addEventListener(
-        'pagehide',
-        detenerPasaporte
-    );
+    window.addEventListener('beforeunload', detenerPasaporte);
+    window.addEventListener('pagehide', detenerPasaporte);
 
     // ============================================================
     // INICIALIZACIÓN
@@ -844,21 +1061,20 @@
         iniciado = true;
 
         instalarEstilos();
+        renderizarCargando();
 
         var ctx = await esperarListo();
 
         if (!ctx.client || !ctx.user || !ctx.user.id) {
             iniciado = false;
+            renderizarError('No pudimos validar tu sesión.');
             return;
         }
 
         clienteActual = ctx.client;
         usuarioActual = ctx.user;
 
-        await cargarPasaporte(
-            ctx.client,
-            ctx.user
-        );
+        await cargarPasaporte(ctx.client, ctx.user);
     }
 
     // ============================================================
@@ -887,10 +1103,7 @@
             return iniciar();
         }
 
-        await cargarPasaporte(
-            clienteActual,
-            usuarioActual
-        );
+        await cargarPasaporte(clienteActual, usuarioActual);
     };
 
 })();
