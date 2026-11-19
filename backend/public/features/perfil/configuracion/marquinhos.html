@@ -22,6 +22,7 @@
     --success: #00d68f;
     --verde: #0F2D1A;
     --whatsapp: #25D366;
+    --cyan: #00e5ff;
 }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
@@ -251,6 +252,61 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
     color: #04210F;
 }
+
+/* ================= VOZ / AUTOMATIZACIÓN ================= */
+.nota-info {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-left: 3px solid var(--gold);
+    background: rgba(212, 175, 55, 0.06);
+    border-radius: 0 10px 10px 0;
+    color: var(--muted);
+    font-size: .74rem;
+    line-height: 1.5;
+}
+.nota-info strong { color: var(--gold); font-weight: 700; }
+.nota-info a {
+    color: var(--cyan);
+    text-decoration: none;
+    border-bottom: 1px dashed rgba(0, 229, 255, 0.35);
+}
+.nota-info a:hover { color: #66f0ff; border-bottom-color: #66f0ff; }
+
+.consulta-rapida {
+    margin-top: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+}
+.consulta-rapida .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: rgba(255,255,255,0.02);
+    color: var(--muted);
+    font-size: .72rem;
+    line-height: 1.3;
+    cursor: pointer;
+    transition: all .2s;
+    text-align: left;
+}
+.consulta-rapida .chip:hover {
+    border-color: var(--gold);
+    color: var(--gold);
+    background: rgba(212, 175, 55, 0.05);
+}
+.consulta-rapida .chip:focus-visible {
+    outline: 2px solid var(--cyan);
+    outline-offset: 2px;
+}
+.consulta-rapida .chip .icono {
+    font-family: 'Orbitron', monospace;
+    color: var(--gold);
+    font-weight: 700;
+}
 </style>
 </head>
 <body>
@@ -293,7 +349,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         <div class="wa-estado" id="waEstado" role="status" aria-live="polite"></div>
     </div>
 
-    <!-- ✅ NUEVO: TAMAÑO DEL MUÑECO -->
+    <!-- TAMAÑO DEL MUÑECO -->
     <div class="card">
         <h2>TAMAÑO DEL MUÑECO</h2>
 
@@ -321,7 +377,7 @@ h1 .hex { font-family: 'Orbitron', monospace; }
                 <div class="titulo">Modo Solo Voz</div>
                 <div class="desc">Muestra 3 burbujitas animadas y responde por audio. Ideal para móvil, sin saturar la pantalla.</div>
             </div>
-            <div class="toggle" id="toggleModoVoz"></div>
+            <div class="toggle" id="toggleModoVoz" role="switch" aria-checked="false" tabindex="0"></div>
         </div>
 
         <div class="opcion">
@@ -329,7 +385,55 @@ h1 .hex { font-family: 'Orbitron', monospace; }
                 <div class="titulo">Modo Subtítulos</div>
                 <div class="desc">Muestra el texto de cada respuesta en un globo. Útil sin auriculares o en lugares ruidosos.</div>
             </div>
-            <div class="toggle" id="toggleSubtitulos"></div>
+            <div class="toggle" id="toggleSubtitulos" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+    </div>
+
+    <!-- ✅ NUEVO: COMANDOS DE VOZ Y CONSULTAS RÁPIDAS -->
+    <div class="card" id="cardVozComandos">
+        <h2>COMANDOS DE VOZ Y CONSULTAS RÁPIDAS</h2>
+
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Permitir comandos de voz</div>
+                <div class="desc">Marquinhos podrá abrir vistas o modales por voz (por ejemplo: “abrir contactos”, “mostrar mensajes”).</div>
+            </div>
+            <div class="toggle" id="toggleComandosVoz" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Apertura de vistas por voz</div>
+                <div class="desc">Atajos hablados para Contactos y Mensajes. Si está desactivado, siempre puedes entrar manualmente desde el menú.</div>
+            </div>
+            <div class="toggle" id="toggleVistasVoz" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+
+        <div class="opcion">
+            <div class="info">
+                <div class="titulo">Consultas rápidas al usuario</div>
+                <div class="desc">Marquinhos puede consultar tus mensajes pendientes, solicitudes y bloqueados para avisarte sin que entres a cada vista.</div>
+            </div>
+            <div class="toggle" id="toggleConsultasRapidas" role="switch" aria-checked="false" tabindex="0"></div>
+        </div>
+
+        <div class="consulta-rapida" role="group" aria-label="Consultas rápidas de ejemplo">
+            <button type="button" class="chip" data-consulta="mensajes">
+                <span class="icono">✉</span> ¿Mensajes por revisar?
+            </button>
+            <button type="button" class="chip" data-consulta="solicitudes">
+                <span class="icono">◇</span> Solicitudes pendientes
+            </button>
+            <button type="button" class="chip" data-consulta="bloqueados">
+                <span class="icono">⛔</span> ¿Quién falta bloquear?
+            </button>
+        </div>
+
+        <div class="nota-info">
+            <strong>Nota:</strong> Tus preferencias, gustos y apariencia se guardan en tu configuración de Marquinhos.
+            Si decides no usar voz ni automatización, <strong>siempre conservas tu acceso manual</strong> a
+            <a href="/features/mensajes/contactos.html">Contactos</a> y
+            <a href="/features/mensajes/mensajes.html">Mensajes</a> desde tu perfil.
         </div>
     </div>
 
@@ -423,7 +527,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     }
 
     async function obtenerToken() {
-        // El cliente de Supabase lo crea auth-global.js; esperamos a que esté listo
         for (let i = 0; i < 80; i++) {
             if (window.supabaseClient && window.supabaseClient.auth) break;
             await new Promise(function (r) { setTimeout(r, 100); });
@@ -520,7 +623,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
 
     function guardar() {
         try { localStorage.setItem(KEY, JSON.stringify(cfg)); } catch (e) {}
-        // Notificar al pet si está abierto
         if (window.Marquinhos && typeof window.Marquinhos.setConfig === 'function') {
             try { window.Marquinhos.setConfig(cfg); } catch (e) {}
         }
@@ -529,31 +631,37 @@ h1 .hex { font-family: 'Orbitron', monospace; }
     function pintar() {
         const toggleVoz = document.getElementById('toggleModoVoz');
         const toggleSub = document.getElementById('toggleSubtitulos');
+        const toggleComandos = document.getElementById('toggleComandosVoz');
+        const toggleVistas = document.getElementById('toggleVistasVoz');
+        const toggleConsultas = document.getElementById('toggleConsultasRapidas');
 
-        // Lógica: si mostrar_subtitulos = false → modo voz activo
         const enModoVoz = !cfg.mostrar_subtitulos;
-
         toggleVoz.classList.toggle('activo', enModoVoz);
+        toggleVoz.setAttribute('aria-checked', enModoVoz ? 'true' : 'false');
         toggleSub.classList.toggle('activo', !!cfg.mostrar_subtitulos);
+        toggleSub.setAttribute('aria-checked', cfg.mostrar_subtitulos ? 'true' : 'false');
 
-        // Tamaño
+        toggleComandos.classList.toggle('activo', !!cfg.comandos_voz);
+        toggleComandos.setAttribute('aria-checked', cfg.comandos_voz ? 'true' : 'false');
+        toggleVistas.classList.toggle('activo', !!cfg.vistas_por_voz);
+        toggleVistas.setAttribute('aria-checked', cfg.vistas_por_voz ? 'true' : 'false');
+        toggleConsultas.classList.toggle('activo', !!cfg.consultas_rapidas);
+        toggleConsultas.setAttribute('aria-checked', cfg.consultas_rapidas ? 'true' : 'false');
+
         const tamano = cfg.tamano != null ? cfg.tamano : 100;
         document.getElementById('sliderTamano').value = tamano;
         document.getElementById('valTamano').textContent = tamano + '%';
         actualizarPreviewTamano(tamano);
 
-        // Volumen
         const vol = Math.round((cfg.volumen != null ? cfg.volumen : 1.0) * 100);
         document.getElementById('sliderVolumen').value = vol;
         document.getElementById('valVolumen').textContent = vol + '%';
 
-        // Velocidad
         const vel = cfg.velocidad != null ? cfg.velocidad : 1.0;
         document.getElementById('sliderVelocidad').value = vel;
         document.getElementById('valVelocidad').textContent = vel.toFixed(2) + 'x';
     }
 
-    // Actualizar preview del tamaño
     function actualizarPreviewTamano(porcentaje) {
         const baseAncho = 90;
         const baseAlto = 130;
@@ -563,7 +671,6 @@ h1 .hex { font-family: 'Orbitron', monospace; }
         const box = document.getElementById('previewBox');
         const texto = document.getElementById('previewTexto');
 
-        // Escalar el preview visual (no puede pasar de 120px alto para caber)
         const escala = Math.min(1, 120 / alto);
         box.style.width = (ancho * escala) + 'px';
         box.style.height = (alto * escala) + 'px';
@@ -588,6 +695,51 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             cfg.mostrar_subtitulos = true;
             guardar();
             pintar();
+        });
+
+        // ✅ NUEVOS: comandos de voz, vistas por voz, consultas rápidas
+        document.getElementById('toggleComandosVoz').addEventListener('click', function() {
+            leer();
+            cfg.comandos_voz = !cfg.comandos_voz;
+            // Si se desactivan comandos de voz, apagar vistas por voz
+            if (!cfg.comandos_voz) cfg.vistas_por_voz = false;
+            guardar();
+            pintar();
+        });
+
+        document.getElementById('toggleVistasVoz').addEventListener('click', function() {
+            leer();
+            // Si comandos de voz está apagado, forzar a encenderlo para permitir vistas por voz
+            if (!cfg.comandos_voz) {
+                cfg.comandos_voz = true;
+            }
+            cfg.vistas_por_voz = !cfg.vistas_por_voz;
+            guardar();
+            pintar();
+        });
+
+        document.getElementById('toggleConsultasRapidas').addEventListener('click', function() {
+            leer();
+            cfg.consultas_rapidas = !cfg.consultas_rapidas;
+            guardar();
+            pintar();
+        });
+
+        // Consultas rápidas de ejemplo (chips)
+        document.querySelectorAll('[data-consulta]').forEach(function (chip) {
+            chip.addEventListener('click', function () {
+                const tipo = chip.getAttribute('data-consulta');
+                if (window.Marquinhos && typeof window.Marquinhos.consultaRapida === 'function') {
+                    try { window.Marquinhos.consultaRapida(tipo); } catch (e) {}
+                } else {
+                    const mensajes = {
+                        mensajes: 'Marquinhos revisará tus mensajes pendientes en Mensajes.',
+                        solicitudes: 'Marquinhos revisará tus solicitudes pendientes en Contactos.',
+                        bloqueados: 'Marquinhos revisará tu lista de bloqueados en Contactos.'
+                    };
+                    alert(mensajes[tipo] || 'Consulta no disponible.');
+                }
+            });
         });
 
         // Slider de tamaño
@@ -627,13 +779,12 @@ h1 .hex { font-family: 'Orbitron', monospace; }
             alert('Posición reseteada. Recarga la página para ver el cambio.');
         });
 
-        // Limpiar historial (store persistente de Marquinhos)
+        // Limpiar historial
         document.getElementById('btnLimpiarHistorial').addEventListener('click', function() {
             if (!confirm('¿Borrar todo el historial de conversación con Marquinhos?')) return;
             if (window.Marquinhos && typeof window.Marquinhos.olvidar === 'function') {
                 window.Marquinhos.olvidar();
             }
-            // Respaldo: borra la clave del store en este navegador, aunque el widget no esté cargado
             Object.keys(localStorage)
                 .filter(function (k) { return k.indexOf('marquinhos_store_v1:') === 0; })
                 .forEach(function (k) { localStorage.removeItem(k); });
