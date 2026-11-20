@@ -14,24 +14,18 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
+    <!-- Tus estilos -->
     <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=4">
+    <link rel="stylesheet" href="/features/contactos/css/contactos-social.css?v=1">
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="/features/shared/js/auth-global.js"></script>
+    <script src="/features/shared/js/presencia-global.js" defer></script>
+    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
     <style>
-        /* =========================================================
-           CSARIEL'S · CONTACTOS · ESTILOS DE SECCIONES
-        ========================================================= */
-
-        .hud-brand-mark {
-            display:inline-flex; align-items:center; justify-content:center;
-            width:42px; height:42px; flex:0 0 auto; border-radius:12px;
-            text-decoration:none; color:#D4AF37;
-            background:rgba(212,175,55,.08);
-            border:1px solid rgba(212,175,55,.28);
-            font-family:Orbitron,monospace; font-size:1.15rem; font-weight:700;
-        }
-
-        /* --- Control de visibilidad de secciones por filtro --- */
-        /* Ocultamos todo por defecto para evitar parpadeos */
+        /* Control de visibilidad de secciones por filtro (Sincronizado con JS) */
         #cercanosTurismoSection,
         #solicitudesPendientesSection,
         #solicitudesEnviadasSection,
@@ -41,10 +35,11 @@
             display: none;
         }
 
-        /* Clases que activan las secciones según el filtro */
+        /* Mostrar secciones según el filtro activo en el body */
         body.filtro-todos #contactosList,
         body.filtro-todos #sugerenciasSection,
-        body.filtro-todos #solicitudesPendientesSection {
+        body.filtro-todos #solicitudesPendientesSection,
+        body.filtro-todos #solicitudesEnviadasSection {
             display: block;
         }
 
@@ -55,111 +50,7 @@
         body.filtro-cercanos #cercanosTurismoSection { display: block; }
         
         body.filtro-grupos #gruposSection { display: block; }
-
-        /* --- Estilos de las secciones --- */
-        .hud-section {
-            margin-bottom: 18px;
-            padding-bottom: 14px;
-            border-bottom: 1px solid var(--line,rgba(255,255,255,.08));
-        }
-
-        .hud-section-title {
-            display:flex; align-items:center; justify-content:space-between;
-            gap:8px; margin-bottom:10px; color:var(--cyan,#00e5ff);
-            font:700 .78rem Orbitron,monospace; letter-spacing:.04em;
-        }
-
-        .contador {
-            background: rgba(0, 229, 255, 0.15);
-            color: #00e5ff;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-family: Inter, sans-serif;
-        }
-
-        /* --- Lista de Contactos y Empty State --- */
-        #contactosList {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: var(--text-secondary, #b8c2cc);
-        }
-
-        .empty-state h3 {
-            font-size: 0.95rem;
-            margin-top: 15px;
-            font-weight: 600;
-        }
-
-        .empty-state .btn-buscar-empty {
-            margin-top: 15px;
-            padding: 10px 20px;
-            border-radius: 20px;
-            border: 1px solid rgba(212, 175, 55, 0.4);
-            background: rgba(212, 175, 55, 0.1);
-            color: #D4AF37;
-            font-weight: 700;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* --- Grupos y Solicitudes --- */
-        .grupos-tabs {
-            display:flex; gap:8px; margin-bottom:10px;
-        }
-        .grupos-tab-btn {
-            padding:6px 12px; border-radius:999px;
-            border:1px solid rgba(168,85,247,.3);
-            background:rgba(11,18,28,.8);
-            color:var(--text-secondary,#b8c2cc);
-            font-size:.72rem; font-weight:700; cursor:pointer;
-        }
-        .grupos-tab-btn.active {
-            background:rgba(168,85,247,.22);
-            color:var(--text-primary,#f0f4f8);
-            border-color:var(--cyan,#00e5ff);
-        }
-        
-        .grupo-item-card {
-            display:flex; align-items:center; gap:12px; padding:11px 14px;
-            border-radius:12px; text-decoration:none; color:var(--text-primary,#f0f4f8);
-            background:rgba(11,18,28,.85); border-bottom:1px solid rgba(255,255,255,.08);
-        }
-        .grupo-item-badge { color:#D4AF37; background:rgba(168,85,247,.14); width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; }
-        .grupo-item-info { flex:1; min-width:0; }
-        .grupo-item-nombre { font-size:.84rem; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .grupo-item-meta { font-size:.7rem; color:var(--text-muted,#8c949c); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        .grupo-item-accion { color:var(--cyan,#00e5ff); font-size:.72rem; font-weight:700; }
-
-        /* --- Botones de acción (Invitar, QR) --- */
-        .hud-inline-invite, .hud-inline-qr {
-            background: rgba(0, 229, 255, 0.1);
-            border: 1px solid rgba(0, 229, 255, 0.3);
-            color: #00e5ff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
     </style>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="/features/shared/js/auth-global.js"></script>
-    <script src="/features/shared/js/presencia-global.js" defer></script>
-    <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 </head>
 
 <body class="ui-hud-contactos">
@@ -227,7 +118,6 @@
                 </div>
             </div>
 
-            <!-- FILTROS: CADA CATEGORÍA TIENE SU PROPIA FUNCIÓN -->
             <div class="filtros hud-filters-bar" role="group" aria-label="Filtros de contactos">
                 <button type="button" class="filtro hud-pill active" data-filtro="todos" aria-pressed="true">
                     <span class="pill-ico">◈</span> Todos
@@ -246,11 +136,7 @@
                 </button>
             </div>
 
-            <!-- =========================================================
-                 SECCIONES DE CONTENIDO (Se muestran/ocultan con JS)
-            ========================================================= -->
-
-            <!-- 1. SECCIÓN CERCANOS (Turismo) -->
+            <!-- 1. SECCIÓN CERCANOS -->
             <section class="cercanos-turismo-section hud-section" id="cercanosTurismoSection" aria-label="Lugares cercanos">
                 <div class="hud-section-title">
                     <span class="grupos-titulo-izq">Lugares cercanos <span class="contador" id="cercanosLugaresContador">0</span></span>
@@ -330,7 +216,6 @@
 
             <!-- 7. LISTA PRINCIPAL DE CONTACTOS (AMIGOS/ONLINE) -->
             <div class="contactos-list hud-contacts-list" id="contactosList" aria-live="polite" aria-busy="true">
-                <!-- El estado vacío se inyecta aquí dinámicamente o se deja como fallback -->
                 <div class="empty-state" id="contactosEmptyState">
                     <span class="planeta-busqueda planeta-empty" id="planetaEstadoVacio" aria-hidden="true" style="font-size:2rem;display:block;margin-bottom:10px;">🪐</span>
                     <h3 id="emptyStateTitle">Cargando contactos...</h3>
@@ -351,7 +236,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- MODALES (QR, Configuración, Buscar, Invitar, Confirmación) - Se mantienen igual -->
+    <!-- MODALES -->
     <div class="modal-overlay" id="modalQRContacto" role="dialog" aria-modal="true" aria-label="Código QR personal" aria-hidden="true">
         <div class="modal qr-modal">
             <div class="modal-header">
@@ -365,13 +250,11 @@
     </div>
 
     <div class="modal-overlay" id="modalConfigContactos" role="dialog" aria-modal="true" aria-labelledby="tituloConfigContactos" aria-hidden="true">
-        <!-- Contenido de configuración (igual que tu código original) -->
         <div class="modal cfg-modal-card">
             <div class="modal-header">
                 <h2 id="tituloConfigContactos">Configuración y visibilidad</h2>
                 <button type="button" class="btn-cerrar" id="btnCerrarConfigContactos" aria-label="Cerrar">✕</button>
             </div>
-            <!-- ... tus switches de configuración ... -->
             <div id="cfgEstadoGuardado" class="cfg-status-msg" aria-live="polite"></div>
         </div>
     </div>
@@ -425,15 +308,8 @@
     </div>
 
     <script>
-        // ==========================================
-        // LÓGICA DE FILTROS (La clave de tu problema)
-        // ==========================================
-        
         function aplicarFiltro(filtro) {
-            // 1. Actualizar clases del body para CSS
             document.body.classList.remove('filtro-todos', 'filtro-amigos', 'filtro-online', 'filtro-cercanos', 'filtro-grupos');
-            
-            // Mapeo de nombres de filtro a clases CSS
             const mapa = {
                 'todos': 'filtro-todos',
                 'favoritos': 'filtro-amigos',
@@ -441,69 +317,43 @@
                 'cercanos': 'filtro-cercanos',
                 'recientes': 'filtro-grupos'
             };
-            
-            if (mapa[filtro]) {
-                document.body.classList.add(mapa[filtro]);
-            }
+            if (mapa[filtro]) document.body.classList.add(mapa[filtro]);
 
-            // 2. Actualizar botones visualmente
             document.querySelectorAll('.filtro[data-filtro]').forEach(btn => {
                 const activo = btn.getAttribute('data-filtro') === filtro;
                 btn.classList.toggle('active', activo);
                 btn.setAttribute('aria-pressed', activo);
             });
 
-            // 3. Lógica extra para "Cercanos" (cargar mapa si se selecciona)
             if (filtro === 'cercanos') {
                 const btnBuscar = document.getElementById('btnBuscarLugaresCercanos');
-                if (btnBuscar) btnBuscar.click(); // Auto-dispara la búsqueda
+                if (btnBuscar) btnBuscar.click();
             }
         }
 
-        // Asignar evento click a los botones de filtro
         document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('.filtro[data-filtro]').forEach(btn => {
                 btn.addEventListener('click', (e) => {
-                    const filtro = e.currentTarget.getAttribute('data-filtro');
-                    aplicarFiltro(filtro);
+                    aplicarFiltro(e.currentTarget.getAttribute('data-filtro'));
                 });
             });
-
-            // Iniciar en "Todos"
             aplicarFiltro('todos');
-        });
 
-        // ==========================================
-        // LÓGICA DE BOTONES "INVITAR" Y "BUSCAR" GLOBALES
-        // ==========================================
-        document.addEventListener('DOMContentLoaded', () => {
-            // Abrir modal de invitar
             document.querySelectorAll('[data-action="invitar"]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const modal = document.getElementById('modalInvitacion');
-                    if(modal) {
-                        modal.classList.add('active');
-                        modal.setAttribute('aria-hidden', 'false');
-                    }
+                    if(modal) { modal.classList.add('active'); modal.setAttribute('aria-hidden', 'false'); }
                 });
             });
 
-            // Abrir modal de buscar
             document.querySelectorAll('[data-action="buscar-rapido"]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const modal = document.getElementById('modalBuscarContacto');
-                    if(modal) {
-                        modal.classList.add('active');
-                        modal.setAttribute('aria-hidden', 'false');
-                        document.getElementById('searchInputModal').focus();
-                    }
+                    if(modal) { modal.classList.add('active'); modal.setAttribute('aria-hidden', 'false'); document.getElementById('searchInputModal').focus(); }
                 });
             });
         });
 
-        // ==========================================
-        // FUNCIONES DE GRUPOS (SwitchTab) - Se mantienen
-        // ==========================================
         window.switchTab = function(tab) {
             const esMis = tab === 'mis-canales';
             const tabMis = document.getElementById('tabMisCanales');
@@ -518,9 +368,6 @@
         };
     </script>
 
-    <!-- Script principal de contactos (lógica de negocio) -->
-    <!-- v26_2: Actualizado para separar estrictamente amigos, en línea y sugerencias -->
     <script src="/features/contactos/contactos.js?v=26_2" defer></script>
-
 </body>
 </html>
