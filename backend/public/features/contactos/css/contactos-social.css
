@@ -1,5 +1,5 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · contactos-social.css · v1.0
+   CSARIEL'S · CONTACTOS · contactos-social.css · v1.1
    ============================================================
    Capa de estilos sociales específica de Contactos.
    Complementa a css/contactos.css (layout/base) y se enfoca en:
@@ -8,10 +8,19 @@
      - Botones de reintento de perfil (.btn-reintentar-perfil)
      - Estados online/offline en sugerencias
      - Detalles de tarjetas que maneja contactos-ui.js
-   Enlazado DESPUÉS de css/contactos.css en contactos.html:
-     <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=1">
-     <link rel="stylesheet" href="/features/contactos/css/contactos-social.css?v=1">
+     - Control de visibilidad del Empty State (robot/planeta)
    ============================================================ */
+
+/* ===== 0. CONTROL DE VISIBILIDAD DEL ESTADO VACÍO ===== */
+/* Forzar que el estado vacío se vea cuando el JS lo indique */
+#contactosEmptyState {
+    display: block !important;
+}
+
+/* Asegurar que el icono del planeta no se oculte */
+#planetaEstadoVacio {
+    display: inline-block !important;
+}
 
 /* ===== 1. AVISOS INLINE (inyectados por contactos-ui.js) ===== */
 .aviso-contactos {
