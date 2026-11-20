@@ -1,21 +1,1025 @@
+
 <!DOCTYPE html>
 <html lang="es" data-require-auth>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="description" content="Contactos · Csariel's Ecosystem">
-    <meta name="theme-color" content="#05080f">
+    <meta name="theme-color" content="#080d0a">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <title data-clave="contactos_titulo">◈ Contactos · Csariel's</title>
 
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='10' width='80' height='80' rx='16' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/%3E%3Ctext x='50' y='68' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'%3E%E2%97%88%3C/text%3E%3C/svg%3E">
+    <title data-clave="contactos_titulo">Contactos · Csariel's</title>
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='8' y='8' width='84' height='84' rx='20' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='3'/%3E%3Cpath d='M50 23 L76 50 L50 77 L24 50 Z' fill='none' stroke='%23D4AF37' stroke-width='5'/%3E%3C/svg%3E">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- CSS modular de Contactos -->
-    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=1">
+    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=2">
+
+    <style>
+        /* =====================================================
+           CSARIEL'S · CONTACTOS
+           GLOBAL PREMIUM DESIGN SYSTEM
+           ===================================================== */
+
+        :root {
+            color-scheme: dark;
+
+            --bg: #080d0a;
+            --bg-secondary: #0b110d;
+            --surface: #101713;
+            --surface-2: #141d17;
+            --surface-3: #19231c;
+
+            --green: #0f2d1a;
+            --green-light: #1d7048;
+            --green-bright: #35a66d;
+
+            --gold: #d4af37;
+            --gold-soft: rgba(212,175,55,.12);
+
+            --text: #f3f5f3;
+            --text-secondary: #a0aaa2;
+            --text-muted: #68736b;
+
+            --border: rgba(255,255,255,.075);
+            --border-strong: rgba(255,255,255,.12);
+
+            --danger: #e36d70;
+            --online: #43c982;
+
+            --radius: 13px;
+            --radius-small: 8px;
+
+            --header-height: 66px;
+            --nav-height: 52px;
+
+            --font: 'Inter', 'Manrope', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html {
+            min-height: 100%;
+            background: var(--bg);
+            scroll-behavior: smooth;
+        }
+
+        body {
+            min-width: 320px;
+            min-height: 100vh;
+            margin: 0;
+            background:
+                radial-gradient(
+                    ellipse at 50% -25%,
+                    rgba(29,112,72,.12),
+                    transparent 48%
+                ),
+                var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 14px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        ::selection {
+            color: #fff;
+            background: rgba(29,112,72,.65);
+        }
+
+        /* =====================================================
+           ESTRUCTURA PRINCIPAL
+           ===================================================== */
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            min-height: 100vh;
+        }
+
+        /* =====================================================
+           HEADER
+           ===================================================== */
+
+        .header {
+            position: sticky;
+            z-index: 100;
+            top: 0;
+
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+
+            width: 100%;
+            height: var(--header-height);
+            padding: 0 clamp(16px, 4vw, 52px);
+
+            background: rgba(8,13,10,.92);
+            border-bottom: 1px solid var(--border);
+
+            backdrop-filter: blur(22px);
+            -webkit-backdrop-filter: blur(22px);
+        }
+
+        .logo {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .logo-hex {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            width: 35px;
+            height: 35px;
+
+            color: var(--gold);
+            background: linear-gradient(145deg,#183b26,#0c1c12);
+
+            border: 1px solid rgba(212,175,55,.4);
+            border-radius: 10px;
+
+            font-size: 22px;
+            font-weight: 800;
+        }
+
+        .logo-text {
+            color: #fff;
+            font-size: 19px;
+            font-weight: 800;
+            letter-spacing: -1px;
+        }
+
+        .logo-text span {
+            color: var(--gold);
+        }
+
+        .logo-badge {
+            padding: 5px 7px;
+
+            color: var(--gold);
+            background: var(--gold-soft);
+
+            border: 1px solid rgba(212,175,55,.18);
+            border-radius: 5px;
+
+            font-size: 9px;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .network-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            padding: 8px 12px;
+
+            color: var(--text-secondary);
+            background: rgba(255,255,255,.025);
+
+            border: 1px solid var(--border);
+            border-radius: 30px;
+
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .network-badge .dot,
+        .contactos-stats .dot {
+            width: 7px;
+            height: 7px;
+            flex: 0 0 7px;
+
+            background: var(--green-bright);
+            border-radius: 50%;
+
+            box-shadow: 0 0 9px rgba(53,166,109,.5);
+        }
+
+        /* =====================================================
+           NAVEGACIÓN PRINCIPAL
+           ===================================================== */
+
+        .main-nav {
+            position: sticky;
+            z-index: 90;
+            top: var(--header-height);
+
+            display: flex;
+            align-items: center;
+            gap: 5px;
+
+            width: 100%;
+            min-height: var(--nav-height);
+            padding: 0 clamp(12px, 4vw, 52px);
+
+            overflow-x: auto;
+
+            background: rgba(10,15,11,.94);
+            border-bottom: 1px solid var(--border);
+
+            scrollbar-width: none;
+            backdrop-filter: blur(18px);
+        }
+
+        .main-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .nav-link {
+            position: relative;
+
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            min-height: 52px;
+            padding: 0 15px;
+
+            color: #89938c;
+            white-space: nowrap;
+
+            font-size: 12px;
+            font-weight: 600;
+
+            transition: color .2s ease;
+        }
+
+        .nav-link:hover {
+            color: #fff;
+        }
+
+        .nav-link.active {
+            color: #fff;
+        }
+
+        .nav-link.active::after {
+            position: absolute;
+            right: 14px;
+            bottom: 0;
+            left: 14px;
+
+            height: 2px;
+
+            background: var(--gold);
+            border-radius: 5px 5px 0 0;
+
+            content: "";
+        }
+
+        .nav-link.live {
+            color: #d8b94f;
+        }
+
+        /* =====================================================
+           CONTENEDOR DE CONTACTOS
+           ===================================================== */
+
+        .contactos-container {
+            width: 100%;
+            max-width: 1160px;
+
+            margin: 0 auto;
+            padding: 32px 24px 65px;
+        }
+
+        /* =====================================================
+           INDICADORES SUPERIORES
+           ===================================================== */
+
+        .contactos-stats {
+            display: flex;
+            align-items: center;
+            gap: 23px;
+
+            min-height: 34px;
+            margin-bottom: 19px;
+
+            color: var(--text-secondary);
+        }
+
+        .stat {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .stat .numero {
+            color: #fff;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* =====================================================
+           BÚSQUEDA
+           ===================================================== */
+
+        .search-bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+
+            width: 100%;
+            min-height: 52px;
+            margin-bottom: 19px;
+        }
+
+        .search-bar::before {
+            position: absolute;
+            content: "";
+        }
+
+        .search-bar input {
+            flex: 1;
+            min-width: 0;
+            height: 49px;
+
+            padding: 0 17px;
+
+            color: #fff;
+            background: #111914;
+
+            border: 1px solid var(--border-strong);
+            border-radius: 9px;
+
+            outline: none;
+
+            font-size: 13px;
+
+            transition: border-color .2s ease, background .2s ease;
+        }
+
+        .search-bar input::placeholder {
+            color: #69756c;
+        }
+
+        .search-bar input:focus {
+            background: #141e17;
+            border-color: rgba(212,175,55,.5);
+        }
+
+        .btn-invitar {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            min-width: 112px;
+            height: 46px;
+            padding: 0 19px;
+
+            color: #17140a;
+            background: linear-gradient(135deg,#e4c65e,#c9a52e);
+
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 8px;
+
+            font-size: 12px;
+            font-weight: 800;
+
+            transition: filter .2s ease, transform .2s ease;
+        }
+
+        .btn-invitar:hover {
+            filter: brightness(1.1);
+        }
+
+        .btn-invitar:active {
+            transform: scale(.97);
+        }
+
+        /* =====================================================
+           FILTROS
+           ===================================================== */
+
+        .filtros {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+
+            width: 100%;
+            margin-bottom: 30px;
+
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .filtros::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filtro {
+            min-height: 35px;
+            padding: 0 15px;
+
+            color: #8d9890;
+            background: transparent;
+
+            border: 1px solid transparent;
+            border-radius: 7px;
+
+            white-space: nowrap;
+
+            font-size: 11px;
+            font-weight: 600;
+
+            transition: all .18s ease;
+        }
+
+        .filtro:hover {
+            color: #fff;
+            background: rgba(255,255,255,.045);
+        }
+
+        .filtro.active {
+            color: #e6cb71;
+            background: rgba(212,175,55,.09);
+            border-color: rgba(212,175,55,.2);
+        }
+
+        /* =====================================================
+           SECCIONES SOCIALES
+           ===================================================== */
+
+        .solicitudes-section,
+        .solicitudes-enviadas-section,
+        .sugerencias-section,
+        .bloqueados-section {
+            width: 100%;
+            margin-bottom: 28px;
+
+            background: rgba(16,23,19,.56);
+
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+
+            overflow: hidden;
+        }
+
+        .solicitudes-titulo,
+        .solicitudes-enviadas-titulo,
+        .sugerencias-titulo,
+        .bloqueados-titulo {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+
+            min-height: 54px;
+            padding: 0 17px;
+
+            color: #f0f3f0;
+            background: rgba(255,255,255,.018);
+
+            border-bottom: 1px solid var(--border);
+
+            font-size: 12px;
+            font-weight: 750;
+            letter-spacing: -.1px;
+        }
+
+        .contador {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            min-width: 22px;
+            height: 22px;
+            padding: 0 7px;
+
+            color: var(--gold);
+            background: var(--gold-soft);
+
+            border: 1px solid rgba(212,175,55,.18);
+            border-radius: 20px;
+
+            font-size: 10px;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* =====================================================
+           LISTA DE CONTACTOS
+           ===================================================== */
+
+        .contactos-list {
+            width: 100%;
+            min-height: 170px;
+
+            background: rgba(16,23,19,.45);
+
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+
+            overflow: hidden;
+        }
+
+        .contactos-list .empty-state {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 13px;
+
+            min-height: 190px;
+            padding: 30px;
+
+            text-align: center;
+        }
+
+        .contactos-list .empty-state .icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            width: 48px;
+            height: 48px;
+
+            color: var(--gold);
+            background: rgba(212,175,55,.07);
+
+            border: 1px solid rgba(212,175,55,.2);
+            border-radius: 13px;
+
+            font-size: 22px;
+        }
+
+        .contactos-list .empty-state h3 {
+            margin: 0;
+
+            color: #cbd2cc;
+
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* =====================================================
+           MODALES
+           ===================================================== */
+
+        .modal-overlay,
+        .confirm-modal-overlay {
+            position: fixed;
+            z-index: 10000;
+            inset: 0;
+
+            display: none;
+            align-items: center;
+            justify-content: center;
+
+            padding: 20px;
+
+            background: rgba(0,0,0,.76);
+
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .modal-overlay[aria-hidden="false"],
+        .confirm-modal-overlay[aria-hidden="false"] {
+            display: flex;
+        }
+
+        .modal {
+            width: 100%;
+            max-width: 480px;
+            max-height: min(85vh,700px);
+
+            padding: 22px;
+
+            overflow-y: auto;
+
+            background: #101713;
+
+            border: 1px solid rgba(212,175,55,.19);
+            border-radius: 15px;
+
+            box-shadow: 0 25px 90px rgba(0,0,0,.5);
+
+            animation: csModalIn .2s ease;
+        }
+
+        @keyframes csModalIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(.985);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+
+            min-height: 42px;
+            margin-bottom: 23px;
+
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+
+            color: #fff;
+
+            font-size: 17px;
+            font-weight: 750;
+            letter-spacing: -.5px;
+        }
+
+        .btn-cerrar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            width: 33px;
+            height: 33px;
+
+            color: #9da79f;
+            background: rgba(255,255,255,.045);
+
+            border: 1px solid var(--border);
+            border-radius: 7px;
+
+            font-size: 14px;
+        }
+
+        .btn-cerrar:hover {
+            color: #fff;
+            background: rgba(255,255,255,.1);
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+        }
+
+        .form-group label {
+            color: #b5beb7;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            height: 46px;
+            padding: 0 13px;
+
+            color: #fff;
+            background: #0a100c;
+
+            border: 1px solid var(--border-strong);
+            border-radius: 8px;
+
+            outline: none;
+            font-size: 13px;
+        }
+
+        .form-group input:focus {
+            border-color: rgba(212,175,55,.5);
+        }
+
+        .resultados-busqueda {
+            min-height: 80px;
+            margin-top: 18px;
+        }
+
+        .busqueda-mensaje {
+            padding: 25px 10px;
+
+            color: var(--text-muted);
+
+            text-align: center;
+            font-size: 12px;
+        }
+
+        /* =====================================================
+           INVITACIONES
+           ===================================================== */
+
+        .codigo-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            min-height: 95px;
+            margin: 17px 0;
+
+            background: #0a100c;
+
+            border: 1px dashed rgba(212,175,55,.4);
+            border-radius: 10px;
+        }
+
+        .codigo {
+            color: var(--gold);
+
+            font-family: 'Manrope',sans-serif;
+            font-size: clamp(19px,5vw,27px);
+            font-weight: 800;
+            letter-spacing: 4px;
+
+            overflow-wrap: anywhere;
+        }
+
+        .btn-copiar {
+            min-height: 39px;
+            padding: 0 15px;
+
+            color: #e7c961;
+            background: rgba(212,175,55,.09);
+
+            border: 1px solid rgba(212,175,55,.24);
+            border-radius: 7px;
+
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .btn-copiar:hover {
+            background: rgba(212,175,55,.17);
+        }
+
+        /* =====================================================
+           CONFIRMACIÓN
+           ===================================================== */
+
+        .confirm-modal {
+            width: 100%;
+            max-width: 390px;
+            padding: 25px;
+
+            text-align: center;
+
+            background: #111914;
+
+            border: 1px solid var(--border-strong);
+            border-radius: 14px;
+
+            box-shadow: 0 25px 90px rgba(0,0,0,.55);
+        }
+
+        .confirm-modal-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            width: 45px;
+            height: 45px;
+            margin: 0 auto 17px;
+
+            color: var(--gold);
+            background: var(--gold-soft);
+
+            border: 1px solid rgba(212,175,55,.2);
+            border-radius: 12px;
+
+            font-size: 20px;
+        }
+
+        .confirm-modal-title {
+            margin: 0 0 10px;
+
+            color: #fff;
+
+            font-size: 16px;
+            font-weight: 750;
+        }
+
+        .confirm-modal-message {
+            margin: 0 0 24px;
+
+            color: var(--text-secondary);
+
+            font-size: 12px;
+            line-height: 1.7;
+        }
+
+        .confirm-modal-actions {
+            display: flex;
+            gap: 9px;
+        }
+
+        .confirm-modal-btn {
+            flex: 1;
+            min-height: 42px;
+
+            border-radius: 7px;
+
+            font-size: 11px;
+            font-weight: 750;
+        }
+
+        .confirm-modal-btn.cancel {
+            color: #c0c8c1;
+            background: transparent;
+            border: 1px solid var(--border-strong);
+        }
+
+        .confirm-modal-btn.confirm-danger {
+            color: #fff;
+            background: #8b3036;
+            border: 1px solid rgba(227,109,112,.3);
+        }
+
+        /* =====================================================
+           NOTIFICACIONES
+           ===================================================== */
+
+        .toast {
+            position: fixed;
+            z-index: 20000;
+            right: 20px;
+            bottom: 22px;
+
+            max-width: min(390px,calc(100% - 40px));
+            padding: 13px 17px;
+
+            color: #f3f5f3;
+            background: #17221a;
+
+            border: 1px solid rgba(212,175,55,.25);
+            border-radius: 9px;
+
+            box-shadow: 0 12px 40px rgba(0,0,0,.35);
+
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        /* =====================================================
+           FOOTER
+           ===================================================== */
+
+        .footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 15px;
+
+            width: 100%;
+            min-height: 65px;
+            margin-top: auto;
+            padding: 15px clamp(16px,4vw,52px);
+
+            color: #748078;
+            background: rgba(8,13,10,.85);
+
+            border-top: 1px solid var(--border);
+
+            font-size: 10px;
+        }
+
+        .footer .brand {
+            color: #d7ded8;
+            font-weight: 750;
+        }
+
+        .network-tag {
+            padding: 5px 9px;
+
+            color: #b4c5ba;
+            background: rgba(255,255,255,.035);
+
+            border: 1px solid var(--border);
+            border-radius: 5px;
+
+            font-size: 9px;
+            font-weight: 700;
+        }
+
+        /* =====================================================
+           RESPONSIVE
+           ===================================================== */
+
+        @media (min-width: 1200px) {
+            .contactos-container {
+                padding-top: 40px;
+            }
+        }
+
+        @media (max-width: 700px) {
+            :root {
+                --header-height: 59px;
+                --nav-height: 48px;
+            }
+
+            .header {
+                padding: 0 15px;
+            }
+
+            .main-nav {
+                padding: 0 8px;
+            }
+
+            .nav-link {
+                min-height: 48px;
+                padding: 0 12px;
+                font-size: 11px;
+            }
+
+            .contactos-container {
+                padding: 24px 13px 45px;
+            }
+
+            .contactos-stats {
+                gap: 17px;
+            }
+
+            .search-bar {
+                gap: 7px;
+            }
+
+            .search-bar input {
+                height: 45px;
+                padding: 0 11px;
+                font-size: 12px;
+            }
+
+            .btn-invitar {
+                min-width: 82px;
+                height: 43px;
+                padding: 0 11px;
+                font-size: 11px;
+            }
+
+            .solicitudes-section,
+            .solicitudes-enviadas-section,
+            .sugerencias-section,
+            .bloqueados-section,
+            .contactos-list {
+                border-radius: 10px;
+            }
+
+            .footer {
+                padding: 14px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .logo-badge {
+                display: none;
+            }
+
+            .network-badge {
+                padding: 7px 9px;
+                font-size: 10px;
+            }
+
+            .filtro {
+                padding: 0 11px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                scroll-behavior: auto !important;
+                animation-duration: .01ms !important;
+                transition-duration: .01ms !important;
+            }
+        }
+    </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/auth-global.js"></script>
@@ -25,15 +1029,18 @@
 
 <body>
     <div class="app">
+
         <header class="header">
             <a href="/" class="logo" aria-label="Csariel's Ecosystem">
                 <span class="logo-hex" aria-hidden="true">◈</span>
                 <span class="logo-text">Csariel<span>'s</span></span>
-                <span class="logo-badge">◇ WEB3</span>
+                <span class="logo-badge">WEB3</span>
             </a>
+
             <div class="header-actions">
                 <span class="network-badge" aria-label="Red Polygon">
-                    <span class="dot" aria-hidden="true"></span>Polygon
+                    <span class="dot" aria-hidden="true"></span>
+                    Polygon
                 </span>
             </div>
         </header>
@@ -42,7 +1049,10 @@
             <a href="/" class="nav-link">Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">Muro</a>
             <a href="/features/perfil/perfil.html" class="nav-link">Perfil</a>
-            <a href="/features/contactos/contactos.html" class="nav-link active" data-clave="contactos_header" aria-current="page">Contactos</a>
+            <a href="/features/contactos/contactos.html"
+               class="nav-link active"
+               data-clave="contactos_header"
+               aria-current="page">Contactos</a>
             <a href="/features/mensajes/mensajes.html" class="nav-link">Mensajes</a>
             <a href="/features/live/live.html" class="nav-link live">Live</a>
             <a href="/features/internet/internet.html" class="nav-link">Internet</a>
@@ -50,141 +1060,379 @@
         </nav>
 
         <main class="contactos-container">
+
             <div class="contactos-stats">
                 <span class="stat" data-clave="contactos_total">
-                    Total: <span class="numero" id="totalContactos">0</span>
+                    Total:
+                    <span class="numero" id="totalContactos">0</span>
                 </span>
+
                 <span class="stat" data-clave="contactos_en_linea">
                     <span class="dot" aria-hidden="true"></span>
-                    En línea: <span class="numero" id="onlineContactos">0</span>
+                    En línea:
+                    <span class="numero" id="onlineContactos">0</span>
                 </span>
             </div>
 
             <div class="search-bar">
-                <input type="text" id="searchInput"
-                    placeholder="🔍 Buscar personas en Csariel's (Nombre, @handle, correo)..."
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Buscar personas, nombres o @usuario..."
                     data-placeholder="contactos_buscar"
-                    autocomplete="off" maxlength="80" inputmode="search"
+                    autocomplete="off"
+                    maxlength="80"
+                    inputmode="search"
                     aria-label="Buscar personas en el ecosistema">
-                <button type="button" class="btn-invitar" data-action="invitar" data-clave="contactos_invitar">
+
+                <button
+                    type="button"
+                    class="btn-invitar"
+                    data-action="invitar"
+                    data-clave="contactos_invitar">
                     Invitar
                 </button>
             </div>
 
             <div class="filtros" role="group" aria-label="Filtros de contactos">
-                <button type="button" class="filtro active" data-filtro="todos" data-clave="contactos_todos" aria-pressed="true">Todos</button>
-                <button type="button" class="filtro" data-filtro="online" data-clave="contactos_filtro_online" aria-pressed="false">En línea</button>
-                <button type="button" class="filtro" data-filtro="favoritos" data-clave="contactos_filtro_favoritos" aria-pressed="false">Favoritos</button>
-                <button type="button" class="filtro" data-filtro="recientes" data-clave="contactos_filtro_recientes" aria-pressed="false">Recientes</button>
+
+                <button
+                    type="button"
+                    class="filtro active"
+                    data-filtro="todos"
+                    data-clave="contactos_todos"
+                    aria-pressed="true">
+                    Todos
+                </button>
+
+                <button
+                    type="button"
+                    class="filtro"
+                    data-filtro="online"
+                    data-clave="contactos_filtro_online"
+                    aria-pressed="false">
+                    En línea
+                </button>
+
+                <button
+                    type="button"
+                    class="filtro"
+                    data-filtro="favoritos"
+                    data-clave="contactos_filtro_favoritos"
+                    aria-pressed="false">
+                    Favoritos
+                </button>
+
+                <button
+                    type="button"
+                    class="filtro"
+                    data-filtro="recientes"
+                    data-clave="contactos_filtro_recientes"
+                    aria-pressed="false">
+                    Recientes
+                </button>
+
             </div>
 
-            <section class="solicitudes-section" id="solicitudesPendientesSection" aria-label="Solicitudes pendientes">
+            <section
+                class="solicitudes-section"
+                id="solicitudesPendientesSection"
+                aria-label="Solicitudes pendientes">
+
                 <div class="solicitudes-titulo">
                     Solicitudes de amistad
                     <span class="contador" id="solicitudesContador">0</span>
                 </div>
+
                 <div id="solicitudesPendientesLista"></div>
+
             </section>
 
-            <section class="solicitudes-enviadas-section" id="solicitudesEnviadasSection" aria-label="Solicitudes enviadas">
+            <section
+                class="solicitudes-enviadas-section"
+                id="solicitudesEnviadasSection"
+                aria-label="Solicitudes enviadas">
+
                 <div class="solicitudes-enviadas-titulo">
                     Solicitudes enviadas
-                    <span class="contador" id="solicitudesEnviadasContador" style="background:var(--orange-soft);">0</span>
+                    <span class="contador" id="solicitudesEnviadasContador">0</span>
                 </div>
+
                 <div id="solicitudesEnviadasLista"></div>
+
             </section>
 
-            <section class="sugerencias-section" id="sugerenciasSection" aria-label="Personas activas">
-                <div class="sugerencias-titulo">Personas activas</div>
+            <section
+                class="sugerencias-section"
+                id="sugerenciasSection"
+                aria-label="Personas activas">
+
+                <div class="sugerencias-titulo">
+                    Personas activas
+                </div>
+
                 <div id="sugerenciasLista"></div>
+
             </section>
 
-            <section class="bloqueados-section" id="bloqueadosSection" aria-label="Usuarios bloqueados">
+            <section
+                class="bloqueados-section"
+                id="bloqueadosSection"
+                aria-label="Usuarios bloqueados">
+
                 <div class="bloqueados-titulo">
                     Usuarios bloqueados
-                    <span class="contador" id="bloqueadosContador" style="background:#ff8197;">0</span>
+                    <span class="contador" id="bloqueadosContador">0</span>
                 </div>
+
                 <div id="bloqueadosLista"></div>
+
             </section>
 
-            <div class="contactos-list" id="contactosList" aria-live="polite" aria-busy="true">
+            <div
+                class="contactos-list"
+                id="contactosList"
+                aria-live="polite"
+                aria-busy="true">
+
                 <div class="empty-state">
                     <span class="icon" aria-hidden="true">◈</span>
-                    <h3 data-clave="contactos_cargando">Cargando contactos...</h3>
+                    <h3 data-clave="contactos_cargando">
+                        Cargando contactos...
+                    </h3>
                 </div>
+
             </div>
+
         </main>
 
         <footer class="footer">
-            <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
+            <span>
+                <span class="brand">◈ Csariel's</span>
+                · Sabor al Paladar · WEB3
+            </span>
+
             <span class="network-tag">Polygon</span>
         </footer>
+
     </div>
 
-    <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div
+        id="toast"
+        class="toast"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true">
+    </div>
 
-    <!-- Modal: Buscar contacto -->
-    <div class="modal-overlay" id="modalBuscarContacto" role="dialog" aria-modal="true"
-        aria-labelledby="tituloBuscarContacto" aria-hidden="true">
+    <!-- =====================================================
+         MODAL · BUSCAR CONTACTO
+         ===================================================== -->
+
+    <div
+        class="modal-overlay"
+        id="modalBuscarContacto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tituloBuscarContacto"
+        aria-hidden="true">
+
         <div class="modal">
+
             <div class="modal-header">
-                <h2 id="tituloBuscarContacto" data-clave="contactos_buscar_titulo">Buscar contacto</h2>
-                <button type="button" class="btn-cerrar" data-action="cerrar-buscar" aria-label="Cerrar">✕</button>
+                <h2
+                    id="tituloBuscarContacto"
+                    data-clave="contactos_buscar_titulo">
+                    Buscar contacto
+                </h2>
+
+                <button
+                    type="button"
+                    class="btn-cerrar"
+                    data-action="cerrar-buscar"
+                    aria-label="Cerrar">
+                    ×
+                </button>
             </div>
+
             <div class="form-group">
-                <label for="searchInputModal" data-clave="contactos_buscar_label">Buscar por nombre, @handle, correo o teléfono</label>
-                <input type="text" id="searchInputModal" placeholder="Ej: Juan o @juan123"
-                    autocomplete="off" maxlength="80" inputmode="search">
+
+                <label
+                    for="searchInputModal"
+                    data-clave="contactos_buscar_label">
+                    Buscar por nombre, @handle, correo o teléfono
+                </label>
+
+                <input
+                    type="text"
+                    id="searchInputModal"
+                    placeholder="Nombre o @usuario"
+                    autocomplete="off"
+                    maxlength="80"
+                    inputmode="search">
+
             </div>
-            <div class="resultados-busqueda" id="resultadosBusqueda" aria-live="polite">
-                <div class="busqueda-mensaje" data-clave="contactos_buscar_minimo">
+
+            <div
+                class="resultados-busqueda"
+                id="resultadosBusqueda"
+                aria-live="polite">
+
+                <div
+                    class="busqueda-mensaje"
+                    data-clave="contactos_buscar_minimo">
                     Escribe al menos 2 caracteres para buscar
                 </div>
+
             </div>
+
         </div>
+
     </div>
 
-    <!-- Modal: Invitación -->
-    <div class="modal-overlay" id="modalInvitacion" role="dialog" aria-modal="true"
-        aria-labelledby="tituloInvitacion" aria-hidden="true">
+    <!-- =====================================================
+         MODAL · INVITACIÓN
+         ===================================================== -->
+
+    <div
+        class="modal-overlay"
+        id="modalInvitacion"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tituloInvitacion"
+        aria-hidden="true">
+
         <div class="modal">
+
             <div class="modal-header">
-                <h2 id="tituloInvitacion" data-clave="contactos_invitar_titulo">Invitar contacto</h2>
-                <button type="button" class="btn-cerrar" data-action="cerrar-invitacion" aria-label="Cerrar">✕</button>
+
+                <h2
+                    id="tituloInvitacion"
+                    data-clave="contactos_invitar_titulo">
+                    Invitar contacto
+                </h2>
+
+                <button
+                    type="button"
+                    class="btn-cerrar"
+                    data-action="cerrar-invitacion"
+                    aria-label="Cerrar">
+                    ×
+                </button>
+
             </div>
+
             <div style="text-align:center;">
-                <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:12px;"
+
+                <p
+                    style="color:var(--text-secondary);font-size:12px;margin-bottom:12px;"
                     data-clave="contactos_invitar_desc">
                     Comparte este código con quien quieras invitar
                 </p>
+
                 <div class="codigo-box">
-                    <div class="codigo" id="codigoInvitacion" aria-live="polite">Generando...</div>
+                    <div
+                        class="codigo"
+                        id="codigoInvitacion"
+                        aria-live="polite">
+                        Generando...
+                    </div>
                 </div>
-                <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                    <button type="button" class="btn-copiar" data-action="copiar-codigo" data-clave="contactos_copiar_codigo">Copiar código</button>
-                    <button type="button" class="btn-copiar" data-action="cerrar-invitacion" data-clave="contactos_cerrar">Cerrar</button>
+
+                <div
+                    style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+
+                    <button
+                        type="button"
+                        class="btn-copiar"
+                        data-action="copiar-codigo"
+                        data-clave="contactos_copiar_codigo">
+                        Copiar código
+                    </button>
+
+                    <button
+                        type="button"
+                        class="btn-copiar"
+                        data-action="cerrar-invitacion"
+                        data-clave="contactos_cerrar">
+                        Cerrar
+                    </button>
+
                 </div>
-                <p style="font-size:.65rem;color:var(--text-muted);margin-top:12px;" data-clave="contactos_codigo_expira">
+
+                <p
+                    style="font-size:10px;color:var(--text-muted);margin-top:15px;"
+                    data-clave="contactos_codigo_expira">
                     El código expira después de 7 días
                 </p>
+
             </div>
+
         </div>
+
     </div>
 
-    <!-- Modal: Confirmación -->
-    <div class="confirm-modal-overlay" id="confirmModalOverlay" role="dialog" aria-modal="true"
-        aria-labelledby="confirmModalTitle" aria-describedby="confirmModalMessage" aria-hidden="true">
+    <!-- =====================================================
+         MODAL · CONFIRMACIÓN
+         ===================================================== -->
+
+    <div
+        class="confirm-modal-overlay"
+        id="confirmModalOverlay"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirmModalTitle"
+        aria-describedby="confirmModalMessage"
+        aria-hidden="true">
+
         <div class="confirm-modal">
-            <div class="confirm-modal-icon" id="confirmModalIcon" aria-hidden="true">⚠️</div>
-            <h3 class="confirm-modal-title" id="confirmModalTitle">Confirmar acción</h3>
-            <p class="confirm-modal-message" id="confirmModalMessage">¿Estás seguro?</p>
-            <div class="confirm-modal-actions">
-                <button type="button" class="confirm-modal-btn cancel" id="confirmModalCancel">Cancelar</button>
-                <button type="button" class="confirm-modal-btn confirm-danger" id="confirmModalConfirm">Aceptar</button>
+
+            <div
+                class="confirm-modal-icon"
+                id="confirmModalIcon"
+                aria-hidden="true">
+                !
             </div>
+
+            <h3
+                class="confirm-modal-title"
+                id="confirmModalTitle">
+                Confirmar acción
+            </h3>
+
+            <p
+                class="confirm-modal-message"
+                id="confirmModalMessage">
+                ¿Estás seguro?
+            </p>
+
+            <div class="confirm-modal-actions">
+
+                <button
+                    type="button"
+                    class="confirm-modal-btn cancel"
+                    id="confirmModalCancel">
+                    Cancelar
+                </button>
+
+                <button
+                    type="button"
+                    class="confirm-modal-btn confirm-danger"
+                    id="confirmModalConfirm">
+                    Aceptar
+                </button>
+
+            </div>
+
         </div>
+
     </div>
+
+    <!-- =====================================================
+         JAVASCRIPT PRINCIPAL
+         ===================================================== -->
 
     <script src="/features/contactos/contactos.js?v=26_1" defer></script>
+
 </body>
 </html>
