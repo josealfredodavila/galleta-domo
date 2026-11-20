@@ -1,9 +1,9 @@
 /* ============================================================
    CSARIEL'S · CONTACTOS · v1
    ============================================================
-   Estilos modulares para /features/mensajes/contactos.html
+   Estilos modulares para /features/contactos/contactos.html
    Enlazado desde el <head> como:
-   <link rel="stylesheet" href="/features/mensajes/css/contactos.css?v=1">
+   <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=1">
 
    ÍNDICE
    1.  Tokens y base
@@ -492,6 +492,33 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .avatar-image-error { display: none !important; }
 .avatar-fallback-hidden { display: none; }
 
+/* ===== 11. AVATARES Y FALLBACK =====
+   Si la foto no carga, contactos.js añade .avatar-image-error a la <img>.
+   La inicial (.avatar-fallback) debe mostrarse entonces, encima del fondo. */
+.contacto-card .contacto-avatar .contacto-avatar-img {
+    position: absolute;
+    inset: 0;
+}
+
+.contacto-card .contacto-avatar .avatar-fallback {
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-weight: 800;
+}
+
+/* Inicial visible cuando no hay foto (no existe <img>) */
+.contacto-card .contacto-avatar .avatar-fallback:not(.avatar-fallback-hidden) {
+    display: flex;
+}
+
+/* Inicial visible cuando la foto falló (la <img> recibió .avatar-image-error) */
+.contacto-card .contacto-avatar .contacto-avatar-img.avatar-image-error + .avatar-fallback-hidden {
+    display: flex;
+}
+
 .contacto-info { flex: 1; min-width: 0; }
 
 .contacto-info .nombre {
@@ -587,7 +614,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .contacto-actions .eliminar,
 .contacto-actions .rechazar { color: #ff8197; }
 
-/* ===== 11. ESTADOS: vacío, loading, skeleton ===== */
+/* ===== 12. ESTADOS: vacío, loading, skeleton ===== */
 .contacto-card.skeleton { pointer-events: none; opacity: .6; }
 .skeleton-avatar { background: rgba(255, 255, 255, .05) !important; }
 .skeleton-info { display: flex; flex-direction: column; gap: 8px; }
@@ -643,7 +670,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .empty-state .btn-accion svg { width: 16px; height: 16px; }
 .empty-state .btn-accion:hover { background: rgba(255, 122, 26, .08); }
 
-/* ===== 12. BÚSQUEDA: mensaje y resultado ===== */
+/* ===== 12b. BÚSQUEDA: mensaje y resultado ===== */
 .busqueda-mensaje {
     padding: 24px;
     color: var(--text-muted);
