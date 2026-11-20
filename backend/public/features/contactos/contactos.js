@@ -1,11 +1,14 @@
 /* ============================================================
    CSARIEL'S · CONTACTOS · v26.2
    ============================================================
-   v26.2:
-   - Integración con el nuevo HTML para el control estricto de filtros.
-   - Control dinámico del estado vacío (Empty State).
-   - Actualización de contadores en los títulos de las secciones.
-   - Corrección de visibilidad de la sección de Grupos.
+   v26.2 (Correcciones de coherencia):
+   - SEPARACIÓN ESTRICTA: Las "Sugerencias" ya no muestran a personas
+     que ya son tus amigos. Solo muestran gente nueva para conectar.
+   - FILTRO "EN LÍNEA": Ahora solo muestra a los amigos que están
+     realmente conectados. Si no hay, muestra el estado vacío.
+   - FILTRO "AMIGOS": Muestra a todos tus amigos aceptados.
+   - ESTADO VACÍO: El botón "Buscar personas" ahora funciona
+     correctamente cuando no hay resultados.
    ============================================================ */
 
 (function () {
@@ -22,7 +25,7 @@
         RPC_RESPONDER_SOLICITUD: 'responder_solicitud_amistad',
         RPC_ELIMINAR_AMISTAD: 'eliminar_amistad',
 
-        TITULO_SUGERENCIAS: 'Personas activas',
+        TITULO_SUGERENCIAS: 'Personas que puedes conocer',
 
         PERFIL_PUBLICO_URL: '/features/perfil/perfil-publico.html',
         MENSAJES_URL: '/features/mensajes/mensajes.html',
@@ -46,14 +49,14 @@
         session: null,
         sessionExpira: 0,
 
-        contactos: [],
+        contactos: [],           // filas activas: { id, contacto_id, es_favorito, fecha }
         totalContactos: 0,
         paginaActual: 0,
         hayMas: true,
 
-        pendientesRecibidas: [],
-        pendientesEnviadas: [],
-        bloqueados: [],
+        pendientesRecibidas: [], // { id, usuario_id }
+        pendientesEnviadas: [],  // { id, contacto_id }
+        bloqueados: [],          // { bloqueado_id }
 
         filtroActual: 'todos',
         textoBusqueda: '',
@@ -61,7 +64,7 @@
         observerScroll: null,
 
         perfiles: new Map(),
-        idsContactosSet: new Set(),
+        idsContactosSet: new Set(), // Solo IDs de amigos ACEPTADOS
         operacionEnCurso: new Set()
     };
 
@@ -426,6 +429,7 @@
             if (!rEnv.error) state.pendientesEnviadas = (rEnv.data || []).map(function (s) { return { id: s.id, contacto_id: s.contacto_id }; });
             if (!rBloq.error) state.bloqueados = (rBloq.data || []).map(function (b) { return { bloqueado_id: b.bloqueado_id }; });
 
+            // IMPORTANTE: Solo los contactos ACEPTADOS (estado: 'activo') entran a este Set
             state.idsContactosSet = new Set(pagina.map(function (c) { return c.contacto_id; }).filter(Boolean));
             state.paginaActual = reset ? 1 : state.paginaActual + 1;
             state.hayMas = pagina.length === CONFIG.PAGE_SIZE;
@@ -464,7 +468,7 @@
     }
 
     /* ============================================================
-       RENDER: CONTACTOS (Incluye lógica para el Empty State)
+       RENDER: CONTACTOS (Filtros estrictos)
        ============================================================ */
 
     function renderizarContactos(errorConsulta) {
@@ -492,10 +496,17 @@
             };
         });
 
-        // Filtrado local (el HTML ya oculta las secciones grandes, esto afina la lista)
-        if (state.filtroActual === 'online') items = items.filter(function (c) { return c.online; });
-        if (state.filtroActual === 'favoritos') items = items.filter(function (c) { return c.es_favorito; });
+        // APLICACIÓN ESTRICTA DE FILTROS
+        if (state.filtroActual === 'online') {
+            // Solo amigos que estén en línea
+            items = items.filter(function (c) { return c.online === true; });
+        }
+        if (state.filtroActual === 'favoritos') {
+            // Solo amigos marcados como favoritos
+            items = items.filter(function (c) { return c.es_favorito === true; });
+        }
         if (state.filtroActual === 'recientes') {
+            // Ordenados por fecha, solo los últimos 10
             items = items.filter(function (c) { return Boolean(c.fecha); })
                 .sort(function (a, b) { return new Date(b.fecha).getTime() - new Date(a.fecha).getTime(); })
                 .slice(0, 10);
@@ -507,13 +518,12 @@
             });
         }
 
-        // Lógica del Estado Vacío
+        // Estado vacío dinámico
         if (!items.length) {
             var msg = state.textoBusqueda ? 'No se encontraron contactos.'
-                : state.filtroActual === 'online' ? 'No hay contactos conectados ahora.'
-                : state.filtroActual === 'favoritos' ? 'Todavía no tienes favoritos.'
+                : state.filtroActual === 'online' ? 'No hay amigos conectados ahora.'
+                : state.filtroActual === 'favoritos' ? 'Todavía no tienes amigos favoritos.'
                 : 'Tu red está vacía. Busca personas para conectar.';
-            
             mostrarEstadoVacio('🪐', msg);
             return;
         }
@@ -668,7 +678,7 @@
     }
 
     /* ============================================================
-       PERSONAS ACTIVAS (sugerencias)
+       PERSONAS ACTIVAS (Sugerencias)
        ============================================================ */
 
     async function cargarSugerencias() {
@@ -689,7 +699,11 @@
             if (r.error) throw r.error;
 
             var crudo = Array.isArray(r.data) ? r.data : [];
-            var sugeridos = crudo.filter(function (u) { return u && u.id; }).slice(0, CONFIG.MAX_SUGERENCIAS);
+            
+            // FILTRO CRÍTICO: Eliminar a los que ya son amigos (están en idsContactosSet)
+            var sugeridos = crudo.filter(function (u) { 
+                return u && u.id && !state.idsContactosSet.has(u.id); 
+            }).slice(0, CONFIG.MAX_SUGERENCIAS);
 
             sugeridos.forEach(function (u) {
                 if (!state.perfiles.has(u.id)) state.perfiles.set(u.id, normalizarPerfil(u));
@@ -753,34 +767,28 @@
     function mostrarEstadoVacio(icono, mensaje) {
         var lista = document.getElementById('contactosList');
         if (!lista) return;
+        lista.setAttribute('aria-busy', 'false');
         
-        // Buscamos el empty-state que ya existe en el HTML
+        // Usamos el empty-state que ya está en el HTML
         var emptyState = document.getElementById('contactosEmptyState');
         if (!emptyState) {
-            // Si por alguna razón no está, lo creamos
-            lista.setAttribute('aria-busy', 'false');
-            lista.innerHTML = '<div class="empty-state" id="contactosEmptyState"><div class="icon" aria-hidden="true">' + escapeHtml(icono) + '</div><h3 id="emptyStateTitle">' + escapeHtml(mensaje) + '</h3><button type="button" class="btn-accion" id="btnBuscarEmpty" data-contactos-action="agregar" style="display:none;">' + SVG.agregarAmigo + ' Buscar personas</button></div>';
-            emptyState = document.getElementById('contactosEmptyState');
+            lista.innerHTML = '<div class="empty-state" id="contactosEmptyState"><div class="icon" aria-hidden="true">' + escapeHtml(icono) + '</div><h3>' + escapeHtml(mensaje) + '</h3><button type="button" class="btn-accion" data-contactos-action="agregar">' + SVG.agregarAmigo + ' Buscar personas</button></div>';
+            return;
         }
 
-        // Actualizamos los textos
-        var title = emptyState.querySelector('h3') || document.getElementById('emptyStateTitle');
-        var btn = emptyState.querySelector('.btn-accion') || document.getElementById('btnBuscarEmpty');
+        var title = emptyState.querySelector('h3');
         var iconEl = emptyState.querySelector('.icon') || emptyState.querySelector('.planeta-busqueda');
+        var btn = emptyState.querySelector('.btn-buscar-empty');
 
         if (title) title.textContent = mensaje;
         if (iconEl) iconEl.textContent = icono;
         
-        // El botón "Buscar personas" solo se muestra si la red está vacía o no hay resultados
+        // Mostrar botón solo si no hay contactos y no estamos buscando
         if (btn) {
-            if (state.contactos.length === 0 || state.textoBusqueda) {
-                btn.style.display = 'inline-flex';
-            } else {
-                btn.style.display = 'none';
-            }
+            btn.style.display = (state.contactos.length === 0 && !state.textoBusqueda) ? 'inline-flex' : 'none';
         }
 
-        lista.setAttribute('aria-busy', 'false');
+        emptyState.style.display = 'block';
     }
 
     function configurarScrollInfinito() {
@@ -1171,7 +1179,7 @@
     }
 
     /* ============================================================
-       EVENTOS (Delegación)
+       EVENTOS
        ============================================================ */
 
     function configurarEventos() {
@@ -1197,25 +1205,19 @@
             }, CONFIG.DEBOUNCE_BUSQUEDA_MS));
         }
 
-        // Manejo estricto de filtros desde el JS
         document.querySelectorAll('.filtros .filtro').forEach(function (boton) {
             boton.addEventListener('click', function () {
-                // Quitar active de todos
                 document.querySelectorAll('.filtros .filtro').forEach(function (item) {
                     item.classList.remove('active');
                     item.setAttribute('aria-pressed', 'false');
                 });
-                // Poner active al clickeado
                 boton.classList.add('active');
                 boton.setAttribute('aria-pressed', 'true');
                 state.filtroActual = boton.dataset.filtro || 'todos';
-                
-                // Refrescar la vista (el HTML reaccionará a state.filtroActual mediante CSS o esta misma función)
                 renderizarContactos(null);
             });
         });
 
-        // Delegación para la lista principal
         var lista = document.getElementById('contactosList');
         if (lista) {
             lista.addEventListener('click', function (event) {
@@ -1253,7 +1255,6 @@
             });
         }
 
-        // Delegación para solicitudes, enviadas, bloqueados, personas activas y modal
         document.addEventListener('click', function (event) {
             var t = event.target;
 
@@ -1310,7 +1311,6 @@
             });
         }
 
-        // Expuestos para los onclick del HTML (Invitar, cerrar modales, copiar)
         window.invitarContacto = invitarContacto;
         window.cerrarModalBuscar = cerrarModalBuscar;
         window.cerrarModalInvitacion = cerrarModalInvitacion;
