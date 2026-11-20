@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=4">
 
     <style>
-        /* Ajustes visuales directos para Grupos de comunidad, Dashboard, Cercanos y Config */
+        /* Ajustes visuales directos para Grupos de comunidad, Dashboard, Cercanos, QR y Config */
         .hud-brand-mark {
             display: inline-flex;
             align-items: center;
@@ -285,6 +285,31 @@
             border: 1px dashed rgba(255, 255, 255, 0.14);
         }
 
+        /* Solo QR personal limpio para escaneo directo */
+        .qr-solo-escaneo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 12px;
+        }
+        .qr-solo-marco {
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 18px;
+            box-shadow: 0 0 28px rgba(0, 229, 255, 0.22);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 224px;
+            min-height: 224px;
+        }
+        .qr-solo-marco canvas,
+        .qr-solo-marco img {
+            display: block;
+            width: 210px !important;
+            height: 210px !important;
+        }
+
         /* Panel/Modal integrado de Configuración, Visibilidad y Accesibilidad */
         .cfg-modal-card {
             max-width: 540px;
@@ -400,6 +425,7 @@
     </style>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script src="/features/shared/js/auth-global.js"></script>
     <script src="/features/shared/js/presencia-global.js" defer></script>
     <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
@@ -425,7 +451,7 @@
                 <button type="button" class="hud-icon-btn" data-action="invitar" aria-label="Invitar contacto" title="Invitar contacto">
                     <span aria-hidden="true">+</span>
                 </button>
-                <button type="button" class="hud-icon-btn hud-qr-btn" data-action="abrir-qr" aria-label="Agregar con código QR" title="Agregar o mostrar QR">
+                <button type="button" id="btnAbrirQrPersonal" class="hud-icon-btn hud-qr-btn" aria-label="Mi código QR" title="Mi código QR">
                     <span aria-hidden="true">⛶</span>
                 </button>
                 <button type="button" id="btnAbrirConfigContactos" class="hud-icon-btn" aria-label="Configuración y visibilidad" title="Configuración y visibilidad">
@@ -638,6 +664,20 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
+    <!-- Modal: Solo QR personal para escaneo directo -->
+    <div class="modal-overlay" id="modalQRContacto" role="dialog" aria-modal="true"
+        aria-label="Código QR personal" aria-hidden="true">
+        <div class="modal qr-modal">
+            <div class="modal-header">
+                <h2>QR</h2>
+                <button type="button" class="btn-cerrar" id="btnCerrarQrPersonal" data-action="cerrar-qr" aria-label="Cerrar">✕</button>
+            </div>
+            <div class="qr-solo-escaneo">
+                <div class="qr-solo-marco" id="qrPersonalLienzo"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal integrado: Configuración, Visibilidad y Accesibilidad -->
     <div class="modal-overlay" id="modalConfigContactos" role="dialog" aria-modal="true"
         aria-labelledby="tituloConfigContactos" aria-hidden="true">
@@ -708,61 +748,6 @@
             <div class="cfg-links-row">
                 <a href="/features/perfil/configuracion/index.html" class="cfg-link-chip">Ajustes completos ▸</a>
                 <a href="/features/perfil/configuracion/privacidad/visibilidad.html" class="cfg-link-chip">Visibilidad avanzada ▸</a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Agregar / Compartir por QR -->
-    <div class="modal-overlay" id="modalQRContacto" role="dialog" aria-modal="true"
-        aria-labelledby="tituloQRContacto" aria-hidden="true">
-        <div class="modal qr-modal">
-            <div class="modal-header">
-                <h2 id="tituloQRContacto" data-clave="contactos_qr_titulo">Conectar por QR</h2>
-                <button type="button" class="btn-cerrar" data-action="cerrar-qr" aria-label="Cerrar">✕</button>
-            </div>
-
-            <div class="qr-panel-body">
-                <p class="qr-subtexto" data-clave="contactos_qr_desc">
-                    Muestra tu código QR para que te agreguen o pega/escanea un código QR de contacto.
-                </p>
-
-                <div class="qr-box-wrapper" id="qrCanvasBox">
-                    <div class="qr-placeholder-grid" id="qrVisualGrid" aria-hidden="true">
-                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-                    </div>
-                    <div class="qr-valor-texto" id="qrCodigoValor">CSARIEL-QR</div>
-                </div>
-
-                <div class="qr-acciones-fila">
-                    <button type="button" class="btn-copiar" id="btnCopiarQR" data-action="copiar-qr">
-                        Copiar código QR
-                    </button>
-                    <button type="button" class="btn-copiar" id="btnEscanearCamaraQR" data-action="escanear-qr-camara">
-                        Escanear cámara
-                    </button>
-                </div>
-
-                <video id="qrVideoPreview" class="qr-video-preview" playsinline muted style="display:none;"></video>
-
-                <div class="form-group qr-agregar-manual">
-                    <label for="inputCodigoQRContacto" data-clave="contactos_qr_ingresar_label">
-                        O pega el código / enlace QR de la persona
-                    </label>
-                    <div class="qr-input-row">
-                        <input type="text" id="inputCodigoQRContacto"
-                            placeholder="Pega código QR o @usuario..."
-                            autocomplete="off" maxlength="120">
-                        <button type="button" class="btn-copiar" id="btnAgregarPorQR" data-action="agregar-por-qr">
-                            Agregar
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -1175,6 +1160,85 @@
         }
 
         // ================================================================
+        // QR PERSONAL DE USUARIO (SOLO VISUAL PARA ESCANEAR DIRECTO)
+        // ================================================================
+        async function obtenerPayloadQrPersonal() {
+            let userId = '';
+            let handle = '';
+            let email = '';
+
+            if (typeof sessionUser !== 'undefined' && sessionUser) {
+                userId = sessionUser.id || '';
+                email = sessionUser.email || '';
+            }
+
+            if (await esperarSupabase() && window.supabaseClient) {
+                try {
+                    const { data: authData } = await window.supabaseClient.auth.getUser();
+                    const u = authData && authData.user;
+                    if (u) {
+                        userId = u.id || userId;
+                        email = u.email || email;
+                        const { data: prof } = await window.supabaseClient
+                            .from('usuarios')
+                            .select('handle')
+                            .eq('id', u.id)
+                            .maybeSingle();
+                        if (prof && prof.handle) handle = String(prof.handle).replace(/^@+/, '');
+                    }
+                } catch (_) {}
+            }
+
+            if (handle) return 'CSARIEL:CONTACT:@' + handle;
+            if (userId) return 'CSARIEL:CONTACT:ID:' + userId;
+            if (email) return 'CSARIEL:CONTACT:' + email;
+            return 'CSARIEL:CONTACT:GUEST';
+        }
+
+        async function renderizarQrPersonal() {
+            const lienzo = document.getElementById('qrPersonalLienzo');
+            if (!lienzo) return;
+            lienzo.innerHTML = '';
+
+            const payload = await obtenerPayloadQrPersonal();
+
+            if (typeof window.QRCode !== 'undefined') {
+                const canvas = document.createElement('canvas');
+                lienzo.appendChild(canvas);
+                try {
+                    await window.QRCode.toCanvas(canvas, payload, {
+                        width: 210,
+                        margin: 1,
+                        color: { dark: '#05080f', light: '#ffffff' }
+                    });
+                    return;
+                } catch (_) {
+                    lienzo.innerHTML = '';
+                }
+            }
+
+            const img = document.createElement('img');
+            img.alt = 'QR';
+            img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=' + encodeURIComponent(payload);
+            lienzo.appendChild(img);
+        }
+
+        async function abrirQrPersonalModal() {
+            const modal = document.getElementById('modalQRContacto');
+            if (!modal) return;
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+            await renderizarQrPersonal();
+        }
+
+        function cerrarQrPersonalModal() {
+            const modal = document.getElementById('modalQRContacto');
+            if (!modal) return;
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        // ================================================================
         // AMIGOS CERCANOS + LUGARES DONDE ESTUVIERON (/api/turismo/buscar)
         // ================================================================
         async function obtenerCoordsCercanos() {
@@ -1395,6 +1459,19 @@
         document.addEventListener('DOMContentLoaded', () => {
             cargarDashboard();
             aplicarEstilosAccesibilidad();
+
+            const btnQrTop = document.getElementById('btnAbrirQrPersonal');
+            const btnQrInline = document.querySelector('.hud-inline-qr[data-action="abrir-qr"]');
+            const btnCerrarQr = document.getElementById('btnCerrarQrPersonal');
+            const modalQr = document.getElementById('modalQRContacto');
+            if (btnQrTop) btnQrTop.addEventListener('click', (e) => { e.stopImmediatePropagation(); abrirQrPersonalModal(); }, true);
+            if (btnQrInline) btnQrInline.addEventListener('click', (e) => { e.stopImmediatePropagation(); abrirQrPersonalModal(); }, true);
+            if (btnCerrarQr) btnCerrarQr.addEventListener('click', cerrarQrPersonalModal);
+            if (modalQr) {
+                modalQr.addEventListener('click', (e) => {
+                    if (e.target === modalQr) cerrarQrPersonalModal();
+                });
+            }
 
             const btnCfg = document.getElementById('btnAbrirConfigContactos');
             const btnCerrarCfg = document.getElementById('btnCerrarConfigContactos');
