@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
     <!-- CSS modular de Contactos -->
-    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=2">
+    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=3">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/auth-global.js"></script>
@@ -43,7 +43,7 @@
                 <button type="button" class="hud-icon-btn" data-action="invitar" aria-label="Invitar contacto" title="Invitar contacto">
                     <span aria-hidden="true">👤+</span>
                 </button>
-                <button type="button" class="hud-icon-btn" data-action="abrir-buscar" aria-label="Buscar o escanear contacto" title="Buscar contacto">
+                <button type="button" class="hud-icon-btn hud-qr-btn" data-action="abrir-qr" aria-label="Agregar con código QR" title="Agregar o mostrar QR">
                     <span aria-hidden="true">⛶</span>
                 </button>
                 <a href="/features/perfil/perfil.html" class="hud-icon-btn" aria-label="Ajustes y perfil" title="Ajustes y perfil">
@@ -80,11 +80,14 @@
                 <button type="button" class="hud-inline-invite" data-action="invitar" data-clave="contactos_invitar">
                     + Invitar
                 </button>
+                <button type="button" class="hud-inline-qr" data-action="abrir-qr" data-clave="contactos_qr">
+                    ⛶ QR
+                </button>
             </div>
 
-            <!-- Barra de búsqueda inteligente con IA y voz -->
+            <!-- Barra de búsqueda inteligente con IA y lupa limpia -->
             <div class="search-bar hud-search-wrapper" role="search">
-                <div class="hud-search-box">
+                <div class="hud-search-box" id="hudSearchBox">
                     <span class="hud-ai-badge" aria-hidden="true">IA</span>
                     <div class="hud-search-fields">
                         <input type="text" id="searchInput" class="hud-search-input"
@@ -96,15 +99,18 @@
                             Búsqueda inteligente · Resultados en tiempo real ⚡
                         </span>
                     </div>
-                    <button type="button" class="hud-search-submit" data-action="buscar-rapido" aria-label="Ejecutar búsqueda">
-                        <span aria-hidden="true">🔍</span>
+                    <button type="button" class="hud-search-submit" data-action="buscar-rapido" aria-label="Buscar contactos" title="Buscar">
+                        <svg class="hud-lupa-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="11" cy="11" r="7"></circle>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                        </svg>
                     </button>
                 </div>
 
-                <button type="button" class="hud-voice-btn" id="btnVozBuscar" data-action="voz-buscar"
-                    aria-label="Buscar por voz" title="Buscar por voz">
-                    <span aria-hidden="true">🎤</span>
-                </button>
+                <!-- Indicador orbital / planeta que gira al buscar -->
+                <div class="hud-search-orbit" id="searchOrbitIndicator" aria-hidden="true" title="Explorando red en tiempo real">
+                    <span class="planeta-busqueda" id="planetaBusqueda">🪐</span>
+                </div>
             </div>
 
             <!-- Filtros en píldora -->
@@ -161,8 +167,8 @@
 
             <!-- Lista principal de contactos -->
             <div class="contactos-list hud-contacts-list" id="contactosList" aria-live="polite" aria-busy="true">
-                <div class="empty-state">
-                    <span class="icon" aria-hidden="true">◈</span>
+                <div class="empty-state" id="contactosEmptyState">
+                    <span class="planeta-busqueda planeta-empty" id="planetaEstadoVacio" aria-hidden="true">🪐</span>
                     <h3 data-clave="contactos_cargando">Cargando contactos...</h3>
                 </div>
             </div>
@@ -175,6 +181,61 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Modal: Agregar / Compartir por QR -->
+    <div class="modal-overlay" id="modalQRContacto" role="dialog" aria-modal="true"
+        aria-labelledby="tituloQRContacto" aria-hidden="true">
+        <div class="modal qr-modal">
+            <div class="modal-header">
+                <h2 id="tituloQRContacto" data-clave="contactos_qr_titulo">Conectar por QR</h2>
+                <button type="button" class="btn-cerrar" data-action="cerrar-qr" aria-label="Cerrar">✕</button>
+            </div>
+
+            <div class="qr-panel-body">
+                <p class="qr-subtexto" data-clave="contactos_qr_desc">
+                    Muestra tu código QR para que te agreguen o pega/escanea un código QR de contacto.
+                </p>
+
+                <div class="qr-box-wrapper" id="qrCanvasBox">
+                    <div class="qr-placeholder-grid" id="qrVisualGrid" aria-hidden="true">
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                        <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <div class="qr-valor-texto" id="qrCodigoValor">CSARIEL-QR</div>
+                </div>
+
+                <div class="qr-acciones-fila">
+                    <button type="button" class="btn-copiar" id="btnCopiarQR" data-action="copiar-qr">
+                        Copiar código QR
+                    </button>
+                    <button type="button" class="btn-copiar" id="btnEscanearCamaraQR" data-action="escanear-qr-camara">
+                        Escanear cámara
+                    </button>
+                </div>
+
+                <video id="qrVideoPreview" class="qr-video-preview" playsinline muted style="display:none;"></video>
+
+                <div class="form-group qr-agregar-manual">
+                    <label for="inputCodigoQRContacto" data-clave="contactos_qr_ingresar_label">
+                        O pega el código / enlace QR de la persona
+                    </label>
+                    <div class="qr-input-row">
+                        <input type="text" id="inputCodigoQRContacto"
+                            placeholder="Pega código QR o @usuario..."
+                            autocomplete="off" maxlength="120">
+                        <button type="button" class="btn-copiar" id="btnAgregarPorQR" data-action="agregar-por-qr">
+                            Agregar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: Buscar contacto -->
     <div class="modal-overlay" id="modalBuscarContacto" role="dialog" aria-modal="true"
@@ -238,6 +299,54 @@
         </div>
     </div>
 
+    <script>
+        // Activa el giro del planeta cuando empiezan a buscar contactos
+        document.addEventListener('DOMContentLoaded', () => {
+            const inputsBusqueda = [
+                document.getElementById('searchInput'),
+                document.getElementById('searchInputModal')
+            ].filter(Boolean);
+
+            const planetas = [
+                document.getElementById('planetaBusqueda'),
+                document.getElementById('planetaEstadoVacio')
+            ].filter(Boolean);
+
+            const orbita = document.getElementById('searchOrbitIndicator');
+            let timeoutGiro = null;
+
+            const actualizarGiroPlaneta = (activo) => {
+                planetas.forEach((p) => {
+                    p.classList.toggle('girando', activo);
+                    p.dataset.buscando = activo ? 'true' : 'false';
+                });
+                if (orbita) {
+                    orbita.classList.toggle('activa', activo);
+                }
+            };
+
+            inputsBusqueda.forEach((input) => {
+                input.addEventListener('input', (e) => {
+                    const hayTexto = (e.target.value || '').trim().length > 0;
+                    actualizarGiroPlaneta(hayTexto);
+                    clearTimeout(timeoutGiro);
+                    if (hayTexto) {
+                        timeoutGiro = setTimeout(() => {
+                            actualizarGiroPlaneta(false);
+                        }, 1800);
+                    }
+                });
+
+                input.addEventListener('blur', () => {
+                    clearTimeout(timeoutGiro);
+                    timeoutGiro = setTimeout(() => {
+                        const algunoConTexto = inputsBusqueda.some((el) => (el.value || '').trim().length > 0);
+                        if (!algunoConTexto) actualizarGiroPlaneta(false);
+                    }, 400);
+                });
+            });
+        });
+    </script>
     <script src="/features/contactos/contactos.js?v=26_1" defer></script>
 </body>
 </html>
