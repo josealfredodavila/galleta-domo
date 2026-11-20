@@ -31,7 +31,7 @@
     })();
 </script>
 
-<!-- Tus CSS base -->
+<!-- Tus CSS base (el de mensajes v3.4, que tiene la estructura del panel) -->
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.4">
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes-messenger.css?v=1">
@@ -40,87 +40,89 @@
 
 <style>
     /* ========================================================
-       MEJORAS VISUALES (Estilo Contactos.html)
+       UNIFICACIÓN CON CONTACTOS.CSS (Diseño plano y oscuro)
     ======================================================== */
     html:not(.auth-ready) .app { display: none !important; }
     
-    /* Botón de Videollamada elegante */
-    .btn-videollamada {
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        padding: 8px 14px; border: 1px solid var(--cyan, #00e5ff); border-radius: 12px;
-        background: rgba(0, 229, 255, 0.08); color: var(--cyan, #00e5ff);
-        font: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 0.75rem;
-    }
-    .btn-videollamada:hover { background: rgba(0, 229, 255, 0.18); border-color: var(--cyan, #00e5ff); box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); transform: translateY(-1px); }
-    .btn-videollamada:disabled { opacity: 0.4; cursor: not-allowed; background: rgba(0, 229, 255, 0.03); }
-    .btn-videollamada svg { flex-shrink: 0; }
-    @media (max-width: 480px) { .btn-videollamada span { display: none; } .btn-videollamada { padding: 8px; } }
-
-    /* Estado Viewer */
-    .estado-viewer-owner-actions { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 20; flex-wrap: wrap; justify-content: center; padding: 0 12px; max-width: calc(100% - 24px); }
-    .ev-action-btn { display: inline-flex; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 99px; font-size: .74rem; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid transparent; transition: all .2s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-    .ev-action-btn.ev-vistas { background: rgba(212,175,55,.15); border-color: rgba(212,175,55,.5); color: #f0d060; }
-    .ev-action-btn.ev-eliminar { background: rgba(255,51,102,.15); border-color: rgba(255,51,102,.5); color: #ff5c7a; }
-    .ev-action-btn.ev-comentar { background: rgba(0,229,255,.12); border-color: rgba(0,229,255,.45); color: #7fdcff; }
-    .ev-action-btn.ev-skip { background: rgba(168,85,247,.12); border-color: rgba(168,85,247,.45); color: #d8b4fe; }
-    .ev-action-btn.hidden { display: none !important; }
-
-    /* ========================================================
-       NUEVA BARRA DE ENTRADA MINIMALISTA (ESTILO WHATSAPP)
-    ======================================================== */
+    /* Barra de entrada minimalista */
     .composer {
         display: flex;
         align-items: flex-end;
         gap: 8px;
-        padding: 10px 12px;
-        background: var(--bg, #0b1016);
-        border-top: 1px solid var(--border, rgba(255,255,255,.08));
+        padding: 12px 16px;
+        background: var(--panel, #0b111b);
+        border-top: 1px solid var(--line, rgba(255,255,255,.08));
     }
 
-    /* Botón Adjuntar (Clip) */
+    /* Botón Clip */
     .composer .btn-icon {
         display: flex; align-items: center; justify-content: center;
-        width: 40px; height: 40px; border-radius: 50%;
-        background: transparent; color: var(--muted, #8aa8b8);
-        border: none; cursor: pointer; transition: color 0.2s, background 0.2s;
+        width: 42px; height: 42px; border-radius: 10px;
+        background: transparent; color: var(--muted, #8593a6);
+        border: 1px solid transparent; cursor: pointer; 
+        transition: color 0.2s, border-color 0.2s;
     }
-    .composer .btn-icon:hover { color: var(--cyan, #00e5ff); background: rgba(255,255,255,0.05); }
-    .composer .btn-icon svg { width: 24px; height: 24px; }
+    .composer .btn-icon:hover { 
+        color: var(--text, #e8edf3); 
+        border-color: var(--line-strong, rgba(255,255,255,.16));
+    }
+    .composer .btn-icon svg { width: 22px; height: 22px; }
 
-    /* Input Wrapper */
+    /* Input Wrapper (Fondo plano, borde sutil) */
     .composer .input-wrapper {
         flex: 1; display: flex; align-items: flex-end;
-        background: rgba(255,255,255,.05);
-        border-radius: 22px;
-        padding: 8px 12px;
-        border: 1px solid var(--border, rgba(255,255,255,.08));
+        background: var(--panel-2, #101826);
+        border-radius: 12px;
+        padding: 8px 14px;
+        border: 1px solid var(--line-strong, rgba(255,255,255,.16));
         min-height: 44px;
-        transition: border-color 0.2s;
+        transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .composer .input-wrapper:focus-within { border-color: var(--cyan, #00e5ff); }
+    .composer .input-wrapper:focus-within { 
+        border-color: var(--orange, #ff7a1a);
+    }
 
     .composer #messageInput {
         flex: 1; background: transparent; border: none;
-        color: var(--text, #f0f4f8); font-size: 0.95rem; font-family: inherit;
+        color: var(--text, #e8edf3); font-size: 0.95rem; font-family: inherit;
         line-height: 1.4; padding: 0 4px; outline: none; resize: none;
         max-height: 120px; min-height: 24px;
     }
-    .composer #messageInput::placeholder { color: var(--muted, #8aa8b8); }
+    .composer #messageInput::placeholder { color: var(--muted, #8593a6); }
 
     /* Botón Emoji */
     .composer .btn-emoji {
-        background: transparent; border: none; font-size: 1.3rem;
+        background: transparent; border: none; font-size: 1.2rem;
         cursor: pointer; padding: 0 0 0 8px; opacity: 0.7;
         transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; height: 28px;
     }
     .composer .btn-emoji:hover { opacity: 1; }
 
-    /* Botones de Acción (Mic/Enviar) */
+    /* Botones de Acción (Mic/Enviar) - Estilo plano con acento naranja */
     .composer .btn-accion {
         display: flex; align-items: center; justify-content: center;
-        width: 44px; height: 44px; border-radius: 50%;
-        border: none; cursor: pointer; transition: all 0.2s ease;
-        color: #05080f; background: var(--cyan, #00e5ff); flex-shrink: 0;
+        width: 44px; height: 44px; border-radius: 10px;
+        border: 1px solid var(--line-strong, rgba(255,255,255,.16)); 
+        cursor: pointer; 
+        transition: all 0.2s ease;
+        color: var(--muted, #8593a6); 
+        background: var(--panel-2, #101826);
+        flex-shrink: 0;
+    }
+    .composer .btn-accion:hover {
+        color: var(--orange, #ff7a1a);
+        border-color: var(--orange, #ff7a1a);
+    }
+    
+    /* El botón de enviar resalta más (naranja sólido) */
+    .composer .btn-send {
+        background: var(--orange, #ff7a1a);
+        border-color: var(--orange, #ff7a1a);
+        color: #05080f;
+    }
+    .composer .btn-send:hover {
+        background: #ff8b3d;
+        color: #05080f;
     }
     
     /* Mostrar/Ocultar Mic y Enviar */
@@ -131,22 +133,47 @@
 
     /* VoiceBot */
     .composer .btn-voicebot {
-        background: transparent; border: none; color: var(--gold, #D4AF37);
+        background: transparent; border: none; color: var(--gold, #d4af37);
         font-size: 1.4rem; cursor: pointer; padding: 0 4px;
         display: flex; align-items: center; justify-content: center; height: 40px;
     }
-    .composer .btn-voicebot.recording { color: var(--danger, #ff3366); animation: pulse-recording 1s infinite; }
+    .composer .btn-voicebot.recording { color: var(--red, #ff4d6d); animation: pulse-recording 1s infinite; }
     @keyframes pulse-recording { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
 
     @media (max-width: 480px) {
         .composer { padding: 8px; gap: 4px; }
         .composer .btn-icon { width: 36px; height: 36px; }
-        .composer .btn-icon svg { width: 22px; height: 22px; }
-        .composer .input-wrapper { min-height: 40px; padding: 6px 10px; border-radius: 20px; }
+        .composer .btn-icon svg { width: 20px; height: 20px; }
+        .composer .input-wrapper { min-height: 40px; padding: 6px 10px; border-radius: 10px; }
         .composer #messageInput { font-size: 0.9rem; }
         .composer .btn-accion { width: 40px; height: 40px; }
         .composer .btn-emoji { font-size: 1.2rem; }
     }
+
+    /* Ajustes al resto del layout para que combine con contactos */
+    .header, .panel, .sidebar, .chathead {
+        /* Usamos los colores base si están definidos, si no caen en los de contactos */
+        background: var(--panel, #0b111b);
+        border-color: var(--line, rgba(255,255,255,.08));
+    }
+    
+    .chathead { border-bottom: 1px solid var(--line-strong, rgba(255,255,255,.16)); }
+    .sidebar { border-right: 1px solid var(--line, rgba(255,255,255,.08)); }
+    
+    /* Botones del header (Videollamada, etc) */
+    .btn-videollamada { 
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px; 
+        padding: 8px 14px; border: 1px solid var(--line-strong, rgba(255,255,255,.16)); 
+        border-radius: 10px; background: transparent; color: var(--muted, #8593a6); 
+        font: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 0.75rem; 
+    }
+    .btn-videollamada:hover { 
+        color: var(--orange, #ff7a1a); 
+        border-color: var(--orange, #ff7a1a); 
+    }
+    .btn-videollamada:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-videollamada svg { flex-shrink: 0; }
+    @media (max-width: 480px) { .btn-videollamada span { display: none; } .btn-videollamada { padding: 8px; } }
 </style>
 </head>
 <body>
@@ -207,7 +234,7 @@
     <div class="tab-content hidden" id="tabLlamadas">
         <div class="sidehead">
             <span>☎ Historial de llamadas</span>
-            <button class="btn-subir-estado" id="btnBorrarTodoHistorial" title="Borrar todo el historial" data-neon="chip-danger" style="background:linear-gradient(135deg,#ff3366,#cc1a4d);color:#fff;">🗑 Todo</button>
+            <button class="btn-subir-estado" id="btnBorrarTodoHistorial" title="Borrar todo el historial" data-neon="chip-danger" style="background:var(--red);color:#fff;border:0;">🗑 Todo</button>
         </div>
         <div class="filtros-canales" style="padding:0 12px 6px; gap:6px; flex-wrap:wrap;">
             <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;"><option value="all">Todos los tipos</option><option value="audio">Solo audio</option><option value="video">Solo video</option></select>
@@ -230,7 +257,7 @@
         </div>
         <div class="actions" id="chatActions" style="display:none;">
             <button class="iconbtn" id="deleteChat" title="Eliminar conversación" data-neon="icon">◇</button>
-            <button class="iconbtn" id="blockUser" title="Bloquear contacto" data-neon="icon-danger" style="color:#ff3366;">⛔</button>
+            <button class="iconbtn" id="blockUser" title="Bloquear contacto" data-neon="icon-danger" style="color:var(--red);">⛔</button>
             <button class="btn-videollamada" id="videoCall" title="Iniciar videollamada" disabled>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="3"></rect><path d="m15 10 6-3v10l-6-3"></path></svg>
                 <span>Videollamada</span>
@@ -249,26 +276,22 @@
     </div>
 
     <!-- ========================================================
-         BARRA DE ENTRADA MINIMALISTA (ESTILO PROFESIONAL)
+         BARRA DE ENTRADA (SINCRONIZADA CON CONTACTOS.CSS)
     ======================================================== -->
     <form class="composer" id="composer" style="display:none;">
-        <!-- Clip de adjuntar -->
         <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
         </button>
         
-        <!-- Input -->
         <div class="input-wrapper">
             <textarea id="messageInput" autocomplete="off" placeholder="Mensaje..." rows="1"></textarea>
             <button type="button" class="btn-emoji" id="emojiBtn" title="Emojis">😊</button>
         </div>
 
-        <!-- Micrófono -->
         <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar audio">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
         </button>
         
-        <!-- Enviar -->
         <button type="submit" class="btn-accion btn-send" id="sendBtn" title="Enviar mensaje">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
@@ -300,13 +323,11 @@
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
 <script>
-    // Lógica del Input dinámico y botón de enviar
     document.addEventListener('DOMContentLoaded', function() {
         var input = document.getElementById('messageInput');
         var composer = document.getElementById('composer');
         
         if (input && composer) {
-            // Auto-resize del textarea
             input.addEventListener('input', function() {
                 this.style.height = 'auto';
                 this.style.height = (this.scrollHeight) + 'px';
@@ -318,7 +339,6 @@
                 }
             });
 
-            // Enviar con Enter (sin Shift)
             input.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
