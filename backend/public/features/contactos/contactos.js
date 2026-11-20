@@ -1,13 +1,12 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v27.1
-   Tablas reales verificadas en Supabase:
-     contactos, bloqueos, preferencias_usuario (prefs jsonb),
-     usuarios (ocultar_estado).
-   RPC usadas: perfiles_por_ids, buscar_usuarios,
-     sugerencias_usuarios, bloquear_contacto,
-     obtener_o_crear_invitacion, responder_solicitud_amistad,
-     eliminar_amistad, canjear_invitacion (pendiente de verificar).
-   Accesibilidad: prefs.accesibilidad = { texto: '80'|'100'|'120'|'140', contraste: bool }
+   CSARIEL'S · CONTACTOS · v28.0
+   Sin QR ni cámara (eso vive en Perfil).
+   RPC: perfiles_por_ids, buscar_usuarios, sugerencias_usuarios,
+        bloquear_contacto, obtener_o_crear_invitacion,
+        canjear_codigo_amistad (nueva), responder_solicitud_amistad,
+        eliminar_amistad.
+   Tablas: contactos, bloqueos, preferencias_usuario (prefs jsonb),
+           usuarios (ocultar_estado).
    ============================================================ */
 
 (function () {
@@ -22,12 +21,14 @@
         RPC_BUSCAR: 'buscar_usuarios',
         RPC_SUGERENCIAS: 'sugerencias_usuarios',
         RPC_BLOQUEAR: 'bloquear_contacto',
-        RPC_INVITACION: 'obtener_o_crear_invitacion',
+        RPC_MI_CODIGO: 'obtener_o_crear_invitacion',
+        RPC_CANJEAR: 'canjear_codigo_amistad',
         RPC_RESPONDER: 'responder_solicitud_amistad',
         RPC_ELIMINAR: 'eliminar_amistad',
-        RPC_CANJEAR: 'canjear_invitacion',
         PERFIL_URL: '/features/perfil/perfil-publico.html',
         MENSAJES_URL: '/features/mensajes/mensajes.html',
+        PAGE: 50,
+        LIMITE_RELACIONES: 100,
         LOTE_MAX: 200,
         MAX_SUGERENCIAS: 10,
         MAX_RESULTADOS: 20,
@@ -36,18 +37,12 @@
         SESSION_TIMEOUT_MS: 7000,
         RETRY_MAX: 3,
         RETRY_BASE_MS: 500,
-        QR_PREFIX: 'SARIELS:',
-        A11Y_KEY: 'contactos_a11y'
+        A11Y_KEY: 'contactos_a11y',
+        COOLDOWN_CANJE_MS: 3000,
+        BLOQUEO_CANJE_MS: 60000
     };
 
     var ICO = {
-        plus: '<path d="M12 5v14M5 12h14"/>',
-        qr: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z"/>',
-        scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/>',
-        menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
-        mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
-        close: '<path d="M6 6l12 12M18 6 6 18"/>',
-        check: '<path d="m5 12 5 5 9-10"/>',
         msg: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
         call: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>',
         star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.3L12 17.3 6.5 20.3l1-6.3L3 9.6l6.2-.9z"/>',
@@ -55,8 +50,7 @@
         bellOff: '<path d="M8.7 3.2A6 6 0 0 1 18 8c0 7 3 9 3 9H6"/><path d="M18 8c0 2.4.4 4.3 1 5.8M3 3l18 18"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
         block: '<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
         trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
-        user: '<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>',
-        add: '<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M19 8v6M16 11h6"/>'
+        check: '<path d="m5 12 5 5 9-10"/>'
     };
 
     var state = {
@@ -68,6 +62,9 @@
         texto: '',
         busquedaVersion: 0,
         contactos: [],
+        total: 0,
+        pagina: 0,
+        hayMas: false,
         recibidas: [],
         enviadas: [],
         bloqueados: [],
@@ -80,9 +77,8 @@
         idsContactos: new Set(),
         perfiles: new Map(),
         operaciones: new Set(),
-        scanStream: null,
-        scanRaf: null,
-        scanBusy: false
+        canjeBloqueadoHasta: 0,
+        canjeEnCurso: false
     };
 
     /* ---------------- Utilidades ---------------- */
@@ -115,6 +111,10 @@
 
     function normalizarTexto(v) {
         return String(v == null ? '' : v).replace(/\u0000/g, '').trim().slice(0, CONFIG.MAX_CHARS);
+    }
+
+    function normalizarCodigo(v) {
+        return String(v == null ? '' : v).toUpperCase().replace(/\s+/g, '');
     }
 
     function avatarSeguro(url) {
@@ -152,7 +152,6 @@
     function cerrarModal(id) {
         var m = document.getElementById(id);
         if (!m) return;
-        if (id === 'modalEscanear') pararEscaner();
         m.classList.remove('active');
         m.setAttribute('aria-hidden', 'true');
     }
@@ -222,7 +221,8 @@
                 var r = await fn();
                 if (r && r.error) {
                     var err = r.error;
-                    if (err.code === '23505' || err.code === '42501' || err.code === 'PGRST116') return r;
+                    // Errores de negocio o permisos: no reintentar
+                    if (err.code === '23505' || err.code === '42501' || err.code === 'PGRST116' || err.code === '54000') return r;
                     throw err;
                 }
                 return r;
@@ -254,31 +254,23 @@
     }
 
     async function cargarPerfiles(ids) {
-        var errores = [];
         var client = sb();
         var unicos = Array.from(new Set((ids || []).filter(Boolean)));
         var faltantes = unicos.filter(function (id) { return !state.perfiles.has(id); });
-        if (client && faltantes.length) {
-            for (var i = 0; i < faltantes.length; i += CONFIG.LOTE_MAX) {
-                var lote = faltantes.slice(i, i + CONFIG.LOTE_MAX);
-                try {
-                    var r = await withRetry(function () { return client.rpc(CONFIG.RPC_PERFILES, { p_ids: lote }); }, 'perfiles');
-                    if (r.error) throw r.error;
-                    var encontrados = new Set();
-                    (r.data || []).forEach(function (p) { state.perfiles.set(p.id, normalizarPerfil(p)); encontrados.add(p.id); });
-                    lote.forEach(function (id) { if (!encontrados.has(id)) state.perfiles.set(id, null); });
-                } catch (e) {
-                    errores.push(detalleError(e));
-                    console.error('[Contactos] Perfiles:', detalleError(e));
-                }
-            }
+        if (!client || !faltantes.length) return;
+        for (var i = 0; i < faltantes.length; i += CONFIG.LOTE_MAX) {
+            var lote = faltantes.slice(i, i + CONFIG.LOTE_MAX);
+            var r = await seguro(function () { return client.rpc(CONFIG.RPC_PERFILES, { p_ids: lote }); }, 'perfiles');
+            if (r.error) { console.error('[Contactos] Perfiles:', detalleError(r.error)); continue; }
+            var encontrados = new Set();
+            (r.data || []).forEach(function (p) { state.perfiles.set(p.id, normalizarPerfil(p)); encontrados.add(p.id); });
+            lote.forEach(function (id) { if (!encontrados.has(id)) state.perfiles.set(id, null); });
         }
-        return errores;
     }
 
     function datosPerfil(id) {
         var p = state.perfiles.get(id);
-        if (p === undefined) return { nombre: 'No se pudo cargar', handle: '', avatar: '', verificado: false, online: false };
+        if (p === undefined) return { nombre: 'Cargando…', handle: '', avatar: '', verificado: false, online: false };
         if (p === null) return { nombre: 'Perfil no disponible', handle: '', avatar: '', verificado: false, online: false };
         return {
             nombre: p.nombre || p.handle || 'Usuario',
@@ -290,11 +282,11 @@
     }
 
     function avatarHtml(d) {
-        if (d.avatar) return '<img src="' + esc(d.avatar) + '" alt="" loading="lazy">';
+        if (d.avatar) return '<img src="' + esc(d.avatar) + '" alt="" loading="lazy" onerror="this.remove()">';
         return esc(inicial(d.nombre));
     }
 
-    /* ---------------- Preferencias ---------------- */
+    /* ---------------- Preferencias y accesibilidad ---------------- */
 
     async function guardarPrefs(patch) {
         var client = sb();
@@ -338,12 +330,31 @@
             showToast('Accesibilidad guardada.', 'success');
         } catch (e) {
             console.error('[Contactos] Accesibilidad:', detalleError(e));
-            showToast('Guardado solo en este dispositivo: ' + detalleError(e), 'warning');
+            showToast('Guardado solo en este dispositivo.', 'warning');
         }
         renderConfig();
     }
 
-    /* ---------------- Carga principal ---------------- */
+    /* ---------------- Carga de datos (paginada) ---------------- */
+
+    function mapContacto(c) {
+        return { id: c.id, contacto_id: c.contacto_id, es_favorito: c.es_favorito === true, fecha: c.fecha || null };
+    }
+
+    // Usa el índice (usuario_id, fecha desc) de contactos
+    function pedirPagina(client, uid, n) {
+        var desde = n * CONFIG.PAGE;
+        var hasta = desde + CONFIG.PAGE - 1;
+        return seguro(function () {
+            return client.from(CONFIG.CONTACTOS_TABLE)
+                .select('id, contacto_id, es_favorito, fecha')
+                .eq('usuario_id', uid)
+                .eq('estado', 'activo')
+                .order('fecha', { ascending: false, nullsFirst: false })
+                .order('id', { ascending: false })
+                .range(desde, hasta);
+        }, 'contactos');
+    }
 
     async function cargarDatos() {
         var client = sb();
@@ -362,25 +373,29 @@
         try {
             var res = await Promise.all([
                 seguro(function () {
-                    return client.from(CONFIG.CONTACTOS_TABLE)
-                        .select('id, usuario_id, contacto_id, es_favorito, estado, fecha, created_at')
-                        .eq('usuario_id', uid).eq('estado', 'activo')
-                        .order('fecha', { ascending: false, nullsFirst: false }).limit(500);
-                }, 'contactos'),
+                    return client.from(CONFIG.CONTACTOS_TABLE).select('id', { count: 'exact', head: true }).eq('usuario_id', uid).eq('estado', 'activo');
+                }, 'conteo'),
+                pedirPagina(client, uid, 0),
                 seguro(function () {
                     return client.from(CONFIG.CONTACTOS_TABLE)
-                        .select('id, usuario_id, contacto_id, created_at')
-                        .eq('contacto_id', uid).eq('estado', 'pendiente');
+                        .select('id, usuario_id, created_at')
+                        .eq('contacto_id', uid).eq('estado', 'pendiente')
+                        .order('created_at', { ascending: false })
+                        .limit(CONFIG.LIMITE_RELACIONES);
                 }, 'recibidas'),
                 seguro(function () {
                     return client.from(CONFIG.CONTACTOS_TABLE)
-                        .select('id, usuario_id, contacto_id, created_at')
-                        .eq('usuario_id', uid).eq('estado', 'pendiente');
+                        .select('id, contacto_id, created_at')
+                        .eq('usuario_id', uid).eq('estado', 'pendiente')
+                        .order('created_at', { ascending: false })
+                        .limit(CONFIG.LIMITE_RELACIONES);
                 }, 'enviadas'),
                 seguro(function () {
                     return client.from(CONFIG.BLOQUEOS_TABLE)
                         .select('id, bloqueado_id, created_at')
-                        .eq('usuario_id', uid).order('created_at', { ascending: false });
+                        .eq('usuario_id', uid)
+                        .order('created_at', { ascending: false })
+                        .limit(CONFIG.LIMITE_RELACIONES);
                 }, 'bloqueados'),
                 seguro(function () {
                     return client.from(CONFIG.PREFS_TABLE).select('prefs').eq('usuario_id', uid).maybeSingle();
@@ -390,7 +405,9 @@
                 }, 'usuario')
             ]);
 
-            var rC = res[0], rR = res[1], rE = res[2], rB = res[3], rP = res[4], rU = res[5];
+            var rT = res[0], rC = res[1], rR = res[2], rE = res[3], rB = res[4], rP = res[5], rU = res[6];
+
+            state.total = rT.error ? 0 : (rT.count || 0);
 
             state.errores = {
                 contactos: rC.error ? detalleError(rC.error) : null,
@@ -399,18 +416,14 @@
                 bloqueados: rB.error ? detalleError(rB.error) : null
             };
 
-            state.contactos = rC.error ? [] : (rC.data || []).map(function (c) {
-                return { id: c.id, contacto_id: c.contacto_id, es_favorito: c.es_favorito === true, fecha: c.fecha || c.created_at || null };
-            });
-            state.recibidas = rR.error ? [] : (rR.data || []).map(function (x) {
-                return { id: x.id, usuario_id: x.usuario_id, fecha: x.created_at || null };
-            });
-            state.enviadas = rE.error ? [] : (rE.data || []).map(function (x) {
-                return { id: x.id, contacto_id: x.contacto_id, fecha: x.created_at || null };
-            });
-            state.bloqueados = rB.error ? [] : (rB.data || []).map(function (b) {
-                return { id: b.id, bloqueado_id: b.bloqueado_id };
-            });
+            var filas = rC.error ? [] : (rC.data || []);
+            state.contactos = filas.map(mapContacto);
+            state.pagina = 1;
+            state.hayMas = filas.length === CONFIG.PAGE;
+
+            state.recibidas = rR.error ? [] : (rR.data || []).map(function (x) { return { id: x.id, usuario_id: x.usuario_id }; });
+            state.enviadas = rE.error ? [] : (rE.data || []).map(function (x) { return { id: x.id, contacto_id: x.contacto_id }; });
+            state.bloqueados = rB.error ? [] : (rB.data || []).map(function (b) { return { bloqueado_id: b.bloqueado_id }; });
 
             state.prefs = (!rP.error && rP.data && rP.data.prefs) ? rP.data.prefs : {};
             state.silenciados = Array.isArray(state.prefs.silenciados) ? state.prefs.silenciados.slice() : [];
@@ -441,6 +454,34 @@
         }
     }
 
+    async function cargarMas() {
+        if (state.cargando || !state.hayMas) return;
+        var client = sb();
+        var s = await getSession();
+        if (!client || !s) return;
+        state.cargando = true;
+        renderLista();
+        var r = await pedirPagina(client, s.user.id, state.pagina);
+        state.cargando = false;
+        if (r.error) {
+            showToast('No se pudieron cargar más contactos.', 'error');
+            renderLista();
+            return;
+        }
+        var filas = r.data || [];
+        filas.forEach(function (c) {
+            if (!state.contactos.some(function (x) { return String(x.id) === String(c.id); })) {
+                state.contactos.push(mapContacto(c));
+            }
+        });
+        state.idsContactos = new Set(state.contactos.map(function (c) { return c.contacto_id; }));
+        await cargarPerfiles(filas.map(function (c) { return c.contacto_id; }));
+        state.pagina += 1;
+        state.hayMas = filas.length === CONFIG.PAGE;
+        actualizarStats();
+        renderLista();
+    }
+
     async function cargarSugerencias() {
         var client = sb();
         var s = await getSession();
@@ -466,16 +507,17 @@
         if (state.filtro === 'todos' && !state.texto) renderLista();
     }
 
-    /* ---------------- Stats y contadores ---------------- */
+    /* ---------------- Estadísticas ---------------- */
 
     function actualizarStats() {
+        // "En línea" cuenta solo los contactos ya cargados
         var online = state.contactos.filter(function (c) {
             var p = state.perfiles.get(c.contacto_id);
             return p && p.online === true;
         }).length;
         var t = document.getElementById('totalContactos');
         var o = document.getElementById('onlineContactos');
-        if (t) t.textContent = String(state.contactos.length);
+        if (t) t.textContent = String(state.total);
         if (o) o.textContent = String(online);
     }
 
@@ -507,10 +549,9 @@
 
     function mostrarCargando() {
         var lista = document.getElementById('contactosList');
-        if (lista) {
-            lista.setAttribute('aria-busy', 'true');
-            lista.innerHTML = '<div class="cargando">Cargando…</div>';
-        }
+        if (!lista) return;
+        lista.setAttribute('aria-busy', 'true');
+        lista.innerHTML = '<div class="cargando">Cargando…</div>';
     }
 
     function pintarVacio(texto) {
@@ -546,12 +587,9 @@
     }
 
     function filaContacto(c) {
-        var avatar = c.avatar
-            ? '<img src="' + esc(c.avatar) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">'
-            : esc(inicial(c.nombre));
         return '<div class="fila" data-id="' + esc(c.contacto_id) + '" data-fila="' + esc(c.id) + '">' +
             '<div class="avatar" data-act="perfil" role="button" tabindex="0" aria-label="Ver perfil">' +
-                avatar +
+                avatarHtml(c) +
                 '<span class="estado-punto" ' + (c.online ? '' : 'hidden') + '></span>' +
             '</div>' +
             '<div class="info">' +
@@ -630,6 +668,10 @@
         }).join('');
     }
 
+    function puedeCargarMas() {
+        return state.hayMas && !state.texto && ['todos', 'favoritos', 'online', 'silenciados'].indexOf(state.filtro) !== -1;
+    }
+
     function renderLista() {
         var lista = document.getElementById('contactosList');
         if (!lista) return;
@@ -660,7 +702,7 @@
         } else if (f === 'favoritos') {
             html = htmlContactos(filtrarTexto(itemsContactos().filter(function (i) { return i.es_favorito; })), 'Todavía no tienes amigos favoritos.');
         } else if (f === 'online') {
-            html = htmlContactos(filtrarTexto(itemsContactos().filter(function (i) { return i.online; })), 'No hay amigos conectados ahora.');
+            html = htmlContactos(filtrarTexto(itemsContactos().filter(function (i) { return i.online; })), 'No hay amigos conectados entre los cargados.');
         } else if (f === 'pendientes') {
             html = htmlRecibidas();
         } else if (f === 'enviadas') {
@@ -669,6 +711,11 @@
             html = htmlBloqueados();
         } else if (f === 'silenciados') {
             html = htmlContactos(filtrarTexto(itemsContactos().filter(function (i) { return i.silenciado; })), 'No tienes contactos silenciados.');
+        }
+
+        if (puedeCargarMas()) {
+            html += '<button type="button" class="cargar-mas" data-act="mas"' + (state.cargando ? ' disabled' : '') + '>' +
+                (state.cargando ? 'Cargando…' : 'Cargar más') + '</button>';
         }
 
         lista.innerHTML = html;
@@ -711,7 +758,7 @@
                 var boton;
                 if (esContacto) boton = '<button type="button" class="accion ok" disabled>' + ico('check') + 'Contacto</button>';
                 else if (enviada) boton = '<button type="button" class="accion" disabled>Enviada</button>';
-                else boton = '<button type="button" class="accion primaria" data-act="add">' + ico('add') + 'Conectar</button>';
+                else boton = '<button type="button" class="accion primaria" data-act="add">Conectar</button>';
                 return '<div class="fila" data-id="' + esc(u.id) + '">' +
                     '<div class="avatar">' + avatarHtml(d) + '</div>' +
                     '<div class="info"><div class="nombre">' + esc(d.nombre) + (d.verificado ? ' <span class="verif">✓</span>' : '') + '</div>' +
@@ -720,7 +767,8 @@
             }).join('');
         } catch (e) {
             console.error('[Contactos] Búsqueda:', detalleError(e));
-            lista.innerHTML = htmlVacio('Error al buscar: ' + detalleError(e));
+            var msg = (e && (e.code === '54000' || /rate_limited/.test(e.message || ''))) ? 'Demasiadas búsquedas. Espera un momento.' : 'Error al buscar. Intenta de nuevo.';
+            lista.innerHTML = htmlVacio(msg);
         }
     }
 
@@ -781,13 +829,13 @@
             await cargarDatos();
         } catch (e) {
             console.error('[Contactos] Agregar:', detalleError(e));
-            showToast('No se pudo enviar: ' + detalleError(e), 'error');
+            showToast('No se pudo enviar la solicitud.', 'error');
         } finally { state.operaciones.delete(clave); }
     }
 
     async function responderSolicitud(filaId, aceptar) {
         var fila = Number(filaId);
-        if (!Number.isInteger(fila) || fila <= 0) { showToast('ID inválido.', 'error'); return; }
+        if (!Number.isInteger(fila) || fila <= 0) { showToast('Solicitud no válida.', 'error'); return; }
         var clave = (aceptar ? 'aceptar:' : 'rechazar:') + fila;
         if (state.operaciones.has(clave)) return;
         state.operaciones.add(clave);
@@ -798,7 +846,7 @@
             await cargarDatos();
         } catch (e) {
             console.error('[Contactos] Responder:', detalleError(e));
-            showToast('Error: ' + detalleError(e), 'error');
+            showToast('No se pudo completar la acción.', 'error');
         } finally { state.operaciones.delete(clave); }
     }
 
@@ -818,7 +866,7 @@
             await cargarDatos();
         } catch (e) {
             console.error('[Contactos] Cancelar:', detalleError(e));
-            showToast('Error al cancelar: ' + detalleError(e), 'error');
+            showToast('No se pudo cancelar.', 'error');
         } finally { state.operaciones.delete(clave); }
     }
 
@@ -842,7 +890,7 @@
             renderLista();
         } catch (e) {
             console.error('[Contactos] Favorito:', detalleError(e));
-            showToast('Error al guardar favorito: ' + detalleError(e), 'error');
+            showToast('No se pudo guardar el favorito.', 'error');
         } finally { state.operaciones.delete(clave); }
     }
 
@@ -858,7 +906,7 @@
             renderLista();
         } catch (e) {
             console.error('[Contactos] Silenciar:', detalleError(e));
-            showToast('No se pudo guardar: ' + detalleError(e), 'error');
+            showToast('No se pudo guardar.', 'error');
         }
     }
 
@@ -877,7 +925,7 @@
             await cargarDatos();
         } catch (e) {
             console.error('[Contactos] Eliminar:', detalleError(e));
-            showToast('Error al eliminar: ' + detalleError(e), 'error');
+            showToast('No se pudo eliminar.', 'error');
         } finally { state.operaciones.delete(clave); }
     }
 
@@ -898,7 +946,7 @@
             await cargarDatos();
         } catch (e) {
             console.error('[Contactos] Bloquear:', detalleError(e));
-            showToast('Error al bloquear: ' + detalleError(e), 'error');
+            showToast('No se pudo bloquear.', 'error');
         } finally { state.operaciones.delete(clave); }
     }
 
@@ -920,7 +968,7 @@
             await cargarDatos();
         } catch (e) {
             console.error('[Contactos] Desbloquear:', detalleError(e));
-            showToast('Error al desbloquear: ' + detalleError(e), 'error');
+            showToast('No se pudo desbloquear.', 'error');
         } finally { state.operaciones.delete(clave); }
     }
 
@@ -938,6 +986,132 @@
         var p = state.perfiles.get(id);
         if (!p || !p.handle) { showToast('Perfil no disponible.', 'warning'); return; }
         window.location.href = CONFIG.PERFIL_URL + '?u=' + encodeURIComponent(p.handle);
+    }
+
+    /* ---------------- Agregar por código ---------------- */
+
+    function mensajeCanje(texto, tipo) {
+        var el = document.getElementById('canjeMsg');
+        if (!el) return;
+        el.textContent = texto;
+        el.className = 'canje-msg' + (tipo ? ' ' + tipo : '');
+    }
+
+    async function cargarMiCodigo() {
+        var client = sb();
+        var s = await getSession();
+        var el = document.getElementById('codigoPropio');
+        if (!el) return;
+        if (!client || !s) { el.textContent = 'Inicia sesión'; return; }
+        el.textContent = 'Generando…';
+        try {
+            var r = await withRetry(function () { return client.rpc(CONFIG.RPC_MI_CODIGO); }, 'mi código');
+            if (r.error) throw r.error;
+            var inv = Array.isArray(r.data) ? r.data[0] : r.data;
+            if (!inv || !inv.codigo) throw new Error('sin código');
+            el.textContent = String(inv.codigo);
+        } catch (e) {
+            console.error('[Contactos] Mi código:', detalleError(e));
+            el.textContent = 'No disponible';
+        }
+    }
+
+    function abrirAgregar() {
+        abrirModal('modalAgregar');
+        mensajeCanje('', '');
+        var input = document.getElementById('inputCodigo');
+        if (input) { input.value = ''; setTimeout(function () { input.focus(); }, 150); }
+        cargarMiCodigo();
+    }
+
+    async function canjearCodigo(ev) {
+        if (ev) ev.preventDefault();
+        var input = document.getElementById('inputCodigo');
+        var btn = document.getElementById('btnCanjear');
+        if (!input || !btn || state.canjeEnCurso) return;
+
+        var codigo = normalizarCodigo(input.value);
+        if (!/^[A-Z0-9-]{6,12}$/.test(codigo)) {
+            mensajeCanje('Escribe un código válido.', 'error');
+            return;
+        }
+        if (Date.now() < state.canjeBloqueadoHasta) {
+            mensajeCanje('Espera un momento antes de intentar de nuevo.', 'warning');
+            return;
+        }
+
+        var client = sb();
+        var s = await getSession();
+        if (!client || !s) { mensajeCanje('Inicia sesión para agregar contactos.', 'error'); return; }
+
+        state.canjeEnCurso = true;
+        btn.disabled = true;
+        mensajeCanje('Enviando…', '');
+
+        var r = await seguro(function () {
+            return client.rpc(CONFIG.RPC_CANJEAR, { p_codigo: codigo });
+        }, 'canjear código');
+
+        state.canjeEnCurso = false;
+        setTimeout(function () { btn.disabled = false; }, CONFIG.COOLDOWN_CANJE_MS);
+
+        if (r.error) {
+            var m = r.error.message || '';
+            if (r.error.code === '54000' || m.indexOf('rate_limited') !== -1) {
+                state.canjeBloqueadoHasta = Date.now() + CONFIG.BLOQUEO_CANJE_MS;
+                mensajeCanje('Demasiados intentos. Espera unos minutos.', 'error');
+            } else if (r.error.code === '42501' || m.indexOf('no_autenticado') !== -1) {
+                mensajeCanje('Tu sesión expiró. Vuelve a iniciar sesión.', 'error');
+            } else {
+                mensajeCanje('No se pudo enviar. Intenta más tarde.', 'error');
+            }
+            return;
+        }
+
+        var estado = r.data && r.data.estado;
+        var textos = {
+            solicitud_enviada: ['Solicitud enviada. Aparecerá cuando la acepte.', 'ok'],
+            ya_son_contactos: ['Ya son contactos.', 'ok'],
+            ya_pendiente: ['Ya enviaste una solicitud a esta persona.', 'warning'],
+            te_envio_solicitud: ['Esta persona ya te envió una solicitud. Revísala en Solicitudes.', 'warning'],
+            propio: ['Ese es tu propio código.', 'error'],
+            codigo_expirado: ['Ese código ya expiró.', 'error'],
+            codigo_invalido: ['Código no válido.', 'error'],
+            no_disponible: ['No se pudo agregar con este código.', 'error']
+        };
+        var t = textos[estado] || ['No se pudo completar la acción.', 'error'];
+        mensajeCanje(t[0], t[1]);
+
+        if (estado === 'solicitud_enviada') {
+            input.value = '';
+            cargarDatos();
+        }
+    }
+
+    async function copiarCodigo() {
+        var el = document.getElementById('codigoPropio');
+        if (!el) return;
+        var cod = el.textContent.trim();
+        if (!cod || cod === 'Generando…' || cod === 'No disponible' || cod === 'Inicia sesión') return;
+        try {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(cod);
+            } else {
+                var tmp = document.createElement('textarea');
+                tmp.value = cod;
+                tmp.setAttribute('readonly', '');
+                tmp.style.position = 'fixed';
+                tmp.style.opacity = '0';
+                document.body.appendChild(tmp);
+                tmp.select();
+                var ok = document.execCommand('copy');
+                tmp.remove();
+                if (!ok) throw new Error('copia no disponible');
+            }
+            showToast('Código copiado.', 'success');
+        } catch (e) {
+            showToast('No se pudo copiar el código.', 'error');
+        }
     }
 
     /* ---------------- Configuración ---------------- */
@@ -1016,7 +1190,7 @@
             }
         } catch (e) {
             console.error('[Contactos] Config:', detalleError(e));
-            showToast('No se pudo guardar: ' + detalleError(e), 'error');
+            showToast('No se pudo guardar.', 'error');
             if (el.type === 'checkbox') el.checked = !v;
         } finally {
             el.disabled = false;
@@ -1026,167 +1200,6 @@
     function abrirConfig() {
         renderConfig();
         abrirModal('modalConfig');
-    }
-
-    /* ---------------- QR personal y escáner ---------------- */
-
-    async function abrirQrPersonal() {
-        var client = sb();
-        var s = await getSession();
-        if (!client || !s) { showToast('Inicia sesión para mostrar tu QR.', 'warning'); return; }
-        if (!window.QRCode) { showToast('El generador QR no se cargó. Recarga la página.', 'error'); return; }
-        try {
-            var r = await withRetry(function () { return client.rpc(CONFIG.RPC_INVITACION); }, 'qr');
-            if (r.error) throw r.error;
-            var inv = Array.isArray(r.data) ? r.data[0] : r.data;
-            if (!inv || !inv.codigo) throw new Error('No se obtuvo el código');
-            var cv = document.createElement('canvas');
-            await window.QRCode.toCanvas(cv, CONFIG.QR_PREFIX + inv.codigo, {
-                width: 240,
-                margin: 2,
-                color: { dark: '#05080f', light: '#ffffff' }
-            });
-            var lienzo = document.getElementById('qrLienzo');
-            if (lienzo) { lienzo.innerHTML = ''; lienzo.appendChild(cv); }
-            abrirModal('modalQR');
-        } catch (e) {
-            console.error('[Contactos] QR:', detalleError(e));
-            showToast('No se pudo generar tu QR: ' + detalleError(e), 'error');
-        }
-    }
-
-    function setEstadoEscaner(t) {
-        var el = document.getElementById('scanEstado');
-        if (el) el.textContent = t;
-    }
-
-    async function abrirEscaner() {
-        var s = await getSession();
-        if (!s) { showToast('Inicia sesión para escanear.', 'warning'); return; }
-        if (!window.jsQR) { showToast('El lector QR no se cargó. Recarga la página.', 'error'); return; }
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-            showToast('Tu navegador no permite usar la cámara.', 'error');
-            return;
-        }
-        abrirModal('modalEscanear');
-        setEstadoEscaner('Preparando cámara…');
-        try {
-            state.scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-            var v = document.getElementById('scanVideo');
-            v.srcObject = state.scanStream;
-            await v.play();
-            setEstadoEscaner('Apunta la cámara al código QR de Csariel\'s');
-            loopEscaner();
-        } catch (e) {
-            console.error('[Contactos] Cámara:', detalleError(e));
-            setEstadoEscaner('No se pudo acceder a la cámara. Revisa los permisos.');
-        }
-    }
-
-    function loopEscaner() {
-        var v = document.getElementById('scanVideo');
-        var c = document.getElementById('scanCanvas');
-        if (!v || !c) return;
-        var ctx = c.getContext('2d', { willReadFrequently: true });
-
-        function tick() {
-            if (!state.scanStream) return;
-            if (!state.scanBusy && v.readyState === v.HAVE_ENOUGH_DATA) {
-                c.width = v.videoWidth;
-                c.height = v.videoHeight;
-                ctx.drawImage(v, 0, 0, c.width, c.height);
-                var img = ctx.getImageData(0, 0, c.width, c.height);
-                var code = window.jsQR(img.data, c.width, c.height, { inversionAttempts: 'dontInvert' });
-                if (code && code.data) {
-                    procesarQR(code.data);
-                    return;
-                }
-            }
-            state.scanRaf = requestAnimationFrame(tick);
-        }
-        tick();
-    }
-
-    function pararEscaner() {
-        if (state.scanRaf) cancelAnimationFrame(state.scanRaf);
-        state.scanRaf = null;
-        if (state.scanStream) state.scanStream.getTracks().forEach(function (t) { t.stop(); });
-        state.scanStream = null;
-        var v = document.getElementById('scanVideo');
-        if (v) v.srcObject = null;
-        state.scanBusy = false;
-    }
-
-    async function procesarQR(texto) {
-        if (state.scanBusy) return;
-        if (String(texto).indexOf(CONFIG.QR_PREFIX) !== 0) {
-            setEstadoEscaner('Ese código no es de Csariel\'s. Intenta con otro.');
-            state.scanRaf = requestAnimationFrame(loopEscaner);
-            return;
-        }
-        state.scanBusy = true;
-        var codigo = String(texto).slice(CONFIG.QR_PREFIX.length).trim();
-        setEstadoEscaner('Procesando…');
-        try {
-            var r = await sb().rpc(CONFIG.RPC_CANJEAR, { p_codigo: codigo });
-            if (r.error) throw r.error;
-            cerrarModal('modalEscanear');
-            showToast('Listo. Revisa tus solicitudes.', 'success');
-            await cargarDatos();
-        } catch (e) {
-            console.error('[Contactos] Canje QR:', detalleError(e));
-            state.scanBusy = false;
-            setEstadoEscaner('No se pudo agregar: ' + detalleError(e));
-            state.scanRaf = requestAnimationFrame(loopEscaner);
-        }
-    }
-
-    /* ---------------- Invitación ---------------- */
-
-    async function invitarContacto() {
-        var client = sb();
-        var s = await getSession();
-        if (!client || !s) { showToast('Inicia sesión.', 'error'); return; }
-        var codigoEl = document.getElementById('codigoInvitacion');
-        abrirModal('modalInvitacion');
-        if (codigoEl) codigoEl.textContent = 'Generando…';
-        try {
-            var r = await withRetry(function () { return client.rpc(CONFIG.RPC_INVITACION); }, 'invitar');
-            if (r.error) throw r.error;
-            var inv = Array.isArray(r.data) ? r.data[0] : r.data;
-            if (!inv || !inv.codigo) throw new Error('El servidor no devolvió un código');
-            if (codigoEl) codigoEl.textContent = String(inv.codigo);
-        } catch (e) {
-            console.error('[Contactos] Invitación:', detalleError(e));
-            if (codigoEl) codigoEl.textContent = 'Error';
-            showToast('Error al generar invitación: ' + detalleError(e), 'error');
-        }
-    }
-
-    async function copiarCodigo() {
-        var el = document.getElementById('codigoInvitacion');
-        if (!el) return;
-        var cod = el.textContent.trim();
-        if (!cod || cod === 'Generando…' || cod === 'Error') return;
-        try {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                await navigator.clipboard.writeText(cod);
-            } else {
-                var tmp = document.createElement('textarea');
-                tmp.value = cod;
-                tmp.setAttribute('readonly', '');
-                tmp.style.position = 'fixed';
-                tmp.style.opacity = '0';
-                document.body.appendChild(tmp);
-                tmp.select();
-                var ok = document.execCommand('copy');
-                tmp.remove();
-                if (!ok) throw new Error('execCommand devolvió false');
-            }
-            showToast('Código copiado.', 'success');
-        } catch (e) {
-            showToast('No se pudo copiar: ' + detalleError(e), 'error');
-        }
     }
 
     /* ---------------- Eventos ---------------- */
@@ -1208,8 +1221,10 @@
             lista.addEventListener('click', function (ev) {
                 var btn = ev.target.closest('[data-act]');
                 if (!btn) return;
-                var fila = btn.closest('.fila');
                 var act = btn.getAttribute('data-act');
+                if (act === 'mas') { cargarMas(); return; }
+                if (act === 'reintentar') { cargarDatos(); return; }
+                var fila = btn.closest('.fila');
                 var id = fila ? fila.getAttribute('data-id') : null;
                 var filaId = fila ? fila.getAttribute('data-fila') : null;
 
@@ -1227,7 +1242,6 @@
                     case 'reject': responderSolicitud(filaId, false); break;
                     case 'cancel': cancelarEnviada(filaId); break;
                     case 'unblock': desbloquear(id); break;
-                    case 'reintentar': cargarDatos(); break;
                 }
             });
         }
@@ -1251,13 +1265,7 @@
 
         document.addEventListener('click', function (ev) {
             var open = ev.target.closest('[data-open]');
-            if (open) {
-                var what = open.getAttribute('data-open');
-                if (what === 'invitar') invitarContacto();
-                if (what === 'qr') abrirQrPersonal();
-                if (what === 'escanear') abrirEscaner();
-                return;
-            }
+            if (open && open.getAttribute('data-open') === 'agregar') { abrirAgregar(); return; }
             var close = ev.target.closest('[data-close]');
             if (close) { cerrarModal(close.getAttribute('data-close')); return; }
             if (ev.target.classList && ev.target.classList.contains('overlay')) {
@@ -1268,16 +1276,17 @@
         var btnConfig = document.getElementById('btnAbrirConfigContactos');
         if (btnConfig) btnConfig.addEventListener('click', abrirConfig);
 
+        var formCanje = document.getElementById('formCanje');
+        if (formCanje) formCanje.addEventListener('submit', canjearCodigo);
+
         var btnCopiar = document.getElementById('btnCopiarCodigo');
         if (btnCopiar) btnCopiar.addEventListener('click', copiarCodigo);
 
         document.addEventListener('keydown', function (ev) {
             if (ev.key === 'Escape') {
-                ['modalQR', 'modalEscanear', 'modalConfig', 'modalInvitacion'].forEach(cerrarModal);
+                ['modalAgregar', 'modalConfig'].forEach(cerrarModal);
             }
         });
-
-        window.addEventListener('beforeunload', pararEscaner);
 
         var client = sb();
         if (client && client.auth && client.auth.onAuthStateChange) {
@@ -1285,8 +1294,9 @@
                 state.session = session || null;
                 state.sessionExpira = Date.now() + 60000;
                 if (evento === 'SIGNED_OUT') {
-                    state.contactos = []; state.recibidas = []; state.enviadas = [];
-                    state.bloqueados = []; state.silenciados = []; state.idsContactos.clear();
+                    state.contactos = []; state.total = 0; state.pagina = 0; state.hayMas = false;
+                    state.recibidas = []; state.enviadas = []; state.bloqueados = [];
+                    state.silenciados = []; state.idsContactos.clear();
                     actualizarStats();
                     pintarVacio('Inicia sesión.');
                 } else if (evento === 'SIGNED_IN' && !state.initialized) {
@@ -1304,7 +1314,6 @@
             intentos++;
             if (sb()) {
                 clearInterval(timer);
-                // Aplica la accesibilidad local de inmediato, antes de que llegue la nube
                 state.a11y = normalizarA11y(leerA11yLocal());
                 aplicarA11y();
                 configurarEventos();
