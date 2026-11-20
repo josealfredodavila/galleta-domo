@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=4">
 
     <style>
-        /* Ajustes visuales directos para Grupos de comunidad, Dashboard y marca limpia */
+        /* Ajustes visuales directos para Grupos de comunidad, Dashboard, Cercanos y Config */
         .hud-brand-mark {
             display: inline-flex;
             align-items: center;
@@ -36,7 +36,8 @@
             font-weight: 700;
         }
 
-        .grupos-section {
+        .grupos-section,
+        .cercanos-turismo-section {
             margin-bottom: 18px;
             padding-bottom: 14px;
             border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
@@ -65,6 +66,10 @@
             font-family: Inter, sans-serif;
             font-size: .7rem;
             font-weight: 700;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
         }
 
         .grupos-tabs {
@@ -91,13 +96,15 @@
         }
 
         .grupos-lista,
-        .grupos-canales-lista {
+        .grupos-canales-lista,
+        .cercanos-lugares-lista {
             display: flex;
             flex-direction: column;
             gap: 8px;
         }
 
-        .grupo-item-card {
+        .grupo-item-card,
+        .cercano-lugar-card {
             display: flex;
             align-items: center;
             gap: 12px;
@@ -110,7 +117,12 @@
             transition: border-color .2s ease, background .2s ease, transform .2s ease;
         }
 
-        .grupo-item-card:hover {
+        .cercano-lugar-card {
+            border-color: rgba(0, 229, 255, 0.22);
+        }
+
+        .grupo-item-card:hover,
+        .cercano-lugar-card:hover {
             border-color: rgba(0, 229, 255, 0.45);
             background: rgba(16, 26, 40, 0.95);
         }
@@ -159,6 +171,34 @@
             font-size: .72rem;
             font-weight: 700;
             white-space: nowrap;
+        }
+
+        .cercanos-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .cercanos-input {
+            flex: 1 1 180px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 229, 255, 0.25);
+            background: rgba(11, 18, 28, 0.9);
+            color: var(--text-primary, #f0f4f8);
+            font-size: .78rem;
+        }
+
+        .cercanos-btn {
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(212, 175, 55, 0.35);
+            background: rgba(212, 175, 55, 0.14);
+            color: var(--gold-light, #f7d44a);
+            font-size: .72rem;
+            font-weight: 700;
+            cursor: pointer;
         }
 
         .canal-item {
@@ -245,8 +285,105 @@
             border: 1px dashed rgba(255, 255, 255, 0.14);
         }
 
+        /* Panel/Modal integrado de Configuración, Visibilidad y Accesibilidad */
+        .cfg-modal-card {
+            max-width: 540px;
+            max-height: 86vh;
+            overflow-y: auto;
+        }
+
+        .cfg-inline-group {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .cfg-inline-heading {
+            font-family: Orbitron, monospace;
+            font-size: .74rem;
+            color: var(--cyan, #00e5ff);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+
+        .cfg-switch-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .cfg-switch-row:last-child {
+            border-bottom: none;
+        }
+
+        .cfg-switch-title {
+            font-size: .8rem;
+            font-weight: 700;
+            color: var(--text-primary, #f0f4f8);
+        }
+
+        .cfg-switch-desc {
+            font-size: .68rem;
+            color: var(--text-muted, #8c949c);
+            margin-top: 2px;
+        }
+
+        .cfg-switch-input {
+            width: 42px;
+            height: 22px;
+            flex: 0 0 auto;
+            accent-color: var(--gold-light, #f7d44a);
+            cursor: pointer;
+        }
+
+        .cfg-links-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 12px;
+        }
+
+        .cfg-link-chip {
+            padding: 7px 11px;
+            border-radius: 10px;
+            font-size: .72rem;
+            font-weight: 700;
+            text-decoration: none;
+            color: var(--gold-light, #f7d44a);
+            background: rgba(212, 175, 55, 0.1);
+            border: 1px solid rgba(212, 175, 55, 0.28);
+        }
+
+        .cfg-status-msg {
+            margin-top: 8px;
+            font-size: .72rem;
+            min-height: 16px;
+            color: var(--cyan, #00e5ff);
+        }
+
+        body.reduce-motion * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+        }
+
+        body.high-contrast {
+            --text-muted: #c0d8e8;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        body.text-large {
+            font-size: 118%;
+        }
+
         html.tema-dia .grupo-item-card,
         html[data-tema="dia"] .grupo-item-card,
+        html.tema-dia .cercano-lugar-card,
+        html[data-tema="dia"] .cercano-lugar-card,
         html.tema-dia .canal-item,
         html[data-tema="dia"] .canal-item {
             background: #ffffff;
@@ -291,9 +428,9 @@
                 <button type="button" class="hud-icon-btn hud-qr-btn" data-action="abrir-qr" aria-label="Agregar con código QR" title="Agregar o mostrar QR">
                     <span aria-hidden="true">⛶</span>
                 </button>
-                <a href="/features/perfil/perfil.html" class="hud-icon-btn" aria-label="Ajustes y perfil" title="Ajustes y perfil">
+                <button type="button" id="btnAbrirConfigContactos" class="hud-icon-btn" aria-label="Configuración y visibilidad" title="Configuración y visibilidad">
                     <span aria-hidden="true">⚙</span>
-                </a>
+                </button>
                 <span class="network-badge hud-network-pill" aria-label="Red Polygon">
                     <span class="dot" aria-hidden="true"></span>Polygon
                 </span>
@@ -376,6 +513,35 @@
                     <span class="pill-ico" aria-hidden="true">◆</span> Grupos
                 </button>
             </div>
+
+            <!-- Amigos cercanos y lugares donde estuvieron (conectado a /api/turismo/buscar) -->
+            <section class="cercanos-turismo-section hud-section" id="cercanosTurismoSection" aria-label="Amigos cercanos y lugares">
+                <div class="grupos-titulo hud-section-title">
+                    <span class="grupos-titulo-izq">
+                        Amigos cercanos · Dónde estuvieron
+                        <span class="contador" id="cercanosLugaresContador" style="background:var(--cyan);color:#05080f;">0</span>
+                    </span>
+                    <button type="button" id="btnRefrescarCercanos" class="grupos-direct-link">Actualizar ↻</button>
+                </div>
+
+                <div class="cercanos-controls">
+                    <input type="text" id="cercanosQueryInput" class="cercanos-input"
+                        placeholder="Ej. cafés, miradores, restaurantes donde estuvieron..."
+                        value="lugares populares">
+                    <button type="button" id="btnBuscarLugaresCercanos" class="cercanos-btn">Buscar zona</button>
+                </div>
+
+                <div id="cercanosLugaresLista" class="cercanos-lugares-lista">
+                    <div class="grupo-item-card">
+                        <span class="grupo-item-badge" aria-hidden="true">◇</span>
+                        <div class="grupo-item-info">
+                            <div class="grupo-item-nombre">Actividad reciente de amigos cercanos</div>
+                            <div class="grupo-item-meta">Toca "Buscar zona" o el filtro "Cercanos" para ver lugares cercanos y check-ins</div>
+                        </div>
+                        <span class="grupo-item-accion">Listo</span>
+                    </div>
+                </div>
+            </section>
 
             <!-- Solicitudes pendientes -->
             <section class="solicitudes-section hud-section" id="solicitudesPendientesSection" aria-label="Solicitudes pendientes">
@@ -471,6 +637,80 @@
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- Modal integrado: Configuración, Visibilidad y Accesibilidad -->
+    <div class="modal-overlay" id="modalConfigContactos" role="dialog" aria-modal="true"
+        aria-labelledby="tituloConfigContactos" aria-hidden="true">
+        <div class="modal cfg-modal-card">
+            <div class="modal-header">
+                <h2 id="tituloConfigContactos">Configuración y visibilidad</h2>
+                <button type="button" class="btn-cerrar" id="btnCerrarConfigContactos" aria-label="Cerrar">✕</button>
+            </div>
+
+            <div class="cfg-inline-group" style="margin-top:0;border-top:none;padding-top:0;">
+                <div class="cfg-inline-heading">Visibilidad y contactos</div>
+
+                <div class="cfg-switch-row">
+                    <div>
+                        <div class="cfg-switch-title">Encontrarme por correo electrónico</div>
+                        <div class="cfg-switch-desc">Permite que te encuentren buscando tu correo.</div>
+                    </div>
+                    <input type="checkbox" id="cfgToggleEmail" class="cfg-switch-input">
+                </div>
+
+                <div class="cfg-switch-row">
+                    <div>
+                        <div class="cfg-switch-title">Encontrarme por teléfono</div>
+                        <div class="cfg-switch-desc">Permite que te encuentren buscando tu número.</div>
+                    </div>
+                    <input type="checkbox" id="cfgToggleTelefono" class="cfg-switch-input">
+                </div>
+
+                <div class="cfg-switch-row">
+                    <div>
+                        <div class="cfg-switch-title">Ocultar mi estado en línea</div>
+                        <div class="cfg-switch-desc">Oculta si estás conectado ante otros usuarios.</div>
+                    </div>
+                    <input type="checkbox" id="cfgToggleOcultarEstado" class="cfg-switch-input">
+                </div>
+            </div>
+
+            <div class="cfg-inline-group">
+                <div class="cfg-inline-heading">Accesibilidad</div>
+
+                <div class="cfg-switch-row">
+                    <div>
+                        <div class="cfg-switch-title">Reducir el movimiento</div>
+                        <div class="cfg-switch-desc">Limita animaciones y transiciones en pantalla.</div>
+                    </div>
+                    <input type="checkbox" id="cfgToggleMovimiento" class="cfg-switch-input">
+                </div>
+
+                <div class="cfg-switch-row">
+                    <div>
+                        <div class="cfg-switch-title">Aumentar el contraste</div>
+                        <div class="cfg-switch-desc">Mejora la legibilidad de textos y bordes.</div>
+                    </div>
+                    <input type="checkbox" id="cfgToggleContraste" class="cfg-switch-input">
+                </div>
+
+                <div class="cfg-switch-row">
+                    <div>
+                        <div class="cfg-switch-title">Texto más grande</div>
+                        <div class="cfg-switch-desc">Aumenta la escala tipográfica de la vista.</div>
+                    </div>
+                    <input type="checkbox" id="cfgToggleTextoGrande" class="cfg-switch-input">
+                </div>
+            </div>
+
+            <div id="cfgEstadoGuardado" class="cfg-status-msg" aria-live="polite"></div>
+
+            <div class="cfg-links-row">
+                <a href="/features/perfil/configuracion/index.html" class="cfg-link-chip">Ajustes completos ▸</a>
+                <a href="/features/perfil/configuracion/privacidad/visibilidad.html" class="cfg-link-chip">Visibilidad avanzada ▸</a>
+            </div>
+        </div>
+    </div>
 
     <!-- Modal: Agregar / Compartir por QR -->
     <div class="modal-overlay" id="modalQRContacto" role="dialog" aria-modal="true"
@@ -934,9 +1174,271 @@
             }
         }
 
-        // Activa el giro del planeta cuando empiezan a buscar contactos e inicia el dashboard de grupos
+        // ================================================================
+        // AMIGOS CERCANOS + LUGARES DONDE ESTUVIERON (/api/turismo/buscar)
+        // ================================================================
+        async function obtenerCoordsCercanos() {
+            if (navigator.geolocation) {
+                try {
+                    const pos = await new Promise((resolve, reject) => {
+                        navigator.geolocation.getCurrentPosition(resolve, reject, {
+                            enableHighAccuracy: false,
+                            timeout: 3500,
+                            maximumAge: 120000
+                        });
+                    });
+                    if (pos && pos.coords) {
+                        return { lat: pos.coords.latitude, lng: pos.coords.longitude };
+                    }
+                } catch (_) {}
+            }
+            return { lat: 19.0414, lng: -98.2063 };
+        }
+
+        async function cargarLugaresAmigosCercanos() {
+            const listaEl = document.getElementById('cercanosLugaresLista');
+            const contEl = document.getElementById('cercanosLugaresContador');
+            const inputEl = document.getElementById('cercanosQueryInput');
+            if (!listaEl) return;
+
+            const q = (inputEl && inputEl.value ? inputEl.value.trim() : '') || 'lugares populares';
+            const coords = await obtenerCoordsCercanos();
+
+            listaEl.innerHTML = `<div class="grupo-item-card">
+                <span class="grupo-item-badge">◇</span>
+                <div class="grupo-item-info">
+                    <div class="grupo-item-nombre">Buscando lugares cercanos...</div>
+                    <div class="grupo-item-meta">Consultando /api/turismo/buscar en tu zona</div>
+                </div>
+            </div>`;
+
+            try {
+                const params = new URLSearchParams({
+                    q,
+                    lat: String(coords.lat),
+                    lng: String(coords.lng),
+                    radio: '10000',
+                    max: '6',
+                    orden: 'distancia'
+                });
+                const res = await fetch('/api/turismo/buscar?' + params.toString());
+                if (!res.ok) throw new Error('HTTP_' + res.status);
+                const data = await res.json();
+                const lugares = Array.isArray(data.results) ? data.results : [];
+
+                if (contEl) contEl.textContent = String(lugares.length);
+
+                if (!lugares.length) {
+                    listaEl.innerHTML = `<div class="grupo-item-card">
+                        <span class="grupo-item-badge">◇</span>
+                        <div class="grupo-item-info">
+                            <div class="grupo-item-nombre">Sin lugares recientes en esta zona</div>
+                            <div class="grupo-item-meta">Prueba otro término como "cafés", "parques" o "restaurantes"</div>
+                        </div>
+                    </div>`;
+                    return;
+                }
+
+                listaEl.innerHTML = lugares.map((lugar) => {
+                    const nombre = grpEscapeHTML(lugar.name || 'Lugar cercano');
+                    const cat = grpEscapeHTML(lugar.category || 'Punto de interés');
+                    const dist = typeof lugar.distanceMeters === 'number'
+                        ? (lugar.distanceMeters >= 1000
+                            ? (lugar.distanceMeters / 1000).toFixed(1) + ' km'
+                            : lugar.distanceMeters + ' m')
+                        : 'Cerca';
+                    const dir = grpEscapeHTML(lugar.address || 'Ubicación reciente');
+                    const url = grpSafeUrl(lugar.mapUrl) || '#';
+
+                    return `<a class="cercano-lugar-card" href="${grpEscapeHTML(url)}" target="_blank" rel="noopener noreferrer">
+                        <span class="grupo-item-badge">📍</span>
+                        <div class="grupo-item-info">
+                            <div class="grupo-item-nombre">${nombre} · ${grpEscapeHTML(dist)}</div>
+                            <div class="grupo-item-meta">${cat} — ${dir}</div>
+                        </div>
+                        <span class="grupo-item-accion">Mapa ▸</span>
+                    </a>`;
+                }).join('');
+            } catch (err) {
+                console.warn('[Contactos/Turismo] Error cargando cercanos:', err);
+                listaEl.innerHTML = `<div class="grupo-item-card">
+                    <span class="grupo-item-badge">◇</span>
+                    <div class="grupo-item-info">
+                        <div class="grupo-item-nombre">Amigos cercanos en tu zona</div>
+                        <div class="grupo-item-meta">No se pudo cargar el buscador turístico ahora mismo</div>
+                    </div>
+                    <span class="grupo-item-accion">Cercanos</span>
+                </div>`;
+            }
+        }
+
+        // ================================================================
+        // CONFIGURACIÓN, VISIBILIDAD Y ACCESIBILIDAD EN CONTACTOS
+        // ================================================================
+        const CFG_PREFS_KEYS = {
+            reducir_movimiento: 'accesibilidad_reducir_movimiento',
+            alto_contraste: 'accesibilidad_alto_contraste',
+            texto_grande: 'accesibilidad_texto_grande'
+        };
+
+        function leerPrefLocal(key) {
+            try {
+                return localStorage.getItem('cfg_' + key) === 'true';
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function guardarPrefLocal(key, val) {
+            try {
+                localStorage.setItem('cfg_' + key, val ? 'true' : 'false');
+            } catch (_) {}
+        }
+
+        function aplicarEstilosAccesibilidad() {
+            const mov = leerPrefLocal(CFG_PREFS_KEYS.reducir_movimiento);
+            const con = leerPrefLocal(CFG_PREFS_KEYS.alto_contraste);
+            const txt = leerPrefLocal(CFG_PREFS_KEYS.texto_grande);
+
+            document.body.classList.toggle('reduce-motion', mov);
+            document.body.classList.toggle('high-contrast', con);
+            document.body.classList.toggle('text-large', txt);
+
+            const tMov = document.getElementById('cfgToggleMovimiento');
+            const tCon = document.getElementById('cfgToggleContraste');
+            const tTxt = document.getElementById('cfgToggleTextoGrande');
+            if (tMov) tMov.checked = mov;
+            if (tCon) tCon.checked = con;
+            if (tTxt) tTxt.checked = txt;
+        }
+
+        function setEstadoCfg(msg) {
+            const el = document.getElementById('cfgEstadoGuardado');
+            if (el) el.textContent = msg || '';
+        }
+
+        async function cargarVisibilidadEnModal() {
+            if (!(await esperarSupabase()) || !window.supabaseClient) return;
+            try {
+                const { data: authData } = await window.supabaseClient.auth.getUser();
+                const user = authData && authData.user;
+                if (!user) return;
+
+                const [{ data: usuario }, { data: prefRow }] = await Promise.all([
+                    window.supabaseClient.from('usuarios').select('ocultar_estado').eq('id', user.id).single(),
+                    window.supabaseClient.from('preferencias_usuario').select('prefs').eq('usuario_id', user.id).maybeSingle()
+                ]);
+
+                const prefs = (prefRow && prefRow.prefs) ? prefRow.prefs : {};
+                const tEmail = document.getElementById('cfgToggleEmail');
+                const tTel = document.getElementById('cfgToggleTelefono');
+                const tOcultar = document.getElementById('cfgToggleOcultarEstado');
+
+                if (tEmail) tEmail.checked = prefs.visibilidad_encontrarme_email === true;
+                if (tTel) tTel.checked = prefs.visibilidad_encontrarme_telefono === true;
+                if (tOcultar) tOcultar.checked = Boolean(usuario && usuario.ocultar_estado === true);
+            } catch (e) {
+                console.warn('[ConfigContactos] Error cargando visibilidad:', e);
+            }
+        }
+
+        async function guardarVisibilidadCampo(clave, valor) {
+            if (!(await esperarSupabase()) || !window.supabaseClient) return;
+            setEstadoCfg('Guardando...');
+            try {
+                const { data: authData } = await window.supabaseClient.auth.getUser();
+                const user = authData && authData.user;
+                if (!user) {
+                    setEstadoCfg('Inicia sesión para guardar en tu cuenta.');
+                    return;
+                }
+
+                if (clave === 'ocultar_estado') {
+                    const { error } = await window.supabaseClient
+                        .from('usuarios')
+                        .update({ ocultar_estado: valor })
+                        .eq('id', user.id);
+                    if (error) throw error;
+                } else {
+                    const { error } = await window.supabaseClient.rpc('actualizar_preferencia', {
+                        p_key: clave,
+                        p_value: { value: valor }
+                    });
+                    if (error) throw error;
+                }
+                setEstadoCfg('✓ Preferencia guardada');
+            } catch (e) {
+                console.warn('[ConfigContactos] Error guardando:', e);
+                setEstadoCfg('No se pudo guardar la preferencia.');
+            } finally {
+                setTimeout(() => setEstadoCfg(''), 2500);
+            }
+        }
+
+        function abrirModalConfigContactos() {
+            const modal = document.getElementById('modalConfigContactos');
+            if (!modal) return;
+            aplicarEstilosAccesibilidad();
+            cargarVisibilidadEnModal();
+            modal.classList.add('active');
+            modal.setAttribute('aria-hidden', 'false');
+        }
+
+        function cerrarModalConfigContactos() {
+            const modal = document.getElementById('modalConfigContactos');
+            if (!modal) return;
+            modal.classList.remove('active');
+            modal.setAttribute('aria-hidden', 'true');
+        }
+
+        // Activa el giro del planeta cuando empiezan a buscar contactos e inicia módulos
         document.addEventListener('DOMContentLoaded', () => {
             cargarDashboard();
+            aplicarEstilosAccesibilidad();
+
+            const btnCfg = document.getElementById('btnAbrirConfigContactos');
+            const btnCerrarCfg = document.getElementById('btnCerrarConfigContactos');
+            const modalCfg = document.getElementById('modalConfigContactos');
+            if (btnCfg) btnCfg.addEventListener('click', abrirModalConfigContactos);
+            if (btnCerrarCfg) btnCerrarCfg.addEventListener('click', cerrarModalConfigContactos);
+            if (modalCfg) {
+                modalCfg.addEventListener('click', (e) => {
+                    if (e.target === modalCfg) cerrarModalConfigContactos();
+                });
+            }
+
+            const tEmail = document.getElementById('cfgToggleEmail');
+            const tTel = document.getElementById('cfgToggleTelefono');
+            const tOcultar = document.getElementById('cfgToggleOcultarEstado');
+            if (tEmail) tEmail.addEventListener('change', (e) => guardarVisibilidadCampo('visibilidad_encontrarme_email', e.target.checked));
+            if (tTel) tTel.addEventListener('change', (e) => guardarVisibilidadCampo('visibilidad_encontrarme_telefono', e.target.checked));
+            if (tOcultar) tOcultar.addEventListener('change', (e) => guardarVisibilidadCampo('ocultar_estado', e.target.checked));
+
+            const tMov = document.getElementById('cfgToggleMovimiento');
+            const tCon = document.getElementById('cfgToggleContraste');
+            const tTxt = document.getElementById('cfgToggleTextoGrande');
+            if (tMov) tMov.addEventListener('change', (e) => {
+                guardarPrefLocal(CFG_PREFS_KEYS.reducir_movimiento, e.target.checked);
+                aplicarEstilosAccesibilidad();
+                setEstadoCfg('✓ Animación actualizada');
+            });
+            if (tCon) tCon.addEventListener('change', (e) => {
+                guardarPrefLocal(CFG_PREFS_KEYS.alto_contraste, e.target.checked);
+                aplicarEstilosAccesibilidad();
+                setEstadoCfg('✓ Contraste actualizado');
+            });
+            if (tTxt) tTxt.addEventListener('change', (e) => {
+                guardarPrefLocal(CFG_PREFS_KEYS.texto_grande, e.target.checked);
+                aplicarEstilosAccesibilidad();
+                setEstadoCfg('✓ Tamaño de texto actualizado');
+            });
+
+            const btnBuscarCercanos = document.getElementById('btnBuscarLugaresCercanos');
+            const btnRefrescarCercanos = document.getElementById('btnRefrescarCercanos');
+            const filtroCercanos = document.querySelector('.filtro[data-filtro="cercanos"]');
+            if (btnBuscarCercanos) btnBuscarCercanos.addEventListener('click', cargarLugaresAmigosCercanos);
+            if (btnRefrescarCercanos) btnRefrescarCercanos.addEventListener('click', cargarLugaresAmigosCercanos);
+            if (filtroCercanos) filtroCercanos.addEventListener('click', cargarLugaresAmigosCercanos);
 
             const inputsBusqueda = [
                 document.getElementById('searchInput'),
