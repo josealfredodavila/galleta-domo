@@ -1,9 +1,9 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v28.0
+   CSARIEL'S · CONTACTOS · v28.1
    Sin QR ni cámara (eso vive en Perfil).
    RPC: perfiles_por_ids, buscar_usuarios, sugerencias_usuarios,
         bloquear_contacto, obtener_o_crear_invitacion,
-        canjear_codigo_amistad (nueva), responder_solicitud_amistad,
+        canjear_codigo_amistad, responder_solicitud_amistad,
         eliminar_amistad.
    Tablas: contactos, bloqueos, preferencias_usuario (prefs jsonb),
            usuarios (ocultar_estado).
@@ -1057,10 +1057,7 @@
 
         if (r.error) {
             var m = r.error.message || '';
-            if (r.error.code === '54000' || m.indexOf('rate_limited') !== -1) {
-                state.canjeBloqueadoHasta = Date.now() + CONFIG.BLOQUEO_CANJE_MS;
-                mensajeCanje('Demasiados intentos. Espera unos minutos.', 'error');
-            } else if (r.error.code === '42501' || m.indexOf('no_autenticado') !== -1) {
+            if (r.error.code === '42501' || m.indexOf('no_autenticado') !== -1) {
                 mensajeCanje('Tu sesión expiró. Vuelve a iniciar sesión.', 'error');
             } else {
                 mensajeCanje('No se pudo enviar. Intenta más tarde.', 'error');
@@ -1069,6 +1066,14 @@
         }
 
         var estado = r.data && r.data.estado;
+
+        // El servidor responde rate_limited (no error) para que el intento quede registrado
+        if (estado === 'rate_limited') {
+            state.canjeBloqueadoHasta = Date.now() + CONFIG.BLOQUEO_CANJE_MS;
+            mensajeCanje('Demasiados intentos. Espera unos minutos.', 'error');
+            return;
+        }
+
         var textos = {
             solicitud_enviada: ['Solicitud enviada. Aparecerá cuando la acepte.', 'ok'],
             ya_son_contactos: ['Ya son contactos.', 'ok'],
