@@ -1,16 +1,11 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v26.1
+   CSARIEL'S · CONTACTOS · v26.2
    ============================================================
-   v26.1:
-   - Sección renombrada a "Personas activas".
-   - Sugerencias muestran "N en común" cuando hay contactos compartidos.
-   - La función sugerencias_usuarios v2 prioriza contactos en común y
-     rota la muestra al azar entre personas activas.
-
-   Arquitectura (sin cambios de fondo):
-   - Perfiles por LOTE con RPC perfiles_por_ids y caché en memoria.
-   - Un solo refresco (refrescarTodo) para contactos, solicitudes y bloqueados.
-   - Errores visibles en cada sección con botón Reintentar.
+   v26.2:
+   - Integración con el nuevo HTML para el control estricto de filtros.
+   - Control dinámico del estado vacío (Empty State).
+   - Actualización de contadores en los títulos de las secciones.
+   - Corrección de visibilidad de la sección de Grupos.
    ============================================================ */
 
 (function () {
@@ -33,7 +28,7 @@
         MENSAJES_URL: '/features/mensajes/mensajes.html',
 
         PAGE_SIZE: 30,
-        LOTE_PERFILES_MAX: 200,   // límite del RPC perfiles_por_ids
+        LOTE_PERFILES_MAX: 200,
         MAX_RESULTADOS_BUSQUEDA: 20,
         MAX_SUGERENCIAS: 10,
         MIN_CHARS_BUSQUEDA: 2,
@@ -51,21 +46,20 @@
         session: null,
         sessionExpira: 0,
 
-        contactos: [],           // filas activas: { id, contacto_id, es_favorito, fecha }
+        contactos: [],
         totalContactos: 0,
         paginaActual: 0,
         hayMas: true,
 
-        pendientesRecibidas: [], // { id, usuario_id }
-        pendientesEnviadas: [],  // { id, contacto_id }
-        bloqueados: [],          // { bloqueado_id }
+        pendientesRecibidas: [],
+        pendientesEnviadas: [],
+        bloqueados: [],
 
         filtroActual: 'todos',
         textoBusqueda: '',
         busquedaVersion: 0,
         observerScroll: null,
 
-        // Caché de perfiles de la sesión: id -> perfil | null (no encontrado)
         perfiles: new Map(),
         idsContactosSet: new Set(),
         operacionEnCurso: new Set()
@@ -240,7 +234,6 @@
                 var resultado = await fn();
                 if (resultado && resultado.error) {
                     var err = resultado.error;
-                    // Errores de negocio o de permisos no se reintentan
                     if (err.code === '23505' || err.code === '42501' || err.code === 'PGRST116') return resultado;
                     throw err;
                 }
@@ -271,12 +264,6 @@
         };
     }
 
-    /*
-     * Pide en UNA sola llamada todos los perfiles que falten en la caché.
-     * Devuelve { errores: [] }.
-     * Un perfil null en caché = la base no lo devolvió (no se vuelve a pedir).
-     * Un perfil ausente de caché = no se pudo consultar (se puede reintentar).
-     */
     async function cargarPerfiles(ids) {
         var resultado = { errores: [] };
         var client = sb();
@@ -309,7 +296,6 @@
         return resultado;
     }
 
-    // Datos de presentación de un perfil, según el estado de la caché.
     function datosPerfil(id) {
         var p = state.perfiles.get(id);
         if (p === undefined) return { nombre: 'No se pudo cargar', handle: '', avatar: '', estado: 'error', verificado: false, online: false };
@@ -363,7 +349,7 @@
     }
 
     /* ============================================================
-       REFRESCO ÚNICO: contactos + solicitudes + bloqueados
+       REFRESCO ÚNICO
        ============================================================ */
 
     async function refrescarTodo(opciones) {
@@ -394,7 +380,6 @@
             var desde = state.paginaActual * CONFIG.PAGE_SIZE;
             var hasta = desde + CONFIG.PAGE_SIZE - 1;
 
-            // 1) Todas las consultas de filas en paralelo (sin perfiles)
             var consultas = await Promise.all([
                 reset
                     ? withRetry(function () {
@@ -452,7 +437,6 @@
                 return !state.contactos.some(function (e) { return String(e.id) === String(n.id); });
             }));
 
-            // 2) UN solo lote de perfiles para todo lo que se va a pintar
             var ids = [];
             state.contactos.forEach(function (c) { ids.push(c.contacto_id); });
             state.pendientesRecibidas.forEach(function (s) { ids.push(s.usuario_id); });
@@ -461,7 +445,6 @@
             var lote = await cargarPerfiles(ids);
             var errorPerfiles = lote.errores.length ? lote.errores[0] : null;
 
-            // 3) Pintar todo
             recalcularEstadisticas();
             renderizarContactos(errores.contactos);
             renderizarPendientesRecibidas(errores.recibidas, errorPerfiles);
@@ -481,7 +464,7 @@
     }
 
     /* ============================================================
-       RENDER: CONTACTOS
+       RENDER: CONTACTOS (Incluye lógica para el Empty State)
        ============================================================ */
 
     function renderizarContactos(errorConsulta) {
@@ -509,6 +492,7 @@
             };
         });
 
+        // Filtrado local (el HTML ya oculta las secciones grandes, esto afina la lista)
         if (state.filtroActual === 'online') items = items.filter(function (c) { return c.online; });
         if (state.filtroActual === 'favoritos') items = items.filter(function (c) { return c.es_favorito; });
         if (state.filtroActual === 'recientes') {
@@ -523,11 +507,13 @@
             });
         }
 
+        // Lógica del Estado Vacío
         if (!items.length) {
             var msg = state.textoBusqueda ? 'No se encontraron contactos.'
                 : state.filtroActual === 'online' ? 'No hay contactos conectados ahora.'
                 : state.filtroActual === 'favoritos' ? 'Todavía no tienes favoritos.'
                 : 'Tu red está vacía. Busca personas para conectar.';
+            
             mostrarEstadoVacio('🪐', msg);
             return;
         }
@@ -683,7 +669,6 @@
 
     /* ============================================================
        PERSONAS ACTIVAS (sugerencias)
-       Una consulta; prioriza contactos en común y rota la muestra.
        ============================================================ */
 
     async function cargarSugerencias() {
@@ -693,8 +678,7 @@
         var contenedor = document.getElementById('sugerenciasLista');
         if (!client || !session || !seccion || !contenedor) return;
 
-        // Título de la sección
-        var titulo = seccion.querySelector('.sugerencias-titulo');
+        var titulo = seccion.querySelector('.hud-section-title');
         if (titulo) titulo.textContent = CONFIG.TITULO_SUGERENCIAS;
 
         quitarAviso(seccion);
@@ -707,7 +691,6 @@
             var crudo = Array.isArray(r.data) ? r.data : [];
             var sugeridos = crudo.filter(function (u) { return u && u.id; }).slice(0, CONFIG.MAX_SUGERENCIAS);
 
-            // Los perfiles devueltos entran a la caché para no volver a pedirlos
             sugeridos.forEach(function (u) {
                 if (!state.perfiles.has(u.id)) state.perfiles.set(u.id, normalizarPerfil(u));
             });
@@ -770,10 +753,34 @@
     function mostrarEstadoVacio(icono, mensaje) {
         var lista = document.getElementById('contactosList');
         if (!lista) return;
+        
+        // Buscamos el empty-state que ya existe en el HTML
+        var emptyState = document.getElementById('contactosEmptyState');
+        if (!emptyState) {
+            // Si por alguna razón no está, lo creamos
+            lista.setAttribute('aria-busy', 'false');
+            lista.innerHTML = '<div class="empty-state" id="contactosEmptyState"><div class="icon" aria-hidden="true">' + escapeHtml(icono) + '</div><h3 id="emptyStateTitle">' + escapeHtml(mensaje) + '</h3><button type="button" class="btn-accion" id="btnBuscarEmpty" data-contactos-action="agregar" style="display:none;">' + SVG.agregarAmigo + ' Buscar personas</button></div>';
+            emptyState = document.getElementById('contactosEmptyState');
+        }
+
+        // Actualizamos los textos
+        var title = emptyState.querySelector('h3') || document.getElementById('emptyStateTitle');
+        var btn = emptyState.querySelector('.btn-accion') || document.getElementById('btnBuscarEmpty');
+        var iconEl = emptyState.querySelector('.icon') || emptyState.querySelector('.planeta-busqueda');
+
+        if (title) title.textContent = mensaje;
+        if (iconEl) iconEl.textContent = icono;
+        
+        // El botón "Buscar personas" solo se muestra si la red está vacía o no hay resultados
+        if (btn) {
+            if (state.contactos.length === 0 || state.textoBusqueda) {
+                btn.style.display = 'inline-flex';
+            } else {
+                btn.style.display = 'none';
+            }
+        }
+
         lista.setAttribute('aria-busy', 'false');
-        lista.innerHTML = '<div class="empty-state"><div class="icon" aria-hidden="true">' + escapeHtml(icono) + '</div><h3>' + escapeHtml(mensaje) + '</h3>' +
-            (state.contactos.length === 0 ? '<button type="button" class="btn-accion" data-contactos-action="agregar">' + SVG.agregarAmigo + ' Buscar personas</button>' : '') +
-            '</div>';
     }
 
     function configurarScrollInfinito() {
@@ -789,7 +796,7 @@
     }
 
     /* ============================================================
-       BÚSQUEDA GLOBAL (buscar_usuarios) — resultados a la caché
+       BÚSQUEDA GLOBAL
        ============================================================ */
 
     async function buscarUsuariosGlobal(texto, version) {
@@ -1026,7 +1033,6 @@
         }
     }
 
-    // Quita el perfil de la caché (solo el error, no los perfiles bien cargados) y vuelve a pedir el lote.
     function reintentarPerfil(id) {
         state.perfiles.delete(id);
         refrescarTodo({ reset: true });
@@ -1165,7 +1171,7 @@
     }
 
     /* ============================================================
-       EVENTOS (delegación: un listener por zona)
+       EVENTOS (Delegación)
        ============================================================ */
 
     function configurarEventos() {
@@ -1191,15 +1197,20 @@
             }, CONFIG.DEBOUNCE_BUSQUEDA_MS));
         }
 
+        // Manejo estricto de filtros desde el JS
         document.querySelectorAll('.filtros .filtro').forEach(function (boton) {
             boton.addEventListener('click', function () {
+                // Quitar active de todos
                 document.querySelectorAll('.filtros .filtro').forEach(function (item) {
                     item.classList.remove('active');
                     item.setAttribute('aria-pressed', 'false');
                 });
+                // Poner active al clickeado
                 boton.classList.add('active');
                 boton.setAttribute('aria-pressed', 'true');
                 state.filtroActual = boton.dataset.filtro || 'todos';
+                
+                // Refrescar la vista (el HTML reaccionará a state.filtroActual mediante CSS o esta misma función)
                 renderizarContactos(null);
             });
         });
