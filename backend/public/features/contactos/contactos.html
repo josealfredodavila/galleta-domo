@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
     <!-- CSS modular de Contactos -->
-    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=3">
+    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=4">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/auth-global.js"></script>
@@ -29,7 +29,7 @@
         <header class="header hud-header" aria-label="Encabezado de contactos">
             <div class="hud-header-left">
                 <a href="/" class="hud-brand-mark" aria-label="Csariel's Ecosystem">
-                    <span class="hud-contacts-icon" aria-hidden="true">👥</span>
+                    <span class="hud-contacts-icon" aria-hidden="true">◈</span>
                 </a>
                 <div class="hud-title-group">
                     <h1 class="hud-page-title" data-clave="contactos_titulo_h1">Contactos</h1>
@@ -41,7 +41,7 @@
 
             <div class="header-actions hud-top-actions">
                 <button type="button" class="hud-icon-btn" data-action="invitar" aria-label="Invitar contacto" title="Invitar contacto">
-                    <span aria-hidden="true">👤+</span>
+                    <span aria-hidden="true">+</span>
                 </button>
                 <button type="button" class="hud-icon-btn hud-qr-btn" data-action="abrir-qr" aria-label="Agregar con código QR" title="Agregar o mostrar QR">
                     <span aria-hidden="true">⛶</span>
@@ -96,7 +96,7 @@
                             autocomplete="off" maxlength="80" inputmode="search"
                             aria-label="Busca personas, @usuarios, lugares, grupos">
                         <span class="hud-search-hint" data-clave="contactos_busqueda_inteligente">
-                            Búsqueda inteligente · Resultados en tiempo real ⚡
+                            Búsqueda inteligente · Resultados en tiempo real ✦
                         </span>
                     </div>
                     <button type="button" class="hud-search-submit" data-action="buscar-rapido" aria-label="Buscar contactos" title="Buscar">
@@ -116,19 +116,19 @@
             <!-- Filtros en píldora -->
             <div class="filtros hud-filters-bar" role="group" aria-label="Filtros de contactos">
                 <button type="button" class="filtro hud-pill active" data-filtro="todos" data-clave="contactos_todos" aria-pressed="true">
-                    <span class="pill-ico" aria-hidden="true">👥</span> Todos
+                    <span class="pill-ico" aria-hidden="true">◈</span> Todos
                 </button>
                 <button type="button" class="filtro hud-pill" data-filtro="favoritos" data-clave="contactos_filtro_favoritos" aria-pressed="false">
-                    <span class="pill-ico" aria-hidden="true">★</span> Amigos
+                    <span class="pill-ico" aria-hidden="true">✦</span> Amigos
                 </button>
                 <button type="button" class="filtro hud-pill" data-filtro="online" data-clave="contactos_filtro_online" aria-pressed="false">
                     <span class="pill-dot" aria-hidden="true"></span> En línea
                 </button>
                 <button type="button" class="filtro hud-pill" data-filtro="cercanos" data-clave="contactos_filtro_cercanos" aria-pressed="false">
-                    <span class="pill-ico" aria-hidden="true">📍</span> Cercanos
+                    <span class="pill-ico" aria-hidden="true">◇</span> Cercanos
                 </button>
                 <button type="button" class="filtro hud-pill" data-filtro="recientes" data-clave="contactos_filtro_recientes" aria-pressed="false">
-                    <span class="pill-ico" aria-hidden="true">👥</span> Grupos
+                    <span class="pill-ico" aria-hidden="true">◆</span> Grupos
                 </button>
             </div>
 
@@ -148,6 +148,32 @@
                     <span class="contador" id="solicitudesEnviadasContador" style="background:var(--orange-soft);">0</span>
                 </div>
                 <div id="solicitudesEnviadasLista"></div>
+            </section>
+
+            <!-- Sección de grupos activos / comunidades -->
+            <section class="grupos-section hud-section" id="gruposSection" aria-label="Grupos de comunidad">
+                <div class="grupos-titulo hud-section-title">
+                    Grupos de comunidad
+                    <span class="contador" id="gruposContador" style="background:var(--violet);">2</span>
+                </div>
+                <div id="gruposLista" class="grupos-lista">
+                    <a href="/features/mensajes/mensajes.html?tab=grupos" class="grupo-item-card">
+                        <span class="grupo-item-badge" aria-hidden="true">◆</span>
+                        <div class="grupo-item-info">
+                            <div class="grupo-item-nombre">Comunidad Csariel's · Puebla</div>
+                            <div class="grupo-item-meta">Canales y grupos activos en el ecosistema</div>
+                        </div>
+                        <span class="grupo-item-accion">Abrir ▸</span>
+                    </a>
+                    <a href="/features/mensajes/mensajes.html?tab=canales" class="grupo-item-card">
+                        <span class="grupo-item-badge" aria-hidden="true">✦</span>
+                        <div class="grupo-item-info">
+                            <div class="grupo-item-nombre">Canales Públicos &amp; Red Polygon</div>
+                            <div class="grupo-item-meta">Explora comunidades o crea un nuevo grupo</div>
+                        </div>
+                        <span class="grupo-item-accion">Explorar ▸</span>
+                    </a>
+                </div>
             </section>
 
             <!-- Personas activas / Sugerencias -->
@@ -289,7 +315,7 @@
     <div class="confirm-modal-overlay" id="confirmModalOverlay" role="dialog" aria-modal="true"
         aria-labelledby="confirmModalTitle" aria-describedby="confirmModalMessage" aria-hidden="true">
         <div class="confirm-modal">
-            <div class="confirm-modal-icon" id="confirmModalIcon" aria-hidden="true">⚠️</div>
+            <div class="confirm-modal-icon" id="confirmModalIcon" aria-hidden="true">!</div>
             <h3 class="confirm-modal-title" id="confirmModalTitle">Confirmar acción</h3>
             <p class="confirm-modal-message" id="confirmModalMessage">¿Estás seguro?</p>
             <div class="confirm-modal-actions">
