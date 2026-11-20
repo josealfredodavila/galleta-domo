@@ -547,9 +547,17 @@
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/js/teclado-emojis.js?v=4"></script>
-<!-- [v5.9.4] Ruta corregida: mensajes.js vive en features/mensajes/ (no en js/).
-     Antes apuntaba a /features/mensajes/js/mensajes.js y daba 404. -->
-<script src="/features/mensajes/mensajes.js?v=5.9.4"></script>
+
+<!-- [v5.9.5] Mensajes modularizado: reemplaza al antiguo mensajes.js.
+     El orden importa: core primero, init al final. -->
+<script src="/features/mensajes/js/mensajes-core.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes-scroll-media.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes-chats.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes-bot.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes-estados.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes-canales.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes-llamadas.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes-init.js?v=1"></script>
 <script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
