@@ -31,6 +31,7 @@
     })();
 </script>
 
+<!-- Tus CSS base -->
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.4">
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes-messenger.css?v=1">
@@ -38,12 +39,34 @@
 <link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
 
 <style>
+    /* ========================================================
+       MEJORAS VISUALES (Estilo Contactos.html)
+    ======================================================== */
     html:not(.auth-ready) .app { display: none !important; }
-    .chathead { position: relative; z-index: 5; }
-    .chathead .actions { position: relative; z-index: 6; }
+    
+    /* Botón de Videollamada elegante */
+    .btn-videollamada {
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        padding: 8px 14px; border: 1px solid var(--cyan, #00e5ff); border-radius: 12px;
+        background: rgba(0, 229, 255, 0.08); color: var(--cyan, #00e5ff);
+        font: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 0.75rem;
+    }
+    .btn-videollamada:hover { background: rgba(0, 229, 255, 0.18); border-color: var(--cyan, #00e5ff); box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); transform: translateY(-1px); }
+    .btn-videollamada:disabled { opacity: 0.4; cursor: not-allowed; background: rgba(0, 229, 255, 0.03); }
+    .btn-videollamada svg { flex-shrink: 0; }
+    @media (max-width: 480px) { .btn-videollamada span { display: none; } .btn-videollamada { padding: 8px; } }
+
+    /* Estado Viewer */
+    .estado-viewer-owner-actions { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 20; flex-wrap: wrap; justify-content: center; padding: 0 12px; max-width: calc(100% - 24px); }
+    .ev-action-btn { display: inline-flex; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 99px; font-size: .74rem; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid transparent; transition: all .2s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+    .ev-action-btn.ev-vistas { background: rgba(212,175,55,.15); border-color: rgba(212,175,55,.5); color: #f0d060; }
+    .ev-action-btn.ev-eliminar { background: rgba(255,51,102,.15); border-color: rgba(255,51,102,.5); color: #ff5c7a; }
+    .ev-action-btn.ev-comentar { background: rgba(0,229,255,.12); border-color: rgba(0,229,255,.45); color: #7fdcff; }
+    .ev-action-btn.ev-skip { background: rgba(168,85,247,.12); border-color: rgba(168,85,247,.45); color: #d8b4fe; }
+    .ev-action-btn.hidden { display: none !important; }
 
     /* ========================================================
-       NUEVA BARRA DE ENTRADA (ESTILO WHATSAPP/MESSENGER)
+       NUEVA BARRA DE ENTRADA MINIMALISTA (ESTILO WHATSAPP)
     ======================================================== */
     .composer {
         display: flex;
@@ -54,132 +77,76 @@
         border-top: 1px solid var(--border, rgba(255,255,255,.08));
     }
 
-    .composer .btn-adjuntar {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: transparent;
-        color: var(--muted, #8aa8b8);
-        font-size: 1.5rem;
-        border: none;
-        cursor: pointer;
-        transition: color 0.2s;
+    /* Botón Adjuntar (Clip) */
+    .composer .btn-icon {
+        display: flex; align-items: center; justify-content: center;
+        width: 40px; height: 40px; border-radius: 50%;
+        background: transparent; color: var(--muted, #8aa8b8);
+        border: none; cursor: pointer; transition: color 0.2s, background 0.2s;
     }
-    .composer .btn-adjuntar:hover { color: var(--text, #f0f4f8); }
+    .composer .btn-icon:hover { color: var(--cyan, #00e5ff); background: rgba(255,255,255,0.05); }
+    .composer .btn-icon svg { width: 24px; height: 24px; }
 
+    /* Input Wrapper */
     .composer .input-wrapper {
-        flex: 1;
-        display: flex;
-        align-items: center;
+        flex: 1; display: flex; align-items: flex-end;
         background: rgba(255,255,255,.05);
-        border-radius: 24px;
-        padding: 4px 12px;
+        border-radius: 22px;
+        padding: 8px 12px;
         border: 1px solid var(--border, rgba(255,255,255,.08));
         min-height: 44px;
+        transition: border-color 0.2s;
     }
-    
-    .composer .input-wrapper:focus-within {
-        border-color: var(--cyan, #00e5ff);
-    }
+    .composer .input-wrapper:focus-within { border-color: var(--cyan, #00e5ff); }
 
     .composer #messageInput {
-        flex: 1;
-        background: transparent;
-        border: none;
-        color: var(--text, #f0f4f8);
-        font-size: 0.95rem;
-        padding: 8px 4px;
-        outline: none;
-        resize: none;
+        flex: 1; background: transparent; border: none;
+        color: var(--text, #f0f4f8); font-size: 0.95rem; font-family: inherit;
+        line-height: 1.4; padding: 0 4px; outline: none; resize: none;
+        max-height: 120px; min-height: 24px;
     }
     .composer #messageInput::placeholder { color: var(--muted, #8aa8b8); }
 
+    /* Botón Emoji */
     .composer .btn-emoji {
-        background: transparent;
-        border: none;
-        font-size: 1.3rem;
-        cursor: pointer;
-        padding: 4px;
-        opacity: 0.7;
-        transition: opacity 0.2s;
+        background: transparent; border: none; font-size: 1.3rem;
+        cursor: pointer; padding: 0 0 0 8px; opacity: 0.7;
+        transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; height: 28px;
     }
     .composer .btn-emoji:hover { opacity: 1; }
 
+    /* Botones de Acción (Mic/Enviar) */
     .composer .btn-accion {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 44px;
-        height: 44px;
-        border-radius: 50%;
-        border: none;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        color: #fff;
-    }
-
-    .composer .btn-mic {
-        background: var(--cyan, #00e5ff);
-        color: #05080f;
+        display: flex; align-items: center; justify-content: center;
+        width: 44px; height: 44px; border-radius: 50%;
+        border: none; cursor: pointer; transition: all 0.2s ease;
+        color: #05080f; background: var(--cyan, #00e5ff); flex-shrink: 0;
     }
     
-    .composer .btn-send {
-        background: var(--cyan, #00e5ff);
-        color: #05080f;
-        display: none; /* Oculto por defecto */
-    }
-
-    /* Cuando hay texto, ocultamos el micrófono y mostramos el botón de enviar */
+    /* Mostrar/Ocultar Mic y Enviar */
+    .composer .btn-mic { display: flex; }
     .composer.has-text .btn-mic { display: none; }
+    .composer .btn-send { display: none; }
     .composer.has-text .btn-send { display: flex; }
 
-    /* Botones secundarios (voicebot) */
+    /* VoiceBot */
     .composer .btn-voicebot {
-        background: transparent;
-        border: none;
-        color: var(--gold, #D4AF37);
-        font-size: 1.2rem;
-        cursor: pointer;
-        padding: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        background: transparent; border: none; color: var(--gold, #D4AF37);
+        font-size: 1.4rem; cursor: pointer; padding: 0 4px;
+        display: flex; align-items: center; justify-content: center; height: 40px;
     }
-    .composer .btn-voicebot.recording {
-        color: var(--danger, #ff3366);
-        animation: pulse-recording 1s infinite;
-    }
-    @keyframes pulse-recording {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-    }
+    .composer .btn-voicebot.recording { color: var(--danger, #ff3366); animation: pulse-recording 1s infinite; }
+    @keyframes pulse-recording { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
 
-    /* Ajustes para móviles */
     @media (max-width: 480px) {
         .composer { padding: 8px; gap: 4px; }
-        .composer .btn-adjuntar { width: 36px; height: 36px; font-size: 1.3rem; }
-        .composer .input-wrapper { min-height: 40px; padding: 2px 8px; }
-        .composer #messageInput { font-size: 0.88rem; }
+        .composer .btn-icon { width: 36px; height: 36px; }
+        .composer .btn-icon svg { width: 22px; height: 22px; }
+        .composer .input-wrapper { min-height: 40px; padding: 6px 10px; border-radius: 20px; }
+        .composer #messageInput { font-size: 0.9rem; }
         .composer .btn-accion { width: 40px; height: 40px; }
+        .composer .btn-emoji { font-size: 1.2rem; }
     }
-
-    /* Resto de tus estilos originales (videollamada, estados, etc.) */
-    .btn-videollamada { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 8px 14px; border: 1px solid var(--cyan, #00e5ff); border-radius: 12px; background: rgba(0, 229, 255, 0.08); color: var(--cyan, #00e5ff); font: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 0.75rem; }
-    .btn-videollamada:hover { background: rgba(0, 229, 255, 0.18); border-color: var(--cyan, #00e5ff); box-shadow: 0 0 15px rgba(0, 229, 255, 0.3); transform: translateY(-1px); }
-    .btn-videollamada:disabled { opacity: 0.4; cursor: not-allowed; background: rgba(0, 229, 255, 0.03); }
-    .btn-videollamada svg { flex-shrink: 0; }
-    @media (max-width: 480px) { .btn-videollamada span { display: none; } .btn-videollamada { padding: 8px; } }
-    .estado-viewer-owner-actions { position: absolute; bottom: 18px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 20; flex-wrap: wrap; justify-content: center; padding: 0 12px; max-width: calc(100% - 24px); }
-    .ev-action-btn { display: inline-flex; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 99px; font-size: .74rem; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid transparent; transition: all .2s ease; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-    .ev-action-btn.ev-vistas { background: rgba(212,175,55,.15); border-color: rgba(212,175,55,.5); color: #f0d060; }
-    .ev-action-btn.ev-eliminar { background: rgba(255,51,102,.15); border-color: rgba(255,51,102,.5); color: #ff5c7a; }
-    .ev-action-btn.ev-comentar { background: rgba(0,229,255,.12); border-color: rgba(0,229,255,.45); color: #7fdcff; }
-    .ev-action-btn.ev-skip { background: rgba(168,85,247,.12); border-color: rgba(168,85,247,.45); color: #d8b4fe; }
-    .ev-action-btn.hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -204,18 +171,10 @@
 <main class="panel" id="panel">
 <aside class="sidebar">
     <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
-        <button class="sidebar-tab active" data-tab="chats" data-neon="tab" role="tab" aria-selected="true" onclick="cambiarPestana('chats')">
-            <span class="tab-icon">◈</span><span class="tab-label">Chats</span>
-        </button>
-        <button class="sidebar-tab" data-tab="canales" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
-            <span class="tab-icon">⬡</span><span class="tab-label">Canales</span>
-        </button>
-        <button class="sidebar-tab" data-tab="grupos" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
-            <span class="tab-icon">◆</span><span class="tab-label">Grupos</span>
-        </button>
-        <button class="sidebar-tab" data-tab="llamadas" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')">
-            <span class="tab-icon">☎</span><span class="tab-label">Llamadas</span>
-        </button>
+        <button class="sidebar-tab active" data-tab="chats" data-neon="tab" role="tab" aria-selected="true" onclick="cambiarPestana('chats')"><span class="tab-icon">◈</span><span class="tab-label">Chats</span></button>
+        <button class="sidebar-tab" data-tab="canales" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('canales')"><span class="tab-icon">⬡</span><span class="tab-label">Canales</span></button>
+        <button class="sidebar-tab" data-tab="grupos" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')"><span class="tab-icon">◆</span><span class="tab-label">Grupos</span></button>
+        <button class="sidebar-tab" data-tab="llamadas" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')"><span class="tab-icon">☎</span><span class="tab-label">Llamadas</span></button>
     </div>
 
     <div class="tab-content" id="tabChats">
@@ -262,9 +221,7 @@
 <section class="chat">
     <header class="chathead">
         <button class="backbtn" id="backBtn" title="Volver" data-neon="icon" aria-label="Volver">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline>
-            </svg>
+            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
         <div class="avatar" id="chatAvatar" title="Ver foto">◈</div>
         <div>
@@ -275,9 +232,7 @@
             <button class="iconbtn" id="deleteChat" title="Eliminar conversación" data-neon="icon">◇</button>
             <button class="iconbtn" id="blockUser" title="Bloquear contacto" data-neon="icon-danger" style="color:#ff3366;">⛔</button>
             <button class="btn-videollamada" id="videoCall" title="Iniciar videollamada" disabled>
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <rect x="3" y="6" width="12" height="12" rx="3"></rect><path d="m15 10 6-3v10l-6-3"></path>
-                </svg>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="3"></rect><path d="m15 10 6-3v10l-6-3"></path></svg>
                 <span>Videollamada</span>
             </button>
             <button class="iconbtn" id="searchChat" title="Buscar en la conversación" data-neon="icon">◇</button>
@@ -294,20 +249,27 @@
     </div>
 
     <!-- ========================================================
-         BARRA DE ENTRADA ACTUALIZADA (ESTILO PROFESIONAL)
+         BARRA DE ENTRADA MINIMALISTA (ESTILO PROFESIONAL)
     ======================================================== -->
     <form class="composer" id="composer" style="display:none;">
-        <button type="button" class="btn-adjuntar" id="attach" title="Adjuntar archivo">＋</button>
+        <!-- Clip de adjuntar -->
+        <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
+        </button>
         
+        <!-- Input -->
         <div class="input-wrapper">
-            <input id="messageInput" autocomplete="off" placeholder="Mensaje..." rows="1">
+            <textarea id="messageInput" autocomplete="off" placeholder="Mensaje..." rows="1"></textarea>
             <button type="button" class="btn-emoji" id="emojiBtn" title="Emojis">😊</button>
         </div>
 
+        <!-- Micrófono -->
         <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar audio">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
         </button>
-        <button type="button" class="btn-accion btn-send" id="sendBtn" title="Enviar mensaje">
+        
+        <!-- Enviar -->
+        <button type="submit" class="btn-accion btn-send" id="sendBtn" title="Enviar mensaje">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
         </button>
         
@@ -319,8 +281,7 @@
 <footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Csariel's · Sabor al Paladar · WEB3</footer>
 </div>
 
-<!-- (Aquí van todos tus modales: newModal, profileModal, vistasModal, modalCrearCanal, modalCrearGrupo, estadoUploadModal, modalConfigLlamadas, modalBloqueados, photoViewer, estadoViewer, callOverlay, incomingOverlay) -->
-<!-- Los he omitido para no hacer la respuesta kilométrica, pero NO LOS BORRES. Cópialos de tu archivo original. -->
+<!-- Modales (mantén los tuyos) -->
 
 <div class="toast" id="toast"></div>
 
@@ -339,23 +300,34 @@
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
 <script>
-    // Lógica para mostrar/ocultar botón de enviar según si hay texto
+    // Lógica del Input dinámico y botón de enviar
     document.addEventListener('DOMContentLoaded', function() {
         var input = document.getElementById('messageInput');
         var composer = document.getElementById('composer');
         
         if (input && composer) {
+            // Auto-resize del textarea
             input.addEventListener('input', function() {
+                this.style.height = 'auto';
+                this.style.height = (this.scrollHeight) + 'px';
+                
                 if (this.value.trim().length > 0) {
                     composer.classList.add('has-text');
                 } else {
                     composer.classList.remove('has-text');
                 }
             });
+
+            // Enviar con Enter (sin Shift)
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    var sendBtn = document.getElementById('sendBtn');
+                    if (sendBtn) sendBtn.click();
+                }
+            });
         }
     });
-
-    // (Aquí va tu script de redirección de Marquinhos y demás)
 </script>
 </body>
 </html>
