@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="description" content="Contactos · Conecta · Comparte · Vibra en Csariel's">
+    <meta name="description" content="Contactos · Csariel's">
     <meta name="theme-color" content="#05080f">
     <meta name="referrer" content="strict-origin-when-cross-origin">
     <title data-clave="contactos_titulo">◈ Contactos · Csariel's</title>
@@ -41,6 +41,14 @@
             margin-bottom: 18px;
             padding-bottom: 14px;
             border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
+        }
+
+        /* Solo visible al seleccionar el filtro Grupos */
+        .grupos-section {
+            display: none;
+        }
+        .grupos-section.solo-en-grupos {
+            display: block;
         }
 
         .grupos-titulo {
@@ -441,9 +449,6 @@
                 </a>
                 <div class="hud-title-group">
                     <h1 class="hud-page-title" data-clave="contactos_titulo_h1">Contactos</h1>
-                    <p class="hud-page-subtitle" data-clave="contactos_subtitulo">
-                        Conecta · Comparte · Vibra en Csariel's
-                    </p>
                 </div>
             </div>
 
@@ -514,11 +519,6 @@
                         </svg>
                     </button>
                 </div>
-
-                <!-- Indicador orbital / planeta que gira al buscar -->
-                <div class="hud-search-orbit" id="searchOrbitIndicator" aria-hidden="true" title="Explorando red en tiempo real">
-                    <span class="planeta-busqueda" id="planetaBusqueda">🪐</span>
-                </div>
             </div>
 
             <!-- Filtros en píldora -->
@@ -587,7 +587,7 @@
                 <div id="solicitudesEnviadasLista"></div>
             </section>
 
-            <!-- Sección de grupos activos / dashboard integrado -->
+            <!-- Sección de grupos activos / dashboard (solo visible en el filtro Grupos) -->
             <section class="grupos-section hud-section" id="gruposSection" aria-label="Grupos de comunidad">
                 <div class="grupos-titulo hud-section-title">
                     <span class="grupos-titulo-izq">
@@ -816,7 +816,7 @@
 
     <script>
         // ================================================================
-        // DASHBOARD DE GRUPOS INTEGRADO EN CONTACTOS
+        // DASHBOARD DE GRUPOS INTEGRADO EN CONTACTOS (SOLO EN FILTRO GRUPOS)
         // ================================================================
         var _timerTarjetaTiempo = null;
         var misCanalesCache = [];
@@ -932,6 +932,12 @@
             `;
             document.head.appendChild(style);
         })();
+
+        function sincronizarVisibilidadGrupos(filtroActivo) {
+            var sec = document.getElementById('gruposSection');
+            if (!sec) return;
+            sec.classList.toggle('solo-en-grupos', filtroActivo === 'recientes');
+        }
 
         function asegurarTarjetaTiempo() {
             var cont = document.getElementById('colMisCanales');
@@ -1455,10 +1461,16 @@
             modal.setAttribute('aria-hidden', 'true');
         }
 
-        // Activa el giro del planeta cuando empiezan a buscar contactos e inicia módulos
         document.addEventListener('DOMContentLoaded', () => {
             cargarDashboard();
             aplicarEstilosAccesibilidad();
+
+            // Escuchar cambio de filtros: grupos solo se muestra en el filtro 'recientes' (Grupos)
+            document.querySelectorAll('.filtro[data-filtro]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    sincronizarVisibilidadGrupos(btn.getAttribute('data-filtro'));
+                });
+            });
 
             const btnQrTop = document.getElementById('btnAbrirQrPersonal');
             const btnQrInline = document.querySelector('.hud-inline-qr[data-action="abrir-qr"]');
@@ -1516,50 +1528,6 @@
             if (btnBuscarCercanos) btnBuscarCercanos.addEventListener('click', cargarLugaresAmigosCercanos);
             if (btnRefrescarCercanos) btnRefrescarCercanos.addEventListener('click', cargarLugaresAmigosCercanos);
             if (filtroCercanos) filtroCercanos.addEventListener('click', cargarLugaresAmigosCercanos);
-
-            const inputsBusqueda = [
-                document.getElementById('searchInput'),
-                document.getElementById('searchInputModal')
-            ].filter(Boolean);
-
-            const planetas = [
-                document.getElementById('planetaBusqueda'),
-                document.getElementById('planetaEstadoVacio')
-            ].filter(Boolean);
-
-            const orbita = document.getElementById('searchOrbitIndicator');
-            let timeoutGiro = null;
-
-            const actualizarGiroPlaneta = (activo) => {
-                planetas.forEach((p) => {
-                    p.classList.toggle('girando', activo);
-                    p.dataset.buscando = activo ? 'true' : 'false';
-                });
-                if (orbita) {
-                    orbita.classList.toggle('activa', activo);
-                }
-            };
-
-            inputsBusqueda.forEach((input) => {
-                input.addEventListener('input', (e) => {
-                    const hayTexto = (e.target.value || '').trim().length > 0;
-                    actualizarGiroPlaneta(hayTexto);
-                    clearTimeout(timeoutGiro);
-                    if (hayTexto) {
-                        timeoutGiro = setTimeout(() => {
-                            actualizarGiroPlaneta(false);
-                        }, 1800);
-                    }
-                });
-
-                input.addEventListener('blur', () => {
-                    clearTimeout(timeoutGiro);
-                    timeoutGiro = setTimeout(() => {
-                        const algunoConTexto = inputsBusqueda.some((el) => (el.value || '').trim().length > 0);
-                        if (!algunoConTexto) actualizarGiroPlaneta(false);
-                    }, 400);
-                });
-            });
         });
     </script>
     <script src="/features/contactos/contactos.js?v=26_1" defer></script>
