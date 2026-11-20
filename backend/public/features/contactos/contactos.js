@@ -1,13 +1,13 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v27.0
-   Filtros: Todos, Amigos, En línea, Cercanos, Grupos,
-            Bloqueados, Solicitud pendiente, Enviadas, Silenciados.
-   Tablas y RPC usadas:
+   CSARIEL'S · CONTACTOS · v27.1
+   Tablas reales verificadas en Supabase:
      contactos, bloqueos, preferencias_usuario (prefs jsonb),
-     usuarios (ocultar_estado),
-     perfiles_por_ids, buscar_usuarios, sugerencias_usuarios,
-     bloquear_contacto, eliminar_amistad, responder_solicitud_amistad,
-     obtener_o_crear_invitacion, canjear_invitacion (NUEVA: crear en SQL)
+     usuarios (ocultar_estado).
+   RPC usadas: perfiles_por_ids, buscar_usuarios,
+     sugerencias_usuarios, bloquear_contacto,
+     obtener_o_crear_invitacion, responder_solicitud_amistad,
+     eliminar_amistad, canjear_invitacion (pendiente de verificar).
+   Accesibilidad: prefs.accesibilidad = { texto: '80'|'100'|'120'|'140', contraste: bool }
    ============================================================ */
 
 (function () {
@@ -18,17 +18,17 @@
         BLOQUEOS_TABLE: 'bloqueos',
         PREFS_TABLE: 'preferencias_usuario',
         USUARIOS_TABLE: 'usuarios',
-        PERFILES_RPC: 'perfiles_por_ids',
-        RPC_BUSCAR_USUARIOS: 'buscar_usuarios',
+        RPC_PERFILES: 'perfiles_por_ids',
+        RPC_BUSCAR: 'buscar_usuarios',
         RPC_SUGERENCIAS: 'sugerencias_usuarios',
         RPC_BLOQUEAR: 'bloquear_contacto',
         RPC_INVITACION: 'obtener_o_crear_invitacion',
-        RPC_RESPONDER_SOLICITUD: 'responder_solicitud_amistad',
-        RPC_ELIMINAR_AMISTAD: 'eliminar_amistad',
-        RPC_CANJEAR_INVITACION: 'canjear_invitacion',
-        PERFIL_PUBLICO_URL: '/features/perfil/perfil-publico.html',
+        RPC_RESPONDER: 'responder_solicitud_amistad',
+        RPC_ELIMINAR: 'eliminar_amistad',
+        RPC_CANJEAR: 'canjear_invitacion',
+        PERFIL_URL: '/features/perfil/perfil-publico.html',
         MENSAJES_URL: '/features/mensajes/mensajes.html',
-        LOTE_PERFILES_MAX: 200,
+        LOTE_MAX: 200,
         MAX_SUGERENCIAS: 10,
         MAX_RESULTADOS: 20,
         MIN_CHARS: 2,
@@ -36,18 +36,27 @@
         SESSION_TIMEOUT_MS: 7000,
         RETRY_MAX: 3,
         RETRY_BASE_MS: 500,
-        DEBOUNCE_MS: 350,
-        QR_PREFIX: 'SARIELS:'
+        QR_PREFIX: 'SARIELS:',
+        A11Y_KEY: 'contactos_a11y'
     };
 
-    var SVG = {
-        mensaje: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px;height:16px;"><path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8A8.5 8.5 0 0 1 12.5 3h.5a8.5 8.5 0 0 1 8 8v.5Z"/></svg>',
-        llamar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px;height:16px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.8 19.8 0 0 1-8.63-3.07 19.4 19.4 0 0 1-6-6A19.8 19.8 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.96.36 1.9.7 2.8a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.84.58 2.8.7A2 2 0 0 1 22 16.92Z"/></svg>',
-        favorito: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" aria-hidden="true" style="width:16px;height:16px;"><path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z"/></svg>',
-        favoritoOutline: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px;height:16px;"><path d="m12 3 2.78 5.63 6.22.9-4.5 4.39 1.06 6.2L12 17.2l-5.56 2.92 1.06-6.2L3 9.53l6.22-.9L12 3Z"/></svg>',
-        bloquear: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px;height:16px;"><circle cx="12" cy="12" r="9"/><path d="m5.64 5.64 12.72 12.72"/></svg>',
-        eliminar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px;height:16px;"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5"/><path d="M14 11v5"/></svg>',
-        agregarAmigo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px;height:16px;"><path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M19 8v6"/><path d="M16 11h6"/></svg>'
+    var ICO = {
+        plus: '<path d="M12 5v14M5 12h14"/>',
+        qr: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 14h2v2h-2zM14 18h2v2h-2zM18 18h2v2h-2z"/>',
+        scan: '<path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/>',
+        menu: '<path d="M4 7h16M4 12h16M4 17h16"/>',
+        mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>',
+        close: '<path d="M6 6l12 12M18 6 6 18"/>',
+        check: '<path d="m5 12 5 5 9-10"/>',
+        msg: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>',
+        call: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>',
+        star: '<path d="m12 3 2.8 5.7 6.2.9-4.5 4.4 1 6.3L12 17.3 6.5 20.3l1-6.3L3 9.6l6.2-.9z"/>',
+        bell: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+        bellOff: '<path d="M8.7 3.2A6 6 0 0 1 18 8c0 7 3 9 3 9H6"/><path d="M18 8c0 2.4.4 4.3 1 5.8M3 3l18 18"/><path d="M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+        block: '<circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/>',
+        trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+        user: '<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/>',
+        add: '<path d="M16 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M19 8v6M16 11h6"/>'
     };
 
     var state = {
@@ -64,10 +73,10 @@
         bloqueados: [],
         silenciados: [],
         prefs: {},
+        a11y: { texto: '100', contraste: false },
         ocultarEstado: false,
         sugerencias: [],
         errores: { contactos: null, recibidas: null, enviadas: null, bloqueados: null },
-        errorPerfiles: null,
         idsContactos: new Set(),
         perfiles: new Map(),
         operaciones: new Set(),
@@ -86,8 +95,12 @@
         return String(v == null ? '' : v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
 
-    function inicial(nombre) {
-        var t = String(nombre || 'U').trim();
+    function ico(nombre) {
+        return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">' + (ICO[nombre] || '') + '</svg>';
+    }
+
+    function inicial(n) {
+        var t = String(n || 'U').trim();
         return t ? t.charAt(0).toUpperCase() : 'U';
     }
 
@@ -97,8 +110,7 @@
 
     function detalleError(e) {
         if (!e) return 'error desconocido';
-        var c = e.code ? e.code + ': ' : '';
-        return c + (e.message || String(e));
+        return (e.code ? e.code + ': ' : '') + (e.message || String(e));
     }
 
     function normalizarTexto(v) {
@@ -107,11 +119,11 @@
 
     function avatarSeguro(url) {
         if (!url) return '';
-        var valor = String(url).trim();
-        if (!valor) return '';
+        var v = String(url).trim();
+        if (!v) return '';
         try {
-            if (valor.charAt(0) === '/' && valor.indexOf('//') !== 0) return valor;
-            var p = new URL(valor, window.location.origin);
+            if (v.charAt(0) === '/' && v.indexOf('//') !== 0) return v;
+            var p = new URL(v, window.location.origin);
             return (p.protocol === 'http:' || p.protocol === 'https:') ? p.href : '';
         } catch (e) { return ''; }
     }
@@ -145,55 +157,40 @@
         m.setAttribute('aria-hidden', 'true');
     }
 
-    function debounce(fn, ms) {
-        var timer = null;
-        return function () {
-            var ctx = this, args = arguments;
-            clearTimeout(timer);
-            timer = setTimeout(function () { fn.apply(ctx, args); }, ms);
-        };
-    }
-
-    async function showConfirm(opciones) {
-        opciones = opciones || {};
+    function showConfirm(opc) {
+        opc = opc || {};
         return new Promise(function (resolve) {
             var overlay = document.getElementById('confirmModalOverlay');
-            var iconEl = document.getElementById('confirmModalIcon');
-            var titleEl = document.getElementById('confirmModalTitle');
-            var msgEl = document.getElementById('confirmModalMessage');
-            var cancelBtn = document.getElementById('confirmModalCancel');
-            var confirmBtn = document.getElementById('confirmModalConfirm');
-            if (!overlay || !cancelBtn || !confirmBtn) { resolve(false); return; }
-            if (iconEl) iconEl.textContent = opciones.icon || '⚠️';
-            if (titleEl) titleEl.textContent = opciones.title || 'Confirmar';
-            if (msgEl) msgEl.textContent = opciones.message || '';
-            cancelBtn.textContent = opciones.cancelText || 'Cancelar';
-            confirmBtn.textContent = opciones.confirmText || 'Aceptar';
-            confirmBtn.classList.toggle('confirm-danger', opciones.danger !== false);
+            var titulo = document.getElementById('confirmModalTitle');
+            var msg = document.getElementById('confirmModalMessage');
+            var cancel = document.getElementById('confirmModalCancel');
+            var confirm = document.getElementById('confirmModalConfirm');
+            if (!overlay || !cancel || !confirm) { resolve(false); return; }
+            if (titulo) titulo.textContent = opc.title || 'Confirmar';
+            if (msg) msg.textContent = opc.message || '';
+            cancel.textContent = opc.cancelText || 'Cancelar';
+            confirm.textContent = opc.confirmText || 'Aceptar';
             overlay.classList.add('active');
             overlay.setAttribute('aria-hidden', 'false');
 
-            function limpiar() {
-                cancelBtn.removeEventListener('click', cancelar);
-                confirmBtn.removeEventListener('click', confirmar);
-                overlay.removeEventListener('click', clickFondo);
-                document.removeEventListener('keydown', teclaEsc);
-            }
             function finalizar(v) {
-                limpiar();
+                cancel.removeEventListener('click', onCancel);
+                confirm.removeEventListener('click', onOk);
+                overlay.removeEventListener('click', onFondo);
+                document.removeEventListener('keydown', onEsc);
                 overlay.classList.remove('active');
                 overlay.setAttribute('aria-hidden', 'true');
                 resolve(v);
             }
-            function cancelar() { finalizar(false); }
-            function confirmar() { finalizar(true); }
-            function clickFondo(e) { if (e.target === overlay) finalizar(false); }
-            function teclaEsc(e) { if (e.key === 'Escape') finalizar(false); }
+            function onCancel() { finalizar(false); }
+            function onOk() { finalizar(true); }
+            function onFondo(e) { if (e.target === overlay) finalizar(false); }
+            function onEsc(e) { if (e.key === 'Escape') finalizar(false); }
 
-            cancelBtn.addEventListener('click', cancelar);
-            confirmBtn.addEventListener('click', confirmar);
-            overlay.addEventListener('click', clickFondo);
-            document.addEventListener('keydown', teclaEsc);
+            cancel.addEventListener('click', onCancel);
+            confirm.addEventListener('click', onOk);
+            overlay.addEventListener('click', onFondo);
+            document.addEventListener('keydown', onEsc);
         });
     }
 
@@ -219,7 +216,7 @@
     }
 
     async function withRetry(fn, contexto) {
-        var ultimoError = null;
+        var ultimo = null;
         for (var i = 0; i < CONFIG.RETRY_MAX; i++) {
             try {
                 var r = await fn();
@@ -230,16 +227,15 @@
                 }
                 return r;
             } catch (e) {
-                ultimoError = e;
+                ultimo = e;
                 console.warn('[Contactos] Reintento ' + (i + 1) + ' (' + contexto + '):', detalleError(e));
                 if (i === CONFIG.RETRY_MAX - 1) break;
                 await new Promise(function (r2) { setTimeout(r2, CONFIG.RETRY_BASE_MS * Math.pow(2, i)); });
             }
         }
-        throw ultimoError;
+        throw ultimo;
     }
 
-    // Igual que withRetry, pero nunca lanza: devuelve { data, error }
     function seguro(fn, contexto) {
         return withRetry(fn, contexto).catch(function (e) { return { data: null, error: e }; });
     }
@@ -263,10 +259,10 @@
         var unicos = Array.from(new Set((ids || []).filter(Boolean)));
         var faltantes = unicos.filter(function (id) { return !state.perfiles.has(id); });
         if (client && faltantes.length) {
-            for (var i = 0; i < faltantes.length; i += CONFIG.LOTE_PERFILES_MAX) {
-                var lote = faltantes.slice(i, i + CONFIG.LOTE_PERFILES_MAX);
+            for (var i = 0; i < faltantes.length; i += CONFIG.LOTE_MAX) {
+                var lote = faltantes.slice(i, i + CONFIG.LOTE_MAX);
                 try {
-                    var r = await withRetry(function () { return client.rpc(CONFIG.PERFILES_RPC, { p_ids: lote }); }, 'perfiles');
+                    var r = await withRetry(function () { return client.rpc(CONFIG.RPC_PERFILES, { p_ids: lote }); }, 'perfiles');
                     if (r.error) throw r.error;
                     var encontrados = new Set();
                     (r.data || []).forEach(function (p) { state.perfiles.set(p.id, normalizarPerfil(p)); encontrados.add(p.id); });
@@ -277,18 +273,17 @@
                 }
             }
         }
-        return { errores: errores };
+        return errores;
     }
 
     function datosPerfil(id) {
         var p = state.perfiles.get(id);
-        if (p === undefined) return { nombre: 'No se pudo cargar', handle: '', avatar: '', estado: 'error', verificado: false, online: false };
-        if (p === null) return { nombre: 'Perfil no disponible', handle: '', avatar: '', estado: 'no_encontrado', verificado: false, online: false };
+        if (p === undefined) return { nombre: 'No se pudo cargar', handle: '', avatar: '', verificado: false, online: false };
+        if (p === null) return { nombre: 'Perfil no disponible', handle: '', avatar: '', verificado: false, online: false };
         return {
             nombre: p.nombre || p.handle || 'Usuario',
             handle: handleTxt(p.handle),
             avatar: p.avatar_url,
-            estado: 'ok',
             verificado: p.verificado === true,
             online: p.online === true
         };
@@ -299,7 +294,7 @@
         return esc(inicial(d.nombre));
     }
 
-    /* ---------------- Preferencias (prefs jsonb) ---------------- */
+    /* ---------------- Preferencias ---------------- */
 
     async function guardarPrefs(patch) {
         var client = sb();
@@ -312,6 +307,40 @@
         if (r.error) throw r.error;
         state.prefs = nuevo;
         state.silenciados = Array.isArray(nuevo.silenciados) ? nuevo.silenciados.slice() : [];
+    }
+
+    function leerA11yLocal() {
+        try {
+            var raw = localStorage.getItem(CONFIG.A11Y_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (e) { return null; }
+    }
+
+    function normalizarA11y(a) {
+        a = a || {};
+        var texto = ['80', '100', '120', '140'].indexOf(String(a.texto)) !== -1 ? String(a.texto) : '100';
+        return { texto: texto, contraste: a.contraste === true };
+    }
+
+    function aplicarA11y() {
+        var h = document.documentElement;
+        h.classList.remove('a11y-texto-80', 'a11y-texto-120', 'a11y-texto-140');
+        if (state.a11y.texto !== '100') h.classList.add('a11y-texto-' + state.a11y.texto);
+        h.classList.toggle('a11y-contraste', state.a11y.contraste === true);
+    }
+
+    async function guardarA11y(patch) {
+        state.a11y = normalizarA11y(Object.assign({}, state.a11y, patch));
+        aplicarA11y();
+        try { localStorage.setItem(CONFIG.A11Y_KEY, JSON.stringify(state.a11y)); } catch (e) {}
+        try {
+            await guardarPrefs({ accesibilidad: state.a11y });
+            showToast('Accesibilidad guardada.', 'success');
+        } catch (e) {
+            console.error('[Contactos] Accesibilidad:', detalleError(e));
+            showToast('Guardado solo en este dispositivo: ' + detalleError(e), 'warning');
+        }
+        renderConfig();
     }
 
     /* ---------------- Carga principal ---------------- */
@@ -369,8 +398,6 @@
                 enviadas: rE.error ? detalleError(rE.error) : null,
                 bloqueados: rB.error ? detalleError(rB.error) : null
             };
-            if (rP.error) console.warn('[Contactos] Preferencias:', detalleError(rP.error));
-            if (rU.error) console.warn('[Contactos] Usuario:', detalleError(rU.error));
 
             state.contactos = rC.error ? [] : (rC.data || []).map(function (c) {
                 return { id: c.id, contacto_id: c.contacto_id, es_favorito: c.es_favorito === true, fecha: c.fecha || c.created_at || null };
@@ -387,6 +414,8 @@
 
             state.prefs = (!rP.error && rP.data && rP.data.prefs) ? rP.data.prefs : {};
             state.silenciados = Array.isArray(state.prefs.silenciados) ? state.prefs.silenciados.slice() : [];
+            state.a11y = normalizarA11y(state.prefs.accesibilidad || leerA11yLocal());
+            aplicarA11y();
             state.ocultarEstado = !rU.error && rU.data ? rU.data.ocultar_estado === true : false;
 
             state.idsContactos = new Set(state.contactos.map(function (c) { return c.contacto_id; }));
@@ -396,8 +425,7 @@
             state.recibidas.forEach(function (x) { ids.push(x.usuario_id); });
             state.enviadas.forEach(function (x) { ids.push(x.contacto_id); });
             state.bloqueados.forEach(function (b) { ids.push(b.bloqueado_id); });
-            var lote = await cargarPerfiles(ids);
-            state.errorPerfiles = lote.errores.length ? lote.errores[0] : null;
+            await cargarPerfiles(ids);
 
             actualizarStats();
             actualizarContadores();
@@ -422,10 +450,10 @@
                 return client.rpc(CONFIG.RPC_SUGERENCIAS, { p_limit: CONFIG.MAX_SUGERENCIAS });
             }, 'sugerencias');
             if (r.error) throw r.error;
-            var bloqueadosIds = new Set(state.bloqueados.map(function (b) { return b.bloqueado_id; }));
+            var bloq = new Set(state.bloqueados.map(function (b) { return b.bloqueado_id; }));
             state.sugerencias = (Array.isArray(r.data) ? r.data : [])
                 .filter(function (u) {
-                    return u && u.id && u.id !== s.user.id && !state.idsContactos.has(u.id) && !bloqueadosIds.has(u.id);
+                    return u && u.id && u.id !== s.user.id && !state.idsContactos.has(u.id) && !bloq.has(u.id);
                 })
                 .slice(0, CONFIG.MAX_SUGERENCIAS);
             state.sugerencias.forEach(function (u) {
@@ -438,18 +466,17 @@
         if (state.filtro === 'todos' && !state.texto) renderLista();
     }
 
-    /* ---------------- Estadísticas y contadores ---------------- */
+    /* ---------------- Stats y contadores ---------------- */
 
     function actualizarStats() {
-        var total = state.contactos.length;
         var online = state.contactos.filter(function (c) {
             var p = state.perfiles.get(c.contacto_id);
             return p && p.online === true;
         }).length;
-        var tEl = document.getElementById('totalContactos');
-        var oEl = document.getElementById('onlineContactos');
-        if (tEl) tEl.textContent = String(total);
-        if (oEl) oEl.textContent = String(online);
+        var t = document.getElementById('totalContactos');
+        var o = document.getElementById('onlineContactos');
+        if (t) t.textContent = String(state.contactos.length);
+        if (o) o.textContent = String(online);
     }
 
     function poner(id, n) {
@@ -466,28 +493,31 @@
 
     /* ---------------- Render ---------------- */
 
-    function htmlVacio(icono, texto) {
-        return '<div class="empty-state"><div class="icon" aria-hidden="true">' + esc(icono) + '</div><h3>' + esc(texto) + '</h3></div>';
+    function htmlVacio(texto) {
+        return '<div class="vacio">' + esc(texto) + '</div>';
     }
 
     function htmlAviso(texto) {
-        return '<div class="aviso-contactos" role="alert"><span>' + esc(texto) + '</span><button type="button" data-act="reintentar">Reintentar</button></div>';
+        return '<div class="aviso" role="alert"><span>' + esc(texto) + '</span><button type="button" data-act="reintentar">Reintentar</button></div>';
+    }
+
+    function titulo(t) {
+        return '<div class="seccion-titulo">' + esc(t) + '</div>';
     }
 
     function mostrarCargando() {
         var lista = document.getElementById('contactosList');
-        if (!lista) return;
-        lista.setAttribute('aria-busy', 'true');
-        lista.innerHTML = [1, 2, 3, 4].map(function () {
-            return '<div class="contacto-card skeleton"><div class="contacto-avatar skeleton-avatar"></div><div class="contacto-info skeleton-info"><div class="skeleton-line skeleton-line-name"></div><div class="skeleton-line skeleton-line-meta"></div></div></div>';
-        }).join('');
+        if (lista) {
+            lista.setAttribute('aria-busy', 'true');
+            lista.innerHTML = '<div class="cargando">Cargando…</div>';
+        }
     }
 
     function pintarVacio(texto) {
         var lista = document.getElementById('contactosList');
         if (!lista) return;
         lista.setAttribute('aria-busy', 'false');
-        lista.innerHTML = htmlVacio('🪐', texto);
+        lista.innerHTML = htmlVacio(texto);
     }
 
     function itemsContactos() {
@@ -515,114 +545,107 @@
         });
     }
 
-    function tarjetaContacto(c) {
-        var fav = c.es_favorito;
-        var mute = c.silenciado;
+    function filaContacto(c) {
         var avatar = c.avatar
-            ? '<img class="contacto-avatar-img" src="' + esc(c.avatar) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.classList.add(\'avatar-image-error\')"><span class="avatar-fallback avatar-fallback-hidden">' + esc(inicial(c.nombre)) + '</span>'
-            : '<span class="avatar-fallback">' + esc(inicial(c.nombre)) + '</span>';
-        return '<article class="contacto-card" data-id="' + esc(c.contacto_id) + '" data-fila="' + esc(c.id) + '">' +
-            '<div class="contacto-avatar ' + (c.online ? 'online' : 'offline') + '" data-act="perfil" role="button" tabindex="0" aria-label="Ver perfil">' +
+            ? '<img src="' + esc(c.avatar) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.remove()">'
+            : esc(inicial(c.nombre));
+        return '<div class="fila" data-id="' + esc(c.contacto_id) + '" data-fila="' + esc(c.id) + '">' +
+            '<div class="avatar" data-act="perfil" role="button" tabindex="0" aria-label="Ver perfil">' +
                 avatar +
-                '<span class="online-dot ' + (c.online ? 'visible' : 'hidden') + '"></span>' +
-                (fav ? '<span class="favorito-badge" aria-hidden="true">★</span>' : '') +
+                '<span class="estado-punto" ' + (c.online ? '' : 'hidden') + '></span>' +
             '</div>' +
-            '<div class="contacto-info">' +
-                '<div class="nombre">' + esc(c.nombre) + (c.verificado ? ' <span class="verified">✓</span>' : '') + (mute ? ' <span title="Silenciado">🔕</span>' : '') + '</div>' +
-                '<div class="estado ' + (c.online ? 'online' : 'offline') + '"><span class="estado-indicador"></span> ' + (c.online ? 'En línea ahora' : 'Desconectado') + '</div>' +
-                (c.handle ? '<div class="contacto-meta">' + esc(c.handle) + '</div>' : '') +
+            '<div class="info">' +
+                '<div class="nombre">' + esc(c.nombre) + (c.verificado ? ' <span class="verif">✓</span>' : '') + '</div>' +
+                '<div class="estado-txt ' + (c.online ? 'on' : '') + '">' + (c.online ? 'En línea' : 'Desconectado') + '</div>' +
+                (c.handle ? '<div class="meta">' + esc(c.handle) + '</div>' : '') +
             '</div>' +
-            '<div class="contacto-actions">' +
-                '<button type="button" class="mensaje" data-act="msg" aria-label="Enviar mensaje">' + SVG.mensaje + '<span>Mensaje</span></button>' +
-                '<button type="button" class="llamar" data-act="call" aria-label="Llamar">' + SVG.llamar + '</button>' +
-                '<button type="button" class="favorito ' + (fav ? 'active' : '') + '" data-act="fav" aria-label="Favorito">' + (fav ? SVG.favorito : SVG.favoritoOutline) + '</button>' +
-                '<button type="button" class="silenciar" data-act="' + (mute ? 'unmute' : 'mute') + '" aria-label="' + (mute ? 'Quitar silencio' : 'Silenciar') + '">' + (mute ? '🔔' : '🔕') + '</button>' +
-                '<button type="button" class="bloquear" data-act="block" aria-label="Bloquear">' + SVG.bloquear + '</button>' +
-                '<button type="button" class="eliminar" data-act="del" aria-label="Eliminar">' + SVG.eliminar + '</button>' +
+            '<div class="acciones">' +
+                '<button type="button" class="accion primaria" data-act="msg" aria-label="Enviar mensaje">' + ico('msg') + 'Mensaje</button>' +
+                '<button type="button" class="accion" data-act="call" aria-label="Llamar">' + ico('call') + '</button>' +
+                '<button type="button" class="accion ' + (c.es_favorito ? 'activo' : '') + '" data-act="fav" aria-label="Favorito">' + ico('star') + '</button>' +
+                '<button type="button" class="accion ' + (c.silenciado ? 'activo' : '') + '" data-act="' + (c.silenciado ? 'unmute' : 'mute') + '" aria-label="' + (c.silenciado ? 'Quitar silencio' : 'Silenciar') + '">' + ico(c.silenciado ? 'bell' : 'bellOff') + '</button>' +
+                '<button type="button" class="accion no" data-act="block" aria-label="Bloquear">' + ico('block') + '</button>' +
+                '<button type="button" class="accion no" data-act="del" aria-label="Eliminar">' + ico('trash') + '</button>' +
             '</div>' +
-        '</article>';
+        '</div>';
     }
 
     function htmlContactos(items, vacio) {
         if (state.errores.contactos) return htmlAviso('No se pudieron cargar tus contactos: ' + state.errores.contactos);
-        if (!items.length) return htmlVacio('🪐', vacio || 'Tu red está vacía. Busca personas para conectar.');
-        return items.map(tarjetaContacto).join('');
+        if (!items.length) return htmlVacio(vacio || 'Tu red está vacía. Busca personas para conectar.');
+        return items.map(filaContacto).join('');
     }
 
     function htmlRecibidas() {
         if (state.errores.recibidas) return htmlAviso('No se pudieron cargar las solicitudes: ' + state.errores.recibidas);
+        if (!state.recibidas.length) return htmlVacio('No tienes solicitudes pendientes.');
         return state.recibidas.map(function (s) {
             var d = datosPerfil(s.usuario_id);
-            return '<div class="solicitud-card" data-fila="' + esc(s.id) + '" data-id="' + esc(s.usuario_id) + '">' +
+            return '<div class="fila" data-id="' + esc(s.usuario_id) + '" data-fila="' + esc(s.id) + '">' +
                 '<div class="avatar">' + avatarHtml(d) + '</div>' +
-                '<div class="info"><div class="nombre">' + esc(d.nombre) + '</div><div class="handle">' + esc(d.handle) + '</div></div>' +
+                '<div class="info"><div class="nombre">' + esc(d.nombre) + '</div><div class="meta">' + esc(d.handle) + '</div></div>' +
                 '<div class="acciones">' +
-                    '<button type="button" class="btn-aceptar" data-act="accept">Aceptar</button>' +
-                    '<button type="button" class="btn-rechazar" data-act="reject">Rechazar</button>' +
+                    '<button type="button" class="accion ok" data-act="accept">Aceptar</button>' +
+                    '<button type="button" class="accion no" data-act="reject">Rechazar</button>' +
                 '</div></div>';
         }).join('');
     }
 
     function htmlEnviadas() {
         if (state.errores.enviadas) return htmlAviso('No se pudieron cargar las solicitudes enviadas: ' + state.errores.enviadas);
+        if (!state.enviadas.length) return htmlVacio('No tienes solicitudes enviadas.');
         return state.enviadas.map(function (s) {
             var d = datosPerfil(s.contacto_id);
-            return '<div class="solicitud-enviada-card" data-fila="' + esc(s.id) + '" data-id="' + esc(s.contacto_id) + '">' +
+            return '<div class="fila" data-id="' + esc(s.contacto_id) + '" data-fila="' + esc(s.id) + '">' +
                 '<div class="avatar">' + avatarHtml(d) + '</div>' +
-                '<div class="info"><div class="nombre">' + esc(d.nombre) + '</div><div class="handle">' + esc(d.handle) + '</div></div>' +
-                '<div class="acciones"><button type="button" class="btn-cancelar-envio" data-act="cancel">Cancelar envío</button></div>' +
+                '<div class="info"><div class="nombre">' + esc(d.nombre) + '</div><div class="meta">' + esc(d.handle) + '</div></div>' +
+                '<div class="acciones"><button type="button" class="accion" data-act="cancel">Cancelar envío</button></div>' +
             '</div>';
         }).join('');
     }
 
     function htmlBloqueados() {
         if (state.errores.bloqueados) return htmlAviso('No se pudieron cargar los bloqueados: ' + state.errores.bloqueados);
-        if (!state.bloqueados.length) return htmlVacio('⛔', 'No tienes usuarios bloqueados.');
+        if (!state.bloqueados.length) return htmlVacio('No tienes usuarios bloqueados.');
         return state.bloqueados.map(function (b) {
             var d = datosPerfil(b.bloqueado_id);
-            return '<div class="bloqueado-card" data-id="' + esc(b.bloqueado_id) + '">' +
+            return '<div class="fila" data-id="' + esc(b.bloqueado_id) + '">' +
                 '<div class="avatar">' + avatarHtml(d) + '</div>' +
-                '<div class="info"><div class="nombre">' + esc(d.nombre) + '</div><div class="handle">' + esc(d.handle) + '</div></div>' +
-                '<div class="acciones"><button type="button" class="btn-desbloquear" data-act="unblock">Desbloquear</button></div>' +
+                '<div class="info"><div class="nombre">' + esc(d.nombre) + '</div><div class="meta">' + esc(d.handle) + '</div></div>' +
+                '<div class="acciones"><button type="button" class="accion" data-act="unblock">Desbloquear</button></div>' +
             '</div>';
         }).join('');
     }
 
     function htmlSugerencias() {
         if (!state.sugerencias.length) return '';
-        var cards = state.sugerencias.map(function (u) {
+        return titulo('Personas que puedes conocer') + state.sugerencias.map(function (u) {
             var d = datosPerfil(u.id);
-            return '<div class="sugerencia-card" data-id="' + esc(u.id) + '">' +
-                '<div class="avatar ' + (d.online ? 'online' : '') + '">' + avatarHtml(d) + '</div>' +
-                '<div class="info"><div class="nombre">' + esc(d.nombre) + (d.verificado ? ' <span class="verified">✓</span>' : '') + '</div>' +
-                '<div class="handle">' + esc(d.handle) + '</div></div>' +
-                '<div class="acciones"><button type="button" class="btn-agregar-sugerencia" data-act="add">Conectar</button></div>' +
+            return '<div class="fila" data-id="' + esc(u.id) + '">' +
+                '<div class="avatar">' + avatarHtml(d) + '</div>' +
+                '<div class="info"><div class="nombre">' + esc(d.nombre) + (d.verificado ? ' <span class="verif">✓</span>' : '') + '</div>' +
+                '<div class="meta">' + esc(d.handle) + '</div></div>' +
+                '<div class="acciones"><button type="button" class="accion primaria" data-act="add">Conectar</button></div>' +
             '</div>';
         }).join('');
-        return '<div class="hud-section-title">Personas que puedes conocer</div>' + cards;
-    }
-
-    function tituloSeccion(t) {
-        return '<div class="hud-section-title">' + esc(t) + '</div>';
     }
 
     function renderLista() {
         var lista = document.getElementById('contactosList');
         if (!lista) return;
 
+        var f = state.filtro;
         var cercanos = document.getElementById('cercanosSection');
         var grupos = document.getElementById('gruposSection');
-        if (cercanos) cercanos.hidden = state.filtro !== 'cercanos';
-        if (grupos) grupos.hidden = state.filtro !== 'recientes';
+        if (cercanos) cercanos.hidden = f !== 'cercanos';
+        if (grupos) grupos.hidden = f !== 'recientes';
 
-        var f = state.filtro;
         var ocultarLista = (f === 'cercanos' || f === 'recientes');
         lista.hidden = ocultarLista;
         if (ocultarLista) return;
 
         lista.setAttribute('aria-busy', 'false');
 
-        // Búsqueda global por voz/texto (solo en Todos)
         if (f === 'todos' && state.texto.length >= CONFIG.MIN_CHARS) {
             buscarGlobal(state.texto, ++state.busquedaVersion);
             return;
@@ -630,8 +653,8 @@
 
         var html = '';
         if (f === 'todos') {
-            if (state.recibidas.length || state.errores.recibidas) html += tituloSeccion('Solicitudes de amistad') + htmlRecibidas();
-            if (state.enviadas.length || state.errores.enviadas) html += tituloSeccion('Solicitudes enviadas') + htmlEnviadas();
+            if (state.recibidas.length || state.errores.recibidas) html += titulo('Solicitudes de amistad') + htmlRecibidas();
+            if (state.enviadas.length || state.errores.enviadas) html += titulo('Solicitudes enviadas') + htmlEnviadas();
             html += htmlContactos(filtrarTexto(itemsContactos()));
             html += htmlSugerencias();
         } else if (f === 'favoritos') {
@@ -639,13 +662,13 @@
         } else if (f === 'online') {
             html = htmlContactos(filtrarTexto(itemsContactos().filter(function (i) { return i.online; })), 'No hay amigos conectados ahora.');
         } else if (f === 'pendientes') {
-            html = state.recibidas.length || state.errores.recibidas ? htmlRecibidas() : htmlVacio('📥', 'No tienes solicitudes pendientes.');
+            html = htmlRecibidas();
         } else if (f === 'enviadas') {
-            html = state.enviadas.length || state.errores.enviadas ? htmlEnviadas() : htmlVacio('📤', 'No tienes solicitudes enviadas.');
+            html = htmlEnviadas();
         } else if (f === 'bloqueados') {
             html = htmlBloqueados();
         } else if (f === 'silenciados') {
-            html = htmlContactos(filtrarTexto(itemsContactos().filter(function (i) { return i.silenciado; })), 'No tienes contactos silenciados. Toca 🔕 en un contacto para silenciarlo.');
+            html = htmlContactos(filtrarTexto(itemsContactos().filter(function (i) { return i.silenciado; })), 'No tienes contactos silenciados.');
         }
 
         lista.innerHTML = html;
@@ -668,11 +691,11 @@
         var s = await getSession();
         var lista = document.getElementById('contactosList');
         if (!client || !s || !lista) return;
-        lista.innerHTML = '<div class="contactos-loading-more">🔍 Buscando en Csariel\'s…</div>';
+        lista.innerHTML = '<div class="cargando">Buscando en Csariel\'s…</div>';
         var termino = texto.replace(/^@+/, '').trim();
         try {
             var r = await withRetry(function () {
-                return client.rpc(CONFIG.RPC_BUSCAR_USUARIOS, { p_query: termino });
+                return client.rpc(CONFIG.RPC_BUSCAR, { p_query: termino });
             }, 'buscar usuarios');
             if (version !== state.busquedaVersion) return;
             if (r.error) throw r.error;
@@ -680,24 +703,24 @@
                 .filter(function (u) { return u && u.id && u.id !== s.user.id; })
                 .slice(0, CONFIG.MAX_RESULTADOS);
             usuarios.forEach(function (u) { state.perfiles.set(u.id, normalizarPerfil(u)); });
-            if (!usuarios.length) { lista.innerHTML = htmlVacio('🛸', 'No se encontraron usuarios.'); return; }
+            if (!usuarios.length) { lista.innerHTML = htmlVacio('No se encontraron usuarios.'); return; }
             lista.innerHTML = usuarios.map(function (u) {
                 var d = datosPerfil(u.id);
                 var esContacto = state.idsContactos.has(u.id);
                 var enviada = state.enviadas.some(function (x) { return x.contacto_id === u.id; });
                 var boton;
-                if (esContacto) boton = '<button type="button" class="btn-agregar" disabled>✓ Contacto</button>';
-                else if (enviada) boton = '<button type="button" class="btn-agregar" disabled>Enviada</button>';
-                else boton = '<button type="button" class="btn-agregar" data-act="add">' + SVG.agregarAmigo + ' Conectar</button>';
-                return '<article class="contacto-card" data-id="' + esc(u.id) + '">' +
-                    '<div class="contacto-avatar">' + avatarHtml(d) + '</div>' +
-                    '<div class="contacto-info"><div class="nombre">' + esc(d.nombre) + (d.verificado ? ' <span class="verified">✓</span>' : '') + '</div>' +
-                    '<div class="contacto-meta">' + esc(d.handle) + '</div></div>' +
-                    '<div class="contacto-actions">' + boton + '</div></article>';
+                if (esContacto) boton = '<button type="button" class="accion ok" disabled>' + ico('check') + 'Contacto</button>';
+                else if (enviada) boton = '<button type="button" class="accion" disabled>Enviada</button>';
+                else boton = '<button type="button" class="accion primaria" data-act="add">' + ico('add') + 'Conectar</button>';
+                return '<div class="fila" data-id="' + esc(u.id) + '">' +
+                    '<div class="avatar">' + avatarHtml(d) + '</div>' +
+                    '<div class="info"><div class="nombre">' + esc(d.nombre) + (d.verificado ? ' <span class="verif">✓</span>' : '') + '</div>' +
+                    '<div class="meta">' + esc(d.handle) + '</div></div>' +
+                    '<div class="acciones">' + boton + '</div></div>';
             }).join('');
         } catch (e) {
             console.error('[Contactos] Búsqueda:', detalleError(e));
-            lista.innerHTML = htmlVacio('⚠️', 'Error al buscar: ' + detalleError(e));
+            lista.innerHTML = htmlVacio('Error al buscar: ' + detalleError(e));
         }
     }
 
@@ -769,8 +792,7 @@
         if (state.operaciones.has(clave)) return;
         state.operaciones.add(clave);
         try {
-            var client = sb();
-            var r = await client.rpc(CONFIG.RPC_RESPONDER_SOLICITUD, { p_fila_id: fila, p_aceptar: aceptar });
+            var r = await sb().rpc(CONFIG.RPC_RESPONDER, { p_fila_id: fila, p_aceptar: aceptar });
             if (r.error) throw r.error;
             showToast(aceptar ? 'Amistad aceptada.' : 'Solicitud rechazada.', 'success');
             await cargarDatos();
@@ -784,7 +806,7 @@
         var client = sb();
         var s = await getSession();
         if (!client || !s) return;
-        var ok = await showConfirm({ title: 'Cancelar solicitud', message: '¿Retirar solicitud de amistad?', icon: '↩️', confirmText: 'Retirar', cancelText: 'Volver', danger: true });
+        var ok = await showConfirm({ title: 'Cancelar solicitud', message: '¿Retirar solicitud de amistad?', confirmText: 'Retirar', cancelText: 'Volver' });
         if (!ok) return;
         var clave = 'cancelar:' + filaId;
         if (state.operaciones.has(clave)) return;
@@ -800,7 +822,7 @@
         } finally { state.operaciones.delete(clave); }
     }
 
-    async function toggleFavorito(filaId, contactoId) {
+    async function toggleFavorito(filaId) {
         var client = sb();
         var s = await getSession();
         if (!client || !s) return;
@@ -843,13 +865,13 @@
     async function eliminarContacto(contactoId) {
         var s = await getSession();
         if (!s) return;
-        var ok = await showConfirm({ title: 'Eliminar contacto', message: '¿Eliminar a este contacto de tu red?', icon: '🗑️', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
+        var ok = await showConfirm({ title: 'Eliminar contacto', message: '¿Eliminar a este contacto de tu red?', confirmText: 'Eliminar', cancelText: 'Cancelar' });
         if (!ok) return;
         var clave = 'eliminar:' + contactoId;
         if (state.operaciones.has(clave)) return;
         state.operaciones.add(clave);
         try {
-            var r = await sb().rpc(CONFIG.RPC_ELIMINAR_AMISTAD, { p_contacto_id: contactoId });
+            var r = await sb().rpc(CONFIG.RPC_ELIMINAR, { p_contacto_id: contactoId });
             if (r.error) throw r.error;
             showToast('Contacto eliminado.', 'success');
             await cargarDatos();
@@ -863,7 +885,7 @@
         var s = await getSession();
         if (!s) return;
         if (contactoId === s.user.id) { showToast('No puedes bloquearte.', 'warning'); return; }
-        var ok = await showConfirm({ title: 'Bloquear usuario', message: '¿Bloquear a este usuario? No podrá llamarte ni escribirte.', icon: '⛔', confirmText: 'Bloquear', cancelText: 'Cancelar', danger: true });
+        var ok = await showConfirm({ title: 'Bloquear usuario', message: '¿Bloquear a este usuario? No podrá llamarte ni escribirte.', confirmText: 'Bloquear', cancelText: 'Cancelar' });
         if (!ok) return;
         var clave = 'bloquear:' + contactoId;
         if (state.operaciones.has(clave)) return;
@@ -884,7 +906,7 @@
         var client = sb();
         var s = await getSession();
         if (!client || !s) return;
-        var ok = await showConfirm({ title: 'Desbloquear usuario', message: '¿Permitir que este usuario te contacte de nuevo?', icon: '🔓', confirmText: 'Desbloquear', cancelText: 'Cancelar', danger: false });
+        var ok = await showConfirm({ title: 'Desbloquear usuario', message: '¿Permitir que este usuario te contacte de nuevo?', confirmText: 'Desbloquear', cancelText: 'Cancelar' });
         if (!ok) return;
         var clave = 'desbloquear:' + bloqueadoId;
         if (state.operaciones.has(clave)) return;
@@ -915,37 +937,52 @@
     function abrirPerfil(id) {
         var p = state.perfiles.get(id);
         if (!p || !p.handle) { showToast('Perfil no disponible.', 'warning'); return; }
-        window.location.href = CONFIG.PERFIL_PUBLICO_URL + '?u=' + encodeURIComponent(p.handle);
+        window.location.href = CONFIG.PERFIL_URL + '?u=' + encodeURIComponent(p.handle);
     }
 
-    /* ---------------- Configuración (modal ☰) ---------------- */
+    /* ---------------- Configuración ---------------- */
 
-    function filaToggle(id, titulo, desc, checked) {
-        return '<label class="cfg-row"><span>' + esc(titulo) + '<small>' + esc(desc) + '</small></span>' +
-            '<input type="checkbox" data-cfg="' + id + '"' + (checked ? ' checked' : '') + '></label>';
+    function fila(titulo, desc, control) {
+        return '<div class="cfg-fila"><div class="cfg-fila-txt">' + esc(titulo) +
+            (desc ? '<small>' + esc(desc) + '</small>' : '') + '</div>' + control + '</div>';
+    }
+
+    function interruptor(id, marcado) {
+        return '<label class="switch"><input type="checkbox" data-cfg="' + id + '"' + (marcado ? ' checked' : '') + ' aria-label="' + esc(id) + '"></label>';
+    }
+
+    function seccion(t) {
+        return '<div class="cfg-sec">' + esc(t) + '</div>';
     }
 
     function renderConfig() {
         var p = state.prefs;
+        var a = state.a11y;
         var quien = p.chats_quien_puede_mensajes || 'todos';
-        var opts = [['todos', 'Todos'], ['contactos', 'Solo mis contactos'], ['nadie', 'Nadie']]
+        var opciones = [['todos', 'Todos'], ['contactos', 'Mis contactos'], ['nadie', 'Nadie']]
             .map(function (o) { return '<option value="' + o[0] + '"' + (quien === o[0] ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('');
+        var tamanos = ['80', '100', '120', '140'].map(function (t) {
+            return '<button type="button" data-a11y-texto="' + t + '" class="' + (a.texto === t ? 'active' : '') + '">' + t + '%</button>';
+        }).join('');
 
         document.getElementById('cfgBody').innerHTML =
-            '<div class="cfg-titulo">Visibilidad</div>' +
-            filaToggle('visEmail', 'Encontrarme por correo', 'Otros pueden encontrarte buscando tu correo.', p.visibilidad_encontrarme_email === true) +
-            filaToggle('visTel', 'Encontrarme por teléfono', 'Otros pueden encontrarte buscando tu teléfono.', p.visibilidad_encontrarme_telefono === true) +
-            filaToggle('visEstado', 'Ocultar mi estado en línea', 'Los demás no verán cuando estás conectado.', state.ocultarEstado === true) +
-            '<div class="cfg-titulo">Chats</div>' +
-            '<label class="cfg-row"><span>Quién puede enviarme mensajes</span><select data-cfg="chQuien">' + opts + '</select></label>' +
-            filaToggle('chFiltro', 'Filtrar solicitudes de desconocidos', 'Sus mensajes llegan a solicitudes.', p.chats_filtro_solicitudes !== false) +
-            filaToggle('chLeido', 'Confirmación de leído', 'La otra persona verá cuando leíste.', p.chats_mostrar_leido !== false) +
-            filaToggle('chEscribiendo', 'Mostrar cuando escribo', 'La otra persona verá "escribiendo…".', p.chats_mostrar_escribiendo !== false) +
-            '<div class="cfg-titulo">Mis listas</div>' +
-            '<button type="button" class="cfg-link" data-goto="silenciados"><span>🔕 Silenciados</span><span>' + state.silenciados.length + '</span></button>' +
-            '<button type="button" class="cfg-link" data-goto="bloqueados"><span>⛔ Bloqueados</span><span>' + state.bloqueados.length + '</span></button>' +
-            '<button type="button" class="cfg-link" data-goto="pendientes"><span>📥 Solicitud pendiente</span><span>' + state.recibidas.length + '</span></button>' +
-            '<button type="button" class="cfg-link" data-goto="enviadas"><span>📤 Solicitudes enviadas</span><span>' + state.enviadas.length + '</span></button>';
+            seccion('Visibilidad') +
+            fila('Encontrarme por correo', 'Otros pueden encontrarte buscando tu correo.', interruptor('visEmail', p.visibilidad_encontrarme_email === true)) +
+            fila('Encontrarme por teléfono', 'Otros pueden encontrarte buscando tu teléfono.', interruptor('visTel', p.visibilidad_encontrarme_telefono === true)) +
+            fila('Ocultar mi estado en línea', 'Los demás no verán cuando estás conectado.', interruptor('visEstado', state.ocultarEstado === true)) +
+            seccion('Chats') +
+            fila('Quién puede enviarme mensajes', '', '<select class="sel" data-cfg="chQuien">' + opciones + '</select>') +
+            fila('Filtrar solicitudes de desconocidos', 'Sus mensajes llegan a solicitudes.', interruptor('chFiltro', p.chats_filtro_solicitudes !== false)) +
+            fila('Confirmación de leído', 'La otra persona verá cuando leíste.', interruptor('chLeido', p.chats_mostrar_leido !== false)) +
+            fila('Mostrar cuando escribo', 'La otra persona verá "escribiendo".', interruptor('chEscribiendo', p.chats_mostrar_escribiendo !== false)) +
+            seccion('Accesibilidad') +
+            fila('Tamaño de texto', 'Aplica a esta página.', '<div class="seg" role="group" aria-label="Tamaño de texto">' + tamanos + '</div>') +
+            fila('Alto contraste', 'Texto blanco y bordes más visibles.', interruptor('a11yContraste', a.contraste === true)) +
+            seccion('Mis listas') +
+            '<button type="button" class="cfg-link" data-goto="silenciados"><span class="cfg-fila-txt">Silenciados</span><span class="cfg-cuenta">' + state.silenciados.length + '</span></button>' +
+            '<button type="button" class="cfg-link" data-goto="bloqueados"><span class="cfg-fila-txt">Bloqueados</span><span class="cfg-cuenta">' + state.bloqueados.length + '</span></button>' +
+            '<button type="button" class="cfg-link" data-goto="pendientes"><span class="cfg-fila-txt">Solicitud pendiente</span><span class="cfg-cuenta">' + state.recibidas.length + '</span></button>' +
+            '<button type="button" class="cfg-link" data-goto="enviadas"><span class="cfg-fila-txt">Solicitudes enviadas</span><span class="cfg-cuenta">' + state.enviadas.length + '</span></button>';
     }
 
     async function onCfgChange(el) {
@@ -953,13 +990,16 @@
         var v = el.type === 'checkbox' ? el.checked : el.value;
         el.disabled = true;
         try {
-            if (k === 'visEstado') {
+            if (k === 'a11yContraste') {
+                await guardarA11y({ contraste: v });
+            } else if (k === 'visEstado') {
                 var client = sb();
                 var s = await getSession();
                 if (!client || !s) throw new Error('Inicia sesión.');
                 var r = await client.from(CONFIG.USUARIOS_TABLE).update({ ocultar_estado: v }).eq('id', s.user.id);
                 if (r.error) throw r.error;
                 state.ocultarEstado = v;
+                showToast('Preferencia guardada.', 'success');
             } else {
                 var mapa = {
                     visEmail: 'visibilidad_encontrarme_email',
@@ -972,8 +1012,8 @@
                 var patch = {};
                 patch[mapa[k]] = v;
                 await guardarPrefs(patch);
+                showToast('Preferencia guardada.', 'success');
             }
-            showToast('Preferencia guardada.', 'success');
         } catch (e) {
             console.error('[Contactos] Config:', detalleError(e));
             showToast('No se pudo guardar: ' + detalleError(e), 'error');
@@ -1070,9 +1110,7 @@
     function pararEscaner() {
         if (state.scanRaf) cancelAnimationFrame(state.scanRaf);
         state.scanRaf = null;
-        if (state.scanStream) {
-            state.scanStream.getTracks().forEach(function (t) { t.stop(); });
-        }
+        if (state.scanStream) state.scanStream.getTracks().forEach(function (t) { t.stop(); });
         state.scanStream = null;
         var v = document.getElementById('scanVideo');
         if (v) v.srcObject = null;
@@ -1083,15 +1121,14 @@
         if (state.scanBusy) return;
         if (String(texto).indexOf(CONFIG.QR_PREFIX) !== 0) {
             setEstadoEscaner('Ese código no es de Csariel\'s. Intenta con otro.');
-            state.scanRaf = requestAnimationFrame(function () { loopEscaner(); });
+            state.scanRaf = requestAnimationFrame(loopEscaner);
             return;
         }
         state.scanBusy = true;
         var codigo = String(texto).slice(CONFIG.QR_PREFIX.length).trim();
         setEstadoEscaner('Procesando…');
         try {
-            var client = sb();
-            var r = await client.rpc(CONFIG.RPC_CANJEAR_INVITACION, { p_codigo: codigo });
+            var r = await sb().rpc(CONFIG.RPC_CANJEAR, { p_codigo: codigo });
             if (r.error) throw r.error;
             cerrarModal('modalEscanear');
             showToast('Listo. Revisa tus solicitudes.', 'success');
@@ -1100,11 +1137,11 @@
             console.error('[Contactos] Canje QR:', detalleError(e));
             state.scanBusy = false;
             setEstadoEscaner('No se pudo agregar: ' + detalleError(e));
-            state.scanRaf = requestAnimationFrame(function () { loopEscaner(); });
+            state.scanRaf = requestAnimationFrame(loopEscaner);
         }
     }
 
-    /* ---------------- Invitación (código copiable) ---------------- */
+    /* ---------------- Invitación ---------------- */
 
     async function invitarContacto() {
         var client = sb();
@@ -1121,7 +1158,7 @@
             if (codigoEl) codigoEl.textContent = String(inv.codigo);
         } catch (e) {
             console.error('[Contactos] Invitación:', detalleError(e));
-            if (codigoEl) codigoEl.textContent = 'ERROR';
+            if (codigoEl) codigoEl.textContent = 'Error';
             showToast('Error al generar invitación: ' + detalleError(e), 'error');
         }
     }
@@ -1130,7 +1167,7 @@
         var el = document.getElementById('codigoInvitacion');
         if (!el) return;
         var cod = el.textContent.trim();
-        if (!cod || cod === 'Generando…' || cod === 'ERROR') return;
+        if (!cod || cod === 'Generando…' || cod === 'Error') return;
         try {
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 await navigator.clipboard.writeText(cod);
@@ -1155,12 +1192,10 @@
     /* ---------------- Eventos ---------------- */
 
     function configurarEventos() {
-        // Filtros
         document.querySelectorAll('.filtro[data-filtro]').forEach(function (b) {
             b.addEventListener('click', function () { setFiltro(b.getAttribute('data-filtro') || 'todos'); });
         });
 
-        // Búsqueda por voz
         var input = document.getElementById('searchInput');
         var btnVoz = document.getElementById('btnVozBuscar');
         if (input) input.addEventListener('click', iniciarVoz);
@@ -1168,37 +1203,35 @@
         var btnLimpiar = document.getElementById('btnLimpiarBusqueda');
         if (btnLimpiar) btnLimpiar.addEventListener('click', function () { aplicarBusqueda(''); });
 
-        // Lista principal (acciones de tarjetas, solicitudes, bloqueados, sugerencias)
         var lista = document.getElementById('contactosList');
         if (lista) {
             lista.addEventListener('click', function (ev) {
                 var btn = ev.target.closest('[data-act]');
                 if (!btn) return;
-                var card = btn.closest('.contacto-card, .solicitud-card, .solicitud-enviada-card, .bloqueado-card, .sugerencia-card');
+                var fila = btn.closest('.fila');
                 var act = btn.getAttribute('data-act');
-                var id = btn.getAttribute('data-id') || (card && card.getAttribute('data-id'));
-                var fila = btn.getAttribute('data-fila') || (card && card.getAttribute('data-fila'));
+                var id = fila ? fila.getAttribute('data-id') : null;
+                var filaId = fila ? fila.getAttribute('data-fila') : null;
 
                 switch (act) {
                     case 'msg': abrirMensaje(id); break;
                     case 'call': llamarContacto(id); break;
                     case 'perfil': abrirPerfil(id); break;
-                    case 'fav': toggleFavorito(fila, id); break;
+                    case 'fav': toggleFavorito(filaId); break;
                     case 'mute': silenciar(id, true); break;
                     case 'unmute': silenciar(id, false); break;
                     case 'block': bloquearContacto(id); break;
                     case 'del': eliminarContacto(id); break;
                     case 'add': agregarContacto(id); break;
-                    case 'accept': responderSolicitud(fila, true); break;
-                    case 'reject': responderSolicitud(fila, false); break;
-                    case 'cancel': cancelarEnviada(fila); break;
+                    case 'accept': responderSolicitud(filaId, true); break;
+                    case 'reject': responderSolicitud(filaId, false); break;
+                    case 'cancel': cancelarEnviada(filaId); break;
                     case 'unblock': desbloquear(id); break;
                     case 'reintentar': cargarDatos(); break;
                 }
             });
         }
 
-        // Modal de configuración: cambios y accesos directos a listas
         var cfg = document.getElementById('cfgBody');
         if (cfg) {
             cfg.addEventListener('change', function (ev) {
@@ -1206,14 +1239,16 @@
                 if (el) onCfgChange(el);
             });
             cfg.addEventListener('click', function (ev) {
-                var b = ev.target.closest('[data-goto]');
-                if (!b) return;
-                cerrarModal('modalConfig');
-                setFiltro(b.getAttribute('data-goto'));
+                var texto = ev.target.closest('[data-a11y-texto]');
+                if (texto) { guardarA11y({ texto: texto.getAttribute('data-a11y-texto') }); return; }
+                var goto = ev.target.closest('[data-goto]');
+                if (goto) {
+                    cerrarModal('modalConfig');
+                    setFiltro(goto.getAttribute('data-goto'));
+                }
             });
         }
 
-        // Botones que abren modales
         document.addEventListener('click', function (ev) {
             var open = ev.target.closest('[data-open]');
             if (open) {
@@ -1225,7 +1260,7 @@
             }
             var close = ev.target.closest('[data-close]');
             if (close) { cerrarModal(close.getAttribute('data-close')); return; }
-            if (ev.target.classList && ev.target.classList.contains('modal-overlay')) {
+            if (ev.target.classList && ev.target.classList.contains('overlay')) {
                 cerrarModal(ev.target.id);
             }
         });
@@ -1269,6 +1304,9 @@
             intentos++;
             if (sb()) {
                 clearInterval(timer);
+                // Aplica la accesibilidad local de inmediato, antes de que llegue la nube
+                state.a11y = normalizarA11y(leerA11yLocal());
+                aplicarA11y();
                 configurarEventos();
                 cargarDatos();
                 return;
