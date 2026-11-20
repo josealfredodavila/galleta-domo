@@ -1,0 +1,243 @@
+<!-- ================================================================
+     CSARIEL'S · TERMINAL DE PAGO CRIPTO
+     Ruta: /features/mercado/terminal-pago.html
+     ================================================================ -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>◈ Pago Seguro · Csariel's</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
+    
+    <!-- Tu CSS de la terminal -->
+    <link rel="stylesheet" href="/features/mercado/terminal-pago.css" />
+    
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <style>
+        body {
+            background: #05080f;
+            color: #f0f4f8;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: radial-gradient(ellipse at 50% 50%, rgba(0, 229, 255, 0.05) 0%, transparent 70%);
+        }
+        .tp-overlay { width: 100%; max-width: 440px; padding: 20px; }
+        
+        /* Toast simple */
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #00d68f; color: #05080f; padding: 12px 24px; border-radius: 30px; font-weight: 700; opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 9999; }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+
+    <div class="tp-overlay">
+        <!-- La terminal (CSS se encarga de los colores según data-estado) -->
+        <div class="tp-root" id="terminalPago" data-estado="buscando">
+            
+            <div class="tp-header">
+                <div class="tp-titulo">TERMINAL DE PAGO</div>
+                <div class="tp-sub" id="tpSubtitulo">Pedido #<span id="numPedido">...</span></div>
+            </div>
+
+            <!-- El Radar Animado -->
+            <div class="tp-radar">
+                <div class="tp-radar-ring"></div>
+                <div class="tp-radar-ring"></div>
+                <div class="tp-radar-ring"></div>
+                <div class="tp-radar-core"></div>
+            </div>
+
+            <div class="tp-estado-texto" id="tpEstadoTexto">Esperando pago...</div>
+
+            <div class="tp-monto-bloque">
+                <div class="tp-monto" id="tpMonto">0.00</div>
+                <div class="tp-moneda" id="tpMoneda">USDT</div>
+                <div class="tp-red-badge" id="tpRed">Polygon</div>
+            </div>
+
+            <div class="tp-dir" id="tpDireccion">0x...</div>
+            
+            <div id="tpQrContainer" style="text-align:center; margin-top:14px; min-height: 180px;">
+                <div class="tp-qr-fallback">Generando QR...</div>
+            </div>
+
+            <div class="tp-aviso">
+                Escanea el QR con tu wallet o copia la dirección. El pago se confirma automáticamente.
+            </div>
+
+            <div class="tp-acciones">
+                <button class="tp-btn tp-btn-sec" onclick="copiarDireccion()">
+                    <span>📋</span> Copiar Dirección
+                </button>
+                <button class="tp-btn tp-btn-sec" onclick="cancelarPago()">
+                    Cancelar
+                </button>
+            </div>
+
+            <div class="tp-toast" id="tpToast">¡Copiado!</div>
+        </div>
+    </div>
+
+    <div class="toast" id="toastGlobal">¡Copiado!</div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="/features/shared/js/idiomas.js"></script>
+
+    <script>
+        // Configuración
+        var supabaseUrl = 'https://zultnlogdoajehbswlih.supabase.co';
+        var supabaseKey = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+        var supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+        
+        var pedidoId = null;
+        var tokenPagoActual = null;
+        var pollingTimer = null;
+
+        function showToast(mensaje) {
+            var t = document.getElementById('toastGlobal');
+            t.textContent = mensaje;
+            t.classList.add('show');
+            setTimeout(function() { t.classList.remove('show'); }, 2500);
+        }
+
+        function copiarDireccion() {
+            var dir = document.getElementById('tpDireccion').textContent;
+            if (!dir || dir === '0x...') return;
+            navigator.clipboard.writeText(dir).then(function() {
+                var toast = document.getElementById('tpToast');
+                toast.classList.add('show');
+                setTimeout(function() { toast.classList.remove('show'); }, 2000);
+            });
+        }
+
+        function cancelarPago() {
+            if (pollingTimer) clearInterval(pollingTimer);
+            // Lo regresamos al pedido (que estará en estado pendiente de pago)
+            if (pedidoId) {
+                window.location.href = '/features/mercado/pedido.html?id=' + pedidoId;
+            } else {
+                window.location.href = '/features/mercado/mis-pedidos.html';
+            }
+        }
+
+        async function iniciarTerminal() {
+            // 1. Obtener parámetros de la URL
+            var params = new URLSearchParams(window.location.search);
+            pedidoId = params.get('pedido_id');
+            var monto = params.get('monto');
+
+            if (!pedidoId || !monto) {
+                showToast('Faltan datos del pedido');
+                setTimeout(cancelarPago, 2000);
+                return;
+            }
+
+            document.getElementById('numPedido').textContent = pedidoId;
+            document.getElementById('tpMonto').textContent = parseFloat(monto).toFixed(2);
+
+            try {
+                // 2. Obtener sesión del usuario
+                var sesion = await supabaseClient.auth.getSession();
+                if (!sesion.data.session) throw new Error('Sesión expirada');
+                var token = sesion.data.session.access_token;
+
+                // 3. Crear Intención de Pago en el Backend
+                document.getElementById('tpEstadoTexto').textContent = 'Generando cobro...';
+                
+                var respIntencion = await fetch('/api/pay/intenciones', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                    body: JSON.stringify({
+                        monto: parseFloat(monto),
+                        metodo: 'usdt',
+                        pedidoId: parseInt(pedidoId),
+                        descripcion: 'Pago pedido Mercado #' + pedidoId,
+                        metodosAceptados: ['usdt']
+                    })
+                });
+                var jsonIntencion = await respIntencion.json();
+                if (!jsonIntencion.success) throw new Error(jsonIntencion.error);
+
+                tokenPagoActual = jsonIntencion.data.public_token;
+
+                // 4. Solicitar la dirección de NOWPayments
+                var respPago = await fetch('/api/pay/intenciones/' + tokenPagoActual + '/pagar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ metodo: 'usdt' })
+                });
+                var jsonPago = await respPago.json();
+                if (!jsonPago.success) throw new Error(jsonPago.error);
+
+                var datosNow = jsonPago.data.nowpayments;
+                
+                // 5. Pintar los datos en la Terminal
+                document.getElementById('tpMonto').textContent = datosNow.pay_amount;
+                document.getElementById('tpMoneda').textContent = datosNow.pay_currency.toUpperCase();
+                document.getElementById('tpRed').textContent = 'Polygon / NOWPayments';
+                document.getElementById('tpDireccion').textContent = datosNow.pay_address;
+                document.getElementById('tpEstadoTexto').textContent = 'Esperando pago...';
+                
+                // 6. Generar el QR
+                document.getElementById('tpQrContainer').innerHTML = '<canvas id="qrCanvas" class="tp-qr"></canvas>';
+                QRCode.toCanvas(document.getElementById('qrCanvas'), datosNow.pay_address, { 
+                    width: 170, margin: 1, color: { dark: '#05080f', light: '#ffffff' } 
+                });
+
+                // 7. Empezar a preguntar si ya pagó
+                iniciarPolling();
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('terminalPago').setAttribute('data-estado', 'error');
+                document.getElementById('tpEstadoTexto').textContent = 'Error al generar el pago';
+                showToast(e.message);
+            }
+        }
+
+        function iniciarPolling() {
+            if (pollingTimer) clearInterval(pollingTimer);
+            
+            pollingTimer = setInterval(async function() {
+                try {
+                    var resp = await fetch('/api/pay/intenciones/' + tokenPagoActual);
+                    var json = await resp.json();
+                    if (!json.success) return;
+
+                    var estado = json.data.estado;
+
+                    if (estado === 'paid') {
+                        // ¡PAGADO!
+                        clearInterval(pollingTimer);
+                        document.getElementById('terminalPago').setAttribute('data-estado', 'confirmado');
+                        document.getElementById('tpEstadoTexto').textContent = '¡Pago Confirmado!';
+                        showToast('Pago recibido. Redirigiendo...');
+
+                        setTimeout(function() {
+                            window.location.href = '/features/mercado/pedido.html?id=' + pedidoId;
+                        }, 2500);
+                    } 
+                    else if (estado === 'processing') {
+                        // Detectado, esperando bloques
+                        document.getElementById('terminalPago').setAttribute('data-estado', 'detectado');
+                        document.getElementById('tpEstadoTexto').textContent = 'Transacción detectada, confirmando...';
+                    }
+                    else if (estado === 'expired' || estado === 'failed' || estado === 'cancelled') {
+                        clearInterval(pollingTimer);
+                        document.getElementById('terminalPago').setAttribute('data-estado', 'error');
+                        document.getElementById('tpEstadoTexto').textContent = 'El pago falló o expiró.';
+                    }
+                } catch (e) { console.warn('Polling error:', e); }
+            }, 3000); // Cada 3 segundos
+        }
+
+        document.addEventListener('DOMContentLoaded', iniciarTerminal);
+    </script>
+</body>
+</html>
