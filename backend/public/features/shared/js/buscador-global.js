@@ -1,15 +1,5 @@
 // ================================================================
-// BUSCADOR GLOBAL DEL ECOSISTEMA · v1.2
-// Requiere: #globalSearchInput y #globalSearchResults en la página.
-// Usa window.supabaseClient (espera a que exista, hasta 5 s).
-// Cambios v1.2 (para alta concurrencia):
-//  - Espera al cliente de Supabase en vez de fallar en silencio
-//  - Cache de resultados en memoria (LRU) para no repetir RPC
-//  - Sesión leída una sola vez y reutilizada
-//  - Avatares: solo http(s) (evita esquemas raros en src)
-//  - Protección contra doble inicialización
-//  - Mensajes claros para sin sesión, rate limit y errores de red
-//  - Escape cierra el panel; "Agregar" queda deshabilitado tras enviar
+// BUSCADOR GLOBAL DEL ECOSISTEMA · v1.3 (Blindado)
 // ================================================================
 (function () {
     'use strict';
@@ -29,12 +19,9 @@
 
     var timer = null;
     var ultimaBusqueda = 0;
-    var miIdCache = undefined; // undefined = no leído, null = sin sesión
-    var cache = new Map();     // query -> { t, lista }
+    var miIdCache = undefined;
+    var cache = new Map();
 
-    // ------------------------------------------------------------
-    // CLIENTE
-    // ------------------------------------------------------------
     function esperarCliente() {
         return new Promise(function (resolve) {
             var inicio = Date.now();
@@ -57,7 +44,6 @@
         return miIdCache;
     }
 
-    // Si cambia la sesión (login/logout), invalida lo cacheado
     function engancharCambioSesion(client) {
         if (!client.auth || !client.auth.onAuthStateChange) return;
         client.auth.onAuthStateChange(function () {
@@ -66,9 +52,6 @@
         });
     }
 
-    // ------------------------------------------------------------
-    // UTILIDADES DE UI (sin innerHTML con datos de usuarios)
-    // ------------------------------------------------------------
     function mostrarMensaje(texto, color) {
         var d = document.createElement('div');
         d.className = 'gs-msg';
@@ -91,15 +74,11 @@
         try {
             var u = new URL(url, window.location.origin);
             return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : null;
-        } catch (e) {
-            return null;
-        }
+        } catch (e) { return null; }
     }
 
     function verPerfil(id, handle) {
-        var param = handle
-            ? '?u=' + encodeURIComponent(handle)
-            : '?id=' + encodeURIComponent(id);
+        var param = handle ? '?u=' + encodeURIComponent(handle) : '?id=' + encodeURIComponent(id);
         window.location.href = '/features/perfil/perfil-publico.html' + param;
     }
 
@@ -112,39 +91,68 @@
     }
 
     // ------------------------------------------------------------
-    // ACCIONES
+    // ACCIÓN CORREGIDA: Agregar contacto (valida estado previo)
     // ------------------------------------------------------------
-    async function agregarContacto(client, contactoId, boton) {
+    async function agregarContacto(client, contactoId, boton, miId) {
+        if (!contactoId || !miId) return;
+
         try {
-            var miId = await obtenerMiId(client);
-            if (!miId) {
-                if (window.showToast) showToast('Inicia sesión para agregar contactos', 'error');
-                return;
+            boton.textContent = 'Enviando...';
+            boton.disabled = true;
+
+            // 1. Verificar si ya existe relación (enviada o recibida)
+            var check = await client.from('contactos')
+                .select('id, estado, usuario_id, contacto_id')
+                .or('and(usuario_id.eq.' + miId + ',contacto_id.eq.' + contactoId + '),and(usuario_id.eq.' + contactoId + ',contacto_id.eq.' + miId + ')')
+                .maybeSingle();
+
+            if (check.data) {
+                if (check.data.estado === 'activo') {
+                    if (window.showToast) showToast('Ya son contactos.', 'info');
+                    boton.textContent = 'Contacto';
+                    return;
+                }
+                if (check.data.estado === 'pendiente') {
+                    if (check.data.usuario_id === miId) {
+                        if (window.showToast) showToast('Ya enviaste una solicitud.', 'warning');
+                        boton.textContent = 'Enviada';
+                    } else {
+                        if (window.showToast) showToast('Esta persona ya te envió una solicitud. Revisa "Solicitud pendiente".', 'info');
+                        boton.textContent = 'Pendiente';
+                    }
+                    return;
+                }
             }
+
+            // 2. Si no existe, insertar
             var res = await client.from('contactos').insert({
                 usuario_id: miId,
                 contacto_id: contactoId,
                 estado: 'pendiente',
                 es_favorito: false
             });
-            if (res.error && res.error.code === '23505') {
-                if (window.showToast) showToast('Ya enviaste una solicitud a esta persona.', 'warning');
-                boton.textContent = 'Enviada';
-                boton.disabled = true;
-            } else if (res.error) {
-                throw res.error;
+
+            if (res.error) {
+                if (res.error.code === '23505') {
+                    if (window.showToast) showToast('Ya existe una solicitud.', 'warning');
+                    boton.textContent = 'Enviada';
+                } else {
+                    throw res.error;
+                }
             } else {
                 if (window.showToast) showToast('Solicitud de amistad enviada.', 'success');
                 boton.textContent = 'Enviada';
-                boton.disabled = true;
             }
+
         } catch (e) {
             console.error('[Buscador] Error al agregar:', e && e.code, e && e.message);
             if (window.showToast) showToast('No se pudo enviar la solicitud.', 'error');
+            boton.textContent = 'Agregar';
+            boton.disabled = false;
         }
     }
 
-    function filaUsuario(client, u) {
+    function filaUsuario(client, u, miId) {
         var handleRaw = u.handle || u.usuario_handle || '';
         var nombre = u.nombre || handleRaw || 'Usuario';
         var avatarUrl = urlAvatarSegura(u.avatar_url || u.avatar || null);
@@ -185,10 +193,9 @@
         btn.textContent = 'Agregar';
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
-            btn.disabled = true;
-            agregarContacto(client, u.id, btn).then(function () {
-                if (!btn.textContent || btn.textContent === 'Agregar') btn.disabled = false;
-            });
+            if (!btn.disabled) {
+                agregarContacto(client, u.id, btn, miId);
+            }
         });
 
         fila.appendChild(avatar);
@@ -197,9 +204,6 @@
         return fila;
     }
 
-    // ------------------------------------------------------------
-    // BÚSQUEDA
-    // ------------------------------------------------------------
     function leerCache(q) {
         var hit = cache.get(q);
         if (!hit) return null;
@@ -226,13 +230,11 @@
 
         try {
             var res = await client.rpc('buscar_usuarios', { p_query: query });
-            if (reqId !== ultimaBusqueda) return; // respuesta vieja, la ignoro
+            if (reqId !== ultimaBusqueda) return;
             if (res.error) throw res.error;
 
             var raw = res.data;
-            var lista = Array.isArray(raw) ? raw
-                      : (raw && Array.isArray(raw.data)) ? raw.data
-                      : [];
+            var lista = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.data)) ? raw.data : [];
 
             var miId = await obtenerMiId(client);
             lista = lista.filter(function (u) { return u.id !== miId; });
@@ -253,13 +255,15 @@
             return;
         }
         caja.replaceChildren();
-        lista.forEach(function (u) { caja.appendChild(filaUsuario(client, u)); });
-        caja.classList.add('active');
+        
+        // Obtenemos miId de forma asíncrona antes de pintar
+        obtenerMiId(client).then(function(miId) {
+            if (reqId !== ultimaBusqueda) return;
+            lista.forEach(function (u) { caja.appendChild(filaUsuario(client, u, miId)); });
+            caja.classList.add('active');
+        });
     }
 
-    // ------------------------------------------------------------
-    // EVENTOS
-    // ------------------------------------------------------------
     input.addEventListener('input', function (e) {
         var query = e.target.value.trim();
         clearTimeout(timer);
