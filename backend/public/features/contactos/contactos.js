@@ -1,7 +1,12 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v28.2 (Auditado)
-   Correcciones: Sentido de solicitudes, validación de recibidas
-   en búsqueda/sugerencias, y unificación de arquitectura.
+   CSARIEL'S · CONTACTOS · v28.1
+   Sin QR ni cámara (eso vive en Perfil).
+   RPC: perfiles_por_ids, buscar_usuarios, sugerencias_usuarios,
+        bloquear_contacto, obtener_o_crear_invitacion,
+        canjear_codigo_amistad, responder_solicitud_amistad,
+        eliminar_amistad.
+   Tablas: contactos, bloqueos, preferencias_usuario (prefs jsonb),
+           usuarios (ocultar_estado).
    ============================================================ */
 
 (function () {
@@ -60,8 +65,8 @@
         total: 0,
         pagina: 0,
         hayMas: false,
-        recibidas: [], // Solicitudes que YO he recibido (contacto_id = uid)
-        enviadas: [],  // Solicitudes que YO he enviado (usuario_id = uid)
+        recibidas: [],
+        enviadas: [],
         bloqueados: [],
         silenciados: [],
         prefs: {},
@@ -216,6 +221,7 @@
                 var r = await fn();
                 if (r && r.error) {
                     var err = r.error;
+                    // Errores de negocio o permisos: no reintentar
                     if (err.code === '23505' || err.code === '42501' || err.code === 'PGRST116' || err.code === '54000') return r;
                     throw err;
                 }
@@ -335,6 +341,7 @@
         return { id: c.id, contacto_id: c.contacto_id, es_favorito: c.es_favorito === true, fecha: c.fecha || null };
     }
 
+    // Usa el índice (usuario_id, fecha desc) de contactos
     function pedirPagina(client, uid, n) {
         var desde = n * CONFIG.PAGE;
         var hasta = desde + CONFIG.PAGE - 1;
@@ -369,7 +376,6 @@
                     return client.from(CONFIG.CONTACTOS_TABLE).select('id', { count: 'exact', head: true }).eq('usuario_id', uid).eq('estado', 'activo');
                 }, 'conteo'),
                 pedirPagina(client, uid, 0),
-                // Recibidas: contacto_id = uid (Yo soy el receptor)
                 seguro(function () {
                     return client.from(CONFIG.CONTACTOS_TABLE)
                         .select('id, usuario_id, created_at')
@@ -377,7 +383,6 @@
                         .order('created_at', { ascending: false })
                         .limit(CONFIG.LIMITE_RELACIONES);
                 }, 'recibidas'),
-                // Enviadas: usuario_id = uid (Yo soy el emisor)
                 seguro(function () {
                     return client.from(CONFIG.CONTACTOS_TABLE)
                         .select('id, contacto_id, created_at')
@@ -487,16 +492,9 @@
             }, 'sugerencias');
             if (r.error) throw r.error;
             var bloq = new Set(state.bloqueados.map(function (b) { return b.bloqueado_id; }));
-            var recibidasSet = new Set(state.recibidas.map(function (x) { return x.usuario_id; }));
-            var enviadasSet = new Set(state.enviadas.map(function (x) { return x.contacto_id; }));
-
             state.sugerencias = (Array.isArray(r.data) ? r.data : [])
                 .filter(function (u) {
-                    return u && u.id && u.id !== s.user.id 
-                        && !state.idsContactos.has(u.id) 
-                        && !bloq.has(u.id)
-                        && !recibidasSet.has(u.id) // No sugerir si ya me envió solicitud
-                        && !enviadasSet.has(u.id); // No sugerir si ya le envié solicitud
+                    return u && u.id && u.id !== s.user.id && !state.idsContactos.has(u.id) && !bloq.has(u.id);
                 })
                 .slice(0, CONFIG.MAX_SUGERENCIAS);
             state.sugerencias.forEach(function (u) {
@@ -512,6 +510,7 @@
     /* ---------------- Estadísticas ---------------- */
 
     function actualizarStats() {
+        // "En línea" cuenta solo los contactos ya cargados
         var online = state.contactos.filter(function (c) {
             var p = state.perfiles.get(c.contacto_id);
             return p && p.online === true;
@@ -752,28 +751,14 @@
                 .slice(0, CONFIG.MAX_RESULTADOS);
             usuarios.forEach(function (u) { state.perfiles.set(u.id, normalizarPerfil(u)); });
             if (!usuarios.length) { lista.innerHTML = htmlVacio('No se encontraron usuarios.'); return; }
-            
-            var recibidasSet = new Set(state.recibidas.map(function (x) { return x.usuario_id; }));
-            
             lista.innerHTML = usuarios.map(function (u) {
                 var d = datosPerfil(u.id);
                 var esContacto = state.idsContactos.has(u.id);
                 var enviada = state.enviadas.some(function (x) { return x.contacto_id === u.id; });
-                var recibida = recibidasSet.has(u.id);
-                
                 var boton;
-                if (esContacto) {
-                    boton = '<button type="button" class="accion ok" disabled>' + ico('check') + 'Contacto</button>';
-                } else if (enviada) {
-                    boton = '<button type="button" class="accion" disabled>Enviada</button>';
-                } else if (recibida) {
-                    // Si ya me envió solicitud, ofrezco aceptar/rechazar directamente
-                    boton = '<button type="button" class="accion ok" data-act="accept" data-fila-id="' + state.recibidas.find(function(x){return x.usuario_id === u.id;}).id + '">Aceptar</button>' +
-                            '<button type="button" class="accion no" data-act="reject" data-fila-id="' + state.recibidas.find(function(x){return x.usuario_id === u.id;}).id + '">Rechazar</button>';
-                } else {
-                    boton = '<button type="button" class="accion primaria" data-act="add">Conectar</button>';
-                }
-                
+                if (esContacto) boton = '<button type="button" class="accion ok" disabled>' + ico('check') + 'Contacto</button>';
+                else if (enviada) boton = '<button type="button" class="accion" disabled>Enviada</button>';
+                else boton = '<button type="button" class="accion primaria" data-act="add">Conectar</button>';
                 return '<div class="fila" data-id="' + esc(u.id) + '">' +
                     '<div class="avatar">' + avatarHtml(d) + '</div>' +
                     '<div class="info"><div class="nombre">' + esc(d.nombre) + (d.verificado ? ' <span class="verif">✓</span>' : '') + '</div>' +
@@ -828,14 +813,6 @@
         if (!contactoId) return;
         if (contactoId === s.user.id) { showToast('No puedes agregarte.', 'warning'); return; }
         if (state.idsContactos.has(contactoId)) { showToast('Ya está en tus contactos.', 'warning'); return; }
-        
-        // Validar si ya me envió solicitud o si ya le envié
-        var yaRecibida = state.recibidas.find(function(x) { return x.usuario_id === contactoId; });
-        if (yaRecibida) { showToast('Esta persona ya te envió una solicitud. Revisa "Solicitud pendiente".', 'warning'); return; }
-        
-        var yaEnviada = state.enviadas.find(function(x) { return x.contacto_id === contactoId; });
-        if (yaEnviada) { showToast('Ya enviaste una solicitud.', 'warning'); return; }
-
         var clave = 'agregar:' + contactoId;
         if (state.operaciones.has(clave)) return;
         state.operaciones.add(clave);
@@ -1090,6 +1067,7 @@
 
         var estado = r.data && r.data.estado;
 
+        // El servidor responde rate_limited (no error) para que el intento quede registrado
         if (estado === 'rate_limited') {
             state.canjeBloqueadoHasta = Date.now() + CONFIG.BLOQUEO_CANJE_MS;
             mensajeCanje('Demasiados intentos. Espera unos minutos.', 'error');
@@ -1253,8 +1231,7 @@
                 if (act === 'reintentar') { cargarDatos(); return; }
                 var fila = btn.closest('.fila');
                 var id = fila ? fila.getAttribute('data-id') : null;
-                // Si el botón tiene data-fila-id (ej. aceptar desde búsqueda), lo usamos
-                var filaId = btn.getAttribute('data-fila-id') || (fila ? fila.getAttribute('data-fila') : null);
+                var filaId = fila ? fila.getAttribute('data-fila') : null;
 
                 switch (act) {
                     case 'msg': abrirMensaje(id); break;
