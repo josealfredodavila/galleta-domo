@@ -14,11 +14,9 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=6">
+    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=7">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="/features/shared/js/auth-global.js"></script>
     <script src="/features/shared/js/presencia-global.js" defer></script>
     <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
@@ -35,14 +33,8 @@
                 <h1>Contactos</h1>
             </div>
             <div class="topbar-actions">
-                <button type="button" class="icon-btn" data-open="invitar" aria-label="Invitar contacto" title="Invitar">
+                <button type="button" class="icon-btn" data-open="agregar" aria-label="Agregar contacto" title="Agregar contacto">
                     <svg class="ico" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                </button>
-                <button type="button" class="icon-btn" data-open="qr" aria-label="Mi código QR" title="Mi QR">
-                    <svg class="ico" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3"/><path d="M8 8h8v8H8z"/></svg>
-                </button>
-                <button type="button" class="icon-btn" data-open="escanear" aria-label="Escanear QR" title="Escanear">
-                    <svg class="ico" viewBox="0 0 24 24"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><circle cx="12" cy="12" r="3"/></svg>
                 </button>
                 <button type="button" id="btnAbrirConfigContactos" class="icon-btn" aria-label="Configuración" title="Configuración">
                     <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
@@ -135,39 +127,42 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <!-- QR personal (solo se muestra, sin compartir por enlace) -->
-    <div class="overlay" id="modalQR" role="dialog" aria-modal="true" aria-label="Mi código QR" aria-hidden="true">
+    <!-- Agregar contacto: tu código (copiar) y canjear un código recibido -->
+    <div class="overlay" id="modalAgregar" role="dialog" aria-modal="true" aria-labelledby="tituloAgregar" aria-hidden="true">
         <div class="modal">
             <div class="modal-head">
-                <h2>Mi código QR</h2>
-                <button type="button" class="modal-close" data-close="modalQR" aria-label="Cerrar">
+                <h2 id="tituloAgregar">Agregar contacto</h2>
+                <button type="button" class="modal-close" data-close="modalAgregar" aria-label="Cerrar">
                     <svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
                 </button>
             </div>
-            <div class="qr-box" id="qrLienzo"></div>
-            <p class="qr-nota">Otra persona con cuenta en Csariel's puede escanearlo con la cámara. No se puede compartir por enlace.</p>
+
+            <div class="bloque-sep" style="border-top:0;margin-top:6px;padding-top:0;">
+                <h3>Tengo un código</h3>
+                <form id="formCanje" autocomplete="off">
+                    <div class="campo-fila">
+                        <input type="text" id="inputCodigo" class="campo" maxlength="12"
+                            placeholder="Ej. A23E4347" autocapitalize="characters" spellcheck="false"
+                            aria-label="Código de contacto">
+                        <button type="submit" id="btnCanjear" class="btn-plano sol">Enviar</button>
+                    </div>
+                    <p class="canje-msg" id="canjeMsg" aria-live="polite"></p>
+                </form>
+                <p class="cfg-cuenta" style="font-size:.72rem;margin:4px 0 0;">La persona debe aceptar tu solicitud para quedar como contacto.</p>
+            </div>
+
+            <div class="bloque-sep">
+                <h3>Mi código</h3>
+                <div class="codigo" id="codigoPropio" aria-live="polite">Generando…</div>
+                <div style="display:flex;justify-content:center;">
+                    <button type="button" class="btn-plano" id="btnCopiarCodigo">Copiar código</button>
+                </div>
+                <p class="cfg-cuenta" style="text-align:center;margin:10px 0 0;font-size:.72rem;">Vale 7 días. Compártelo solo con personas que conozcas.</p>
+            </div>
         </div>
     </div>
 
-    <!-- Escanear QR -->
-    <div class="overlay" id="modalEscanear" role="dialog" aria-modal="true" aria-label="Escanear código QR" aria-hidden="true">
-        <div class="modal">
-            <div class="modal-head">
-                <h2>Escanear QR</h2>
-                <button type="button" class="modal-close" data-close="modalEscanear" aria-label="Cerrar">
-                    <svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
-                </button>
-            </div>
-            <div class="visor">
-                <video id="scanVideo" playsinline muted></video>
-                <div class="visor-marco" aria-hidden="true"></div>
-            </div>
-            <canvas id="scanCanvas" hidden></canvas>
-            <div class="scan-estado" id="scanEstado" aria-live="polite">Preparando cámara…</div>
-        </div>
-    </div>
-
-    <!-- Configuración: visibilidad, chats, accesibilidad y listas -->
+    <!-- Configuración -->
     <div class="overlay" id="modalConfig" role="dialog" aria-modal="true" aria-label="Configuración" aria-hidden="true">
         <div class="modal">
             <div class="modal-head">
@@ -177,25 +172,6 @@
                 </button>
             </div>
             <div id="cfgBody"></div>
-        </div>
-    </div>
-
-    <!-- Invitar -->
-    <div class="overlay" id="modalInvitacion" role="dialog" aria-modal="true" aria-labelledby="tituloInvitacion" aria-hidden="true">
-        <div class="modal">
-            <div class="modal-head">
-                <h2 id="tituloInvitacion">Invitar contacto</h2>
-                <button type="button" class="modal-close" data-close="modalInvitacion" aria-label="Cerrar">
-                    <svg class="ico" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>
-                </button>
-            </div>
-            <p class="cfg-cuenta" style="margin:0;">Comparte este código con quien quieras invitar.</p>
-            <div class="codigo" id="codigoInvitacion" aria-live="polite">Generando…</div>
-            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-                <button type="button" class="btn-plano sol" id="btnCopiarCodigo">Copiar código</button>
-                <button type="button" class="btn-plano" data-close="modalInvitacion">Cerrar</button>
-            </div>
-            <p class="cfg-cuenta" style="text-align:center;margin-top:12px;font-size:.72rem;">El código expira en 7 días.</p>
         </div>
     </div>
 
@@ -222,6 +198,6 @@
         };
     </script>
 
-    <script src="/features/contactos/contactos.js?v=27_1" defer></script>
+    <script src="/features/contactos/contactos.js?v=28_0" defer></script>
 </body>
 </html>
