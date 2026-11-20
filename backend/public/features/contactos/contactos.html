@@ -18,7 +18,7 @@
     <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=4">
 
     <style>
-        /* Ajustes visuales directos para Grupos de comunidad y marca limpia */
+        /* Ajustes visuales directos para Grupos de comunidad, Dashboard y marca limpia */
         .hud-brand-mark {
             display: inline-flex;
             align-items: center;
@@ -38,13 +38,14 @@
 
         .grupos-section {
             margin-bottom: 18px;
-            padding-bottom: 12px;
+            padding-bottom: 14px;
             border-bottom: 1px solid var(--line, rgba(255, 255, 255, 0.08));
         }
 
         .grupos-titulo {
             display: flex;
             align-items: center;
+            justify-content: space-between;
             gap: 8px;
             margin-bottom: 10px;
             color: var(--cyan, #00e5ff);
@@ -52,7 +53,45 @@
             letter-spacing: .04em;
         }
 
-        .grupos-lista {
+        .grupos-titulo-izq {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .grupos-direct-link {
+            color: var(--gold-light, #f7d44a);
+            text-decoration: none;
+            font-family: Inter, sans-serif;
+            font-size: .7rem;
+            font-weight: 700;
+        }
+
+        .grupos-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .grupos-tab-btn {
+            padding: 6px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            background: rgba(11, 18, 28, 0.8);
+            color: var(--text-secondary, #b8c2cc);
+            font-size: .72rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .grupos-tab-btn.active {
+            background: rgba(168, 85, 247, 0.22);
+            color: var(--text-primary, #f0f4f8);
+            border-color: var(--cyan, #00e5ff);
+        }
+
+        .grupos-lista,
+        .grupos-canales-lista {
             display: flex;
             flex-direction: column;
             gap: 8px;
@@ -122,15 +161,103 @@
             white-space: nowrap;
         }
 
+        .canal-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            border-radius: 12px;
+            background: rgba(11, 18, 28, 0.78);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            cursor: pointer;
+        }
+
+        .canal-item .avatar-mini {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(212, 175, 55, 0.12);
+            color: var(--gold-light, #f7d44a);
+            flex: 0 0 auto;
+        }
+
+        .canal-item .avatar-mini img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .canal-item .info .nombre {
+            font-size: .8rem;
+            font-weight: 700;
+        }
+
+        .canal-item .info .stats {
+            font-size: .68rem;
+            color: var(--text-muted, #8c949c);
+        }
+
+        .en-vivo-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .live-tag-small {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #ff3366;
+            color: #fff;
+            font-size: .62rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+            width: fit-content;
+        }
+
+        .btn-salir-aire {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(212, 175, 55, 0.45);
+            background: rgba(212, 175, 55, 0.14);
+            color: var(--gold-light, #f7d44a);
+            font-size: .72rem;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .no-live-box {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 16px;
+            border-radius: 12px;
+            background: rgba(11, 18, 28, 0.72);
+            border: 1px dashed rgba(255, 255, 255, 0.14);
+        }
+
         html.tema-dia .grupo-item-card,
-        html[data-tema="dia"] .grupo-item-card {
+        html[data-tema="dia"] .grupo-item-card,
+        html.tema-dia .canal-item,
+        html[data-tema="dia"] .canal-item {
             background: #ffffff;
             color: #17212b;
             border-color: rgba(23, 33, 43, 0.14);
         }
 
         html.tema-dia .grupo-item-nombre,
-        html[data-tema="dia"] .grupo-item-nombre {
+        html[data-tema="dia"] .grupo-item-nombre,
+        html.tema-dia .canal-item .info .nombre,
+        html[data-tema="dia"] .canal-item .info .nombre {
             color: #17212b;
         }
     </style>
@@ -268,29 +395,48 @@
                 <div id="solicitudesEnviadasLista"></div>
             </section>
 
-            <!-- Sección de grupos activos / comunidades (acceso directo a Grupos) -->
+            <!-- Sección de grupos activos / dashboard integrado -->
             <section class="grupos-section hud-section" id="gruposSection" aria-label="Grupos de comunidad">
                 <div class="grupos-titulo hud-section-title">
-                    Grupos de comunidad
-                    <span class="contador" id="gruposContador" style="background:var(--violet);">2</span>
+                    <span class="grupos-titulo-izq">
+                        Grupos de comunidad
+                        <span class="contador" id="gruposContador" style="background:var(--violet);">2</span>
+                    </span>
+                    <a href="/features/grupos/grupos.html" class="grupos-direct-link">Ver todo ▸</a>
                 </div>
-                <div id="gruposLista" class="grupos-lista">
-                    <a href="/features/grupos/grupos.html?tab=mis-canales" class="grupo-item-card">
-                        <span class="grupo-item-badge" aria-hidden="true">◆</span>
-                        <div class="grupo-item-info">
-                            <div class="grupo-item-nombre">Comunidad Csariel's · Puebla</div>
-                            <div class="grupo-item-meta">Canales y grupos activos en el ecosistema</div>
-                        </div>
-                        <span class="grupo-item-accion">Abrir ▸</span>
-                    </a>
-                    <a href="/features/grupos/grupos.html?tab=en-vivo" class="grupo-item-card">
-                        <span class="grupo-item-badge" aria-hidden="true">✦</span>
-                        <div class="grupo-item-info">
-                            <div class="grupo-item-nombre">Canales en Vivo &amp; Red Polygon</div>
-                            <div class="grupo-item-meta">Entra directo a tus canales o crea un nuevo grupo</div>
-                        </div>
-                        <span class="grupo-item-accion">Explorar ▸</span>
-                    </a>
+
+                <div class="grupos-tabs" role="tablist" aria-label="Secciones de grupos">
+                    <button type="button" id="tabMisCanales" class="grupos-tab-btn active" onclick="switchTab('mis-canales')">
+                        Mis Canales
+                    </button>
+                    <button type="button" id="tabEnVivo" class="grupos-tab-btn" onclick="switchTab('en-vivo')">
+                        En Vivo
+                    </button>
+                </div>
+
+                <div id="colMisCanales">
+                    <div id="misCanalesLista" class="grupos-canales-lista">
+                        <a href="/features/grupos/grupos.html?tab=mis-canales" class="grupo-item-card">
+                            <span class="grupo-item-badge" aria-hidden="true">◆</span>
+                            <div class="grupo-item-info">
+                                <div class="grupo-item-nombre">Comunidad Csariel's · Puebla</div>
+                                <div class="grupo-item-meta">Canales y grupos activos en el ecosistema</div>
+                            </div>
+                            <span class="grupo-item-accion">Abrir ▸</span>
+                        </a>
+                        <a href="/features/grupos/grupos.html?tab=en-vivo" class="grupo-item-card">
+                            <span class="grupo-item-badge" aria-hidden="true">✦</span>
+                            <div class="grupo-item-info">
+                                <div class="grupo-item-nombre">Canales en Vivo &amp; Red Polygon</div>
+                                <div class="grupo-item-meta">Entra directo a tus canales o crea un nuevo grupo</div>
+                            </div>
+                            <span class="grupo-item-accion">Explorar ▸</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div id="colEnVivo" style="display:none;">
+                    <div id="enVivoGrid" class="en-vivo-grid"></div>
                 </div>
             </section>
 
@@ -444,8 +590,354 @@
     </div>
 
     <script>
-        // Activa el giro del planeta cuando empiezan a buscar contactos
+        // ================================================================
+        // DASHBOARD DE GRUPOS INTEGRADO EN CONTACTOS
+        // ================================================================
+        var _timerTarjetaTiempo = null;
+        var misCanalesCache = [];
+
+        if (typeof window.grpEscapeHTML !== 'function') {
+            window.grpEscapeHTML = function (str) {
+                return String(str == null ? '' : str)
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#39;');
+            };
+        }
+
+        if (typeof window.grpSafeUrl !== 'function') {
+            window.grpSafeUrl = function (url) {
+                var u = String(url || '').trim();
+                if (!u) return '';
+                if (/^(https?:\/\/|\/|data:image\/)/i.test(u)) return u;
+                return '';
+            };
+        }
+
+        if (typeof window.esperarSupabase !== 'function') {
+            window.esperarSupabase = function () {
+                return new Promise(function (resolve) {
+                    if (window.supabaseClient) return resolve(true);
+                    var intentos = 0;
+                    var timer = setInterval(function () {
+                        intentos += 1;
+                        if (window.supabaseClient) {
+                            clearInterval(timer);
+                            resolve(true);
+                        } else if (intentos >= 40) {
+                            clearInterval(timer);
+                            resolve(false);
+                        }
+                    }, 100);
+                });
+            };
+        }
+
+        if (typeof window.abrirGrupo !== 'function') {
+            window.abrirGrupo = function (grupoId) {
+                var id = String(grupoId || '').trim();
+                var destino = id
+                    ? '/features/grupos/grupos.html?grupo=' + encodeURIComponent(id)
+                    : '/features/grupos/grupos.html';
+                window.location.href = destino;
+            };
+        }
+
+        if (typeof window.abrirModalCrearGrupo !== 'function') {
+            window.abrirModalCrearGrupo = function () {
+                window.location.href = '/features/grupos/grupos.html?crear=1';
+            };
+        }
+
+        (function inyectarEstilosUVDE() {
+            if (document.getElementById('uvde-grupos-styles')) return;
+            var style = document.createElement('style');
+            style.id = 'uvde-grupos-styles';
+            style.textContent = `
+                .uvde-live-container {
+                    width: 100%;
+                    aspect-ratio: 9 / 16;
+                    position: relative;
+                    overflow: hidden;
+                    background: #000;
+                    border-radius: 12px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                }
+                .uvde-live-container video {
+                    width: 100%;
+                    height: 100%;
+                    position: absolute;
+                    inset: 0;
+                    object-fit: cover;
+                    object-position: center;
+                    display: block;
+                    max-width: 100%;
+                    filter: none !important;
+                }
+                .uvde-live-container img {
+                    width: 100%;
+                    height: 100%;
+                    position: absolute;
+                    inset: 0;
+                    object-fit: cover;
+                    object-position: center;
+                    display: block;
+                    max-width: 100%;
+                }
+                .uvde-live-overlay {
+                    position: relative;
+                    z-index: 2;
+                    width: 100%;
+                    height: 100%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    pointer-events: none;
+                }
+                .en-vivo-card {
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                    cursor: pointer;
+                }
+            `;
+            document.head.appendChild(style);
+        })();
+
+        function asegurarTarjetaTiempo() {
+            var cont = document.getElementById('colMisCanales');
+            if (!cont) return null;
+            var card = document.getElementById('tiempoCanalCard');
+            if (card) return card;
+
+            card = document.createElement('div');
+            card.id = 'tiempoCanalCard';
+            card.style.cssText = 'margin:0 0 12px 0;padding:12px 14px;border-radius:14px;' +
+                'background:rgba(0,0,0,0.35);border:1px solid var(--glass-border,rgba(255,255,255,0.1));';
+
+            var lista = document.getElementById('misCanalesLista');
+            cont.insertBefore(card, lista || cont.firstChild);
+            return card;
+        }
+
+        function formatoTiempoCanal(minutos) {
+            var m = Math.max(0, Math.floor(Number(minutos) || 0));
+            var h = Math.floor(m / 60);
+            var r = m % 60;
+            if (h > 0) return h + ' h ' + r + ' min';
+            return r + ' min';
+        }
+
+        async function obtenerTiempoCanalDashboard() {
+            var rpc = await window.supabaseClient.rpc('obtener_tiempo_canal');
+            if (rpc.error) throw rpc.error;
+            var r = Array.isArray(rpc.data) ? rpc.data[0] : rpc.data;
+            return {
+                limite: Number(r?.limite) || 120,
+                usados: Number(r?.usados) || 0,
+                restantes: Number(r?.restantes) || 0
+            };
+        }
+
+        async function actualizarTarjetaTiempo() {
+            var card = asegurarTarjetaTiempo();
+            if (!card) return;
+
+            var usuarioActual = typeof sessionUser !== 'undefined' && sessionUser ? sessionUser : null;
+            if (!usuarioActual && window.supabaseClient?.auth?.getUser) {
+                try {
+                    var resAuth = await window.supabaseClient.auth.getUser();
+                    usuarioActual = resAuth?.data?.user || null;
+                } catch (_) {}
+            }
+
+            if (!usuarioActual) {
+                card.style.display = 'none';
+                return;
+            }
+
+            card.style.display = 'block';
+            try {
+                var t = await obtenerTiempoCanalDashboard();
+                var porcentajeUsado = t.limite > 0 ? Math.min(100, Math.round((t.usados / t.limite) * 100)) : 0;
+                var colorBarra = t.restantes <= 10 ? '#ff3366' : 'linear-gradient(90deg,#00d68f,#D4AF37)';
+
+                var agotado = t.restantes <= 0;
+                var mensaje = agotado
+                    ? 'Ya usaste tus 2 horas de hoy. Se reinician a medianoche (hora de México).'
+                    : 'Te quedan ' + formatoTiempoCanal(t.restantes) + ' hoy.';
+
+                card.innerHTML =
+                    '<div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px;">Tu tiempo de hoy en canales</div>' +
+                    '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;">' +
+                        '<span style="font-family:Orbitron,monospace;font-size:1rem;color:var(--gold);">' + grpEscapeHTML(formatoTiempoCanal(t.restantes)) + '</span>' +
+                        '<span style="font-size:0.65rem;color:var(--text-muted);">de ' + formatoTiempoCanal(t.limite) + ' · usados ' + formatoTiempoCanal(t.usados) + '</span>' +
+                    '</div>' +
+                    '<div style="height:6px;border-radius:4px;background:rgba(255,255,255,0.1);overflow:hidden;margin:8px 0;">' +
+                        '<div style="height:100%;width:' + porcentajeUsado + '%;background:' + colorBarra + ';transition:width 0.6s ease;"></div>' +
+                    '</div>' +
+                    '<div style="font-size:0.65rem;color:' + (agotado ? '#ff3366' : 'var(--text-secondary)') + ';line-height:1.5;">' +
+                        grpEscapeHTML(mensaje) +
+                    '</div>';
+            } catch (e) {
+                card.style.display = 'none';
+                console.warn('[Grupos] Tiempo de canal:', e?.message || e);
+            }
+        }
+
+        function iniciarTarjetaTiempo() {
+            if (_timerTarjetaTiempo) clearInterval(_timerTarjetaTiempo);
+            _timerTarjetaTiempo = setInterval(function () {
+                if (document.visibilityState === 'visible') actualizarTarjetaTiempo();
+            }, 60000);
+        }
+
+        async function cargarDashboard() {
+            var misCanalesDiv = document.getElementById('misCanalesLista');
+            var enVivoDiv = document.getElementById('enVivoGrid');
+            var contadorGrupos = document.getElementById('gruposContador');
+            if (!misCanalesDiv || !enVivoDiv) return;
+
+            if (!(await esperarSupabase())) {
+                console.warn('[Grupos] cargarDashboard: supabaseClient no disponible');
+                return;
+            }
+
+            try {
+                if (!window.supabaseClient) return;
+
+                var usuarioActual = typeof sessionUser !== 'undefined' && sessionUser ? sessionUser : null;
+                if (!usuarioActual && window.supabaseClient?.auth?.getUser) {
+                    try {
+                        var resUser = await window.supabaseClient.auth.getUser();
+                        usuarioActual = resUser?.data?.user || null;
+                    } catch (_) {}
+                }
+
+                await actualizarTarjetaTiempo();
+                iniciarTarjetaTiempo();
+
+                if (usuarioActual) {
+                    var misGruposResult = await window.supabaseClient
+                        .from('grupos_video_miembros')
+                        .select('grupo_id')
+                        .eq('usuario_id', usuarioActual.id)
+                        .eq('estado', 'activo');
+                    var ids = (misGruposResult.data || []).map(function(m) { return m.grupo_id; });
+
+                    if (ids.length > 0) {
+                        var misCanalesData = await window.supabaseClient
+                            .from('grupos_video')
+                            .select('id, nombre, avatar_url, precio_usdt, marketplace_activo')
+                            .in('id', ids);
+                        misCanalesCache = misCanalesData.data || [];
+
+                        if (misCanalesCache.length > 0) {
+                            if (contadorGrupos) contadorGrupos.textContent = String(misCanalesCache.length);
+                            misCanalesDiv.innerHTML = misCanalesCache.map(function(g) {
+                                var safeId = grpEscapeHTML(String(g.id || ''));
+                                var avatar = g.avatar_url
+                                    ? '<img src="' + grpEscapeHTML(grpSafeUrl(g.avatar_url)) + '">'
+                                    : '◈';
+                                var precio = g.precio_usdt > 0 ? '$' + g.precio_usdt + ' USDT' : 'Gratis';
+                                var mkIcon = g.marketplace_activo
+                                    ? '<svg class="icon icon-sm" viewBox="0 0 24 24" style="width:14px;height:14px;vertical-align:middle;"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>'
+                                    : '';
+                                return '<div class="canal-item" onclick="abrirGrupo(\'' + safeId + '\')">' +
+                                    '<div class="avatar-mini">' + avatar + '</div>' +
+                                    '<div class="info" style="flex:1;min-width:0;">' +
+                                    '<div class="nombre">' + grpEscapeHTML(g.nombre) + ' ' + mkIcon + '</div>' +
+                                    '<div class="stats">' + precio + '</div>' +
+                                    '</div>' +
+                                    '<span class="grupo-item-accion">Abrir ▸</span>' +
+                                    '</div>';
+                            }).join('');
+                        }
+                    }
+                }
+
+                var livesResult = await window.supabaseClient
+                    .from('transmisiones')
+                    .select('*, grupo:grupos_video(id, nombre, avatar_url)')
+                    .eq('estado', 'en_vivo')
+                    .eq('is_live', true)
+                    .order('created_at', { ascending: false })
+                    .limit(20);
+
+                var lives = livesResult.data || [];
+
+                if (lives.length === 0) {
+                    var botonAireHTML;
+                    if (misCanalesCache && misCanalesCache.length > 0) {
+                        var primerGrupoId = grpEscapeHTML(String(misCanalesCache[0].id || ''));
+                        botonAireHTML = '<button type="button" class="btn-salir-aire" onclick="abrirGrupo(\'' + primerGrupoId + '\')">' +
+                            '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;"><circle cx="12" cy="12" r="6"/></svg>' +
+                            'SALIR AL AIRE EN ' + grpEscapeHTML(misCanalesCache[0].nombre).toUpperCase() +
+                            '</button>';
+                    } else {
+                        botonAireHTML = '<button type="button" class="btn-salir-aire" onclick="abrirModalCrearGrupo()">' +
+                            '<svg viewBox="0 0 24 24" width="12" height="12" style="fill:currentColor;"><circle cx="12" cy="12" r="6"/></svg>' +
+                            'Crear mi canal' +
+                            '</button>';
+                    }
+                    enVivoDiv.innerHTML = `<div class="no-live-box">
+                        <h3 style="font-size:.82rem;margin-bottom:4px;">Nadie al aire por ahora</h3>
+                        <p style="font-size:.7rem;color:var(--text-muted);">Sé el primero en transmitir en tu canal</p>
+                        ${botonAireHTML}
+                    </div>`;
+                } else {
+                    enVivoDiv.innerHTML = lives.map(function(l) {
+                        var g = l.grupo || {};
+                        var safeGrupoId = grpEscapeHTML(String(g.id || ''));
+                        var img = grpSafeUrl(g.avatar_url);
+                        return `<div class="en-vivo-card" onclick="abrirGrupo('${safeGrupoId}')">
+                            <div class="live-tag-small">EN VIVO</div>
+                            <div class="uvde-live-container">
+                                ${img ? `<img src="${grpEscapeHTML(img)}" alt="Portada">` : '<div style="color:#fff;font-size:2rem;">◈</div>'}
+                                <div class="uvde-live-overlay">
+                                    ${img ? `<img src="${grpEscapeHTML(img)}" style="width:60px; height:60px; border-radius:50%; border:2px solid var(--gold); box-shadow: 0 0 20px rgba(212,175,55,0.6); object-fit:cover;">` : ''}
+                                </div>
+                            </div>
+                            <div class="info" style="padding-top:6px;">
+                                <div class="titulo" style="font-size:.78rem;font-weight:700;">${grpEscapeHTML(l.titulo || 'Sin título')}</div>
+                                <div class="canal" style="font-size:.68rem;color:var(--text-muted);">${grpEscapeHTML(g.nombre || 'Canal')}</div>
+                                <div class="stats" style="font-size:.65rem;color:var(--cyan);">${l.espectadores || 0} viendo</div>
+                            </div>
+                        </div>`;
+                    }).join('');
+                }
+            } catch (e) {
+                console.warn('[Grupos] Error cargando dashboard:', e);
+            }
+        }
+
+        function switchTab(tab) {
+            var tabMis = document.getElementById('tabMisCanales');
+            var tabVivo = document.getElementById('tabEnVivo');
+            var colMis = document.getElementById('colMisCanales');
+            var colVivo = document.getElementById('colEnVivo');
+
+            if (tab === 'mis-canales') {
+                if (tabMis) tabMis.classList.add('active');
+                if (tabVivo) tabVivo.classList.remove('active');
+                if (colMis) colMis.style.display = 'block';
+                if (colVivo) colVivo.style.display = 'none';
+            } else {
+                if (tabVivo) tabVivo.classList.add('active');
+                if (tabMis) tabMis.classList.remove('active');
+                if (colVivo) colVivo.style.display = 'block';
+                if (colMis) colMis.style.display = 'none';
+            }
+        }
+
+        // Activa el giro del planeta cuando empiezan a buscar contactos e inicia el dashboard de grupos
         document.addEventListener('DOMContentLoaded', () => {
+            cargarDashboard();
+
             const inputsBusqueda = [
                 document.getElementById('searchInput'),
                 document.getElementById('searchInputModal')
