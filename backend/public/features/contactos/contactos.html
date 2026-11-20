@@ -14,7 +14,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- Tus estilos -->
+    <!-- Tus estilos base -->
     <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=4">
     <link rel="stylesheet" href="/features/contactos/css/contactos-social.css?v=1">
 
@@ -25,31 +25,92 @@
     <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
     <style>
-        /* Control de visibilidad de secciones por filtro (Sincronizado con JS) */
+        /* =========================================================
+           CONTROL ESTRICTO DE VISIBILIDAD (Sincronizado con JS)
+           Esto soluciona que las solicitudes se mezclen con amigos o grupos
+        ========================================================= */
+        
+        /* 1. Ocultar absolutamente todas las secciones secundarias por defecto */
         #cercanosTurismoSection,
         #solicitudesPendientesSection,
         #solicitudesEnviadasSection,
         #gruposSection,
         #sugerenciasSection,
         #bloqueadosSection {
-            display: none;
+            display: none !important;
         }
 
-        /* Mostrar secciones según el filtro activo en el body */
-        body.filtro-todos #contactosList,
-        body.filtro-todos #sugerenciasSection,
+        /* 2. Mostrar SOLO lo que corresponde según el filtro activo en el body */
+
+        /* TODOS: Muestra Solicitudes, Sugerencias y la lista de Amigos */
         body.filtro-todos #solicitudesPendientesSection,
-        body.filtro-todos #solicitudesEnviadasSection {
-            display: block;
+        body.filtro-todos #solicitudesEnviadasSection,
+        body.filtro-todos #sugerenciasSection,
+        body.filtro-todos #contactosList {
+            display: block !important;
         }
 
-        body.filtro-amigos #contactosList { display: block; }
+        /* AMIGOS: Muestra SOLO la lista de Amigos (oculta solicitudes y sugerencias) */
+        body.filtro-amigos #contactosList {
+            display: block !important;
+        }
         
-        body.filtro-online #contactosList { display: block; }
+        /* EN LÍNEA: Muestra SOLO la lista de Amigos (el JS filtra los conectados) */
+        body.filtro-online #contactosList {
+            display: block !important;
+        }
         
-        body.filtro-cercanos #cercanosTurismoSection { display: block; }
+        /* CERCANOS: Muestra SOLO el mapa de turismo */
+        body.filtro-cercanos #cercanosTurismoSection {
+            display: block !important;
+        }
         
-        body.filtro-grupos #gruposSection { display: block; }
+        /* GRUPOS: Muestra SOLO la sección de Grupos (oculta todo lo demás) */
+        body.filtro-grupos #gruposSection {
+            display: block !important;
+        }
+
+        /* =========================================================
+           AJUSTES VISUALES PARA BOTONES EN MÓVIL
+        ========================================================= */
+        .btn-cancelar-envio {
+            color: #ffffff !important;
+            background: #0084ff !important;
+            border: 1px solid #0084ff !important;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-aceptar {
+            color: #00d68f !important;
+            border: 1px solid #00d68f !important;
+            background: transparent !important;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-weight: 600;
+        }
+
+        .btn-rechazar {
+            color: #ff3366 !important;
+            border: 1px solid #ff3366 !important;
+            background: transparent !important;
+            border-radius: 8px;
+            padding: 8px 14px;
+            font-weight: 600;
+        }
+
+        /* Forzar que el estado vacío (robot/planeta) se vea cuando el JS lo indique */
+        #contactosEmptyState {
+            display: block !important;
+        }
+
+        #planetaEstadoVacio {
+            display: inline-block !important;
+        }
     </style>
 </head>
 
@@ -368,6 +429,7 @@
         };
     </script>
 
+    <!-- Script principal de contactos -->
     <script src="/features/contactos/contactos.js?v=26_2" defer></script>
 </body>
 </html>
