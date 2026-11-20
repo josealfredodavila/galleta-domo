@@ -6,7 +6,7 @@
     <meta name="description" content="Contactos · Csariel's">
     <meta name="theme-color" content="#05080f">
     <meta name="referrer" content="strict-origin-when-cross-origin">
-    <title data-clave="contactos_titulo">◈ Contactos · Csariel's</title>
+    <title>◈ Contactos · Csariel's</title>
 
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='10' width='80' height='80' rx='16' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/%3E%3Ctext x='50' y='68' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'%3E%E2%97%88%3C/text%3E%3C/svg%3E">
 
@@ -14,103 +14,159 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
-    <!-- Tus estilos base -->
     <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=4">
-    <link rel="stylesheet" href="/features/contactos/css/contactos-social.css?v=1">
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="/features/shared/js/auth-global.js"></script>
     <script src="/features/shared/js/presencia-global.js" defer></script>
     <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
     <style>
-        /* =========================================================
-           CONTROL ESTRICTO DE VISIBILIDAD (Sincronizado con JS)
-           Esto soluciona que las solicitudes se mezclen con amigos o grupos
-        ========================================================= */
-        
-        /* 1. Ocultar absolutamente todas las secciones secundarias por defecto */
-        #cercanosTurismoSection,
-        #solicitudesPendientesSection,
-        #solicitudesEnviadasSection,
-        #gruposSection,
-        #sugerenciasSection,
-        #bloqueadosSection {
-            display: none !important;
+        [hidden] { display: none !important; }
+
+        /* Filtros en una sola fila con desplazamiento horizontal */
+        .filtros.hud-filters-bar {
+            display: flex;
+            overflow-x: auto;
+            gap: 8px;
+            padding-bottom: 6px;
+            scrollbar-width: none;
+        }
+        .filtros.hud-filters-bar::-webkit-scrollbar { display: none; }
+        .filtros .filtro { flex: 0 0 auto; white-space: nowrap; }
+
+        .pill-count {
+            display: inline-block;
+            min-width: 16px;
+            padding: 0 5px;
+            margin-left: 4px;
+            border-radius: 99px;
+            background: #ff3366;
+            color: #fff;
+            font-size: .6rem;
+            font-weight: 800;
+            line-height: 16px;
+            text-align: center;
+        }
+        .pill-count:empty { display: none; }
+
+        /* Búsqueda por voz */
+        .hud-search-input[readonly] { cursor: pointer; }
+        .hud-search-clear {
+            background: transparent;
+            border: 0;
+            color: inherit;
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0 6px;
+        }
+        #btnVozBuscar.escuchando {
+            background: #ff3366 !important;
+            color: #fff !important;
+            animation: pulseVoz 1.1s ease-in-out infinite;
+        }
+        @keyframes pulseVoz { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
+        /* Acciones de tarjeta: que no se desborden en móvil */
+        .contacto-actions { flex-wrap: wrap; }
+        .contacto-actions .silenciar {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 10px;
+            padding: 6px 8px;
+            cursor: pointer;
+            color: inherit;
         }
 
-        /* 2. Mostrar SOLO lo que corresponde según el filtro activo en el body */
-
-        /* TODOS: Muestra Solicitudes, Sugerencias y la lista de Amigos */
-        body.filtro-todos #solicitudesPendientesSection,
-        body.filtro-todos #solicitudesEnviadasSection,
-        body.filtro-todos #sugerenciasSection,
-        body.filtro-todos #contactosList {
-            display: block !important;
+        /* Avisos y vacíos */
+        .aviso-contactos {
+            margin: 8px 0;
+            padding: 10px 12px;
+            border: 1px solid rgba(255,51,102,.45);
+            border-radius: 10px;
+            color: #ff8197;
+            font-size: .72rem;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
         }
-
-        /* AMIGOS: Muestra SOLO la lista de Amigos (oculta solicitudes y sugerencias) */
-        body.filtro-amigos #contactosList {
-            display: block !important;
-        }
-        
-        /* EN LÍNEA: Muestra SOLO la lista de Amigos (el JS filtra los conectados) */
-        body.filtro-online #contactosList {
-            display: block !important;
-        }
-        
-        /* CERCANOS: Muestra SOLO el mapa de turismo */
-        body.filtro-cercanos #cercanosTurismoSection {
-            display: block !important;
-        }
-        
-        /* GRUPOS: Muestra SOLO la sección de Grupos (oculta todo lo demás) */
-        body.filtro-grupos #gruposSection {
-            display: block !important;
-        }
-
-        /* =========================================================
-           AJUSTES VISUALES PARA BOTONES EN MÓVIL
-        ========================================================= */
-        .btn-cancelar-envio {
-            color: #ffffff !important;
-            background: #0084ff !important;
-            border: 1px solid #0084ff !important;
+        .aviso-contactos button {
+            margin-left: 10px;
+            padding: 4px 10px;
+            border: 1px solid #ff8197;
             border-radius: 8px;
-            padding: 8px 14px;
-            font-weight: 600;
-            display: inline-flex;
+            background: transparent;
+            color: #ff8197;
+            cursor: pointer;
+            font-size: .7rem;
+        }
+        .contactos-loading-more { padding: 18px; text-align: center; color: var(--text-muted); font-size: .8rem; }
+
+        /* Modal de configuración */
+        .cfg-titulo {
+            font-size: .68rem;
+            text-transform: uppercase;
+            letter-spacing: .6px;
+            color: var(--text-muted);
+            font-weight: 800;
+            margin: 16px 0 4px;
+        }
+        .cfg-row {
+            display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+            cursor: pointer;
+        }
+        .cfg-row small { display: block; color: var(--text-muted); font-size: .68rem; margin-top: 2px; }
+        .cfg-row input[type="checkbox"] { width: 42px; height: 24px; accent-color: #00d68f; flex: 0 0 auto; }
+        .cfg-row select {
+            background: rgba(255,255,255,.06);
+            color: inherit;
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 10px;
+            padding: 6px 8px;
+        }
+        .cfg-link {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 12px 0;
+            background: none;
+            border: 0;
+            border-bottom: 1px solid rgba(255,255,255,.06);
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+            text-align: left;
         }
 
-        .btn-aceptar {
-            color: #00d68f !important;
-            border: 1px solid #00d68f !important;
-            background: transparent !important;
-            border-radius: 8px;
-            padding: 8px 14px;
-            font-weight: 600;
+        /* QR y escáner */
+        .qr-marco { display: flex; justify-content: center; padding: 14px; background: #fff; border-radius: 16px; }
+        .qr-marco canvas { max-width: 100%; height: auto; pointer-events: none; -webkit-user-select: none; user-select: none; }
+        .qr-aviso { font-size: .7rem; color: var(--text-muted); text-align: center; margin-top: 10px; line-height: 1.5; }
+        .scan-visor {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #000;
         }
-
-        .btn-rechazar {
-            color: #ff3366 !important;
-            border: 1px solid #ff3366 !important;
-            background: transparent !important;
-            border-radius: 8px;
-            padding: 8px 14px;
-            font-weight: 600;
+        .scan-visor video { width: 100%; height: 100%; object-fit: cover; }
+        .scan-marco {
+            position: absolute;
+            inset: 18%;
+            border: 2px solid #D4AF37;
+            border-radius: 14px;
+            box-shadow: 0 0 0 999px rgba(0,0,0,.35);
+            pointer-events: none;
         }
-
-        /* Forzar que el estado vacío (robot/planeta) se vea cuando el JS lo indique */
-        #contactosEmptyState {
-            display: block !important;
-        }
-
-        #planetaEstadoVacio {
-            display: inline-block !important;
-        }
+        .scan-estado { font-size: .75rem; color: var(--text-muted); text-align: center; margin-top: 10px; min-height: 18px; }
     </style>
 </head>
 
@@ -119,18 +175,19 @@
 
         <header class="header hud-header" aria-label="Encabezado de contactos">
             <div class="hud-header-left">
-                <a href="/" class="hud-brand-mark" aria-label="Csariel's Ecosystem">
+                <a href="/" class="hud-brand-mark" aria-label="Csariel's">
                     <span class="hud-contacts-icon" aria-hidden="true">◈</span>
                 </a>
                 <div class="hud-title-group">
-                    <h1 class="hud-page-title" data-clave="contactos_titulo_h1">Contactos</h1>
+                    <h1 class="hud-page-title">Contactos</h1>
                 </div>
             </div>
 
             <div class="header-actions hud-top-actions">
-                <button type="button" class="hud-icon-btn" data-action="invitar" aria-label="Invitar contacto" title="Invitar contacto">+</button>
-                <button type="button" id="btnAbrirQrPersonal" class="hud-icon-btn hud-qr-btn" aria-label="Mi código QR" title="Mi código QR">⛶</button>
-                <button type="button" id="btnAbrirConfigContactos" class="hud-icon-btn" aria-label="Configuración y visibilidad" title="Configuración y visibilidad">⚙</button>
+                <button type="button" class="hud-icon-btn" data-open="invitar" aria-label="Invitar contacto" title="Invitar contacto">+</button>
+                <button type="button" class="hud-icon-btn" data-open="qr" aria-label="Mi código QR" title="Mi código QR">⛶</button>
+                <button type="button" class="hud-icon-btn" data-open="escanear" aria-label="Escanear QR" title="Escanear QR">📷</button>
+                <button type="button" id="btnAbrirConfigContactos" class="hud-icon-btn" aria-label="Configuración y visibilidad" title="Configuración">☰</button>
                 <span class="network-badge hud-network-pill" aria-label="Red Polygon">
                     <span class="dot"></span>Polygon
                 </span>
@@ -141,7 +198,7 @@
             <a href="/" class="nav-link">Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link">Muro</a>
             <a href="/features/perfil/perfil.html" class="nav-link">Perfil</a>
-            <a href="/features/contactos/contactos.html" class="nav-link active" data-clave="contactos_header" aria-current="page">Contactos</a>
+            <a href="/features/contactos/contactos.html" class="nav-link active" aria-current="page">Contactos</a>
             <a href="/features/mensajes/mensajes.html" class="nav-link">Mensajes</a>
             <a href="/features/live/live.html" class="nav-link live">Live</a>
             <a href="/features/internet/internet.html" class="nav-link">Internet</a>
@@ -153,139 +210,78 @@
             <div class="contactos-stats hud-stats-strip">
                 <span class="stat">Total: <span class="numero" id="totalContactos">0</span></span>
                 <span class="stat"><span class="dot"></span> En línea: <span class="numero" id="onlineContactos">0</span></span>
-                <button type="button" class="hud-inline-invite" data-action="invitar">+ Invitar</button>
-                <button type="button" class="hud-inline-qr" data-action="abrir-qr">⛶ QR</button>
             </div>
 
             <div class="search-bar hud-search-wrapper" role="search">
-                <div class="hud-search-box" id="hudSearchBox">
-                    <span class="hud-ai-badge" aria-hidden="true">IA</span>
+                <div class="hud-search-box">
                     <div class="hud-search-fields">
                         <input type="text" id="searchInput" class="hud-search-input"
-                            placeholder="Busca personas, @usuarios, lugares, grupos..."
-                            data-placeholder="contactos_buscar"
-                            autocomplete="off" maxlength="80" inputmode="search"
-                            aria-label="Busca personas, @usuarios, lugares, grupos">
-                        <span class="hud-search-hint" data-clave="contactos_busqueda_inteligente">
-                            Búsqueda inteligente · Resultados en tiempo real ✦
-                        </span>
+                            placeholder="Toca el micrófono y di un nombre o @usuario"
+                            readonly autocomplete="off" aria-label="Búsqueda por voz">
+                        <span class="hud-search-hint">Búsqueda por voz · Resultados en tiempo real</span>
                     </div>
-                    <button type="button" class="hud-search-submit" data-action="buscar-rapido" aria-label="Buscar contactos" title="Buscar">
-                        <svg class="hud-lupa-svg" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="11" cy="11" r="7"></circle>
-                            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                        </svg>
-                    </button>
+                    <button type="button" id="btnLimpiarBusqueda" class="hud-search-clear" aria-label="Limpiar búsqueda" hidden>✕</button>
+                    <button type="button" id="btnVozBuscar" class="hud-search-submit" aria-label="Buscar por voz" title="Buscar por voz">🎤</button>
                 </div>
             </div>
 
-            <div class="filtros hud-filters-bar" role="group" aria-label="Filtros de contactos">
-                <button type="button" class="filtro hud-pill active" data-filtro="todos" aria-pressed="true">
-                    <span class="pill-ico">◈</span> Todos
-                </button>
-                <button type="button" class="filtro hud-pill" data-filtro="favoritos" aria-pressed="false">
-                    <span class="pill-ico">✦</span> Amigos
-                </button>
-                <button type="button" class="filtro hud-pill" data-filtro="online" aria-pressed="false">
-                    <span class="pill-dot"></span> En línea
-                </button>
-                <button type="button" class="filtro hud-pill" data-filtro="cercanos" aria-pressed="false">
-                    <span class="pill-ico">◇</span> Cercanos
-                </button>
-                <button type="button" class="filtro hud-pill" data-filtro="recientes" aria-pressed="false">
-                    <span class="pill-ico">◆</span> Grupos
-                </button>
+            <div class="filtros hud-filters-bar" id="filtrosBar" role="group" aria-label="Filtros de contactos">
+                <button type="button" class="filtro hud-pill active" data-filtro="todos" aria-pressed="true"><span class="pill-ico">◈</span> Todos</button>
+                <button type="button" class="filtro hud-pill" data-filtro="favoritos" aria-pressed="false"><span class="pill-ico">✦</span> Amigos</button>
+                <button type="button" class="filtro hud-pill" data-filtro="online" aria-pressed="false"><span class="pill-dot"></span> En línea</button>
+                <button type="button" class="filtro hud-pill" data-filtro="cercanos" aria-pressed="false"><span class="pill-ico">◇</span> Cercanos</button>
+                <button type="button" class="filtro hud-pill" data-filtro="recientes" aria-pressed="false"><span class="pill-ico">◆</span> Grupos</button>
+                <button type="button" class="filtro hud-pill" data-filtro="bloqueados" aria-pressed="false"><span class="pill-ico">⛔</span> Bloqueados <span class="pill-count" id="cntBloqueados"></span></button>
+                <button type="button" class="filtro hud-pill" data-filtro="pendientes" aria-pressed="false"><span class="pill-ico">📥</span> Solicitud pendiente <span class="pill-count" id="cntPendientes"></span></button>
+                <button type="button" class="filtro hud-pill" data-filtro="enviadas" aria-pressed="false"><span class="pill-ico">📤</span> Enviadas <span class="pill-count" id="cntEnviadas"></span></button>
+                <button type="button" class="filtro hud-pill" data-filtro="silenciados" aria-pressed="false"><span class="pill-ico">🔕</span> Silenciados <span class="pill-count" id="cntSilenciados"></span></button>
             </div>
 
-            <!-- 1. SECCIÓN CERCANOS -->
-            <section class="cercanos-turismo-section hud-section" id="cercanosTurismoSection" aria-label="Lugares cercanos">
+            <!-- Sección Cercanos -->
+            <section class="cercanos-turismo-section hud-section" id="cercanosSection" aria-label="Lugares cercanos" hidden>
                 <div class="hud-section-title">
-                    <span class="grupos-titulo-izq">Lugares cercanos <span class="contador" id="cercanosLugaresContador">0</span></span>
-                    <button type="button" id="btnRefrescarCercanos" class="grupos-direct-link" style="background:none;border:none;color:#D4AF37;cursor:pointer;">Actualizar ↻</button>
+                    <span>Lugares cercanos</span>
                 </div>
-                <div class="cercanos-controls" style="display:flex;gap:8px;margin-bottom:10px;">
-                    <input type="text" id="cercanosQueryInput" class="cercanos-input" style="flex:1;padding:8px 12px;border-radius:10px;border:1px solid rgba(0,229,255,.25);background:rgba(11,18,28,.9);color:#fff;" placeholder="Ej. cafés, miradores..." value="lugares populares">
-                    <button type="button" id="btnBuscarLugaresCercanos" class="cercanos-btn" style="padding:8px 12px;border-radius:10px;border:1px solid rgba(212,175,55,.35);background:rgba(212,175,55,.14);color:#D4AF37;font-weight:700;cursor:pointer;">Buscar zona</button>
-                </div>
-                <div id="cercanosLugaresLista" class="cercanos-lugares-lista">
-                    <div class="grupo-item-card">
-                        <span class="grupo-item-badge">◇</span>
-                        <div class="grupo-item-info">
-                            <div class="grupo-item-nombre">Explorar lugares cercanos</div>
-                            <div class="grupo-item-meta">Los amigos aceptados se muestran en la lista de Cercanos, nunca las personas desconocidas.</div>
-                        </div>
+                <div class="grupo-item-card">
+                    <span class="grupo-item-badge">◇</span>
+                    <div class="grupo-item-info">
+                        <div class="grupo-item-nombre">Lugares cercanos</div>
+                        <div class="grupo-item-meta">Esta sección se activará cuando la ubicación esté conectada.</div>
                     </div>
                 </div>
             </section>
 
-            <!-- 2. SECCIÓN SOLICITUDES RECIBIDAS -->
-            <section class="solicitudes-section hud-section" id="solicitudesPendientesSection" aria-label="Solicitudes pendientes">
+            <!-- Sección Grupos -->
+            <section class="grupos-section hud-section" id="gruposSection" aria-label="Grupos de comunidad" hidden>
                 <div class="hud-section-title">
-                    Solicitudes de amistad <span class="contador" id="solicitudesContador">0</span>
-                </div>
-                <div id="solicitudesPendientesLista"></div>
-            </section>
-
-            <!-- 3. SECCIÓN SOLICITUDES ENVIADAS -->
-            <section class="solicitudes-enviadas-section hud-section" id="solicitudesEnviadasSection" aria-label="Solicitudes enviadas">
-                <div class="hud-section-title">
-                    Solicitudes enviadas <span class="contador" id="solicitudesEnviadasContador">0</span>
-                </div>
-                <div id="solicitudesEnviadasLista"></div>
-            </section>
-
-            <!-- 4. SECCIÓN GRUPOS -->
-            <section class="grupos-section hud-section" id="gruposSection" aria-label="Grupos de comunidad">
-                <div class="hud-section-title">
-                    <span class="grupos-titulo-izq">Grupos y comunidades <span class="contador" id="gruposContador">0</span></span>
-                    <a href="/features/grupos/grupos.html" class="grupos-direct-link" style="color:#D4AF37;text-decoration:none;font-size:0.7rem;font-weight:700;">Ver todo ▸</a>
+                    <span>Grupos y comunidades</span>
+                    <a href="/features/grupos/grupos.html" style="color:#D4AF37;text-decoration:none;font-size:0.7rem;font-weight:700;">Ver todo ▸</a>
                 </div>
                 <div class="grupos-tabs" role="tablist">
                     <button type="button" id="tabMisCanales" class="grupos-tab-btn active" onclick="switchTab('mis-canales')">Mis grupos</button>
                     <button type="button" id="tabEnVivo" class="grupos-tab-btn" onclick="switchTab('en-vivo')">En vivo</button>
                 </div>
                 <div id="colMisCanales">
-                    <div id="misCanalesLista" class="grupos-canales-lista">
-                        <a href="/features/grupos/grupos.html?tab=mis-canales" class="grupo-item-card">
-                            <span class="grupo-item-badge">◆</span>
-                            <div class="grupo-item-info">
-                                <div class="grupo-item-nombre">Mis comunidades</div>
-                                <div class="grupo-item-meta">Consulta los grupos a los que perteneces.</div>
-                            </div>
-                            <span class="grupo-item-accion">Abrir ▸</span>
-                        </a>
+                    <a href="/features/grupos/grupos.html?tab=mis-canales" class="grupo-item-card">
+                        <span class="grupo-item-badge">◆</span>
+                        <div class="grupo-item-info">
+                            <div class="grupo-item-nombre">Mis comunidades</div>
+                            <div class="grupo-item-meta">Consulta los grupos a los que perteneces.</div>
+                        </div>
+                        <span class="grupo-item-accion">Abrir ▸</span>
+                    </a>
+                </div>
+                <div id="colEnVivo" hidden>
+                    <div class="grupo-item-card">
+                        <div class="grupo-item-info">
+                            <div class="grupo-item-meta">Sin transmisiones en vivo por ahora.</div>
+                        </div>
                     </div>
                 </div>
-                <div id="colEnVivo" style="display:none;">
-                    <div id="enVivoGrid" class="en-vivo-grid" style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;"></div>
-                </div>
             </section>
 
-            <!-- 5. SECCIÓN SUGERENCIAS -->
-            <section class="sugerencias-section hud-section" id="sugerenciasSection" aria-label="Personas sugeridas">
-                <div class="hud-section-title">Personas que puedes conocer</div>
-                <div id="sugerenciasLista"></div>
-            </section>
-
-            <!-- 6. SECCIÓN BLOQUEADOS -->
-            <section class="bloqueados-section hud-section" id="bloqueadosSection" aria-label="Usuarios bloqueados">
-                <div class="hud-section-title">
-                    Usuarios bloqueados <span class="contador" id="bloqueadosContador">0</span>
-                </div>
-                <div id="bloqueadosLista"></div>
-            </section>
-
-            <!-- 7. LISTA PRINCIPAL DE CONTACTOS (AMIGOS/ONLINE) -->
-            <div class="contactos-list hud-contacts-list" id="contactosList" aria-live="polite" aria-busy="true">
-                <div class="empty-state" id="contactosEmptyState">
-                    <span class="planeta-busqueda planeta-empty" id="planetaEstadoVacio" aria-hidden="true" style="font-size:2rem;display:block;margin-bottom:10px;">🪐</span>
-                    <h3 id="emptyStateTitle">Cargando contactos...</h3>
-                    <button type="button" class="btn-buscar-empty" onclick="document.querySelector('[data-action=\'buscar-rapido\']').click()" style="display:none;" id="btnBuscarEmpty">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        Buscar personas
-                    </button>
-                </div>
-            </div>
+            <!-- Lista principal: todas las vistas de filtro se renderizan aquí -->
+            <div class="contactos-list hud-contacts-list" id="contactosList" aria-live="polite" aria-busy="true"></div>
 
         </main>
 
@@ -297,50 +293,51 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- MODALES -->
-    <div class="modal-overlay" id="modalQRContacto" role="dialog" aria-modal="true" aria-label="Código QR personal" aria-hidden="true">
+    <!-- MODAL: Mi código QR (solo se muestra, no se comparte por enlace) -->
+    <div class="modal-overlay" id="modalQR" role="dialog" aria-modal="true" aria-label="Mi código QR" aria-hidden="true">
         <div class="modal qr-modal">
             <div class="modal-header">
-                <h2>QR</h2>
-                <button type="button" class="btn-cerrar" id="btnCerrarQrPersonal" aria-label="Cerrar">✕</button>
+                <h2>Mi código QR</h2>
+                <button type="button" class="btn-cerrar" data-close="modalQR" aria-label="Cerrar">✕</button>
             </div>
-            <div class="qr-solo-escaneo">
-                <div class="qr-solo-marco" id="qrPersonalLienzo"></div>
-            </div>
+            <div class="qr-marco" id="qrLienzo"></div>
+            <p class="qr-aviso">Otra persona con cuenta en Csariel's puede escanearlo con la cámara. No se puede compartir por enlace.</p>
         </div>
     </div>
 
-    <div class="modal-overlay" id="modalConfigContactos" role="dialog" aria-modal="true" aria-labelledby="tituloConfigContactos" aria-hidden="true">
-        <div class="modal cfg-modal-card">
-            <div class="modal-header">
-                <h2 id="tituloConfigContactos">Configuración y visibilidad</h2>
-                <button type="button" class="btn-cerrar" id="btnCerrarConfigContactos" aria-label="Cerrar">✕</button>
-            </div>
-            <div id="cfgEstadoGuardado" class="cfg-status-msg" aria-live="polite"></div>
-        </div>
-    </div>
-
-    <div class="modal-overlay" id="modalBuscarContacto" role="dialog" aria-modal="true" aria-labelledby="tituloBuscarContacto" aria-hidden="true">
+    <!-- MODAL: Escanear QR -->
+    <div class="modal-overlay" id="modalEscanear" role="dialog" aria-modal="true" aria-label="Escanear código QR" aria-hidden="true">
         <div class="modal">
             <div class="modal-header">
-                <h2 id="tituloBuscarContacto" data-clave="contactos_buscar_titulo">Buscar contacto</h2>
-                <button type="button" class="btn-cerrar" data-action="cerrar-buscar" aria-label="Cerrar">✕</button>
+                <h2>Escanear QR</h2>
+                <button type="button" class="btn-cerrar" data-close="modalEscanear" aria-label="Cerrar">✕</button>
             </div>
-            <div class="form-group">
-                <label for="searchInputModal">Buscar por nombre, @handle, correo o teléfono</label>
-                <input type="text" id="searchInputModal" placeholder="Ej: Juan o @juan123" autocomplete="off" maxlength="80" inputmode="search">
+            <div class="scan-visor">
+                <video id="scanVideo" playsinline muted></video>
+                <div class="scan-marco" aria-hidden="true"></div>
             </div>
-            <div class="resultados-busqueda" id="resultadosBusqueda" aria-live="polite">
-                <div class="busqueda-mensaje">Escribe al menos 2 caracteres para buscar</div>
-            </div>
+            <canvas id="scanCanvas" hidden></canvas>
+            <div class="scan-estado" id="scanEstado" aria-live="polite">Preparando cámara…</div>
         </div>
     </div>
 
+    <!-- MODAL: Configuración y visibilidad (se llena desde JS) -->
+    <div class="modal-overlay" id="modalConfig" role="dialog" aria-modal="true" aria-label="Configuración y visibilidad" aria-hidden="true">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Configuración y visibilidad</h2>
+                <button type="button" class="btn-cerrar" data-close="modalConfig" aria-label="Cerrar">✕</button>
+            </div>
+            <div id="cfgBody"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: Invitar -->
     <div class="modal-overlay" id="modalInvitacion" role="dialog" aria-modal="true" aria-labelledby="tituloInvitacion" aria-hidden="true">
         <div class="modal">
             <div class="modal-header">
                 <h2 id="tituloInvitacion">Invitar contacto</h2>
-                <button type="button" class="btn-cerrar" data-action="cerrar-invitacion" aria-label="Cerrar">✕</button>
+                <button type="button" class="btn-cerrar" data-close="modalInvitacion" aria-label="Cerrar">✕</button>
             </div>
             <div style="text-align:center;">
                 <p style="color:var(--text-secondary);font-size:.85rem;margin-bottom:12px;">Comparte este código con quien quieras invitar</p>
@@ -348,14 +345,15 @@
                     <div class="codigo" id="codigoInvitacion" aria-live="polite">Generando...</div>
                 </div>
                 <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                    <button type="button" class="btn-copiar" data-action="copiar-codigo">Copiar código</button>
-                    <button type="button" class="btn-copiar" data-action="cerrar-invitacion">Cerrar</button>
+                    <button type="button" class="btn-copiar" id="btnCopiarCodigo">Copiar código</button>
+                    <button type="button" class="btn-copiar" data-close="modalInvitacion">Cerrar</button>
                 </div>
                 <p style="font-size:.65rem;color:var(--text-muted);margin-top:12px;">El código expira después de 7 días</p>
             </div>
         </div>
     </div>
 
+    <!-- MODAL: Confirmación -->
     <div class="confirm-modal-overlay" id="confirmModalOverlay" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle" aria-describedby="confirmModalMessage" aria-hidden="true">
         <div class="confirm-modal">
             <div class="confirm-modal-icon" id="confirmModalIcon">!</div>
@@ -369,67 +367,20 @@
     </div>
 
     <script>
-        function aplicarFiltro(filtro) {
-            document.body.classList.remove('filtro-todos', 'filtro-amigos', 'filtro-online', 'filtro-cercanos', 'filtro-grupos');
-            const mapa = {
-                'todos': 'filtro-todos',
-                'favoritos': 'filtro-amigos',
-                'online': 'filtro-online',
-                'cercanos': 'filtro-cercanos',
-                'recientes': 'filtro-grupos'
-            };
-            if (mapa[filtro]) document.body.classList.add(mapa[filtro]);
-
-            document.querySelectorAll('.filtro[data-filtro]').forEach(btn => {
-                const activo = btn.getAttribute('data-filtro') === filtro;
-                btn.classList.toggle('active', activo);
-                btn.setAttribute('aria-pressed', activo);
-            });
-
-            if (filtro === 'cercanos') {
-                const btnBuscar = document.getElementById('btnBuscarLugaresCercanos');
-                if (btnBuscar) btnBuscar.click();
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            document.querySelectorAll('.filtro[data-filtro]').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    aplicarFiltro(e.currentTarget.getAttribute('data-filtro'));
-                });
-            });
-            aplicarFiltro('todos');
-
-            document.querySelectorAll('[data-action="invitar"]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const modal = document.getElementById('modalInvitacion');
-                    if(modal) { modal.classList.add('active'); modal.setAttribute('aria-hidden', 'false'); }
-                });
-            });
-
-            document.querySelectorAll('[data-action="buscar-rapido"]').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const modal = document.getElementById('modalBuscarContacto');
-                    if(modal) { modal.classList.add('active'); modal.setAttribute('aria-hidden', 'false'); document.getElementById('searchInputModal').focus(); }
-                });
-            });
-        });
-
-        window.switchTab = function(tab) {
-            const esMis = tab === 'mis-canales';
-            const tabMis = document.getElementById('tabMisCanales');
-            const tabVivo = document.getElementById('tabEnVivo');
-            const colMis = document.getElementById('colMisCanales');
-            const colVivo = document.getElementById('colEnVivo');
-
-            if(tabMis) tabMis.classList.toggle('active', esMis);
-            if(tabVivo) tabVivo.classList.toggle('active', !esMis);
-            if(colMis) colMis.style.display = esMis ? 'block' : 'none';
-            if(colVivo) colVivo.style.display = esMis ? 'none' : 'block';
+        // Pestañas de Grupos (la lógica de grupos vive en su propia página)
+        window.switchTab = function (tab) {
+            var esMis = tab === 'mis-canales';
+            var tabMis = document.getElementById('tabMisCanales');
+            var tabVivo = document.getElementById('tabEnVivo');
+            var colMis = document.getElementById('colMisCanales');
+            var colVivo = document.getElementById('colEnVivo');
+            if (tabMis) tabMis.classList.toggle('active', esMis);
+            if (tabVivo) tabVivo.classList.toggle('active', !esMis);
+            if (colMis) colMis.hidden = !esMis;
+            if (colVivo) colVivo.hidden = esMis;
         };
     </script>
 
-    <!-- Script principal de contactos -->
-    <script src="/features/contactos/contactos.js?v=26_2" defer></script>
+    <script src="/features/contactos/contactos.js?v=27_0" defer></script>
 </body>
 </html>
