@@ -1,5 +1,5 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v3 (HUD + QR + PLANETA)
+   CSARIEL'S · CONTACTOS · v3.1 (HUD + QR + PLANETA)
    ============================================================
    Estilos modulares para /features/contactos/contactos.html
    Enlazado desde el <head> como:
@@ -379,7 +379,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
     flex: 0 0 auto;
 }
 
-/* Planeta que gira al buscar */
+/* Planeta único junto a la barra de búsqueda: gira al buscar */
 .hud-search-orbit {
     display: inline-flex;
     align-items: center;
@@ -388,19 +388,22 @@ button:focus-visible, a:focus-visible, input:focus-visible {
     height: 42px;
     flex: 0 0 auto;
     border-radius: 50%;
-    border: 1px solid rgba(212, 175, 55, .28);
-    background: rgba(12, 18, 28, .85);
+    border: 1px solid rgba(0, 255, 163, .35);
+    background: rgba(12, 24, 22, .9);
     transition: border-color var(--transition), box-shadow var(--transition);
 }
 
-.hud-search-orbit.activa {
+.hud-search-orbit.activa,
+.hud-search-orbit.girando,
+.hud-search-wrapper:focus-within .hud-search-orbit,
+.hud-search-wrapper.buscando .hud-search-orbit {
     border-color: var(--neon-green);
-    box-shadow: 0 0 16px rgba(0, 255, 163, .35);
+    box-shadow: 0 0 18px rgba(0, 255, 163, .38);
 }
 
 @keyframes girarPlaneta {
-    from { transform: rotate(0deg) scale(1.12); }
-    to   { transform: rotate(360deg) scale(1.12); }
+    from { transform: rotate(0deg) scale(1.14); }
+    to   { transform: rotate(360deg) scale(1.14); }
 }
 
 .planeta-busqueda {
@@ -410,15 +413,21 @@ button:focus-visible, a:focus-visible, input:focus-visible {
     transition: transform .25s ease, filter .25s ease;
 }
 
-.planeta-busqueda.planeta-empty {
-    font-size: 2rem;
-    margin-bottom: 10px;
-    opacity: .9;
+/* El planeta de abajo queda eliminado / oculto */
+.planeta-busqueda.planeta-empty,
+#planetaEstadoVacio {
+    display: none !important;
 }
 
-.planeta-busqueda.girando {
+/* Gira cuando el usuario busca o activa búsqueda */
+.planeta-busqueda.girando,
+.planeta-busqueda.activa,
+.hud-search-orbit.activa .planeta-busqueda,
+.hud-search-orbit.girando .planeta-busqueda,
+.hud-search-wrapper:focus-within .planeta-busqueda,
+.hud-search-wrapper.buscando .planeta-busqueda {
     animation: girarPlaneta 1.05s linear infinite;
-    filter: drop-shadow(0 0 9px rgba(0, 255, 163, .75));
+    filter: drop-shadow(0 0 10px rgba(0, 255, 163, .8));
 }
 
 /* ===== 7. FILTROS EN PÍLDORA ===== */
