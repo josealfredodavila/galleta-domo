@@ -1,31 +1,7 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v3.1 (HUD + QR + PLANETA)
+   CSARIEL'S · CONTACTOS · v3.2 (HUD + QR + PLANETA + GRUPOS)
    ============================================================
    Estilos modulares para /features/contactos/contactos.html
-   Enlazado desde el <head> como:
-   <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=3">
-
-   ÍNDICE
-   1.  Tokens y base
-   2.  Layout (.app, .contactos-container)
-   3.  Header HUD
-   4.  Navegación principal
-   5.  Estadísticas
-   6.  Búsqueda IA, lupa, QR y planeta giratorio
-   7.  Filtros en píldora
-   8.  Secciones (solicitudes, enviadas, sugerencias, bloqueados)
-   9.  Tarjetas de solicitudes/sugerencias/bloqueados
-   10. Lista de contactos
-   11. Avatares y fallback
-   12. Estados vacíos, loading y skeleton
-   13. Avisos inline ([data-aviso-contactos])
-   14. Modales (QR, búsqueda, invitación)
-   15. Modal de confirmación
-   16. Toast
-   17. Footer
-   18. Tema claro
-   19. Responsive
-   20. Prefers-reduced-motion
    ============================================================ */
 
 /* ===== 1. TOKENS Y BASE ===== */
@@ -411,12 +387,6 @@ button:focus-visible, a:focus-visible, input:focus-visible {
     font-size: 1.25rem;
     line-height: 1;
     transition: transform .25s ease, filter .25s ease;
-}
-
-/* El planeta de abajo queda eliminado / oculto */
-.planeta-busqueda.planeta-empty,
-#planetaEstadoVacio {
-    display: none !important;
 }
 
 /* Gira cuando el usuario busca o activa búsqueda */
@@ -1033,116 +1003,29 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .form-group input:focus { border-bottom-color: var(--orange); }
 
 /* Estilos específicos del Modal QR */
-.qr-panel-body {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.qr-subtexto {
-    margin: 0;
-    color: var(--text-secondary);
-    font-size: .8rem;
-    line-height: 1.5;
-    text-align: center;
-}
-
+.qr-panel-body { display: flex; flex-direction: column; gap: 14px; }
+.qr-subtexto { margin: 0; color: var(--text-secondary); font-size: .8rem; line-height: 1.5; text-align: center; }
 .qr-box-wrapper {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    padding: 16px;
-    border-radius: 16px;
-    border: 1px solid rgba(0, 255, 163, .28);
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 16px; border-radius: 16px; border: 1px solid rgba(0, 255, 163, .28);
     background: rgba(8, 15, 24, .95);
 }
-
-.qr-placeholder-grid {
-    display: grid;
-    grid-template-columns: repeat(7, 14px);
-    gap: 4px;
-    padding: 12px;
-    border-radius: 12px;
-    background: #f4f8fb;
-}
-
-.qr-placeholder-grid span {
-    width: 14px;
-    height: 14px;
-    border-radius: 2px;
-    background: #070c14;
-}
-
+.qr-placeholder-grid { display: grid; grid-template-columns: repeat(7, 14px); gap: 4px; padding: 12px; border-radius: 12px; background: #f4f8fb; }
+.qr-placeholder-grid span { width: 14px; height: 14px; border-radius: 2px; background: #070c14; }
 .qr-placeholder-grid span:nth-child(2n) { background: transparent; }
 .qr-placeholder-grid span:nth-child(3n) { background: #0f2d1a; }
-
-.qr-valor-texto {
-    color: var(--gold-light);
-    font: 700 .78rem Orbitron, monospace;
-    letter-spacing: 1.5px;
-    word-break: break-all;
-    text-align: center;
-}
-
-.qr-acciones-fila {
-    display: flex;
-    gap: 10px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.qr-video-preview {
-    width: 100%;
-    max-height: 220px;
-    border-radius: 14px;
-    border: 1px solid var(--line-neon);
-    background: #000;
-    object-fit: cover;
-}
-
-.qr-agregar-manual {
-    margin-bottom: 0;
-    padding-top: 6px;
-    border-top: 1px solid var(--line);
-}
-
-.qr-input-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.qr-input-row input {
-    flex: 1 1 auto;
-    min-width: 0;
-}
+.qr-valor-texto { color: var(--gold-light); font: 700 .78rem Orbitron, monospace; letter-spacing: 1.5px; word-break: break-all; text-align: center; }
+.qr-acciones-fila { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+.qr-video-preview { width: 100%; max-height: 220px; border-radius: 14px; border: 1px solid var(--line-neon); background: #000; object-fit: cover; }
+.qr-agregar-manual { margin-bottom: 0; padding-top: 6px; border-top: 1px solid var(--line); }
+.qr-input-row { display: flex; align-items: center; gap: 10px; }
+.qr-input-row input { flex: 1 1 auto; min-width: 0; }
 
 .resultados-busqueda { display: flex; flex-direction: column; max-height: 380px; overflow-y: auto; }
 
-.codigo-box {
-    margin-bottom: 16px;
-    padding: 18px 0;
-    border-top: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-}
-.codigo {
-    color: var(--gold);
-    font: 700 clamp(1.05rem, 5vw, 1.6rem) Orbitron, monospace;
-    letter-spacing: 3px;
-    overflow-wrap: anywhere;
-}
-.btn-copiar {
-    padding: 9px 16px;
-    border: 1px solid var(--line-gold);
-    border-radius: 18px;
-    color: var(--gold);
-    background: transparent;
-    font-size: .74rem;
-    font-weight: 700;
-    cursor: pointer;
-    white-space: nowrap;
-}
+.codigo-box { margin-bottom: 16px; padding: 18px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.codigo { color: var(--gold); font: 700 clamp(1.05rem, 5vw, 1.6rem) Orbitron, monospace; letter-spacing: 3px; overflow-wrap: anywhere; }
+.btn-copiar { padding: 9px 16px; border: 1px solid var(--line-gold); border-radius: 18px; color: var(--gold); background: transparent; font-size: .74rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
 .btn-copiar:hover { background: rgba(212, 175, 55, .07); }
 
 /* ===== 15. MODAL CONFIRMACIÓN ===== */
@@ -1160,15 +1043,7 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 .confirm-modal-title { margin: 0 0 8px; color: var(--text-primary); font-size: 1rem; }
 .confirm-modal-message { margin-bottom: 18px; color: var(--text-secondary); font-size: .84rem; line-height: 1.6; }
 .confirm-modal-actions { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
-.confirm-modal-btn {
-    min-width: 105px;
-    padding: 10px 16px;
-    border: 1px solid transparent;
-    border-radius: 14px;
-    font-size: .78rem;
-    font-weight: 700;
-    cursor: pointer;
-}
+.confirm-modal-btn { min-width: 105px; padding: 10px 16px; border: 1px solid transparent; border-radius: 14px; font-size: .78rem; font-weight: 700; cursor: pointer; }
 .confirm-modal-btn.cancel { border-color: var(--line); color: var(--text-secondary); background: transparent; }
 .confirm-modal-btn.confirm-danger { border-color: var(--danger); color: #fff; background: var(--danger); }
 
@@ -1199,27 +1074,16 @@ button:focus-visible, a:focus-visible, input:focus-visible {
 
 /* ===== 17. FOOTER ===== */
 .footer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    margin: 28px auto 0;
-    padding: 18px 0 8px;
-    border-top: 1px solid var(--line);
-    color: var(--text-muted);
-    font-size: .65rem;
-    text-align: center;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    margin: 28px auto 0; padding: 18px 0 8px; border-top: 1px solid var(--line);
+    color: var(--text-muted); font-size: .65rem; text-align: center;
 }
 .footer .brand { color: var(--orange); font-family: Orbitron, monospace; }
 .network-tag { display: flex; align-items: center; gap: 5px; opacity: .7; }
 
 /* ===== 18. TEMA CLARO ===== */
 html.tema-dia, html[data-tema="dia"] { color-scheme: light; }
-html.tema-dia body, html[data-tema="dia"] body {
-    color: #17212b;
-    background-color: #f5f7fa;
-    background-image: none;
-}
+html.tema-dia body, html[data-tema="dia"] body { color: #17212b; background-color: #f5f7fa; background-image: none; }
 html.tema-dia .header, html[data-tema="dia"] .header { background: rgba(245, 247, 250, .96); }
 html.tema-dia .hud-page-title, html[data-tema="dia"] .hud-page-title { color: #17212b; }
 html.tema-dia .hud-page-subtitle, html[data-tema="dia"] .hud-page-subtitle { color: #4a5a6a; }
@@ -1227,10 +1091,7 @@ html.tema-dia .contacto-info .nombre, html[data-tema="dia"] .contacto-info .nomb
 html.tema-dia .hud-search-input, html[data-tema="dia"] .hud-search-input { color: #17212b; }
 html.tema-dia .hud-search-box, html[data-tema="dia"] .hud-search-box,
 html.tema-dia .contacto-card, html[data-tema="dia"] .contacto-card,
-html.tema-dia .hud-pill, html[data-tema="dia"] .hud-pill {
-    background: #ffffff;
-    border-color: rgba(23, 33, 43, .14);
-}
+html.tema-dia .hud-pill, html[data-tema="dia"] .hud-pill { background: #ffffff; border-color: rgba(23, 33, 43, .14); }
 html.tema-dia .nav-link, html[data-tema="dia"] .nav-link { color: #586777; }
 html.tema-dia .modal, html[data-tema="dia"] .modal,
 html.tema-dia .confirm-modal, html[data-tema="dia"] .confirm-modal,
@@ -1243,19 +1104,11 @@ html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096; }
     .app { padding: 10px 14px 22px; }
     .hud-page-subtitle { white-space: normal; }
     .contacto-card { flex-wrap: wrap; }
-    .contacto-card .contacto-actions {
-        width: 100%;
-        justify-content: flex-start;
-        padding-left: 61px;
-    }
+    .contacto-card .contacto-actions { width: 100%; justify-content: flex-start; padding-left: 61px; }
     .solicitud-card .acciones,
     .sugerencia-card .acciones,
     .solicitud-enviada-card .acciones,
-    .bloqueado-card .acciones {
-        width: auto;
-        justify-content: flex-end;
-        margin-left: auto;
-    }
+    .bloqueado-card .acciones { width: auto; justify-content: flex-end; margin-left: auto; }
 }
 
 @media (max-width: 480px) {
@@ -1284,4 +1137,111 @@ html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096; }
         animation-iteration-count: 1 !important;
         transition-duration: .01ms !important;
     }
+}
+
+/* ===== 21. SECCIÓN DE GRUPOS (NUEVO) ===== */
+/* Estilos para los botones de pestaña (Mis grupos / En vivo) */
+.grupos-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.grupos-tab-btn {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, .14);
+    background: rgba(14, 20, 30, .78);
+    color: var(--text-secondary);
+    font-size: .74rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.grupos-tab-btn.active {
+    color: var(--text-primary);
+    border-color: var(--cyan);
+    background: rgba(0, 229, 255, .12);
+    box-shadow: 0 0 12px rgba(0, 229, 255, .15);
+}
+
+.grupos-tab-btn:hover:not(.active) {
+    background: rgba(255, 255, 255, .08);
+}
+
+/* Estilos para las tarjetas de comunidades dentro de la sección de grupos */
+#misCanalesLista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#misCanalesLista .grupo-item-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    text-decoration: none;
+    background: rgba(11, 18, 28, .85);
+    border: 1px solid rgba(255, 255, 255, .06);
+    transition: var(--transition);
+}
+
+#misCanalesLista .grupo-item-card:hover {
+    background: rgba(16, 26, 40, .95);
+    border-color: rgba(0, 229, 255, .3);
+}
+
+#misCanalesLista .grupo-item-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    color: var(--gold);
+    background: rgba(168, 85, 247, .14);
+    font-size: 1rem;
+}
+
+#misCanalesLista .grupo-item-info {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#misCanalesLista .grupo-item-nombre {
+    color: var(--text-primary);
+    font-size: .84rem;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#misCanalesLista .grupo-item-meta {
+    margin-top: 2px;
+    color: var(--text-muted);
+    font-size: .7rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#misCanalesLista .grupo-item-accion {
+    flex: 0 0 auto;
+    color: var(--cyan);
+    font-size: .72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    text-decoration: none;
+}
+
+/* ===== 22. FIX DEL PLANETA (Permitir que se vea) ===== */
+/* Eliminamos la regla que ocultaba el planeta en el estado vacío */
+.planeta-busqueda.planeta-empty,
+#planetaEstadoVacio {
+    display: inline-block !important;
 }
