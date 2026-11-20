@@ -31,7 +31,7 @@
     })();
 </script>
 
-<!-- Tus CSS base (el de mensajes v3.4, que tiene la estructura del panel) -->
+<!-- Tus CSS base -->
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.4">
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes-messenger.css?v=1">
@@ -152,12 +152,11 @@
 
     /* Ajustes al resto del layout para que combine con contactos */
     .header, .panel, .sidebar, .chathead {
-        /* Usamos los colores base si están definidos, si no caen en los de contactos */
         background: var(--panel, #0b111b);
         border-color: var(--line, rgba(255,255,255,.08));
     }
     
-    .chathead { border-bottom: 1px solid var(--line-strong, rgba(255,255,255,.16)); }
+    .chathead { border-bottom: 1px solid var(--line-strong, rgba(255,255,255,.16)); cursor: pointer; }
     .sidebar { border-right: 1px solid var(--line, rgba(255,255,255,.08)); }
     
     /* Botones del header (Videollamada, etc) */
@@ -174,6 +173,212 @@
     .btn-videollamada:disabled { opacity: 0.4; cursor: not-allowed; }
     .btn-videollamada svg { flex-shrink: 0; }
     @media (max-width: 480px) { .btn-videollamada span { display: none; } .btn-videollamada { padding: 8px; } }
+
+    /* ========================================================
+       ESTILOS DEL MODAL DE PERFIL DEL CONTACTO (ESTILO CAPTURAS)
+    ======================================================== */
+    .contact-profile-overlay {
+        position: fixed;
+        inset: 0;
+        background: var(--bg, #05080f);
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+        transform: translateX(100%);
+        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+        color: var(--text, #e8edf3);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    .contact-profile-overlay.open {
+        transform: translateX(0);
+    }
+
+    /* Cabecera superior con botón atrás */
+    .cp-topbar {
+        display: flex;
+        align-items: center;
+        padding: 16px;
+        background: var(--bg, #05080f);
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+    .cp-back {
+        background: transparent;
+        border: none;
+        color: var(--text, #e8edf3);
+        cursor: pointer;
+        padding: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.2s;
+    }
+    .cp-back:hover { background: rgba(255,255,255,0.1); }
+    .cp-back svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+
+    /* Contenido central */
+    .cp-content {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 0 16px 32px;
+        max-width: 600px;
+        margin: 0 auto;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Avatar */
+    .cp-avatar-container {
+        position: relative;
+        width: 120px;
+        height: 120px;
+        margin-bottom: 12px;
+    }
+    .cp-avatar {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: cover;
+        background: var(--panel-2, #101826);
+        border: 2px solid var(--line-strong, rgba(255,255,255,.16));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: bold;
+        color: var(--muted, #8593a6);
+        overflow: hidden;
+    }
+    .cp-status-dot {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        width: 20px;
+        height: 20px;
+        background: var(--success, #00d68f);
+        border-radius: 50%;
+        border: 3px solid var(--bg, #05080f);
+    }
+
+    /* Nombre y tagline */
+    .cp-name {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 4px;
+        text-align: center;
+    }
+    .cp-encryption-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 99px;
+        background: var(--panel-2, #101826);
+        border: 1px solid var(--line, rgba(255,255,255,.08));
+        font-size: 0.7rem;
+        color: var(--muted, #8593a6);
+        margin-bottom: 24px;
+    }
+    .cp-encryption-badge svg { width: 12px; height: 12px; fill: currentColor; }
+
+    /* Botones de acción (4) */
+    .cp-action-grid {
+        display: flex;
+        gap: 16px;
+        width: 100%;
+        justify-content: center;
+        margin-bottom: 32px;
+        flex-wrap: wrap;
+    }
+    .cp-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        background: transparent;
+        border: none;
+        color: var(--text, #e8edf3);
+        cursor: pointer;
+        width: 70px;
+        transition: opacity 0.2s;
+    }
+    .cp-action-btn:hover { opacity: 0.7; }
+    .cp-action-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--panel-2, #101826);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+    }
+    .cp-action-btn:hover .cp-action-icon { background: var(--line-strong, rgba(255,255,255,.16)); }
+    .cp-action-icon svg { width: 24px; height: 24px; fill: currentColor; }
+    .cp-action-label { font-size: 0.75rem; font-weight: 500; }
+
+    /* Listas de opciones */
+    .cp-section {
+        width: 100%;
+        margin-bottom: 24px;
+    }
+    .cp-section-title {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text, #e8edf3);
+        margin-bottom: 12px;
+        padding-left: 4px;
+    }
+    .cp-list {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg, #05080f);
+    }
+    .cp-list-item {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 14px 4px;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--line, rgba(255,255,255,.08));
+        color: var(--text, #e8edf3);
+        cursor: pointer;
+        text-align: left;
+        width: 100%;
+        font-size: 0.95rem;
+        transition: background 0.2s;
+    }
+    .cp-list-item:last-child { border-bottom: none; }
+    .cp-list-item:hover { background: rgba(255,255,255,0.03); }
+    .cp-list-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: var(--panel-2, #101826);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+    .cp-list-icon svg { width: 20px; height: 20px; fill: currentColor; color: var(--muted, #8593a6); }
+    .cp-list-item.danger .cp-list-icon svg { color: var(--red, #ff4d6d); }
+    .cp-list-text {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .cp-list-text .main { font-weight: 500; }
+    .cp-list-text .sub { font-size: 0.75rem; color: var(--muted, #8593a6); margin-top: 2px; }
+    .cp-list-toggle {
+        color: var(--muted, #8593a6);
+        font-size: 0.8rem;
+    }
 </style>
 </head>
 <body>
@@ -246,12 +451,12 @@
 </aside>
 
 <section class="chat">
-    <header class="chathead">
+    <header class="chathead" id="chatHeader">
         <button class="backbtn" id="backBtn" title="Volver" data-neon="icon" aria-label="Volver">
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
         </button>
-        <div class="avatar" id="chatAvatar" title="Ver foto">◈</div>
-        <div>
+        <div class="avatar" id="chatAvatar" title="Ver foto" style="cursor:pointer;">◈</div>
+        <div style="flex:1; cursor:pointer;" id="chatInfoTrigger">
             <div class="chatname" id="chatName">Selecciona una conversación</div>
             <div class="status" id="chatStatus">◈ En espera</div>
         </div>
@@ -275,9 +480,7 @@
         <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span></button>
     </div>
 
-    <!-- ========================================================
-         BARRA DE ENTRADA (SINCRONIZADA CON CONTACTOS.CSS)
-    ======================================================== -->
+    <!-- BARRA DE ENTRADA -->
     <form class="composer" id="composer" style="display:none;">
         <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
@@ -304,7 +507,124 @@
 <footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Csariel's · Sabor al Paladar · WEB3</footer>
 </div>
 
-<!-- Modales (mantén los tuyos) -->
+<!-- ========================================================
+     MODAL DE PERFIL DEL CONTACTO (ESTILO CAPTURAS)
+======================================================== -->
+<div class="contact-profile-overlay" id="contactProfileOverlay">
+    <div class="cp-topbar">
+        <button class="cp-back" id="cpBackBtn" aria-label="Volver">
+            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        </button>
+    </div>
+    
+    <div class="cp-content">
+        <div class="cp-avatar-container">
+            <div class="cp-avatar" id="cpAvatar">OP</div>
+            <div class="cp-status-dot" id="cpStatusDot"></div>
+        </div>
+        
+        <div class="cp-name" id="cpName">Contacto</div>
+        
+        <div class="cp-encryption-badge">
+            <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            Cifrado de extremo a extremo
+        </div>
+
+        <!-- Botones de acción principales -->
+        <div class="cp-action-grid">
+            <button class="cp-action-btn" id="cpBtnCall">
+                <div class="cp-action-icon" style="color: var(--text, #e8edf3);">
+                    <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <span class="cp-action-label">Llamar</span>
+            </button>
+            <button class="cp-action-btn" id="cpBtnVideo">
+                <div class="cp-action-icon" style="color: var(--text, #e8edf3);">
+                    <svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M16 10l6-3v10l-6-3"/></svg>
+                </div>
+                <span class="cp-action-label">Videollamada</span>
+            </button>
+            <button class="cp-action-btn" id="cpBtnProfile">
+                <div class="cp-action-icon" style="color: var(--text, #e8edf3);">
+                    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                </div>
+                <span class="cp-action-label">Perfil</span>
+            </button>
+            <button class="cp-action-btn" id="cpBtnMute">
+                <div class="cp-action-icon" style="color: var(--text, #e8edf3);">
+                    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                </div>
+                <span class="cp-action-label">Silenciar</span>
+            </button>
+        </div>
+
+        <!-- Sección: Acciones -->
+        <div class="cp-section">
+            <div class="cp-section-title">Acciones</div>
+            <div class="cp-list">
+                <button class="cp-list-item" id="cpActionMarkRead">
+                    <div class="cp-list-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+                    <div class="cp-list-text"><span class="main">Marcar como no leído</span></div>
+                </button>
+                <button class="cp-list-item" id="cpActionShareContact">
+                    <div class="cp-list-icon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
+                    <div class="cp-list-text"><span class="main">Compartir contacto</span></div>
+                </button>
+                <button class="cp-list-item" id="cpActionCreateGroup">
+                    <div class="cp-list-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+                    <div class="cp-list-text"><span class="main">Create group with <span id="cpGroupName">Contacto</span></span></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sección: Personalización -->
+        <div class="cp-section">
+            <div class="cp-section-title">Personalización</div>
+            <div class="cp-list">
+                <button class="cp-list-item" id="cpActionReaction">
+                    <div class="cp-list-icon" style="background: rgba(0, 122, 255, 0.1); color: #007aff;"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h2c.55 0 1-.45 1-1v-9c0-.55-.45-1-1-1H2v11zm19.83-7.12c.11-.25.17-.52.17-.8V11c0-1.1-.9-2-2-2h-5.5l.92-4.65c.05-.22.02-.46-.1-.66-.12-.2-.31-.34-.53-.4l-.95-.24c-.42-.11-.86.1-1.05.49L9.7 9.7c-.1.2-.15.42-.15.65V19c0 1.1.9 2 2 2h8c.83 0 1.5-.5 1.8-1.2l2.03-5.92z"/></svg></div>
+                    <div class="cp-list-text"><span class="main">Reacción rápida</span></div>
+                </button>
+                <button class="cp-list-item" id="cpActionNickname">
+                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div>
+                    <div class="cp-list-text"><span class="main">Apodos</span></div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Sección: Privacidad y ayuda -->
+        <div class="cp-section">
+            <div class="cp-section-title">Privacidad y ayuda</div>
+            <div class="cp-list">
+                <button class="cp-list-item" id="cpActionVerify">
+                    <div class="cp-list-icon"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+                    <div class="cp-list-text"><span class="main">Verificar cifrado de extremo a extremo</span></div>
+                </button>
+                <button class="cp-list-item" id="cpActionTemp">
+                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+                    <div class="cp-list-text"><span class="main">Mensajes temporales</span></div>
+                </button>
+                <button class="cp-list-item" id="cpActionReadReceipts">
+                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+                    <div class="cp-list-text"><span class="main">Confirmaciones de lectura</span></div>
+                    <div class="cp-list-toggle">Activado</div>
+                </button>
+                <button class="cp-list-item danger" id="cpActionBlock">
+                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
+                    <div class="cp-list-text"><span class="main">Block <span id="cpBlockName">Contacto</span></span></div>
+                </button>
+                <button class="cp-list-item danger" id="cpActionReport">
+                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+                    <div class="cp-list-text">
+                        <span class="main">Reportar</span>
+                        <span class="sub">Enviar comentarios y reportar conversación</span>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- FIN MODAL PERFIL CONTACTO -->
 
 <div class="toast" id="toast"></div>
 
@@ -324,6 +644,7 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Lógica de la barra de entrada
         var input = document.getElementById('messageInput');
         var composer = document.getElementById('composer');
         
@@ -347,6 +668,90 @@
                 }
             });
         }
+
+        // ========================================================
+        // LÓGICA DEL MODAL DE PERFIL DE CONTACTO
+        // ========================================================
+        var overlay = document.getElementById('contactProfileOverlay');
+        var backBtn = document.getElementById('cpBackBtn');
+        var chatHeader = document.getElementById('chatHeader');
+        var chatInfoTrigger = document.getElementById('chatInfoTrigger');
+        var chatAvatar = document.getElementById('chatAvatar');
+        var chatName = document.getElementById('chatName');
+
+        // Elementos internos del modal para actualizar dinámicamente
+        var cpName = document.getElementById('cpName');
+        var cpAvatar = document.getElementById('cpAvatar');
+        var cpGroupName = document.getElementById('cpGroupName');
+        var cpBlockName = document.getElementById('cpBlockName');
+        var cpBtnProfile = document.getElementById('cpBtnProfile');
+        var cpStatusDot = document.getElementById('cpStatusDot');
+
+        function openProfileModal() {
+            var nombreActual = chatName.innerText.trim();
+            if (nombreActual === "Selecciona una conversación") return;
+
+            // Actualizar textos dinámicos
+            cpName.innerText = nombreActual;
+            cpGroupName.innerText = nombreActual;
+            cpBlockName.innerText = nombreActual;
+            
+            // Manejo del avatar
+            var avatarText = chatAvatar.innerText.trim();
+            if (avatarText && !chatAvatar.querySelector('img')) {
+                cpAvatar.innerHTML = avatarText.substring(0, 2).toUpperCase();
+            } else if (chatAvatar.querySelector('img')) {
+                var imgSrc = chatAvatar.querySelector('img').src;
+                cpAvatar.innerHTML = '<img src="' + imgSrc + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+            } else {
+                cpAvatar.innerHTML = nombreActual.substring(0, 2).toUpperCase();
+            }
+
+            // REGLA ESPECIAL: Ocultar botón "Perfil" si es Marquinhos
+            if (nombreActual.toLowerCase().includes("marquinhos") || nombreActual.toLowerCase().includes("bot")) {
+                cpBtnProfile.style.display = 'none';
+            } else {
+                cpBtnProfile.style.display = 'flex';
+            }
+
+            // Abrir modal
+            overlay.classList.add('open');
+            document.body.style.overflow = 'hidden'; // Evitar scroll de fondo
+        }
+
+        function closeProfileModal() {
+            overlay.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+
+        // Eventos para abrir el modal
+        if (chatInfoTrigger) chatInfoTrigger.addEventListener('click', openProfileModal);
+        if (chatAvatar) chatAvatar.addEventListener('click', openProfileModal);
+
+        // Evento para cerrar
+        if (backBtn) backBtn.addEventListener('click', closeProfileModal);
+
+        // Cerrar al hacer clic en el fondo (opcional, pero útil)
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) closeProfileModal();
+        });
+
+        // Lógica de botones internos del perfil
+        if (cpBtnProfile) {
+            cpBtnProfile.addEventListener('click', function() {
+                var nombre = cpName.innerText;
+                // Aquí rediriges al perfil. Como es una demo, usamos la ruta base.
+                // En tu sistema real, deberías obtener el ID del usuario.
+                window.location.href = '/features/perfil/perfil.html?nombre=' + encodeURIComponent(nombre);
+            });
+        }
+
+        // Cerrar modal con tecla Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && overlay.classList.contains('open')) {
+                closeProfileModal();
+            }
+        });
     });
 </script>
 </body>
