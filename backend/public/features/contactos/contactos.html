@@ -502,33 +502,6 @@
         });
 
         // ==========================================
-        // CONTROL DE ESTADO VACÍO (Para la lista de contactos)
-        // ==========================================
-        // Esta función será llamada por tu contactos.js cuando termine de cargar
-        window.actualizarEstadoVacio = function(cantidad, filtro) {
-            const emptyState = document.getElementById('contactosEmptyState');
-            const title = document.getElementById('emptyStateTitle');
-            const btnBuscar = document.getElementById('btnBuscarEmpty');
-            
-            if (!emptyState) return;
-
-            if (cantidad === 0) {
-                emptyState.style.display = 'block';
-                btnBuscar.style.display = 'inline-flex';
-                
-                if (filtro === 'online') {
-                    title.textContent = 'No hay contactos conectados ahora.';
-                } else if (filtro === 'favoritos') {
-                    title.textContent = 'Todavía no tienes favoritos.';
-                } else {
-                    title.textContent = 'Tu red está vacía. Busca personas para conectar.';
-                }
-            } else {
-                emptyState.style.display = 'none';
-            }
-        };
-
-        // ==========================================
         // FUNCIONES DE GRUPOS (SwitchTab) - Se mantienen
         // ==========================================
         window.switchTab = function(tab) {
@@ -546,7 +519,8 @@
     </script>
 
     <!-- Script principal de contactos (lógica de negocio) -->
-    <script src="/features/contactos/contactos.js?v=26_1" defer></script>
+    <!-- v26_2: Actualizado para separar estrictamente amigos, en línea y sugerencias -->
+    <script src="/features/contactos/contactos.js?v=26_2" defer></script>
 
 </body>
 </html>
