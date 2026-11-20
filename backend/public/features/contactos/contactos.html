@@ -61,10 +61,11 @@
 
         <div class="search" role="search">
             <div class="search-field">
-                <input type="text" id="searchInput" class="search-input"
-                    placeholder="Toca el micrófono y di un nombre o @usuario"
-                    readonly autocomplete="off" aria-label="Búsqueda por voz">
-                <div class="search-hint">Búsqueda por voz</div>
+                <!-- CORRECCIÓN: Se eliminó 'readonly', se cambió type a 'search' y se ajustó el placeholder -->
+                <input type="search" id="searchInput" class="search-input"
+                    placeholder="Escribe un nombre, @usuario o usa el micrófono"
+                    autocomplete="off" aria-label="Buscar contactos por texto o voz">
+                <div class="search-hint">Buscar contacto</div>
             </div>
             <button type="button" id="btnLimpiarBusqueda" class="btn-clear" aria-label="Limpiar búsqueda" hidden>✕</button>
             <button type="button" id="btnVozBuscar" class="btn-mic" aria-label="Buscar por voz" title="Buscar por voz">
