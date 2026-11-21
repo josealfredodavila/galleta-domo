@@ -1,35 +1,42 @@
 // ================================================================
-// MENSAJES · BOT MARQUINHOS v1.0 · MÓDULO 4 DE 8
-// Ruta: backend/public/features/mensajes/js/mensajes-bot.js
+// MENSAJES · BOT MARQUINHOS v2.0 · MÓDULO 4 DE 8
+// Ruta: frontend/features/mensajes/js/mensajes-bot.js
 // Depende de: mensajes-core.js, mensajes-scroll-media.js,
 //             mensajes-chats.js (append, messageHTML, scrollToBottom,
 //             recargarBandeja, observarCargaMultimedia)
-// Contenido: conversación con Marquinhos, envío de texto al bot,
-//            nota de voz al bot (grabar, subir, transcribir y
-//            responder), historial para el bot, términos de uso,
-//            indicador de escritura y llamada a /api/ai/chat-pet.
-// NO cargar todavía en mensajes.html.
+// Cambios v2.0: sin emojis; el botón de voz cambia de estado con
+//               clases en vez de cambiar el texto (usa SVG del HTML).
 // ================================================================
 
 'use strict';
 
-// Estado de la grabación de voz para el bot
 let voiceBotRecorder = null;
 let voiceBotChunks = [];
 let voiceBotGrabando = false;
 let enviandoVozBot = false;
+
+function marcarBotonVoz(estado) {
+    const btn = $('voiceBot');
+    if (!btn) return;
+    btn.classList.toggle('recording', estado === 'grabando');
+    btn.classList.toggle('processing', estado === 'procesando');
+    btn.disabled = estado === 'procesando';
+}
 
 async function abrirConversacionBot() {
     const box = $('messages');
     const btn = box.querySelector('#scrollDownBtn');
     const anchor = box.querySelector('#scrollAnchor');
     box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
+    box.querySelectorAll('.empty').forEach(el => el.remove());
     if (!anchor) { const newAnchor = document.createElement('div'); newAnchor.id = 'scrollAnchor'; box.appendChild(newAnchor); }
     if (!btn) {
         const newBtn = document.createElement('button');
+        newBtn.type = 'button';
         newBtn.className = 'scroll-down-btn';
         newBtn.id = 'scrollDownBtn';
-        newBtn.innerHTML = '↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span>';
+        newBtn.setAttribute('aria-label', 'Ir al final');
+        newBtn.innerHTML = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg><span class="badge-new" id="newMsgBadge" hidden>1</span>';
         box.appendChild(newBtn);
         newBtn.onclick = () => { isUserAtBottom = true; scrollToBottom(true); actualizarFlecha(); };
     }
@@ -45,11 +52,11 @@ async function abrirConversacionBot() {
         anchorRef.insertAdjacentHTML('beforebegin', `
             <div class="bubblewrap received">
                 <div class="bubble">
-                    <div class="bubble-bot-info">✦ MARQUINHOS</div>
-                    ¡Hola! 👋 Soy Marquinhos, el asistente de Sariel's. Puedes:<br><br>
-                    ◈ Escribirme un mensaje de texto<br>
-                    ◈ Enviarme una nota de voz con 🎙️<br>
-                    ◈ Hablarme con el botón 🔊 (te responderé con voz)<br><br>
+                    <div class="bubble-bot-info">MARQUINHOS</div>
+                    Hola, soy Marquinhos, el asistente de Csariel's. Puedes:<br><br>
+                    Escribirme un mensaje de texto.<br>
+                    Enviarme una nota de voz con el micrófono.<br>
+                    Hablarme con el botón de voz y te responderé con voz.<br><br>
                     ¿En qué te puedo ayudar hoy?
                 </div>
             </div>`);
@@ -75,7 +82,7 @@ async function enviarMensajeBot(textoLimpio) {
         if (ins.error) throw ins.error;
         userMsg = ins.data;
     } catch (e) {
-        if (esErrorContenidoNoPermitido(e)) { toast('❌ Contenido no permitido por las normas de la comunidad', 'error'); $('messageInput').value = textoLimpio; return; }
+        if (esErrorContenidoNoPermitido(e)) { toast('Contenido no permitido por las normas de la comunidad.', 'error'); $('messageInput').value = textoLimpio; return; }
         console.warn('No se pudo guardar el mensaje del usuario:', e);
     }
     append(userMsg, true);
@@ -94,7 +101,7 @@ async function enviarMensajeBot(textoLimpio) {
     } catch (e) {
         quitarTypingBot();
         console.error('Error Marquinhos:', e);
-        append({ contenido: '⚠️ ' + (e.message || 'Ups, tuve un problema.'), created_at: new Date().toISOString(), tipo: 'texto', remitente_id: BOT_UUID, leido: true, es_bot: true }, false);
+        append({ contenido: e.message || 'Tuve un problema. Intenta de nuevo.', created_at: new Date().toISOString(), tipo: 'texto', remitente_id: BOT_UUID, leido: true, es_bot: true }, false);
     }
 }
 
@@ -126,7 +133,7 @@ async function verificarTerminosMarquinhos() {
             return true;
         }
     } catch (e) { console.warn('Error verificando términos:', e); }
-    toast('⚠️ Debes aceptar los Términos de Marquinhos primero', 'warning');
+    toast('Debes aceptar los Términos de Marquinhos primero.', 'warning');
     const RUTA_TERMINOS_REAL = '/legal/terminos-marquinhos';
     setTimeout(() => { window.location.href = RUTA_TERMINOS_REAL; }, 1200);
     return false;
@@ -157,17 +164,16 @@ async function preguntarAlBotConMemoria(mensaje, historial) {
         const contentType = r.headers.get('content-type') || '';
         if (contentType.includes('application/json')) { try { data = await r.json(); } catch (_) { data = null; } }
         else {
-            const texto = await r.text().catch(() => '');
             if (!r.ok) {
                 if (r.status === 502 || r.status === 504) throw new Error('El servidor está tardando o no disponible. Intenta de nuevo.');
-                if (r.status === 500) throw new Error('El servidor tuvo un error interno. Revisa CORS o logs de Railway.');
+                if (r.status === 500) throw new Error('El servidor tuvo un error interno. Intenta más tarde.');
                 throw new Error('El servidor devolvió una respuesta inesperada. Código: ' + r.status);
             }
-            throw new Error('El servidor no devolvió JSON válido.');
+            throw new Error('El servidor no devolvió datos válidos.');
         }
         if (!r.ok) throw new Error((data && data.error) || `Error del servidor (${r.status})`);
         if (!data || data.success === false) throw new Error((data && data.error) || 'Marquinhos no pudo responder.');
-        let respuesta = typeof data.reply === 'string' ? data.reply.trim() : '';
+        const respuesta = typeof data.reply === 'string' ? data.reply.trim() : '';
         if (!respuesta) throw new Error('Marquinhos respondió sin contenido.');
         return limpiarMarkdown(respuesta);
     } catch (error) {
@@ -179,14 +185,13 @@ async function preguntarAlBotConMemoria(mensaje, historial) {
 
 function mostrarTypingBot() {
     const box = $('messages');
-    const empty = box.querySelector('.empty');
-    if (empty) empty.remove();
+    box.querySelectorAll('.empty').forEach(el => el.remove());
     const anchorRef = box.querySelector('#scrollAnchor');
     if (anchorRef) {
         anchorRef.insertAdjacentHTML('beforebegin', `
             <div class="bubblewrap received" id="typing-bot">
                 <div class="bubble">
-                    <div class="bubble-bot-info">✦ MARQUINHOS</div>
+                    <div class="bubble-bot-info">MARQUINHOS</div>
                     <div class="typing-indicator"><span></span><span></span><span></span></div>
                 </div>
             </div>`);
@@ -199,7 +204,7 @@ function quitarTypingBot() { const el = $('typing-bot'); if (el) el.remove(); }
 async function grabarVozParaBot() {
     if (!current?.bot) return;
     if (!await auth()) return;
-    if (enviandoVozBot) { toast('⏳ Procesando audio anterior. Espera un momento…', 'warning'); return; }
+    if (enviandoVozBot) { toast('Procesando el audio anterior. Espera un momento.', 'warning'); return; }
     if (voiceBotGrabando) {
         if (voiceBotRecorder && voiceBotRecorder.state !== 'inactive') voiceBotRecorder.stop();
         return;
@@ -212,41 +217,40 @@ async function grabarVozParaBot() {
         voiceBotRecorder.onstop = async () => {
             stream.getTracks().forEach(t => t.stop());
             voiceBotGrabando = false;
-            $('voiceBot').classList.remove('recording');
-            $('voiceBot').textContent = '🔊';
+            marcarBotonVoz('');
             const blob = new Blob(voiceBotChunks, { type: voiceBotRecorder.mimeType || 'audio/webm' });
             voiceBotChunks = [];
-            if (!blob.size) { toast('⚠️ No se capturó audio', 'error'); return; }
+            if (!blob.size) { toast('No se capturó audio.', 'error'); return; }
             const file = new File([blob], `voz-${Date.now()}.webm`, { type: blob.type });
             await enviarVozAlBot(file);
         };
         voiceBotRecorder.start();
         voiceBotGrabando = true;
-        $('voiceBot').classList.add('recording');
-        $('voiceBot').textContent = '⏹️';
-        toast('🎙️ Habla ahora… presiona otra vez para enviar');
-    } catch (e) { console.error('Error micrófono:', e); toast('❌ No se pudo acceder al micrófono', 'error'); }
+        marcarBotonVoz('grabando');
+        toast('Habla ahora. Presiona otra vez para enviar.');
+    } catch (e) {
+        console.error('Error micrófono:', e);
+        toast('No se pudo acceder al micrófono.', 'error');
+    }
 }
 
 async function enviarVozAlBot(file) {
-    if (enviandoVozBot) { toast('⏳ Ya hay un audio en proceso. Espera…', 'warning'); return; }
+    if (enviandoVozBot) { toast('Ya hay un audio en proceso. Espera.', 'warning'); return; }
     enviandoVozBot = true;
-    const $btn = $('voiceBot');
-    $btn.classList.add('processing');
-    $btn.textContent = '⏳';
-    $btn.disabled = true;
+    marcarBotonVoz('procesando');
     try {
         const s = await session();
-        if (!s) { enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
+        if (!s) throw new Error('Inicia sesión nuevamente.');
         const path = `${user.id}/bot-voice/${Date.now()}.webm`;
         const { error: upErr } = await db.storage.from('chat-audio').upload(path, file, { contentType: file.type, upsert: false });
-        if (upErr) { toast('❌ Error subiendo audio', 'error'); enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
+        if (upErr) throw new Error('No se pudo subir el audio.');
         const { data: signed } = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
-        if (!signed?.signedUrl) { toast('❌ Error firmando audio', 'error'); enviandoVozBot = false; $btn.classList.remove('processing'); $btn.textContent = '🔊'; $btn.disabled = false; return; }
+        if (!signed?.signedUrl) throw new Error('No se pudo preparar el audio.');
+
         const tempId = 'voice-user-' + Date.now();
         const box = $('messages');
         const anchorRef = box.querySelector('#scrollAnchor');
-        const tempHTML = `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">🎙️ TU VOZ</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`;
+        const tempHTML = `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">Tu voz</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`;
         if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', tempHTML); else box.insertAdjacentHTML('beforeend', tempHTML);
         scrollToBottom(true);
 
@@ -257,12 +261,19 @@ async function enviarVozAlBot(file) {
         while (intentos < maxIntentos && !exito) {
             const r = await fetch('/api/ai/voice/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token }, body: JSON.stringify({ audio_url: signed.signedUrl }) });
             data = await r.json().catch(() => ({}));
-            if (r.status === 429) { intentos++; const waitTime = intentos * 2000; toast(`⏳ Servidor ocupado. Reintentando en ${waitTime / 1000}s...`, 'warning'); await new Promise(resolve => setTimeout(resolve, waitTime)); continue; }
-            if (!r.ok || data.success === false) throw new Error(data.error || 'Error del servicio de voz');
+            if (r.status === 429) {
+                intentos++;
+                const waitTime = intentos * 2000;
+                toast(`Servidor ocupado. Reintentando en ${waitTime / 1000} s.`, 'warning');
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+                continue;
+            }
+            if (!r.ok || data.success === false) throw new Error(data.error || 'Error del servicio de voz.');
             exito = true;
         }
-        if (!exito) throw new Error('El servidor de IA está saturado. Intenta de nuevo en unos minutos.');
+        if (!exito) throw new Error('El asistente está saturado. Intenta de nuevo en unos minutos.');
         document.getElementById(tempId)?.remove();
+
         try {
             await db.from('mensajes_chat').insert({ remitente_id: user.id, destinatario_id: BOT_UUID, contenido: data.transcripcion || file.name, nombre_archivo: file.name, imagen_url: `bucket://chat-audio/${path}`, tipo: 'audio', leido: true, editado: false, eliminado: false });
         } catch (e) { console.warn('No se pudo guardar la nota de voz:', e); }
@@ -271,24 +282,26 @@ async function enviarVozAlBot(file) {
         } catch (e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
 
         const botId = 'voice-bot-' + Date.now();
-        let botBody = `<div class="bubble-bot-info">✦ MARQUINHOS</div>`;
-        if (data.transcripcion) botBody += `<div class="bot-transcripcion">🎙️ "${esc(data.transcripcion)}"</div>`;
+        let botBody = '<div class="bubble-bot-info">MARQUINHOS</div>';
+        if (data.transcripcion) botBody += `<div class="bot-transcripcion">Escuché: "${esc(data.transcripcion)}"</div>`;
         botBody += `<div>${esc(limpiarMarkdown(data.reply || 'Sin respuesta'))}</div>`;
         if (data.audio_url) botBody += `<audio class="bot-audio" controls src="${esc(data.audio_url)}"></audio>`;
         const botHTML = `<div class="bubblewrap received" id="${botId}"><div class="bubble">${botBody}</div></div>`;
-        if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', botHTML); else box.insertAdjacentHTML('beforeend', botHTML);
+        const anchorFinal = box.querySelector('#scrollAnchor');
+        if (anchorFinal) anchorFinal.insertAdjacentHTML('beforebegin', botHTML); else box.insertAdjacentHTML('beforeend', botHTML);
         observarCargaMultimedia(box);
         scrollToBottom(true);
-        if (data.audio_url) { const audio = document.querySelector(`#${botId} audio`); if (audio) audio.play().catch(() => {}); }
+        if (data.audio_url) {
+            const audio = document.querySelector(`#${botId} audio`);
+            if (audio) audio.play().catch(() => {});
+        }
         recargarBandeja();
     } catch (e) {
         console.error('Error voz bot:', e);
-        if (e.message.includes('429') || e.message.includes('Too Many Requests') || e.message.includes('saturado')) toast('⏳ El asistente está saturado. Por favor, espera unos segundos e intenta de nuevo.', 'warning');
-        else toast('❌ ' + e.message, 'error');
+        if (String(e.message || '').includes('saturado')) toast('El asistente está saturado. Espera unos segundos e intenta de nuevo.', 'warning');
+        else toast(e.message || 'No se pudo enviar la nota de voz.', 'error');
     } finally {
         enviandoVozBot = false;
-        $btn.classList.remove('processing');
-        $btn.textContent = '🔊';
-        $btn.disabled = false;
+        marcarBotonVoz('');
     }
 }
