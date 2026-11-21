@@ -1,20 +1,14 @@
 // ================================================================
-// MENSAJES · INIT v2.0 · MÓDULO 8 DE 8
+// MENSAJES · INIT v2.1 · MÓDULO 8 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-init.js
 // Depende de: core, scroll-media, chats, bot, estados, canales,
-//             llamadas y teclado-emojis.js (window.inicializarTecladoEmojis)
-//             e idiomas.js (window.inicializarIdiomas).
-// Cambios v2.0:
-//  - Sin emojis en toasts, modales ni botones
-//  - Eliminado el enlace duplicado de blockUser y deleteChat (ahora lo
-//    maneja mensajes-chats.js)
-//  - Eliminada la reescritura de botones del composer y del header:
-//    el HTML ya trae el diseño final
+//             llamadas, llamadas-ui y teclado-emojis.js
+// Cambios v2.1: sin cambios funcionales; se quitan los icon vacíos
+//               en los NeonModal de inicio de llamada.
 // ================================================================
 
 'use strict';
 
-// Variables que usan mensajes-chats.js y mensajes-llamadas.js
 let recorder = null;
 let audioChunks = [];
 let recordingMode = null;
@@ -76,22 +70,18 @@ function enlazarBotonesUI() {
         if (el) el.addEventListener('click', e => { if (e.target.id === modalId) cerrar(); });
     };
 
-    // Perfil y foto
     bind('headerAvatar', abrirProfileModal);
     bindChange('avatarInput', subirFotoHeader);
     bind('btnCambiarFoto', () => $('avatarInput')?.click());
     bind('btnCerrarProfileModal', cerrarProfileModal);
     bindClickFondo('profileModal', cerrarProfileModal);
 
-    // Vistas de historias
     bind('closeVistasModal', cerrarVistasModal);
     bindClickFondo('vistasModal', cerrarVistasModal);
 
-    // Visor de foto
     bind('pvClose', cerrarPhotoViewer);
     bindClickFondo('photoViewer', cerrarPhotoViewer);
 
-    // Visor de historias
     bind('evClose', cerrarEstadoViewer);
     bind('evPrev', (e) => { if (e) e.stopPropagation(); anteriorEstado(); });
     bind('evNext', (e) => { if (e) e.stopPropagation(); siguienteEstado(); });
@@ -112,7 +102,6 @@ function enlazarBotonesUI() {
         evBody.addEventListener('touchcancel', desactivarPausaEstado);
     }
 
-    // Subir estado
     bind('btnSubirEstado', abrirModalEstado);
     bind('closeEstadoModal', cerrarModalEstado);
     bind('btnSeleccionarEstado', seleccionarArchivoEstado);
@@ -120,7 +109,6 @@ function enlazarBotonesUI() {
     bind('btnPublicarEstado', publicarEstado);
     bindClickFondo('estadoUploadModal', cerrarModalEstado);
 
-    // Composer de chat
     const composerEl = $('composer');
     if (composerEl) composerEl.addEventListener('submit', e => { e.preventDefault(); sendMessage($('messageInput').value); });
 
@@ -138,12 +126,9 @@ function enlazarBotonesUI() {
     bind('audio', recordAudioNota);
     bind('voiceBot', grabarVozParaBot);
     bind('backBtn', cerrarConversacion);
-    // blockUser, deleteChat, audioCall y videoCall los enlazan mensajes-chats.js y mensajes-llamadas.js
 
-    // Buscar dentro de la conversación
     bind('searchChat', buscarEnConversacion);
 
-    // Nueva conversación y búsqueda de usuarios
     bind('newChat', onNuevoClick);
     bind('closeModal', () => $('newModal')?.classList.remove('show'));
     bindClickFondo('newModal', () => $('newModal')?.classList.remove('show'));
@@ -154,7 +139,6 @@ function enlazarBotonesUI() {
     const searchConvEl = $('searchConversations');
     if (searchConvEl) searchConvEl.addEventListener('input', e => { conversationFilter = e.target.value; aplicarFiltroConversaciones(); });
 
-    // Scroll del chat
     const messagesEl = $('messages');
     if (messagesEl) {
         messagesEl.addEventListener('scroll', detectarSiEstaAbajo);
@@ -165,7 +149,6 @@ function enlazarBotonesUI() {
     }
     bind('scrollDownBtn', () => { isUserAtBottom = true; scrollToBottom(true); actualizarFlecha(); });
 
-    // Configuración de llamadas y bloqueados
     bind('btnConfigLlamadas', abrirModalConfigLlamadas);
     bind('closeModalConfig', cerrarModalConfigLlamadas);
     bindClickFondo('modalConfigLlamadas', cerrarModalConfigLlamadas);
@@ -173,21 +156,17 @@ function enlazarBotonesUI() {
     bind('closeModalBloqueados', () => { const m = $('modalBloqueados'); if (m) m.classList.remove('show'); });
     bindClickFondo('modalBloqueados', () => { const m = $('modalBloqueados'); if (m) m.classList.remove('show'); });
 
-    // Canales y grupos
     bind('closeModalCanal', cerrarModalCrearCanal);
     bindClickFondo('modalCrearCanal', cerrarModalCrearCanal);
     bind('closeModalGrupo', cerrarModalCrearGrupo);
     bindClickFondo('modalCrearGrupo', cerrarModalCrearGrupo);
 
-    // Teclado de emojis (el botón del HTML es #emojiBtn)
     if (typeof window.inicializarTecladoEmojis === 'function') {
         window.inicializarTecladoEmojis('messageInput', 'emojiBtn');
     }
 
-    // Botones de llamada (videollamada, audio, colgar, aceptar, rechazar)
     enlazarBotonesLlamada();
 
-    // Teclas globales
     document.addEventListener('keydown', e => {
         if (e.key === ' ' && $('estadoViewer')?.classList.contains('show')) {
             e.preventDefault();
@@ -216,7 +195,6 @@ async function buscarEnConversacion() {
     const q = await NeonModal.prompt({
         title: 'Buscar en la conversación',
         message: 'Escribe el texto que quieres encontrar:',
-        icon: '',
         placeholder: 'Texto a buscar',
         confirmText: 'Buscar',
         cancelText: 'Cancelar'
@@ -289,19 +267,16 @@ async function init() {
 
     enlazarBotonesUI();
 
-    // Llamadas entrantes en tiempo real
     if (user && user.id) {
         db.channel('incoming-calls').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'llamadas', filter: `destinatario_id=eq.${user.id}` }, p => {
             if (user && p.new.estado === 'ringing') incoming(p.new);
         }).subscribe();
     }
 
-    // Refresco periódico de historias (solo con la pestaña visible)
     setInterval(() => { if (document.hidden) return; cargarEstados(); }, 10 * 60 * 1000);
 
     registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
 
-    // Abrir conversación desde la URL: ?usuario=<id>&accion=llamada
     if (user && user.id) {
         const urlObj = new URL(window.location.href);
         const usuarioParam = urlObj.searchParams.get('usuario');
@@ -316,7 +291,6 @@ async function init() {
                             const ok = await NeonModal.confirm({
                                 title: 'Iniciar videollamada',
                                 message: '¿Quieres llamar a este usuario ahora?',
-                                icon: '',
                                 confirmText: 'Llamar',
                                 cancelText: 'Cancelar'
                             });
@@ -386,7 +360,6 @@ function urlBase64ToUint8Array(base64String) {
     return outputArray;
 }
 
-// Acciones que llegan desde las notificaciones push (aceptar / rechazar llamada)
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('message', (event) => {
         const data = event.data || {};
@@ -430,7 +403,6 @@ window.generarSlug = generarSlug;
 window.openConversation = openConversation;
 window.NeonModal = NeonModal;
 
-// Historias
 window.cargarEstados = cargarEstados;
 window.abrirEstadoUsuario = abrirEstadoUsuario;
 window.cerrarEstadoViewer = cerrarEstadoViewer;
@@ -440,7 +412,6 @@ window.saltarGrupoMensajes = saltarGrupoMensajes;
 window.abrirPanelEstado = abrirPanelEstado;
 window.abrirVistasModal = abrirVistasModal;
 
-// Llamadas (contrato de llamadas-ui.js)
 window.startCall = startCall;
 window.acceptCall = acceptCall;
 window.endCall = finalizarLlamadaLocal;
@@ -450,8 +421,6 @@ Object.defineProperty(window, 'current', {
     get: function () { return current; },
     configurable: true
 });
-
-/* ---------------- Arranque ---------------- */
 
 document.addEventListener('DOMContentLoaded', () => {
     if (window.supabase?.createClient) init();
