@@ -1,44 +1,47 @@
 // ================================================================
-// MENSAJES · INIT v1.0 · MÓDULO 8 DE 8
-// Ruta: backend/public/features/mensajes/js/mensajes-init.js
-// Depende de: TODOS los módulos anteriores (core, scroll-media,
-//             chats, bot, estados, canales, llamadas) y de
-//             teclado-emojis.js (window.inicializarTecladoEmojis)
+// MENSAJES · INIT v2.0 · MÓDULO 8 DE 8
+// Ruta: frontend/features/mensajes/js/mensajes-init.js
+// Depende de: core, scroll-media, chats, bot, estados, canales,
+//             llamadas y teclado-emojis.js (window.inicializarTecladoEmojis)
 //             e idiomas.js (window.inicializarIdiomas).
-// Contenido: variables de grabación y llamada entrante que no estaban
-//            en core, foto del header, enlace de botones de la UI,
-//            init() principal, auth listener, canal de llamadas
-//            entrantes, push y service worker, parámetros de URL
-//            (?usuario= y ?accion=llamada), decoración visual,
-//            exposición global y arranque en DOMContentLoaded.
-// NO cargar todavía en mensajes.html.
+// Cambios v2.0:
+//  - Sin emojis en toasts, modales ni botones
+//  - Eliminado el enlace duplicado de blockUser y deleteChat (ahora lo
+//    maneja mensajes-chats.js)
+//  - Eliminada la reescritura de botones del composer y del header:
+//    el HTML ya trae el diseño final
 // ================================================================
 
 'use strict';
 
-// Variables que usan mensajes-chats.js y mensajes-llamadas.js.
-// No se declararon en mensajes-core.js, por eso van aquí.
+// Variables que usan mensajes-chats.js y mensajes-llamadas.js
 let recorder = null;
 let audioChunks = [];
 let recordingMode = null;
 let recordingStartedAt = 0;
 let incomingId = null;
 
-// ================================================================
-// FOTO DEL HEADER
-// ================================================================
+/* ---------------- Foto y perfil del header ---------------- */
+
 async function cargarFotoHeader() {
     if (!user || !user.id) return;
     try {
         const { data, error } = await db.from('usuarios').select('avatar_url, nombre, handle').eq('id', user.id).maybeSingle();
         if (error) { console.warn('No se pudo cargar perfil:', error.message); return; }
         currentUserProfile = data;
+
+        const inicial = esc(((data?.nombre || data?.handle || 'U') + '').charAt(0).toUpperCase());
         const headerAvatar = $('headerAvatar');
-        if (data?.avatar_url) headerAvatar.innerHTML = `<img src="${esc(data.avatar_url)}" alt="Mi foto">`;
-        else { const inicial = (data?.nombre || data?.handle || '◈').charAt(0).toUpperCase(); headerAvatar.innerHTML = esc(inicial); }
-        $('profileModalAvatar').innerHTML = data?.avatar_url ? `<img src="${esc(data.avatar_url)}" alt="Mi foto">` : esc((data?.nombre || data?.handle || '◈').charAt(0).toUpperCase());
-        $('profileModalName').textContent = data?.nombre || 'Mi Perfil';
-        $('profileModalHandle').textContent = '@' + (data?.handle || 'usuario');
+        if (headerAvatar) {
+            headerAvatar.innerHTML = data?.avatar_url ? `<img src="${esc(data.avatar_url)}" alt="Mi foto">` : inicial;
+        }
+
+        const pmAvatar = $('profileModalAvatar');
+        if (pmAvatar) pmAvatar.innerHTML = data?.avatar_url ? `<img src="${esc(data.avatar_url)}" alt="Mi foto">` : inicial;
+        const pmName = $('profileModalName');
+        if (pmName) pmName.textContent = data?.nombre || 'Mi perfil';
+        const pmHandle = $('profileModalHandle');
+        if (pmHandle) pmHandle.textContent = '@' + (data?.handle || 'usuario');
     } catch (e) { console.warn('Error cargando foto del header:', e); }
 }
 
@@ -46,26 +49,25 @@ async function subirFotoHeader(event) {
     const file = event.target.files[0];
     if (!file) return;
     if (!await auth()) return;
-    if (file.size > 5 * 1024 * 1024) { toast('❌ La imagen no puede superar los 5 MB', 'error'); event.target.value = ''; return; }
-    if (!file.type.startsWith('image/')) { toast('❌ Solo se permiten imágenes', 'error'); event.target.value = ''; return; }
+    if (file.size > 5 * 1024 * 1024) { toast('La imagen no puede superar los 5 MB.', 'error'); event.target.value = ''; return; }
+    if (!file.type.startsWith('image/')) { toast('Solo se permiten imágenes.', 'error'); event.target.value = ''; return; }
     try {
-        toast('⏳ Revisando y subiendo foto...', '');
+        toast('Revisando y subiendo la foto…', '');
         const d = await subirViaBackend(file, 'sariels-avatars', 'imagen');
         const { error: updateError } = await db.from('usuarios').update({ avatar_url: d.url + '?t=' + Date.now() }).eq('id', user.id);
         if (updateError) throw updateError;
-        toast('✅ Foto actualizada correctamente', 'success');
+        toast('Foto actualizada correctamente.', 'success');
         event.target.value = '';
         await cargarFotoHeader();
     } catch (error) {
         console.error('Error al subir foto:', error);
-        toast('❌ ' + (error.message || 'No se pudo subir la foto'), 'error');
+        toast(error.message || 'No se pudo subir la foto.', 'error');
         event.target.value = '';
     }
 }
 
-// ================================================================
-// ENLACE DE BOTONES DE LA UI (las de llamada van en el módulo 7)
-// ================================================================
+/* ---------------- Enlace de botones de la UI ---------------- */
+
 function enlazarBotonesUI() {
     const bind = (id, fn, ev = 'onclick') => { const el = $(id); if (el) el[ev] = fn; };
     const bindChange = (id, fn) => { const el = $(id); if (el) el.addEventListener('change', fn); };
@@ -81,7 +83,7 @@ function enlazarBotonesUI() {
     bind('btnCerrarProfileModal', cerrarProfileModal);
     bindClickFondo('profileModal', cerrarProfileModal);
 
-    // Vistas
+    // Vistas de historias
     bind('closeVistasModal', cerrarVistasModal);
     bindClickFondo('vistasModal', cerrarVistasModal);
 
@@ -93,7 +95,12 @@ function enlazarBotonesUI() {
     bind('evClose', cerrarEstadoViewer);
     bind('evPrev', (e) => { if (e) e.stopPropagation(); anteriorEstado(); });
     bind('evNext', (e) => { if (e) e.stopPropagation(); siguienteEstado(); });
-    bind('evVistas', (e) => { if (e) e.stopPropagation(); const el = $('evVistas'); const estadoId = el?.dataset.estadoId; if (estadoId) abrirPanelEstado(estadoId, 'vistas'); });
+    bind('evVistas', (e) => {
+        if (e) e.stopPropagation();
+        const el = $('evVistas');
+        const estadoId = el?.dataset.estadoId;
+        if (estadoId) abrirPanelEstado(estadoId, 'vistas');
+    });
 
     const evBody = $('evBody');
     if (evBody) {
@@ -113,12 +120,12 @@ function enlazarBotonesUI() {
     bind('btnPublicarEstado', publicarEstado);
     bindClickFondo('estadoUploadModal', cerrarModalEstado);
 
-    // Chat
+    // Composer de chat
     const composerEl = $('composer');
     if (composerEl) composerEl.addEventListener('submit', e => { e.preventDefault(); sendMessage($('messageInput').value); });
 
     bind('attach', () => {
-        if (current?.bot) { toast('⚠️ Para Marquinhos usa el botón 🔊', 'error'); return; }
+        if (current?.bot) { toast('Para Marquinhos usa el botón de voz.', 'error'); return; }
         $('fileInput')?.click();
     });
 
@@ -130,9 +137,10 @@ function enlazarBotonesUI() {
 
     bind('audio', recordAudioNota);
     bind('voiceBot', grabarVozParaBot);
-    bind('deleteChat', deleteConversation);
     bind('backBtn', cerrarConversacion);
-    bind('blockUser', bloquearUsuarioActual);
+    // blockUser, deleteChat, audioCall y videoCall los enlazan mensajes-chats.js y mensajes-llamadas.js
+
+    // Buscar dentro de la conversación
     bind('searchChat', buscarEnConversacion);
 
     // Nueva conversación y búsqueda de usuarios
@@ -171,12 +179,12 @@ function enlazarBotonesUI() {
     bind('closeModalGrupo', cerrarModalCrearGrupo);
     bindClickFondo('modalCrearGrupo', cerrarModalCrearGrupo);
 
-    // Teclado de emojis
+    // Teclado de emojis (el botón del HTML es #emojiBtn)
     if (typeof window.inicializarTecladoEmojis === 'function') {
         window.inicializarTecladoEmojis('messageInput', 'emojiBtn');
     }
 
-    // Llamadas (botones de la pantalla de llamada y videollamada)
+    // Botones de llamada (videollamada, audio, colgar, aceptar, rechazar)
     enlazarBotonesLlamada();
 
     // Teclas globales
@@ -200,24 +208,44 @@ function enlazarBotonesUI() {
     });
 }
 
-// Búsqueda dentro de la conversación (antes inline en init)
+/* ---------------- Búsqueda dentro de la conversación ---------------- */
+
 async function buscarEnConversacion() {
-    if (!current) { toast('⚠️ Selecciona una conversación', 'error'); return; }
-    if (current.bot) { toast('ℹ️ Marquinhos no tiene búsqueda local aún', 'warning'); return; }
-    const q = await NeonModal.prompt({ title: 'Buscar en la conversación', message: 'Escribe el texto que quieres encontrar:', icon: '🔍', placeholder: 'Texto a buscar…', confirmText: 'Buscar', cancelText: 'Cancelar' });
+    if (!current) { toast('Selecciona una conversación.', 'error'); return; }
+    if (current.bot) { toast('Marquinhos todavía no tiene búsqueda en el chat.', 'warning'); return; }
+    const q = await NeonModal.prompt({
+        title: 'Buscar en la conversación',
+        message: 'Escribe el texto que quieres encontrar:',
+        icon: '',
+        placeholder: 'Texto a buscar',
+        confirmText: 'Buscar',
+        cancelText: 'Cancelar'
+    });
     if (!q || !q.trim()) return;
-    const r = await db.from('mensajes_chat').select('*').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${current.id}),and(remitente_id.eq.${current.id},destinatario_id.eq.${user.id})`).ilike('contenido', '%' + q.trim() + '%').order('created_at', { ascending: true });
-    if (r.error) { toast('❌ Error al buscar', 'error'); return; }
-    await renderMessages(r.data || []);
+    const r = await db.from('mensajes_chat')
+        .select('*')
+        .eq('eliminado', false)
+        .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${current.id}),and(remitente_id.eq.${current.id},destinatario_id.eq.${user.id})`)
+        .ilike('contenido', '%' + q.trim() + '%')
+        .order('created_at', { ascending: true });
+    if (r.error) { toast('Error al buscar.', 'error'); return; }
+    if (!r.data || !r.data.length) {
+        toast('No se encontraron mensajes con ese texto.', 'warning');
+        return;
+    }
+    await renderMessages(r.data);
 }
 
-// ================================================================
-// INIT PRINCIPAL
-// ================================================================
+/* ---------------- Init principal ---------------- */
+
 async function init() {
     try { db = await window.supabaseReady; } catch (e) { db = null; }
     if (!db) db = window.supabaseClient;
-    if (!db) { toast('❌ No se pudo conectar a Supabase. Revisa tu conexión.', 'error'); console.error('[Mensajes] No hay cliente Supabase disponible.'); return; }
+    if (!db) {
+        toast('No se pudo conectar a Supabase. Revisa tu conexión.', 'error');
+        console.error('[Mensajes] No hay cliente Supabase disponible.');
+        return;
+    }
 
     try {
         const s = await session();
@@ -227,6 +255,8 @@ async function init() {
     const callBtn = $('videoCall');
     if (!window.__livekitReady && window.LivekitClient) window.__livekitReady = true;
     if (callBtn) callBtn.disabled = !window.__livekitReady;
+    const audioBtn = $('audioCall');
+    if (audioBtn) audioBtn.disabled = !window.__livekitReady;
 
     await cargarFotoHeader();
     await loadConversations();
@@ -248,11 +278,13 @@ async function init() {
     window.addEventListener('livekit:ready', () => {
         window.__livekitReady = true;
         const b = $('videoCall'); if (b) b.disabled = false;
+        const a = $('audioCall'); if (a) a.disabled = false;
     });
     window.addEventListener('livekit:error', () => {
         window.__livekitReady = false;
         const b = $('videoCall'); if (b) b.disabled = true;
-        toast('⚠️ Las llamadas no están disponibles en este dispositivo.', 'warning');
+        const a = $('audioCall'); if (a) a.disabled = true;
+        toast('Las llamadas no están disponibles en este dispositivo.', 'warning');
     });
 
     enlazarBotonesUI();
@@ -264,7 +296,7 @@ async function init() {
         }).subscribe();
     }
 
-    // Refresco periódico de historias (solo si la pestaña está visible)
+    // Refresco periódico de historias (solo con la pestaña visible)
     setInterval(() => { if (document.hidden) return; cargarEstados(); }, 10 * 60 * 1000);
 
     registrarPushYServiceWorker().catch(err => console.warn('[Push] No se pudo registrar:', err));
@@ -281,8 +313,17 @@ async function init() {
                     await openConversation(usuarioParam);
                     if (accionParam === 'llamada') {
                         setTimeout(async () => {
-                            const ok = await NeonModal.confirm({ title: 'Iniciar videollamada', message: '¿Quieres llamar a este usuario ahora?', icon: '📹', confirmText: 'Llamar', cancelText: 'Cancelar' });
-                            if (ok) { try { await startCall('video'); } catch (e) { console.error('[Llamadas] Error en inicio automático:', e); } }
+                            const ok = await NeonModal.confirm({
+                                title: 'Iniciar videollamada',
+                                message: '¿Quieres llamar a este usuario ahora?',
+                                icon: '',
+                                confirmText: 'Llamar',
+                                cancelText: 'Cancelar'
+                            });
+                            if (ok) {
+                                try { await startCall('video'); }
+                                catch (e) { console.error('[Llamadas] Error en inicio automático:', e); }
+                            }
                         }, 1000);
                     }
                 } catch (e) { console.error('[Mensajes] Error al abrir conversación desde URL:', e); }
@@ -297,20 +338,16 @@ async function init() {
         }
     }
 
-    decorarComposerWeb3();
-    decorarSidebarTabsWeb3();
-    decorarChatActions();
     configurarLongPressMensajes();
 
     setTimeout(async () => {
         try { if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas(); }
-        catch (e) { console.warn('⚠️ Error aplicando idiomas:', e); }
+        catch (e) { console.warn('Error aplicando idiomas:', e); }
     }, 500);
 }
 
-// ================================================================
-// PUSH Y SERVICE WORKER
-// ================================================================
+/* ---------------- Push y service worker ---------------- */
+
 async function registrarPushYServiceWorker() {
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
     try {
@@ -336,7 +373,7 @@ async function registrarPushYServiceWorker() {
             })
         });
         const dataSub = await resSub.json();
-        if (dataSub.success) console.log('[Push] Suscripción guardada en Supabase correctamente ✅');
+        if (dataSub.success) console.log('[Push] Suscripción guardada correctamente.');
     } catch (error) { console.error('[Push] Error en el registro:', error); }
 }
 
@@ -357,7 +394,7 @@ if ('serviceWorker' in navigator) {
 
         if (data.accion === 'reject') {
             llamadaFetch(`/api/llamadas/${encodeURIComponent(data.llamadaId)}/terminar`, { motivo: 'rechazada_desde_notificacion' })
-                .then(() => toast('📵 Llamada rechazada', 'warning'))
+                .then(() => toast('Llamada rechazada.', 'warning'))
                 .catch(e => console.warn('[Llamadas] rechazo desde notificación:', e.code || e.message));
             return;
         }
@@ -373,71 +410,8 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// ================================================================
-// DECORACIÓN VISUAL (solo presentación, no cambia la lógica)
-// ================================================================
-function decorarComposerWeb3() {
-    const composer = $('composer');
-    if (!composer || composer.dataset.web3decorated) return;
-    envolverBotonConLabel($('attach'), '◆', 'Adjuntar');
-    envolverBotonConLabel($('audio'), '🎙️', 'Audio');
-    envolverBotonConLabel($('voiceBot'), '🔊', 'Voz');
-    const sendBtn = composer.querySelector('button[type="submit"]');
-    if (sendBtn && !sendBtn.classList.contains('composer-send')) {
-        sendBtn.classList.add('composer-send');
-        sendBtn.innerHTML = '<span>Enviar</span><span style="font-size:.9rem;">➤</span>';
-    }
-    const input = $('messageInput');
-    if (input && !input.placeholder) input.placeholder = 'Escribe un mensaje…';
-    composer.dataset.web3decorated = '1';
-}
+/* ---------------- Exposición global ---------------- */
 
-function envolverBotonConLabel(btn, icono, label) {
-    if (!btn || btn.dataset.web3labeled) return;
-    btn.classList.add('composer-btn');
-    btn.innerHTML = '<span class="composer-btn-icon">' + icono + '</span><span class="composer-btn-label">' + label + '</span>';
-    btn.dataset.web3labeled = '1';
-    const observer = new MutationObserver(() => {
-        const t = btn.textContent.trim();
-        if (t === '⏹️' || t === '⏳') {
-            const icon = t === '⏹️' ? '⏹️' : '⏳';
-            const lbl = t === '⏹️' ? 'Grabando' : 'Procesando';
-            btn.innerHTML = '<span class="composer-btn-icon">' + icon + '</span><span class="composer-btn-label">' + lbl + '</span>';
-        } else if (t === '🎙️' || t === '🔊') {
-            if (!btn.querySelector('.composer-btn-icon')) {
-                btn.innerHTML = '<span class="composer-btn-icon">' + icono + '</span><span class="composer-btn-label">' + label + '</span>';
-            }
-        }
-    });
-    observer.observe(btn, { childList: true, subtree: true, characterData: true });
-}
-
-function decorarSidebarTabsWeb3() {
-    document.querySelectorAll('.sidebar-tab').forEach(tab => tab.setAttribute('role', 'tab'));
-}
-
-function decorarChatActions() {
-    const search = $('searchChat');
-    if (search && !search.dataset.web3labeled) {
-        search.classList.remove('iconbtn');
-        search.classList.add('action-labeled');
-        search.setAttribute('title', 'Buscar en la conversación');
-        search.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><line x1="20" y1="20" x2="16.65" y2="16.65"></line></svg><span class="action-label">Buscar</span>`;
-        search.dataset.web3labeled = '1';
-    }
-    const del = $('deleteChat');
-    if (del && !del.dataset.web3labeled) {
-        del.classList.remove('iconbtn');
-        del.classList.add('action-labeled', 'danger');
-        del.setAttribute('title', 'Eliminar chat');
-        del.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"></path></svg><span class="action-label">Eliminar chat</span>`;
-        del.dataset.web3labeled = '1';
-    }
-}
-
-// ================================================================
-// EXPOSICIÓN GLOBAL (para los onclick del HTML y para otros módulos)
-// ================================================================
 window.cambiarPestana = cambiarPestana;
 window.onNuevoClick = onNuevoClick;
 window.buscarCanalesDebounce = buscarCanalesDebounce;
@@ -466,7 +440,7 @@ window.saltarGrupoMensajes = saltarGrupoMensajes;
 window.abrirPanelEstado = abrirPanelEstado;
 window.abrirVistasModal = abrirVistasModal;
 
-// Llamadas (ya expuestas en el módulo 7, se repiten aquí solo como referencia de contrato)
+// Llamadas (contrato de llamadas-ui.js)
 window.startCall = startCall;
 window.acceptCall = acceptCall;
 window.endCall = finalizarLlamadaLocal;
@@ -477,18 +451,9 @@ Object.defineProperty(window, 'current', {
     configurable: true
 });
 
-window.NeonUI = {
-    version: '5.9.4',
-    decorarComposer: decorarComposerWeb3,
-    decorarSidebarTabs: decorarSidebarTabsWeb3,
-    decorarSidebarTabsWeb3: decorarSidebarTabsWeb3,
-    decorarChatActions: decorarChatActions
-};
+/* ---------------- Arranque ---------------- */
 
-// ================================================================
-// ARRANQUE
-// ================================================================
 document.addEventListener('DOMContentLoaded', () => {
     if (window.supabase?.createClient) init();
-    else toast('❌ No se pudo cargar Supabase', 'error');
+    else toast('No se pudo cargar Supabase.', 'error');
 });
