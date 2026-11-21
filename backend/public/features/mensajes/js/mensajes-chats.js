@@ -1,16 +1,15 @@
 // ================================================================
-// MENSAJES · CHATS v2.0 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.1 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
 // Depende de: mensajes-core.js, mensajes-scroll-media.js
 // Usa (módulos 4 y 7): abrirConversacionBot, enviarMensajeBot,
 //                      enviarVozAlBot, startCall, deleteConversation
-// Cambios v2.0:
-//  - Sin emojis ni diamantes: iconos SVG planos
-//  - Bloqueo sincronizado con contactos.js (tablas bloqueos y RPC bloquear_contacto)
-//  - Estado de bloqueo visible: se oculta la barra de escribir y el botón
-//    cambia a "Desbloquear"
-//  - Panel de información del chat (estilo Messenger) controlado aquí
-//  - #chatHeader guarda userId, handle y online para "Ver perfil"
+// Cambios v2.1:
+//  - Apertura de Marquinhos sin esperar escrituras de lectura (no se traba)
+//  - Errores de apertura capturados y avisados al usuario
+//  - Cada apertura tiene secuencia: una respuesta vieja no pisa la nueva
+//  - Abrir un chat cierra el visor de historias si estaba abierto
+//  - Tocar la foto del contacto ejecuta una sola acción (sin duplicados)
 // ================================================================
 
 'use strict';
@@ -18,6 +17,7 @@
 const ICO_ESTRELLA_CHAT = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>';
 
 let conversationFilter = '';
+let aperturaSecuencia = 0;
 
 function etiquetaPreview(tipo, contenido) {
     if (!tipo) return 'Sin mensajes';
@@ -165,7 +165,6 @@ async function bloquearUsuarioActual() {
         const ok = await NeonModal.confirm({
             title: 'Desbloquear usuario',
             message: `¿Permitir que ${nombre} te escriba y te llame de nuevo?`,
-            icon: '',
             confirmText: 'Desbloquear',
             cancelText: 'Cancelar'
         });
@@ -177,7 +176,6 @@ async function bloquearUsuarioActual() {
         const ok = await NeonModal.confirm({
             title: 'Bloquear usuario',
             message: `¿Bloquear a ${nombre}? No podrá llamarte ni escribirte.`,
-            icon: '',
             confirmText: 'Bloquear',
             cancelText: 'Cancelar',
             danger: true
@@ -194,9 +192,30 @@ async function bloquearUsuarioActual() {
 
 /* ---------------- Abrir y cerrar chat ---------------- */
 
+function marcarBotLeidoEnSegundoPlano() {
+    // No se espera: si la escritura tarda o falla, no bloquea la apertura
+    try {
+        db.from('mensajes_chat')
+            .update({ leido: true })
+            .eq('remitente_id', BOT_UUID)
+            .eq('destinatario_id', user.id)
+            .eq('leido', false)
+            .then(() => {}, () => {});
+    } catch (e) { /* silencioso */ }
+}
+
 async function openConversation(id) {
+    const secuencia = ++aperturaSecuencia;
+
+    // Si el visor de historias quedó abierto, se cierra para dejar libre el chat
+    const visor = $('estadoViewer');
+    if (visor) visor.classList.remove('show');
+
     if (!await auth()) return;
+
     const p = await profile(id);
+    if (secuencia !== aperturaSecuencia) return;
+
     const esBot = (id === BOT_ID);
     current = { id, profile: p, bot: esBot, bloqueo: { yo: false, el: false } };
 
@@ -212,11 +231,6 @@ async function openConversation(id) {
     header.dataset.userId = id;
     header.dataset.handle = p.handle || '';
     header.dataset.online = p.online ? 'true' : 'false';
-
-    $('chatAvatar').onclick = () => {
-        if (esBot) { toast('Marquinhos es un asistente de IA.', 'warning'); return; }
-        verFotoAmpliada(p.avatar_url, p.nombre, p.handle);
-    };
 
     $('voiceBot').hidden = !esBot;
     $('chatActions').hidden = esBot;
@@ -239,22 +253,38 @@ async function openConversation(id) {
     actualizarFlecha();
 
     if (esBot) {
-        await db.from('mensajes_chat').update({ leido: true }).eq('remitente_id', BOT_UUID).eq('destinatario_id', user.id).eq('leido', false);
+        marcarBotLeidoEnSegundoPlano();
         botResumenCache.ts = 0;
-        await abrirConversacionBot();
+        try {
+            await abrirConversacionBot();
+        } catch (e) {
+            console.error('[Mensajes] Error abriendo Marquinhos:', e);
+            toast('No se pudo abrir Marquinhos. Intenta de nuevo.', 'error');
+        }
         return;
     }
 
-    aplicarEstadoBloqueo(await estadoBloqueoCon(id));
+    const bloqueo = await estadoBloqueoCon(id);
+    if (secuencia !== aperturaSecuencia) return;
+    aplicarEstadoBloqueo(bloqueo);
 
-    const r = await db.from('mensajes_chat').select('*').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${id}),and(remitente_id.eq.${id},destinatario_id.eq.${user.id})`).order('created_at', { ascending: true }).limit(100);
+    const r = await db.from('mensajes_chat')
+        .select('*')
+        .eq('eliminado', false)
+        .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${id}),and(remitente_id.eq.${id},destinatario_id.eq.${user.id})`)
+        .order('created_at', { ascending: true })
+        .limit(100);
+    if (secuencia !== aperturaSecuencia) return;
     if (r.error) { console.error(r.error); toast('Error al cargar mensajes.', 'error'); return; }
+
     await renderMessages(r.data || []);
+    if (secuencia !== aperturaSecuencia) return;
     await markRead(id);
     subscribeMessages(id);
 }
 
 async function cerrarConversacion() {
+    aperturaSecuencia++;
     current = null;
     $('panel').classList.remove('chat-open');
     $('chatName').textContent = 'Selecciona una conversación';
@@ -262,7 +292,6 @@ async function cerrarConversacion() {
     $('chatStatus').className = 'status';
     $('chatAvatar').innerHTML = '';
     $('chatAvatar').className = 'avatar';
-    $('chatAvatar').onclick = null;
     $('chatHeader').dataset.userId = '';
     $('chatHeader').dataset.handle = '';
     $('chatActions').hidden = true;
@@ -399,7 +428,6 @@ async function deleteConversation() {
     const confirmado = await NeonModal.confirm({
         title: 'Eliminar conversación',
         message: `¿Eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`,
-        icon: '',
         confirmText: 'Eliminar',
         cancelText: 'Cancelar',
         danger: true
@@ -640,7 +668,6 @@ async function editarMensaje(msgId, bubblewrap) {
     const nuevoTexto = await NeonModal.prompt({
         title: 'Editar mensaje',
         message: 'Edita tu mensaje (máximo 15 minutos después de enviarlo):',
-        icon: '',
         placeholder: 'Nuevo texto',
         defaultValue: contenidoActual,
         confirmText: 'Guardar',
@@ -676,7 +703,7 @@ async function editarMensaje(msgId, bubblewrap) {
 }
 
 async function eliminarMensajeParaMi(msgId, bubblewrap) {
-    const confirmado = await NeonModal.confirm({ title: 'Eliminar para mí', message: '¿Eliminar este mensaje solo de tu vista?', icon: '', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
+    const confirmado = await NeonModal.confirm({ title: 'Eliminar para mí', message: '¿Eliminar este mensaje solo de tu vista?', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
     if (!confirmado) return;
     try {
         const { error } = await db.rpc('eliminar_mensaje_para_mi', { p_mensaje_id: msgId });
@@ -688,7 +715,7 @@ async function eliminarMensajeParaMi(msgId, bubblewrap) {
 }
 
 async function eliminarMensajeParaTodos(msgId, bubblewrap) {
-    const confirmado = await NeonModal.confirm({ title: 'Eliminar para todos', message: '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.', icon: '', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
+    const confirmado = await NeonModal.confirm({ title: 'Eliminar para todos', message: '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
     if (!confirmado) return;
     try {
         const { error } = await db.rpc('eliminar_mensaje_para_todos', { p_mensaje_id: msgId });
@@ -800,10 +827,17 @@ function configurarInfoChat() {
     header.dataset.infoListeners = '1';
 
     $('chatInfoTrigger').addEventListener('click', abrirInfoChat);
-    $('chatAvatar').addEventListener('click', e => {
-        if (!current || current.bot) { abrirInfoChat(); return; }
+
+    // La foto abre el visor si hay foto real; si no, abre el panel de información. Una sola acción.
+    $('chatAvatar').addEventListener('click', () => {
+        if (!current) return;
+        if (!current.bot && current.profile && current.profile.avatar_url && typeof verFotoAmpliada === 'function') {
+            verFotoAmpliada(current.profile.avatar_url, current.profile.nombre, current.profile.handle);
+            return;
+        }
         abrirInfoChat();
     });
+
     $('chatSettings').addEventListener('click', abrirInfoChat);
     $('cpBackBtn').addEventListener('click', cerrarInfoChat);
     $('contactProfileOverlay').addEventListener('click', e => {
