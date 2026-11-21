@@ -3,8 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Mensajes · Csariel's">
 <meta name="theme-color" content="#05080f">
-<title>◈ Mensajes · Csariel's</title>
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>Mensajes · Csariel's</title>
+
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect x='10' y='10' width='80' height='80' rx='16' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/%3E%3C/svg%3E">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <script src="/features/shared/js/api-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -23,610 +31,339 @@
             intento++;
             var s = document.createElement('script');
             s.src = url; s.async = true;
-            s.onload = function () { if (window.LivekitClient) { window.__livekitReady = true; window.dispatchEvent(new CustomEvent('livekit:ready')); } else { setTimeout(cargarScript, 1500); } };
+            s.onload = function () {
+                if (window.LivekitClient) { window.__livekitReady = true; window.dispatchEvent(new CustomEvent('livekit:ready')); }
+                else { setTimeout(cargarScript, 1500); }
+            };
             s.onerror = function () { setTimeout(cargarScript, 1500); };
             document.head.appendChild(s);
         }
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargarScript); else cargarScript();
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargarScript);
+        else cargarScript();
     })();
 </script>
 
-<!-- Tus CSS base -->
-<link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=3.4">
+<!-- Estilos de módulos que se conservan (emojis y teclado) -->
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
-<link rel="stylesheet" href="/features/mensajes/css/mensajes-messenger.css?v=1">
-<link rel="stylesheet" href="/features/mensajes/css/mensajes-floating.css?v=1">
 <link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
 
-<style>
-    /* ========================================================
-       UNIFICACIÓN CON CONTACTOS.CSS (Diseño plano y oscuro)
-    ======================================================== */
-    html:not(.auth-ready) .app { display: none !important; }
-    
-    /* Barra de entrada minimalista */
-    .composer {
-        display: flex;
-        align-items: flex-end;
-        gap: 8px;
-        padding: 12px 16px;
-        background: var(--panel, #0b111b);
-        border-top: 1px solid var(--line, rgba(255,255,255,.08));
-    }
-
-    /* Botón Clip */
-    .composer .btn-icon {
-        display: flex; align-items: center; justify-content: center;
-        width: 42px; height: 42px; border-radius: 10px;
-        background: transparent; color: var(--muted, #8593a6);
-        border: 1px solid transparent; cursor: pointer; 
-        transition: color 0.2s, border-color 0.2s;
-    }
-    .composer .btn-icon:hover { 
-        color: var(--text, #e8edf3); 
-        border-color: var(--line-strong, rgba(255,255,255,.16));
-    }
-    .composer .btn-icon svg { width: 22px; height: 22px; }
-
-    /* Input Wrapper (Fondo plano, borde sutil) */
-    .composer .input-wrapper {
-        flex: 1; display: flex; align-items: flex-end;
-        background: var(--panel-2, #101826);
-        border-radius: 12px;
-        padding: 8px 14px;
-        border: 1px solid var(--line-strong, rgba(255,255,255,.16));
-        min-height: 44px;
-        transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .composer .input-wrapper:focus-within { 
-        border-color: var(--orange, #ff7a1a);
-    }
-
-    .composer #messageInput {
-        flex: 1; background: transparent; border: none;
-        color: var(--text, #e8edf3); font-size: 0.95rem; font-family: inherit;
-        line-height: 1.4; padding: 0 4px; outline: none; resize: none;
-        max-height: 120px; min-height: 24px;
-    }
-    .composer #messageInput::placeholder { color: var(--muted, #8593a6); }
-
-    /* Botón Emoji */
-    .composer .btn-emoji {
-        background: transparent; border: none; font-size: 1.2rem;
-        cursor: pointer; padding: 0 0 0 8px; opacity: 0.7;
-        transition: opacity 0.2s; display: flex; align-items: center; justify-content: center; height: 28px;
-    }
-    .composer .btn-emoji:hover { opacity: 1; }
-
-    /* Botones de Acción (Mic/Enviar) - Estilo plano con acento naranja */
-    .composer .btn-accion {
-        display: flex; align-items: center; justify-content: center;
-        width: 44px; height: 44px; border-radius: 10px;
-        border: 1px solid var(--line-strong, rgba(255,255,255,.16)); 
-        cursor: pointer; 
-        transition: all 0.2s ease;
-        color: var(--muted, #8593a6); 
-        background: var(--panel-2, #101826);
-        flex-shrink: 0;
-    }
-    .composer .btn-accion:hover {
-        color: var(--orange, #ff7a1a);
-        border-color: var(--orange, #ff7a1a);
-    }
-    
-    /* El botón de enviar resalta más (naranja sólido) */
-    .composer .btn-send {
-        background: var(--orange, #ff7a1a);
-        border-color: var(--orange, #ff7a1a);
-        color: #05080f;
-    }
-    .composer .btn-send:hover {
-        background: #ff8b3d;
-        color: #05080f;
-    }
-    
-    /* Mostrar/Ocultar Mic y Enviar */
-    .composer .btn-mic { display: flex; }
-    .composer.has-text .btn-mic { display: none; }
-    .composer .btn-send { display: none; }
-    .composer.has-text .btn-send { display: flex; }
-
-    /* VoiceBot */
-    .composer .btn-voicebot {
-        background: transparent; border: none; color: var(--gold, #d4af37);
-        font-size: 1.4rem; cursor: pointer; padding: 0 4px;
-        display: flex; align-items: center; justify-content: center; height: 40px;
-    }
-    .composer .btn-voicebot.recording { color: var(--red, #ff4d6d); animation: pulse-recording 1s infinite; }
-    @keyframes pulse-recording { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(1.1); } 100% { opacity: 1; transform: scale(1); } }
-
-    @media (max-width: 480px) {
-        .composer { padding: 8px; gap: 4px; }
-        .composer .btn-icon { width: 36px; height: 36px; }
-        .composer .btn-icon svg { width: 20px; height: 20px; }
-        .composer .input-wrapper { min-height: 40px; padding: 6px 10px; border-radius: 10px; }
-        .composer #messageInput { font-size: 0.9rem; }
-        .composer .btn-accion { width: 40px; height: 40px; }
-        .composer .btn-emoji { font-size: 1.2rem; }
-    }
-
-    /* Ajustes al resto del layout para que combine con contactos */
-    .header, .panel, .sidebar, .chathead {
-        background: var(--panel, #0b111b);
-        border-color: var(--line, rgba(255,255,255,.08));
-    }
-    
-    .chathead { border-bottom: 1px solid var(--line-strong, rgba(255,255,255,.16)); cursor: pointer; }
-    .sidebar { border-right: 1px solid var(--line, rgba(255,255,255,.08)); }
-    
-    /* Botones del header (Videollamada, etc) */
-    .btn-videollamada { 
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px; 
-        padding: 8px 14px; border: 1px solid var(--line-strong, rgba(255,255,255,.16)); 
-        border-radius: 10px; background: transparent; color: var(--muted, #8593a6); 
-        font: inherit; font-weight: 600; cursor: pointer; transition: all 0.2s ease; font-size: 0.75rem; 
-    }
-    .btn-videollamada:hover { 
-        color: var(--orange, #ff7a1a); 
-        border-color: var(--orange, #ff7a1a); 
-    }
-    .btn-videollamada:disabled { opacity: 0.4; cursor: not-allowed; }
-    .btn-videollamada svg { flex-shrink: 0; }
-    @media (max-width: 480px) { .btn-videollamada span { display: none; } .btn-videollamada { padding: 8px; } }
-
-    /* ========================================================
-       ESTILOS DEL MODAL DE PERFIL DEL CONTACTO (ESTILO CAPTURAS)
-    ======================================================== */
-    .contact-profile-overlay {
-        position: fixed;
-        inset: 0;
-        background: var(--bg, #05080f);
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        overflow-y: auto;
-        transform: translateX(100%);
-        transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
-        color: var(--text, #e8edf3);
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    }
-    .contact-profile-overlay.open {
-        transform: translateX(0);
-    }
-
-    /* Cabecera superior con botón atrás */
-    .cp-topbar {
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        background: var(--bg, #05080f);
-        position: sticky;
-        top: 0;
-        z-index: 10;
-    }
-    .cp-back {
-        background: transparent;
-        border: none;
-        color: var(--text, #e8edf3);
-        cursor: pointer;
-        padding: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 50%;
-        transition: background 0.2s;
-    }
-    .cp-back:hover { background: rgba(255,255,255,0.1); }
-    .cp-back svg { width: 24px; height: 24px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
-
-    /* Contenido central */
-    .cp-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 0 16px 32px;
-        max-width: 600px;
-        margin: 0 auto;
-        width: 100%;
-        box-sizing: border-box;
-    }
-
-    /* Avatar */
-    .cp-avatar-container {
-        position: relative;
-        width: 120px;
-        height: 120px;
-        margin-bottom: 12px;
-    }
-    .cp-avatar {
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        object-fit: cover;
-        background: var(--panel-2, #101826);
-        border: 2px solid var(--line-strong, rgba(255,255,255,.16));
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 3rem;
-        font-weight: bold;
-        color: var(--muted, #8593a6);
-        overflow: hidden;
-    }
-    .cp-status-dot {
-        position: absolute;
-        bottom: 4px;
-        right: 4px;
-        width: 20px;
-        height: 20px;
-        background: var(--success, #00d68f);
-        border-radius: 50%;
-        border: 3px solid var(--bg, #05080f);
-    }
-
-    /* Nombre y tagline */
-    .cp-name {
-        font-size: 1.5rem;
-        font-weight: 700;
-        margin-bottom: 4px;
-        text-align: center;
-    }
-    .cp-encryption-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 12px;
-        border-radius: 99px;
-        background: var(--panel-2, #101826);
-        border: 1px solid var(--line, rgba(255,255,255,.08));
-        font-size: 0.7rem;
-        color: var(--muted, #8593a6);
-        margin-bottom: 24px;
-    }
-    .cp-encryption-badge svg { width: 12px; height: 12px; fill: currentColor; }
-
-    /* Botones de acción (4) */
-    .cp-action-grid {
-        display: flex;
-        gap: 16px;
-        width: 100%;
-        justify-content: center;
-        margin-bottom: 32px;
-        flex-wrap: wrap;
-    }
-    .cp-action-btn {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 8px;
-        background: transparent;
-        border: none;
-        color: var(--text, #e8edf3);
-        cursor: pointer;
-        width: 70px;
-        transition: opacity 0.2s;
-    }
-    .cp-action-btn:hover { opacity: 0.7; }
-    .cp-action-icon {
-        width: 56px;
-        height: 56px;
-        border-radius: 50%;
-        background: var(--panel-2, #101826);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.2s;
-    }
-    .cp-action-btn:hover .cp-action-icon { background: var(--line-strong, rgba(255,255,255,.16)); }
-    .cp-action-icon svg { width: 24px; height: 24px; fill: currentColor; }
-    .cp-action-label { font-size: 0.75rem; font-weight: 500; }
-
-    /* Listas de opciones */
-    .cp-section {
-        width: 100%;
-        margin-bottom: 24px;
-    }
-    .cp-section-title {
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--text, #e8edf3);
-        margin-bottom: 12px;
-        padding-left: 4px;
-    }
-    .cp-list {
-        display: flex;
-        flex-direction: column;
-        background: var(--bg, #05080f);
-    }
-    .cp-list-item {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 14px 4px;
-        background: transparent;
-        border: none;
-        border-bottom: 1px solid var(--line, rgba(255,255,255,.08));
-        color: var(--text, #e8edf3);
-        cursor: pointer;
-        text-align: left;
-        width: 100%;
-        font-size: 0.95rem;
-        transition: background 0.2s;
-    }
-    .cp-list-item:last-child { border-bottom: none; }
-    .cp-list-item:hover { background: rgba(255,255,255,0.03); }
-    .cp-list-icon {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: var(--panel-2, #101826);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-    .cp-list-icon svg { width: 20px; height: 20px; fill: currentColor; color: var(--muted, #8593a6); }
-    .cp-list-item.danger .cp-list-icon svg { color: var(--red, #ff4d6d); }
-    .cp-list-text {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-    }
-    .cp-list-text .main { font-weight: 500; }
-    .cp-list-text .sub { font-size: 0.75rem; color: var(--muted, #8593a6); margin-top: 2px; }
-    .cp-list-toggle {
-        color: var(--muted, #8593a6);
-        font-size: 0.8rem;
-    }
-</style>
+<!-- Diseño unificado con Contactos (plano, oscuro, naranja) -->
+<link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=4.0">
 </head>
+
 <body>
 <div class="app">
-<header class="header">
-    <a class="logo" href="/"><b>◈</b><span>Csariel's</span><em class="badge">WEB3</em></a>
-    <div class="header-right">
-        <div class="network"><i></i>Polygon</div>
-        <button class="iconbtn" id="btnConfigLlamadas" title="Configuración de llamadas" style="color:var(--muted);" data-neon="icon">⚙</button>
-        <div class="header-avatar" id="headerAvatar" title="Mi perfil">◈</div>
-        <input type="file" id="avatarInput" hidden accept="image/*">
-    </div>
-</header>
-<nav class="nav">
-    <a href="/">⌂ Inicio</a>
-    <a href="/features/muro/muro.html">◇ Muro</a>
-    <a href="/features/perfil/perfil.html">◆ Perfil</a>
-    <a href="/features/contactos/contactos.html">◈ Contactos</a>
-    <a class="active" href="/features/mensajes/mensajes.html" data-neon="nav">◈ Mensajes</a>
-    <a href="/features/live/live.html">◉ Live</a>
-</nav>
-<main class="panel" id="panel">
-<aside class="sidebar">
-    <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
-        <button class="sidebar-tab active" data-tab="chats" data-neon="tab" role="tab" aria-selected="true" onclick="cambiarPestana('chats')"><span class="tab-icon">◈</span><span class="tab-label">Chats</span></button>
-        <button class="sidebar-tab" data-tab="canales" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('canales')"><span class="tab-icon">⬡</span><span class="tab-label">Canales</span></button>
-        <button class="sidebar-tab" data-tab="grupos" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')"><span class="tab-icon">◆</span><span class="tab-label">Grupos</span></button>
-        <button class="sidebar-tab" data-tab="llamadas" data-neon="tab" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')"><span class="tab-icon">☎</span><span class="tab-label">Llamadas</span></button>
-    </div>
 
-    <div class="tab-content" id="tabChats">
-        <div class="sidehead"><span>◈ Conversaciones</span></div>
-        <div class="searchbox"><input type="text" id="searchConversations" placeholder="◇ Buscar conversación…" autocomplete="off"></div>
-        <div class="estados-bar">
-            <div class="estados-header">
-                <div class="estados-title">◈ ESTADOS</div>
-                <button class="btn-subir-estado" id="btnSubirEstado" title="Subir estado" data-neon="chip">＋ Subir</button>
-            </div>
-            <div class="estados-scroll" id="estadosScroll"></div>
+    <header class="topbar">
+        <div class="topbar-left">
+            <a href="/" class="brand" aria-label="Inicio">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 21 12 12 21 3 12Z"/></svg>
+            </a>
+            <h1>Mensajes</h1>
         </div>
-        <div class="convlist" id="conversationList"></div>
-    </div>
-
-    <div class="tab-content hidden" id="tabCanales">
-        <div class="sidehead"><span>⬡ Canales Públicos</span></div>
-        <div class="searchbox"><input type="text" id="searchCanales" placeholder="◇ Buscar canal…" autocomplete="off" oninput="buscarCanalesDebounce()"></div>
-        <div class="filtros-canales"><select id="filtroEstadoCanal" onchange="cargarCanales()"><option value="">Todos los estados</option></select></div>
-        <div class="canales-lista" id="canalesLista"></div>
-    </div>
-
-    <div class="tab-content hidden" id="tabGrupos">
-        <div class="sidehead"><span>◆ Grupos Privados</span></div>
-        <div class="searchbox"><input type="text" id="searchGrupos" placeholder="◇ Buscar grupo…" autocomplete="off" oninput="buscarGruposDebounce()"></div>
-        <div class="filtros-canales"><select id="filtroEstadoGrupo" onchange="cargarGrupos()"><option value="">Todos los estados</option></select></div>
-        <div class="canales-lista" id="gruposLista"></div>
-    </div>
-
-    <div class="tab-content hidden" id="tabLlamadas">
-        <div class="sidehead">
-            <span>☎ Historial de llamadas</span>
-            <button class="btn-subir-estado" id="btnBorrarTodoHistorial" title="Borrar todo el historial" data-neon="chip-danger" style="background:var(--red);color:#fff;border:0;">🗑 Todo</button>
-        </div>
-        <div class="filtros-canales" style="padding:0 12px 6px; gap:6px; flex-wrap:wrap;">
-            <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;"><option value="all">Todos los tipos</option><option value="audio">Solo audio</option><option value="video">Solo video</option></select>
-            <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" style="flex:1 1 auto;"><option value="all">Todas</option><option value="entrante">Entrantes</option><option value="saliente">Salientes</option></select>
-        </div>
-        <div class="canales-lista" id="historialLlamadasLista"><div class="empty-state-small"><div class="empty-icon">☎</div><div class="empty-text">Cargando historial…</div></div></div>
-    </div>
-    <button class="fab" id="newChat" title="Nueva conversación" data-neon="fab">＋</button>
-</aside>
-
-<section class="chat">
-    <header class="chathead" id="chatHeader">
-        <button class="backbtn" id="backBtn" title="Volver" data-neon="icon" aria-label="Volver">
-            <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
-        </button>
-        <div class="avatar" id="chatAvatar" title="Ver foto" style="cursor:pointer;">◈</div>
-        <div style="flex:1; cursor:pointer;" id="chatInfoTrigger">
-            <div class="chatname" id="chatName">Selecciona una conversación</div>
-            <div class="status" id="chatStatus">◈ En espera</div>
-        </div>
-        <div class="actions" id="chatActions" style="display:none;">
-            <button class="iconbtn" id="deleteChat" title="Eliminar conversación" data-neon="icon">◇</button>
-            <button class="iconbtn" id="blockUser" title="Bloquear contacto" data-neon="icon-danger" style="color:var(--red);">⛔</button>
-            <button class="btn-videollamada" id="videoCall" title="Iniciar videollamada" disabled>
-                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="12" height="12" rx="3"></rect><path d="m15 10 6-3v10l-6-3"></path></svg>
-                <span>Videollamada</span>
+        <div class="topbar-actions">
+            <button type="button" class="icon-btn" id="btnConfigLlamadas" aria-label="Configuración de llamadas" title="Configuración de llamadas">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
             </button>
-            <button class="iconbtn" id="searchChat" title="Buscar en la conversación" data-neon="icon">◇</button>
+            <div class="header-avatar" id="headerAvatar" title="Mi perfil" role="button" tabindex="0" aria-label="Mi perfil"></div>
+            <input type="file" id="avatarInput" hidden accept="image/*">
         </div>
     </header>
-    <div class="messages" id="messages">
-        <div class="empty" id="emptyState">
-            <strong>◈</strong>
-            <p>Selecciona una conversación</p>
-            <small>Elige un chat de la lista para empezar a hablar</small>
-        </div>
-        <div id="scrollAnchor"></div>
-        <button class="scroll-down-btn" id="scrollDownBtn" title="Ir al final">↓<span class="badge-new" id="newMsgBadge" style="display:none;">1</span></button>
-    </div>
 
-    <!-- BARRA DE ENTRADA -->
-    <form class="composer" id="composer" style="display:none;">
-        <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path></svg>
-        </button>
-        
-        <div class="input-wrapper">
-            <textarea id="messageInput" autocomplete="off" placeholder="Mensaje..." rows="1"></textarea>
-            <button type="button" class="btn-emoji" id="emojiBtn" title="Emojis">😊</button>
-        </div>
+    <nav class="nav" aria-label="Navegación principal">
+        <a href="/">Inicio</a>
+        <a href="/features/muro/muro.html">Muro</a>
+        <a href="/features/perfil/perfil.html">Perfil</a>
+        <a href="/features/contactos/contactos.html">Contactos</a>
+        <a href="/features/mensajes/mensajes.html" class="active" aria-current="page">Mensajes</a>
+        <a href="/features/live/live.html" class="live">Live</a>
+        <a href="/features/internet/internet.html">Internet</a>
+        <a href="/features/videos/videos.html">Videos</a>
+    </nav>
 
-        <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar audio">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/><path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>
-        </button>
-        
-        <button type="submit" class="btn-accion btn-send" id="sendBtn" title="Enviar mensaje">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
-        </button>
-        
-        <button type="button" class="btn-voicebot" id="voiceBot" title="Hablar con Marquinhos" style="display:none;">◉</button>
-        <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
-    </form>
-</section>
-</main>
-<footer style="padding:18px 2px;color:var(--muted);font-size:.68rem">◈ Csariel's · Sabor al Paladar · WEB3</footer>
+    <main class="panel" id="panel">
+
+        <aside class="sidebar">
+            <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
+                <button type="button" class="sidebar-tab active" data-tab="chats" role="tab" aria-selected="true" onclick="cambiarPestana('chats')">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+                    <span class="tab-label">Chats</span>
+                </button>
+                <button type="button" class="sidebar-tab" data-tab="canales" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11v2a2 2 0 0 0 2 2h1l3 4V5L7 9H6a2 2 0 0 0-2 2z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg>
+                    <span class="tab-label">Canales</span>
+                </button>
+                <button type="button" class="sidebar-tab" data-tab="grupos" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                    <span class="tab-label">Grupos</span>
+                </button>
+                <button type="button" class="sidebar-tab" data-tab="llamadas" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg>
+                    <span class="tab-label">Llamadas</span>
+                </button>
+            </div>
+
+            <!-- CHATS -->
+            <div class="tab-content" id="tabChats">
+                <div class="sidehead"><span>Conversaciones</span></div>
+                <div class="searchbox">
+                    <input type="text" id="searchConversations" placeholder="Buscar conversación" autocomplete="off" aria-label="Buscar conversación">
+                </div>
+                <div class="estados-bar">
+                    <div class="estados-header">
+                        <div class="estados-title">ESTADOS</div>
+                        <button type="button" class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">
+                            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                            Subir
+                        </button>
+                    </div>
+                    <div class="estados-scroll" id="estadosScroll"></div>
+                </div>
+                <div class="convlist" id="conversationList"></div>
+            </div>
+
+            <!-- CANALES -->
+            <div class="tab-content hidden" id="tabCanales">
+                <div class="sidehead"><span>Canales públicos</span></div>
+                <div class="searchbox">
+                    <input type="text" id="searchCanales" placeholder="Buscar canal" autocomplete="off" oninput="buscarCanalesDebounce()" aria-label="Buscar canal">
+                </div>
+                <div class="filtros-canales">
+                    <select id="filtroEstadoCanal" onchange="cargarCanales()" aria-label="Filtrar canales por estado">
+                        <option value="">Todos los estados</option>
+                    </select>
+                </div>
+                <div class="canales-lista" id="canalesLista"></div>
+            </div>
+
+            <!-- GRUPOS -->
+            <div class="tab-content hidden" id="tabGrupos">
+                <div class="sidehead"><span>Grupos privados</span></div>
+                <div class="searchbox">
+                    <input type="text" id="searchGrupos" placeholder="Buscar grupo" autocomplete="off" oninput="buscarGruposDebounce()" aria-label="Buscar grupo">
+                </div>
+                <div class="filtros-canales">
+                    <select id="filtroEstadoGrupo" onchange="cargarGrupos()" aria-label="Filtrar grupos por estado">
+                        <option value="">Todos los estados</option>
+                    </select>
+                </div>
+                <div class="canales-lista" id="gruposLista"></div>
+            </div>
+
+            <!-- LLAMADAS -->
+            <div class="tab-content hidden" id="tabLlamadas">
+                <div class="sidehead">
+                    <span>Historial de llamadas</span>
+                    <button type="button" class="btn-subir-estado danger" id="btnBorrarTodoHistorial" title="Borrar todo el historial">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+                        Todo
+                    </button>
+                </div>
+                <div class="filtros-canales filtros-llamadas">
+                    <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por tipo de llamada">
+                        <option value="all">Todos los tipos</option>
+                        <option value="audio">Solo audio</option>
+                        <option value="video">Solo video</option>
+                    </select>
+                    <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por dirección">
+                        <option value="all">Todas</option>
+                        <option value="entrante">Entrantes</option>
+                        <option value="saliente">Salientes</option>
+                    </select>
+                </div>
+                <div class="canales-lista" id="historialLlamadasLista">
+                    <div class="empty-state-small">
+                        <div class="empty-text">Cargando historial…</div>
+                    </div>
+                </div>
+            </div>
+
+            <button type="button" class="fab" id="newChat" title="Nueva conversación" aria-label="Nueva conversación">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+        </aside>
+
+        <!-- CHAT -->
+        <section class="chat">
+            <header class="chathead" id="chatHeader">
+                <button type="button" class="backbtn" id="backBtn" title="Volver" aria-label="Volver">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+                </button>
+                <div class="avatar" id="chatAvatar" title="Ver foto" role="button" tabindex="0" aria-label="Ver foto"></div>
+                <div class="chat-title" id="chatInfoTrigger" role="button" tabindex="0">
+                    <div class="chatname" id="chatName">Selecciona una conversación</div>
+                    <div class="status" id="chatStatus">En espera</div>
+                </div>
+                <div class="actions" id="chatActions" hidden>
+                    <button type="button" class="iconbtn" id="deleteChat" title="Eliminar conversación" aria-label="Eliminar conversación">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+                    </button>
+                    <button type="button" class="iconbtn danger" id="blockUser" title="Bloquear contacto" aria-label="Bloquear contacto">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>
+                    </button>
+                    <button type="button" class="btn-videollamada" id="videoCall" title="Iniciar videollamada" disabled>
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M16 10l6-3v10l-6-3"/></svg>
+                        <span>Videollamada</span>
+                    </button>
+                    <button type="button" class="iconbtn" id="searchChat" title="Buscar en la conversación" aria-label="Buscar en la conversación">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
+                    </button>
+                </div>
+            </header>
+
+            <div class="messages" id="messages">
+                <div class="empty" id="emptyState">
+                    <p>Selecciona una conversación</p>
+                    <small>Elige un chat de la lista para empezar a hablar</small>
+                </div>
+                <div id="scrollAnchor"></div>
+                <button type="button" class="scroll-down-btn" id="scrollDownBtn" title="Ir al final" aria-label="Ir al final">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+                    <span class="badge-new" id="newMsgBadge" hidden>1</span>
+                </button>
+            </div>
+
+            <!-- BARRA DE ENTRADA -->
+            <form class="composer" id="composer" hidden>
+                <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo" aria-label="Adjuntar archivo">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                </button>
+
+                <div class="input-wrapper">
+                    <textarea id="messageInput" autocomplete="off" placeholder="Escribe un mensaje" rows="1" aria-label="Escribir mensaje"></textarea>
+                    <button type="button" class="btn-emoji" id="emojiBtn" title="Emojis" aria-label="Emojis">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+                    </button>
+                </div>
+
+                <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar audio" aria-label="Grabar audio">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+                </button>
+
+                <button type="submit" class="btn-accion btn-send" id="sendBtn" title="Enviar mensaje" aria-label="Enviar mensaje">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                </button>
+
+                <button type="button" class="btn-voicebot" id="voiceBot" title="Hablar con Marquinhos" aria-label="Hablar con Marquinhos" hidden>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="11" rx="3"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/><path d="M12 4v4"/></svg>
+                </button>
+                <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
+            </form>
+        </section>
+
+    </main>
+
+    <footer class="footer">
+        <span>Csariel's · Sabor al Paladar</span>
+        <span>Polygon</span>
+    </footer>
 </div>
 
-<!-- ========================================================
-     MODAL DE PERFIL DEL CONTACTO (ESTILO CAPTURAS)
-======================================================== -->
-<div class="contact-profile-overlay" id="contactProfileOverlay">
+<!-- PERFIL DEL CONTACTO -->
+<div class="contact-profile-overlay" id="contactProfileOverlay" role="dialog" aria-modal="true" aria-label="Perfil del contacto">
     <div class="cp-topbar">
-        <button class="cp-back" id="cpBackBtn" aria-label="Volver">
-            <svg viewBox="0 0 24 24"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+        <button type="button" class="cp-back" id="cpBackBtn" aria-label="Volver">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         </button>
     </div>
-    
+
     <div class="cp-content">
         <div class="cp-avatar-container">
-            <div class="cp-avatar" id="cpAvatar">OP</div>
-            <div class="cp-status-dot" id="cpStatusDot"></div>
+            <div class="cp-avatar" id="cpAvatar"></div>
+            <div class="cp-status-dot" id="cpStatusDot" hidden></div>
         </div>
-        
+
         <div class="cp-name" id="cpName">Contacto</div>
-        
+
         <div class="cp-encryption-badge">
-            <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
             Cifrado de extremo a extremo
         </div>
 
-        <!-- Botones de acción principales -->
         <div class="cp-action-grid">
-            <button class="cp-action-btn" id="cpBtnCall">
-                <div class="cp-action-icon" style="color: var(--text, #e8edf3);">
-                    <svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
-                </div>
+            <button type="button" class="cp-action-btn" id="cpBtnCall">
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg></span>
                 <span class="cp-action-label">Llamar</span>
             </button>
-            <button class="cp-action-btn" id="cpBtnVideo">
-                <div class="cp-action-icon" style="color: var(--text, #e8edf3);">
-                    <svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M16 10l6-3v10l-6-3"/></svg>
-                </div>
-                <span class="cp-action-label">Videollamada</span>
+            <button type="button" class="cp-action-btn" id="cpBtnVideo">
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M16 10l6-3v10l-6-3"/></svg></span>
+                <span class="cp-action-label">Video</span>
             </button>
-            <button class="cp-action-btn" id="cpBtnProfile">
-                <div class="cp-action-icon" style="color: var(--text, #e8edf3);">
-                    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                </div>
+            <button type="button" class="cp-action-btn" id="cpBtnProfile">
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
                 <span class="cp-action-label">Perfil</span>
             </button>
-            <button class="cp-action-btn" id="cpBtnMute">
-                <div class="cp-action-icon" style="color: var(--text, #e8edf3);">
-                    <svg viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-                </div>
+            <button type="button" class="cp-action-btn" id="cpBtnMute">
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M3 3l18 18"/></svg></span>
                 <span class="cp-action-label">Silenciar</span>
             </button>
         </div>
 
-        <!-- Sección: Acciones -->
         <div class="cp-section">
             <div class="cp-section-title">Acciones</div>
             <div class="cp-list">
-                <button class="cp-list-item" id="cpActionMarkRead">
-                    <div class="cp-list-icon"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
-                    <div class="cp-list-text"><span class="main">Marcar como no leído</span></div>
+                <button type="button" class="cp-list-item" id="cpActionMarkRead">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Marcar como no leído</span></span>
                 </button>
-                <button class="cp-list-item" id="cpActionShareContact">
-                    <div class="cp-list-icon"><svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></div>
-                    <div class="cp-list-text"><span class="main">Compartir contacto</span></div>
+                <button type="button" class="cp-list-item" id="cpActionShareContact">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Compartir contacto</span></span>
                 </button>
-                <button class="cp-list-item" id="cpActionCreateGroup">
-                    <div class="cp-list-icon"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-                    <div class="cp-list-text"><span class="main">Create group with <span id="cpGroupName">Contacto</span></span></div>
+                <button type="button" class="cp-list-item" id="cpActionCreateGroup">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Crear grupo con <span id="cpGroupName">Contacto</span></span></span>
                 </button>
             </div>
         </div>
 
-        <!-- Sección: Personalización -->
         <div class="cp-section">
             <div class="cp-section-title">Personalización</div>
             <div class="cp-list">
-                <button class="cp-list-item" id="cpActionReaction">
-                    <div class="cp-list-icon" style="background: rgba(0, 122, 255, 0.1); color: #007aff;"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 20h2c.55 0 1-.45 1-1v-9c0-.55-.45-1-1-1H2v11zm19.83-7.12c.11-.25.17-.52.17-.8V11c0-1.1-.9-2-2-2h-5.5l.92-4.65c.05-.22.02-.46-.1-.66-.12-.2-.31-.34-.53-.4l-.95-.24c-.42-.11-.86.1-1.05.49L9.7 9.7c-.1.2-.15.42-.15.65V19c0 1.1.9 2 2 2h8c.83 0 1.5-.5 1.8-1.2l2.03-5.92z"/></svg></div>
-                    <div class="cp-list-text"><span class="main">Reacción rápida</span></div>
+                <button type="button" class="cp-list-item" id="cpActionReaction">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-6 0v4"/><path d="M5 11h14l-1.5 9h-11z"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Reacción rápida</span></span>
                 </button>
-                <button class="cp-list-item" id="cpActionNickname">
-                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></div>
-                    <div class="cp-list-text"><span class="main">Apodos</span></div>
+                <button type="button" class="cp-list-item" id="cpActionNickname">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Apodos</span></span>
                 </button>
             </div>
         </div>
 
-        <!-- Sección: Privacidad y ayuda -->
         <div class="cp-section">
             <div class="cp-section-title">Privacidad y ayuda</div>
             <div class="cp-list">
-                <button class="cp-list-item" id="cpActionVerify">
-                    <div class="cp-list-icon"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
-                    <div class="cp-list-text"><span class="main">Verificar cifrado de extremo a extremo</span></div>
+                <button type="button" class="cp-list-item" id="cpActionVerify">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Verificar cifrado de extremo a extremo</span></span>
                 </button>
-                <button class="cp-list-item" id="cpActionTemp">
-                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-                    <div class="cp-list-text"><span class="main">Mensajes temporales</span></div>
+                <button type="button" class="cp-list-item" id="cpActionTemp">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Mensajes temporales</span></span>
                 </button>
-                <button class="cp-list-item" id="cpActionReadReceipts">
-                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
-                    <div class="cp-list-text"><span class="main">Confirmaciones de lectura</span></div>
-                    <div class="cp-list-toggle">Activado</div>
+                <button type="button" class="cp-list-item" id="cpActionReadReceipts">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Confirmaciones de lectura</span></span>
+                    <span class="cp-list-toggle">Activado</span>
                 </button>
-                <button class="cp-list-item danger" id="cpActionBlock">
-                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg></div>
-                    <div class="cp-list-text"><span class="main">Block <span id="cpBlockName">Contacto</span></span></div>
+                <button type="button" class="cp-list-item danger" id="cpActionBlock">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Bloquear a <span id="cpBlockName">Contacto</span></span></span>
                 </button>
-                <button class="cp-list-item danger" id="cpActionReport">
-                    <div class="cp-list-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
-                    <div class="cp-list-text">
+                <button type="button" class="cp-list-item danger" id="cpActionReport">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+                    <span class="cp-list-text">
                         <span class="main">Reportar</span>
                         <span class="sub">Enviar comentarios y reportar conversación</span>
-                    </div>
+                    </span>
                 </button>
             </div>
         </div>
     </div>
 </div>
-<!-- FIN MODAL PERFIL CONTACTO -->
 
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/js/teclado-emojis.js?v=4"></script>
@@ -643,24 +380,18 @@
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Lógica de la barra de entrada
+    document.addEventListener('DOMContentLoaded', function () {
         var input = document.getElementById('messageInput');
         var composer = document.getElementById('composer');
-        
+
         if (input && composer) {
-            input.addEventListener('input', function() {
+            input.addEventListener('input', function () {
                 this.style.height = 'auto';
-                this.style.height = (this.scrollHeight) + 'px';
-                
-                if (this.value.trim().length > 0) {
-                    composer.classList.add('has-text');
-                } else {
-                    composer.classList.remove('has-text');
-                }
+                this.style.height = this.scrollHeight + 'px';
+                composer.classList.toggle('has-text', this.value.trim().length > 0);
             });
 
-            input.addEventListener('keydown', function(e) {
+            input.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
                     var sendBtn = document.getElementById('sendBtn');
@@ -669,88 +400,63 @@
             });
         }
 
-        // ========================================================
-        // LÓGICA DEL MODAL DE PERFIL DE CONTACTO
-        // ========================================================
+        // Modal de perfil del contacto
         var overlay = document.getElementById('contactProfileOverlay');
         var backBtn = document.getElementById('cpBackBtn');
-        var chatHeader = document.getElementById('chatHeader');
         var chatInfoTrigger = document.getElementById('chatInfoTrigger');
         var chatAvatar = document.getElementById('chatAvatar');
         var chatName = document.getElementById('chatName');
-
-        // Elementos internos del modal para actualizar dinámicamente
         var cpName = document.getElementById('cpName');
         var cpAvatar = document.getElementById('cpAvatar');
         var cpGroupName = document.getElementById('cpGroupName');
         var cpBlockName = document.getElementById('cpBlockName');
         var cpBtnProfile = document.getElementById('cpBtnProfile');
-        var cpStatusDot = document.getElementById('cpStatusDot');
 
-        function openProfileModal() {
-            var nombreActual = chatName.innerText.trim();
-            if (nombreActual === "Selecciona una conversación") return;
+        function abrirPerfilContacto() {
+            var nombre = chatName.textContent.trim();
+            if (!nombre || nombre === 'Selecciona una conversación') return;
 
-            // Actualizar textos dinámicos
-            cpName.innerText = nombreActual;
-            cpGroupName.innerText = nombreActual;
-            cpBlockName.innerText = nombreActual;
-            
-            // Manejo del avatar
-            var avatarText = chatAvatar.innerText.trim();
-            if (avatarText && !chatAvatar.querySelector('img')) {
-                cpAvatar.innerHTML = avatarText.substring(0, 2).toUpperCase();
-            } else if (chatAvatar.querySelector('img')) {
-                var imgSrc = chatAvatar.querySelector('img').src;
-                cpAvatar.innerHTML = '<img src="' + imgSrc + '" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">';
+            cpName.textContent = nombre;
+            cpGroupName.textContent = nombre;
+            cpBlockName.textContent = nombre;
+
+            var img = chatAvatar.querySelector('img');
+            if (img) {
+                cpAvatar.innerHTML = '';
+                var copia = document.createElement('img');
+                copia.src = img.src;
+                copia.alt = '';
+                cpAvatar.appendChild(copia);
             } else {
-                cpAvatar.innerHTML = nombreActual.substring(0, 2).toUpperCase();
+                cpAvatar.textContent = nombre.substring(0, 2).toUpperCase();
             }
 
-            // REGLA ESPECIAL: Ocultar botón "Perfil" si es Marquinhos
-            if (nombreActual.toLowerCase().includes("marquinhos") || nombreActual.toLowerCase().includes("bot")) {
-                cpBtnProfile.style.display = 'none';
-            } else {
-                cpBtnProfile.style.display = 'flex';
-            }
+            var esBot = /marquinhos|bot/i.test(nombre);
+            cpBtnProfile.hidden = esBot;
 
-            // Abrir modal
             overlay.classList.add('open');
-            document.body.style.overflow = 'hidden'; // Evitar scroll de fondo
+            document.body.style.overflow = 'hidden';
         }
 
-        function closeProfileModal() {
+        function cerrarPerfilContacto() {
             overlay.classList.remove('open');
             document.body.style.overflow = '';
         }
 
-        // Eventos para abrir el modal
-        if (chatInfoTrigger) chatInfoTrigger.addEventListener('click', openProfileModal);
-        if (chatAvatar) chatAvatar.addEventListener('click', openProfileModal);
+        if (chatInfoTrigger) chatInfoTrigger.addEventListener('click', abrirPerfilContacto);
+        if (chatAvatar) chatAvatar.addEventListener('click', abrirPerfilContacto);
+        if (backBtn) backBtn.addEventListener('click', cerrarPerfilContacto);
 
-        // Evento para cerrar
-        if (backBtn) backBtn.addEventListener('click', closeProfileModal);
-
-        // Cerrar al hacer clic en el fondo (opcional, pero útil)
-        overlay.addEventListener('click', function(e) {
-            if (e.target === overlay) closeProfileModal();
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) cerrarPerfilContacto();
         });
 
-        // Lógica de botones internos del perfil
-        if (cpBtnProfile) {
-            cpBtnProfile.addEventListener('click', function() {
-                var nombre = cpName.innerText;
-                // Aquí rediriges al perfil. Como es una demo, usamos la ruta base.
-                // En tu sistema real, deberías obtener el ID del usuario.
-                window.location.href = '/features/perfil/perfil.html?nombre=' + encodeURIComponent(nombre);
-            });
-        }
+        cpBtnProfile.addEventListener('click', function () {
+            window.location.href = '/features/perfil/perfil.html?nombre=' + encodeURIComponent(cpName.textContent);
+        });
 
-        // Cerrar modal con tecla Escape
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && overlay.classList.contains('open')) {
-                closeProfileModal();
-            }
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && overlay.classList.contains('open')) cerrarPerfilContacto();
         });
     });
 </script>
