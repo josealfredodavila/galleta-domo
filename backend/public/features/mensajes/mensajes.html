@@ -46,6 +46,79 @@
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 <link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=4.1">
+
+<style>
+    /* Logo sin subrayado */
+    .brand { text-decoration: none; }
+
+    /* Botón + naranja: se oculta sin quitar el elemento, para no romper
+       los enlaces de mensajes-init.js (bind('newChat', ...)) */
+    .fab[hidden] { display: none !important; }
+
+    /* ---------- Historial de llamadas: filas legibles ----------
+       Las filas las genera llamadas-ui.js. Estas reglas las acomodan
+       sin depender de sus clases internas. */
+    #historialLlamadasLista > * {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 64px;
+        padding: 10px 12px;
+        overflow: hidden;
+        border: 1px solid var(--line, rgba(255,255,255,.08));
+        border-radius: 12px;
+        background: var(--panel-2, #101826);
+    }
+    #historialLlamadasLista > * > :first-child {
+        flex: 0 0 44px;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        background: var(--panel, #0b111b);
+        border: 1px solid var(--line-strong, rgba(255,255,255,.16));
+        font-weight: 700;
+        color: var(--text, #e8edf3);
+    }
+    #historialLlamadasLista img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+    }
+    #historialLlamadasLista > * > * {
+        min-width: 0;
+        line-height: 1.25;
+    }
+    #historialLlamadasLista > * > :nth-child(2) {
+        flex: 1 1 auto;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: .92rem;
+        font-weight: 600;
+    }
+    #historialLlamadasLista > * > :last-child {
+        flex: 0 0 auto;
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    #historialLlamadasLista button {
+        width: 34px;
+        height: 34px;
+        display: grid;
+        place-items: center;
+        border-radius: 10px;
+        border: 1px solid var(--line-strong, rgba(255,255,255,.16));
+        background: transparent;
+        color: var(--muted, #8593a6);
+    }
+    #historialLlamadasLista button:hover { color: var(--orange, #ff7a1a); border-color: var(--orange, #ff7a1a); }
+    #historialLlamadasLista button svg { width: 16px; height: 16px; }
+</style>
 </head>
 
 <body>
@@ -173,9 +246,8 @@
                 </div>
             </div>
 
-            <button type="button" class="fab" id="newChat" title="Buscar contacto o nueva conversación" aria-label="Buscar contacto o nueva conversación">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-            </button>
+            <!-- Oculto: se conserva el id para que mensajes-init.js no falle -->
+            <button type="button" class="fab" id="newChat" hidden aria-hidden="true" tabindex="-1"></button>
         </aside>
 
         <!-- CHAT -->
@@ -213,7 +285,7 @@
             <div class="messages" id="messages">
                 <div class="empty" id="emptyState">
                     <p>Selecciona una conversación</p>
-                    <small>Elige un chat de la lista o busca un contacto con el botón +</small>
+                    <small>Elige un chat de la lista para empezar a escribir</small>
                 </div>
                 <div id="scrollAnchor"></div>
                 <button type="button" class="scroll-down-btn" id="scrollDownBtn" title="Ir al final" aria-label="Ir al final">
@@ -258,7 +330,7 @@
     </footer>
 </div>
 
-<!-- INFORMACIÓN DEL CONTACTO (estilo Messenger / Facebook) -->
+<!-- INFORMACIÓN DEL CONTACTO -->
 <div class="contact-profile-overlay" id="contactProfileOverlay" role="dialog" aria-modal="true" aria-label="Información del contacto">
     <div class="cp-topbar">
         <button type="button" class="cp-back" id="cpBackBtn" aria-label="Volver">
@@ -455,7 +527,6 @@
         });
 
         // Acciones del perfil: delegan en los botones que ya maneja el JS
-        // (así bloquear, eliminar y buscar funcionan igual que en el chat)
         function delegar(idPerfil, idJS) {
             var b = document.getElementById(idPerfil);
             if (!b) return;
