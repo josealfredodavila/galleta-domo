@@ -1,12 +1,10 @@
 // ================================================================
-// MENSAJES · SCROLL Y MEDIA v1.0 · MÓDULO 2 DE 8
-// Ruta: backend/public/features/mensajes/js/mensajes-scroll-media.js
+// MENSAJES · SCROLL Y MEDIA v2.0 · MÓDULO 2 DE 8
+// Ruta: frontend/features/mensajes/js/mensajes-scroll-media.js
 // Depende de: mensajes-core.js (db, $, toast, esc, signedCache,
 //             isUserAtBottom, unreadCount, scrollRetryTimer, etc.)
-// Contenido: scroll del chat, flecha de nuevos mensajes, firma de
-//            URLs de Storage, visor de imágenes, descarga y foto
-//            de perfil ampliada.
-// NO cargar todavía en mensajes.html.
+// Cambios v2.0: sin emojis en mensajes ni botones; descarga con
+//               estilo plano del ecosistema.
 // ================================================================
 
 'use strict';
@@ -37,11 +35,12 @@ function actualizarFlecha() {
     const badge = $('newMsgBadge');
     if (!btn) return;
     if (unreadCount > 0) {
+        btn.classList.add('visible');
         btn.classList.add('has-new');
-        if (badge) { badge.textContent = unreadCount > 9 ? '9+' : unreadCount; badge.style.display = 'flex'; }
+        if (badge) { badge.textContent = unreadCount > 9 ? '9+' : unreadCount; badge.hidden = false; }
     } else {
         btn.classList.remove('has-new');
-        if (badge) badge.style.display = 'none';
+        if (badge) badge.hidden = true;
     }
 }
 
@@ -120,7 +119,7 @@ function urlSegura(u) {
 }
 
 function verFotoAmpliada(url, nombre, handle) {
-    if (!url) { toast('ℹ️ Este usuario no tiene foto de perfil', 'warning'); return; }
+    if (!url) { toast('Este usuario no tiene foto de perfil.', 'warning'); return; }
     $('pvImage').src = url;
     $('pvName').textContent = nombre || 'Usuario';
     $('pvHandle').textContent = handle ? '@' + handle : '';
@@ -137,8 +136,8 @@ function asegurarBotonDescarga() {
     btn = document.createElement('button');
     btn.id = 'pvDownload';
     btn.type = 'button';
-    btn.textContent = '⬇ Descargar';
-    btn.style.cssText = 'position:absolute;bottom:28px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:99px;border:1px solid var(--gold);background:rgba(5,8,15,.85);color:var(--gold);font-weight:800;font-size:.85rem;cursor:pointer;z-index:2;';
+    btn.textContent = 'Descargar';
+    btn.style.cssText = 'position:absolute;bottom:28px;left:50%;transform:translateX(-50%);padding:10px 22px;border-radius:10px;border:1px solid var(--line-strong,rgba(255,255,255,.16));background:var(--panel,#0b111b);color:var(--text,#e8edf3);font-weight:600;font-size:.85rem;cursor:pointer;z-index:2;';
     btn.addEventListener('click', e => { e.stopPropagation(); descargarImagen(pvDownloadUrl, pvDownloadNombre); });
     visor.appendChild(btn);
     return btn;
@@ -146,8 +145,11 @@ function asegurarBotonDescarga() {
 
 function abrirVisorImagen(url, nombreArchivo) {
     if (!url) return;
-    pvDownloadUrl = url; pvDownloadNombre = nombreArchivo || 'imagen.jpg';
-    $('pvImage').src = url; $('pvName').textContent = ''; $('pvHandle').textContent = '';
+    pvDownloadUrl = url;
+    pvDownloadNombre = nombreArchivo || 'imagen.jpg';
+    $('pvImage').src = url;
+    $('pvName').textContent = '';
+    $('pvHandle').textContent = '';
     asegurarBotonDescarga();
     $('photoViewer').classList.add('show');
 }
@@ -161,14 +163,17 @@ async function descargarImagen(url, nombreArchivo) {
         const blob = await r.blob();
         const objUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = objUrl; a.download = nombre;
-        document.body.appendChild(a); a.click(); a.remove();
+        a.href = objUrl;
+        a.download = nombre;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
         setTimeout(() => URL.revokeObjectURL(objUrl), 3000);
-        toast('✅ Descarga iniciada', 'success');
+        toast('Descarga iniciada.', 'success');
     } catch (e) {
         console.warn('Descarga directa no disponible, abriendo en pestaña:', e);
         window.open(url, '_blank', 'noopener');
-        toast('ℹ️ Mantén presionada la imagen para guardarla', 'warning');
+        toast('Mantén presionada la imagen para guardarla.', 'warning');
     }
 }
 
