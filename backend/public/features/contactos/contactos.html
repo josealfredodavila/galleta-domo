@@ -16,6 +16,31 @@
 
     <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=7">
 
+    <!-- Avatar de la barra superior: mismo aspecto que en Mensajes -->
+    <style>
+        #headerAvatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            overflow: hidden;
+            border: 1px solid rgba(212, 175, 55, .3);
+            display: grid;
+            place-items: center;
+            color: #d4af37;
+            font-weight: 700;
+            flex-shrink: 0;
+            background: #0b1118;
+            text-decoration: none;
+        }
+        #headerAvatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+    </style>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/auth-global.js"></script>
     <script src="/features/shared/js/presencia-global.js" defer></script>
@@ -39,6 +64,7 @@
                 <button type="button" id="btnAbrirConfigContactos" class="icon-btn" aria-label="Configuración" title="Configuración">
                     <svg class="ico" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
                 </button>
+                <a href="/features/perfil/perfil.html" class="header-avatar" id="headerAvatar" aria-label="Mi perfil" title="Mi perfil"></a>
             </div>
         </header>
 
@@ -199,6 +225,40 @@
             document.getElementById('colMisCanales').hidden = !esMis;
             document.getElementById('colEnVivo').hidden = esMis;
         };
+
+        // Avatar de la barra superior: foto del usuario o inicial
+        (function () {
+            var el = document.getElementById('headerAvatar');
+            if (!el) return;
+
+            async function cargarAvatar() {
+                try {
+                    var db = window.supabaseClient || (window.supabaseReady ? await window.supabaseReady : null);
+                    if (!db) return;
+
+                    var s = await db.auth.getSession();
+                    var user = s && s.data && s.data.session ? s.data.session.user : null;
+                    if (!user) return;
+
+                    var r = await db.from('usuarios').select('avatar_url, nombre, handle').eq('id', user.id).maybeSingle();
+                    var d = r.data || {};
+
+                    el.innerHTML = '';
+                    if (d.avatar_url) {
+                        var img = document.createElement('img');
+                        img.src = d.avatar_url;
+                        img.alt = 'Mi foto';
+                        el.appendChild(img);
+                    } else {
+                        el.textContent = String(d.nombre || d.handle || 'U').charAt(0).toUpperCase();
+                    }
+                } catch (e) {
+                    console.warn('No se pudo cargar el avatar:', e);
+                }
+            }
+
+            cargarAvatar();
+        })();
     </script>
 
     <script src="/features/contactos/contactos.js?v=28_2" defer></script>
