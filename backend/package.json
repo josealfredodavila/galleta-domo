@@ -48,9 +48,6 @@
     "web-push": "^3.6.7",
     "ws": "^8.18.0"
   },
-  "overrides": {
-    "@aws-sdk/credential-provider-http": "3.600.0"
-  },
   "devDependencies": {
     "jest": "^29.0.0",
     "nodemon": "^2.0.22",
