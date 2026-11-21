@@ -74,13 +74,6 @@
 <link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
 
 <style>
-/* ==========================================================
-   CSARIEL'S MESSAGES
-   EXPERIENCIA SOCIAL CONTEMPORÁNEA
-   Inspiración visual: X · Instagram · Messenger
-   Superficies continuas, jerarquía visual y navegación limpia.
-========================================================== */
-
 :root {
     color-scheme: dark;
 
@@ -110,8 +103,6 @@
     --msg-radius: 13px;
     --msg-transition: .18s ease;
 }
-
-/* BASE */
 
 * {
     box-sizing: border-box;
@@ -171,16 +162,12 @@ select:focus-visible {
     display: none !important;
 }
 
-/* CONTENEDOR */
-
 .app {
     min-height: 100vh;
     background: var(--msg-bg);
     display: flex;
     flex-direction: column;
 }
-
-/* CABECERA */
 
 .topbar {
     height: 65px;
@@ -270,8 +257,6 @@ select:focus-visible {
     border: 1px solid rgba(212,175,55,.3);
 }
 
-/* NAVEGACIÓN */
-
 .nav {
     height: 49px;
     min-height: 49px;
@@ -326,8 +311,6 @@ select:focus-visible {
     color: #f07b83;
 }
 
-/* ESTRUCTURA PRINCIPAL */
-
 .panel {
     flex: 1;
     width: 100%;
@@ -358,8 +341,6 @@ select:focus-visible {
     position: relative;
     background: var(--msg-bg);
 }
-
-/* PESTAÑAS */
 
 .sidebar-tabs {
     display: flex;
@@ -409,8 +390,6 @@ select:focus-visible {
     font-size: .69rem;
     font-weight: 600;
 }
-
-/* CONTENIDO LATERAL */
 
 .tab-content {
     min-height: 0;
@@ -480,12 +459,11 @@ select:focus-visible {
     min-width: 0;
 }
 
-/* ESTADOS */
-
 .estados-bar {
     padding: 13px 15px 12px;
     border-bottom: 1px solid var(--msg-line);
     flex-shrink: 0;
+    background: linear-gradient(180deg,rgba(212,175,55,.025),transparent);
 }
 
 .estados-header {
@@ -524,14 +502,48 @@ select:focus-visible {
 }
 
 .estados-scroll {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    min-height: 86px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 2px 1px 7px;
     scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
 }
 
 .estados-scroll::-webkit-scrollbar {
     display: none;
 }
 
-/* LISTAS DE CONVERSACIONES */
+/* Tarjetas y avatares de historias */
+.estados-scroll > * {
+    flex: 0 0 auto;
+}
+
+.estado-item,
+.estado-card,
+.estado-bubble,
+.estado-user {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.estado-item img,
+.estado-card img,
+.estado-bubble img,
+.estado-user img {
+    object-fit: cover;
+}
+
+.estado-item:focus-visible,
+.estado-card:focus-visible,
+.estado-bubble:focus-visible,
+.estado-user:focus-visible {
+    outline: 2px solid var(--msg-gold);
+    outline-offset: 3px;
+}
 
 .convlist,
 .canales-lista {
@@ -574,8 +586,6 @@ select:focus-visible {
     color: var(--msg-muted);
 }
 
-/* AVATARES GENERADOS POR LOS MÓDULOS */
-
 .avatar,
 #chatAvatar,
 #headerAvatar,
@@ -583,8 +593,6 @@ select:focus-visible {
 .estado-viewer-avatar {
     flex-shrink: 0;
 }
-
-/* CABECERA DEL CHAT */
 
 .chathead {
     min-height: 68px;
@@ -656,8 +664,6 @@ select:focus-visible {
     color: var(--msg-gold);
 }
 
-/* MENSAJES */
-
 .messages {
     position: relative;
     flex: 1;
@@ -722,8 +728,6 @@ select:focus-visible {
 .scroll-down-btn:hover {
     background: #26384a;
 }
-
-/* COMPOSITOR */
 
 .composer {
     min-height: 69px;
@@ -819,8 +823,6 @@ select:focus-visible {
     height: 20px;
 }
 
-/* ACCIONES */
-
 .btn-accion {
     width: 42px;
     height: 42px;
@@ -872,8 +874,6 @@ select:focus-visible {
     background: #205338;
 }
 
-/* EMOJIS */
-
 #emojiBtn {
     position: relative;
     flex-shrink: 0;
@@ -908,8 +908,6 @@ select:focus-visible {
 #emojiPanel button:hover {
     background: var(--msg-gold-soft) !important;
 }
-
-/* PERFIL DEL CONTACTO */
 
 .contact-profile-overlay {
     background: #0a1018;
@@ -1018,8 +1016,6 @@ select:focus-visible {
     color: var(--msg-danger);
 }
 
-/* CANALES Y GRUPOS */
-
 .form-campo {
     display: flex;
     flex-direction: column;
@@ -1058,8 +1054,6 @@ select:focus-visible {
     outline-offset: 2px;
 }
 
-/* BOTONES */
-
 .btn-plano {
     color: #e4e9ef;
     background: #192634;
@@ -1085,8 +1079,6 @@ select:focus-visible {
 .btn-plano.sol:hover {
     background: var(--msg-gold-light);
 }
-
-/* MODALES */
 
 .modal {
     background: rgba(0,0,0,.74);
@@ -1150,14 +1142,13 @@ select:focus-visible {
     padding: 10px;
 }
 
-/* HISTORIAS */
-
+/* Visor de historias: media sin deformación */
 .estado-viewer {
     background: #05080d;
 }
 
 .estado-viewer-header {
-    background: linear-gradient(to bottom,rgba(0,0,0,.58),transparent);
+    background: linear-gradient(to bottom,rgba(0,0,0,.72),transparent);
 }
 
 .estado-viewer-name {
@@ -1189,21 +1180,115 @@ select:focus-visible {
     background: rgba(212,175,55,.25);
 }
 
-.estado-preview-img {
+.estado-viewer-body {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    background: #000;
+}
+
+.estado-viewer-body > img,
+.estado-viewer-body > video,
+.estado-viewer-img,
+.estado-viewer-video {
     display: block;
     width: 100%;
-    max-height: 50vh;
+    height: 100%;
+    max-width: 100%;
+    max-height: 100%;
     object-fit: contain;
+    object-position: center;
+    background: #000;
+}
+
+.estado-preview-img,
+.estado-preview-video {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    max-height: min(60vh,620px);
+    max-height: min(60dvh,620px);
+    object-fit: contain;
+    object-position: center;
     background: #000;
     border-radius: 9px;
 }
 
-.estado-preview-img.hidden {
+.estado-preview-img.hidden,
+.estado-preview-video.hidden {
     display: none !important;
 }
 
-/* LLAMADAS */
+#estadoPreviewWrap {
+    width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    border-radius: 10px;
+    background: #05080d;
+}
 
+#estadoPreviewWrap video,
+#estadoPreviewWrap img {
+    margin: 0 auto;
+}
+
+.estado-upload-help {
+    margin: 9px 0 0;
+    color: var(--msg-muted);
+    font-size: .72rem;
+    line-height: 1.5;
+}
+
+.estado-upload-limits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin-top: 10px;
+}
+
+.estado-upload-limits span {
+    padding: 6px 9px;
+    color: #cbd5df;
+    background: rgba(255,255,255,.045);
+    border: 1px solid var(--msg-line);
+    border-radius: 7px;
+    font-size: .69rem;
+}
+
+.estado-upload-limits strong {
+    color: var(--msg-gold);
+}
+
+.estado-viewer-caption {
+    position: absolute;
+    left: 12px;
+    right: 12px;
+    bottom: 12px;
+    z-index: 4;
+    padding: 10px 13px;
+    color: #fff;
+    background: rgba(0,0,0,.48);
+    border-radius: 9px;
+    font-size: .88rem;
+    line-height: 1.45;
+    text-align: center;
+    overflow-wrap: anywhere;
+    backdrop-filter: blur(8px);
+}
+
+#evVistas,
+#evComentar,
+#evEliminar {
+    min-height: 39px;
+    padding: 8px 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+}
+
+/* Llamadas */
 #btnConfigLlamadas {
     display: grid !important;
 }
@@ -1225,8 +1310,6 @@ select:focus-visible {
     transform: translateY(-2px);
 }
 
-/* PERFIL PROPIO */
-
 .profile-modal-box {
     background: #101823;
     border: 1px solid var(--msg-line);
@@ -1244,8 +1327,6 @@ select:focus-visible {
     background: #26394c;
 }
 
-/* PIE */
-
 .footer {
     min-height: 37px;
     display: flex;
@@ -1258,8 +1339,6 @@ select:focus-visible {
     font-size: .69rem;
 }
 
-/* HISTORIAL */
-
 .btn-borrar-todo {
     color: var(--msg-danger);
     background: transparent;
@@ -1271,8 +1350,6 @@ select:focus-visible {
 .btn-borrar-todo:hover {
     background: rgba(241,109,117,.1);
 }
-
-/* RESPONSIVE TABLET */
 
 @media (max-width: 900px) {
     .panel {
@@ -1292,10 +1369,7 @@ select:focus-visible {
     }
 }
 
-/* RESPONSIVE MÓVIL */
-
 @media (max-width: 680px) {
-
     html,
     body {
         height: 100%;
@@ -1400,7 +1474,12 @@ select:focus-visible {
     }
 
     .estados-bar {
-        padding: 11px 13px;
+        padding: 11px 13px 9px;
+    }
+
+    .estados-scroll {
+        min-height: 82px;
+        gap: 12px;
     }
 
     .chathead {
@@ -1478,6 +1557,8 @@ select:focus-visible {
     .modalbox {
         width: calc(100% - 24px);
         max-width: 440px;
+        max-height: calc(100dvh - 24px);
+        overflow-y: auto;
         padding: 17px;
         border-radius: 13px;
     }
@@ -1486,9 +1567,48 @@ select:focus-visible {
         grid-template-columns: 1fr 1fr;
         gap: 9px;
     }
-}
 
-/* MÓVILES PEQUEÑOS */
+    /* Visor de historias a pantalla completa */
+    .estado-viewer {
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100% !important;
+        height: 100vh !important;
+        height: 100dvh !important;
+        max-height: 100dvh !important;
+        overflow: hidden !important;
+        padding-top: env(safe-area-inset-top);
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    .estado-viewer-body {
+        min-height: 0 !important;
+        max-height: none !important;
+    }
+
+    .estado-viewer-body > img,
+    .estado-viewer-body > video,
+    .estado-viewer-img,
+    .estado-viewer-video {
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain !important;
+    }
+
+    .estado-viewer-header {
+        padding-top: max(10px,env(safe-area-inset-top));
+    }
+
+    .estado-viewer-foot {
+        padding-bottom: max(12px,env(safe-area-inset-bottom));
+    }
+
+    .estado-preview-img,
+    .estado-preview-video {
+        max-height: min(55vh,480px);
+        max-height: min(55dvh,480px);
+    }
+}
 
 @media (max-width: 360px) {
     .topbar {
@@ -1522,8 +1642,6 @@ select:focus-visible {
     }
 }
 
-/* ESCRITORIO AMPLIO */
-
 @media (min-width: 1200px) {
     .panel {
         min-height: calc(100vh - 151px);
@@ -1537,8 +1655,6 @@ select:focus-visible {
         min-height: 600px;
     }
 }
-
-/* ACCESIBILIDAD */
 
 button:disabled {
     opacity: .45;
@@ -1639,17 +1755,17 @@ button:disabled {
 
         <div class="estados-bar">
             <div class="estados-header">
-                <div class="estados-title">Estados</div>
+                <div class="estados-title">Historias</div>
 
-                <button type="button" class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">
+                <button type="button" class="btn-subir-estado" id="btnSubirEstado" title="Subir historia" aria-label="Publicar una historia">
                     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M12 5v14M5 12h14"/>
                     </svg>
-                    Subir
+                    Publicar
                 </button>
             </div>
 
-            <div class="estados-scroll" id="estadosScroll"></div>
+            <div class="estados-scroll" id="estadosScroll" aria-label="Historias recientes"></div>
         </div>
 
         <div class="convlist" id="conversationList"></div>
@@ -2196,7 +2312,7 @@ button:disabled {
     <div class="modalbox">
 
         <div class="modal-head">
-            <h2>Subir historia</h2>
+            <h2>Publicar historia</h2>
 
             <button type="button" class="modal-close" id="closeEstadoModal" aria-label="Cerrar">
                 <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
@@ -2207,11 +2323,19 @@ button:disabled {
 
         <button type="button" class="btn-plano" id="btnSeleccionarEstado">Elegir foto o video</button>
 
-        <input type="file" id="estadoFileInput" accept="image/*,video/*" hidden>
+        <input type="file" id="estadoFileInput" accept="image/*,video/mp4,video/webm,video/quicktime" hidden>
 
-        <div id="estadoPreviewWrap" class="hidden" style="margin:12px 0;">
-            <img id="estadoPreviewImg" class="estado-preview-img" alt="">
+        <div id="estadoPreviewWrap" class="hidden">
+            <img id="estadoPreviewImg" class="estado-preview-img hidden" alt="Vista previa de la historia">
         </div>
+
+        <div class="estado-upload-limits" aria-label="Límites de publicación">
+            <span><strong>10 fotos</strong> activas</span>
+            <span><strong>5 videos</strong> activos</span>
+            <span><strong>60 segundos</strong> por video</span>
+        </div>
+
+        <p class="estado-upload-help">Las historias permanecen disponibles durante 24 horas. Puedes publicar fotos y videos desde tu dispositivo.</p>
 
         <input type="text" id="estadoCaption" class="search" maxlength="200" placeholder="Escribe un texto (opcional)" autocomplete="off" style="margin-top:12px;">
 
@@ -2443,7 +2567,7 @@ button:disabled {
 <script src="/features/mensajes/js/mensajes-scroll-media.js?v=1"></script>
 <script src="/features/mensajes/js/mensajes-chats.js?v=1"></script>
 <script src="/features/mensajes/js/mensajes-bot.js?v=1"></script>
-<script src="/features/mensajes/js/mensajes-estados.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes-estados.js?v=2.1"></script>
 <script src="/features/mensajes/js/mensajes-canales.js?v=1"></script>
 <script src="/features/mensajes/js/mensajes-llamadas.js?v=1"></script>
 <script src="/features/mensajes/js/mensajes-init.js?v=1"></script>
