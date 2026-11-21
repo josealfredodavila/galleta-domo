@@ -1,18 +1,16 @@
 // ================================================================
-// MURO · PUBLICACIONES (feed) · v3.1
+// MURO · PUBLICACIONES (feed) · v3.2
 // ================================================================
 // Cargar feed, renderizar posts estilo plataforma tipo X,
 // scroll infinito por cursor, verificación de like.
 // Depende de: muro-config.js, muro-utils.js
 //
-// v3.1 (corrección):
-// - SIN soporte de video. Solo imágenes en .post-imagen dentro de
-//   .post-media con data-xv-* para el visor.
-// - El render de media es exclusivamente imagen.
-// - Se conserva TODO lo demás: cursor, caché de likes, moderación,
-//   temas, aviso de lenguaje, venta de tokens, menú de tres puntos,
-//   comentarios y clases/IDs usados por muro-acciones.js,
-//   muro-social-actions.js y el visor [data-xv-src] de muro.html.
+// v3.2 (corrección):
+// - SOLO imágenes (video eliminado por completo).
+// - Se eliminaron los botones de "Comentar" y "Republicar" del feed.
+// - Se conservan: cursor, caché de likes, moderación, temas,
+//   aviso de lenguaje, venta de tokens, menú de tres puntos,
+//   like, compartir y el visor [data-xv-src].
 // ================================================================
 
 // ================================================================
@@ -37,17 +35,6 @@ var MURO_PUB_ICON = {
     corazon:
         '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
             '<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>' +
-        '</svg>',
-
-    comentar:
-        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
-            '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>' +
-        '</svg>',
-
-    republicar:
-        '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">' +
-            '<path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/>' +
-            '<path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>' +
         '</svg>',
 
     compartir:
@@ -349,6 +336,8 @@ function renderizarPost(post) {
     var fechaCorta = fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
     var fechaCompleta = fecha.toLocaleString();
 
+    // NOTA: Se eliminaron los botones de "Comentar" (comment-btn) y "Republicar" (repost-btn)
+    // de la barra de acciones. Ahora solo quedan Like y Compartir.
     div.innerHTML =
         '<div class="post-row">' +
             '<div class="post-avatar">' + avatarHtml + '</div>' +
@@ -372,12 +361,6 @@ function renderizarPost(post) {
                 seccionVenta +
 
                 '<div class="post-actions" role="group" aria-label="Acciones">' +
-                    '<button type="button" class="post-act comment-btn" onclick="toggleComentarios(\'' + post.id + '\')" aria-label="Responder">' +
-                        MURO_PUB_ICON.comentar + '<span class="count">' + comentariosCount + '</span>' +
-                    '</button>' +
-                    '<button type="button" class="post-act repost-btn" onclick="compartirPublicacion(\'' + post.id + '\')" aria-label="Republicar">' +
-                        MURO_PUB_ICON.republicar + '<span class="count">0</span>' +
-                    '</button>' +
                     '<button type="button" class="post-act like-btn" data-liked="false" onclick="toggleLike(\'' + post.id + '\')" aria-label="Me gusta">' +
                         MURO_PUB_ICON.corazon + '<span class="count">' + likesCount + '</span>' +
                     '</button>' +
