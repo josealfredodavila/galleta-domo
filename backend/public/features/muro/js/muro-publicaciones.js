@@ -357,6 +357,7 @@ function renderizarPost(post) {
     var fechaCorta = fecha.toLocaleDateString('es-MX', { day: 'numeric', month: 'short' });
     var fechaCompleta = fecha.toLocaleString();
 
+    // Se eliminó el botón de Republicar (🔁) de la barra de acciones según lo solicitado.
     div.innerHTML =
         '<div class="post-row">' +
             '<div class="post-avatar">' + avatarHtml + '</div>' +
@@ -383,9 +384,7 @@ function renderizarPost(post) {
                     '<button type="button" class="post-act comment-btn" onclick="toggleComentarios(\'' + post.id + '\')" aria-label="Responder">' +
                         MURO_PUB_ICON.comentar + '<span class="count">' + comentariosCount + '</span>' +
                     '</button>' +
-                    '<button type="button" class="post-act repost-btn" onclick="compartirPublicacion(\'' + post.id + '\')" aria-label="Republicar">' +
-                        MURO_PUB_ICON.republicar + '<span class="count">0</span>' +
-                    '</button>' +
+                    // Botón de Republicar eliminado de aquí
                     '<button type="button" class="post-act like-btn" data-liked="false" onclick="toggleLike(\'' + post.id + '\')" aria-label="Me gusta">' +
                         MURO_PUB_ICON.corazon + '<span class="count">' + likesCount + '</span>' +
                     '</button>' +
