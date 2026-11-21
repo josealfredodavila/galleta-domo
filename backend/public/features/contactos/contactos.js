@@ -1,5 +1,12 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v28.1
+   CSARIEL'S · CONTACTOS · v28.2
+   Cambios v28.2:
+   - El micrófono ya NO se activa al tocar el campo de texto.
+     Solo se activa con el botón 🎤.
+   - Escribir en el campo busca al dejar de teclear (350 ms) y con Enter.
+   - El botón ✕ aparece al escribir, sin esperar la búsqueda.
+   - Al buscar no se mueve el cursor si se escribe en medio del texto.
+   - El micrófono no se puede iniciar dos veces seguidas.
    Sin QR ni cámara (eso vive en Perfil).
    RPC: perfiles_por_ids, buscar_usuarios, sugerencias_usuarios,
         bloquear_contacto, obtener_o_crear_invitacion,
@@ -34,6 +41,7 @@
         MAX_RESULTADOS: 20,
         MIN_CHARS: 2,
         MAX_CHARS: 80,
+        DEBOUNCE_BUSQUEDA_MS: 350,
         SESSION_TIMEOUT_MS: 7000,
         RETRY_MAX: 3,
         RETRY_BASE_MS: 500,
@@ -78,7 +86,8 @@
         perfiles: new Map(),
         operaciones: new Set(),
         canjeBloqueadoHasta: 0,
-        canjeEnCurso: false
+        canjeEnCurso: false,
+        vozActiva: false
     };
 
     /* ---------------- Utilidades ---------------- */
@@ -731,7 +740,7 @@
         renderLista();
     }
 
-    /* ---------------- Búsqueda (voz y texto) ---------------- */
+    /* ---------------- Búsqueda (texto y voz) ---------------- */
 
     async function buscarGlobal(texto, version) {
         var client = sb();
@@ -776,7 +785,8 @@
         var t = normalizarTexto(valor);
         state.texto = t.toLowerCase();
         var input = document.getElementById('searchInput');
-        if (input) input.value = t;
+        // Solo reescribe el campo si cambió, para no mover el cursor mientras se escribe
+        if (input && input.value !== t) input.value = t;
         var limpiar = document.getElementById('btnLimpiarBusqueda');
         if (limpiar) limpiar.hidden = !t;
         if (state.texto.length >= CONFIG.MIN_CHARS && state.filtro === 'todos') {
@@ -790,6 +800,7 @@
         var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
         var btn = document.getElementById('btnVozBuscar');
         if (!SR) { showToast('Tu navegador no soporta búsqueda por voz.', 'warning'); return; }
+        if (state.vozActiva) return;
         var rec = new SR();
         rec.lang = 'es-MX';
         rec.interimResults = false;
@@ -799,9 +810,16 @@
             aplicarBusqueda(t);
         };
         rec.onerror = function () { showToast('No se entendió. Intenta de nuevo.', 'warning'); };
-        rec.onend = function () { if (btn) btn.classList.remove('escuchando'); };
+        rec.onend = function () {
+            state.vozActiva = false;
+            if (btn) btn.classList.remove('escuchando');
+        };
+        state.vozActiva = true;
         if (btn) btn.classList.add('escuchando');
-        try { rec.start(); } catch (e) { if (btn) btn.classList.remove('escuchando'); }
+        try { rec.start(); } catch (e) {
+            state.vozActiva = false;
+            if (btn) btn.classList.remove('escuchando');
+        }
     }
 
     /* ---------------- Acciones de contacto ---------------- */
@@ -1214,12 +1232,35 @@
             b.addEventListener('click', function () { setFiltro(b.getAttribute('data-filtro') || 'todos'); });
         });
 
+        // Búsqueda: el campo escribe normal (sin micrófono). El micrófono solo con su botón.
         var input = document.getElementById('searchInput');
         var btnVoz = document.getElementById('btnVozBuscar');
-        if (input) input.addEventListener('click', iniciarVoz);
-        if (btnVoz) btnVoz.addEventListener('click', iniciarVoz);
         var btnLimpiar = document.getElementById('btnLimpiarBusqueda');
-        if (btnLimpiar) btnLimpiar.addEventListener('click', function () { aplicarBusqueda(''); });
+
+        if (btnVoz) btnVoz.addEventListener('click', iniciarVoz);
+
+        if (btnLimpiar) btnLimpiar.addEventListener('click', function () {
+            aplicarBusqueda('');
+            if (input) input.focus();
+        });
+
+        if (input) {
+            var timerBusqueda = null;
+            input.addEventListener('input', function () {
+                var valor = input.value;
+                var limpiar = document.getElementById('btnLimpiarBusqueda');
+                if (limpiar) limpiar.hidden = !normalizarTexto(valor);
+                clearTimeout(timerBusqueda);
+                timerBusqueda = setTimeout(function () { aplicarBusqueda(valor); }, CONFIG.DEBOUNCE_BUSQUEDA_MS);
+            });
+            input.addEventListener('keydown', function (ev) {
+                if (ev.key === 'Enter') {
+                    ev.preventDefault();
+                    clearTimeout(timerBusqueda);
+                    aplicarBusqueda(input.value);
+                }
+            });
+        }
 
         var lista = document.getElementById('contactosList');
         if (lista) {
