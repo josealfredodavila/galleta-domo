@@ -61,15 +61,17 @@
 
         <div class="search" role="search">
             <div class="search-field">
-                <!-- CORRECCIÓN: Se eliminó 'readonly', se cambió type a 'search' y se ajustó el placeholder -->
                 <input type="search" id="searchInput" class="search-input"
                     placeholder="Escribe un nombre, @usuario o usa el micrófono"
-                    autocomplete="off" aria-label="Buscar contactos por texto o voz">
+                    autocomplete="off" autocapitalize="none" spellcheck="false"
+                    maxlength="80" enterkeyhint="search"
+                    aria-label="Buscar contactos por texto"
+                    aria-controls="contactosList">
                 <div class="search-hint">Buscar contacto</div>
             </div>
             <button type="button" id="btnLimpiarBusqueda" class="btn-clear" aria-label="Limpiar búsqueda" hidden>✕</button>
             <button type="button" id="btnVozBuscar" class="btn-mic" aria-label="Buscar por voz" title="Buscar por voz">
-                <svg class="ico" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
             </button>
         </div>
 
@@ -199,7 +201,6 @@
         };
     </script>
 
-    <!-- Script principal actualizado (v28.2) -->
     <script src="/features/contactos/contactos.js?v=28_2" defer></script>
 </body>
 </html>
