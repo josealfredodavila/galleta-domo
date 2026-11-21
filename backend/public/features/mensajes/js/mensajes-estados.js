@@ -1,18 +1,17 @@
 // ================================================================
-// MENSAJES · ESTADOS (HISTORIAS) v4.0 · MÓDULO 5 DE 8
+// MENSAJES · ESTADOS (HISTORIAS) v4.1 · MÓDULO 5 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-estados.js
 // Depende de: mensajes-core.js (db, user, $, toast, esc, perfilCache,
 //             currentUserProfile, NeonModal, auth, subirViaBackend,
 //             ESTADOS_BUCKET, ESTADOS_TTL_MS, TTL_PERFIL_MS, PERFIL_CACHE_LIMITE)
-// Cambios v4.0:
-//  - Controles de video propios (sin controles nativos del navegador)
-//  - Visor a pantalla completa: imagen y video con object-fit: contain
-//  - Navegación por toque y deslizar con pointer events
-//  - Ya no se enlaza nada a los botones que enlaza mensajes-init.js
-//    (evita publicar dos veces y botones muertos en móvil)
-//  - Comentarios con p_texto (nombre real del parámetro en Supabase)
-//  - Videos de hasta 60 s (CHECK de estados actualizado en Supabase)
-//  - Sin emojis ni símbolos decorativos
+// Cambios v4.1:
+//  - Cierre del visor centralizado (forzarCierreVisor): nunca queda
+//    cubriendo la pantalla y bloqueando el resto de Mensajes
+//  - Cada apertura y cierre usa una generación; las cargas lentas
+//    viejas ya no vuelven a mostrar el visor
+//  - Errores de una historia cierran el visor con aviso, sin atascarse
+//  - Panel de vistas y comentarios solo con texto (sin íconos)
+//  - Se quitó la etiqueta de vistas de la rueda
 // ================================================================
 
 'use strict';
@@ -23,13 +22,11 @@ const ESTADOS_MIME_VIDEO = ['video/mp4', 'video/webm', 'video/quicktime'];
 const ESTADOS_ACCEPT = ESTADOS_MIME_IMAGEN.concat(ESTADOS_MIME_VIDEO).join(',');
 const ESTADOS_VIGENCIA_MS = (typeof ESTADOS_TTL_MS === 'number' && ESTADOS_TTL_MS > 0) ? ESTADOS_TTL_MS : 86400000;
 
-const ICO_OJO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
-const ICO_COMENTAR = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>';
+// Íconos solo de controles del video
 const ICO_PLAY = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
 const ICO_PAUSA = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
 const ICO_VOLUMEN = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>';
 const ICO_SILENCIO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>';
-const ICO_BASURA = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>';
 
 let estadosCache = [];
 let estadoActualUserId = null;
@@ -193,7 +190,7 @@ async function obtenerEstadosActivos() {
 
 async function obtenerVistasPropias(ids) {
     const set = new Set();
-    if (!ids.length) return set;
+    if (!ids.length || !user) return set;
     try {
         const r = await db.from('estados_vistas').select('estado_id').eq('usuario_id', user.id).in('estado_id', ids);
         (r.data || []).forEach(v => set.add(v.estado_id));
@@ -222,21 +219,18 @@ async function cargarEstados() {
     }
 }
 
-async function renderizarRueda(rueda, porUsuario, otros) {
+function renderizarRueda(rueda, porUsuario, otros) {
     rueda.innerHTML = '';
 
     const mios = porUsuario[user.id] || [];
 
     if (mios.length) {
         const ultimo = mios[mios.length - 1];
-        const total = await obtenerVistasEstado(ultimo.id);
         rueda.appendChild(crearItemRueda({
-            uid: user.id,
             titulo: 'Tu historia',
             esVideo: estadoEsVideo(ultimo),
             thumb: estadoURL(ultimo),
             nuevo: mios.some(estadoEsNuevo),
-            badge: total,
             onClick: () => abrirEstadoUsuario(user.id)
         }));
     } else {
@@ -251,7 +245,6 @@ async function renderizarRueda(rueda, porUsuario, otros) {
         const p = perfilCache.get(uid);
         const perfil = (p && p.data) || { nombre: 'Usuario', avatar_url: null };
         rueda.appendChild(crearItemRueda({
-            uid,
             titulo: perfil.nombre || 'Usuario',
             avatarUrl: perfil.avatar_url,
             avatarNombre: perfil.nombre,
@@ -294,13 +287,6 @@ function crearItemRueda(o) {
     circulo.appendChild(inner);
     item.appendChild(circulo);
 
-    if (o.badge > 0) {
-        const b = document.createElement('span');
-        b.className = 'estado-vistas-badge';
-        b.textContent = String(o.badge);
-        item.appendChild(b);
-    }
-
     const nombre = document.createElement('div');
     nombre.className = 'estado-name';
     nombre.textContent = o.titulo;
@@ -311,7 +297,7 @@ function crearItemRueda(o) {
     return item;
 }
 
-/* ---------------- Visor ---------------- */
+/* ---------------- Visor: apertura y cierre ---------------- */
 
 function actualizarBarra(p) {
     const val = Math.max(0, Math.min(100, p)) + '%';
@@ -329,9 +315,34 @@ function detenerVideo() {
     const v = $('evVideo');
     estadoVideoActivo = false;
     if (!v) return;
-    v.pause();
-    v.removeAttribute('src');
-    v.load();
+    try {
+        v.pause();
+        v.removeAttribute('src');
+        v.load();
+    } catch (e) {}
+}
+
+/*
+ * Cierre único y completo. Siempre deja el visor oculto y el estado limpio,
+ * aunque algo anterior haya fallado. No espera ni recarga nada.
+ */
+function forzarCierreVisor() {
+    estadoVisorGen++;
+    detenerTemporizador();
+    detenerVideo();
+    const visor = $('estadoViewer');
+    if (visor) visor.classList.remove('show');
+    estadoPausado = false;
+    estadoVideoPausadoPorUsuario = false;
+    estadoActualUserId = null;
+    estadoActualIndex = 0;
+    estadoProgresoActual = 0;
+    actualizarBarra(0);
+}
+
+function cerrarEstadoViewer() {
+    forzarCierreVisor();
+    cargarEstados().catch(() => {});
 }
 
 function reproducirVideo() {
@@ -340,7 +351,7 @@ function reproducirVideo() {
     const p = v.play();
     if (p && p.catch) {
         p.catch(() => {
-            // Los navegadores bloquean el sonido sin interacción: se reproduce silenciado.
+            // Sin sonido permitido por el navegador: se reproduce silenciado
             v.muted = true;
             const p2 = v.play();
             if (p2 && p2.catch) p2.catch(() => {});
@@ -356,11 +367,15 @@ function alternarVideo() {
 }
 
 function abrirEstadoUsuario(uid) {
+    if (!user) return;
     const lista = estadosDe(uid);
-    if (!lista.length) { aviso('Este usuario no tiene historias activas.', 'warning'); return; }
+    if (!lista.length) {
+        aviso('Este usuario no tiene historias activas.', 'warning');
+        return;
+    }
+    forzarCierreVisor();
     estadoActualUserId = uid;
     estadoActualIndex = 0;
-    estadoPausado = false;
     const visor = $('estadoViewer');
     if (visor) visor.classList.add('show');
     mostrarEstadoActual();
@@ -383,87 +398,100 @@ async function pintarCabecera(estado, mio, gen) {
     if (nom) nom.textContent = p.nombre || 'Usuario';
 }
 
+/* ---------------- Visor: mostrar historia ---------------- */
+
 async function mostrarEstadoActual() {
     const gen = ++estadoVisorGen;
     detenerTemporizador();
     detenerVideo();
 
-    const lista = estadosDe(estadoActualUserId);
-    if (!lista.length || estadoActualIndex < 0 || estadoActualIndex >= lista.length) {
-        cerrarEstadoViewer();
-        return;
+    try {
+        const lista = estadosDe(estadoActualUserId);
+        if (!user || !lista.length || estadoActualIndex < 0 || estadoActualIndex >= lista.length) {
+            forzarCierreVisor();
+            return;
+        }
+
+        const estado = lista[estadoActualIndex];
+        const mio = estado.usuario_id === user.id;
+        const esVideo = estadoEsVideo(estado);
+        const img = $('evImage');
+        const vid = $('evVideo');
+
+        pintarCabecera(estado, mio, gen).catch(() => {});
+
+        if (esVideo && vid) {
+            if (img) { img.classList.add('hidden'); img.removeAttribute('src'); }
+            vid.classList.remove('hidden');
+            mostrar('evVideoBar');
+            estadoVideoActivo = true;
+            estadoVideoPausadoPorUsuario = false;
+            vid.muted = false;
+            vid.src = estadoURL(estado);
+            vid.load();
+            reproducirVideo();
+        } else {
+            if (vid) vid.classList.add('hidden');
+            ocultar('evVideoBar');
+            if (img) {
+                img.classList.remove('hidden');
+                img.src = estadoURL(estado);
+            }
+        }
+
+        estadoProgresoActual = 0;
+        actualizarBarra(0);
+
+        const cap = $('evCaption');
+        if (cap) {
+            if (estado.caption) { cap.textContent = estado.caption; cap.classList.remove('hidden'); }
+            else { cap.textContent = ''; cap.classList.add('hidden'); }
+        }
+
+        const prev = $('evPrev');
+        if (prev) prev.classList.toggle('hidden', estadoActualIndex === 0);
+
+        const next = $('evNext');
+        if (next) next.classList.remove('hidden');
+
+        const hayOtros = estadosCache.some(e => e.usuario_id !== estadoActualUserId);
+        const skip = $('evSkip');
+        if (skip) skip.classList.toggle('hidden', !hayOtros);
+
+        const vistas = $('evVistas');
+        const eliminar = $('evEliminar');
+        const comentar = $('evComentar');
+
+        if (mio) {
+            if (vistas) { vistas.classList.remove('hidden'); vistas.dataset.estadoId = estado.id; }
+            if (eliminar) { eliminar.classList.remove('hidden'); eliminar.dataset.estadoId = estado.id; }
+            ocultar('evComentar');
+            obtenerVistasEstado(estado.id).then(total => {
+                if (gen !== estadoVisorGen) return;
+                const c = $('evVistasCount');
+                if (c) c.textContent = String(total);
+            }).catch(() => {});
+        } else {
+            ocultar('evVistas');
+            ocultar('evEliminar');
+            if (comentar) { comentar.classList.remove('hidden'); comentar.dataset.estadoId = estado.id; }
+            registrarVistaEstado(estado.id);
+        }
+
+        if (!esVideo) iniciarTemporizadorImagen(gen);
+    } catch (e) {
+        console.error('[Estados] Error mostrando la historia:', e);
+        forzarCierreVisor();
+        aviso('No se pudo mostrar la historia.', 'error');
     }
-
-    const estado = lista[estadoActualIndex];
-    const mio = estado.usuario_id === user.id;
-    const esVideo = estadoEsVideo(estado);
-    const img = $('evImage');
-    const vid = $('evVideo');
-
-    pintarCabecera(estado, mio, gen);
-
-    if (esVideo) {
-        img.classList.add('hidden');
-        img.removeAttribute('src');
-        vid.classList.remove('hidden');
-        mostrar('evVideoBar');
-        estadoVideoActivo = true;
-        estadoVideoPausadoPorUsuario = false;
-        vid.muted = false;
-        vid.src = estadoURL(estado);
-        vid.load();
-        reproducirVideo();
-    } else {
-        vid.classList.add('hidden');
-        ocultar('evVideoBar');
-        img.classList.remove('hidden');
-        img.src = estadoURL(estado);
-    }
-
-    estadoProgresoActual = 0;
-    actualizarBarra(0);
-
-    const cap = $('evCaption');
-    if (cap) {
-        if (estado.caption) { cap.textContent = estado.caption; cap.classList.remove('hidden'); }
-        else { cap.textContent = ''; cap.classList.add('hidden'); }
-    }
-
-    const prev = $('evPrev');
-    const next = $('evNext');
-    if (prev) prev.classList.toggle('hidden', estadoActualIndex === 0);
-    if (next) next.classList.toggle('hidden', lista.length === 1 && estadosCache.length <= lista.length);
-
-    const otroUsuario = estadosCache.some(e => e.usuario_id !== estadoActualUserId);
-    const skip = $('evSkip');
-    if (skip) skip.classList.toggle('hidden', !otroUsuario);
-
-    const vistas = $('evVistas');
-    const eliminar = $('evEliminar');
-    const comentar = $('evComentar');
-
-    if (mio) {
-        if (vistas) { vistas.classList.remove('hidden'); vistas.dataset.estadoId = estado.id; }
-        if (eliminar) { eliminar.classList.remove('hidden'); eliminar.dataset.estadoId = estado.id; }
-        ocultar('evComentar');
-        obtenerVistasEstado(estado.id).then(total => {
-            if (gen === estadoVisorGen) { const c = $('evVistasCount'); if (c) c.textContent = String(total); }
-        });
-    } else {
-        ocultar('evVistas');
-        ocultar('evEliminar');
-        if (comentar) { comentar.classList.remove('hidden'); comentar.dataset.estadoId = estado.id; }
-        registrarVistaEstado(estado.id);
-    }
-
-    if (!esVideo) iniciarTemporizadorImagen();
 }
 
-function iniciarTemporizadorImagen() {
+function iniciarTemporizadorImagen(gen) {
     const total = ESTADOS_LIMITE.imagenSeg * 1000;
     const paso = 50;
     const incremento = paso / total * 100;
     estadoTimer = setInterval(() => {
+        if (gen !== estadoVisorGen) { detenerTemporizador(); return; }
         if (estadoPausado) return;
         estadoProgresoActual = Math.min(100, estadoProgresoActual + incremento);
         actualizarBarra(estadoProgresoActual);
@@ -473,6 +501,8 @@ function iniciarTemporizadorImagen() {
         }
     }, paso);
 }
+
+/* ---------------- Navegación entre historias ---------------- */
 
 function siguienteEstado() {
     const lista = estadosDe(estadoActualUserId);
@@ -493,32 +523,21 @@ function anteriorEstado() {
 }
 
 function saltarGrupoMensajes() {
-    if (!estadoActualUserId) return;
+    if (!estadoActualUserId) { forzarCierreVisor(); return; }
     const orden = [];
     estadosCache.forEach(e => { if (!orden.includes(e.usuario_id)) orden.push(e.usuario_id); });
     for (let i = orden.indexOf(estadoActualUserId) + 1; i < orden.length; i++) {
         if (estadosDe(orden[i]).length) {
+            forzarCierreVisor();
+            const visor = $('estadoViewer');
+            if (visor) visor.classList.add('show');
             estadoActualUserId = orden[i];
             estadoActualIndex = 0;
-            estadoPausado = false;
             mostrarEstadoActual();
             return;
         }
     }
     cerrarEstadoViewer();
-}
-
-function cerrarEstadoViewer() {
-    estadoVisorGen++;
-    detenerTemporizador();
-    detenerVideo();
-    const visor = $('estadoViewer');
-    if (visor) visor.classList.remove('show');
-    estadoPausado = false;
-    estadoActualUserId = null;
-    estadoActualIndex = 0;
-    actualizarBarra(0);
-    cargarEstados();
 }
 
 function activarPausaEstado() {
@@ -582,6 +601,26 @@ function instalarGestos() {
 
 /* ---------------- Controles del video ---------------- */
 
+function pintarIconoPlay() {
+    const v = $('evVideo');
+    const b = $('evPlay');
+    if (v && b) b.innerHTML = v.paused ? ICO_PLAY : ICO_PAUSA;
+}
+
+function pintarIconoVolumen() {
+    const v = $('evVideo');
+    const b = $('evMute');
+    if (v && b) b.innerHTML = v.muted ? ICO_SILENCIO : ICO_VOLUMEN;
+}
+
+function pintarTiempoVideo() {
+    const v = $('evVideo');
+    const t = $('evTiempoVideo');
+    if (!v || !t) return;
+    const total = isFinite(v.duration) ? formatoTiempo(v.duration) : '0:00';
+    t.textContent = formatoTiempo(v.currentTime) + ' / ' + total;
+}
+
 function instalarControlesVideo() {
     const v = $('evVideo');
     if (!v || estadoVisorListo) return;
@@ -630,7 +669,7 @@ function instalarControlesVideo() {
         seek.addEventListener('pointerdown', e => {
             e.stopPropagation();
             arrastrando = true;
-            seek.setPointerCapture(e.pointerId);
+            try { seek.setPointerCapture(e.pointerId); } catch (err) {}
             buscar(e);
         });
         seek.addEventListener('pointermove', e => { if (arrastrando) buscar(e); });
@@ -639,27 +678,7 @@ function instalarControlesVideo() {
     }
 }
 
-function pintarIconoPlay() {
-    const v = $('evVideo');
-    const b = $('evPlay');
-    if (v && b) b.innerHTML = v.paused ? ICO_PLAY : ICO_PAUSA;
-}
-
-function pintarIconoVolumen() {
-    const v = $('evVideo');
-    const b = $('evMute');
-    if (v && b) b.innerHTML = v.muted ? ICO_SILENCIO : ICO_VOLUMEN;
-}
-
-function pintarTiempoVideo() {
-    const v = $('evVideo');
-    const t = $('evTiempoVideo');
-    if (!v || !t) return;
-    const total = isFinite(v.duration) ? formatoTiempo(v.duration) : '0:00';
-    t.textContent = formatoTiempo(v.currentTime) + ' / ' + total;
-}
-
-/* ---------------- Paneles: vistas y comentarios ---------------- */
+/* ---------------- Panel de vistas y comentarios ---------------- */
 
 function pintarMensajePanel(lista, texto) {
     lista.innerHTML = '';
@@ -702,13 +721,13 @@ function pintarTabsPanel(estadoId, activa) {
     if (!cont) return;
     cont.innerHTML = '';
     [
-        { id: 'vistas', icono: ICO_OJO, texto: 'Vistas' },
-        { id: 'comentarios', icono: ICO_COMENTAR, texto: 'Comentarios' }
+        { id: 'vistas', texto: 'Vistas' },
+        { id: 'comentarios', texto: 'Comentarios' }
     ].forEach(t => {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'estado-tab' + (t.id === activa ? ' active' : '');
-        b.innerHTML = t.icono + '<span>' + t.texto + '</span>';
+        b.textContent = t.texto;
         b.addEventListener('click', () => abrirPanelEstado(estadoId, t.id));
         cont.appendChild(b);
     });
@@ -938,7 +957,7 @@ async function previewEstado(event) {
             aviso('Puedes tener máximo ' + ESTADOS_LIMITE.videos + ' videos activos.', 'error'); continue;
         }
         if (tipo === 'imagen' && imagenes >= ESTADOS_LIMITE.imagenes) {
-            aviso('Puedes tener máximo ' + ESTADOS_LIMITE.imagenes + ' imágenes activas.', 'error'); continue;
+            aviso('Puedes tener máximo ' + ESTADOS_LIMITE.imagenes + ' fotos activas.', 'error'); continue;
         }
 
         let duracion = 0;
@@ -1030,7 +1049,9 @@ function pintarBotonPublicar(enProceso) {
 
 function pintarProgresoPublicacion(p) {
     const barra = $('estadoProgresoPublicacion');
-    if (barra) barra.firstElementChild.style.width = Math.max(0, Math.min(100, p)) + '%';
+    if (barra && barra.firstElementChild) {
+        barra.firstElementChild.style.width = Math.max(0, Math.min(100, p)) + '%';
+    }
 }
 
 /* ---------------- Publicar: envío ---------------- */
@@ -1138,6 +1159,13 @@ async function publicarEstado() {
 function inicializarEstados() {
     instalarGestos();
     instalarControlesVideo();
+    // Por si la página se oculta o pierde foco con el visor abierto
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            const v = $('evVideo');
+            if (estadoVideoActivo && v && !v.paused) v.pause();
+        }
+    });
 }
 
 if (document.readyState === 'loading') {
