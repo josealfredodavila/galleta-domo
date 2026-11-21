@@ -976,3 +976,75 @@ button {
         transition-duration: .01ms !important;
     }
 }
+
+/* ================================================================
+   AJUSTES v1.3 · Interfaz del chat (no altera colores ni tema)
+   ================================================================ */
+
+/* 1) El composer nunca debe quedar oculto por estilos heredados
+      salvo cuando el JS lo marque con [hidden] por bloqueo confirmado. */
+.composer:not([hidden]) {
+    display: flex !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+/* 2) Asegurar que el input/textarea del chat sea siempre interactivo
+      (sin disabled/readonly por CSS, sin overlay que lo tape). */
+.composer #messageInput,
+.composer input[type="text"],
+.composer textarea {
+    pointer-events: auto !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    cursor: text;
+}
+
+.composer #messageInput:disabled,
+.composer #messageInput[readonly] {
+    opacity: 1 !important;
+    cursor: text;
+}
+
+/* 3) Ningún pseudo-elemento/overlay del composer debe capturar el toque. */
+.composer::before,
+.composer::after,
+.input-wrapper::before,
+.input-wrapper::after {
+    pointer-events: none !important;
+}
+
+.input-wrapper {
+    pointer-events: auto !important;
+    position: relative;
+    z-index: 1;
+}
+
+/* 4) En móvil, al enfocar el textarea, evitar que el teclado virtual lo tape. */
+@media (max-width: 760px) {
+    .composer #messageInput,
+    .composer textarea {
+        scroll-margin-bottom: 90px;
+    }
+    .chat,
+    .messages {
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
+
+/* 5) Overlays cerrados no deben interceptar eventos. */
+.contact-profile-overlay:not(.open),
+.estado-viewer:not(.show),
+.photo-viewer:not(.show) {
+    pointer-events: none !important;
+}
+
+/* 6) Reafirmar que #messages no tape al composer con un z-index alto. */
+.messages {
+    z-index: auto;
+}
+.composer {
+    position: relative;
+    z-index: 2;
+}
