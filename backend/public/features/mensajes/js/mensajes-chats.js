@@ -1,21 +1,34 @@
 // ================================================================
-// MENSAJES · CHATS v1.0 · MÓDULO 3 DE 8
-// Ruta: backend/public/features/mensajes/js/mensajes-chats.js
+// MENSAJES · CHATS v2.0 · MÓDULO 3 DE 8
+// Ruta: frontend/features/mensajes/js/mensajes-chats.js
 // Depende de: mensajes-core.js, mensajes-scroll-media.js
-// Usa en tiempo de ejecución (módulos 4 y 7):
-//   - abrirConversacionBot()  → mensajes-bot.js
-//   - enviarMensajeBot()      → mensajes-bot.js
-//   - enviarVozAlBot()        → mensajes-bot.js
-// Contenido: lista de conversaciones, abrir/cerrar chat, render,
-//            enviar texto, adjuntos, notas de voz, editar, eliminar,
-//            marcar leído, realtime, nueva conversación, bloqueo y
-//            menú contextual de mensajes.
-// NO cargar todavía en mensajes.html.
+// Usa (módulos 4 y 7): abrirConversacionBot, enviarMensajeBot,
+//                      enviarVozAlBot, startCall, deleteConversation
+// Cambios v2.0:
+//  - Sin emojis ni diamantes: iconos SVG planos
+//  - Bloqueo sincronizado con contactos.js (tablas bloqueos y RPC bloquear_contacto)
+//  - Estado de bloqueo visible: se oculta la barra de escribir y el botón
+//    cambia a "Desbloquear"
+//  - Panel de información del chat (estilo Messenger) controlado aquí
+//  - #chatHeader guarda userId, handle y online para "Ver perfil"
 // ================================================================
 
 'use strict';
 
+const ICO_ESTRELLA_CHAT = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/></svg>';
+
 let conversationFilter = '';
+
+function etiquetaPreview(tipo, contenido) {
+    if (!tipo) return 'Sin mensajes';
+    if (tipo === 'texto') return (contenido || '').slice(0, 60) || 'Sin mensajes';
+    const etiquetas = { imagen: 'Imagen', video: 'Video', audio: 'Nota de voz', archivo: 'Archivo' };
+    return etiquetas[tipo] || (contenido || tipo);
+}
+
+function textoPresencia(p) {
+    return p && p.online ? 'En línea' : 'Desconectado';
+}
 
 async function loadConversations() {
     const list = $('conversationList');
@@ -27,12 +40,12 @@ async function loadConversations() {
     botEl.dataset.id = BOT_ID;
     botEl.dataset.name = 'marquinhos';
     botEl.innerHTML = `
-        <div class="avatar avatar-bot">✦</div>
+        <div class="avatar avatar-bot">${ICO_ESTRELLA_CHAT}</div>
         <div class="convinfo">
             <div class="convname">Marquinhos</div>
-            <div class="convmsg" id="botLastMsg">Tu asistente personal ✦</div>
+            <div class="convmsg" id="botLastMsg">Tu asistente personal</div>
         </div>
-        <div class="convtime" id="botBadge" style="color:var(--success);font-size:.55rem">IA</div>`;
+        <div class="convtime" id="botBadge">IA</div>`;
     botEl.onclick = () => openConversation(BOT_ID);
     list.appendChild(botEl);
 
@@ -48,11 +61,11 @@ async function loadConversations() {
         const { ultimo: lastBot, noLeidos } = botResumenCache;
         if (lastBot) {
             const preview = $('botLastMsg');
-            if (preview) preview.textContent = lastBot.tipo === 'texto' ? (lastBot.contenido || '').slice(0, 60) : ('📎 ' + (lastBot.contenido || lastBot.tipo));
+            if (preview) preview.textContent = etiquetaPreview(lastBot.tipo, lastBot.contenido);
         }
         const badge = $('botBadge');
         if (badge && noLeidos > 0) {
-            badge.innerHTML = `<span style="background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 8px;border-radius:99px;min-width:20px;text-align:center;display:inline-block;animation:pulse-badge 1.5s infinite;">${noLeidos > 9 ? '9+' : noLeidos}</span>`;
+            badge.innerHTML = `<span class="badge-unread">${noLeidos > 9 ? '9+' : noLeidos}</span>`;
         }
     } catch (e) { console.warn('Error cargando badge bot:', e); }
 
@@ -69,15 +82,8 @@ async function loadConversations() {
             const nombre = conv.nombre || 'Usuario';
             const handle = conv.handle || 'usuario';
             const avatarUrl = conv.avatar_url || null;
-            const ultimoTipo = conv.ultimo_tipo;
-            const ultimoContenido = conv.ultimo_contenido;
             const noLeidos = Number(conv.no_leidos) || 0;
-
-            let preview;
-            if (!ultimoTipo) preview = 'Sin mensajes';
-            else if (ultimoTipo === 'texto') preview = (ultimoContenido || '').slice(0, 60) || 'Sin mensajes';
-            else preview = '📎 ' + (ultimoContenido || ultimoTipo);
-
+            const preview = etiquetaPreview(conv.ultimo_tipo, conv.ultimo_contenido);
             const hora = conv.ultimo_at ? new Date(conv.ultimo_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
             const el = document.createElement('div');
@@ -90,8 +96,8 @@ async function loadConversations() {
                     <div class="convmsg">${esc(preview)}</div>
                 </div>
                 <div class="convtime">
-                    ${hora}
-                    ${noLeidos > 0 ? `<span style="display:inline-block;margin-left:6px;background:var(--danger);color:#fff;font-size:.6rem;font-weight:800;padding:2px 7px;border-radius:99px;min-width:18px;text-align:center;">${noLeidos > 9 ? '9+' : noLeidos}</span>` : ''}
+                    ${esc(hora)}
+                    ${noLeidos > 0 ? `<span class="badge-unread">${noLeidos > 9 ? '9+' : noLeidos}</span>` : ''}
                 </div>`;
             el.onclick = () => openConversation(otherId);
             list.appendChild(el);
@@ -105,43 +111,126 @@ const recargarBandeja = debounce(loadConversations, 300);
 function aplicarFiltroConversaciones() {
     const q = conversationFilter.trim().toLowerCase();
     document.querySelectorAll('.conv').forEach(el => {
-        if (!q || el.dataset.name?.includes(q) || el.querySelector('.convname')?.textContent.toLowerCase().includes(q)) el.style.display = 'flex';
-        else el.style.display = 'none';
+        const visible = !q || el.dataset.name?.includes(q) || el.querySelector('.convname')?.textContent.toLowerCase().includes(q);
+        el.style.display = visible ? 'flex' : 'none';
     });
 }
+
+/* ---------------- Bloqueo (sincronizado con contactos.js) ---------------- */
+
+async function estadoBloqueoCon(id) {
+    const yo = await db.from('bloqueos').select('id').eq('usuario_id', user.id).eq('bloqueado_id', id).maybeSingle();
+    const el = await db.from('bloqueos').select('id').eq('usuario_id', id).eq('bloqueado_id', user.id).maybeSingle();
+    return { yo: !!(yo && yo.data), el: !!(el && el.data) };
+}
+
+function aplicarEstadoBloqueo(est) {
+    if (!current || current.bot) return;
+    current.bloqueo = est;
+    const composer = $('composer');
+    const status = $('chatStatus');
+    const nombre = current.profile?.nombre || 'Usuario';
+
+    if (est.yo || est.el) {
+        composer.hidden = true;
+        status.textContent = est.yo ? 'Bloqueado' : 'No disponible';
+        status.className = 'status';
+    } else {
+        composer.hidden = false;
+        status.textContent = textoPresencia(current.profile);
+        status.className = 'status' + (current.profile?.online ? ' online' : '');
+    }
+
+    const filaBloqueo = document.querySelector('#cpActionBlock .main');
+    if (filaBloqueo) {
+        const verbo = est.yo ? 'Desbloquear a ' : 'Bloquear a ';
+        filaBloqueo.innerHTML = verbo + '<span id="cpBlockName">' + esc(nombre) + '</span>';
+    }
+}
+
+async function bloquearUsuarioActual() {
+    if (!current || current.bot) { toast('Marquinhos no se puede bloquear.', 'warning'); return; }
+    if (!await auth()) return;
+
+    const id = current.id;
+    const nombre = current.profile?.nombre || 'este usuario';
+    const est = await estadoBloqueoCon(id);
+
+    if (est.el && !est.yo) {
+        toast('Esta persona te bloqueó. No puedes cambiar este estado.', 'warning');
+        return;
+    }
+
+    if (est.yo) {
+        const ok = await NeonModal.confirm({
+            title: 'Desbloquear usuario',
+            message: `¿Permitir que ${nombre} te escriba y te llame de nuevo?`,
+            icon: '',
+            confirmText: 'Desbloquear',
+            cancelText: 'Cancelar'
+        });
+        if (!ok) return;
+        const { error } = await db.from('bloqueos').delete().eq('usuario_id', user.id).eq('bloqueado_id', id);
+        if (error) { toast('No se pudo desbloquear.', 'error'); return; }
+        toast('Usuario desbloqueado.', 'success');
+    } else {
+        const ok = await NeonModal.confirm({
+            title: 'Bloquear usuario',
+            message: `¿Bloquear a ${nombre}? No podrá llamarte ni escribirte.`,
+            icon: '',
+            confirmText: 'Bloquear',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+        if (!ok) return;
+        const { error } = await db.rpc('bloquear_contacto', { p_contacto_id: id });
+        if (error) { console.error('Error bloqueando:', error); toast('No se pudo bloquear.', 'error'); return; }
+        toast('Usuario bloqueado.', 'success');
+    }
+
+    aplicarEstadoBloqueo(await estadoBloqueoCon(id));
+    recargarBandeja();
+}
+
+/* ---------------- Abrir y cerrar chat ---------------- */
 
 async function openConversation(id) {
     if (!await auth()) return;
     const p = await profile(id);
     const esBot = (id === BOT_ID);
-    current = { id, profile: p, bot: esBot };
+    current = { id, profile: p, bot: esBot, bloqueo: { yo: false, el: false } };
 
     $('chatName').textContent = p.nombre || 'Usuario';
-    $('chatAvatar').innerHTML = esBot ? '✦' : (p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || '◈').charAt(0).toUpperCase()));
+    $('chatAvatar').innerHTML = esBot
+        ? ICO_ESTRELLA_CHAT
+        : (p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || 'U').charAt(0).toUpperCase()));
     $('chatAvatar').className = 'avatar' + (esBot ? ' avatar-bot' : '');
-    $('chatStatus').textContent = esBot ? '✦ IA · Siempre disponible' : (p.online ? '◉ En línea' : '◈ Desconectado');
-    $('chatStatus').className = 'status' + (p.online ? ' online' : '');
+    $('chatStatus').textContent = esBot ? 'IA · Siempre disponible' : textoPresencia(p);
+    $('chatStatus').className = 'status' + (!esBot && p.online ? ' online' : '');
+
+    const header = $('chatHeader');
+    header.dataset.userId = id;
+    header.dataset.handle = p.handle || '';
+    header.dataset.online = p.online ? 'true' : 'false';
 
     $('chatAvatar').onclick = () => {
-        if (esBot) { toast('ℹ️ Marquinhos es un asistente IA', 'warning'); return; }
+        if (esBot) { toast('Marquinhos es un asistente de IA.', 'warning'); return; }
         verFotoAmpliada(p.avatar_url, p.nombre, p.handle);
     };
 
-    $('voiceBot').style.display = esBot ? 'inline-flex' : 'none';
-    $('chatActions').style.display = 'flex';
+    $('voiceBot').hidden = !esBot;
+    $('chatActions').hidden = esBot;
 
     const callBtn = $('videoCall');
     if (callBtn) {
-        if (esBot) callBtn.style.display = 'none';
-        else {
-            callBtn.style.display = 'inline-flex';
-            callBtn.title = 'Iniciar videollamada con ' + (p.nombre || 'usuario');
-            callBtn.disabled = !window.__livekitReady;
-        }
+        callBtn.disabled = esBot || !window.__livekitReady;
+        callBtn.title = esBot ? '' : 'Videollamada con ' + (p.nombre || 'usuario');
     }
+    const audioBtn = $('audioCall');
+    if (audioBtn) audioBtn.disabled = esBot || !window.__livekitReady;
 
-    $('composer').style.display = 'flex';
-    $('emptyState').style.display = 'none';
+    $('composer').hidden = false;
+    $('emptyState').hidden = true;
     $('panel').classList.add('chat-open');
     document.querySelectorAll('.conv').forEach(x => x.classList.toggle('active', x.dataset.id === id));
 
@@ -152,14 +241,14 @@ async function openConversation(id) {
     if (esBot) {
         await db.from('mensajes_chat').update({ leido: true }).eq('remitente_id', BOT_UUID).eq('destinatario_id', user.id).eq('leido', false);
         botResumenCache.ts = 0;
-        const badge = $('botBadge');
-        if (badge) { badge.textContent = 'IA'; badge.style.color = 'var(--success)'; }
         await abrirConversacionBot();
         return;
     }
 
+    aplicarEstadoBloqueo(await estadoBloqueoCon(id));
+
     const r = await db.from('mensajes_chat').select('*').eq('eliminado', false).or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${id}),and(remitente_id.eq.${id},destinatario_id.eq.${user.id})`).order('created_at', { ascending: true }).limit(100);
-    if (r.error) { console.error(r.error); toast('❌ Error al cargar mensajes', 'error'); return; }
+    if (r.error) { console.error(r.error); toast('Error al cargar mensajes.', 'error'); return; }
     await renderMessages(r.data || []);
     await markRead(id);
     subscribeMessages(id);
@@ -169,13 +258,17 @@ async function cerrarConversacion() {
     current = null;
     $('panel').classList.remove('chat-open');
     $('chatName').textContent = 'Selecciona una conversación';
-    $('chatStatus').textContent = '◈ En espera';
-    $('chatAvatar').innerHTML = '◈';
+    $('chatStatus').textContent = 'Elige un chat para empezar';
+    $('chatStatus').className = 'status';
+    $('chatAvatar').innerHTML = '';
     $('chatAvatar').className = 'avatar';
     $('chatAvatar').onclick = null;
-    $('chatActions').style.display = 'none';
-    $('composer').style.display = 'none';
-    $('emptyState').style.display = 'block';
+    $('chatHeader').dataset.userId = '';
+    $('chatHeader').dataset.handle = '';
+    $('chatActions').hidden = true;
+    $('voiceBot').hidden = true;
+    $('composer').hidden = true;
+    $('emptyState').hidden = false;
     const box = $('messages');
     box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
     document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
@@ -186,13 +279,16 @@ async function cerrarConversacion() {
     }
 }
 
+/* ---------------- Render de mensajes ---------------- */
+
 async function renderMessages(rows) {
     const box = $('messages');
     box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
     let anchor = box.querySelector('#scrollAnchor');
     if (!anchor) { anchor = document.createElement('div'); anchor.id = 'scrollAnchor'; box.appendChild(anchor); }
+    box.querySelectorAll('.empty').forEach(el => el.remove());
     if (!rows.length) {
-        anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><strong>◈</strong><div>Sin mensajes</div><small>Envía el primer mensaje</small></div>');
+        anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><p>Sin mensajes</p><small>Envía el primer mensaje</small></div>');
         return;
     }
     const signedUrls = await Promise.all(rows.map(m => getSignedUrlForMessage(m)));
@@ -202,6 +298,16 @@ async function renderMessages(rows) {
     isUserAtBottom = true;
     observarCargaMultimedia(box);
     scrollToBottom(true);
+}
+
+function estadoLecturaTexto(m, sent) {
+    if (!sent) return '';
+    return m.leido ? ' · Leído' : ' · Enviado';
+}
+
+function avisoModeracionHTML(m) {
+    if (m.aviso_moderacion !== 'lenguaje_inapropiado') return '';
+    return '<div class="aviso-moderacion">Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>';
 }
 
 function messageHTML(m, sent, signedUrl) {
@@ -214,26 +320,34 @@ function messageHTML(m, sent, signedUrl) {
         if (m.tipo === 'imagen') body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy" data-visor="1" data-src="${esc(urlToUse)}" data-nombre="${esc(m.nombre_archivo || 'imagen.jpg')}" style="cursor:zoom-in;">`;
         else if (m.tipo === 'video') body = `<video controls playsinline src="${esc(urlToUse)}"></video>`;
         else if (m.tipo === 'audio') body = `<audio controls preload="metadata" src="${esc(urlToUse)}"></audio>`;
-        else { const displayName = esc(m.nombre_archivo || limpiarMarkdown(m.contenido) || 'Archivo'); body = `📎 <a href="${esc(urlToUse)}" target="_blank" rel="noopener" style="color:var(--gold)">${displayName}</a>`; }
+        else {
+            const displayName = esc(m.nombre_archivo || limpiarMarkdown(m.contenido) || 'Archivo');
+            body = `<a class="file-link" href="${esc(urlToUse)}" target="_blank" rel="noopener">${displayName}</a>`;
+        }
     }
     const esBotRecibido = !sent && (m.es_bot || m.bot_message);
-    const headerBot = esBotRecibido ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
-    const avisoHTML = m.aviso_moderacion === 'lenguaje_inapropiado' ? '<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(247,212,74,.12);border:1px solid rgba(247,212,74,.4);color:#f7d44a;font-size:.68rem;">⚠️ Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>' : '';
+    const headerBot = esBotRecibido ? '<div class="bubble-bot-info">MARQUINHOS</div>' : '';
     const editadoHTML = m.editado === true ? ' · editado' : '';
+    const hora = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
     return `<div class="bubblewrap ${sent ? 'sent' : 'received'}" data-mensaje-id="${esc(m.id || '')}">
-        <div class="bubble">${headerBot}${body}${avisoHTML}</div>
-        <div class="meta">${m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}${editadoHTML}${sent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : ''}</div>
+        <div class="bubble">${headerBot}${body}${avisoModeracionHTML(m)}</div>
+        <div class="meta">${esc(hora)}${editadoHTML}${estadoLecturaTexto(m, sent)}</div>
     </div>`;
 }
 
+/* ---------------- Enviar ---------------- */
+
 async function sendMessage(text) {
     if (!current || !text.trim()) return;
+    if (!current.bot && current.bloqueo && (current.bloqueo.yo || current.bloqueo.el)) {
+        toast('No puedes enviar mensajes a este contacto.', 'warning');
+        return;
+    }
     if (!await auth()) return;
     const textoLimpio = text.trim();
     $('messageInput').value = '';
 
     if (current.bot) {
-        // La lógica completa de Marquinhos vive en mensajes-bot.js
         await enviarMensajeBot(textoLimpio);
         return;
     }
@@ -243,23 +357,22 @@ async function sendMessage(text) {
         resp = await enviarMensajeChat(current.id, textoLimpio, 'texto');
     } catch (e) {
         console.error('Error enviando mensaje:', e);
-        if (esErrorContenidoNoPermitido(e)) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
-        else toast('❌ ' + (e.message || 'Error al enviar mensaje'), 'error');
+        if (esErrorContenidoNoPermitido(e)) toast('Contenido no permitido por las normas de la comunidad.', 'error');
+        else toast(e.message || 'Error al enviar mensaje.', 'error');
         $('messageInput').value = textoLimpio;
         return;
     }
 
     if (resp.estado === 'entregado' && resp.mensaje) { await append(resp.mensaje, true); recargarBandeja(); return; }
-    if (resp.estado === 'solicitud') { toast('📥 Tu mensaje se envió como solicitud. Aparecerá cuando la acepte.', 'success'); recargarBandeja(); return; }
-    if (resp.estado === 'solicitud_en_espera') { toast('⏳ Ya tienes una solicitud pendiente con esta persona.', 'warning'); $('messageInput').value = textoLimpio; return; }
-    toast('⚠️ No se pudo enviar el mensaje.', 'error');
+    if (resp.estado === 'solicitud') { toast('Tu mensaje se envió como solicitud. Aparecerá cuando la acepte.', 'success'); recargarBandeja(); return; }
+    if (resp.estado === 'solicitud_en_espera') { toast('Ya tienes una solicitud pendiente con esta persona.', 'warning'); $('messageInput').value = textoLimpio; return; }
+    toast('No se pudo enviar el mensaje.', 'error');
     $('messageInput').value = textoLimpio;
 }
 
 async function append(m, sent) {
     const box = $('messages');
-    const empty = box.querySelector('.empty');
-    if (empty) empty.remove();
+    box.querySelectorAll('.empty').forEach(el => el.remove());
     const signedUrl = await getSignedUrlForMessage(m);
     const anchorRef = box.querySelector('#scrollAnchor');
     if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, sent, signedUrl));
@@ -280,25 +393,34 @@ async function markRead(id, force = false) {
 }
 
 async function deleteConversation() {
-    if (!current) { toast('⚠️ Selecciona una conversación', 'error'); return; }
+    if (!current) { toast('Selecciona una conversación.', 'error'); return; }
     if (!await auth()) return;
     const nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
-    const confirmado = await NeonModal.confirm({ title: 'Eliminar conversación', message: `¿Eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`, icon: '🗑', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
+    const confirmado = await NeonModal.confirm({
+        title: 'Eliminar conversación',
+        message: `¿Eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`,
+        icon: '',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        danger: true
+    });
     if (!confirmado) return;
     try {
         const targetId = current.bot ? BOT_UUID : current.id;
         const { error } = await db.rpc('ocultar_conversacion', { p_otro: targetId });
         if (error) throw error;
-        toast('✅ Conversación eliminada correctamente', 'success');
+        toast('Conversación eliminada.', 'success');
         const box = $('messages');
         box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
         const anchor = box.querySelector('#scrollAnchor');
-        if (anchor) anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><strong>◈</strong><div>Conversación eliminada</div><small>Envía un mensaje para empezar de nuevo</small></div>');
+        if (anchor) anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><p>Conversación eliminada</p><small>Envía un mensaje para empezar de nuevo</small></div>');
         unreadCount = 0;
         actualizarFlecha();
         recargarBandeja();
-    } catch (e) { console.error('Error eliminando conversación:', e); toast('❌ No se pudo eliminar la conversación', 'error'); }
+    } catch (e) { console.error('Error eliminando conversación:', e); toast('No se pudo eliminar la conversación.', 'error'); }
 }
+
+/* ---------------- Realtime ---------------- */
 
 function subscribeMessages(id) {
     if (id === BOT_ID) return;
@@ -325,16 +447,14 @@ function subscribeMessages(id) {
             const innerHtml = (typeof window.formatearMensajeConEmotes === 'function')
                 ? window.formatearMensajeConEmotes(textoLimpio)
                 : esc(textoLimpio);
-            const headerBot = (!esSent && (m.es_bot || m.bot_message)) ? '<div class="bubble-bot-info">✦ MARQUINHOS</div>' : '';
-            const avisoHTML = m.aviso_moderacion === 'lenguaje_inapropiado' ? '<div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(247,212,74,.12);border:1px solid rgba(247,212,74,.4);color:#f7d44a;font-size:.68rem;">⚠️ Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</div>' : '';
-            bubble.innerHTML = headerBot + innerHtml + avisoHTML;
+            const headerBot = (!esSent && (m.es_bot || m.bot_message)) ? '<div class="bubble-bot-info">MARQUINHOS</div>' : '';
+            bubble.innerHTML = headerBot + innerHtml + avisoModeracionHTML(m);
         }
 
         if (metaEl) {
             const hora = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
             const editado = m.editado === true ? ' · editado' : '';
-            const leido = esSent ? (m.leido ? ' · ◆◆' : ' · ◈◈') : '';
-            metaEl.textContent = hora + editado + leido;
+            metaEl.textContent = hora + editado + estadoLecturaTexto(m, esSent);
         }
 
         recargarBandeja();
@@ -350,12 +470,14 @@ function subscribeMessages(id) {
         .subscribe();
 }
 
+/* ---------------- Adjuntos y notas de voz ---------------- */
+
 async function uploadFile(file) {
     if (!current || !await auth()) return;
-    if (current.bot) { toast('⚠️ Para Marquinhos usa el botón 🔊, o envía nota de voz con 🎙️', 'error'); return; }
-    if (file.size > 50 * 1024 * 1024) { toast('⚠️ El archivo supera 50 MB', 'error'); return; }
+    if (current.bot) { toast('Para Marquinhos usa el botón de voz o envía una nota de voz.', 'error'); return; }
+    if (file.size > 50 * 1024 * 1024) { toast('El archivo supera 50 MB.', 'error'); return; }
     const type = file.type.startsWith('image/') ? 'imagen' : file.type.startsWith('video/') ? 'video' : file.type.startsWith('audio/') ? 'audio' : 'archivo';
-    if (type === 'archivo') { toast('⚠️ En el chat solo se pueden enviar imágenes, videos o audios', 'error'); return; }
+    if (type === 'archivo') { toast('En el chat solo se pueden enviar imágenes, videos o audios.', 'error'); return; }
     let storageRef;
     try {
         if (type === 'audio') {
@@ -368,20 +490,22 @@ async function uploadFile(file) {
             const d = await subirViaBackend(file, 'chat-attachments', type);
             storageRef = `bucket://chat-attachments/${d.path}`;
         }
-    } catch (e) { console.error('Error subiendo archivo:', e); toast('❌ ' + (e.message || 'No se pudo subir el archivo'), 'error'); return; }
+    } catch (e) { console.error('Error subiendo archivo:', e); toast(e.message || 'No se pudo subir el archivo.', 'error'); return; }
 
     let resp;
     try {
         resp = await enviarMensajeChat(current.id, file.name, type, storageRef, file.name);
     } catch (e) {
         console.error('Error enviando archivo:', e);
-        if (esErrorContenidoNoPermitido(e)) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
-        else toast('❌ ' + (e.message || 'No se pudo guardar el archivo'), 'error');
+        if (esErrorContenidoNoPermitido(e)) toast('Contenido no permitido por las normas de la comunidad.', 'error');
+        else toast(e.message || 'No se pudo guardar el archivo.', 'error');
         return;
     }
 
     if (resp.estado === 'entregado' && resp.mensaje) { await append(resp.mensaje, true); recargarBandeja(); }
 }
+
+/* ---------------- Nueva conversación / buscar contacto ---------------- */
 
 function newConversation() {
     $('newModal').classList.add('show');
@@ -392,21 +516,21 @@ function newConversation() {
 
 async function searchUsers(q) {
     const box = $('userResults');
-    if (!q || q.trim().length < 2) { box.innerHTML = '<div style="padding:18px;text-align:center;color:var(--muted)">Escribe al menos 2 caracteres</div>'; return; }
+    if (!q || q.trim().length < 2) { box.innerHTML = '<div class="busqueda-vacia">Escribe al menos 2 caracteres</div>'; return; }
     if (!await auth()) return;
     const term = q.trim().replace(/[%_,\\]/g, ' ').replace(/\s+/g, ' ').trim();
     const r = await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`).neq('id', user.id).neq('id', BOT_UUID).limit(12);
-    if (r.error) { console.error(r.error); toast('❌ Error al buscar usuarios', 'error'); return; }
-    box.innerHTML = r.data?.length ? '' : '<div style="padding:18px;text-align:center;color:var(--muted)">No se encontraron usuarios</div>';
+    if (r.error) { console.error(r.error); toast('Error al buscar usuarios.', 'error'); return; }
+    box.innerHTML = r.data?.length ? '' : '<div class="busqueda-vacia">No se encontraron usuarios</div>';
     for (const p of r.data || []) {
         const el = document.createElement('div');
         el.className = 'result';
         el.innerHTML = avatar(p.nombre, p.avatar_url) + `
-            <div style="flex:1">
+            <div class="result-info">
                 <b>${esc(p.nombre || 'Usuario')}</b>
-                <div style="font-size:.68rem;color:var(--muted)">@${esc(p.handle || 'usuario')}</div>
+                <div class="result-handle">@${esc(p.handle || 'usuario')}</div>
             </div>
-            <span style="color:var(--gold);font-size:.7rem">Iniciar ›</span>`;
+            <span class="result-action">Abrir chat</span>`;
         el.onclick = () => createConversation(p.id);
         box.appendChild(el);
     }
@@ -419,6 +543,8 @@ async function createConversation(id) {
     await openConversation(id);
 }
 
+/* ---------------- Grabación de nota de voz (chat normal) ---------------- */
+
 function getSupportedAudioMime() {
     const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg', 'audio/mp4'];
     for (const type of candidates) { if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) return type; }
@@ -429,7 +555,7 @@ function extensionForMime(mime) { if (mime.includes('ogg')) return 'ogg'; if (mi
 
 async function recordAudioNota() {
     if (recorder && recorder.state === 'recording') { recorder.stop(); return; }
-    if (!current) { toast('⚠️ Selecciona una conversación', 'error'); return; }
+    if (!current) { toast('Selecciona una conversación.', 'error'); return; }
     if (!await auth()) return;
     const esBot = current.bot;
     try {
@@ -443,13 +569,12 @@ async function recordAudioNota() {
         recorder.onstop = async () => {
             stream.getTracks().forEach(t => t.stop());
             $('audio').classList.remove('recording');
-            $('audio').textContent = '🎙️';
             const blob = new Blob(audioChunks, { type: recorder.mimeType || mimeType || 'audio/webm' });
             audioChunks = [];
             const mode = recordingMode;
             recorder = null;
             recordingMode = null;
-            if (!blob.size) { toast('⚠️ No se capturó audio', 'error'); return; }
+            if (!blob.size) { toast('No se capturó audio.', 'error'); return; }
             const ext = extensionForMime(blob.type);
             const file = new File([blob], `audio-${Date.now()}.${ext}`, { type: blob.type });
             if (mode === 'bot') await enviarVozAlBot(file);
@@ -457,32 +582,15 @@ async function recordAudioNota() {
         };
         recorder.start();
         $('audio').classList.add('recording');
-        $('audio').textContent = '⏹️';
-        toast(esBot ? '🎙️ Habla con Marquinhos… presiona otra vez para enviar' : '🎙️ Grabando… presiona otra vez para detener');
-    } catch (e) { console.error('Micrófono:', e); $('audio').classList.remove('recording'); $('audio').textContent = '🎙️'; toast('❌ No se pudo acceder al micrófono', 'error'); }
-}
-
-async function bloquearUsuarioActual() {
-    if (!current || current.bot) { toast('⚠️ No se puede bloquear a Marquinhos', 'warning'); return; }
-    const confirmado = await NeonModal.confirm({
-        title: 'Bloquear usuario',
-        message: `¿Bloquear a ${current.profile.nombre || 'este usuario'}? No podrá llamarte ni tú a él.`,
-        icon: '⛔',
-        confirmText: 'Bloquear',
-        cancelText: 'Cancelar',
-        danger: true
-    });
-    if (!confirmado) return;
-    try {
-        await db.rpc('bloquear_contacto', { p_contacto_id: current.id });
-        toast('⛔ Usuario bloqueado', 'success');
-        await cerrarConversacion();
-        recargarBandeja();
+        toast(esBot ? 'Habla con Marquinhos. Presiona otra vez para enviar.' : 'Grabando. Presiona otra vez para detener.');
     } catch (e) {
-        console.error('Error bloqueando:', e);
-        toast('❌ No se pudo bloquear al usuario', 'error');
+        console.error('Micrófono:', e);
+        $('audio').classList.remove('recording');
+        toast('No se pudo acceder al micrófono.', 'error');
     }
 }
+
+/* ---------------- Menú contextual de mensajes ---------------- */
 
 async function mostrarMenuMensaje(bubblewrap, msgId) {
     document.querySelectorAll('.msg-context-menu').forEach(m => m.remove());
@@ -492,7 +600,6 @@ async function mostrarMenuMensaje(bubblewrap, msgId) {
 
     const menu = document.createElement('div');
     menu.className = 'msg-context-menu';
-    menu.style.cssText = 'position:fixed;z-index:9999;background:var(--panel,#0d1117);border:1px solid rgba(0,229,255,.3);border-radius:12px;padding:8px 0;box-shadow:0 8px 30px rgba(0,0,0,.5);min-width:160px;';
 
     const rect = bubblewrap.getBoundingClientRect();
     let x = rect.left + rect.width / 2;
@@ -509,10 +616,9 @@ async function mostrarMenuMensaje(bubblewrap, msgId) {
 
     opciones.forEach(op => {
         const btn = document.createElement('button');
+        btn.type = 'button';
         btn.textContent = op.texto;
-        btn.style.cssText = `display:block;width:100%;padding:8px 16px;background:none;border:none;text-align:left;color:${op.danger ? '#ff5c7a' : 'var(--text-primary,#e6f1ff)'};font-size:.8rem;cursor:pointer;`;
-        btn.onmouseenter = () => btn.style.background = 'rgba(0,229,255,.08)';
-        btn.onmouseleave = () => btn.style.background = 'none';
+        if (op.danger) btn.classList.add('danger');
         btn.onclick = () => { menu.remove(); op.accion(); };
         menu.appendChild(btn);
     });
@@ -529,13 +635,13 @@ async function editarMensaje(msgId, bubblewrap) {
     const bubble = bubblewrap.querySelector('.bubble');
     const metaEl = bubblewrap.querySelector('.meta');
     const esSent = bubblewrap.classList.contains('sent');
-    let contenidoActual = bubble.textContent.trim();
+    const contenidoActual = bubble.textContent.trim();
 
     const nuevoTexto = await NeonModal.prompt({
         title: 'Editar mensaje',
-        message: 'Edita tu mensaje (máx. 15 minutos):',
-        icon: '✎',
-        placeholder: 'Nuevo texto…',
+        message: 'Edita tu mensaje (máximo 15 minutos después de enviarlo):',
+        icon: '',
+        placeholder: 'Nuevo texto',
         defaultValue: contenidoActual,
         confirmText: 'Guardar',
         cancelText: 'Cancelar'
@@ -546,52 +652,51 @@ async function editarMensaje(msgId, bubblewrap) {
         const { error } = await db.rpc('editar_mensaje_chat', { p_mensaje_id: msgId, p_contenido: nuevoTexto });
         if (error) {
             const msgErr = error.message || '';
-            if (msgErr.indexOf('contenido_no_permitido') !== -1) toast('❌ Contenido no permitido por las normas de la comunidad', 'error');
-            else if (msgErr.indexOf('edicion_expirada') !== -1) toast('Ya no puedes editar este mensaje (más de 15 minutos)', 'error');
-            else toast('❌ ' + (msgErr || 'No se pudo editar'), 'error');
+            if (msgErr.indexOf('contenido_no_permitido') !== -1) toast('Contenido no permitido por las normas de la comunidad.', 'error');
+            else if (msgErr.indexOf('edicion_expirada') !== -1) toast('Ya no puedes editar este mensaje (más de 15 minutos).', 'error');
+            else toast(msgErr || 'No se pudo editar.', 'error');
             return;
         }
         const textoLimpio = limpiarMarkdown(nuevoTexto);
-        const innerHtml = (typeof window.formatearMensajeConEmotes === 'function')
+        bubble.innerHTML = (typeof window.formatearMensajeConEmotes === 'function')
             ? window.formatearMensajeConEmotes(textoLimpio)
             : esc(textoLimpio);
-        bubble.innerHTML = innerHtml;
         if (metaEl) {
             const horaMatch = metaEl.textContent.match(/^\s*(\d{1,2}:\d{2})/);
             const hora = horaMatch ? horaMatch[1] : '';
-            const leidoEstado = esSent ? (metaEl.textContent.includes('◆◆') ? ' · ◆◆' : ' · ◈◈') : '';
-            metaEl.textContent = `${hora} · editado${leidoEstado}`;
+            const leido = esSent ? (metaEl.textContent.includes('Leído') ? ' · Leído' : ' · Enviado') : '';
+            metaEl.textContent = `${hora} · editado${leido}`;
         }
-        toast('✎ Mensaje editado', 'success');
+        toast('Mensaje editado.', 'success');
         recargarBandeja();
     } catch (e) {
         console.error('Error editando mensaje:', e);
-        toast('❌ No se pudo editar el mensaje', 'error');
+        toast('No se pudo editar el mensaje.', 'error');
     }
 }
 
 async function eliminarMensajeParaMi(msgId, bubblewrap) {
-    const confirmado = await NeonModal.confirm({ title: 'Eliminar para mí', message: '¿Eliminar este mensaje solo de tu vista?', icon: '🗑', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
+    const confirmado = await NeonModal.confirm({ title: 'Eliminar para mí', message: '¿Eliminar este mensaje solo de tu vista?', icon: '', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
     if (!confirmado) return;
     try {
         const { error } = await db.rpc('eliminar_mensaje_para_mi', { p_mensaje_id: msgId });
         if (error) throw error;
         bubblewrap.remove();
-        toast('✅ Mensaje eliminado para ti', 'success');
+        toast('Mensaje eliminado para ti.', 'success');
         recargarBandeja();
-    } catch (e) { console.error('Error eliminando para mí:', e); toast('❌ No se pudo eliminar', 'error'); }
+    } catch (e) { console.error('Error eliminando para mí:', e); toast('No se pudo eliminar.', 'error'); }
 }
 
 async function eliminarMensajeParaTodos(msgId, bubblewrap) {
-    const confirmado = await NeonModal.confirm({ title: 'Eliminar para todos', message: '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.', icon: '🗑', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
+    const confirmado = await NeonModal.confirm({ title: 'Eliminar para todos', message: '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.', icon: '', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
     if (!confirmado) return;
     try {
         const { error } = await db.rpc('eliminar_mensaje_para_todos', { p_mensaje_id: msgId });
         if (error) throw error;
         bubblewrap.remove();
-        toast('✅ Mensaje eliminado para todos', 'success');
+        toast('Mensaje eliminado para todos.', 'success');
         recargarBandeja();
-    } catch (e) { console.error('Error eliminando para todos:', e); toast('❌ No se pudo eliminar', 'error'); }
+    } catch (e) { console.error('Error eliminando para todos:', e); toast('No se pudo eliminar.', 'error'); }
 }
 
 function configurarLongPressMensajes() {
@@ -635,4 +740,102 @@ function configurarLongPressMensajes() {
         const msgId = bubblewrap.dataset.mensajeId;
         if (msgId) mostrarMenuMensaje(bubblewrap, msgId);
     });
+}
+
+/* ---------------- Información del chat (panel tipo Messenger) ---------------- */
+
+function abrirInfoChat() {
+    if (!current) { toast('Primero abre una conversación.', 'warning'); return; }
+    const nombre = current.bot ? 'Marquinhos' : (current.profile?.nombre || 'Usuario');
+    const overlay = $('contactProfileOverlay');
+    if (!overlay) return;
+
+    $('cpName').textContent = nombre;
+    const cpAvatar = $('cpAvatar');
+    cpAvatar.innerHTML = '';
+    const img = $('chatAvatar').querySelector('img');
+    if (img && !current.bot) {
+        const copia = document.createElement('img');
+        copia.src = img.src;
+        copia.alt = '';
+        cpAvatar.appendChild(copia);
+    } else {
+        cpAvatar.innerHTML = current.bot ? ICO_ESTRELLA_CHAT : esc(nombre.substring(0, 2).toUpperCase());
+    }
+
+    $('cpSub').textContent = current.bot ? 'Asistente de Csariel\'s' : 'Csariel\'s';
+    $('cpStatusDot').hidden = !(current.profile?.online && !current.bot);
+    $('cpVerPerfil').hidden = !!current.bot;
+    $('cpBtnCall').disabled = !!current.bot || !window.__livekitReady;
+    $('cpBtnVideo').disabled = !!current.bot || !window.__livekitReady;
+    $('cpBtnMute').hidden = !!current.bot;
+    $('cpActionBlock').hidden = !!current.bot;
+    $('cpActionDelete').hidden = false;
+
+    if (!current.bot) aplicarEstadoBloqueo(current.bloqueo || { yo: false, el: false });
+
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+
+function cerrarInfoChat() {
+    const overlay = $('contactProfileOverlay');
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    document.body.style.overflow = '';
+}
+
+function verPerfilDelContacto() {
+    const header = $('chatHeader');
+    const handle = header?.dataset.handle;
+    const uid = header?.dataset.userId;
+    if (handle) window.location.href = '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
+    else if (uid) window.location.href = '/features/perfil/perfil-publico.html?id=' + encodeURIComponent(uid);
+    else toast('No se encontró el perfil de este contacto.', 'warning');
+}
+
+function configurarInfoChat() {
+    const header = $('chatHeader');
+    if (!header || header.dataset.infoListeners) return;
+    header.dataset.infoListeners = '1';
+
+    $('chatInfoTrigger').addEventListener('click', abrirInfoChat);
+    $('chatAvatar').addEventListener('click', e => {
+        if (!current || current.bot) { abrirInfoChat(); return; }
+        abrirInfoChat();
+    });
+    $('chatSettings').addEventListener('click', abrirInfoChat);
+    $('cpBackBtn').addEventListener('click', cerrarInfoChat);
+    $('contactProfileOverlay').addEventListener('click', e => {
+        if (e.target === $('contactProfileOverlay')) cerrarInfoChat();
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && $('contactProfileOverlay').classList.contains('open')) cerrarInfoChat();
+    });
+
+    $('cpVerPerfil').addEventListener('click', verPerfilDelContacto);
+    $('cpBtnCall').addEventListener('click', () => { cerrarInfoChat(); if (typeof window.startCall === 'function') window.startCall('audio'); });
+    $('cpBtnVideo').addEventListener('click', () => { cerrarInfoChat(); if (typeof window.startCall === 'function') window.startCall('video'); });
+    $('cpActionSearch').addEventListener('click', () => { cerrarInfoChat(); const b = $('searchChat'); if (b) b.click(); });
+    $('cpBtnMute').addEventListener('click', () => toast('Silenciar llegará en una próxima versión.', 'warning'));
+    $('cpActionMarkRead').addEventListener('click', () => toast('Marcado como no leído.', 'success'));
+    $('cpActionNickname').addEventListener('click', () => toast('Apodos llegará en una próxima versión.', 'warning'));
+    $('cpActionBlock').addEventListener('click', () => bloquearUsuarioActual());
+    $('cpActionDelete').addEventListener('click', async () => { cerrarInfoChat(); await deleteConversation(); });
+    $('cpActionReport').addEventListener('click', () => toast('Reporte enviado. Gracias por avisarnos.', 'success'));
+    $('cpActionReadReceipts').addEventListener('click', () => {
+        const t = $('cpActionReadReceipts').querySelector('.cp-list-toggle');
+        if (t) t.textContent = t.textContent === 'Activado' ? 'Desactivado' : 'Activado';
+    });
+
+    const blockBtn = $('blockUser');
+    if (blockBtn) blockBtn.onclick = () => bloquearUsuarioActual();
+    const delBtn = $('deleteChat');
+    if (delBtn) delBtn.onclick = () => deleteConversation();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', configurarInfoChat, { once: true });
+} else {
+    configurarInfoChat();
 }
