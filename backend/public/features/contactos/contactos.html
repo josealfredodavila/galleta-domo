@@ -12,7 +12,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <script src="/features/shared/js/api-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -21,29 +21,52 @@
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
 <script>
-    (function () {
-        var url = 'https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js';
-        var maxIntentos = 3;
-        var intento = 0;
-        function cargarScript() {
-            if (window.LivekitClient) { window.__livekitReady = true; return; }
-            if (intento >= maxIntentos) { window.dispatchEvent(new CustomEvent('livekit:error')); return; }
-            intento++;
-            var s = document.createElement('script');
-            s.src = url; s.async = true;
-            s.onload = function () {
-                if (window.LivekitClient) { window.__livekitReady = true; window.dispatchEvent(new CustomEvent('livekit:ready')); }
-                else { setTimeout(cargarScript, 1500); }
-            };
-            s.onerror = function () { setTimeout(cargarScript, 1500); };
-            document.head.appendChild(s);
+(function () {
+    var url = 'https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js';
+    var maxIntentos = 3;
+    var intento = 0;
+
+    function cargarScript() {
+        if (window.LivekitClient) {
+            window.__livekitReady = true;
+            return;
         }
-        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargarScript);
-        else cargarScript();
-    })();
+
+        if (intento >= maxIntentos) {
+            window.dispatchEvent(new CustomEvent('livekit:error'));
+            return;
+        }
+
+        intento++;
+
+        var s = document.createElement('script');
+        s.src = url;
+        s.async = true;
+
+        s.onload = function () {
+            if (window.LivekitClient) {
+                window.__livekitReady = true;
+                window.dispatchEvent(new CustomEvent('livekit:ready'));
+            } else {
+                setTimeout(cargarScript, 1500);
+            }
+        };
+
+        s.onerror = function () {
+            setTimeout(cargarScript, 1500);
+        };
+
+        document.head.appendChild(s);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', cargarScript);
+    } else {
+        cargarScript();
+    }
+})();
 </script>
 
-<!-- Estilos: base, tema Messenger, contactos flotantes, llamadas -->
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=4.2">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes-messenger.css?v=1.2">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes-floating.css?v=1.2">
@@ -51,288 +74,1337 @@
 <link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
 
 <style>
-    /* Botón de configuración de llamadas: visible también con el tema Messenger */
-    #btnConfigLlamadas { display: grid !important; }
+/* ==========================================================
+   CSARIEL'S MESSAGES · VISUAL SYSTEM
+   Diseño limpio, continuo y elegante.
+   Sin tarjetas LEGO ni elementos caricaturescos.
+========================================================== */
 
-    /* Pie del visor de historias: vistas, eliminar y comentar */
-    .estado-viewer-foot {
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 22px;
-        display: flex;
-        justify-content: center;
-        gap: 10px;
-        z-index: 4;
-        padding: 0 12px;
+:root {
+    --msg-bg: #080c12;
+    --msg-panel: #0c121b;
+    --msg-panel-soft: #111a25;
+    --msg-surface: #151f2b;
+    --msg-text: #f4f6f8;
+    --msg-muted: #84909e;
+    --msg-line: rgba(255,255,255,.075);
+    --msg-line-strong: rgba(255,255,255,.13);
+    --msg-green: #0f2d1a;
+    --msg-green-light: #174b30;
+    --msg-gold: #d4af37;
+    --msg-gold-soft: rgba(212,175,55,.13);
+    --msg-accent: #d4af37;
+    --msg-radius: 12px;
+    --msg-transition: .2s ease;
+}
+
+/* Base */
+
+html {
+    background: var(--msg-bg);
+    color-scheme: dark;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    background: var(--msg-bg);
+    color: var(--msg-text);
+    -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea,
+select {
+    font-family: inherit;
+}
+
+button {
+    -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--msg-gold);
+    outline-offset: 3px;
+}
+
+.ico {
+    width: 20px;
+    height: 20px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+}
+
+/* Estructura principal */
+
+.app {
+    background: var(--msg-bg);
+}
+
+.topbar {
+    background: rgba(8,12,18,.97);
+    border-bottom: 1px solid var(--msg-line);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.topbar h1 {
+    font-size: 1.08rem;
+    font-weight: 700;
+    letter-spacing: -.035em;
+}
+
+.brand {
+    background: linear-gradient(145deg,#174b30,#0f2d1a);
+    border: 1px solid rgba(212,175,55,.7);
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.22);
+}
+
+.brand span {
+    color: var(--msg-gold);
+    font-weight: 800;
+}
+
+.nav {
+    background: #090e15;
+    border-bottom: 1px solid var(--msg-line);
+    scrollbar-width: none;
+}
+
+.nav::-webkit-scrollbar {
+    display: none;
+}
+
+.nav a {
+    color: #8995a3;
+    transition: color var(--msg-transition);
+    font-weight: 500;
+}
+
+.nav a:hover,
+.nav a.active {
+    color: var(--msg-gold);
+}
+
+.nav a.active {
+    border-bottom-color: var(--msg-gold);
+}
+
+.panel {
+    background: var(--msg-bg);
+}
+
+.sidebar {
+    background: var(--msg-panel);
+    border-right: 1px solid var(--msg-line);
+}
+
+.chat {
+    background: var(--msg-bg);
+}
+
+/* Barra superior */
+
+.icon-btn,
+.iconbtn,
+.backbtn,
+.btn-icon,
+.btn-emoji,
+.btn-accion,
+.cp-back,
+.modal-close,
+.pv-close,
+.estado-viewer-close {
+    transition:
+        background var(--msg-transition),
+        color var(--msg-transition),
+        border-color var(--msg-transition),
+        transform var(--msg-transition);
+}
+
+.icon-btn:hover,
+.iconbtn:hover,
+.backbtn:hover,
+.btn-icon:hover,
+.btn-emoji:hover {
+    background: rgba(212,175,55,.11);
+    color: var(--msg-gold);
+}
+
+/* Pestañas laterales */
+
+.sidebar-tabs {
+    background: transparent;
+    border-bottom: 1px solid var(--msg-line);
+    gap: 0;
+}
+
+.sidebar-tab {
+    border-radius: 0 !important;
+    background: transparent;
+    color: var(--msg-muted);
+    border-bottom: 2px solid transparent;
+    transition: all var(--msg-transition);
+}
+
+.sidebar-tab:hover {
+    background: rgba(255,255,255,.025);
+    color: var(--msg-text);
+}
+
+.sidebar-tab.active {
+    color: var(--msg-gold);
+    background: transparent;
+    border-bottom: 2px solid var(--msg-gold);
+    box-shadow: none;
+}
+
+.sidebar-tab .ico {
+    width: 19px;
+    height: 19px;
+    stroke-width: 1.8;
+}
+
+.sidehead {
+    color: var(--msg-text);
+    font-weight: 700;
+    letter-spacing: -.025em;
+    border-bottom: 1px solid var(--msg-line);
+}
+
+/* Buscadores */
+
+.searchbox input,
+.search,
+.campo,
+.filtros-canales select {
+    width: 100%;
+    background: #111a25;
+    color: var(--msg-text);
+    border: 1px solid var(--msg-line);
+    border-radius: 11px;
+    min-height: 42px;
+    padding: 10px 13px;
+    font-size: .84rem;
+    outline: none;
+    transition: border-color var(--msg-transition), background var(--msg-transition);
+}
+
+.searchbox input:focus,
+.search:focus,
+.campo:focus,
+.filtros-canales select:focus {
+    border-color: rgba(212,175,55,.65);
+    background: #131d29;
+    box-shadow: 0 0 0 3px rgba(212,175,55,.07);
+}
+
+.searchbox input::placeholder,
+.search::placeholder,
+.campo::placeholder {
+    color: #758292;
+}
+
+/* Estados */
+
+.estados-bar {
+    border-bottom: 1px solid var(--msg-line);
+}
+
+.estados-header {
+    padding-bottom: 10px;
+}
+
+.estados-title {
+    color: var(--msg-text);
+    font-weight: 700;
+    font-size: .86rem;
+}
+
+.btn-subir-estado {
+    background: var(--msg-gold-soft);
+    color: var(--msg-gold);
+    border: 1px solid rgba(212,175,55,.22);
+    border-radius: 9px;
+    padding: 8px 12px;
+    font-weight: 600;
+    transition: all var(--msg-transition);
+}
+
+.btn-subir-estado:hover {
+    background: rgba(212,175,55,.2);
+}
+
+/* Listas de conversaciones */
+
+.convlist,
+.canales-lista {
+    scrollbar-width: thin;
+    scrollbar-color: #293746 transparent;
+}
+
+.convlist > *,
+.canales-lista > * {
+    border-radius: 0 !important;
+    box-shadow: none !important;
+}
+
+.convlist > * {
+    border-bottom: 1px solid var(--msg-line);
+    transition: background var(--msg-transition);
+}
+
+.convlist > *:hover {
+    background: rgba(255,255,255,.035);
+}
+
+.chatname {
+    font-weight: 650;
+    letter-spacing: -.02em;
+}
+
+.status {
+    color: var(--msg-muted);
+    font-size: .75rem;
+}
+
+.empty-state-small,
+.empty {
+    color: var(--msg-muted);
+}
+
+/* Encabezado del chat */
+
+.chathead {
+    background: rgba(10,15,22,.97);
+    border-bottom: 1px solid var(--msg-line);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+}
+
+.chatname {
+    color: var(--msg-text);
+}
+
+#chatAvatar {
+    cursor: pointer;
+}
+
+.actions {
+    gap: 7px;
+}
+
+.actions .iconbtn {
+    width: 39px;
+    height: 39px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    border: 1px solid var(--msg-line);
+    background: transparent;
+    color: #c1cad4;
+}
+
+.actions .iconbtn:hover {
+    background: var(--msg-gold-soft);
+    border-color: rgba(212,175,55,.25);
+    color: var(--msg-gold);
+}
+
+/* Área de mensajes */
+
+.messages {
+    background-color: var(--msg-bg);
+    scrollbar-width: thin;
+    scrollbar-color: #293746 transparent;
+}
+
+.messages::-webkit-scrollbar,
+.convlist::-webkit-scrollbar,
+.canales-lista::-webkit-scrollbar {
+    width: 5px;
+}
+
+.messages::-webkit-scrollbar-thumb,
+.convlist::-webkit-scrollbar-thumb,
+.canales-lista::-webkit-scrollbar-thumb {
+    background: #293746;
+    border-radius: 10px;
+}
+
+/* Botón de desplazamiento */
+
+.scroll-down-btn {
+    background: #182432;
+    color: var(--msg-gold);
+    border: 1px solid var(--msg-line-strong);
+    box-shadow: 0 4px 18px rgba(0,0,0,.3);
+    border-radius: 50%;
+    transition: all var(--msg-transition);
+}
+
+.scroll-down-btn:hover {
+    background: #203044;
+    transform: translateY(-2px);
+}
+
+/* ==========================================================
+   COMPOSITOR DE MENSAJES
+========================================================== */
+
+.composer {
+    background: #0c131d;
+    border-top: 1px solid var(--msg-line);
+    padding: 11px 13px;
+    gap: 9px;
+    align-items: flex-end;
+}
+
+.input-wrapper {
+    background: #17212d;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 22px;
+    min-height: 45px;
+    display: flex;
+    align-items: flex-end;
+    padding: 4px 7px 4px 15px;
+    transition: border-color var(--msg-transition), background var(--msg-transition);
+}
+
+.input-wrapper:focus-within {
+    background: #1a2634;
+    border-color: rgba(212,175,55,.4);
+}
+
+.input-wrapper textarea {
+    background: transparent;
+    color: #f4f6f8;
+    border: 0;
+    outline: 0;
+    box-shadow: none;
+    resize: none;
+    min-height: 35px;
+    max-height: 120px;
+    padding: 9px 0;
+    font-size: .9rem;
+    line-height: 1.4;
+    flex: 1;
+}
+
+.input-wrapper textarea::placeholder {
+    color: #8592a0;
+}
+
+.input-wrapper textarea:focus {
+    outline: none;
+    box-shadow: none;
+}
+
+/* Botón de adjuntar */
+
+.btn-icon {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #aab6c4;
+    display: grid;
+    place-items: center;
+}
+
+.btn-icon:hover {
+    color: var(--msg-gold);
+    background: var(--msg-gold-soft);
+}
+
+/* Botón de emojis: diseño limpio, sin apariencia infantil */
+
+.btn-emoji {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    margin: 0 0 2px 5px;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #b5c0cb;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.btn-emoji .ico {
+    width: 21px;
+    height: 21px;
+    stroke-width: 1.7;
+}
+
+.btn-emoji:hover {
+    background: rgba(212,175,55,.13);
+    color: var(--msg-gold);
+}
+
+/* Acciones principales */
+
+.btn-accion {
+    width: 43px;
+    height: 43px;
+    min-width: 43px;
+    border: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
+
+.btn-mic {
+    background: #182431;
+    color: #c3ccd6;
+}
+
+.btn-mic:hover {
+    background: #253649;
+    color: var(--msg-gold);
+}
+
+.btn-send {
+    background: linear-gradient(145deg,#d9bb58,#b58e25);
+    color: #10170f;
+    box-shadow: 0 3px 12px rgba(212,175,55,.16);
+}
+
+.btn-send:hover {
+    background: #e6c75e;
+    transform: translateY(-1px);
+}
+
+.btn-send .ico {
+    width: 19px;
+    height: 19px;
+    stroke-width: 2;
+}
+
+.btn-voicebot {
+    background: #153b29;
+    color: #e4c75f;
+    border: 1px solid rgba(212,175,55,.25);
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+}
+
+.btn-voicebot:hover {
+    background: #205338;
+}
+
+/* ==========================================================
+   TECLADO DE EMOJIS
+   Mantiene compatibilidad con teclado-emojis.js
+========================================================== */
+
+#emojiBtn {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.emoji-picker,
+.emoji-panel,
+.teclado-emojis,
+#emojiPicker,
+#emojiPanel {
+    font-family: 'Inter',sans-serif !important;
+    background: #111a25 !important;
+    color: #f4f6f8 !important;
+    border: 1px solid rgba(255,255,255,.1) !important;
+    border-radius: 15px !important;
+    box-shadow: 0 14px 40px rgba(0,0,0,.42) !important;
+}
+
+.emoji-picker button,
+.emoji-panel button,
+.teclado-emojis button,
+#emojiPicker button,
+#emojiPanel button {
+    border-radius: 9px !important;
+    transition: background .15s ease, transform .15s ease;
+}
+
+.emoji-picker button:hover,
+.emoji-panel button:hover,
+.teclado-emojis button:hover,
+#emojiPicker button:hover,
+#emojiPanel button:hover {
+    background: rgba(212,175,55,.12) !important;
+    transform: scale(1.06);
+}
+
+/* ==========================================================
+   INFORMACIÓN DEL CONTACTO
+========================================================== */
+
+.contact-profile-overlay {
+    background: #0a1018;
+}
+
+.cp-topbar {
+    background: rgba(10,16,24,.97);
+    border-bottom: 1px solid var(--msg-line);
+}
+
+.cp-topbar-title {
+    font-weight: 700;
+    letter-spacing: -.02em;
+}
+
+.cp-name {
+    font-weight: 750;
+    letter-spacing: -.035em;
+}
+
+.cp-sub {
+    color: var(--msg-muted);
+}
+
+.cp-ver-perfil {
+    background: var(--msg-gold-soft);
+    color: var(--msg-gold);
+    border: 1px solid rgba(212,175,55,.25);
+    border-radius: 10px;
+    font-weight: 650;
+    transition: background var(--msg-transition);
+}
+
+.cp-ver-perfil:hover {
+    background: rgba(212,175,55,.22);
+}
+
+.cp-action-grid {
+    border-bottom: 1px solid var(--msg-line);
+}
+
+.cp-action-btn {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    color: var(--msg-text);
+    transition: color var(--msg-transition);
+}
+
+.cp-action-btn:hover {
+    color: var(--msg-gold);
+}
+
+.cp-action-icon {
+    background: #172330 !important;
+    border: 1px solid var(--msg-line) !important;
+    border-radius: 50% !important;
+    box-shadow: none !important;
+}
+
+.cp-action-btn:hover .cp-action-icon {
+    background: var(--msg-gold-soft) !important;
+    border-color: rgba(212,175,55,.25) !important;
+}
+
+.cp-action-label {
+    font-size: .75rem;
+    font-weight: 550;
+}
+
+.cp-section {
+    border-bottom: 1px solid var(--msg-line);
+}
+
+.cp-section-title {
+    color: var(--msg-muted);
+    font-size: .72rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+}
+
+.cp-list {
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+.cp-list-item {
+    background: transparent !important;
+    border: 0 !important;
+    border-bottom: 1px solid var(--msg-line) !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    color: var(--msg-text);
+    transition: background var(--msg-transition);
+}
+
+.cp-list-item:hover {
+    background: rgba(255,255,255,.035) !important;
+}
+
+.cp-list-icon {
+    color: #aab6c4;
+}
+
+.cp-list-item.danger {
+    color: #ed7777;
+}
+
+.cp-list-item.danger .cp-list-icon {
+    color: #ed7777;
+}
+
+/* ==========================================================
+   CANALES Y GRUPOS
+========================================================== */
+
+.form-campo {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 15px;
+}
+
+.form-campo label {
+    color: #aab6c4;
+    font-size: .75rem;
+    font-weight: 650;
+}
+
+.campo {
+    min-height: 44px;
+    border-radius: 10px;
+    background: #111a25;
+    border: 1px solid var(--msg-line-strong);
+    color: var(--msg-text);
+    font-size: .87rem;
+    padding: 11px 13px;
+}
+
+.campo-area {
+    resize: vertical;
+    min-height: 85px;
+}
+
+.form-fila {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.canal-card:focus-visible {
+    outline: 2px solid var(--msg-gold);
+    outline-offset: 2px;
+}
+
+/* Botones planos */
+
+.btn-plano {
+    background: #192634;
+    color: #e4e9ef;
+    border: 1px solid var(--msg-line-strong);
+    border-radius: 10px;
+    padding: 11px 15px;
+    font-weight: 600;
+    font-size: .84rem;
+    transition: all var(--msg-transition);
+}
+
+.btn-plano:hover {
+    background: #223448;
+    border-color: rgba(212,175,55,.3);
+}
+
+.btn-plano.sol {
+    background: linear-gradient(135deg,#d8b94f,#b9912b);
+    color: #10170f;
+    border: 1px solid transparent;
+    font-weight: 750;
+}
+
+.btn-plano.sol:hover {
+    background: #e6c85e;
+}
+
+/* ==========================================================
+   MODALES
+========================================================== */
+
+.modal {
+    backdrop-filter: blur(9px);
+    -webkit-backdrop-filter: blur(9px);
+    background: rgba(0,0,0,.72);
+}
+
+.modalbox {
+    background: #101823;
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 17px;
+    box-shadow: 0 20px 70px rgba(0,0,0,.5);
+    padding: 20px;
+}
+
+.modal-head {
+    border-bottom: 1px solid var(--msg-line);
+    padding-bottom: 14px;
+    margin-bottom: 18px;
+}
+
+.modal-head h2 {
+    font-size: 1rem;
+    font-weight: 750;
+    letter-spacing: -.025em;
+}
+
+.modal-close {
+    color: #aeb8c4;
+    background: transparent;
+    border: 0;
+    border-radius: 50%;
+}
+
+.modal-close:hover {
+    background: rgba(255,255,255,.08);
+    color: var(--msg-gold);
+}
+
+.cfg-fila {
+    border-bottom: 1px solid var(--msg-line);
+    padding: 12px 0;
+}
+
+.cfg-fila-txt {
+    color: var(--msg-text);
+    font-weight: 600;
+}
+
+.cfg-fila-txt small {
+    color: var(--msg-muted);
+    font-weight: 400;
+}
+
+.sel {
+    background: #172330;
+    color: var(--msg-text);
+    border: 1px solid var(--msg-line-strong);
+    border-radius: 9px;
+    padding: 10px;
+}
+
+/* ==========================================================
+   VISOR DE HISTORIAS
+========================================================== */
+
+.estado-viewer {
+    background: #05080d;
+}
+
+.estado-viewer-header {
+    background: linear-gradient(to bottom,rgba(0,0,0,.58),transparent);
+}
+
+.estado-viewer-name {
+    font-weight: 700;
+}
+
+.estado-viewer-time {
+    color: rgba(255,255,255,.68);
+}
+
+.estado-viewer-progress {
+    background: rgba(255,255,255,.24);
+}
+
+.estado-viewer-progress-inner {
+    background: #fff;
+}
+
+.estado-viewer-foot button {
+    border-radius: 999px;
+    background: rgba(12,18,27,.78);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,.18);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: background var(--msg-transition);
+}
+
+.estado-viewer-foot button:hover {
+    background: rgba(212,175,55,.25);
+}
+
+.estado-preview-img {
+    width: 100%;
+    max-height: 50vh;
+    border-radius: 10px;
+    object-fit: contain;
+    display: block;
+    background: #000;
+}
+
+.estado-preview-img.hidden {
+    display: none !important;
+}
+
+/* ==========================================================
+   LLAMADAS
+========================================================== */
+
+#btnConfigLlamadas {
+    display: grid !important;
+}
+
+#callOverlay .callinfo {
+    min-height: 20px;
+    text-align: center;
+}
+
+.call {
+    background: #05080e;
+}
+
+.call .controls button {
+    transition: transform var(--msg-transition), background var(--msg-transition);
+}
+
+.call .controls button:hover {
+    transform: translateY(-2px);
+}
+
+/* ==========================================================
+   BOTONES DE PERFIL
+========================================================== */
+
+.profile-modal-box {
+    background: #101823;
+    border: 1px solid var(--msg-line);
+    border-radius: 17px;
+}
+
+.profile-modal-btn {
+    background: #192634;
+    color: var(--msg-text);
+    border: 1px solid var(--msg-line);
+    border-radius: 10px;
+    transition: background var(--msg-transition);
+}
+
+.profile-modal-btn:hover {
+    background: #26394c;
+}
+
+/* Pie */
+
+.footer {
+    background: #080d14;
+    border-top: 1px solid var(--msg-line);
+    color: var(--msg-muted);
+}
+
+/* Accesibilidad */
+
+[hidden],
+.hidden {
+    display: none !important;
+}
+
+button:disabled {
+    opacity: .45;
+    cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+    .form-fila {
+        grid-template-columns: 1fr 1fr;
+        gap: 9px;
     }
-    .estado-viewer-foot button {
-        display: inline-flex;
-        align-items: center;
+
+    .composer {
+        padding: 9px 8px;
         gap: 6px;
-        padding: 9px 16px;
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,.25);
-        background: rgba(0,0,0,.55);
-        color: #fff;
-        font-size: .8rem;
-        font-weight: 600;
     }
-    .estado-viewer-foot button .ico { width: 16px; height: 16px; }
-    .estado-viewer-foot .hidden { display: none !important; }
 
-    .estado-preview-img {
-        width: 100%;
-        max-height: 50vh;
-        border-radius: 12px;
-        object-fit: contain;
-        display: block;
-        background: #000;
+    .btn-icon,
+    .btn-accion {
+        width: 39px;
+        height: 39px;
+        min-width: 39px;
     }
-    .estado-preview-img.hidden { display: none !important; }
 
-    /* Pantalla de llamada: el texto de estado se centra */
-    #callOverlay .callinfo { min-height: 20px; }
-
-    /* ---------- Formularios de canales y grupos ---------- */
-    .form-campo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-    .form-campo label { font-size: .72rem; color: var(--muted); font-weight: 600; }
-    .campo {
-        width: 100%; padding: 10px 12px; border-radius: 10px;
-        border: 1px solid var(--line-strong); background: var(--panel-2);
-        color: var(--text); font-size: .9rem; outline: 0;
+    .input-wrapper {
+        min-height: 42px;
     }
-    .campo:focus { border-color: var(--orange); }
-    .campo-area { resize: vertical; min-height: 76px; }
-    .form-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    @media (max-width: 420px) { .form-fila { grid-template-columns: 1fr; } }
 
-    /* ---------- Tarjetas de canales y grupos ---------- */
-    .canal-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+    .input-wrapper textarea {
+        font-size: .86rem;
+    }
+
+    .modalbox {
+        border-radius: 15px;
+        padding: 17px;
+    }
+}
+
+@media (max-width: 360px) {
+    .form-fila {
+        grid-template-columns: 1fr;
+    }
+
+    .actions {
+        gap: 3px;
+    }
+
+    .actions .iconbtn {
+        width: 35px;
+        height: 35px;
+    }
+
+    .composer {
+        gap: 4px;
+        padding-left: 5px;
+        padding-right: 5px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+    }
+}
 </style>
 </head>
 
 <body>
 <div class="app">
 
-    <header class="topbar">
-        <div class="topbar-left">
-            <a href="/" class="brand" aria-label="Inicio"><span>C</span></a>
-            <h1>Mensajes</h1>
+<header class="topbar">
+    <div class="topbar-left">
+        <a href="/" class="brand" aria-label="Inicio"><span>C</span></a>
+        <h1>Mensajes</h1>
+    </div>
+
+    <div class="topbar-actions">
+        <button type="button" class="icon-btn" id="btnConfigLlamadas" aria-label="Configuración de llamadas" title="Configuración de llamadas">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </button>
+
+        <div class="header-avatar" id="headerAvatar" role="button" tabindex="0" aria-label="Mi perfil" title="Mi perfil"></div>
+        <input type="file" id="avatarInput" hidden accept="image/*">
+    </div>
+</header>
+
+<nav class="nav" aria-label="Navegación principal">
+    <a href="/">Inicio</a>
+    <a href="/features/muro/muro.html">Muro</a>
+    <a href="/features/perfil/perfil.html">Perfil</a>
+    <a href="/features/contactos/contactos.html">Contactos</a>
+    <a href="/features/mensajes/mensajes.html" class="active" aria-current="page">Mensajes</a>
+    <a href="/features/live/live.html" class="live">Live</a>
+    <a href="/features/internet/internet.html">Internet</a>
+    <a href="/features/videos/videos.html">Videos</a>
+</nav>
+
+<main class="panel" id="panel">
+
+<aside class="sidebar">
+
+    <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
+
+        <button type="button" class="sidebar-tab active" data-tab="chats" role="tab" aria-selected="true" onclick="cambiarPestana('chats')">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>
+            </svg>
+            <span class="tab-label">Chats</span>
+        </button>
+
+        <button type="button" class="sidebar-tab" data-tab="canales" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M11 5 6 9H3v6h3l5 4z"/>
+                <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
+            </svg>
+            <span class="tab-label">Canales</span>
+        </button>
+
+        <button type="button" class="sidebar-tab" data-tab="grupos" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span class="tab-label">Grupos</span>
+        </button>
+
+        <button type="button" class="sidebar-tab" data-tab="llamadas" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
+            </svg>
+            <span class="tab-label">Llamadas</span>
+        </button>
+    </div>
+
+    <!-- CHATS -->
+    <div class="tab-content" id="tabChats">
+
+        <div class="sidehead"><span>Conversaciones</span></div>
+
+        <div class="searchbox">
+            <input type="text" id="searchConversations" placeholder="Buscar conversación" autocomplete="off" aria-label="Buscar conversación">
         </div>
-        <div class="topbar-actions">
-            <button type="button" class="icon-btn" id="btnConfigLlamadas" aria-label="Configuración de llamadas" title="Configuración de llamadas">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+
+        <div class="estados-bar">
+            <div class="estados-header">
+                <div class="estados-title">Estados</div>
+
+                <button type="button" class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    Subir
+                </button>
+            </div>
+
+            <div class="estados-scroll" id="estadosScroll"></div>
+        </div>
+
+        <div class="convlist" id="conversationList"></div>
+    </div>
+
+    <!-- CANALES -->
+    <div class="tab-content hidden" id="tabCanales">
+
+        <div class="sidehead"><span>Canales públicos</span></div>
+
+        <div class="searchbox">
+            <input type="text" id="searchCanales" placeholder="Buscar canal" autocomplete="off" oninput="buscarCanalesDebounce()" aria-label="Buscar canal">
+        </div>
+
+        <div class="filtros-canales">
+            <select id="filtroEstadoCanal" onchange="cargarCanales()" aria-label="Filtrar canales por estado">
+                <option value="">Todos los estados</option>
+            </select>
+        </div>
+
+        <div class="canales-lista" id="canalesLista"></div>
+    </div>
+
+    <!-- GRUPOS -->
+    <div class="tab-content hidden" id="tabGrupos">
+
+        <div class="sidehead"><span>Grupos privados</span></div>
+
+        <div class="searchbox">
+            <input type="text" id="searchGrupos" placeholder="Buscar grupo" autocomplete="off" oninput="buscarGruposDebounce()" aria-label="Buscar grupo">
+        </div>
+
+        <div class="filtros-canales">
+            <select id="filtroEstadoGrupo" onchange="cargarGrupos()" aria-label="Filtrar grupos por estado">
+                <option value="">Todos los estados</option>
+            </select>
+        </div>
+
+        <div class="canales-lista" id="gruposLista"></div>
+    </div>
+
+    <!-- LLAMADAS -->
+    <div class="tab-content hidden" id="tabLlamadas">
+
+        <div class="sidehead">
+            <span>Historial de llamadas</span>
+
+            <button type="button" class="btn-borrar-todo" id="btnBorrarTodoHistorial" title="Borrar todo el historial">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>
+                </svg>
+                Borrar todo
             </button>
-            <div class="header-avatar" id="headerAvatar" role="button" tabindex="0" aria-label="Mi perfil" title="Mi perfil"></div>
-            <input type="file" id="avatarInput" hidden accept="image/*">
+        </div>
+
+        <div class="filtros-canales filtros-llamadas">
+            <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por tipo de llamada">
+                <option value="all">Todos los tipos</option>
+                <option value="audio">Solo audio</option>
+                <option value="video">Solo video</option>
+            </select>
+
+            <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por dirección">
+                <option value="all">Todas</option>
+                <option value="entrante">Entrantes</option>
+                <option value="saliente">Salientes</option>
+            </select>
+        </div>
+
+        <div class="canales-lista" id="historialLlamadasLista">
+            <div class="empty-state-small">
+                <div class="empty-text">Cargando historial…</div>
+            </div>
+        </div>
+    </div>
+
+    <button type="button" class="fab" id="newChat" hidden aria-hidden="true" tabindex="-1"></button>
+
+</aside>
+
+<!-- CHAT -->
+<section class="chat">
+
+    <header class="chathead" id="chatHeader">
+
+        <button type="button" class="backbtn" id="backBtn" title="Volver" aria-label="Volver">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
+        </button>
+
+        <div class="avatar" id="chatAvatar" role="button" tabindex="0" aria-label="Ver foto"></div>
+
+        <div class="chat-title" id="chatInfoTrigger" role="button" tabindex="0">
+            <div class="chatname" id="chatName">Selecciona una conversación</div>
+            <div class="status" id="chatStatus">Elige un chat para empezar</div>
+        </div>
+
+        <div class="actions" id="chatActions" hidden>
+
+            <button type="button" class="iconbtn" id="audioCall" title="Llamar" aria-label="Llamar">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
+                </svg>
+            </button>
+
+            <button type="button" class="iconbtn" id="videoCall" title="Videollamada" aria-label="Videollamada" disabled>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="2" y="6" width="14" height="12" rx="2"/>
+                    <path d="M16 10l6-3v10l-6-3"/>
+                </svg>
+            </button>
+
+            <button type="button" class="iconbtn" id="chatSettings" title="Información del chat" aria-label="Información del chat">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="tools-ocultas" hidden>
+            <button type="button" id="searchChat" aria-label="Buscar en la conversación">Buscar</button>
+            <button type="button" id="deleteChat" aria-label="Eliminar conversación">Eliminar</button>
+            <button type="button" id="blockUser" aria-label="Bloquear contacto">Bloquear</button>
         </div>
     </header>
 
-    <nav class="nav" aria-label="Navegación principal">
-        <a href="/">Inicio</a>
-        <a href="/features/muro/muro.html">Muro</a>
-        <a href="/features/perfil/perfil.html">Perfil</a>
-        <a href="/features/contactos/contactos.html">Contactos</a>
-        <a href="/features/mensajes/mensajes.html" class="active" aria-current="page">Mensajes</a>
-        <a href="/features/live/live.html" class="live">Live</a>
-        <a href="/features/internet/internet.html">Internet</a>
-        <a href="/features/videos/videos.html">Videos</a>
-    </nav>
+    <div class="messages" id="messages">
 
-    <main class="panel" id="panel">
+        <div class="empty" id="emptyState">
+            <p>Selecciona una conversación</p>
+            <small>Elige un chat de la lista para empezar a escribir</small>
+        </div>
 
-        <aside class="sidebar">
-            <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
-                <button type="button" class="sidebar-tab active" data-tab="chats" role="tab" aria-selected="true" onclick="cambiarPestana('chats')">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
-                    <span class="tab-label">Chats</span>
-                </button>
-                <button type="button" class="sidebar-tab" data-tab="canales" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
-                    <span class="tab-label">Canales</span>
-                </button>
-                <button type="button" class="sidebar-tab" data-tab="grupos" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-                    <span class="tab-label">Grupos</span>
-                </button>
-                <button type="button" class="sidebar-tab" data-tab="llamadas" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg>
-                    <span class="tab-label">Llamadas</span>
-                </button>
-            </div>
+        <div id="scrollAnchor"></div>
 
-            <!-- CHATS -->
-            <div class="tab-content" id="tabChats">
-                <div class="sidehead"><span>Conversaciones</span></div>
-                <div class="searchbox">
-                    <input type="text" id="searchConversations" placeholder="Buscar conversación" autocomplete="off" aria-label="Buscar conversación">
-                </div>
-                <div class="estados-bar">
-                    <div class="estados-header">
-                        <div class="estados-title">Estados</div>
-                        <button type="button" class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">
-                            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-                            Subir
-                        </button>
-                    </div>
-                    <div class="estados-scroll" id="estadosScroll"></div>
-                </div>
-                <div class="convlist" id="conversationList"></div>
-            </div>
+        <button type="button" class="scroll-down-btn" id="scrollDownBtn" title="Ir al final" aria-label="Ir al final">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14M5 12l7 7 7-7"/>
+            </svg>
+            <span class="badge-new" id="newMsgBadge" hidden>1</span>
+        </button>
+    </div>
 
-            <!-- CANALES -->
-            <div class="tab-content hidden" id="tabCanales">
-                <div class="sidehead"><span>Canales públicos</span></div>
-                <div class="searchbox">
-                    <input type="text" id="searchCanales" placeholder="Buscar canal" autocomplete="off" oninput="buscarCanalesDebounce()" aria-label="Buscar canal">
-                </div>
-                <div class="filtros-canales">
-                    <select id="filtroEstadoCanal" onchange="cargarCanales()" aria-label="Filtrar canales por estado">
-                        <option value="">Todos los estados</option>
-                    </select>
-                </div>
-                <div class="canales-lista" id="canalesLista"></div>
-            </div>
+    <!-- BARRA DE ESCRIBIR -->
+    <form class="composer" id="composer" hidden>
 
-            <!-- GRUPOS -->
-            <div class="tab-content hidden" id="tabGrupos">
-                <div class="sidehead"><span>Grupos privados</span></div>
-                <div class="searchbox">
-                    <input type="text" id="searchGrupos" placeholder="Buscar grupo" autocomplete="off" oninput="buscarGruposDebounce()" aria-label="Buscar grupo">
-                </div>
-                <div class="filtros-canales">
-                    <select id="filtroEstadoGrupo" onchange="cargarGrupos()" aria-label="Filtrar grupos por estado">
-                        <option value="">Todos los estados</option>
-                    </select>
-                </div>
-                <div class="canales-lista" id="gruposLista"></div>
-            </div>
+        <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo" aria-label="Adjuntar archivo">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+            </svg>
+        </button>
 
-            <!-- LLAMADAS -->
-            <div class="tab-content hidden" id="tabLlamadas">
-                <div class="sidehead">
-                    <span>Historial de llamadas</span>
-                    <button type="button" class="btn-borrar-todo" id="btnBorrarTodoHistorial" title="Borrar todo el historial">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
-                        Borrar todo
-                    </button>
-                </div>
-                <div class="filtros-canales filtros-llamadas">
-                    <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por tipo de llamada">
-                        <option value="all">Todos los tipos</option>
-                        <option value="audio">Solo audio</option>
-                        <option value="video">Solo video</option>
-                    </select>
-                    <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por dirección">
-                        <option value="all">Todas</option>
-                        <option value="entrante">Entrantes</option>
-                        <option value="saliente">Salientes</option>
-                    </select>
-                </div>
-                <div class="canales-lista" id="historialLlamadasLista">
-                    <div class="empty-state-small">
-                        <div class="empty-text">Cargando historial…</div>
-                    </div>
-                </div>
-            </div>
+        <div class="input-wrapper">
 
-            <!-- Oculto: conserva el id que usa mensajes-init.js -->
-            <button type="button" class="fab" id="newChat" hidden aria-hidden="true" tabindex="-1"></button>
-        </aside>
+            <textarea id="messageInput" autocomplete="off" placeholder="Escribe un mensaje" rows="1" aria-label="Escribir mensaje"></textarea>
 
-        <!-- CHAT -->
-        <section class="chat">
-            <header class="chathead" id="chatHeader">
-                <button type="button" class="backbtn" id="backBtn" title="Volver" aria-label="Volver">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
-                </button>
-                <div class="avatar" id="chatAvatar" role="button" tabindex="0" aria-label="Ver foto"></div>
-                <div class="chat-title" id="chatInfoTrigger" role="button" tabindex="0">
-                    <div class="chatname" id="chatName">Selecciona una conversación</div>
-                    <div class="status" id="chatStatus">Elige un chat para empezar</div>
-                </div>
+            <button type="button" class="btn-emoji" id="emojiBtn" title="Abrir teclado de emojis" aria-label="Abrir teclado de emojis">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9"/>
+                    <path d="M8 14.5s1.5 2 4 2 4-2 4-2"/>
+                    <path d="M9 9.5h.01M15 9.5h.01"/>
+                </svg>
+            </button>
 
-                <div class="actions" id="chatActions" hidden>
-                    <button type="button" class="iconbtn" id="audioCall" title="Llamar" aria-label="Llamar">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg>
-                    </button>
-                    <button type="button" class="iconbtn" id="videoCall" title="Videollamada" aria-label="Videollamada" disabled>
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg>
-                    </button>
-                    <button type="button" class="iconbtn" id="chatSettings" title="Información del chat" aria-label="Información del chat">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-                    </button>
-                </div>
+        </div>
 
-                <!-- Herramientas que disparan los módulos (desde el panel de información) -->
-                <div class="tools-ocultas" hidden>
-                    <button type="button" id="searchChat" aria-label="Buscar en la conversación">Buscar</button>
-                    <button type="button" id="deleteChat" aria-label="Eliminar conversación">Eliminar</button>
-                    <button type="button" id="blockUser" aria-label="Bloquear contacto">Bloquear</button>
-                </div>
-            </header>
+        <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar nota de voz" aria-label="Grabar nota de voz">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="9" y="3" width="6" height="11" rx="3"/>
+                <path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>
+            </svg>
+        </button>
 
-            <div class="messages" id="messages">
-                <div class="empty" id="emptyState">
-                    <p>Selecciona una conversación</p>
-                    <small>Elige un chat de la lista para empezar a escribir</small>
-                </div>
-                <div id="scrollAnchor"></div>
-                <button type="button" class="scroll-down-btn" id="scrollDownBtn" title="Ir al final" aria-label="Ir al final">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
-                    <span class="badge-new" id="newMsgBadge" hidden>1</span>
-                </button>
-            </div>
+        <button type="submit" class="btn-accion btn-send" id="sendBtn" title="Enviar mensaje" aria-label="Enviar mensaje">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M22 2 11 13"/>
+                <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
+            </svg>
+        </button>
 
-            <!-- BARRA DE ESCRIBIR -->
-            <form class="composer" id="composer" hidden>
-                <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo" aria-label="Adjuntar archivo">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                </button>
+        <button type="button" class="btn-voicebot" id="voiceBot" title="Hablar con Marquinhos" aria-label="Hablar con Marquinhos" hidden>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 2v4M8 10h8a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"/>
+                <circle cx="9" cy="14" r="1"/>
+                <circle cx="15" cy="14" r="1"/>
+            </svg>
+        </button>
 
-                <div class="input-wrapper">
-                    <textarea id="messageInput" autocomplete="off" placeholder="Escribe un mensaje" rows="1" aria-label="Escribir mensaje"></textarea>
-                    <button type="button" class="btn-emoji" id="emojiBtn" title="Emojis" aria-label="Emojis">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                    </button>
-                </div>
+        <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
+    </form>
 
-                <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar nota de voz" aria-label="Grabar nota de voz">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
-                </button>
+</section>
+</main>
 
-                <button type="submit" class="btn-accion btn-send" id="sendBtn" title="Enviar mensaje" aria-label="Enviar mensaje">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
-                </button>
+<footer class="footer">
+    <span>Csariel's · Sabor al Paladar</span>
+    <span>Polygon</span>
+</footer>
 
-                <button type="button" class="btn-voicebot" id="voiceBot" title="Hablar con Marquinhos" aria-label="Hablar con Marquinhos" hidden>
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4M8 10h8a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg>
-                </button>
-                <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
-            </form>
-        </section>
-
-    </main>
-
-    <footer class="footer">
-        <span>Csariel's · Sabor al Paladar</span>
-        <span>Polygon</span>
-    </footer>
 </div>
 
-<!-- ================================================================ -->
-<!-- INFORMACIÓN DEL CHAT (lo controla mensajes-chats.js)              -->
-<!-- ================================================================ -->
+<!-- INFORMACIÓN DEL CHAT -->
 <div class="contact-profile-overlay" id="contactProfileOverlay" role="dialog" aria-modal="true" aria-label="Información del contacto">
+
     <div class="cp-topbar">
         <button type="button" class="cp-back" id="cpBackBtn" aria-label="Volver">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <line x1="19" y1="12" x2="5" y2="12"/>
+                <polyline points="12 19 5 12 12 5"/>
+            </svg>
         </button>
         <span class="cp-topbar-title">Información</span>
     </div>
 
     <div class="cp-content">
+
         <div class="cp-avatar-container">
             <div class="cp-avatar" id="cpAvatar"></div>
             <span class="cp-status-dot" id="cpStatusDot" hidden></span>
@@ -344,117 +1416,226 @@
         <button type="button" class="cp-ver-perfil" id="cpVerPerfil">Ver perfil</button>
 
         <div class="cp-action-grid">
+
             <button type="button" class="cp-action-btn" id="cpBtnCall">
-                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg></span>
+                <span class="cp-action-icon">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
+                    </svg>
+                </span>
                 <span class="cp-action-label">Llamar</span>
             </button>
+
             <button type="button" class="cp-action-btn" id="cpBtnVideo">
-                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg></span>
+                <span class="cp-action-icon">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                        <rect x="2" y="6" width="14" height="12" rx="2"/>
+                        <path d="M16 10l6-3v10l-6-3"/>
+                    </svg>
+                </span>
                 <span class="cp-action-label">Video</span>
             </button>
+
             <button type="button" class="cp-action-btn" id="cpActionSearch">
-                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg></span>
+                <span class="cp-action-icon">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                        <circle cx="11" cy="11" r="7"/>
+                        <path d="m21 21-4.35-4.35"/>
+                    </svg>
+                </span>
                 <span class="cp-action-label">Buscar</span>
             </button>
+
             <button type="button" class="cp-action-btn" id="cpBtnMute">
-                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
+                <span class="cp-action-icon">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                </span>
                 <span class="cp-action-label">Silenciar</span>
             </button>
+
         </div>
 
         <div class="cp-section">
             <div class="cp-section-title">Chat</div>
+
             <div class="cp-list">
+
                 <button type="button" class="cp-list-item" id="cpActionMarkRead">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg></span>
+                    <span class="cp-list-icon">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3" y="5" width="18" height="14" rx="2"/>
+                            <polyline points="3 7 12 13 21 7"/>
+                        </svg>
+                    </span>
                     <span class="cp-list-text"><span class="main">Marcar como no leído</span></span>
                 </button>
+
                 <button type="button" class="cp-list-item" id="cpActionNickname">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
+                    <span class="cp-list-icon">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
+                        </svg>
+                    </span>
                     <span class="cp-list-text"><span class="main">Apodo</span></span>
                 </button>
+
                 <button type="button" class="cp-list-item danger" id="cpActionDelete">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+                    <span class="cp-list-icon">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>
+                        </svg>
+                    </span>
                     <span class="cp-list-text"><span class="main">Eliminar conversación</span></span>
                 </button>
+
             </div>
         </div>
 
         <div class="cp-section">
             <div class="cp-section-title">Privacidad y ayuda</div>
+
             <div class="cp-list">
+
                 <button type="button" class="cp-list-item" id="cpActionReadReceipts">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
+                    <span class="cp-list-icon">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                            <circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </span>
                     <span class="cp-list-text"><span class="main">Confirmaciones de lectura</span></span>
                     <span class="cp-list-toggle">Activado</span>
                 </button>
+
                 <button type="button" class="cp-list-item danger" id="cpActionBlock">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></span>
-                    <span class="cp-list-text"><span class="main">Bloquear a <span id="cpBlockName">Contacto</span></span></span>
+                    <span class="cp-list-icon">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                            <circle cx="12" cy="12" r="9"/>
+                            <line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>
+                        </svg>
+                    </span>
+                    <span class="cp-list-text">
+                        <span class="main">Bloquear a <span id="cpBlockName">Contacto</span></span>
+                    </span>
                 </button>
+
                 <button type="button" class="cp-list-item danger" id="cpActionReport">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+                    <span class="cp-list-icon">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </span>
                     <span class="cp-list-text">
                         <span class="main">Reportar</span>
                         <span class="sub">Enviar comentarios y reportar conversación</span>
                     </span>
                 </button>
+
             </div>
         </div>
     </div>
 </div>
 
-<!-- ================================================================ -->
-<!-- PANTALLA DE LLAMADA (la estructura la completa llamadas-ui.js)    -->
-<!-- ================================================================ -->
+<!-- PANTALLA DE LLAMADA -->
 <div class="call" id="callOverlay" role="dialog" aria-modal="true" aria-label="Llamada">
+
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
         <video id="localVideo" class="local" autoplay playsinline muted></video>
     </div>
+
     <div class="callinfo" id="callInfo"></div>
+
     <div class="controls">
+
         <button type="button" id="toggleMic" aria-label="Micrófono">
-            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+            <span class="ctrl-icon">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="9" y="3" width="6" height="11" rx="3"/>
+                    <path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>
+                </svg>
+            </span>
             <span class="ctrl-label">Micrófono</span>
         </button>
+
         <button type="button" id="toggleCam" aria-label="Cámara">
-            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg></span>
+            <span class="ctrl-icon">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="2" y="6" width="14" height="12" rx="2"/>
+                    <path d="M16 10l6-3v10l-6-3"/>
+                </svg>
+            </span>
             <span class="ctrl-label">Cámara</span>
         </button>
+
         <button type="button" id="toggleScreen" aria-label="Compartir pantalla">
-            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
+            <span class="ctrl-icon">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <rect x="2" y="3" width="20" height="14" rx="2"/>
+                    <path d="M8 21h8M12 17v4"/>
+                </svg>
+            </span>
             <span class="ctrl-label">Pantalla</span>
         </button>
+
         <button type="button" id="hangup" class="hang" aria-label="Colgar">
-            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></span>
+            <span class="ctrl-icon">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/>
+                    <line x1="23" y1="1" x2="1" y2="23"/>
+                </svg>
+            </span>
             <span class="ctrl-label">Colgar</span>
         </button>
+
     </div>
 </div>
 
 <!-- LLAMADA ENTRANTE -->
 <div class="call" id="incomingOverlay" role="dialog" aria-modal="true" aria-label="Llamada entrante">
+
     <div class="avatar" id="incomingAvatar"></div>
     <h2 id="incomingName">Llamada entrante</h2>
     <div class="callinfo">Llamada entrante</div>
+
     <div class="controls">
+
         <button type="button" id="acceptCall" class="accept" aria-label="Aceptar llamada">
-            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg></span>
+            <span class="ctrl-icon">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
+                </svg>
+            </span>
             <span class="ctrl-label">Aceptar</span>
         </button>
+
         <button type="button" id="rejectCall" class="hang" aria-label="Rechazar llamada">
-            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></span>
+            <span class="ctrl-icon">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/>
+                    <line x1="23" y1="1" x2="1" y2="23"/>
+                </svg>
+            </span>
             <span class="ctrl-label">Rechazar</span>
         </button>
+
     </div>
 </div>
 
 <!-- VISOR DE FOTO -->
 <div class="photo-viewer" id="photoViewer" role="dialog" aria-modal="true" aria-label="Foto de perfil">
+
     <button type="button" class="pv-close" id="pvClose" aria-label="Cerrar">
-        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6 6 18"/>
+        </svg>
     </button>
+
     <img id="pvImage" alt="">
     <div class="pv-name" id="pvName"></div>
     <div class="pv-handle" id="pvHandle"></div>
@@ -462,10 +1643,12 @@
 
 <!-- PERFIL PROPIO -->
 <div class="modal" id="profileModal" role="dialog" aria-modal="true" aria-label="Mi perfil">
+
     <div class="profile-modal-box">
         <div class="profile-modal-avatar" id="profileModalAvatar"></div>
         <div class="profile-modal-name" id="profileModalName">Mi perfil</div>
         <div class="profile-modal-handle" id="profileModalHandle"></div>
+
         <div class="profile-modal-actions">
             <button type="button" class="profile-modal-btn" id="btnCambiarFoto">Cambiar foto</button>
             <button type="button" class="profile-modal-btn" id="btnCerrarProfileModal">Cerrar</button>
@@ -475,146 +1658,217 @@
 
 <!-- VISOR DE HISTORIAS -->
 <div class="estado-viewer" id="estadoViewer" role="dialog" aria-modal="true" aria-label="Historia">
+
     <div class="estado-viewer-progress">
         <div class="estado-viewer-progress-inner" id="estadoProgress"></div>
     </div>
 
     <div class="estado-viewer-header">
+
         <div class="estado-viewer-avatar" id="evAvatar"></div>
+
         <div class="estado-viewer-info">
             <div class="estado-viewer-name" id="evName"></div>
             <div class="estado-viewer-time" id="evTime"></div>
         </div>
+
         <button type="button" class="estado-viewer-close hidden" id="evSkip" aria-label="Siguiente persona" title="Siguiente persona">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="6 9 12 15 18 9"/>
+            </svg>
         </button>
+
         <button type="button" class="estado-viewer-close" id="evClose" aria-label="Cerrar">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18"/>
+            </svg>
         </button>
     </div>
 
     <div class="estado-viewer-body" id="evBody">
+
         <img class="estado-viewer-img" id="evImage" alt="">
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
+
         <button type="button" class="estado-viewer-nav prev hidden" id="evPrev" aria-label="Historia anterior">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="15 18 9 12 15 6"/>
+            </svg>
         </button>
+
         <button type="button" class="estado-viewer-nav next hidden" id="evNext" aria-label="Historia siguiente">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6"/>
+            </svg>
         </button>
     </div>
 
     <div class="estado-viewer-foot">
+
         <button type="button" class="hidden" id="evVistas" aria-label="Ver vistas">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            <span>Vistas</span> <span id="evVistasCount">0</span>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span>Vistas</span>
+            <span id="evVistasCount">0</span>
         </button>
+
         <button type="button" class="hidden" id="evComentar" aria-label="Comentar">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>
+            </svg>
             <span>Comentar</span>
         </button>
+
         <button type="button" class="hidden" id="evEliminar" aria-label="Eliminar historia">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>
+            </svg>
             <span>Eliminar</span>
         </button>
+
     </div>
 </div>
 
 <!-- SUBIR HISTORIA -->
 <div class="modal" id="estadoUploadModal" role="dialog" aria-modal="true" aria-label="Subir historia">
+
     <div class="modalbox">
+
         <div class="modal-head">
             <h2>Subir historia</h2>
+
             <button type="button" class="modal-close" id="closeEstadoModal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18"/>
+                </svg>
             </button>
         </div>
+
         <button type="button" class="btn-plano" id="btnSeleccionarEstado">Elegir foto o video</button>
+
         <input type="file" id="estadoFileInput" accept="image/*,video/*" hidden>
+
         <div id="estadoPreviewWrap" class="hidden" style="margin:12px 0;">
             <img id="estadoPreviewImg" class="estado-preview-img" alt="">
         </div>
+
         <input type="text" id="estadoCaption" class="search" maxlength="200" placeholder="Escribe un texto (opcional)" autocomplete="off" style="margin-top:12px;">
+
         <button type="button" class="btn-plano sol" id="btnPublicarEstado" disabled style="width:100%;margin-top:14px;">Publicar historia</button>
+
     </div>
 </div>
 
 <!-- VISTAS Y COMENTARIOS DE UNA HISTORIA -->
 <div class="modal" id="vistasModal" role="dialog" aria-modal="true" aria-label="Vistas y comentarios">
+
     <div class="modalbox">
+
         <div class="modal-head">
             <h2>Historia <span id="vistasModalCount"></span></h2>
+
             <button type="button" class="modal-close" id="closeVistasModal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18"/>
+                </svg>
             </button>
         </div>
+
         <div id="vistasList"></div>
     </div>
 </div>
 
-<!-- BUSCAR CONTACTO (se conserva; el botón + está oculto) -->
+<!-- BUSCAR CONTACTO -->
 <div class="modal" id="newModal" role="dialog" aria-modal="true" aria-label="Buscar contacto">
+
     <div class="modalbox">
+
         <div class="modal-head">
             <h2>Buscar contacto</h2>
+
             <button type="button" class="modal-close" id="closeModal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18"/>
+                </svg>
             </button>
         </div>
+
         <input type="search" id="userSearch" class="search" placeholder="Buscar por nombre o @usuario" autocomplete="off">
+
         <div id="userResults" style="margin-top:10px;"></div>
+
     </div>
 </div>
 
 <!-- CONFIGURACIÓN DE LLAMADAS -->
 <div class="modal" id="modalConfigLlamadas" role="dialog" aria-modal="true" aria-label="Configuración de llamadas">
+
     <div class="modalbox">
+
         <div class="modal-head">
             <h2>Llamadas</h2>
+
             <button type="button" class="modal-close" id="closeModalConfig" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18"/>
+                </svg>
             </button>
         </div>
+
         <div class="cfg-fila">
             <div class="cfg-fila-txt">
                 Quién puede llamarme
                 <small>Define quién puede iniciar una llamada contigo.</small>
             </div>
+
             <select class="sel" id="selectQuienPuedeLlamarme" aria-label="Quién puede llamarme">
                 <option value="todos">Todos</option>
                 <option value="contactos">Solo mis contactos</option>
                 <option value="nadie">Nadie</option>
             </select>
         </div>
+
         <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
             <button type="button" class="btn-plano" id="btnVerBloqueados">Ver bloqueados</button>
             <button type="button" class="btn-plano sol" id="btnGuardarConfig">Guardar</button>
         </div>
+
     </div>
 </div>
 
 <!-- USUARIOS BLOQUEADOS -->
 <div class="modal" id="modalBloqueados" role="dialog" aria-modal="true" aria-label="Usuarios bloqueados">
+
     <div class="modalbox">
+
         <div class="modal-head">
             <h2>Bloqueados <span id="countBloqueados"></span></h2>
+
             <button type="button" class="modal-close" id="closeModalBloqueados" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18"/>
+                </svg>
             </button>
         </div>
+
         <div id="listaBloqueados"></div>
     </div>
 </div>
 
-<!-- ================================================================ -->
-<!-- CANALES: formulario completo (IDs usados por mensajes-canales.js) -->
-<!-- ================================================================ -->
+<!-- CREAR CANAL -->
 <div class="modal" id="modalCrearCanal" role="dialog" aria-modal="true" aria-labelledby="tituloCrearCanal">
+
     <div class="modalbox">
+
         <div class="modal-head">
             <h2 id="tituloCrearCanal">Crear canal público</h2>
+
             <button type="button" class="modal-close" id="closeModalCanal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18"/>
+                </svg>
             </button>
         </div>
 
@@ -629,40 +1883,50 @@
         </div>
 
         <div class="form-fila">
+
             <div class="form-campo">
                 <label for="canalEstado">Estado</label>
                 <input type="text" id="canalEstado" class="campo" maxlength="60" autocomplete="off">
             </div>
+
             <div class="form-campo">
                 <label for="canalMunicipio">Municipio</label>
                 <input type="text" id="canalMunicipio" class="campo" maxlength="80" autocomplete="off">
             </div>
+
         </div>
 
         <div class="form-fila">
+
             <div class="form-campo">
                 <label for="canalCiudad">Ciudad</label>
                 <input type="text" id="canalCiudad" class="campo" maxlength="80" autocomplete="off">
             </div>
+
             <div class="form-campo">
                 <label for="canalPais">País</label>
                 <input type="text" id="canalPais" class="campo" value="México" maxlength="60" autocomplete="off">
             </div>
+
         </div>
 
         <button type="button" class="btn-plano sol" id="btnCrearCanal" style="width:100%;margin-top:6px;">Crear canal</button>
+
     </div>
 </div>
 
-<!-- ================================================================ -->
-<!-- GRUPOS: formulario completo (IDs usados por mensajes-canales.js) -->
-<!-- ================================================================ -->
+<!-- CREAR GRUPO -->
 <div class="modal" id="modalCrearGrupo" role="dialog" aria-modal="true" aria-labelledby="tituloCrearGrupo">
+
     <div class="modalbox">
+
         <div class="modal-head">
             <h2 id="tituloCrearGrupo">Crear grupo privado</h2>
+
             <button type="button" class="modal-close" id="closeModalGrupo" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18"/>
+                </svg>
             </button>
         </div>
 
@@ -677,36 +1941,42 @@
         </div>
 
         <div class="form-fila">
+
             <div class="form-campo">
                 <label for="grupoEstado">Estado</label>
                 <input type="text" id="grupoEstado" class="campo" maxlength="60" autocomplete="off">
             </div>
+
             <div class="form-campo">
                 <label for="grupoMunicipio">Municipio</label>
                 <input type="text" id="grupoMunicipio" class="campo" maxlength="80" autocomplete="off">
             </div>
+
         </div>
 
         <div class="form-fila">
+
             <div class="form-campo">
                 <label for="grupoCiudad">Ciudad</label>
                 <input type="text" id="grupoCiudad" class="campo" maxlength="80" autocomplete="off">
             </div>
+
             <div class="form-campo">
                 <label for="grupoPais">País</label>
                 <input type="text" id="grupoPais" class="campo" value="México" maxlength="60" autocomplete="off">
             </div>
+
         </div>
 
         <button type="button" class="btn-plano sol" id="btnCrearGrupo" style="width:100%;margin-top:6px;">Crear grupo</button>
+
     </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- ================================================================ -->
-<!-- SCRIPTS (el orden importa)                                        -->
-<!-- ================================================================ -->
+<!-- SCRIPTS: ORDEN ORIGINAL CONSERVADO -->
+
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/js/teclado-emojis.js?v=4"></script>
 
@@ -722,64 +1992,91 @@
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
 <script>
-    /* Puentes para funciones que llama mensajes-init.js y que define llamadas-ui.js */
-    function abrirModalConfigLlamadas() {
-        if (typeof window.abrirModalConfig === 'function') window.abrirModalConfig();
+/* Puentes de compatibilidad para los módulos de llamadas */
+
+function abrirModalConfigLlamadas() {
+    if (typeof window.abrirModalConfig === 'function') {
+        window.abrirModalConfig();
     }
-    function cerrarModalConfigLlamadas() {
-        var m = document.getElementById('modalConfigLlamadas');
-        if (m) m.classList.remove('show');
+}
+
+function cerrarModalConfigLlamadas() {
+    var m = document.getElementById('modalConfigLlamadas');
+    if (m) {
+        m.classList.remove('show');
     }
-    function abrirListaBloqueados() {
-        if (typeof window.abrirModalBloqueados === 'function') window.abrirModalBloqueados();
+}
+
+function abrirListaBloqueados() {
+    if (typeof window.abrirModalBloqueados === 'function') {
+        window.abrirModalBloqueados();
+    }
+}
+
+/* Conserva el bloqueo administrado por mensajes-chats.js */
+
+document.addEventListener('DOMContentLoaded', function () {
+
+    var b = document.getElementById('blockUser');
+
+    if (b && typeof bloquearUsuarioActual === 'function') {
+        b.onclick = function () {
+            bloquearUsuarioActual();
+        };
     }
 
-    /* El botón Bloquear usa la versión de mensajes-chats.js (tabla bloqueos, igual que Contactos).
-       Se asigna al final para que gane sobre la de llamadas-ui.js. */
-    document.addEventListener('DOMContentLoaded', function () {
-        var b = document.getElementById('blockUser');
-        if (b && typeof bloquearUsuarioActual === 'function') {
-            b.onclick = function () { bloquearUsuarioActual(); };
-        }
-    });
+});
 </script>
 
 <script>
-    /* Barra de escribir: crece con el texto y alterna micrófono / enviar */
-    document.addEventListener('DOMContentLoaded', function () {
-        var input = document.getElementById('messageInput');
-        var composer = document.getElementById('composer');
-        if (!input || !composer) return;
+/* Barra de escritura: altura automática y alternancia de acciones */
 
-        function ajustarAltura() {
-            input.style.height = 'auto';
-            input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-        }
-        function ajustarEstado() {
-            composer.classList.toggle('has-text', input.value.trim().length > 0);
+document.addEventListener('DOMContentLoaded', function () {
+
+    var input = document.getElementById('messageInput');
+    var composer = document.getElementById('composer');
+
+    if (!input || !composer) return;
+
+    function ajustarAltura() {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+    }
+
+    function ajustarEstado() {
+        composer.classList.toggle('has-text', input.value.trim().length > 0);
+    }
+
+    input.addEventListener('input', function () {
+        ajustarAltura();
+        ajustarEstado();
+    });
+
+    input.addEventListener('keydown', function (e) {
+
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+
+            var sendBtn = document.getElementById('sendBtn');
+
+            if (sendBtn) {
+                sendBtn.click();
+            }
         }
 
-        input.addEventListener('input', function () {
+    });
+
+    composer.addEventListener('submit', function () {
+
+        setTimeout(function () {
             ajustarAltura();
             ajustarEstado();
-        });
+        }, 0);
 
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                var sendBtn = document.getElementById('sendBtn');
-                if (sendBtn) sendBtn.click();
-            }
-        });
-
-        // Después de enviar, mensajes-chats.js vacía el campo: restablece la barra
-        composer.addEventListener('submit', function () {
-            setTimeout(function () {
-                ajustarAltura();
-                ajustarEstado();
-            }, 0);
-        });
     });
+
+});
 </script>
+
 </body>
 </html>
