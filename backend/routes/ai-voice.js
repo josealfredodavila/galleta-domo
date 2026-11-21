@@ -1,13 +1,12 @@
 /* ================================================================
-   routes/ai-voice.js - VOZ CON MARQUINHOS (v2.1)
+   routes/ai-voice.js - VOZ CON MARQUINHOS (v2.2)
    ================================================================
    Endpoint: POST /api/ai/voice/chat
    Flujo: audio -> Whisper -> música (Deezer) o LLM -> TTS -> respuesta
 
-   v2.1 — Whisper recibe el audio como buffer (no como stream), con
-          nombre, tipo y Content-Length correctos. Los reintentos ya
-          no reenvían un stream consumido. Los errores de Groq y de
-          NVIDIA se registran con su cuerpo de respuesta.
+   v2.2 — Modelo de NVIDIA configurable con la variable NVIDIA_MODEL
+          (por defecto nvidia/nemotron-3.5-lightning-30b-a3b).
+          Límite de tokens a 300 para modelos de razonamiento.
 ================================================================ */
 
 'use strict';
@@ -15,9 +14,7 @@
 const express = require('express');
 const router = express.Router();
 const { createClient } = require('@supabase/supabase-js');
-const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const axios = require('axios');
 const FormData = require('form-data');
 
@@ -33,11 +30,12 @@ const ELEVEN_API_KEY = process.env.ELEVENLABS_API_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-const NVIDIA_MODEL = 'moonshotai/kimi-k3';
+// Modelo de NVIDIA: se cambia desde Railway con la variable NVIDIA_MODEL.
+const NVIDIA_MODEL = process.env.NVIDIA_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
 const WHISPER_MODEL = 'whisper-large-v3';
 
-// Si el modelo devuelve contenido vacío con estos tokens, subir a 300.
-const MAX_TOKENS_RESPUESTA = 120;
+// Modelo de razonamiento: necesita espacio para pensar antes de responder.
+const MAX_TOKENS_RESPUESTA = 300;
 const MAX_CARACTERES_RESPUESTA = 200;
 const HISTORIAL_LLM_MAX = 6;
 
@@ -555,7 +553,7 @@ router.post('/chat', autenticar, async (req, res) => {
             });
         }
 
-        console.log(`\n🎙️ Marquinhos Voice Chat · ID ${timestamp}`);
+        console.log(`\n🎙️ Marquinhos Voice Chat · ID ${timestamp} · modelo ${NVIDIA_MODEL}`);
 
         /* PASO 1: DESCARGAR AUDIO (en memoria) */
         console.log('\n📥 PASO 1: Descargando audio del usuario');
@@ -647,7 +645,7 @@ router.post('/chat', autenticar, async (req, res) => {
 
             respuestaTexto = limpiarRespuestaMarquinhos(contenido);
             if (!respuestaTexto) throw new Error('La respuesta quedó vacía después de limpiarla');
-        }, 'NVIDIA Kimi K3', 2);
+        }, 'NVIDIA LLM', 2);
 
         respuestaTexto = recortarRespuesta(respuestaTexto, MAX_CARACTERES_RESPUESTA);
 
