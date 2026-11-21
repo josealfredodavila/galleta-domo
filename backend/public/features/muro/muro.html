@@ -812,14 +812,8 @@
             </div>
             <p class="xv-text" id="xvText"></p>
             <div class="xv-actions">
-                <button type="button" class="xv-act" id="xvResp" aria-label="Responder">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
-                    <span id="xvRespN">0</span>
-                </button>
-                <button type="button" class="xv-act" id="xvRepost" aria-label="Republicar">
-                    <svg class="icon" viewBox="0 0 24 24"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
-                    <span id="xvRepostN">0</span>
-                </button>
+                <!-- Botón de Comentario eliminado según lo solicitado -->
+                <!-- Botón de Repost eliminado según lo solicitado -->
                 <button type="button" class="xv-act" id="xvLike" aria-label="Me gusta">
                     <svg class="icon" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                     <span id="xvLikeN">0</span>
@@ -833,7 +827,8 @@
             </div>
         </div>
 
-        <div class="xv-bar">
+        <!-- Barra de controles de video (se oculta si es imagen) -->
+        <div class="xv-bar" id="xvBar" hidden>
             <button type="button" id="xvPlay" aria-label="Reproducir o pausar">
                 <svg class="icon" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>
             </button>
@@ -1125,7 +1120,7 @@
 
     function compartirMuro() {
         var url = window.location.href;
-        var titulo = "Csariel's · Muro";
+        var titulo = "Csariel's"; // Corregido según lo solicitado
         if (navigator.share) {
             navigator.share({ title: titulo, url: url }).catch(function () {});
         } else if (navigator.clipboard) {
@@ -1186,14 +1181,13 @@
         var handle = document.getElementById('xvHandle');
         var texto = document.getElementById('xvText');
         var likeN = document.getElementById('xvLikeN');
-        var respN = document.getElementById('xvRespN');
-        var repN = document.getElementById('xvRepostN');
         var likeBtn = document.getElementById('xvLike');
         var seguir = document.getElementById('xvSeguir');
         var guardar = document.getElementById('xvGuardar');
         var compartir = document.getElementById('xvCompartir');
         var cerrar = document.getElementById('xvClose');
         var mas = document.getElementById('xvMas');
+        var bar = document.getElementById('xvBar'); // Referencia a la barra inferior
 
         var actual = { src: '', tipo: 'imagen', id: null };
         var liked = false;
@@ -1243,20 +1237,26 @@
                 img.src = actual.src;
             }
 
+            // Ocultar o mostrar la barra inferior (Play, progreso, tiempo, mute) según el tipo
+            if (bar) bar.hidden = !esVideo;
+
             var inicial = (o.name || 'U').charAt(0).toUpperCase();
             av.innerHTML = o.avatar ? '<img src="' + o.avatar.replace(/"/g, '&quot;') + '" alt="">' : inicial;
             nombre.textContent = o.name || 'Usuario';
             handle.textContent = '@' + (o.handle || 'usuario');
             texto.textContent = o.text || '';
             likeN.textContent = o.likes || '0';
-            respN.textContent = o.comments || '0';
-            repN.textContent = o.reposts || '0';
 
+            // Reiniciar estados de botones
             liked = false;
             likeBtn.style.color = '';
+            likeBtn.querySelector('.icon').style.fill = 'none';
+            likeBtn.querySelector('.icon').style.stroke = 'currentColor';
+            
             seguido = false;
             seguir.textContent = 'Seguir';
             guardado = false;
+            guardar.style.color = '';
 
             progFill.style.width = '0%';
             tiempo.textContent = '0:00';
@@ -1327,12 +1327,18 @@
             vid.currentTime = ratio * vid.duration;
         });
 
+        // Corazón rojo
         likeBtn.addEventListener('click', function () {
             liked = !liked;
+            var iconSvg = likeBtn.querySelector('.icon');
             likeBtn.style.color = liked ? 'var(--danger)' : '';
+            iconSvg.style.fill = liked ? 'var(--danger)' : 'none';
+            iconSvg.style.stroke = liked ? 'var(--danger)' : 'currentColor';
+            
             var n = parseInt(likeN.textContent, 10) || 0;
             likeN.textContent = String(liked ? n + 1 : Math.max(0, n - 1));
         });
+
         seguir.addEventListener('click', function () {
             seguido = !seguido;
             seguir.textContent = seguido ? 'Siguiendo' : 'Seguir';
@@ -1345,7 +1351,7 @@
         compartir.addEventListener('click', function () {
             var url = actual.src || window.location.href;
             if (navigator.share) {
-                navigator.share({ title: nombre.textContent, url: url }).catch(function () {});
+                navigator.share({ title: "Csariel's", url: url }).catch(function () {});
             } else if (navigator.clipboard) {
                 navigator.clipboard.writeText(url).then(function () {
                     if (typeof showToast === 'function') showToast('Enlace copiado', 'success');
