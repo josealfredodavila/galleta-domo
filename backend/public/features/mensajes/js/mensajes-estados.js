@@ -1,30 +1,36 @@
 // ================================================================
-// MENSAJES · ESTADOS (HISTORIAS) v3.0 · MÓDULO 5 DE 8
+// MENSAJES · ESTADOS (HISTORIAS) v3.1 · MÓDULO 5 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-estados.js
 //
-// ACTUALIZACIÓN v3.0:
-// - Publicación múltiple: hasta 5 videos y 10 imágenes.
-// - Videos de máximo 60 segundos.
-// - Publicación individual de cada archivo.
-// - Validación de límites antes de subir.
-// - Visor multimedia adaptable a pantalla completa.
-// - Imágenes con object-fit: contain (sin deformaciones).
-// - Videos con object-fit: contain y controles.
-// - Cambio seguro entre imágenes y videos.
-// - Vista previa multimedia sin desbordamientos.
-// - Progreso independiente para cada historia.
-// - Publicaciones de 24 horas.
-// - Control de propiedad al eliminar historias.
-// - Compatible con la estructura existente de Supabase.
-// - No inventa tablas ni columnas.
-// - Referencias SQL al final para tablas y funciones faltantes.
+// CSARIEL'S ECOSYSTEM
+//
+// - Integración con el sistema de historias de Mensajes.
+// - Sin alertas, confirmaciones ni controles nativos del navegador.
+// - Interfaz integrada con NeonModal y toast del ecosistema.
+// - Publicación múltiple: hasta 5 videos y 10 imágenes activas.
+// - Cada video: máximo 60 segundos y 25 MB.
+// - Cada imagen: máximo 10 MB.
+// - Cada archivo se publica individualmente.
+// - Visor multimedia adaptable a móvil y pantalla completa.
+// - Imágenes y videos sin deformaciones.
+// - Historias activas durante 24 horas.
+// - Vistas y comentarios integrados.
+// - Control de propiedad al eliminar.
+// - Limpieza de temporizadores y recursos multimedia.
+// - No crea tablas, columnas, RPC ni buckets automáticamente.
 // ================================================================
 
 'use strict';
 
+/* ================================================================
+   CONFIGURACIÓN
+================================================================ */
+
 const ICO_ESTADO = {
-    eye: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
-    chat: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>'
+    eye: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+    chat: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"/></svg>',
+    video: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="m16 10 5-3v10l-5-3z"/></svg>',
+    image: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>'
 };
 
 const ESTADOS_MAX_VIDEOS = 5;
@@ -33,6 +39,7 @@ const ESTADOS_MAX_VIDEO_MB = 25;
 const ESTADOS_MAX_IMAGEN_MB = 10;
 const ESTADOS_MAX_VIDEO_SEGUNDOS = 60;
 const ESTADOS_DURACION_IMAGEN = 5;
+const ESTADOS_TTL_FALLBACK = 86400000;
 
 let estadosCache = [];
 let estadoActualIndex = 0;
@@ -42,172 +49,185 @@ let estadoProgresoActual = 0;
 let estadoPausado = false;
 let estadosArchivosSeleccionados = [];
 let estadosSubiendo = false;
-let estadoMediaObjectURL = null;
+let estadoGeneracionVisor = 0;
+let estadoGeneracionPreview = 0;
+let estadoModalAbierto = false;
 
 /* ================================================================
-   HELPERS
+   UTILIDADES GENERALES
 ================================================================ */
 
+function estadoElemento(id) {
+    return document.getElementById(id);
+}
+
 function ocultarEl(id) {
-    const el = $(id);
-    if (el) el.classList.add('hidden');
+    const elemento = estadoElemento(id);
+
+    if (elemento) {
+        elemento.classList.add('hidden');
+    }
 }
 
 function mostrarEl(id) {
-    const el = $(id);
-    if (el) el.classList.remove('hidden');
+    const elemento = estadoElemento(id);
+
+    if (elemento) {
+        elemento.classList.remove('hidden');
+    }
+}
+
+function estadoEscapar(valor) {
+    if (typeof esc === 'function') {
+        return esc(String(valor == null ? '' : valor));
+    }
+
+    return String(valor == null ? '' : valor)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function estadoAvisar(mensaje, tipo) {
+    if (typeof toast === 'function') {
+        toast(mensaje, tipo || 'info');
+    }
+}
+
+function estadoFechaExpiracion() {
+    const ttl = (
+        typeof ESTADOS_TTL_MS === 'number' &&
+        ESTADOS_TTL_MS > 0
+    ) ? ESTADOS_TTL_MS : ESTADOS_TTL_FALLBACK;
+
+    return new Date(Date.now() + ttl).toISOString();
 }
 
 function estadoEsNuevo(estado) {
-    if (!window.__estadosVistosIds) return true;
+    if (!window.__estadosVistosIds) {
+        return true;
+    }
+
     return !window.__estadosVistosIds.has(estado.id);
 }
 
 function estadoEsVideo(estado) {
-    return estado && (
-        estado.media_tipo === 'video' ||
-        (estado.media_url || estado.imagen_url || '').match(/\.(mp4|webm|mov|m4v)(\?|$)/i)
-    );
+    if (!estado) return false;
+
+    if (estado.media_tipo === 'video') {
+        return true;
+    }
+
+    const url = estado.media_url || estado.imagen_url || '';
+
+    return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(url);
 }
 
 function estadoObtenerURL(estado) {
-    return estado ? (estado.media_url || estado.imagen_url || '') : '';
+    if (!estado) return '';
+
+    return estado.media_url || estado.imagen_url || '';
 }
 
-function estadoLiberarObjectURL() {
-    if (estadoMediaObjectURL) {
-        try {
-            URL.revokeObjectURL(estadoMediaObjectURL);
-        } catch (e) {}
-
-        estadoMediaObjectURL = null;
+function estadoTiempoDetener() {
+    if (estadoTimer) {
+        clearInterval(estadoTimer);
+        estadoTimer = null;
     }
 }
 
-function estadoObtenerElemento(id) {
-    return document.getElementById(id);
-}
+function estadoDetenerVideo() {
+    const video = estadoElemento('evVideo');
 
-function estadoAplicarAjusteMedia(elemento, esVideo) {
-    if (!elemento) return;
+    if (!video) return;
 
-    elemento.style.setProperty('width', '100%', 'important');
-    elemento.style.setProperty('height', '100%', 'important');
-    elemento.style.setProperty('max-width', '100%', 'important');
-    elemento.style.setProperty('max-height', '100%', 'important');
-    elemento.style.setProperty('object-fit', 'contain', 'important');
-    elemento.style.setProperty('object-position', 'center center', 'important');
-    elemento.style.setProperty('display', 'block', 'important');
-    elemento.style.setProperty('margin', 'auto', 'important');
-    elemento.style.setProperty('background', '#000', 'important');
-
-    if (esVideo) {
-        elemento.playsInline = true;
-        elemento.preload = 'metadata';
-    }
-}
-
-function estadoAplicarVisorCompleto() {
-    const viewer = $('estadoViewer');
-    if (!viewer) return;
-
-    viewer.style.setProperty('position', 'fixed', 'important');
-    viewer.style.setProperty('inset', '0', 'important');
-    viewer.style.setProperty('width', '100vw', 'important');
-    viewer.style.setProperty('height', '100dvh', 'important');
-    viewer.style.setProperty('max-width', '100vw', 'important');
-    viewer.style.setProperty('max-height', '100dvh', 'important');
-    viewer.style.setProperty('overflow', 'hidden', 'important');
-    viewer.style.setProperty('background', '#000', 'important');
-    viewer.style.setProperty('z-index', '99999', 'important');
-
-    const imagen = $('evImage');
-    const video = $('evVideo');
-
-    [imagen, video].forEach(function (media) {
-        if (!media) return;
-
-        estadoAplicarAjusteMedia(media, media.tagName === 'VIDEO');
-
-        media.style.setProperty('position', 'absolute', 'important');
-        media.style.setProperty('inset', '0', 'important');
-    });
-
-    if (imagen || video) {
-        const padre = (imagen || video).parentElement;
-
-        if (padre) {
-            padre.style.setProperty('position', 'absolute', 'important');
-            padre.style.setProperty('inset', '0', 'important');
-            padre.style.setProperty('width', '100%', 'important');
-            padre.style.setProperty('height', '100%', 'important');
-            padre.style.setProperty('overflow', 'hidden', 'important');
-            padre.style.setProperty('display', 'flex', 'important');
-            padre.style.setProperty('align-items', 'center', 'important');
-            padre.style.setProperty('justify-content', 'center', 'important');
-            padre.style.setProperty('background', '#000', 'important');
-        }
-    }
-}
-
-async function registrarVistaEstado(estadoId) {
-    if (!user) return;
+    video.pause();
+    video.onended = null;
+    video.ontimeupdate = null;
+    video.onloadedmetadata = null;
+    video.removeAttribute('src');
 
     try {
-        const { error } = await db.from('estados_vistas').upsert(
-            {
-                estado_id: estadoId,
-                usuario_id: user.id
-            },
-            {
-                onConflict: 'estado_id,usuario_id',
-                ignoreDuplicates: true
-            }
-        );
-
-        if (!error && window.__estadosVistosIds) {
-            window.__estadosVistosIds.add(estadoId);
-        }
+        video.load();
     } catch (e) {}
 }
 
-async function obtenerVistasEstado(estadoId) {
-    try {
-        const { count, error } = await db.from('estados_vistas')
-            .select('id', {
-                count: 'exact',
-                head: true
-            })
-            .eq('estado_id', estadoId);
+function estadoLimpiarPreviews() {
+    estadosArchivosSeleccionados.forEach(function (item) {
+        if (item && item.url) {
+            try {
+                URL.revokeObjectURL(item.url);
+            } catch (e) {}
+        }
+    });
 
-        if (error) return 0;
+    estadosArchivosSeleccionados = [];
+}
 
-        return count || 0;
-    } catch (e) {
-        return 0;
+function estadoObtenerPathStorage(url) {
+    if (!url) return null;
+
+    const coincidencia = String(url).match(
+        /\/storage\/v1\/object\/(?:public|sign)\/([^/]+)\/(.+?)(?:\?|$)/
+    );
+
+    if (coincidencia) {
+        try {
+            return decodeURIComponent(coincidencia[2]);
+        } catch (e) {
+            return coincidencia[2];
+        }
     }
+
+    if (
+        !/^https?:\/\//i.test(url) &&
+        String(url).indexOf('/') !== -1
+    ) {
+        return String(url).split('?')[0];
+    }
+
+    return null;
+}
+
+function estadoEsMiHistoria(estado) {
+    return !!(
+        estado &&
+        user &&
+        estado.usuario_id === user.id
+    );
 }
 
 function haceTiempo(fecha) {
     if (!fecha) return 'hace tiempo';
 
-    const diffMin = Math.floor(
-        (Date.now() - new Date(fecha).getTime()) / 60000
-    );
+    const tiempo = new Date(fecha).getTime();
 
-    if (diffMin < 1) return 'hace un momento';
-    if (diffMin < 60) return `hace ${diffMin} min`;
-    if (diffMin < 1440) return `hace ${Math.floor(diffMin / 60)} h`;
+    if (!isFinite(tiempo)) return 'hace tiempo';
 
-    return `hace ${Math.floor(diffMin / 1440)} d`;
+    const diferencia = Math.max(0, Date.now() - tiempo);
+    const minutos = Math.floor(diferencia / 60000);
+
+    if (minutos < 1) return 'ahora';
+    if (minutos < 60) return 'hace ' + minutos + ' min';
+
+    const horas = Math.floor(minutos / 60);
+
+    if (horas < 24) return 'hace ' + horas + ' h';
+
+    return 'hace ' + Math.floor(horas / 24) + ' d';
 }
 
 function avatarInicialHTML(nombre, avatarUrl) {
     if (avatarUrl) {
-        return `<img src="${esc(avatarUrl)}" alt="">`;
+        return '<img src="' + estadoEscapar(avatarUrl) +
+            '" alt="" loading="lazy">';
     }
 
-    return esc(((nombre || 'U') + '').charAt(0).toUpperCase());
+    return estadoEscapar(
+        String(nombre || 'U').charAt(0).toUpperCase()
+    );
 }
 
 function urlPerfil(handle, uid) {
@@ -225,15 +245,422 @@ function urlPerfil(handle, uid) {
 }
 
 /* ================================================================
-   CARGAR HISTORIAS
+   ESTILOS DEL ECOSISTEMA
+   CSS LOCAL DEL MÓDULO. NO ALTERA EL RESTO DE MENSAJES.
+================================================================ */
+
+function estadoInstalarEstilos() {
+    if (estadoElemento('mensajes-estados-responsive-css')) {
+        return;
+    }
+
+    const style = document.createElement('style');
+
+    style.id = 'mensajes-estados-responsive-css';
+
+    style.textContent = `
+        #estadoViewer {
+            position: fixed !important;
+            inset: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            height: 100dvh !important;
+            max-width: 100vw !important;
+            max-height: 100vh !important;
+            max-height: 100dvh !important;
+            overflow: hidden !important;
+            background: #05080f !important;
+            z-index: 99999 !important;
+            box-sizing: border-box !important;
+        }
+
+        #estadoViewer *,
+        #estadoUploadModal *,
+        #vistasModal * {
+            box-sizing: border-box;
+        }
+
+        #estadoViewer .estado-media-stage {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            overflow: hidden !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            background: #05080f !important;
+        }
+
+        #estadoViewer #evImage,
+        #estadoViewer #evVideo {
+            position: absolute !important;
+            inset: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            max-width: 100% !important;
+            max-height: 100% !important;
+            margin: auto !important;
+            object-fit: contain !important;
+            object-position: center center !important;
+            background: #05080f !important;
+            border: 0 !important;
+        }
+
+        #estadoViewer #evVideo {
+            z-index: 2;
+        }
+
+        #estadoViewer #evImage {
+            z-index: 1;
+        }
+
+        #estadoViewer .hidden,
+        #estadoUploadModal .hidden,
+        #vistasModal .hidden {
+            display: none !important;
+        }
+
+        #estadoUploadModal .estado-preview-grid {
+            display: grid !important;
+            grid-template-columns: repeat(auto-fill, minmax(105px, 1fr));
+            gap: 10px;
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+        }
+
+        #estadoUploadModal .estado-preview-item {
+            position: relative;
+            min-width: 0;
+            width: 100%;
+            aspect-ratio: 9 / 16;
+            overflow: hidden;
+            background: #05080f;
+            border: 1px solid rgba(255,255,255,.12);
+            border-radius: 12px;
+        }
+
+        #estadoUploadModal .estado-preview-item img,
+        #estadoUploadModal .estado-preview-item video {
+            display: block;
+            width: 100%;
+            height: 100%;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            object-position: center;
+            background: #05080f;
+        }
+
+        #estadoUploadModal .estado-preview-numero {
+            position: absolute;
+            top: 7px;
+            left: 7px;
+            z-index: 3;
+            padding: 4px 8px;
+            border-radius: 20px;
+            color: #fff;
+            background: rgba(5,8,15,.8);
+            font-size: 11px;
+            pointer-events: none;
+        }
+
+        #estadoUploadModal .estado-preview-controles {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+            color: inherit;
+            font-size: 12px;
+        }
+
+        #estadoUploadModal .estado-preview-eliminar {
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            z-index: 4;
+            width: 28px;
+            height: 28px;
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 50%;
+            background: rgba(5,8,15,.88);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+        }
+
+        #estadoUploadModal .estado-preview-eliminar:disabled {
+            opacity: .4;
+            cursor: default;
+        }
+
+        #estadoUploadModal .estado-preview-progreso {
+            height: 3px;
+            width: 100%;
+            margin-top: 5px;
+            overflow: hidden;
+            border-radius: 5px;
+            background: rgba(255,255,255,.12);
+        }
+
+        #estadoUploadModal .estado-preview-progreso > span {
+            display: block;
+            height: 100%;
+            width: 100%;
+            background: #D4AF37;
+        }
+
+        #estadoUploadModal .estado-preview-info {
+            min-width: 0;
+            overflow-wrap: anywhere;
+            font-size: 11px;
+            opacity: .8;
+            padding: 5px 2px;
+        }
+
+        #estadoUploadModal #estadoPreviewWrap {
+            width: 100%;
+            max-width: 100%;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        #estadoUploadModal #estadoPreviewImg,
+        #estadoUploadModal #estadoPreviewVideo {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            max-height: min(60vh, 620px);
+            max-height: min(60dvh, 620px);
+            object-fit: contain;
+            background: #05080f;
+        }
+
+        #estadoUploadModal .estado-preview-contador {
+            margin-top: 10px;
+            font-size: 12px;
+            opacity: .8;
+        }
+
+        #estadoUploadModal .estado-progreso-publicacion {
+            width: 100%;
+            height: 3px;
+            overflow: hidden;
+            border-radius: 5px;
+            background: rgba(255,255,255,.12);
+            margin-top: 10px;
+        }
+
+        #estadoUploadModal .estado-progreso-publicacion span {
+            display: block;
+            width: 0;
+            height: 100%;
+            background: #D4AF37;
+            transition: width .2s ease;
+        }
+
+        #vistasModal .estado-tabs {
+            display: flex;
+            gap: 18px;
+            border-bottom: 1px solid rgba(255,255,255,.12);
+            margin-bottom: 12px;
+        }
+
+        #vistasModal .estado-tab {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            border: 0;
+            border-bottom: 2px solid transparent;
+            padding: 10px 2px;
+            background: transparent;
+            color: inherit;
+            cursor: pointer;
+            font: inherit;
+        }
+
+        #vistasModal .estado-tab.active {
+            border-bottom-color: #D4AF37;
+            color: #D4AF37;
+        }
+
+        #vistasModal .estado-tab .ico {
+            width: 17px;
+            height: 17px;
+        }
+
+        #vistasModal .estado-panel-msg {
+            padding: 22px 12px;
+            text-align: center;
+            opacity: .75;
+        }
+
+        #vistasModal .estado-result {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 2px;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            cursor: pointer;
+        }
+
+        #vistasModal .estado-result .avatar {
+            flex: 0 0 40px;
+            width: 40px;
+            height: 40px;
+            overflow: hidden;
+            border-radius: 50%;
+        }
+
+        #vistasModal .estado-result .avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #vistasModal .estado-result-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        #vistasModal .estado-result-meta {
+            margin-top: 3px;
+            font-size: 12px;
+            opacity: .65;
+        }
+
+        #vistasModal .estado-comentario {
+            margin-top: 5px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        #estadoUploadModal .estado-upload-error {
+            padding: 10px 0;
+            color: #ff8d8d;
+            font-size: 12px;
+        }
+
+        #estadosScroll .estado-video-thumb {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            color: #D4AF37;
+            background: #101722;
+        }
+
+        @media (max-width: 480px) {
+            #estadoUploadModal .estado-preview-grid {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 7px;
+            }
+
+            #estadoUploadModal .estado-preview-item {
+                border-radius: 9px;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+}
+
+function estadoAplicarVisorCompleto() {
+    estadoInstalarEstilos();
+
+    const viewer = estadoElemento('estadoViewer');
+
+    if (!viewer) return;
+
+    viewer.classList.add('estado-viewer-responsive');
+
+    const imagen = estadoElemento('evImage');
+    const video = estadoElemento('evVideo');
+    const media = imagen || video;
+
+    if (media && media.parentElement) {
+        media.parentElement.classList.add('estado-media-stage');
+    }
+
+    [imagen, video].forEach(function (elemento) {
+        if (!elemento) return;
+
+        elemento.style.objectFit = 'contain';
+        elemento.style.objectPosition = 'center center';
+        elemento.style.maxWidth = '100%';
+        elemento.style.maxHeight = '100%';
+    });
+}
+
+/* ================================================================
+   REGISTRO Y CONSULTA DE VISTAS
+================================================================ */
+
+async function registrarVistaEstado(estadoId) {
+    if (!user || !estadoId) return;
+
+    try {
+        const resultado = await db.from('estados_vistas').upsert(
+            {
+                estado_id: estadoId,
+                usuario_id: user.id
+            },
+            {
+                onConflict: 'estado_id,usuario_id',
+                ignoreDuplicates: true
+            }
+        );
+
+        if (!resultado.error) {
+            if (!window.__estadosVistosIds) {
+                window.__estadosVistosIds = new Set();
+            }
+
+            window.__estadosVistosIds.add(estadoId);
+        }
+    } catch (e) {
+        console.warn('[Estados] No se pudo registrar la vista:', e);
+    }
+}
+
+async function obtenerVistasEstado(estadoId) {
+    try {
+        const resultado = await db.from('estados_vistas')
+            .select('id', {
+                count: 'exact',
+                head: true
+            })
+            .eq('estado_id', estadoId);
+
+        if (resultado.error) {
+            throw resultado.error;
+        }
+
+        return resultado.count || 0;
+    } catch (e) {
+        console.warn('[Estados] No se pudieron consultar las vistas:', e);
+        return 0;
+    }
+}
+
+/* ================================================================
+   CARGAR HISTORIAS DEL ECOSISTEMA
 ================================================================ */
 
 async function cargarEstados() {
-    const scroll = $('estadosScroll');
+    const scroll = estadoElemento('estadosScroll');
 
     if (!scroll || !user) return;
 
-    scroll.innerHTML = '';
+    scroll.innerHTML = '<div class="estados-vacio">Cargando historias...</div>';
 
     try {
         let filas = [];
@@ -245,35 +672,38 @@ async function cargarEstados() {
                 rpc.data.length > 0 &&
                 Array.isArray(rpc.data[0].estados)
             ) {
-                rpc.data.forEach(function (u) {
-                    (u.estados || []).forEach(function (e) {
+                rpc.data.forEach(function (grupo) {
+                    (grupo.estados || []).forEach(function (estado) {
                         filas.push({
-                            id: e.id,
-                            usuario_id: u.usuario_id,
-                            imagen_url: e.imagen_url,
-                            media_url: e.media_url,
-                            media_tipo: e.media_tipo,
-                            duracion_segundos: e.duracion_segundos,
-                            caption: e.caption,
-                            created_at: e.created_at,
-                            expires_at: e.expires_at,
+                            id: estado.id,
+                            usuario_id: grupo.usuario_id,
+                            imagen_url: estado.imagen_url,
+                            media_url: estado.media_url,
+                            media_tipo: estado.media_tipo,
+                            duracion_segundos: estado.duracion_segundos,
+                            caption: estado.caption,
+                            created_at: estado.created_at,
+                            expires_at: estado.expires_at,
                             origen: 'mensajes'
                         });
                     });
                 });
             } else {
-                filas = rpc.data.map(function (e) {
-                    return Object.assign({}, e, {
-                        origen: e.origen || 'mensajes'
+                filas = rpc.data.map(function (estado) {
+                    return Object.assign({}, estado, {
+                        origen: estado.origen || 'mensajes'
                     });
                 });
             }
         } else {
             if (rpc.error) {
-                console.warn('[Estados] RPC falló:', rpc.error.message);
+                console.warn(
+                    '[Estados] RPC estados_mensajes_activos:',
+                    rpc.error.message
+                );
             }
 
-            const { data, error } = await db.from('estados')
+            const consulta = await db.from('estados')
                 .select(
                     'id, usuario_id, imagen_url, media_url, media_tipo, duracion_segundos, caption, created_at, expires_at, origen'
                 )
@@ -283,80 +713,108 @@ async function cargarEstados() {
                     ascending: true
                 });
 
-            if (error) {
-                if (error.code === '42P01') {
-                    console.warn('[Estados] Falta la tabla estados.');
-                    scroll.innerHTML =
-                        '<div class="estados-vacio">El módulo de estados necesita configuración en Supabase.</div>';
-                    return;
-                }
-
-                throw error;
+            if (consulta.error) {
+                throw consulta.error;
             }
 
-            filas = data || [];
+            filas = consulta.data || [];
         }
 
-        estadosCache = filas;
+        const ahora = Date.now();
 
-        if (!estadosCache.length) {
-            scroll.innerHTML =
-                '<div class="estados-vacio">Sin estados</div>';
-            return;
-        }
+        estadosCache = filas.filter(function (estado) {
+            if (!estado.id || !estado.usuario_id) return false;
+
+            if (estado.expires_at) {
+                const expiracion = new Date(estado.expires_at).getTime();
+
+                if (isFinite(expiracion) && expiracion <= ahora) {
+                    return false;
+                }
+            }
+
+            return !!estadoObtenerURL(estado);
+        });
+
+        estadosCache.sort(function (a, b) {
+            return new Date(a.created_at || 0).getTime() -
+                new Date(b.created_at || 0).getTime();
+        });
 
         window.__estadosVistosIds = new Set();
 
-        const idsEstados = estadosCache.map(function (e) {
-            return e.id;
+        if (!estadosCache.length) {
+            scroll.innerHTML = '<div class="estados-vacio">Todavía no hay historias</div>';
+            return;
+        }
+
+        const idsEstados = estadosCache.map(function (estado) {
+            return estado.id;
         });
 
         try {
-            const { data: vistasData } = await db.from('estados_vistas')
+            const vistas = await db.from('estados_vistas')
                 .select('estado_id')
                 .eq('usuario_id', user.id)
                 .in('estado_id', idsEstados);
 
-            (vistasData || []).forEach(function (v) {
-                window.__estadosVistosIds.add(v.estado_id);
-            });
-        } catch (e) {}
+            if (!vistas.error) {
+                (vistas.data || []).forEach(function (vista) {
+                    window.__estadosVistosIds.add(vista.estado_id);
+                });
+            }
+        } catch (e) {
+            console.warn('[Estados] No se pudieron cargar vistas previas:', e);
+        }
 
         const porUsuario = {};
 
-        estadosCache.forEach(function (e) {
-            if (!porUsuario[e.usuario_id]) {
-                porUsuario[e.usuario_id] = [];
+        estadosCache.forEach(function (estado) {
+            if (!porUsuario[estado.usuario_id]) {
+                porUsuario[estado.usuario_id] = [];
             }
 
-            porUsuario[e.usuario_id].push(e);
+            porUsuario[estado.usuario_id].push(estado);
         });
 
-        const idsUnicos = Object.keys(porUsuario).filter(function (uid) {
+        const idsPerfiles = Object.keys(porUsuario).filter(function (uid) {
             return uid !== user.id;
         });
 
-        if (idsUnicos.length) {
+        if (idsPerfiles.length) {
             try {
-                const { data: perfilesEst } = await db.from('perfiles_publicos')
+                const perfiles = await db.from('perfiles_publicos')
                     .select('id,nombre,handle,avatar_url')
-                    .in('id', idsUnicos);
+                    .in('id', idsPerfiles);
 
-                (perfilesEst || []).forEach(function (p) {
-                    if (perfilCache.size >= PERFIL_CACHE_LIMITE) {
-                        const primera = perfilCache.keys().next().value;
+                if (!perfiles.error) {
+                    (perfiles.data || []).forEach(function (perfil) {
+                        if (
+                            typeof perfilCache !== 'undefined' &&
+                            perfilCache &&
+                            typeof perfilCache.set === 'function'
+                        ) {
+                            if (
+                                typeof PERFIL_CACHE_LIMITE === 'number' &&
+                                perfilCache.size >= PERFIL_CACHE_LIMITE
+                            ) {
+                                const primera = perfilCache.keys().next().value;
 
-                        if (primera !== undefined) {
-                            perfilCache.delete(primera);
+                                if (primera !== undefined) {
+                                    perfilCache.delete(primera);
+                                }
+                            }
+
+                            perfilCache.set(perfil.id, {
+                                ts: Date.now(),
+                                data: perfil
+                            });
                         }
-                    }
-
-                    perfilCache.set(p.id, {
-                        ts: Date.now(),
-                        data: p
                     });
-                });
-            } catch (e) {}
+                }
+            } catch (e) {
+                console.warn('[Estados] No se pudieron cargar perfiles:', e);
+            }
         }
 
         const miEstado = porUsuario[user.id];
@@ -364,30 +822,29 @@ async function cargarEstados() {
         if (miEstado && miEstado.length) {
             const tieneNuevos = miEstado.some(estadoEsNuevo);
             const ultimo = miEstado[miEstado.length - 1];
-            const ultimoImg = estadoObtenerURL(ultimo);
-
+            const ultimoURL = estadoObtenerURL(ultimo);
             const totalVistas = await obtenerVistasEstado(ultimo.id);
 
             scroll.insertAdjacentHTML('beforeend', `
-                <div class="estado-item" data-userid="${esc(user.id)}">
+                <div class="estado-item" data-userid="${estadoEscapar(user.id)}">
                     <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
                         <div class="estado-inner">
                             ${estadoEsVideo(ultimo)
-                                ? '<div class="estado-video-thumb">VIDEO</div>'
-                                : `<img src="${esc(ultimoImg)}" alt="">`
+                                ? '<div class="estado-video-thumb">' + ICO_ESTADO.video + '</div>'
+                                : '<img src="' + estadoEscapar(ultimoURL) + '" alt="" loading="lazy">'
                             }
                         </div>
                     </div>
                     ${totalVistas > 0
-                        ? `<span class="estado-vistas-badge">${totalVistas}</span>`
+                        ? '<span class="estado-vistas-badge">' + totalVistas + '</span>'
                         : ''
                     }
-                    <div class="estado-name">Tú</div>
+                    <div class="estado-name">Tu historia</div>
                 </div>
             `);
 
             const miItem = scroll.querySelector(
-                `[data-userid="${user.id}"]`
+                '[data-userid="' + CSS.escape(user.id) + '"]'
             );
 
             if (miItem) {
@@ -395,39 +852,67 @@ async function cargarEstados() {
                     abrirEstadoUsuario(user.id);
                 };
             }
+        } else {
+            scroll.insertAdjacentHTML('beforeend', `
+                <div class="estado-item estado-item-crear" data-crear-estado="1">
+                    <div class="estado-circle">
+                        <div class="estado-inner estado-crear-icono">+</div>
+                    </div>
+                    <div class="estado-name">Tu historia</div>
+                </div>
+            `);
+
+            const crear = scroll.querySelector('[data-crear-estado="1"]');
+
+            if (crear) {
+                crear.onclick = abrirModalEstado;
+            }
         }
 
-        for (const uid of Object.keys(porUsuario)) {
-            if (uid === user.id) continue;
+        const otrosUsuarios = Object.keys(porUsuario).filter(function (uid) {
+            return uid !== user.id;
+        });
 
-            const entrada = perfilCache.get(uid);
+        for (let i = 0; i < otrosUsuarios.length; i++) {
+            const uid = otrosUsuarios[i];
 
-            const p = (
+            const entrada = (
+                typeof perfilCache !== 'undefined' &&
+                perfilCache &&
+                perfilCache.get
+            ) ? perfilCache.get(uid) : null;
+
+            const ttlPerfil = (
+                typeof TTL_PERFIL_MS === 'number' &&
+                TTL_PERFIL_MS > 0
+            ) ? TTL_PERFIL_MS : 300000;
+
+            const perfil = (
                 entrada &&
-                Date.now() - entrada.ts < TTL_PERFIL_MS &&
+                Date.now() - entrada.ts < ttlPerfil &&
                 entrada.data
             ) || {
                 id: uid,
                 nombre: 'Usuario',
-                handle: 'usuario',
+                handle: '',
                 avatar_url: null
             };
 
             const tieneNuevos = porUsuario[uid].some(estadoEsNuevo);
 
             scroll.insertAdjacentHTML('beforeend', `
-                <div class="estado-item" data-userid="${esc(uid)}">
+                <div class="estado-item" data-userid="${estadoEscapar(uid)}">
                     <div class="estado-circle ${tieneNuevos ? '' : 'visto'}">
                         <div class="estado-inner">
-                            ${avatarInicialHTML(p.nombre, p.avatar_url)}
+                            ${avatarInicialHTML(perfil.nombre, perfil.avatar_url)}
                         </div>
                     </div>
-                    <div class="estado-name">${esc(p.nombre || 'Usuario')}</div>
+                    <div class="estado-name">${estadoEscapar(perfil.nombre || 'Usuario')}</div>
                 </div>
             `);
 
             const item = scroll.querySelector(
-                `[data-userid="${uid}"]`
+                '[data-userid="' + CSS.escape(uid) + '"]'
             );
 
             if (item) {
@@ -439,6 +924,9 @@ async function cargarEstados() {
 
     } catch (e) {
         console.error('[Estados] Error cargando historias:', e);
+
+        scroll.innerHTML =
+            '<div class="estados-vacio">No se pudieron cargar las historias. Inténtalo nuevamente.</div>';
     }
 }
 
@@ -447,14 +935,19 @@ async function cargarEstados() {
 ================================================================ */
 
 function abrirEstadoUsuario(uid) {
-    const estados = estadosCache.filter(function (e) {
-        return e.usuario_id === uid;
+    if (!uid) return;
+
+    const estados = estadosCache.filter(function (estado) {
+        return estado.usuario_id === uid;
     });
 
     if (!estados.length) {
-        toast('Este usuario no tiene estados.', 'warning');
+        estadoAvisar('Este usuario todavía no tiene historias activas.', 'warning');
         return;
     }
+
+    estadoTiempoDetener();
+    estadoDetenerVideo();
 
     estadoActualUserId = uid;
     estadoActualIndex = 0;
@@ -463,30 +956,53 @@ function abrirEstadoUsuario(uid) {
 
     estadoAplicarVisorCompleto();
 
-    mostrarEstadoActual();
-
-    const viewer = $('estadoViewer');
+    const viewer = estadoElemento('estadoViewer');
 
     if (viewer) {
         viewer.classList.add('show');
     }
+
+    mostrarEstadoActual();
 }
 
 async function mostrarEstadoActual() {
-    const estados = estadosCache.filter(function (e) {
-        return e.usuario_id === estadoActualUserId;
+    const generacion = ++estadoGeneracionVisor;
+
+    estadoTiempoDetener();
+    estadoDetenerVideo();
+
+    const estados = estadosCache.filter(function (estado) {
+        return estado.usuario_id === estadoActualUserId;
     });
 
-    if (estadoActualIndex >= estados.length) {
+    if (
+        !estadoActualUserId ||
+        estadoActualIndex < 0 ||
+        estadoActualIndex >= estados.length
+    ) {
         cerrarEstadoViewer();
         return;
     }
 
     const estado = estados[estadoActualIndex];
-    const esMiEstado = estadoActualUserId === user.id;
+    const esMiEstado = estadoEsMiHistoria(estado);
 
-    const avatar = $('evAvatar');
-    const nombre = $('evName');
+    const avatar = estadoElemento('evAvatar');
+    const nombre = estadoElemento('evName');
+    const imagen = estadoElemento('evImage');
+
+    let video = estadoElemento('evVideo');
+
+    if (!video && imagen && imagen.parentNode) {
+        video = document.createElement('video');
+        video.id = 'evVideo';
+        video.className = 'estado-viewer-video hidden';
+        video.controls = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+
+        imagen.parentNode.appendChild(video);
+    }
 
     if (esMiEstado) {
         if (avatar) {
@@ -496,186 +1012,225 @@ async function mostrarEstadoActual() {
             );
         }
 
-        if (nombre) nombre.textContent = 'Tú';
-
+        if (nombre) {
+            nombre.textContent = 'Tú';
+        }
     } else {
-        db.from('perfiles_publicos')
-            .select('nombre, handle, avatar_url')
-            .eq('id', estadoActualUserId)
-            .maybeSingle()
-            .then(function (r) {
-                if (r.data && estadoActualUserId === estado.usuario_id) {
-                    if (avatar) {
-                        avatar.innerHTML = avatarInicialHTML(
-                            r.data.nombre,
-                            r.data.avatar_url
-                        );
-                    }
+        if (avatar) {
+            avatar.innerHTML = '';
+        }
 
-                    if (nombre) {
-                        nombre.textContent = r.data.nombre || 'Usuario';
-                    }
+        if (nombre) {
+            nombre.textContent = 'Usuario';
+        }
+
+        try {
+            const perfil = await db.from('perfiles_publicos')
+                .select('nombre, handle, avatar_url')
+                .eq('id', estado.usuario_id)
+                .maybeSingle();
+
+            if (generacion !== estadoGeneracionVisor) return;
+
+            if (perfil.data) {
+                if (avatar) {
+                    avatar.innerHTML = avatarInicialHTML(
+                        perfil.data.nombre,
+                        perfil.data.avatar_url
+                    );
                 }
-            });
+
+                if (nombre) {
+                    nombre.textContent = perfil.data.nombre || 'Usuario';
+                }
+            }
+        } catch (e) {
+            console.warn('[Estados] No se pudo consultar el perfil:', e);
+        }
     }
 
-    estadoLiberarObjectURL();
+    if (generacion !== estadoGeneracionVisor) return;
 
     const urlMedia = estadoObtenerURL(estado);
     const esVideo = estadoEsVideo(estado);
 
-    const evImageEl = $('evImage');
-
-    let videoEl = estadoObtenerElemento('evVideo');
-
-    if (!videoEl && evImageEl && evImageEl.parentNode) {
-        videoEl = document.createElement('video');
-        videoEl.id = 'evVideo';
-        videoEl.className = 'estado-viewer-video';
-        videoEl.controls = true;
-        videoEl.playsInline = true;
-        videoEl.preload = 'auto';
-
-        evImageEl.parentNode.appendChild(videoEl);
-    }
-
     if (esVideo) {
-        if (evImageEl) {
-            evImageEl.classList.add('hidden');
-            evImageEl.removeAttribute('src');
+        if (imagen) {
+            imagen.classList.add('hidden');
+            imagen.removeAttribute('src');
         }
 
-        if (videoEl) {
-            videoEl.pause();
-            videoEl.classList.remove('hidden');
+        if (video) {
+            video.classList.remove('hidden');
+            video.controls = true;
+            video.playsInline = true;
+            video.autoplay = true;
+            video.loop = false;
+            video.muted = false;
+            video.preload = 'auto';
+            video.style.objectFit = 'contain';
 
-            videoEl.controls = true;
-            videoEl.playsInline = true;
-            videoEl.autoplay = true;
-            videoEl.loop = false;
+            video.src = urlMedia;
+            video.load();
 
-            estadoAplicarAjusteMedia(videoEl, true);
+            video.onended = function () {
+                if (generacion !== estadoGeneracionVisor) return;
 
-            videoEl.src = urlMedia;
-            videoEl.load();
+                estadoTiempoDetener();
+                estadoProgresoActual = 100;
 
-            const reproduccion = videoEl.play();
+                const progress = estadoElemento('estadoProgress');
+
+                if (progress) {
+                    progress.style.width = '100%';
+                }
+
+                siguienteEstado();
+            };
+
+            video.ontimeupdate = function () {
+                if (
+                    generacion !== estadoGeneracionVisor ||
+                    !video.duration ||
+                    !isFinite(video.duration)
+                ) {
+                    return;
+                }
+
+                estadoProgresoActual = Math.min(
+                    100,
+                    (video.currentTime / video.duration) * 100
+                );
+
+                const progress = estadoElemento('estadoProgress');
+
+                if (progress) {
+                    progress.style.width = estadoProgresoActual + '%';
+                }
+            };
+
+            const reproduccion = video.play();
 
             if (reproduccion && reproduccion.catch) {
-                reproduccion.catch(function () {});
+                reproduccion.catch(function () {
+                    // El usuario puede iniciar el video desde sus controles.
+                });
             }
         }
-
     } else {
-        if (videoEl) {
-            videoEl.pause();
-            videoEl.classList.add('hidden');
-            videoEl.removeAttribute('src');
-            videoEl.load();
+        if (video) {
+            video.pause();
+            video.classList.add('hidden');
+            video.removeAttribute('src');
+
+            try {
+                video.load();
+            } catch (e) {}
         }
 
-        if (evImageEl) {
-            evImageEl.classList.remove('hidden');
-
-            estadoAplicarAjusteMedia(evImageEl, false);
-
-            evImageEl.src = urlMedia;
-            evImageEl.alt = 'Historia publicada';
+        if (imagen) {
+            imagen.classList.remove('hidden');
+            imagen.style.objectFit = 'contain';
+            imagen.style.objectPosition = 'center';
+            imagen.src = urlMedia;
+            imagen.alt = 'Historia publicada';
         }
     }
 
     estadoAplicarVisorCompleto();
 
-    const evTime = $('evTime');
+    const tiempo = estadoElemento('evTime');
 
-    if (evTime) {
-        evTime.textContent = haceTiempo(estado.created_at);
+    if (tiempo) {
+        tiempo.textContent = haceTiempo(estado.created_at);
     }
 
-    const caption = $('evCaption');
+    const caption = estadoElemento('evCaption');
 
     if (caption) {
         if (estado.caption) {
             caption.textContent = estado.caption;
             caption.classList.remove('hidden');
         } else {
+            caption.textContent = '';
             caption.classList.add('hidden');
         }
     }
 
     registrarVistaEstado(estado.id);
 
-    const prev = $('evPrev');
-    const next = $('evNext');
+    const anteriores = estadoElemento('evPrev');
+    const siguientes = estadoElemento('evNext');
 
-    if (prev) {
-        prev.classList.toggle('hidden', estadoActualIndex === 0);
+    if (anteriores) {
+        anteriores.classList.toggle('hidden', estadoActualIndex === 0);
     }
 
-    if (next) {
-        next.classList.toggle(
+    if (siguientes) {
+        siguientes.classList.toggle(
             'hidden',
             estadoActualIndex >= estados.length - 1
         );
     }
 
-    const evVistasEl = $('evVistas');
-    const evEliminarEl = $('evEliminar');
-    const evComentarEl = $('evComentar');
+    const vistas = estadoElemento('evVistas');
+    const eliminar = estadoElemento('evEliminar');
+    const comentar = estadoElemento('evComentar');
 
     if (esMiEstado) {
-        const total = await obtenerVistasEstado(estado.id);
+        if (vistas) {
+            vistas.classList.remove('hidden');
+            vistas.dataset.estadoId = estado.id;
 
-        if (estadoActualUserId !== estado.usuario_id) return;
-
-        if ($('evVistasCount')) {
-            $('evVistasCount').textContent = total;
-        }
-
-        if (evVistasEl) {
-            evVistasEl.classList.remove('hidden');
-            evVistasEl.dataset.estadoId = estado.id;
-
-            evVistasEl.onclick = function (e) {
-                e.stopPropagation();
+            vistas.onclick = function (event) {
+                event.stopPropagation();
                 abrirPanelEstado(estado.id, 'vistas');
             };
         }
 
-        if (evEliminarEl) {
-            evEliminarEl.classList.remove('hidden');
-            evEliminarEl.dataset.estadoId = estado.id;
+        if (eliminar) {
+            eliminar.classList.remove('hidden');
+            eliminar.dataset.estadoId = estado.id;
 
-            evEliminarEl.onclick = function (e) {
-                e.stopPropagation();
+            eliminar.onclick = function (event) {
+                event.stopPropagation();
                 eliminarHistoriaMensajes(estado.id);
             };
         }
 
         ocultarEl('evComentar');
 
+        const total = await obtenerVistasEstado(estado.id);
+
+        if (generacion !== estadoGeneracionVisor) return;
+
+        const contador = estadoElemento('evVistasCount');
+
+        if (contador) {
+            contador.textContent = String(total);
+        }
     } else {
         ocultarEl('evVistas');
         ocultarEl('evEliminar');
 
-        if (evComentarEl) {
-            evComentarEl.classList.remove('hidden');
-            evComentarEl.dataset.estadoId = estado.id;
+        if (comentar) {
+            comentar.classList.remove('hidden');
+            comentar.dataset.estadoId = estado.id;
 
-            evComentarEl.onclick = function (e) {
-                e.stopPropagation();
+            comentar.onclick = function (event) {
+                event.stopPropagation();
                 comentarHistoriaMensajes(estado.id);
             };
         }
     }
 
-    const evSkipEl = $('evSkip');
+    const saltar = estadoElemento('evSkip');
 
-    if (evSkipEl) {
-        evSkipEl.classList.remove('hidden');
+    if (saltar) {
+        saltar.classList.remove('hidden');
 
-        evSkipEl.onclick = function (e) {
-            e.stopPropagation();
+        saltar.onclick = function (event) {
+            event.stopPropagation();
             saltarGrupoMensajes();
         };
     }
@@ -684,77 +1239,73 @@ async function mostrarEstadoActual() {
 }
 
 /* ================================================================
-   PROGRESO
+   PROGRESO DEL VISOR
 ================================================================ */
 
 function iniciarProgresoEstado(estado) {
-    const progress = $('estadoProgress');
+    estadoTiempoDetener();
 
-    if (estadoTimer) {
-        clearInterval(estadoTimer);
-    }
+    estadoProgresoActual = 0;
+
+    const progress = estadoElemento('estadoProgress');
 
     if (progress) {
-        progress.style.width = estadoProgresoActual + '%';
+        progress.style.width = '0%';
     }
 
-    const esVideo = estadoEsVideo(estado);
+    if (estadoEsVideo(estado)) {
+        const video = estadoElemento('evVideo');
 
-    if (esVideo) {
-        const videoEl = estadoObtenerElemento('evVideo');
+        if (!video) return;
 
-        if (videoEl) {
-            estadoTimer = setInterval(function () {
-                if (estadoPausado || videoEl.paused) return;
+        estadoTimer = setInterval(function () {
+            if (estadoPausado || video.paused) return;
 
-                if (
-                    videoEl.duration &&
-                    isFinite(videoEl.duration)
-                ) {
-                    estadoProgresoActual =
-                        (videoEl.currentTime / videoEl.duration) * 100;
-                }
+            if (
+                video.duration &&
+                isFinite(video.duration) &&
+                video.duration > 0
+            ) {
+                estadoProgresoActual = Math.min(
+                    100,
+                    (video.currentTime / video.duration) * 100
+                );
 
                 if (progress) {
                     progress.style.width = estadoProgresoActual + '%';
                 }
-            }, 100);
+            }
+        }, 150);
 
-            videoEl.onended = function () {
-                if (estadoTimer) clearInterval(estadoTimer);
+        return;
+    }
 
-                estadoProgresoActual = 0;
+    const duracion = ESTADOS_DURACION_IMAGEN * 1000;
+    const intervalo = 50;
+    const incremento = 100 / (duracion / intervalo);
 
-                siguienteEstado();
-            };
+    estadoTimer = setInterval(function () {
+        if (estadoPausado) return;
+
+        estadoProgresoActual = Math.min(
+            100,
+            estadoProgresoActual + incremento
+        );
+
+        if (progress) {
+            progress.style.width = estadoProgresoActual + '%';
         }
 
-    } else {
-        const duracionMs = ESTADOS_DURACION_IMAGEN * 1000;
-
-        estadoTimer = setInterval(function () {
-            if (estadoPausado) return;
-
-            estadoProgresoActual += 100 / (duracionMs / 50);
-
-            if (progress) {
-                progress.style.width = estadoProgresoActual + '%';
-            }
-
-            if (estadoProgresoActual >= 100) {
-                clearInterval(estadoTimer);
-
-                estadoProgresoActual = 0;
-
-                siguienteEstado();
-            }
-        }, 50);
-    }
+        if (estadoProgresoActual >= 100) {
+            estadoTiempoDetener();
+            siguienteEstado();
+        }
+    }, intervalo);
 }
 
 function siguienteEstado() {
-    const estados = estadosCache.filter(function (e) {
-        return e.usuario_id === estadoActualUserId;
+    const estados = estadosCache.filter(function (estado) {
+        return estado.usuario_id === estadoActualUserId;
     });
 
     if (estadoActualIndex < estados.length - 1) {
@@ -769,13 +1320,13 @@ function siguienteEstado() {
 }
 
 function anteriorEstado() {
-    if (estadoActualIndex > 0) {
-        estadoActualIndex--;
-        estadoProgresoActual = 0;
-        estadoPausado = false;
+    if (estadoActualIndex <= 0) return;
 
-        mostrarEstadoActual();
-    }
+    estadoActualIndex--;
+    estadoProgresoActual = 0;
+    estadoPausado = false;
+
+    mostrarEstadoActual();
 }
 
 function saltarGrupoMensajes() {
@@ -783,20 +1334,23 @@ function saltarGrupoMensajes() {
 
     const ordenUsuarios = [];
 
-    estadosCache.forEach(function (e) {
-        if (!ordenUsuarios.includes(e.usuario_id)) {
-            ordenUsuarios.push(e.usuario_id);
+    estadosCache.forEach(function (estado) {
+        if (!ordenUsuarios.includes(estado.usuario_id)) {
+            ordenUsuarios.push(estado.usuario_id);
         }
     });
 
-    const idxActual = ordenUsuarios.indexOf(estadoActualUserId);
+    const indice = ordenUsuarios.indexOf(estadoActualUserId);
 
-    for (let i = idxActual + 1; i < ordenUsuarios.length; i++) {
+    for (let i = indice + 1; i < ordenUsuarios.length; i++) {
         const uid = ordenUsuarios[i];
 
-        if (estadosCache.some(function (e) {
-            return e.usuario_id === uid;
+        if (estadosCache.some(function (estado) {
+            return estado.usuario_id === uid;
         })) {
+            estadoTiempoDetener();
+            estadoDetenerVideo();
+
             estadoActualUserId = uid;
             estadoActualIndex = 0;
             estadoProgresoActual = 0;
@@ -811,60 +1365,60 @@ function saltarGrupoMensajes() {
 }
 
 function cerrarEstadoViewer() {
-    const viewer = $('estadoViewer');
+    estadoGeneracionVisor++;
+
+    estadoTiempoDetener();
+    estadoDetenerVideo();
+
+    const viewer = estadoElemento('estadoViewer');
 
     if (viewer) {
         viewer.classList.remove('show');
     }
 
-    if (estadoTimer) {
-        clearInterval(estadoTimer);
-    }
-
-    estadoTimer = null;
     estadoPausado = false;
     estadoProgresoActual = 0;
     estadoActualUserId = null;
+    estadoActualIndex = 0;
 
-    const videoEl = estadoObtenerElemento('evVideo');
+    const progress = estadoElemento('estadoProgress');
 
-    if (videoEl) {
-        videoEl.pause();
-        videoEl.removeAttribute('src');
-        videoEl.load();
-        videoEl.onended = null;
+    if (progress) {
+        progress.style.width = '0%';
     }
-
-    estadoLiberarObjectURL();
 
     cargarEstados();
 }
 
 function activarPausaEstado() {
-    const viewer = $('estadoViewer');
+    const viewer = estadoElemento('estadoViewer');
 
     if (!viewer || !viewer.classList.contains('show')) return;
 
     estadoPausado = true;
 
-    const videoEl = estadoObtenerElemento('evVideo');
+    const video = estadoElemento('evVideo');
 
-    if (videoEl) {
-        videoEl.pause();
+    if (video) {
+        video.pause();
     }
 }
 
 function desactivarPausaEstado() {
-    const viewer = $('estadoViewer');
+    const viewer = estadoElemento('estadoViewer');
 
     if (!viewer || !viewer.classList.contains('show')) return;
 
     estadoPausado = false;
 
-    const videoEl = estadoObtenerElemento('evVideo');
+    const video = estadoElemento('evVideo');
 
-    if (videoEl && !videoEl.classList.contains('hidden')) {
-        videoEl.play().catch(function () {});
+    if (video && !video.classList.contains('hidden')) {
+        const resultado = video.play();
+
+        if (resultado && resultado.catch) {
+            resultado.catch(function () {});
+        }
     }
 }
 
@@ -877,172 +1431,206 @@ async function abrirPanelEstado(estadoId, tab) {
 
     if (!estadoId) return;
 
-    const modal = $('vistasModal');
-    const list = $('vistasList');
-    const countEl = $('vistasModalCount');
+    const modal = estadoElemento('vistasModal');
+    const lista = estadoElemento('vistasList');
+    const contador = estadoElemento('vistasModalCount');
 
-    if (!modal || !list) return;
+    if (!modal || !lista) {
+        estadoAvisar('No está disponible el panel de historias.', 'warning');
+        return;
+    }
 
     modal.classList.add('show');
 
-    list.innerHTML =
-        '<div class="estado-panel-msg">Cargando...</div>';
+    lista.innerHTML = '<div class="estado-panel-msg">Cargando...</div>';
 
-    if (countEl) countEl.textContent = '';
-
-    let tabsBar = document.getElementById('vistasTabsBar');
-
-    if (!tabsBar) {
-        tabsBar = document.createElement('div');
-        tabsBar.id = 'vistasTabsBar';
-        tabsBar.className = 'estado-tabs';
-
-        list.parentNode.insertBefore(tabsBar, list);
+    if (contador) {
+        contador.textContent = '';
     }
 
-    tabsBar.innerHTML = `
+    let tabs = estadoElemento('vistasTabsBar');
+
+    if (!tabs) {
+        tabs = document.createElement('div');
+        tabs.id = 'vistasTabsBar';
+        tabs.className = 'estado-tabs';
+
+        lista.parentNode.insertBefore(tabs, lista);
+    }
+
+    tabs.innerHTML = `
         <button type="button" class="estado-tab ${tab === 'vistas' ? 'active' : ''}" data-tab="vistas">
-            ${ICO_ESTADO.eye}<span>Vistas</span>
+            ${ICO_ESTADO.eye}
+            <span>Vistas</span>
         </button>
         <button type="button" class="estado-tab ${tab === 'comentarios' ? 'active' : ''}" data-tab="comentarios">
-            ${ICO_ESTADO.chat}<span>Comentarios</span>
+            ${ICO_ESTADO.chat}
+            <span>Comentarios</span>
         </button>
     `;
 
-    tabsBar.querySelectorAll('button').forEach(function (btn) {
-        btn.onclick = function () {
-            abrirPanelEstado(estadoId, btn.dataset.tab);
+    tabs.querySelectorAll('[data-tab]').forEach(function (boton) {
+        boton.onclick = function () {
+            abrirPanelEstado(estadoId, boton.dataset.tab);
         };
     });
 
     try {
         if (tab === 'vistas') {
-            const { data: vistas, error } = await db.from('estados_vistas')
+            const resultado = await db.from('estados_vistas')
                 .select('usuario_id, visto_at')
                 .eq('estado_id', estadoId)
                 .order('visto_at', {
                     ascending: false
                 });
 
-            if (error) throw error;
+            if (resultado.error) {
+                throw resultado.error;
+            }
 
-            if (!vistas || !vistas.length) {
-                list.innerHTML =
-                    '<div class="estado-panel-msg">Nadie ha visto este estado todavía.</div>';
+            const vistas = resultado.data || [];
+
+            if (contador) {
+                contador.textContent = '(' + vistas.length + ')';
+            }
+
+            if (!vistas.length) {
+                lista.innerHTML =
+                    '<div class="estado-panel-msg">Todavía no hay vistas registradas.</div>';
                 return;
             }
 
-            if (countEl) {
-                countEl.textContent = `(${vistas.length})`;
-            }
-
-            const ids = vistas.map(function (v) {
-                return v.usuario_id;
+            const ids = vistas.map(function (vista) {
+                return vista.usuario_id;
             });
 
-            const { data: perfiles } = await db.from('perfiles_publicos')
-                .select('id, nombre, handle, avatar_url')
+            const consultaPerfiles = await db.from('perfiles_publicos')
+                .select('id,nombre,handle,avatar_url')
                 .in('id', ids);
 
-            const perfilMap = {};
+            if (consultaPerfiles.error) {
+                throw consultaPerfiles.error;
+            }
 
-            (perfiles || []).forEach(function (p) {
-                perfilMap[p.id] = p;
+            const perfiles = {};
+
+            (consultaPerfiles.data || []).forEach(function (perfil) {
+                perfiles[perfil.id] = perfil;
             });
 
-            list.innerHTML = '';
+            lista.innerHTML = '';
 
-            vistas.forEach(function (v) {
-                const p = perfilMap[v.usuario_id] || {
+            vistas.forEach(function (vista) {
+                const perfil = perfiles[vista.usuario_id] || {
                     nombre: 'Usuario',
                     handle: '',
                     avatar_url: null
                 };
 
-                const url = urlPerfil(p.handle, v.usuario_id);
+                const url = urlPerfil(perfil.handle, vista.usuario_id);
 
-                list.insertAdjacentHTML('beforeend', `
-                    <div class="result estado-result" ${url ? `data-url="${esc(url)}"` : ''}>
-                        <div class="avatar">
-                            ${avatarInicialHTML(p.nombre, p.avatar_url)}
-                        </div>
-                        <div class="estado-result-info">
-                            <b>${esc(p.nombre || 'Usuario')}</b>
-                            <div class="estado-result-meta">
-                                @${esc(p.handle || 'usuario')} · ${haceTiempo(v.visto_at)}
-                            </div>
+                const fila = document.createElement('div');
+
+                fila.className = 'result estado-result';
+
+                if (url) {
+                    fila.dataset.url = url;
+                }
+
+                fila.innerHTML = `
+                    <div class="avatar">
+                        ${avatarInicialHTML(perfil.nombre, perfil.avatar_url)}
+                    </div>
+                    <div class="estado-result-info">
+                        <b>${estadoEscapar(perfil.nombre || 'Usuario')}</b>
+                        <div class="estado-result-meta">
+                            @${estadoEscapar(perfil.handle || 'usuario')}
+                            · ${estadoEscapar(haceTiempo(vista.visto_at))}
                         </div>
                     </div>
-                `);
+                `;
+
+                if (url) {
+                    fila.onclick = function () {
+                        window.location.href = url;
+                    };
+                }
+
+                lista.appendChild(fila);
             });
 
-            list.querySelectorAll('.estado-result[data-url]')
-                .forEach(function (el) {
-                    el.onclick = function () {
-                        window.location.href = el.dataset.url;
-                    };
-                });
-
         } else {
-            const { data: comentarios, error } = await db.rpc(
+            const resultado = await db.rpc(
                 'estado_comentarios_lista',
                 {
                     p_estado_id: estadoId
                 }
             );
 
-            if (error) throw error;
-
-            const arr = Array.isArray(comentarios)
-                ? comentarios
-                : (comentarios && comentarios.data) || [];
-
-            if (countEl) {
-                countEl.textContent = `(${arr.length})`;
+            if (resultado.error) {
+                throw resultado.error;
             }
 
-            if (!arr.length) {
-                list.innerHTML =
-                    '<div class="estado-panel-msg">Aún no hay comentarios.</div>';
+            const comentarios = Array.isArray(resultado.data)
+                ? resultado.data
+                : (
+                    resultado.data &&
+                    Array.isArray(resultado.data.data)
+                ) ? resultado.data.data : [];
+
+            if (contador) {
+                contador.textContent = '(' + comentarios.length + ')';
+            }
+
+            if (!comentarios.length) {
+                lista.innerHTML =
+                    '<div class="estado-panel-msg">Todavía no hay comentarios.</div>';
                 return;
             }
 
-            list.innerHTML = '';
+            lista.innerHTML = '';
 
-            arr.forEach(function (c) {
+            comentarios.forEach(function (comentario) {
                 const nombre =
-                    c.nombre || c.usuario_handle || 'Usuario';
+                    comentario.nombre ||
+                    comentario.usuario_handle ||
+                    'Usuario';
 
                 const texto =
-                    c.comentario || c.texto || c.contenido || '';
+                    comentario.comentario ||
+                    comentario.texto ||
+                    comentario.contenido ||
+                    '';
 
-                const cuando = c.created_at
-                    ? haceTiempo(c.created_at)
-                    : '';
+                const fila = document.createElement('div');
 
-                list.insertAdjacentHTML('beforeend', `
-                    <div class="result estado-result estado-result-top">
-                        <div class="avatar">
-                            ${avatarInicialHTML(nombre, c.avatar_url)}
-                        </div>
-                        <div class="estado-result-info">
-                            <b>${esc(nombre)}</b>
-                            <div class="estado-comentario">${esc(texto)}</div>
-                            ${cuando
-                                ? `<div class="estado-result-meta">${esc(cuando)}</div>`
-                                : ''
-                            }
-                        </div>
+                fila.className = 'result estado-result estado-result-top';
+
+                fila.innerHTML = `
+                    <div class="avatar">
+                        ${avatarInicialHTML(nombre, comentario.avatar_url)}
                     </div>
-                `);
+                    <div class="estado-result-info">
+                        <b>${estadoEscapar(nombre)}</b>
+                        <div class="estado-comentario">${estadoEscapar(texto)}</div>
+                        ${comentario.created_at
+                            ? '<div class="estado-result-meta">' +
+                                estadoEscapar(haceTiempo(comentario.created_at)) +
+                              '</div>'
+                            : ''
+                        }
+                    </div>
+                `;
+
+                lista.appendChild(fila);
             });
         }
 
     } catch (e) {
-        console.error('[Estados] Error cargando panel:', e);
+        console.error('[Estados] Error cargando el panel:', e);
 
-        list.innerHTML =
-            '<div class="estado-panel-msg estado-panel-error">No se pudo cargar.</div>';
+        lista.innerHTML =
+            '<div class="estado-panel-msg estado-panel-error">No se pudo cargar la información.</div>';
     }
 }
 
@@ -1051,7 +1639,7 @@ async function abrirVistasModal(estadoId) {
 }
 
 function cerrarVistasModal() {
-    const modal = $('vistasModal');
+    const modal = estadoElemento('vistasModal');
 
     if (modal) {
         modal.classList.remove('show');
@@ -1062,85 +1650,103 @@ function cerrarVistasModal() {
    ELIMINAR HISTORIA
 ================================================================ */
 
-function extraerPathBucketEstados(url) {
-    if (!url) return null;
-
-    const m = url.match(
-        /\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/(.+)$/
-    );
-
-    if (m) {
-        return decodeURIComponent(m[1].split('?')[0]);
-    }
-
-    if (!url.startsWith('http') && url.includes('/')) {
-        return url;
-    }
-
-    return null;
-}
-
 async function eliminarHistoriaMensajes(estadoId) {
     if (!estadoId || !user) return;
 
-    const confirmado = await NeonModal.confirm({
-        title: 'Eliminar historia',
-        message: '¿Eliminar esta historia? Se borrará para todos. No se puede deshacer.',
-        confirmText: 'Eliminar',
-        cancelText: 'Cancelar',
-        danger: true
+    const estado = estadosCache.find(function (item) {
+        return item.id === estadoId;
     });
+
+    if (!estadoEsMiHistoria(estado)) {
+        estadoAvisar('Solo puedes eliminar tus propias historias.', 'error');
+        return;
+    }
+
+    let confirmado = false;
+
+    if (typeof NeonModal !== 'undefined' && NeonModal.confirm) {
+        confirmado = await NeonModal.confirm({
+            title: 'Eliminar historia',
+            message: 'Esta historia dejará de estar disponible para todos.',
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+    } else {
+        estadoAvisar(
+            'El sistema de confirmación del ecosistema no está disponible.',
+            'error'
+        );
+        return;
+    }
 
     if (!confirmado) return;
 
     try {
-        const { data: fila, error: e1 } = await db.from('estados')
+        const consulta = await db.from('estados')
             .select('id, media_url, imagen_url, usuario_id')
             .eq('id', estadoId)
             .maybeSingle();
 
-        if (e1) throw e1;
+        if (consulta.error) {
+            throw consulta.error;
+        }
 
-        if (!fila || fila.usuario_id !== user.id) {
+        if (!consulta.data || consulta.data.usuario_id !== user.id) {
             throw new Error('No puedes eliminar esta historia.');
         }
 
-        const urlMedia = fila.media_url || fila.imagen_url;
+        const url = consulta.data.media_url || consulta.data.imagen_url;
 
-        const { error: e2 } = await db.from('estados')
+        const eliminacion = await db.from('estados')
             .delete()
             .eq('id', estadoId)
             .eq('usuario_id', user.id);
 
-        if (e2) throw e2;
+        if (eliminacion.error) {
+            throw eliminacion.error;
+        }
 
-        if (urlMedia) {
-            try {
-                const path = extraerPathBucketEstados(urlMedia);
+        if (url) {
+            const path = estadoObtenerPathStorage(url);
 
-                if (path) {
-                    await db.storage.from(ESTADOS_BUCKET).remove([path]);
+            if (path) {
+                try {
+                    const borrado = await db.storage
+                        .from(ESTADOS_BUCKET)
+                        .remove([path]);
+
+                    if (borrado.error) {
+                        console.warn(
+                            '[Estados] No se pudo borrar el archivo:',
+                            borrado.error
+                        );
+                    }
+                } catch (errorStorage) {
+                    console.warn(
+                        '[Estados] Error limpiando Storage:',
+                        errorStorage
+                    );
                 }
-            } catch (e) {
-                console.warn('[Estados] No se pudo borrar el archivo:', e);
             }
         }
 
-        toast('Historia eliminada.', 'success');
+        estadosCache = estadosCache.filter(function (item) {
+            return item.id !== estadoId;
+        });
+
+        estadoAvisar('Historia eliminada correctamente.', 'success');
 
         if (estadoActualUserId === user.id) {
-            const indice = estadosCache.findIndex(function (e) {
-                return e.id === estadoId;
+            const propios = estadosCache.filter(function (item) {
+                return item.usuario_id === user.id;
             });
 
-            if (indice !== -1) {
-                estadosCache.splice(indice, 1);
-            }
-
-            if (estadoActualIndex >= estadosCache.filter(function (e) {
-                return e.usuario_id === user.id;
-            }).length) {
+            if (!propios.length) {
                 cerrarEstadoViewer();
+            } else if (estadoActualIndex >= propios.length) {
+                estadoActualIndex = propios.length - 1;
+                mostrarEstadoActual();
             } else {
                 mostrarEstadoActual();
             }
@@ -1149,9 +1755,9 @@ async function eliminarHistoriaMensajes(estadoId) {
         }
 
     } catch (e) {
-        console.error('[Estados] Error eliminando:', e);
+        console.error('[Estados] Error eliminando historia:', e);
 
-        toast(
+        estadoAvisar(
             e.message || 'No se pudo eliminar la historia.',
             'error'
         );
@@ -1159,16 +1765,21 @@ async function eliminarHistoriaMensajes(estadoId) {
 }
 
 /* ================================================================
-   COMENTAR HISTORIA
+   COMENTARIOS DE HISTORIAS
 ================================================================ */
 
 async function comentarHistoriaMensajes(estadoId) {
     if (!estadoId || !user) return;
 
+    if (typeof NeonModal === 'undefined' || !NeonModal.prompt) {
+        estadoAvisar('El sistema de comentarios no está disponible.', 'error');
+        return;
+    }
+
     const texto = await NeonModal.prompt({
         title: 'Comentar historia',
-        message: 'Escribe tu comentario (máximo 200 caracteres):',
-        placeholder: 'Tu comentario',
+        message: 'Escribe un comentario de hasta 200 caracteres.',
+        placeholder: 'Escribe tu comentario',
         confirmText: 'Enviar',
         cancelText: 'Cancelar',
         maxlength: 200
@@ -1176,20 +1787,27 @@ async function comentarHistoriaMensajes(estadoId) {
 
     if (!texto || !texto.trim()) return;
 
+    const comentario = texto.trim().slice(0, 200);
+
     try {
-        const { error } = await db.rpc('estado_enviar_comentario', {
-            p_estado_id: estadoId,
-            p_comentario: texto.trim()
-        });
+        const resultado = await db.rpc(
+            'estado_enviar_comentario',
+            {
+                p_estado_id: estadoId,
+                p_comentario: comentario
+            }
+        );
 
-        if (error) throw error;
+        if (resultado.error) {
+            throw resultado.error;
+        }
 
-        toast('Comentario enviado.', 'success');
+        estadoAvisar('Comentario enviado.', 'success');
 
     } catch (e) {
-        console.error('[Estados] Error comentando:', e);
+        console.error('[Estados] Error enviando comentario:', e);
 
-        toast(
+        estadoAvisar(
             e.message || 'No se pudo enviar el comentario.',
             'error'
         );
@@ -1197,85 +1815,142 @@ async function comentarHistoriaMensajes(estadoId) {
 }
 
 /* ================================================================
-   PUBLICACIÓN MÚLTIPLE
+   MODAL DE PUBLICACIÓN
 ================================================================ */
 
 function abrirModalEstado() {
-    const modal = $('estadoUploadModal');
+    const modal = estadoElemento('estadoUploadModal');
 
-    if (!modal) return;
-
-    estadosArchivosSeleccionados = [];
-    estadosSubiendo = false;
-
-    const fileInput = $('estadoFileInput');
-    const caption = $('estadoCaption');
-    const btn = $('btnPublicarEstado');
-
-    if (fileInput) {
-        fileInput.value = '';
-        fileInput.multiple = true;
-        fileInput.accept = 'image/*,video/mp4,video/webm,video/quicktime';
+    if (!modal) {
+        estadoAvisar('El módulo de publicación no está disponible.', 'error');
+        return;
     }
 
-    if (caption) caption.value = '';
+    if (estadosSubiendo) return;
 
-    if (btn) {
-        btn.disabled = true;
-        btn.classList.remove('is-loading');
+    estadoLimpiarPreviews();
+
+    estadoModalAbierto = true;
+
+    const input = estadoElemento('estadoFileInput');
+    const caption = estadoElemento('estadoCaption');
+    const boton = estadoElemento('btnPublicarEstado');
+
+    if (input) {
+        input.value = '';
+        input.multiple = true;
+        input.accept = 'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,video/x-m4v';
+    }
+
+    if (caption) {
+        caption.value = '';
+    }
+
+    if (boton) {
+        boton.disabled = true;
+        boton.classList.remove('is-loading');
+    }
+
+    const lista = estadoElemento('estadoPreviewLista');
+
+    if (lista) {
+        lista.innerHTML = '';
+    }
+
+    const contador = estadoElemento('estadoPreviewContador');
+
+    if (contador) {
+        contador.textContent = '';
     }
 
     ocultarEl('estadoPreviewWrap');
 
-    const imagen = $('estadoPreviewImg');
+    const imagen = estadoElemento('estadoPreviewImg');
 
     if (imagen) {
         imagen.removeAttribute('src');
-        imagen.classList.remove('hidden');
+        imagen.classList.add('hidden');
     }
 
-    const video = estadoObtenerElemento('estadoPreviewVideo');
+    const video = estadoElemento('estadoPreviewVideo');
 
     if (video) {
         video.pause();
         video.removeAttribute('src');
-        video.load();
         video.classList.add('hidden');
-    }
 
-    const modalLista = estadoObtenerElemento('estadoPreviewLista');
-
-    if (modalLista) {
-        modalLista.innerHTML = '';
+        try {
+            video.load();
+        } catch (e) {}
     }
 
     modal.classList.add('show');
 }
 
 function cerrarModalEstado() {
-    const modal = $('estadoUploadModal');
+    const modal = estadoElemento('estadoUploadModal');
+
+    estadoModalAbierto = false;
+    estadoGeneracionPreview++;
 
     if (modal) {
         modal.classList.remove('show');
     }
 
-    const video = estadoObtenerElemento('estadoPreviewVideo');
+    estadoLimpiarPreviews();
+
+    const input = estadoElemento('estadoFileInput');
+
+    if (input) {
+        input.value = '';
+    }
+
+    const caption = estadoElemento('estadoCaption');
+
+    if (caption) {
+        caption.value = '';
+    }
+
+    const boton = estadoElemento('btnPublicarEstado');
+
+    if (boton) {
+        boton.disabled = false;
+        boton.classList.remove('is-loading');
+    }
+
+    const video = estadoElemento('estadoPreviewVideo');
 
     if (video) {
         video.pause();
         video.removeAttribute('src');
-        video.load();
+
+        try {
+            video.load();
+        } catch (e) {}
     }
 
-    estadosArchivosSeleccionados = [];
+    const imagen = estadoElemento('estadoPreviewImg');
+
+    if (imagen) {
+        imagen.removeAttribute('src');
+    }
+
+    const lista = estadoElemento('estadoPreviewLista');
+
+    if (lista) {
+        lista.innerHTML = '';
+    }
+
+    ocultarEl('estadoPreviewWrap');
 }
 
 function seleccionarArchivoEstado() {
-    const input = $('estadoFileInput');
+    const input = estadoElemento('estadoFileInput');
 
     if (!input || estadosSubiendo) return;
 
     input.multiple = true;
+    input.accept = 'image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,video/x-m4v';
     input.click();
 }
 
@@ -1291,28 +1966,29 @@ function estadoValidarArchivo(file) {
         };
     }
 
-    const esVideo = file.type.indexOf('video/') === 0;
-    const esImagen = file.type.indexOf('image/') === 0;
+    const tipo = String(file.type || '').toLowerCase();
+    const esVideo = tipo.indexOf('video/') === 0;
+    const esImagen = tipo.indexOf('image/') === 0;
 
     if (!esVideo && !esImagen) {
         return {
             valido: false,
-            mensaje: 'Solo se permiten imágenes y videos.'
+            mensaje: 'Selecciona imágenes o videos compatibles.'
         };
     }
 
     if (esVideo) {
-        const tiposPermitidos = [
+        const permitidos = [
             'video/mp4',
             'video/webm',
             'video/quicktime',
             'video/x-m4v'
         ];
 
-        if (!tiposPermitidos.includes(file.type)) {
+        if (!permitidos.includes(tipo)) {
             return {
                 valido: false,
-                mensaje: 'Formato de video no compatible. Utiliza MP4, WebM o MOV.'
+                mensaje: 'Formato no compatible. Utiliza MP4, WebM o MOV.'
             };
         }
 
@@ -1322,8 +1998,21 @@ function estadoValidarArchivo(file) {
                 mensaje: 'Cada video puede pesar máximo 25 MB.'
             };
         }
-
     } else {
+        const permitidosImagen = [
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+            'image/gif'
+        ];
+
+        if (!permitidosImagen.includes(tipo)) {
+            return {
+                valido: false,
+                mensaje: 'Formato de imagen no compatible.'
+            };
+        }
+
         if (file.size > ESTADOS_MAX_IMAGEN_MB * 1024 * 1024) {
             return {
                 valido: false,
@@ -1339,20 +2028,47 @@ function estadoValidarArchivo(file) {
     };
 }
 
-async function estadoObtenerDuracionVideo(file) {
+function estadoObtenerDuracionVideo(file) {
     return new Promise(function (resolve, reject) {
         const url = URL.createObjectURL(file);
         const video = document.createElement('video');
+        let terminado = false;
+
+        function limpiar() {
+            if (terminado) return;
+
+            terminado = true;
+
+            video.onloadedmetadata = null;
+            video.onerror = null;
+
+            try {
+                video.pause();
+                video.removeAttribute('src');
+                video.load();
+            } catch (e) {}
+
+            try {
+                URL.revokeObjectURL(url);
+            } catch (e) {}
+        }
 
         video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
 
         video.onloadedmetadata = function () {
             const duracion = video.duration;
 
-            URL.revokeObjectURL(url);
+            limpiar();
 
             if (!isFinite(duracion) || duracion <= 0) {
-                reject(new Error('No se pudo leer la duración del video.'));
+                reject(new Error('No se pudo determinar la duración del video.'));
+                return;
+            }
+
+            if (duracion > ESTADOS_MAX_VIDEO_SEGUNDOS) {
+                reject(new Error('Cada video debe durar máximo 60 segundos.'));
                 return;
             }
 
@@ -1360,9 +2076,8 @@ async function estadoObtenerDuracionVideo(file) {
         };
 
         video.onerror = function () {
-            URL.revokeObjectURL(url);
-
-            reject(new Error('No se pudo abrir el video seleccionado.'));
+            limpiar();
+            reject(new Error('No se pudo leer el archivo de video.'));
         };
 
         video.src = url;
@@ -1370,47 +2085,73 @@ async function estadoObtenerDuracionVideo(file) {
 }
 
 /* ================================================================
-   VISTA PREVIA MÚLTIPLE
+   PREVISUALIZACIÓN MÚLTIPLE
 ================================================================ */
 
 async function previewEstado(event) {
-    const input = event.target;
+    const input = event && event.target
+        ? event.target
+        : estadoElemento('estadoFileInput');
+
+    if (!input || estadosSubiendo) return;
+
+    const generacion = ++estadoGeneracionPreview;
     const archivos = Array.from(input.files || []);
 
     if (!archivos.length) return;
 
-    if (estadosSubiendo) return;
-
-    const videos = archivos.filter(function (f) {
-        return f.type.indexOf('video/') === 0;
+    const videos = archivos.filter(function (file) {
+        return String(file.type || '').indexOf('video/') === 0;
     });
 
-    const imagenes = archivos.filter(function (f) {
-        return f.type.indexOf('image/') === 0;
+    const imagenes = archivos.filter(function (file) {
+        return String(file.type || '').indexOf('image/') === 0;
     });
 
     if (videos.length > ESTADOS_MAX_VIDEOS) {
-        toast('Puedes seleccionar máximo 5 videos por publicación.', 'error');
         input.value = '';
+        estadoAvisar('Puedes tener hasta 5 videos activos.', 'error');
         return;
     }
 
     if (imagenes.length > ESTADOS_MAX_IMAGENES) {
-        toast('Puedes seleccionar máximo 10 imágenes por publicación.', 'error');
         input.value = '';
+        estadoAvisar('Puedes tener hasta 10 imágenes activas.', 'error');
         return;
     }
 
     if (videos.length + imagenes.length !== archivos.length) {
-        toast('Hay archivos que no son compatibles.', 'error');
         input.value = '';
+        estadoAvisar('Hay archivos que no son compatibles.', 'error');
         return;
+    }
+
+    const boton = estadoElemento('btnPublicarEstado');
+
+    if (boton) {
+        boton.disabled = true;
+    }
+
+    const wrap = estadoElemento('estadoPreviewWrap');
+
+    if (wrap) {
+        wrap.classList.remove('hidden');
+    }
+
+    const lista = estadoElemento('estadoPreviewLista');
+
+    if (lista) {
+        lista.innerHTML = '<div class="estado-panel-msg">Validando archivos...</div>';
     }
 
     const validos = [];
 
     try {
         for (let i = 0; i < archivos.length; i++) {
+            if (generacion !== estadoGeneracionPreview) {
+                throw new Error('La selección cambió durante la validación.');
+            }
+
             const file = archivos[i];
             const validacion = estadoValidarArchivo(file);
 
@@ -1422,12 +2163,6 @@ async function previewEstado(event) {
 
             if (validacion.esVideo) {
                 duracion = await estadoObtenerDuracionVideo(file);
-
-                if (duracion > ESTADOS_MAX_VIDEO_SEGUNDOS) {
-                    throw new Error(
-                        'Cada video debe durar máximo 1 minuto.'
-                    );
-                }
             }
 
             validos.push({
@@ -1438,157 +2173,232 @@ async function previewEstado(event) {
             });
         }
 
-        estadosArchivosSeleccionados.forEach(function (item) {
-            if (item.url) URL.revokeObjectURL(item.url);
-        });
+        if (generacion !== estadoGeneracionPreview) {
+            validos.forEach(function (item) {
+                URL.revokeObjectURL(item.url);
+            });
+
+            return;
+        }
+
+        estadoLimpiarPreviews();
 
         estadosArchivosSeleccionados = validos;
 
         estadoRenderizarPreviews();
 
-        const btn = $('btnPublicarEstado');
-
-        if (btn) {
-            btn.disabled = estadosArchivosSeleccionados.length === 0;
+        if (boton) {
+            boton.disabled = estadosArchivosSeleccionados.length === 0;
         }
 
     } catch (e) {
         validos.forEach(function (item) {
-            if (item.url) URL.revokeObjectURL(item.url);
+            try {
+                URL.revokeObjectURL(item.url);
+            } catch (error) {}
         });
 
-        estadosArchivosSeleccionados = [];
+        if (generacion !== estadoGeneracionPreview) return;
+
+        estadoLimpiarPreviews();
 
         input.value = '';
 
-        const btn = $('btnPublicarEstado');
+        if (boton) {
+            boton.disabled = true;
+        }
 
-        if (btn) btn.disabled = true;
+        if (lista) {
+            lista.innerHTML = '';
+        }
 
-        ocultarEl('estadoPreviewWrap');
+        if (wrap) {
+            wrap.classList.add('hidden');
+        }
 
-        toast(e.message || 'No se pudieron validar los archivos.', 'error');
+        estadoAvisar(
+            e.message || 'No se pudieron validar los archivos.',
+            'error'
+        );
     }
 }
 
 function estadoRenderizarPreviews() {
-    const wrap = $('estadoPreviewWrap');
+    const wrap = estadoElemento('estadoPreviewWrap');
 
     if (!wrap) return;
 
     wrap.classList.remove('hidden');
 
-    let lista = estadoObtenerElemento('estadoPreviewLista');
+    let lista = estadoElemento('estadoPreviewLista');
 
     if (!lista) {
         lista = document.createElement('div');
         lista.id = 'estadoPreviewLista';
         lista.className = 'estado-preview-grid';
-
-        const referencia = $('estadoPreviewImg');
-
-        if (referencia && referencia.parentNode) {
-            referencia.parentNode.appendChild(lista);
-            referencia.classList.add('hidden');
-        } else {
-            wrap.appendChild(lista);
-        }
+        wrap.appendChild(lista);
     }
 
+    lista.className = 'estado-preview-grid';
     lista.innerHTML = '';
 
-    estadosArchivosSeleccionados.forEach(function (item, index) {
+    estadosArchivosSeleccionados.forEach(function (item, indice) {
         const tarjeta = document.createElement('div');
 
         tarjeta.className = 'estado-preview-item';
 
-        tarjeta.style.setProperty('position', 'relative');
-        tarjeta.style.setProperty('overflow', 'hidden');
-        tarjeta.style.setProperty('background', '#000');
-        tarjeta.style.setProperty('aspect-ratio', '9 / 16');
-        tarjeta.style.setProperty('min-width', '0');
-        tarjeta.style.setProperty('border-radius', '10px');
-
-        let media;
+        const media = item.tipo === 'video'
+            ? document.createElement('video')
+            : document.createElement('img');
 
         if (item.tipo === 'video') {
-            media = document.createElement('video');
             media.muted = true;
             media.playsInline = true;
             media.controls = true;
             media.preload = 'metadata';
         } else {
-            media = document.createElement('img');
             media.alt = 'Vista previa de imagen';
+            media.loading = 'lazy';
         }
 
         media.src = item.url;
 
-        media.style.setProperty('width', '100%');
-        media.style.setProperty('height', '100%');
-        media.style.setProperty('object-fit', 'contain');
-        media.style.setProperty('display', 'block');
-        media.style.setProperty('background', '#000');
-
         const numero = document.createElement('span');
 
         numero.className = 'estado-preview-numero';
-        numero.textContent = String(index + 1);
+        numero.textContent = (indice + 1) + ' / ' +
+            estadosArchivosSeleccionados.length;
 
-        numero.style.setProperty('position', 'absolute');
-        numero.style.setProperty('top', '8px');
-        numero.style.setProperty('left', '8px');
-        numero.style.setProperty('background', 'rgba(0,0,0,.75)');
-        numero.style.setProperty('color', '#fff');
-        numero.style.setProperty('padding', '4px 8px');
-        numero.style.setProperty('border-radius', '20px');
-        numero.style.setProperty('font-size', '12px');
+        const eliminar = document.createElement('button');
+
+        eliminar.type = 'button';
+        eliminar.className = 'estado-preview-eliminar';
+        eliminar.setAttribute('aria-label', 'Quitar archivo');
+        eliminar.textContent = '×';
+
+        eliminar.onclick = function () {
+            if (estadosSubiendo) return;
+
+            if (item.url) {
+                try {
+                    URL.revokeObjectURL(item.url);
+                } catch (e) {}
+            }
+
+            estadosArchivosSeleccionados.splice(indice, 1);
+
+            const input = estadoElemento('estadoFileInput');
+
+            if (input) {
+                input.value = '';
+            }
+
+            estadoRenderizarPreviews();
+
+            const boton = estadoElemento('btnPublicarEstado');
+
+            if (boton) {
+                boton.disabled = estadosArchivosSeleccionados.length === 0;
+            }
+
+            if (!estadosArchivosSeleccionados.length) {
+                ocultarEl('estadoPreviewWrap');
+            }
+        };
+
+        const informacion = document.createElement('div');
+
+        informacion.className = 'estado-preview-info';
+
+        informacion.textContent = item.tipo === 'video'
+            ? 'Video · ' + Math.ceil(item.duracion) + ' s'
+            : 'Imagen';
 
         tarjeta.appendChild(media);
         tarjeta.appendChild(numero);
+        tarjeta.appendChild(eliminar);
+        tarjeta.appendChild(informacion);
 
         lista.appendChild(tarjeta);
     });
 
-    let contador = estadoObtenerElemento('estadoPreviewContador');
+    let contador = estadoElemento('estadoPreviewContador');
 
     if (!contador) {
         contador = document.createElement('div');
         contador.id = 'estadoPreviewContador';
         contador.className = 'estado-preview-contador';
-
         wrap.appendChild(contador);
     }
 
-    const totalVideos = estadosArchivosSeleccionados.filter(function (a) {
-        return a.tipo === 'video';
+    const totalVideos = estadosArchivosSeleccionados.filter(function (item) {
+        return item.tipo === 'video';
     }).length;
 
-    const totalImagenes = estadosArchivosSeleccionados.filter(function (a) {
-        return a.tipo === 'imagen';
+    const totalImagenes = estadosArchivosSeleccionados.filter(function (item) {
+        return item.tipo === 'imagen';
     }).length;
 
     contador.textContent =
-        totalVideos + ' videos · ' +
-        totalImagenes + ' imágenes · ' +
-        estadosArchivosSeleccionados.length + ' archivos';
+        totalVideos + '/5 videos · ' +
+        totalImagenes + '/10 imágenes seleccionadas';
 }
 
 /* ================================================================
-   SUBIR Y PUBLICAR
+   CUOTAS ACTIVAS EN SUPABASE
+================================================================ */
+
+async function estadoConsultarCuotas() {
+    if (!user) {
+        throw new Error('Inicia sesión para publicar historias.');
+    }
+
+    const resultado = await db.from('estados')
+        .select('id, media_tipo, media_url, imagen_url')
+        .eq('usuario_id', user.id)
+        .eq('origen', 'mensajes')
+        .gt('expires_at', new Date().toISOString());
+
+    if (resultado.error) {
+        throw resultado.error;
+    }
+
+    const activos = resultado.data || [];
+
+    let videos = 0;
+    let imagenes = 0;
+
+    activos.forEach(function (estado) {
+        if (estadoEsVideo(estado)) {
+            videos++;
+        } else {
+            imagenes++;
+        }
+    });
+
+    return {
+        videos: videos,
+        imagenes: imagenes,
+        total: activos.length
+    };
+}
+
+/* ================================================================
+   PUBLICAR HISTORIAS EN EL ECOSISTEMA
 ================================================================ */
 
 async function publicarEstado() {
     if (estadosSubiendo) return;
 
-    if (!user || !await auth()) return;
-
-    const input = $('estadoFileInput');
+    if (!user || !await auth()) {
+        estadoAvisar('Inicia sesión para publicar historias.', 'warning');
+        return;
+    }
 
     if (!estadosArchivosSeleccionados.length) {
-        const archivos = Array.from(input.files || []);
+        const input = estadoElemento('estadoFileInput');
 
-        if (archivos.length) {
+        if (input && input.files && input.files.length) {
             await previewEstado({
                 target: input
             });
@@ -1596,101 +2406,176 @@ async function publicarEstado() {
     }
 
     if (!estadosArchivosSeleccionados.length) {
-        toast('Selecciona al menos una imagen o un video.', 'error');
+        estadoAvisar('Selecciona al menos una imagen o un video.', 'warning');
         return;
     }
 
     const archivos = estadosArchivosSeleccionados.slice();
 
-    const totalVideos = archivos.filter(function (a) {
-        return a.tipo === 'video';
+    const videosNuevos = archivos.filter(function (item) {
+        return item.tipo === 'video';
     }).length;
 
-    const totalImagenes = archivos.filter(function (a) {
-        return a.tipo === 'imagen';
+    const imagenesNuevas = archivos.filter(function (item) {
+        return item.tipo === 'imagen';
     }).length;
 
-    if (totalVideos > ESTADOS_MAX_VIDEOS) {
-        toast('El máximo es de 5 videos.', 'error');
+    if (videosNuevos > ESTADOS_MAX_VIDEOS) {
+        estadoAvisar('Puedes publicar hasta 5 videos activos.', 'error');
         return;
     }
 
-    if (totalImagenes > ESTADOS_MAX_IMAGENES) {
-        toast('El máximo es de 10 imágenes.', 'error');
+    if (imagenesNuevas > ESTADOS_MAX_IMAGENES) {
+        estadoAvisar('Puedes publicar hasta 10 imágenes activas.', 'error');
         return;
     }
 
     estadosSubiendo = true;
 
-    const btn = $('btnPublicarEstado');
+    const boton = estadoElemento('btnPublicarEstado');
 
-    if (btn) {
-        btn.disabled = true;
-        btn.classList.add('is-loading');
+    if (boton) {
+        boton.disabled = true;
+        boton.classList.add('is-loading');
+        boton.textContent = 'Publicando...';
     }
 
-    const captionInput = $('estadoCaption');
+    let barra = estadoElemento('estadoProgresoPublicacion');
 
-    const caption = captionInput
-        ? captionInput.value.trim()
-        : '';
+    if (!barra) {
+        const wrap = estadoElemento('estadoPreviewWrap');
+
+        if (wrap) {
+            barra = document.createElement('div');
+            barra.id = 'estadoProgresoPublicacion';
+            barra.className = 'estado-progreso-publicacion';
+            barra.innerHTML = '<span></span>';
+            wrap.appendChild(barra);
+        }
+    }
 
     let publicados = 0;
     let errores = [];
+    let cuotas = null;
+
+    const captionInput = estadoElemento('estadoCaption');
+
+    const caption = captionInput
+        ? String(captionInput.value || '').trim().slice(0, 300)
+        : '';
 
     try {
+        // La cuota se consulta en Supabase antes de subir.
+        cuotas = await estadoConsultarCuotas();
+
+        if (cuotas.videos + videosNuevos > ESTADOS_MAX_VIDEOS) {
+            throw new Error(
+                'Ya tienes ' + cuotas.videos +
+                ' videos activos. El máximo permitido es 5. Elimina o espera a que expire alguno.'
+            );
+        }
+
+        if (cuotas.imagenes + imagenesNuevas > ESTADOS_MAX_IMAGENES) {
+            throw new Error(
+                'Ya tienes ' + cuotas.imagenes +
+                ' imágenes activas. El máximo permitido es 10. Elimina o espera a que expire alguna.'
+            );
+        }
+
         for (let i = 0; i < archivos.length; i++) {
             const item = archivos[i];
 
             try {
-                const resultado = await subirViaBackend(
+                const validacion = estadoValidarArchivo(item.file);
+
+                if (!validacion.valido) {
+                    throw new Error(validacion.mensaje);
+                }
+
+                if (item.tipo === 'video') {
+                    const duracionReal = await estadoObtenerDuracionVideo(item.file);
+
+                    if (duracionReal > ESTADOS_MAX_VIDEO_SEGUNDOS) {
+                        throw new Error('Los videos no pueden superar 60 segundos.');
+                    }
+
+                    item.duracion = duracionReal;
+                }
+
+                const subida = await subirViaBackend(
                     item.file,
                     ESTADOS_BUCKET,
                     item.tipo
                 );
 
-                if (!resultado || !resultado.url) {
-                    throw new Error('El servidor no devolvió la URL del archivo.');
+                if (!subida || !subida.url) {
+                    throw new Error('El almacenamiento no devolvió la URL del archivo.');
                 }
 
-                const expiresAt = new Date(
-                    Date.now() + ESTADOS_TTL_MS
-                ).toISOString();
+                const urlArchivo = subida.url;
 
-                const { error: insertError } = await db.from('estados').insert({
+                const registro = await db.from('estados').insert({
                     usuario_id: user.id,
-                    imagen_url: resultado.url,
-                    media_url: resultado.url,
+                    imagen_url: urlArchivo,
+                    media_url: urlArchivo,
                     media_tipo: item.tipo,
                     duracion_segundos: item.tipo === 'video'
-                        ? Math.ceil(item.duracion)
+                        ? Math.min(
+                            ESTADOS_MAX_VIDEO_SEGUNDOS,
+                            Math.ceil(item.duracion)
+                        )
                         : ESTADOS_DURACION_IMAGEN,
                     caption: caption || null,
                     origen: 'mensajes',
-                    expires_at: expiresAt
+                    expires_at: estadoFechaExpiracion()
                 });
 
-                if (insertError) {
-                    throw insertError;
+                if (registro.error) {
+                    // Si falla el registro, intenta retirar el archivo huérfano.
+                    const path = estadoObtenerPathStorage(urlArchivo);
+
+                    if (path) {
+                        try {
+                            await db.storage
+                                .from(ESTADOS_BUCKET)
+                                .remove([path]);
+                        } catch (errorStorage) {
+                            console.warn(
+                                '[Estados] No se pudo limpiar archivo sin registro:',
+                                errorStorage
+                            );
+                        }
+                    }
+
+                    throw registro.error;
                 }
 
                 publicados++;
 
-            } catch (e) {
+                if (barra) {
+                    const progreso = barra.querySelector('span');
+
+                    if (progreso) {
+                        progreso.style.width =
+                            ((i + 1) / archivos.length * 100) + '%';
+                    }
+                }
+
+            } catch (errorArchivo) {
                 console.error(
-                    '[Estados] Error publicando archivo ' + (i + 1),
-                    e
+                    '[Estados] Error publicando archivo ' + (i + 1) + ':',
+                    errorArchivo
                 );
 
                 errores.push({
                     numero: i + 1,
-                    mensaje: e.message || 'Error desconocido'
+                    mensaje: errorArchivo.message || 'Error desconocido'
                 });
             }
         }
 
         if (publicados > 0) {
-            toast(
+            estadoAvisar(
                 publicados + ' de ' + archivos.length +
                 ' historias publicadas correctamente.',
                 'success'
@@ -1701,35 +2586,31 @@ async function publicarEstado() {
             await cargarEstados();
         }
 
-        if (errores.length > 0) {
-            console.error('[Estados] Archivos no publicados:', errores);
+        if (errores.length) {
+            const mensaje = errores.length === archivos.length
+                ? 'No se pudo publicar ningún archivo.'
+                : 'Algunos archivos no se pudieron publicar.';
 
-            toast(
-                'No se pudieron publicar ' + errores.length +
-                ' archivos. Revisa la conexión e inténtalo nuevamente.',
-                'warning'
-            );
-        }
+            estadoAvisar(mensaje, 'warning');
 
-        if (publicados === 0 && errores.length > 0) {
-            throw new Error('No se pudo publicar ningún archivo.');
+            console.warn('[Estados] Errores de publicación:', errores);
         }
 
     } catch (e) {
-        console.error('[Estados] Error general:', e);
+        console.error('[Estados] Error general de publicación:', e);
 
         if (e.code === '42P01') {
-            toast(
-                'Falta una tabla de estados en Supabase. Consulta la referencia SQL.',
+            estadoAvisar(
+                'No se encuentra la tabla de historias en Supabase.',
                 'error'
             );
         } else if (e.code === '42703') {
-            toast(
-                'Falta una columna requerida en Supabase. Consulta la referencia SQL.',
+            estadoAvisar(
+                'Falta una columna requerida en Supabase.',
                 'error'
             );
         } else {
-            toast(
+            estadoAvisar(
                 e.message || 'No se pudieron publicar las historias.',
                 'error'
             );
@@ -1738,26 +2619,40 @@ async function publicarEstado() {
     } finally {
         estadosSubiendo = false;
 
-        if (btn) {
-            btn.disabled = false;
-            btn.classList.remove('is-loading');
+        if (barra) {
+            const progreso = barra.querySelector('span');
+
+            if (progreso && publicados === 0) {
+                progreso.style.width = '0%';
+            }
+        }
+
+        if (boton) {
+            boton.disabled = estadosArchivosSeleccionados.length === 0;
+            boton.classList.remove('is-loading');
+            boton.textContent = 'Publicar historia';
         }
     }
 }
 
 /* ================================================================
-   NAVEGACIÓN DEL VISOR
+   NAVEGACIÓN Y GESTOS
 ================================================================ */
 
 function estadoInstalarNavegacion() {
-    const viewer = $('estadoViewer');
+    const viewer = estadoElemento('estadoViewer');
 
-    if (!viewer || viewer.dataset.estadosEventos === '1') return;
+    if (!viewer || viewer.dataset.estadosEventos === '1') {
+        return;
+    }
 
     viewer.dataset.estadosEventos = '1';
 
-    viewer.addEventListener('click', function (e) {
-        const target = e.target;
+    let inicioX = 0;
+    let inicioY = 0;
+
+    viewer.addEventListener('click', function (event) {
+        const target = event.target;
 
         if (
             target.closest('#evPrev') ||
@@ -1767,7 +2662,8 @@ function estadoInstalarNavegacion() {
             target.closest('#evVistas') ||
             target.closest('#evSkip') ||
             target.closest('video') ||
-            target.closest('button')
+            target.closest('button') ||
+            target.closest('a')
         ) {
             return;
         }
@@ -1775,131 +2671,241 @@ function estadoInstalarNavegacion() {
         const rect = viewer.getBoundingClientRect();
         const mitad = rect.left + rect.width / 2;
 
-        if (e.clientX < mitad) {
+        if (event.clientX < mitad) {
             anteriorEstado();
         } else {
             siguienteEstado();
         }
     });
 
-    viewer.addEventListener('touchstart', function (e) {
-        if (!e.touches || !e.touches.length) return;
+    viewer.addEventListener('touchstart', function (event) {
+        if (!event.touches || !event.touches.length) return;
 
-        const target = e.target;
+        const target = event.target;
 
         if (
             target.closest('video') ||
             target.closest('button') ||
-            target.closest('input')
+            target.closest('input') ||
+            target.closest('textarea')
         ) {
             return;
         }
 
+        inicioX = event.touches[0].clientX;
+        inicioY = event.touches[0].clientY;
+
         estadoPausado = true;
-    }, {
-        passive: true
-    });
 
-    viewer.addEventListener('touchend', function () {
-        if (!viewer.classList.contains('show')) return;
-
-        estadoPausado = false;
-
-        const video = estadoObtenerElemento('evVideo');
+        const video = estadoElemento('evVideo');
 
         if (video && !video.classList.contains('hidden')) {
-            video.play().catch(function () {});
+            video.pause();
         }
     }, {
         passive: true
     });
+
+    viewer.addEventListener('touchend', function (event) {
+        if (!viewer.classList.contains('show')) return;
+
+        if (!event.changedTouches || !event.changedTouches.length) {
+            estadoPausado = false;
+            return;
+        }
+
+        const finX = event.changedTouches[0].clientX;
+        const finY = event.changedTouches[0].clientY;
+
+        const deltaX = finX - inicioX;
+        const deltaY = finY - inicioY;
+
+        if (Math.abs(deltaX) > 65 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            estadoPausado = false;
+
+            if (deltaX < 0) {
+                siguienteEstado();
+            } else {
+                anteriorEstado();
+            }
+
+            return;
+        }
+
+        estadoPausado = false;
+
+        const video = estadoElemento('evVideo');
+
+        if (video && !video.classList.contains('hidden')) {
+            const resultado = video.play();
+
+            if (resultado && resultado.catch) {
+                resultado.catch(function () {});
+            }
+        }
+    }, {
+        passive: true
+    });
+
+    viewer.addEventListener('touchcancel', function () {
+        estadoPausado = false;
+    }, {
+        passive: true
+    });
 }
 
 /* ================================================================
-   INICIALIZACIÓN
+   INTEGRACIÓN CON EL CICLO DE VIDA DEL ECOSISTEMA
 ================================================================ */
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', estadoInstalarNavegacion);
-} else {
+function estadoInicializarModulo() {
+    estadoInstalarEstilos();
     estadoInstalarNavegacion();
+
+    const input = estadoElemento('estadoFileInput');
+
+    if (input && input.dataset.estadosChange !== '1') {
+        input.dataset.estadosChange = '1';
+
+        input.addEventListener('change', function (event) {
+            previewEstado(event);
+        });
+    }
+
+    const boton = estadoElemento('btnPublicarEstado');
+
+    if (boton && boton.dataset.estadosClick !== '1') {
+        boton.dataset.estadosClick = '1';
+
+        boton.addEventListener('click', function (event) {
+            event.preventDefault();
+            publicarEstado();
+        });
+    }
+
+    const imagen = estadoElemento('evImage');
+
+    if (imagen && imagen.parentElement) {
+        imagen.parentElement.classList.add('estado-media-stage');
+    }
+
+    const video = estadoElemento('evVideo');
+
+    if (video) {
+        video.playsInline = true;
+        video.preload = 'metadata';
+    }
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener(
+        'DOMContentLoaded',
+        estadoInicializarModulo
+    );
+} else {
+    estadoInicializarModulo();
 }
 
 /* ================================================================
-   REFERENCIA DE CONFIGURACIÓN SUPABASE
+   REFERENCIA DE SUPABASE · ESTRUCTURAS EXISTENTES
 ================================================================
 
-IMPORTANTE:
+Este módulo utiliza las estructuras ya integradas en Csariel's:
 
-Este módulo utiliza las estructuras existentes:
+TABLAS:
+- public.estados
+- public.estados_vistas
+- public.perfiles_publicos
 
-1. public.estados
-2. public.estados_vistas
-3. public.perfiles_publicos
-4. RPC estados_mensajes_activos
-5. RPC estado_comentarios_lista
-6. RPC estado_enviar_comentario
+FUNCIONES RPC:
+- estados_mensajes_activos
+- estado_comentarios_lista
+- estado_enviar_comentario
 
-No crea ni supone tablas adicionales.
+COLUMNAS UTILIZADAS EN public.estados:
+- id
+- usuario_id
+- imagen_url
+- media_url
+- media_tipo
+- duracion_segundos
+- caption
+- origen
+- created_at
+- expires_at
 
-Si public.estados no existe, verificar primero:
+COLUMNAS UTILIZADAS EN public.estados_vistas:
+- id
+- estado_id
+- usuario_id
+- visto_at
 
-    SELECT table_name
-    FROM information_schema.tables
-    WHERE table_schema = 'public'
-      AND table_name IN ('estados', 'estados_vistas');
-
-Si public.estados existe, verificar columnas:
-
-    SELECT column_name, data_type
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'estados'
-    ORDER BY ordinal_position;
-
-Columnas que utiliza este módulo en public.estados:
-
-    id
-    usuario_id
-    imagen_url
-    media_url
-    media_tipo
-    duracion_segundos
-    caption
-    origen
-    created_at
-    expires_at
-
-Columnas utilizadas en public.estados_vistas:
-
-    id
-    estado_id
-    usuario_id
-    visto_at
-
-Si falta alguna tabla o columna, agregar únicamente después de
-comparar el resultado con la estructura actual de producción.
-
-IMPORTANTE PARA LOS LÍMITES:
-
-Los límites de 5 videos y 10 imágenes se aplican a cada selección
-y publicación realizada desde este módulo.
-
-Para garantizar los mismos límites ante solicitudes externas,
-deben validarse también en el servidor y mediante políticas
-o restricciones de Supabase.
+COLUMNAS UTILIZADAS EN public.perfiles_publicos:
+- id
+- nombre
+- handle
+- avatar_url
 
 BUCKET:
+- ESTADOS_BUCKET
 
-El bucket utilizado sigue siendo:
+VERIFICAR TABLAS EXISTENTES ANTES DE MODIFICAR:
 
-    ESTADOS_BUCKET
+SELECT table_name
+FROM information_schema.tables
+WHERE table_schema = 'public'
+  AND table_name IN (
+      'estados',
+      'estados_vistas',
+      'perfiles_publicos'
+  );
 
-El sistema de almacenamiento debe permitir la subida autenticada
-y la lectura de los archivos publicados.
+VERIFICAR COLUMNAS DE HISTORIAS:
 
-La duración máxima de video se valida en el navegador. Para
-garantizarla, el backend debe verificar también los metadatos
-reales del archivo.
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'estados'
+ORDER BY ordinal_position;
+
+VERIFICAR COLUMNAS DE VISTAS:
+
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'estados_vistas'
+ORDER BY ordinal_position;
+
+VERIFICAR FUNCIONES RPC:
+
+SELECT
+    routine_schema,
+    routine_name
+FROM information_schema.routines
+WHERE routine_schema = 'public'
+  AND routine_name IN (
+      'estados_mensajes_activos',
+      'estado_comentarios_lista',
+      'estado_enviar_comentario'
+  );
+
+IMPORTANTE:
+- No se crea ninguna tabla automáticamente.
+- No se presupone una columna nueva.
+- No se reemplazan las funciones RPC existentes.
+- Los límites del navegador son 5 videos activos y 10 imágenes
+  activas por usuario, por separado.
+- La consulta de cuotas se realiza sobre public.estados.
+- Para evitar publicaciones simultáneas que superen el límite,
+  el servidor debe volver a validar la cuota antes del INSERT.
+- El backend debe validar el tipo MIME real, el tamaño y la
+  duración del video; la validación del navegador no sustituye
+  la validación del servidor.
+- La publicación requiere permisos INSERT para el usuario
+  autenticado y permisos de lectura del bucket para las historias.
+- La eliminación requiere permisos DELETE limitados al propietario.
+- Las vistas deben permitir registrar la vista del usuario
+  autenticado sin permitir suplantar a otros usuarios.
+- Las historias vencidas dejan de mostrarse después de 24 horas.
 
 =============================================================== */
