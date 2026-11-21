@@ -1,15 +1,11 @@
 // ================================================================
-// MENSAJES · CHATS v2.1 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.2 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
-// Depende de: mensajes-core.js, mensajes-scroll-media.js
-// Usa (módulos 4 y 7): abrirConversacionBot, enviarMensajeBot,
-//                      enviarVozAlBot, startCall, deleteConversation
-// Cambios v2.1:
-//  - Apertura de Marquinhos sin esperar escrituras de lectura (no se traba)
-//  - Errores de apertura capturados y avisados al usuario
-//  - Cada apertura tiene secuencia: una respuesta vieja no pisa la nueva
-//  - Abrir un chat cierra el visor de historias si estaba abierto
-//  - Tocar la foto del contacto ejecuta una sola acción (sin duplicados)
+// Cambios v2.2 (interfaz):
+//  - El composer nunca queda oculto por demora/fallo al consultar bloqueos.
+//  - Solo se oculta si hay bloqueo confirmado (yo === true || el === true).
+//  - estadoBloqueoCon() es tolerante a errores (devuelve false,false).
+//  - Guardias defensivas: input/textarea sin disabled/readonly; foco hace scroll.
 // ================================================================
 
 'use strict';
@@ -119,31 +115,59 @@ function aplicarFiltroConversaciones() {
 /* ---------------- Bloqueo (sincronizado con contactos.js) ---------------- */
 
 async function estadoBloqueoCon(id) {
-    const yo = await db.from('bloqueos').select('id').eq('usuario_id', user.id).eq('bloqueado_id', id).maybeSingle();
-    const el = await db.from('bloqueos').select('id').eq('usuario_id', id).eq('bloqueado_id', user.id).maybeSingle();
-    return { yo: !!(yo && yo.data), el: !!(el && el.data) };
+    // Tolerante a errores: si falla una consulta, esa dirección se considera NO bloqueada.
+    try {
+        if (!user || !user.id || !id) return { yo: false, el: false };
+        const [yo, el] = await Promise.all([
+            db.from('bloqueos').select('id').eq('usuario_id', user.id).eq('bloqueado_id', id).maybeSingle(),
+            db.from('bloqueos').select('id').eq('usuario_id', id).eq('bloqueado_id', user.id).maybeSingle()
+        ]);
+        return {
+            yo: !!(yo && yo.data),
+            el: !!(el && el.data)
+        };
+    } catch (e) {
+        console.warn('[Mensajes] estadoBloqueoCon falló, se asume sin bloqueo:', e && e.message ? e.message : e);
+        return { yo: false, el: false };
+    }
 }
 
 function aplicarEstadoBloqueo(est) {
     if (!current || current.bot) return;
-    current.bloqueo = est;
+    const seguro = {
+        yo: est && est.yo === true,
+        el: est && est.el === true
+    };
+    current.bloqueo = seguro;
+
     const composer = $('composer');
     const status = $('chatStatus');
     const nombre = current.profile?.nombre || 'Usuario';
+    const bloqueado = seguro.yo || seguro.el;
 
-    if (est.yo || est.el) {
-        composer.hidden = true;
-        status.textContent = est.yo ? 'Bloqueado' : 'No disponible';
-        status.className = 'status';
-    } else {
-        composer.hidden = false;
-        status.textContent = textoPresencia(current.profile);
-        status.className = 'status' + (current.profile?.online ? ' online' : '');
+    if (composer) {
+        composer.hidden = bloqueado;
+        // Refuerzo visual: si no está bloqueado, garantiza visibilidad y eliminación de estilos que impidan el toque.
+        if (!bloqueado) {
+            composer.style.removeProperty('display');
+            composer.style.removeProperty('visibility');
+            composer.style.removeProperty('pointer-events');
+        }
+    }
+
+    if (status) {
+        if (bloqueado) {
+            status.textContent = seguro.yo ? 'Bloqueado' : 'No disponible';
+            status.className = 'status';
+        } else {
+            status.textContent = textoPresencia(current.profile);
+            status.className = 'status' + (current.profile?.online ? ' online' : '');
+        }
     }
 
     const filaBloqueo = document.querySelector('#cpActionBlock .main');
     if (filaBloqueo) {
-        const verbo = est.yo ? 'Desbloquear a ' : 'Bloquear a ';
+        const verbo = seguro.yo ? 'Desbloquear a ' : 'Bloquear a ';
         filaBloqueo.innerHTML = verbo + '<span id="cpBlockName">' + esc(nombre) + '</span>';
     }
 }
@@ -193,7 +217,6 @@ async function bloquearUsuarioActual() {
 /* ---------------- Abrir y cerrar chat ---------------- */
 
 function marcarBotLeidoEnSegundoPlano() {
-    // No se espera: si la escritura tarda o falla, no bloquea la apertura
     try {
         db.from('mensajes_chat')
             .update({ leido: true })
@@ -207,7 +230,6 @@ function marcarBotLeidoEnSegundoPlano() {
 async function openConversation(id) {
     const secuencia = ++aperturaSecuencia;
 
-    // Si el visor de historias quedó abierto, se cierra para dejar libre el chat
     const visor = $('estadoViewer');
     if (visor) visor.classList.remove('show');
 
@@ -243,6 +265,8 @@ async function openConversation(id) {
     const audioBtn = $('audioCall');
     if (audioBtn) audioBtn.disabled = esBot || !window.__livekitReady;
 
+    // === Interfaz: composer visible y editable SIEMPRE al abrir la conversación ===
+    // Se muestra ANTES de consultar bloqueos para no quedar oculto por demoras.
     $('composer').hidden = false;
     $('emptyState').hidden = true;
     $('panel').classList.add('chat-open');
@@ -264,9 +288,12 @@ async function openConversation(id) {
         return;
     }
 
-    const bloqueo = await estadoBloqueoCon(id);
-    if (secuencia !== aperturaSecuencia) return;
-    aplicarEstadoBloqueo(bloqueo);
+    // La consulta de bloqueo NO debe retrasar ni ocultar la interfaz:
+    // se lanza sin await, y aplicarEstadoBloqueo solo oculta si es bloqueo confirmado.
+    estadoBloqueoCon(id).then(est => {
+        if (secuencia !== aperturaSecuencia) return;
+        if (current && current.id === id) aplicarEstadoBloqueo(est);
+    }).catch(() => {});
 
     const r = await db.from('mensajes_chat')
         .select('*')
@@ -368,7 +395,7 @@ function messageHTML(m, sent, signedUrl) {
 
 async function sendMessage(text) {
     if (!current || !text.trim()) return;
-    if (!current.bot && current.bloqueo && (current.bloqueo.yo || current.bloqueo.el)) {
+    if (!current.bot && current.bloqueo && (current.bloqueo.yo === true || current.bloqueo.el === true)) {
         toast('No puedes enviar mensajes a este contacto.', 'warning');
         return;
     }
@@ -828,7 +855,6 @@ function configurarInfoChat() {
 
     $('chatInfoTrigger').addEventListener('click', abrirInfoChat);
 
-    // La foto abre el visor si hay foto real; si no, abre el panel de información. Una sola acción.
     $('chatAvatar').addEventListener('click', () => {
         if (!current) return;
         if (!current.bot && current.profile && current.profile.avatar_url && typeof verFotoAmpliada === 'function') {
