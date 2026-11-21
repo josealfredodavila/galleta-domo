@@ -334,8 +334,12 @@ body {
     font-weight: 700;
     color: #fff;
     letter-spacing: .5px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
+/* --- HANDLE NARANJA Y VERIFICACIÓN AZUL --- */
 .pf-handle {
     display: inline-flex;
     align-items: center;
@@ -343,26 +347,45 @@ body {
     margin-top: 4px;
     padding: 2px 10px 2px 8px;
     border-radius: 999px;
-    color: #5cc8ff !important;
+    color: #ff7a1a !important; /* Color naranja solicitado */
     font-weight: 600;
     font-size: .72rem;
-    background: linear-gradient(135deg, rgba(0,229,255,.12), rgba(139,92,246,.16));
-    border: 1px solid rgba(0,229,255,.38);
-    text-shadow: 0 0 8px rgba(0,229,255,.5);
-    box-shadow: 0 0 10px rgba(0,229,255,.12);
-    animation: pfHalo 2.4s ease-in-out infinite;
+    background: rgba(255, 122, 26, 0.1);
+    border: 1px solid rgba(255, 122, 26, 0.3);
+    text-shadow: 0 0 8px rgba(255, 122, 26, 0.3);
+    transition: all 0.2s ease;
 }
 .pf-handle::before {
     content: '⚡';
     font-size: .68rem;
     line-height: 1;
-    filter: drop-shadow(0 0 4px rgba(0,229,255,.9));
-    animation: pfDestello 1.8s steps(2, end) infinite;
+    filter: drop-shadow(0 0 4px rgba(255,122,26,.8));
+}
+
+/* Nuevo Badge de Verificación (Palomita Azul) */
+.badge-verificado {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 15px;
+    height: 15px;
+    background: #00e5ff;
+    border-radius: 50%;
+    box-shadow: 0 0 8px rgba(0, 229, 255, 0.6);
+    position: relative;
+}
+.badge-verificado::after {
+    content: '';
+    width: 5px;
+    height: 8px;
+    border: solid #04070d;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translate(-0.5px, -1px);
 }
 
 @keyframes pfHalo {
-    0%, 100% { box-shadow: 0 0 6px rgba(0,229,255,.15); }
-    50% { box-shadow: 0 0 14px rgba(0,229,255,.45), 0 0 22px rgba(139,92,246,.25); }
+    0%, 100% { box-shadow: 0 0 6px rgba(255,122,26,.15); }
+    50% { box-shadow: 0 0 14px rgba(255,122,26,.45), 0 0 22px rgba(255,122,26,.25); }
 }
 @keyframes pfDestello {
     0%, 100% { opacity: 1; }
@@ -665,13 +688,8 @@ textarea#postContent:focus {
 .post-card .post-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold)); display: flex; align-items: center; justify-content: center; color: white; font-size: 1rem; overflow: hidden; flex-shrink: 0; }
 .post-card .post-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .post-card .post-author { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-weight: 700; color: var(--text-primary); font-size: 0.92rem; line-height: 1.2; }
-/* Color azul cian para el nombre del autor */
-.post-card .post-author a { color: var(--cyan); text-decoration: none; transition: color 0.2s ease; }
-.post-card .post-author a:hover { color: #5cc8ff; text-decoration: underline; }
-
-/* Color azul cian para el handle (@) */
-.post-card .post-handle { color: var(--cyan); font-size: 0.8rem; font-weight: 400; opacity: 0.85; }
-
+.post-card .post-author a { color: var(--orange-soft); text-decoration: none; }
+.post-card .post-author a:hover { color: var(--orange); text-decoration: underline; }
 .post-card .post-author .badge-verificado {
     display: inline-flex; align-items: center; gap: 4px; font-size: 0.56rem; font-weight: 600;
     color: var(--orange); background: rgba(255, 122, 26, 0.1); border: 0;
