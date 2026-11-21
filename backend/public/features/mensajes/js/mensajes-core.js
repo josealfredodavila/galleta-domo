@@ -1,11 +1,14 @@
 // ================================================================
-// MENSAJES · CORE v1.0 · MÓDULO 1 DE 8
-// Ruta: backend/public/features/mensajes/js/mensajes-core.js
+// MENSAJES · CORE v2.0 · MÓDULO 1 DE 8
+// Ruta: frontend/features/mensajes/js/mensajes-core.js
 // Contenido: constantes, estado compartido, helpers de texto,
 //            toast, modal propio (NeonModal), sesión, subida de
 //            archivos, perfiles y envío de mensajes.
-// NO cargar todavía en mensajes.html: mensajes.js sigue activo.
-// Se conecta al final, cuando estén todos los módulos.
+// Cambios v2.0:
+//  - Sin emojis en toasts, mensajes de error ni textos del sistema
+//  - Toast con role/aria-live para lectores de pantalla
+//  - NeonModal sin icono por defecto (ya no muestra "?")
+//  - profile() incluye bloqueado/online para el estado de bloqueo
 // ================================================================
 
 'use strict';
@@ -35,7 +38,7 @@ const TTL_PERFIL_MS = 5 * 60 * 1000;
 const signedCache = new Map();
 const TTL_SIGNED_MS = 50 * 60 * 1000;
 
-// Control de markRead en lote (1 vez cada 2s por conversación)
+// Control de markRead en lote (1 vez cada 2 s por conversación)
 const markReadTimestamps = new Map();
 const MARK_READ_DEBOUNCE_MS = 2000;
 
@@ -55,11 +58,15 @@ function debounce(fn, ms) {
     };
 }
 
+/* ---------------- Toast accesible ---------------- */
+
 function toast(text, type = '') {
     const el = $('toast');
     if (!el) return;
     el.textContent = text;
     el.className = 'toast show ' + type;
+    el.setAttribute('role', 'status');
+    el.setAttribute('aria-live', 'polite');
     clearTimeout(el.t);
     el.t = setTimeout(() => el.classList.remove('show'), 3500);
 }
@@ -105,6 +112,8 @@ async function enviarMensajeChat(destinatarioId, contenido, tipo = 'texto', imag
     return data || {};
 }
 
+/* ---------------- Limpieza de texto de Marquinhos ---------------- */
+
 function limpiarMarkdown(texto) {
     if (typeof texto !== 'string') return '';
     let t = texto;
@@ -124,12 +133,14 @@ function limpiarMarkdown(texto) {
     t = t.replace(/^\s{0,3}[-*_]{3,}\s*$/gm, '');
     t = t.replace(/^\s*\|.*\|\s*$/gm, '');
     t = t.replace(/\|/g, ' ');
-    t = t.replace(/^\s*[*#_~•◈✦🔴🟡🟢➤→»]+\s*/gm, '');
+    t = t.replace(/^\s*[*#_~•]+\s*/gm, '');
     t = t.replace(/\s+[*#_~]{2,}\s+/g, ' ');
     t = t.replace(/[ \t]{2,}/g, ' ');
     t = t.replace(/\n{3,}/g, '\n\n');
     return t.trim();
 }
+
+/* ---------------- Modal propio (sin emojis, sin icono por defecto) ---------------- */
 
 const NeonModal = (function () {
     let activeBackdrop = null, activeResolve = null, activeEscHandler = null;
@@ -150,10 +161,12 @@ const NeonModal = (function () {
         const danger = !!opts.danger;
         const card = document.createElement('div');
         card.className = 'neon-modal-card' + (danger ? ' danger' : '');
-        const iconHtml = opts.icon ? `<div class="neon-modal-icon">${opts.icon}</div>` : '';
+        const iconHtml = opts.icon ? `<div class="neon-modal-icon">${esc(opts.icon)}</div>` : '';
         const titleHtml = opts.title ? `<h3 class="neon-modal-title">${esc(opts.title)}</h3>` : '';
         const messageHtml = opts.message ? `<p class="neon-modal-message">${esc(opts.message)}</p>` : '';
-        const inputHtml = opts.type === 'prompt' ? `<input class="neon-modal-input" type="text" placeholder="${esc(opts.placeholder || '')}" value="${esc(opts.defaultValue || '')}" maxlength="${opts.maxlength || 200}">` : '';
+        const inputHtml = opts.type === 'prompt'
+            ? `<input class="neon-modal-input" type="text" placeholder="${esc(opts.placeholder || '')}" value="${esc(opts.defaultValue || '')}" maxlength="${opts.maxlength || 200}">`
+            : '';
         const confirmText = opts.confirmText || 'Aceptar';
         const cancelText = opts.cancelText || 'Cancelar';
         const confirmClass = danger ? 'danger' : 'confirm';
@@ -203,18 +216,39 @@ const NeonModal = (function () {
 
     function confirm(opts) {
         return new Promise((resolve) => {
-            _open({ type: 'confirm', title: opts.title || 'Confirmar', message: opts.message || '', icon: opts.icon || '?', confirmText: opts.confirmText || 'Aceptar', cancelText: opts.cancelText || 'Cancelar', danger: !!opts.danger }, resolve);
+            _open({
+                type: 'confirm',
+                title: opts.title || 'Confirmar',
+                message: opts.message || '',
+                icon: opts.icon || '',
+                confirmText: opts.confirmText || 'Aceptar',
+                cancelText: opts.cancelText || 'Cancelar',
+                danger: !!opts.danger
+            }, resolve);
         });
     }
 
     function prompt(opts) {
         return new Promise((resolve) => {
-            _open({ type: 'prompt', title: opts.title || 'Ingresa un valor', message: opts.message || '', icon: opts.icon || '✎', placeholder: opts.placeholder || '', defaultValue: opts.defaultValue || '', maxlength: opts.maxlength || 200, confirmText: opts.confirmText || 'Aceptar', cancelText: opts.cancelText || 'Cancelar', danger: !!opts.danger }, resolve);
+            _open({
+                type: 'prompt',
+                title: opts.title || 'Ingresa un valor',
+                message: opts.message || '',
+                icon: opts.icon || '',
+                placeholder: opts.placeholder || '',
+                defaultValue: opts.defaultValue || '',
+                maxlength: opts.maxlength || 200,
+                confirmText: opts.confirmText || 'Aceptar',
+                cancelText: opts.cancelText || 'Cancelar',
+                danger: !!opts.danger
+            }, resolve);
         });
     }
 
     return { confirm, prompt };
 })();
+
+/* ---------------- Sesión y archivos ---------------- */
 
 async function session() {
     if (!db) return null;
@@ -225,35 +259,46 @@ async function session() {
 
 async function auth() {
     const s = await session();
-    if (!s) { toast('⚠️ Inicia sesión para usar Mensajes', 'error'); return false; }
+    if (!s) { toast('Inicia sesión para usar Mensajes.', 'error'); return false; }
     user = s.user;
     return true;
 }
 
 async function subirViaBackend(file, destino, tipo) {
     const s = await session();
-    if (!s) throw new Error('Inicia sesión primero');
+    if (!s) throw new Error('Inicia sesión primero.');
     const fd = new FormData();
     fd.append('file', file);
     fd.append('destino', destino);
     fd.append('tipo', tipo);
     const r = await fetch('/api/media/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + s.access_token }, body: fd });
     const d = await r.json().catch(() => ({}));
-    if (!r.ok || !d.ok) throw new Error(d.error || 'No se pudo subir el archivo');
+    if (!r.ok || !d.ok) throw new Error(d.error || 'No se pudo subir el archivo.');
     return d;
 }
 
+/* ---------------- Avatares y perfiles ---------------- */
+
 function avatar(name, url, cls = 'avatar') {
     if (url) return `<div class="${cls}"><img src="${esc(url)}" alt=""></div>`;
-    return `<div class="${cls}">${esc((name || '◈').charAt(0).toUpperCase())}</div>`;
+    return `<div class="${cls}">${esc((name || 'U').charAt(0).toUpperCase())}</div>`;
 }
 
 async function profile(id) {
-    if (id === BOT_ID) return { id: BOT_ID, nombre: "Marquinhos", handle: 'marquinhos', avatar_url: null, online: true, bot: true };
+    if (id === BOT_ID) {
+        return { id: BOT_ID, nombre: 'Marquinhos', handle: 'marquinhos', avatar_url: null, online: true, bot: true, bloqueado: false };
+    }
     const enCache = perfilCache.get(id);
     if (enCache && Date.now() - enCache.ts < TTL_PERFIL_MS) return enCache.data;
-    const r = await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url,online,ultima_conexion').eq('id', id).maybeSingle();
-    const data = r.data || { id, nombre: 'Usuario', avatar_url: null, online: false };
+
+    const r = await db.from('perfiles_publicos')
+        .select('id,nombre,handle,avatar_url,online,ultima_conexion')
+        .eq('id', id)
+        .maybeSingle();
+    const data = r.data
+        ? { ...r.data, bloqueado: false }
+        : { id, nombre: 'Usuario', handle: null, avatar_url: null, online: false, bloqueado: false };
+
     if (perfilCache.size >= PERFIL_CACHE_LIMITE) {
         const primera = perfilCache.keys().next().value;
         if (primera !== undefined) perfilCache.delete(primera);
