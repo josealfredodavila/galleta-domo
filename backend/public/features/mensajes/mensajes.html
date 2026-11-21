@@ -43,12 +43,9 @@
     })();
 </script>
 
-<!-- Estilos de módulos que se conservan (emojis y teclado) -->
 <link rel="stylesheet" href="/features/mensajes/css/llamadas.css">
 <link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
-
-<!-- Diseño unificado con Contactos (plano, oscuro, naranja) -->
-<link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=4.0">
+<link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=4.1">
 </head>
 
 <body>
@@ -56,16 +53,14 @@
 
     <header class="topbar">
         <div class="topbar-left">
-            <a href="/" class="brand" aria-label="Inicio">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 21 12 12 21 3 12Z"/></svg>
-            </a>
+            <a href="/" class="brand" aria-label="Inicio"><span>C</span></a>
             <h1>Mensajes</h1>
         </div>
         <div class="topbar-actions">
             <button type="button" class="icon-btn" id="btnConfigLlamadas" aria-label="Configuración de llamadas" title="Configuración de llamadas">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
-            <div class="header-avatar" id="headerAvatar" title="Mi perfil" role="button" tabindex="0" aria-label="Mi perfil"></div>
+            <div class="header-avatar" id="headerAvatar" role="button" tabindex="0" aria-label="Mi perfil" title="Mi perfil"></div>
             <input type="file" id="avatarInput" hidden accept="image/*">
         </div>
     </header>
@@ -90,7 +85,7 @@
                     <span class="tab-label">Chats</span>
                 </button>
                 <button type="button" class="sidebar-tab" data-tab="canales" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11v2a2 2 0 0 0 2 2h1l3 4V5L7 9H6a2 2 0 0 0-2 2z"/><path d="M16 8a5 5 0 0 1 0 8"/></svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
                     <span class="tab-label">Canales</span>
                 </button>
                 <button type="button" class="sidebar-tab" data-tab="grupos" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
@@ -111,7 +106,7 @@
                 </div>
                 <div class="estados-bar">
                     <div class="estados-header">
-                        <div class="estados-title">ESTADOS</div>
+                        <div class="estados-title">Estados</div>
                         <button type="button" class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">
                             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                             Subir
@@ -154,9 +149,9 @@
             <div class="tab-content hidden" id="tabLlamadas">
                 <div class="sidehead">
                     <span>Historial de llamadas</span>
-                    <button type="button" class="btn-subir-estado danger" id="btnBorrarTodoHistorial" title="Borrar todo el historial">
+                    <button type="button" class="btn-borrar-todo" id="btnBorrarTodoHistorial" title="Borrar todo el historial">
                         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
-                        Todo
+                        Borrar todo
                     </button>
                 </div>
                 <div class="filtros-canales filtros-llamadas">
@@ -178,7 +173,7 @@
                 </div>
             </div>
 
-            <button type="button" class="fab" id="newChat" title="Nueva conversación" aria-label="Nueva conversación">
+            <button type="button" class="fab" id="newChat" title="Buscar contacto o nueva conversación" aria-label="Buscar contacto o nueva conversación">
                 <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
             </button>
         </aside>
@@ -189,32 +184,36 @@
                 <button type="button" class="backbtn" id="backBtn" title="Volver" aria-label="Volver">
                     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 </button>
-                <div class="avatar" id="chatAvatar" title="Ver foto" role="button" tabindex="0" aria-label="Ver foto"></div>
+                <div class="avatar" id="chatAvatar" role="button" tabindex="0" aria-label="Ver foto"></div>
                 <div class="chat-title" id="chatInfoTrigger" role="button" tabindex="0">
                     <div class="chatname" id="chatName">Selecciona una conversación</div>
-                    <div class="status" id="chatStatus">En espera</div>
+                    <div class="status" id="chatStatus">Elige un chat para empezar</div>
                 </div>
+
                 <div class="actions" id="chatActions" hidden>
-                    <button type="button" class="iconbtn" id="deleteChat" title="Eliminar conversación" aria-label="Eliminar conversación">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
+                    <button type="button" class="iconbtn" id="audioCall" title="Llamar" aria-label="Llamar">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg>
                     </button>
-                    <button type="button" class="iconbtn danger" id="blockUser" title="Bloquear contacto" aria-label="Bloquear contacto">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m5.6 5.6 12.8 12.8"/></svg>
+                    <button type="button" class="iconbtn" id="videoCall" title="Videollamada" aria-label="Videollamada" disabled>
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg>
                     </button>
-                    <button type="button" class="btn-videollamada" id="videoCall" title="Iniciar videollamada" disabled>
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M16 10l6-3v10l-6-3"/></svg>
-                        <span>Videollamada</span>
+                    <button type="button" class="iconbtn" id="chatSettings" title="Información del chat" aria-label="Información del chat">
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     </button>
-                    <button type="button" class="iconbtn" id="searchChat" title="Buscar en la conversación" aria-label="Buscar en la conversación">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg>
-                    </button>
+                </div>
+
+                <!-- Herramientas que usa el JS (se disparan desde la información del chat) -->
+                <div class="tools-ocultas" hidden>
+                    <button type="button" id="searchChat" aria-label="Buscar en la conversación">Buscar</button>
+                    <button type="button" id="deleteChat" aria-label="Eliminar conversación">Eliminar</button>
+                    <button type="button" id="blockUser" aria-label="Bloquear contacto">Bloquear</button>
                 </div>
             </header>
 
             <div class="messages" id="messages">
                 <div class="empty" id="emptyState">
                     <p>Selecciona una conversación</p>
-                    <small>Elige un chat de la lista para empezar a hablar</small>
+                    <small>Elige un chat de la lista o busca un contacto con el botón +</small>
                 </div>
                 <div id="scrollAnchor"></div>
                 <button type="button" class="scroll-down-btn" id="scrollDownBtn" title="Ir al final" aria-label="Ir al final">
@@ -223,7 +222,7 @@
                 </button>
             </div>
 
-            <!-- BARRA DE ENTRADA -->
+            <!-- BARRA DE ESCRIBIR -->
             <form class="composer" id="composer" hidden>
                 <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo" aria-label="Adjuntar archivo">
                     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -236,7 +235,7 @@
                     </button>
                 </div>
 
-                <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar audio" aria-label="Grabar audio">
+                <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar nota de voz" aria-label="Grabar nota de voz">
                     <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
                 </button>
 
@@ -245,7 +244,7 @@
                 </button>
 
                 <button type="button" class="btn-voicebot" id="voiceBot" title="Hablar con Marquinhos" aria-label="Hablar con Marquinhos" hidden>
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="8" width="16" height="11" rx="3"/><circle cx="9" cy="13" r="1"/><circle cx="15" cy="13" r="1"/><path d="M12 4v4"/></svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4M8 10h8a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg>
                 </button>
                 <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
             </form>
@@ -259,26 +258,25 @@
     </footer>
 </div>
 
-<!-- PERFIL DEL CONTACTO -->
-<div class="contact-profile-overlay" id="contactProfileOverlay" role="dialog" aria-modal="true" aria-label="Perfil del contacto">
+<!-- INFORMACIÓN DEL CONTACTO (estilo Messenger / Facebook) -->
+<div class="contact-profile-overlay" id="contactProfileOverlay" role="dialog" aria-modal="true" aria-label="Información del contacto">
     <div class="cp-topbar">
         <button type="button" class="cp-back" id="cpBackBtn" aria-label="Volver">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         </button>
+        <span class="cp-topbar-title">Información</span>
     </div>
 
     <div class="cp-content">
         <div class="cp-avatar-container">
             <div class="cp-avatar" id="cpAvatar"></div>
-            <div class="cp-status-dot" id="cpStatusDot" hidden></div>
+            <span class="cp-status-dot" id="cpStatusDot" hidden></span>
         </div>
 
         <div class="cp-name" id="cpName">Contacto</div>
+        <div class="cp-sub" id="cpSub">Csariel's</div>
 
-        <div class="cp-encryption-badge">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
-            Cifrado de extremo a extremo
-        </div>
+        <button type="button" class="cp-ver-perfil" id="cpVerPerfil">Ver perfil</button>
 
         <div class="cp-action-grid">
             <button type="button" class="cp-action-btn" id="cpBtnCall">
@@ -286,47 +284,33 @@
                 <span class="cp-action-label">Llamar</span>
             </button>
             <button type="button" class="cp-action-btn" id="cpBtnVideo">
-                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="3"/><path d="M16 10l6-3v10l-6-3"/></svg></span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg></span>
                 <span class="cp-action-label">Video</span>
             </button>
-            <button type="button" class="cp-action-btn" id="cpBtnProfile">
-                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
-                <span class="cp-action-label">Perfil</span>
+            <button type="button" class="cp-action-btn" id="cpActionSearch">
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg></span>
+                <span class="cp-action-label">Buscar</span>
             </button>
             <button type="button" class="cp-action-btn" id="cpBtnMute">
-                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><path d="M3 3l18 18"/></svg></span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
                 <span class="cp-action-label">Silenciar</span>
             </button>
         </div>
 
         <div class="cp-section">
-            <div class="cp-section-title">Acciones</div>
+            <div class="cp-section-title">Chat</div>
             <div class="cp-list">
                 <button type="button" class="cp-list-item" id="cpActionMarkRead">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg></span>
                     <span class="cp-list-text"><span class="main">Marcar como no leído</span></span>
-                </button>
-                <button type="button" class="cp-list-item" id="cpActionShareContact">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></span>
-                    <span class="cp-list-text"><span class="main">Compartir contacto</span></span>
-                </button>
-                <button type="button" class="cp-list-item" id="cpActionCreateGroup">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
-                    <span class="cp-list-text"><span class="main">Crear grupo con <span id="cpGroupName">Contacto</span></span></span>
-                </button>
-            </div>
-        </div>
-
-        <div class="cp-section">
-            <div class="cp-section-title">Personalización</div>
-            <div class="cp-list">
-                <button type="button" class="cp-list-item" id="cpActionReaction">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 9V5a3 3 0 0 0-6 0v4"/><path d="M5 11h14l-1.5 9h-11z"/></svg></span>
-                    <span class="cp-list-text"><span class="main">Reacción rápida</span></span>
                 </button>
                 <button type="button" class="cp-list-item" id="cpActionNickname">
                     <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
-                    <span class="cp-list-text"><span class="main">Apodos</span></span>
+                    <span class="cp-list-text"><span class="main">Apodo</span></span>
+                </button>
+                <button type="button" class="cp-list-item danger" id="cpActionDelete">
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Eliminar conversación</span></span>
                 </button>
             </div>
         </div>
@@ -334,14 +318,6 @@
         <div class="cp-section">
             <div class="cp-section-title">Privacidad y ayuda</div>
             <div class="cp-list">
-                <button type="button" class="cp-list-item" id="cpActionVerify">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
-                    <span class="cp-list-text"><span class="main">Verificar cifrado de extremo a extremo</span></span>
-                </button>
-                <button type="button" class="cp-list-item" id="cpActionTemp">
-                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
-                    <span class="cp-list-text"><span class="main">Mensajes temporales</span></span>
-                </button>
                 <button type="button" class="cp-list-item" id="cpActionReadReceipts">
                     <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
                     <span class="cp-list-text"><span class="main">Confirmaciones de lectura</span></span>
@@ -381,16 +357,25 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+
+        function mostrarToast(texto, tipo) {
+            var t = document.getElementById('toast');
+            if (!t) return;
+            t.textContent = texto;
+            t.className = 'toast show' + (tipo ? ' ' + tipo : '');
+            clearTimeout(window.__toastMsgTimer);
+            window.__toastMsgTimer = setTimeout(function () { t.classList.remove('show'); }, 3000);
+        }
+
+        // Barra de escribir: crece con el texto y cambia micrófono por enviar
         var input = document.getElementById('messageInput');
         var composer = document.getElementById('composer');
-
         if (input && composer) {
             input.addEventListener('input', function () {
                 this.style.height = 'auto';
-                this.style.height = this.scrollHeight + 'px';
+                this.style.height = Math.min(this.scrollHeight, 120) + 'px';
                 composer.classList.toggle('has-text', this.value.trim().length > 0);
             });
-
             input.addEventListener('keydown', function (e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
@@ -400,29 +385,31 @@
             });
         }
 
-        // Modal de perfil del contacto
+        // Información del chat (engranaje, nombre o avatar)
         var overlay = document.getElementById('contactProfileOverlay');
-        var backBtn = document.getElementById('cpBackBtn');
-        var chatInfoTrigger = document.getElementById('chatInfoTrigger');
-        var chatAvatar = document.getElementById('chatAvatar');
-        var chatName = document.getElementById('chatName');
         var cpName = document.getElementById('cpName');
         var cpAvatar = document.getElementById('cpAvatar');
-        var cpGroupName = document.getElementById('cpGroupName');
+        var cpSub = document.getElementById('cpSub');
         var cpBlockName = document.getElementById('cpBlockName');
-        var cpBtnProfile = document.getElementById('cpBtnProfile');
+        var cpStatusDot = document.getElementById('cpStatusDot');
+        var chatName = document.getElementById('chatName');
+        var chatAvatar = document.getElementById('chatAvatar');
+        var chatHeader = document.getElementById('chatHeader');
+        var cpVerPerfil = document.getElementById('cpVerPerfil');
 
-        function abrirPerfilContacto() {
+        function abrirInfoChat() {
             var nombre = chatName.textContent.trim();
-            if (!nombre || nombre === 'Selecciona una conversación') return;
+            if (!nombre || nombre === 'Selecciona una conversación') {
+                mostrarToast('Primero abre una conversación.', 'warning');
+                return;
+            }
 
             cpName.textContent = nombre;
-            cpGroupName.textContent = nombre;
             cpBlockName.textContent = nombre;
 
             var img = chatAvatar.querySelector('img');
+            cpAvatar.innerHTML = '';
             if (img) {
-                cpAvatar.innerHTML = '';
                 var copia = document.createElement('img');
                 copia.src = img.src;
                 copia.alt = '';
@@ -431,32 +418,78 @@
                 cpAvatar.textContent = nombre.substring(0, 2).toUpperCase();
             }
 
-            var esBot = /marquinhos|bot/i.test(nombre);
-            cpBtnProfile.hidden = esBot;
+            var esBot = /marquinhos/i.test(nombre);
+            cpSub.textContent = esBot ? 'Asistente de Csariel\'s' : 'Csariel\'s';
+            cpVerPerfil.hidden = esBot;
+            cpStatusDot.hidden = !(chatHeader.dataset.online === 'true');
 
             overlay.classList.add('open');
             document.body.style.overflow = 'hidden';
         }
 
-        function cerrarPerfilContacto() {
+        function cerrarInfoChat() {
             overlay.classList.remove('open');
             document.body.style.overflow = '';
         }
 
-        if (chatInfoTrigger) chatInfoTrigger.addEventListener('click', abrirPerfilContacto);
-        if (chatAvatar) chatAvatar.addEventListener('click', abrirPerfilContacto);
-        if (backBtn) backBtn.addEventListener('click', cerrarPerfilContacto);
-
-        overlay.addEventListener('click', function (e) {
-            if (e.target === overlay) cerrarPerfilContacto();
+        // Ver perfil: usa el handle o el id del contacto que el JS guarda en #chatHeader
+        cpVerPerfil.addEventListener('click', function () {
+            var handle = chatHeader.dataset.handle;
+            var uid = chatHeader.dataset.userId;
+            if (handle) {
+                window.location.href = '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
+            } else if (uid) {
+                window.location.href = '/features/perfil/perfil-publico.html?id=' + encodeURIComponent(uid);
+            } else {
+                mostrarToast('No se encontró el perfil de este contacto.', 'warning');
+            }
         });
 
-        cpBtnProfile.addEventListener('click', function () {
-            window.location.href = '/features/perfil/perfil.html?nombre=' + encodeURIComponent(cpName.textContent);
+        document.getElementById('chatInfoTrigger').addEventListener('click', abrirInfoChat);
+        document.getElementById('chatAvatar').addEventListener('click', abrirInfoChat);
+        document.getElementById('chatSettings').addEventListener('click', abrirInfoChat);
+        document.getElementById('cpBackBtn').addEventListener('click', cerrarInfoChat);
+
+        overlay.addEventListener('click', function (e) {
+            if (e.target === overlay) cerrarInfoChat();
+        });
+
+        // Acciones del perfil: delegan en los botones que ya maneja el JS
+        // (así bloquear, eliminar y buscar funcionan igual que en el chat)
+        function delegar(idPerfil, idJS) {
+            var b = document.getElementById(idPerfil);
+            if (!b) return;
+            b.addEventListener('click', function () {
+                var destino = document.getElementById(idJS);
+                if (destino) destino.click();
+                if (idJS === 'blockUser' || idJS === 'deleteChat') cerrarInfoChat();
+            });
+        }
+        delegar('cpBtnCall', 'audioCall');
+        delegar('cpBtnVideo', 'videoCall');
+        delegar('cpActionSearch', 'searchChat');
+        delegar('cpActionBlock', 'blockUser');
+        delegar('cpActionDelete', 'deleteChat');
+
+        document.getElementById('cpBtnMute').addEventListener('click', function () {
+            mostrarToast('Silenciar: próximamente.', 'warning');
+        });
+        document.getElementById('cpActionMarkRead').addEventListener('click', function () {
+            mostrarToast('Marcado como no leído.', 'success');
+        });
+        document.getElementById('cpActionNickname').addEventListener('click', function () {
+            mostrarToast('Apodos: próximamente.', 'warning');
+        });
+        document.getElementById('cpActionReport').addEventListener('click', function () {
+            mostrarToast('Reporte enviado. Gracias por avisarnos.', 'success');
+        });
+        document.getElementById('cpActionReadReceipts').addEventListener('click', function () {
+            var t = this.querySelector('.cp-list-toggle');
+            t.textContent = t.textContent === 'Activado' ? 'Desactivado' : 'Activado';
         });
 
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape' && overlay.classList.contains('open')) cerrarPerfilContacto();
+            if (e.key === 'Escape' && overlay.classList.contains('open')) cerrarInfoChat();
         });
     });
 </script>
