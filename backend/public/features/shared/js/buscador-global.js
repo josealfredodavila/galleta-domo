@@ -1,15 +1,13 @@
 // ================================================================
-// BUSCADOR GLOBAL DEL ECOSISTEMA · v1.2
+// BUSCADOR GLOBAL DEL ECOSISTEMA · v1.3
 // Requiere: #globalSearchInput y #globalSearchResults en la página.
-// Usa window.supabaseClient (espera a que exista, hasta 5 s).
-// Cambios v1.2 (para alta concurrencia):
-//  - Espera al cliente de Supabase en vez de fallar en silencio
-//  - Cache de resultados en memoria (LRU) para no repetir RPC
-//  - Sesión leída una sola vez y reutilizada
-//  - Avatares: solo http(s) (evita esquemas raros en src)
-//  - Protección contra doble inicialización
-//  - Mensajes claros para sin sesión, rate limit y errores de red
-//  - Escape cierra el panel; "Agregar" queda deshabilitado tras enviar
+// Cambios v1.3:
+//  - El listener de cambio de sesión se registra una sola vez
+//  - Antes de agregar revisa la relación (contactos, pendiente en
+//    cualquiera de los dos sentidos) para no crear duplicados
+//  - Mensajes correctos según la relación real
+//  - Se quita el "@" inicial de la consulta (y de la caché)
+//  - Sin emojis en la interfaz
 // ================================================================
 (function () {
     'use strict';
@@ -30,10 +28,28 @@
     var timer = null;
     var ultimaBusqueda = 0;
     var miIdCache = undefined; // undefined = no leído, null = sin sesión
+    var sesionEnganchada = false;
     var cache = new Map();     // query -> { t, lista }
 
     // ------------------------------------------------------------
-    // CLIENTE
+    // UTILIDADES
+    // ------------------------------------------------------------
+    function notificar(msg, tipo) {
+        if (typeof window.showToast === 'function') window.showToast(msg, tipo);
+    }
+
+    function normalizarQuery(valor) {
+        return String(valor || '').trim().replace(/^@+/, '').trim();
+    }
+
+    function marcarBoton(boton, texto) {
+        if (!boton) return;
+        boton.textContent = texto;
+        boton.disabled = true;
+    }
+
+    // ------------------------------------------------------------
+    // CLIENTE Y SESIÓN
     // ------------------------------------------------------------
     function esperarCliente() {
         return new Promise(function (resolve) {
@@ -57,9 +73,10 @@
         return miIdCache;
     }
 
-    // Si cambia la sesión (login/logout), invalida lo cacheado
+    // Se registra una sola vez por página
     function engancharCambioSesion(client) {
-        if (!client.auth || !client.auth.onAuthStateChange) return;
+        if (sesionEnganchada || !client.auth || !client.auth.onAuthStateChange) return;
+        sesionEnganchada = true;
         client.auth.onAuthStateChange(function () {
             miIdCache = undefined;
             cache.clear();
@@ -67,7 +84,7 @@
     }
 
     // ------------------------------------------------------------
-    // UTILIDADES DE UI (sin innerHTML con datos de usuarios)
+    // UI (sin innerHTML con datos de usuarios)
     // ------------------------------------------------------------
     function mostrarMensaje(texto, color) {
         var d = document.createElement('div');
@@ -112,38 +129,97 @@
     }
 
     // ------------------------------------------------------------
+    // RELACIÓN ENTRE DOS USUARIOS
+    // Devuelve: 'contactos' | 'pendiente_mia' | 'pendiente_recibida' | 'ninguna'
+    // ------------------------------------------------------------
+    async function estadoRelacion(client, miId, otroId) {
+        var propia = await client
+            .from('contactos')
+            .select('estado')
+            .eq('usuario_id', miId)
+            .eq('contacto_id', otroId)
+            .maybeSingle();
+        if (propia.error) throw propia.error;
+        if (propia.data) {
+            return propia.data.estado === 'activo' ? 'contactos' : 'pendiente_mia';
+        }
+
+        var recibida = await client
+            .from('contactos')
+            .select('id')
+            .eq('usuario_id', otroId)
+            .eq('contacto_id', miId)
+            .eq('estado', 'pendiente')
+            .maybeSingle();
+        if (recibida.error) throw recibida.error;
+        if (recibida.data) return 'pendiente_recibida';
+
+        return 'ninguna';
+    }
+
+    // ------------------------------------------------------------
     // ACCIONES
+    // Devuelve true si el botón debe quedar marcado; false si debe
+    // volver a estar disponible.
     // ------------------------------------------------------------
     async function agregarContacto(client, contactoId, boton) {
+        var miId = await obtenerMiId(client);
+        if (!miId) {
+            notificar('Inicia sesión para agregar contactos.', 'error');
+            return false;
+        }
+        if (contactoId === miId) {
+            notificar('No puedes agregarte a ti mismo.', 'warning');
+            return false;
+        }
+
         try {
-            var miId = await obtenerMiId(client);
-            if (!miId) {
-                if (window.showToast) showToast('Inicia sesión para agregar contactos', 'error');
-                return;
+            var rel = await estadoRelacion(client, miId, contactoId);
+
+            if (rel === 'contactos') {
+                notificar('Ya están en tus contactos.', 'warning');
+                marcarBoton(boton, 'Contacto');
+                return true;
             }
+            if (rel === 'pendiente_mia') {
+                notificar('Ya enviaste una solicitud a esta persona.', 'warning');
+                marcarBoton(boton, 'Enviada');
+                return true;
+            }
+            if (rel === 'pendiente_recibida') {
+                notificar('Esta persona ya te envió una solicitud. Revísala en Contactos.', 'warning');
+                return false;
+            }
+
             var res = await client.from('contactos').insert({
                 usuario_id: miId,
                 contacto_id: contactoId,
                 estado: 'pendiente',
                 es_favorito: false
             });
-            if (res.error && res.error.code === '23505') {
-                if (window.showToast) showToast('Ya enviaste una solicitud a esta persona.', 'warning');
-                boton.textContent = 'Enviada';
-                boton.disabled = true;
-            } else if (res.error) {
+
+            if (res.error) {
+                if (res.error.code === '23505') {
+                    notificar('Ya enviaste una solicitud a esta persona.', 'warning');
+                    marcarBoton(boton, 'Enviada');
+                    return true;
+                }
                 throw res.error;
-            } else {
-                if (window.showToast) showToast('Solicitud de amistad enviada.', 'success');
-                boton.textContent = 'Enviada';
-                boton.disabled = true;
             }
+
+            notificar('Solicitud de amistad enviada.', 'success');
+            marcarBoton(boton, 'Enviada');
+            return true;
         } catch (e) {
             console.error('[Buscador] Error al agregar:', e && e.code, e && e.message);
-            if (window.showToast) showToast('No se pudo enviar la solicitud.', 'error');
+            notificar('No se pudo enviar la solicitud.', 'error');
+            return false;
         }
     }
 
+    // ------------------------------------------------------------
+    // FILA DE RESULTADO
+    // ------------------------------------------------------------
     function filaUsuario(client, u) {
         var handleRaw = u.handle || u.usuario_handle || '';
         var nombre = u.nombre || handleRaw || 'Usuario';
@@ -185,9 +261,10 @@
         btn.textContent = 'Agregar';
         btn.addEventListener('click', function (e) {
             e.stopPropagation();
+            if (btn.disabled) return;
             btn.disabled = true;
-            agregarContacto(client, u.id, btn).then(function () {
-                if (!btn.textContent || btn.textContent === 'Agregar') btn.disabled = false;
+            agregarContacto(client, u.id, btn).then(function (marcado) {
+                if (!marcado) btn.disabled = false;
             });
         });
 
@@ -198,7 +275,7 @@
     }
 
     // ------------------------------------------------------------
-    // BÚSQUEDA
+    // BÚSQUEDA Y CACHÉ
     // ------------------------------------------------------------
     function leerCache(q) {
         var hit = cache.get(q);
@@ -222,11 +299,11 @@
             return;
         }
 
-        mostrarMensaje('🔍 Buscando en Csariel\'s…');
+        mostrarMensaje('Buscando en Csariel\'s…');
 
         try {
             var res = await client.rpc('buscar_usuarios', { p_query: query });
-            if (reqId !== ultimaBusqueda) return; // respuesta vieja, la ignoro
+            if (reqId !== ultimaBusqueda) return;
             if (res.error) throw res.error;
 
             var raw = res.data;
@@ -235,7 +312,7 @@
                       : [];
 
             var miId = await obtenerMiId(client);
-            lista = lista.filter(function (u) { return u.id !== miId; });
+            lista = lista.filter(function (u) { return u && u.id !== miId; });
 
             guardarCache(q, lista);
             pintar(client, lista, reqId);
@@ -261,7 +338,7 @@
     // EVENTOS
     // ------------------------------------------------------------
     input.addEventListener('input', function (e) {
-        var query = e.target.value.trim();
+        var query = normalizarQuery(e.target.value);
         clearTimeout(timer);
         if (query.length < MIN_CHARS) {
             ultimaBusqueda++;
@@ -280,12 +357,15 @@
     });
 
     input.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') { input.value = ''; ultimaBusqueda++; cerrar(); }
+        if (e.key === 'Escape') {
+            clearTimeout(timer);
+            input.value = '';
+            ultimaBusqueda++;
+            cerrar();
+        }
     });
 
     document.addEventListener('click', function (e) {
         if (!e.target.closest('.global-search-container')) cerrar();
     });
 })();
-
-
