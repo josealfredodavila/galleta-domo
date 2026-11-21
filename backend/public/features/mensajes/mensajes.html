@@ -27,22 +27,12 @@
     var intento = 0;
 
     function cargarScript() {
-        if (window.LivekitClient) {
-            window.__livekitReady = true;
-            return;
-        }
-
-        if (intento >= maxIntentos) {
-            window.dispatchEvent(new CustomEvent('livekit:error'));
-            return;
-        }
-
+        if (window.LivekitClient) { window.__livekitReady = true; return; }
+        if (intento >= maxIntentos) { window.dispatchEvent(new CustomEvent('livekit:error')); return; }
         intento++;
-
         var s = document.createElement('script');
         s.src = url;
         s.async = true;
-
         s.onload = function () {
             if (window.LivekitClient) {
                 window.__livekitReady = true;
@@ -51,19 +41,12 @@
                 setTimeout(cargarScript, 1500);
             }
         };
-
-        s.onerror = function () {
-            setTimeout(cargarScript, 1500);
-        };
-
+        s.onerror = function () { setTimeout(cargarScript, 1500); };
         document.head.appendChild(s);
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', cargarScript);
-    } else {
-        cargarScript();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargarScript);
+    else cargarScript();
 })();
 </script>
 
@@ -74,1602 +57,555 @@
 <link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
 
 <style>
+/* ================================================================
+   PALETA: verde y dorado del favicon. Sustituye el morado de
+   mensajes-messenger.css y mensajes-floating.css sin editarlos.
+   ================================================================ */
 :root {
-    color-scheme: dark;
+    --ms-accent: #d4af37;
+    --ms-accent-2: #35c88a;
+    --ms-bubble-sent: #174b30;
+    --ms-bubble-recv: #151f2a;
 
     --msg-bg: #080d12;
     --msg-panel: #0b1118;
-    --msg-panel-soft: #101923;
     --msg-surface: #151f2a;
-    --msg-surface-hover: #1b2936;
-
     --msg-text: #f3f5f7;
     --msg-muted: #8b98a7;
-    --msg-muted-soft: #657383;
-
     --msg-line: rgba(255,255,255,.075);
     --msg-line-strong: rgba(255,255,255,.13);
-
+    --msg-gold: #d4af37;
+    --msg-gold-soft: rgba(212,175,55,.12);
     --msg-green: #0f2d1a;
     --msg-green-light: #174b30;
-    --msg-gold: #d4af37;
-    --msg-gold-light: #e5c75b;
-    --msg-gold-soft: rgba(212,175,55,.11);
-
-    --msg-danger: #f16d75;
-    --msg-success: #35c88a;
-    --msg-blue: #35a8ff;
-
-    --msg-radius: 13px;
-    --msg-transition: .18s ease;
 }
 
-* {
-    box-sizing: border-box;
+.sent .bubble,
+.bubble.sent,
+.estado-circle,
+.header-avatar,
+.avatar-bot,
+.btn-send,
+.neon-modal-btn.confirm,
+.neon-modal-btn.danger {
+    background: var(--msg-green-light) !important;
+}
+.estado-circle { background: linear-gradient(135deg,#d4af37,#35c88a) !important; }
+.estado-circle.visto { background: #2a3440 !important; }
+.btn-send { background: #d4af37 !important; color: #17190e !important; }
+.neon-modal-btn.confirm { background: #d4af37 !important; color: #17190e !important; }
+.neon-modal-btn.danger { background: #f16d75 !important; color: #fff !important; }
+.neon-modal-btn.cancel { color: #d4af37 !important; }
+.estado-inner, .estado-viewer-avatar { color: #d4af37 !important; }
+.fab { background: #d4af37 !important; color: #17190e !important; }
+.fab:hover { background: #e5c75b !important; }
+.nav a.active, .sidebar-tab.active, .sidebar-tab.active .tab-label {
+    color: #d4af37 !important;
+    border-bottom-color: #d4af37 !important;
+}
+.nav a.active { border-bottom-color: #d4af37 !important; }
+.toast.success { color: #35c88a !important; }
+.bubble-bot-info, .btn-subir-estado { color: #d4af37 !important; }
+.scroll-down-btn.has-new { background: #d4af37 !important; color: #17190e !important; }
+.backbtn:hover, .action-labeled:hover, .iconbtn:hover, .composer-btn:hover,
+.composer .btn:hover:not(:disabled), .msg-context-menu button:hover,
+.btn-videollamada:hover {
+    background: rgba(212,175,55,.12) !important;
+    color: #d4af37 !important;
+}
+.searchbox input:focus-visible, .composer #messageInput:focus-visible,
+.composer input:focus-visible {
+    outline-color: #d4af37 !important;
+    box-shadow: 0 0 0 3px rgba(212,175,55,.2) !important;
+}
+#cfBubble { background: #35c88a !important; color: #04130a !important; }
+#cfBubble[aria-expanded="true"] { background: #d4af37 !important; color: #17190e !important; }
+#callOverlay .call-avatar-halo, #incomingOverlay .incoming-halo {
+    background: linear-gradient(135deg,#d4af37,#174b30) !important;
 }
 
-html {
-    min-height: 100%;
-    background: var(--msg-bg);
-    color-scheme: dark;
-    scroll-behavior: smooth;
-}
-
-body {
+/* ================================================================
+   BASE
+   ================================================================ */
+* { box-sizing: border-box; }
+html, body {
     margin: 0;
-    min-height: 100vh;
-    font-family: 'Inter', sans-serif;
+    height: 100%;
     background: var(--msg-bg);
     color: var(--msg-text);
+    font-family: 'Inter', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
-    text-rendering: optimizeLegibility;
 }
+button, input, textarea, select { font-family: inherit; }
+button { -webkit-tap-highlight-color: transparent; cursor: pointer; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+.ico { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+[hidden], .hidden { display: none !important; }
 
-button,
-input,
-textarea,
+/* Selects sin apariencia nativa del sistema */
 select {
-    font-family: inherit;
+    -webkit-appearance: none;
+    appearance: none;
+    background-color: #121b25;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23d4af37' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px !important;
 }
 
-button {
-    -webkit-tap-highlight-color: transparent;
-    cursor: pointer;
-}
-
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-    outline: 2px solid var(--msg-gold);
-    outline-offset: 3px;
-}
-
-.ico {
-    width: 20px;
-    height: 20px;
-    fill: none;
-    stroke: currentColor;
-    stroke-width: 1.8;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-    flex-shrink: 0;
-}
-
-[hidden],
-.hidden {
-    display: none !important;
-}
-
-.app {
-    min-height: 100vh;
-    background: var(--msg-bg);
-    display: flex;
-    flex-direction: column;
-}
+/* ================================================================
+   ESTRUCTURA
+   ================================================================ */
+.app { height: 100%; display: flex; flex-direction: column; background: var(--msg-bg); }
 
 .topbar {
-    height: 65px;
-    min-height: 65px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 22px;
-    background: rgba(8,13,18,.96);
-    border-bottom: 1px solid var(--msg-line);
-    position: relative;
-    z-index: 30;
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
+    height: 65px; min-height: 65px; display: flex; align-items: center; justify-content: space-between;
+    padding: 0 22px; background: rgba(8,13,18,.96); border-bottom: 1px solid var(--msg-line);
+    position: relative; z-index: 30;
 }
-
-.topbar-left,
-.topbar-actions {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-}
-
-.topbar h1 {
-    margin: 0;
-    font-size: 1.12rem;
-    font-weight: 750;
-    letter-spacing: -.045em;
-}
+.topbar-left, .topbar-actions { display: flex; align-items: center; gap: 14px; }
+.topbar h1 { margin: 0; font-size: 1.12rem; font-weight: 750; letter-spacing: -.045em; }
 
 .brand {
-    width: 36px;
-    height: 36px;
-    display: grid;
-    place-items: center;
-    text-decoration: none;
-    background: linear-gradient(145deg,#174b30,#0f2d1a);
-    border: 1px solid rgba(212,175,55,.58);
-    border-radius: 11px;
-    transition: transform var(--msg-transition);
+    width: 36px; height: 36px; display: grid; place-items: center; text-decoration: none;
+    background: linear-gradient(145deg,#174b30,#0f2d1a); border: 1px solid rgba(212,175,55,.58); border-radius: 11px;
 }
-
-.brand:hover {
-    transform: scale(1.04);
-}
-
-.brand span {
-    color: var(--msg-gold);
-    font-size: 21px;
-    font-weight: 800;
-}
-
-.icon-btn,
-.iconbtn,
-.backbtn,
-.btn-icon,
-.btn-emoji,
-.btn-accion,
-.cp-back,
-.modal-close,
-.pv-close,
-.estado-viewer-close {
-    transition: background var(--msg-transition), color var(--msg-transition), border-color var(--msg-transition);
-}
+.brand span { color: #d4af37; font-size: 21px; font-weight: 800; }
 
 .icon-btn {
-    width: 38px;
-    height: 38px;
-    display: grid;
-    place-items: center;
-    color: #aeb9c5;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
+    width: 38px; height: 38px; display: grid; place-items: center; color: #aeb9c5;
+    background: transparent; border: 0; border-radius: 50%;
 }
-
-.icon-btn:hover {
-    color: var(--msg-gold);
-    background: var(--msg-gold-soft);
-}
-
+.icon-btn:hover { color: #d4af37; background: var(--msg-gold-soft); }
 .header-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    border: 1px solid rgba(212,175,55,.3);
+    width: 36px; height: 36px; border-radius: 50%; cursor: pointer; overflow: hidden;
+    border: 1px solid rgba(212,175,55,.3); display: grid; place-items: center; color: #d4af37; font-weight: 700;
 }
+.header-avatar img { width: 100%; height: 100%; object-fit: cover; }
 
 .nav {
-    height: 49px;
-    min-height: 49px;
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-    gap: 35px;
-    padding: 0 16px;
-    background: #090e14;
-    border-bottom: 1px solid var(--msg-line);
-    overflow-x: auto;
-    scrollbar-width: none;
+    height: 49px; min-height: 49px; display: flex; align-items: stretch; justify-content: center;
+    gap: 35px; padding: 0 16px; background: #090e14; border-bottom: 1px solid var(--msg-line);
+    overflow-x: auto; scrollbar-width: none;
 }
-
-.nav::-webkit-scrollbar {
-    display: none;
-}
-
+.nav::-webkit-scrollbar { display: none; }
 .nav a {
-    display: flex;
-    align-items: center;
-    position: relative;
-    white-space: nowrap;
-    color: #8995a3;
-    text-decoration: none;
-    font-size: .83rem;
-    font-weight: 550;
-    transition: color var(--msg-transition);
+    display: flex; align-items: center; position: relative; white-space: nowrap;
+    color: #8995a3; text-decoration: none; font-size: .83rem; font-weight: 550;
 }
-
-.nav a:hover,
-.nav a.active {
-    color: var(--msg-text);
-}
-
-.nav a.active {
-    font-weight: 700;
-}
-
+.nav a:hover, .nav a.active { color: var(--msg-text); }
+.nav a.active { font-weight: 700; }
 .nav a.active::after {
-    content: "";
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 2px;
-    background: var(--msg-gold);
-    border-radius: 3px 3px 0 0;
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+    background: #d4af37; border-radius: 3px 3px 0 0;
 }
-
-.nav a.live {
-    color: #f07b83;
-}
+.nav a.live { color: #f07b83; }
 
 .panel {
-    flex: 1;
-    width: 100%;
-    max-width: 1600px;
-    min-height: 0;
-    margin: 0 auto;
-    display: grid;
-    grid-template-columns: minmax(310px, 370px) minmax(0,1fr);
-    background: var(--msg-bg);
-    overflow: hidden;
+    flex: 1; min-height: 0; width: 100%; max-width: 1600px; margin: 0 auto;
+    display: grid; grid-template-columns: minmax(310px, 370px) minmax(0,1fr); overflow: hidden;
 }
+.sidebar { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--msg-panel); border-right: 1px solid var(--msg-line); overflow: hidden; }
+.chat { min-width: 0; min-height: 0; display: flex; flex-direction: column; background: var(--msg-bg); position: relative; }
 
-.sidebar {
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    background: var(--msg-panel);
-    border-right: 1px solid var(--msg-line);
-    overflow: hidden;
-}
-
-.chat {
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    position: relative;
-    background: var(--msg-bg);
-}
-
-.sidebar-tabs {
-    display: flex;
-    align-items: stretch;
-    flex-shrink: 0;
-    background: var(--msg-panel);
-    border-bottom: 1px solid var(--msg-line);
-    gap: 0;
-    padding: 0 10px;
-}
-
+.sidebar-tabs { display: flex; flex-shrink: 0; background: var(--msg-panel); border-bottom: 1px solid var(--msg-line); padding: 0 10px; }
 .sidebar-tab {
-    flex: 1;
-    min-width: 0;
-    min-height: 58px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-    color: var(--msg-muted);
-    background: transparent;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    border-radius: 0 !important;
-    transition: color var(--msg-transition), border-color var(--msg-transition);
+    flex: 1; min-width: 0; min-height: 58px; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 5px; color: var(--msg-muted); background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
 }
+.sidebar-tab:hover { color: var(--msg-text); background: rgba(255,255,255,.025); }
+.sidebar-tab .ico { width: 19px; height: 19px; }
+.tab-label { font-size: .69rem; font-weight: 600; }
 
-.sidebar-tab:hover {
-    color: var(--msg-text);
-    background: rgba(255,255,255,.025);
-}
-
-.sidebar-tab.active {
-    color: var(--msg-gold);
-    border-bottom-color: var(--msg-gold);
-    background: transparent;
-    box-shadow: none;
-}
-
-.sidebar-tab .ico {
-    width: 19px;
-    height: 19px;
-}
-
-.tab-label {
-    font-size: .69rem;
-    font-weight: 600;
-}
-
-.tab-content {
-    min-height: 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
+.tab-content { min-height: 0; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 .sidehead {
-    min-height: 57px;
-    padding: 0 17px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    color: var(--msg-text);
-    font-size: .95rem;
-    font-weight: 750;
-    letter-spacing: -.025em;
-    border-bottom: 1px solid var(--msg-line);
+    min-height: 57px; padding: 0 17px; display: flex; align-items: center; justify-content: space-between;
+    font-size: .95rem; font-weight: 750; letter-spacing: -.025em; border-bottom: 1px solid var(--msg-line);
 }
-
-.searchbox {
-    padding: 12px 14px;
-    flex-shrink: 0;
+.searchbox { padding: 12px 14px; flex-shrink: 0; }
+.searchbox input, .search, .campo, .filtros-canales select {
+    width: 100%; min-height: 42px; padding: 10px 14px; color: var(--msg-text); background: #121b25;
+    border: 1px solid transparent; border-radius: 9px; font-size: .83rem; outline: none;
 }
+.searchbox input:focus, .search:focus, .campo:focus { background: #172330; border-color: rgba(212,175,55,.5); }
+.searchbox input::placeholder, .search::placeholder, .campo::placeholder { color: #657383; }
+.filtros-canales { display: flex; gap: 8px; padding: 0 14px 12px; flex-shrink: 0; }
+.filtros-canales select { min-width: 0; }
 
-.searchbox input,
-.search,
-.campo,
-.filtros-canales select {
-    width: 100%;
-    min-height: 42px;
-    padding: 10px 14px;
-    color: var(--msg-text);
-    background: #121b25;
-    border: 1px solid transparent;
-    border-radius: 9px;
-    font-size: .83rem;
-    outline: none;
-    transition: background var(--msg-transition), border-color var(--msg-transition);
-}
-
-.searchbox input:focus,
-.search:focus,
-.campo:focus,
-.filtros-canales select:focus {
-    background: #172330;
-    border-color: rgba(212,175,55,.5);
-    box-shadow: none;
-}
-
-.searchbox input::placeholder,
-.search::placeholder,
-.campo::placeholder {
-    color: var(--msg-muted-soft);
-}
-
-.filtros-canales {
-    display: flex;
-    gap: 8px;
-    padding: 0 14px 12px;
-    flex-shrink: 0;
-}
-
-.filtros-canales select {
-    min-width: 0;
-}
-
-.estados-bar {
-    padding: 13px 15px 12px;
-    border-bottom: 1px solid var(--msg-line);
-    flex-shrink: 0;
-    background: linear-gradient(180deg,rgba(212,175,55,.025),transparent);
-}
-
-.estados-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 11px;
-}
-
-.estados-title {
-    color: var(--msg-text);
-    font-size: .83rem;
-    font-weight: 700;
-}
-
+/* Historias (rueda) */
+.estados-bar { padding: 13px 15px 12px; border-bottom: 1px solid var(--msg-line); flex-shrink: 0; background: linear-gradient(180deg,rgba(212,175,55,.025),transparent); }
+.estados-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 11px; }
+.estados-title { font-size: .83rem; font-weight: 700; }
 .btn-subir-estado {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--msg-gold);
-    background: transparent;
-    border: 0;
-    padding: 6px 9px;
-    border-radius: 7px;
-    font-size: .75rem;
-    font-weight: 650;
+    display: inline-flex; align-items: center; gap: 5px; background: transparent; border: 0;
+    padding: 6px 9px; border-radius: 7px; font-size: .75rem; font-weight: 650;
+}
+.btn-subir-estado .ico { width: 16px; height: 16px; }
+.btn-subir-estado:hover { background: var(--msg-gold-soft); }
+.estados-scroll { display: flex; align-items: flex-start; gap: 13px; min-height: 86px; overflow-x: auto; padding: 2px 1px 7px; scrollbar-width: none; }
+.estados-scroll::-webkit-scrollbar { display: none; }
+.estados-vacio { color: var(--msg-muted); font-size: .72rem; padding: 14px 4px; width: 100%; text-align: center; }
+
+.estado-item { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; width: 66px; flex: 0 0 66px; cursor: pointer; outline: none; }
+.estado-item:focus-visible .estado-circle { box-shadow: 0 0 0 2px #d4af37; }
+.estado-circle { width: 58px; height: 58px; border-radius: 50%; padding: 2px; }
+.estado-inner {
+    width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #0b1118;
+    display: grid; place-items: center; font-weight: 700;
+}
+.estado-inner img { width: 100%; height: 100%; object-fit: cover; }
+.estado-name { font-size: .66rem; color: var(--msg-muted); max-width: 66px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.estado-vistas-badge {
+    position: absolute; top: -2px; right: 4px; background: #d4af37; color: #17190e;
+    font-size: .6rem; font-weight: 800; border-radius: 9px; padding: 1px 5px;
 }
 
-.btn-subir-estado .ico {
-    width: 16px;
-    height: 16px;
-}
+.convlist, .canales-lista { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #293746 transparent; }
+.convlist > *, .canales-lista > * { border-radius: 0 !important; box-shadow: none !important; }
+.convlist > * { border-bottom: 1px solid var(--msg-line); }
 
-.btn-subir-estado:hover {
-    background: var(--msg-gold-soft);
-}
-
-.estados-scroll {
-    display: flex;
-    align-items: flex-start;
-    gap: 13px;
-    min-height: 86px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 2px 1px 7px;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-}
-
-.estados-scroll::-webkit-scrollbar {
-    display: none;
-}
-
-/* Tarjetas y avatares de historias */
-.estados-scroll > * {
-    flex: 0 0 auto;
-}
-
-.estado-item,
-.estado-card,
-.estado-bubble,
-.estado-user {
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.estado-item img,
-.estado-card img,
-.estado-bubble img,
-.estado-user img {
-    object-fit: cover;
-}
-
-.estado-item:focus-visible,
-.estado-card:focus-visible,
-.estado-bubble:focus-visible,
-.estado-user:focus-visible {
-    outline: 2px solid var(--msg-gold);
-    outline-offset: 3px;
-}
-
-.convlist,
-.canales-lista {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: #293746 transparent;
-}
-
-.convlist > *,
-.canales-lista > * {
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-.convlist > * {
-    border-bottom: 1px solid var(--msg-line);
-    transition: background var(--msg-transition);
-}
-
-.convlist > *:hover {
-    background: rgba(255,255,255,.045);
-}
-
-.chatname {
-    color: var(--msg-text);
-    font-size: .88rem;
-    font-weight: 700;
-    letter-spacing: -.02em;
-}
-
-.status {
-    color: var(--msg-muted);
-    font-size: .73rem;
-}
-
-.empty-state-small,
-.empty {
-    color: var(--msg-muted);
-}
-
-.avatar,
-#chatAvatar,
-#headerAvatar,
-.cp-avatar,
-.estado-viewer-avatar {
-    flex-shrink: 0;
-}
-
+/* Chat */
 .chathead {
-    min-height: 68px;
-    height: 68px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 0 20px;
-    background: rgba(10,16,23,.96);
-    border-bottom: 1px solid var(--msg-line);
-    backdrop-filter: blur(18px);
-    -webkit-backdrop-filter: blur(18px);
+    min-height: 68px; height: 68px; flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 0 20px;
+    background: rgba(10,16,23,.96); border-bottom: 1px solid var(--msg-line);
 }
-
 .backbtn {
-    width: 35px;
-    height: 35px;
-    display: none;
-    place-items: center;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    color: #b4bfca;
+    width: 35px; height: 35px; display: none; place-items: center; border: 0; border-radius: 50%;
+    background: transparent; color: #b4bfca;
 }
-
-.backbtn:hover {
-    color: var(--msg-gold);
-    background: var(--msg-gold-soft);
-}
-
-#chatAvatar {
-    cursor: pointer;
-}
-
-.chat-title {
-    flex: 1;
-    min-width: 0;
-    cursor: pointer;
-}
-
-.chat-title .chatname {
-    font-size: .91rem;
-}
-
-.chat-title .status {
-    margin-top: 3px;
-}
-
-.actions {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-}
-
+.backbtn:hover { color: #d4af37; background: var(--msg-gold-soft); }
+#chatAvatar { cursor: pointer; }
+.chat-title { flex: 1; min-width: 0; cursor: pointer; }
+.chatname { font-size: .91rem; font-weight: 700; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.status { color: var(--msg-muted); font-size: .73rem; margin-top: 3px; }
+.actions { display: flex; align-items: center; gap: 7px; }
 .actions .iconbtn {
-    width: 38px;
-    height: 38px;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    border: 0;
-    background: transparent;
-    color: #aeb9c5;
+    width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; border: 0;
+    background: transparent; color: #aeb9c5;
 }
-
-.actions .iconbtn:hover {
-    background: var(--msg-gold-soft);
-    color: var(--msg-gold);
-}
+.actions .iconbtn:hover { background: var(--msg-gold-soft); color: #d4af37; }
+.actions .iconbtn:disabled { opacity: .35; }
 
 .messages {
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding: 20px;
-    background: var(--msg-bg);
-    scrollbar-width: thin;
-    scrollbar-color: #293746 transparent;
+    position: relative; flex: 1; min-height: 0; overflow-y: auto; padding: 20px; background: var(--msg-bg);
+    scrollbar-width: thin; scrollbar-color: #293746 transparent;
 }
-
-.messages::-webkit-scrollbar,
-.convlist::-webkit-scrollbar,
-.canales-lista::-webkit-scrollbar {
-    width: 5px;
-}
-
-.messages::-webkit-scrollbar-thumb,
-.convlist::-webkit-scrollbar-thumb,
-.canales-lista::-webkit-scrollbar-thumb {
-    background: #293746;
-    border-radius: 10px;
-}
-
-.empty {
-    min-height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    gap: 7px;
-}
-
-.empty p {
-    margin: 0;
-    color: #e8edf2;
-    font-size: .98rem;
-    font-weight: 700;
-}
-
-.empty small {
-    color: var(--msg-muted);
-    font-size: .8rem;
-}
-
+.empty { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 7px; color: var(--msg-muted); }
+.empty p { margin: 0; color: #e8edf2; font-size: .98rem; font-weight: 700; }
+.empty small { font-size: .8rem; }
 .scroll-down-btn {
-    position: sticky;
-    float: right;
-    bottom: 12px;
-    width: 39px;
-    height: 39px;
-    display: grid;
-    place-items: center;
-    background: #192532;
-    color: var(--msg-gold);
-    border: 1px solid var(--msg-line-strong);
-    box-shadow: 0 3px 15px rgba(0,0,0,.3);
-    border-radius: 50%;
-}
-
-.scroll-down-btn:hover {
-    background: #26384a;
+    position: sticky; float: right; bottom: 12px; width: 39px; height: 39px; display: grid; place-items: center;
+    background: #192532; color: #d4af37; border: 1px solid var(--msg-line-strong); border-radius: 50%;
 }
 
 .composer {
-    min-height: 69px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: flex-end;
-    gap: 9px;
-    padding: 11px 16px;
-    background: #0c131b;
-    border-top: 1px solid var(--msg-line);
+    min-height: 69px; flex-shrink: 0; display: flex; align-items: flex-end; gap: 9px; padding: 11px 16px;
+    background: #0c131b; border-top: 1px solid var(--msg-line);
 }
-
 .input-wrapper {
-    flex: 1;
-    min-width: 0;
-    min-height: 43px;
-    display: flex;
-    align-items: flex-end;
-    padding: 4px 7px 4px 15px;
-    background: #17212c;
-    border: 1px solid transparent;
-    border-radius: 23px;
-    transition: background var(--msg-transition), border-color var(--msg-transition);
+    flex: 1; min-width: 0; min-height: 43px; display: flex; align-items: flex-end; padding: 4px 7px 4px 15px;
+    background: #17212c; border: 1px solid transparent; border-radius: 23px;
 }
-
-.input-wrapper:focus-within {
-    background: #1a2835;
-    border-color: rgba(212,175,55,.38);
-}
-
+.input-wrapper:focus-within { background: #1a2835; border-color: rgba(212,175,55,.38); }
 .input-wrapper textarea {
-    flex: 1;
-    min-width: 0;
-    min-height: 34px;
-    max-height: 120px;
-    padding: 9px 0;
-    color: var(--msg-text);
-    background: transparent;
-    border: 0;
-    outline: 0;
-    box-shadow: none;
-    resize: none;
-    font-size: .88rem;
-    line-height: 1.4;
+    flex: 1; min-width: 0; min-height: 34px; max-height: 120px; padding: 9px 0; color: var(--msg-text);
+    background: transparent; border: 0; outline: 0; resize: none; font-size: .88rem; line-height: 1.4;
 }
-
-.input-wrapper textarea::placeholder {
-    color: #8995a3;
+.input-wrapper textarea::placeholder { color: #8995a3; }
+.btn-icon, .btn-accion, .btn-voicebot {
+    width: 42px; height: 42px; min-width: 42px; display: grid; place-items: center; border: 0; border-radius: 50%;
 }
-
-.input-wrapper textarea:focus {
-    outline: none;
-    box-shadow: none;
-}
-
-.btn-icon {
-    width: 41px;
-    height: 41px;
-    min-width: 41px;
-    display: grid;
-    place-items: center;
-    border: 0;
-    border-radius: 50%;
-    color: #aeb9c5;
-    background: transparent;
-}
-
-.btn-icon:hover {
-    color: var(--msg-gold);
-    background: var(--msg-gold-soft);
-}
-
+.btn-icon { color: #aeb9c5; background: transparent; }
+.btn-icon:hover { color: #d4af37; background: var(--msg-gold-soft); }
 .btn-emoji {
-    width: 34px;
-    height: 34px;
-    min-width: 34px;
-    margin: 0 0 2px 5px;
-    display: grid;
-    place-items: center;
-    border: 0;
-    border-radius: 50%;
-    color: #aeb9c5;
-    background: transparent;
+    width: 34px; height: 34px; min-width: 34px; margin: 0 0 2px 5px; display: grid; place-items: center;
+    border: 0; border-radius: 50%; color: #aeb9c5; background: transparent;
 }
+.btn-emoji:hover { color: #d4af37; background: var(--msg-gold-soft); }
+.btn-mic { color: #c1cbd5; background: #182532; }
+.btn-mic:hover { color: #d4af37; background: #263849; }
+.btn-send { color: #17190e; }
+.btn-send:hover { background: #e5c75b !important; }
+.btn-voicebot { color: #d4af37; background: #153b29; border: 1px solid rgba(212,175,55,.25); }
 
-.btn-emoji:hover {
-    color: var(--msg-gold);
-    background: var(--msg-gold-soft);
-}
-
-.btn-emoji .ico {
-    width: 20px;
-    height: 20px;
-}
-
-.btn-accion {
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-    display: grid;
-    place-items: center;
-    border: 0;
-    border-radius: 50%;
-}
-
-.btn-mic {
-    color: #c1cbd5;
-    background: #182532;
-}
-
-.btn-mic:hover {
-    color: var(--msg-gold);
-    background: #263849;
-}
-
-.btn-send {
-    color: #17190e;
-    background: var(--msg-gold);
-    box-shadow: none;
-}
-
-.btn-send:hover {
-    background: var(--msg-gold-light);
-}
-
-.btn-send .ico {
-    width: 19px;
-    height: 19px;
-    stroke-width: 2;
-}
-
-.btn-voicebot {
-    width: 42px;
-    height: 42px;
-    display: grid;
-    place-items: center;
-    color: var(--msg-gold);
-    background: #153b29;
-    border: 1px solid rgba(212,175,55,.25);
-    border-radius: 50%;
-}
-
-.btn-voicebot:hover {
-    background: #205338;
-}
-
-#emojiBtn {
-    position: relative;
-    flex-shrink: 0;
-}
-
-.emoji-picker,
-.emoji-panel,
-.teclado-emojis,
-#emojiPicker,
-#emojiPanel {
-    font-family: 'Inter',sans-serif !important;
-    color: var(--msg-text) !important;
-    background: #111a25 !important;
-    border: 1px solid var(--msg-line-strong) !important;
-    border-radius: 13px !important;
-    box-shadow: 0 14px 40px rgba(0,0,0,.4) !important;
-}
-
-.emoji-picker button,
-.emoji-panel button,
-.teclado-emojis button,
-#emojiPicker button,
-#emojiPanel button {
-    border-radius: 8px !important;
-    transition: background .15s ease;
-}
-
-.emoji-picker button:hover,
-.emoji-panel button:hover,
-.teclado-emojis button:hover,
-#emojiPicker button:hover,
-#emojiPanel button:hover {
-    background: var(--msg-gold-soft) !important;
-}
-
-.contact-profile-overlay {
-    background: #0a1018;
-}
-
-.cp-topbar {
-    background: rgba(10,16,24,.97);
-    border-bottom: 1px solid var(--msg-line);
-}
-
-.cp-topbar-title {
-    font-weight: 700;
-    letter-spacing: -.02em;
-}
-
-.cp-name {
-    font-weight: 750;
-    letter-spacing: -.035em;
-}
-
-.cp-sub {
-    color: var(--msg-muted);
-}
-
-.cp-ver-perfil {
-    color: var(--msg-gold);
-    background: var(--msg-gold-soft);
-    border: 1px solid rgba(212,175,55,.23);
-    border-radius: 9px;
-    font-weight: 650;
-}
-
-.cp-ver-perfil:hover {
-    background: rgba(212,175,55,.2);
-}
-
-.cp-action-grid {
-    border-bottom: 1px solid var(--msg-line);
-}
-
-.cp-action-btn {
-    color: var(--msg-text);
-    background: transparent !important;
-    border: 0 !important;
-    box-shadow: none !important;
-}
-
-.cp-action-btn:hover {
-    color: var(--msg-gold);
-}
-
-.cp-action-icon {
-    background: #172330 !important;
-    border: 1px solid var(--msg-line) !important;
-    border-radius: 50% !important;
-    box-shadow: none !important;
-}
-
-.cp-action-btn:hover .cp-action-icon {
-    background: var(--msg-gold-soft) !important;
-    border-color: rgba(212,175,55,.25) !important;
-}
-
-.cp-action-label {
-    font-size: .75rem;
-    font-weight: 550;
-}
-
-.cp-section {
-    border-bottom: 1px solid var(--msg-line);
-}
-
-.cp-section-title {
-    color: var(--msg-muted);
-    font-size: .7rem;
-    font-weight: 700;
-    letter-spacing: .07em;
-    text-transform: uppercase;
-}
-
-.cp-list {
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
-.cp-list-item {
-    color: var(--msg-text);
-    background: transparent !important;
-    border: 0 !important;
-    border-bottom: 1px solid var(--msg-line) !important;
-    border-radius: 0 !important;
-    box-shadow: none !important;
-}
-
-.cp-list-item:hover {
-    background: rgba(255,255,255,.035) !important;
-}
-
-.cp-list-icon {
-    color: #aab6c4;
-}
-
-.cp-list-item.danger,
-.cp-list-item.danger .cp-list-icon {
-    color: var(--msg-danger);
-}
-
-.form-campo {
-    display: flex;
-    flex-direction: column;
-    gap: 7px;
-    margin-bottom: 15px;
-}
-
-.form-campo label {
-    color: #aab6c4;
-    font-size: .75rem;
-    font-weight: 650;
-}
-
-.campo {
-    min-height: 44px;
-    background: #121b25;
-    border: 1px solid var(--msg-line-strong);
-    border-radius: 9px;
-    color: var(--msg-text);
-    font-size: .87rem;
-}
-
-.campo-area {
-    resize: vertical;
-    min-height: 85px;
-}
-
-.form-fila {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-}
-
-.canal-card:focus-visible {
-    outline: 2px solid var(--msg-gold);
-    outline-offset: 2px;
-}
-
-.btn-plano {
-    color: #e4e9ef;
-    background: #192634;
-    border: 1px solid var(--msg-line-strong);
-    border-radius: 9px;
-    padding: 11px 15px;
-    font-size: .84rem;
-    font-weight: 600;
-    transition: background var(--msg-transition);
-}
-
-.btn-plano:hover {
-    background: #26384a;
-}
-
-.btn-plano.sol {
-    color: #17190e;
-    background: var(--msg-gold);
-    border-color: transparent;
-    font-weight: 750;
-}
-
-.btn-plano.sol:hover {
-    background: var(--msg-gold-light);
-}
-
+/* Modales */
 .modal {
-    background: rgba(0,0,0,.74);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    display: none; position: fixed; inset: 0; z-index: 100000; align-items: center; justify-content: center;
+    padding: 14px; background: rgba(0,0,0,.74); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
-
+.modal.show { display: flex; }
 .modalbox {
-    padding: 21px;
-    color: var(--msg-text);
-    background: #101823;
-    border: 1px solid var(--msg-line-strong);
-    border-radius: 14px;
-    box-shadow: 0 20px 70px rgba(0,0,0,.48);
+    width: 100%; max-width: 440px; max-height: calc(100dvh - 28px); overflow-y: auto; padding: 20px;
+    background: #101823; border: 1px solid var(--msg-line-strong); border-radius: 14px; box-shadow: 0 20px 70px rgba(0,0,0,.48);
 }
-
-.modal-head {
-    padding-bottom: 14px;
-    margin-bottom: 18px;
-    border-bottom: 1px solid var(--msg-line);
+.modal-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; margin-bottom: 16px; border-bottom: 1px solid var(--msg-line); }
+.modal-head h2 { margin: 0; font-size: 1rem; font-weight: 750; letter-spacing: -.025em; }
+.modal-close { width: 34px; height: 34px; display: grid; place-items: center; color: #aeb8c4; background: transparent; border: 0; border-radius: 50%; }
+.modal-close:hover { color: #d4af37; background: rgba(255,255,255,.08); }
+.btn-plano {
+    color: #e4e9ef; background: #192634; border: 1px solid var(--msg-line-strong); border-radius: 9px;
+    padding: 11px 15px; font-size: .84rem; font-weight: 600;
 }
+.btn-plano:hover { background: #26384a; }
+.btn-plano.sol { color: #17190e; background: #d4af37; border-color: transparent; font-weight: 750; }
+.btn-plano.sol:hover { background: #e5c75b; }
+.btn-plano.is-loading { opacity: .6; cursor: progress; }
 
-.modal-head h2 {
-    font-size: 1rem;
-    font-weight: 750;
-    letter-spacing: -.025em;
-}
+.form-campo { display: flex; flex-direction: column; gap: 7px; margin-bottom: 14px; }
+.form-campo label { color: #aab6c4; font-size: .75rem; font-weight: 650; }
+.campo { min-height: 44px; font-size: .87rem; border-color: var(--msg-line-strong); }
+.campo-area { resize: vertical; min-height: 85px; }
+.form-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-.modal-close {
-    color: #aeb8c4;
-    background: transparent;
-    border: 0;
-    border-radius: 50%;
-}
+.cfg-fila { padding: 12px 0; border-bottom: 1px solid var(--msg-line); }
+.cfg-fila-txt { font-weight: 600; }
+.cfg-fila-txt small { display: block; color: var(--msg-muted); font-weight: 400; margin-top: 3px; }
+.sel { width: 100%; margin-top: 10px; min-height: 42px; padding: 10px 14px; color: var(--msg-text); background: #172330; border: 1px solid var(--msg-line-strong); border-radius: 9px; }
 
-.modal-close:hover {
-    color: var(--msg-gold);
-    background: rgba(255,255,255,.08);
-}
+.profile-modal-box { width: 100%; max-width: 360px; padding: 26px 22px; text-align: center; background: #101823; border: 1px solid var(--msg-line); border-radius: 14px; }
+.profile-modal-avatar { width: 84px; height: 84px; margin: 0 auto 12px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #174b30; color: #d4af37; font-size: 1.8rem; font-weight: 700; }
+.profile-modal-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.profile-modal-name { font-weight: 750; font-size: 1.05rem; }
+.profile-modal-handle { color: var(--msg-muted); font-size: .8rem; margin-top: 3px; }
+.profile-modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+.profile-modal-btn { flex: 1; padding: 10px; color: var(--msg-text); background: #192634; border: 1px solid var(--msg-line); border-radius: 9px; font-weight: 600; }
 
-.cfg-fila {
-    padding: 12px 0;
-    border-bottom: 1px solid var(--msg-line);
-}
+/* Visor de fotos de perfil */
+.photo-viewer { display: none; position: fixed; inset: 0; z-index: 100005; background: #000; align-items: center; justify-content: center; }
+.photo-viewer.show { display: flex; }
+.photo-viewer img { max-width: 100%; max-height: 100dvh; object-fit: contain; }
+.pv-close { position: absolute; top: max(12px, env(safe-area-inset-top)); right: 12px; width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; }
 
-.cfg-fila-txt {
-    color: var(--msg-text);
-    font-weight: 600;
-}
+/* Información del chat */
+.contact-profile-overlay { background: #0a1018; }
+.cp-topbar { background: rgba(10,16,24,.97); border-bottom: 1px solid var(--msg-line); }
+.cp-ver-perfil { color: #d4af37; background: var(--msg-gold-soft); border: 1px solid rgba(212,175,55,.23); border-radius: 9px; font-weight: 650; }
+.cp-action-btn { background: transparent !important; border: 0 !important; box-shadow: none !important; color: var(--msg-text); }
+.cp-action-icon { background: #172330 !important; border: 1px solid var(--msg-line) !important; border-radius: 50% !important; box-shadow: none !important; }
+.cp-action-btn:hover .cp-action-icon { background: var(--msg-gold-soft) !important; border-color: rgba(212,175,55,.25) !important; }
+.cp-list { background: transparent !important; box-shadow: none !important; border-radius: 0 !important; }
+.cp-list-item { background: transparent !important; border: 0 !important; border-bottom: 1px solid var(--msg-line) !important; border-radius: 0 !important; box-shadow: none !important; }
+.cp-list-item.danger, .cp-list-item.danger .cp-list-icon { color: #f16d75; }
 
-.cfg-fila-txt small {
-    color: var(--msg-muted);
-    font-weight: 400;
-}
-
-.sel {
-    color: var(--msg-text);
-    background: #172330;
-    border: 1px solid var(--msg-line-strong);
-    border-radius: 9px;
-    padding: 10px;
-}
-
-/* Visor de historias: media sin deformación */
+/* Visor de historias a pantalla completa */
 .estado-viewer {
-    background: #05080d;
+    display: none; position: fixed; inset: 0; z-index: 99999; flex-direction: column;
+    width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; background: #000;
+    touch-action: manipulation; user-select: none; -webkit-user-select: none;
 }
-
-.estado-viewer-header {
-    background: linear-gradient(to bottom,rgba(0,0,0,.72),transparent);
-}
-
-.estado-viewer-name {
-    font-weight: 700;
-}
-
-.estado-viewer-time {
-    color: rgba(255,255,255,.68);
-}
+.estado-viewer.show { display: flex; }
 
 .estado-viewer-progress {
-    background: rgba(255,255,255,.24);
+    position: absolute; top: calc(env(safe-area-inset-top, 0px) + 8px); left: 10px; right: 10px; z-index: 6;
+    height: 3px; background: rgba(255,255,255,.25); border-radius: 3px; overflow: hidden;
+}
+.estado-viewer-progress-inner { height: 100%; width: 0; background: #fff; }
+
+.estado-viewer-header {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; align-items: center; gap: 10px;
+    padding: calc(env(safe-area-inset-top, 0px) + 18px) 12px 26px;
+    background: linear-gradient(rgba(0,0,0,.6), transparent);
+}
+.estado-viewer-avatar {
+    width: 36px; height: 36px; flex-shrink: 0; border-radius: 50%; overflow: hidden; display: grid; place-items: center;
+    background: #174b30; border: 1px solid rgba(212,175,55,.4); font-weight: 700;
+}
+.estado-viewer-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.estado-viewer-info { flex: 1; min-width: 0; }
+.estado-viewer-name { font-size: .9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.estado-viewer-time { font-size: .72rem; color: rgba(255,255,255,.7); }
+.estado-viewer-close, .estado-viewer-skip {
+    width: 40px; height: 40px; flex-shrink: 0; display: grid; place-items: center;
+    background: rgba(0,0,0,.35); color: #fff; border: 0; border-radius: 50%;
 }
 
-.estado-viewer-progress-inner {
-    background: #fff;
-}
-
-.estado-viewer-foot button {
-    color: #fff;
-    background: rgba(12,18,27,.78);
-    border: 1px solid rgba(255,255,255,.18);
-    border-radius: 999px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-}
-
-.estado-viewer-foot button:hover {
-    background: rgba(212,175,55,.25);
-}
-
-.estado-viewer-body {
-    position: relative;
-    min-width: 0;
-    min-height: 0;
-    overflow: hidden;
-    background: #000;
-}
-
-.estado-viewer-body > img,
-.estado-viewer-body > video,
-.estado-viewer-img,
-.estado-viewer-video {
-    display: block;
-    width: 100%;
-    height: 100%;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-    object-position: center;
-    background: #000;
-}
-
-.estado-preview-img,
-.estado-preview-video {
-    display: block;
-    width: 100%;
-    max-width: 100%;
-    max-height: min(60vh,620px);
-    max-height: min(60dvh,620px);
-    object-fit: contain;
-    object-position: center;
-    background: #000;
-    border-radius: 9px;
-}
-
-.estado-preview-img.hidden,
-.estado-preview-video.hidden {
-    display: none !important;
-}
-
-#estadoPreviewWrap {
-    width: 100%;
-    min-width: 0;
-    overflow: hidden;
-    border-radius: 10px;
-    background: #05080d;
-}
-
-#estadoPreviewWrap video,
-#estadoPreviewWrap img {
-    margin: 0 auto;
-}
-
-.estado-upload-help {
-    margin: 9px 0 0;
-    color: var(--msg-muted);
-    font-size: .72rem;
-    line-height: 1.5;
-}
-
-.estado-upload-limits {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 7px;
-    margin-top: 10px;
-}
-
-.estado-upload-limits span {
-    padding: 6px 9px;
-    color: #cbd5df;
-    background: rgba(255,255,255,.045);
-    border: 1px solid var(--msg-line);
-    border-radius: 7px;
-    font-size: .69rem;
-}
-
-.estado-upload-limits strong {
-    color: var(--msg-gold);
+.estado-viewer-body { position: absolute; inset: 0; background: #000; }
+.estado-viewer-img, .estado-viewer-video {
+    position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; object-position: center; background: #000;
 }
 
 .estado-viewer-caption {
-    position: absolute;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    z-index: 4;
-    padding: 10px 13px;
-    color: #fff;
-    background: rgba(0,0,0,.48);
-    border-radius: 9px;
-    font-size: .88rem;
-    line-height: 1.45;
-    text-align: center;
-    overflow-wrap: anywhere;
-    backdrop-filter: blur(8px);
+    position: absolute; left: 14px; right: 14px; z-index: 4; bottom: calc(env(safe-area-inset-bottom, 0px) + 150px);
+    padding: 10px 13px; color: #fff; background: rgba(0,0,0,.5); border-radius: 9px;
+    font-size: .88rem; line-height: 1.45; text-align: center; overflow-wrap: anywhere;
 }
 
-#evVistas,
-#evComentar,
-#evEliminar {
-    min-height: 39px;
-    padding: 8px 13px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
+/* Flechas: solo con puntero (escritorio). En tablet y celular se navega tocando o deslizando. */
+.estado-viewer-nav {
+    position: absolute; top: 50%; transform: translateY(-50%); z-index: 4; width: 44px; height: 44px;
+    display: none; place-items: center; border: 0; border-radius: 50%; background: rgba(0,0,0,.4); color: #fff;
 }
+.estado-viewer-nav.prev { left: 12px; }
+.estado-viewer-nav.next { right: 12px; }
+@media (hover: hover) and (pointer: fine) { .estado-viewer-nav { display: grid; } }
+
+/* Controles propios del video */
+.estado-viewer-videobar {
+    position: absolute; left: 0; right: 0; z-index: 5; display: flex; align-items: center; gap: 10px;
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 74px); padding: 16px 14px 10px;
+    background: linear-gradient(transparent, rgba(0,0,0,.6));
+}
+.ev-ctl {
+    width: 40px; height: 40px; flex-shrink: 0; display: grid; place-items: center; border: 0; border-radius: 50%;
+    background: rgba(255,255,255,.14); color: #fff;
+}
+.ev-seek { position: relative; flex: 1; height: 26px; cursor: pointer; touch-action: none; }
+.ev-seek::before {
+    content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 4px; margin-top: -2px;
+    background: rgba(255,255,255,.3); border-radius: 4px;
+}
+.ev-seek span {
+    position: absolute; left: 0; top: 50%; height: 4px; width: 0; margin-top: -2px;
+    background: #d4af37; border-radius: 4px; pointer-events: none;
+}
+.ev-tiempo { flex-shrink: 0; min-width: 78px; text-align: right; color: #fff; font-size: .72rem; font-variant-numeric: tabular-nums; }
+
+.estado-viewer-foot {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+    padding: 12px 12px calc(env(safe-area-inset-bottom, 0px) + 14px);
+    background: linear-gradient(transparent, rgba(0,0,0,.6));
+}
+.estado-viewer-foot button {
+    display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 8px 16px;
+    color: #fff; background: rgba(12,18,27,.8); border: 1px solid rgba(255,255,255,.18); border-radius: 999px;
+    font-size: .8rem; font-weight: 600;
+}
+.estado-viewer-foot button .ico { width: 17px; height: 17px; }
+.estado-viewer-foot button:hover { background: rgba(212,175,55,.25); }
+
+/* Panel de vistas y comentarios */
+#vistasModal .modalbox { max-width: 460px; }
+#vistasTabs { display: flex; gap: 18px; border-bottom: 1px solid var(--msg-line-strong); margin-bottom: 12px; }
+.estado-tab { display: inline-flex; align-items: center; gap: 7px; padding: 10px 2px; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--msg-muted); font-weight: 600; }
+.estado-tab.active { color: #d4af37; border-bottom-color: #d4af37; }
+.estado-tab .ico { width: 17px; height: 17px; }
+.estado-panel-msg { padding: 22px 12px; text-align: center; color: var(--msg-muted); font-size: .85rem; }
+.estado-result { display: flex; align-items: center; gap: 12px; padding: 11px 2px; border-bottom: 1px solid var(--msg-line); }
+.estado-result[data-url], .estado-result[data-url] * { cursor: pointer; }
+.estado-result .avatar { width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; background: #174b30; color: #d4af37; font-weight: 700; }
+.estado-result .avatar img { width: 100%; height: 100%; object-fit: cover; }
+.estado-result-info { flex: 1; min-width: 0; }
+.estado-result-meta { margin-top: 3px; font-size: .72rem; color: var(--msg-muted); }
+.estado-comentario { margin-top: 5px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .86rem; }
+
+/* Publicar historia */
+.estado-upload-limits { display: flex; flex-wrap: wrap; gap: 7px; margin: 4px 0 6px; }
+.estado-upload-limits span { padding: 6px 9px; color: #cbd5df; background: rgba(255,255,255,.045); border: 1px solid var(--msg-line); border-radius: 7px; font-size: .69rem; }
+.estado-upload-limits strong { color: #d4af37; }
+.estado-upload-help { margin: 8px 0 0; color: var(--msg-muted); font-size: .72rem; line-height: 1.5; }
+
+#estadoPreviewWrap { margin-top: 12px; }
+.estado-preview-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 9px; }
+.estado-preview-item {
+    position: relative; aspect-ratio: 9 / 16; overflow: hidden; background: #05080d;
+    border: 1px solid var(--msg-line-strong); border-radius: 11px;
+}
+.estado-preview-item img, .estado-preview-item video { width: 100%; height: 100%; object-fit: contain; display: block; }
+.estado-preview-numero {
+    position: absolute; top: 6px; left: 6px; padding: 3px 7px; border-radius: 20px;
+    background: rgba(5,8,15,.8); color: #fff; font-size: 10px;
+}
+.estado-preview-quitar {
+    position: absolute; top: 5px; right: 5px; width: 28px; height: 28px; display: grid; place-items: center;
+    background: rgba(5,8,15,.9); color: #fff; border: 1px solid rgba(255,255,255,.25); border-radius: 50%; font-size: 16px; line-height: 1;
+}
+.estado-preview-info {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 14px 6px 5px;
+    background: linear-gradient(transparent, rgba(0,0,0,.75)); color: #fff; font-size: 10px; text-align: left;
+}
+.estado-preview-contador { margin-top: 10px; color: var(--msg-muted); font-size: .74rem; }
+.estado-progreso-publicacion { height: 3px; margin-top: 10px; overflow: hidden; border-radius: 5px; background: rgba(255,255,255,.12); }
+.estado-progreso-publicacion > span { display: block; height: 100%; width: 0; background: #d4af37; transition: width .2s ease; }
+
+/* Notificaciones y modal del ecosistema por encima del visor */
+.neon-modal-backdrop { z-index: 100020 !important; }
+.toast { z-index: 100030; }
 
 /* Llamadas */
-#btnConfigLlamadas {
-    display: grid !important;
-}
-
-#callOverlay .callinfo {
-    min-height: 20px;
-    text-align: center;
-}
-
-.call {
-    background: #05080e;
-}
-
-.call .controls button {
-    transition: transform var(--msg-transition), background var(--msg-transition);
-}
-
-.call .controls button:hover {
-    transform: translateY(-2px);
-}
-
-.profile-modal-box {
-    background: #101823;
-    border: 1px solid var(--msg-line);
-    border-radius: 14px;
-}
-
-.profile-modal-btn {
-    color: var(--msg-text);
-    background: #192634;
-    border: 1px solid var(--msg-line);
-    border-radius: 9px;
-}
-
-.profile-modal-btn:hover {
-    background: #26394c;
-}
+#btnConfigLlamadas { display: grid !important; }
+.call .controls button:hover { transform: translateY(-2px); }
 
 .footer {
-    min-height: 37px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 18px;
-    color: var(--msg-muted);
-    background: #080d14;
-    border-top: 1px solid var(--msg-line);
-    font-size: .69rem;
+    min-height: 37px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px;
+    color: var(--msg-muted); background: #080d14; border-top: 1px solid var(--msg-line); font-size: .69rem;
 }
+.btn-borrar-todo { color: #f16d75; background: transparent; border: 0; font-size: .73rem; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; }
+.btn-borrar-todo:hover { background: rgba(241,109,117,.1); }
 
-.btn-borrar-todo {
-    color: var(--msg-danger);
-    background: transparent;
-    border: 0;
-    font-size: .73rem;
-    font-weight: 600;
-}
-
-.btn-borrar-todo:hover {
-    background: rgba(241,109,117,.1);
-}
-
+/* ================================================================
+   RESPONSIVE: tablet, celular gama alta y gama baja
+   ================================================================ */
 @media (max-width: 900px) {
-    .panel {
-        grid-template-columns: minmax(280px, 320px) minmax(0,1fr);
-    }
-
-    .nav {
-        gap: 23px;
-    }
-
-    .chathead {
-        padding: 0 14px;
-    }
-
-    .messages {
-        padding: 16px;
-    }
+    .panel { grid-template-columns: minmax(280px, 320px) minmax(0,1fr); }
+    .nav { gap: 23px; }
+    .chathead { padding: 0 14px; }
+    .messages { padding: 16px; }
 }
 
 @media (max-width: 680px) {
-    html,
-    body {
-        height: 100%;
-        min-height: 100%;
-        overflow: hidden;
-    }
+    html, body { overflow: hidden; }
+    .app { height: 100dvh; overflow: hidden; }
+    .topbar { height: 57px; min-height: 57px; padding: 0 13px; }
+    .topbar h1 { font-size: 1rem; }
+    .brand { width: 33px; height: 33px; }
+    .nav { height: 43px; min-height: 43px; justify-content: flex-start; gap: 25px; padding: 0 15px; }
+    .nav a { font-size: .76rem; }
 
-    .app {
-        height: 100dvh;
-        min-height: 0;
-        overflow: hidden;
-    }
+    .panel { position: relative; display: block; overflow: hidden; }
+    .sidebar { position: absolute; inset: 0; width: 100%; height: 100%; border-right: 0; z-index: 2; transition: transform .22s ease; }
+    .chat { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 3; transform: translateX(100%); transition: transform .22s ease; }
+    .panel.chat-open .sidebar { transform: translateX(-100%); }
+    .panel.chat-open .chat { transform: translateX(0); }
 
-    .topbar {
-        height: 57px;
-        min-height: 57px;
-        padding: 0 13px;
-    }
+    .sidehead { min-height: 52px; padding: 0 15px; }
+    .searchbox { padding: 10px 13px; }
+    .estados-bar { padding: 11px 13px 9px; }
+    .estados-scroll { gap: 12px; min-height: 82px; }
+    .estado-item { width: 62px; flex-basis: 62px; }
+    .estado-circle { width: 54px; height: 54px; }
 
-    .topbar h1 {
-        font-size: 1rem;
-    }
+    .chathead { height: 61px; min-height: 61px; padding: 0 10px; gap: 9px; }
+    .backbtn { display: grid; width: 33px; height: 33px; }
+    .chatname { font-size: .85rem; }
+    .actions { gap: 2px; }
+    .actions .iconbtn { width: 35px; height: 35px; }
+    .actions .iconbtn .ico { width: 18px; height: 18px; }
+    .messages { padding: 12px; }
 
-    .brand {
-        width: 33px;
-        height: 33px;
-    }
+    .composer { min-height: 61px; padding: 8px; gap: 5px; padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+    .btn-icon, .btn-accion, .btn-voicebot { width: 38px; height: 38px; min-width: 38px; }
+    .input-wrapper { min-height: 40px; padding-left: 12px; }
+    .input-wrapper textarea { min-height: 31px; font-size: .85rem; }
+    .btn-emoji { width: 30px; height: 30px; min-width: 30px; }
 
-    .nav {
-        height: 43px;
-        min-height: 43px;
-        justify-content: flex-start;
-        gap: 25px;
-        padding: 0 15px;
-    }
+    .footer { min-height: 30px; padding: 0 12px; font-size: .63rem; }
+    .modalbox { padding: 17px; border-radius: 13px; }
+    .form-fila { grid-template-columns: 1fr 1fr; gap: 9px; }
 
-    .nav a {
-        font-size: .76rem;
-    }
-
-    .panel {
-        position: relative;
-        flex: 1;
-        min-height: 0;
-        display: block;
-        overflow: hidden;
-    }
-
-    .sidebar {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        border-right: 0;
-        display: flex;
-        z-index: 2;
-        transition: transform .22s ease;
-    }
-
-    .chat {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        z-index: 3;
-        transform: translateX(100%);
-        transition: transform .22s ease;
-    }
-
-    .panel.chat-open .sidebar {
-        transform: translateX(-100%);
-    }
-
-    .panel.chat-open .chat {
-        transform: translateX(0);
-    }
-
-    .panel:not(.chat-open) .chat {
-        pointer-events: none;
-    }
-
-    .panel.chat-open .chat {
-        pointer-events: auto;
-    }
-
-    .sidebar-tabs {
-        min-height: 57px;
-    }
-
-    .sidebar-tab {
-        min-height: 55px;
-    }
-
-    .sidehead {
-        min-height: 52px;
-        padding: 0 15px;
-    }
-
-    .searchbox {
-        padding: 10px 13px;
-    }
-
-    .estados-bar {
-        padding: 11px 13px 9px;
-    }
-
-    .estados-scroll {
-        min-height: 82px;
-        gap: 12px;
-    }
-
-    .chathead {
-        height: 61px;
-        min-height: 61px;
-        padding: 0 10px;
-        gap: 9px;
-    }
-
-    .backbtn {
-        display: grid;
-        width: 33px;
-        height: 33px;
-    }
-
-    .chat-title .chatname {
-        font-size: .85rem;
-    }
-
-    .actions {
-        gap: 2px;
-    }
-
-    .actions .iconbtn {
-        width: 35px;
-        height: 35px;
-    }
-
-    .actions .iconbtn .ico {
-        width: 18px;
-        height: 18px;
-    }
-
-    .messages {
-        padding: 12px;
-    }
-
-    .composer {
-        min-height: 61px;
-        padding: 8px 8px;
-        gap: 5px;
-        padding-bottom: max(8px,env(safe-area-inset-bottom));
-    }
-
-    .btn-icon,
-    .btn-accion {
-        width: 38px;
-        height: 38px;
-        min-width: 38px;
-    }
-
-    .input-wrapper {
-        min-height: 40px;
-        padding-left: 12px;
-    }
-
-    .input-wrapper textarea {
-        min-height: 31px;
-        font-size: .85rem;
-    }
-
-    .btn-emoji {
-        width: 30px;
-        height: 30px;
-        min-width: 30px;
-        margin-left: 2px;
-    }
-
-    .footer {
-        min-height: 30px;
-        font-size: .63rem;
-        padding: 0 12px;
-    }
-
-    .modalbox {
-        width: calc(100% - 24px);
-        max-width: 440px;
-        max-height: calc(100dvh - 24px);
-        overflow-y: auto;
-        padding: 17px;
-        border-radius: 13px;
-    }
-
-    .form-fila {
-        grid-template-columns: 1fr 1fr;
-        gap: 9px;
-    }
-
-    /* Visor de historias a pantalla completa */
-    .estado-viewer {
-        position: fixed !important;
-        inset: 0 !important;
-        width: 100% !important;
-        height: 100vh !important;
-        height: 100dvh !important;
-        max-height: 100dvh !important;
-        overflow: hidden !important;
-        padding-top: env(safe-area-inset-top);
-        padding-bottom: env(safe-area-inset-bottom);
-    }
-
-    .estado-viewer-body {
-        min-height: 0 !important;
-        max-height: none !important;
-    }
-
-    .estado-viewer-body > img,
-    .estado-viewer-body > video,
-    .estado-viewer-img,
-    .estado-viewer-video {
-        width: 100% !important;
-        height: 100% !important;
-        object-fit: contain !important;
-    }
-
-    .estado-viewer-header {
-        padding-top: max(10px,env(safe-area-inset-top));
-    }
-
-    .estado-viewer-foot {
-        padding-bottom: max(12px,env(safe-area-inset-bottom));
-    }
-
-    .estado-preview-img,
-    .estado-preview-video {
-        max-height: min(55vh,480px);
-        max-height: min(55dvh,480px);
-    }
+    .estado-viewer-caption { bottom: calc(env(safe-area-inset-bottom, 0px) + 140px); }
 }
 
+/* Celulares de gama baja y pantallas muy angostas */
 @media (max-width: 360px) {
-    .topbar {
-        padding: 0 9px;
-    }
-
-    .nav {
-        gap: 19px;
-    }
-
-    .actions .iconbtn {
-        width: 32px;
-        height: 32px;
-    }
-
-    .composer {
-        gap: 3px;
-        padding-left: 5px;
-        padding-right: 5px;
-    }
-
-    .btn-icon,
-    .btn-accion {
-        width: 35px;
-        height: 35px;
-        min-width: 35px;
-    }
-
-    .form-fila {
-        grid-template-columns: 1fr;
-    }
+    .topbar { padding: 0 9px; }
+    .nav { gap: 19px; }
+    .actions .iconbtn { width: 32px; height: 32px; }
+    .composer { gap: 3px; padding-left: 5px; padding-right: 5px; }
+    .btn-icon, .btn-accion, .btn-voicebot { width: 35px; height: 35px; min-width: 35px; }
+    .form-fila { grid-template-columns: 1fr; }
+    .estado-viewer-header { padding-top: calc(env(safe-area-inset-top, 0px) + 16px); }
+    .estado-viewer-close, .estado-viewer-skip { width: 36px; height: 36px; }
+    .ev-tiempo { min-width: 64px; font-size: .66rem; }
+    .estado-viewer-foot button { padding: 7px 12px; font-size: .74rem; }
 }
 
-@media (min-width: 1200px) {
-    .panel {
-        min-height: calc(100vh - 151px);
-    }
-
-    .sidebar {
-        min-height: 600px;
-    }
-
-    .chat {
-        min-height: 600px;
-    }
-}
-
-button:disabled {
-    opacity: .45;
-    cursor: not-allowed;
+/* Tablets en vertical y horizontal: visor centrado, sin deformar */
+@media (min-width: 681px) {
+    .estado-viewer-img, .estado-viewer-video { width: 100%; height: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        scroll-behavior: auto !important;
-        animation-duration: .01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: .01ms !important;
-    }
+    *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
 </style>
 </head>
@@ -1684,14 +620,14 @@ button:disabled {
     </div>
 
     <div class="topbar-actions">
-        <button type="button" class="icon-btn" id="btnConfigLlamadas" aria-label="Configuración de llamadas" title="Configuración de llamadas">
+        <button type="button" class="icon-btn" id="btnConfigLlamadas" aria-label="Configuración de llamadas">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="12" r="3"/>
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
         </button>
 
-        <div class="header-avatar" id="headerAvatar" role="button" tabindex="0" aria-label="Mi perfil" title="Mi perfil"></div>
+        <div class="header-avatar" id="headerAvatar" role="button" tabindex="0" aria-label="Mi perfil"></div>
         <input type="file" id="avatarInput" hidden accept="image/*">
     </div>
 </header>
@@ -1712,41 +648,25 @@ button:disabled {
 <aside class="sidebar">
 
     <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
-
         <button type="button" class="sidebar-tab active" data-tab="chats" role="tab" aria-selected="true" onclick="cambiarPestana('chats')">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
             <span class="tab-label">Chats</span>
         </button>
-
         <button type="button" class="sidebar-tab" data-tab="canales" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M11 5 6 9H3v6h3l5 4z"/>
-                <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
             <span class="tab-label">Canales</span>
         </button>
-
         <button type="button" class="sidebar-tab" data-tab="grupos" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                <circle cx="9" cy="7" r="4"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             <span class="tab-label">Grupos</span>
         </button>
-
         <button type="button" class="sidebar-tab" data-tab="llamadas" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg>
             <span class="tab-label">Llamadas</span>
         </button>
     </div>
 
     <div class="tab-content" id="tabChats">
-
         <div class="sidehead"><span>Conversaciones</span></div>
 
         <div class="searchbox">
@@ -1756,102 +676,77 @@ button:disabled {
         <div class="estados-bar">
             <div class="estados-header">
                 <div class="estados-title">Historias</div>
-
-                <button type="button" class="btn-subir-estado" id="btnSubirEstado" title="Subir historia" aria-label="Publicar una historia">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
+                <button type="button" class="btn-subir-estado" id="btnSubirEstado" aria-label="Publicar una historia">
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                     Publicar
                 </button>
             </div>
-
-            <div class="estados-scroll" id="estadosScroll" aria-label="Historias recientes"></div>
+            <div class="estados-scroll" id="estadosScroll"></div>
         </div>
 
         <div class="convlist" id="conversationList"></div>
     </div>
 
     <div class="tab-content hidden" id="tabCanales">
-
         <div class="sidehead"><span>Canales públicos</span></div>
-
         <div class="searchbox">
             <input type="text" id="searchCanales" placeholder="Buscar canal" autocomplete="off" oninput="buscarCanalesDebounce()" aria-label="Buscar canal">
         </div>
-
         <div class="filtros-canales">
             <select id="filtroEstadoCanal" onchange="cargarCanales()" aria-label="Filtrar canales por estado">
                 <option value="">Todos los estados</option>
             </select>
         </div>
-
         <div class="canales-lista" id="canalesLista"></div>
     </div>
 
     <div class="tab-content hidden" id="tabGrupos">
-
         <div class="sidehead"><span>Grupos privados</span></div>
-
         <div class="searchbox">
             <input type="text" id="searchGrupos" placeholder="Buscar grupo" autocomplete="off" oninput="buscarGruposDebounce()" aria-label="Buscar grupo">
         </div>
-
         <div class="filtros-canales">
             <select id="filtroEstadoGrupo" onchange="cargarGrupos()" aria-label="Filtrar grupos por estado">
                 <option value="">Todos los estados</option>
             </select>
         </div>
-
         <div class="canales-lista" id="gruposLista"></div>
     </div>
 
     <div class="tab-content hidden" id="tabLlamadas">
-
         <div class="sidehead">
             <span>Historial de llamadas</span>
-
-            <button type="button" class="btn-borrar-todo" id="btnBorrarTodoHistorial" title="Borrar todo el historial">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>
-                </svg>
+            <button type="button" class="btn-borrar-todo" id="btnBorrarTodoHistorial">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
                 Borrar todo
             </button>
         </div>
-
-        <div class="filtros-canales filtros-llamadas">
+        <div class="filtros-canales">
             <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por tipo de llamada">
                 <option value="all">Todos los tipos</option>
                 <option value="audio">Solo audio</option>
                 <option value="video">Solo video</option>
             </select>
-
             <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por dirección">
                 <option value="all">Todas</option>
                 <option value="entrante">Entrantes</option>
                 <option value="saliente">Salientes</option>
             </select>
         </div>
-
         <div class="canales-lista" id="historialLlamadasLista">
-            <div class="empty-state-small">
-                <div class="empty-text">Cargando historial…</div>
-            </div>
+            <div class="empty-state-small"><div class="empty-text">Cargando historial…</div></div>
         </div>
     </div>
 
+    <!-- Oculto: conserva el id que usa mensajes-init.js -->
     <button type="button" class="fab" id="newChat" hidden aria-hidden="true" tabindex="-1"></button>
-
 </aside>
 
 <section class="chat">
 
     <header class="chathead" id="chatHeader">
-
-        <button type="button" class="backbtn" id="backBtn" title="Volver" aria-label="Volver">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="19" y1="12" x2="5" y2="12"/>
-                <polyline points="12 19 5 12 12 5"/>
-            </svg>
+        <button type="button" class="backbtn" id="backBtn" aria-label="Volver">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         </button>
 
         <div class="avatar" id="chatAvatar" role="button" tabindex="0" aria-label="Ver foto"></div>
@@ -1862,100 +757,65 @@ button:disabled {
         </div>
 
         <div class="actions" id="chatActions" hidden>
-
-            <button type="button" class="iconbtn" id="audioCall" title="Llamar" aria-label="Llamar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
-                </svg>
+            <button type="button" class="iconbtn" id="audioCall" aria-label="Llamar">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg>
             </button>
-
-            <button type="button" class="iconbtn" id="videoCall" title="Videollamada" aria-label="Videollamada" disabled>
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="2" y="6" width="14" height="12" rx="2"/>
-                    <path d="M16 10l6-3v10l-6-3"/>
-                </svg>
+            <button type="button" class="iconbtn" id="videoCall" aria-label="Videollamada" disabled>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg>
             </button>
-
-            <button type="button" class="iconbtn" id="chatSettings" title="Información del chat" aria-label="Información del chat">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                </svg>
+            <button type="button" class="iconbtn" id="chatSettings" aria-label="Información del chat">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
         </div>
 
+        <!-- Herramientas que disparan los módulos desde la información del chat -->
         <div class="tools-ocultas" hidden>
-            <button type="button" id="searchChat" aria-label="Buscar en la conversación">Buscar</button>
-            <button type="button" id="deleteChat" aria-label="Eliminar conversación">Eliminar</button>
-            <button type="button" id="blockUser" aria-label="Bloquear contacto">Bloquear</button>
+            <button type="button" id="searchChat">Buscar</button>
+            <button type="button" id="deleteChat">Eliminar</button>
+            <button type="button" id="blockUser">Bloquear</button>
         </div>
     </header>
 
     <div class="messages" id="messages">
-
         <div class="empty" id="emptyState">
             <p>Selecciona una conversación</p>
             <small>Elige un chat de la lista para empezar a escribir</small>
         </div>
-
         <div id="scrollAnchor"></div>
-
-        <button type="button" class="scroll-down-btn" id="scrollDownBtn" title="Ir al final" aria-label="Ir al final">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 5v14M5 12l7 7 7-7"/>
-            </svg>
+        <button type="button" class="scroll-down-btn" id="scrollDownBtn" aria-label="Ir al final">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
             <span class="badge-new" id="newMsgBadge" hidden>1</span>
         </button>
     </div>
 
     <form class="composer" id="composer" hidden>
-
-        <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo" aria-label="Adjuntar archivo">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-            </svg>
+        <button type="button" class="btn-icon" id="attach" aria-label="Adjuntar archivo">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
         </button>
 
         <div class="input-wrapper">
-
             <textarea id="messageInput" autocomplete="off" placeholder="Escribe un mensaje" rows="1" aria-label="Escribir mensaje"></textarea>
-
-            <button type="button" class="btn-emoji" id="emojiBtn" title="Abrir teclado de emojis" aria-label="Abrir teclado de emojis">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9"/>
-                    <path d="M8 14.5s1.5 2 4 2 4-2 4-2"/>
-                    <path d="M9 9.5h.01M15 9.5h.01"/>
-                </svg>
+            <button type="button" class="btn-emoji" id="emojiBtn" aria-label="Abrir teclado de emojis">
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 14.5s1.5 2 4 2 4-2 4-2"/><path d="M9 9.5h.01M15 9.5h.01"/></svg>
             </button>
-
         </div>
 
-        <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar nota de voz" aria-label="Grabar nota de voz">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <rect x="9" y="3" width="6" height="11" rx="3"/>
-                <path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>
-            </svg>
+        <button type="button" class="btn-accion btn-mic" id="audio" aria-label="Grabar nota de voz">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
         </button>
 
-        <button type="submit" class="btn-accion btn-send" id="sendBtn" title="Enviar mensaje" aria-label="Enviar mensaje">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M22 2 11 13"/>
-                <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
-            </svg>
+        <button type="submit" class="btn-accion btn-send" id="sendBtn" aria-label="Enviar mensaje">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         </button>
 
-        <button type="button" class="btn-voicebot" id="voiceBot" title="Hablar con Marquinhos" aria-label="Hablar con Marquinhos" hidden>
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M12 2v4M8 10h8a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"/>
-                <circle cx="9" cy="14" r="1"/>
-                <circle cx="15" cy="14" r="1"/>
-            </svg>
+        <button type="button" class="btn-voicebot" id="voiceBot" aria-label="Hablar con Marquinhos" hidden>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4M8 10h8a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg>
         </button>
 
         <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
     </form>
-
 </section>
+
 </main>
 
 <footer class="footer">
@@ -1965,21 +825,16 @@ button:disabled {
 
 </div>
 
-<!-- INFORMACIÓN DEL CHAT -->
+<!-- INFORMACIÓN DEL CHAT (lo controla mensajes-chats.js) -->
 <div class="contact-profile-overlay" id="contactProfileOverlay" role="dialog" aria-modal="true" aria-label="Información del contacto">
-
     <div class="cp-topbar">
         <button type="button" class="cp-back" id="cpBackBtn" aria-label="Volver">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="19" y1="12" x2="5" y2="12"/>
-                <polyline points="12 19 5 12 12 5"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         </button>
         <span class="cp-topbar-title">Información</span>
     </div>
 
     <div class="cp-content">
-
         <div class="cp-avatar-container">
             <div class="cp-avatar" id="cpAvatar"></div>
             <span class="cp-status-dot" id="cpStatusDot" hidden></span>
@@ -1991,239 +846,126 @@ button:disabled {
         <button type="button" class="cp-ver-perfil" id="cpVerPerfil">Ver perfil</button>
 
         <div class="cp-action-grid">
-
             <button type="button" class="cp-action-btn" id="cpBtnCall">
-                <span class="cp-action-icon">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
-                    </svg>
-                </span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg></span>
                 <span class="cp-action-label">Llamar</span>
             </button>
-
             <button type="button" class="cp-action-btn" id="cpBtnVideo">
-                <span class="cp-action-icon">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="2" y="6" width="14" height="12" rx="2"/>
-                        <path d="M16 10l6-3v10l-6-3"/>
-                    </svg>
-                </span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg></span>
                 <span class="cp-action-label">Video</span>
             </button>
-
             <button type="button" class="cp-action-btn" id="cpActionSearch">
-                <span class="cp-action-icon">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="11" cy="11" r="7"/>
-                        <path d="m21 21-4.35-4.35"/>
-                    </svg>
-                </span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg></span>
                 <span class="cp-action-label">Buscar</span>
             </button>
-
             <button type="button" class="cp-action-btn" id="cpBtnMute">
-                <span class="cp-action-icon">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                    </svg>
-                </span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
                 <span class="cp-action-label">Silenciar</span>
             </button>
-
         </div>
 
         <div class="cp-section">
             <div class="cp-section-title">Chat</div>
-
             <div class="cp-list">
-
                 <button type="button" class="cp-list-item" id="cpActionMarkRead">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <rect x="3" y="5" width="18" height="14" rx="2"/>
-                            <polyline points="3 7 12 13 21 7"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg></span>
                     <span class="cp-list-text"><span class="main">Marcar como no leído</span></span>
                 </button>
-
                 <button type="button" class="cp-list-item" id="cpActionNickname">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
                     <span class="cp-list-text"><span class="main">Apodo</span></span>
                 </button>
-
                 <button type="button" class="cp-list-item danger" id="cpActionDelete">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
                     <span class="cp-list-text"><span class="main">Eliminar conversación</span></span>
                 </button>
-
             </div>
         </div>
 
         <div class="cp-section">
             <div class="cp-section-title">Privacidad y ayuda</div>
-
             <div class="cp-list">
-
                 <button type="button" class="cp-list-item" id="cpActionReadReceipts">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
                     <span class="cp-list-text"><span class="main">Confirmaciones de lectura</span></span>
                     <span class="cp-list-toggle">Activado</span>
                 </button>
-
                 <button type="button" class="cp-list-item danger" id="cpActionBlock">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"/>
-                            <line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>
-                        </svg>
-                    </span>
-                    <span class="cp-list-text">
-                        <span class="main">Bloquear a <span id="cpBlockName">Contacto</span></span>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Bloquear a <span id="cpBlockName">Contacto</span></span></span>
                 </button>
-
                 <button type="button" class="cp-list-item danger" id="cpActionReport">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                            <line x1="12" y1="9" x2="12" y2="13"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
                     <span class="cp-list-text">
                         <span class="main">Reportar</span>
                         <span class="sub">Enviar comentarios y reportar conversación</span>
                     </span>
                 </button>
-
             </div>
         </div>
     </div>
 </div>
 
-<!-- PANTALLA DE LLAMADA -->
+<!-- PANTALLA DE LLAMADA (la estructura la completa llamadas-ui.js) -->
 <div class="call" id="callOverlay" role="dialog" aria-modal="true" aria-label="Llamada">
-
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
         <video id="localVideo" class="local" autoplay playsinline muted></video>
     </div>
-
     <div class="callinfo" id="callInfo"></div>
-
     <div class="controls">
-
         <button type="button" id="toggleMic" aria-label="Micrófono">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="9" y="3" width="6" height="11" rx="3"/>
-                    <path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
             <span class="ctrl-label">Micrófono</span>
         </button>
-
         <button type="button" id="toggleCam" aria-label="Cámara">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="2" y="6" width="14" height="12" rx="2"/>
-                    <path d="M16 10l6-3v10l-6-3"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg></span>
             <span class="ctrl-label">Cámara</span>
         </button>
-
         <button type="button" id="toggleScreen" aria-label="Compartir pantalla">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="2" y="3" width="20" height="14" rx="2"/>
-                    <path d="M8 21h8M12 17v4"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
             <span class="ctrl-label">Pantalla</span>
         </button>
-
         <button type="button" id="hangup" class="hang" aria-label="Colgar">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/>
-                    <line x1="23" y1="1" x2="1" y2="23"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></span>
             <span class="ctrl-label">Colgar</span>
         </button>
-
     </div>
 </div>
 
 <!-- LLAMADA ENTRANTE -->
 <div class="call" id="incomingOverlay" role="dialog" aria-modal="true" aria-label="Llamada entrante">
-
     <div class="avatar" id="incomingAvatar"></div>
     <h2 id="incomingName">Llamada entrante</h2>
     <div class="callinfo">Llamada entrante</div>
-
     <div class="controls">
-
         <button type="button" id="acceptCall" class="accept" aria-label="Aceptar llamada">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg></span>
             <span class="ctrl-label">Aceptar</span>
         </button>
-
         <button type="button" id="rejectCall" class="hang" aria-label="Rechazar llamada">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/>
-                    <line x1="23" y1="1" x2="1" y2="23"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></span>
             <span class="ctrl-label">Rechazar</span>
         </button>
-
     </div>
 </div>
 
-<!-- VISOR DE FOTO -->
+<!-- VISOR DE FOTO DE PERFIL -->
 <div class="photo-viewer" id="photoViewer" role="dialog" aria-modal="true" aria-label="Foto de perfil">
-
     <button type="button" class="pv-close" id="pvClose" aria-label="Cerrar">
-        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18"/>
-        </svg>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
-
     <img id="pvImage" alt="">
-    <div class="pv-name" id="pvName"></div>
-    <div class="pv-handle" id="pvHandle"></div>
+    <div class="pv-name" id="pvName" hidden></div>
+    <div class="pv-handle" id="pvHandle" hidden></div>
 </div>
 
 <!-- PERFIL PROPIO -->
 <div class="modal" id="profileModal" role="dialog" aria-modal="true" aria-label="Mi perfil">
-
     <div class="profile-modal-box">
         <div class="profile-modal-avatar" id="profileModalAvatar"></div>
         <div class="profile-modal-name" id="profileModalName">Mi perfil</div>
         <div class="profile-modal-handle" id="profileModalHandle"></div>
-
         <div class="profile-modal-actions">
             <button type="button" class="profile-modal-btn" id="btnCambiarFoto">Cambiar foto</button>
             <button type="button" class="profile-modal-btn" id="btnCerrarProfileModal">Cerrar</button>
@@ -2231,227 +973,174 @@ button:disabled {
     </div>
 </div>
 
-<!-- VISOR DE HISTORIAS -->
+<!-- VISOR DE HISTORIAS (pantalla completa) -->
 <div class="estado-viewer" id="estadoViewer" role="dialog" aria-modal="true" aria-label="Historia">
 
-    <div class="estado-viewer-progress">
-        <div class="estado-viewer-progress-inner" id="estadoProgress"></div>
-    </div>
+    <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
 
     <div class="estado-viewer-header">
-
         <div class="estado-viewer-avatar" id="evAvatar"></div>
-
         <div class="estado-viewer-info">
             <div class="estado-viewer-name" id="evName"></div>
             <div class="estado-viewer-time" id="evTime"></div>
         </div>
-
-        <button type="button" class="estado-viewer-close hidden" id="evSkip" aria-label="Siguiente persona" title="Siguiente persona">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <polyline points="6 9 12 15 18 9"/>
-            </svg>
+        <button type="button" class="estado-viewer-skip hidden" id="evSkip" aria-label="Siguiente persona">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
-
         <button type="button" class="estado-viewer-close" id="evClose" aria-label="Cerrar">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 6l12 12M18 6 6 18"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
     </div>
 
+    <!-- Solo medios y texto: init.js cancela eventos táctiles de este bloque -->
     <div class="estado-viewer-body" id="evBody">
-
         <img class="estado-viewer-img" id="evImage" alt="">
+        <video class="estado-viewer-video hidden" id="evVideo" playsinline preload="auto"></video>
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
+    </div>
 
-        <button type="button" class="estado-viewer-nav prev hidden" id="evPrev" aria-label="Historia anterior">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6"/>
-            </svg>
+    <button type="button" class="estado-viewer-nav prev hidden" id="evPrev" aria-label="Historia anterior">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <button type="button" class="estado-viewer-nav next" id="evNext" aria-label="Historia siguiente">
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+
+    <div class="estado-viewer-videobar hidden" id="evVideoBar">
+        <button type="button" class="ev-ctl" id="evPlay" aria-label="Reproducir o pausar">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>
         </button>
-
-        <button type="button" class="estado-viewer-nav next hidden" id="evNext" aria-label="Historia siguiente">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <polyline points="9 18 15 12 9 6"/>
-            </svg>
+        <div class="ev-seek" id="evSeek" role="slider" aria-label="Posición del video"><span id="evSeekFill"></span></div>
+        <span class="ev-tiempo" id="evTiempoVideo">0:00 / 0:00</span>
+        <button type="button" class="ev-ctl" id="evMute" aria-label="Silenciar o activar sonido">
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
         </button>
     </div>
 
     <div class="estado-viewer-foot">
-
         <button type="button" class="hidden" id="evVistas" aria-label="Ver vistas">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
             <span>Vistas</span>
             <span id="evVistasCount">0</span>
         </button>
-
         <button type="button" class="hidden" id="evComentar" aria-label="Comentar">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
             <span>Comentar</span>
         </button>
-
         <button type="button" class="hidden" id="evEliminar" aria-label="Eliminar historia">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
             <span>Eliminar</span>
         </button>
-
     </div>
 </div>
 
-<!-- SUBIR HISTORIA -->
-<div class="modal" id="estadoUploadModal" role="dialog" aria-modal="true" aria-label="Subir historia">
-
+<!-- PUBLICAR HISTORIA -->
+<div class="modal" id="estadoUploadModal" role="dialog" aria-modal="true" aria-label="Publicar historia">
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Publicar historia</h2>
-
             <button type="button" class="modal-close" id="closeEstadoModal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
 
-        <button type="button" class="btn-plano" id="btnSeleccionarEstado">Elegir foto o video</button>
+        <button type="button" class="btn-plano" id="btnSeleccionarEstado" style="width:100%;">Elegir fotos o videos</button>
+        <input type="file" id="estadoFileInput" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" multiple hidden>
 
-        <input type="file" id="estadoFileInput" accept="image/*,video/mp4,video/webm,video/quicktime" hidden>
+        <div class="estado-upload-limits">
+            <span><strong>10</strong> fotos activas</span>
+            <span><strong>5</strong> videos activos</span>
+            <span><strong>60 s</strong> por video</span>
+        </div>
+        <p class="estado-upload-help">Las historias permanecen disponibles durante 24 horas.</p>
 
         <div id="estadoPreviewWrap" class="hidden">
-            <img id="estadoPreviewImg" class="estado-preview-img hidden" alt="Vista previa de la historia">
+            <div id="estadoPreviewLista" class="estado-preview-grid"></div>
+            <div id="estadoPreviewContador" class="estado-preview-contador"></div>
+            <div id="estadoProgresoPublicacion" class="estado-progreso-publicacion"><span></span></div>
         </div>
-
-        <div class="estado-upload-limits" aria-label="Límites de publicación">
-            <span><strong>10 fotos</strong> activas</span>
-            <span><strong>5 videos</strong> activos</span>
-            <span><strong>60 segundos</strong> por video</span>
-        </div>
-
-        <p class="estado-upload-help">Las historias permanecen disponibles durante 24 horas. Puedes publicar fotos y videos desde tu dispositivo.</p>
 
         <input type="text" id="estadoCaption" class="search" maxlength="200" placeholder="Escribe un texto (opcional)" autocomplete="off" style="margin-top:12px;">
 
         <button type="button" class="btn-plano sol" id="btnPublicarEstado" disabled style="width:100%;margin-top:14px;">Publicar historia</button>
-
     </div>
 </div>
 
-<!-- VISTAS Y COMENTARIOS DE UNA HISTORIA -->
+<!-- VISTAS Y COMENTARIOS -->
 <div class="modal" id="vistasModal" role="dialog" aria-modal="true" aria-label="Vistas y comentarios">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Historia <span id="vistasModalCount"></span></h2>
-
             <button type="button" class="modal-close" id="closeVistasModal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
-
+        <div id="vistasTabs"></div>
         <div id="vistasList"></div>
     </div>
 </div>
 
-<!-- BUSCAR CONTACTO -->
+<!-- BUSCAR CONTACTO (se conserva; el botón + está oculto) -->
 <div class="modal" id="newModal" role="dialog" aria-modal="true" aria-label="Buscar contacto">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Buscar contacto</h2>
-
             <button type="button" class="modal-close" id="closeModal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
-
         <input type="search" id="userSearch" class="search" placeholder="Buscar por nombre o @usuario" autocomplete="off">
-
         <div id="userResults" style="margin-top:10px;"></div>
-
     </div>
 </div>
 
 <!-- CONFIGURACIÓN DE LLAMADAS -->
 <div class="modal" id="modalConfigLlamadas" role="dialog" aria-modal="true" aria-label="Configuración de llamadas">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Llamadas</h2>
-
             <button type="button" class="modal-close" id="closeModalConfig" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
-
         <div class="cfg-fila">
             <div class="cfg-fila-txt">
                 Quién puede llamarme
                 <small>Define quién puede iniciar una llamada contigo.</small>
             </div>
-
             <select class="sel" id="selectQuienPuedeLlamarme" aria-label="Quién puede llamarme">
                 <option value="todos">Todos</option>
                 <option value="contactos">Solo mis contactos</option>
                 <option value="nadie">Nadie</option>
             </select>
         </div>
-
         <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
             <button type="button" class="btn-plano" id="btnVerBloqueados">Ver bloqueados</button>
             <button type="button" class="btn-plano sol" id="btnGuardarConfig">Guardar</button>
         </div>
-
     </div>
 </div>
 
 <!-- USUARIOS BLOQUEADOS -->
 <div class="modal" id="modalBloqueados" role="dialog" aria-modal="true" aria-label="Usuarios bloqueados">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Bloqueados <span id="countBloqueados"></span></h2>
-
             <button type="button" class="modal-close" id="closeModalBloqueados" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
-
         <div id="listaBloqueados"></div>
     </div>
 </div>
 
 <!-- CREAR CANAL -->
 <div class="modal" id="modalCrearCanal" role="dialog" aria-modal="true" aria-labelledby="tituloCrearCanal">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2 id="tituloCrearCanal">Crear canal público</h2>
-
             <button type="button" class="modal-close" id="closeModalCanal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
 
@@ -2459,57 +1148,42 @@ button:disabled {
             <label for="canalNombre">Nombre</label>
             <input type="text" id="canalNombre" class="campo" maxlength="80" autocomplete="off">
         </div>
-
         <div class="form-campo">
             <label for="canalDescripcion">Descripción</label>
             <textarea id="canalDescripcion" class="campo campo-area" maxlength="500" rows="3"></textarea>
         </div>
-
         <div class="form-fila">
-
             <div class="form-campo">
                 <label for="canalEstado">Estado</label>
                 <input type="text" id="canalEstado" class="campo" maxlength="60" autocomplete="off">
             </div>
-
             <div class="form-campo">
                 <label for="canalMunicipio">Municipio</label>
                 <input type="text" id="canalMunicipio" class="campo" maxlength="80" autocomplete="off">
             </div>
-
         </div>
-
         <div class="form-fila">
-
             <div class="form-campo">
                 <label for="canalCiudad">Ciudad</label>
                 <input type="text" id="canalCiudad" class="campo" maxlength="80" autocomplete="off">
             </div>
-
             <div class="form-campo">
                 <label for="canalPais">País</label>
                 <input type="text" id="canalPais" class="campo" value="México" maxlength="60" autocomplete="off">
             </div>
-
         </div>
 
         <button type="button" class="btn-plano sol" id="btnCrearCanal" style="width:100%;margin-top:6px;">Crear canal</button>
-
     </div>
 </div>
 
 <!-- CREAR GRUPO -->
-<div class="modal" id="modalCrearGrupo" role="dialog" aria-labelledby="tituloCrearGrupo">
-
+<div class="modal" id="modalCrearGrupo" role="dialog" aria-modal="true" aria-labelledby="tituloCrearGrupo">
     <div class="modalbox">
-
         <div class="modal-head">
             <h2 id="tituloCrearGrupo">Crear grupo privado</h2>
-
             <button type="button" class="modal-close" id="closeModalGrupo" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
 
@@ -2517,49 +1191,38 @@ button:disabled {
             <label for="grupoNombre">Nombre</label>
             <input type="text" id="grupoNombre" class="campo" maxlength="80" autocomplete="off">
         </div>
-
         <div class="form-campo">
             <label for="grupoDescripcion">Descripción</label>
             <textarea id="grupoDescripcion" class="campo campo-area" maxlength="500" rows="3"></textarea>
         </div>
-
         <div class="form-fila">
-
             <div class="form-campo">
                 <label for="grupoEstado">Estado</label>
                 <input type="text" id="grupoEstado" class="campo" maxlength="60" autocomplete="off">
             </div>
-
             <div class="form-campo">
                 <label for="grupoMunicipio">Municipio</label>
                 <input type="text" id="grupoMunicipio" class="campo" maxlength="80" autocomplete="off">
             </div>
-
         </div>
-
         <div class="form-fila">
-
             <div class="form-campo">
                 <label for="grupoCiudad">Ciudad</label>
                 <input type="text" id="grupoCiudad" class="campo" maxlength="80" autocomplete="off">
             </div>
-
             <div class="form-campo">
                 <label for="grupoPais">País</label>
                 <input type="text" id="grupoPais" class="campo" value="México" maxlength="60" autocomplete="off">
             </div>
-
         </div>
 
         <button type="button" class="btn-plano sol" id="btnCrearGrupo" style="width:100%;margin-top:6px;">Crear grupo</button>
-
     </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- SCRIPTS: ORDEN ORIGINAL CONSERVADO -->
-
+<!-- SCRIPTS (el orden importa) -->
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/js/teclado-emojis.js?v=4"></script>
 
@@ -2567,99 +1230,64 @@ button:disabled {
 <script src="/features/mensajes/js/mensajes-scroll-media.js?v=1"></script>
 <script src="/features/mensajes/js/mensajes-chats.js?v=1"></script>
 <script src="/features/mensajes/js/mensajes-bot.js?v=1"></script>
-<script src="/features/mensajes/js/mensajes-estados.js?v=2.1"></script>
-<script src="/features/mensajes/js/mensajes-canales.js?v=1"></script>
+<script src="/features/mensajes/js/mensajes-estados.js?v=4"></script>
+<script src="/features/mensajes/js/mensajes-canales.js?v=2"></script>
 <script src="/features/mensajes/js/mensajes-llamadas.js?v=1"></script>
 <script src="/features/mensajes/js/mensajes-init.js?v=1"></script>
-<script src="/features/mensajes/js/llamadas-ui.js?v=2"></script>
+<script src="/features/mensajes/js/llamadas-ui.js?v=3"></script>
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
 <script>
-/* Puentes de compatibilidad para los módulos de llamadas */
-
+/* Puentes que llama mensajes-init.js y que define llamadas-ui.js */
 function abrirModalConfigLlamadas() {
-    if (typeof window.abrirModalConfig === 'function') {
-        window.abrirModalConfig();
-    }
+    if (typeof window.abrirModalConfig === 'function') window.abrirModalConfig();
 }
-
 function cerrarModalConfigLlamadas() {
     var m = document.getElementById('modalConfigLlamadas');
-    if (m) {
-        m.classList.remove('show');
-    }
+    if (m) m.classList.remove('show');
 }
-
 function abrirListaBloqueados() {
-    if (typeof window.abrirModalBloqueados === 'function') {
-        window.abrirModalBloqueados();
-    }
+    if (typeof window.abrirModalBloqueados === 'function') window.abrirModalBloqueados();
 }
 
-/* Conserva el bloqueo administrado por mensajes-chats.js */
-
+/* El botón Bloquear usa la versión de mensajes-chats.js (tabla bloqueos, igual que Contactos) */
 document.addEventListener('DOMContentLoaded', function () {
-
     var b = document.getElementById('blockUser');
-
     if (b && typeof bloquearUsuarioActual === 'function') {
-        b.onclick = function () {
-            bloquearUsuarioActual();
-        };
+        b.onclick = function () { bloquearUsuarioActual(); };
     }
-
 });
 </script>
 
 <script>
-/* Barra de escritura: altura automática y alternancia de acciones */
-
+/* Barra de escritura: altura automática y alternancia de micrófono / enviar */
 document.addEventListener('DOMContentLoaded', function () {
-
     var input = document.getElementById('messageInput');
     var composer = document.getElementById('composer');
-
     if (!input || !composer) return;
 
     function ajustarAltura() {
         input.style.height = 'auto';
         input.style.height = Math.min(input.scrollHeight, 120) + 'px';
     }
-
     function ajustarEstado() {
         composer.classList.toggle('has-text', input.value.trim().length > 0);
     }
 
-    input.addEventListener('input', function () {
-        ajustarAltura();
-        ajustarEstado();
-    });
+    input.addEventListener('input', function () { ajustarAltura(); ajustarEstado(); });
 
     input.addEventListener('keydown', function (e) {
-
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-
             var sendBtn = document.getElementById('sendBtn');
-
-            if (sendBtn) {
-                sendBtn.click();
-            }
+            if (sendBtn) sendBtn.click();
         }
-
     });
 
     composer.addEventListener('submit', function () {
-
-        setTimeout(function () {
-            ajustarAltura();
-            ajustarEstado();
-        }, 0);
-
+        setTimeout(function () { ajustarAltura(); ajustarEstado(); }, 0);
     });
-
 });
 </script>
-
 </body>
 </html>
