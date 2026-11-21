@@ -1,15 +1,12 @@
 // ============================================================
-// CSARIEL'S · LLAMADAS-UI · v2.0
-// Cambios v2.0 (Auditoría Senior):
-// - CERO confirm() nativos: todo usa NeonModal.confirm
-// - Botón "call-back" del historial INICIA LA LLAMADA directamente
-//   (antes abría el chat por error). Usa window.startCallConUsuario
-//   expuesto por mensajes.js.
-// - Botón "block" del historial y #blockUser usan bloquearUsuario()
-//   con NeonModal.confirm (Cancelar cierra limpio, Aceptar bloquea).
-// - Eliminado código muerto (svgIcon arrow-in/arrow-out).
-// - NO se tocó: llamadaFetch, auth, historial logic, bloques,
-//   config, enhancer del overlay (v1.2).
+// CSARIEL'S · LLAMADAS-UI · v3.0
+// Cambios v3.0:
+// - Sin emojis: iconos SVG planos en toasts, modales, historial y overlay
+// - Corregido el SVG del icono de llamar (path inválido)
+// - Filas del historial con la estructura que espera mensajes.html
+// - Estilos del historial y del overlay inyectados por el propio JS
+// - Botón de llamar del historial inicia la llamada directamente
+// - Todas las confirmaciones usan NeonModal (sin confirm() nativo)
 // ============================================================
 
 (function () {
@@ -39,16 +36,124 @@
         el.t = setTimeout(function () { el.classList.remove('show'); }, 3500);
     }
 
-    // ============================================================
-    // NeonModal: obtener referencia segura
-    // (mensajes.js carga primero y lo expone en window.NeonModal)
-    // ============================================================
+    /* ---------------- Iconos SVG planos ---------------- */
+
+    var ICONOS = {
+        phone: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>',
+        block: '<circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>',
+        trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+        lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+        video: '<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/>',
+        audio: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>',
+        incoming: '<line x1="17" y1="7" x2="7" y2="17"/><polyline points="17 17 7 17 7 7"/>',
+        outgoing: '<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>',
+        alert: '<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>',
+        check: '<path d="M5 12l5 5 9-10"/>',
+        empty: '<path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>'
+    };
+
+    function svg(nombre, clase) {
+        return '<svg class="' + (clase || 'ico') + '" viewBox="0 0 24 24" aria-hidden="true">' + (ICONOS[nombre] || '') + '</svg>';
+    }
+
+    /* ---------------- Estilos del historial y del overlay ---------------- */
+
+    function inyectarEstilos() {
+        if (document.getElementById('llamadas-ui-estilos')) return;
+        var css = `
+        .llamada-item {
+            display:flex; align-items:center; gap:10px; min-height:64px;
+            padding:10px 12px; border:1px solid var(--line,rgba(255,255,255,.08));
+            border-radius:12px; background:var(--panel-2,#101826); overflow:hidden;
+        }
+        .llamada-avatar {
+            position:relative; flex:0 0 44px; width:44px; height:44px; border-radius:12px;
+            display:grid; place-items:center; overflow:hidden; font-weight:700;
+            background:var(--panel,#0b111b); border:1px solid var(--line-strong,rgba(255,255,255,.16));
+            color:var(--text,#e8edf3);
+        }
+        .llamada-avatar img { width:100%; height:100%; object-fit:cover; display:block; }
+        .dir-badge {
+            position:absolute; right:-4px; bottom:-4px; width:18px; height:18px; border-radius:50%;
+            display:grid; place-items:center; border:2px solid var(--panel-2,#101826);
+            background:var(--muted,#8593a6);
+        }
+        .dir-badge.entrante { background:var(--green,#00d68f); }
+        .dir-badge.saliente { background:var(--orange,#ff7a1a); }
+        .dir-badge.perdida { background:var(--red,#ff4d6d); }
+        .dir-badge svg { width:10px; height:10px; stroke:#05080f; fill:none; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; }
+        .llamada-info { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:4px; }
+        .llamada-nombre { font-size:.92rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .llamada-meta { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+        .badge-tipo, .badge-estado, .meta-duration, .meta-time {
+            font-size:.66rem; line-height:1; padding:4px 7px; border-radius:6px;
+            border:1px solid var(--line-strong,rgba(255,255,255,.16)); color:var(--muted,#8593a6);
+        }
+        .badge-estado.contestada { color:var(--green,#00d68f); border-color:var(--green,#00d68f); }
+        .badge-estado.perdida, .badge-estado.rechazada, .badge-estado.fallida { color:var(--red,#ff4d6d); border-color:var(--red,#ff4d6d); }
+        .meta-time, .meta-duration { border-style:none; padding:0; }
+        .llamada-acciones { flex:0 0 auto; display:flex; gap:6px; align-items:center; }
+        .llamada-acciones button {
+            width:34px; height:34px; display:grid; place-items:center; border-radius:10px;
+            border:1px solid var(--line-strong,rgba(255,255,255,.16)); background:transparent;
+            color:var(--muted,#8593a6); cursor:pointer;
+        }
+        .llamada-acciones button:hover { color:var(--orange,#ff7a1a); border-color:var(--orange,#ff7a1a); }
+        .llamada-acciones button.call-back:hover { color:var(--green,#00d68f); border-color:var(--green,#00d68f); }
+        .llamada-acciones button.danger:hover { color:var(--red,#ff4d6d); border-color:var(--red,#ff4d6d); }
+        .llamada-acciones svg { width:16px; height:16px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+        .call-e2e-header {
+            display:flex; align-items:center; justify-content:center; gap:8px;
+            font-size:.72rem; color:var(--muted,#8593a6); margin-bottom:18px;
+        }
+        .call-e2e-header svg { width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+        .call-avatar-block { display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:12px; }
+        .call-avatar-halo {
+            width:104px; height:104px; border-radius:24px; overflow:hidden; display:grid; place-items:center;
+            background:var(--panel-2,#101826); border:1px solid var(--line-strong,rgba(255,255,255,.16));
+            font-size:2.2rem; font-weight:700; color:var(--muted,#8593a6);
+        }
+        .call-avatar-halo img { width:100%; height:100%; object-fit:cover; }
+        .call-name { font-size:1.3rem; font-weight:700; text-align:center; }
+        .call-subname { font-size:.82rem; color:var(--muted,#8593a6); text-align:center; }
+        .call-timer { font-variant-numeric:tabular-nums; font-size:1rem; text-align:center; margin:8px 0; }
+        .call-status { display:flex; align-items:center; justify-content:center; gap:6px; font-size:.75rem; color:var(--muted,#8593a6); }
+        .call-status .dot { width:7px; height:7px; border-radius:50%; background:var(--green,#00d68f); }
+        .call-controls-bar { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px; }
+
+        .incoming-halo {
+            width:112px; height:112px; border-radius:26px; overflow:hidden; margin:0 auto 14px;
+            display:grid; place-items:center; background:var(--panel-2,#101826);
+            border:1px solid var(--line-strong,rgba(255,255,255,.16)); font-size:2.4rem; font-weight:700;
+        }
+        .incoming-halo img { width:100%; height:100%; object-fit:cover; }
+
+        .bloqueado-item {
+            display:flex; align-items:center; gap:10px; padding:10px 12px; margin-bottom:8px;
+            border:1px solid var(--line,rgba(255,255,255,.08)); border-radius:12px; background:var(--panel-2,#101826);
+        }
+        .bloqueado-item .avatar { width:40px; height:40px; flex:0 0 40px; border-radius:10px; display:grid; place-items:center; overflow:hidden; font-weight:700; background:var(--panel,#0b111b); border:1px solid var(--line-strong,rgba(255,255,255,.16)); }
+        .bloqueado-item .avatar img { width:100%; height:100%; object-fit:cover; }
+        .bloqueado-info { flex:1; min-width:0; }
+        .bloqueado-nombre { font-size:.9rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .bloqueado-handle { font-size:.72rem; color:var(--muted,#8593a6); }
+        .bloqueado-item button {
+            padding:7px 12px; border-radius:9px; border:1px solid var(--green,#00d68f);
+            background:transparent; color:var(--green,#00d68f); font-size:.75rem; font-weight:600;
+        }`;
+        var st = document.createElement('style');
+        st.id = 'llamadas-ui-estilos';
+        st.textContent = css;
+        document.head.appendChild(st);
+    }
+
+    /* ---------------- NeonModal ---------------- */
+
     function obtenerNeonModal() {
         if (window.NeonModal && typeof window.NeonModal.confirm === 'function') {
             return window.NeonModal;
         }
-        // Fallback ultra-defensivo por si el orden de carga cambiara:
-        // un modal nativo estilizado mínimo, NO usa confirm().
         return {
             confirm: function (opts) {
                 return new Promise(function (resolve) {
@@ -59,7 +164,6 @@
                     var card = document.createElement('div');
                     card.className = 'neon-modal-card' + (opts.danger ? ' danger' : '');
                     card.innerHTML =
-                        (opts.icon ? '<div class="neon-modal-icon">' + opts.icon + '</div>' : '') +
                         (opts.title ? '<h3 class="neon-modal-title">' + esc(opts.title) + '</h3>' : '') +
                         (opts.message ? '<p class="neon-modal-message">' + esc(opts.message) + '</p>' : '') +
                         '<div class="neon-modal-actions">' +
@@ -81,6 +185,8 @@
             }
         };
     }
+
+    /* ---------------- Red y sesión ---------------- */
 
     function conLimite(promesa, ms, codigo) {
         return new Promise(function (resolve, reject) {
@@ -174,24 +280,31 @@
     function textoError(e) {
         var code = e && e.code;
         var status = e && e.status;
-        if (code === 'no_autenticado') return 'Inicia sesión para ver tu historial';
-        if (code === 'timeout') return 'El servidor tardó más de 15 s. Intenta de nuevo.';
-        if (code === 'red') return 'Sin conexión con el servidor';
-        if (code === 'respuesta_no_json') return 'Respuesta inválida del servidor (HTTP ' + status + ')';
-        if (status === 404) return 'Ruta no encontrada (404). El backend de llamadas no responde en esa dirección.';
+        if (code === 'no_autenticado') return 'Inicia sesión para ver tu historial.';
+        if (code === 'timeout') return 'El servidor tardó más de 15 segundos. Intenta de nuevo.';
+        if (code === 'red') return 'Sin conexión con el servidor.';
+        if (code === 'respuesta_no_json') return 'Respuesta inválida del servidor (HTTP ' + status + ').';
+        if (status === 404) return 'Ruta no encontrada (404). El servicio de llamadas no responde en esa dirección.';
         if (status === 401 || status === 403) return 'Sesión no válida (' + status + '). Vuelve a iniciar sesión.';
         if (status === 500) return 'Error interno del servidor (500).';
         return 'Error: ' + (code || (e && e.message) || 'desconocido') + (status ? ' (HTTP ' + status + ')' : '');
     }
 
-    // ============================================================
-    // HISTORIAL
-    // ============================================================
+    /* ---------------- Historial ---------------- */
+
+    function mensajeEstado(icono, texto, sub) {
+        return '<div class="empty-state-small">' +
+            '<div class="empty-icon">' + svg(icono, 'ico') + '</div>' +
+            '<div class="empty-text">' + esc(texto) + '</div>' +
+            (sub ? '<div style="font-size:.7rem;color:var(--muted);margin-top:4px;">' + esc(sub) + '</div>' : '') +
+        '</div>';
+    }
+
     async function cargarHistorialLlamadas() {
         var cont = $('historialLlamadasLista');
         if (!cont) return;
 
-        cont.innerHTML = mensajeEstado('☎', 'Cargando historial…');
+        cont.innerHTML = mensajeEstado('empty', 'Cargando historial…');
 
         var tipo = ($('filtroTipoLlamada') ? $('filtroTipoLlamada').value : 'all') || 'all';
         var direccion = ($('filtroDireccionLlamada') ? $('filtroDireccionLlamada').value : 'all') || 'all';
@@ -203,19 +316,18 @@
 
         try {
             var data = await llamadaFetch('/api/llamadas/historial?' + qs.toString());
-            console.log('[Llamadas UI] Historial recibido:', data);
 
             if (!Array.isArray(data)) {
                 console.error('[Llamadas UI] Historial: respuesta no es un arreglo', data);
-                cont.innerHTML = mensajeEstado('!', 'Respuesta inválida del servidor');
+                cont.innerHTML = mensajeEstado('alert', 'Respuesta inválida del servidor.');
                 return;
             }
 
             historialCache = data;
 
             if (!historialCache.length) {
-                cont.innerHTML = mensajeEstado('☎', 'No hay llamadas en tu historial',
-                    'Cuando hagas o recibas llamadas aparecerán aquí');
+                cont.innerHTML = mensajeEstado('empty', 'No hay llamadas en tu historial.',
+                    'Cuando hagas o recibas llamadas aparecerán aquí.');
                 return;
             }
 
@@ -227,7 +339,6 @@
             cont.querySelectorAll('[data-action="block"]').forEach(function (btn) {
                 btn.onclick = function () { bloquearUsuario(btn.dataset.userid, btn.dataset.nombre); };
             });
-            // FIX v2.0: el botón call-back INICIA LA LLAMADA directamente.
             cont.querySelectorAll('[data-action="call-back"]').forEach(function (btn) {
                 btn.onclick = function () {
                     iniciarLlamadaDesdeHistorial(btn.dataset.userid, btn.dataset.nombre);
@@ -235,39 +346,14 @@
             });
         } catch (e) {
             console.error('[Llamadas UI] Historial error:', e);
-            cont.innerHTML = mensajeEstado('!', textoError(e));
-        }
-    }
-
-    function mensajeEstado(icono, texto, sub) {
-        return '<div class="empty-state-small">' +
-            '<div class="empty-icon">' + esc(icono) + '</div>' +
-            '<div class="empty-text">' + esc(texto) + '</div>' +
-            (sub ? '<div style="font-size:.65rem;color:var(--muted);margin-top:4px;">' + esc(sub) + '</div>' : '') +
-        '</div>';
-    }
-
-    function svgIcon(name) {
-        switch (name) {
-            case 'phone':
-                return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.362 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.338 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
-            case 'block':
-                return '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>';
-            case 'trash':
-                return '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
-            case 'close':
-                return '✕';
-            case 'alert':
-                return '!';
-            default:
-                return '';
+            cont.innerHTML = mensajeEstado('alert', textoError(e));
         }
     }
 
     function renderFilaHistorial(h) {
         var esEntrante = h.direccion !== 'saliente';
         var dirClass = esEntrante ? 'entrante' : 'saliente';
-        var dirIcon = esEntrante ? '↙' : '↗';
+        var dirIcon = esEntrante ? 'incoming' : 'outgoing';
 
         var estadoClase = h.estado || 'cancelada';
         var estadoLabel = {
@@ -281,7 +367,8 @@
         var esFallida = ['perdida', 'rechazada', 'fallida'].indexOf(h.estado) !== -1;
         if (esFallida) dirClass = 'perdida';
 
-        var tipoLabel = h.tipo === 'video' ? '📹 Video' : '☎ Audio';
+        var tipoIcon = h.tipo === 'video' ? 'video' : 'audio';
+        var tipoLabel = h.tipo === 'video' ? 'Video' : 'Audio';
 
         var duracion = '';
         if (h.duracion_seg != null && h.duracion_seg > 0) {
@@ -300,14 +387,14 @@
                   d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
-        var inicial = (h.contraparte_nombre || '?').charAt(0).toUpperCase();
+        var inicial = (h.contraparte_nombre || 'U').charAt(0).toUpperCase();
         var avatarHTML = h.contraparte_avatar
             ? '<img src="' + esc(h.contraparte_avatar) + '" alt="">'
             : esc(inicial);
 
         return '<div class="llamada-item">' +
             '<div class="llamada-avatar">' + avatarHTML +
-                '<span class="dir-badge ' + dirClass + '">' + dirIcon + '</span>' +
+                '<span class="dir-badge ' + dirClass + '">' + svg(dirIcon, '') + '</span>' +
             '</div>' +
             '<div class="llamada-info">' +
                 '<div class="llamada-nombre">' + esc(h.contraparte_nombre || 'Usuario') + '</div>' +
@@ -319,23 +406,22 @@
                 '</div>' +
             '</div>' +
             '<div class="llamada-acciones">' +
-                '<button type="button" class="call-back" data-action="call-back" data-userid="' + esc(h.contraparte_id) + '" data-nombre="' + esc(h.contraparte_nombre || '') + '" title="Llamar de nuevo" aria-label="Llamar de nuevo">' + svgIcon('phone') + '</button>' +
-                '<button type="button" class="block" data-action="block" data-userid="' + esc(h.contraparte_id) + '" data-nombre="' + esc(h.contraparte_nombre) + '" title="Bloquear" aria-label="Bloquear">' + svgIcon('block') + '</button>' +
-                '<button type="button" class="danger" data-action="delete" data-id="' + esc(h.id) + '" title="Eliminar del historial" aria-label="Eliminar del historial">' + svgIcon('trash') + '</button>' +
+                '<button type="button" class="call-back" data-action="call-back" data-userid="' + esc(h.contraparte_id) + '" data-nombre="' + esc(h.contraparte_nombre || '') + '" title="Llamar de nuevo" aria-label="Llamar de nuevo">' + svg(tipoIcon, '') + '</button>' +
+                '<button type="button" class="block" data-action="block" data-userid="' + esc(h.contraparte_id) + '" data-nombre="' + esc(h.contraparte_nombre || '') + '" title="Bloquear" aria-label="Bloquear">' + svg('block', '') + '</button>' +
+                '<button type="button" class="danger" data-action="delete" data-id="' + esc(h.id) + '" title="Eliminar del historial" aria-label="Eliminar del historial">' + svg('trash', '') + '</button>' +
             '</div>' +
         '</div>';
     }
 
-    // ============================================================
-    // INICIAR LLAMADA DESDE HISTORIAL (fix v2.0)
-    // ============================================================
+    /* ---------------- Iniciar llamada desde el historial ---------------- */
+
     async function iniciarLlamadaDesdeHistorial(userId, nombre) {
         if (!userId) {
-            toast('⚠️ Usuario no disponible', 'error');
+            toast('Usuario no disponible.', 'error');
             return;
         }
         if (!window.LivekitClient) {
-            toast('❌ Las llamadas no están disponibles en este dispositivo. Recarga la página.', 'error');
+            toast('Las llamadas no están disponibles en este dispositivo. Recarga la página.', 'error');
             return;
         }
         if (!window.current || window.current.id !== userId) {
@@ -348,27 +434,26 @@
             }
         }
         if (typeof window.startCall !== 'function') {
-            toast('❌ El módulo de llamadas no está listo. Recarga la página.', 'error');
+            toast('El módulo de llamadas no está listo. Recarga la página.', 'error');
             return;
         }
         try {
             await window.startCall('video');
         } catch (e) {
             console.error('[Llamadas UI] Error iniciando llamada desde historial:', e);
-            toast('❌ No se pudo iniciar la llamada: ' + (e.message || 'error'), 'error');
+            toast('No se pudo iniciar la llamada: ' + (e.message || 'error'), 'error');
         }
     }
 
-    // ============================================================
-    // BORRAR / BLOQUEAR — con NeonModal (CERO confirm nativos)
-    // ============================================================
+    /* ---------------- Borrar y bloquear ---------------- */
+
     async function borrarLlamada(id) {
         if (!id) return;
         var modal = obtenerNeonModal();
         var confirmado = await modal.confirm({
             title: 'Eliminar llamada',
             message: '¿Eliminar esta llamada del historial?\n\nEsta acción no se puede deshacer.',
-            icon: '🗑',
+            icon: '',
             confirmText: 'Eliminar',
             cancelText: 'Cancelar',
             danger: true
@@ -376,20 +461,20 @@
         if (!confirmado) return;
         try {
             await llamadaFetch('/api/llamadas/historial/' + encodeURIComponent(id), { method: 'DELETE' });
-            toast('✅ Llamada eliminada del historial', 'success');
+            toast('Llamada eliminada del historial.', 'success');
             await cargarHistorialLlamadas();
         } catch (e) {
             console.error('[Llamadas UI] Borrar:', e);
-            toast('❌ ' + textoError(e), 'error');
+            toast(textoError(e), 'error');
         }
     }
 
     async function borrarTodoHistorial() {
         var modal = obtenerNeonModal();
         var confirmado = await modal.confirm({
-            title: 'Borrar TODO el historial',
+            title: 'Borrar todo el historial',
             message: '¿Borrar TODO el historial de llamadas?\n\nEsta acción no se puede deshacer.',
-            icon: '🗑',
+            icon: '',
             confirmText: 'Borrar todo',
             cancelText: 'Cancelar',
             danger: true
@@ -397,24 +482,21 @@
         if (!confirmado) return;
         try {
             var d = await llamadaFetch('/api/llamadas/historial', { method: 'DELETE' });
-            toast('✅ Historial borrado (' + ((d && d.eliminadas) || 0) + ' llamadas)', 'success');
+            toast('Historial borrado (' + ((d && d.eliminadas) || 0) + ' llamadas).', 'success');
             await cargarHistorialLlamadas();
         } catch (e) {
             console.error('[Llamadas UI] Borrar todo:', e);
-            toast('❌ ' + textoError(e), 'error');
+            toast(textoError(e), 'error');
         }
     }
 
-    // ============================================================
-    // BLOQUEOS
-    // ============================================================
     async function bloquearUsuario(userId, nombre) {
         if (!userId) return;
         var modal = obtenerNeonModal();
         var confirmado = await modal.confirm({
             title: 'Bloquear usuario',
             message: '¿Bloquear a ' + (nombre || 'este usuario') + '?\n\nNo podrá llamarte ni tú a él.',
-            icon: '⛔',
+            icon: '',
             confirmText: 'Bloquear',
             cancelText: 'Cancelar',
             danger: true
@@ -425,15 +507,15 @@
                 method: 'POST',
                 body: { bloqueadoId: userId }
             });
-            toast('⛔ Usuario bloqueado', 'success');
+            toast('Usuario bloqueado.', 'success');
             await cargarHistorialLlamadas();
             await cargarBloqueados();
         } catch (e) {
             if (e.code === 'ya_bloqueado') {
-                toast('⚠️ Este usuario ya estaba bloqueado', 'warning');
+                toast('Este usuario ya estaba bloqueado.', 'warning');
             } else {
                 console.error('[Llamadas UI] Bloquear:', e);
-                toast('❌ ' + textoError(e), 'error');
+                toast(textoError(e), 'error');
             }
         }
     }
@@ -444,18 +526,18 @@
         var confirmado = await modal.confirm({
             title: 'Desbloquear usuario',
             message: '¿Desbloquear a este usuario?\n\nPodrá volver a llamarte.',
-            icon: '✓',
+            icon: '',
             confirmText: 'Desbloquear',
             cancelText: 'Cancelar'
         });
         if (!confirmado) return;
         try {
             await llamadaFetch('/api/llamadas/bloqueos/' + encodeURIComponent(userId), { method: 'DELETE' });
-            toast('✅ Usuario desbloqueado', 'success');
+            toast('Usuario desbloqueado.', 'success');
             await cargarBloqueados();
         } catch (e) {
             console.error('[Llamadas UI] Desbloquear:', e);
-            toast('❌ ' + textoError(e), 'error');
+            toast(textoError(e), 'error');
         }
     }
 
@@ -474,12 +556,12 @@
             if (contador) contador.textContent = bloqueadosCache.length;
 
             if (!bloqueadosCache.length) {
-                cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No tienes usuarios bloqueados</div>';
+                cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem;">No tienes usuarios bloqueados.</div>';
                 return;
             }
 
             cont.innerHTML = bloqueadosCache.map(function (b) {
-                var inicial = (b.nombre || '?').charAt(0).toUpperCase();
+                var inicial = (b.nombre || 'U').charAt(0).toUpperCase();
                 var avatarHTML = b.avatar_url
                     ? '<img src="' + esc(b.avatar_url) + '" alt="">'
                     : esc(inicial);
@@ -489,7 +571,7 @@
                         '<div class="bloqueado-nombre">' + esc(b.nombre || 'Usuario') + '</div>' +
                         '<div class="bloqueado-handle">@' + esc(b.handle || 'usuario') + '</div>' +
                     '</div>' +
-                    '<button data-userid="' + esc(b.bloqueado_id) + '">Desbloquear</button>' +
+                    '<button type="button" data-userid="' + esc(b.bloqueado_id) + '">Desbloquear</button>' +
                 '</div>';
             }).join('');
 
@@ -498,14 +580,13 @@
             });
         } catch (e) {
             console.error('[Llamadas UI] Bloqueados:', e);
-            cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);font-size:.8rem;">' +
+            cont.innerHTML = '<div style="text-align:center;padding:20px;color:var(--red);font-size:.8rem;">' +
                 esc(textoError(e)) + '</div>';
         }
     }
 
-    // ============================================================
-    // CONFIG
-    // ============================================================
+    /* ---------------- Configuración ---------------- */
+
     async function cargarConfiguracionLlamadas() {
         try {
             var data = await llamadaFetch('/api/llamadas/configuracion');
@@ -527,16 +608,15 @@
                 body: { quien_puede_llamarme: valor }
             });
             configLlamadasCache.quien_puede_llamarme = valor;
-            toast('✅ Configuración guardada', 'success');
+            toast('Configuración guardada.', 'success');
         } catch (e) {
             console.error('[Llamadas UI] Config put:', e);
-            toast('❌ ' + textoError(e), 'error');
+            toast(textoError(e), 'error');
         }
     }
 
-    // ============================================================
-    // MODALES
-    // ============================================================
+    /* ---------------- Modales ---------------- */
+
     function abrirModalConfig() {
         cargarConfiguracionLlamadas();
         var m = $('modalConfigLlamadas');
@@ -559,9 +639,8 @@
         if (m) m.classList.remove('show');
     }
 
-    // ============================================================
-    // HOOK cambiarPestana
-    // ============================================================
+    /* ---------------- Hook de cambiarPestana ---------------- */
+
     var _cambiarPestanaOriginal = window.cambiarPestana;
     window.cambiarPestana = function (pestana) {
         if (typeof _cambiarPestanaOriginal === 'function') {
@@ -576,15 +655,16 @@
         }
     };
 
-    // ============================================================
-    // INIT
-    // ============================================================
+    /* ---------------- Inicialización ---------------- */
+
     document.addEventListener('DOMContentLoaded', function () {
+        inyectarEstilos();
+
         var btnConfig = $('btnConfigLlamadas');
         if (btnConfig) btnConfig.onclick = abrirModalConfig;
 
-        var closeModalConfig = $('closeModalConfig');
-        if (closeModalConfig) closeModalConfig.onclick = cerrarModalConfig;
+        var closeModalConfigEl = $('closeModalConfig');
+        if (closeModalConfigEl) closeModalConfigEl.onclick = cerrarModalConfig;
 
         var btnGuardarConfig = $('btnGuardarConfig');
         if (btnGuardarConfig) btnGuardarConfig.onclick = guardarConfiguracionLlamadas;
@@ -597,22 +677,21 @@
             };
         }
 
-        var closeModalBloqueados = $('closeModalBloqueados');
-        if (closeModalBloqueados) closeModalBloqueados.onclick = cerrarModalBloqueados;
+        var closeModalBloqueadosEl = $('closeModalBloqueados');
+        if (closeModalBloqueadosEl) closeModalBloqueadosEl.onclick = cerrarModalBloqueados;
 
         var btnBorrarTodo = $('btnBorrarTodoHistorial');
         if (btnBorrarTodo) btnBorrarTodo.onclick = borrarTodoHistorial;
 
-        // FIX v2.0: bloquearUsuario usa NeonModal, no confirm()
         var btnBlock = $('blockUser');
         if (btnBlock) {
             btnBlock.onclick = function () {
                 if (!window.current || !window.current.id) {
-                    toast('⚠️ Selecciona una conversación', 'error');
+                    toast('Selecciona una conversación.', 'error');
                     return;
                 }
                 if (window.current.bot) {
-                    toast('ℹ️ Marquinhos es un bot', 'warning');
+                    toast('Marquinhos no se puede bloquear.', 'warning');
                     return;
                 }
                 bloquearUsuario(window.current.id, window.current.profile && window.current.profile.nombre);
@@ -646,9 +725,8 @@
         iniciarEnhancerOverlayLlamada();
     });
 
-    // ============================================================
-    // CALLS UI ENHANCER — v1.2 (sin cambios)
-    // ============================================================
+    /* ---------------- Overlay de llamada (estructura y ticker) ---------------- */
+
     var enhancerTimer = null;
     var enhancerStartAt = 0;
     var enhancerInjected = false;
@@ -659,29 +737,28 @@
         if (!callOverlay) return;
 
         if (!callOverlay.dataset.upgraded) {
-            const videos = callOverlay.querySelector('.videos');
-            const callinfo = callOverlay.querySelector('#callInfo');
-            const controls = callOverlay.querySelector('.controls');
+            var videos = callOverlay.querySelector('.videos');
+            var callinfo = callOverlay.querySelector('#callInfo');
+            var controls = callOverlay.querySelector('.controls');
 
-            const headerE2E = document.createElement('div');
+            var headerE2E = document.createElement('div');
             headerE2E.className = 'call-e2e-header';
-            headerE2E.innerHTML = '<span class="lock">🔒</span><span>Llamada privada y cifrada · E2E</span>';
+            headerE2E.innerHTML = svg('lock', 'ico') + '<span>Llamada privada y cifrada</span>';
 
-            const avatarBlock = document.createElement('div');
+            var avatarBlock = document.createElement('div');
             avatarBlock.className = 'call-avatar-block';
             avatarBlock.id = 'callAvatarBlock';
-            avatarBlock.innerHTML = `
-                <div class="call-avatar-halo" id="callAvatarHalo">◈</div>
-                <div class="call-name" id="callNameDisplay">Llamada</div>
-                <div class="call-subname" id="callSubnameDisplay">Conectando…</div>
-            `;
+            avatarBlock.innerHTML =
+                '<div class="call-avatar-halo" id="callAvatarHalo"></div>' +
+                '<div class="call-name" id="callNameDisplay">Llamada</div>' +
+                '<div class="call-subname" id="callSubnameDisplay">Conectando…</div>';
 
-            const timerEl = document.createElement('div');
+            var timerEl = document.createElement('div');
             timerEl.className = 'call-timer';
             timerEl.id = 'callTimer';
             timerEl.textContent = '00:00';
 
-            const statusEl = document.createElement('div');
+            var statusEl = document.createElement('div');
             statusEl.className = 'call-status';
             statusEl.id = 'callStatus';
             statusEl.innerHTML = '<span class="dot"></span><span id="callStatusText">Conectando…</span>';
@@ -705,36 +782,30 @@
 
         var incomingOverlay = $('incomingOverlay');
         if (incomingOverlay && !incomingOverlay.dataset.upgraded) {
-            const avatar = incomingOverlay.querySelector('#incomingAvatar');
-            const nameEl = incomingOverlay.querySelector('#incomingName');
-            const callinfo = incomingOverlay.querySelector('.callinfo');
-            const controls = incomingOverlay.querySelector('.controls');
+            var avatar = incomingOverlay.querySelector('#incomingAvatar');
+            var nameEl = incomingOverlay.querySelector('#incomingName');
+            var callinfoIn = incomingOverlay.querySelector('.callinfo');
+            var controlsIn = incomingOverlay.querySelector('.controls');
 
-            const halo = document.createElement('div');
+            var halo = document.createElement('div');
             halo.className = 'incoming-halo';
             halo.id = 'incomingHalo';
-            if (avatar) {
-                halo.innerHTML = avatar.innerHTML || '◈';
-                avatar.style.display = 'none';
-                avatar.setAttribute('aria-hidden', 'true');
-            } else {
-                halo.innerHTML = '◈';
-            }
 
-            const headerE2E = document.createElement('div');
-            headerE2E.className = 'call-e2e-header';
-            headerE2E.style.marginBottom = '18px';
-            headerE2E.innerHTML = '<span class="lock">🔒</span><span>Llamada privada y cifrada · E2E</span>';
+            var headerIn = document.createElement('div');
+            headerIn.className = 'call-e2e-header';
+            headerIn.style.marginBottom = '18px';
+            headerIn.innerHTML = svg('lock', 'ico') + '<span>Llamada privada y cifrada</span>';
 
             incomingOverlay.innerHTML = '';
-            incomingOverlay.appendChild(headerE2E);
+            incomingOverlay.appendChild(headerIn);
             incomingOverlay.appendChild(halo);
             if (nameEl) incomingOverlay.appendChild(nameEl);
-            if (callinfo) incomingOverlay.appendChild(callinfo);
-            if (controls) incomingOverlay.appendChild(controls);
+            if (callinfoIn) incomingOverlay.appendChild(callinfoIn);
+            if (controlsIn) incomingOverlay.appendChild(controlsIn);
 
             if (avatar) {
                 avatar.style.display = 'none';
+                avatar.setAttribute('aria-hidden', 'true');
                 halo.appendChild(avatar);
             }
 
@@ -777,7 +848,7 @@
             if (c.profile.avatar_url) {
                 halo.innerHTML = '<img src="' + esc(c.profile.avatar_url) + '" alt="">';
             } else {
-                halo.textContent = (nombre.charAt(0) || '◈').toUpperCase();
+                halo.textContent = (nombre.charAt(0) || 'U').toUpperCase();
             }
         }
     }
@@ -794,8 +865,7 @@
             var mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
             var ss = String(elapsed % 60).padStart(2, '0');
             timer.textContent = mm + ':' + ss;
-            if (elapsed < 2 && statusText) statusText.textContent = 'Conectando…';
-            else if (elapsed >= 2 && statusText) statusText.textContent = 'En llamada';
+            if (statusText) statusText.textContent = elapsed < 2 ? 'Conectando…' : 'En llamada';
         }
         tick();
         enhancerTimer = setInterval(tick, 1000);
@@ -812,9 +882,8 @@
         if (statusText) statusText.textContent = 'Conectando…';
     }
 
-    // ============================================================
-    // EXPOSICIÓN GLOBAL
-    // ============================================================
+    /* ---------------- Exposición global ---------------- */
+
     window.cargarHistorialLlamadas = cargarHistorialLlamadas;
     window.cargarBloqueados = cargarBloqueados;
     window.bloquearUsuario = bloquearUsuario;
@@ -822,7 +891,7 @@
     window.abrirModalConfig = abrirModalConfig;
     window.abrirModalBloqueados = abrirModalBloqueados;
     window.LlamadasUI = {
-        version: '2.0.0',
+        version: '3.0.0',
         iniciarEnhancerOverlayLlamada: iniciarEnhancerOverlayLlamada,
         iniciarLlamadaDesdeHistorial: iniciarLlamadaDesdeHistorial
     };
