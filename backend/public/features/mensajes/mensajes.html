@@ -1,4 +1,3 @@
-
 <!doctype html>
 <html lang="es" data-require-auth>
 <head>
@@ -22,52 +21,29 @@
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
 <script>
-(function () {
-    var url = 'https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js';
-    var maxIntentos = 3;
-    var intento = 0;
-
-    function cargarScript() {
-        if (window.LivekitClient) {
-            window.__livekitReady = true;
-            return;
+    (function () {
+        var url = 'https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js';
+        var maxIntentos = 3;
+        var intento = 0;
+        function cargarScript() {
+            if (window.LivekitClient) { window.__livekitReady = true; return; }
+            if (intento >= maxIntentos) { window.dispatchEvent(new CustomEvent('livekit:error')); return; }
+            intento++;
+            var s = document.createElement('script');
+            s.src = url; s.async = true;
+            s.onload = function () {
+                if (window.LivekitClient) { window.__livekitReady = true; window.dispatchEvent(new CustomEvent('livekit:ready')); }
+                else { setTimeout(cargarScript, 1500); }
+            };
+            s.onerror = function () { setTimeout(cargarScript, 1500); };
+            document.head.appendChild(s);
         }
-
-        if (intento >= maxIntentos) {
-            window.dispatchEvent(new CustomEvent('livekit:error'));
-            return;
-        }
-
-        intento++;
-
-        var s = document.createElement('script');
-        s.src = url;
-        s.async = true;
-
-        s.onload = function () {
-            if (window.LivekitClient) {
-                window.__livekitReady = true;
-                window.dispatchEvent(new CustomEvent('livekit:ready'));
-            } else {
-                setTimeout(cargarScript, 1500);
-            }
-        };
-
-        s.onerror = function () {
-            setTimeout(cargarScript, 1500);
-        };
-
-        document.head.appendChild(s);
-    }
-
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', cargarScript);
-    } else {
-        cargarScript();
-    }
-})();
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', cargarScript);
+        else cargarScript();
+    })();
 </script>
 
+<!-- Estilos: base, tema Messenger, contactos flotantes, llamadas -->
 <link rel="stylesheet" href="/features/mensajes/css/mensajes.css?v=4.2">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes-messenger.css?v=1.2">
 <link rel="stylesheet" href="/features/mensajes/css/mensajes-floating.css?v=1.2">
@@ -75,70 +51,64 @@
 <link rel="stylesheet" href="/features/css/teclado-emojis.css?v=4">
 
 <style>
-#btnConfigLlamadas {
-    display: grid !important;
-}
+    /* Botón de configuración de llamadas: visible también con el tema Messenger */
+    #btnConfigLlamadas { display: grid !important; }
 
-.estado-viewer-foot {
-    position: absolute;
-    left: 0;
-    right: 0;
-    bottom: 22px;
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    z-index: 4;
-    padding: 0 12px;
-}
+    /* Pie del visor de historias: vistas, eliminar y comentar */
+    .estado-viewer-foot {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 22px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        z-index: 4;
+        padding: 0 12px;
+    }
+    .estado-viewer-foot button {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 16px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.25);
+        background: rgba(0,0,0,.55);
+        color: #fff;
+        font-size: .8rem;
+        font-weight: 600;
+    }
+    .estado-viewer-foot button .ico { width: 16px; height: 16px; }
+    .estado-viewer-foot .hidden { display: none !important; }
 
-.estado-viewer-foot button {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 9px 16px;
-    border-radius: 999px;
-    border: 1px solid rgba(255,255,255,.25);
-    background: rgba(0,0,0,.55);
-    color: #fff;
-    font-size: .8rem;
-    font-weight: 600;
-}
+    .estado-preview-img {
+        width: 100%;
+        max-height: 50vh;
+        border-radius: 12px;
+        object-fit: contain;
+        display: block;
+        background: #000;
+    }
+    .estado-preview-img.hidden { display: none !important; }
 
-.estado-viewer-foot button .ico {
-    width: 16px;
-    height: 16px;
-}
+    /* Pantalla de llamada: el texto de estado se centra */
+    #callOverlay .callinfo { min-height: 20px; }
 
-.estado-viewer-foot .hidden,
-.estado-preview-img.hidden {
-    display: none !important;
-}
+    /* ---------- Formularios de canales y grupos ---------- */
+    .form-campo { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+    .form-campo label { font-size: .72rem; color: var(--muted); font-weight: 600; }
+    .campo {
+        width: 100%; padding: 10px 12px; border-radius: 10px;
+        border: 1px solid var(--line-strong); background: var(--panel-2);
+        color: var(--text); font-size: .9rem; outline: 0;
+    }
+    .campo:focus { border-color: var(--orange); }
+    .campo-area { resize: vertical; min-height: 76px; }
+    .form-fila { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 420px) { .form-fila { grid-template-columns: 1fr; } }
 
-.estado-preview-img {
-    width: 100%;
-    max-height: 50vh;
-    border-radius: 12px;
-    object-fit: contain;
-    display: block;
-    background: #000;
-}
-
-#callOverlay .callinfo {
-    min-height: 20px;
-}
-
-#messageInput {
-    resize: none;
-    overflow-y: auto;
-}
-
-.tools-ocultas {
-    display: none !important;
-}
-
-[hidden] {
-    display: none !important;
-}
+    /* ---------- Tarjetas de canales y grupos ---------- */
+    .canal-card:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 </style>
 </head>
 
@@ -150,15 +120,10 @@
             <a href="/" class="brand" aria-label="Inicio"><span>C</span></a>
             <h1>Mensajes</h1>
         </div>
-
         <div class="topbar-actions">
             <button type="button" class="icon-btn" id="btnConfigLlamadas" aria-label="Configuración de llamadas" title="Configuración de llamadas">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <circle cx="12" cy="12" r="3"/>
-                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
-
             <div class="header-avatar" id="headerAvatar" role="button" tabindex="0" aria-label="Mi perfil" title="Mi perfil"></div>
             <input type="file" id="avatarInput" hidden accept="image/*">
         </div>
@@ -178,124 +143,93 @@
     <main class="panel" id="panel">
 
         <aside class="sidebar">
-
             <div class="sidebar-tabs" role="tablist" aria-label="Secciones de mensajes">
-
                 <button type="button" class="sidebar-tab active" data-tab="chats" role="tab" aria-selected="true" onclick="cambiarPestana('chats')">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
                     <span class="tab-label">Chats</span>
                 </button>
-
                 <button type="button" class="sidebar-tab" data-tab="canales" role="tab" aria-selected="false" onclick="cambiarPestana('canales')">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M11 5 6 9H3v6h3l5 4z"/>
-                        <path d="M15.5 8.5a5 5 0 0 1 0 7"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
                     <span class="tab-label">Canales</span>
                 </button>
-
                 <button type="button" class="sidebar-tab" data-tab="grupos" role="tab" aria-selected="false" onclick="cambiarPestana('grupos')">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                        <circle cx="9" cy="7" r="4"/>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     <span class="tab-label">Grupos</span>
                 </button>
-
                 <button type="button" class="sidebar-tab" data-tab="llamadas" role="tab" aria-selected="false" onclick="cambiarPestana('llamadas')">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg>
                     <span class="tab-label">Llamadas</span>
                 </button>
-
             </div>
 
+            <!-- CHATS -->
             <div class="tab-content" id="tabChats">
                 <div class="sidehead"><span>Conversaciones</span></div>
-
                 <div class="searchbox">
                     <input type="text" id="searchConversations" placeholder="Buscar conversación" autocomplete="off" aria-label="Buscar conversación">
                 </div>
-
                 <div class="estados-bar">
                     <div class="estados-header">
                         <div class="estados-title">Estados</div>
                         <button type="button" class="btn-subir-estado" id="btnSubirEstado" title="Subir estado">
-                            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="M12 5v14M5 12h14"/>
-                            </svg>
+                            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
                             Subir
                         </button>
                     </div>
                     <div class="estados-scroll" id="estadosScroll"></div>
                 </div>
-
                 <div class="convlist" id="conversationList"></div>
             </div>
 
+            <!-- CANALES -->
             <div class="tab-content hidden" id="tabCanales">
                 <div class="sidehead"><span>Canales públicos</span></div>
-
                 <div class="searchbox">
                     <input type="text" id="searchCanales" placeholder="Buscar canal" autocomplete="off" oninput="buscarCanalesDebounce()" aria-label="Buscar canal">
                 </div>
-
                 <div class="filtros-canales">
                     <select id="filtroEstadoCanal" onchange="cargarCanales()" aria-label="Filtrar canales por estado">
                         <option value="">Todos los estados</option>
                     </select>
                 </div>
-
                 <div class="canales-lista" id="canalesLista"></div>
             </div>
 
+            <!-- GRUPOS -->
             <div class="tab-content hidden" id="tabGrupos">
                 <div class="sidehead"><span>Grupos privados</span></div>
-
                 <div class="searchbox">
                     <input type="text" id="searchGrupos" placeholder="Buscar grupo" autocomplete="off" oninput="buscarGruposDebounce()" aria-label="Buscar grupo">
                 </div>
-
                 <div class="filtros-canales">
                     <select id="filtroEstadoGrupo" onchange="cargarGrupos()" aria-label="Filtrar grupos por estado">
                         <option value="">Todos los estados</option>
                     </select>
                 </div>
-
                 <div class="canales-lista" id="gruposLista"></div>
             </div>
 
+            <!-- LLAMADAS -->
             <div class="tab-content hidden" id="tabLlamadas">
-
                 <div class="sidehead">
                     <span>Historial de llamadas</span>
-
                     <button type="button" class="btn-borrar-todo" id="btnBorrarTodoHistorial" title="Borrar todo el historial">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>
-                        </svg>
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
                         Borrar todo
                     </button>
                 </div>
-
                 <div class="filtros-canales filtros-llamadas">
                     <select id="filtroTipoLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por tipo de llamada">
                         <option value="all">Todos los tipos</option>
                         <option value="audio">Solo audio</option>
                         <option value="video">Solo video</option>
                     </select>
-
                     <select id="filtroDireccionLlamada" onchange="cargarHistorialLlamadas()" aria-label="Filtrar por dirección">
                         <option value="all">Todas</option>
                         <option value="entrante">Entrantes</option>
                         <option value="saliente">Salientes</option>
                     </select>
                 </div>
-
                 <div class="canales-lista" id="historialLlamadasLista">
                     <div class="empty-state-small">
                         <div class="empty-text">Cargando historial…</div>
@@ -303,149 +237,102 @@
                 </div>
             </div>
 
+            <!-- Oculto: conserva el id que usa mensajes-init.js -->
             <button type="button" class="fab" id="newChat" hidden aria-hidden="true" tabindex="-1"></button>
-
         </aside>
 
+        <!-- CHAT -->
         <section class="chat">
-
             <header class="chathead" id="chatHeader">
-
                 <button type="button" class="backbtn" id="backBtn" title="Volver" aria-label="Volver">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <line x1="19" y1="12" x2="5" y2="12"/>
-                        <polyline points="12 19 5 12 12 5"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
                 </button>
-
                 <div class="avatar" id="chatAvatar" role="button" tabindex="0" aria-label="Ver foto"></div>
-
                 <div class="chat-title" id="chatInfoTrigger" role="button" tabindex="0">
                     <div class="chatname" id="chatName">Selecciona una conversación</div>
                     <div class="status" id="chatStatus">Elige un chat para empezar</div>
                 </div>
 
                 <div class="actions" id="chatActions" hidden>
-
                     <button type="button" class="iconbtn" id="audioCall" title="Llamar" aria-label="Llamar">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
-                        </svg>
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg>
                     </button>
-
                     <button type="button" class="iconbtn" id="videoCall" title="Videollamada" aria-label="Videollamada" disabled>
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <rect x="2" y="6" width="14" height="12" rx="2"/>
-                            <path d="M16 10l6-3v10l-6-3"/>
-                        </svg>
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg>
                     </button>
-
                     <button type="button" class="iconbtn" id="chatSettings" title="Información del chat" aria-label="Información del chat">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                        </svg>
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                     </button>
-
                 </div>
 
+                <!-- Herramientas que disparan los módulos (desde el panel de información) -->
                 <div class="tools-ocultas" hidden>
                     <button type="button" id="searchChat" aria-label="Buscar en la conversación">Buscar</button>
                     <button type="button" id="deleteChat" aria-label="Eliminar conversación">Eliminar</button>
                     <button type="button" id="blockUser" aria-label="Bloquear contacto">Bloquear</button>
                 </div>
-
             </header>
 
             <div class="messages" id="messages">
-
                 <div class="empty" id="emptyState">
                     <p>Selecciona una conversación</p>
                     <small>Elige un chat de la lista para empezar a escribir</small>
                 </div>
-
                 <div id="scrollAnchor"></div>
-
                 <button type="button" class="scroll-down-btn" id="scrollDownBtn" title="Ir al final" aria-label="Ir al final">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 5v14M5 12l7 7 7-7"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
                     <span class="badge-new" id="newMsgBadge" hidden>1</span>
                 </button>
-
             </div>
 
+            <!-- BARRA DE ESCRIBIR -->
             <form class="composer" id="composer" hidden>
-
                 <button type="button" class="btn-icon" id="attach" title="Adjuntar archivo" aria-label="Adjuntar archivo">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
                 </button>
 
                 <div class="input-wrapper">
                     <textarea id="messageInput" autocomplete="off" placeholder="Escribe un mensaje" rows="1" aria-label="Escribir mensaje"></textarea>
-
                     <button type="button" class="btn-emoji" id="emojiBtn" title="Emojis" aria-label="Emojis">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"/>
-                            <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-                            <line x1="9" y1="9" x2="9.01" y2="9"/>
-                            <line x1="15" y1="9" x2="15.01" y2="9"/>
-                        </svg>
+                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
                     </button>
                 </div>
 
                 <button type="button" class="btn-accion btn-mic" id="audio" title="Grabar nota de voz" aria-label="Grabar nota de voz">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="9" y="3" width="6" height="11" rx="3"/>
-                        <path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
                 </button>
 
                 <button type="submit" class="btn-accion btn-send" id="sendBtn" title="Enviar mensaje" aria-label="Enviar mensaje">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M22 2 11 13"/>
-                        <path d="M22 2l-7 20-4-9-9-4 20-7z"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4 20-7z"/></svg>
                 </button>
 
                 <button type="button" class="btn-voicebot" id="voiceBot" title="Hablar con Marquinhos" aria-label="Hablar con Marquinhos" hidden>
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M12 2v4M8 10h8a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"/>
-                        <circle cx="9" cy="14" r="1"/>
-                        <circle cx="15" cy="14" r="1"/>
-                    </svg>
+                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2v4M8 10h8a4 4 0 0 1 4 4v2a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4v-2a4 4 0 0 1 4-4z"/><circle cx="9" cy="14" r="1"/><circle cx="15" cy="14" r="1"/></svg>
                 </button>
-
                 <input id="fileInput" type="file" hidden multiple accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.txt">
-
             </form>
         </section>
+
     </main>
 
     <footer class="footer">
         <span>Csariel's · Sabor al Paladar</span>
         <span>Polygon</span>
     </footer>
-
 </div>
 
-<!-- INFORMACIÓN DEL CHAT -->
+<!-- ================================================================ -->
+<!-- INFORMACIÓN DEL CHAT (lo controla mensajes-chats.js)              -->
+<!-- ================================================================ -->
 <div class="contact-profile-overlay" id="contactProfileOverlay" role="dialog" aria-modal="true" aria-label="Información del contacto">
-
     <div class="cp-topbar">
         <button type="button" class="cp-back" id="cpBackBtn" aria-label="Volver">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <line x1="19" y1="12" x2="5" y2="12"/>
-                <polyline points="12 19 5 12 12 5"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
         </button>
         <span class="cp-topbar-title">Información</span>
     </div>
 
     <div class="cp-content">
-
         <div class="cp-avatar-container">
             <div class="cp-avatar" id="cpAvatar"></div>
             <span class="cp-status-dot" id="cpStatusDot" hidden></span>
@@ -457,224 +344,116 @@
         <button type="button" class="cp-ver-perfil" id="cpVerPerfil">Ver perfil</button>
 
         <div class="cp-action-grid">
-
             <button type="button" class="cp-action-btn" id="cpBtnCall">
-                <span class="cp-action-icon">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
-                    </svg>
-                </span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg></span>
                 <span class="cp-action-label">Llamar</span>
             </button>
-
             <button type="button" class="cp-action-btn" id="cpBtnVideo">
-                <span class="cp-action-icon">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="2" y="6" width="14" height="12" rx="2"/>
-                        <path d="M16 10l6-3v10l-6-3"/>
-                    </svg>
-                </span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg></span>
                 <span class="cp-action-label">Video</span>
             </button>
-
             <button type="button" class="cp-action-btn" id="cpActionSearch">
-                <span class="cp-action-icon">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <circle cx="11" cy="11" r="7"/>
-                        <path d="m21 21-4.35-4.35"/>
-                    </svg>
-                </span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.35-4.35"/></svg></span>
                 <span class="cp-action-label">Buscar</span>
             </button>
-
             <button type="button" class="cp-action-btn" id="cpBtnMute">
-                <span class="cp-action-icon">
-                    <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                    </svg>
-                </span>
+                <span class="cp-action-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></span>
                 <span class="cp-action-label">Silenciar</span>
             </button>
-
         </div>
 
         <div class="cp-section">
             <div class="cp-section-title">Chat</div>
-
             <div class="cp-list">
-
                 <button type="button" class="cp-list-item" id="cpActionMarkRead">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <rect x="3" y="5" width="18" height="14" rx="2"/>
-                            <polyline points="3 7 12 13 21 7"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 13 21 7"/></svg></span>
                     <span class="cp-list-text"><span class="main">Marcar como no leído</span></span>
                 </button>
-
                 <button type="button" class="cp-list-item" id="cpActionNickname">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 7V4h16v3M9 20h6M12 4v16"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg></span>
                     <span class="cp-list-text"><span class="main">Apodo</span></span>
                 </button>
-
                 <button type="button" class="cp-list-item danger" id="cpActionDelete">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg></span>
                     <span class="cp-list-text"><span class="main">Eliminar conversación</span></span>
                 </button>
-
             </div>
         </div>
 
         <div class="cp-section">
             <div class="cp-section-title">Privacidad y ayuda</div>
-
             <div class="cp-list">
-
                 <button type="button" class="cp-list-item" id="cpActionReadReceipts">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                            <circle cx="12" cy="12" r="3"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></span>
                     <span class="cp-list-text"><span class="main">Confirmaciones de lectura</span></span>
                     <span class="cp-list-toggle">Activado</span>
                 </button>
-
                 <button type="button" class="cp-list-item danger" id="cpActionBlock">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <circle cx="12" cy="12" r="9"/>
-                            <line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>
-                        </svg>
-                    </span>
-                    <span class="cp-list-text">
-                        <span class="main">Bloquear a <span id="cpBlockName">Contacto</span></span>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/></svg></span>
+                    <span class="cp-list-text"><span class="main">Bloquear a <span id="cpBlockName">Contacto</span></span></span>
                 </button>
-
                 <button type="button" class="cp-list-item danger" id="cpActionReport">
-                    <span class="cp-list-icon">
-                        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                            <line x1="12" y1="9" x2="12" y2="13"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                    </span>
+                    <span class="cp-list-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
                     <span class="cp-list-text">
                         <span class="main">Reportar</span>
                         <span class="sub">Enviar comentarios y reportar conversación</span>
                     </span>
                 </button>
-
             </div>
         </div>
-
     </div>
 </div>
 
-<!-- PANTALLA DE LLAMADA -->
+<!-- ================================================================ -->
+<!-- PANTALLA DE LLAMADA (la estructura la completa llamadas-ui.js)    -->
+<!-- ================================================================ -->
 <div class="call" id="callOverlay" role="dialog" aria-modal="true" aria-label="Llamada">
-
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
         <video id="localVideo" class="local" autoplay playsinline muted></video>
     </div>
-
     <div class="callinfo" id="callInfo"></div>
-
     <div class="controls">
-
         <button type="button" id="toggleMic" aria-label="Micrófono">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="9" y="3" width="6" height="11" rx="3"/>
-                    <path d="M5 11a7 7 0 0 0 14 0M12 18v3"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
             <span class="ctrl-label">Micrófono</span>
         </button>
-
         <button type="button" id="toggleCam" aria-label="Cámara">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="2" y="6" width="14" height="12" rx="2"/>
-                    <path d="M16 10l6-3v10l-6-3"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3"/></svg></span>
             <span class="ctrl-label">Cámara</span>
         </button>
-
         <button type="button" id="toggleScreen" aria-label="Compartir pantalla">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="2" y="3" width="20" height="14" rx="2"/>
-                    <path d="M8 21h8M12 17v4"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg></span>
             <span class="ctrl-label">Pantalla</span>
         </button>
-
         <button type="button" id="hangup" class="hang" aria-label="Colgar">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/>
-                    <line x1="23" y1="1" x2="1" y2="23"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></span>
             <span class="ctrl-label">Colgar</span>
         </button>
-
     </div>
 </div>
 
 <!-- LLAMADA ENTRANTE -->
 <div class="call" id="incomingOverlay" role="dialog" aria-modal="true" aria-label="Llamada entrante">
-
     <div class="avatar" id="incomingAvatar"></div>
     <h2 id="incomingName">Llamada entrante</h2>
     <div class="callinfo">Llamada entrante</div>
-
     <div class="controls">
-
         <button type="button" id="acceptCall" class="accept" aria-label="Aceptar llamada">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 16.9v3a2 2 0 0 1-2.2 2A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.6a2 2 0 0 1-.5 2.1L8 9.6a16 16 0 0 0 6.4 6.4l1.2-1.3a2 2 0 0 1 2.1-.5c.8.3 1.7.6 2.6.7a2 2 0 0 1 1.7 2z"/></svg></span>
             <span class="ctrl-label">Aceptar</span>
         </button>
-
         <button type="button" id="rejectCall" class="hang" aria-label="Rechazar llamada">
-            <span class="ctrl-icon">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/>
-                    <line x1="23" y1="1" x2="1" y2="23"/>
-                </svg>
-            </span>
+            <span class="ctrl-icon"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/></svg></span>
             <span class="ctrl-label">Rechazar</span>
         </button>
-
     </div>
 </div>
 
 <!-- VISOR DE FOTO -->
 <div class="photo-viewer" id="photoViewer" role="dialog" aria-modal="true" aria-label="Foto de perfil">
     <button type="button" class="pv-close" id="pvClose" aria-label="Cerrar">
-        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M6 6l12 12M18 6 6 18"/>
-        </svg>
+        <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
     </button>
     <img id="pvImage" alt="">
     <div class="pv-name" id="pvName"></div>
@@ -687,7 +466,6 @@
         <div class="profile-modal-avatar" id="profileModalAvatar"></div>
         <div class="profile-modal-name" id="profileModalName">Mi perfil</div>
         <div class="profile-modal-handle" id="profileModalHandle"></div>
-
         <div class="profile-modal-actions">
             <button type="button" class="profile-modal-btn" id="btnCambiarFoto">Cambiar foto</button>
             <button type="button" class="profile-modal-btn" id="btnCerrarProfileModal">Cerrar</button>
@@ -697,245 +475,238 @@
 
 <!-- VISOR DE HISTORIAS -->
 <div class="estado-viewer" id="estadoViewer" role="dialog" aria-modal="true" aria-label="Historia">
-
     <div class="estado-viewer-progress">
         <div class="estado-viewer-progress-inner" id="estadoProgress"></div>
     </div>
 
     <div class="estado-viewer-header">
-
         <div class="estado-viewer-avatar" id="evAvatar"></div>
-
         <div class="estado-viewer-info">
             <div class="estado-viewer-name" id="evName"></div>
             <div class="estado-viewer-time" id="evTime"></div>
         </div>
-
         <button type="button" class="estado-viewer-close hidden" id="evSkip" aria-label="Siguiente persona" title="Siguiente persona">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <polyline points="6 9 12 15 18 9"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
-
         <button type="button" class="estado-viewer-close" id="evClose" aria-label="Cerrar">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 6l12 12M18 6 6 18"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
-
     </div>
 
     <div class="estado-viewer-body" id="evBody">
-
         <img class="estado-viewer-img" id="evImage" alt="">
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
-
         <button type="button" class="estado-viewer-nav prev hidden" id="evPrev" aria-label="Historia anterior">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <polyline points="15 18 9 12 15 6"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
         </button>
-
         <button type="button" class="estado-viewer-nav next hidden" id="evNext" aria-label="Historia siguiente">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <polyline points="9 18 15 12 9 6"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
         </button>
-
     </div>
 
     <div class="estado-viewer-foot">
-
         <button type="button" class="hidden" id="evVistas" aria-label="Ver vistas">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <span>Vistas</span>
-            <span id="evVistasCount">0</span>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            <span>Vistas</span> <span id="evVistasCount">0</span>
         </button>
-
         <button type="button" class="hidden" id="evComentar" aria-label="Comentar">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
             <span>Comentar</span>
         </button>
-
         <button type="button" class="hidden" id="evEliminar" aria-label="Eliminar historia">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>
-            </svg>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
             <span>Eliminar</span>
         </button>
-
     </div>
 </div>
 
 <!-- SUBIR HISTORIA -->
 <div class="modal" id="estadoUploadModal" role="dialog" aria-modal="true" aria-label="Subir historia">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Subir historia</h2>
-
             <button type="button" class="modal-close" id="closeEstadoModal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
-
         <button type="button" class="btn-plano" id="btnSeleccionarEstado">Elegir foto o video</button>
-
         <input type="file" id="estadoFileInput" accept="image/*,video/*" hidden>
-
         <div id="estadoPreviewWrap" class="hidden" style="margin:12px 0;">
             <img id="estadoPreviewImg" class="estado-preview-img" alt="">
         </div>
-
         <input type="text" id="estadoCaption" class="search" maxlength="200" placeholder="Escribe un texto (opcional)" autocomplete="off" style="margin-top:12px;">
-
-        <button type="button" class="btn-plano sol" id="btnPublicarEstado" disabled style="width:100%;margin-top:14px;">
-            Publicar historia
-        </button>
-
+        <button type="button" class="btn-plano sol" id="btnPublicarEstado" disabled style="width:100%;margin-top:14px;">Publicar historia</button>
     </div>
 </div>
 
-<!-- VISTAS Y COMENTARIOS -->
+<!-- VISTAS Y COMENTARIOS DE UNA HISTORIA -->
 <div class="modal" id="vistasModal" role="dialog" aria-modal="true" aria-label="Vistas y comentarios">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Historia <span id="vistasModalCount"></span></h2>
-
             <button type="button" class="modal-close" id="closeVistasModal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
-
         <div id="vistasList"></div>
-
     </div>
 </div>
 
-<!-- BUSCAR CONTACTO -->
+<!-- BUSCAR CONTACTO (se conserva; el botón + está oculto) -->
 <div class="modal" id="newModal" role="dialog" aria-modal="true" aria-label="Buscar contacto">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Buscar contacto</h2>
-
             <button type="button" class="modal-close" id="closeModal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
-
         <input type="search" id="userSearch" class="search" placeholder="Buscar por nombre o @usuario" autocomplete="off">
         <div id="userResults" style="margin-top:10px;"></div>
-
     </div>
 </div>
 
 <!-- CONFIGURACIÓN DE LLAMADAS -->
 <div class="modal" id="modalConfigLlamadas" role="dialog" aria-modal="true" aria-label="Configuración de llamadas">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Llamadas</h2>
-
             <button type="button" class="modal-close" id="closeModalConfig" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
-
         <div class="cfg-fila">
-
             <div class="cfg-fila-txt">
                 Quién puede llamarme
                 <small>Define quién puede iniciar una llamada contigo.</small>
             </div>
-
             <select class="sel" id="selectQuienPuedeLlamarme" aria-label="Quién puede llamarme">
                 <option value="todos">Todos</option>
                 <option value="contactos">Solo mis contactos</option>
                 <option value="nadie">Nadie</option>
             </select>
-
         </div>
-
         <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
             <button type="button" class="btn-plano" id="btnVerBloqueados">Ver bloqueados</button>
             <button type="button" class="btn-plano sol" id="btnGuardarConfig">Guardar</button>
         </div>
-
     </div>
 </div>
 
 <!-- USUARIOS BLOQUEADOS -->
 <div class="modal" id="modalBloqueados" role="dialog" aria-modal="true" aria-label="Usuarios bloqueados">
-
     <div class="modalbox">
-
         <div class="modal-head">
             <h2>Bloqueados <span id="countBloqueados"></span></h2>
-
             <button type="button" class="modal-close" id="closeModalBloqueados" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
-
         <div id="listaBloqueados"></div>
-
     </div>
 </div>
 
-<!-- CREAR CANAL -->
-<div class="modal" id="modalCrearCanal" role="dialog" aria-modal="true" aria-label="Crear canal">
+<!-- ================================================================ -->
+<!-- CANALES: formulario completo (IDs usados por mensajes-canales.js) -->
+<!-- ================================================================ -->
+<div class="modal" id="modalCrearCanal" role="dialog" aria-modal="true" aria-labelledby="tituloCrearCanal">
     <div class="modalbox">
         <div class="modal-head">
-            <h2>Crear canal</h2>
-
+            <h2 id="tituloCrearCanal">Crear canal público</h2>
             <button type="button" class="modal-close" id="closeModalCanal" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
+
+        <div class="form-campo">
+            <label for="canalNombre">Nombre</label>
+            <input type="text" id="canalNombre" class="campo" maxlength="80" autocomplete="off">
+        </div>
+
+        <div class="form-campo">
+            <label for="canalDescripcion">Descripción</label>
+            <textarea id="canalDescripcion" class="campo campo-area" maxlength="500" rows="3"></textarea>
+        </div>
+
+        <div class="form-fila">
+            <div class="form-campo">
+                <label for="canalEstado">Estado</label>
+                <input type="text" id="canalEstado" class="campo" maxlength="60" autocomplete="off">
+            </div>
+            <div class="form-campo">
+                <label for="canalMunicipio">Municipio</label>
+                <input type="text" id="canalMunicipio" class="campo" maxlength="80" autocomplete="off">
+            </div>
+        </div>
+
+        <div class="form-fila">
+            <div class="form-campo">
+                <label for="canalCiudad">Ciudad</label>
+                <input type="text" id="canalCiudad" class="campo" maxlength="80" autocomplete="off">
+            </div>
+            <div class="form-campo">
+                <label for="canalPais">País</label>
+                <input type="text" id="canalPais" class="campo" value="México" maxlength="60" autocomplete="off">
+            </div>
+        </div>
+
+        <button type="button" class="btn-plano sol" id="btnCrearCanal" style="width:100%;margin-top:6px;">Crear canal</button>
     </div>
 </div>
 
-<!-- CREAR GRUPO -->
-<div class="modal" id="modalCrearGrupo" role="dialog" aria-modal="true" aria-label="Crear grupo">
+<!-- ================================================================ -->
+<!-- GRUPOS: formulario completo (IDs usados por mensajes-canales.js) -->
+<!-- ================================================================ -->
+<div class="modal" id="modalCrearGrupo" role="dialog" aria-modal="true" aria-labelledby="tituloCrearGrupo">
     <div class="modalbox">
         <div class="modal-head">
-            <h2>Crear grupo</h2>
-
+            <h2 id="tituloCrearGrupo">Crear grupo privado</h2>
             <button type="button" class="modal-close" id="closeModalGrupo" aria-label="Cerrar">
-                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M6 6l12 12M18 6 6 18"/>
-                </svg>
+                <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
+
+        <div class="form-campo">
+            <label for="grupoNombre">Nombre</label>
+            <input type="text" id="grupoNombre" class="campo" maxlength="80" autocomplete="off">
+        </div>
+
+        <div class="form-campo">
+            <label for="grupoDescripcion">Descripción</label>
+            <textarea id="grupoDescripcion" class="campo campo-area" maxlength="500" rows="3"></textarea>
+        </div>
+
+        <div class="form-fila">
+            <div class="form-campo">
+                <label for="grupoEstado">Estado</label>
+                <input type="text" id="grupoEstado" class="campo" maxlength="60" autocomplete="off">
+            </div>
+            <div class="form-campo">
+                <label for="grupoMunicipio">Municipio</label>
+                <input type="text" id="grupoMunicipio" class="campo" maxlength="80" autocomplete="off">
+            </div>
+        </div>
+
+        <div class="form-fila">
+            <div class="form-campo">
+                <label for="grupoCiudad">Ciudad</label>
+                <input type="text" id="grupoCiudad" class="campo" maxlength="80" autocomplete="off">
+            </div>
+            <div class="form-campo">
+                <label for="grupoPais">País</label>
+                <input type="text" id="grupoPais" class="campo" value="México" maxlength="60" autocomplete="off">
+            </div>
+        </div>
+
+        <button type="button" class="btn-plano sol" id="btnCrearGrupo" style="width:100%;margin-top:6px;">Crear grupo</button>
     </div>
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- SCRIPTS -->
+<!-- ================================================================ -->
+<!-- SCRIPTS (el orden importa)                                        -->
+<!-- ================================================================ -->
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/js/teclado-emojis.js?v=4"></script>
 
@@ -951,86 +722,64 @@
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
 <script>
-/* Puentes de compatibilidad para la configuración de llamadas. */
-(function () {
-    window.abrirModalConfigLlamadas = function () {
-        if (typeof window.abrirModalConfig === 'function') {
-            window.abrirModalConfig();
-            return;
+    /* Puentes para funciones que llama mensajes-init.js y que define llamadas-ui.js */
+    function abrirModalConfigLlamadas() {
+        if (typeof window.abrirModalConfig === 'function') window.abrirModalConfig();
+    }
+    function cerrarModalConfigLlamadas() {
+        var m = document.getElementById('modalConfigLlamadas');
+        if (m) m.classList.remove('show');
+    }
+    function abrirListaBloqueados() {
+        if (typeof window.abrirModalBloqueados === 'function') window.abrirModalBloqueados();
+    }
+
+    /* El botón Bloquear usa la versión de mensajes-chats.js (tabla bloqueos, igual que Contactos).
+       Se asigna al final para que gane sobre la de llamadas-ui.js. */
+    document.addEventListener('DOMContentLoaded', function () {
+        var b = document.getElementById('blockUser');
+        if (b && typeof bloquearUsuarioActual === 'function') {
+            b.onclick = function () { bloquearUsuarioActual(); };
         }
-
-        var modal = document.getElementById('modalConfigLlamadas');
-        if (modal) modal.classList.add('show');
-    };
-
-    window.cerrarModalConfigLlamadas = function () {
-        var modal = document.getElementById('modalConfigLlamadas');
-
-        if (modal) {
-            modal.classList.remove('show');
-            modal.setAttribute('aria-hidden', 'true');
-        }
-    };
-
-    window.abrirListaBloqueados = function () {
-        if (typeof window.abrirModalBloqueados === 'function') {
-            window.abrirModalBloqueados();
-            return;
-        }
-
-        var modal = document.getElementById('modalBloqueados');
-        if (modal) modal.classList.add('show');
-    };
-})();
+    });
 </script>
 
 <script>
-/* Barra de escritura: altura automática y cambio entre micrófono y enviar. */
-document.addEventListener('DOMContentLoaded', function () {
+    /* Barra de escribir: crece con el texto y alterna micrófono / enviar */
+    document.addEventListener('DOMContentLoaded', function () {
+        var input = document.getElementById('messageInput');
+        var composer = document.getElementById('composer');
+        if (!input || !composer) return;
 
-    var input = document.getElementById('messageInput');
-    var composer = document.getElementById('composer');
-
-    if (!input || !composer) return;
-
-    function ajustarAltura() {
-        input.style.height = 'auto';
-        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-    }
-
-    function ajustarEstado() {
-        composer.classList.toggle('has-text', input.value.trim().length > 0);
-    }
-
-    input.addEventListener('input', function () {
-        ajustarAltura();
-        ajustarEstado();
-    });
-
-    input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-
-            var sendBtn = document.getElementById('sendBtn');
-
-            if (sendBtn && !sendBtn.disabled) {
-                sendBtn.click();
-            }
+        function ajustarAltura() {
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 120) + 'px';
         }
-    });
+        function ajustarEstado() {
+            composer.classList.toggle('has-text', input.value.trim().length > 0);
+        }
 
-    composer.addEventListener('submit', function () {
-        setTimeout(function () {
+        input.addEventListener('input', function () {
             ajustarAltura();
             ajustarEstado();
-        }, 0);
+        });
+
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                var sendBtn = document.getElementById('sendBtn');
+                if (sendBtn) sendBtn.click();
+            }
+        });
+
+        // Después de enviar, mensajes-chats.js vacía el campo: restablece la barra
+        composer.addEventListener('submit', function () {
+            setTimeout(function () {
+                ajustarAltura();
+                ajustarEstado();
+            }, 0);
+        });
     });
-
-    ajustarAltura();
-    ajustarEstado();
-
-});
 </script>
-
 </body>
 </html>
