@@ -590,27 +590,99 @@
     </div>
 </div>
 
-<!-- CANALES: los campos del formulario se completan al revisar mensajes-canales.js -->
-<div class="modal" id="modalCrearCanal" role="dialog" aria-modal="true" aria-label="Crear canal">
+<!-- ================================================================ -->
+<!-- CANALES: formulario completo para mensajes-canales.js v2.0        -->
+<!-- ================================================================ -->
+<div class="modal" id="modalCrearCanal" role="dialog" aria-modal="true" aria-labelledby="tituloCrearCanal">
     <div class="modalbox">
         <div class="modal-head">
-            <h2>Crear canal</h2>
-            <button type="button" class="modal-close" id="closeModalCanal" aria-label="Cerrar">
+            <h2 id="tituloCrearCanal">Crear canal público</h2>
+            <button type="button" class="modal-close" id="closeModalCanal" onclick="cerrarModalCrearCanal()" aria-label="Cerrar">
                 <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
+
+        <div class="form-campo">
+            <label for="canalNombre">Nombre</label>
+            <input type="text" id="canalNombre" class="campo" maxlength="80" autocomplete="off">
+        </div>
+
+        <div class="form-campo">
+            <label for="canalDescripcion">Descripción</label>
+            <textarea id="canalDescripcion" class="campo campo-area" maxlength="500" rows="3"></textarea>
+        </div>
+
+        <div class="form-fila">
+            <div class="form-campo">
+                <label for="canalEstado">Estado</label>
+                <input type="text" id="canalEstado" class="campo" maxlength="60" autocomplete="off">
+            </div>
+            <div class="form-campo">
+                <label for="canalMunicipio">Municipio</label>
+                <input type="text" id="canalMunicipio" class="campo" maxlength="80" autocomplete="off">
+            </div>
+        </div>
+
+        <div class="form-fila">
+            <div class="form-campo">
+                <label for="canalCiudad">Ciudad</label>
+                <input type="text" id="canalCiudad" class="campo" maxlength="80" autocomplete="off">
+            </div>
+            <div class="form-campo">
+                <label for="canalPais">País</label>
+                <input type="text" id="canalPais" class="campo" value="México" maxlength="60" autocomplete="off">
+            </div>
+        </div>
+
+        <button type="button" class="btn-plano sol" id="btnCrearCanal" style="width:100%;margin-top:6px;">Crear canal</button>
     </div>
 </div>
 
-<!-- GRUPOS: los campos del formulario se completan al revisar mensajes-canales.js -->
-<div class="modal" id="modalCrearGrupo" role="dialog" aria-modal="true" aria-label="Crear grupo">
+<!-- ================================================================ -->
+<!-- GRUPOS: formulario completo para mensajes-canales.js v2.0         -->
+<!-- ================================================================ -->
+<div class="modal" id="modalCrearGrupo" role="dialog" aria-modal="true" aria-labelledby="tituloCrearGrupo">
     <div class="modalbox">
         <div class="modal-head">
-            <h2>Crear grupo</h2>
-            <button type="button" class="modal-close" id="closeModalGrupo" aria-label="Cerrar">
+            <h2 id="tituloCrearGrupo">Crear grupo privado</h2>
+            <button type="button" class="modal-close" id="closeModalGrupo" onclick="cerrarModalCrearGrupo()" aria-label="Cerrar">
                 <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
             </button>
         </div>
+
+        <div class="form-campo">
+            <label for="grupoNombre">Nombre</label>
+            <input type="text" id="grupoNombre" class="campo" maxlength="80" autocomplete="off">
+        </div>
+
+        <div class="form-campo">
+            <label for="grupoDescripcion">Descripción</label>
+            <textarea id="grupoDescripcion" class="campo campo-area" maxlength="500" rows="3"></textarea>
+        </div>
+
+        <div class="form-fila">
+            <div class="form-campo">
+                <label for="grupoEstado">Estado</label>
+                <input type="text" id="grupoEstado" class="campo" maxlength="60" autocomplete="off">
+            </div>
+            <div class="form-campo">
+                <label for="grupoMunicipio">Municipio</label>
+                <input type="text" id="grupoMunicipio" class="campo" maxlength="80" autocomplete="off">
+            </div>
+        </div>
+
+        <div class="form-fila">
+            <div class="form-campo">
+                <label for="grupoCiudad">Ciudad</label>
+                <input type="text" id="grupoCiudad" class="campo" maxlength="80" autocomplete="off">
+            </div>
+            <div class="form-campo">
+                <label for="grupoPais">País</label>
+                <input type="text" id="grupoPais" class="campo" value="México" maxlength="60" autocomplete="off">
+            </div>
+        </div>
+
+        <button type="button" class="btn-plano sol" id="btnCrearGrupo" style="width:100%;margin-top:6px;">Crear grupo</button>
     </div>
 </div>
 
