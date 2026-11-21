@@ -1,12 +1,13 @@
 /* ================================================================
-   routes/ai-voice.js - VOZ CON MARQUINHOS (v2.2)
+   routes/ai-voice.js - VOZ CON MARQUINHOS (v2.3)
    ================================================================
    Endpoint: POST /api/ai/voice/chat
    Flujo: audio -> Whisper -> música (Deezer) o LLM -> TTS -> respuesta
 
-   v2.2 — Modelo de NVIDIA configurable con la variable NVIDIA_MODEL
-          (por defecto nvidia/nemotron-3.5-lightning-30b-a3b).
-          Límite de tokens a 300 para modelos de razonamiento.
+   v2.3 — El modelo de NVIDIA no piensa en voz (enable_thinking: false),
+          así la respuesta llega dentro del límite de tokens. El texto se
+          extrae de forma tolerante. Si la respuesta llega vacía, el log
+          muestra finish_reason, uso de tokens y claves recibidas.
 ================================================================ */
 
 'use strict';
@@ -34,7 +35,6 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const NVIDIA_MODEL = process.env.NVIDIA_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
 const WHISPER_MODEL = 'whisper-large-v3';
 
-// Modelo de razonamiento: necesita espacio para pensar antes de responder.
 const MAX_TOKENS_RESPUESTA = 300;
 const MAX_CARACTERES_RESPUESTA = 200;
 const HISTORIAL_LLM_MAX = 6;
@@ -219,6 +219,33 @@ async function llamadaConReintentos(fn, nombreOp, maxReintentos = 3) {
             await new Promise(resolve => setTimeout(resolve, delay * 1000));
         }
     }
+}
+
+/* ================================================================
+   EXTRAER TEXTO DE LA RESPUESTA DEL LLM
+   Tolera content como texto o como lista de partes.
+================================================================ */
+
+function extraerContenidoLLM(data) {
+    const message = data?.choices?.[0]?.message;
+    let contenido = message?.content;
+
+    if (Array.isArray(contenido)) {
+        contenido = contenido
+            .map(parte => (typeof parte === 'string' ? parte : (parte?.text || '')))
+            .join(' ');
+    }
+
+    return typeof contenido === 'string' ? contenido.trim() : '';
+}
+
+function diagnosticoLLMVacio(data) {
+    const choice = data?.choices?.[0] || {};
+    return {
+        finish_reason: choice.finish_reason,
+        usage: data?.usage,
+        claves_message: Object.keys(choice.message || {})
+    };
 }
 
 /* ================================================================
@@ -629,7 +656,8 @@ router.post('/chat', autenticar, async (req, res) => {
                     messages: mensajes,
                     max_tokens: MAX_TOKENS_RESPUESTA,
                     temperature: 0.5,
-                    stream: false
+                    stream: false,
+                    chat_template_kwargs: { enable_thinking: false }
                 },
                 {
                     headers: {
@@ -640,8 +668,11 @@ router.post('/chat', autenticar, async (req, res) => {
                 }
             );
 
-            const contenido = nvidiaResponse.data?.choices?.[0]?.message?.content?.trim() || '';
-            if (!contenido) throw new Error('NVIDIA no devolvió contenido');
+            const contenido = extraerContenidoLLM(nvidiaResponse.data);
+            if (!contenido) {
+                console.warn('  ⚠️ NVIDIA sin contenido:', JSON.stringify(diagnosticoLLMVacio(nvidiaResponse.data)));
+                throw new Error('NVIDIA no devolvió contenido');
+            }
 
             respuestaTexto = limpiarRespuestaMarquinhos(contenido);
             if (!respuestaTexto) throw new Error('La respuesta quedó vacía después de limpiarla');
