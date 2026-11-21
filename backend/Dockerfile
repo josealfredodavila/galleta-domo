@@ -4,7 +4,7 @@
 # - Node.js 22 (tiene WebSocket nativo, arregla el error de Supabase)
 # - FFmpeg instalado (para procesar videos)
 # - Compatible con Railway
-# - Usa npm ci con package-lock.json (build reproducible)
+# - Usa npm ci: instala exactamente las versiones de package-lock.json
 # - NO incluye CMD: Railway usa el Start Command del panel
 # ================================================================
 
@@ -28,7 +28,7 @@ WORKDIR /app
 # Copiar archivos de dependencias primero (mejor caché de Docker)
 COPY package*.json ./
 
-# Instalar dependencias de Node usando el lock (reproducible)
+# Instalar dependencias de Node según package-lock.json
 RUN npm ci --omit=dev && npm cache clean --force
 
 # Copiar el resto del código
