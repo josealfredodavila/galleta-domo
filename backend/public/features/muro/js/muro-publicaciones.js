@@ -1,20 +1,18 @@
 // ================================================================
-// MURO · PUBLICACIONES (feed) · v3.0
+// MURO · PUBLICACIONES (feed) · v3.1
 // ================================================================
 // Cargar feed, renderizar posts estilo plataforma tipo X,
 // scroll infinito por cursor, verificación de like.
 // Depende de: muro-config.js, muro-utils.js
 //
-// v3.0:
-// - Tarjeta tipo X: cabecera en una línea (nombre, handle, fecha),
-//   texto, media y barra de acciones (responder, republicar, me gusta,
-//   compartir).
-// - Media con data-xv-* para abrir el visor a pantalla completa
-//   definido en muro.html.
-// - Eliminar y reportar pasan al menú de tres puntos (sin perder funciones).
-// - Se conservan: paginación por cursor, caché de likes, moderación,
-//   temas, aviso de lenguaje, venta de tokens y todas las funciones
-//   que llaman otros archivos del muro.
+// v3.1 (corrección):
+// - SIN soporte de video. Solo imágenes en .post-imagen dentro de
+//   .post-media con data-xv-* para el visor.
+// - El render de media es exclusivamente imagen.
+// - Se conserva TODO lo demás: cursor, caché de likes, moderación,
+//   temas, aviso de lenguaje, venta de tokens, menú de tres puntos,
+//   comentarios y clases/IDs usados por muro-acciones.js,
+//   muro-social-actions.js y el visor [data-xv-src] de muro.html.
 // ================================================================
 
 // ================================================================
@@ -305,13 +303,15 @@ function renderizarPost(post) {
             '</div>';
     }
 
+    // ---------------------------------------------------------------
+    // MEDIA — SOLO IMAGEN (sin video)
+    // ---------------------------------------------------------------
     var mediaHtml = '';
     if (post.imagen_url) {
         var srcEsc = escapeHTML(post.imagen_url);
-        var tipo = (/\.(mp4|webm|mov|m4v)(\?|$)/i.test(post.imagen_url)) ? 'video' : 'imagen';
         var atributosVisor =
             ' data-xv-src="' + srcEsc + '"' +
-            ' data-xv-type="' + tipo + '"' +
+            ' data-xv-type="imagen"' +
             ' data-xv-name="' + nombre + '"' +
             ' data-xv-handle="' + handle + '"' +
             ' data-xv-avatar="' + escapeHTML(avatarUrl || '') + '"' +
@@ -321,18 +321,10 @@ function renderizarPost(post) {
             ' data-xv-reposts="0"' +
             ' data-xv-id="' + post.id + '"';
 
-        if (tipo === 'video') {
-            mediaHtml =
-                '<div class="post-media post-media-video" role="button" tabindex="0" aria-label="Ver video a pantalla completa"' + atributosVisor + '>' +
-                    '<video class="post-imagen" src="' + srcEsc + '" muted playsinline preload="metadata"></video>' +
-                    '<span class="post-media-play" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg></span>' +
-                '</div>';
-        } else {
-            mediaHtml =
-                '<div class="post-media" role="button" tabindex="0" aria-label="Ver imagen a pantalla completa"' + atributosVisor + '>' +
-                    '<img class="post-imagen" src="' + srcEsc + '" alt="" loading="lazy" />' +
-                '</div>';
-        }
+        mediaHtml =
+            '<div class="post-media" role="button" tabindex="0" aria-label="Ver imagen a pantalla completa"' + atributosVisor + '>' +
+                '<img class="post-imagen" src="' + srcEsc + '" alt="" loading="lazy" />' +
+            '</div>';
     }
 
     var seccionVenta = '';
