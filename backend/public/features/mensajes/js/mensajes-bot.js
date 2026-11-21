@@ -1,11 +1,14 @@
 // ================================================================
-// MENSAJES · BOT MARQUINHOS v2.0 · MÓDULO 4 DE 8
+// MENSAJES · BOT MARQUINHOS v2.1 · MÓDULO 4 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-bot.js
 // Depende de: mensajes-core.js, mensajes-scroll-media.js,
 //             mensajes-chats.js (append, messageHTML, scrollToBottom,
 //             recargarBandeja, observarCargaMultimedia)
-// Cambios v2.0: sin emojis; el botón de voz cambia de estado con
-//               clases en vez de cambiar el texto (usa SVG del HTML).
+// Cambios v2.1:
+//  - La burbuja "Enviando…" se quita siempre (éxito o error)
+//  - Si el envío falla, se borra el audio subido (no quedan archivos huérfanos)
+//  - La extensión del audio sale del tipo real (webm, mp4, ogg)
+//  - Mensaje de error claro cuando el servicio de voz no puede procesar el audio
 // ================================================================
 
 'use strict';
@@ -21,6 +24,13 @@ function marcarBotonVoz(estado) {
     btn.classList.toggle('recording', estado === 'grabando');
     btn.classList.toggle('processing', estado === 'procesando');
     btn.disabled = estado === 'procesando';
+}
+
+function extensionDeAudio(mime) {
+    const t = String(mime || '').toLowerCase();
+    if (t.includes('mp4') || t.includes('m4a') || t.includes('aac')) return 'm4a';
+    if (t.includes('ogg')) return 'ogg';
+    return 'webm';
 }
 
 async function abrirConversacionBot() {
@@ -201,6 +211,8 @@ function mostrarTypingBot() {
 
 function quitarTypingBot() { const el = $('typing-bot'); if (el) el.remove(); }
 
+/* ---------------- Grabación de voz para Marquinhos ---------------- */
+
 async function grabarVozParaBot() {
     if (!current?.bot) return;
     if (!await auth()) return;
@@ -218,10 +230,11 @@ async function grabarVozParaBot() {
             stream.getTracks().forEach(t => t.stop());
             voiceBotGrabando = false;
             marcarBotonVoz('');
-            const blob = new Blob(voiceBotChunks, { type: voiceBotRecorder.mimeType || 'audio/webm' });
+            const tipo = voiceBotRecorder.mimeType || 'audio/webm';
+            const blob = new Blob(voiceBotChunks, { type: tipo });
             voiceBotChunks = [];
             if (!blob.size) { toast('No se capturó audio.', 'error'); return; }
-            const file = new File([blob], `voz-${Date.now()}.webm`, { type: blob.type });
+            const file = new File([blob], `voz-${Date.now()}.${extensionDeAudio(tipo)}`, { type: tipo });
             await enviarVozAlBot(file);
         };
         voiceBotRecorder.start();
@@ -238,16 +251,25 @@ async function enviarVozAlBot(file) {
     if (enviandoVozBot) { toast('Ya hay un audio en proceso. Espera.', 'warning'); return; }
     enviandoVozBot = true;
     marcarBotonVoz('procesando');
+
+    const tempId = 'voice-user-' + Date.now();
+    let pathSubido = null;
+    let guardado = false;
+
     try {
         const s = await session();
         if (!s) throw new Error('Inicia sesión nuevamente.');
-        const path = `${user.id}/bot-voice/${Date.now()}.webm`;
-        const { error: upErr } = await db.storage.from('chat-audio').upload(path, file, { contentType: file.type, upsert: false });
-        if (upErr) throw new Error('No se pudo subir el audio.');
-        const { data: signed } = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
-        if (!signed?.signedUrl) throw new Error('No se pudo preparar el audio.');
 
-        const tempId = 'voice-user-' + Date.now();
+        const tipoArchivo = file.type || 'audio/webm';
+        const path = `${user.id}/bot-voice/${Date.now()}.${extensionDeAudio(tipoArchivo)}`;
+
+        const up = await db.storage.from('chat-audio').upload(path, file, { contentType: tipoArchivo, upsert: false });
+        if (up.error) throw new Error('No se pudo subir el audio.');
+        pathSubido = path;
+
+        const firma = await db.storage.from('chat-audio').createSignedUrl(path, 3600);
+        if (!firma.data || !firma.data.signedUrl) throw new Error('No se pudo preparar el audio.');
+
         const box = $('messages');
         const anchorRef = box.querySelector('#scrollAnchor');
         const tempHTML = `<div class="bubblewrap sent" id="${tempId}"><div class="bubble"><div class="voice-label">Tu voz</div><div class="voice-loading">Enviando a Marquinhos…</div></div></div>`;
@@ -258,21 +280,34 @@ async function enviarVozAlBot(file) {
         const maxIntentos = 3;
         let exito = false;
         let data = {};
+        let ultimoError = 'Error procesando voz';
+
         while (intentos < maxIntentos && !exito) {
-            const r = await fetch('/api/ai/voice/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token }, body: JSON.stringify({ audio_url: signed.signedUrl }) });
+            const r = await fetch('/api/ai/voice/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + s.access_token },
+                body: JSON.stringify({ audio_url: firma.data.signedUrl })
+            });
             data = await r.json().catch(() => ({}));
+
             if (r.status === 429) {
                 intentos++;
-                const waitTime = intentos * 2000;
-                toast(`Servidor ocupado. Reintentando en ${waitTime / 1000} s.`, 'warning');
-                await new Promise(resolve => setTimeout(resolve, waitTime));
+                const espera = intentos * 2000;
+                toast(`Servidor ocupado. Reintentando en ${espera / 1000} s.`, 'warning');
+                await new Promise(resolve => setTimeout(resolve, espera));
                 continue;
             }
-            if (!r.ok || data.success === false) throw new Error(data.error || 'Error del servicio de voz.');
+            if (!r.ok || data.success === false) {
+                ultimoError = data.error || 'Error procesando voz';
+                break;
+            }
             exito = true;
         }
-        if (!exito) throw new Error('El asistente está saturado. Intenta de nuevo en unos minutos.');
-        document.getElementById(tempId)?.remove();
+
+        if (!exito) {
+            if (intentos >= maxIntentos) throw new Error('El asistente está saturado. Intenta de nuevo en unos minutos.');
+            throw new Error(ultimoError + '. Marquinhos no pudo escuchar el audio, intenta de nuevo.');
+        }
 
         try {
             await db.from('mensajes_chat').insert({ remitente_id: user.id, destinatario_id: BOT_UUID, contenido: data.transcripcion || file.name, nombre_archivo: file.name, imagen_url: `bucket://chat-audio/${path}`, tipo: 'audio', leido: true, editado: false, eliminado: false });
@@ -280,6 +315,7 @@ async function enviarVozAlBot(file) {
         try {
             if (data.reply) await db.from('mensajes_chat').insert({ remitente_id: BOT_UUID, destinatario_id: user.id, contenido: data.reply, tipo: 'texto', leido: true, editado: false, eliminado: false });
         } catch (e) { console.warn('No se pudo guardar la respuesta de Marquinhos:', e); }
+        guardado = true;
 
         const botId = 'voice-bot-' + Date.now();
         let botBody = '<div class="bubble-bot-info">MARQUINHOS</div>';
@@ -291,6 +327,7 @@ async function enviarVozAlBot(file) {
         if (anchorFinal) anchorFinal.insertAdjacentHTML('beforebegin', botHTML); else box.insertAdjacentHTML('beforeend', botHTML);
         observarCargaMultimedia(box);
         scrollToBottom(true);
+
         if (data.audio_url) {
             const audio = document.querySelector(`#${botId} audio`);
             if (audio) audio.play().catch(() => {});
@@ -298,9 +335,13 @@ async function enviarVozAlBot(file) {
         recargarBandeja();
     } catch (e) {
         console.error('Error voz bot:', e);
+        if (pathSubido && !guardado) {
+            try { await db.storage.from('chat-audio').remove([pathSubido]); } catch (err) {}
+        }
         if (String(e.message || '').includes('saturado')) toast('El asistente está saturado. Espera unos segundos e intenta de nuevo.', 'warning');
         else toast(e.message || 'No se pudo enviar la nota de voz.', 'error');
     } finally {
+        document.getElementById(tempId)?.remove();
         enviandoVozBot = false;
         marcarBotonVoz('');
     }
