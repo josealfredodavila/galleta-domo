@@ -1,13 +1,13 @@
 /* ================================================================
-   routes/ai-voice.js - VOZ CON MARQUINHOS (v2.0)
+   routes/ai-voice.js - VOZ CON MARQUINHOS (v2.1)
    ================================================================
    Endpoint: POST /api/ai/voice/chat
    Flujo: audio -> Whisper -> música (Deezer) o LLM -> TTS -> respuesta
 
-   v2.0 — URL de audio validada contra Supabase Storage (anti-SSRF),
-          silencio sin error 500, historial siempre guardado,
-          detección de música compartida con chat-pet, voz es-US,
-          respuesta enviada antes de subir audio a Storage.
+   v2.1 — Whisper recibe el audio como buffer (no como stream), con
+          nombre, tipo y Content-Length correctos. Los reintentos ya
+          no reenvían un stream consumido. Los errores de Groq y de
+          NVIDIA se registran con su cuerpo de respuesta.
 ================================================================ */
 
 'use strict';
@@ -34,6 +34,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 const NVIDIA_MODEL = 'moonshotai/kimi-k3';
+const WHISPER_MODEL = 'whisper-large-v3';
 
 // Si el modelo devuelve contenido vacío con estos tokens, subir a 300.
 const MAX_TOKENS_RESPUESTA = 120;
@@ -164,9 +165,47 @@ function urlAudioPermitida(urlAudio) {
     }
 }
 
+/* Extensión real del audio según la URL (webm, m4a, ogg, mp3, wav) */
+function extensionDeUrl(urlAudio) {
+    try {
+        const ext = path.extname(new URL(urlAudio).pathname).toLowerCase();
+        return ['.webm', '.m4a', '.mp4', '.ogg', '.mp3', '.wav'].includes(ext) ? ext : '.webm';
+    } catch (e) {
+        return '.webm';
+    }
+}
+
+function tipoMimeDeExtension(ext) {
+    const mapa = {
+        '.webm': 'audio/webm',
+        '.m4a': 'audio/mp4',
+        '.mp4': 'audio/mp4',
+        '.ogg': 'audio/ogg',
+        '.mp3': 'audio/mpeg',
+        '.wav': 'audio/wav'
+    };
+    return mapa[ext] || 'audio/webm';
+}
+
 /* ================================================================
    REINTENTOS CON BACKOFF
+   Registra el cuerpo de la respuesta del proveedor cuando existe.
 ================================================================ */
+
+function detalleErrorProveedor(error) {
+    const status = error.response ? error.response.status : null;
+    let cuerpo = null;
+    if (error.response && error.response.data) {
+        try {
+            const d = error.response.data;
+            cuerpo = Buffer.isBuffer(d) ? d.toString('utf8') : (typeof d === 'string' ? d : JSON.stringify(d));
+            cuerpo = cuerpo.slice(0, 500);
+        } catch (e) {
+            cuerpo = '(no legible)';
+        }
+    }
+    return { status, cuerpo };
+}
 
 async function llamadaConReintentos(fn, nombreOp, maxReintentos = 3) {
     for (let intento = 1; intento <= maxReintentos; intento++) {
@@ -174,7 +213,8 @@ async function llamadaConReintentos(fn, nombreOp, maxReintentos = 3) {
             console.log(`  ▶️ ${nombreOp} (${intento}/${maxReintentos})`);
             return await fn();
         } catch (error) {
-            console.warn(`  ⚠️ ${nombreOp}: ${error.message}`);
+            const det = detalleErrorProveedor(error);
+            console.warn(`  ⚠️ ${nombreOp}: ${error.message} | status=${det.status} | cuerpo=${det.cuerpo}`);
             if (intento === maxReintentos) throw error;
             const delay = Math.pow(2, intento - 1);
             console.log(`  ⏳ Reintentando en ${delay}s...`);
@@ -459,19 +499,43 @@ async function subirAudioRespuesta(usuarioId, audioBuffer) {
 }
 
 /* ================================================================
+   TRANSCRIPCIÓN CON GROQ WHISPER (buffer, no stream)
+================================================================ */
+
+async function transcribirConWhisper(audioBuffer, nombreArchivo, tipoMime) {
+    const formData = new FormData();
+    formData.append('file', audioBuffer, { filename: nombreArchivo, contentType: tipoMime });
+    formData.append('model', WHISPER_MODEL);
+    formData.append('language', 'es');
+    formData.append('response_format', 'json');
+
+    const cuerpo = formData.getBuffer();
+
+    const respuesta = await axios.post(
+        'https://api.groq.com/openai/v1/audio/transcriptions',
+        cuerpo,
+        {
+            headers: {
+                ...formData.getHeaders(),
+                'Content-Length': cuerpo.length,
+                Authorization: 'Bearer ' + GROQ_API_KEY
+            },
+            timeout: TIMEOUTS.GROQ_WHISPER,
+            maxBodyLength: Infinity,
+            maxContentLength: Infinity
+        }
+    );
+
+    return (respuesta.data?.text || '').trim();
+}
+
+/* ================================================================
    RUTA PRINCIPAL
    POST /chat
 ================================================================ */
 
 router.post('/chat', autenticar, async (req, res) => {
     const timestamp = Date.now();
-    const inputPath = path.join(os.tmpdir(), `voice_input_${timestamp}.webm`);
-
-    const limpiarTemporales = () => {
-        try {
-            if (fs.existsSync(inputPath)) fs.unlinkSync(inputPath);
-        } catch (e) {}
-    };
 
     try {
         if (!NVIDIA_API_KEY || !GROQ_API_KEY) {
@@ -493,50 +557,39 @@ router.post('/chat', autenticar, async (req, res) => {
 
         console.log(`\n🎙️ Marquinhos Voice Chat · ID ${timestamp}`);
 
-        /* PASO 1: DESCARGAR AUDIO */
+        /* PASO 1: DESCARGAR AUDIO (en memoria) */
         console.log('\n📥 PASO 1: Descargando audio del usuario');
+        const extension = extensionDeUrl(urlAudio);
+        const tipoMime = tipoMimeDeExtension(extension);
+        let audioUsuario = null;
+
         await llamadaConReintentos(async () => {
             const audioResponse = await axios.get(urlAudio, {
                 responseType: 'arraybuffer',
                 timeout: TIMEOUTS.DOWNLOAD_AUDIO,
                 maxContentLength: MAX_AUDIO_BYTES
             });
-            const inputBuffer = Buffer.from(audioResponse.data);
-            if (!inputBuffer.length) throw new Error('Buffer vacío');
-            fs.writeFileSync(inputPath, inputBuffer);
-            console.log(`  ✅ Descargado: ${(inputBuffer.length / 1024).toFixed(1)}KB`);
+            const buffer = Buffer.from(audioResponse.data);
+            if (!buffer.length) throw new Error('Buffer vacío');
+            audioUsuario = buffer;
+            console.log(`  ✅ Descargado: ${(buffer.length / 1024).toFixed(1)}KB (${extension})`);
         }, 'Descargar audio', 2);
 
         /* PASO 2: TRANSCRIBIR (silencio no es error) */
         console.log('\n🎤 PASO 2: Transcribiendo con Groq Whisper');
         let transcripcion = '';
         await llamadaConReintentos(async () => {
-            const formData = new FormData();
-            formData.append('file', fs.createReadStream(inputPath));
-            formData.append('model', 'whisper-large-v3');
-            formData.append('language', 'es');
-
-            const whisperResponse = await axios.post(
-                'https://api.groq.com/openai/v1/audio/transcriptions',
-                formData,
-                {
-                    headers: {
-                        ...formData.getHeaders(),
-                        Authorization: 'Bearer ' + GROQ_API_KEY
-                    },
-                    timeout: TIMEOUTS.GROQ_WHISPER
-                }
+            transcripcion = await transcribirConWhisper(
+                audioUsuario,
+                `voice_${timestamp}${extension}`,
+                tipoMime
             );
-
-            transcripcion = (whisperResponse.data?.text || '').trim();
             if (transcripcion) {
                 console.log(`  ✅ "${transcripcion.substring(0, 100)}${transcripcion.length > 100 ? '...' : ''}"`);
             } else {
                 console.log('  ℹ️ Transcripción vacía (silencio)');
             }
         }, 'Groq Whisper', 2);
-
-        limpiarTemporales();
 
         if (!transcripcion) {
             return res.json({
@@ -617,8 +670,7 @@ router.post('/chat', autenticar, async (req, res) => {
             musica: musicaReproduciendo
         });
 
-        /* TAREAS EN SEGUNDO PLANO: subir audio y guardar historial.
-           Errores capturados para no tumbar el proceso. */
+        /* TAREAS EN SEGUNDO PLANO: subir audio y guardar historial */
         (async () => {
             let audioBotUrl = null;
             if (audioBuffer) {
@@ -636,14 +688,9 @@ router.post('/chat', autenticar, async (req, res) => {
         })().catch(e => console.error('❌ Tarea en segundo plano falló:', e.message));
 
     } catch (error) {
+        const det = detalleErrorProveedor(error);
         console.error(`\n❌ ERROR CRÍTICO: ${error.message}`);
-        console.error('   Detalles:', {
-            name: error.name,
-            code: error.code,
-            status: error.response ? error.response.status : null
-        });
-
-        limpiarTemporales();
+        console.error('   Detalles:', { name: error.name, code: error.code, status: det.status, cuerpo: det.cuerpo });
 
         if (res.headersSent) return;
 
