@@ -166,11 +166,12 @@ select {
 .topbar-left, .topbar-actions { display: flex; align-items: center; gap: 14px; }
 .topbar h1 { margin: 0; font-size: 1.12rem; font-weight: 750; letter-spacing: -.045em; }
 
+/* Logo igual al de Contactos: cuadro con borde cian y rombo */
 .brand {
-    width: 36px; height: 36px; display: grid; place-items: center; text-decoration: none;
-    background: linear-gradient(145deg,#174b30,#0f2d1a); border: 1px solid rgba(212,175,55,.58); border-radius: 11px;
+    width: 46px; height: 46px; flex-shrink: 0; display: grid; place-items: center; text-decoration: none;
+    background: #0a0f16; border: 2px solid #1fd4ff; border-radius: 14px;
 }
-.brand span { color: #d4af37; font-size: 21px; font-weight: 800; }
+.brand svg { width: 22px; height: 22px; fill: none; stroke: #1fd4ff; stroke-width: 2; stroke-linejoin: round; }
 
 .icon-btn {
     width: 38px; height: 38px; display: grid; place-items: center; color: #aeb9c5;
@@ -255,10 +256,8 @@ select {
 }
 .estado-inner img { width: 100%; height: 100%; object-fit: cover; }
 .estado-name { font-size: .66rem; color: var(--msg-muted); max-width: 66px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.estado-vistas-badge {
-    position: absolute; top: -2px; right: 4px; background: #d4af37; color: #17190e;
-    font-size: .6rem; font-weight: 800; border-radius: 9px; padding: 1px 5px;
-}
+/* Sin etiqueta de número de vistas en la rueda */
+.estado-vistas-badge { display: none !important; }
 
 .convlist, .canales-lista { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #293746 transparent; }
 .convlist > *, .canales-lista > * { border-radius: 0 !important; box-shadow: none !important; }
@@ -297,6 +296,8 @@ select {
     position: sticky; float: right; bottom: 12px; width: 39px; height: 39px; display: grid; place-items: center;
     background: #192532; color: #d4af37; border: 1px solid var(--msg-line-strong); border-radius: 50%;
 }
+/* Al estar ya en el último mensaje, la flecha no se muestra */
+.scroll-down-btn.en-fondo { display: none !important; }
 
 .composer {
     min-height: 69px; flex-shrink: 0; display: flex; align-items: flex-end; gap: 9px; padding: 11px 16px;
@@ -465,12 +466,12 @@ select {
     padding: 12px 12px calc(env(safe-area-inset-bottom, 0px) + 14px);
     background: linear-gradient(transparent, rgba(0,0,0,.6));
 }
+/* Botones del visor solo con texto */
 .estado-viewer-foot button {
-    display: inline-flex; align-items: center; gap: 7px; min-height: 40px; padding: 8px 16px;
+    display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 18px;
     color: #fff; background: rgba(12,18,27,.8); border: 1px solid rgba(255,255,255,.18); border-radius: 999px;
     font-size: .8rem; font-weight: 600;
 }
-.estado-viewer-foot button .ico { width: 17px; height: 17px; }
 .estado-viewer-foot button:hover { background: rgba(212,175,55,.25); }
 
 /* Panel de vistas y comentarios */
@@ -547,7 +548,7 @@ select {
     .app { height: 100dvh; overflow: hidden; }
     .topbar { height: 57px; min-height: 57px; padding: 0 13px; }
     .topbar h1 { font-size: 1rem; }
-    .brand { width: 33px; height: 33px; }
+    .brand { width: 42px; height: 42px; border-radius: 13px; }
     .nav { height: 43px; min-height: 43px; justify-content: flex-start; gap: 25px; padding: 0 15px; }
     .nav a { font-size: .76rem; }
 
@@ -588,6 +589,7 @@ select {
 /* Celulares de gama baja y pantallas muy angostas */
 @media (max-width: 360px) {
     .topbar { padding: 0 9px; }
+    .brand { width: 38px; height: 38px; }
     .nav { gap: 19px; }
     .actions .iconbtn { width: 32px; height: 32px; }
     .composer { gap: 3px; padding-left: 5px; padding-right: 5px; }
@@ -596,10 +598,9 @@ select {
     .estado-viewer-header { padding-top: calc(env(safe-area-inset-top, 0px) + 16px); }
     .estado-viewer-close, .estado-viewer-skip { width: 36px; height: 36px; }
     .ev-tiempo { min-width: 64px; font-size: .66rem; }
-    .estado-viewer-foot button { padding: 7px 12px; font-size: .74rem; }
+    .estado-viewer-foot button { padding: 7px 14px; font-size: .74rem; }
 }
 
-/* Tablets en vertical y horizontal: visor centrado, sin deformar */
 @media (min-width: 681px) {
     .estado-viewer-img, .estado-viewer-video { width: 100%; height: 100%; }
 }
@@ -615,7 +616,9 @@ select {
 
 <header class="topbar">
     <div class="topbar-left">
-        <a href="/" class="brand" aria-label="Inicio"><span>C</span></a>
+        <a href="/" class="brand" aria-label="Inicio">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 21 12 12 21 3 12z"/></svg>
+        </a>
         <h1>Mensajes</h1>
     </div>
 
@@ -1019,18 +1022,10 @@ select {
 
     <div class="estado-viewer-foot">
         <button type="button" class="hidden" id="evVistas" aria-label="Ver vistas">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            <span>Vistas</span>
-            <span id="evVistasCount">0</span>
+            Vistas <span id="evVistasCount">0</span>
         </button>
-        <button type="button" class="hidden" id="evComentar" aria-label="Comentar">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
-            <span>Comentar</span>
-        </button>
-        <button type="button" class="hidden" id="evEliminar" aria-label="Eliminar historia">
-            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/></svg>
-            <span>Eliminar</span>
-        </button>
+        <button type="button" class="hidden" id="evComentar" aria-label="Comentar">Comentar</button>
+        <button type="button" class="hidden" id="evEliminar" aria-label="Eliminar historia">Eliminar</button>
     </div>
 </div>
 
@@ -1256,6 +1251,71 @@ document.addEventListener('DOMContentLoaded', function () {
     if (b && typeof bloquearUsuarioActual === 'function') {
         b.onclick = function () { bloquearUsuarioActual(); };
     }
+});
+</script>
+
+<script>
+/* Visor de historias: al cerrarse queda limpio y no bloquea la pantalla */
+document.addEventListener('DOMContentLoaded', function () {
+    var visor = document.getElementById('estadoViewer');
+    var video = document.getElementById('evVideo');
+
+    function limpiarVisor() {
+        if (visor) visor.classList.remove('show');
+        if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
+    }
+
+    /* Al tocar la lista de conversaciones con el visor abierto, se cierra primero
+       (captura: se ejecuta antes que el abrir chat) */
+    var lista = document.getElementById('conversationList');
+    if (lista) {
+        lista.addEventListener('click', function () {
+            if (visor && visor.classList.contains('show')) limpiarVisor();
+        }, true);
+    }
+
+    /* Si la pestaña cambia mientras se ve una historia, también se cierra */
+    document.querySelectorAll('.sidebar-tab').forEach(function (t) {
+        t.addEventListener('click', function () {
+            if (visor && visor.classList.contains('show')) limpiarVisor();
+        });
+    });
+
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && visor && visor.classList.contains('show')) limpiarVisor();
+    });
+});
+</script>
+
+<script>
+/* Flecha de bajar: visible solo si no estás en el último mensaje.
+   Al tocarla baja hasta el final, incluso si las imágenes tardan en cargar. */
+document.addEventListener('DOMContentLoaded', function () {
+    var m = document.getElementById('messages');
+    var b = document.getElementById('scrollDownBtn');
+    if (!m || !b) return;
+
+    function alFinal() {
+        return m.scrollHeight - m.scrollTop - m.clientHeight < 60;
+    }
+
+    function actualizar() {
+        b.classList.toggle('en-fondo', alFinal());
+    }
+
+    function irAlFinal() {
+        m.scrollTop = m.scrollHeight;
+        [120, 300, 700].forEach(function (ms) {
+            setTimeout(function () { m.scrollTop = m.scrollHeight; actualizar(); }, ms);
+        });
+    }
+
+    m.addEventListener('scroll', actualizar, { passive: true });
+    m.addEventListener('load', actualizar, true);
+    b.addEventListener('click', irAlFinal);
+
+    new MutationObserver(actualizar).observe(m, { childList: true, subtree: true });
+    actualizar();
 });
 </script>
 
