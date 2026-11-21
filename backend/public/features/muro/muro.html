@@ -34,8 +34,10 @@
             --muted: #71767b;
             --gold: #d4af37;
             --gold-soft: rgba(212,175,55,.12);
+            --gold-hover: #e8c84a;
             --green: #174b30;
             --cyan: #1fd4ff;
+            --cyan-hover: #5ce0ff;
             --danger: #f4212e;
             --success: #35c88a;
             --col: 600px;
@@ -144,9 +146,10 @@
         .search-user-name { font-size: .9rem; font-weight: 700; color: var(--text); }
         .search-user-handle { font-size: .8rem; color: var(--muted); }
         .search-user-action {
-            padding: 6px 14px; border-radius: 999px; font-size: .78rem; font-weight: 700;
-            background: var(--text); color: #000; border: 0;
+            padding: 6px 14px; border-radius: 999px; font-size: .78rem; font-weight: 800;
+            background: var(--gold); color: #000; border: 0;
         }
+        .search-user-action:hover { background: var(--gold-hover); }
         .search-user-action:disabled { opacity: .55; }
 
         /* ================================================================
@@ -200,9 +203,9 @@
         .valor-mercado .detalles strong { color: var(--text); font-weight: 700; }
         .btn-vender-token {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; width: 100%;
-            border-radius: 999px; background: var(--text); color: #000; border: 0; font-size: .88rem; font-weight: 700;
+            border-radius: 999px; background: var(--gold); color: #000; border: 0; font-size: .88rem; font-weight: 800;
         }
-        .btn-vender-token:hover { background: #d7dbdf; }
+        .btn-vender-token:hover { background: var(--gold-hover); }
 
         /* ================================================================
            TENDENCIAS Y TOKENS (listas planas)
@@ -230,7 +233,8 @@
             display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px;
             border: 1px solid var(--line-strong); background: transparent; color: var(--text); font-size: .78rem; font-weight: 700;
         }
-        .filtro-temas .toggle-btn.active { background: var(--text); color: #000; border-color: var(--text); }
+        .filtro-temas .toggle-btn.active { background: var(--gold); color: #000; border-color: var(--gold); }
+        .filtro-temas .toggle-btn.active:hover { background: var(--gold-hover); border-color: var(--gold-hover); }
         .filtro-temas .info { font-size: .76rem; color: var(--muted); }
 
         /* ================================================================
@@ -309,7 +313,7 @@
             display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 16px; border-radius: 999px; border: 0;
             background: var(--cyan); color: #000; font-size: .9rem; font-weight: 800;
         }
-        #btnPublicar:hover { background: #5ce0ff; }
+        #btnPublicar:hover { background: var(--cyan-hover); }
         #btnPublicar:disabled { opacity: .45; }
         #btnPublicar .icon { display: none; }
 
@@ -317,6 +321,94 @@
            FEED (contenedor; las tarjetas las genera muro-publicaciones.js)
            ================================================================ */
         #feedContainer { display: block; }
+
+        /* Estructura de tarjeta usada por muro-publicaciones.js */
+        .post-card {
+            background: #000 !important;
+            border: 0 !important;
+            border-bottom: 1px solid var(--line) !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            padding: 14px 16px;
+            transition: background .15s ease;
+        }
+        .post-card:hover { background: #050505 !important; }
+        .post-row { display: flex; gap: 12px; align-items: flex-start; }
+        .post-avatar {
+            width: 40px; height: 40px; border-radius: 50%; overflow: hidden; flex-shrink: 0;
+            background: var(--green); color: var(--gold); display: grid; place-items: center; font-size: 1rem; font-weight: 700;
+        }
+        .post-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .post-avatar-link { display: block; width: 100%; height: 100%; color: inherit; text-decoration: none; }
+        .post-body { flex: 1; min-width: 0; }
+        .post-header { display: flex; align-items: flex-start; gap: 8px; justify-content: space-between; margin-bottom: 4px; }
+        .post-author-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; min-width: 0; }
+        .post-author { font-weight: 800; color: var(--text); font-size: .95rem; }
+        .post-author a { color: inherit; text-decoration: none; }
+        .post-author a:hover { text-decoration: underline; }
+        .post-handle { color: var(--muted); font-size: .86rem; }
+        .post-dot { color: var(--muted); }
+        .post-date { color: var(--muted); font-size: .82rem; }
+        .badge-verificado { color: var(--cyan); display: inline-flex; align-items: center; }
+        .badge-verificado .icon { width: 16px; height: 16px; }
+        .post-menu-btn {
+            width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+            display: inline-flex; align-items: center; justify-content: center;
+            background: transparent !important; border: 0 !important; color: var(--muted) !important;
+        }
+        .post-menu-btn:hover { background: rgba(31,212,255,.1) !important; color: var(--cyan) !important; }
+        .post-menu-btn .icon { width: 18px; height: 18px; }
+        .post-tema-badge {
+            display: inline-flex; align-items: center; gap: 4px; margin: 4px 0;
+            color: var(--cyan); font-size: .74rem; font-weight: 700;
+        }
+        .post-content { color: var(--text); font-size: 1rem; line-height: 1.4; margin: 4px 0 8px; word-wrap: break-word; }
+        .post-content .hashtag, .post-content .mencion { color: var(--cyan); text-decoration: none; font-weight: 600; }
+        .post-content .hashtag:hover, .post-content .mencion:hover { text-decoration: underline; }
+        .post-media { width: 100%; max-width: 100%; margin-top: 8px; border-radius: 16px; overflow: hidden; background: #000; cursor: pointer; }
+        .post-imagen { display: block; width: 100%; max-width: 100%; max-height: 560px; object-fit: cover; border-radius: 16px; }
+        .post-venta {
+            margin-top: 10px; padding: 10px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line);
+            display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+        }
+        .post-venta-info { display: flex; flex-direction: column; gap: 2px; font-size: .8rem; color: var(--muted); }
+        .post-venta-info strong { color: var(--text); }
+        .post-venta-etiqueta { display: inline-flex; align-items: center; gap: 4px; color: var(--gold); font-weight: 700; font-size: .74rem; }
+        .post-venta-precio { color: var(--gold); font-size: .76rem; }
+        .btn-comprar {
+            height: 32px; padding: 0 16px; border-radius: 999px; border: 0;
+            background: var(--gold); color: #000; font-size: .8rem; font-weight: 800;
+        }
+        .btn-comprar:hover:not(:disabled) { background: var(--gold-hover); }
+        .post-actions { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+        .post-act {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px;
+            background: transparent; border: 0; color: var(--muted); font-size: .8rem; font-weight: 600; cursor: pointer;
+        }
+        .post-act:hover { background: rgba(31,212,255,.1); color: var(--cyan); }
+        .post-act .icon { width: 18px; height: 18px; flex-shrink: 0; }
+        .post-act.like-btn[data-liked="true"] { color: var(--danger); }
+        .post-act.like-btn[data-liked="true"] .icon { fill: var(--danger); stroke: var(--danger); }
+        .post-comentarios { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+        .post-comentarios .input-comentario { display: flex; gap: 8px; margin-top: 8px; }
+        .post-comentarios .input-comentario input {
+            flex: 1; height: 36px; padding: 0 14px; border-radius: 999px;
+            background: transparent; border: 1px solid var(--line-strong); color: var(--text); font-size: .86rem; outline: none;
+        }
+        .post-comentarios .input-comentario input:focus { border-color: var(--cyan); }
+        .btn-enviar-comentario {
+            height: 36px; padding: 0 14px; border-radius: 999px; border: 0;
+            background: var(--cyan); color: #000; font-size: .8rem; font-weight: 800;
+        }
+        .btn-enviar-comentario:hover { background: var(--cyan-hover); }
+        .comentario { display: flex; gap: 10px; padding: 8px 0; }
+        .comentario .avatar { width: 30px; height: 30px; border-radius: 50%; overflow: hidden; flex-shrink: 0; background: var(--green); color: var(--gold); display: grid; place-items: center; font-size: .7rem; font-weight: 700; }
+        .comentario .avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .comentario .texto { flex: 1; font-size: .86rem; color: var(--text); }
+        .comentario .texto strong { color: var(--gold); }
+        .comentario .texto .fecha { font-size: .7rem; color: var(--muted); margin-left: 4px; }
+        .btn-eliminar-comentario { background: none; border: 0; color: var(--danger); font-size: .7rem; padding: 0; margin-top: 2px; }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--muted); }
 
         /* ================================================================
            VISOR DE MEDIA A PANTALLA COMPLETA (estilo X)
@@ -356,8 +448,9 @@
         .xv-name { font-size: .95rem; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .xv-handle { font-size: .82rem; color: #8b98a7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .xv-follow {
-            height: 32px; padding: 0 16px; border-radius: 999px; background: #fff; color: #000; border: 0; font-size: .82rem; font-weight: 800;
+            height: 32px; padding: 0 16px; border-radius: 999px; background: var(--gold); color: #000; border: 0; font-size: .82rem; font-weight: 800;
         }
+        .xv-follow:hover { background: var(--gold-hover); }
         .xv-text { margin: 10px 0 10px; color: #fff; font-size: .95rem; line-height: 1.4; max-height: 96px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
         .xv-actions { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
         .xv-act {
@@ -380,13 +473,13 @@
         /* ================================================================
            MODALES (superficie de X)
            ================================================================ */
-        .modal-overlay { background: rgba(91,112,131,.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
+        .modal-overlay { background: rgba(0,0,0,.75); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
         .modal-overlay .modal, .modal-overlay.modal-content {
             background: var(--bg); border: 1px solid var(--line-strong); border-radius: 16px;
             box-shadow: 0 20px 60px rgba(0,0,0,.7); color: var(--text); max-width: 420px; width: calc(100% - 28px); padding: 20px;
         }
         .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 14px; }
-        .modal-header h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.05rem; font-weight: 800; }
+        .modal-header h2 { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 1.05rem; font-weight: 800; color: var(--text); }
         .modal-header h2 .icon { width: 18px; height: 18px; color: var(--gold); }
         .btn-cerrar { width: 34px; height: 34px; display: grid; place-items: center; background: transparent; border: 0; border-radius: 50%; color: var(--text); }
         .btn-cerrar:hover { background: var(--hover); }
@@ -401,8 +494,9 @@
         .detalle-pago { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px 14px; margin-bottom: 14px; }
         .btn-guardar, .btn-confirmar, .btn-gold {
             display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px; padding: 0 18px;
-            border-radius: 999px; border: 0; background: var(--text); color: #000; font-size: .9rem; font-weight: 800;
+            border-radius: 999px; border: 0; background: var(--gold); color: #000; font-size: .9rem; font-weight: 800;
         }
+        .btn-guardar:hover, .btn-confirmar:hover, .btn-gold:hover { background: var(--gold-hover); }
         .btn-guardar { width: 100%; }
         .btn-confirmar { flex: 1; }
         .btn-gold { padding: 0 16px; }
@@ -416,28 +510,33 @@
         .qr-container img { width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 8px; }
         .address-box { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-top: 10px; }
         .address-box .label { display: inline-flex; align-items: center; gap: 6px; font-size: .78rem; color: var(--muted); }
-        .address-box .address { margin-top: 6px; font-size: .78rem; word-break: break-all; font-family: ui-monospace, monospace; }
-        .monto-final { margin: 12px 0; font-size: 1.2rem; font-weight: 800; }
+        .address-box .address { margin-top: 6px; font-size: .78rem; word-break: break-all; font-family: ui-monospace, monospace; color: var(--cyan); }
+        .monto-final { margin: 12px 0; font-size: 1.2rem; font-weight: 800; color: var(--gold); }
         .actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 12px; }
         .actions button { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border-radius: 999px; background: transparent; border: 1px solid var(--line-strong); color: var(--text); font-size: .8rem; font-weight: 700; }
+        .actions button:hover { background: var(--hover); border-color: var(--cyan); color: var(--cyan); }
+        .actions button.btn-gold { background: var(--gold); border-color: var(--gold); color: #000; }
+        .actions button.btn-gold:hover { background: var(--gold-hover); border-color: var(--gold-hover); color: #000; }
         .status { margin-top: 12px; font-size: .8rem; color: var(--muted); text-align: center; }
         .modal-body { display: block; }
 
         .toast {
             position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
             max-width: calc(100% - 32px); padding: 12px 18px; border-radius: 999px;
-            background: var(--text); color: #000; font-size: .86rem; font-weight: 700; z-index: 9000;
+            background: var(--surface-2); color: var(--text); border: 1px solid var(--gold);
+            font-size: .86rem; font-weight: 700; z-index: 9000;
+            box-shadow: 0 8px 24px rgba(0,0,0,.6);
         }
-        .toast.error { background: var(--danger); color: #fff; }
-        .toast.success { background: var(--success); color: #000; }
-        .toast.warning { background: var(--gold); color: #000; }
+        .toast.error { background: var(--surface-2); color: #fff; border-color: var(--danger); }
+        .toast.success { background: var(--surface-2); color: var(--success); border-color: var(--success); }
+        .toast.warning { background: var(--surface-2); color: var(--gold); border-color: var(--gold); }
 
         .footer {
             display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px;
             padding: 16px; font-size: .76rem; color: var(--muted); border-top: 1px solid var(--line);
         }
         .footer .brand { color: var(--gold); font-weight: 700; }
-        .footer-net { display: inline-flex; align-items: center; gap: 5px; }
+        .footer-net { display: inline-flex; align-items: center; gap: 5px; color: var(--cyan); }
         .footer-net .icon { width: 12px; height: 12px; }
 
         /* ================================================================
@@ -462,10 +561,12 @@
         .cs-historia-pie { display: flex; flex-direction: column; gap: 8px; padding: 8px 16px 4px; border-top: 1px solid var(--line); }
         .cs-historia-resumen { font-size: .76rem; color: var(--muted); display: flex; gap: 12px; }
         .cs-historia-pie-btn { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; background: transparent; border: 1px solid var(--line-strong); color: var(--text); border-radius: 999px; font-size: .78rem; font-weight: 700; }
+        .cs-historia-pie-btn:hover { border-color: var(--cyan); color: var(--cyan); }
         .cs-historia-comentar { display: flex; gap: 8px; align-items: center; padding: 8px 0; }
         .cs-historia-input { flex: 1; background: var(--bg); border: 1px solid var(--line-strong); border-radius: 999px; padding: 9px 14px; color: var(--text); font-size: .86rem; outline: none; }
         .cs-historia-input:focus { border-color: var(--cyan); }
-        .cs-historia-enviar { background: var(--text); border: 0; color: #000; border-radius: 999px; padding: 9px 16px; font-size: .8rem; font-weight: 800; }
+        .cs-historia-enviar { background: var(--gold); border: 0; color: #000; border-radius: 999px; padding: 9px 16px; font-size: .8rem; font-weight: 800; }
+        .cs-historia-enviar:hover { background: var(--gold-hover); }
         .cs-historia-enviar:disabled { opacity: .5; }
         .cs-historia-panel {
             position: absolute; left: 0; right: 0; bottom: 0; top: 40%; background: var(--bg); border-top: 1px solid var(--line-strong);
@@ -488,6 +589,7 @@
             .app { border-left: 0; border-right: 0; }
             .header { padding: 0 12px; }
             .pf-composer { padding: 10px 12px; }
+            .post-card { padding: 12px; }
         }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after { transition: none !important; animation: none !important; }
@@ -1065,10 +1167,6 @@
     </script>
 
     <!-- VISOR DE MEDIA A PANTALLA COMPLETA -->
-    <!-- Cualquier elemento con data-xv-src abre este visor.
-         Atributos: data-xv-src, data-xv-type (video|imagen), data-xv-name,
-         data-xv-handle, data-xv-avatar, data-xv-text, data-xv-likes,
-         data-xv-comments, data-xv-reposts, data-xv-id -->
     <script>
     (function () {
         'use strict';
