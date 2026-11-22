@@ -1,15 +1,15 @@
 // ================================================================
-// MENSAJES · ESTADOS (HISTORIAS) v4.5 · MÓDULO 5 DE 8
+// MENSAJES · ESTADOS (HISTORIAS) v4.6 · MÓDULO 5 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-estados.js
 // Depende de: mensajes-core.js
 //
-// ACTUALIZACIÓN v4.5:
-// - Amplía candidatos de nombre y usa @handle como respaldo legible
-//   cuando no hay nombre real antes de caer en "Usuario".
-// - Conserva datos semilla (nombre, handle, avatar) provenientes de
-//   historias/RPC al agrupar por usuario.
-// - Mantiene resolución por perfiles_publicos, comparación de IDs
-//   como string, vistas, comentarios, eliminación y publicación.
+// ACTUALIZACIÓN v4.6:
+// - Resuelve el nombre real del amigo consultando perfiles_publicos
+//   y, si no viene ahí, toma respaldo desde estados_activos_por_usuario
+//   para evitar que quede como "Usuario".
+// - Mantiene intacto el flujo de publicación (previewEstado,
+//   consultarCuotas, publicarUno, publicarEstado), vistas,
+//   comentarios, eliminación y comparación de IDs como string.
 // ================================================================
 
 'use strict';
@@ -230,11 +230,8 @@ function urlPerfil(handle, uid) {
 
 /* ================================================================
    IDENTIDAD REAL DEL USUARIO
-   CORRECCIÓN PRINCIPAL v4.5
+   CORRECCIÓN PRINCIPAL v4.6
 ================================================================ */
-
-// Normaliza los identificadores para evitar diferencias entre
-// UUID recibidos como string y otros formatos.
 
 function normalizarIdEstado(uid) {
     if (uid === null || uid === undefined) return '';
@@ -242,7 +239,16 @@ function normalizarIdEstado(uid) {
     return String(uid).trim();
 }
 
-// Obtiene un nombre real sin utilizar identificadores como nombre.
+function esNombreValidoEstado(valor) {
+    const limpio = String(valor || '').trim();
+    if (!limpio) return false;
+    const baja = limpio.toLowerCase();
+    return (
+        baja !== 'usuario' &&
+        baja !== 'undefined' &&
+        baja !== 'null'
+    );
+}
 
 function nombreRealEstado(perfil) {
     if (!perfil) return 'Usuario';
@@ -257,15 +263,8 @@ function nombreRealEstado(perfil) {
     ];
 
     for (let i = 0; i < candidatos.length; i++) {
-
         const nombre = String(candidatos[i] || '').trim();
-
-        if (
-            nombre &&
-            nombre.toLowerCase() !== 'usuario' &&
-            nombre.toLowerCase() !== 'undefined' &&
-            nombre.toLowerCase() !== 'null'
-        ) {
+        if (esNombreValidoEstado(nombre)) {
             return nombre;
         }
     }
@@ -281,8 +280,6 @@ function nombreRealEstado(perfil) {
     return 'Usuario';
 }
 
-// Caché de perfiles compartida con el resto del sistema.
-
 function obtenerPerfilCacheEstado(uid) {
     const id = normalizarIdEstado(uid);
 
@@ -297,10 +294,58 @@ function obtenerPerfilCacheEstado(uid) {
     return entrada.data;
 }
 
-// Consulta el perfil real asociado al ID del propietario de la historia.
+function guardarPerfilCacheEstado(id, data) {
+    if (
+        !id ||
+        !data ||
+        typeof perfilCache === 'undefined' ||
+        !perfilCache ||
+        typeof perfilCache.set !== 'function'
+    ) {
+        return;
+    }
+
+    if (
+        typeof PERFIL_CACHE_LIMITE === 'number' &&
+        perfilCache.size >= PERFIL_CACHE_LIMITE &&
+        !perfilCache.has(id)
+    ) {
+        const primera = perfilCache.keys().next().value;
+        if (primera !== undefined) {
+            perfilCache.delete(primera);
+        }
+    }
+
+    perfilCache.set(id, {
+        ts: Date.now(),
+        data: data
+    });
+}
+
+async function obtenerNombresRespaldoRPC(ids) {
+    const mapa = {};
+    if (!ids || !ids.length) return mapa;
+
+    try {
+        const rpc = await db.rpc('estados_activos_por_usuario');
+        if (!rpc.error && Array.isArray(rpc.data)) {
+            rpc.data.forEach(u => {
+                const uid = normalizarIdEstado(u && u.usuario_id);
+                if (!uid || !ids.includes(uid)) return;
+                mapa[uid] = {
+                    id: uid,
+                    nombre: u.nombre || '',
+                    handle: u.handle || '',
+                    avatar_url: u.avatar_url || null
+                };
+            });
+        }
+    } catch (e) {}
+
+    return mapa;
+}
 
 async function perfilDe(uid) {
-
     const id = normalizarIdEstado(uid);
 
     if (!id) {
@@ -319,9 +364,7 @@ async function perfilDe(uid) {
         : 300000;
 
     if (en) {
-
         const entrada = perfilCache.get(id);
-
         if (
             entrada &&
             Date.now() - entrada.ts < ttl &&
@@ -332,24 +375,19 @@ async function perfilDe(uid) {
     }
 
     try {
-
-        // Se consulta la fuente de perfiles públicos por el ID real.
         const r = await db.from('perfiles_publicos')
             .select('*')
             .eq('id', id)
             .maybeSingle();
 
-        if (r.error) {
-            console.warn(
-                '[Estados] No se pudo consultar el perfil:',
-                r.error
-            );
+        let data = (!r.error && r.data) ? r.data : null;
+
+        if (!data || nombreRealEstado(data) === 'Usuario') {
+            const respaldoRpc = await obtenerNombresRespaldoRPC([id]);
+            if (respaldoRpc[id]) {
+                data = Object.assign({}, data || {}, respaldoRpc[id]);
+            }
         }
-
-        let data = r.data || null;
-
-        // Si la consulta no devuelve nombre, se conserva el perfil
-        // anterior si tiene información real.
 
         if (!data && en) {
             data = en;
@@ -364,46 +402,18 @@ async function perfilDe(uid) {
             };
         }
 
-        data = Object.assign({}, en || {}, data, {
+        const combinado = Object.assign({}, en || {}, data, {
             id: id,
             nombre: nombreRealEstado(Object.assign({}, en || {}, data)),
             handle: data.handle || (en && en.handle) || '',
             avatar_url: data.avatar_url || (en && en.avatar_url) || null
         });
 
-        if (
-            typeof perfilCache !== 'undefined' &&
-            perfilCache &&
-            typeof perfilCache.set === 'function'
-        ) {
-
-            if (
-                typeof PERFIL_CACHE_LIMITE === 'number' &&
-                perfilCache.size >= PERFIL_CACHE_LIMITE
-            ) {
-
-                const primera = perfilCache.keys().next().value;
-
-                if (primera !== undefined) {
-                    perfilCache.delete(primera);
-                }
-            }
-
-            perfilCache.set(id, {
-                ts: Date.now(),
-                data: data
-            });
-        }
-
-        return data;
+        guardarPerfilCacheEstado(id, combinado);
+        return combinado;
 
     } catch (e) {
-
-        console.warn(
-            '[Estados] Error obteniendo perfil real:',
-            e
-        );
-
+        console.warn('[Estados] Error obteniendo perfil real:', e);
         if (en) return en;
 
         return {
@@ -415,10 +425,7 @@ async function perfilDe(uid) {
     }
 }
 
-// Resuelve los perfiles de todos los usuarios de las historias.
-
 async function resolverPerfilesEstados(ids) {
-
     const unicos = Array.from(
         new Set(
             (ids || [])
@@ -429,12 +436,26 @@ async function resolverPerfilesEstados(ids) {
 
     if (!unicos.length) return {};
 
+    const faltantes = unicos.filter(uid => {
+        const c = obtenerPerfilCacheEstado(uid);
+        return !c || nombreRealEstado(c) === 'Usuario';
+    });
+
+    if (faltantes.length) {
+        const respaldo = await obtenerNombresRespaldoRPC(faltantes);
+        Object.keys(respaldo).forEach(uid => {
+            const previo = obtenerPerfilCacheEstado(uid) || {};
+            const mezclado = Object.assign({}, previo, respaldo[uid], {
+                id: uid,
+                nombre: nombreRealEstado(Object.assign({}, previo, respaldo[uid]))
+            });
+            guardarPerfilCacheEstado(uid, mezclado);
+        });
+    }
+
     const resultado = {};
-
     await Promise.all(unicos.map(async uid => {
-
         resultado[uid] = await perfilDe(uid);
-
     }));
 
     return resultado;
@@ -509,6 +530,9 @@ async function obtenerEstadosActivos() {
                     filas.push(
                         Object.assign({}, e, {
                             usuario_id: g.usuario_id,
+                            nombre: e.nombre || g.nombre || '',
+                            handle: e.handle || g.handle || '',
+                            avatar_url: e.avatar_url || g.avatar_url || null,
                             origen: 'mensajes'
                         })
                     );
@@ -622,16 +646,7 @@ async function cargarEstados() {
                     avatar_url: avatarSemilla || previo.avatar_url || null
                 });
 
-                if (
-                    typeof perfilCache !== 'undefined' &&
-                    perfilCache &&
-                    typeof perfilCache.set === 'function'
-                ) {
-                    perfilCache.set(uid, {
-                        ts: Date.now(),
-                        data: combinado
-                    });
-                }
+                guardarPerfilCacheEstado(uid, combinado);
             }
         });
 
@@ -640,10 +655,6 @@ async function cargarEstados() {
                 normalizarIdEstado(uid) !==
                 normalizarIdEstado(user.id)
             );
-
-        // IMPORTANTE:
-        // Se resuelve el perfil de cada autor antes de dibujar
-        // la rueda. Así no se utiliza el nombre genérico temporal.
 
         await resolverPerfilesEstados(
             Object.keys(porUsuario)
@@ -664,7 +675,7 @@ async function cargarEstados() {
 }
 
 /* ================================================================
-   RUEDA DE HISTORIAS v4.5
+   RUEDA DE HISTORIAS v4.6
 ================================================================ */
 
 function renderizarRueda(rueda, porUsuario, otros) {
@@ -1731,16 +1742,7 @@ async function pintarVistas(estadoId, lista, cont) {
 
         mapa[normalizarIdEstado(p.id)] = p;
 
-        // Actualiza también la caché compartida.
-        if (
-            typeof perfilCache !== 'undefined' &&
-            perfilCache
-        ) {
-            perfilCache.set(normalizarIdEstado(p.id), {
-                ts: Date.now(),
-                data: p
-            });
-        }
+        guardarPerfilCacheEstado(normalizarIdEstado(p.id), p);
     });
 
     lista.innerHTML = '';
@@ -2870,5 +2872,5 @@ if (document.readyState === 'loading') {
 }
 
 // ================================================================
-// FIN · MENSAJES · ESTADOS v4.5
+// FIN · MENSAJES · ESTADOS v4.6
 // ================================================================
