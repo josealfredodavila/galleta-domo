@@ -1,19 +1,22 @@
 // ================================================================
-// MENSAJES · BOT MARQUINHOS v2.3 · MÓDULO 4 DE 8
+// MENSAJES · BOT MARQUINHOS v2.5 · MÓDULO 4 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-bot.js
 // Depende de: mensajes-core.js, mensajes-scroll-media.js,
 //             mensajes-chats.js
 //
-// CAMBIOS v2.3:
+// CAMBIOS v2.5:
+//  - Resumen corto en vivo junto al indicador debajo de la pregunta
+//    mientras Marquinhos busca y razona.
+//  - Panel deslizable hacia arriba ("Razonamientos") mientras está
+//    procesando, con pasos breves y cierre/limpieza automática.
+//
+// CAMBIOS v2.3 / v2.2 / v2.1 CONSERVADOS:
 //  - Cabeza de bot tecnológica con visor y antena con destellos
-//    ultravioleta / galácticos (reemplaza el círculo morado simple).
+//    ultravioleta / galácticos.
 //  - Posición debajo de la última pregunta del usuario mientras
 //    procesa y limpieza automática al terminar o fallar.
-//
-// CAMBIOS v2.2 / v2.1 CONSERVADOS:
 //  - Indicador integrado en mensajes de texto y voz.
 //  - CSS autónomo inyectado desde este archivo (#mqs-head-styles).
-//  - Limpieza garantizada ante errores y reintentos.
 //  - Burbuja "Enviando…" removida siempre, borrado de audio si falla,
 //    extensión según MIME real y mensajes de error claros.
 // ================================================================
@@ -24,6 +27,9 @@ let voiceBotRecorder = null;
 let voiceBotChunks = [];
 let voiceBotGrabando = false;
 let enviandoVozBot = false;
+
+let mqsSheetTouchStartY = null;
+let mqsSheetDragOffset = 0;
 
 // ================================================================
 // MARQUINHOS · INDICADOR VISUAL GALÁCTICO (CABEZA + ANTENA UV)
@@ -42,7 +48,9 @@ let enviandoVozBot = false;
             gap: 10px;
             padding: 8px 12px 6px 6px;
             margin: 4px 0 6px;
-            pointer-events: none;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
             animation: mqs-head-in .22s ease-out;
         }
 
@@ -54,6 +62,7 @@ let enviandoVozBot = false;
             place-items: center;
             flex: 0 0 42px;
             isolation: isolate;
+            pointer-events: none;
         }
 
         .mqs-head-indicator__avatar::before {
@@ -95,6 +104,21 @@ let enviandoVozBot = false;
             animation: mqs-visor-pulso 1.6s ease-in-out infinite;
         }
 
+        .mqs-head-indicator__meta {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            min-width: 0;
+            pointer-events: none;
+        }
+
+        .mqs-head-indicator__row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
         .mqs-head-indicator__text {
             font-size: 12.5px;
             font-weight: 600;
@@ -111,6 +135,107 @@ let enviandoVozBot = false;
             background-clip: text;
             -webkit-text-fill-color: transparent;
             animation: mqs-text-shimmer 2.2s linear infinite;
+        }
+
+        .mqs-head-indicator__resumen {
+            font-size: 11px;
+            color: #c4b5fd;
+            opacity: .85;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 220px;
+        }
+
+        .mqs-head-indicator__chevron {
+            font-size: 12px;
+            color: #d8b4fe;
+            opacity: .85;
+            transform: translateY(-1px);
+        }
+
+        .mqs-razonamiento-sheet {
+            position: fixed;
+            left: 10px;
+            right: 10px;
+            bottom: 72px;
+            z-index: 950;
+            background: linear-gradient(180deg, #1b1033 0%, #0d081a 100%);
+            border: 1px solid rgba(168, 85, 247, 0.35);
+            border-radius: 16px;
+            padding: 10px 14px 14px;
+            box-shadow: 0 -6px 28px rgba(0, 0, 0, 0.55), 0 0 18px rgba(139, 92, 246, 0.22);
+            color: #e9d5ff;
+            transform: translateY(115%);
+            opacity: 0;
+            pointer-events: none;
+            transition: transform .24s ease-out, opacity .2s ease-out;
+            touch-action: none;
+        }
+
+        .mqs-razonamiento-sheet.is-open {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .mqs-razonamiento-sheet__handle {
+            width: 34px;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(216, 180, 254, 0.38);
+            margin: 0 auto 8px;
+        }
+
+        .mqs-razonamiento-sheet__header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .mqs-razonamiento-sheet__title {
+            font-size: 12.5px;
+            font-weight: 700;
+            color: #f3e8ff;
+            letter-spacing: .2px;
+        }
+
+        .mqs-razonamiento-sheet__close {
+            background: transparent;
+            border: 0;
+            color: #c4b5fd;
+            font-size: 14px;
+            line-height: 1;
+            padding: 2px 6px;
+            cursor: pointer;
+        }
+
+        .mqs-razonamiento-sheet__list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            font-size: 11.5px;
+            color: #d8b4fe;
+        }
+
+        .mqs-razonamiento-sheet__item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: .92;
+        }
+
+        .mqs-razonamiento-sheet__dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #e879f9;
+            box-shadow: 0 0 8px #c084fc;
+            flex: 0 0 6px;
         }
 
         @keyframes mqs-head-in {
@@ -181,8 +306,10 @@ let enviandoVozBot = false;
             .mqs-head-indicator__antena-punta,
             .mqs-head-indicator__chispas,
             .mqs-head-indicator__visor-luz,
-            .mqs-head-indicator__text {
+            .mqs-head-indicator__text,
+            .mqs-razonamiento-sheet {
                 animation: none !important;
+                transition: none !important;
             }
 
             .mqs-head-indicator__text {
@@ -257,10 +384,85 @@ function renderizarCabezaBotSVG() {
 }
 
 // ================================================================
+// PANEL DESLIZABLE DE RAZONAMIENTO + RESUMEN CORTO
+// ================================================================
+
+function asegurarHojaRazonamientoMarquinhos() {
+    let sheet = document.getElementById('mqs-razonamiento-sheet');
+    if (sheet) return sheet;
+
+    sheet = document.createElement('div');
+    sheet.id = 'mqs-razonamiento-sheet';
+    sheet.className = 'mqs-razonamiento-sheet';
+    sheet.setAttribute('role', 'region');
+    sheet.setAttribute('aria-label', 'Resumen de razonamiento de Marquinhos');
+    sheet.innerHTML = `
+        <div class="mqs-razonamiento-sheet__handle" aria-hidden="true"></div>
+        <div class="mqs-razonamiento-sheet__header">
+            <span class="mqs-razonamiento-sheet__title">Razonamientos de Marquinhos</span>
+            <button type="button" class="mqs-razonamiento-sheet__close" id="mqs-sheet-close" aria-label="Cerrar">✕</button>
+        </div>
+        <ul class="mqs-razonamiento-sheet__list" id="mqs-sheet-steps"></ul>
+    `;
+
+    sheet.querySelector('#mqs-sheet-close').addEventListener('click', () => {
+        establecerEstadoHojaRazonamiento(false);
+    });
+
+    sheet.addEventListener('touchstart', e => {
+        if (!e.touches || !e.touches.length) return;
+        mqsSheetTouchStartY = e.touches[0].clientY;
+        mqsSheetDragOffset = 0;
+    }, { passive: true });
+
+    sheet.addEventListener('touchmove', e => {
+        if (mqsSheetTouchStartY === null || !e.touches || !e.touches.length) return;
+        const deltaY = e.touches[0].clientY - mqsSheetTouchStartY;
+        if (deltaY > 0) {
+            mqsSheetDragOffset = deltaY;
+            sheet.style.transform = `translateY(${deltaY}px)`;
+        }
+    }, { passive: true });
+
+    sheet.addEventListener('touchend', () => {
+        if (mqsSheetTouchStartY === null) return;
+        const shouldClose = mqsSheetDragOffset > 45;
+        sheet.style.transform = '';
+        mqsSheetTouchStartY = null;
+        mqsSheetDragOffset = 0;
+        if (shouldClose) establecerEstadoHojaRazonamiento(false);
+    });
+
+    document.body.appendChild(sheet);
+    return sheet;
+}
+
+function establecerEstadoHojaRazonamiento(abierta) {
+    const sheet = document.getElementById('mqs-razonamiento-sheet');
+    if (!sheet) return;
+    sheet.style.transform = '';
+    sheet.classList.toggle('is-open', Boolean(abierta));
+}
+
+function renderizarPasosHoja(pasos) {
+    const sheet = asegurarHojaRazonamientoMarquinhos();
+    const list = sheet.querySelector('#mqs-sheet-steps');
+    if (!list) return;
+    const lista = Array.isArray(pasos) && pasos.length
+        ? pasos
+        : ['Analizando consulta…', 'Buscando contexto en Marquinhos…'];
+
+    list.innerHTML = lista
+        .slice(-3)
+        .map(p => `<li class="mqs-razonamiento-sheet__item"><span class="mqs-razonamiento-sheet__dot"></span><span>${esc(String(p))}</span></li>`)
+        .join('');
+}
+
+// ================================================================
 // MOSTRAR / ACTUALIZAR / QUITAR INDICADOR
 // ================================================================
 
-function mostrarIndicadorMarquinhos(texto) {
+function mostrarIndicadorMarquinhos(texto, resumen = '', pasos = []) {
     const box = $('messages');
 
     if (!box || !current || !current.bot) return;
@@ -272,7 +474,7 @@ function mostrarIndicadorMarquinhos(texto) {
     const existente = box.querySelector('#mqs-head-indicator');
 
     if (existente) {
-        actualizarIndicadorMarquinhos(texto);
+        actualizarIndicadorMarquinhos(texto, resumen, pasos);
         return;
     }
 
@@ -285,38 +487,58 @@ function mostrarIndicadorMarquinhos(texto) {
              id="mqs-head-indicator"
              aria-live="polite"
              aria-atomic="true">
-            <div class="mqs-head-indicator">
+            <div class="mqs-head-indicator" id="mqs-head-trigger" title="Desliza arriba o toca para ver el resumen">
                 <div class="mqs-head-indicator__avatar" aria-hidden="true">
                     ${renderizarCabezaBotSVG()}
                 </div>
-                <div class="mqs-head-indicator__text" id="mqs-head-text"></div>
+                <div class="mqs-head-indicator__meta">
+                    <div class="mqs-head-indicator__row">
+                        <span class="mqs-head-indicator__text" id="mqs-head-text"></span>
+                        <span class="mqs-head-indicator__chevron" aria-hidden="true">⌃</span>
+                    </div>
+                    <span class="mqs-head-indicator__resumen" id="mqs-head-resumen"></span>
+                </div>
             </div>
         </div>
     `;
 
-    // Colocar justo debajo de la última pregunta enviada por el usuario si existe
+    const tpl = document.createElement('template');
+    tpl.innerHTML = html.trim();
+    const nodo = tpl.content.firstChild;
+
     const enviados = box.querySelectorAll('.bubblewrap.sent');
     const ultimoEnviado = enviados.length ? enviados[enviados.length - 1] : null;
 
-    if (ultimoEnviado && ultimoEnviado.nextSibling) {
-        ultimoEnviado.parentNode.insertBefore(
-            (() => {
-                const tpl = document.createElement('template');
-                tpl.innerHTML = html.trim();
-                return tpl.content.firstChild;
-            })(),
-            ultimoEnviado.nextSibling
-        );
+    if (ultimoEnviado && ultimoEnviado.parentNode) {
+        ultimoEnviado.parentNode.insertBefore(nodo, ultimoEnviado.nextSibling);
     } else {
-        anchorRef.insertAdjacentHTML('beforebegin', html);
+        anchorRef.parentNode.insertBefore(nodo, anchorRef);
     }
 
-    actualizarIndicadorMarquinhos(mensaje);
+    const trigger = nodo.querySelector('#mqs-head-trigger');
+    if (trigger) {
+        let startY = null;
+        trigger.addEventListener('click', () => {
+            const sheet = asegurarHojaRazonamientoMarquinhos();
+            establecerEstadoHojaRazonamiento(!sheet.classList.contains('is-open'));
+        });
+        trigger.addEventListener('touchstart', e => {
+            if (e.touches && e.touches.length) startY = e.touches[0].clientY;
+        }, { passive: true });
+        trigger.addEventListener('touchend', e => {
+            if (startY === null || !e.changedTouches || !e.changedTouches.length) return;
+            const diffY = startY - e.changedTouches[0].clientY;
+            startY = null;
+            if (diffY > 20) establecerEstadoHojaRazonamiento(true);
+        }, { passive: true });
+    }
+
+    actualizarIndicadorMarquinhos(mensaje, resumen, pasos);
 
     scrollToBottom(true);
 }
 
-function actualizarIndicadorMarquinhos(texto) {
+function actualizarIndicadorMarquinhos(texto, resumen = '', pasos = []) {
     const box = $('messages');
     if (!box) return;
 
@@ -324,13 +546,26 @@ function actualizarIndicadorMarquinhos(texto) {
     if (!indicador) return;
 
     const textoIndicador = indicador.querySelector('#mqs-head-text');
-
     if (textoIndicador && texto) {
         textoIndicador.textContent = String(texto);
+    }
+
+    const resumenEl = indicador.querySelector('#mqs-head-resumen');
+    if (resumenEl && resumen) {
+        const limpio = String(resumen).replace(/\s+/g, ' ').trim();
+        resumenEl.textContent = limpio.length > 54 ? limpio.slice(0, 54) + '…' : limpio;
+    }
+
+    if (Array.isArray(pasos) && pasos.length) {
+        renderizarPasosHoja(pasos);
     }
 }
 
 function quitarIndicadorMarquinhos() {
+    establecerEstadoHojaRazonamiento(false);
+    const sheet = document.getElementById('mqs-razonamiento-sheet');
+    if (sheet) sheet.remove();
+
     const box = $('messages');
     if (!box) return;
 
@@ -370,6 +605,8 @@ function extensionDeAudio(mime) {
 // ================================================================
 
 async function abrirConversacionBot() {
+    quitarIndicadorMarquinhos();
+
     const box = $('messages');
 
     if (!box) return;
@@ -511,13 +748,22 @@ async function enviarMensajeBot(textoLimpio) {
 
     append(userMsg, true);
 
-    mostrarIndicadorMarquinhos('Pensando…');
+    const resumenConsulta = `Buscando respuesta para: "${textoLimpio}"`;
+    mostrarIndicadorMarquinhos(
+        'Pensando…',
+        resumenConsulta,
+        ['Recibiendo pregunta', 'Cargando historial de conversación']
+    );
     mostrarTypingBot();
 
     try {
         const historial = await cargarHistorialParaBot();
 
-        actualizarIndicadorMarquinhos('Razonando…');
+        actualizarIndicadorMarquinhos(
+            'Razonando…',
+            resumenConsulta,
+            ['Recibiendo pregunta', 'Historial cargado', 'Razonando respuesta con Marquinhos']
+        );
 
         const respuesta = await preguntarAlBotConMemoria(
             textoLimpio,
@@ -1021,11 +1267,20 @@ async function enviarVozAlBot(file) {
             box.insertAdjacentHTML('beforeend', tempHTML);
         }
 
-        mostrarIndicadorMarquinhos('Escuchando…');
+        const resumenVoz = `Procesando nota de voz (${file.name || 'audio'})`;
+        mostrarIndicadorMarquinhos(
+            'Escuchando…',
+            resumenVoz,
+            ['Audio subido y firmado', 'Escuchando nota de voz']
+        );
 
         scrollToBottom(true);
 
-        actualizarIndicadorMarquinhos('Razonando…');
+        actualizarIndicadorMarquinhos(
+            'Razonando…',
+            resumenVoz,
+            ['Audio subido y firmado', 'Audio escuchado', 'Razonando respuesta de voz']
+        );
 
         let intentos = 0;
         const maxIntentos = 3;
@@ -1052,6 +1307,12 @@ async function enviarVozAlBot(file) {
                 intentos++;
 
                 const espera = intentos * 2000;
+
+                actualizarIndicadorMarquinhos(
+                    'Razonando…',
+                    `Servidor ocupado, reintentando (${intentos}/${maxIntentos})…`,
+                    ['Servidor ocupado (429)', `Reintentando en ${espera / 1000} s`]
+                );
 
                 toast(
                     `Servidor ocupado. Reintentando en ${espera / 1000} s.`,
