@@ -1606,11 +1606,20 @@ function cerrarInfoChat() {
 
 function verPerfilDelContacto() {
     const header = $('chatHeader');
-    const handle = header?.dataset.handle;
-    const uid = header?.dataset.userId;
-    if (handle) window.location.href = '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
-    else if (uid) window.location.href = '/features/perfil/perfil-publico.html?id=' + encodeURIComponent(uid);
-    else toast('No se encontró el perfil de este contacto.', 'warning');
+    const handle = String(header?.dataset.handle || '').replace(/^@+/, '');
+    const uid = String(header?.dataset.userId || '');
+
+    if (!uid) {
+        toast('No se encontró el perfil de este contacto.', 'warning');
+        return;
+    }
+
+    // UUID como identificador principal; handle para comprobar la correspondencia.
+    const params = new URLSearchParams();
+    if (handle) params.set('u', handle);
+    params.set('id', uid);
+
+    window.location.href = '/features/perfil/perfil-publico.html?' + params.toString();
 }
 
 function configurarInfoChat() {
