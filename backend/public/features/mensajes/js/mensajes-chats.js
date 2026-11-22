@@ -262,6 +262,111 @@ function aplicarEstadoBloqueo(est) {
     }
 }
 
+/* ---------------- Ficha del contacto (Fase 2) ---------------- */
+
+const FICHA_RELACION = {
+    amigos: { texto: 'Amigos', clase: 'ok' },
+    solicitud_enviada: { texto: 'Solicitud enviada', clase: 'pend' },
+    solicitud_recibida: { texto: 'Te envió una solicitud', clase: 'pend' },
+    ninguna: { texto: 'No agregado', clase: '' },
+    bloqueado_por_mi: { texto: 'Bloqueado', clase: 'bloq' },
+    bloqueado_por_el: { texto: 'No disponible', clase: 'bloq' }
+};
+
+function asegurarFichaDOM() {
+    let f = document.getElementById('chatFicha');
+    if (f) return f;
+    const header = $('chatHeader');
+    if (!header || !header.parentNode) return null;
+    f = document.createElement('div');
+    f.id = 'chatFicha';
+    f.className = 'chat-ficha';
+    f.hidden = true;
+    header.parentNode.insertBefore(f, header.nextSibling);
+    f.addEventListener('click', (ev) => {
+        const btn = ev.target.closest('[data-act="ver-perfil"]');
+        if (btn && !btn.disabled) verPerfilDelContacto();
+    });
+    return f;
+}
+
+function limpiarFicha() {
+    const f = document.getElementById('chatFicha');
+    if (!f) return;
+    f.hidden = true;
+    f.innerHTML = '';
+    f.dataset.userId = '';
+}
+
+function avatarFichaHTML(nombre, url) {
+    const seguro = urlSegura(url);
+    const ini = esc(String(nombre || 'U').trim().charAt(0).toUpperCase() || 'U');
+    const img = seguro ? `<img src="${esc(seguro)}" alt="" loading="lazy" onerror="this.remove()">` : '';
+    return `<span class="ficha-avatar" data-ini="${ini}">${img}</span>`;
+}
+
+// Muestra nombre y foto de inmediato (datos del perfil ya cargado) mientras llega la relación.
+function pintarFichaCargando(p, id) {
+    const f = asegurarFichaDOM();
+    if (!f) return;
+    f.dataset.userId = id;
+    f.innerHTML = `
+        ${avatarFichaHTML(p.nombre, p.avatar_url)}
+        <div class="ficha-info">
+            <div class="ficha-nombre">${esc(p.nombre || 'Usuario')}</div>
+            ${p.handle ? `<div class="ficha-handle">@${esc(p.handle)}</div>` : ''}
+            <div class="ficha-meta"><span class="ficha-rel">Cargando…</span></div>
+        </div>
+        <button type="button" class="ficha-ver" data-act="ver-perfil" disabled>Ver perfil</button>`;
+    f.hidden = false;
+}
+
+function pintarFichaServidor(d) {
+    const f = asegurarFichaDOM();
+    if (!f) return;
+    const rel = FICHA_RELACION[d.relacion] || FICHA_RELACION.ninguna;
+    const puedeVer = d.puede_ver_perfil === true;
+    const conexion = d.online === true ? 'En línea' : (d.online === false ? 'Desconectado' : '');
+    f.dataset.userId = d.id;
+    f.innerHTML = `
+        ${avatarFichaHTML(d.nombre, d.avatar_url)}
+        <div class="ficha-info">
+            <div class="ficha-nombre">${esc(d.nombre || 'Usuario')}</div>
+            ${d.handle ? `<div class="ficha-handle">@${esc(d.handle)}</div>` : ''}
+            <div class="ficha-meta">
+                <span class="ficha-rel ${rel.clase}">${esc(rel.texto)}</span>
+                ${conexion ? `<span class="ficha-conexion ${d.online === true ? 'on' : ''}">${esc(conexion)}</span>` : ''}
+            </div>
+        </div>
+        <button type="button" class="ficha-ver" data-act="ver-perfil" ${puedeVer ? '' : 'disabled'}>${puedeVer ? 'Ver perfil' : 'No disponible'}</button>`;
+    f.hidden = false;
+}
+
+// Descarta respuestas de conversaciones que ya no están abiertas (cambio rápido de chat).
+async function cargarFichaContacto(id, secuencia) {
+    if (!id || id === BOT_ID) return;
+
+    let r;
+    try {
+        r = await db.rpc('contacto_ficha', { p_otro: id });
+    } catch (e) {
+        console.warn('[Mensajes] contacto_ficha falló:', e);
+        r = { error: e };
+    }
+
+    if (secuencia !== aperturaSecuencia || !current || current.id !== id) return;
+
+    if (r.error || !r.data || r.data.estado !== 'ok' || r.data.id !== id) {
+        const rel = document.querySelector('#chatFicha .ficha-rel');
+        if (rel) rel.textContent = 'Relación no disponible';
+        return;
+    }
+
+    current.ficha = r.data;
+    pintarFichaServidor(r.data);
+}
+
+// Reemplaza bloquearUsuarioActual (tras bloquear o desbloquear, la ficha se actualiza)
 async function bloquearUsuarioActual() {
     if (!current || current.bot) { toast('Marquinhos no se puede bloquear.', 'warning'); return; }
     if (!await auth()) return;
@@ -301,6 +406,7 @@ async function bloquearUsuarioActual() {
     }
 
     aplicarEstadoBloqueo(await estadoBloqueoCon(id));
+    cargarFichaContacto(id, aperturaSecuencia);
     recargarBandeja();
 }
 
@@ -321,6 +427,7 @@ async function openConversation(id) {
     const secuencia = ++aperturaSecuencia;
 
     liberarInterfazChat();
+    limpiarFicha();
 
     if (vozEstado !== 'idle') cancelarNotaVoz(true);
 
@@ -330,7 +437,7 @@ async function openConversation(id) {
     if (secuencia !== aperturaSecuencia) return;
 
     const esBot = (id === BOT_ID);
-    current = { id, profile: p, bot: esBot, bloqueo: { yo: false, el: false } };
+    current = { id, profile: p, bot: esBot, bloqueo: { yo: false, el: false }, ficha: null };
 
     $('chatName').textContent = p.nombre || 'Usuario';
     $('chatAvatar').innerHTML = esBot
@@ -377,6 +484,9 @@ async function openConversation(id) {
         return;
     }
 
+    pintarFichaCargando(p, id);
+    cargarFichaContacto(id, secuencia);
+
     estadoBloqueoCon(id).then(est => {
         if (secuencia !== aperturaSecuencia) return;
         if (current && current.id === id) aplicarEstadoBloqueo(est);
@@ -400,6 +510,7 @@ async function openConversation(id) {
 async function cerrarConversacion() {
     aperturaSecuencia++;
     if (vozEstado !== 'idle') cancelarNotaVoz(true);
+    limpiarFicha();
     current = null;
     $('panel').classList.remove('chat-open');
     $('chatName').textContent = 'Selecciona una conversación';
@@ -1605,16 +1716,24 @@ function cerrarInfoChat() {
 }
 
 function verPerfilDelContacto() {
+    if (!current || current.bot) return;
+
+    const ficha = current.ficha && current.ficha.id === current.id ? current.ficha : null;
+
+    if (ficha && ficha.puede_ver_perfil !== true) {
+        toast('Este perfil no está disponible.', 'warning');
+        return;
+    }
+
     const header = $('chatHeader');
-    const handle = String(header?.dataset.handle || '').replace(/^@+/, '');
-    const uid = String(header?.dataset.userId || '');
+    const handle = String((ficha ? ficha.handle : header?.dataset.handle) || '').replace(/^@+/, '');
+    const uid = String((ficha ? ficha.id : header?.dataset.userId) || '');
 
     if (!uid) {
         toast('No se encontró el perfil de este contacto.', 'warning');
         return;
     }
 
-    // UUID como identificador principal; handle para comprobar la correspondencia.
     const params = new URLSearchParams();
     if (handle) params.set('u', handle);
     params.set('id', uid);
@@ -2138,3 +2257,69 @@ if (document.readyState === 'loading') {
 } else {
     vozCrearInterfaz();
 }
+
+// ================================================================
+// CSS AUTÓNOMO · FICHA DEL CONTACTO (Fase 2)
+// Se inyecta desde este módulo para no depender de editar otro
+// archivo. Las reglas son específicas y no alteran otros módulos.
+// ================================================================
+
+(function instalarEstilosFicha() {
+    if (document.getElementById('cs-ficha-styles')) return;
+
+    const s = document.createElement('style');
+    s.id = 'cs-ficha-styles';
+    s.textContent = `
+        .chat-ficha {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: #070b10;
+            border-bottom: 1px solid rgba(255,255,255,.08);
+            box-sizing: border-box;
+            width: 100%;
+        }
+        .chat-ficha[hidden] { display: none !important; }
+        .ficha-avatar {
+            position: relative;
+            width: 46px; height: 46px; flex: 0 0 46px;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+            color: #fff; font-weight: 700;
+            border: 1.5px solid rgba(0,229,255,.45);
+        }
+        .ficha-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .ficha-avatar:not(:has(img))::before { content: attr(data-ini); }
+        .ficha-info { min-width: 0; flex: 1; }
+        .ficha-nombre {
+            font-weight: 700; font-size: .95rem; color: #f5fbff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .ficha-handle {
+            font-size: .72rem; color: #5cc8ff;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .ficha-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 3px; font-size: .68rem; }
+        .ficha-rel { color: #9fb3c8; }
+        .ficha-rel.ok { color: #2be7b5; }
+        .ficha-rel.pend { color: #f7d44a; }
+        .ficha-rel.bloq { color: #ff626b; }
+        .ficha-conexion { color: #6f8ba0; }
+        .ficha-conexion.on { color: #2be7b5; }
+        .ficha-ver {
+            flex: 0 0 auto;
+            padding: 8px 12px;
+            border-radius: 999px;
+            border: 1px solid rgba(0,229,255,.45);
+            background: rgba(0,229,255,.06);
+            color: #5cc8ff;
+            font-size: .72rem; font-weight: 700;
+            cursor: pointer;
+        }
+        .ficha-ver:disabled { opacity: .45; cursor: not-allowed; }
+    `;
+    document.head.appendChild(s);
+})();
