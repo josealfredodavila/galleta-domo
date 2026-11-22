@@ -1034,6 +1034,7 @@ function marcarBotLeidoEnSegundoPlano() {
 }
 
 async function openConversation(id) {
+    // CORRECCIÓN: Aseguramos que la secuencia se incremente para invalidar cualquier carga pendiente anterior
     const secuencia = ++aperturaSecuencia;
 
     liberarInterfazChat();
@@ -1044,6 +1045,7 @@ async function openConversation(id) {
 
     const p = await profile(id);
 
+    // CORRECCIÓN: Si mientras cargaba el perfil el usuario hizo clic en otra conversación, abortamos esta.
     if (secuencia !== aperturaSecuencia) return;
 
     const esBot = id === BOT_ID;
