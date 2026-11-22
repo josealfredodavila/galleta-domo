@@ -3,14 +3,15 @@
 // Subida centralizada con moderación, deduplicación por SHA-256,
 // cuota de almacenamiento por plan y marca de agua visual en el muro.
 // ================================================================
-// v2.3:
-//   - Marca de agua grabada en imágenes y videos de 'muro-videos' y
-//     'muro-imagenes' (perfil y feed de publicaciones).
-//   - La moderación revisa el archivo original antes de marcarlo.
-//   - La deduplicación y la cuota usan el archivo final (ya marcado).
-//   - Incluye la verificación de hashes obsoletos de la v2.2.
-//   - Requiere: npm install sharp, y FFmpeg en el servidor
-//     (variable opcional FFMPEG_PATH; por defecto 'ffmpeg').
+// v2.4:
+//   - Adjuntos del chat (chat-attachments) privados: se guardan en
+//     Supabase Storage (bucket privado), sin R2, sin marca de agua y
+//     sin deduplicación entre usuarios.
+//   - GET /chat/:mensajeId/url firma el adjunto desde el backend solo
+//     para remitente o destinatario (y si el mensaje no está oculto).
+//   - POST /admin/adjuntos-r2 migra los adjuntos de chat que quedaron
+//     en R2 a Supabase Storage. Solo administradores. dry_run por defecto.
+//   - Marca de agua y deduplicación del muro sin cambios (v2.3).
 // ================================================================
 
 'use strict';
@@ -23,7 +24,13 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { createHash } = require('node:crypto');
 
-const { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const {
+    S3Client,
+    PutObjectCommand,
+    DeleteObjectCommand,
+    HeadObjectCommand,
+    GetObjectCommand
+} = require('@aws-sdk/client-s3');
 
 const { verificarToken } = require('../middleware/auth');
 const { supabaseAdmin } = require('../config/supabase');
@@ -99,6 +106,9 @@ const DESTINOS = {
 
 // Destinos del muro (perfil y feed de publicaciones) que llevan marca de agua.
 const DESTINOS_CON_MARCA = new Set(['muro-videos', 'muro-imagenes']);
+
+// Adjuntos privados del chat: Supabase Storage, nunca R2 público.
+const DESTINOS_PRIVADOS = new Set(['chat-attachments']);
 
 const MARCA_RUTA = path.join(__dirname, '..', 'public', 'watermark.png');
 const MARCA_ANCHO_RELATIVO = 0.12;
@@ -373,7 +383,7 @@ async function aplicarMarcaSegunTipo(buffer, mime, tipo) {
 }
 
 // ================================================================
-// R2: SUBIR / BORRAR / EXISTE
+// R2: SUBIR / BORRAR / EXISTE / LEER
 // ================================================================
 
 async function subirAR2(path, buffer, contentType) {
@@ -416,6 +426,59 @@ async function existeEnR2(path) {
         if (e.name === 'NotFound' || (e.$metadata && e.$metadata.httpStatusCode === 404)) return false;
         throw e;
     }
+}
+
+async function leerDeR2(path) {
+    if (!r2Client) throw new Error('R2 no configurado');
+    const obj = await r2Client.send(new GetObjectCommand({ Bucket: R2_BUCKET, Key: path }));
+    const bytes = await obj.Body.transformToByteArray();
+    return { buffer: Buffer.from(bytes), contentType: obj.ContentType || 'application/octet-stream' };
+}
+
+// ================================================================
+// ADJUNTOS PRIVADOS DEL CHAT (Supabase Storage, bucket privado)
+// ================================================================
+
+async function subirAdjuntoPrivado(req, res, usuarioId, destino, file) {
+    const extension = extensionSegura(file.mimetype);
+    if (!extension) {
+        logSubida(req, destino, 'extension_no_soportada');
+        return res.status(400).json({ ok: false, error: 'Formato no soportado' });
+    }
+
+    const cuota = await consultarCuotaUsuario(usuarioId);
+    if (!cuota.ok) {
+        logSubida(req, destino, 'error_cuota');
+        return res.status(503).json({ ok: false, error: 'No pudimos verificar tu espacio. Intenta de nuevo.' });
+    }
+    if (file.size > cuota.disponibleBytes) {
+        logSubida(req, destino, 'cuota_excedida');
+        return res.status(413).json({
+            ok: false,
+            error: 'cuota_excedida',
+            mensaje: cuota.disponibleBytes > 0
+                ? `Te quedan ${formatearMB(cuota.disponibleBytes)} MB en tu plan.`
+                : 'Llegaste al límite de tu plan. Libera espacio para subir más.',
+            plan: cuota.plan
+        });
+    }
+
+    const ruta = `${usuarioId}/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${extension}`;
+
+    const { error } = await supabaseAdmin.storage.from(destino).upload(ruta, file.buffer, {
+        contentType: file.mimetype,
+        cacheControl: '3600',
+        upsert: false
+    });
+
+    if (error) {
+        console.error('❌ [media] Error subiendo adjunto privado:', error.message);
+        logSubida(req, destino, 'error_subida_privada');
+        return res.status(500).json({ ok: false, error: 'Error al guardar el archivo' });
+    }
+
+    logSubida(req, destino, 'ok_privado');
+    return res.status(200).json({ ok: true, path: ruta, privado: true });
 }
 
 // ================================================================
@@ -494,6 +557,12 @@ router.post(
             }
             logSubida(req, destino, 'rechazado_otro');
             return res.status(422).json({ ok: false, error: 'Contenido no permitido' });
+        }
+
+        // 1.5) Adjuntos del chat: privados en Supabase Storage.
+        //      Sin R2, sin marca de agua y sin deduplicación entre usuarios.
+        if (DESTINOS_PRIVADOS.has(destino)) {
+            return await subirAdjuntoPrivado(req, res, usuarioId, destino, req.file);
         }
 
         // 2) Marca de agua (solo destinos del muro).
@@ -703,6 +772,161 @@ router.get('/cuota', verificarToken, async (req, res) => {
         limite_mb: formatearMB(cuota.limiteBytes),
         usado_mb: formatearMB(cuota.usadoBytes),
         disponible_mb: formatearMB(cuota.disponibleBytes)
+    });
+});
+
+// ================================================================
+// GET /api/media/chat/:mensajeId/url
+// Firma un adjunto de chat solo para remitente o destinatario, y solo
+// si el mensaje no está eliminado ni oculto para esa persona.
+// ================================================================
+
+router.get('/chat/:mensajeId/url', verificarToken, async (req, res) => {
+    const usuarioId = req.usuarioId || (req.usuario && req.usuario.id);
+    const mensajeId = req.params.mensajeId;
+
+    if (!usuarioId) return res.status(401).json({ ok: false, error: 'No autenticado' });
+    if (!/^[0-9a-f-]{36}$/i.test(mensajeId)) {
+        return res.status(400).json({ ok: false, error: 'ID inválido' });
+    }
+
+    const { data: m, error } = await supabaseAdmin
+        .from('mensajes_chat')
+        .select('id, imagen_url, remitente_id, destinatario_id, eliminado')
+        .eq('id', mensajeId)
+        .maybeSingle();
+
+    if (error) return res.status(500).json({ ok: false, error: 'Error consultando el mensaje' });
+    if (!m || m.eliminado) return res.status(404).json({ ok: false, error: 'No disponible' });
+    if (m.remitente_id !== usuarioId && m.destinatario_id !== usuarioId) {
+        return res.status(404).json({ ok: false, error: 'No disponible' });
+    }
+
+    const { data: oculto } = await supabaseAdmin
+        .from('mensajes_ocultos')
+        .select('mensaje_id')
+        .eq('mensaje_id', mensajeId)
+        .eq('usuario_id', usuarioId)
+        .maybeSingle();
+    if (oculto) return res.status(404).json({ ok: false, error: 'No disponible' });
+
+    const coincidencia = /^bucket:\/\/(chat-attachments|chat-audio)\/(.+)$/.exec(m.imagen_url || '');
+    if (!coincidencia) return res.status(404).json({ ok: false, error: 'No disponible' });
+
+    const bucket = coincidencia[1];
+    const ruta = coincidencia[2];
+    if (ruta.includes('..')) return res.status(400).json({ ok: false, error: 'Ruta inválida' });
+
+    const { data, error: errFirma } = await supabaseAdmin.storage
+        .from(bucket)
+        .createSignedUrl(ruta, 3600);
+
+    if (errFirma || !data || !data.signedUrl) {
+        return res.status(404).json({ ok: false, error: 'Archivo no encontrado' });
+    }
+
+    return res.status(200).json({ ok: true, url: data.signedUrl });
+});
+
+// ================================================================
+// POST /api/media/admin/adjuntos-r2
+// Migra adjuntos de chat que quedaron en R2 (prefijo duplicado) a
+// Supabase Storage privado. Solo administradores.
+// Body: { dry_run: true|false }  (dry_run por defecto: true)
+// Orden por archivo: copiar -> verificar -> actualizar fila -> borrar R2.
+// ================================================================
+
+const PREFIJO_ROTO = 'bucket://chat-attachments/chat-attachments/';
+
+async function leerBufferDeStorage(bucket, ruta) {
+    const { data, error } = await supabaseAdmin.storage.from(bucket).download(ruta);
+    if (error || !data) return null;
+    return Buffer.from(await data.arrayBuffer());
+}
+
+router.post('/admin/adjuntos-r2', verificarToken, async (req, res) => {
+    const usuarioId = req.usuarioId || (req.usuario && req.usuario.id);
+    if (!usuarioId) return res.status(401).json({ ok: false, error: 'No autenticado' });
+
+    const { data: admin } = await supabaseAdmin
+        .from('usuarios')
+        .select('es_admin')
+        .eq('id', usuarioId)
+        .maybeSingle();
+    if (!admin || admin.es_admin !== true) {
+        return res.status(403).json({ ok: false, error: 'Solo administradores' });
+    }
+
+    const dryRun = !(req.body && req.body.dry_run === false);
+
+    const { data: filas, error } = await supabaseAdmin
+        .from('mensajes_chat')
+        .select('id, imagen_url')
+        .like('imagen_url', PREFIJO_ROTO + '%')
+        .limit(200);
+
+    if (error) return res.status(500).json({ ok: false, error: 'Error consultando mensajes' });
+
+    const resultados = [];
+
+    for (const f of (filas || [])) {
+        const ruta = f.imagen_url.slice(PREFIJO_ROTO.length);   // <uid>/...
+        const keyR2 = 'chat-attachments/' + ruta;
+        const nuevaRef = 'bucket://chat-attachments/' + ruta;
+
+        if (dryRun) {
+            let existeR2 = false;
+            try { existeR2 = await existeEnR2(keyR2); } catch (e) { existeR2 = false; }
+            resultados.push({ id: f.id, keyR2, nuevaRef, existeEnR2: existeR2, accion: 'simulacion' });
+            continue;
+        }
+
+        try {
+            // 1) Copiar de R2 a Supabase (si ya existe ahí, se reutiliza).
+            const yaEnSupabase = await leerBufferDeStorage('chat-attachments', ruta);
+            if (!yaEnSupabase) {
+                const { buffer, contentType } = await leerDeR2(keyR2);
+                const { error: errUp } = await supabaseAdmin.storage
+                    .from('chat-attachments')
+                    .upload(ruta, buffer, { contentType, cacheControl: '3600', upsert: false });
+                if (errUp && !/already exists|duplicate/i.test(errUp.message || '')) throw errUp;
+            }
+
+            // 2) Verificar que quedó en Supabase.
+            const verificado = await leerBufferDeStorage('chat-attachments', ruta);
+            if (!verificado) throw new Error('No se verificó la copia en Supabase');
+
+            // 3) Actualizar la fila del mensaje.
+            const { error: errFila } = await supabaseAdmin
+                .from('mensajes_chat')
+                .update({ imagen_url: nuevaRef })
+                .eq('id', f.id);
+            if (errFila) throw errFila;
+
+            // 4) Limpiar R2 y el registro de hash de ese archivo.
+            try { await borrarDeR2(keyR2); } catch (e) {
+                console.warn('⚠️ [media/admin] No se borró de R2:', keyR2, e.message);
+            }
+            await supabaseAdmin
+                .from('archivos_hash')
+                .delete()
+                .eq('bucket', 'chat-attachments')
+                .eq('path', keyR2);
+
+            resultados.push({ id: f.id, nuevaRef, accion: 'migrado' });
+            console.log(`[media/admin] migrado mensaje=${f.id} -> ${nuevaRef}`);
+
+        } catch (e) {
+            console.error('❌ [media/admin] Error migrando', f.id, e.message);
+            resultados.push({ id: f.id, accion: 'error', detalle: e.message });
+        }
+    }
+
+    return res.status(200).json({
+        ok: true,
+        dry_run: dryRun,
+        total: (filas || []).length,
+        resultados
     });
 });
 
