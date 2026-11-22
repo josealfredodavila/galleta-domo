@@ -1,26 +1,21 @@
-
 // ================================================================
-// MENSAJES · BOT MARQUINHOS v2.2 · MÓDULO 4 DE 8
+// MENSAJES · BOT MARQUINHOS v2.3 · MÓDULO 4 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-bot.js
 // Depende de: mensajes-core.js, mensajes-scroll-media.js,
 //             mensajes-chats.js
 //
-// CAMBIOS v2.2:
-//  - Indicador visual galáctico de Marquinhos.
-//  - Cabeza tecnológica con estrella SVG dorada.
-//  - Antena ultravioleta con aura pulsante.
-//  - Texto animado Pensando… / Razonando…
-//  - Indicador integrado en mensajes de texto y voz.
-//  - Conserva #typing-bot y sus tres puntos originales.
-//  - CSS autónomo inyectado desde este archivo.
-//  - Limpieza garantizada ante errores y reintentos.
-//  - Sin cambios en Supabase, endpoints ni HTML base.
+// CAMBIOS v2.3:
+//  - Cabeza de bot tecnológica con visor y antena con destellos
+//    ultravioleta / galácticos (reemplaza el círculo morado simple).
+//  - Posición debajo de la última pregunta del usuario mientras
+//    procesa y limpieza automática al terminar o fallar.
 //
-// CAMBIOS v2.1 CONSERVADOS:
-//  - La burbuja "Enviando…" se quita siempre.
-//  - Si falla el envío, se borra el audio subido.
-//  - Extensión de audio según MIME real.
-//  - Mensajes de error claros.
+// CAMBIOS v2.2 / v2.1 CONSERVADOS:
+//  - Indicador integrado en mensajes de texto y voz.
+//  - CSS autónomo inyectado desde este archivo (#mqs-head-styles).
+//  - Limpieza garantizada ante errores y reintentos.
+//  - Burbuja "Enviando…" removida siempre, borrado de audio si falla,
+//    extensión según MIME real y mensajes de error claros.
 // ================================================================
 
 'use strict';
@@ -31,7 +26,7 @@ let voiceBotGrabando = false;
 let enviandoVozBot = false;
 
 // ================================================================
-// MARQUINHOS · INDICADOR VISUAL GALÁCTICO
+// MARQUINHOS · INDICADOR VISUAL GALÁCTICO (CABEZA + ANTENA UV)
 // ================================================================
 
 (function instalarEstilosMarquinhosHead() {
@@ -42,99 +37,86 @@ let enviandoVozBot = false;
 
     style.textContent = `
         .mqs-head-indicator {
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 10px;
-            padding: 6px 4px 2px;
-            margin: 0 0 4px;
+            padding: 8px 12px 6px 6px;
+            margin: 4px 0 6px;
             pointer-events: none;
             animation: mqs-head-in .22s ease-out;
         }
 
         .mqs-head-indicator__avatar {
             position: relative;
-            width: 34px;
-            height: 34px;
-            border-radius: 50%;
+            width: 42px;
+            height: 44px;
             display: grid;
             place-items: center;
-            background: radial-gradient(
-                circle at 30% 25%,
-                #2a1b4d 0%,
-                #0e0820 70%
-            );
-            box-shadow:
-                0 0 0 1px rgba(160,80,255,.35),
-                0 0 12px rgba(120,40,220,.25) inset;
-            flex: 0 0 34px;
+            flex: 0 0 42px;
             isolation: isolate;
-        }
-
-        .mqs-head-indicator__avatar svg {
-            position: relative;
-            z-index: 2;
-            width: 20px;
-            height: 20px;
-            fill: #d4af37;
-            stroke: none;
-            filter: drop-shadow(0 0 4px rgba(212,175,55,.65));
         }
 
         .mqs-head-indicator__avatar::before {
             content: "";
             position: absolute;
-            z-index: 0;
-            inset: -8px;
+            inset: -6px;
             border-radius: 50%;
             background: radial-gradient(
                 circle,
-                rgba(170,90,255,.55) 0%,
-                rgba(90,20,180,0) 68%
+                rgba(168, 85, 247, 0.42) 0%,
+                rgba(99, 102, 241, 0.16) 45%,
+                rgba(59, 130, 246, 0) 72%
             );
-            animation: mqs-uv-pulse 1.6s ease-in-out infinite;
+            animation: mqs-uv-aura 1.5s ease-in-out infinite;
             pointer-events: none;
+            z-index: 0;
         }
 
-        .mqs-head-indicator__avatar::after {
-            content: "";
-            position: absolute;
-            z-index: 3;
-            top: -4px;
-            left: 50%;
-            width: 4px;
-            height: 4px;
-            margin-left: -2px;
-            border-radius: 50%;
-            background: #e0aaff;
-            box-shadow:
-                0 0 6px #c47aff,
-                0 0 12px #8a3cff;
-            animation: mqs-uv-tip 1.2s ease-in-out infinite;
-            pointer-events: none;
+        .mqs-head-indicator__bot {
+            position: relative;
+            z-index: 2;
+            width: 34px;
+            height: 36px;
+            overflow: visible;
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.75));
+        }
+
+        .mqs-head-indicator__antena-punta {
+            transform-origin: 18px 3px;
+            animation: mqs-antena-destello 1.1s ease-in-out infinite;
+        }
+
+        .mqs-head-indicator__chispas {
+            transform-origin: 18px 3px;
+            animation: mqs-chispas-galaxia 1.35s ease-in-out infinite;
+        }
+
+        .mqs-head-indicator__visor-luz {
+            animation: mqs-visor-pulso 1.6s ease-in-out infinite;
         }
 
         .mqs-head-indicator__text {
-            font-size: 12px;
+            font-size: 12.5px;
             font-weight: 600;
-            letter-spacing: .2px;
-            color: #b9a7e0;
+            letter-spacing: .25px;
             background: linear-gradient(
                 90deg,
-                #b9a7e0,
-                #e0aaff,
-                #b9a7e0
+                #c4b5fd,
+                #e879f9,
+                #67e8f9,
+                #c4b5fd
             );
-            background-size: 200% 100%;
+            background-size: 240% 100%;
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: mqs-text-shimmer 2.4s linear infinite;
+            animation: mqs-text-shimmer 2.2s linear infinite;
         }
 
         @keyframes mqs-head-in {
             from {
                 opacity: 0;
-                transform: translateY(-2px);
+                transform: translateY(3px);
             }
             to {
                 opacity: 1;
@@ -142,10 +124,10 @@ let enviandoVozBot = false;
             }
         }
 
-        @keyframes mqs-uv-pulse {
+        @keyframes mqs-uv-aura {
             0%, 100% {
-                opacity: .35;
-                transform: scale(.85);
+                opacity: .45;
+                transform: scale(.9);
             }
             50% {
                 opacity: 1;
@@ -153,42 +135,58 @@ let enviandoVozBot = false;
             }
         }
 
-        @keyframes mqs-uv-tip {
+        @keyframes mqs-antena-destello {
             0%, 100% {
-                opacity: .6;
-                box-shadow: 0 0 4px #c47aff;
+                opacity: .75;
+                transform: scale(1);
             }
             50% {
                 opacity: 1;
-                box-shadow:
-                    0 0 8px #c47aff,
-                    0 0 18px #8a3cff;
+                transform: scale(1.35);
+            }
+        }
+
+        @keyframes mqs-chispas-galaxia {
+            0%, 100% {
+                opacity: .25;
+                transform: scale(.8) rotate(0deg);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.25) rotate(25deg);
+            }
+        }
+
+        @keyframes mqs-visor-pulso {
+            0%, 100% {
+                opacity: .65;
+            }
+            50% {
+                opacity: 1;
             }
         }
 
         @keyframes mqs-text-shimmer {
             from {
-                background-position: 200% 0;
+                background-position: 240% 0;
             }
             to {
-                background-position: -200% 0;
+                background-position: -240% 0;
             }
         }
 
         @media (prefers-reduced-motion: reduce) {
             .mqs-head-indicator,
             .mqs-head-indicator__avatar::before,
-            .mqs-head-indicator__avatar::after,
+            .mqs-head-indicator__antena-punta,
+            .mqs-head-indicator__chispas,
+            .mqs-head-indicator__visor-luz,
             .mqs-head-indicator__text {
                 animation: none !important;
             }
 
-            .mqs-head-indicator__avatar::before {
-                opacity: .6;
-            }
-
             .mqs-head-indicator__text {
-                -webkit-text-fill-color: #b9a7e0;
+                -webkit-text-fill-color: #d8b4fe;
             }
         }
     `;
@@ -196,8 +194,70 @@ let enviandoVozBot = false;
     document.head.appendChild(style);
 })();
 
+function renderizarCabezaBotSVG() {
+    return `
+        <svg class="mqs-head-indicator__bot" viewBox="0 0 36 38" aria-hidden="true">
+            <defs>
+                <linearGradient id="mqsCabezaGrad" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0%" stop-color="#3b1d6e"/>
+                    <stop offset="100%" stop-color="#140b29"/>
+                </linearGradient>
+                <linearGradient id="mqsVisorGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#e879f9"/>
+                    <stop offset="50%" stop-color="#a855f7"/>
+                    <stop offset="100%" stop-color="#38bdf8"/>
+                </linearGradient>
+                <radialGradient id="mqsUvGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#ffffff"/>
+                    <stop offset="45%" stop-color="#d946ef"/>
+                    <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+                </radialGradient>
+            </defs>
+
+            <!-- Antena superior -->
+            <line x1="18" y1="11" x2="18" y2="4" stroke="#c084fc" stroke-width="2" stroke-linecap="round"/>
+
+            <!-- Destellos galácticos / ultravioleta en la punta de la antena -->
+            <g class="mqs-head-indicator__chispas" stroke="#e879f9" stroke-width="1.4" stroke-linecap="round">
+                <line x1="18" y1="-1" x2="18" y2="1.5"/>
+                <line x1="18" y1="6.5" x2="18" y2="9"/>
+                <line x1="13.5" y1="4" x2="16" y2="4"/>
+                <line x1="20" y1="4" x2="22.5" y2="4"/>
+                <line x1="14.5" y1="0.5" x2="16.2" y2="2.2"/>
+                <line x1="19.8" y1="5.8" x2="21.5" y2="7.5"/>
+                <line x1="21.5" y1="0.5" x2="19.8" y2="2.2"/>
+                <line x1="16.2" y1="5.8" x2="14.5" y2="7.5"/>
+            </g>
+
+            <g class="mqs-head-indicator__antena-punta">
+                <circle cx="18" cy="4" r="5.5" fill="url(#mqsUvGlow)"/>
+                <circle cx="18" cy="4" r="2.6" fill="#f5d0fe"/>
+            </g>
+
+            <!-- Orejas / conectores laterales -->
+            <rect x="4" y="17" width="3" height="8" rx="1.5" fill="#7e22ce"/>
+            <rect x="29" y="17" width="3" height="8" rx="1.5" fill="#7e22ce"/>
+
+            <!-- Cabeza del bot -->
+            <rect x="7" y="11" width="22" height="20" rx="8" fill="url(#mqsCabezaGrad)" stroke="#a855f7" stroke-width="1.4"/>
+
+            <!-- Visor tecnológico -->
+            <rect x="10.5" y="16" width="15" height="8" rx="4" fill="#090514" stroke="url(#mqsVisorGrad)" stroke-width="1.2"/>
+
+            <!-- Ojos / destellos en el visor -->
+            <g class="mqs-head-indicator__visor-luz">
+                <circle cx="15" cy="20" r="2" fill="#f0abfc"/>
+                <circle cx="21" cy="20" r="2" fill="#67e8f9"/>
+            </g>
+
+            <!-- Detalle inferior de barbilla / señal -->
+            <path d="M14 27.5h8" stroke="#d4af37" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+    `;
+}
+
 // ================================================================
-// MOSTRAR INDICADOR
+// MOSTRAR / ACTUALIZAR / QUITAR INDICADOR
 // ================================================================
 
 function mostrarIndicadorMarquinhos(texto) {
@@ -225,35 +285,36 @@ function mostrarIndicadorMarquinhos(texto) {
              id="mqs-head-indicator"
              aria-live="polite"
              aria-atomic="true">
-
             <div class="mqs-head-indicator">
-
-                <div class="mqs-head-indicator__avatar"
-                     aria-hidden="true">
-
-                    <svg viewBox="0 0 24 24">
-                        <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/>
-                    </svg>
-
+                <div class="mqs-head-indicator__avatar" aria-hidden="true">
+                    ${renderizarCabezaBotSVG()}
                 </div>
-
-                <div class="mqs-head-indicator__text"
-                     id="mqs-head-text"></div>
-
+                <div class="mqs-head-indicator__text" id="mqs-head-text"></div>
             </div>
         </div>
     `;
 
-    anchorRef.insertAdjacentHTML('beforebegin', html);
+    // Colocar justo debajo de la última pregunta enviada por el usuario si existe
+    const enviados = box.querySelectorAll('.bubblewrap.sent');
+    const ultimoEnviado = enviados.length ? enviados[enviados.length - 1] : null;
+
+    if (ultimoEnviado && ultimoEnviado.nextSibling) {
+        ultimoEnviado.parentNode.insertBefore(
+            (() => {
+                const tpl = document.createElement('template');
+                tpl.innerHTML = html.trim();
+                return tpl.content.firstChild;
+            })(),
+            ultimoEnviado.nextSibling
+        );
+    } else {
+        anchorRef.insertAdjacentHTML('beforebegin', html);
+    }
 
     actualizarIndicadorMarquinhos(mensaje);
 
     scrollToBottom(true);
 }
-
-// ================================================================
-// ACTUALIZAR TEXTO DEL INDICADOR
-// ================================================================
 
 function actualizarIndicadorMarquinhos(texto) {
     const box = $('messages');
@@ -268,10 +329,6 @@ function actualizarIndicadorMarquinhos(texto) {
         textoIndicador.textContent = String(texto);
     }
 }
-
-// ================================================================
-// QUITAR INDICADOR
-// ================================================================
 
 function quitarIndicadorMarquinhos() {
     const box = $('messages');
@@ -454,8 +511,8 @@ async function enviarMensajeBot(textoLimpio) {
 
     append(userMsg, true);
 
-    mostrarTypingBot();
     mostrarIndicadorMarquinhos('Pensando…');
+    mostrarTypingBot();
 
     try {
         const historial = await cargarHistorialParaBot();
@@ -1028,10 +1085,6 @@ async function enviarVozAlBot(file) {
             );
         }
 
-        // --------------------------------------------------------
-        // GUARDAR MENSAJE DE VOZ
-        // --------------------------------------------------------
-
         try {
             await db
                 .from('mensajes_chat')
@@ -1050,10 +1103,6 @@ async function enviarVozAlBot(file) {
         } catch (e) {
             console.warn('No se pudo guardar la nota de voz:', e);
         }
-
-        // --------------------------------------------------------
-        // GUARDAR RESPUESTA DEL BOT
-        // --------------------------------------------------------
 
         try {
             if (data.reply) {
@@ -1075,10 +1124,6 @@ async function enviarVozAlBot(file) {
         }
 
         guardado = true;
-
-        // --------------------------------------------------------
-        // CONSTRUIR RESPUESTA VISUAL
-        // --------------------------------------------------------
 
         const botId = 'voice-bot-' + Date.now();
 
@@ -1114,7 +1159,6 @@ async function enviarVozAlBot(file) {
             box.insertAdjacentHTML('beforeend', botHTML);
         }
 
-        // Limpiar indicadores antes de mostrar el resultado definitivo.
         quitarIndicadorMarquinhos();
 
         observarCargaMultimedia(box);
