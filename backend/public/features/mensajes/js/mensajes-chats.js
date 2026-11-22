@@ -1,10 +1,17 @@
 // ================================================================
-// MENSAJES · CHATS v2.4 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.5 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
+//
+// ACTUALIZACIÓN v2.5 · AJUSTES VISUALES DE NOTA DE VOZ
+//  - Vista previa en una sola fila: deshacer, reproducir, texto y enviar.
+//  - El texto "Nota de voz lista" y "Escucha antes de enviar" ya no se
+//    parte en columnas angostas; se lee en una línea con elipsis.
+//  - El botón X rojo de cancelar se reemplaza por una flecha de deshacer.
+//  - Sin cambios en la lógica de grabación, ondas, reproductor ni envío.
 //
 // ACTUALIZACIÓN v2.4 · EXPERIENCIA DE NOTAS DE VOZ
 //  - Ondas de audio animadas durante la grabación.
-//  - Botón X para cancelar y descartar.
+//  - Botón de deshacer para cancelar y descartar.
 //  - Botón ✓ para detener y preparar la nota.
 //  - Vista previa antes de enviar.
 //  - Botón para reproducir y pausar la vista previa.
@@ -654,8 +661,8 @@ function vozCrearInterfaz() {
 
     panel.innerHTML = `
         <div class="voz-recorder-main">
-            <button type="button" class="voz-action voz-cancel" id="vozCancelBtn" aria-label="Cancelar nota de voz" title="Cancelar">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            <button type="button" class="voz-action voz-cancel" id="vozCancelBtn" aria-label="Deshacer y descartar nota de voz" title="Deshacer">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg>
             </button>
             <div class="voz-center">
                 <div class="voz-status-row">
@@ -1893,6 +1900,123 @@ if (document.readyState === 'loading') {
                 width: min(340px, 82vw);
                 min-width: min(260px, 76vw);
                 max-width: 86vw;
+            }
+        }
+
+        /* ============================================================
+           AJUSTES VISUALES v2.5 · VISTA PREVIA Y BOTÓN DESHACER
+           ============================================================ */
+
+        #vozRecorderPanel {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 10px;
+            background: transparent;
+            border-top: 0;
+            padding: 6px 4px 4px;
+        }
+
+        #vozRecorderPanel:not(.voz-preview-ready) .voz-recorder-main {
+            flex: 1 1 100%;
+        }
+
+        #vozRecorderPanel .voz-cancel {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            color: #c9d1d9;
+            background: rgba(255,255,255,.06);
+            border: 1px solid rgba(255,255,255,.08);
+        }
+
+        #vozRecorderPanel .voz-cancel:hover {
+            color: #ffffff;
+            background: rgba(255,255,255,.12);
+        }
+
+        #vozRecorderPanel .voz-cancel svg {
+            width: 19px;
+            height: 19px;
+            stroke-width: 1.8;
+        }
+
+        #vozRecorderPanel.voz-preview-ready .voz-recorder-main {
+            display: contents;
+        }
+
+        #vozRecorderPanel.voz-preview-ready .voz-center,
+        #vozRecorderPanel.voz-preview-ready .voz-accept {
+            display: none !important;
+        }
+
+        #vozRecorderPanel .voz-preview-controls {
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 44px;
+        }
+
+        #vozRecorderPanel .voz-preview-play {
+            flex: 0 0 36px;
+            width: 36px;
+            height: 36px;
+        }
+
+        #vozRecorderPanel .voz-preview-info {
+            flex: 1 1 auto;
+            min-width: 0;
+            overflow: hidden;
+        }
+
+        #vozRecorderPanel .voz-preview-title,
+        #vozRecorderPanel .voz-preview-subtitle {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        #vozRecorderPanel .voz-preview-title {
+            font-size: 13px;
+            line-height: 1.25;
+        }
+
+        #vozRecorderPanel .voz-preview-subtitle {
+            margin-top: 2px;
+            font-size: 11px;
+        }
+
+        #vozRecorderPanel .voz-send-btn {
+            flex: 0 0 auto;
+            min-width: 92px;
+            white-space: nowrap;
+            text-align: center;
+            padding: 9px 16px;
+        }
+
+        #vozRecorderPanel .voz-recording-hint {
+            flex: 1 1 100%;
+            margin: 0 0 0 44px;
+        }
+
+        #vozRecorderPanel.voz-preview-ready .voz-recording-hint {
+            margin: 0 0 0 44px;
+        }
+
+        @media (max-width: 480px) {
+            #vozRecorderPanel .voz-preview-title {
+                font-size: 12px;
+            }
+
+            #vozRecorderPanel .voz-send-btn {
+                min-width: 84px;
+                padding: 8px 12px;
+            }
+
+            #vozRecorderPanel .voz-recording-hint {
+                margin-left: 42px;
             }
         }
     `;
