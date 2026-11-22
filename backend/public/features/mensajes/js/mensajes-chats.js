@@ -1,24 +1,28 @@
 // ================================================================
-// MENSAJES · CHATS v2.6 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.5 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
 //
-// CAMBIOS v2.6 · CORRECCIONES DE ROBUSTEZ (sin tocar estilos)
-//  - Nota de voz: cancelar + regrabar ya no deja el estado colgado.
-//    * recorder/audioChunks capturados por toma (ignora onstop viejo).
-//    * cancelar limpia TODO (flags, chunks, preview, blob) síncrono.
-//    * watchdog de 6s para salir de 'processing' si stop() no responde.
-//    * recordAudioNota fuerza limpieza de recorder anterior.
-//  - Chats: al salir del visor de Estados se abren chats de nuevo.
-//    * limpiarEstadoViewer() restaura overflow, clases y overlays.
-//    * openConversation con null-guards + try/catch global.
-//    * profile() null-safe con toast + restauración de UI.
-//  - configurarInfoChat / abrirInfoChat con guardias en todos los $().
+// ACTUALIZACIÓN v2.5 · AJUSTES VISUALES DE NOTA DE VOZ
+//  - Vista previa en una sola fila: deshacer, reproducir, texto y enviar.
+//  - El texto "Nota de voz lista" y "Escucha antes de enviar" ya no se
+//    parte en columnas angostas; se lee en una línea con elipsis.
+//  - El botón X rojo de cancelar se reemplaza por una flecha de deshacer.
+//  - Sin cambios en la lógica de grabación, ondas, reproductor ni envío.
 //
-// Se conservan intactos:
-//  - Colores de ondas (#d4af37, #00d9c5, #5a9cff, #c47aff).
-//  - Flecha de deshacer (SVG original).
-//  - Estructura de la fila de vista previa (deshacer/play/texto/enviar).
-//  - Textos de UI y CSS inyectado.
+// ACTUALIZACIÓN v2.4 · EXPERIENCIA DE NOTAS DE VOZ
+//  - Ondas de audio animadas durante la grabación.
+//  - Botón de deshacer para cancelar y descartar.
+//  - Botón ✓ para detener y preparar la nota.
+//  - Vista previa antes de enviar.
+//  - Botón para reproducir y pausar la vista previa.
+//  - Envío únicamente mediante confirmación expresa.
+//  - Limpieza de micrófono y recursos temporales.
+//  - Reproductor de audio con clase CSS propia y ancho adaptable.
+//  - Compatibilidad con notas de voz para Marquinhos.
+//  - Conserva Supabase, bucket chat-audio y flujo existente.
+//
+// Se conservan las funciones originales de conversaciones,
+// mensajes, bloqueo, multimedia, realtime y menú contextual.
 // ================================================================
 
 'use strict';
@@ -47,16 +51,11 @@ let vozEstado = 'idle';
 let vozCancelar = false;
 let vozPreviewAudio = null;
 let vozProcesando = false;
-let vozWatchdogTimer = null;
 
 const VOZ_BARRAS = 36;
 const VOZ_MAX_MB = 50;
-const VOZ_WATCHDOG_MS = 6000;
 
-// Recorder y chunks locales al módulo (antes eran globals implícitos).
-let recorder = null;
-let audioChunks = [];
-let recordingStartedAt = 0;
+let conversationFilterOriginal = '';
 
 function etiquetaPreview(tipo, contenido) {
     if (!tipo) return 'Sin mensajes';
@@ -268,199 +267,105 @@ function marcarBotLeidoEnSegundoPlano() {
     } catch (e) { }
 }
 
-/**
- * Limpia cualquier residuo del visor de Estados que pueda estar
- * bloqueando clics o dejando overflow/pointer-events activos.
- * Se llama al abrir y cerrar conversación.
- */
-function limpiarEstadoViewer() {
-    try {
-        const visor = $('estadoViewer');
-        if (visor) {
-            visor.classList.remove('show', 'open', 'active', 'visible');
-            visor.style.removeProperty('pointer-events');
-            visor.style.removeProperty('z-index');
-            visor.style.removeProperty('display');
-            // Si quedó un backdrop hijo, lo quitamos.
-            visor.querySelectorAll('.estado-viewer-backdrop, .estado-backdrop').forEach(n => n.remove());
-        }
-
-        // Overlays residuales de estados.
-        document.querySelectorAll('.estado-overlay, .estado-viewer-overlay, #estadoOverlay')
-            .forEach(n => n.remove());
-
-        // Asegurar que el body no quede con scroll bloqueado por error.
-        if (document.body.style.overflow === 'hidden') {
-            document.body.style.overflow = '';
-        }
-
-        // El panel del chat nunca debe quedar con pointer-events: none.
-        const panel = $('panel');
-        if (panel) {
-            panel.style.removeProperty('pointer-events');
-        }
-    } catch (e) {
-        console.warn('[Mensajes] limpiarEstadoViewer:', e);
-    }
-}
-
 async function openConversation(id) {
     const secuencia = ++aperturaSecuencia;
 
-    try {
-        // CRÍTICO: liberar cualquier capa del visor de Estados antes de abrir.
-        limpiarEstadoViewer();
+    if (vozEstado !== 'idle') cancelarNotaVoz(true);
 
-        if (vozEstado !== 'idle') cancelarNotaVoz(true);
+    const visor = $('estadoViewer');
+    if (visor) visor.classList.remove('show');
 
-        if (!await auth()) return;
+    if (!await auth()) return;
 
-        const p = await profile(id);
-        if (secuencia !== aperturaSecuencia) return;
+    const p = await profile(id);
+    if (secuencia !== aperturaSecuencia) return;
 
-        // Null-guard: si profile falla, no dejamos la UI colgada.
-        if (!p) {
-            console.warn('[Mensajes] profile(id) devolvió null para', id);
-            document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
-            toast('No se pudo cargar el perfil. Intenta de nuevo.', 'error');
-            return;
-        }
+    const esBot = (id === BOT_ID);
+    current = { id, profile: p, bot: esBot, bloqueo: { yo: false, el: false } };
 
-        const esBot = (id === BOT_ID);
-        current = { id, profile: p, bot: esBot, bloqueo: { yo: false, el: false } };
+    $('chatName').textContent = p.nombre || 'Usuario';
+    $('chatAvatar').innerHTML = esBot
+        ? ICO_ESTRELLA_CHAT
+        : (p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || 'U').charAt(0).toUpperCase()));
+    $('chatAvatar').className = 'avatar' + (esBot ? ' avatar-bot' : '');
+    $('chatStatus').textContent = esBot ? 'IA · Siempre disponible' : textoPresencia(p);
+    $('chatStatus').className = 'status' + (!esBot && p.online ? ' online' : '');
 
-        const chatName = $('chatName');
-        if (chatName) chatName.textContent = p.nombre || 'Usuario';
+    const header = $('chatHeader');
+    header.dataset.userId = id;
+    header.dataset.handle = p.handle || '';
+    header.dataset.online = p.online ? 'true' : 'false';
 
-        const chatAvatar = $('chatAvatar');
-        if (chatAvatar) {
-            chatAvatar.innerHTML = esBot
-                ? ICO_ESTRELLA_CHAT
-                : (p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || 'U').charAt(0).toUpperCase()));
-            chatAvatar.className = 'avatar' + (esBot ? ' avatar-bot' : '');
-        }
+    $('voiceBot').hidden = !esBot;
+    $('chatActions').hidden = esBot;
 
-        const chatStatus = $('chatStatus');
-        if (chatStatus) {
-            chatStatus.textContent = esBot ? 'IA · Siempre disponible' : textoPresencia(p);
-            chatStatus.className = 'status' + (!esBot && p.online ? ' online' : '');
-        }
-
-        const header = $('chatHeader');
-        if (header) {
-            header.dataset.userId = id;
-            header.dataset.handle = p.handle || '';
-            header.dataset.online = p.online ? 'true' : 'false';
-        }
-
-        const voiceBot = $('voiceBot');
-        if (voiceBot) voiceBot.hidden = !esBot;
-        const chatActions = $('chatActions');
-        if (chatActions) chatActions.hidden = esBot;
-
-        const callBtn = $('videoCall');
-        if (callBtn) {
-            callBtn.disabled = esBot || !window.__livekitReady;
-            callBtn.title = esBot ? '' : 'Videollamada con ' + (p.nombre || 'usuario');
-        }
-        const audioCallBtn = $('audioCall');
-        if (audioCallBtn) audioCallBtn.disabled = esBot || !window.__livekitReady;
-
-        const composer = $('composer');
-        if (composer) composer.hidden = false;
-        const emptyState = $('emptyState');
-        if (emptyState) emptyState.hidden = true;
-        const panel = $('panel');
-        if (panel) {
-            panel.classList.add('chat-open');
-            panel.style.removeProperty('pointer-events');
-        }
-        document.querySelectorAll('.conv').forEach(x => x.classList.toggle('active', x.dataset.id === id));
-
-        isUserAtBottom = true;
-        unreadCount = 0;
-        actualizarFlecha();
-
-        if (esBot) {
-            marcarBotLeidoEnSegundoPlano();
-            botResumenCache.ts = 0;
-            try {
-                await abrirConversacionBot();
-            } catch (e) {
-                console.error('[Mensajes] Error abriendo Marquinhos:', e);
-                toast('No se pudo abrir Marquinhos. Intenta de nuevo.', 'error');
-            }
-            return;
-        }
-
-        estadoBloqueoCon(id).then(est => {
-            if (secuencia !== aperturaSecuencia) return;
-            if (current && current.id === id) aplicarEstadoBloqueo(est);
-        }).catch(() => {});
-
-        const r = await db.from('mensajes_chat')
-            .select('*')
-            .eq('eliminado', false)
-            .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${id}),and(remitente_id.eq.${id},destinatario_id.eq.${user.id})`)
-            .order('created_at', { ascending: true })
-            .limit(100);
-        if (secuencia !== aperturaSecuencia) return;
-        if (r.error) { console.error(r.error); toast('Error al cargar mensajes.', 'error'); return; }
-
-        await renderMessages(r.data || []);
-        if (secuencia !== aperturaSecuencia) return;
-        await markRead(id);
-        subscribeMessages(id);
-
-    } catch (e) {
-        console.error('[Mensajes] openConversation falló:', e);
-        document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
-        toast('No se pudo abrir la conversación.', 'error');
+    const callBtn = $('videoCall');
+    if (callBtn) {
+        callBtn.disabled = esBot || !window.__livekitReady;
+        callBtn.title = esBot ? '' : 'Videollamada con ' + (p.nombre || 'usuario');
     }
+    const audioBtn = $('audioCall');
+    if (audioBtn) audioBtn.disabled = esBot || !window.__livekitReady;
+
+    $('composer').hidden = false;
+    $('emptyState').hidden = true;
+    $('panel').classList.add('chat-open');
+    document.querySelectorAll('.conv').forEach(x => x.classList.toggle('active', x.dataset.id === id));
+
+    isUserAtBottom = true;
+    unreadCount = 0;
+    actualizarFlecha();
+
+    if (esBot) {
+        marcarBotLeidoEnSegundoPlano();
+        botResumenCache.ts = 0;
+        try {
+            await abrirConversacionBot();
+        } catch (e) {
+            console.error('[Mensajes] Error abriendo Marquinhos:', e);
+            toast('No se pudo abrir Marquinhos. Intenta de nuevo.', 'error');
+        }
+        return;
+    }
+
+    estadoBloqueoCon(id).then(est => {
+        if (secuencia !== aperturaSecuencia) return;
+        if (current && current.id === id) aplicarEstadoBloqueo(est);
+    }).catch(() => {});
+
+    const r = await db.from('mensajes_chat')
+        .select('*')
+        .eq('eliminado', false)
+        .or(`and(remitente_id.eq.${user.id},destinatario_id.eq.${id}),and(remitente_id.eq.${id},destinatario_id.eq.${user.id})`)
+        .order('created_at', { ascending: true })
+        .limit(100);
+    if (secuencia !== aperturaSecuencia) return;
+    if (r.error) { console.error(r.error); toast('Error al cargar mensajes.', 'error'); return; }
+
+    await renderMessages(r.data || []);
+    if (secuencia !== aperturaSecuencia) return;
+    await markRead(id);
+    subscribeMessages(id);
 }
 
 async function cerrarConversacion() {
     aperturaSecuencia++;
     if (vozEstado !== 'idle') cancelarNotaVoz(true);
     current = null;
-    limpiarEstadoViewer();
-
-    const panel = $('panel');
-    if (panel) panel.classList.remove('chat-open');
-
-    const chatName = $('chatName');
-    if (chatName) chatName.textContent = 'Selecciona una conversación';
-
-    const chatStatus = $('chatStatus');
-    if (chatStatus) {
-        chatStatus.textContent = 'Elige un chat para empezar';
-        chatStatus.className = 'status';
-    }
-
-    const chatAvatar = $('chatAvatar');
-    if (chatAvatar) {
-        chatAvatar.innerHTML = '';
-        chatAvatar.className = 'avatar';
-    }
-
-    const header = $('chatHeader');
-    if (header) {
-        header.dataset.userId = '';
-        header.dataset.handle = '';
-    }
-
-    const chatActions = $('chatActions');
-    if (chatActions) chatActions.hidden = true;
-    const voiceBot = $('voiceBot');
-    if (voiceBot) voiceBot.hidden = true;
-    const composer = $('composer');
-    if (composer) composer.hidden = true;
-    const emptyState = $('emptyState');
-    if (emptyState) emptyState.hidden = false;
-
+    $('panel').classList.remove('chat-open');
+    $('chatName').textContent = 'Selecciona una conversación';
+    $('chatStatus').textContent = 'Elige un chat para empezar';
+    $('chatStatus').className = 'status';
+    $('chatAvatar').innerHTML = '';
+    $('chatAvatar').className = 'avatar';
+    $('chatHeader').dataset.userId = '';
+    $('chatHeader').dataset.handle = '';
+    $('chatActions').hidden = true;
+    $('voiceBot').hidden = true;
+    $('composer').hidden = true;
+    $('emptyState').hidden = false;
     const box = $('messages');
-    if (box) box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
-
+    box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
     document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
     if (msgChannel) {
         try { db.removeChannel(msgChannel); }
@@ -473,7 +378,6 @@ async function cerrarConversacion() {
 
 async function renderMessages(rows) {
     const box = $('messages');
-    if (!box) return;
     box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
     let anchor = box.querySelector('#scrollAnchor');
     if (!anchor) { anchor = document.createElement('div'); anchor.id = 'scrollAnchor'; box.appendChild(anchor); }
@@ -482,11 +386,9 @@ async function renderMessages(rows) {
         anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><p>Sin mensajes</p><small>Envía el primer mensaje</small></div>');
         return;
     }
-    // allSettled: un fallo de signed URL no rompe todo el render.
-    const results = await Promise.allSettled(rows.map(m => getSignedUrlForMessage(m)));
+    const signedUrls = await Promise.all(rows.map(m => getSignedUrlForMessage(m)));
     rows.forEach((m, i) => {
-        const signed = results[i] && results[i].status === 'fulfilled' ? results[i].value : null;
-        anchor.insertAdjacentHTML('beforebegin', messageHTML(m, m.remitente_id === user.id, signed));
+        anchor.insertAdjacentHTML('beforebegin', messageHTML(m, m.remitente_id === user.id, signedUrls[i]));
     });
     isUserAtBottom = true;
     observarCargaMultimedia(box);
@@ -544,8 +446,7 @@ async function sendMessage(text) {
     }
     if (!await auth()) return;
     const textoLimpio = text.trim();
-    const input = $('messageInput');
-    if (input) input.value = '';
+    $('messageInput').value = '';
 
     if (current.bot) {
         await enviarMensajeBot(textoLimpio);
@@ -559,23 +460,21 @@ async function sendMessage(text) {
         console.error('Error enviando mensaje:', e);
         if (esErrorContenidoNoPermitido(e)) toast('Contenido no permitido por las normas de la comunidad.', 'error');
         else toast(e.message || 'Error al enviar mensaje.', 'error');
-        if (input) input.value = textoLimpio;
+        $('messageInput').value = textoLimpio;
         return;
     }
 
     if (resp.estado === 'entregado' && resp.mensaje) { await append(resp.mensaje, true); recargarBandeja(); return; }
     if (resp.estado === 'solicitud') { toast('Tu mensaje se envió como solicitud. Aparecerá cuando la acepte.', 'success'); recargarBandeja(); return; }
-    if (resp.estado === 'solicitud_en_espera') { toast('Ya tienes una solicitud pendiente con esta persona.', 'warning'); if (input) input.value = textoLimpio; return; }
+    if (resp.estado === 'solicitud_en_espera') { toast('Ya tienes una solicitud pendiente con esta persona.', 'warning'); $('messageInput').value = textoLimpio; return; }
     toast('No se pudo enviar el mensaje.', 'error');
-    if (input) input.value = textoLimpio;
+    $('messageInput').value = textoLimpio;
 }
 
 async function append(m, sent) {
     const box = $('messages');
-    if (!box) return;
     box.querySelectorAll('.empty').forEach(el => el.remove());
-    let signedUrl = null;
-    try { signedUrl = await getSignedUrlForMessage(m); } catch (e) { console.warn('[Mensajes] append signedUrl:', e); }
+    const signedUrl = await getSignedUrlForMessage(m);
     const anchorRef = box.querySelector('#scrollAnchor');
     if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, sent, signedUrl));
     else box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl));
@@ -597,7 +496,7 @@ async function markRead(id, force = false) {
 async function deleteConversation() {
     if (!current) { toast('Selecciona una conversación.', 'error'); return; }
     if (!await auth()) return;
-    const nombre = current.bot ? 'Marquinhos' : (current.profile?.nombre || 'este usuario');
+    const nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
     const confirmado = await NeonModal.confirm({
         title: 'Eliminar conversación',
         message: `¿Eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`,
@@ -612,11 +511,9 @@ async function deleteConversation() {
         if (error) throw error;
         toast('Conversación eliminada.', 'success');
         const box = $('messages');
-        if (box) {
-            box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
-            const anchor = box.querySelector('#scrollAnchor');
-            if (anchor) anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><p>Conversación eliminada</p><small>Envía un mensaje para empezar de nuevo</small></div>');
-        }
+        box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
+        const anchor = box.querySelector('#scrollAnchor');
+        if (anchor) anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><p>Conversación eliminada</p><small>Envía un mensaje para empezar de nuevo</small></div>');
         unreadCount = 0;
         actualizarFlecha();
         recargarBandeja();
@@ -711,18 +608,14 @@ async function uploadFile(file) {
 /* ---------------- Nueva conversación ---------------- */
 
 function newConversation() {
-    const modal = $('newModal');
-    if (modal) modal.classList.add('show');
-    const search = $('userSearch');
-    if (search) search.value = '';
-    const results = $('userResults');
-    if (results) results.innerHTML = '';
-    setTimeout(() => { const s = $('userSearch'); if (s) s.focus(); }, 50);
+    $('newModal').classList.add('show');
+    $('userSearch').value = '';
+    $('userResults').innerHTML = '';
+    setTimeout(() => $('userSearch').focus(), 50);
 }
 
 async function searchUsers(q) {
     const box = $('userResults');
-    if (!box) return;
     if (!q || q.trim().length < 2) { box.innerHTML = '<div class="busqueda-vacia">Escribe al menos 2 caracteres</div>'; return; }
     if (!await auth()) return;
     const term = q.trim().replace(/[%_,\\]/g, ' ').replace(/\s+/g, ' ').trim();
@@ -745,8 +638,7 @@ async function searchUsers(q) {
 
 async function createConversation(id) {
     if (!await auth()) return;
-    const modal = $('newModal');
-    if (modal) modal.classList.remove('show');
+    $('newModal').classList.remove('show');
     await loadConversations();
     await openConversation(id);
 }
@@ -956,31 +848,20 @@ function vozLimpiarPreview() {
     vozDuracion = 0;
 }
 
-/**
- * Cancela el watchdog pendiente si existe.
- */
-function vozCancelarWatchdog() {
-    if (vozWatchdogTimer) {
-        clearTimeout(vozWatchdogTimer);
-        vozWatchdogTimer = null;
-    }
-}
-
 function vozRestablecerInterfaz() {
-    vozCancelarWatchdog();
     vozDetenerAnimacion();
     vozLiberarMicrofono();
 
     const panel = document.getElementById('vozRecorderPanel');
     if (panel) {
         panel.classList.remove('voz-preview-ready');
-        const pc = panel.querySelector('#vozPreviewControls'); if (pc) pc.hidden = true;
-        const wf = panel.querySelector('#vozWaveform'); if (wf) wf.hidden = false;
-        const hint = panel.querySelector('#vozHint'); if (hint) hint.textContent = 'Tu audio no se enviará hasta que confirmes.';
-        const st = panel.querySelector('#vozStatusText'); if (st) st.textContent = 'Grabando nota de voz';
-        const ld = panel.querySelector('#vozLiveDot'); if (ld) ld.hidden = false;
-        const ab = panel.querySelector('#vozAcceptBtn'); if (ab) { ab.hidden = false; ab.disabled = false; }
-        const cb = panel.querySelector('#vozCancelBtn'); if (cb) { cb.hidden = false; cb.disabled = false; }
+        panel.querySelector('#vozPreviewControls').hidden = true;
+        panel.querySelector('#vozWaveform').hidden = false;
+        panel.querySelector('#vozHint').textContent = 'Tu audio no se enviará hasta que confirmes.';
+        panel.querySelector('#vozStatusText').textContent = 'Grabando nota de voz';
+        panel.querySelector('#vozLiveDot').hidden = false;
+        panel.querySelector('#vozAcceptBtn').hidden = false;
+        panel.querySelector('#vozCancelBtn').hidden = false;
     }
 
     vozEstado = 'idle';
@@ -998,16 +879,16 @@ function vozRestablecerInterfaz() {
 function vozReiniciarPanel() {
     const panel = vozCrearInterfaz();
     if (!panel) return;
-    const pc = panel.querySelector('#vozPreviewControls'); if (pc) pc.hidden = true;
-    const wf = panel.querySelector('#vozWaveform'); if (wf) wf.hidden = false;
-    const ab = panel.querySelector('#vozAcceptBtn'); if (ab) { ab.hidden = false; ab.disabled = false; }
-    const cb = panel.querySelector('#vozCancelBtn'); if (cb) { cb.hidden = false; cb.disabled = false; }
-    const ld = panel.querySelector('#vozLiveDot'); if (ld) ld.hidden = false;
-    const st = panel.querySelector('#vozStatusText'); if (st) st.textContent = 'Grabando nota de voz';
-    const hint = panel.querySelector('#vozHint'); if (hint) hint.textContent = 'Tu audio no se enviará hasta que confirmes.';
-    const timer = panel.querySelector('#vozTimer'); if (timer) timer.textContent = '00:00';
-    const dur = panel.querySelector('#vozPreviewDuration'); if (dur) dur.textContent = 'Escucha antes de enviar';
-    const play = panel.querySelector('#vozPreviewPlay'); if (play) play.innerHTML = '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
+    panel.querySelector('#vozPreviewControls').hidden = true;
+    panel.querySelector('#vozWaveform').hidden = false;
+    panel.querySelector('#vozAcceptBtn').hidden = false;
+    panel.querySelector('#vozCancelBtn').hidden = false;
+    panel.querySelector('#vozLiveDot').hidden = false;
+    panel.querySelector('#vozStatusText').textContent = 'Grabando nota de voz';
+    panel.querySelector('#vozHint').textContent = 'Tu audio no se enviará hasta que confirmes.';
+    panel.querySelector('#vozTimer').textContent = '00:00';
+    panel.querySelector('#vozPreviewDuration').textContent = 'Escucha antes de enviar';
+    panel.querySelector('#vozPreviewPlay').innerHTML = '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
     panel.querySelectorAll('.voz-bar').forEach(bar => {
         bar.style.height = '5px';
         bar.classList.remove('voz-bar-active');
@@ -1028,24 +909,6 @@ function extensionForMime(mime) {
     return 'webm';
 }
 
-/**
- * Fuerza el descarte de cualquier recorder previo que haya quedado colgado.
- * Imprescindible para que la 2ª grabación tras cancelar funcione.
- */
-function vozDescartarRecorderAnterior() {
-    if (!recorder) return;
-    try {
-        recorder.ondataavailable = null;
-        recorder.onstop = null;
-        recorder.onerror = null;
-        if (recorder.state !== 'inactive') {
-            try { recorder.stop(); } catch (e) { }
-        }
-    } catch (e) { /* noop */ }
-    recorder = null;
-    audioChunks = [];
-}
-
 /* ---------------- Iniciar grabación ---------------- */
 
 async function recordAudioNota() {
@@ -1059,13 +922,7 @@ async function recordAudioNota() {
         return;
     }
 
-    // Si quedó atascado en 'processing' o 'cancelled', forzamos reset.
-    if (vozEstado === 'processing' || vozProcesando) {
-        console.warn('[Mensajes] Estado colgado detectado, reseteando antes de grabar.');
-        vozDescartarRecorderAnterior();
-        vozRestablecerInterfaz();
-        vozOcultarPanel();
-    }
+    if (vozProcesando) return;
 
     if (!current) {
         toast('Selecciona una conversación.', 'error');
@@ -1082,15 +939,7 @@ async function recordAudioNota() {
     const esBot = current.bot;
 
     try {
-        vozDescartarRecorderAnterior();
-        vozCancelarWatchdog();
         vozReiniciarPanel();
-
-        // Reset explícito de flags antes de abrir el micrófono.
-        vozCancelar = false;
-        vozProcesando = false;
-        vozBlobPreparado = null;
-        audioChunks = [];
 
         vozStream = await navigator.mediaDevices.getUserMedia({
             audio: {
@@ -1105,6 +954,8 @@ async function recordAudioNota() {
             return;
         }
 
+        audioChunks = [];
+        vozCancelar = false;
         vozMode = esBot ? 'bot' : 'normal';
         vozEstado = 'recording';
         recordingStartedAt = Date.now();
@@ -1112,35 +963,25 @@ async function recordAudioNota() {
         const mimeType = getSupportedAudioMime();
         vozMimeActual = mimeType || 'audio/webm';
 
-        const miRecorder = mimeType
+        recorder = mimeType
             ? new MediaRecorder(vozStream, { mimeType: mimeType })
             : new MediaRecorder(vozStream);
 
-        recorder = miRecorder;
-
-        miRecorder.ondataavailable = function(e) {
-            // Solo aceptamos chunks si este recorder sigue activo.
-            if (recorder !== miRecorder) return;
+        recorder.ondataavailable = function(e) {
             if (e.data && e.data.size > 0) audioChunks.push(e.data);
         };
 
-        miRecorder.onerror = function(e) {
-            if (recorder !== miRecorder) return;
+        recorder.onerror = function(e) {
             console.error('[Mensajes] Error grabando:', e);
             cancelarNotaVoz(false);
             toast('Ocurrió un error durante la grabación.', 'error');
         };
 
-        miRecorder.onstop = function() {
-            // Solo procesamos si este recorder es el vigente.
-            if (recorder !== miRecorder) {
-                console.warn('[Mensajes] onstop de recorder obsoleto ignorado.');
-                return;
-            }
+        recorder.onstop = function() {
             vozProcesarGrabacion();
         };
 
-        miRecorder.start(250);
+        recorder.start(250);
 
         vozMostrarPanel();
         vozIniciarAnimacion(vozStream);
@@ -1152,7 +993,6 @@ async function recordAudioNota() {
 
     } catch (e) {
         console.error('Micrófono:', e);
-        vozDescartarRecorderAnterior();
         vozRestablecerInterfaz();
         vozOcultarPanel();
         toast('No se pudo acceder al micrófono. Revisa los permisos.', 'error');
@@ -1169,39 +1009,22 @@ function detenerYPrepararNotaVoz() {
 
     const panel = document.getElementById('vozRecorderPanel');
     if (panel) {
-        const st = panel.querySelector('#vozStatusText'); if (st) st.textContent = 'Preparando nota de voz...';
-        const ld = panel.querySelector('#vozLiveDot'); if (ld) ld.hidden = true;
-        const ab = panel.querySelector('#vozAcceptBtn'); if (ab) ab.disabled = true;
+        panel.querySelector('#vozStatusText').textContent = 'Preparando nota de voz...';
+        panel.querySelector('#vozLiveDot').hidden = true;
+        panel.querySelector('#vozAcceptBtn').disabled = true;
     }
 
-    // Watchdog: si en 6s no llegó onstop, forzamos el procesamiento.
-    vozCancelarWatchdog();
-    vozWatchdogTimer = setTimeout(() => {
-        vozWatchdogTimer = null;
-        if (vozEstado === 'processing') {
-            console.warn('[Mensajes] Watchdog: onstop no disparó, forzando procesamiento.');
-            vozDescartarRecorderAnterior();
-            vozProcesarGrabacion();
-        }
-    }, VOZ_WATCHDOG_MS);
-
     try {
-        if (recorder.state !== 'inactive') {
-            recorder.stop();
-        } else {
-            // Si ya estaba inactivo, procesamos directamente.
-            vozProcesarGrabacion();
-        }
+        if (recorder.state !== 'inactive') recorder.stop();
+        else vozProcesarGrabacion();
     } catch (e) {
         console.error('[Mensajes] No se pudo detener la grabación:', e);
-        vozCancelarWatchdog();
         cancelarNotaVoz(false);
         toast('No se pudo preparar la nota de voz.', 'error');
     }
 }
 
 function vozProcesarGrabacion() {
-    vozCancelarWatchdog();
     vozLiberarMicrofono();
     vozDetenerAnimacion();
 
@@ -1209,20 +1032,9 @@ function vozProcesarGrabacion() {
         ? recorder.mimeType
         : (vozMimeActual || 'audio/webm');
 
-    const chunksSnapshot = Array.isArray(audioChunks) ? audioChunks.slice() : [];
-    const blob = new Blob(chunksSnapshot, { type: mime });
-
-    // Limpieza local del recorder, con guardas.
-    const recLocal = recorder;
-    recorder = null;
+    const blob = new Blob(audioChunks || [], { type: mime });
     audioChunks = [];
-    if (recLocal) {
-        try {
-            recLocal.ondataavailable = null;
-            recLocal.onstop = null;
-            recLocal.onerror = null;
-        } catch (e) { /* noop */ }
-    }
+    recorder = null;
 
     if (vozCancelar) {
         vozRestablecerInterfaz();
@@ -1245,9 +1057,6 @@ function vozProcesarGrabacion() {
         return;
     }
 
-    // Limpieza defensiva antes de asignar un nuevo preview.
-    vozLimpiarPreview();
-
     vozBlobPreparado = blob;
     vozUrlPreview = URL.createObjectURL(blob);
     vozEstado = 'ready';
@@ -1263,19 +1072,13 @@ function vozMostrarPreview() {
 
     panel.classList.add('voz-preview-ready');
 
-    const wf = panel.querySelector('#vozWaveform'); if (wf) wf.hidden = true;
-    const ab = panel.querySelector('#vozAcceptBtn'); if (ab) ab.hidden = true;
-    const ld = panel.querySelector('#vozLiveDot'); if (ld) ld.hidden = true;
+    panel.querySelector('#vozWaveform').hidden = true;
+    panel.querySelector('#vozAcceptBtn').hidden = true;
+    panel.querySelector('#vozLiveDot').hidden = true;
 
-    const st = panel.querySelector('#vozStatusText'); if (st) st.textContent = 'Nota de voz preparada';
-    const hint = panel.querySelector('#vozHint'); if (hint) hint.textContent = 'Escucha tu nota. Puedes enviarla o descartarla.';
-    const pc = panel.querySelector('#vozPreviewControls'); if (pc) pc.hidden = false;
-
-    // Limpieza por si había un preview anterior cargado.
-    if (vozPreviewAudio) {
-        try { vozPreviewAudio.pause(); } catch (e) { }
-        vozPreviewAudio = null;
-    }
+    panel.querySelector('#vozStatusText').textContent = 'Nota de voz preparada';
+    panel.querySelector('#vozHint').textContent = 'Escucha tu nota. Puedes enviarla o descartarla.';
+    panel.querySelector('#vozPreviewControls').hidden = false;
 
     vozPreviewAudio = new Audio(vozUrlPreview);
     vozPreviewAudio.preload = 'metadata';
@@ -1283,24 +1086,25 @@ function vozMostrarPreview() {
     vozPreviewAudio.addEventListener('loadedmetadata', function() {
         if (isFinite(vozPreviewAudio.duration)) {
             vozDuracion = vozPreviewAudio.duration;
-            const dur = document.getElementById('vozPreviewDuration');
-            if (dur) dur.textContent = 'Duración · ' + vozFormatoTiempo(Math.floor(vozDuracion));
+            panel.querySelector('#vozPreviewDuration').textContent =
+                'Duración · ' + vozFormatoTiempo(Math.floor(vozDuracion));
         }
     });
 
     vozPreviewAudio.addEventListener('ended', function() {
-        const play = document.getElementById('vozPreviewPlay');
-        if (play) play.innerHTML = '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
+        panel.querySelector('#vozPreviewPlay').innerHTML =
+            '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
     });
 
-    const play = panel.querySelector('#vozPreviewPlay');
-    if (play) play.innerHTML = '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
+    panel.querySelector('#vozPreviewPlay').innerHTML =
+        '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
 
-    const cb = panel.querySelector('#vozCancelBtn');
-    if (cb) { cb.disabled = false; cb.hidden = false; }
+    panel.querySelector('#vozCancelBtn').disabled = false;
+    panel.querySelector('#vozCancelBtn').hidden = false;
 
     const send = panel.querySelector('#vozSendBtn');
-    if (send) { send.disabled = false; send.textContent = 'Enviar'; }
+    send.disabled = false;
+    send.textContent = 'Enviar';
 
     const audioBtn = $('audio');
     if (audioBtn) audioBtn.classList.remove('recording');
@@ -1310,9 +1114,7 @@ function alternarPreviewNotaVoz() {
     if (!vozPreviewAudio || vozEstado !== 'ready') return;
 
     const panel = document.getElementById('vozRecorderPanel');
-    if (!panel) return;
     const btn = panel.querySelector('#vozPreviewPlay');
-    if (!btn) return;
 
     if (vozPreviewAudio.paused) {
         if (vozPreviewAudio.ended) vozPreviewAudio.currentTime = 0;
@@ -1332,47 +1134,29 @@ function alternarPreviewNotaVoz() {
 /* ---------------- Cancelar y descartar ---------------- */
 
 function cancelarNotaVoz(silencioso) {
-    const hayAlgo = vozEstado !== 'idle' || vozBlobPreparado || recorder || vozProcesando;
-    if (!hayAlgo) return;
+    if (vozEstado === 'idle' && !vozBlobPreparado && !recorder) return;
 
-    // 1) Marcar cancelación ANTES de tocar el recorder.
     vozCancelar = true;
+    vozEstado = 'cancelled';
 
-    // 2) Cancelar watchdog.
-    vozCancelarWatchdog();
-
-    // 3) Detener animación y micrófono.
     vozDetenerAnimacion();
     vozLiberarMicrofono();
 
-    // 4) Descartar recorder sin esperar onstop.
-    const recLocal = recorder;
-    recorder = null;
-    if (recLocal) {
+    if (recorder) {
         try {
-            recLocal.ondataavailable = null;
-            recLocal.onstop = null;
-            recLocal.onerror = null;
-            if (recLocal.state !== 'inactive') recLocal.stop();
-        } catch (e) { /* noop */ }
+            recorder.onstop = function() {
+                audioChunks = [];
+                recorder = null;
+            };
+            if (recorder.state !== 'inactive') recorder.stop();
+            else recorder = null;
+        } catch (e) {
+            recorder = null;
+        }
     }
 
-    // 5) Limpiar chunks, preview y blob.
     audioChunks = [];
-    vozBlobPreparado = null;
-    vozUrlPreview = null;
-    vozDuracion = 0;
-    if (vozPreviewAudio) {
-        try { vozPreviewAudio.pause(); } catch (e) { }
-        vozPreviewAudio = null;
-    }
-    if (vozUrlPreview) {
-        try { URL.revokeObjectURL(vozUrlPreview); } catch (e) { }
-    }
-    // Forzamos limpieza completa por si quedó algo.
     vozLimpiarPreview();
-
-    // 6) Reset de estado e interfaz.
     vozRestablecerInterfaz();
     vozOcultarPanel();
 
@@ -1547,7 +1331,6 @@ async function editarMensaje(msgId, bubblewrap) {
     const bubble = bubblewrap.querySelector('.bubble');
     const metaEl = bubblewrap.querySelector('.meta');
     const esSent = bubblewrap.classList.contains('sent');
-    if (!bubble) return;
     const contenidoActual = bubble.textContent.trim();
 
     const nuevoTexto = await NeonModal.prompt({
@@ -1697,36 +1480,27 @@ function abrirInfoChat() {
     const overlay = $('contactProfileOverlay');
     if (!overlay) return;
 
-    const cpName = $('cpName');
-    if (cpName) cpName.textContent = nombre;
-
+    $('cpName').textContent = nombre;
     const cpAvatar = $('cpAvatar');
-    if (cpAvatar) {
-        cpAvatar.innerHTML = '';
-        const chatAvatar = $('chatAvatar');
-        const img = chatAvatar ? chatAvatar.querySelector('img') : null;
-        if (img && !current.bot) {
-            const copia = document.createElement('img');
-            copia.src = img.src;
-            copia.alt = '';
-            cpAvatar.appendChild(copia);
-        } else {
-            cpAvatar.innerHTML = current.bot ? ICO_ESTRELLA_CHAT : esc(nombre.substring(0, 2).toUpperCase());
-        }
+    cpAvatar.innerHTML = '';
+    const img = $('chatAvatar').querySelector('img');
+    if (img && !current.bot) {
+        const copia = document.createElement('img');
+        copia.src = img.src;
+        copia.alt = '';
+        cpAvatar.appendChild(copia);
+    } else {
+        cpAvatar.innerHTML = current.bot ? ICO_ESTRELLA_CHAT : esc(nombre.substring(0, 2).toUpperCase());
     }
 
-    const cpSub = $('cpSub');
-    if (cpSub) cpSub.textContent = current.bot ? 'Asistente de Csariel\'s' : 'Csariel\'s';
-
-    const cpStatusDot = $('cpStatusDot');
-    if (cpStatusDot) cpStatusDot.hidden = !(current.profile?.online && !current.bot);
-
-    const cpVerPerfil = $('cpVerPerfil'); if (cpVerPerfil) cpVerPerfil.hidden = !!current.bot;
-    const cpBtnCall = $('cpBtnCall'); if (cpBtnCall) cpBtnCall.disabled = !!current.bot || !window.__livekitReady;
-    const cpBtnVideo = $('cpBtnVideo'); if (cpBtnVideo) cpBtnVideo.disabled = !!current.bot || !window.__livekitReady;
-    const cpBtnMute = $('cpBtnMute'); if (cpBtnMute) cpBtnMute.hidden = !!current.bot;
-    const cpActionBlock = $('cpActionBlock'); if (cpActionBlock) cpActionBlock.hidden = !!current.bot;
-    const cpActionDelete = $('cpActionDelete'); if (cpActionDelete) cpActionDelete.hidden = false;
+    $('cpSub').textContent = current.bot ? 'Asistente de Csariel\'s' : 'Csariel\'s';
+    $('cpStatusDot').hidden = !(current.profile?.online && !current.bot);
+    $('cpVerPerfil').hidden = !!current.bot;
+    $('cpBtnCall').disabled = !!current.bot || !window.__livekitReady;
+    $('cpBtnVideo').disabled = !!current.bot || !window.__livekitReady;
+    $('cpBtnMute').hidden = !!current.bot;
+    $('cpActionBlock').hidden = !!current.bot;
+    $('cpActionDelete').hidden = false;
 
     if (!current.bot) aplicarEstadoBloqueo(current.bloqueo || { yo: false, el: false });
 
@@ -1755,16 +1529,9 @@ function configurarInfoChat() {
     if (!header || header.dataset.infoListeners) return;
     header.dataset.infoListeners = '1';
 
-    // Guardias en TODOS los addEventListener para que un ID faltante
-    // no rompa la inicialización completa del módulo.
-    const on = (id, ev, fn) => {
-        const el = $(id);
-        if (el) el.addEventListener(ev, fn);
-    };
+    $('chatInfoTrigger').addEventListener('click', abrirInfoChat);
 
-    on('chatInfoTrigger', 'click', abrirInfoChat);
-
-    on('chatAvatar', 'click', () => {
+    $('chatAvatar').addEventListener('click', () => {
         if (!current) return;
         if (!current.bot && current.profile && current.profile.avatar_url && typeof verFotoAmpliada === 'function') {
             verFotoAmpliada(current.profile.avatar_url, current.profile.nombre, current.profile.handle);
@@ -1773,43 +1540,40 @@ function configurarInfoChat() {
         abrirInfoChat();
     });
 
-    on('chatSettings', 'click', abrirInfoChat);
-    on('cpBackBtn', 'click', cerrarInfoChat);
-    on('contactProfileOverlay', 'click', e => {
+    $('chatSettings').addEventListener('click', abrirInfoChat);
+    $('cpBackBtn').addEventListener('click', cerrarInfoChat);
+    $('contactProfileOverlay').addEventListener('click', e => {
         if (e.target === $('contactProfileOverlay')) cerrarInfoChat();
     });
     document.addEventListener('keydown', e => {
-        const ov = $('contactProfileOverlay');
-        if (e.key === 'Escape' && ov && ov.classList.contains('open')) cerrarInfoChat();
+        if (e.key === 'Escape' && $('contactProfileOverlay').classList.contains('open')) cerrarInfoChat();
     });
 
-    on('cpVerPerfil', 'click', verPerfilDelContacto);
-    on('cpBtnCall', 'click', () => {
+    $('cpVerPerfil').addEventListener('click', verPerfilDelContacto);
+    $('cpBtnCall').addEventListener('click', () => {
         cerrarInfoChat();
         if (typeof window.startCall === 'function') window.startCall('audio');
     });
-    on('cpBtnVideo', 'click', () => {
+    $('cpBtnVideo').addEventListener('click', () => {
         cerrarInfoChat();
         if (typeof window.startCall === 'function') window.startCall('video');
     });
-    on('cpActionSearch', 'click', () => {
+    $('cpActionSearch').addEventListener('click', () => {
         cerrarInfoChat();
         const b = $('searchChat');
         if (b) b.click();
     });
-    on('cpBtnMute', 'click', () => toast('Silenciar llegará en una próxima versión.', 'warning'));
-    on('cpActionMarkRead', 'click', () => toast('Marcado como no leído.', 'success'));
-    on('cpActionNickname', 'click', () => toast('Apodos llegará en una próxima versión.', 'warning'));
-    on('cpActionBlock', 'click', () => bloquearUsuarioActual());
-    on('cpActionDelete', 'click', async () => {
+    $('cpBtnMute').addEventListener('click', () => toast('Silenciar llegará en una próxima versión.', 'warning'));
+    $('cpActionMarkRead').addEventListener('click', () => toast('Marcado como no leído.', 'success'));
+    $('cpActionNickname').addEventListener('click', () => toast('Apodos llegará en una próxima versión.', 'warning'));
+    $('cpActionBlock').addEventListener('click', () => bloquearUsuarioActual());
+    $('cpActionDelete').addEventListener('click', async () => {
         cerrarInfoChat();
         await deleteConversation();
     });
-    on('cpActionReport', 'click', () => toast('Reporte enviado. Gracias por avisarnos.', 'success'));
-    on('cpActionReadReceipts', 'click', () => {
-        const el = $('cpActionReadReceipts');
-        if (!el) return;
-        const t = el.querySelector('.cp-list-toggle');
+    $('cpActionReport').addEventListener('click', () => toast('Reporte enviado. Gracias por avisarnos.', 'success'));
+    $('cpActionReadReceipts').addEventListener('click', () => {
+        const t = $('cpActionReadReceipts').querySelector('.cp-list-toggle');
         if (t) t.textContent = t.textContent === 'Activado' ? 'Desactivado' : 'Activado';
     });
 
