@@ -1,494 +1,177 @@
 <!DOCTYPE html>
 <html lang="es" data-public>
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title data-clave="perfil_publico_titulo_pagina">◈ Perfil · Csariel's</title>
-
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-size='50' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
-
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
+<script src="/features/shared/js/api-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/features/shared/js/auth-global.js"></script>
-<script src="/features/shared/js/apariencia-global.js?v=6" defer></script>
+<script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
+
+<!-- CSS compartido con el perfil propio -->
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
+<link rel="stylesheet" href="/features/perfil/css/emojis-animations.css">
+<link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
+<link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
 
 <style>
-html:not(.auth-ready) .app{display:none!important}
-[hidden]{display:none!important}
+    html:not(.auth-ready) .app { display: none !important; }
 
-.pp-estado{display:flex;align-items:center;gap:6px;margin-top:6px;font-size:.75rem;color:var(--text-secondary)}
-.pp-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
-.pp-dot.activo{background:var(--success);box-shadow:0 0 8px var(--success)}
-.pp-dot.inactivo{background:var(--text-muted)}
-.pp-wallet{cursor:pointer;font-family:monospace;border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.05)}
-.pp-acciones-sociales{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
-.pp-volver{width:100%;justify-content:center;margin-top:16px}
-.pp-mensaje{text-align:center;padding:30px 10px}
-.pp-mensaje .btn{margin-top:14px}
+    .btn, .btn-outline, .nav-link, .tab-btn { -webkit-tap-highlight-color: transparent; }
+    .anuncios-imagen-contenedor img { display: block; width: 100%; max-width: 100%; height: auto; max-height: 260px; object-fit: cover; border-radius: 16px; }
 
-/* =====================================
-   @HANDLE WEB3 · MISMO ESTILO QUE EN PUBLICACIONES
-===================================== */
-.perfil-header .handle{
- display:inline-flex;
- align-items:center;
- gap:4px;
- padding:2px 10px 2px 8px;
- border-radius:999px;
- color:#5cc8ff;
- font-weight:600;
- font-size:.8rem;
- background:linear-gradient(135deg,rgba(0,229,255,.12),rgba(139,92,246,.16));
- border:1px solid rgba(0,229,255,.35);
- text-shadow:0 0 8px rgba(0,229,255,.55);
- animation:ppHandleHalo 2.4s ease-in-out infinite;
-}
-.perfil-header .handle::before{
- content:'⚡';
- font-size:.7rem;
- line-height:1;
- filter:drop-shadow(0 0 4px rgba(0,229,255,.9));
- animation:ppHandleDestello 1.8s steps(2,end) infinite;
-}
-@keyframes ppHandleHalo{
- 0%,100%{box-shadow:0 0 6px rgba(0,229,255,.15)}
- 50%{box-shadow:0 0 14px rgba(0,229,255,.45),0 0 22px rgba(139,92,246,.25)}
-}
-@keyframes ppHandleDestello{
- 0%,100%{opacity:1}
- 50%{opacity:.35}
-}
-@media (prefers-reduced-motion: reduce){
- .perfil-header .handle,
- .perfil-header .handle::before{animation:none!important}
-}
+    /* ================= CABECERA · @HANDLE (igual que perfil propio) ================= */
+    .perfil-header #pvHandle {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        margin-top: 4px;
+        padding: 3px 12px 3px 9px;
+        border-radius: 999px;
+        color: #5cc8ff !important;
+        font-weight: 600;
+        font-size: .82rem;
+        letter-spacing: .2px;
+        background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16));
+        border: 1px solid rgba(0, 229, 255, .38);
+        text-shadow: 0 0 8px rgba(0, 229, 255, .5);
+        box-shadow: 0 0 10px rgba(0, 229, 255, .12);
+        animation: pvHandleHalo 2.4s ease-in-out infinite;
+    }
+    .perfil-header #pvHandle::before {
+        content: '⚡';
+        font-size: .72rem;
+        line-height: 1;
+        filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
+        animation: pvHandleDestello 1.8s steps(2, end) infinite;
+    }
+    @keyframes pvHandleHalo {
+        0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
+        50%      { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
+    }
+    @keyframes pvHandleDestello {
+        0%, 100% { opacity: 1; }
+        50%      { opacity: .35; }
+    }
 
-/* =====================================
-   PUBLICACIONES DEL PERFIL (solo contactos)
-===================================== */
-.pub-section{
- max-width:720px;
- margin:18px auto 0;
- padding:0 16px;
- box-sizing:border-box;
-}
-.pub-head{
- display:flex;
- align-items:center;
- justify-content:space-between;
- padding:12px 0;
- border-bottom:1px solid rgba(255,255,255,.09);
-}
-.pub-head h3{
- margin:0;
- font-family:Orbitron,monospace;
- font-size:.8rem;
- letter-spacing:.12em;
- text-transform:uppercase;
- color:#bfefff;
-}
-.pub-head span{font-size:.7rem;color:#6f8ba0}
-.pub-msg{
- margin:14px 0;
- text-align:center;
- font-size:.8rem;
- color:#8aa8b8;
- line-height:1.5;
-}
-.pub-post{
- display:flex;
- gap:12px;
- padding:14px 0;
- border-bottom:1px solid rgba(255,255,255,.07);
-}
-.pub-av{
- width:42px;height:42px;flex:0 0 42px;
- border-radius:50%;
- overflow:hidden;
- display:flex;align-items:center;justify-content:center;
- background:linear-gradient(135deg,#0F2D1A,#D4AF37);
- color:#fff;font-weight:700;
- border:1.5px solid rgba(0,229,255,.45);
-}
-.pub-av img{width:100%;height:100%;object-fit:cover}
-.pub-meta{min-width:0;flex:1}
-.pub-nombre{font-weight:700;font-size:.9rem;color:#f5fbff}
-.pub-sub{font-size:.7rem;color:#6f8ba0;margin-top:2px}
-.pub-texto{
- margin-top:8px;
- font-size:.92rem;
- line-height:1.55;
- color:#d5e4ef;
- white-space:pre-wrap;
- word-break:break-word;
-}
-.pub-img{
- display:block;
- width:100%;
- max-height:420px;
- object-fit:cover;
- border-radius:14px;
- margin-top:10px;
- background:#050a12;
-}
-.pub-venta{
- display:inline-block;
- margin-top:10px;
- padding:4px 10px;
- border-radius:999px;
- font-size:.7rem;
- color:#D4AF37;
- border:1px solid rgba(212,175,55,.35);
- background:rgba(212,175,55,.08);
-}
-.pub-aviso{margin-top:8px;font-size:.7rem;color:#f7d44a}
-.pub-mas{display:block;margin:14px auto 0}
+    .perfil-header #pvAvatar,
+    .perfil-header .avatar {
+        border: 2px solid rgba(0, 229, 255, .55) !important;
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, .18), 0 0 22px rgba(0, 229, 255, .28) !important;
+    }
 
-/* =====================================
-   MI ECOSISTEMA PLEGADO
-===================================== */
-.eco-details{margin:22px 0 28px}
-.eco-details > summary{
- list-style:none;
- cursor:pointer;
- display:flex;
- align-items:center;
- justify-content:space-between;
- gap:12px;
- padding:14px 16px;
- border:1px solid rgba(0,229,255,.22);
- border-radius:18px;
- background:linear-gradient(160deg,#06111e,#020811);
- color:#eaf7ff;
- font-family:Orbitron,monospace;
- font-size:.74rem;
- letter-spacing:.1em;
- text-transform:uppercase;
-}
-.eco-details > summary::-webkit-details-marker{display:none}
-.eco-details > summary::after{
- content:'+';
- color:#00e5ff;
- font-size:1.2rem;
- line-height:1;
-}
-.eco-details[open] > summary::after{content:'−'}
-.eco-details .ecosistema{margin:14px 0 0}
+    .perfil-header .stats .number {
+        font-family: Orbitron, Inter, sans-serif !important;
+        font-weight: 700;
+        color: #f5fbff;
+        font-size: 1.15rem;
+        line-height: 1.1;
+        font-variant-numeric: tabular-nums;
+    }
+    .perfil-header .stats .label {
+        font-family: Inter, sans-serif;
+        font-size: .6rem;
+        letter-spacing: .12em;
+        color: #8aa8b8;
+        text-transform: uppercase;
+    }
 
-/* =====================================
-   CARRUSEL MI ECOSISTEMA · CSARIEL'S
-===================================== */
+    .pv-estado { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: .75rem; color: #9fb3c8; }
+    .pv-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+    .pv-dot.activo { background: var(--success, #00d68f); box-shadow: 0 0 8px var(--success, #00d68f); }
+    .pv-dot.inactivo { background: var(--text-muted, #6b7d90); }
 
-.ecosistema{
- --eco-cyan:#00e5ff;
- position:relative;
- isolation:isolate;
- overflow:hidden;
- margin:22px 0 28px;
- padding:24px 12px 20px;
- border:1px solid rgba(0,229,255,.22);
- border-radius:28px;
- background:
- radial-gradient(ellipse at 50% 35%,rgba(0,117,180,.19),transparent 55%),
- linear-gradient(160deg,#06111e,#020811 65%,#071021);
- color:#eaf7ff;
- box-shadow:0 18px 55px rgba(0,0,0,.28),inset 0 0 35px rgba(0,229,255,.035);
-}
+    .pv-wallet {
+        margin-top: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        border-radius: 999px;
+        border: 1px solid rgba(0, 229, 255, .35);
+        background: rgba(0, 229, 255, .05);
+        color: #5cc8ff;
+        font-family: monospace;
+        font-size: .72rem;
+        cursor: pointer;
+    }
 
-.ecosistema *{box-sizing:border-box}
+    .pv-acciones { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
+    .pv-volver { width: 100%; justify-content: center; margin-top: 14px; }
 
-.eco-heading{
- text-align:center;
- margin:0 auto 18px;
- max-width:650px;
-}
+    /* ================= PASAPORTE DEL VISITANTE (sin correo ni transacciones) ================= */
+    #pvPasaporte { margin: 0 0 12px; }
+    .pv-pasaporte {
+        position: relative;
+        padding: 18px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+        color: #f0f4f8;
+    }
+    .pv-pasaporte-sello {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: 'Orbitron', monospace;
+        font-size: .6rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        color: #D4AF37;
+        margin-bottom: 10px;
+    }
+    .pv-pasaporte-titulo { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
+    .pv-pasaporte-sub { font-size: .8rem; color: #9fb3c8; line-height: 1.5; }
+    .pv-pasaporte-verif {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 10px;
+        font-size: .72rem;
+        font-weight: 600;
+        color: #00d68f;
+    }
 
-.eco-kicker{
- display:inline-flex;
- align-items:center;
- gap:7px;
- padding:6px 11px;
- border:1px solid rgba(0,229,255,.35);
- border-radius:99px;
- color:#65efff;
- font-size:.68rem;
- letter-spacing:.13em;
- text-transform:uppercase;
-}
+    /* ================= PUBLICACIONES (solo lectura) ================= */
+    .pv-pub-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 6px; }
+    .pv-pub-head h3 { margin: 0; font-family: Orbitron, monospace; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: #bfefff; }
+    .pv-pub-contador { font-size: .7rem; color: #6f8ba0; }
+    .pv-pub-msg { margin: 14px 16px; text-align: center; font-size: .82rem; color: #8aa8b8; line-height: 1.5; }
+    .pv-post { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
+    .pv-post-av {
+        width: 42px; height: 42px; flex: 0 0 42px;
+        border-radius: 50%; overflow: hidden;
+        display: flex; align-items: center; justify-content: center;
+        background: linear-gradient(135deg, #0F2D1A, #D4AF37);
+        color: #fff; font-weight: 700;
+        border: 1.5px solid rgba(0, 229, 255, .45);
+    }
+    .pv-post-av img { width: 100%; height: 100%; object-fit: cover; }
+    .pv-post-meta { min-width: 0; flex: 1; }
+    .pv-post-nombre { font-weight: 700; font-size: .9rem; color: #f5fbff; }
+    .pv-post-sub { font-size: .7rem; color: #6f8ba0; margin-top: 2px; }
+    .pv-post-texto { margin-top: 8px; font-size: .92rem; line-height: 1.55; color: #d5e4ef; white-space: pre-wrap; word-break: break-word; }
+    .pv-post-img { display: block; width: 100%; max-height: 420px; object-fit: cover; border-radius: 14px; margin-top: 10px; background: #050a12; }
+    .pv-post-venta {
+        display: inline-block; margin-top: 10px; padding: 4px 10px; border-radius: 999px;
+        font-size: .7rem; color: #D4AF37; border: 1px solid rgba(212, 175, 55, .35); background: rgba(212, 175, 55, .08);
+    }
+    .pv-post-aviso { margin-top: 8px; font-size: .7rem; color: #f7d44a; }
+    .pv-mas { display: block; margin: 14px auto 16px; }
 
-.eco-heading h2{
- font-family:Inter,sans-serif;
- font-size:clamp(1.35rem,5vw,2rem);
- line-height:1.2;
- margin:13px 0 8px;
- color:#f5fbff;
-}
+    /* ================= ESTADOS DE PANTALLA ================= */
+    .pv-mensaje { text-align: center; padding: 30px 12px; }
+    .pv-mensaje .btn { margin-top: 14px; }
 
-.eco-heading h2 span{color:var(--eco-cyan)}
-
-.eco-heading p{
- margin:0;
- color:#9eb9d2;
- font-size:.88rem;
- line-height:1.55;
-}
-
-.eco-carousel{position:relative;padding:9px 0 16px}
-
-.eco-track{
- display:flex;
- align-items:center;
- gap:12px;
- overflow-x:auto;
- overscroll-behavior-x:contain;
- scroll-snap-type:x mandatory;
- scroll-behavior:smooth;
- padding:12px max(12px,calc((100% - 240px)/2)) 20px;
- scrollbar-width:none;
- -webkit-overflow-scrolling:touch;
-}
-
-.eco-track::-webkit-scrollbar{display:none}
-
-.eco-card{
- position:relative;
- flex:0 0 76%;
- max-width:270px;
- min-height:290px;
- scroll-snap-align:center;
- display:flex;
- flex-direction:column;
- justify-content:flex-end;
- gap:10px;
- padding:18px;
- overflow:hidden;
- border:1px solid var(--eco-color,#00e5ff);
- border-radius:23px;
- background:
- radial-gradient(ellipse at 50% 15%,color-mix(in srgb,var(--eco-color,#00e5ff) 19%,transparent),transparent 55%),
- linear-gradient(155deg,#10243a,#050d19 78%);
- box-shadow:0 0 20px color-mix(in srgb,var(--eco-color,#00e5ff) 12%,transparent);
- transform:scale(.91);
- opacity:.78;
- transition:transform .28s ease,opacity .28s ease,box-shadow .28s ease;
- color:#f3f9ff;
- text-align:left;
- cursor:pointer;
- font:inherit;
-}
-
-.eco-card.is-active{
- transform:scale(1);
- opacity:1;
- box-shadow:0 0 26px color-mix(in srgb,var(--eco-color,#00e5ff) 24%,transparent),inset 0 0 25px rgba(255,255,255,.025);
-}
-
-.eco-art{
- position:absolute;
- inset:0 0 35% 0;
- display:grid;
- place-items:center;
- overflow:hidden;
- pointer-events:none;
-}
-
-.eco-art:before{
- content:"";
- position:absolute;
- width:190px;
- height:190px;
- border-radius:50%;
- background:radial-gradient(circle,var(--eco-color,#00e5ff),transparent 68%);
- opacity:.19;
- filter:blur(12px);
-}
-
-.eco-symbol{
- position:relative;
- display:grid;
- place-items:center;
- width:104px;
- height:104px;
- border:1px solid color-mix(in srgb,var(--eco-color,#00e5ff) 75%,transparent);
- border-radius:28px;
- color:var(--eco-color,#00e5ff);
- font-size:3.3rem;
- text-shadow:0 0 22px var(--eco-color,#00e5ff);
- background:rgba(1,8,18,.5);
- transform:rotate(-7deg);
-}
-
-.eco-number{
- position:absolute;
- top:13px;
- left:14px;
- color:var(--eco-color,#00e5ff);
- font:700 .65rem Orbitron,monospace;
- letter-spacing:.12em;
-}
-
-.eco-card h3{
- position:relative;
- margin:0;
- font-size:1.22rem;
- line-height:1.2;
-}
-
-.eco-card p{
- position:relative;
- margin:0;
- color:#b5cce0;
- font-size:.82rem;
- line-height:1.45;
- min-height:2.4em;
-}
-
-.eco-card .eco-open{
- position:relative;
- display:flex;
- align-items:center;
- justify-content:space-between;
- gap:8px;
- margin-top:3px;
- padding:10px 12px;
- border:1px solid var(--eco-color,#00e5ff);
- border-radius:99px;
- color:#eafaff;
- font-size:.8rem;
- font-weight:700;
-}
-
-.eco-card .eco-open span:last-child{
- color:var(--eco-color,#00e5ff);
- font-size:1.1rem;
-}
-
-.eco-card[data-section="ecosistema"]{--eco-color:#00e5ff}
-.eco-card[data-section="cripto"]{--eco-color:#28c9ff}
-.eco-card[data-section="tienda"]{--eco-color:#e34cff}
-.eco-card[data-section="social"]{--eco-color:#ff4ca6}
-.eco-card[data-section="live"]{--eco-color:#ff315d}
-.eco-card[data-section="mensajes"]{--eco-color:#2be7b5}
-.eco-card[data-section="pagos"]{--eco-color:#ffc247}
-.eco-card[data-section="servicios"]{--eco-color:#4d9dff}
-
-.eco-controls{
- display:flex;
- align-items:center;
- justify-content:center;
- gap:15px;
-}
-
-.eco-arrow{
- display:grid;
- place-items:center;
- width:38px;
- height:38px;
- border-radius:50%;
- border:1px solid rgba(0,229,255,.6);
- background:#041321;
- color:#00e5ff;
- font-size:1.25rem;
- cursor:pointer;
-}
-
-.eco-dots{
- display:flex;
- align-items:center;
- justify-content:center;
- gap:7px;
-}
-
-.eco-dot{
- width:7px;
- height:7px;
- padding:0;
- border:0;
- border-radius:99px;
- background:#526a84;
- cursor:pointer;
- transition:width .2s,background .2s;
-}
-
-.eco-dot[aria-current="true"]{
- width:23px;
- background:#00e5ff;
- box-shadow:0 0 10px #00e5ff;
-}
-
-.eco-description{
- margin:18px 3px 0;
- padding:19px 14px;
- border:1px solid rgba(0,229,255,.18);
- border-radius:20px;
- background:rgba(0,14,28,.62);
- text-align:center;
-}
-
-.eco-description h3{
- margin:0 0 8px;
- font-size:1.2rem;
- color:#00e5ff;
-}
-
-.eco-description p{
- margin:0;
- color:#a9c2d9;
- font-size:.86rem;
- line-height:1.6;
-}
-
-.eco-features{
- display:grid;
- grid-template-columns:repeat(2,minmax(0,1fr));
- gap:8px;
- margin-top:14px;
-}
-
-.eco-feature{
- padding:13px 8px;
- border:1px solid rgba(0,229,255,.16);
- border-radius:14px;
- text-align:center;
- background:rgba(3,20,35,.68);
-}
-
-.eco-feature b{
- display:block;
- margin-bottom:5px;
- color:#e5f8ff;
- font-size:.78rem;
-}
-
-.eco-feature span{color:#00e5ff;font-size:1.35rem}
-
-.eco-hint{
- text-align:center;
- color:#7597b3;
- font-size:.72rem;
- margin:10px 0 0;
-}
-
-@media(min-width:700px){
- .ecosistema{padding:30px 24px}
- .eco-track{
-  padding-left:calc((100% - 280px)/2);
-  padding-right:calc((100% - 280px)/2);
-  gap:18px;
- }
- .eco-card{flex-basis:280px;min-height:330px}
- .eco-features{grid-template-columns:repeat(4,minmax(0,1fr))}
-}
-
-@media(prefers-reduced-motion:reduce){
- .eco-track{scroll-behavior:auto}
- .eco-card,.eco-dot{transition:none}
-}
+    @media (prefers-reduced-motion: reduce) {
+        .perfil-header #pvHandle,
+        .perfil-header #pvHandle::before { animation: none !important; }
+    }
 </style>
 </head>
-
 <body>
 
 <canvas id="stars-canvas"></canvas>
@@ -499,1413 +182,723 @@ html:not(.auth-ready) .app{display:none!important}
 <div class="app">
 
 <header class="header">
- <a href="/" class="logo">
-  <span class="logo-hex">◈</span>
-  <span class="logo-text">Csariel<span>'s</span></span>
-  <span class="logo-badge">✦ WEB3</span>
- </a>
-
- <div class="header-actions">
-  <span class="network-badge" data-no-traducir="1">
-   <span class="dot"></span> Polygon
-  </span>
- </div>
+    <a href="/" class="logo">
+        <span class="logo-hex">◈</span>
+        <span class="logo-text">Csariel<span>'s</span></span>
+        <span class="logo-badge">✦ WEB3</span>
+    </a>
+    <div class="header-actions">
+        <span class="network-badge" data-no-traducir="1"><span class="dot"></span> Polygon</span>
+    </div>
 </header>
 
 <nav class="main-nav">
-
- <a href="/" class="nav-link">
-  <svg class="icon icon-sm" viewBox="0 0 24 24">
-   <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-   <polyline points="9 22 9 12 15 12 15 22"/>
-  </svg>
-  <span data-clave="nav_inicio">Inicio</span>
- </a>
-
- <a href="/features/muro/muro.html" class="nav-link">
-  <svg class="icon icon-sm" viewBox="0 0 24 24">
-   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-  </svg>
-  <span data-clave="nav_muro">Muro</span>
- </a>
-
- <a href="/features/perfil/perfil.html" class="nav-link">
-  <svg class="icon icon-sm" viewBox="0 0 24 24">
-   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-   <circle cx="12" cy="7" r="4"/>
-  </svg>
-  <span data-clave="nav_perfil">Perfil</span>
- </a>
-
- <a href="/features/contactos/contactos.html" class="nav-link">
-  <svg class="icon icon-sm" viewBox="0 0 24 24">
-   <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-   <circle cx="9" cy="7" r="4"/>
-   <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-  </svg>
-  <span data-clave="nav_contactos">Contactos</span>
- </a>
-
- <a href="/features/live/live.html" class="nav-link live">
-  <svg class="icon icon-sm" viewBox="0 0 24 24">
-   <path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/>
-   <circle cx="12" cy="12" r="2"/>
-  </svg>
-  <span data-clave="nav_live">Live</span>
- </a>
-
- <a href="/features/internet/internet.html" class="nav-link">
-  <svg class="icon icon-sm" viewBox="0 0 24 24">
-   <path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/>
-   <circle cx="12" cy="12" r="2"/>
-  </svg>
-  <span data-clave="nav_internet">Internet</span>
- </a>
-
+    <a href="/" class="nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span data-clave="nav_inicio">Inicio</span>
+    </a>
+    <a href="/features/muro/muro.html" class="nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span data-clave="nav_muro">Muro</span>
+    </a>
+    <a href="/features/noticias/noticias.html" class="nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0V8"/><line x1="12" y1="6" x2="18" y2="6"/><line x1="12" y1="10" x2="18" y2="10"/><line x1="12" y1="14" x2="16" y2="14"/></svg>
+        <span data-clave="nav_noticias">Noticias</span>
+    </a>
+    <a href="/features/perfil/perfil.html" class="nav-link active">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <span data-clave="nav_perfil">Perfil</span>
+    </a>
+    <a href="/features/contactos/contactos.html" class="nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span data-clave="nav_contactos">Contactos</span>
+    </a>
+    <a href="/features/live/live.html" class="nav-link live">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
+        <span data-clave="nav_live">Live</span>
+    </a>
+    <a href="/features/internet/internet.html" class="nav-link">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>
+        <span data-clave="nav_internet">Internet</span>
+    </a>
 </nav>
 
-<!-- =====================================
-     PERFIL PÚBLICO (primero: lo importante es la persona)
-====================================== -->
+<!-- ============ CARRUSEL 3D HORIZONTAL ============ -->
+<div class="carrusel-3d-wrapper">
+    <div class="carrusel-3d-track"></div>
+</div>
 
 <div class="perfil-container">
 
- <div id="pantallaCargando" class="panel">
-  <div class="panel-body">
-   <div class="empty-state">
-    <svg class="icon" viewBox="0 0 24 24">
-     <path d="M6 3h12l4 6-10 12L2 9l4-6z"/>
-     <path d="M2 9h20M12 3l-4 6 4 12 4-12-4-6"/>
-    </svg>
-    <h4 data-clave="perfil_publico_cargando">Cargando perfil...</h4>
-   </div>
-  </div>
- </div>
+    <!-- Estados de carga y error -->
+    <div id="pvCargando" class="panel">
+        <div class="panel-body">
+            <div class="empty-state">
+                <h4 data-clave="perfil_publico_cargando">Cargando perfil...</h4>
+            </div>
+        </div>
+    </div>
 
- <div id="pantallaNoEncontrado" class="panel" hidden>
-  <div class="panel-body pp-mensaje">
-   <h4 data-clave="perfil_publico_no_encontrado">Perfil no encontrado</h4>
-   <p data-clave="perfil_publico_no_encontrado_desc">
-    No existe ningún usuario con ese nombre de usuario.
-   </p>
-   <a href="/features/contactos/contactos.html"
-      class="btn btn-outline btn-sm"
-      data-clave="perfil_publico_volver_muro">← Volver</a>
-  </div>
- </div>
+    <div id="pvNoEncontrado" class="panel" hidden>
+        <div class="panel-body pv-mensaje">
+            <h4 id="pvNoEncontradoTitulo" data-clave="perfil_publico_no_encontrado">Perfil no encontrado</h4>
+            <p id="pvNoEncontradoTexto" data-clave="perfil_publico_no_encontrado_desc">No existe ningún usuario con ese nombre de usuario.</p>
+            <a href="/features/contactos/contactos.html" class="btn btn-outline btn-sm">← Volver</a>
+        </div>
+    </div>
 
- <div id="pantallaError" class="panel" hidden>
-  <div class="panel-body pp-mensaje">
-   <p data-clave="perfil_publico_error_cargar">
-    No pudimos cargar este perfil. Intenta de nuevo.
-   </p>
-   <button type="button" id="btnReintentar"
-           class="btn btn-outline btn-sm"
-           data-clave="perfil_publico_reintentar">Reintentar</button>
-  </div>
- </div>
+    <div id="pvError" class="panel" hidden>
+        <div class="panel-body pv-mensaje">
+            <p id="pvErrorTexto" data-clave="perfil_publico_error_cargar">No pudimos cargar este perfil. Intenta de nuevo.</p>
+            <button type="button" id="pvReintentar" class="btn btn-outline btn-sm">Reintentar</button>
+        </div>
+    </div>
 
- <div id="pantallaPerfil" class="perfil-header" hidden>
+    <!-- Perfil del visitante -->
+    <div id="pvPerfil" hidden>
 
-  <div class="avatar-container">
-   <div class="avatar" id="pubAvatar">◈</div>
-  </div>
+        <div class="perfil-header">
 
-  <div class="info">
+            <div class="avatar-container">
+                <div class="avatar" id="pvAvatar">◈</div>
+            </div>
 
-   <div class="nombre">
-    <span id="pubNombre" data-no-traducir="1"></span>
-    <span class="verified" id="pubVerificado"
-          data-clave="perfil_publico_verificado" hidden>✦ VERIFICADO</span>
-   </div>
+            <div class="info">
+                <div class="nombre">
+                    <span id="pvNombre" data-no-traducir="1"></span>
+                    <span class="verified" id="pvVerificado" data-clave="perfil_badge_verificado" hidden>
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                        VERIFICADO
+                    </span>
+                </div>
 
-   <div class="handle" id="pubHandle"></div>
+                <div class="handle" id="pvHandle"></div>
 
-   <div class="pp-estado" id="pubEstado" hidden>
-    <span class="pp-dot" id="pubEstadoDot"></span>
-    <span id="pubEstadoTexto"></span>
-   </div>
+                <div class="pv-estado" id="pvEstado" hidden>
+                    <span class="pv-dot" id="pvEstadoDot"></span>
+                    <span id="pvEstadoTexto"></span>
+                </div>
 
-   <div class="badges">
-    <button type="button" class="badge pp-wallet" id="walletChip" hidden>
-     <span data-clave="perfil_publico_wallet_publica">Wallet pública</span>:
-     <span id="walletDir" data-no-traducir="1"></span>
-    </button>
+                <div class="badges">
+                    <span class="badge gold" data-clave="perfil_badge_miembro">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg>
+                        MIEMBRO
+                    </span>
+                    <span class="badge" data-clave="perfil_badge_web3">
+                        <svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/><polygon points="12 7 16 9.5 16 14.5 12 17 8 14.5 8 9.5 12 7"/></svg>
+                        WEB3
+                    </span>
+                </div>
 
-    <span class="badge" data-no-traducir="1">WEB3</span>
-   </div>
+                <button type="button" class="pv-wallet" id="pvWallet" hidden>
+                    <span>Wallet</span>
+                    <span id="pvWalletDir" data-no-traducir="1"></span>
+                </button>
+            </div>
 
-  </div>
+            <div class="stats">
+                <div class="stat">
+                    <div class="number" id="pvSeguidores">0</div>
+                    <div class="label" data-clave="perfil_stat_seguidores">Seguidores</div>
+                </div>
+                <div class="stat">
+                    <div class="number" id="pvSiguiendo">0</div>
+                    <div class="label" data-clave="perfil_stat_siguiendo">Siguiendo</div>
+                </div>
+            </div>
 
-  <div class="stats">
+            <div class="pv-acciones">
+                <button type="button" class="btn btn-outline btn-sm" id="pvCompartir" data-clave="perfil_compartir">Compartir</button>
+            </div>
 
-   <div class="stat">
-    <div class="number" id="pubSeguidores">0</div>
-    <div class="label" data-clave="perfil_publico_seguidores">Seguidores</div>
-   </div>
+            <a href="/features/contactos/contactos.html" id="pvVolver" class="btn btn-outline pv-volver">← Volver</a>
+        </div>
 
-   <div class="stat">
-    <div class="number" id="pubSiguiendo">0</div>
-    <div class="label" data-clave="perfil_publico_siguiendo">Siguiendo</div>
-   </div>
+        <!-- Pasaporte del visitante -->
+        <section id="pvPasaporte" aria-label="Identidad"></section>
 
-  </div>
+        <!-- Publicaciones (solo contactos, validado en la base) -->
+        <section class="panel" id="pvPubSection" hidden>
+            <div class="pv-pub-head">
+                <h3 data-clave="perfil_mis_publicaciones">Publicaciones</h3>
+                <span class="pv-pub-contador" id="pvPubContador"></span>
+            </div>
+            <p class="pv-pub-msg" id="pvPubMsg" hidden></p>
+            <div id="pvPubLista"></div>
+            <button type="button" class="btn btn-outline btn-sm pv-mas" id="pvPubMas" hidden>Cargar más</button>
+        </section>
 
-  <div class="acciones">
-   <button type="button" class="btn btn-outline btn-sm" id="btnCompartir">
-    <svg class="icon icon-sm" viewBox="0 0 24 24">
-     <circle cx="18" cy="5" r="3"/>
-     <circle cx="6" cy="12" r="3"/>
-     <circle cx="18" cy="19" r="3"/>
-     <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
-     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
-    </svg>
-    <span id="btnCompartirTxt" data-clave="perfil_publico_compartir">Compartir</span>
-   </button>
-  </div>
-
-  <div class="pp-acciones-sociales">
-   <a id="linkWhatsapp" class="btn btn-outline btn-sm"
-      target="_blank" rel="noopener" data-no-traducir="1">WhatsApp</a>
-
-   <a id="linkX" class="btn btn-outline btn-sm"
-      target="_blank" rel="noopener" data-no-traducir="1">X</a>
-
-   <a id="linkTelegram" class="btn btn-outline btn-sm"
-      target="_blank" rel="noopener" data-no-traducir="1">Telegram</a>
-  </div>
-
-  <a href="/features/contactos/contactos.html"
-     id="btnVolver"
-     class="btn btn-outline pp-volver">← Volver</a>
-
- </div>
+    </div>
 </div>
 
-<!-- =====================================
-     PUBLICACIONES DEL CONTACTO (solo contactos, validado en la base)
-====================================== -->
-<section class="pub-section" id="pubSection" aria-labelledby="pubTitulo" hidden>
- <div class="pub-head">
-  <h3 id="pubTitulo">Publicaciones</h3>
-  <span id="pubContador"></span>
- </div>
- <p class="pub-msg" id="pubMsg" hidden></p>
- <div id="pubLista"></div>
- <button type="button" class="btn btn-outline btn-sm pub-mas" id="pubMas" hidden>Cargar más</button>
-</section>
-
-<!-- =====================================
-     MI ECOSISTEMA (plegado por defecto)
-====================================== -->
-
-<details class="eco-details">
-<summary>Explora Mi Ecosistema</summary>
-
-<section class="ecosistema" aria-labelledby="ecoTitle">
-
- <div class="eco-heading">
-  <span class="eco-kicker">◈ Csariel's · WEB3</span>
-
-  <h2 id="ecoTitle">
-   Explora <span>Mi Ecosistema</span>
-  </h2>
-
-  <p>
-   Desliza las tarjetas para elegir una sección.
-   Todo tu mundo físico y digital, en un solo lugar.
-  </p>
- </div>
-
- <div class="eco-carousel">
-
-  <div class="eco-track" id="ecoTrack"
-       aria-label="Carrusel de secciones de Csariel's">
-
-   <button class="eco-card is-active"
-           type="button"
-           data-section="ecosistema"
-           data-href="/"
-           aria-label="Abrir Mi Ecosistema">
-
-    <span class="eco-number">01 / ECOSISTEMA</span>
-    <span class="eco-art"><span class="eco-symbol">◈</span></span>
-
-    <h3>Mi Ecosistema</h3>
-    <p>Todo conectado: mundo físico, digital y Web3.</p>
-
-    <span class="eco-open">
-     <span>Explorar ecosistema</span><span>→</span>
-    </span>
-   </button>
-
-   <button class="eco-card"
-           type="button"
-           data-section="cripto"
-           data-href=""
-           aria-label="Cripto y NFTs (próximamente)">
-
-    <span class="eco-number">02 / WEB3</span>
-    <span class="eco-art"><span class="eco-symbol">₿</span></span>
-
-    <h3>Cripto y NFTs</h3>
-    <p>Activos digitales, tokens y herramientas Web3.</p>
-
-    <span class="eco-open">
-     <span>Próximamente</span><span>·</span>
-    </span>
-   </button>
-
-   <button class="eco-card"
-           type="button"
-           data-section="tienda"
-           data-href=""
-           aria-label="Tienda (próximamente)">
-
-    <span class="eco-number">03 / COMERCIO</span>
-    <span class="eco-art"><span class="eco-symbol">🛍</span></span>
-
-    <h3>Tienda</h3>
-    <p>Productos físicos y digitales en un solo espacio.</p>
-
-    <span class="eco-open">
-     <span>Próximamente</span><span>·</span>
-    </span>
-   </button>
-
-   <button class="eco-card"
-           type="button"
-           data-section="social"
-           data-href="/features/muro/muro.html"
-           aria-label="Abrir Red Social">
-
-    <span class="eco-number">04 / COMUNIDAD</span>
-    <span class="eco-art"><span class="eco-symbol">♧</span></span>
-
-    <h3>Red social</h3>
-    <p>Publica, conecta, comparte y descubre la comunidad.</p>
-
-    <span class="eco-open">
-     <span>Ir al Muro</span><span>→</span>
-    </span>
-   </button>
-
-   <button class="eco-card"
-           type="button"
-           data-section="live"
-           data-href="/features/live/live.html"
-           aria-label="Abrir Live">
-
-    <span class="eco-number">05 / EN VIVO</span>
-    <span class="eco-art"><span class="eco-symbol">◉</span></span>
-
-    <h3>Live</h3>
-    <p>Transmisiones en vivo y experiencias compartidas.</p>
-
-    <span class="eco-open">
-     <span>Entrar a Live</span><span>→</span>
-    </span>
-   </button>
-
-   <button class="eco-card"
-           type="button"
-           data-section="mensajes"
-           data-href="/features/contactos/contactos.html"
-           aria-label="Abrir Contactos">
-
-    <span class="eco-number">06 / MENSAJES</span>
-    <span class="eco-art"><span class="eco-symbol">✉</span></span>
-
-    <h3>Mensajería</h3>
-    <p>Conversaciones privadas, contactos y comunidad.</p>
-
-    <span class="eco-open">
-     <span>Ver contactos</span><span>→</span>
-    </span>
-   </button>
-
-   <button class="eco-card"
-           type="button"
-           data-section="pagos"
-           data-href=""
-           aria-label="Pagos (próximamente)">
-
-    <span class="eco-number">07 / PAGOS</span>
-    <span class="eco-art"><span class="eco-symbol">＄</span></span>
-
-    <h3>Pagos</h3>
-    <p>Descubre las opciones de pago disponibles.</p>
-
-    <span class="eco-open">
-     <span>Próximamente</span><span>·</span>
-    </span>
-   </button>
-
-   <button class="eco-card"
-           type="button"
-           data-section="servicios"
-           data-href=""
-           aria-label="Servicios digitales (próximamente)">
-
-    <span class="eco-number">08 / SERVICIOS</span>
-    <span class="eco-art"><span class="eco-symbol">⚙</span></span>
-
-    <h3>Servicios digitales</h3>
-    <p>Herramientas y servicios del ecosistema.</p>
-
-    <span class="eco-open">
-     <span>Próximamente</span><span>·</span>
-    </span>
-   </button>
-
-  </div>
-
-  <div class="eco-controls">
-   <button type="button" class="eco-arrow" id="ecoPrev"
-           aria-label="Sección anterior">‹</button>
-
-   <div class="eco-dots" id="ecoDots"
-        aria-label="Elegir sección"></div>
-
-   <button type="button" class="eco-arrow" id="ecoNext"
-           aria-label="Sección siguiente">›</button>
-  </div>
-
-  <p class="eco-hint">
-   Desliza horizontalmente · Toca una tarjeta para abrir la sección
-  </p>
-
- </div>
-
- <div class="eco-description">
-  <h3>Mi Ecosistema</h3>
-
-  <p>
-   Csariel's reúne comercio, comunidad y tecnología Web3.
-   Elige una tarjeta para entrar directamente a la sección que buscas.
-  </p>
-
-  <div class="eco-features">
-
-   <div class="eco-feature">
-    <span>🛒</span>
-    <b>Comercio físico y digital</b>
-   </div>
-
-   <div class="eco-feature">
-    <span>◇</span>
-    <b>NFTs y activos digitales</b>
-   </div>
-
-   <div class="eco-feature">
-    <span>♧</span>
-    <b>Red social y comunidad</b>
-   </div>
-
-   <div class="eco-feature">
-    <span>◉</span>
-    <b>Transmisiones en vivo</b>
-   </div>
-
-   <div class="eco-feature">
-    <span>✉</span>
-    <b>Mensajería privada</b>
-   </div>
-
-   <div class="eco-feature">
-    <span>＄</span>
-    <b>Pagos y cobros</b>
-   </div>
-
-   <div class="eco-feature">
-    <span>⚙</span>
-    <b>Servicios digitales</b>
-   </div>
-
-   <div class="eco-feature">
-    <span>◈</span>
-    <b>Experiencia Web3</b>
-   </div>
-
-  </div>
- </div>
-
-</section>
-</details>
-
-<footer class="footer">
- <span data-no-traducir="1">
-  <span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3
- </span>
-
- <div class="footer-links">
-  <span style="opacity:.3;display:inline-flex;align-items:center;gap:4px"
-        data-no-traducir="1">
-   <svg class="icon icon-sm" viewBox="0 0 24 24">
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-   </svg>
-   Polygon
-  </span>
- </div>
+<footer class="footer" style="text-align: center;">
+    <span data-no-traducir="1"><span class="brand">© Csariel's</span> · Sabor al Paladar · WEB3</span>
+    <div style="margin-top: 8px; font-size: 0.75rem; opacity: 0.6;" data-no-traducir="1">Polygon</div>
 </footer>
 
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
-/* =====================================
-   CONTROL DEL CARRUSEL
-===================================== */
-(function(){
- 'use strict';
-
- var track=document.getElementById('ecoTrack');
- if(!track)return;
-
- var cards=Array.prototype.slice.call(
-  track.querySelectorAll('.eco-card')
- );
-
- var dotsWrap=document.getElementById('ecoDots');
- var prev=document.getElementById('ecoPrev');
- var next=document.getElementById('ecoNext');
- var active=0;
- var scrollTimer=null;
-
- function flashCard(card){
-  if(!card)return;
-  var label=card.querySelector('.eco-open span:first-child');
-  if(!label||label.dataset.busy==='1')return;
-  var prevText=label.textContent;
-  label.dataset.busy='1';
-  label.textContent='Disponible pronto';
-  setTimeout(function(){
-   label.textContent=prevText;
-   delete label.dataset.busy;
-  },1400);
- }
-
- cards.forEach(function(card,index){
-  var dot=document.createElement('button');
-
-  dot.type='button';
-  dot.className='eco-dot';
-  dot.setAttribute('aria-label','Mostrar sección '+(index+1));
-
-  dot.addEventListener('click',function(){
-   goTo(index);
-  });
-
-  dotsWrap.appendChild(dot);
-
-  card.addEventListener('click',function(){
-   if(index!==active){
-    goTo(index);
-    return;
-   }
-
-   var href=(card.getAttribute('data-href')||'').trim();
-
-   if(href){
-    window.location.href=href;
-   }else{
-    flashCard(card);
-   }
-  });
- });
-
- var dots=Array.prototype.slice.call(
-  dotsWrap.querySelectorAll('.eco-dot')
- );
-
- function setActive(index){
-  active=(index+cards.length)%cards.length;
-
-  cards.forEach(function(card,i){
-   card.classList.toggle('is-active',i===active);
-
-   if(i===active){
-    card.setAttribute('aria-current','true');
-   }else{
-    card.removeAttribute('aria-current');
-   }
-  });
-
-  dots.forEach(function(dot,i){
-   dot.setAttribute('aria-current',i===active?'true':'false');
-  });
- }
-
- function goTo(index){
-  active=(index+cards.length)%cards.length;
-
-  cards[active].scrollIntoView({
-   behavior:window.matchMedia(
-    '(prefers-reduced-motion: reduce)'
-   ).matches?'auto':'smooth',
-   block:'nearest',
-   inline:'center'
-  });
-
-  setActive(active);
- }
-
- function detectActive(){
-  var center=track.getBoundingClientRect().left+
-             track.clientWidth/2;
-
-  var closest=0;
-  var distance=Infinity;
-
-  cards.forEach(function(card,i){
-   var r=card.getBoundingClientRect();
-   var d=Math.abs((r.left+r.right)/2-center);
-
-   if(d<distance){
-    distance=d;
-    closest=i;
-   }
-  });
-
-  setActive(closest);
- }
-
- prev.addEventListener('click',function(){
-  goTo(active-1);
- });
-
- next.addEventListener('click',function(){
-  goTo(active+1);
- });
-
- track.addEventListener('scroll',function(){
-  if(scrollTimer)clearTimeout(scrollTimer);
-
-  scrollTimer=setTimeout(detectActive,70);
- },{passive:true});
-
- track.addEventListener('keydown',function(e){
-  if(e.key==='ArrowRight'){
-   e.preventDefault();
-   goTo(active+1);
-  }
-
-  if(e.key==='ArrowLeft'){
-   e.preventDefault();
-   goTo(active-1);
-  }
- });
-
- setActive(0);
-})();
-
-/* =====================================
-   LÓGICA DEL PERFIL PÚBLICO
-   - Perfil por @handle o por ?id= (RPC que respeta bloqueos y cuentas activas)
-   - Publicaciones solo para contactos (RPC perfil_publicaciones_contactos)
-   - Regreso con history.back() y respaldo a Contactos
-===================================== */
-(function(){
- 'use strict';
-
- var RUTA_PERFIL_PROPIO='/features/perfil/perfil.html';
- var HANDLE_RE=/^[A-Za-z0-9_]{1,40}$/;
- var UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
- var POSTS_PAGE=20;
-
- function $(id){
-  return document.getElementById(id);
- }
-
- function esNombreValido(valor){
-  var limpio=String(valor||'').trim();
-  if(!limpio)return false;
-  var baja=limpio.toLowerCase();
-  return baja!=='usuario'&&baja!=='undefined'&&baja!=='null';
- }
-
- function limpiarHandle(h){
-  return String(h||'').replace(/^@+/,'').trim();
- }
-
- function resolverNombre(candidatos,handleFallback){
-  var lista=Array.isArray(candidatos)?candidatos:[];
-  for(var i=0;i<lista.length;i++){
-   var val=String(lista[i]||'').trim();
-   if(esNombreValido(val))return val;
-  }
-  var h=limpiarHandle(handleFallback);
-  if(h)return '@'+h;
-  return 'Usuario';
- }
-
- var el={
-  cargando:$('pantallaCargando'),
-  noEncontrado:$('pantallaNoEncontrado'),
-  error:$('pantallaError'),
-  perfil:$('pantallaPerfil'),
-  btnReintentar:$('btnReintentar'),
-  avatar:$('pubAvatar'),
-  nombre:$('pubNombre'),
-  verificado:$('pubVerificado'),
-  handle:$('pubHandle'),
-  estado:$('pubEstado'),
-  estadoDot:$('pubEstadoDot'),
-  estadoTexto:$('pubEstadoTexto'),
-  seguidores:$('pubSeguidores'),
-  siguiendo:$('pubSiguiendo'),
-  wallet:$('walletChip'),
-  walletDir:$('walletDir'),
-  btnCompartir:$('btnCompartir'),
-  btnCompartirTxt:$('btnCompartirTxt'),
-  linkWa:$('linkWhatsapp'),
-  linkX:$('linkX'),
-  linkTg:$('linkTelegram'),
-  volver:$('btnVolver'),
-  pubSection:$('pubSection'),
-  pubLista:$('pubLista'),
-  pubMsg:$('pubMsg'),
-  pubMas:$('pubMas'),
-  pubContador:$('pubContador')
- };
-
- var perfil=null;
- var sesionId=null;
- var direccionWallet=null;
- var presencia=null;
- var pub={cargando:false,antes:null,total:0};
-
- function t(clave,vars){
-  return typeof window.t==='function'
-   ?window.t(clave,null,vars||null)
-   :clave;
- }
-
- function formatearTiempoRelativoLocal(iso){
-  if(typeof window.formatearTiempoRelativo==='function'){
-   try{
-    var externo=window.formatearTiempoRelativo(iso);
-    if(externo)return externo;
-   }catch(e){}
-  }
-
-  var ms=Date.now()-new Date(iso).getTime();
-
-  if(!isFinite(ms)||ms<0)ms=0;
-
-  var seg=Math.floor(ms/1000);
-
-  if(seg<60)return t('perfil_publico_hace_segundos');
-
-  var min=Math.floor(seg/60);
-
-  if(min<60){
-   return t('perfil_publico_hace_min',{n:min});
-  }
-
-  var h=Math.floor(min/60);
-
-  if(h<24)return t('perfil_publico_hace_h',{n:h});
-
-  var d=Math.floor(h/24);
-
-  if(d<30)return t('perfil_publico_hace_d',{n:d});
-
-  var mes=Math.floor(d/30);
-
-  if(mes<12){
-   return mes===1
-    ?t('perfil_publico_hace_mes',{n:mes})
-    :t('perfil_publico_hace_meses',{n:mes});
-  }
-
-  var anio=Math.floor(mes/12);
-
-  return anio===1
-   ?t('perfil_publico_hace_anio',{n:anio})
-   :t('perfil_publico_hace_anios',{n:anio});
- }
-
- function mostrar(pantalla){
-  [
-   el.cargando,
-   el.noEncontrado,
-   el.error,
-   el.perfil
-  ].forEach(function(n){
-   if(n)n.hidden=n!==pantalla;
-  });
- }
-
- // Acepta ?u=handle (preferido) o ?id=uuid (respaldo)
- function leerIdentificador(){
-  var sp=new URLSearchParams(window.location.search);
-
-  var u=limpiarHandle(sp.get('u')||'');
-  if(u&&HANDLE_RE.test(u))return {tipo:'handle',valor:u};
-
-  var id=(sp.get('id')||'').trim();
-  if(id&&UUID_RE.test(id))return {tipo:'id',valor:id};
-
-  return null;
- }
-
- function urlPerfil(){
-  var h=limpiarHandle(perfil&&perfil.handle);
-  var base=window.location.origin+window.location.pathname;
-  if(h)return base+'?u='+encodeURIComponent(h);
-  if(perfil&&perfil.id)return base+'?id='+encodeURIComponent(perfil.id);
-  return base;
- }
-
- function fechaUTC(iso){
-  if(!iso)return null;
-
-  return /(Z|[+-]\d{2}:?\d{2})$/i.test(iso)
-   ?iso
-   :iso+'Z';
- }
-
- function acortar(direccion){
-  return direccion.slice(0,6)+'...'+direccion.slice(-4);
- }
-
- function textoCompartir(){
-  var nombreVisible=resolverNombre(
-   [perfil&&perfil.nombre],
-   perfil&&perfil.handle
-  );
-  return t('perfil_publico_compartir_texto',{
-   nombre:nombreVisible
-  });
- }
-
- function flash(nodo,mensaje,ms){
-  if(!nodo)return;
-
-  var previo=nodo.textContent;
-  nodo.textContent=mensaje;
-
-  setTimeout(function(){
-   nodo.textContent=previo;
-  },ms||1800);
- }
-
- function copiarAlPortapapeles(texto){
-  if(
-   navigator.clipboard&&
-   typeof navigator.clipboard.writeText==='function'
-  ){
-   return navigator.clipboard.writeText(texto)
-    .then(function(){return true;});
-  }
-
-  return Promise.resolve(false);
- }
-
- async function obtenerCliente(){
-  try{
-   var c=await window.supabaseReady;
-
-   if(c)return c;
-  }catch(e){}
-
-  return window.supabaseClient||null;
- }
-
- async function obtenerSesionId(client){
-  try{
-   var r=await client.auth.getSession();
-
-   return(
-    r&&r.data&&r.data.session&&r.data.session.user
-   )?r.data.session.user.id:null;
-  }catch(e){
-   return null;
-  }
- }
-
- async function cargarPerfil(client,ident){
-  var r;
-
-  if(ident.tipo==='handle'){
-   r=await client.rpc('perfil_publico_por_handle',{p_handle:ident.valor});
-  }else{
-   r=await client.rpc('perfil_publico_por_id',{p_id:ident.valor});
-  }
-
-  if(r.error)throw r.error;
-
-  var fila=Array.isArray(r.data)?r.data[0]:r.data;
-
-  return fila||null;
- }
-
- async function cargarWallet(client,id){
-  var r=await client
-   .from('wallet_publica')
-   .select('wallet_address')
-   .eq('id',id)
-   .maybeSingle();
-
-  if(
-   r.error||
-   !r.data||
-   !r.data.wallet_address
-  )return;
-
-  direccionWallet=r.data.wallet_address;
-  el.walletDir.textContent=acortar(direccionWallet);
-  el.wallet.hidden=false;
- }
-
- async function copiarWallet(){
-  if(!direccionWallet)return;
-
-  try{
-   var ok=await copiarAlPortapapeles(direccionWallet);
-
-   flash(
-    el.walletDir,
-    ok?t('perfil_publico_wallet_copiada'):acortar(direccionWallet)
-   );
-  }catch(e){
-   console.warn(
-    '[PerfilPublico] No se pudo copiar la wallet:',
-    e
-   );
-  }
- }
-
- function pintarAvatar(url){
-  el.avatar.textContent='';
-
-  if(!url){
-   el.avatar.textContent='◈';
-   return;
-  }
-
-  var img=document.createElement('img');
-  img.alt='';
-
-  img.onerror=function(){
-   el.avatar.textContent='◈';
-  };
-
-  img.src=url;
-  el.avatar.appendChild(img);
- }
-
- function prepararEnlacesCompartir(){
-  var url=urlPerfil();
-  var texto=textoCompartir();
-
-  el.linkWa.href='https://wa.me/?text='+
-   encodeURIComponent(texto+' '+url);
-
-  // X: intent oficial de publicación (x.com; twitter.com redirige aquí)
-  el.linkX.href='https://x.com/intent/post?text='+
-   encodeURIComponent(texto)+
-   '&url='+encodeURIComponent(url);
-
-  el.linkTg.href='https://t.me/share/url?url='+
-   encodeURIComponent(url)+
-   '&text='+encodeURIComponent(texto);
- }
-
- async function compartirPerfil(){
-  var url=urlPerfil();
-  var texto=textoCompartir();
-
-  if(navigator.share){
-   try{
-    await navigator.share({
-     title:texto,
-     text:texto,
-     url:url
-    });
-
-    return;
-   }catch(e){
-    if(e&&e.name==='AbortError')return;
-   }
-  }
-
-  try{
-   var ok=await copiarAlPortapapeles(url);
-
-   if(ok){
-    flash(
-     el.btnCompartirTxt,
-     t('perfil_publico_enlace_copiado')
-    );
-   }else{
-    window.prompt(
-     t('perfil_publico_copiar_enlace'),
-     url
-    );
-   }
-  }catch(e){
-   window.prompt(
-    t('perfil_publico_copiar_enlace'),
-    url
-   );
-  }
- }
-
- function renderPerfil(p){
-  var handleLimpio=limpiarHandle(p.handle);
-  var nombreVisible=resolverNombre([p.nombre],handleLimpio);
-
-  el.nombre.textContent=nombreVisible;
-  el.handle.textContent=handleLimpio?'@'+handleLimpio:'@usuario';
-  el.verificado.hidden=!p.verificado;
-
-  el.seguidores.textContent=String(
-   p.seguidores_count||0
-  );
-
-  el.siguiendo.textContent=String(
-   p.siguiendo_count||0
-  );
-
-  pintarAvatar(p.avatar_url);
-  prepararEnlacesCompartir();
- }
-
- function pintarEstado(){
-  if(!perfil||!el.estado)return;
-
-  el.estado.hidden=true;
-
-  if(!(presencia&&typeof presencia==='object')){
-   return;
-  }
-
-  var entrada=presencia[perfil.id];
-
-  if(entrada&&entrada.visible!==false){
-   el.estadoDot.className='pp-dot activo';
-   el.estadoTexto.textContent=
-    t('perfil_publico_activo_ahora');
-
-   el.estado.hidden=false;
-   return;
-  }
-
-  if(perfil.ultima_conexion){
-   el.estadoDot.className='pp-dot inactivo';
-
-   el.estadoTexto.textContent=
-    t('perfil_publico_inactivo')+
-    ' · '+
-    formatearTiempoRelativoLocal(
-     fechaUTC(perfil.ultima_conexion)
-    );
-
-   el.estado.hidden=false;
-  }
- }
-
- function aplicarPresencia(mapa){
-  if(mapa&&typeof mapa==='object'){
-   presencia=mapa;
-  }
-
-  pintarEstado();
- }
-
- window.addEventListener(
-  'sar:presence:sync',
-  function(e){
-   aplicarPresencia(e.detail);
-
-   if(
-    typeof window.aplicarTraducciones==='function'&&
-    el.estado
-   ){
-    try{
-     window.aplicarTraducciones(el.estado);
-    }catch(_){}
-   }
-  }
- );
-
- /* ---------------- PUBLICACIONES (solo contactos) ---------------- */
-
- function safeHttps(u){
-  if(!u)return null;
-
-  try{
-   var x=new URL(String(u),window.location.href);
-   return x.protocol==='https:'?x.href:null;
-  }catch(e){
-   return null;
-  }
- }
-
- function fechaPost(iso){
-  if(!iso)return '';
-
-  var d=new Date(iso);
-
-  if(isNaN(d.getTime()))return '';
-
-  return d.toLocaleString('es-MX',{
-   day:'numeric',
-   month:'short',
-   hour:'2-digit',
-   minute:'2-digit'
-  });
- }
-
- function mostrarMensajePub(texto){
-  if(!el.pubMsg)return;
-
-  el.pubMsg.textContent=texto||'';
-  el.pubMsg.hidden=!texto;
- }
-
- function crearPost(p){
-  var art=document.createElement('article');
-  art.className='pub-post';
-
-  var mismoAutor=!!(perfil&&p.usuario_id&&perfil.id===p.usuario_id);
-  var handlePost=limpiarHandle(
-   p.usuario_handle||(mismoAutor&&perfil&&perfil.handle)||''
-  );
-  var nombrePost=resolverNombre(
-   [
-    p.usuario_nombre,
-    mismoAutor&&perfil&&perfil.nombre
-   ],
-   handlePost
-  );
-
-  var av=document.createElement('div');
-  av.className='pub-av';
-
-  var avatarUrl=safeHttps(
-   p.usuario_avatar_url||(mismoAutor&&perfil&&perfil.avatar_url)||''
-  );
-
-  if(avatarUrl){
-   var im=document.createElement('img');
-   im.alt='';
-   im.loading='lazy';
-   im.src=avatarUrl;
-   av.appendChild(im);
-  }else{
-   var inicial=(nombrePost.replace(/^@/,'').charAt(0)||'U').toUpperCase();
-   av.textContent=inicial;
-  }
-
-  var cuerpo=document.createElement('div');
-  cuerpo.className='pub-meta';
-
-  var nombre=document.createElement('div');
-  nombre.className='pub-nombre';
-  nombre.textContent=nombrePost;
-
-  var sub=document.createElement('div');
-  sub.className='pub-sub';
-  sub.textContent=
-   (handlePost?'@'+handlePost+' · ':'')+fechaPost(p.created_at);
-
-  cuerpo.appendChild(nombre);
-  cuerpo.appendChild(sub);
-
-  if(p.contenido){
-   var texto=document.createElement('div');
-   texto.className='pub-texto';
-   texto.textContent=p.contenido;
-   cuerpo.appendChild(texto);
-  }
-
-  var img=safeHttps(p.imagen_url);
-
-  if(img){
-   var media=document.createElement('img');
-   media.className='pub-img';
-   media.alt='';
-   media.loading='lazy';
-   media.src=img;
-   cuerpo.appendChild(media);
-  }
-
-  if(Number(p.cantidad_venta)>0&&!p.vendido){
-   var venta=document.createElement('span');
-   venta.className='pub-venta';
-   venta.textContent='En venta · '+p.cantidad_venta+' tokens';
-   cuerpo.appendChild(venta);
-  }
-
-  if(p.aviso_moderacion==='lenguaje_inapropiado'){
-   var aviso=document.createElement('div');
-   aviso.className='pub-aviso';
-   aviso.textContent='Este mensaje contiene lenguaje inapropiado.';
-   cuerpo.appendChild(aviso);
-  }
-
-  var fila=document.createElement('div');
-  fila.className='pub-post-fila';
-  fila.style.display='flex';
-  fila.style.gap='12px';
-  fila.style.width='100%';
-  fila.appendChild(av);
-  fila.appendChild(cuerpo);
-
-  art.appendChild(fila);
-
-  return art;
- }
-
- async function cargarPublicaciones(client,handle,reiniciar){
-  var handleLimpio=limpiarHandle(handle);
-  if(pub.cargando||!handleLimpio)return;
-
-  pub.cargando=true;
-
-  if(reiniciar){
-   pub.antes=null;
-   pub.total=0;
-   el.pubLista.innerHTML='';
-  }
-
-  if(el.pubMas)el.pubMas.disabled=true;
-
-  try{
-   var r=await client.rpc('perfil_publicaciones_contactos',{
-    p_handle:handleLimpio,
-    p_antes:reiniciar?null:pub.antes,
-    p_limite:POSTS_PAGE
-   });
-
-   if(r.error){
-    el.pubSection.hidden=false;
-    el.pubLista.innerHTML='';
-    el.pubMas.hidden=true;
-
-    if(r.error.code==='42501'){
-     mostrarMensajePub('Inicia sesión para ver las publicaciones de tus contactos.');
-    }else{
-     mostrarMensajePub('No se pudieron cargar las publicaciones.');
+/* INICIALIZACIÓN DE IDIOMAS */
+(function () {
+    'use strict';
+    var intentos = 0;
+    function intentar() {
+        if (typeof window.inicializarIdiomas === 'function') {
+            try {
+                Promise.resolve(window.inicializarIdiomas()).catch(function (e) {
+                    console.warn('[PerfilPublico] Idiomas (ignorado):', e);
+                });
+            } catch (e) {
+                console.warn('[PerfilPublico] Excepción idiomas:', e);
+            }
+            return;
+        }
+        if (intentos++ >= 25) return;
+        setTimeout(intentar, 200);
     }
-
-    return;
-   }
-
-   var d=r.data||{};
-
-   if(d.estado==='bloqueado'||d.estado==='no_encontrado'){
-    el.pubSection.hidden=true;
-    return;
-   }
-
-   el.pubSection.hidden=false;
-
-   if(d.estado==='no_autenticado'){
-    el.pubLista.innerHTML='';
-    el.pubMas.hidden=true;
-    el.pubContador.textContent='';
-    mostrarMensajePub('Inicia sesión para ver las publicaciones de tus contactos.');
-    return;
-   }
-
-   if(d.estado==='no_contacto'){
-    el.pubLista.innerHTML='';
-    el.pubMas.hidden=true;
-    el.pubContador.textContent='';
-    mostrarMensajePub('Solo tus contactos pueden ver las publicaciones de esta persona.');
-    return;
-   }
-
-   var posts=Array.isArray(d.posts)?d.posts:[];
-
-   posts.forEach(function(p){
-    el.pubLista.appendChild(crearPost(p));
-   });
-
-   pub.total+=posts.length;
-
-   if(posts.length){
-    pub.antes=posts[posts.length-1].created_at;
-   }
-
-   el.pubContador.textContent=pub.total?String(pub.total):'';
-
-   if(!pub.total){
-    mostrarMensajePub('Sin publicaciones');
-   }else{
-    mostrarMensajePub('');
-   }
-
-   el.pubMas.hidden=posts.length<POSTS_PAGE;
-  }catch(e){
-   console.warn('[PerfilPublico] Publicaciones:',e);
-   el.pubSection.hidden=false;
-   mostrarMensajePub('No se pudieron cargar las publicaciones.');
-  }finally{
-   pub.cargando=false;
-   if(el.pubMas)el.pubMas.disabled=false;
-  }
- }
-
- /* ---------------- REGRESO ---------------- */
-
- function mismoOrigenReferrer(){
-  try{
-   return !!document.referrer&&
-    new URL(document.referrer).origin===window.location.origin;
-  }catch(e){
-   return false;
-  }
- }
-
- function configurarVolver(){
-  if(!el.volver)return;
-
-  el.volver.addEventListener('click',function(e){
-   if(window.history.length>1&&mismoOrigenReferrer()){
-    e.preventDefault();
-    window.history.back();
-   }
-   // Sin historial del mismo sitio, el enlace lleva a Contactos.
-  });
- }
-
- /* ---------------- ESPERA Y ARRANQUE ---------------- */
-
- function pintarEstadoInicial(){
-  pintarEstado();
- }
-
- function esperarIdiomas(){
-  return new Promise(function(resolve){
-   var intentos=0;
-
-   (function intentar(){
-    if(typeof window.inicializarIdiomas==='function'){
-     try{
-      Promise.resolve(window.inicializarIdiomas())
-       .then(resolve,resolve);
-     }catch(e){
-      resolve();
-     }
-
-     return;
-    }
-
-    if(intentos++>=25){
-     resolve();
-     return;
-    }
-
-    setTimeout(intentar,200);
-   })();
-  });
- }
-
- async function init(){
-  mostrar(el.cargando);
-
-  var ident=leerIdentificador();
-
-  if(!ident){
-   mostrar(el.noEncontrado);
-   return;
-  }
-
-  await esperarIdiomas();
-
-  var client=await obtenerCliente();
-
-  if(!client){
-   throw new Error('Cliente de Supabase no disponible');
-  }
-
-  sesionId=await obtenerSesionId(client);
-
-  var p=await cargarPerfil(client,ident);
-
-  if(!p){
-   mostrar(el.noEncontrado);
-   return;
-  }
-
-  if(sesionId&&p.id===sesionId){
-   window.location.replace(RUTA_PERFIL_PROPIO);
-   return;
-  }
-
-  perfil=p;
-
-  renderPerfil(p);
-
-  if(
-   window.presenciaUsuarios&&
-   typeof window.presenciaUsuarios==='object'
-  ){
-   presencia=window.presenciaUsuarios;
-  }
-
-  mostrar(el.perfil);
-  pintarEstadoInicial();
-
-  cargarWallet(client,p.id).catch(function(e){
-   console.warn(
-    '[PerfilPublico] No se pudo cargar la wallet:',
-    e
-   );
-  });
-
-  cargarPublicaciones(client,p.handle,true);
- }
-
- el.wallet.addEventListener('click',copiarWallet);
-
- el.btnCompartir.addEventListener(
-  'click',
-  compartirPerfil
- );
-
- el.btnReintentar.addEventListener(
-  'click',
-  function(){
-   window.location.reload();
-  }
- );
-
- if(el.pubMas){
-  el.pubMas.addEventListener('click',async function(){
-   var client=await obtenerCliente();
-
-   if(client&&perfil&&perfil.handle){
-    cargarPublicaciones(client,perfil.handle,false);
-   }
-  });
- }
-
- configurarVolver();
-
- function arrancar(){
-  init().catch(function(err){
-   console.error('[PerfilPublico]',err);
-   mostrar(el.error);
-  });
- }
-
- if(document.readyState==='loading'){
-  document.addEventListener(
-   'DOMContentLoaded',
-   arrancar
-  );
- }else{
-  arrancar();
- }
+    intentar();
 })();
 </script>
 
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
+<script src="/features/anuncios/anuncios-carrusel.js" defer></script>
+<script src="/features/perfil/js/carrusel-3d.js" defer></script>
+
+<script>
+/* ================================================================
+   PERFIL PÚBLICO · VISITANTE
+   - Identidad: ?u=handle&id=uuid se validan juntos en la base.
+   - Visibilidad general: perfil_visibilidad_estado (público / solo contactos).
+   - Publicaciones: solo contactos, desde la base (perfil_publicaciones_contactos).
+   ================================================================ */
+(function () {
+    'use strict';
+
+    var RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html';
+    var HANDLE_RE = /^[A-Za-z0-9_]{1,40}$/;
+    var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    var POSTS_PAGE = 20;
+
+    function $(id) { return document.getElementById(id); }
+
+    var el = {
+        cargando: $('pvCargando'),
+        noEncontrado: $('pvNoEncontrado'),
+        noEncontradoTitulo: $('pvNoEncontradoTitulo'),
+        noEncontradoTexto: $('pvNoEncontradoTexto'),
+        error: $('pvError'),
+        errorTexto: $('pvErrorTexto'),
+        reintentar: $('pvReintentar'),
+        perfil: $('pvPerfil'),
+        avatar: $('pvAvatar'),
+        nombre: $('pvNombre'),
+        verificado: $('pvVerificado'),
+        handle: $('pvHandle'),
+        estado: $('pvEstado'),
+        estadoDot: $('pvEstadoDot'),
+        estadoTexto: $('pvEstadoTexto'),
+        wallet: $('pvWallet'),
+        walletDir: $('pvWalletDir'),
+        seguidores: $('pvSeguidores'),
+        siguiendo: $('pvSiguiendo'),
+        compartir: $('pvCompartir'),
+        pasaporte: $('pvPasaporte'),
+        pubSection: $('pvPubSection'),
+        pubLista: $('pvPubLista'),
+        pubMsg: $('pvPubMsg'),
+        pubMas: $('pvPubMas'),
+        pubContador: $('pvPubContador'),
+        volver: $('pvVolver')
+    };
+
+    var perfil = null;
+    var direccionWallet = null;
+    var pub = { cargando: false, antes: null, total: 0 };
+
+    /* ---------------- Utilidades ---------------- */
+
+    function mostrar(panel) {
+        [el.cargando, el.noEncontrado, el.error, el.perfil].forEach(function (n) {
+            if (n) n.hidden = (n !== panel);
+        });
+    }
+
+    function toast(msg, tipo) {
+        if (typeof window.showToast === 'function') { window.showToast(msg, tipo || 'success'); return; }
+        var t = $('toast');
+        if (!t) return;
+        t.textContent = String(msg || '');
+        t.className = 'toast' + (tipo ? ' ' + tipo : '');
+        requestAnimationFrame(function () { t.classList.add('show'); });
+        clearTimeout(window.__pvToastTimer);
+        window.__pvToastTimer = setTimeout(function () { t.classList.remove('show'); }, 3200);
+    }
+
+    function acortar(d) { return d.slice(0, 6) + '…' + d.slice(-4); }
+
+    function safeHttps(u) {
+        if (!u) return null;
+        try {
+            var x = new URL(String(u), window.location.href);
+            return x.protocol === 'https:' ? x.href : null;
+        } catch (e) { return null; }
+    }
+
+    function fechaUTC(iso) {
+        if (!iso) return null;
+        return /(Z|[+-]\d{2}:?\d{2})$/i.test(iso) ? iso : iso + 'Z';
+    }
+
+    function tiempoRelativo(iso) {
+        var ms = Date.now() - new Date(iso).getTime();
+        if (!isFinite(ms) || ms < 0) ms = 0;
+        var min = Math.floor(ms / 60000);
+        if (min < 1) return 'hace un momento';
+        if (min < 60) return 'hace ' + min + ' min';
+        var h = Math.floor(min / 60);
+        if (h < 24) return 'hace ' + h + ' h';
+        var d = Math.floor(h / 24);
+        if (d < 30) return 'hace ' + d + ' d';
+        return 'hace más de un mes';
+    }
+
+    function fechaPost(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        if (isNaN(d.getTime())) return '';
+        return d.toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function urlPerfil() {
+        return window.location.origin + window.location.pathname + '?u=' + encodeURIComponent(perfil.handle);
+    }
+
+    /* ---------------- Identidad ---------------- */
+
+    // Con ambos parámetros, el UUID y el handle deben corresponder al mismo usuario.
+    function leerIdentificador() {
+        var sp = new URLSearchParams(window.location.search);
+        var tieneU = sp.has('u');
+        var tieneId = sp.has('id');
+        var u = (sp.get('u') || '').trim().replace(/^@+/, '');
+        var id = (sp.get('id') || '').trim();
+        var uOk = HANDLE_RE.test(u);
+        var idOk = UUID_RE.test(id);
+
+        if (tieneU && tieneId) {
+            return (uOk && idOk) ? { tipo: 'verificado', handle: u, id: id } : { tipo: 'invalido' };
+        }
+        if (tieneU && uOk) return { tipo: 'handle', valor: u };
+        if (tieneId && idOk) return { tipo: 'id', valor: id };
+        if (tieneU || tieneId) return { tipo: 'invalido' };
+        return null;
+    }
+
+    async function obtenerCliente() {
+        try {
+            var c = await window.supabaseReady;
+            if (c) return c;
+        } catch (e) {}
+        return window.supabaseClient || null;
+    }
+
+    async function obtenerSesionId(client) {
+        try {
+            var r = await client.auth.getSession();
+            return (r && r.data && r.data.session && r.data.session.user) ? r.data.session.user.id : null;
+        } catch (e) { return null; }
+    }
+
+    async function cargarPerfil(client, ident) {
+        var r;
+        if (ident.tipo === 'verificado') {
+            r = await client.rpc('perfil_publico_verificado', { p_handle: ident.handle, p_id: ident.id });
+        } else if (ident.tipo === 'handle') {
+            r = await client.rpc('perfil_publico_por_handle', { p_handle: ident.valor });
+        } else {
+            r = await client.rpc('perfil_publico_por_id', { p_id: ident.valor });
+        }
+        if (r.error) throw r.error;
+        var fila = Array.isArray(r.data) ? r.data[0] : r.data;
+        return fila || null;
+    }
+
+    async function resolverSinPerfil(client, ident) {
+        var id = ident.tipo === 'verificado' ? ident.id : (ident.tipo === 'id' ? ident.valor : null);
+        if (!id) return 'no_encontrado';
+        var params = { p_id: id };
+        if (ident.tipo === 'verificado') params.p_handle = ident.handle;
+        try {
+            var r = await client.rpc('perfil_visibilidad_estado', params);
+            if (!r.error && r.data) return r.data;
+        } catch (e) {}
+        return 'no_encontrado';
+    }
+
+    function mensajeNoEncontrado(titulo, texto) {
+        el.noEncontradoTitulo.removeAttribute('data-clave');
+        el.noEncontradoTexto.removeAttribute('data-clave');
+        el.noEncontradoTitulo.textContent = titulo;
+        el.noEncontradoTexto.textContent = texto;
+        mostrar(el.noEncontrado);
+    }
+
+    function mostrarErrorIdentidad() {
+        el.errorTexto.removeAttribute('data-clave');
+        el.errorTexto.textContent = 'No pudimos verificar la identidad de este perfil. Por seguridad no se muestran sus datos.';
+        mostrar(el.error);
+    }
+
+    /* ---------------- Render del perfil ---------------- */
+
+    function pintarAvatar(url) {
+        el.avatar.textContent = '';
+        var seguro = safeHttps(url);
+        if (!seguro) { el.avatar.textContent = '◈'; return; }
+        var img = document.createElement('img');
+        img.alt = '';
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+        img.onerror = function () { el.avatar.textContent = '◈'; };
+        img.src = seguro;
+        el.avatar.appendChild(img);
+    }
+
+    function pintarEstado(p) {
+        if (!p.ultima_conexion && p.online !== true) { el.estado.hidden = true; return; }
+        el.estado.hidden = false;
+        if (p.online === true) {
+            el.estadoDot.className = 'pv-dot activo';
+            el.estadoTexto.textContent = 'Activo ahora';
+        } else {
+            el.estadoDot.className = 'pv-dot inactivo';
+            el.estadoTexto.textContent = 'Inactivo · ' + tiempoRelativo(fechaUTC(p.ultima_conexion));
+        }
+    }
+
+    function renderPerfil(p) {
+        el.nombre.textContent = p.nombre || p.handle;
+        el.handle.textContent = '@' + p.handle;
+        el.verificado.hidden = !p.verificado;
+        el.seguidores.textContent = String(p.seguidores_count || 0);
+        el.siguiendo.textContent = String(p.siguiendo_count || 0);
+        pintarAvatar(p.avatar_url);
+        pintarEstado(p);
+        pintarPasaporte(p);
+    }
+
+    // Pasaporte del visitante: identidad verificada, sin correo ni transacciones.
+    function pintarPasaporte(p) {
+        el.pasaporte.innerHTML = '';
+        var card = document.createElement('div');
+        card.className = 'pv-pasaporte';
+
+        var sello = document.createElement('div');
+        sello.className = 'pv-pasaporte-sello';
+        sello.textContent = '◈ Csariel\'s · Digital Identity';
+
+        var titulo = document.createElement('div');
+        titulo.className = 'pv-pasaporte-titulo';
+        titulo.textContent = 'Pasaporte Digital';
+
+        var sub = document.createElement('div');
+        sub.className = 'pv-pasaporte-sub';
+        sub.textContent = 'Identidad en Csariel\'s.';
+
+        card.appendChild(sello);
+        card.appendChild(titulo);
+        card.appendChild(sub);
+
+        if (p.verificado) {
+            var verif = document.createElement('div');
+            verif.className = 'pv-pasaporte-verif';
+            verif.textContent = '✓ Miembro verificado';
+            card.appendChild(verif);
+        }
+
+        el.pasaporte.appendChild(card);
+    }
+
+    async function cargarWallet(client, id) {
+        var r = await client.from('wallet_publica').select('wallet_address').eq('id', id).maybeSingle();
+        if (r.error || !r.data || !r.data.wallet_address) return;
+        direccionWallet = r.data.wallet_address;
+        el.walletDir.textContent = acortar(direccionWallet);
+        el.wallet.hidden = false;
+    }
+
+    function copiarWallet() {
+        if (!direccionWallet) return;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(direccionWallet).then(function () {
+                toast('Dirección copiada', 'success');
+            }).catch(function () {
+                toast('No se pudo copiar', 'error');
+            });
+        }
+    }
+
+    async function compartirPerfil() {
+        var url = urlPerfil();
+        var texto = (perfil.nombre || perfil.handle) + ' en Csariel\'s';
+        if (navigator.share) {
+            try {
+                await navigator.share({ title: texto, text: texto, url: url });
+                return;
+            } catch (e) {
+                if (e && e.name === 'AbortError') return;
+            }
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function () {
+                toast('Enlace copiado', 'success');
+            }).catch(function () {
+                window.prompt('Copia este enlace:', url);
+            });
+        } else {
+            window.prompt('Copia este enlace:', url);
+        }
+    }
+
+    /* ---------------- Publicaciones (solo contactos) ---------------- */
+
+    function mostrarMensajePub(texto) {
+        el.pubMsg.textContent = texto || '';
+        el.pubMsg.hidden = !texto;
+    }
+
+    function crearPost(p) {
+        var art = document.createElement('article');
+        art.className = 'pv-post';
+
+        var av = document.createElement('div');
+        av.className = 'pv-post-av';
+        var avatarUrl = safeHttps(p.usuario_avatar_url);
+        if (avatarUrl) {
+            var im = document.createElement('img');
+            im.alt = '';
+            im.loading = 'lazy';
+            im.src = avatarUrl;
+            av.appendChild(im);
+        } else {
+            av.textContent = (p.usuario_nombre || 'U').charAt(0).toUpperCase();
+        }
+
+        var meta = document.createElement('div');
+        meta.className = 'pv-post-meta';
+
+        var nombre = document.createElement('div');
+        nombre.className = 'pv-post-nombre';
+        nombre.textContent = p.usuario_nombre || p.usuario_handle || 'Usuario';
+
+        var sub = document.createElement('div');
+        sub.className = 'pv-post-sub';
+        sub.textContent = (p.usuario_handle ? '@' + p.usuario_handle + ' · ' : '') + fechaPost(p.created_at);
+
+        meta.appendChild(nombre);
+        meta.appendChild(sub);
+
+        if (p.contenido) {
+            var texto = document.createElement('div');
+            texto.className = 'pv-post-texto';
+            texto.textContent = p.contenido;
+            meta.appendChild(texto);
+        }
+
+        var img = safeHttps(p.imagen_url);
+        if (img) {
+            var media = document.createElement('img');
+            media.className = 'pv-post-img';
+            media.alt = '';
+            media.loading = 'lazy';
+            media.src = img;
+            meta.appendChild(media);
+        }
+
+        if (Number(p.cantidad_venta) > 0 && !p.vendido) {
+            var venta = document.createElement('span');
+            venta.className = 'pv-post-venta';
+            venta.textContent = 'En venta · ' + p.cantidad_venta + ' tokens';
+            meta.appendChild(venta);
+        }
+
+        if (p.aviso_moderacion === 'lenguaje_inapropiado') {
+            var aviso = document.createElement('div');
+            aviso.className = 'pv-post-aviso';
+            aviso.textContent = 'Este mensaje contiene lenguaje inapropiado.';
+            meta.appendChild(aviso);
+        }
+
+        art.appendChild(av);
+        art.appendChild(meta);
+        return art;
+    }
+
+    async function cargarPublicaciones(client, handle, reiniciar) {
+        if (pub.cargando || !handle) return;
+        pub.cargando = true;
+
+        if (reiniciar) {
+            pub.antes = null;
+            pub.total = 0;
+            el.pubLista.innerHTML = '';
+        }
+        el.pubMas.disabled = true;
+
+        try {
+            var r = await client.rpc('perfil_publicaciones_contactos', {
+                p_handle: handle,
+                p_antes: reiniciar ? null : pub.antes,
+                p_limite: POSTS_PAGE
+            });
+
+            if (r.error) {
+                el.pubSection.hidden = false;
+                el.pubLista.innerHTML = '';
+                el.pubMas.hidden = true;
+                mostrarMensajePub(r.error.code === '42501'
+                    ? 'Inicia sesión para ver las publicaciones de tus contactos.'
+                    : 'No se pudieron cargar las publicaciones.');
+                return;
+            }
+
+            var d = r.data || {};
+
+            if (d.estado === 'bloqueado' || d.estado === 'no_encontrado') {
+                el.pubSection.hidden = true;
+                return;
+            }
+
+            el.pubSection.hidden = false;
+
+            if (d.estado === 'no_autenticado') {
+                el.pubLista.innerHTML = '';
+                el.pubMas.hidden = true;
+                el.pubContador.textContent = '';
+                mostrarMensajePub('Inicia sesión para ver las publicaciones de tus contactos.');
+                return;
+            }
+
+            if (d.estado === 'no_contacto') {
+                el.pubLista.innerHTML = '';
+                el.pubMas.hidden = true;
+                el.pubContador.textContent = '';
+                mostrarMensajePub('Solo tus contactos pueden ver las publicaciones de esta persona.');
+                return;
+            }
+
+            var posts = Array.isArray(d.posts) ? d.posts : [];
+            posts.forEach(function (p) { el.pubLista.appendChild(crearPost(p)); });
+
+            pub.total += posts.length;
+            if (posts.length) pub.antes = posts[posts.length - 1].created_at;
+
+            el.pubContador.textContent = pub.total ? String(pub.total) : '';
+            mostrarMensajePub(pub.total ? '' : 'Sin publicaciones');
+            el.pubMas.hidden = posts.length < POSTS_PAGE;
+        } catch (e) {
+            console.warn('[PerfilPublico] Publicaciones:', e);
+            el.pubSection.hidden = false;
+            mostrarMensajePub('No se pudieron cargar las publicaciones.');
+        } finally {
+            pub.cargando = false;
+            el.pubMas.disabled = false;
+        }
+    }
+
+    /* ---------------- Regreso ---------------- */
+
+    function mismoOrigenReferrer() {
+        try {
+            return !!document.referrer && new URL(document.referrer).origin === window.location.origin;
+        } catch (e) { return false; }
+    }
+
+    el.volver.addEventListener('click', function (e) {
+        if (window.history.length > 1 && mismoOrigenReferrer()) {
+            e.preventDefault();
+            window.history.back();
+        }
+    });
+
+    /* ---------------- Arranque ---------------- */
+
+    async function init() {
+        mostrar(el.cargando);
+
+        var ident = leerIdentificador();
+        if (!ident) { mostrar(el.noEncontrado); return; }
+        if (ident.tipo === 'invalido') { mostrarErrorIdentidad(); return; }
+
+        var client = await obtenerCliente();
+        if (!client) throw new Error('Cliente de Supabase no disponible');
+
+        var sesionId = await obtenerSesionId(client);
+
+        var p = await cargarPerfil(client, ident);
+
+        if (!p) {
+            var vis = await resolverSinPerfil(client, ident);
+            if (vis === 'restringido') {
+                mensajeNoEncontrado('Perfil restringido', 'Este perfil está restringido. Solo sus contactos pueden verlo.');
+            } else if (ident.tipo === 'verificado') {
+                mostrarErrorIdentidad();
+            } else {
+                mostrar(el.noEncontrado);
+            }
+            return;
+        }
+
+        // Defensa adicional en cliente: la base ya lo garantiza.
+        if (ident.tipo === 'verificado' &&
+            String(p.handle || '').toLowerCase() !== ident.handle.toLowerCase()) {
+            mostrarErrorIdentidad();
+            return;
+        }
+
+        // Si el visitante es el dueño, va a su perfil completo.
+        if (sesionId && p.id === sesionId) {
+            window.location.replace(RUTA_PERFIL_PROPIO);
+            return;
+        }
+
+        perfil = p;
+        renderPerfil(p);
+        mostrar(el.perfil);
+
+        cargarWallet(client, p.id).catch(function (e) {
+            console.warn('[PerfilPublico] Wallet:', e);
+        });
+
+        cargarPublicaciones(client, p.handle, true);
+    }
+
+    el.wallet.addEventListener('click', copiarWallet);
+    el.compartir.addEventListener('click', compartirPerfil);
+    el.reintentar.addEventListener('click', function () { window.location.reload(); });
+    el.pubMas.addEventListener('click', async function () {
+        var client = await obtenerCliente();
+        if (client && perfil && perfil.handle) cargarPublicaciones(client, perfil.handle, false);
+    });
+
+    function arrancar() {
+        init().catch(function (err) {
+            console.error('[PerfilPublico]', err);
+            mostrar(el.error);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', arrancar);
+    } else {
+        arrancar();
+    }
+})();
+</script>
 
 </body>
 </html>
