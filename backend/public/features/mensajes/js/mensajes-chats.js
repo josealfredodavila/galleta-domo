@@ -1,13 +1,6 @@
 // ================================================================
-// MENSAJES · CHATS v2.7 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.6 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
-//
-// ACTUALIZACIÓN v2.7 · NOMBRES REALES Y CIERRE SEGURO DE ESTADOS
-//  - Resuelve el nombre real de contactos en bandeja y búsqueda
-//    consultando perfiles_publicos / perfilCache para evitar "Usuario".
-//  - Refuerza liberarInterfazChat() llamando a forzarCierreVisor()
-//    si está disponible, limpiando estados y capas sin interferir
-//    con notas de voz ni apertura de conversaciones.
 //
 // ACTUALIZACIÓN v2.6 · CORRECCIÓN DE NOTAS DE VOZ Y APERTURA DE CHATS
 //  - Cada grabación tiene un identificador de generación. Un evento
@@ -72,120 +65,6 @@ const VOZ_VIGILANTE_MS = 4000;
 
 let conversationFilterOriginal = '';
 
-/* ---------------- Identidad real en chats ---------------- */
-
-function normalizarIdChat(uid) {
-    if (uid === null || uid === undefined) return '';
-    return String(uid).trim();
-}
-
-function esNombreValidoChat(valor) {
-    const limpio = String(valor || '').trim();
-    if (!limpio) return false;
-    const baja = limpio.toLowerCase();
-    return baja !== 'usuario' && baja !== 'undefined' && baja !== 'null';
-}
-
-function nombreRealChat(datos) {
-    if (!datos) return 'Usuario';
-
-    const candidatos = [
-        datos.nombre,
-        datos.usuario_nombre,
-        datos.nombre_completo,
-        datos.display_name,
-        datos.full_name,
-        datos.apodo
-    ];
-
-    for (let i = 0; i < candidatos.length; i++) {
-        const val = String(candidatos[i] || '').trim();
-        if (esNombreValidoChat(val)) return val;
-    }
-
-    const handle = String(datos.handle || datos.usuario_handle || '')
-        .replace(/^@+/, '')
-        .trim();
-
-    if (handle) return '@' + handle;
-
-    return 'Usuario';
-}
-
-function guardarCachePerfilChat(id, datos) {
-    const uid = normalizarIdChat(id);
-    if (!uid || !datos || typeof perfilCache === 'undefined' || !perfilCache || typeof perfilCache.set !== 'function') {
-        return;
-    }
-
-    const previa = perfilCache.get(uid)?.data || {};
-    const combinado = Object.assign({}, previa, datos, {
-        id: uid,
-        nombre: nombreRealChat(Object.assign({}, previa, datos)),
-        handle: datos.handle || previa.handle || '',
-        avatar_url: datos.avatar_url || previa.avatar_url || null
-    });
-
-    if (typeof PERFIL_CACHE_LIMITE === 'number' && perfilCache.size >= PERFIL_CACHE_LIMITE && !perfilCache.has(uid)) {
-        const primera = perfilCache.keys().next().value;
-        if (primera !== undefined) perfilCache.delete(primera);
-    }
-
-    perfilCache.set(uid, {
-        ts: Date.now(),
-        data: combinado
-    });
-}
-
-async function completarPerfilesConversaciones(conversaciones) {
-    const pendientes = [];
-
-    (conversaciones || []).forEach(conv => {
-        const uid = normalizarIdChat(conv && conv.otro_id);
-        if (!uid) return;
-
-        const enCache = (typeof perfilCache !== 'undefined' && perfilCache && perfilCache.get(uid)?.data) || null;
-        const nombreActual = nombreRealChat({
-            nombre: conv.nombre || (enCache && enCache.nombre),
-            handle: conv.handle || (enCache && enCache.handle)
-        });
-
-        if (nombreActual === 'Usuario') {
-            pendientes.push(uid);
-        } else {
-            guardarCachePerfilChat(uid, {
-                nombre: nombreActual,
-                handle: conv.handle || (enCache && enCache.handle) || '',
-                avatar_url: conv.avatar_url || (enCache && enCache.avatar_url) || null
-            });
-        }
-    });
-
-    const unicos = Array.from(new Set(pendientes));
-    if (!unicos.length) return;
-
-    try {
-        const r = await db.from('perfiles_publicos')
-            .select('*')
-            .in('id', unicos);
-
-        if (!r.error && Array.isArray(r.data)) {
-            r.data.forEach(p => {
-                const uid = normalizarIdChat(p.id);
-                if (!uid) return;
-                guardarCachePerfilChat(uid, p);
-                const conv = (conversaciones || []).find(c => normalizarIdChat(c.otro_id) === uid);
-                if (conv) {
-                    const real = nombreRealChat(p);
-                    if (real !== 'Usuario') conv.nombre = real;
-                    if (p.handle) conv.handle = p.handle;
-                    if (p.avatar_url) conv.avatar_url = p.avatar_url;
-                }
-            });
-        }
-    } catch (e) {}
-}
-
 function etiquetaPreview(tipo, contenido) {
     if (!tipo) return 'Sin mensajes';
     if (tipo === 'texto') return (contenido || '').slice(0, 60) || 'Sin mensajes';
@@ -242,25 +121,19 @@ async function loadConversations() {
         const conversaciones = Array.isArray(filas) ? filas : [];
         if (!conversaciones.length) { aplicarFiltroConversaciones(); return; }
 
-        await completarPerfilesConversaciones(conversaciones);
-
         conversaciones.forEach(conv => {
-            const otherId = normalizarIdChat(conv.otro_id);
+            const otherId = conv.otro_id;
             if (!otherId) return;
 
-            const enCache = (typeof perfilCache !== 'undefined' && perfilCache && perfilCache.get(otherId)?.data) || null;
-            const nombre = nombreRealChat({
-                nombre: conv.nombre || (enCache && enCache.nombre),
-                handle: conv.handle || (enCache && enCache.handle)
-            });
-            const handle = conv.handle || (enCache && enCache.handle) || 'usuario';
-            const avatarUrl = conv.avatar_url || (enCache && enCache.avatar_url) || null;
+            const nombre = conv.nombre || 'Usuario';
+            const handle = conv.handle || 'usuario';
+            const avatarUrl = conv.avatar_url || null;
             const noLeidos = Number(conv.no_leidos) || 0;
             const preview = etiquetaPreview(conv.ultimo_tipo, conv.ultimo_contenido);
             const hora = conv.ultimo_at ? new Date(conv.ultimo_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
             const el = document.createElement('div');
-            el.className = 'conv' + (normalizarIdChat(current?.id) === otherId ? ' active' : '');
+            el.className = 'conv' + (current?.id === otherId ? ' active' : '');
             el.dataset.id = otherId;
             el.dataset.name = ((nombre || '').toLowerCase() + ' ' + (handle || '').toLowerCase()).trim();
             el.innerHTML = avatar(nombre, avatarUrl) + `
@@ -292,13 +165,9 @@ function aplicarFiltroConversaciones() {
 /* ---------------- Capas y estilos del visor de estados ---------------- */
 
 // Quita del DOM de mensajes lo que pueda haber dejado el visor de estados
-// (clases, estilos inline, inert).
+// (clases, estilos inline, inert). No abre ni cierra el visor en sí.
 function liberarInterfazChat() {
     try {
-        if (typeof window.forzarCierreVisor === 'function') {
-            window.forzarCierreVisor();
-        }
-
         const visor = $('estadoViewer');
         if (visor) {
             visor.classList.remove('show');
@@ -364,7 +233,7 @@ function aplicarEstadoBloqueo(est) {
 
     const composer = $('composer');
     const status = $('chatStatus');
-    const nombre = nombreRealChat(current.profile);
+    const nombre = current.profile?.nombre || 'Usuario';
     const bloqueado = seguro.yo || seguro.el;
 
     if (composer) {
@@ -398,7 +267,7 @@ async function bloquearUsuarioActual() {
     if (!await auth()) return;
 
     const id = current.id;
-    const nombre = nombreRealChat(current.profile) === 'Usuario' ? 'este usuario' : nombreRealChat(current.profile);
+    const nombre = current.profile?.nombre || 'este usuario';
     const est = await estadoBloqueoCon(id);
 
     if (est.el && !est.yo) {
@@ -461,13 +330,12 @@ async function openConversation(id) {
     if (secuencia !== aperturaSecuencia) return;
 
     const esBot = (id === BOT_ID);
-    const nombreVisible = esBot ? 'Marquinhos' : nombreRealChat(p);
-    current = { id, profile: Object.assign({}, p, { nombre: nombreVisible }), bot: esBot, bloqueo: { yo: false, el: false } };
+    current = { id, profile: p, bot: esBot, bloqueo: { yo: false, el: false } };
 
-    $('chatName').textContent = nombreVisible;
+    $('chatName').textContent = p.nombre || 'Usuario';
     $('chatAvatar').innerHTML = esBot
         ? ICO_ESTRELLA_CHAT
-        : (p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((nombreVisible || 'U').charAt(0).toUpperCase()));
+        : (p.avatar_url ? `<img src="${esc(p.avatar_url)}" alt="">` : esc((p.nombre || 'U').charAt(0).toUpperCase()));
     $('chatAvatar').className = 'avatar' + (esBot ? ' avatar-bot' : '');
     $('chatStatus').textContent = esBot ? 'IA · Siempre disponible' : textoPresencia(p);
     $('chatStatus').className = 'status' + (!esBot && p.online ? ' online' : '');
@@ -483,7 +351,7 @@ async function openConversation(id) {
     const callBtn = $('videoCall');
     if (callBtn) {
         callBtn.disabled = esBot || !window.__livekitReady;
-        callBtn.title = esBot ? '' : 'Videollamada con ' + nombreVisible;
+        callBtn.title = esBot ? '' : 'Videollamada con ' + (p.nombre || 'usuario');
     }
     const audioBtn = $('audioCall');
     if (audioBtn) audioBtn.disabled = esBot || !window.__livekitReady;
@@ -491,7 +359,7 @@ async function openConversation(id) {
     $('composer').hidden = false;
     $('emptyState').hidden = true;
     $('panel').classList.add('chat-open');
-    document.querySelectorAll('.conv').forEach(x => x.classList.toggle('active', normalizarIdChat(x.dataset.id) === normalizarIdChat(id)));
+    document.querySelectorAll('.conv').forEach(x => x.classList.toggle('active', x.dataset.id === id));
 
     isUserAtBottom = true;
     unreadCount = 0;
@@ -677,7 +545,7 @@ async function markRead(id, force = false) {
 async function deleteConversation() {
     if (!current) { toast('Selecciona una conversación.', 'error'); return; }
     if (!await auth()) return;
-    const nombre = current.bot ? 'Marquinhos' : (nombreRealChat(current.profile) === 'Usuario' ? 'este usuario' : nombreRealChat(current.profile));
+    const nombre = current.bot ? 'Marquinhos' : (current.profile.nombre || 'este usuario');
     const confirmado = await NeonModal.confirm({
         title: 'Eliminar conversación',
         message: `¿Eliminar TODA la conversación con ${nombre}?\n\nEsta acción no se puede deshacer.`,
@@ -800,17 +668,15 @@ async function searchUsers(q) {
     if (!q || q.trim().length < 2) { box.innerHTML = '<div class="busqueda-vacia">Escribe al menos 2 caracteres</div>'; return; }
     if (!await auth()) return;
     const term = q.trim().replace(/[%_,\\]/g, ' ').replace(/\s+/g, ' ').trim();
-    const r = await db.from('perfiles_publicos').select('*').or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`).neq('id', user.id).neq('id', BOT_UUID).limit(12);
+    const r = await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').or(`nombre.ilike.%${term}%,handle.ilike.%${term}%`).neq('id', user.id).neq('id', BOT_UUID).limit(12);
     if (r.error) { console.error(r.error); toast('Error al buscar usuarios.', 'error'); return; }
     box.innerHTML = r.data?.length ? '' : '<div class="busqueda-vacia">No se encontraron usuarios</div>';
     for (const p of r.data || []) {
-        guardarCachePerfilChat(p.id, p);
-        const nombre = nombreRealChat(p);
         const el = document.createElement('div');
         el.className = 'result';
-        el.innerHTML = avatar(nombre, p.avatar_url) + `
+        el.innerHTML = avatar(p.nombre, p.avatar_url) + `
             <div class="result-info">
-                <b>${esc(nombre)}</b>
+                <b>${esc(p.nombre || 'Usuario')}</b>
                 <div class="result-handle">@${esc(p.handle || 'usuario')}</div>
             </div>
             <span class="result-action">Abrir chat</span>`;
@@ -1699,7 +1565,7 @@ function abrirInfoChat() {
         toast('Primero abre una conversación.', 'warning');
         return;
     }
-    const nombre = current.bot ? 'Marquinhos' : nombreRealChat(current.profile);
+    const nombre = current.bot ? 'Marquinhos' : (current.profile?.nombre || 'Usuario');
     const overlay = $('contactProfileOverlay');
     if (!overlay) return;
 
