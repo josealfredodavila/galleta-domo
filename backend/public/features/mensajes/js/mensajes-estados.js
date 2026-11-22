@@ -1,22 +1,23 @@
 // ================================================================
-// MENSAJES · ESTADOS (HISTORIAS) v4.3 · MÓDULO 5 DE 8
+// MENSAJES · ESTADOS (HISTORIAS) v4.4 · MÓDULO 5 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-estados.js
 // Depende de: mensajes-core.js
 //
-// ACTUALIZACIÓN v4.3:
-// - Muestra la última historia publicada de cada usuario.
-// - Vista previa real de fotografías en la rueda.
-// - Vista previa real de videos en la rueda.
-// - Indicador de reproducción para historias de video.
-// - Identifica correctamente la publicación más reciente.
-// - Mantiene el avatar y nombre del usuario.
-// - Conserva el indicador de historias nuevas/vistas.
-// - Actualización inmediata después de publicar.
-// - Actualización inmediata después de eliminar.
-// - Conserva navegación, reproducción y controles.
-// - Conserva vistas, comentarios y eliminación.
-// - Conserva publicación múltiple y límites.
-// - Compatible con historias de Supabase.
+// ACTUALIZACIÓN v4.4:
+// - Corrige la identificación del nombre real de los amigos.
+// - Consulta perfiles públicos por ID de usuario.
+// - Evita mostrar "Usuario" cuando existe un nombre registrado.
+// - Resuelve nombres mediante perfiles_publicos.
+// - Mantiene sincronizados nombres, handles y avatares.
+// - Corrige la comparación de IDs como string.
+// - Aplica nombres reales en la rueda de historias.
+// - Aplica nombres reales en la cabecera del visor.
+// - Aplica nombres reales en las listas de vistas.
+// - Aplica nombres reales en comentarios cuando RPC devuelve
+//   identificadores de usuario.
+// - Mantiene la última fotografía o video publicado.
+// - Conserva vistas, comentarios, eliminación y publicación.
+// - Conserva compatibilidad con Supabase.
 // ================================================================
 
 'use strict';
@@ -121,10 +122,6 @@ function estadosDe(uid) {
         );
 }
 
-/*
- * Obtiene siempre la última historia cronológica
- * publicada por un usuario.
- */
 function ultimoEstadoDe(uid) {
     const lista = estadosDe(uid);
 
@@ -239,55 +236,206 @@ function urlPerfil(handle, uid) {
     return null;
 }
 
+/* ================================================================
+   IDENTIDAD REAL DEL USUARIO
+   CORRECCIÓN PRINCIPAL v4.4
+================================================================ */
+
+// Normaliza los identificadores para evitar diferencias entre
+// UUID recibidos como string y otros formatos.
+
+function normalizarIdEstado(uid) {
+    if (uid === null || uid === undefined) return '';
+
+    return String(uid).trim();
+}
+
+// Obtiene un nombre real sin utilizar identificadores como nombre.
+
+function nombreRealEstado(perfil) {
+    if (!perfil) return 'Usuario';
+
+    const candidatos = [
+        perfil.nombre,
+        perfil.nombre_completo,
+        perfil.display_name,
+        perfil.full_name
+    ];
+
+    for (let i = 0; i < candidatos.length; i++) {
+
+        const nombre = String(candidatos[i] || '').trim();
+
+        if (
+            nombre &&
+            nombre.toLowerCase() !== 'usuario' &&
+            nombre.toLowerCase() !== 'undefined' &&
+            nombre.toLowerCase() !== 'null'
+        ) {
+            return nombre;
+        }
+    }
+
+    return 'Usuario';
+}
+
+// Caché de perfiles compartida con el resto del sistema.
+
+function obtenerPerfilCacheEstado(uid) {
+    const id = normalizarIdEstado(uid);
+
+    if (!id || typeof perfilCache === 'undefined') {
+        return null;
+    }
+
+    const entrada = perfilCache.get(id);
+
+    if (!entrada || !entrada.data) return null;
+
+    return entrada.data;
+}
+
+// Consulta el perfil real asociado al ID del propietario de la historia.
+
 async function perfilDe(uid) {
-    const en = perfilCache.get(uid);
+
+    const id = normalizarIdEstado(uid);
+
+    if (!id) {
+        return {
+            id: '',
+            nombre: 'Usuario',
+            handle: '',
+            avatar_url: null
+        };
+    }
+
+    const en = obtenerPerfilCacheEstado(id);
 
     const ttl = (typeof TTL_PERFIL_MS === 'number')
         ? TTL_PERFIL_MS
         : 300000;
 
-    if (en && Date.now() - en.ts < ttl) {
-        return en.data;
+    if (en) {
+
+        const entrada = perfilCache.get(id);
+
+        if (
+            entrada &&
+            Date.now() - entrada.ts < ttl &&
+            nombreRealEstado(en) !== 'Usuario'
+        ) {
+            return en;
+        }
     }
 
     try {
+
+        // Se consulta la fuente de perfiles públicos por el ID real.
         const r = await db.from('perfiles_publicos')
-            .select('id,nombre,handle,avatar_url')
-            .eq('id', uid)
+            .select('*')
+            .eq('id', id)
             .maybeSingle();
 
-        const data = r.data || {
-            id: uid,
-            nombre: 'Usuario',
-            handle: '',
-            avatar_url: null
-        };
-
-        if (typeof PERFIL_CACHE_LIMITE === 'number' &&
-            perfilCache.size >= PERFIL_CACHE_LIMITE) {
-
-            const primera = perfilCache.keys().next().value;
-
-            if (primera !== undefined) {
-                perfilCache.delete(primera);
-            }
+        if (r.error) {
+            console.warn(
+                '[Estados] No se pudo consultar el perfil:',
+                r.error
+            );
         }
 
-        perfilCache.set(uid, {
-            ts: Date.now(),
-            data: data
+        let data = r.data || null;
+
+        // Si la consulta no devuelve nombre, se conserva el perfil
+        // anterior si tiene información real.
+
+        if (!data && en) {
+            data = en;
+        }
+
+        if (!data) {
+            data = {
+                id: id,
+                nombre: 'Usuario',
+                handle: '',
+                avatar_url: null
+            };
+        }
+
+        data = Object.assign({}, data, {
+            id: id,
+            nombre: nombreRealEstado(data),
+            handle: data.handle || '',
+            avatar_url: data.avatar_url || null
         });
+
+        if (
+            typeof perfilCache !== 'undefined' &&
+            perfilCache &&
+            typeof perfilCache.set === 'function'
+        ) {
+
+            if (
+                typeof PERFIL_CACHE_LIMITE === 'number' &&
+                perfilCache.size >= PERFIL_CACHE_LIMITE
+            ) {
+
+                const primera = perfilCache.keys().next().value;
+
+                if (primera !== undefined) {
+                    perfilCache.delete(primera);
+                }
+            }
+
+            perfilCache.set(id, {
+                ts: Date.now(),
+                data: data
+            });
+        }
 
         return data;
 
     } catch (e) {
+
+        console.warn(
+            '[Estados] Error obteniendo perfil real:',
+            e
+        );
+
+        if (en) return en;
+
         return {
-            id: uid,
+            id: id,
             nombre: 'Usuario',
             handle: '',
             avatar_url: null
         };
     }
+}
+
+// Resuelve los perfiles de todos los usuarios de las historias.
+
+async function resolverPerfilesEstados(ids) {
+
+    const unicos = Array.from(
+        new Set(
+            (ids || [])
+                .map(normalizarIdEstado)
+                .filter(Boolean)
+        )
+    );
+
+    if (!unicos.length) return {};
+
+    const resultado = {};
+
+    await Promise.all(unicos.map(async uid => {
+
+        resultado[uid] = await perfilDe(uid);
+
+    }));
+
+    return resultado;
 }
 
 /* ================================================================
@@ -434,6 +582,7 @@ async function cargarEstados() {
     if (!rueda || !user) return;
 
     try {
+
         estadosCache = await obtenerEstadosActivos();
 
         window.__estadosVistosIds =
@@ -444,18 +593,36 @@ async function cargarEstados() {
         const porUsuario = {};
 
         estadosCache.forEach(e => {
-            (porUsuario[e.usuario_id] =
-                porUsuario[e.usuario_id] || []).push(e);
+
+            const uid = normalizarIdEstado(e.usuario_id);
+
+            if (!uid) return;
+
+            if (!porUsuario[uid]) {
+                porUsuario[uid] = [];
+            }
+
+            porUsuario[uid].push(e);
         });
 
         const otros = Object.keys(porUsuario)
-            .filter(uid => uid !== user.id);
+            .filter(uid =>
+                normalizarIdEstado(uid) !==
+                normalizarIdEstado(user.id)
+            );
 
-        await Promise.all(otros.map(perfilDe));
+        // IMPORTANTE:
+        // Se resuelve el perfil de cada autor antes de dibujar
+        // la rueda. Así no se utiliza el nombre genérico temporal.
+
+        await resolverPerfilesEstados(
+            Object.keys(porUsuario)
+        );
 
         renderizarRueda(rueda, porUsuario, otros);
 
     } catch (e) {
+
         console.error(
             '[Estados] Error cargando historias:',
             e
@@ -467,8 +634,7 @@ async function cargarEstados() {
 }
 
 /* ================================================================
-   RUEDA DE HISTORIAS v4.3
-   AHORA MUESTRA LA ÚLTIMA FOTO O VIDEO PUBLICADO
+   RUEDA DE HISTORIAS v4.4
 ================================================================ */
 
 function renderizarRueda(rueda, porUsuario, otros) {
@@ -507,11 +673,10 @@ function renderizarRueda(rueda, porUsuario, otros) {
 
     otros.forEach(uid => {
 
-        const p = perfilCache.get(uid);
-
-        const perfil = (p && p.data) || {
+        const perfil = obtenerPerfilCacheEstado(uid) || {
             nombre: 'Usuario',
-            avatar_url: null
+            avatar_url: null,
+            handle: ''
         };
 
         const lista = (porUsuario[uid] || []).slice().sort(
@@ -528,9 +693,9 @@ function renderizarRueda(rueda, porUsuario, otros) {
 
         rueda.appendChild(
             crearItemRueda({
-                titulo: perfil.nombre || 'Usuario',
+                titulo: nombreRealEstado(perfil),
                 avatarUrl: perfil.avatar_url,
-                avatarNombre: perfil.nombre,
+                avatarNombre: nombreRealEstado(perfil),
                 thumb: estadoURL(ultimo),
                 esVideo: estadoEsVideo(ultimo),
                 nuevo: lista.some(estadoEsNuevo),
@@ -545,13 +710,6 @@ function renderizarRueda(rueda, porUsuario, otros) {
     }
 }
 
-/*
- * Crea cada círculo utilizando la última publicación:
- *
- * FOTO: muestra la fotografía publicada.
- * VIDEO: muestra una vista previa del video con indicador.
- * SIN HISTORIA: muestra el avatar o botón de creación.
- */
 function crearItemRueda(o) {
     const item = document.createElement('div');
 
@@ -641,7 +799,7 @@ function crearItemRueda(o) {
     const nombre = document.createElement('div');
 
     nombre.className = 'estado-name';
-    nombre.textContent = o.titulo;
+    nombre.textContent = o.titulo || 'Usuario';
 
     item.appendChild(nombre);
 
@@ -800,7 +958,12 @@ async function pintarCabecera(estado, mio, gen) {
             );
         }
 
-        if (nom) nom.textContent = 'Tu historia';
+        if (nom) {
+            nom.textContent =
+                nombreRealEstado(currentUserProfile) === 'Usuario'
+                    ? 'Tu historia'
+                    : nombreRealEstado(currentUserProfile);
+        }
 
         return;
     }
@@ -811,13 +974,13 @@ async function pintarCabecera(estado, mio, gen) {
 
     if (av) {
         av.innerHTML = avatarHTML(
-            p.nombre,
+            nombreRealEstado(p),
             p.avatar_url
         );
     }
 
     if (nom) {
-        nom.textContent = p.nombre || 'Usuario';
+        nom.textContent = nombreRealEstado(p);
     }
 }
 
@@ -845,7 +1008,9 @@ async function mostrarEstadoActual() {
 
         const estado = lista[estadoActualIndex];
 
-        const mio = estado.usuario_id === user.id;
+        const mio =
+            normalizarIdEstado(estado.usuario_id) ===
+            normalizarIdEstado(user.id);
 
         const esVideo = estadoEsVideo(estado);
 
@@ -924,7 +1089,9 @@ async function mostrarEstadoActual() {
         }
 
         const hayOtros = estadosCache.some(
-            e => e.usuario_id !== estadoActualUserId
+            e =>
+                normalizarIdEstado(e.usuario_id) !==
+                normalizarIdEstado(estadoActualUserId)
         );
 
         const skip = $('evSkip');
@@ -1065,13 +1232,18 @@ function saltarGrupoMensajes() {
     const orden = [];
 
     estadosCache.forEach(e => {
-        if (!orden.includes(e.usuario_id)) {
-            orden.push(e.usuario_id);
+
+        const uid = normalizarIdEstado(e.usuario_id);
+
+        if (uid && !orden.includes(uid)) {
+            orden.push(uid);
         }
     });
 
     for (
-        let i = orden.indexOf(estadoActualUserId) + 1;
+        let i = orden.indexOf(
+            normalizarIdEstado(estadoActualUserId)
+        ) + 1;
         i < orden.length;
         i++
     ) {
@@ -1491,6 +1663,7 @@ function pintarTabsPanel(estadoId, activa) {
 }
 
 async function pintarVistas(estadoId, lista, cont) {
+
     const r = await db.from('estados_vistas')
         .select('usuario_id, visto_at')
         .eq('estado_id', estadoId)
@@ -1517,24 +1690,40 @@ async function pintarVistas(estadoId, lista, cont) {
     const ids = vistas.map(v => v.usuario_id);
 
     const perf = await db.from('perfiles_publicos')
-        .select('id,nombre,handle,avatar_url')
+        .select('*')
         .in('id', ids);
 
     const mapa = {};
 
     (perf.data || []).forEach(p => {
-        mapa[p.id] = p;
+
+        p.nombre = nombreRealEstado(p);
+
+        mapa[normalizarIdEstado(p.id)] = p;
+
+        // Actualiza también la caché compartida.
+        if (
+            typeof perfilCache !== 'undefined' &&
+            perfilCache
+        ) {
+            perfilCache.set(normalizarIdEstado(p.id), {
+                ts: Date.now(),
+                data: p
+            });
+        }
     });
 
     lista.innerHTML = '';
 
-    vistas.forEach(v => {
+    await Promise.all(vistas.map(async v => {
 
-        const p = mapa[v.usuario_id] || {
-            nombre: 'Usuario',
-            handle: '',
-            avatar_url: null
-        };
+        let p = mapa[normalizarIdEstado(v.usuario_id)];
+
+        if (!p) {
+            p = await perfilDe(v.usuario_id);
+        }
+
+        const nombre = nombreRealEstado(p);
 
         const url = urlPerfil(
             p.handle,
@@ -1547,10 +1736,10 @@ async function pintarVistas(estadoId, lista, cont) {
 
         fila.innerHTML =
             '<div class="avatar">' +
-            avatarHTML(p.nombre, p.avatar_url) +
+            avatarHTML(nombre, p.avatar_url) +
             '</div>' +
             '<div class="estado-result-info"><b>' +
-            esc(p.nombre || 'Usuario') +
+            esc(nombre) +
             '</b>' +
             '<div class="estado-result-meta">@' +
             esc(p.handle || 'usuario') +
@@ -1565,10 +1754,11 @@ async function pintarVistas(estadoId, lista, cont) {
         }
 
         lista.appendChild(fila);
-    });
+    }));
 }
 
 async function pintarComentarios(estadoId, lista, cont) {
+
     const r = await db.rpc(
         'estado_comentarios_lista',
         {
@@ -1601,12 +1791,35 @@ async function pintarComentarios(estadoId, lista, cont) {
 
     lista.innerHTML = '';
 
-    arr.forEach(c => {
+    await Promise.all(arr.map(async c => {
+
+        const uid =
+            c.usuario_id ||
+            c.autor_id ||
+            c.user_id ||
+            c.perfil_id;
+
+        let perfil = null;
+
+        if (uid) {
+            perfil = await perfilDe(uid);
+        }
 
         const nombre =
-            c.nombre ||
-            c.usuario_handle ||
-            'Usuario';
+            nombreRealEstado(perfil) !== 'Usuario'
+                ? nombreRealEstado(perfil)
+                : (
+                    c.nombre ||
+                    c.nombre_completo ||
+                    c.display_name ||
+                    c.usuario_handle ||
+                    'Usuario'
+                );
+
+        const avatar =
+            (perfil && perfil.avatar_url) ||
+            c.avatar_url ||
+            null;
 
         const texto =
             c.comentario ||
@@ -1621,7 +1834,7 @@ async function pintarComentarios(estadoId, lista, cont) {
 
         fila.innerHTML =
             '<div class="avatar">' +
-            avatarHTML(nombre, c.avatar_url) +
+            avatarHTML(nombre, avatar) +
             '</div>' +
             '<div class="estado-result-info"><b>' +
             esc(nombre) +
@@ -1639,7 +1852,7 @@ async function pintarComentarios(estadoId, lista, cont) {
             '</div>';
 
         lista.appendChild(fila);
-    });
+    }));
 }
 
 function abrirVistasModal(estadoId) {
@@ -2627,5 +2840,5 @@ if (document.readyState === 'loading') {
 }
 
 // ================================================================
-// FIN · MENSAJES · ESTADOS v4.3
+// FIN · MENSAJES · ESTADOS v4.4
 // ================================================================
