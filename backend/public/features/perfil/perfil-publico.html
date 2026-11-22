@@ -971,6 +971,19 @@ html:not(.auth-ready) .app{display:none!important}
  var active=0;
  var scrollTimer=null;
 
+ function flashCard(card){
+  if(!card)return;
+  var label=card.querySelector('.eco-open span:first-child');
+  if(!label||label.dataset.busy==='1')return;
+  var prevText=label.textContent;
+  label.dataset.busy='1';
+  label.textContent='Disponible pronto';
+  setTimeout(function(){
+   label.textContent=prevText;
+   delete label.dataset.busy;
+  },1400);
+ }
+
  cards.forEach(function(card,index){
   var dot=document.createElement('button');
 
@@ -990,10 +1003,12 @@ html:not(.auth-ready) .app{display:none!important}
     return;
    }
 
-   var href=card.getAttribute('data-href');
+   var href=(card.getAttribute('data-href')||'').trim();
 
    if(href){
     window.location.href=href;
+   }else{
+    flashCard(card);
    }
   });
  });
@@ -1093,13 +1108,34 @@ html:not(.auth-ready) .app{display:none!important}
  'use strict';
 
  var RUTA_PERFIL_PROPIO='/features/perfil/perfil.html';
- var RUTA_CONTACTOS='/features/contactos/contactos.html';
  var HANDLE_RE=/^[A-Za-z0-9_]{1,40}$/;
  var UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
  var POSTS_PAGE=20;
 
  function $(id){
   return document.getElementById(id);
+ }
+
+ function esNombreValido(valor){
+  var limpio=String(valor||'').trim();
+  if(!limpio)return false;
+  var baja=limpio.toLowerCase();
+  return baja!=='usuario'&&baja!=='undefined'&&baja!=='null';
+ }
+
+ function limpiarHandle(h){
+  return String(h||'').replace(/^@+/,'').trim();
+ }
+
+ function resolverNombre(candidatos,handleFallback){
+  var lista=Array.isArray(candidatos)?candidatos:[];
+  for(var i=0;i<lista.length;i++){
+   var val=String(lista[i]||'').trim();
+   if(esNombreValido(val))return val;
+  }
+  var h=limpiarHandle(handleFallback);
+  if(h)return '@'+h;
+  return 'Usuario';
  }
 
  var el={
@@ -1204,7 +1240,7 @@ html:not(.auth-ready) .app{display:none!important}
  function leerIdentificador(){
   var sp=new URLSearchParams(window.location.search);
 
-  var u=(sp.get('u')||'').trim();
+  var u=limpiarHandle(sp.get('u')||'');
   if(u&&HANDLE_RE.test(u))return {tipo:'handle',valor:u};
 
   var id=(sp.get('id')||'').trim();
@@ -1214,9 +1250,11 @@ html:not(.auth-ready) .app{display:none!important}
  }
 
  function urlPerfil(){
-  return window.location.origin+
-   window.location.pathname+
-   '?u='+encodeURIComponent(perfil.handle);
+  var h=limpiarHandle(perfil&&perfil.handle);
+  var base=window.location.origin+window.location.pathname;
+  if(h)return base+'?u='+encodeURIComponent(h);
+  if(perfil&&perfil.id)return base+'?id='+encodeURIComponent(perfil.id);
+  return base;
  }
 
  function fechaUTC(iso){
@@ -1232,8 +1270,12 @@ html:not(.auth-ready) .app{display:none!important}
  }
 
  function textoCompartir(){
+  var nombreVisible=resolverNombre(
+   [perfil&&perfil.nombre],
+   perfil&&perfil.handle
+  );
   return t('perfil_publico_compartir_texto',{
-   nombre:perfil.nombre||perfil.handle
+   nombre:nombreVisible
   });
  }
 
@@ -1411,8 +1453,11 @@ html:not(.auth-ready) .app{display:none!important}
  }
 
  function renderPerfil(p){
-  el.nombre.textContent=p.nombre||p.handle;
-  el.handle.textContent='@'+p.handle;
+  var handleLimpio=limpiarHandle(p.handle);
+  var nombreVisible=resolverNombre([p.nombre],handleLimpio);
+
+  el.nombre.textContent=nombreVisible;
+  el.handle.textContent=handleLimpio?'@'+handleLimpio:'@usuario';
   el.verificado.hidden=!p.verificado;
 
   el.seguidores.textContent=String(
@@ -1524,10 +1569,24 @@ html:not(.auth-ready) .app{display:none!important}
   var art=document.createElement('article');
   art.className='pub-post';
 
+  var mismoAutor=!!(perfil&&p.usuario_id&&perfil.id===p.usuario_id);
+  var handlePost=limpiarHandle(
+   p.usuario_handle||(mismoAutor&&perfil&&perfil.handle)||''
+  );
+  var nombrePost=resolverNombre(
+   [
+    p.usuario_nombre,
+    mismoAutor&&perfil&&perfil.nombre
+   ],
+   handlePost
+  );
+
   var av=document.createElement('div');
   av.className='pub-av';
 
-  var avatarUrl=safeHttps(p.usuario_avatar_url);
+  var avatarUrl=safeHttps(
+   p.usuario_avatar_url||(mismoAutor&&perfil&&perfil.avatar_url)||''
+  );
 
   if(avatarUrl){
    var im=document.createElement('img');
@@ -1536,7 +1595,8 @@ html:not(.auth-ready) .app{display:none!important}
    im.src=avatarUrl;
    av.appendChild(im);
   }else{
-   av.textContent=(p.usuario_nombre||'U').charAt(0).toUpperCase();
+   var inicial=(nombrePost.replace(/^@/,'').charAt(0)||'U').toUpperCase();
+   av.textContent=inicial;
   }
 
   var cuerpo=document.createElement('div');
@@ -1544,12 +1604,12 @@ html:not(.auth-ready) .app{display:none!important}
 
   var nombre=document.createElement('div');
   nombre.className='pub-nombre';
-  nombre.textContent=p.usuario_nombre||p.usuario_handle||'Usuario';
+  nombre.textContent=nombrePost;
 
   var sub=document.createElement('div');
   sub.className='pub-sub';
   sub.textContent=
-   (p.usuario_handle?'@'+p.usuario_handle+' · ':'')+fechaPost(p.created_at);
+   (handlePost?'@'+handlePost+' · ':'')+fechaPost(p.created_at);
 
   cuerpo.appendChild(nombre);
   cuerpo.appendChild(sub);
@@ -1600,7 +1660,8 @@ html:not(.auth-ready) .app{display:none!important}
  }
 
  async function cargarPublicaciones(client,handle,reiniciar){
-  if(pub.cargando||!handle)return;
+  var handleLimpio=limpiarHandle(handle);
+  if(pub.cargando||!handleLimpio)return;
 
   pub.cargando=true;
 
@@ -1614,7 +1675,7 @@ html:not(.auth-ready) .app{display:none!important}
 
   try{
    var r=await client.rpc('perfil_publicaciones_contactos',{
-    p_handle:handle,
+    p_handle:handleLimpio,
     p_antes:reiniciar?null:pub.antes,
     p_limite:POSTS_PAGE
    });
