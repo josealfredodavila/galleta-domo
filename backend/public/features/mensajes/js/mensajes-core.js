@@ -1,9 +1,15 @@
 // ================================================================
-// MENSAJES · CORE v2.0 · MÓDULO 1 DE 8
+// MENSAJES · CORE v2.1 · MÓDULO 1 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-core.js
 // Contenido: constantes, estado compartido, helpers de texto,
 //            toast, modal propio (NeonModal), sesión, subida de
 //            archivos, perfiles y envío de mensajes.
+// Cambios v2.1:
+//  - profile(id) lee con la RPC perfiles_por_ids (SECURITY DEFINER),
+//    ya no con la vista perfiles_publicos, que solo mostraba la fila
+//    propia y dejaba "Usuario / Desconectado" en los demás chats.
+//  - El perfil no disponible se guarda con TTL corto (30 s) para
+//    reintentar pronto en vez de quedar fijo 5 minutos.
 // Cambios v2.0:
 //  - Sin emojis en toasts, mensajes de error ni textos del sistema
 //  - Toast con role/aria-live para lectores de pantalla
@@ -35,6 +41,7 @@ let currentUserProfile = null;
 
 const perfilCache = new Map();
 const TTL_PERFIL_MS = 5 * 60 * 1000;
+const TTL_PERFIL_FALLBACK_MS = 30 * 1000;
 const signedCache = new Map();
 const TTL_SIGNED_MS = 50 * 60 * 1000;
 
@@ -288,21 +295,40 @@ async function profile(id) {
     if (id === BOT_ID) {
         return { id: BOT_ID, nombre: 'Marquinhos', handle: 'marquinhos', avatar_url: null, online: true, bot: true, bloqueado: false };
     }
-    const enCache = perfilCache.get(id);
-    if (enCache && Date.now() - enCache.ts < TTL_PERFIL_MS) return enCache.data;
 
-    const r = await db.from('perfiles_publicos')
-        .select('id,nombre,handle,avatar_url,online,ultima_conexion')
-        .eq('id', id)
-        .maybeSingle();
-    const data = r.data
-        ? { ...r.data, bloqueado: false }
-        : { id, nombre: 'Usuario', handle: null, avatar_url: null, online: false, bloqueado: false };
+    const enCache = perfilCache.get(id);
+    if (enCache && Date.now() - enCache.ts < enCache.ttl) return enCache.data;
+
+    let data = null;
+    try {
+        // perfiles_por_ids es SECURITY DEFINER: devuelve el perfil de cualquier
+        // usuario, enmascara "en línea" si ocultó su estado y omite cuentas inválidas.
+        const { data: filas, error } = await db.rpc('perfiles_por_ids', { p_ids: [id] });
+        if (error) throw error;
+        const p = Array.isArray(filas) ? filas[0] : null;
+        if (p) {
+            data = {
+                id: p.id,
+                nombre: p.nombre || 'Usuario',
+                handle: p.handle || null,
+                avatar_url: p.avatar_url || null,
+                online: p.online === true,
+                ultima_conexion: p.ultima_conexion || null,
+                bloqueado: false
+            };
+        }
+    } catch (e) {
+        console.warn('No se pudo cargar el perfil:', e);
+    }
+
+    // Sin datos: fallback con TTL corto para reintentar pronto
+    const ttl = data ? TTL_PERFIL_MS : TTL_PERFIL_FALLBACK_MS;
+    if (!data) data = { id, nombre: 'Usuario', handle: null, avatar_url: null, online: false, bloqueado: false };
 
     if (perfilCache.size >= PERFIL_CACHE_LIMITE) {
         const primera = perfilCache.keys().next().value;
         if (primera !== undefined) perfilCache.delete(primera);
     }
-    perfilCache.set(id, { ts: Date.now(), data });
+    perfilCache.set(id, { ts: Date.now(), ttl, data });
     return data;
 }
