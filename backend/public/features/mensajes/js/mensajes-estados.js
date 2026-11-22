@@ -1,23 +1,15 @@
 // ================================================================
-// MENSAJES · ESTADOS (HISTORIAS) v4.4 · MÓDULO 5 DE 8
+// MENSAJES · ESTADOS (HISTORIAS) v4.5 · MÓDULO 5 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-estados.js
 // Depende de: mensajes-core.js
 //
-// ACTUALIZACIÓN v4.4:
-// - Corrige la identificación del nombre real de los amigos.
-// - Consulta perfiles públicos por ID de usuario.
-// - Evita mostrar "Usuario" cuando existe un nombre registrado.
-// - Resuelve nombres mediante perfiles_publicos.
-// - Mantiene sincronizados nombres, handles y avatares.
-// - Corrige la comparación de IDs como string.
-// - Aplica nombres reales en la rueda de historias.
-// - Aplica nombres reales en la cabecera del visor.
-// - Aplica nombres reales en las listas de vistas.
-// - Aplica nombres reales en comentarios cuando RPC devuelve
-//   identificadores de usuario.
-// - Mantiene la última fotografía o video publicado.
-// - Conserva vistas, comentarios, eliminación y publicación.
-// - Conserva compatibilidad con Supabase.
+// ACTUALIZACIÓN v4.5:
+// - Amplía candidatos de nombre y usa @handle como respaldo legible
+//   cuando no hay nombre real antes de caer en "Usuario".
+// - Conserva datos semilla (nombre, handle, avatar) provenientes de
+//   historias/RPC al agrupar por usuario.
+// - Mantiene resolución por perfiles_publicos, comparación de IDs
+//   como string, vistas, comentarios, eliminación y publicación.
 // ================================================================
 
 'use strict';
@@ -238,7 +230,7 @@ function urlPerfil(handle, uid) {
 
 /* ================================================================
    IDENTIDAD REAL DEL USUARIO
-   CORRECCIÓN PRINCIPAL v4.4
+   CORRECCIÓN PRINCIPAL v4.5
 ================================================================ */
 
 // Normaliza los identificadores para evitar diferencias entre
@@ -257,9 +249,11 @@ function nombreRealEstado(perfil) {
 
     const candidatos = [
         perfil.nombre,
+        perfil.usuario_nombre,
         perfil.nombre_completo,
         perfil.display_name,
-        perfil.full_name
+        perfil.full_name,
+        perfil.apodo
     ];
 
     for (let i = 0; i < candidatos.length; i++) {
@@ -274,6 +268,14 @@ function nombreRealEstado(perfil) {
         ) {
             return nombre;
         }
+    }
+
+    const handle = String(perfil.handle || perfil.usuario_handle || '')
+        .replace(/^@+/, '')
+        .trim();
+
+    if (handle) {
+        return '@' + handle;
     }
 
     return 'Usuario';
@@ -362,11 +364,11 @@ async function perfilDe(uid) {
             };
         }
 
-        data = Object.assign({}, data, {
+        data = Object.assign({}, en || {}, data, {
             id: id,
-            nombre: nombreRealEstado(data),
-            handle: data.handle || '',
-            avatar_url: data.avatar_url || null
+            nombre: nombreRealEstado(Object.assign({}, en || {}, data)),
+            handle: data.handle || (en && en.handle) || '',
+            avatar_url: data.avatar_url || (en && en.avatar_url) || null
         });
 
         if (
@@ -603,6 +605,34 @@ async function cargarEstados() {
             }
 
             porUsuario[uid].push(e);
+
+            const nombreSemilla = e.nombre || e.usuario_nombre || '';
+            const handleSemilla = e.handle || e.usuario_handle || '';
+            const avatarSemilla = e.avatar_url || e.usuario_avatar_url || null;
+
+            if (nombreSemilla || handleSemilla || avatarSemilla) {
+                const previo = obtenerPerfilCacheEstado(uid) || {};
+                const combinado = Object.assign({}, previo, {
+                    id: uid,
+                    nombre: nombreRealEstado({
+                        nombre: nombreSemilla || previo.nombre,
+                        handle: handleSemilla || previo.handle
+                    }),
+                    handle: handleSemilla || previo.handle || '',
+                    avatar_url: avatarSemilla || previo.avatar_url || null
+                });
+
+                if (
+                    typeof perfilCache !== 'undefined' &&
+                    perfilCache &&
+                    typeof perfilCache.set === 'function'
+                ) {
+                    perfilCache.set(uid, {
+                        ts: Date.now(),
+                        data: combinado
+                    });
+                }
+            }
         });
 
         const otros = Object.keys(porUsuario)
@@ -634,7 +664,7 @@ async function cargarEstados() {
 }
 
 /* ================================================================
-   RUEDA DE HISTORIAS v4.4
+   RUEDA DE HISTORIAS v4.5
 ================================================================ */
 
 function renderizarRueda(rueda, porUsuario, otros) {
@@ -2840,5 +2870,5 @@ if (document.readyState === 'loading') {
 }
 
 // ================================================================
-// FIN · MENSAJES · ESTADOS v4.4
+// FIN · MENSAJES · ESTADOS v4.5
 // ================================================================
