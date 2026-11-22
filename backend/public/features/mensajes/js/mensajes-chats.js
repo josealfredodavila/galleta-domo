@@ -1,6 +1,10 @@
 // ================================================================
-// MENSAJES · CHATS v2.2 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.3 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
+// Cambios v2.3 (multimedia):
+//  - messageHTML usa solo la URL firmada (sin fallback a imagen_url crudo).
+//  - Si un adjunto no tiene URL se muestra "Archivo no disponible"
+//    en lugar de una burbuja vacía o el nombre del archivo.
 // Cambios v2.2 (interfaz):
 //  - El composer nunca queda oculto por demora/fallo al consultar bloqueos.
 //  - Solo se oculta si hay bloqueo confirmado (yo === true || el === true).
@@ -371,7 +375,10 @@ function messageHTML(m, sent, signedUrl) {
     let body = (typeof window.formatearMensajeConEmotes === 'function')
         ? window.formatearMensajeConEmotes(textoLimpio)
         : esc(textoLimpio);
-    const urlToUse = urlSegura(signedUrl || m.imagen_url);
+
+    const esMedia = m.tipo === 'imagen' || m.tipo === 'video' || m.tipo === 'audio' || m.tipo === 'archivo';
+    const urlToUse = urlSegura(signedUrl);
+
     if (urlToUse) {
         if (m.tipo === 'imagen') body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy" data-visor="1" data-src="${esc(urlToUse)}" data-nombre="${esc(m.nombre_archivo || 'imagen.jpg')}" style="cursor:zoom-in;">`;
         else if (m.tipo === 'video') body = `<video controls playsinline src="${esc(urlToUse)}"></video>`;
@@ -380,7 +387,10 @@ function messageHTML(m, sent, signedUrl) {
             const displayName = esc(m.nombre_archivo || limpiarMarkdown(m.contenido) || 'Archivo');
             body = `<a class="file-link" href="${esc(urlToUse)}" target="_blank" rel="noopener">${displayName}</a>`;
         }
+    } else if (esMedia) {
+        body = '<span class="media-no-disponible">Archivo no disponible</span>';
     }
+
     const esBotRecibido = !sent && (m.es_bot || m.bot_message);
     const headerBot = esBotRecibido ? '<div class="bubble-bot-info">MARQUINHOS</div>' : '';
     const editadoHTML = m.editado === true ? ' · editado' : '';
