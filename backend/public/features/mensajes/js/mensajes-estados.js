@@ -1,20 +1,22 @@
 // ================================================================
-// MENSAJES · ESTADOS (HISTORIAS) v4.2 · MÓDULO 5 DE 8
+// MENSAJES · ESTADOS (HISTORIAS) v4.3 · MÓDULO 5 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-estados.js
 // Depende de: mensajes-core.js
 //
-// ACTUALIZACIÓN v4.2:
-// - Eliminación funcional desde el visor.
-// - Evento de eliminación conectado automáticamente.
-// - Confirmación antes de eliminar.
-// - Protección contra eliminaciones duplicadas.
-// - Verificación de eliminación en Supabase.
-// - Limpieza del archivo correspondiente en Storage.
-// - Actualización inmediata de la rueda de historias.
-// - Corrección de índices después de eliminar.
-// - Cierre automático si se elimina la última historia.
-// - Protección del visor durante operaciones asíncronas.
-// - Conserva publicación, vistas, comentarios y reproducción.
+// ACTUALIZACIÓN v4.3:
+// - Muestra la última historia publicada de cada usuario.
+// - Vista previa real de fotografías en la rueda.
+// - Vista previa real de videos en la rueda.
+// - Indicador de reproducción para historias de video.
+// - Identifica correctamente la publicación más reciente.
+// - Mantiene el avatar y nombre del usuario.
+// - Conserva el indicador de historias nuevas/vistas.
+// - Actualización inmediata después de publicar.
+// - Actualización inmediata después de eliminar.
+// - Conserva navegación, reproducción y controles.
+// - Conserva vistas, comentarios y eliminación.
+// - Conserva publicación múltiple y límites.
+// - Compatible con historias de Supabase.
 // ================================================================
 
 'use strict';
@@ -111,7 +113,24 @@ function estadoEsNuevo(e) {
 }
 
 function estadosDe(uid) {
-    return estadosCache.filter(e => e.usuario_id === uid);
+    return estadosCache
+        .filter(e => String(e.usuario_id) === String(uid))
+        .sort((a, b) =>
+            new Date(a.created_at || 0) -
+            new Date(b.created_at || 0)
+        );
+}
+
+/*
+ * Obtiene siempre la última historia cronológica
+ * publicada por un usuario.
+ */
+function ultimoEstadoDe(uid) {
+    const lista = estadosDe(uid);
+
+    return lista.length
+        ? lista[lista.length - 1]
+        : null;
 }
 
 function estadoPath(url) {
@@ -137,10 +156,6 @@ function estadoPath(url) {
     return null;
 }
 
-/*
- * Elimina el archivo físico de Storage.
- * La historia de la base de datos se elimina por separado.
- */
 async function borrarArchivoStorage(url) {
     const path = estadoPath(url);
 
@@ -451,10 +466,19 @@ async function cargarEstados() {
     }
 }
 
+/* ================================================================
+   RUEDA DE HISTORIAS v4.3
+   AHORA MUESTRA LA ÚLTIMA FOTO O VIDEO PUBLICADO
+================================================================ */
+
 function renderizarRueda(rueda, porUsuario, otros) {
     rueda.innerHTML = '';
 
-    const mios = porUsuario[user.id] || [];
+    const mios = (porUsuario[user.id] || []).slice().sort(
+        (a, b) =>
+            new Date(a.created_at || 0) -
+            new Date(b.created_at || 0)
+    );
 
     if (mios.length) {
 
@@ -490,12 +514,26 @@ function renderizarRueda(rueda, porUsuario, otros) {
             avatar_url: null
         };
 
+        const lista = (porUsuario[uid] || []).slice().sort(
+            (a, b) =>
+                new Date(a.created_at || 0) -
+                new Date(b.created_at || 0)
+        );
+
+        const ultimo = lista.length
+            ? lista[lista.length - 1]
+            : null;
+
+        if (!ultimo) return;
+
         rueda.appendChild(
             crearItemRueda({
                 titulo: perfil.nombre || 'Usuario',
                 avatarUrl: perfil.avatar_url,
                 avatarNombre: perfil.nombre,
-                nuevo: porUsuario[uid].some(estadoEsNuevo),
+                thumb: estadoURL(ultimo),
+                esVideo: estadoEsVideo(ultimo),
+                nuevo: lista.some(estadoEsNuevo),
                 onClick: () => abrirEstadoUsuario(uid)
             })
         );
@@ -507,6 +545,13 @@ function renderizarRueda(rueda, porUsuario, otros) {
     }
 }
 
+/*
+ * Crea cada círculo utilizando la última publicación:
+ *
+ * FOTO: muestra la fotografía publicada.
+ * VIDEO: muestra una vista previa del video con indicador.
+ * SIN HISTORIA: muestra el avatar o botón de creación.
+ */
 function crearItemRueda(o) {
     const item = document.createElement('div');
 
@@ -530,15 +575,55 @@ function crearItemRueda(o) {
 
     } else if (o.thumb && o.esVideo) {
 
-        inner.innerHTML = ICO_PLAY;
+        const video = document.createElement('video');
+
+        video.className = 'estado-thumb-video';
+        video.src = o.thumb;
+        video.muted = true;
+        video.defaultMuted = true;
+        video.playsInline = true;
+        video.preload = 'metadata';
+        video.autoplay = false;
+        video.controls = false;
+
+        video.setAttribute('muted', '');
+        video.setAttribute('playsinline', '');
+        video.setAttribute('aria-hidden', 'true');
+
+        video.addEventListener('loadedmetadata', function() {
+            try {
+                if (video.duration > 0) {
+                    video.currentTime = Math.min(0.1, video.duration);
+                }
+            } catch (e) {}
+        }, { once: true });
+
+        video.addEventListener('error', function() {
+            video.classList.add('estado-thumb-error');
+        });
+
+        inner.appendChild(video);
+
+        const indicador = document.createElement('span');
+
+        indicador.className = 'estado-thumb-play';
+        indicador.innerHTML = ICO_PLAY;
+        indicador.setAttribute('aria-hidden', 'true');
+
+        inner.appendChild(indicador);
 
     } else if (o.thumb) {
 
         const img = document.createElement('img');
 
+        img.className = 'estado-thumb-imagen';
         img.src = o.thumb;
-        img.alt = '';
+        img.alt = 'Última historia publicada';
         img.loading = 'lazy';
+
+        img.onerror = function() {
+            img.classList.add('estado-thumb-error');
+        };
 
         inner.appendChild(img);
 
@@ -1586,13 +1671,8 @@ function cerrarVistasModal() {
 
 /* ================================================================
    ELIMINAR HISTORIA
-   ELIMINACIÓN REAL EN SUPABASE + STORAGE
 ================================================================ */
 
-/*
- * Comprueba que la historia siga perteneciendo al usuario
- * autenticado antes de permitir cualquier eliminación.
- */
 function validarPropiedadHistoria(estadoId) {
     if (!user || !estadoId) return null;
 
@@ -1602,10 +1682,6 @@ function validarPropiedadHistoria(estadoId) {
     ) || null;
 }
 
-/*
- * Conecta el botón real del visor con la función de eliminación.
- * Utiliza dataset.estadoId para identificar la historia actual.
- */
 function instalarAccionEliminarEstado() {
     const btn = $('evEliminar');
 
@@ -1634,17 +1710,6 @@ function instalarAccionEliminarEstado() {
     });
 }
 
-/*
- * Elimina una historia:
- *
- * 1. Verifica que sea propiedad del usuario.
- * 2. Solicita confirmación.
- * 3. Elimina la fila de Supabase.
- * 4. Comprueba que la eliminación se haya realizado.
- * 5. Elimina el archivo de Storage.
- * 6. Actualiza la memoria local.
- * 7. Actualiza el visor y la rueda.
- */
 async function eliminarHistoriaMensajes(estadoId) {
 
     if (!estadoId || !user) {
@@ -1701,10 +1766,6 @@ async function eliminarHistoriaMensajes(estadoId) {
 
         if (!ok) return;
 
-        /*
-         * Se vuelve a verificar la propiedad inmediatamente
-         * antes de realizar la operación destructiva.
-         */
         const propietario = validarPropiedadHistoria(estadoId);
 
         if (!propietario) {
@@ -1713,11 +1774,6 @@ async function eliminarHistoriaMensajes(estadoId) {
             );
         }
 
-        /*
-         * Eliminación real de la fila.
-         * Se conserva el filtro de usuario para proteger
-         * las historias de otros usuarios.
-         */
         const r = await db.from('estados')
             .delete()
             .eq('id', estadoId)
@@ -1728,35 +1784,21 @@ async function eliminarHistoriaMensajes(estadoId) {
             throw r.error;
         }
 
-        /*
-         * Si Supabase no devuelve la fila eliminada,
-         * no se informa falsamente que se eliminó.
-         */
         if (!r.data || !r.data.length) {
             throw new Error(
                 'Supabase no confirmó la eliminación. Revisa los permisos RLS de la tabla estados.'
             );
         }
 
-        /*
-         * La fila ya está eliminada.
-         * Ahora se intenta limpiar el archivo físico.
-         */
         const urlArchivo = estadoURL(estado);
 
         const storageEliminado =
             await borrarArchivoStorage(urlArchivo);
 
-        /*
-         * Limpiar las vistas locales relacionadas.
-         */
         if (window.__estadosVistosIds) {
             window.__estadosVistosIds.delete(estadoId);
         }
 
-        /*
-         * Actualizar caché local.
-         */
         const indiceEliminado = estadosCache.findIndex(
             e => String(e.id) === String(estadoId)
         );
@@ -1765,9 +1807,6 @@ async function eliminarHistoriaMensajes(estadoId) {
             e => String(e.id) !== String(estadoId)
         );
 
-        /*
-         * Confirmación al usuario.
-         */
         if (storageEliminado) {
             aviso(
                 'Historia eliminada correctamente.',
@@ -1780,10 +1819,6 @@ async function eliminarHistoriaMensajes(estadoId) {
             );
         }
 
-        /*
-         * Si se estaba visualizando la historia eliminada,
-         * actualizar el visor sin dejarlo bloqueado.
-         */
         if (estadoActualUserId === user.id) {
 
             const restantes = estadosDe(user.id);
@@ -1816,9 +1851,6 @@ async function eliminarHistoriaMensajes(estadoId) {
             await cargarEstados();
         }
 
-        /*
-         * Actualizar rueda después de la operación.
-         */
         await cargarEstados();
 
     } catch (e) {
@@ -1845,10 +1877,6 @@ async function eliminarHistoriaMensajes(estadoId) {
             boton.disabled = false;
             boton.classList.remove('is-loading');
 
-            /*
-             * No mostrar el botón si ya no existe
-             * una historia propia en el visor.
-             */
             const actual = estadosDe(user ? user.id : null);
 
             if (
@@ -2554,16 +2582,8 @@ function inicializarEstados() {
 
     instalarControlesVideo();
 
-    /*
-     * IMPORTANTE:
-     * Conecta directamente el botón de eliminar del visor.
-     * No depende de que exista un onclick en el HTML.
-     */
     instalarAccionEliminarEstado();
 
-    /*
-     * Por si la página se oculta o pierde el foco.
-     */
     document.addEventListener(
         'visibilitychange',
         () => {
@@ -2584,10 +2604,6 @@ function inicializarEstados() {
     );
 }
 
-/*
- * Permite inicializar nuevamente si los elementos del visor
- * se incorporan al DOM después de cargar este módulo.
- */
 function reinicializarEstados() {
 
     instalarGestos();
@@ -2611,5 +2627,5 @@ if (document.readyState === 'loading') {
 }
 
 // ================================================================
-// FIN · MENSAJES · ESTADOS v4.2
+// FIN · MENSAJES · ESTADOS v4.3
 // ================================================================
