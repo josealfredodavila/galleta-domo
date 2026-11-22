@@ -1,23 +1,29 @@
 // ================================================================
-// MENSAJES · CHATS v2.5 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.6 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
+//
+// ACTUALIZACIÓN v2.6 · CORRECCIÓN DE NOTAS DE VOZ Y APERTURA DE CHATS
+//  - Cada grabación tiene un identificador de generación. Un evento
+//    tardío de una grabación descartada ya no puede anular la nueva.
+//  - vozForzarReinicio() libera micrófono, recorder, temporizadores y
+//    panel en un solo paso; se usa al descartar, al enviar y al detectar
+//    un estado atascado.
+//  - Vigilante: si la nota no termina de procesarse en 4 s, se prepara
+//    de todas formas o se reinicia el micrófono.
+//  - Envío protegido con finally: el micrófono nunca queda bloqueado
+//    por un error de red o de subida.
+//  - liberarInterfazChat(): al abrir una conversación o tocar la lista
+//    se limpian capas, estilos inline y clases que deje el visor de
+//    estados, sin tocar el visor en sí.
 //
 // ACTUALIZACIÓN v2.5 · AJUSTES VISUALES DE NOTA DE VOZ
 //  - Vista previa en una sola fila: deshacer, reproducir, texto y enviar.
-//  - El texto "Nota de voz lista" y "Escucha antes de enviar" ya no se
-//    parte en columnas angostas; se lee en una línea con elipsis.
-//  - El botón X rojo de cancelar se reemplaza por una flecha de deshacer.
-//  - Sin cambios en la lógica de grabación, ondas, reproductor ni envío.
+//  - Botón de deshacer en lugar de la X roja.
 //
 // ACTUALIZACIÓN v2.4 · EXPERIENCIA DE NOTAS DE VOZ
 //  - Ondas de audio animadas durante la grabación.
-//  - Botón de deshacer para cancelar y descartar.
-//  - Botón ✓ para detener y preparar la nota.
 //  - Vista previa antes de enviar.
-//  - Botón para reproducir y pausar la vista previa.
 //  - Envío únicamente mediante confirmación expresa.
-//  - Limpieza de micrófono y recursos temporales.
-//  - Reproductor de audio con clase CSS propia y ancho adaptable.
 //  - Compatibilidad con notas de voz para Marquinhos.
 //  - Conserva Supabase, bucket chat-audio y flujo existente.
 //
@@ -51,9 +57,11 @@ let vozEstado = 'idle';
 let vozCancelar = false;
 let vozPreviewAudio = null;
 let vozProcesando = false;
+let vozGen = 0;
 
 const VOZ_BARRAS = 36;
 const VOZ_MAX_MB = 50;
+const VOZ_VIGILANTE_MS = 4000;
 
 let conversationFilterOriginal = '';
 
@@ -152,6 +160,48 @@ function aplicarFiltroConversaciones() {
         const visible = !q || el.dataset.name?.includes(q) || el.querySelector('.convname')?.textContent.toLowerCase().includes(q);
         el.style.display = visible ? 'flex' : 'none';
     });
+}
+
+/* ---------------- Capas y estilos del visor de estados ---------------- */
+
+// Quita del DOM de mensajes lo que pueda haber dejado el visor de estados
+// (clases, estilos inline, inert). No abre ni cierra el visor en sí.
+function liberarInterfazChat() {
+    try {
+        const visor = $('estadoViewer');
+        if (visor) {
+            visor.classList.remove('show');
+            visor.style.removeProperty('pointer-events');
+        }
+
+        document.querySelectorAll('.estado-viewer.show, .estado-visor.show').forEach(el => {
+            el.classList.remove('show');
+        });
+
+        const overlayPerfil = $('contactProfileOverlay');
+        const perfilAbierto = !!(overlayPerfil && overlayPerfil.classList.contains('open'));
+
+        [document.body, document.documentElement, $('panel'), $('conversationList'), $('messages'), $('composer')]
+            .forEach(el => {
+                if (!el) return;
+                el.style.removeProperty('pointer-events');
+                el.removeAttribute('inert');
+            });
+
+        if (!perfilAbierto && document.body) {
+            document.body.style.removeProperty('overflow');
+        }
+
+        if (document.body) {
+            Array.from(document.body.classList).forEach(clase => {
+                if (/estado|visor|viewer|no-scroll|overlay-open/i.test(clase)) {
+                    document.body.classList.remove(clase);
+                }
+            });
+        }
+    } catch (e) {
+        console.warn('[Mensajes] liberarInterfazChat:', e);
+    }
 }
 
 /* ---------------- Bloqueo ---------------- */
@@ -270,10 +320,9 @@ function marcarBotLeidoEnSegundoPlano() {
 async function openConversation(id) {
     const secuencia = ++aperturaSecuencia;
 
-    if (vozEstado !== 'idle') cancelarNotaVoz(true);
+    liberarInterfazChat();
 
-    const visor = $('estadoViewer');
-    if (visor) visor.classList.remove('show');
+    if (vozEstado !== 'idle') cancelarNotaVoz(true);
 
     if (!await auth()) return;
 
@@ -861,7 +910,9 @@ function vozRestablecerInterfaz() {
         panel.querySelector('#vozStatusText').textContent = 'Grabando nota de voz';
         panel.querySelector('#vozLiveDot').hidden = false;
         panel.querySelector('#vozAcceptBtn').hidden = false;
+        panel.querySelector('#vozAcceptBtn').disabled = false;
         panel.querySelector('#vozCancelBtn').hidden = false;
+        panel.querySelector('#vozCancelBtn').disabled = false;
     }
 
     vozEstado = 'idle';
@@ -876,13 +927,37 @@ function vozRestablecerInterfaz() {
     }
 }
 
+// Reinicio completo: invalida eventos pendientes, detiene la grabación
+// activa sin dejar handlers vivos y devuelve la interfaz al estado inicial.
+function vozForzarReinicio() {
+    vozGen++;
+
+    const rec = recorder;
+    recorder = null;
+    if (rec) {
+        try {
+            rec.ondataavailable = null;
+            rec.onstop = null;
+            rec.onerror = null;
+            if (rec.state !== 'inactive') rec.stop();
+        } catch (e) { }
+    }
+
+    audioChunks = [];
+    vozLimpiarPreview();
+    vozRestablecerInterfaz();
+    vozOcultarPanel();
+}
+
 function vozReiniciarPanel() {
     const panel = vozCrearInterfaz();
     if (!panel) return;
     panel.querySelector('#vozPreviewControls').hidden = true;
     panel.querySelector('#vozWaveform').hidden = false;
     panel.querySelector('#vozAcceptBtn').hidden = false;
+    panel.querySelector('#vozAcceptBtn').disabled = false;
     panel.querySelector('#vozCancelBtn').hidden = false;
+    panel.querySelector('#vozCancelBtn').disabled = false;
     panel.querySelector('#vozLiveDot').hidden = false;
     panel.querySelector('#vozStatusText').textContent = 'Grabando nota de voz';
     panel.querySelector('#vozHint').textContent = 'Tu audio no se enviará hasta que confirmes.';
@@ -912,17 +987,26 @@ function extensionForMime(mime) {
 /* ---------------- Iniciar grabación ---------------- */
 
 async function recordAudioNota() {
-    if (vozEstado === 'recording') {
+    // Grabando con grabadora viva: el botón detiene y prepara.
+    if (vozEstado === 'recording' && recorder) {
         detenerYPrepararNotaVoz();
         return;
     }
 
     if (vozEstado === 'ready') {
-        toast('Ya tienes una nota preparada. Envíala o cancélala.', 'warning');
+        toast('Ya tienes una nota preparada. Envíala o deshazla.', 'warning');
         return;
     }
 
-    if (vozProcesando) return;
+    // Envío en curso: se respeta, pero con un límite de seguridad.
+    if (vozProcesando) {
+        toast('Espera un momento, la nota anterior se está enviando.', 'warning');
+        return;
+    }
+
+    // Cualquier otro estado residual (procesando, cancelado, grabando sin
+    // grabadora) se limpia antes de empezar de nuevo.
+    if (vozEstado !== 'idle') vozForzarReinicio();
 
     if (!current) {
         toast('Selecciona una conversación.', 'error');
@@ -963,25 +1047,22 @@ async function recordAudioNota() {
         const mimeType = getSupportedAudioMime();
         vozMimeActual = mimeType || 'audio/webm';
 
-        recorder = mimeType
+        const rec = mimeType
             ? new MediaRecorder(vozStream, { mimeType: mimeType })
             : new MediaRecorder(vozStream);
 
-        recorder.ondataavailable = function(e) {
+        rec.ondataavailable = function(e) {
             if (e.data && e.data.size > 0) audioChunks.push(e.data);
         };
 
-        recorder.onerror = function(e) {
+        rec.onerror = function(e) {
             console.error('[Mensajes] Error grabando:', e);
             cancelarNotaVoz(false);
             toast('Ocurrió un error durante la grabación.', 'error');
         };
 
-        recorder.onstop = function() {
-            vozProcesarGrabacion();
-        };
-
-        recorder.start(250);
+        recorder = rec;
+        rec.start(250);
 
         vozMostrarPanel();
         vozIniciarAnimacion(vozStream);
@@ -993,8 +1074,7 @@ async function recordAudioNota() {
 
     } catch (e) {
         console.error('Micrófono:', e);
-        vozRestablecerInterfaz();
-        vozOcultarPanel();
+        vozForzarReinicio();
         toast('No se pudo acceder al micrófono. Revisa los permisos.', 'error');
     }
 }
@@ -1002,7 +1082,16 @@ async function recordAudioNota() {
 /* ---------------- Detener y preparar ---------------- */
 
 function detenerYPrepararNotaVoz() {
-    if (vozEstado !== 'recording' || !recorder) return;
+    if (vozEstado !== 'recording') return;
+
+    if (!recorder) {
+        vozForzarReinicio();
+        toast('No se pudo preparar la nota. Intenta de nuevo.', 'error');
+        return;
+    }
+
+    const gen = vozGen;
+    const rec = recorder;
 
     vozEstado = 'processing';
     vozDetenerAnimacion();
@@ -1014,45 +1103,52 @@ function detenerYPrepararNotaVoz() {
         panel.querySelector('#vozAcceptBtn').disabled = true;
     }
 
+    rec.onstop = function() {
+        if (gen !== vozGen) return;
+        vozProcesarGrabacion(rec);
+    };
+
     try {
-        if (recorder.state !== 'inactive') recorder.stop();
-        else vozProcesarGrabacion();
+        if (rec.state !== 'inactive') rec.stop();
+        else vozProcesarGrabacion(rec);
     } catch (e) {
         console.error('[Mensajes] No se pudo detener la grabación:', e);
-        cancelarNotaVoz(false);
+        vozForzarReinicio();
         toast('No se pudo preparar la nota de voz.', 'error');
+        return;
     }
+
+    // Vigilante: si el navegador no dispara onstop, se prepara igual.
+    setTimeout(function() {
+        if (gen === vozGen && vozEstado === 'processing') {
+            vozProcesarGrabacion(rec);
+        }
+    }, VOZ_VIGILANTE_MS);
 }
 
-function vozProcesarGrabacion() {
+function vozProcesarGrabacion(rec) {
     vozLiberarMicrofono();
     vozDetenerAnimacion();
 
-    const mime = recorder && recorder.mimeType
-        ? recorder.mimeType
-        : (vozMimeActual || 'audio/webm');
+    const mime = (rec && rec.mimeType) || vozMimeActual || 'audio/webm';
 
     const blob = new Blob(audioChunks || [], { type: mime });
     audioChunks = [];
     recorder = null;
 
     if (vozCancelar) {
-        vozRestablecerInterfaz();
-        vozOcultarPanel();
-        vozLimpiarPreview();
+        vozForzarReinicio();
         return;
     }
 
     if (!blob.size) {
-        vozRestablecerInterfaz();
-        vozOcultarPanel();
+        vozForzarReinicio();
         toast('No se capturó audio.', 'error');
         return;
     }
 
     if (blob.size > VOZ_MAX_MB * 1024 * 1024) {
-        vozRestablecerInterfaz();
-        vozOcultarPanel();
+        vozForzarReinicio();
         toast('La nota supera el límite de 50 MB.', 'error');
         return;
     }
@@ -1137,28 +1233,7 @@ function cancelarNotaVoz(silencioso) {
     if (vozEstado === 'idle' && !vozBlobPreparado && !recorder) return;
 
     vozCancelar = true;
-    vozEstado = 'cancelled';
-
-    vozDetenerAnimacion();
-    vozLiberarMicrofono();
-
-    if (recorder) {
-        try {
-            recorder.onstop = function() {
-                audioChunks = [];
-                recorder = null;
-            };
-            if (recorder.state !== 'inactive') recorder.stop();
-            else recorder = null;
-        } catch (e) {
-            recorder = null;
-        }
-    }
-
-    audioChunks = [];
-    vozLimpiarPreview();
-    vozRestablecerInterfaz();
-    vozOcultarPanel();
+    vozForzarReinicio();
 
     if (!silencioso) toast('Nota de voz descartada.', 'success');
 }
@@ -1185,11 +1260,13 @@ async function enviarNotaVozPreparada() {
 
     const panel = document.getElementById('vozRecorderPanel');
     const sendBtn = panel ? panel.querySelector('#vozSendBtn') : null;
+    const cancelBtn = panel ? panel.querySelector('#vozCancelBtn') : null;
 
     if (sendBtn) {
         sendBtn.disabled = true;
         sendBtn.textContent = 'Enviando...';
     }
+    if (cancelBtn) cancelBtn.disabled = true;
 
     const blob = vozBlobPreparado;
     const mode = vozMode;
@@ -1198,11 +1275,14 @@ async function enviarNotaVozPreparada() {
         type: blob.type || 'audio/webm'
     });
 
+    let exito = false;
+
     try {
         if (mode === 'bot') {
             vozLimpiarPreview();
             vozRestablecerInterfaz();
             vozOcultarPanel();
+            exito = true;
             await enviarVozAlBot(file);
             return;
         }
@@ -1233,6 +1313,7 @@ async function enviarNotaVozPreparada() {
         );
 
         if (resp.estado === 'entregado' && resp.mensaje) {
+            exito = true;
             vozLimpiarPreview();
             vozRestablecerInterfaz();
             vozOcultarPanel();
@@ -1243,6 +1324,7 @@ async function enviarNotaVozPreparada() {
         }
 
         if (resp.estado === 'solicitud') {
+            exito = true;
             vozLimpiarPreview();
             vozRestablecerInterfaz();
             vozOcultarPanel();
@@ -1266,11 +1348,18 @@ async function enviarNotaVozPreparada() {
             toast(e.message || 'No se pudo enviar la nota de voz.', 'error');
         }
 
-        vozProcesando = false;
-
         if (sendBtn) {
             sendBtn.disabled = false;
             sendBtn.textContent = 'Reintentar';
+        }
+        if (cancelBtn) cancelBtn.disabled = false;
+    } finally {
+        // Nunca dejar el micrófono bloqueado por un envío que terminó.
+        vozProcesando = false;
+        if (!exito && vozEstado === 'ready' && !document.getElementById('vozRecorderPanel')?.querySelector('#vozPreviewControls')?.hidden) {
+            // Se mantiene la vista previa para reintentar.
+        } else if (!exito && vozEstado !== 'ready') {
+            vozRestablecerInterfaz();
         }
     }
 }
@@ -1529,6 +1618,10 @@ function configurarInfoChat() {
     if (!header || header.dataset.infoListeners) return;
     header.dataset.infoListeners = '1';
 
+    // Al tocar la lista de conversaciones se limpian capas que pudo dejar el visor de estados.
+    const lista = $('conversationList');
+    if (lista) lista.addEventListener('pointerdown', liberarInterfazChat, true);
+
     $('chatInfoTrigger').addEventListener('click', abrirInfoChat);
 
     $('chatAvatar').addEventListener('click', () => {
@@ -1588,6 +1681,10 @@ if (document.readyState === 'loading') {
 } else {
     configurarInfoChat();
 }
+
+// Disponible para otros módulos (por ejemplo, el visor de estados) que
+// quieran pedir la misma limpieza al cerrarse.
+window.liberarInterfazChat = liberarInterfazChat;
 
 // ================================================================
 // CSS AUTÓNOMO · NOTAS DE VOZ Y REPRODUCTOR
