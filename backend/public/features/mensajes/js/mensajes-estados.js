@@ -1,31 +1,61 @@
 // ================================================================
-// MENSAJES · ESTADOS (HISTORIAS) v4.1 · MÓDULO 5 DE 8
+// MENSAJES · ESTADOS (HISTORIAS) v4.2 · MÓDULO 5 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-estados.js
-// Depende de: mensajes-core.js (db, user, $, toast, esc, perfilCache,
-//             currentUserProfile, NeonModal, auth, subirViaBackend,
-//             ESTADOS_BUCKET, ESTADOS_TTL_MS, TTL_PERFIL_MS, PERFIL_CACHE_LIMITE)
-// Cambios v4.1:
-//  - Cierre del visor centralizado (forzarCierreVisor): nunca queda
-//    cubriendo la pantalla y bloqueando el resto de Mensajes
-//  - Cada apertura y cierre usa una generación; las cargas lentas
-//    viejas ya no vuelven a mostrar el visor
-//  - Errores de una historia cierran el visor con aviso, sin atascarse
-//  - Panel de vistas y comentarios solo con texto (sin íconos)
-//  - Se quitó la etiqueta de vistas de la rueda
+// Depende de: mensajes-core.js
+//
+// ACTUALIZACIÓN v4.2:
+// - Eliminación funcional desde el visor.
+// - Evento de eliminación conectado automáticamente.
+// - Confirmación antes de eliminar.
+// - Protección contra eliminaciones duplicadas.
+// - Verificación de eliminación en Supabase.
+// - Limpieza del archivo correspondiente en Storage.
+// - Actualización inmediata de la rueda de historias.
+// - Corrección de índices después de eliminar.
+// - Cierre automático si se elimina la última historia.
+// - Protección del visor durante operaciones asíncronas.
+// - Conserva publicación, vistas, comentarios y reproducción.
 // ================================================================
 
 'use strict';
 
-const ESTADOS_LIMITE = { videos: 5, imagenes: 10, videoMB: 25, imagenMB: 10, videoSeg: 60, imagenSeg: 5 };
-const ESTADOS_MIME_IMAGEN = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-const ESTADOS_MIME_VIDEO = ['video/mp4', 'video/webm', 'video/quicktime'];
-const ESTADOS_ACCEPT = ESTADOS_MIME_IMAGEN.concat(ESTADOS_MIME_VIDEO).join(',');
-const ESTADOS_VIGENCIA_MS = (typeof ESTADOS_TTL_MS === 'number' && ESTADOS_TTL_MS > 0) ? ESTADOS_TTL_MS : 86400000;
+const ESTADOS_LIMITE = {
+    videos: 5,
+    imagenes: 10,
+    videoMB: 25,
+    imagenMB: 10,
+    videoSeg: 60,
+    imagenSeg: 5
+};
 
-// Íconos solo de controles del video
+const ESTADOS_MIME_IMAGEN = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif'
+];
+
+const ESTADOS_MIME_VIDEO = [
+    'video/mp4',
+    'video/webm',
+    'video/quicktime'
+];
+
+const ESTADOS_ACCEPT = ESTADOS_MIME_IMAGEN
+    .concat(ESTADOS_MIME_VIDEO)
+    .join(',');
+
+const ESTADOS_VIGENCIA_MS =
+    (typeof ESTADOS_TTL_MS === 'number' && ESTADOS_TTL_MS > 0)
+        ? ESTADOS_TTL_MS
+        : 86400000;
+
 const ICO_PLAY = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>';
+
 const ICO_PAUSA = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
+
 const ICO_VOLUMEN = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>';
+
 const ICO_SILENCIO = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>';
 
 let estadosCache = [];
@@ -39,25 +69,45 @@ let estadoVideoActivo = false;
 let estadoVideoPausadoPorUsuario = false;
 let estadoArchivos = [];
 let estadoPublicando = false;
+let estadoEliminando = false;
+let estadoEliminandoId = null;
 let estadoGestosListos = false;
 let estadoVisorListo = false;
+let estadoAccionesListas = false;
 
-/* ---------------- Utilidades ---------------- */
+/* ================================================================
+   UTILIDADES
+================================================================ */
 
-function ocultar(id) { const el = $(id); if (el) el.classList.add('hidden'); }
-function mostrar(id) { const el = $(id); if (el) el.classList.remove('hidden'); }
-function aviso(mensaje, tipo) { toast(mensaje, tipo || ''); }
+function ocultar(id) {
+    const el = $(id);
+    if (el) el.classList.add('hidden');
+}
 
-function estadoURL(e) { return e ? (e.media_url || e.imagen_url || '') : ''; }
+function mostrar(id) {
+    const el = $(id);
+    if (el) el.classList.remove('hidden');
+}
+
+function aviso(mensaje, tipo) {
+    toast(mensaje, tipo || '');
+}
+
+function estadoURL(e) {
+    return e ? (e.media_url || e.imagen_url || '') : '';
+}
 
 function estadoEsVideo(e) {
     if (!e) return false;
+
     if (e.media_tipo === 'video') return true;
+
     return /\.(mp4|webm|mov|m4v)(\?|#|$)/i.test(estadoURL(e));
 }
 
 function estadoEsNuevo(e) {
-    return !(window.__estadosVistosIds && window.__estadosVistosIds.has(e.id));
+    return !(window.__estadosVistosIds &&
+        window.__estadosVistosIds.has(e.id));
 }
 
 function estadosDe(uid) {
@@ -66,21 +116,55 @@ function estadosDe(uid) {
 
 function estadoPath(url) {
     if (!url) return null;
-    const m = String(url).match(/\/storage\/v1\/object\/(?:public|sign)\/[^/]+\/([^?]+)/);
+
+    const m = String(url).match(
+        /\/storage\/v1\/object\/(?:public|sign|authenticated)\/[^/]+\/([^?#]+)/
+    );
+
     if (m) {
-        try { return decodeURIComponent(m[1]); } catch (e) { return m[1]; }
+        try {
+            return decodeURIComponent(m[1]);
+        } catch (e) {
+            return m[1];
+        }
     }
-    if (!/^https?:/i.test(url) && String(url).indexOf('/') !== -1) return String(url).split('?')[0];
+
+    if (!/^https?:/i.test(url) &&
+        String(url).indexOf('/') !== -1) {
+        return String(url).split('?')[0];
+    }
+
     return null;
 }
 
+/*
+ * Elimina el archivo físico de Storage.
+ * La historia de la base de datos se elimina por separado.
+ */
 async function borrarArchivoStorage(url) {
     const path = estadoPath(url);
-    if (!path) return;
+
+    if (!path) {
+        console.warn('[Estados] No se pudo identificar la ruta del archivo.');
+        return false;
+    }
+
     try {
-        const r = await db.storage.from(ESTADOS_BUCKET).remove([path]);
-        if (r.error) console.warn('[Estados] No se pudo borrar el archivo:', r.error);
-    } catch (e) { console.warn('[Estados] Error limpiando Storage:', e); }
+        const r = await db.storage
+            .from(ESTADOS_BUCKET)
+            .remove([path]);
+
+        if (r.error) {
+            console.warn('[Estados] No se pudo borrar el archivo:', r.error);
+            return false;
+        }
+
+        return true;
+
+    } catch (e) {
+        console.warn('[Estados] Error limpiando Storage:', e);
+        return false;
+    }
 }
 
 function estadoFechaExpiracion() {
@@ -89,133 +173,281 @@ function estadoFechaExpiracion() {
 
 function formatoTiempo(seg) {
     const t = Math.max(0, Math.floor(seg || 0));
-    return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
+
+    return Math.floor(t / 60) +
+        ':' + String(t % 60).padStart(2, '0');
 }
 
 function haceTiempo(fecha) {
     if (!fecha) return '';
+
     const t = new Date(fecha).getTime();
+
     if (!isFinite(t)) return '';
-    const min = Math.max(0, Math.floor((Date.now() - t) / 60000));
+
+    const min = Math.max(
+        0,
+        Math.floor((Date.now() - t) / 60000)
+    );
+
     if (min < 1) return 'ahora';
     if (min < 60) return 'hace ' + min + ' min';
+
     const h = Math.floor(min / 60);
+
     if (h < 24) return 'hace ' + h + ' h';
+
     return 'hace ' + Math.floor(h / 24) + ' d';
 }
 
 function avatarHTML(nombre, url) {
-    if (url) return '<img src="' + esc(url) + '" alt="">';
-    return esc(String(nombre || 'U').charAt(0).toUpperCase());
+    if (url) {
+        return '<img src="' + esc(url) + '" alt="">';
+    }
+
+    return esc(
+        String(nombre || 'U').charAt(0).toUpperCase()
+    );
 }
 
 function urlPerfil(handle, uid) {
-    if (handle) return '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
-    if (uid) return '/features/perfil/perfil-publico.html?id=' + encodeURIComponent(uid);
+    if (handle) {
+        return '/features/perfil/perfil-publico.html?u=' +
+            encodeURIComponent(handle);
+    }
+
+    if (uid) {
+        return '/features/perfil/perfil-publico.html?id=' +
+            encodeURIComponent(uid);
+    }
+
     return null;
 }
 
 async function perfilDe(uid) {
     const en = perfilCache.get(uid);
-    const ttl = (typeof TTL_PERFIL_MS === 'number') ? TTL_PERFIL_MS : 300000;
-    if (en && Date.now() - en.ts < ttl) return en.data;
+
+    const ttl = (typeof TTL_PERFIL_MS === 'number')
+        ? TTL_PERFIL_MS
+        : 300000;
+
+    if (en && Date.now() - en.ts < ttl) {
+        return en.data;
+    }
+
     try {
-        const r = await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').eq('id', uid).maybeSingle();
-        const data = r.data || { id: uid, nombre: 'Usuario', handle: '', avatar_url: null };
-        if (typeof PERFIL_CACHE_LIMITE === 'number' && perfilCache.size >= PERFIL_CACHE_LIMITE) {
+        const r = await db.from('perfiles_publicos')
+            .select('id,nombre,handle,avatar_url')
+            .eq('id', uid)
+            .maybeSingle();
+
+        const data = r.data || {
+            id: uid,
+            nombre: 'Usuario',
+            handle: '',
+            avatar_url: null
+        };
+
+        if (typeof PERFIL_CACHE_LIMITE === 'number' &&
+            perfilCache.size >= PERFIL_CACHE_LIMITE) {
+
             const primera = perfilCache.keys().next().value;
-            if (primera !== undefined) perfilCache.delete(primera);
+
+            if (primera !== undefined) {
+                perfilCache.delete(primera);
+            }
         }
-        perfilCache.set(uid, { ts: Date.now(), data });
+
+        perfilCache.set(uid, {
+            ts: Date.now(),
+            data: data
+        });
+
         return data;
+
     } catch (e) {
-        return { id: uid, nombre: 'Usuario', handle: '', avatar_url: null };
+        return {
+            id: uid,
+            nombre: 'Usuario',
+            handle: '',
+            avatar_url: null
+        };
     }
 }
 
-/* ---------------- Vistas ---------------- */
+/* ================================================================
+   VISTAS
+================================================================ */
 
 async function registrarVistaEstado(id) {
     if (!user || !id) return;
-    if (window.__estadosVistosIds && window.__estadosVistosIds.has(id)) return;
+
+    if (window.__estadosVistosIds &&
+        window.__estadosVistosIds.has(id)) {
+        return;
+    }
+
     try {
         const r = await db.from('estados_vistas').upsert(
-            { estado_id: id, usuario_id: user.id },
-            { onConflict: 'estado_id,usuario_id', ignoreDuplicates: true }
+            {
+                estado_id: id,
+                usuario_id: user.id
+            },
+            {
+                onConflict: 'estado_id,usuario_id',
+                ignoreDuplicates: true
+            }
         );
+
         if (!r.error) {
-            window.__estadosVistosIds = window.__estadosVistosIds || new Set();
+            window.__estadosVistosIds =
+                window.__estadosVistosIds || new Set();
+
             window.__estadosVistosIds.add(id);
         }
-    } catch (e) { /* silencioso: no bloquea el visor */ }
+
+    } catch (e) {}
 }
 
 async function obtenerVistasEstado(id) {
     try {
-        const r = await db.from('estados_vistas').select('id', { count: 'exact', head: true }).eq('estado_id', id);
+        const r = await db.from('estados_vistas')
+            .select('id', {
+                count: 'exact',
+                head: true
+            })
+            .eq('estado_id', id);
+
         return r.error ? 0 : (r.count || 0);
-    } catch (e) { return 0; }
+
+    } catch (e) {
+        return 0;
+    }
 }
 
-/* ---------------- Cargar historias ---------------- */
+/* ================================================================
+   CARGAR HISTORIAS
+================================================================ */
 
 async function obtenerEstadosActivos() {
     let filas = [];
+
     const rpc = await db.rpc('estados_mensajes_activos');
 
     if (!rpc.error && Array.isArray(rpc.data)) {
-        if (rpc.data.length && Array.isArray(rpc.data[0].estados)) {
-            rpc.data.forEach(g => (g.estados || []).forEach(e => {
-                filas.push(Object.assign({}, e, { usuario_id: g.usuario_id, origen: 'mensajes' }));
-            }));
+
+        if (rpc.data.length &&
+            Array.isArray(rpc.data[0].estados)) {
+
+            rpc.data.forEach(g => {
+                (g.estados || []).forEach(e => {
+                    filas.push(
+                        Object.assign({}, e, {
+                            usuario_id: g.usuario_id,
+                            origen: 'mensajes'
+                        })
+                    );
+                });
+            });
+
         } else {
             filas = rpc.data.slice();
         }
+
     } else {
+
         const q = await db.from('estados')
-            .select('id, usuario_id, imagen_url, media_url, media_tipo, duracion_segundos, caption, created_at, expires_at')
+            .select(
+                'id, usuario_id, imagen_url, media_url, media_tipo, duracion_segundos, caption, created_at, expires_at'
+            )
             .eq('origen', 'mensajes')
             .gt('expires_at', new Date().toISOString())
-            .order('created_at', { ascending: true });
+            .order('created_at', {
+                ascending: true
+            });
+
         if (q.error) throw q.error;
+
         filas = q.data || [];
     }
 
     const ahora = Date.now();
+
     return filas
-        .filter(e => e && e.id && e.usuario_id && estadoURL(e) &&
-            (!e.expires_at || new Date(e.expires_at).getTime() > ahora))
-        .sort((a, b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+        .filter(e =>
+            e &&
+            e.id &&
+            e.usuario_id &&
+            estadoURL(e) &&
+            (!e.expires_at ||
+                new Date(e.expires_at).getTime() > ahora)
+        )
+        .sort((a, b) =>
+            new Date(a.created_at || 0) -
+            new Date(b.created_at || 0)
+        );
 }
 
 async function obtenerVistasPropias(ids) {
     const set = new Set();
+
     if (!ids.length || !user) return set;
+
     try {
-        const r = await db.from('estados_vistas').select('estado_id').eq('usuario_id', user.id).in('estado_id', ids);
-        (r.data || []).forEach(v => set.add(v.estado_id));
-    } catch (e) { console.warn('[Estados] No se cargaron vistas previas:', e); }
+        const r = await db.from('estados_vistas')
+            .select('estado_id')
+            .eq('usuario_id', user.id)
+            .in('estado_id', ids);
+
+        (r.data || []).forEach(v => {
+            set.add(v.estado_id);
+        });
+
+    } catch (e) {
+        console.warn(
+            '[Estados] No se cargaron vistas previas:',
+            e
+        );
+    }
+
     return set;
 }
 
 async function cargarEstados() {
     const rueda = $('estadosScroll');
+
     if (!rueda || !user) return;
 
     try {
         estadosCache = await obtenerEstadosActivos();
-        window.__estadosVistosIds = await obtenerVistasPropias(estadosCache.map(e => e.id));
+
+        window.__estadosVistosIds =
+            await obtenerVistasPropias(
+                estadosCache.map(e => e.id)
+            );
 
         const porUsuario = {};
-        estadosCache.forEach(e => { (porUsuario[e.usuario_id] = porUsuario[e.usuario_id] || []).push(e); });
 
-        const otros = Object.keys(porUsuario).filter(uid => uid !== user.id);
+        estadosCache.forEach(e => {
+            (porUsuario[e.usuario_id] =
+                porUsuario[e.usuario_id] || []).push(e);
+        });
+
+        const otros = Object.keys(porUsuario)
+            .filter(uid => uid !== user.id);
+
         await Promise.all(otros.map(perfilDe));
 
         renderizarRueda(rueda, porUsuario, otros);
+
     } catch (e) {
-        console.error('[Estados] Error cargando historias:', e);
-        rueda.innerHTML = '<div class="estados-vacio">No se pudieron cargar las historias.</div>';
+        console.error(
+            '[Estados] Error cargando historias:',
+            e
+        );
+
+        rueda.innerHTML =
+            '<div class="estados-vacio">No se pudieron cargar las historias.</div>';
     }
 }
 
@@ -225,96 +457,151 @@ function renderizarRueda(rueda, porUsuario, otros) {
     const mios = porUsuario[user.id] || [];
 
     if (mios.length) {
+
         const ultimo = mios[mios.length - 1];
-        rueda.appendChild(crearItemRueda({
-            titulo: 'Tu historia',
-            esVideo: estadoEsVideo(ultimo),
-            thumb: estadoURL(ultimo),
-            nuevo: mios.some(estadoEsNuevo),
-            onClick: () => abrirEstadoUsuario(user.id)
-        }));
+
+        rueda.appendChild(
+            crearItemRueda({
+                titulo: 'Tu historia',
+                esVideo: estadoEsVideo(ultimo),
+                thumb: estadoURL(ultimo),
+                nuevo: mios.some(estadoEsNuevo),
+                onClick: () => abrirEstadoUsuario(user.id)
+            })
+        );
+
     } else {
-        rueda.appendChild(crearItemRueda({
-            titulo: 'Tu historia',
-            crear: true,
-            onClick: abrirModalEstado
-        }));
+
+        rueda.appendChild(
+            crearItemRueda({
+                titulo: 'Tu historia',
+                crear: true,
+                onClick: abrirModalEstado
+            })
+        );
     }
 
     otros.forEach(uid => {
+
         const p = perfilCache.get(uid);
-        const perfil = (p && p.data) || { nombre: 'Usuario', avatar_url: null };
-        rueda.appendChild(crearItemRueda({
-            titulo: perfil.nombre || 'Usuario',
-            avatarUrl: perfil.avatar_url,
-            avatarNombre: perfil.nombre,
-            nuevo: porUsuario[uid].some(estadoEsNuevo),
-            onClick: () => abrirEstadoUsuario(uid)
-        }));
+
+        const perfil = (p && p.data) || {
+            nombre: 'Usuario',
+            avatar_url: null
+        };
+
+        rueda.appendChild(
+            crearItemRueda({
+                titulo: perfil.nombre || 'Usuario',
+                avatarUrl: perfil.avatar_url,
+                avatarNombre: perfil.nombre,
+                nuevo: porUsuario[uid].some(estadoEsNuevo),
+                onClick: () => abrirEstadoUsuario(uid)
+            })
+        );
     });
 
     if (!rueda.children.length) {
-        rueda.innerHTML = '<div class="estados-vacio">Todavía no hay historias.</div>';
+        rueda.innerHTML =
+            '<div class="estados-vacio">Todavía no hay historias.</div>';
     }
 }
 
 function crearItemRueda(o) {
     const item = document.createElement('div');
+
     item.className = 'estado-item';
     item.tabIndex = 0;
     item.setAttribute('role', 'button');
 
     const circulo = document.createElement('div');
-    circulo.className = 'estado-circle' + (o.nuevo === false ? ' visto' : '');
+
+    circulo.className =
+        'estado-circle' +
+        (o.nuevo === false ? ' visto' : '');
 
     const inner = document.createElement('div');
+
     inner.className = 'estado-inner';
 
     if (o.crear) {
+
         inner.textContent = '+';
+
     } else if (o.thumb && o.esVideo) {
+
         inner.innerHTML = ICO_PLAY;
+
     } else if (o.thumb) {
+
         const img = document.createElement('img');
+
         img.src = o.thumb;
         img.alt = '';
         img.loading = 'lazy';
+
         inner.appendChild(img);
+
     } else {
-        inner.innerHTML = avatarHTML(o.avatarNombre, o.avatarUrl);
+
+        inner.innerHTML = avatarHTML(
+            o.avatarNombre,
+            o.avatarUrl
+        );
     }
 
     circulo.appendChild(inner);
     item.appendChild(circulo);
 
     const nombre = document.createElement('div');
+
     nombre.className = 'estado-name';
     nombre.textContent = o.titulo;
+
     item.appendChild(nombre);
 
     item.addEventListener('click', o.onClick);
-    item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); o.onClick(); } });
+
+    item.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            o.onClick();
+        }
+    });
+
     return item;
 }
 
-/* ---------------- Visor: apertura y cierre ---------------- */
+/* ================================================================
+   VISOR: APERTURA Y CIERRE
+================================================================ */
 
 function actualizarBarra(p) {
     const val = Math.max(0, Math.min(100, p)) + '%';
+
     const barra = $('estadoProgress');
+
     if (barra) barra.style.width = val;
+
     const seek = $('evSeekFill');
+
     if (seek) seek.style.width = val;
 }
 
 function detenerTemporizador() {
-    if (estadoTimer) { clearInterval(estadoTimer); estadoTimer = null; }
+    if (estadoTimer) {
+        clearInterval(estadoTimer);
+        estadoTimer = null;
+    }
 }
 
 function detenerVideo() {
     const v = $('evVideo');
+
     estadoVideoActivo = false;
+
     if (!v) return;
+
     try {
         v.pause();
         v.removeAttribute('src');
@@ -322,62 +609,91 @@ function detenerVideo() {
     } catch (e) {}
 }
 
-/*
- * Cierre único y completo. Siempre deja el visor oculto y el estado limpio,
- * aunque algo anterior haya fallado. No espera ni recarga nada.
- */
 function forzarCierreVisor() {
     estadoVisorGen++;
+
     detenerTemporizador();
     detenerVideo();
+
     const visor = $('estadoViewer');
+
     if (visor) visor.classList.remove('show');
+
     estadoPausado = false;
     estadoVideoPausadoPorUsuario = false;
     estadoActualUserId = null;
     estadoActualIndex = 0;
     estadoProgresoActual = 0;
+
     actualizarBarra(0);
 }
 
 function cerrarEstadoViewer() {
     forzarCierreVisor();
+
     cargarEstados().catch(() => {});
 }
 
 function reproducirVideo() {
     const v = $('evVideo');
+
     if (!v) return;
+
     const p = v.play();
+
     if (p && p.catch) {
         p.catch(() => {
-            // Sin sonido permitido por el navegador: se reproduce silenciado
+
             v.muted = true;
+
             const p2 = v.play();
-            if (p2 && p2.catch) p2.catch(() => {});
+
+            if (p2 && p2.catch) {
+                p2.catch(() => {});
+            }
         });
     }
 }
 
 function alternarVideo() {
     const v = $('evVideo');
+
     if (!estadoVideoActivo || !v) return;
-    if (v.paused) { estadoVideoPausadoPorUsuario = false; reproducirVideo(); }
-    else { estadoVideoPausadoPorUsuario = true; v.pause(); }
+
+    if (v.paused) {
+
+        estadoVideoPausadoPorUsuario = false;
+        reproducirVideo();
+
+    } else {
+
+        estadoVideoPausadoPorUsuario = true;
+        v.pause();
+    }
 }
 
 function abrirEstadoUsuario(uid) {
     if (!user) return;
+
     const lista = estadosDe(uid);
+
     if (!lista.length) {
-        aviso('Este usuario no tiene historias activas.', 'warning');
+        aviso(
+            'Este usuario no tiene historias activas.',
+            'warning'
+        );
         return;
     }
+
     forzarCierreVisor();
+
     estadoActualUserId = uid;
     estadoActualIndex = 0;
+
     const visor = $('estadoViewer');
+
     if (visor) visor.classList.add('show');
+
     mostrarEstadoActual();
 }
 
@@ -385,54 +701,106 @@ async function pintarCabecera(estado, mio, gen) {
     const av = $('evAvatar');
     const nom = $('evName');
     const tm = $('evTime');
-    if (tm) tm.textContent = haceTiempo(estado.created_at);
+
+    if (tm) {
+        tm.textContent = haceTiempo(estado.created_at);
+    }
 
     if (mio) {
-        if (av) av.innerHTML = avatarHTML(currentUserProfile && currentUserProfile.nombre, currentUserProfile && currentUserProfile.avatar_url);
+
+        if (av) {
+            av.innerHTML = avatarHTML(
+                currentUserProfile && currentUserProfile.nombre,
+                currentUserProfile && currentUserProfile.avatar_url
+            );
+        }
+
         if (nom) nom.textContent = 'Tu historia';
+
         return;
     }
+
     const p = await perfilDe(estado.usuario_id);
+
     if (gen !== estadoVisorGen) return;
-    if (av) av.innerHTML = avatarHTML(p.nombre, p.avatar_url);
-    if (nom) nom.textContent = p.nombre || 'Usuario';
+
+    if (av) {
+        av.innerHTML = avatarHTML(
+            p.nombre,
+            p.avatar_url
+        );
+    }
+
+    if (nom) {
+        nom.textContent = p.nombre || 'Usuario';
+    }
 }
 
-/* ---------------- Visor: mostrar historia ---------------- */
+/* ================================================================
+   VISOR: MOSTRAR HISTORIA
+================================================================ */
 
 async function mostrarEstadoActual() {
     const gen = ++estadoVisorGen;
+
     detenerTemporizador();
     detenerVideo();
 
     try {
         const lista = estadosDe(estadoActualUserId);
-        if (!user || !lista.length || estadoActualIndex < 0 || estadoActualIndex >= lista.length) {
+
+        if (!user ||
+            !lista.length ||
+            estadoActualIndex < 0 ||
+            estadoActualIndex >= lista.length) {
+
             forzarCierreVisor();
             return;
         }
 
         const estado = lista[estadoActualIndex];
+
         const mio = estado.usuario_id === user.id;
+
         const esVideo = estadoEsVideo(estado);
+
         const img = $('evImage');
         const vid = $('evVideo');
 
-        pintarCabecera(estado, mio, gen).catch(() => {});
+        pintarCabecera(
+            estado,
+            mio,
+            gen
+        ).catch(() => {});
 
         if (esVideo && vid) {
-            if (img) { img.classList.add('hidden'); img.removeAttribute('src'); }
+
+            if (img) {
+                img.classList.add('hidden');
+                img.removeAttribute('src');
+            }
+
             vid.classList.remove('hidden');
+
             mostrar('evVideoBar');
+
             estadoVideoActivo = true;
             estadoVideoPausadoPorUsuario = false;
+
             vid.muted = false;
             vid.src = estadoURL(estado);
             vid.load();
+
             reproducirVideo();
+
         } else {
-            if (vid) vid.classList.add('hidden');
+
+            if (vid) {
+                vid.classList.add('hidden');
+            }
+
             ocultar('evVideoBar');
+
             if (img) {
                 img.classList.remove('hidden');
                 img.src = estadoURL(estado);
@@ -440,49 +808,108 @@ async function mostrarEstadoActual() {
         }
 
         estadoProgresoActual = 0;
+
         actualizarBarra(0);
 
         const cap = $('evCaption');
+
         if (cap) {
-            if (estado.caption) { cap.textContent = estado.caption; cap.classList.remove('hidden'); }
-            else { cap.textContent = ''; cap.classList.add('hidden'); }
+            if (estado.caption) {
+                cap.textContent = estado.caption;
+                cap.classList.remove('hidden');
+            } else {
+                cap.textContent = '';
+                cap.classList.add('hidden');
+            }
         }
 
         const prev = $('evPrev');
-        if (prev) prev.classList.toggle('hidden', estadoActualIndex === 0);
+
+        if (prev) {
+            prev.classList.toggle(
+                'hidden',
+                estadoActualIndex === 0
+            );
+        }
 
         const next = $('evNext');
-        if (next) next.classList.remove('hidden');
 
-        const hayOtros = estadosCache.some(e => e.usuario_id !== estadoActualUserId);
+        if (next) {
+            next.classList.remove('hidden');
+        }
+
+        const hayOtros = estadosCache.some(
+            e => e.usuario_id !== estadoActualUserId
+        );
+
         const skip = $('evSkip');
-        if (skip) skip.classList.toggle('hidden', !hayOtros);
+
+        if (skip) {
+            skip.classList.toggle('hidden', !hayOtros);
+        }
 
         const vistas = $('evVistas');
         const eliminar = $('evEliminar');
         const comentar = $('evComentar');
 
         if (mio) {
-            if (vistas) { vistas.classList.remove('hidden'); vistas.dataset.estadoId = estado.id; }
-            if (eliminar) { eliminar.classList.remove('hidden'); eliminar.dataset.estadoId = estado.id; }
+
+            if (vistas) {
+                vistas.classList.remove('hidden');
+                vistas.dataset.estadoId = estado.id;
+            }
+
+            if (eliminar) {
+                eliminar.classList.remove('hidden');
+                eliminar.dataset.estadoId = estado.id;
+                eliminar.disabled = false;
+            }
+
             ocultar('evComentar');
-            obtenerVistasEstado(estado.id).then(total => {
-                if (gen !== estadoVisorGen) return;
-                const c = $('evVistasCount');
-                if (c) c.textContent = String(total);
-            }).catch(() => {});
+
+            obtenerVistasEstado(estado.id)
+                .then(total => {
+
+                    if (gen !== estadoVisorGen) return;
+
+                    const c = $('evVistasCount');
+
+                    if (c) {
+                        c.textContent = String(total);
+                    }
+                })
+                .catch(() => {});
+
         } else {
+
             ocultar('evVistas');
             ocultar('evEliminar');
-            if (comentar) { comentar.classList.remove('hidden'); comentar.dataset.estadoId = estado.id; }
+
+            if (comentar) {
+                comentar.classList.remove('hidden');
+                comentar.dataset.estadoId = estado.id;
+            }
+
             registrarVistaEstado(estado.id);
         }
 
-        if (!esVideo) iniciarTemporizadorImagen(gen);
+        if (!esVideo) {
+            iniciarTemporizadorImagen(gen);
+        }
+
     } catch (e) {
-        console.error('[Estados] Error mostrando la historia:', e);
+
+        console.error(
+            '[Estados] Error mostrando la historia:',
+            e
+        );
+
         forzarCierreVisor();
-        aviso('No se pudo mostrar la historia.', 'error');
+
+        aviso(
+            'No se pudo mostrar la historia.',
+            'error'
+        );
     }
 }
 
@@ -490,140 +917,265 @@ function iniciarTemporizadorImagen(gen) {
     const total = ESTADOS_LIMITE.imagenSeg * 1000;
     const paso = 50;
     const incremento = paso / total * 100;
+
     estadoTimer = setInterval(() => {
-        if (gen !== estadoVisorGen) { detenerTemporizador(); return; }
+
+        if (gen !== estadoVisorGen) {
+            detenerTemporizador();
+            return;
+        }
+
         if (estadoPausado) return;
-        estadoProgresoActual = Math.min(100, estadoProgresoActual + incremento);
+
+        estadoProgresoActual = Math.min(
+            100,
+            estadoProgresoActual + incremento
+        );
+
         actualizarBarra(estadoProgresoActual);
+
         if (estadoProgresoActual >= 100) {
             detenerTemporizador();
             siguienteEstado();
         }
+
     }, paso);
 }
 
-/* ---------------- Navegación entre historias ---------------- */
+/* ================================================================
+   NAVEGACIÓN ENTRE HISTORIAS
+================================================================ */
 
 function siguienteEstado() {
     const lista = estadosDe(estadoActualUserId);
+
     if (estadoActualIndex < lista.length - 1) {
+
         estadoActualIndex++;
         estadoPausado = false;
+
         mostrarEstadoActual();
+
     } else {
+
         saltarGrupoMensajes();
     }
 }
 
 function anteriorEstado() {
     if (estadoActualIndex <= 0) return;
+
     estadoActualIndex--;
     estadoPausado = false;
+
     mostrarEstadoActual();
 }
 
 function saltarGrupoMensajes() {
-    if (!estadoActualUserId) { forzarCierreVisor(); return; }
+    if (!estadoActualUserId) {
+        forzarCierreVisor();
+        return;
+    }
+
     const orden = [];
-    estadosCache.forEach(e => { if (!orden.includes(e.usuario_id)) orden.push(e.usuario_id); });
-    for (let i = orden.indexOf(estadoActualUserId) + 1; i < orden.length; i++) {
+
+    estadosCache.forEach(e => {
+        if (!orden.includes(e.usuario_id)) {
+            orden.push(e.usuario_id);
+        }
+    });
+
+    for (
+        let i = orden.indexOf(estadoActualUserId) + 1;
+        i < orden.length;
+        i++
+    ) {
+
         if (estadosDe(orden[i]).length) {
+
             forzarCierreVisor();
+
             const visor = $('estadoViewer');
-            if (visor) visor.classList.add('show');
+
+            if (visor) {
+                visor.classList.add('show');
+            }
+
             estadoActualUserId = orden[i];
             estadoActualIndex = 0;
+
             mostrarEstadoActual();
+
             return;
         }
     }
+
     cerrarEstadoViewer();
 }
 
 function activarPausaEstado() {
     const visor = $('estadoViewer');
+
     if (!visor || !visor.classList.contains('show')) return;
+
     estadoPausado = true;
+
     const v = $('evVideo');
-    if (estadoVideoActivo && v && !v.paused) v.pause();
+
+    if (estadoVideoActivo && v && !v.paused) {
+        v.pause();
+    }
 }
 
 function desactivarPausaEstado() {
     const visor = $('estadoViewer');
+
     if (!visor || !visor.classList.contains('show')) return;
+
     estadoPausado = false;
-    if (estadoVideoActivo && !estadoVideoPausadoPorUsuario) reproducirVideo();
+
+    if (estadoVideoActivo &&
+        !estadoVideoPausadoPorUsuario) {
+
+        reproducirVideo();
+    }
 }
 
-/* ---------------- Gestos: tocar y deslizar ---------------- */
+/* ================================================================
+   GESTOS
+================================================================ */
 
 function ignorarGesto(target) {
-    return !!(target && target.closest && target.closest(
-        'button, #evSeek, .estado-viewer-header, .estado-viewer-foot, .estado-viewer-videobar, .estado-viewer-nav'
-    ));
+    return !!(
+        target &&
+        target.closest &&
+        target.closest(
+            'button, #evSeek, .estado-viewer-header, .estado-viewer-foot, .estado-viewer-videobar, .estado-viewer-nav'
+        )
+    );
 }
 
 function instalarGestos() {
     const visor = $('estadoViewer');
+
     if (!visor || estadoGestosListos) return;
+
     estadoGestosListos = true;
 
-    let x0 = 0, y0 = 0, t0 = 0, activo = false;
+    let x0 = 0;
+    let y0 = 0;
+    let t0 = 0;
+    let activo = false;
 
     visor.addEventListener('pointerdown', e => {
+
         activo = !ignorarGesto(e.target);
-        x0 = e.clientX; y0 = e.clientY; t0 = Date.now();
+
+        x0 = e.clientX;
+        y0 = e.clientY;
+        t0 = Date.now();
     });
 
-    visor.addEventListener('pointercancel', () => { activo = false; });
+    visor.addEventListener('pointercancel', () => {
+        activo = false;
+    });
 
     visor.addEventListener('pointerup', e => {
+
         if (!activo) return;
+
         activo = false;
+
         const dx = e.clientX - x0;
         const dy = e.clientY - y0;
         const dt = Date.now() - t0;
 
-        if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.3) {
-            if (dx < 0) siguienteEstado(); else anteriorEstado();
+        if (
+            Math.abs(dx) > 60 &&
+            Math.abs(dx) > Math.abs(dy) * 1.3
+        ) {
+
+            if (dx < 0) {
+                siguienteEstado();
+            } else {
+                anteriorEstado();
+            }
+
             return;
         }
 
-        if (Math.abs(dx) < 12 && Math.abs(dy) < 12 && dt < 450) {
-            const ancho = visor.clientWidth || window.innerWidth;
-            const rel = (e.clientX - visor.getBoundingClientRect().left) / ancho;
-            if (rel < 0.32) anteriorEstado();
-            else if (rel > 0.68) siguienteEstado();
-            else alternarVideo();
+        if (
+            Math.abs(dx) < 12 &&
+            Math.abs(dy) < 12 &&
+            dt < 450
+        ) {
+
+            const ancho = visor.clientWidth ||
+                window.innerWidth;
+
+            const rel = (
+                e.clientX -
+                visor.getBoundingClientRect().left
+            ) / ancho;
+
+            if (rel < 0.32) {
+                anteriorEstado();
+            } else if (rel > 0.68) {
+                siguienteEstado();
+            } else {
+                alternarVideo();
+            }
         }
     });
 }
 
-/* ---------------- Controles del video ---------------- */
+/* ================================================================
+   CONTROLES DEL VIDEO
+================================================================ */
 
 function pintarIconoPlay() {
     const v = $('evVideo');
     const b = $('evPlay');
-    if (v && b) b.innerHTML = v.paused ? ICO_PLAY : ICO_PAUSA;
+
+    if (v && b) {
+        b.innerHTML = v.paused
+            ? ICO_PLAY
+            : ICO_PAUSA;
+    }
 }
 
 function pintarIconoVolumen() {
     const v = $('evVideo');
     const b = $('evMute');
-    if (v && b) b.innerHTML = v.muted ? ICO_SILENCIO : ICO_VOLUMEN;
+
+    if (v && b) {
+        b.innerHTML = v.muted
+            ? ICO_SILENCIO
+            : ICO_VOLUMEN;
+    }
 }
 
 function pintarTiempoVideo() {
     const v = $('evVideo');
     const t = $('evTiempoVideo');
+
     if (!v || !t) return;
-    const total = isFinite(v.duration) ? formatoTiempo(v.duration) : '0:00';
-    t.textContent = formatoTiempo(v.currentTime) + ' / ' + total;
+
+    const total = isFinite(v.duration)
+        ? formatoTiempo(v.duration)
+        : '0:00';
+
+    t.textContent =
+        formatoTiempo(v.currentTime) +
+        ' / ' +
+        total;
 }
 
 function instalarControlesVideo() {
     const v = $('evVideo');
+
     if (!v || estadoVisorListo) return;
+
     estadoVisorListo = true;
 
     v.controls = false;
@@ -631,17 +1183,32 @@ function instalarControlesVideo() {
     v.preload = 'auto';
 
     v.addEventListener('timeupdate', () => {
-        if (!estadoVideoActivo || !isFinite(v.duration) || v.duration <= 0) return;
-        estadoProgresoActual = v.currentTime / v.duration * 100;
+
+        if (
+            !estadoVideoActivo ||
+            !isFinite(v.duration) ||
+            v.duration <= 0
+        ) return;
+
+        estadoProgresoActual =
+            v.currentTime / v.duration * 100;
+
         actualizarBarra(estadoProgresoActual);
+
         pintarTiempoVideo();
     });
 
-    v.addEventListener('loadedmetadata', pintarTiempoVideo);
+    v.addEventListener(
+        'loadedmetadata',
+        pintarTiempoVideo
+    );
 
     v.addEventListener('ended', () => {
+
         if (!estadoVideoActivo) return;
+
         actualizarBarra(100);
+
         siguienteEstado();
     });
 
@@ -650,85 +1217,190 @@ function instalarControlesVideo() {
     v.addEventListener('volumechange', pintarIconoVolumen);
 
     const play = $('evPlay');
-    if (play) play.addEventListener('click', e => { e.stopPropagation(); alternarVideo(); });
+
+    if (play) {
+        play.addEventListener('click', e => {
+            e.stopPropagation();
+            alternarVideo();
+        });
+    }
 
     const mute = $('evMute');
-    if (mute) mute.addEventListener('click', e => { e.stopPropagation(); v.muted = !v.muted; });
+
+    if (mute) {
+        mute.addEventListener('click', e => {
+            e.stopPropagation();
+            v.muted = !v.muted;
+        });
+    }
 
     const seek = $('evSeek');
+
     if (seek) {
+
         let arrastrando = false;
-        const buscar = (e) => {
-            if (!isFinite(v.duration) || v.duration <= 0) return;
+
+        const buscar = e => {
+
+            if (
+                !isFinite(v.duration) ||
+                v.duration <= 0
+            ) return;
+
             const r = seek.getBoundingClientRect();
-            const ratio = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+
+            if (!r.width) return;
+
+            const ratio = Math.min(
+                1,
+                Math.max(
+                    0,
+                    (e.clientX - r.left) / r.width
+                )
+            );
+
             v.currentTime = ratio * v.duration;
+
             estadoProgresoActual = ratio * 100;
+
             actualizarBarra(estadoProgresoActual);
         };
+
         seek.addEventListener('pointerdown', e => {
+
             e.stopPropagation();
+
             arrastrando = true;
-            try { seek.setPointerCapture(e.pointerId); } catch (err) {}
+
+            try {
+                seek.setPointerCapture(e.pointerId);
+            } catch (err) {}
+
             buscar(e);
         });
-        seek.addEventListener('pointermove', e => { if (arrastrando) buscar(e); });
-        seek.addEventListener('pointerup', () => { arrastrando = false; });
-        seek.addEventListener('pointercancel', () => { arrastrando = false; });
+
+        seek.addEventListener('pointermove', e => {
+
+            if (arrastrando) {
+                buscar(e);
+            }
+        });
+
+        seek.addEventListener('pointerup', () => {
+            arrastrando = false;
+        });
+
+        seek.addEventListener('pointercancel', () => {
+            arrastrando = false;
+        });
     }
 }
 
-/* ---------------- Panel de vistas y comentarios ---------------- */
+/* ================================================================
+   PANEL DE VISTAS Y COMENTARIOS
+================================================================ */
 
 function pintarMensajePanel(lista, texto) {
     lista.innerHTML = '';
+
     const d = document.createElement('div');
+
     d.className = 'estado-panel-msg';
     d.textContent = texto;
+
     lista.appendChild(d);
 }
 
 async function abrirPanelEstado(estadoId, tab) {
     tab = tab || 'vistas';
+
     if (!estadoId) return;
 
     const modal = $('vistasModal');
     const lista = $('vistasList');
     const cont = $('vistasModalCount');
+
     if (!modal || !lista) return;
 
-    // Pausa el visor para que el panel no compita con el video
     estadoPausado = true;
+
     const v = $('evVideo');
-    if (estadoVideoActivo && v && !v.paused) v.pause();
+
+    if (estadoVideoActivo && v && !v.paused) {
+        v.pause();
+    }
 
     modal.classList.add('show');
+
     pintarTabsPanel(estadoId, tab);
+
     if (cont) cont.textContent = '';
+
     pintarMensajePanel(lista, 'Cargando…');
 
     try {
-        if (tab === 'vistas') await pintarVistas(estadoId, lista, cont);
-        else await pintarComentarios(estadoId, lista, cont);
+
+        if (tab === 'vistas') {
+            await pintarVistas(
+                estadoId,
+                lista,
+                cont
+            );
+        } else {
+            await pintarComentarios(
+                estadoId,
+                lista,
+                cont
+            );
+        }
+
     } catch (e) {
-        console.error('[Estados] Error en el panel:', e);
-        pintarMensajePanel(lista, 'No se pudo cargar la información.');
+
+        console.error(
+            '[Estados] Error en el panel:',
+            e
+        );
+
+        pintarMensajePanel(
+            lista,
+            'No se pudo cargar la información.'
+        );
     }
 }
 
 function pintarTabsPanel(estadoId, activa) {
     const cont = $('vistasTabs');
+
     if (!cont) return;
+
     cont.innerHTML = '';
+
     [
-        { id: 'vistas', texto: 'Vistas' },
-        { id: 'comentarios', texto: 'Comentarios' }
+        {
+            id: 'vistas',
+            texto: 'Vistas'
+        },
+        {
+            id: 'comentarios',
+            texto: 'Comentarios'
+        }
+
     ].forEach(t => {
+
         const b = document.createElement('button');
+
         b.type = 'button';
-        b.className = 'estado-tab' + (t.id === activa ? ' active' : '');
+
+        b.className =
+            'estado-tab' +
+            (t.id === activa ? ' active' : '');
+
         b.textContent = t.texto;
-        b.addEventListener('click', () => abrirPanelEstado(estadoId, t.id));
+
+        b.addEventListener('click', () => {
+            abrirPanelEstado(estadoId, t.id);
+        });
+
         cont.appendChild(b);
     });
 }
@@ -737,115 +1409,461 @@ async function pintarVistas(estadoId, lista, cont) {
     const r = await db.from('estados_vistas')
         .select('usuario_id, visto_at')
         .eq('estado_id', estadoId)
-        .order('visto_at', { ascending: false });
+        .order('visto_at', {
+            ascending: false
+        });
+
     if (r.error) throw r.error;
 
     const vistas = r.data || [];
-    if (cont) cont.textContent = '(' + vistas.length + ')';
-    if (!vistas.length) { pintarMensajePanel(lista, 'Todavía no hay vistas.'); return; }
+
+    if (cont) {
+        cont.textContent = '(' + vistas.length + ')';
+    }
+
+    if (!vistas.length) {
+        pintarMensajePanel(
+            lista,
+            'Todavía no hay vistas.'
+        );
+        return;
+    }
 
     const ids = vistas.map(v => v.usuario_id);
-    const perf = await db.from('perfiles_publicos').select('id,nombre,handle,avatar_url').in('id', ids);
+
+    const perf = await db.from('perfiles_publicos')
+        .select('id,nombre,handle,avatar_url')
+        .in('id', ids);
+
     const mapa = {};
-    (perf.data || []).forEach(p => { mapa[p.id] = p; });
+
+    (perf.data || []).forEach(p => {
+        mapa[p.id] = p;
+    });
 
     lista.innerHTML = '';
+
     vistas.forEach(v => {
-        const p = mapa[v.usuario_id] || { nombre: 'Usuario', handle: '', avatar_url: null };
-        const url = urlPerfil(p.handle, v.usuario_id);
+
+        const p = mapa[v.usuario_id] || {
+            nombre: 'Usuario',
+            handle: '',
+            avatar_url: null
+        };
+
+        const url = urlPerfil(
+            p.handle,
+            v.usuario_id
+        );
+
         const fila = document.createElement('div');
+
         fila.className = 'estado-result';
+
         fila.innerHTML =
-            '<div class="avatar">' + avatarHTML(p.nombre, p.avatar_url) + '</div>' +
-            '<div class="estado-result-info"><b>' + esc(p.nombre || 'Usuario') + '</b>' +
-            '<div class="estado-result-meta">@' + esc(p.handle || 'usuario') + ' · ' + esc(haceTiempo(v.visto_at)) + '</div></div>';
-        if (url) fila.addEventListener('click', () => { window.location.href = url; });
+            '<div class="avatar">' +
+            avatarHTML(p.nombre, p.avatar_url) +
+            '</div>' +
+            '<div class="estado-result-info"><b>' +
+            esc(p.nombre || 'Usuario') +
+            '</b>' +
+            '<div class="estado-result-meta">@' +
+            esc(p.handle || 'usuario') +
+            ' · ' +
+            esc(haceTiempo(v.visto_at)) +
+            '</div></div>';
+
+        if (url) {
+            fila.addEventListener('click', () => {
+                window.location.href = url;
+            });
+        }
+
         lista.appendChild(fila);
     });
 }
 
 async function pintarComentarios(estadoId, lista, cont) {
-    const r = await db.rpc('estado_comentarios_lista', { p_estado_id: estadoId });
+    const r = await db.rpc(
+        'estado_comentarios_lista',
+        {
+            p_estado_id: estadoId
+        }
+    );
+
     if (r.error) throw r.error;
 
-    const arr = Array.isArray(r.data) ? r.data : ((r.data && Array.isArray(r.data.data)) ? r.data.data : []);
-    if (cont) cont.textContent = '(' + arr.length + ')';
-    if (!arr.length) { pintarMensajePanel(lista, 'Todavía no hay comentarios.'); return; }
+    const arr = Array.isArray(r.data)
+        ? r.data
+        : (
+            r.data &&
+            Array.isArray(r.data.data)
+                ? r.data.data
+                : []
+        );
+
+    if (cont) {
+        cont.textContent = '(' + arr.length + ')';
+    }
+
+    if (!arr.length) {
+        pintarMensajePanel(
+            lista,
+            'Todavía no hay comentarios.'
+        );
+        return;
+    }
 
     lista.innerHTML = '';
+
     arr.forEach(c => {
-        const nombre = c.nombre || c.usuario_handle || 'Usuario';
-        const texto = c.comentario || c.texto || c.contenido || '';
+
+        const nombre =
+            c.nombre ||
+            c.usuario_handle ||
+            'Usuario';
+
+        const texto =
+            c.comentario ||
+            c.texto ||
+            c.contenido ||
+            '';
+
         const fila = document.createElement('div');
-        fila.className = 'estado-result estado-result-top';
+
+        fila.className =
+            'estado-result estado-result-top';
+
         fila.innerHTML =
-            '<div class="avatar">' + avatarHTML(nombre, c.avatar_url) + '</div>' +
-            '<div class="estado-result-info"><b>' + esc(nombre) + '</b>' +
-            '<div class="estado-comentario">' + esc(texto) + '</div>' +
-            (c.created_at ? '<div class="estado-result-meta">' + esc(haceTiempo(c.created_at)) + '</div>' : '') +
+            '<div class="avatar">' +
+            avatarHTML(nombre, c.avatar_url) +
+            '</div>' +
+            '<div class="estado-result-info"><b>' +
+            esc(nombre) +
+            '</b>' +
+            '<div class="estado-comentario">' +
+            esc(texto) +
+            '</div>' +
+            (
+                c.created_at
+                    ? '<div class="estado-result-meta">' +
+                        esc(haceTiempo(c.created_at)) +
+                        '</div>'
+                    : ''
+            ) +
             '</div>';
+
         lista.appendChild(fila);
     });
 }
 
-function abrirVistasModal(estadoId) { return abrirPanelEstado(estadoId, 'vistas'); }
+function abrirVistasModal(estadoId) {
+    return abrirPanelEstado(
+        estadoId,
+        'vistas'
+    );
+}
 
 function cerrarVistasModal() {
     const m = $('vistasModal');
-    if (m) m.classList.remove('show');
+
+    if (m) {
+        m.classList.remove('show');
+    }
+
+    estadoPausado = false;
+
+    const v = $('evVideo');
+
+    if (
+        estadoVideoActivo &&
+        v &&
+        !estadoVideoPausadoPorUsuario
+    ) {
+        reproducirVideo();
+    }
 }
 
-/* ---------------- Eliminar y comentar ---------------- */
+/* ================================================================
+   ELIMINAR HISTORIA
+   ELIMINACIÓN REAL EN SUPABASE + STORAGE
+================================================================ */
 
+/*
+ * Comprueba que la historia siga perteneciendo al usuario
+ * autenticado antes de permitir cualquier eliminación.
+ */
+function validarPropiedadHistoria(estadoId) {
+    if (!user || !estadoId) return null;
+
+    return estadosCache.find(e =>
+        String(e.id) === String(estadoId) &&
+        String(e.usuario_id) === String(user.id)
+    ) || null;
+}
+
+/*
+ * Conecta el botón real del visor con la función de eliminación.
+ * Utiliza dataset.estadoId para identificar la historia actual.
+ */
+function instalarAccionEliminarEstado() {
+    const btn = $('evEliminar');
+
+    if (!btn || estadoAccionesListas) return;
+
+    estadoAccionesListas = true;
+
+    btn.addEventListener('click', async e => {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (estadoEliminando) return;
+
+        const estadoId = btn.dataset.estadoId;
+
+        if (!estadoId) {
+            aviso(
+                'No se pudo identificar la historia.',
+                'error'
+            );
+            return;
+        }
+
+        await eliminarHistoriaMensajes(estadoId);
+    });
+}
+
+/*
+ * Elimina una historia:
+ *
+ * 1. Verifica que sea propiedad del usuario.
+ * 2. Solicita confirmación.
+ * 3. Elimina la fila de Supabase.
+ * 4. Comprueba que la eliminación se haya realizado.
+ * 5. Elimina el archivo de Storage.
+ * 6. Actualiza la memoria local.
+ * 7. Actualiza el visor y la rueda.
+ */
 async function eliminarHistoriaMensajes(estadoId) {
-    if (!estadoId || !user) return;
 
-    const estado = estadosCache.find(e => e.id === estadoId);
-    if (!estado || estado.usuario_id !== user.id) {
-        aviso('Solo puedes eliminar tus propias historias.', 'error');
+    if (!estadoId || !user) {
+        aviso(
+            'Inicia sesión para eliminar una historia.',
+            'warning'
+        );
         return;
     }
 
-    const ok = await NeonModal.confirm({
-        title: 'Eliminar historia',
-        message: 'Esta historia dejará de estar disponible para todos.',
-        confirmText: 'Eliminar',
-        cancelText: 'Cancelar',
-        danger: true
-    });
-    if (!ok) return;
+    if (estadoEliminando) return;
+
+    const estado = validarPropiedadHistoria(estadoId);
+
+    if (!estado) {
+        aviso(
+            'Solo puedes eliminar tus propias historias.',
+            'error'
+        );
+        return;
+    }
+
+    if (
+        typeof NeonModal === 'undefined' ||
+        !NeonModal ||
+        typeof NeonModal.confirm !== 'function'
+    ) {
+        aviso(
+            'No está disponible la confirmación de eliminación.',
+            'error'
+        );
+        return;
+    }
+
+    estadoEliminando = true;
+    estadoEliminandoId = estadoId;
+
+    const btn = $('evEliminar');
+
+    if (btn) {
+        btn.disabled = true;
+        btn.classList.add('is-loading');
+    }
 
     try {
-        // select() confirma que la fila realmente se borró (RLS puede bloquearla sin error)
+
+        const ok = await NeonModal.confirm({
+            title: 'Eliminar historia',
+            message: 'Esta historia dejará de estar disponible para todos.',
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            danger: true
+        });
+
+        if (!ok) return;
+
+        /*
+         * Se vuelve a verificar la propiedad inmediatamente
+         * antes de realizar la operación destructiva.
+         */
+        const propietario = validarPropiedadHistoria(estadoId);
+
+        if (!propietario) {
+            throw new Error(
+                'La historia ya no está disponible o no te pertenece.'
+            );
+        }
+
+        /*
+         * Eliminación real de la fila.
+         * Se conserva el filtro de usuario para proteger
+         * las historias de otros usuarios.
+         */
         const r = await db.from('estados')
             .delete()
             .eq('id', estadoId)
             .eq('usuario_id', user.id)
             .select('id');
-        if (r.error) throw r.error;
-        if (!r.data || !r.data.length) throw new Error('No se pudo eliminar la historia.');
 
-        await borrarArchivoStorage(estadoURL(estado));
+        if (r.error) {
+            throw r.error;
+        }
 
-        estadosCache = estadosCache.filter(e => e.id !== estadoId);
-        aviso('Historia eliminada.', 'success');
+        /*
+         * Si Supabase no devuelve la fila eliminada,
+         * no se informa falsamente que se eliminó.
+         */
+        if (!r.data || !r.data.length) {
+            throw new Error(
+                'Supabase no confirmó la eliminación. Revisa los permisos RLS de la tabla estados.'
+            );
+        }
 
+        /*
+         * La fila ya está eliminada.
+         * Ahora se intenta limpiar el archivo físico.
+         */
+        const urlArchivo = estadoURL(estado);
+
+        const storageEliminado =
+            await borrarArchivoStorage(urlArchivo);
+
+        /*
+         * Limpiar las vistas locales relacionadas.
+         */
+        if (window.__estadosVistosIds) {
+            window.__estadosVistosIds.delete(estadoId);
+        }
+
+        /*
+         * Actualizar caché local.
+         */
+        const indiceEliminado = estadosCache.findIndex(
+            e => String(e.id) === String(estadoId)
+        );
+
+        estadosCache = estadosCache.filter(
+            e => String(e.id) !== String(estadoId)
+        );
+
+        /*
+         * Confirmación al usuario.
+         */
+        if (storageEliminado) {
+            aviso(
+                'Historia eliminada correctamente.',
+                'success'
+            );
+        } else {
+            aviso(
+                'Historia eliminada. No se pudo limpiar el archivo de almacenamiento.',
+                'warning'
+            );
+        }
+
+        /*
+         * Si se estaba visualizando la historia eliminada,
+         * actualizar el visor sin dejarlo bloqueado.
+         */
         if (estadoActualUserId === user.id) {
+
             const restantes = estadosDe(user.id);
+
             if (!restantes.length) {
-                cerrarEstadoViewer();
+
+                forzarCierreVisor();
+
             } else {
-                estadoActualIndex = Math.min(estadoActualIndex, restantes.length - 1);
+
+                if (indiceEliminado !== -1 &&
+                    indiceEliminado <= estadoActualIndex) {
+
+                    estadoActualIndex--;
+                }
+
+                if (estadoActualIndex < 0) {
+                    estadoActualIndex = 0;
+                }
+
+                if (estadoActualIndex >= restantes.length) {
+                    estadoActualIndex = restantes.length - 1;
+                }
+
                 mostrarEstadoActual();
             }
+
         } else {
+
             await cargarEstados();
         }
+
+        /*
+         * Actualizar rueda después de la operación.
+         */
+        await cargarEstados();
+
     } catch (e) {
-        console.error('[Estados] Error eliminando:', e);
-        aviso(e.message || 'No se pudo eliminar la historia.', 'error');
+
+        console.error(
+            '[Estados] Error eliminando historia:',
+            e
+        );
+
+        aviso(
+            e.message ||
+            'No se pudo eliminar la historia.',
+            'error'
+        );
+
+    } finally {
+
+        estadoEliminando = false;
+        estadoEliminandoId = null;
+
+        const boton = $('evEliminar');
+
+        if (boton) {
+            boton.disabled = false;
+            boton.classList.remove('is-loading');
+
+            /*
+             * No mostrar el botón si ya no existe
+             * una historia propia en el visor.
+             */
+            const actual = estadosDe(user ? user.id : null);
+
+            if (
+                !actual.length ||
+                estadoActualUserId !== (user ? user.id : null)
+            ) {
+                boton.classList.add('hidden');
+            }
+        }
     }
 }
+
+/* ================================================================
+   COMENTAR HISTORIA
+================================================================ */
 
 async function comentarHistoriaMensajes(estadoId) {
     if (!estadoId || !user) return;
@@ -858,126 +1876,284 @@ async function comentarHistoriaMensajes(estadoId) {
         cancelText: 'Cancelar',
         maxlength: 200
     });
+
     if (!texto) return;
 
+    const contenido = texto.trim().slice(0, 200);
+
+    if (!contenido) return;
+
     try {
-        const r = await db.rpc('estado_enviar_comentario', {
-            p_estado_id: estadoId,
-            p_texto: texto.trim().slice(0, 200)
-        });
+
+        const r = await db.rpc(
+            'estado_enviar_comentario',
+            {
+                p_estado_id: estadoId,
+                p_texto: contenido
+            }
+        );
+
         if (r.error) throw r.error;
-        aviso('Comentario enviado.', 'success');
+
+        aviso(
+            'Comentario enviado.',
+            'success'
+        );
+
     } catch (e) {
-        console.error('[Estados] Error comentando:', e);
-        aviso(e.message || 'No se pudo enviar el comentario.', 'error');
+
+        console.error(
+            '[Estados] Error comentando:',
+            e
+        );
+
+        aviso(
+            e.message ||
+            'No se pudo enviar el comentario.',
+            'error'
+        );
     }
 }
 
-/* ---------------- Publicar: selección ---------------- */
+/* ================================================================
+   PUBLICAR: SELECCIÓN
+================================================================ */
 
 function limpiarArchivosSeleccion() {
-    estadoArchivos.forEach(a => { try { URL.revokeObjectURL(a.url); } catch (e) {} });
+    estadoArchivos.forEach(a => {
+        try {
+            URL.revokeObjectURL(a.url);
+        } catch (e) {}
+    });
+
     estadoArchivos = [];
 }
 
 function abrirModalEstado() {
     if (estadoPublicando) return;
+
     limpiarArchivosSeleccion();
 
     const input = $('estadoFileInput');
-    if (input) { input.value = ''; input.multiple = true; input.accept = ESTADOS_ACCEPT; }
+
+    if (input) {
+        input.value = '';
+        input.multiple = true;
+        input.accept = ESTADOS_ACCEPT;
+    }
 
     const cap = $('estadoCaption');
-    if (cap) cap.value = '';
+
+    if (cap) {
+        cap.value = '';
+    }
 
     pintarPreview();
+
     const m = $('estadoUploadModal');
-    if (m) m.classList.add('show');
+
+    if (m) {
+        m.classList.add('show');
+    }
 }
 
 function cerrarModalEstado() {
     if (estadoPublicando) return;
+
     const m = $('estadoUploadModal');
-    if (m) m.classList.remove('show');
+
+    if (m) {
+        m.classList.remove('show');
+    }
+
     limpiarArchivosSeleccion();
+
     pintarPreview();
 }
 
 function seleccionarArchivoEstado() {
     if (estadoPublicando) return;
+
     const input = $('estadoFileInput');
-    if (input) input.click();
+
+    if (input) {
+        input.click();
+    }
 }
 
 function duracionVideo(file) {
     return new Promise((resolve, reject) => {
+
         const url = URL.createObjectURL(file);
+
         const v = document.createElement('video');
+
         v.preload = 'metadata';
         v.muted = true;
+
         v.onloadedmetadata = () => {
+
             const d = v.duration;
+
             URL.revokeObjectURL(url);
-            if (!isFinite(d) || d <= 0) reject(new Error('No se pudo leer la duración del video.'));
-            else resolve(d);
+
+            if (!isFinite(d) || d <= 0) {
+                reject(
+                    new Error(
+                        'No se pudo leer la duración del video.'
+                    )
+                );
+            } else {
+                resolve(d);
+            }
         };
-        v.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer el video.')); };
+
+        v.onerror = () => {
+
+            URL.revokeObjectURL(url);
+
+            reject(
+                new Error(
+                    'No se pudo leer el video.'
+                )
+            );
+        };
+
         v.src = url;
     });
 }
 
 function contarArchivos(tipo) {
-    return estadoArchivos.filter(a => a.tipo === tipo).length;
+    return estadoArchivos.filter(
+        a => a.tipo === tipo
+    ).length;
 }
 
 async function previewEstado(event) {
-    const input = (event && event.target) || $('estadoFileInput');
+    const input = (event && event.target) ||
+        $('estadoFileInput');
+
     if (!input || estadoPublicando) return;
 
     const nuevos = Array.from(input.files || []);
+
     input.value = '';
+
     if (!nuevos.length) return;
 
     let videos = contarArchivos('video');
     let imagenes = contarArchivos('imagen');
 
     for (const file of nuevos) {
-        const tipo = ESTADOS_MIME_VIDEO.includes(file.type) ? 'video'
-            : (ESTADOS_MIME_IMAGEN.includes(file.type) ? 'imagen' : null);
 
-        if (!tipo) { aviso('Formato no compatible: ' + file.name, 'error'); continue; }
+        const tipo = ESTADOS_MIME_VIDEO.includes(file.type)
+            ? 'video'
+            : (
+                ESTADOS_MIME_IMAGEN.includes(file.type)
+                    ? 'imagen'
+                    : null
+            );
 
-        if (tipo === 'video' && file.size > ESTADOS_LIMITE.videoMB * 1048576) {
-            aviso('Cada video puede pesar máximo ' + ESTADOS_LIMITE.videoMB + ' MB.', 'error'); continue;
+        if (!tipo) {
+            aviso(
+                'Formato no compatible: ' + file.name,
+                'error'
+            );
+            continue;
         }
-        if (tipo === 'imagen' && file.size > ESTADOS_LIMITE.imagenMB * 1048576) {
-            aviso('Cada imagen puede pesar máximo ' + ESTADOS_LIMITE.imagenMB + ' MB.', 'error'); continue;
+
+        if (
+            tipo === 'video' &&
+            file.size > ESTADOS_LIMITE.videoMB * 1048576
+        ) {
+            aviso(
+                'Cada video puede pesar máximo ' +
+                ESTADOS_LIMITE.videoMB +
+                ' MB.',
+                'error'
+            );
+            continue;
         }
-        if (tipo === 'video' && videos >= ESTADOS_LIMITE.videos) {
-            aviso('Puedes tener máximo ' + ESTADOS_LIMITE.videos + ' videos activos.', 'error'); continue;
+
+        if (
+            tipo === 'imagen' &&
+            file.size > ESTADOS_LIMITE.imagenMB * 1048576
+        ) {
+            aviso(
+                'Cada imagen puede pesar máximo ' +
+                ESTADOS_LIMITE.imagenMB +
+                ' MB.',
+                'error'
+            );
+            continue;
         }
-        if (tipo === 'imagen' && imagenes >= ESTADOS_LIMITE.imagenes) {
-            aviso('Puedes tener máximo ' + ESTADOS_LIMITE.imagenes + ' fotos activas.', 'error'); continue;
+
+        if (
+            tipo === 'video' &&
+            videos >= ESTADOS_LIMITE.videos
+        ) {
+            aviso(
+                'Puedes tener máximo ' +
+                ESTADOS_LIMITE.videos +
+                ' videos activos.',
+                'error'
+            );
+            continue;
+        }
+
+        if (
+            tipo === 'imagen' &&
+            imagenes >= ESTADOS_LIMITE.imagenes
+        ) {
+            aviso(
+                'Puedes tener máximo ' +
+                ESTADOS_LIMITE.imagenes +
+                ' fotos activas.',
+                'error'
+            );
+            continue;
         }
 
         let duracion = 0;
+
         if (tipo === 'video') {
+
             try {
                 duracion = await duracionVideo(file);
+
             } catch (e) {
+
                 aviso(e.message, 'error');
+
                 continue;
             }
+
             if (duracion > ESTADOS_LIMITE.videoSeg) {
-                aviso('Cada video puede durar máximo ' + ESTADOS_LIMITE.videoSeg + ' segundos.', 'error');
+
+                aviso(
+                    'Cada video puede durar máximo ' +
+                    ESTADOS_LIMITE.videoSeg +
+                    ' segundos.',
+                    'error'
+                );
+
                 continue;
             }
+
             videos++;
+
         } else {
+
             imagenes++;
         }
 
-        estadoArchivos.push({ file, tipo, duracion, url: URL.createObjectURL(file), publicado: false });
+        estadoArchivos.push({
+            file: file,
+            tipo: tipo,
+            duracion: duracion,
+            url: URL.createObjectURL(file),
+            publicado: false
+        });
     }
 
     pintarPreview();
@@ -985,9 +2161,17 @@ async function previewEstado(event) {
 
 function quitarArchivoSeleccion(indice) {
     if (estadoPublicando) return;
+
     const a = estadoArchivos[indice];
-    if (a) { try { URL.revokeObjectURL(a.url); } catch (e) {} }
+
+    if (a) {
+        try {
+            URL.revokeObjectURL(a.url);
+        } catch (e) {}
+    }
+
     estadoArchivos.splice(indice, 1);
+
     pintarPreview();
 }
 
@@ -996,35 +2180,79 @@ function pintarPreview() {
     const lista = $('estadoPreviewLista');
     const cont = $('estadoPreviewContador');
 
-    if (wrap) wrap.classList.toggle('hidden', estadoArchivos.length === 0);
+    if (wrap) {
+        wrap.classList.toggle(
+            'hidden',
+            estadoArchivos.length === 0
+        );
+    }
+
     if (lista) {
+
         lista.innerHTML = '';
+
         estadoArchivos.forEach((a, i) => {
+
             const card = document.createElement('div');
+
             card.className = 'estado-preview-item';
 
-            const media = a.tipo === 'video' ? document.createElement('video') : document.createElement('img');
+            const media = a.tipo === 'video'
+                ? document.createElement('video')
+                : document.createElement('img');
+
             media.src = a.url;
-            if (a.tipo === 'video') { media.muted = true; media.playsInline = true; media.preload = 'metadata'; }
-            else { media.alt = ''; }
+
+            if (a.tipo === 'video') {
+
+                media.muted = true;
+                media.playsInline = true;
+                media.preload = 'metadata';
+
+            } else {
+
+                media.alt = '';
+            }
+
             card.appendChild(media);
 
             const num = document.createElement('span');
+
             num.className = 'estado-preview-numero';
-            num.textContent = (i + 1) + ' / ' + estadoArchivos.length;
+
+            num.textContent =
+                (i + 1) +
+                ' / ' +
+                estadoArchivos.length;
+
             card.appendChild(num);
 
             const quitar = document.createElement('button');
+
             quitar.type = 'button';
             quitar.className = 'estado-preview-quitar';
-            quitar.setAttribute('aria-label', 'Quitar archivo');
+
+            quitar.setAttribute(
+                'aria-label',
+                'Quitar archivo'
+            );
+
             quitar.textContent = '×';
-            quitar.addEventListener('click', () => quitarArchivoSeleccion(i));
+
+            quitar.addEventListener('click', () => {
+                quitarArchivoSeleccion(i);
+            });
+
             card.appendChild(quitar);
 
             const info = document.createElement('span');
+
             info.className = 'estado-preview-info';
-            info.textContent = a.tipo === 'video' ? 'Video · ' + formatoTiempo(a.duracion) : 'Foto';
+
+            info.textContent = a.tipo === 'video'
+                ? 'Video · ' + formatoTiempo(a.duracion)
+                : 'Foto';
+
             card.appendChild(info);
 
             lista.appendChild(card);
@@ -1032,8 +2260,16 @@ function pintarPreview() {
     }
 
     if (cont) {
-        cont.textContent = contarArchivos('video') + '/' + ESTADOS_LIMITE.videos + ' videos · ' +
-            contarArchivos('imagen') + '/' + ESTADOS_LIMITE.imagenes + ' fotos';
+
+        cont.textContent =
+            contarArchivos('video') +
+            '/' +
+            ESTADOS_LIMITE.videos +
+            ' videos · ' +
+            contarArchivos('imagen') +
+            '/' +
+            ESTADOS_LIMITE.imagenes +
+            ' fotos';
     }
 
     pintarBotonPublicar(false);
@@ -1041,20 +2277,36 @@ function pintarPreview() {
 
 function pintarBotonPublicar(enProceso) {
     const btn = $('btnPublicarEstado');
+
     if (!btn) return;
-    btn.disabled = enProceso || estadoArchivos.length === 0;
-    btn.classList.toggle('is-loading', enProceso);
-    btn.textContent = enProceso ? 'Publicando…' : 'Publicar historia';
+
+    btn.disabled =
+        enProceso ||
+        estadoArchivos.length === 0;
+
+    btn.classList.toggle(
+        'is-loading',
+        enProceso
+    );
+
+    btn.textContent = enProceso
+        ? 'Publicando…'
+        : 'Publicar historia';
 }
 
 function pintarProgresoPublicacion(p) {
     const barra = $('estadoProgresoPublicacion');
+
     if (barra && barra.firstElementChild) {
-        barra.firstElementChild.style.width = Math.max(0, Math.min(100, p)) + '%';
+
+        barra.firstElementChild.style.width =
+            Math.max(0, Math.min(100, p)) + '%';
     }
 }
 
-/* ---------------- Publicar: envío ---------------- */
+/* ================================================================
+   PUBLICAR: ENVÍO
+================================================================ */
 
 async function consultarCuotas() {
     const r = await db.from('estados')
@@ -1062,19 +2314,42 @@ async function consultarCuotas() {
         .eq('usuario_id', user.id)
         .eq('origen', 'mensajes')
         .gt('expires_at', new Date().toISOString());
+
     if (r.error) throw r.error;
 
     const activos = r.data || [];
-    const videos = activos.filter(estadoEsVideo).length;
-    return { videos, imagenes: activos.length - videos };
+
+    const videos = activos.filter(
+        estadoEsVideo
+    ).length;
+
+    return {
+        videos: videos,
+        imagenes: activos.length - videos
+    };
 }
 
 async function publicarUno(a, caption) {
-    const sub = await subirViaBackend(a.file, ESTADOS_BUCKET, a.tipo);
-    if (!sub || !sub.url) throw new Error('El almacenamiento no devolvió la URL del archivo.');
+    const sub = await subirViaBackend(
+        a.file,
+        ESTADOS_BUCKET,
+        a.tipo
+    );
+
+    if (!sub || !sub.url) {
+        throw new Error(
+            'El almacenamiento no devolvió la URL del archivo.'
+        );
+    }
 
     const duracion = a.tipo === 'video'
-        ? Math.max(1, Math.min(ESTADOS_LIMITE.videoSeg, Math.ceil(a.duracion)))
+        ? Math.max(
+            1,
+            Math.min(
+                ESTADOS_LIMITE.videoSeg,
+                Math.ceil(a.duracion)
+            )
+        )
         : ESTADOS_LIMITE.imagenSeg;
 
     const ins = await db.from('estados').insert({
@@ -1089,87 +2364,252 @@ async function publicarUno(a, caption) {
     });
 
     if (ins.error) {
+
         await borrarArchivoStorage(sub.url);
+
         throw ins.error;
     }
+
     a.publicado = true;
 }
 
 async function publicarEstado() {
     if (estadoPublicando) return;
-    if (!estadoArchivos.length) { aviso('Selecciona al menos una foto o video.', 'warning'); return; }
+
+    if (!estadoArchivos.length) {
+
+        aviso(
+            'Selecciona al menos una foto o video.',
+            'warning'
+        );
+
+        return;
+    }
+
     if (!await auth()) return;
 
     estadoPublicando = true;
+
     pintarBotonPublicar(true);
+
     pintarProgresoPublicacion(0);
 
     const capInput = $('estadoCaption');
-    const caption = capInput ? (capInput.value || '').trim().slice(0, 200) || null : null;
+
+    const caption = capInput
+        ? (capInput.value || '').trim().slice(0, 200) || null
+        : null;
+
     const lote = estadoArchivos.slice();
+
     const fallidos = [];
+
     let ok = 0;
 
     try {
+
         const cuota = await consultarCuotas();
-        const nuevosVideos = lote.filter(a => a.tipo === 'video').length;
+
+        const nuevosVideos = lote.filter(
+            a => a.tipo === 'video'
+        ).length;
+
         const nuevasFotos = lote.length - nuevosVideos;
 
-        if (cuota.videos + nuevosVideos > ESTADOS_LIMITE.videos) {
-            throw new Error('Ya tienes ' + cuota.videos + ' videos activos. El máximo es ' + ESTADOS_LIMITE.videos + '.');
+        if (
+            cuota.videos + nuevosVideos >
+            ESTADOS_LIMITE.videos
+        ) {
+            throw new Error(
+                'Ya tienes ' +
+                cuota.videos +
+                ' videos activos. El máximo es ' +
+                ESTADOS_LIMITE.videos +
+                '.'
+            );
         }
-        if (cuota.imagenes + nuevasFotos > ESTADOS_LIMITE.imagenes) {
-            throw new Error('Ya tienes ' + cuota.imagenes + ' fotos activas. El máximo es ' + ESTADOS_LIMITE.imagenes + '.');
+
+        if (
+            cuota.imagenes + nuevasFotos >
+            ESTADOS_LIMITE.imagenes
+        ) {
+            throw new Error(
+                'Ya tienes ' +
+                cuota.imagenes +
+                ' fotos activas. El máximo es ' +
+                ESTADOS_LIMITE.imagenes +
+                '.'
+            );
         }
 
         for (let i = 0; i < lote.length; i++) {
+
             try {
-                await publicarUno(lote[i], caption);
+
+                await publicarUno(
+                    lote[i],
+                    caption
+                );
+
                 ok++;
+
             } catch (e) {
-                console.error('[Estados] Error publicando archivo ' + (i + 1) + ':', e);
+
+                console.error(
+                    '[Estados] Error publicando archivo ' +
+                    (i + 1) +
+                    ':',
+                    e
+                );
+
                 fallidos.push(lote[i].file.name);
             }
-            pintarProgresoPublicacion((i + 1) / lote.length * 100);
+
+            pintarProgresoPublicacion(
+                (i + 1) / lote.length * 100
+            );
         }
 
-        if (ok === lote.length) aviso('Historias publicadas.', 'success');
-        else if (ok > 0) aviso(ok + ' de ' + lote.length + ' historias publicadas.', 'warning');
-        if (fallidos.length) aviso('No se pudieron publicar ' + fallidos.length + ' archivo(s).', 'error');
+        if (ok === lote.length) {
+
+            aviso(
+                'Historias publicadas.',
+                'success'
+            );
+
+        } else if (ok > 0) {
+
+            aviso(
+                ok +
+                ' de ' +
+                lote.length +
+                ' historias publicadas.',
+                'warning'
+            );
+        }
+
+        if (fallidos.length) {
+
+            aviso(
+                'No se pudieron publicar ' +
+                fallidos.length +
+                ' archivo(s).',
+                'error'
+            );
+        }
+
     } catch (e) {
-        console.error('[Estados] Error general de publicación:', e);
-        aviso(e.message || 'No se pudieron publicar las historias.', 'error');
+
+        console.error(
+            '[Estados] Error general de publicación:',
+            e
+        );
+
+        aviso(
+            e.message ||
+            'No se pudieron publicar las historias.',
+            'error'
+        );
+
     } finally {
+
         estadoArchivos = estadoArchivos.filter(a => {
-            if (a.publicado) { try { URL.revokeObjectURL(a.url); } catch (e) {} return false; }
+
+            if (a.publicado) {
+
+                try {
+                    URL.revokeObjectURL(a.url);
+                } catch (e) {}
+
+                return false;
+            }
+
             return true;
         });
+
         estadoPublicando = false;
+
         pintarBotonPublicar(false);
+
         pintarPreview();
+
         if (ok > 0) {
-            if (!estadoArchivos.length) cerrarModalEstado();
+
+            if (!estadoArchivos.length) {
+                cerrarModalEstado();
+            }
+
             await cargarEstados();
         }
     }
 }
 
-/* ---------------- Inicialización ---------------- */
+/* ================================================================
+   INICIALIZACIÓN
+================================================================ */
 
 function inicializarEstados() {
+
     instalarGestos();
+
     instalarControlesVideo();
-    // Por si la página se oculta o pierde foco con el visor abierto
-    document.addEventListener('visibilitychange', () => {
-        if (document.hidden) {
-            const v = $('evVideo');
-            if (estadoVideoActivo && v && !v.paused) v.pause();
+
+    /*
+     * IMPORTANTE:
+     * Conecta directamente el botón de eliminar del visor.
+     * No depende de que exista un onclick en el HTML.
+     */
+    instalarAccionEliminarEstado();
+
+    /*
+     * Por si la página se oculta o pierde el foco.
+     */
+    document.addEventListener(
+        'visibilitychange',
+        () => {
+
+            if (document.hidden) {
+
+                const v = $('evVideo');
+
+                if (
+                    estadoVideoActivo &&
+                    v &&
+                    !v.paused
+                ) {
+                    v.pause();
+                }
+            }
         }
-    });
+    );
+}
+
+/*
+ * Permite inicializar nuevamente si los elementos del visor
+ * se incorporan al DOM después de cargar este módulo.
+ */
+function reinicializarEstados() {
+
+    instalarGestos();
+
+    instalarControlesVideo();
+
+    instalarAccionEliminarEstado();
 }
 
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', inicializarEstados, { once: true });
+
+    document.addEventListener(
+        'DOMContentLoaded',
+        inicializarEstados,
+        { once: true }
+    );
+
 } else {
+
     inicializarEstados();
 }
+
+// ================================================================
+// FIN · MENSAJES · ESTADOS v4.2
+// ================================================================
