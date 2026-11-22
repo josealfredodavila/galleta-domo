@@ -1,8 +1,13 @@
 // ================================================================
-// MENSAJES · SCROLL Y MEDIA v2.0 · MÓDULO 2 DE 8
+// MENSAJES · SCROLL Y MEDIA v2.1 · MÓDULO 2 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-scroll-media.js
-// Depende de: mensajes-core.js (db, $, toast, esc, signedCache,
+// Depende de: mensajes-core.js (db, $, toast, esc, session, signedCache,
 //             isUserAtBottom, unreadCount, scrollRetryTimer, etc.)
+// Cambios v2.1:
+//  - Adjuntos de chat (chat-attachments y chat-audio) se firman desde el
+//    backend (/api/media/chat/:id/url), solo para remitente o destinatario.
+//  - Tipo texto no pide firma; los adjuntos se piden una vez por mensaje
+//    y se reutilizan 50 minutos.
 // Cambios v2.0: sin emojis en mensajes ni botones; descarga con
 //               estilo plano del ecosistema.
 // ================================================================
@@ -82,9 +87,40 @@ async function firmarConCache(bucket, filePath) {
     return data.signedUrl;
 }
 
+// Firma de adjuntos de chat desde el backend (chat-attachments y chat-audio).
+// El backend verifica que el usuario sea remitente o destinatario.
+const firmasChat = new Map();
+const TTL_FIRMA_CHAT_MS = 50 * 60 * 1000;
+
+async function firmarMediaChat(mensajeId) {
+    const enCache = firmasChat.get(mensajeId);
+    if (enCache && Date.now() - enCache.ts < TTL_FIRMA_CHAT_MS) return enCache.url;
+
+    const s = await session();
+    if (!s) return null;
+
+    try {
+        const r = await fetch('/api/media/chat/' + encodeURIComponent(mensajeId) + '/url', {
+            headers: { 'Authorization': 'Bearer ' + s.access_token }
+        });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || !d.ok || !d.url) return null;
+        firmasChat.set(mensajeId, { ts: Date.now(), url: d.url });
+        return d.url;
+    } catch (e) {
+        console.warn('No se pudo firmar el adjunto:', e);
+        return null;
+    }
+}
+
 async function getSignedUrlForMessage(m) {
-    if (!m.imagen_url) return null;
+    if (!m.imagen_url || m.tipo === 'texto') return null;
     const raw = m.imagen_url;
+
+    if (raw.startsWith('bucket://chat-')) {
+        return m.id ? await firmarMediaChat(m.id) : null;
+    }
+
     if (raw.startsWith('http')) {
         if (raw.includes('/object/public/')) return raw;
         try {
@@ -97,6 +133,7 @@ async function getSignedUrlForMessage(m) {
             return (await firmarConCache(bucket, filePath)) || raw;
         } catch (e) { return raw; }
     }
+
     if (raw.startsWith('bucket://')) {
         try {
             const withoutPrefix = raw.replace('bucket://', '');
@@ -107,6 +144,7 @@ async function getSignedUrlForMessage(m) {
             return await firmarConCache(bucket, filePath);
         } catch (e) { console.warn('Error parseando ruta:', e); return null; }
     }
+
     return null;
 }
 
