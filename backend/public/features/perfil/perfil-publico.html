@@ -66,6 +66,118 @@ html:not(.auth-ready) .app{display:none!important}
 }
 
 /* =====================================
+   PUBLICACIONES DEL PERFIL (solo contactos)
+===================================== */
+.pub-section{
+ max-width:720px;
+ margin:18px auto 0;
+ padding:0 16px;
+ box-sizing:border-box;
+}
+.pub-head{
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ padding:12px 0;
+ border-bottom:1px solid rgba(255,255,255,.09);
+}
+.pub-head h3{
+ margin:0;
+ font-family:Orbitron,monospace;
+ font-size:.8rem;
+ letter-spacing:.12em;
+ text-transform:uppercase;
+ color:#bfefff;
+}
+.pub-head span{font-size:.7rem;color:#6f8ba0}
+.pub-msg{
+ margin:14px 0;
+ text-align:center;
+ font-size:.8rem;
+ color:#8aa8b8;
+ line-height:1.5;
+}
+.pub-post{
+ display:flex;
+ gap:12px;
+ padding:14px 0;
+ border-bottom:1px solid rgba(255,255,255,.07);
+}
+.pub-av{
+ width:42px;height:42px;flex:0 0 42px;
+ border-radius:50%;
+ overflow:hidden;
+ display:flex;align-items:center;justify-content:center;
+ background:linear-gradient(135deg,#0F2D1A,#D4AF37);
+ color:#fff;font-weight:700;
+ border:1.5px solid rgba(0,229,255,.45);
+}
+.pub-av img{width:100%;height:100%;object-fit:cover}
+.pub-meta{min-width:0;flex:1}
+.pub-nombre{font-weight:700;font-size:.9rem;color:#f5fbff}
+.pub-sub{font-size:.7rem;color:#6f8ba0;margin-top:2px}
+.pub-texto{
+ margin-top:8px;
+ font-size:.92rem;
+ line-height:1.55;
+ color:#d5e4ef;
+ white-space:pre-wrap;
+ word-break:break-word;
+}
+.pub-img{
+ display:block;
+ width:100%;
+ max-height:420px;
+ object-fit:cover;
+ border-radius:14px;
+ margin-top:10px;
+ background:#050a12;
+}
+.pub-venta{
+ display:inline-block;
+ margin-top:10px;
+ padding:4px 10px;
+ border-radius:999px;
+ font-size:.7rem;
+ color:#D4AF37;
+ border:1px solid rgba(212,175,55,.35);
+ background:rgba(212,175,55,.08);
+}
+.pub-aviso{margin-top:8px;font-size:.7rem;color:#f7d44a}
+.pub-mas{display:block;margin:14px auto 0}
+
+/* =====================================
+   MI ECOSISTEMA PLEGADO
+===================================== */
+.eco-details{margin:22px 0 28px}
+.eco-details > summary{
+ list-style:none;
+ cursor:pointer;
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ gap:12px;
+ padding:14px 16px;
+ border:1px solid rgba(0,229,255,.22);
+ border-radius:18px;
+ background:linear-gradient(160deg,#06111e,#020811);
+ color:#eaf7ff;
+ font-family:Orbitron,monospace;
+ font-size:.74rem;
+ letter-spacing:.1em;
+ text-transform:uppercase;
+}
+.eco-details > summary::-webkit-details-marker{display:none}
+.eco-details > summary::after{
+ content:'+';
+ color:#00e5ff;
+ font-size:1.2rem;
+ line-height:1;
+}
+.eco-details[open] > summary::after{content:'−'}
+.eco-details .ecosistema{margin:14px 0 0}
+
+/* =====================================
    CARRUSEL MI ECOSISTEMA · CSARIEL'S
 ===================================== */
 
@@ -476,9 +588,9 @@ html:not(.auth-ready) .app{display:none!important}
    <p data-clave="perfil_publico_no_encontrado_desc">
     No existe ningún usuario con ese nombre de usuario.
    </p>
-   <a href="/features/muro/muro.html"
+   <a href="/features/contactos/contactos.html"
       class="btn btn-outline btn-sm"
-      data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
+      data-clave="perfil_publico_volver_muro">← Volver</a>
   </div>
  </div>
 
@@ -563,16 +675,32 @@ html:not(.auth-ready) .app{display:none!important}
       target="_blank" rel="noopener" data-no-traducir="1">Telegram</a>
   </div>
 
-  <a href="/features/muro/muro.html"
-     class="btn btn-outline pp-volver"
-     data-clave="perfil_publico_volver_muro">← Volver al Muro</a>
+  <a href="/features/contactos/contactos.html"
+     id="btnVolver"
+     class="btn btn-outline pp-volver">← Volver</a>
 
  </div>
 </div>
 
 <!-- =====================================
-     CARRUSEL MI ECOSISTEMA (después del perfil)
+     PUBLICACIONES DEL CONTACTO (solo contactos, validado en la base)
 ====================================== -->
+<section class="pub-section" id="pubSection" aria-labelledby="pubTitulo" hidden>
+ <div class="pub-head">
+  <h3 id="pubTitulo">Publicaciones</h3>
+  <span id="pubContador"></span>
+ </div>
+ <p class="pub-msg" id="pubMsg" hidden></p>
+ <div id="pubLista"></div>
+ <button type="button" class="btn btn-outline btn-sm pub-mas" id="pubMas" hidden>Cargar más</button>
+</section>
+
+<!-- =====================================
+     MI ECOSISTEMA (plegado por defecto)
+====================================== -->
+
+<details class="eco-details">
+<summary>Explora Mi Ecosistema</summary>
 
 <section class="ecosistema" aria-labelledby="ecoTitle">
 
@@ -803,6 +931,7 @@ html:not(.auth-ready) .app{display:none!important}
  </div>
 
 </section>
+</details>
 
 <footer class="footer">
  <span data-no-traducir="1">
@@ -956,14 +1085,18 @@ html:not(.auth-ready) .app{display:none!important}
 
 /* =====================================
    LÓGICA DEL PERFIL PÚBLICO
-   Lectura por @usuario vía RPC perfil_publico_por_handle
-   (visible para visitantes; filtra cuentas inactivas y bloqueos)
+   - Perfil por @handle o por ?id= (RPC que respeta bloqueos y cuentas activas)
+   - Publicaciones solo para contactos (RPC perfil_publicaciones_contactos)
+   - Regreso con history.back() y respaldo a Contactos
 ===================================== */
 (function(){
  'use strict';
 
  var RUTA_PERFIL_PROPIO='/features/perfil/perfil.html';
+ var RUTA_CONTACTOS='/features/contactos/contactos.html';
  var HANDLE_RE=/^[A-Za-z0-9_]{1,40}$/;
+ var UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+ var POSTS_PAGE=20;
 
  function $(id){
   return document.getElementById(id);
@@ -990,13 +1123,20 @@ html:not(.auth-ready) .app{display:none!important}
   btnCompartirTxt:$('btnCompartirTxt'),
   linkWa:$('linkWhatsapp'),
   linkX:$('linkX'),
-  linkTg:$('linkTelegram')
+  linkTg:$('linkTelegram'),
+  volver:$('btnVolver'),
+  pubSection:$('pubSection'),
+  pubLista:$('pubLista'),
+  pubMsg:$('pubMsg'),
+  pubMas:$('pubMas'),
+  pubContador:$('pubContador')
  };
 
  var perfil=null;
  var sesionId=null;
  var direccionWallet=null;
  var presencia=null;
+ var pub={cargando:false,antes:null,total:0};
 
  function t(clave,vars){
   return typeof window.t==='function'
@@ -1060,14 +1200,17 @@ html:not(.auth-ready) .app{display:none!important}
   });
  }
 
- function leerHandle(){
-  var raw=new URLSearchParams(
-   window.location.search
-  ).get('u');
+ // Acepta ?u=handle (preferido) o ?id=uuid (respaldo)
+ function leerIdentificador(){
+  var sp=new URLSearchParams(window.location.search);
 
-  var handle=raw?raw.trim():'';
+  var u=(sp.get('u')||'').trim();
+  if(u&&HANDLE_RE.test(u))return {tipo:'handle',valor:u};
 
-  return HANDLE_RE.test(handle)?handle:null;
+  var id=(sp.get('id')||'').trim();
+  if(id&&UUID_RE.test(id))return {tipo:'id',valor:id};
+
+  return null;
  }
 
  function urlPerfil(){
@@ -1139,10 +1282,14 @@ html:not(.auth-ready) .app{display:none!important}
   }
  }
 
- async function cargarPerfil(client,handle){
-  var r=await client.rpc('perfil_publico_por_handle',{
-   p_handle:handle
-  });
+ async function cargarPerfil(client,ident){
+  var r;
+
+  if(ident.tipo==='handle'){
+   r=await client.rpc('perfil_publico_por_handle',{p_handle:ident.valor});
+  }else{
+   r=await client.rpc('perfil_publico_por_id',{p_id:ident.valor});
+  }
 
   if(r.error)throw r.error;
 
@@ -1338,6 +1485,239 @@ html:not(.auth-ready) .app{display:none!important}
   }
  );
 
+ /* ---------------- PUBLICACIONES (solo contactos) ---------------- */
+
+ function safeHttps(u){
+  if(!u)return null;
+
+  try{
+   var x=new URL(String(u),window.location.href);
+   return x.protocol==='https:'?x.href:null;
+  }catch(e){
+   return null;
+  }
+ }
+
+ function fechaPost(iso){
+  if(!iso)return '';
+
+  var d=new Date(iso);
+
+  if(isNaN(d.getTime()))return '';
+
+  return d.toLocaleString('es-MX',{
+   day:'numeric',
+   month:'short',
+   hour:'2-digit',
+   minute:'2-digit'
+  });
+ }
+
+ function mostrarMensajePub(texto){
+  if(!el.pubMsg)return;
+
+  el.pubMsg.textContent=texto||'';
+  el.pubMsg.hidden=!texto;
+ }
+
+ function crearPost(p){
+  var art=document.createElement('article');
+  art.className='pub-post';
+
+  var av=document.createElement('div');
+  av.className='pub-av';
+
+  var avatarUrl=safeHttps(p.usuario_avatar_url);
+
+  if(avatarUrl){
+   var im=document.createElement('img');
+   im.alt='';
+   im.loading='lazy';
+   im.src=avatarUrl;
+   av.appendChild(im);
+  }else{
+   av.textContent=(p.usuario_nombre||'U').charAt(0).toUpperCase();
+  }
+
+  var cuerpo=document.createElement('div');
+  cuerpo.className='pub-meta';
+
+  var nombre=document.createElement('div');
+  nombre.className='pub-nombre';
+  nombre.textContent=p.usuario_nombre||p.usuario_handle||'Usuario';
+
+  var sub=document.createElement('div');
+  sub.className='pub-sub';
+  sub.textContent=
+   (p.usuario_handle?'@'+p.usuario_handle+' · ':'')+fechaPost(p.created_at);
+
+  cuerpo.appendChild(nombre);
+  cuerpo.appendChild(sub);
+
+  if(p.contenido){
+   var texto=document.createElement('div');
+   texto.className='pub-texto';
+   texto.textContent=p.contenido;
+   cuerpo.appendChild(texto);
+  }
+
+  var img=safeHttps(p.imagen_url);
+
+  if(img){
+   var media=document.createElement('img');
+   media.className='pub-img';
+   media.alt='';
+   media.loading='lazy';
+   media.src=img;
+   cuerpo.appendChild(media);
+  }
+
+  if(Number(p.cantidad_venta)>0&&!p.vendido){
+   var venta=document.createElement('span');
+   venta.className='pub-venta';
+   venta.textContent='En venta · '+p.cantidad_venta+' tokens';
+   cuerpo.appendChild(venta);
+  }
+
+  if(p.aviso_moderacion==='lenguaje_inapropiado'){
+   var aviso=document.createElement('div');
+   aviso.className='pub-aviso';
+   aviso.textContent='Este mensaje contiene lenguaje inapropiado.';
+   cuerpo.appendChild(aviso);
+  }
+
+  var fila=document.createElement('div');
+  fila.className='pub-post-fila';
+  fila.style.display='flex';
+  fila.style.gap='12px';
+  fila.style.width='100%';
+  fila.appendChild(av);
+  fila.appendChild(cuerpo);
+
+  art.appendChild(fila);
+
+  return art;
+ }
+
+ async function cargarPublicaciones(client,handle,reiniciar){
+  if(pub.cargando||!handle)return;
+
+  pub.cargando=true;
+
+  if(reiniciar){
+   pub.antes=null;
+   pub.total=0;
+   el.pubLista.innerHTML='';
+  }
+
+  if(el.pubMas)el.pubMas.disabled=true;
+
+  try{
+   var r=await client.rpc('perfil_publicaciones_contactos',{
+    p_handle:handle,
+    p_antes:reiniciar?null:pub.antes,
+    p_limite:POSTS_PAGE
+   });
+
+   if(r.error){
+    el.pubSection.hidden=false;
+    el.pubLista.innerHTML='';
+    el.pubMas.hidden=true;
+
+    if(r.error.code==='42501'){
+     mostrarMensajePub('Inicia sesión para ver las publicaciones de tus contactos.');
+    }else{
+     mostrarMensajePub('No se pudieron cargar las publicaciones.');
+    }
+
+    return;
+   }
+
+   var d=r.data||{};
+
+   if(d.estado==='bloqueado'||d.estado==='no_encontrado'){
+    el.pubSection.hidden=true;
+    return;
+   }
+
+   el.pubSection.hidden=false;
+
+   if(d.estado==='no_autenticado'){
+    el.pubLista.innerHTML='';
+    el.pubMas.hidden=true;
+    el.pubContador.textContent='';
+    mostrarMensajePub('Inicia sesión para ver las publicaciones de tus contactos.');
+    return;
+   }
+
+   if(d.estado==='no_contacto'){
+    el.pubLista.innerHTML='';
+    el.pubMas.hidden=true;
+    el.pubContador.textContent='';
+    mostrarMensajePub('Solo tus contactos pueden ver las publicaciones de esta persona.');
+    return;
+   }
+
+   var posts=Array.isArray(d.posts)?d.posts:[];
+
+   posts.forEach(function(p){
+    el.pubLista.appendChild(crearPost(p));
+   });
+
+   pub.total+=posts.length;
+
+   if(posts.length){
+    pub.antes=posts[posts.length-1].created_at;
+   }
+
+   el.pubContador.textContent=pub.total?String(pub.total):'';
+
+   if(!pub.total){
+    mostrarMensajePub('Sin publicaciones');
+   }else{
+    mostrarMensajePub('');
+   }
+
+   el.pubMas.hidden=posts.length<POSTS_PAGE;
+  }catch(e){
+   console.warn('[PerfilPublico] Publicaciones:',e);
+   el.pubSection.hidden=false;
+   mostrarMensajePub('No se pudieron cargar las publicaciones.');
+  }finally{
+   pub.cargando=false;
+   if(el.pubMas)el.pubMas.disabled=false;
+  }
+ }
+
+ /* ---------------- REGRESO ---------------- */
+
+ function mismoOrigenReferrer(){
+  try{
+   return !!document.referrer&&
+    new URL(document.referrer).origin===window.location.origin;
+  }catch(e){
+   return false;
+  }
+ }
+
+ function configurarVolver(){
+  if(!el.volver)return;
+
+  el.volver.addEventListener('click',function(e){
+   if(window.history.length>1&&mismoOrigenReferrer()){
+    e.preventDefault();
+    window.history.back();
+   }
+   // Sin historial del mismo sitio, el enlace lleva a Contactos.
+  });
+ }
+
+ /* ---------------- ESPERA Y ARRANQUE ---------------- */
+
+ function pintarEstadoInicial(){
+  pintarEstado();
+ }
+
  function esperarIdiomas(){
   return new Promise(function(resolve){
    var intentos=0;
@@ -1367,9 +1747,9 @@ html:not(.auth-ready) .app{display:none!important}
  async function init(){
   mostrar(el.cargando);
 
-  var handle=leerHandle();
+  var ident=leerIdentificador();
 
-  if(!handle){
+  if(!ident){
    mostrar(el.noEncontrado);
    return;
   }
@@ -1384,7 +1764,7 @@ html:not(.auth-ready) .app{display:none!important}
 
   sesionId=await obtenerSesionId(client);
 
-  var p=await cargarPerfil(client,handle);
+  var p=await cargarPerfil(client,ident);
 
   if(!p){
    mostrar(el.noEncontrado);
@@ -1408,7 +1788,7 @@ html:not(.auth-ready) .app{display:none!important}
   }
 
   mostrar(el.perfil);
-  pintarEstado();
+  pintarEstadoInicial();
 
   cargarWallet(client,p.id).catch(function(e){
    console.warn(
@@ -1416,6 +1796,8 @@ html:not(.auth-ready) .app{display:none!important}
     e
    );
   });
+
+  cargarPublicaciones(client,p.handle,true);
  }
 
  el.wallet.addEventListener('click',copiarWallet);
@@ -1431,6 +1813,18 @@ html:not(.auth-ready) .app{display:none!important}
    window.location.reload();
   }
  );
+
+ if(el.pubMas){
+  el.pubMas.addEventListener('click',async function(){
+   var client=await obtenerCliente();
+
+   if(client&&perfil&&perfil.handle){
+    cargarPublicaciones(client,perfil.handle,false);
+   }
+  });
+ }
+
+ configurarVolver();
 
  function arrancar(){
   init().catch(function(err){
