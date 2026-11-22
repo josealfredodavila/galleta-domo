@@ -1002,8 +1002,12 @@
 
     function abrirPerfil(id) {
         var p = state.perfiles.get(id);
-        if (!p || !p.handle) { showToast('Perfil no disponible.', 'warning'); return; }
-        window.location.href = CONFIG.PERFIL_URL + '?u=' + encodeURIComponent(p.handle);
+        if (!id || !p || !p.handle || p.id !== id) {
+            showToast('Perfil no disponible.', 'warning');
+            return;
+        }
+        var params = new URLSearchParams({ u: p.handle, id: id });
+        window.location.href = CONFIG.PERFIL_URL + '?' + params.toString();
     }
 
     /* ---------------- Agregar por código ---------------- */
