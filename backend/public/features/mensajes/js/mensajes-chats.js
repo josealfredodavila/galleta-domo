@@ -1,15 +1,21 @@
 // ================================================================
-// MENSAJES · CHATS v2.3 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.4 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
-// Cambios v2.3 (multimedia):
-//  - messageHTML usa solo la URL firmada (sin fallback a imagen_url crudo).
-//  - Si un adjunto no tiene URL se muestra "Archivo no disponible"
-//    en lugar de una burbuja vacía o el nombre del archivo.
-// Cambios v2.2 (interfaz):
-//  - El composer nunca queda oculto por demora/fallo al consultar bloqueos.
-//  - Solo se oculta si hay bloqueo confirmado (yo === true || el === true).
-//  - estadoBloqueoCon() es tolerante a errores (devuelve false,false).
-//  - Guardias defensivas: input/textarea sin disabled/readonly; foco hace scroll.
+//
+// ACTUALIZACIÓN v2.4 · EXPERIENCIA DE NOTAS DE VOZ
+//  - Ondas de audio animadas durante la grabación.
+//  - Botón X para cancelar y descartar.
+//  - Botón ✓ para detener y preparar la nota.
+//  - Vista previa antes de enviar.
+//  - Botón para reproducir y pausar la vista previa.
+//  - Envío únicamente mediante confirmación expresa.
+//  - Limpieza de micrófono y recursos temporales.
+//  - Reproductor de audio con clase CSS propia y ancho adaptable.
+//  - Compatibilidad con notas de voz para Marquinhos.
+//  - Conserva Supabase, bucket chat-audio y flujo existente.
+//
+// Se conservan las funciones originales de conversaciones,
+// mensajes, bloqueo, multimedia, realtime y menú contextual.
 // ================================================================
 
 'use strict';
@@ -18,6 +24,31 @@ const ICO_ESTRELLA_CHAT = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="tru
 
 let conversationFilter = '';
 let aperturaSecuencia = 0;
+
+// ================================================================
+// NOTAS DE VOZ · ESTADO
+// ================================================================
+
+let vozStream = null;
+let vozBlobPreparado = null;
+let vozUrlPreview = null;
+let vozMimeActual = '';
+let vozDuracion = 0;
+let vozIntervalo = null;
+let vozAnimacion = null;
+let vozAudioContext = null;
+let vozAnalyzer = null;
+let vozSource = null;
+let vozMode = null;
+let vozEstado = 'idle';
+let vozCancelar = false;
+let vozPreviewAudio = null;
+let vozProcesando = false;
+
+const VOZ_BARRAS = 36;
+const VOZ_MAX_MB = 50;
+
+let conversationFilterOriginal = '';
 
 function etiquetaPreview(tipo, contenido) {
     if (!tipo) return 'Sin mensajes';
@@ -116,10 +147,9 @@ function aplicarFiltroConversaciones() {
     });
 }
 
-/* ---------------- Bloqueo (sincronizado con contactos.js) ---------------- */
+/* ---------------- Bloqueo ---------------- */
 
 async function estadoBloqueoCon(id) {
-    // Tolerante a errores: si falla una consulta, esa dirección se considera NO bloqueada.
     try {
         if (!user || !user.id || !id) return { yo: false, el: false };
         const [yo, el] = await Promise.all([
@@ -131,7 +161,7 @@ async function estadoBloqueoCon(id) {
             el: !!(el && el.data)
         };
     } catch (e) {
-        console.warn('[Mensajes] estadoBloqueoCon falló, se asume sin bloqueo:', e && e.message ? e.message : e);
+        console.warn('[Mensajes] estadoBloqueoCon falló:', e);
         return { yo: false, el: false };
     }
 }
@@ -151,7 +181,6 @@ function aplicarEstadoBloqueo(est) {
 
     if (composer) {
         composer.hidden = bloqueado;
-        // Refuerzo visual: si no está bloqueado, garantiza visibilidad y eliminación de estilos que impidan el toque.
         if (!bloqueado) {
             composer.style.removeProperty('display');
             composer.style.removeProperty('visibility');
@@ -228,11 +257,13 @@ function marcarBotLeidoEnSegundoPlano() {
             .eq('destinatario_id', user.id)
             .eq('leido', false)
             .then(() => {}, () => {});
-    } catch (e) { /* silencioso */ }
+    } catch (e) { }
 }
 
 async function openConversation(id) {
     const secuencia = ++aperturaSecuencia;
+
+    if (vozEstado !== 'idle') cancelarNotaVoz(true);
 
     const visor = $('estadoViewer');
     if (visor) visor.classList.remove('show');
@@ -269,8 +300,6 @@ async function openConversation(id) {
     const audioBtn = $('audioCall');
     if (audioBtn) audioBtn.disabled = esBot || !window.__livekitReady;
 
-    // === Interfaz: composer visible y editable SIEMPRE al abrir la conversación ===
-    // Se muestra ANTES de consultar bloqueos para no quedar oculto por demoras.
     $('composer').hidden = false;
     $('emptyState').hidden = true;
     $('panel').classList.add('chat-open');
@@ -292,8 +321,6 @@ async function openConversation(id) {
         return;
     }
 
-    // La consulta de bloqueo NO debe retrasar ni ocultar la interfaz:
-    // se lanza sin await, y aplicarEstadoBloqueo solo oculta si es bloqueo confirmado.
     estadoBloqueoCon(id).then(est => {
         if (secuencia !== aperturaSecuencia) return;
         if (current && current.id === id) aplicarEstadoBloqueo(est);
@@ -316,6 +343,7 @@ async function openConversation(id) {
 
 async function cerrarConversacion() {
     aperturaSecuencia++;
+    if (vozEstado !== 'idle') cancelarNotaVoz(true);
     current = null;
     $('panel').classList.remove('chat-open');
     $('chatName').textContent = 'Selecciona una conversación';
@@ -334,7 +362,7 @@ async function cerrarConversacion() {
     document.querySelectorAll('.conv').forEach(x => x.classList.remove('active'));
     if (msgChannel) {
         try { db.removeChannel(msgChannel); }
-        catch (e) { console.warn('[Mensajes] removeChannel msgChannel:', e && e.message ? e.message : e); }
+        catch (e) { console.warn('[Mensajes] removeChannel:', e); }
         msgChannel = null;
     }
 }
@@ -382,7 +410,7 @@ function messageHTML(m, sent, signedUrl) {
     if (urlToUse) {
         if (m.tipo === 'imagen') body = `<img src="${esc(urlToUse)}" alt="${esc(m.nombre_archivo || 'Imagen')}" loading="lazy" data-visor="1" data-src="${esc(urlToUse)}" data-nombre="${esc(m.nombre_archivo || 'imagen.jpg')}" style="cursor:zoom-in;">`;
         else if (m.tipo === 'video') body = `<video controls playsinline src="${esc(urlToUse)}"></video>`;
-        else if (m.tipo === 'audio') body = `<audio controls preload="metadata" src="${esc(urlToUse)}"></audio>`;
+        else if (m.tipo === 'audio') body = `<div class="chat-audio-player"><audio controls preload="metadata" playsinline src="${esc(urlToUse)}"></audio></div>`;
         else {
             const displayName = esc(m.nombre_archivo || limpiarMarkdown(m.contenido) || 'Archivo');
             body = `<a class="file-link" href="${esc(urlToUse)}" target="_blank" rel="noopener">${displayName}</a>`;
@@ -491,7 +519,7 @@ function subscribeMessages(id) {
     if (id === BOT_ID) return;
     if (msgChannel) {
         try { db.removeChannel(msgChannel); }
-        catch (e) { console.warn('[Mensajes] removeChannel msgChannel (pre-subscribe):', e && e.message ? e.message : e); }
+        catch (e) { console.warn('[Mensajes] removeChannel:', e); }
         msgChannel = null;
     }
     if (!user || !user.id) return;
@@ -535,7 +563,7 @@ function subscribeMessages(id) {
         .subscribe();
 }
 
-/* ---------------- Adjuntos y notas de voz ---------------- */
+/* ---------------- Adjuntos ---------------- */
 
 async function uploadFile(file) {
     if (!current || !await auth()) return;
@@ -570,7 +598,7 @@ async function uploadFile(file) {
     if (resp.estado === 'entregado' && resp.mensaje) { await append(resp.mensaje, true); recargarBandeja(); }
 }
 
-/* ---------------- Nueva conversación / buscar contacto ---------------- */
+/* ---------------- Nueva conversación ---------------- */
 
 function newConversation() {
     $('newModal').classList.add('show');
@@ -608,54 +636,645 @@ async function createConversation(id) {
     await openConversation(id);
 }
 
-/* ---------------- Grabación de nota de voz (chat normal) ---------------- */
+/* ================================================================
+   NOTAS DE VOZ · INTERFAZ
+   ================================================================ */
 
-function getSupportedAudioMime() {
-    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg', 'audio/mp4'];
-    for (const type of candidates) { if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) return type; }
-    return '';
+function vozCrearInterfaz() {
+    let panel = document.getElementById('vozRecorderPanel');
+    if (panel) return panel;
+
+    const composer = $('composer');
+    if (!composer) return null;
+
+    panel = document.createElement('div');
+    panel.id = 'vozRecorderPanel';
+    panel.className = 'voz-recorder-panel';
+    panel.hidden = true;
+
+    panel.innerHTML = `
+        <div class="voz-recorder-main">
+            <button type="button" class="voz-action voz-cancel" id="vozCancelBtn" aria-label="Cancelar nota de voz" title="Cancelar">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+            <div class="voz-center">
+                <div class="voz-status-row">
+                    <span class="voz-live-dot" id="vozLiveDot"></span>
+                    <span class="voz-status-text" id="vozStatusText">Grabando nota de voz</span>
+                    <span class="voz-timer" id="vozTimer">00:00</span>
+                </div>
+                <div class="voz-waveform" id="vozWaveform" aria-label="Visualización de audio"></div>
+            </div>
+            <button type="button" class="voz-action voz-accept" id="vozAcceptBtn" aria-label="Aceptar grabación" title="Detener y preparar">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+            </button>
+        </div>
+        <div class="voz-preview-controls" id="vozPreviewControls" hidden>
+            <button type="button" class="voz-preview-play" id="vozPreviewPlay" aria-label="Reproducir vista previa">
+                <svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <div class="voz-preview-info">
+                <div class="voz-preview-title">Nota de voz lista</div>
+                <div class="voz-preview-subtitle" id="vozPreviewDuration">Escucha antes de enviar</div>
+            </div>
+            <button type="button" class="voz-send-btn" id="vozSendBtn">Enviar</button>
+        </div>
+        <div class="voz-recording-hint" id="vozHint">Tu audio no se enviará hasta que confirmes.</div>
+    `;
+
+    const input = $('messageInput');
+    if (input && input.parentNode) {
+        input.parentNode.insertBefore(panel, input);
+    } else {
+        composer.insertBefore(panel, composer.firstChild);
+    }
+
+    const waveform = panel.querySelector('#vozWaveform');
+    for (let i = 0; i < VOZ_BARRAS; i++) {
+        const bar = document.createElement('span');
+        bar.className = 'voz-bar';
+        bar.style.setProperty('--voz-index', i);
+        bar.style.height = (5 + Math.round(Math.random() * 9)) + 'px';
+        waveform.appendChild(bar);
+    }
+
+    panel.querySelector('#vozCancelBtn').addEventListener('click', () => cancelarNotaVoz(false));
+    panel.querySelector('#vozAcceptBtn').addEventListener('click', () => detenerYPrepararNotaVoz());
+    panel.querySelector('#vozSendBtn').addEventListener('click', () => enviarNotaVozPreparada());
+    panel.querySelector('#vozPreviewPlay').addEventListener('click', () => alternarPreviewNotaVoz());
+
+    return panel;
 }
 
-function extensionForMime(mime) { if (mime.includes('ogg')) return 'ogg'; if (mime.includes('mp4')) return 'm4a'; return 'webm'; }
+function vozMostrarPanel() {
+    const panel = vozCrearInterfaz();
+    if (!panel) return null;
+    panel.hidden = false;
+    panel.classList.add('voz-visible');
+    return panel;
+}
 
-async function recordAudioNota() {
-    if (recorder && recorder.state === 'recording') { recorder.stop(); return; }
-    if (!current) { toast('Selecciona una conversación.', 'error'); return; }
-    if (!await auth()) return;
-    const esBot = current.bot;
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        audioChunks = [];
-        const mimeType = getSupportedAudioMime();
-        recorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
-        recordingMode = esBot ? 'bot' : 'normal';
-        recordingStartedAt = Date.now();
-        recorder.ondataavailable = e => { if (e.data && e.data.size) audioChunks.push(e.data); };
-        recorder.onstop = async () => {
-            stream.getTracks().forEach(t => t.stop());
-            $('audio').classList.remove('recording');
-            const blob = new Blob(audioChunks, { type: recorder.mimeType || mimeType || 'audio/webm' });
-            audioChunks = [];
-            const mode = recordingMode;
-            recorder = null;
-            recordingMode = null;
-            if (!blob.size) { toast('No se capturó audio.', 'error'); return; }
-            const ext = extensionForMime(blob.type);
-            const file = new File([blob], `audio-${Date.now()}.${ext}`, { type: blob.type });
-            if (mode === 'bot') await enviarVozAlBot(file);
-            else await uploadFile(file);
-        };
-        recorder.start();
-        $('audio').classList.add('recording');
-        toast(esBot ? 'Habla con Marquinhos. Presiona otra vez para enviar.' : 'Grabando. Presiona otra vez para detener.');
-    } catch (e) {
-        console.error('Micrófono:', e);
-        $('audio').classList.remove('recording');
-        toast('No se pudo acceder al micrófono.', 'error');
+function vozOcultarPanel() {
+    const panel = document.getElementById('vozRecorderPanel');
+    if (!panel) return;
+    panel.hidden = true;
+    panel.classList.remove('voz-visible', 'voz-preview-ready');
+}
+
+function vozActualizarTiempo() {
+    const timer = document.getElementById('vozTimer');
+    if (!timer) return;
+    const segundos = Math.max(0, Math.floor((Date.now() - recordingStartedAt) / 1000));
+    timer.textContent = vozFormatoTiempo(segundos);
+}
+
+function vozFormatoTiempo(segundos) {
+    const min = Math.floor(segundos / 60);
+    const sec = segundos % 60;
+    return String(min).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
+}
+
+function vozActualizarOndas(data) {
+    const panel = document.getElementById('vozRecorderPanel');
+    if (!panel) return;
+    const barras = panel.querySelectorAll('.voz-bar');
+    if (!barras.length) return;
+
+    for (let i = 0; i < barras.length; i++) {
+        let valor = 0;
+        if (data && data.length) {
+            const indice = Math.floor(i * data.length / barras.length);
+            valor = data[indice] / 255;
+        } else {
+            valor = Math.random() * 0.35;
+        }
+        const altura = Math.max(4, Math.round(4 + valor * 31));
+        barras[i].style.height = altura + 'px';
+        barras[i].classList.toggle('voz-bar-active', valor > 0.13);
     }
 }
 
-/* ---------------- Menú contextual de mensajes ---------------- */
+function vozDetenerAnimacion() {
+    if (vozAnimacion) {
+        cancelAnimationFrame(vozAnimacion);
+        vozAnimacion = null;
+    }
+    if (vozIntervalo) {
+        clearInterval(vozIntervalo);
+        vozIntervalo = null;
+    }
+    if (vozAudioContext) {
+        try { vozAudioContext.close(); } catch (e) { }
+        vozAudioContext = null;
+        vozAnalyzer = null;
+        vozSource = null;
+    }
+}
+
+function vozIniciarAnimacion(stream) {
+    vozDetenerAnimacion();
+
+    const panel = vozMostrarPanel();
+    if (!panel) return;
+
+    const barras = panel.querySelectorAll('.voz-bar');
+    barras.forEach(bar => {
+        bar.style.height = '5px';
+        bar.classList.remove('voz-bar-active');
+    });
+
+    try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (AudioContextClass) {
+            vozAudioContext = new AudioContextClass();
+            vozAnalyzer = vozAudioContext.createAnalyser();
+            vozAnalyzer.fftSize = 128;
+            vozAnalyzer.smoothingTimeConstant = 0.72;
+            vozSource = vozAudioContext.createMediaStreamSource(stream);
+            vozSource.connect(vozAnalyzer);
+            const data = new Uint8Array(vozAnalyzer.frequencyBinCount);
+
+            const dibujar = () => {
+                if (vozEstado !== 'recording' || !vozAnalyzer) return;
+                vozAnalyzer.getByteFrequencyData(data);
+                vozActualizarOndas(data);
+                vozAnimacion = requestAnimationFrame(dibujar);
+            };
+            dibujar();
+        }
+    } catch (e) {
+        console.warn('[Mensajes] Analizador de audio no disponible:', e);
+    }
+
+    if (!vozAnimacion) {
+        vozIntervalo = setInterval(() => {
+            if (vozEstado !== 'recording') return;
+            vozActualizarOndas(null);
+        }, 90);
+    }
+}
+
+function vozLiberarMicrofono() {
+    if (vozStream) {
+        vozStream.getTracks().forEach(track => {
+            try { track.stop(); } catch (e) { }
+        });
+        vozStream = null;
+    }
+    const audioBtn = $('audio');
+    if (audioBtn) audioBtn.classList.remove('recording');
+}
+
+function vozLimpiarPreview() {
+    if (vozPreviewAudio) {
+        try {
+            vozPreviewAudio.pause();
+            vozPreviewAudio.src = '';
+        } catch (e) { }
+        vozPreviewAudio = null;
+    }
+    if (vozUrlPreview) {
+        try { URL.revokeObjectURL(vozUrlPreview); } catch (e) { }
+        vozUrlPreview = null;
+    }
+    vozBlobPreparado = null;
+    vozDuracion = 0;
+}
+
+function vozRestablecerInterfaz() {
+    vozDetenerAnimacion();
+    vozLiberarMicrofono();
+
+    const panel = document.getElementById('vozRecorderPanel');
+    if (panel) {
+        panel.classList.remove('voz-preview-ready');
+        panel.querySelector('#vozPreviewControls').hidden = true;
+        panel.querySelector('#vozWaveform').hidden = false;
+        panel.querySelector('#vozHint').textContent = 'Tu audio no se enviará hasta que confirmes.';
+        panel.querySelector('#vozStatusText').textContent = 'Grabando nota de voz';
+        panel.querySelector('#vozLiveDot').hidden = false;
+        panel.querySelector('#vozAcceptBtn').hidden = false;
+        panel.querySelector('#vozCancelBtn').hidden = false;
+    }
+
+    vozEstado = 'idle';
+    vozMode = null;
+    vozProcesando = false;
+    vozCancelar = false;
+
+    const audioBtn = $('audio');
+    if (audioBtn) {
+        audioBtn.classList.remove('recording');
+        audioBtn.disabled = false;
+    }
+}
+
+function vozReiniciarPanel() {
+    const panel = vozCrearInterfaz();
+    if (!panel) return;
+    panel.querySelector('#vozPreviewControls').hidden = true;
+    panel.querySelector('#vozWaveform').hidden = false;
+    panel.querySelector('#vozAcceptBtn').hidden = false;
+    panel.querySelector('#vozCancelBtn').hidden = false;
+    panel.querySelector('#vozLiveDot').hidden = false;
+    panel.querySelector('#vozStatusText').textContent = 'Grabando nota de voz';
+    panel.querySelector('#vozHint').textContent = 'Tu audio no se enviará hasta que confirmes.';
+    panel.querySelector('#vozTimer').textContent = '00:00';
+    panel.querySelector('#vozPreviewDuration').textContent = 'Escucha antes de enviar';
+    panel.querySelector('#vozPreviewPlay').innerHTML = '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
+    panel.querySelectorAll('.voz-bar').forEach(bar => {
+        bar.style.height = '5px';
+        bar.classList.remove('voz-bar-active');
+    });
+}
+
+function getSupportedAudioMime() {
+    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/ogg', 'audio/mp4'];
+    for (const type of candidates) {
+        if (window.MediaRecorder && MediaRecorder.isTypeSupported(type)) return type;
+    }
+    return '';
+}
+
+function extensionForMime(mime) {
+    if (mime.includes('ogg')) return 'ogg';
+    if (mime.includes('mp4')) return 'm4a';
+    return 'webm';
+}
+
+/* ---------------- Iniciar grabación ---------------- */
+
+async function recordAudioNota() {
+    if (vozEstado === 'recording') {
+        detenerYPrepararNotaVoz();
+        return;
+    }
+
+    if (vozEstado === 'ready') {
+        toast('Ya tienes una nota preparada. Envíala o cancélala.', 'warning');
+        return;
+    }
+
+    if (vozProcesando) return;
+
+    if (!current) {
+        toast('Selecciona una conversación.', 'error');
+        return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !window.MediaRecorder) {
+        toast('Tu navegador no permite grabar notas de voz.', 'error');
+        return;
+    }
+
+    if (!await auth()) return;
+
+    const esBot = current.bot;
+
+    try {
+        vozReiniciarPanel();
+
+        vozStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+                echoCancellation: true,
+                noiseSuppression: true,
+                autoGainControl: true
+            }
+        });
+
+        if (!current || current.bot !== esBot) {
+            vozLiberarMicrofono();
+            return;
+        }
+
+        audioChunks = [];
+        vozCancelar = false;
+        vozMode = esBot ? 'bot' : 'normal';
+        vozEstado = 'recording';
+        recordingStartedAt = Date.now();
+
+        const mimeType = getSupportedAudioMime();
+        vozMimeActual = mimeType || 'audio/webm';
+
+        recorder = mimeType
+            ? new MediaRecorder(vozStream, { mimeType: mimeType })
+            : new MediaRecorder(vozStream);
+
+        recorder.ondataavailable = function(e) {
+            if (e.data && e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        recorder.onerror = function(e) {
+            console.error('[Mensajes] Error grabando:', e);
+            cancelarNotaVoz(false);
+            toast('Ocurrió un error durante la grabación.', 'error');
+        };
+
+        recorder.onstop = function() {
+            vozProcesarGrabacion();
+        };
+
+        recorder.start(250);
+
+        vozMostrarPanel();
+        vozIniciarAnimacion(vozStream);
+
+        const audioBtn = $('audio');
+        if (audioBtn) audioBtn.classList.add('recording');
+
+        vozIntervalo = setInterval(vozActualizarTiempo, 250);
+
+    } catch (e) {
+        console.error('Micrófono:', e);
+        vozRestablecerInterfaz();
+        vozOcultarPanel();
+        toast('No se pudo acceder al micrófono. Revisa los permisos.', 'error');
+    }
+}
+
+/* ---------------- Detener y preparar ---------------- */
+
+function detenerYPrepararNotaVoz() {
+    if (vozEstado !== 'recording' || !recorder) return;
+
+    vozEstado = 'processing';
+    vozDetenerAnimacion();
+
+    const panel = document.getElementById('vozRecorderPanel');
+    if (panel) {
+        panel.querySelector('#vozStatusText').textContent = 'Preparando nota de voz...';
+        panel.querySelector('#vozLiveDot').hidden = true;
+        panel.querySelector('#vozAcceptBtn').disabled = true;
+    }
+
+    try {
+        if (recorder.state !== 'inactive') recorder.stop();
+        else vozProcesarGrabacion();
+    } catch (e) {
+        console.error('[Mensajes] No se pudo detener la grabación:', e);
+        cancelarNotaVoz(false);
+        toast('No se pudo preparar la nota de voz.', 'error');
+    }
+}
+
+function vozProcesarGrabacion() {
+    vozLiberarMicrofono();
+    vozDetenerAnimacion();
+
+    const mime = recorder && recorder.mimeType
+        ? recorder.mimeType
+        : (vozMimeActual || 'audio/webm');
+
+    const blob = new Blob(audioChunks || [], { type: mime });
+    audioChunks = [];
+    recorder = null;
+
+    if (vozCancelar) {
+        vozRestablecerInterfaz();
+        vozOcultarPanel();
+        vozLimpiarPreview();
+        return;
+    }
+
+    if (!blob.size) {
+        vozRestablecerInterfaz();
+        vozOcultarPanel();
+        toast('No se capturó audio.', 'error');
+        return;
+    }
+
+    if (blob.size > VOZ_MAX_MB * 1024 * 1024) {
+        vozRestablecerInterfaz();
+        vozOcultarPanel();
+        toast('La nota supera el límite de 50 MB.', 'error');
+        return;
+    }
+
+    vozBlobPreparado = blob;
+    vozUrlPreview = URL.createObjectURL(blob);
+    vozEstado = 'ready';
+
+    vozMostrarPreview();
+}
+
+/* ---------------- Vista previa ---------------- */
+
+function vozMostrarPreview() {
+    const panel = vozMostrarPanel();
+    if (!panel) return;
+
+    panel.classList.add('voz-preview-ready');
+
+    panel.querySelector('#vozWaveform').hidden = true;
+    panel.querySelector('#vozAcceptBtn').hidden = true;
+    panel.querySelector('#vozLiveDot').hidden = true;
+
+    panel.querySelector('#vozStatusText').textContent = 'Nota de voz preparada';
+    panel.querySelector('#vozHint').textContent = 'Escucha tu nota. Puedes enviarla o descartarla.';
+    panel.querySelector('#vozPreviewControls').hidden = false;
+
+    vozPreviewAudio = new Audio(vozUrlPreview);
+    vozPreviewAudio.preload = 'metadata';
+
+    vozPreviewAudio.addEventListener('loadedmetadata', function() {
+        if (isFinite(vozPreviewAudio.duration)) {
+            vozDuracion = vozPreviewAudio.duration;
+            panel.querySelector('#vozPreviewDuration').textContent =
+                'Duración · ' + vozFormatoTiempo(Math.floor(vozDuracion));
+        }
+    });
+
+    vozPreviewAudio.addEventListener('ended', function() {
+        panel.querySelector('#vozPreviewPlay').innerHTML =
+            '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
+    });
+
+    panel.querySelector('#vozPreviewPlay').innerHTML =
+        '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
+
+    panel.querySelector('#vozCancelBtn').disabled = false;
+    panel.querySelector('#vozCancelBtn').hidden = false;
+
+    const send = panel.querySelector('#vozSendBtn');
+    send.disabled = false;
+    send.textContent = 'Enviar';
+
+    const audioBtn = $('audio');
+    if (audioBtn) audioBtn.classList.remove('recording');
+}
+
+function alternarPreviewNotaVoz() {
+    if (!vozPreviewAudio || vozEstado !== 'ready') return;
+
+    const panel = document.getElementById('vozRecorderPanel');
+    const btn = panel.querySelector('#vozPreviewPlay');
+
+    if (vozPreviewAudio.paused) {
+        if (vozPreviewAudio.ended) vozPreviewAudio.currentTime = 0;
+
+        vozPreviewAudio.play().then(() => {
+            btn.innerHTML = '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M7 5h4v14H7zM15 5h4v14h-4z"/></svg>';
+        }).catch(e => {
+            console.warn('[Mensajes] No se pudo reproducir preview:', e);
+            toast('No se pudo reproducir la vista previa.', 'error');
+        });
+    } else {
+        vozPreviewAudio.pause();
+        btn.innerHTML = '<svg viewBox="0 0 24 24" class="voz-play-icon"><path d="M8 5v14l11-7z"/></svg>';
+    }
+}
+
+/* ---------------- Cancelar y descartar ---------------- */
+
+function cancelarNotaVoz(silencioso) {
+    if (vozEstado === 'idle' && !vozBlobPreparado && !recorder) return;
+
+    vozCancelar = true;
+    vozEstado = 'cancelled';
+
+    vozDetenerAnimacion();
+    vozLiberarMicrofono();
+
+    if (recorder) {
+        try {
+            recorder.onstop = function() {
+                audioChunks = [];
+                recorder = null;
+            };
+            if (recorder.state !== 'inactive') recorder.stop();
+            else recorder = null;
+        } catch (e) {
+            recorder = null;
+        }
+    }
+
+    audioChunks = [];
+    vozLimpiarPreview();
+    vozRestablecerInterfaz();
+    vozOcultarPanel();
+
+    if (!silencioso) toast('Nota de voz descartada.', 'success');
+}
+
+/* ---------------- Enviar nota confirmada ---------------- */
+
+async function enviarNotaVozPreparada() {
+    if (vozEstado !== 'ready' || !vozBlobPreparado || vozProcesando) return;
+
+    if (!current) {
+        cancelarNotaVoz(true);
+        toast('La conversación ya no está disponible.', 'warning');
+        return;
+    }
+
+    if (!current.bot && current.bloqueo && (current.bloqueo.yo === true || current.bloqueo.el === true)) {
+        toast('No puedes enviar mensajes a este contacto.', 'warning');
+        return;
+    }
+
+    if (!await auth()) return;
+
+    vozProcesando = true;
+
+    const panel = document.getElementById('vozRecorderPanel');
+    const sendBtn = panel ? panel.querySelector('#vozSendBtn') : null;
+
+    if (sendBtn) {
+        sendBtn.disabled = true;
+        sendBtn.textContent = 'Enviando...';
+    }
+
+    const blob = vozBlobPreparado;
+    const mode = vozMode;
+    const ext = extensionForMime(blob.type);
+    const file = new File([blob], `audio-${Date.now()}.${ext}`, {
+        type: blob.type || 'audio/webm'
+    });
+
+    try {
+        if (mode === 'bot') {
+            vozLimpiarPreview();
+            vozRestablecerInterfaz();
+            vozOcultarPanel();
+            await enviarVozAlBot(file);
+            return;
+        }
+
+        if (file.size > VOZ_MAX_MB * 1024 * 1024) {
+            throw new Error('La nota supera el límite de 50 MB.');
+        }
+
+        const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `${user.id}/mensajes/${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${safe}`;
+
+        const up = await db.storage.from('chat-audio').upload(path, file, {
+            contentType: file.type || 'application/octet-stream',
+            cacheControl: '3600',
+            upsert: false
+        });
+
+        if (up.error) throw up.error;
+
+        const storageRef = `bucket://chat-audio/${path}`;
+
+        const resp = await enviarMensajeChat(
+            current.id,
+            file.name,
+            'audio',
+            storageRef,
+            file.name
+        );
+
+        if (resp.estado === 'entregado' && resp.mensaje) {
+            vozLimpiarPreview();
+            vozRestablecerInterfaz();
+            vozOcultarPanel();
+            await append(resp.mensaje, true);
+            recargarBandeja();
+            toast('Nota de voz enviada.', 'success');
+            return;
+        }
+
+        if (resp.estado === 'solicitud') {
+            vozLimpiarPreview();
+            vozRestablecerInterfaz();
+            vozOcultarPanel();
+            toast('Tu nota se envió como solicitud.', 'success');
+            recargarBandeja();
+            return;
+        }
+
+        if (resp.estado === 'solicitud_en_espera') {
+            throw new Error('Ya tienes una solicitud pendiente con esta persona.');
+        }
+
+        throw new Error('No se pudo enviar la nota de voz.');
+
+    } catch (e) {
+        console.error('[Mensajes] Error enviando nota:', e);
+
+        if (esErrorContenidoNoPermitido(e)) {
+            toast('Contenido no permitido por las normas de la comunidad.', 'error');
+        } else {
+            toast(e.message || 'No se pudo enviar la nota de voz.', 'error');
+        }
+
+        vozProcesando = false;
+
+        if (sendBtn) {
+            sendBtn.disabled = false;
+            sendBtn.textContent = 'Reintentar';
+        }
+    }
+}
+
+/* ---------------- Compatibilidad ---------------- */
+
+async function iniciarNotaVoz() {
+    return recordAudioNota();
+}
+
+/* ---------------- Menú contextual ---------------- */
 
 async function mostrarMenuMensaje(bubblewrap, msgId) {
     document.querySelectorAll('.msg-context-menu').forEach(m => m.remove());
@@ -690,7 +1309,12 @@ async function mostrarMenuMensaje(bubblewrap, msgId) {
 
     document.body.appendChild(menu);
     setTimeout(() => {
-        const close = (e) => { if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener('click', close); } };
+        const close = (e) => {
+            if (!menu.contains(e.target)) {
+                menu.remove();
+                document.removeEventListener('click', close);
+            }
+        };
         document.addEventListener('click', close);
     }, 10);
 }
@@ -740,7 +1364,13 @@ async function editarMensaje(msgId, bubblewrap) {
 }
 
 async function eliminarMensajeParaMi(msgId, bubblewrap) {
-    const confirmado = await NeonModal.confirm({ title: 'Eliminar para mí', message: '¿Eliminar este mensaje solo de tu vista?', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
+    const confirmado = await NeonModal.confirm({
+        title: 'Eliminar para mí',
+        message: '¿Eliminar este mensaje solo de tu vista?',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        danger: true
+    });
     if (!confirmado) return;
     try {
         const { error } = await db.rpc('eliminar_mensaje_para_mi', { p_mensaje_id: msgId });
@@ -748,11 +1378,20 @@ async function eliminarMensajeParaMi(msgId, bubblewrap) {
         bubblewrap.remove();
         toast('Mensaje eliminado para ti.', 'success');
         recargarBandeja();
-    } catch (e) { console.error('Error eliminando para mí:', e); toast('No se pudo eliminar.', 'error'); }
+    } catch (e) {
+        console.error('Error eliminando para mí:', e);
+        toast('No se pudo eliminar.', 'error');
+    }
 }
 
 async function eliminarMensajeParaTodos(msgId, bubblewrap) {
-    const confirmado = await NeonModal.confirm({ title: 'Eliminar para todos', message: '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.', confirmText: 'Eliminar', cancelText: 'Cancelar', danger: true });
+    const confirmado = await NeonModal.confirm({
+        title: 'Eliminar para todos',
+        message: '¿Eliminar este mensaje para todos? Esta acción no se puede deshacer.',
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        danger: true
+    });
     if (!confirmado) return;
     try {
         const { error } = await db.rpc('eliminar_mensaje_para_todos', { p_mensaje_id: msgId });
@@ -760,7 +1399,10 @@ async function eliminarMensajeParaTodos(msgId, bubblewrap) {
         bubblewrap.remove();
         toast('Mensaje eliminado para todos.', 'success');
         recargarBandeja();
-    } catch (e) { console.error('Error eliminando para todos:', e); toast('No se pudo eliminar.', 'error'); }
+    } catch (e) {
+        console.error('Error eliminando para todos:', e);
+        toast('No se pudo eliminar.', 'error');
+    }
 }
 
 function configurarLongPressMensajes() {
@@ -782,7 +1424,8 @@ function configurarLongPressMensajes() {
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         const bubblewrap = e.target.closest('.bubblewrap');
         if (!esMensajeValido(bubblewrap)) return;
-        startX = e.clientX; startY = e.clientY;
+        startX = e.clientX;
+        startY = e.clientY;
         pressTimer = setTimeout(() => {
             pressTimer = null;
             const msgId = bubblewrap.dataset.mensajeId;
@@ -790,11 +1433,24 @@ function configurarLongPressMensajes() {
         }, 500);
     });
 
-    box.addEventListener('pointerup', () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
-    box.addEventListener('pointercancel', () => { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } });
+    box.addEventListener('pointerup', () => {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+    });
+    box.addEventListener('pointercancel', () => {
+        if (pressTimer) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
+    });
     box.addEventListener('pointermove', e => {
         if (!pressTimer) return;
-        if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) { clearTimeout(pressTimer); pressTimer = null; }
+        if (Math.abs(e.clientX - startX) > 10 || Math.abs(e.clientY - startY) > 10) {
+            clearTimeout(pressTimer);
+            pressTimer = null;
+        }
     });
     box.addEventListener('contextmenu', e => {
         if (e.pointerType === 'touch') return;
@@ -806,10 +1462,13 @@ function configurarLongPressMensajes() {
     });
 }
 
-/* ---------------- Información del chat (panel tipo Messenger) ---------------- */
+/* ---------------- Información del chat ---------------- */
 
 function abrirInfoChat() {
-    if (!current) { toast('Primero abre una conversación.', 'warning'); return; }
+    if (!current) {
+        toast('Primero abre una conversación.', 'warning');
+        return;
+    }
     const nombre = current.bot ? 'Marquinhos' : (current.profile?.nombre || 'Usuario');
     const overlay = $('contactProfileOverlay');
     if (!overlay) return;
@@ -884,14 +1543,27 @@ function configurarInfoChat() {
     });
 
     $('cpVerPerfil').addEventListener('click', verPerfilDelContacto);
-    $('cpBtnCall').addEventListener('click', () => { cerrarInfoChat(); if (typeof window.startCall === 'function') window.startCall('audio'); });
-    $('cpBtnVideo').addEventListener('click', () => { cerrarInfoChat(); if (typeof window.startCall === 'function') window.startCall('video'); });
-    $('cpActionSearch').addEventListener('click', () => { cerrarInfoChat(); const b = $('searchChat'); if (b) b.click(); });
+    $('cpBtnCall').addEventListener('click', () => {
+        cerrarInfoChat();
+        if (typeof window.startCall === 'function') window.startCall('audio');
+    });
+    $('cpBtnVideo').addEventListener('click', () => {
+        cerrarInfoChat();
+        if (typeof window.startCall === 'function') window.startCall('video');
+    });
+    $('cpActionSearch').addEventListener('click', () => {
+        cerrarInfoChat();
+        const b = $('searchChat');
+        if (b) b.click();
+    });
     $('cpBtnMute').addEventListener('click', () => toast('Silenciar llegará en una próxima versión.', 'warning'));
     $('cpActionMarkRead').addEventListener('click', () => toast('Marcado como no leído.', 'success'));
     $('cpActionNickname').addEventListener('click', () => toast('Apodos llegará en una próxima versión.', 'warning'));
     $('cpActionBlock').addEventListener('click', () => bloquearUsuarioActual());
-    $('cpActionDelete').addEventListener('click', async () => { cerrarInfoChat(); await deleteConversation(); });
+    $('cpActionDelete').addEventListener('click', async () => {
+        cerrarInfoChat();
+        await deleteConversation();
+    });
     $('cpActionReport').addEventListener('click', () => toast('Reporte enviado. Gracias por avisarnos.', 'success'));
     $('cpActionReadReceipts').addEventListener('click', () => {
         const t = $('cpActionReadReceipts').querySelector('.cp-list-toggle');
@@ -908,4 +1580,331 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', configurarInfoChat, { once: true });
 } else {
     configurarInfoChat();
+}
+
+// ================================================================
+// CSS AUTÓNOMO · NOTAS DE VOZ Y REPRODUCTOR
+// Se inyecta desde este módulo para no depender de editar otro
+// archivo. Las reglas son específicas y no alteran otros módulos.
+// ================================================================
+
+(function instalarEstilosNotaVoz() {
+    if (document.getElementById('cs-voz-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'cs-voz-styles';
+
+    style.textContent = `
+        #vozRecorderPanel {
+            width: 100%;
+            box-sizing: border-box;
+            background: #080d12;
+            color: #f3f5f6;
+            border-top: 1px solid rgba(255,255,255,.09);
+            padding: 10px 12px 8px;
+            margin: 0;
+            font-family: inherit;
+        }
+
+        #vozRecorderPanel[hidden] {
+            display: none !important;
+        }
+
+        #vozRecorderPanel .voz-recorder-main {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            min-height: 54px;
+        }
+
+        #vozRecorderPanel .voz-action {
+            width: 38px;
+            height: 38px;
+            min-width: 38px;
+            border: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            padding: 0;
+            background: transparent;
+            color: #fff;
+            transition: background .18s ease, opacity .18s ease;
+        }
+
+        #vozRecorderPanel .voz-action:active {
+            transform: scale(.94);
+        }
+
+        #vozRecorderPanel .voz-action svg {
+            width: 23px;
+            height: 23px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        #vozRecorderPanel .voz-cancel {
+            color: #ff626b;
+            background: rgba(255,98,107,.09);
+        }
+
+        #vozRecorderPanel .voz-accept {
+            color: #0b0d0f;
+            background: #d4af37;
+        }
+
+        #vozRecorderPanel .voz-accept:disabled,
+        #vozRecorderPanel .voz-action:disabled {
+            opacity: .4;
+            cursor: wait;
+        }
+
+        #vozRecorderPanel .voz-center {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #vozRecorderPanel .voz-status-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            min-width: 0;
+            margin-bottom: 7px;
+        }
+
+        #vozRecorderPanel .voz-live-dot {
+            width: 7px;
+            height: 7px;
+            flex: 0 0 7px;
+            border-radius: 50%;
+            background: #ff4c58;
+            box-shadow: 0 0 9px rgba(255,76,88,.7);
+            animation: csVozPulse 1s infinite;
+        }
+
+        #vozRecorderPanel .voz-status-text {
+            font-size: 12px;
+            font-weight: 600;
+            color: #e9ecef;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        #vozRecorderPanel .voz-timer {
+            margin-left: auto;
+            font-size: 12px;
+            font-variant-numeric: tabular-nums;
+            color: #d4af37;
+        }
+
+        #vozRecorderPanel .voz-waveform {
+            display: flex;
+            width: 100%;
+            height: 36px;
+            align-items: center;
+            justify-content: space-between;
+            gap: 2px;
+            overflow: hidden;
+        }
+
+        #vozRecorderPanel .voz-bar {
+            display: block;
+            flex: 1 1 0;
+            min-width: 2px;
+            max-width: 5px;
+            height: 5px;
+            background: #d4af37;
+            opacity: .65;
+            transition: height 65ms linear, opacity 65ms linear;
+        }
+
+        #vozRecorderPanel .voz-bar:nth-child(3n) {
+            background: #00d9c5;
+        }
+
+        #vozRecorderPanel .voz-bar:nth-child(4n) {
+            background: #5a9cff;
+        }
+
+        #vozRecorderPanel .voz-bar:nth-child(5n) {
+            background: #c47aff;
+        }
+
+        #vozRecorderPanel .voz-bar-active {
+            opacity: 1;
+        }
+
+        #vozRecorderPanel .voz-recording-hint {
+            margin: 4px 0 0 50px;
+            font-size: 10px;
+            color: #7f8b96;
+            line-height: 1.4;
+        }
+
+        #vozRecorderPanel .voz-preview-controls {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            min-height: 48px;
+            width: 100%;
+        }
+
+        #vozRecorderPanel .voz-preview-controls[hidden] {
+            display: none !important;
+        }
+
+        #vozRecorderPanel .voz-preview-play {
+            width: 38px;
+            height: 38px;
+            flex: 0 0 38px;
+            border: 1px solid rgba(212,175,55,.5);
+            border-radius: 50%;
+            color: #d4af37;
+            background: rgba(212,175,55,.08);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        #vozRecorderPanel .voz-preview-play svg {
+            width: 22px;
+            height: 22px;
+            fill: currentColor;
+        }
+
+        #vozRecorderPanel .voz-preview-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        #vozRecorderPanel .voz-preview-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #f2f3f4;
+        }
+
+        #vozRecorderPanel .voz-preview-subtitle {
+            margin-top: 3px;
+            font-size: 11px;
+            color: #98a2ac;
+        }
+
+        #vozRecorderPanel .voz-send-btn {
+            border: 0;
+            padding: 9px 17px;
+            min-height: 36px;
+            background: #d4af37;
+            color: #10140e;
+            font-size: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            border-radius: 3px;
+        }
+
+        #vozRecorderPanel .voz-send-btn:disabled {
+            opacity: .55;
+            cursor: wait;
+        }
+
+        #vozRecorderPanel.voz-preview-ready .voz-recorder-main {
+            min-height: 42px;
+        }
+
+        #vozRecorderPanel.voz-preview-ready .voz-center {
+            display: none;
+        }
+
+        #vozRecorderPanel.voz-preview-ready .voz-recorder-main {
+            gap: 8px;
+        }
+
+        #vozRecorderPanel.voz-preview-ready .voz-cancel {
+            margin-right: 2px;
+        }
+
+        @keyframes csVozPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: .4; transform: scale(.78); }
+        }
+
+        .chat-audio-player {
+            display: block;
+            width: min(100%, 340px);
+            min-width: min(260px, 100%);
+            max-width: 100%;
+            box-sizing: border-box;
+            padding: 3px 0;
+        }
+
+        .chat-audio-player audio {
+            display: block;
+            width: 100% !important;
+            min-width: 0 !important;
+            max-width: 100% !important;
+            height: 42px;
+            min-height: 42px;
+            border-radius: 4px;
+            object-fit: contain;
+        }
+
+        .bubble:has(.chat-audio-player) {
+            width: min(360px, 78vw);
+            min-width: min(280px, 72vw);
+            max-width: min(420px, 82vw);
+            box-sizing: border-box;
+        }
+
+        .bubblewrap .chat-audio-player audio::-webkit-media-controls-panel {
+            background-color: #e5e7eb;
+        }
+
+        @media (max-width: 480px) {
+            #vozRecorderPanel {
+                padding: 9px 8px 7px;
+            }
+
+            #vozRecorderPanel .voz-recorder-main {
+                gap: 7px;
+            }
+
+            #vozRecorderPanel .voz-action {
+                width: 35px;
+                height: 35px;
+                min-width: 35px;
+            }
+
+            #vozRecorderPanel .voz-waveform {
+                gap: 1px;
+            }
+
+            .chat-audio-player {
+                width: min(100%, 320px);
+                min-width: min(245px, 100%);
+            }
+
+            .bubble:has(.chat-audio-player) {
+                width: min(340px, 82vw);
+                min-width: min(260px, 76vw);
+                max-width: 86vw;
+            }
+        }
+    `;
+
+    document.head.appendChild(style);
+})();
+
+// Inicializa el panel sin modificar el HTML original.
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+        vozCrearInterfaz();
+    }, { once: true });
+} else {
+    vozCrearInterfaz();
 }
