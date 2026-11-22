@@ -425,7 +425,7 @@ html:not(.auth-ready) .app{display:none!important}
   <span data-clave="nav_perfil">Perfil</span>
  </a>
 
- <a href="/features/mensajes/contactos.html" class="nav-link">
+ <a href="/features/contactos/contactos.html" class="nav-link">
   <svg class="icon icon-sm" viewBox="0 0 24 24">
    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
    <circle cx="9" cy="7" r="4"/>
@@ -614,8 +614,8 @@ html:not(.auth-ready) .app{display:none!important}
    <button class="eco-card"
            type="button"
            data-section="cripto"
-           data-href="/features/cripto/cripto.html"
-           aria-label="Abrir Cripto y NFTs">
+           data-href=""
+           aria-label="Cripto y NFTs (próximamente)">
 
     <span class="eco-number">02 / WEB3</span>
     <span class="eco-art"><span class="eco-symbol">₿</span></span>
@@ -624,15 +624,15 @@ html:not(.auth-ready) .app{display:none!important}
     <p>Activos digitales, tokens y herramientas Web3.</p>
 
     <span class="eco-open">
-     <span>Explorar cripto</span><span>→</span>
+     <span>Próximamente</span><span>·</span>
     </span>
    </button>
 
    <button class="eco-card"
            type="button"
            data-section="tienda"
-           data-href="/features/tienda/tienda.html"
-           aria-label="Abrir Tienda">
+           data-href=""
+           aria-label="Tienda (próximamente)">
 
     <span class="eco-number">03 / COMERCIO</span>
     <span class="eco-art"><span class="eco-symbol">🛍</span></span>
@@ -641,7 +641,7 @@ html:not(.auth-ready) .app{display:none!important}
     <p>Productos físicos y digitales en un solo espacio.</p>
 
     <span class="eco-open">
-     <span>Visitar tienda</span><span>→</span>
+     <span>Próximamente</span><span>·</span>
     </span>
    </button>
 
@@ -682,8 +682,8 @@ html:not(.auth-ready) .app{display:none!important}
    <button class="eco-card"
            type="button"
            data-section="mensajes"
-           data-href="/features/mensajes/contactos.html"
-           aria-label="Abrir Mensajería">
+           data-href="/features/contactos/contactos.html"
+           aria-label="Abrir Contactos">
 
     <span class="eco-number">06 / MENSAJES</span>
     <span class="eco-art"><span class="eco-symbol">✉</span></span>
@@ -699,8 +699,8 @@ html:not(.auth-ready) .app{display:none!important}
    <button class="eco-card"
            type="button"
            data-section="pagos"
-           data-href="/features/pagos/pagos.html"
-           aria-label="Abrir Pagos">
+           data-href=""
+           aria-label="Pagos (próximamente)">
 
     <span class="eco-number">07 / PAGOS</span>
     <span class="eco-art"><span class="eco-symbol">＄</span></span>
@@ -709,15 +709,15 @@ html:not(.auth-ready) .app{display:none!important}
     <p>Descubre las opciones de pago disponibles.</p>
 
     <span class="eco-open">
-     <span>Ver pagos</span><span>→</span>
+     <span>Próximamente</span><span>·</span>
     </span>
    </button>
 
    <button class="eco-card"
            type="button"
            data-section="servicios"
-           data-href="/features/servicios/servicios.html"
-           aria-label="Abrir Servicios Digitales">
+           data-href=""
+           aria-label="Servicios digitales (próximamente)">
 
     <span class="eco-number">08 / SERVICIOS</span>
     <span class="eco-art"><span class="eco-symbol">⚙</span></span>
@@ -726,7 +726,7 @@ html:not(.auth-ready) .app{display:none!important}
     <p>Herramientas y servicios del ecosistema.</p>
 
     <span class="eco-open">
-     <span>Descubrir</span><span>→</span>
+     <span>Próximamente</span><span>·</span>
     </span>
    </button>
 
@@ -956,6 +956,8 @@ html:not(.auth-ready) .app{display:none!important}
 
 /* =====================================
    LÓGICA DEL PERFIL PÚBLICO
+   Lectura por @usuario vía RPC perfil_publico_por_handle
+   (visible para visitantes; filtra cuentas inactivas y bloqueos)
 ===================================== */
 (function(){
  'use strict';
@@ -1138,17 +1140,15 @@ html:not(.auth-ready) .app{display:none!important}
  }
 
  async function cargarPerfil(client,handle){
-  var r=await client
-   .from('perfiles_publicos')
-   .select(
-    'id, nombre, handle, avatar_url, ultima_conexion, verificado, seguidores_count, siguiendo_count'
-   )
-   .eq('handle',handle)
-   .maybeSingle();
+  var r=await client.rpc('perfil_publico_por_handle',{
+   p_handle:handle
+  });
 
   if(r.error)throw r.error;
 
-  return r.data||null;
+  var fila=Array.isArray(r.data)?r.data[0]:r.data;
+
+  return fila||null;
  }
 
  async function cargarWallet(client,id){
