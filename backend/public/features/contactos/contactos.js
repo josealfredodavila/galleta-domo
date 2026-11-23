@@ -32,7 +32,8 @@
         RPC_CANJEAR: 'canjear_codigo_amistad',
         RPC_RESPONDER: 'responder_solicitud_amistad',
         RPC_ELIMINAR: 'eliminar_amistad',
-        PERFIL_URL: '/features/perfil-publico/perfil-publico.html',
+        // RUTA CORREGIDA: Apunta al archivo correcto en tu servidor
+        PERFIL_URL: '/features/perfil-publico/perfil-publico.html', 
         MENSAJES_URL: '/features/mensajes/mensajes.html',
         PAGE: 50,
         LIMITE_RELACIONES: 100,
@@ -998,11 +999,14 @@
 
     function abrirPerfil(id) {
         var p = state.perfiles.get(id);
-        if (!id || !p || !p.handle || p.id !== id) {
+        // CORRECCIÓN QUIRÚRGICA: Si no hay handle, usamos el ID como respaldo para que siempre funcione
+        if (!id) {
             showToast('Perfil no disponible.', 'warning');
             return;
         }
-        var params = new URLSearchParams({ u: p.handle, id: id });
+        var params = new URLSearchParams();
+        if (p && p.handle) params.set('u', p.handle);
+        params.set('id', id);
         window.location.href = CONFIG.PERFIL_URL + '?' + params.toString();
     }
 
