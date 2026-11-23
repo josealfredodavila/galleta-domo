@@ -1,8 +1,8 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4.0 · Reacciones con movimiento propio (pv-rx-*), medios sin
-   recorte, nombres en azul y reportes en publicacion_reportes.
-   Usa solo tablas y RPC que existen en Supabase:
+   v4.1 · Reacciones con clases pv-* (sin choque con emojis-animations),
+   medios sin recorte y reportes en publicacion_reportes.
+   Tablas y RPC verificadas en Supabase:
    perfil_publico_verificado, perfil_publico_por_handle,
    perfil_publico_por_id, perfil_visibilidad_estado,
    perfil_publicaciones_contactos, publicaciones,
@@ -22,14 +22,14 @@
     var TIMEOUT_SESION_MS = 4000;
     var TIMEOUT_PERFIL_MS = 12000;
 
+    /* Opciones de reacción aprobadas (coinciden con el CHECK de la tabla). */
     var EMOJIS_REACCION = ['❤️', '😂', '🥺', '💎'];
 
-    var CLASE_RX = {
-        '❤️': 'pv-rx-corazon',
-        '😂': 'pv-rx-risa',
-        '🥺': 'pv-rx-brillo',
-        '💎': 'pv-rx-diamante',
-        '🤩': 'pv-rx-estrellas'
+    var CLASE_EMO = {
+        '❤️': 'pv-emo-corazon',
+        '😂': 'pv-emo-risa',
+        '🥺': 'pv-emo-brillo',
+        '💎': 'pv-emo-diamante'
     };
 
     var perfil = null;
@@ -176,25 +176,23 @@
     }
 
     function cerrarTodosDropdowns() {
-        document.querySelectorAll('.reaccion-dropdown').forEach(function (d) { d.hidden = true; });
+        document.querySelectorAll('.pv-reaccion-dropdown').forEach(function (d) { d.hidden = true; });
     }
 
-    /* ================= REACCIONES · MOVIMIENTO PROPIO ================= */
+    /* ================= REACCIONES: MOVIMIENTO pv-emo-* ================= */
 
-    function aplicarRx(nodo, emoji) {
+    function aplicarEmo(nodo, emoji) {
         if (!nodo) return;
-        Object.keys(CLASE_RX).forEach(function (k) {
-            nodo.classList.remove(CLASE_RX[k]);
+        nodo.classList.add('pv-emo');
+        Object.keys(CLASE_EMO).forEach(function (k) {
+            nodo.classList.remove(CLASE_EMO[k]);
         });
-        nodo.classList.add('pv-rx-emoji');
-        nodo.classList.add(CLASE_RX[emoji] || 'pv-rx-fluido');
+        nodo.classList.add(CLASE_EMO[emoji] || 'pv-emo-fluido');
         nodo.style.setProperty('--delay', (Math.random() * 0.6).toFixed(2) + 's');
     }
 
     function RG() {
         return window.ReaccionesGlobal || {
-            EMOJIS: EMOJIS_REACCION,
-            POR_DEFECTO: '❤️',
             normalizar: function (e) {
                 return EMOJIS_REACCION.indexOf(e) !== -1 ? e : '❤️';
             },
@@ -373,21 +371,17 @@
     function vfAbrir(items, idxInicial, postObj) {
         var n = vfNodo();
         if (!n.root || !Array.isArray(items) || !items.length) return;
-
         if (medioActivo) { try { medioActivo.pause(); } catch (e) {} }
-
         vf.abierto = true;
         vf.items = items;
         vf.post = postObj || null;
         vf.modoFit = 'contain';
-
         n.root.hidden = false;
         vfRender(idxInicial || 0);
     }
 
     function vfCerrar(mantenerPip) {
         var n = vfNodo();
-
         vfCerrarSheet();
         if (vf.ocultarTimer) { clearTimeout(vf.ocultarTimer); vf.ocultarTimer = null; }
         vf.abierto = false;
@@ -459,9 +453,10 @@
         function boton(texto, onClick) {
             var b = document.createElement('button');
             b.type = 'button';
-            b.className = 'btn btn-outline btn-sm';
+            b.className = 'pub-vf-pill-btn';
             b.style.width = '100%';
             b.style.justifyContent = 'flex-start';
+            b.style.height = '44px';
             b.textContent = texto;
             b.addEventListener('click', onClick);
             return b;
@@ -523,14 +518,17 @@
                 vConf.appendChild(boton('Confirmar reporte', async function () {
                     try {
                         var client = await obtenerCliente();
-                        if (client && post.id && window.usuarioActualId) {
-                            var ins = await client.from('publicacion_reportes').insert({
-                                publicacion_id: post.id,
-                                usuario_id: window.usuarioActualId,
-                                motivo: vf.motivoReporte
-                            });
-                            if (ins.error) throw ins.error;
+                        if (!client || !post.id || !window.usuarioActualId) {
+                            throw new Error('Inicia sesión para reportar');
                         }
+                        /* Columnas reales de publicacion_reportes: publicacion_id, usuario_id, motivo.
+                           id, estado ('pendiente') y created_at se llenan solos. */
+                        var ins = await client.from('publicacion_reportes').insert({
+                            publicacion_id: post.id,
+                            usuario_id: window.usuarioActualId,
+                            motivo: vf.motivoReporte
+                        });
+                        if (ins.error) throw ins.error;
                         vfCerrarSheet();
                         toast('Reporte enviado', 'success');
                     } catch (e) {
@@ -677,7 +675,6 @@
     function cerrarLightbox() {
         var lb = el.lightbox;
         var body = el.lightboxBody;
-
         if (medioActivo && body && body.contains(medioActivo)) {
             try { medioActivo.pause(); } catch (e) {}
             medioActivo = null;
@@ -696,7 +693,6 @@
         }
 
         if (!el.lightboxBody) return;
-
         el.lightboxBody.innerHTML = '';
 
         var nodo;
@@ -713,11 +709,7 @@
             nodo.src = segura;
             nodo.alt = '';
         }
-        nodo.style.maxWidth = '95vw';
-        nodo.style.maxHeight = '85vh';
-        nodo.style.objectFit = 'contain';
         el.lightboxBody.appendChild(nodo);
-
         if (el.lightbox) el.lightbox.hidden = false;
     }
 
@@ -974,8 +966,7 @@
             return;
         }
 
-        /* Marco sin proporción fija: la foto o el video conservan su
-           proporción real, con altura máxima. Sin bandas negras. */
+        /* Sin proporción fija: la foto o el video conservan su proporción real. */
         var marco = document.createElement('div');
         marco.className = 'pv-media-marco';
 
@@ -1002,7 +993,7 @@
         marco.appendChild(nodo);
 
         marco.addEventListener('click', function () {
-            if (nodo.pause) { try { nodo.pause(); } catch (e) {} }
+            if (typeof nodo.pause === 'function') { try { nodo.pause(); } catch (e) {} }
             abrirMedioAmpliado(media.tipo, media.url, [{ tipo: media.tipo, url: media.url }], 0, p);
         });
 
@@ -1018,28 +1009,28 @@
         bar._resumen = r;
 
         var wrap = document.createElement('div');
-        wrap.className = 'reaccion-wrap';
+        wrap.className = 'pv-reaccion-wrap';
 
         var dropdown = document.createElement('div');
-        dropdown.className = 'reaccion-dropdown';
+        dropdown.className = 'pv-reaccion-dropdown';
         dropdown.hidden = true;
 
         EMOJIS_REACCION.forEach(function (emoji) {
             var btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'reaccion-opcion' + (r.miTipo === emoji ? ' activo' : '');
+            btn.className = 'pv-reaccion-opcion' + (r.miTipo === emoji ? ' activo' : '');
             btn.setAttribute('data-tipo', emoji);
             btn.setAttribute('aria-label', 'Reaccionar con ' + emoji);
 
             var ico = document.createElement('span');
             ico.textContent = emoji;
-            aplicarRx(ico, emoji);
+            aplicarEmo(ico, emoji);
             btn.appendChild(ico);
 
             var n = r.totales[emoji] || 0;
             if (n > 0) {
                 var cant = document.createElement('span');
-                cant.className = 'pv-rx-count';
+                cant.className = 'pv-count';
                 cant.textContent = String(n);
                 btn.appendChild(cant);
             }
@@ -1049,18 +1040,19 @@
 
         var trigger = document.createElement('button');
         trigger.type = 'button';
-        trigger.className = 'reaccion-trigger' + (r.miTipo ? ' activo' : '');
+        trigger.className = 'pv-reaccion-trigger' + (r.miTipo ? ' activo' : '');
         trigger.setAttribute('aria-label', 'Reacciones');
 
         var emojiActual = r.miTipo || '❤️';
         var trigEmoji = document.createElement('span');
+        trigEmoji.className = 'pv-reaccion-icono';
         trigEmoji.textContent = emojiActual;
-        aplicarRx(trigEmoji, emojiActual);
+        aplicarEmo(trigEmoji, emojiActual);
         trigger.appendChild(trigEmoji);
 
         if (r.total > 0) {
             var trigCount = document.createElement('span');
-            trigCount.className = 'pv-rx-count';
+            trigCount.className = 'pv-count pv-count-trigger';
             trigCount.textContent = String(r.total);
             trigger.appendChild(trigCount);
         }
@@ -1380,7 +1372,7 @@
                 el.pubSection.hidden = false;
                 el.pubMas.hidden = true;
                 mostrarMensajePub(r.error.code === '42501'
-                    ? 'Inicia sesión para ver las publicaciones de tus contactos.'
+                    ? 'Inicia sesión para ver las publicaciones.'
                     : 'No se pudieron cargar las publicaciones.');
                 return;
             }
@@ -1398,7 +1390,7 @@
                 el.pubLista.innerHTML = '';
                 el.pubMas.hidden = true;
                 el.pubContador.textContent = '';
-                mostrarMensajePub('Inicia sesión para ver las publicaciones de tus contactos.');
+                mostrarMensajePub('Inicia sesión para ver las publicaciones.');
                 return;
             }
 
@@ -1406,7 +1398,7 @@
                 el.pubLista.innerHTML = '';
                 el.pubMas.hidden = true;
                 el.pubContador.textContent = '';
-                mostrarMensajePub('Solo tus contactos pueden ver las publicaciones de esta persona.');
+                mostrarMensajePub('Las publicaciones de esta persona solo son visibles para sus contactos.');
                 return;
             }
 
@@ -1552,7 +1544,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v4.0');
+        console.info('[PerfilPublico] iniciando v4.1');
 
         mostrar(el.cargando);
         configurarVolver();
@@ -1637,7 +1629,7 @@
     });
 
     document.addEventListener('click', function (ev) {
-        if (!ev.target.closest('.reaccion-wrap')) cerrarTodosDropdowns();
+        if (!ev.target.closest('.pv-reaccion-wrap')) cerrarTodosDropdowns();
     });
 
     document.addEventListener('keydown', function (e) {
