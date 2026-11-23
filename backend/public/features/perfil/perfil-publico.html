@@ -584,6 +584,9 @@
     el.lightbox.addEventListener('click', function (e) {
         if (e.target === el.lightbox) cerrarLightbox();
     });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && el.lightbox && !el.lightbox.hidden) cerrarLightbox();
+    });
 
     /* ---------------- Identidad ---------------- */
 
@@ -788,6 +791,7 @@
     function renderMediaPost(meta, p) {
         var media = resolverMedia(p);
         if (!media) return;
+        var bloquearDescarga = p.permitir_descarga === false;
 
         if (media.tipo === 'video') {
             var vid = document.createElement('video');
@@ -796,6 +800,7 @@
             vid.controls = true;
             vid.preload = 'metadata';
             vid.playsInline = true;
+            if (bloquearDescarga) vid.setAttribute('controlsList', 'nodownload');
             meta.appendChild(vid);
         } else if (media.tipo === 'audio') {
             var aud = document.createElement('audio');
@@ -803,6 +808,7 @@
             aud.src = media.url;
             aud.controls = true;
             aud.preload = 'none';
+            if (bloquearDescarga) aud.setAttribute('controlsList', 'nodownload');
             aud.addEventListener('play', function () {
                 if (audioActivo && audioActivo !== aud) {
                     try { audioActivo.pause(); } catch (e) {}
@@ -821,6 +827,22 @@
             });
             meta.appendChild(img);
         }
+    }
+
+    async function marcarReaccionesPrevias(client, pubIds, mapaBotones) {
+        if (!client || !usuarioActualId || !pubIds.length) return;
+        try {
+            var r = await client
+                .from('publicaciones_reacciones')
+                .select('publicacion_id')
+                .eq('usuario_id', usuarioActualId)
+                .in('publicacion_id', pubIds);
+            if (r.error || !Array.isArray(r.data)) return;
+            r.data.forEach(function (row) {
+                var btn = mapaBotones.get(String(row.publicacion_id));
+                if (btn) btn.classList.add('activo');
+            });
+        } catch (e) {}
     }
 
     async function alternarReaccion(pubId, btn, countSpan) {
@@ -943,7 +965,7 @@
         el.pubMsg.hidden = !texto;
     }
 
-    function crearPost(p) {
+    function crearPost(p, mapaBotones) {
         var art = document.createElement('article');
         art.className = 'pv-post';
 
@@ -1014,6 +1036,7 @@
 
             btnLike.appendChild(corazon);
             btnLike.appendChild(likeCount);
+            if (mapaBotones) mapaBotones.set(String(pubId), btnLike);
 
             var btnCom = document.createElement('button');
             btnCom.type = 'button';
@@ -1085,6 +1108,10 @@
         pub.cargando = true;
 
         if (reiniciar) {
+            if (audioActivo) {
+                try { audioActivo.pause(); } catch (e) {}
+                audioActivo = null;
+            }
             pub.antes = null;
             pub.total = 0;
             pub.idsVistos.clear();
@@ -1136,14 +1163,21 @@
 
             var posts = Array.isArray(d.posts) ? d.posts : [];
             var agregados = 0;
+            var mapaBotones = new Map();
+            var idsLote = [];
 
             posts.forEach(function (p) {
                 var claveId = p.id || p.publicacion_id || (p.created_at + '|' + (p.contenido || '').slice(0, 24));
                 if (pub.idsVistos.has(claveId)) return;
                 pub.idsVistos.add(claveId);
-                el.pubLista.appendChild(crearPost(p));
+                el.pubLista.appendChild(crearPost(p, mapaBotones));
+                if (p.id || p.publicacion_id) idsLote.push(p.id || p.publicacion_id);
                 agregados++;
             });
+
+            if (idsLote.length) {
+                marcarReaccionesPrevias(client, idsLote, mapaBotones);
+            }
 
             pub.total += agregados;
             if (posts.length) pub.antes = posts[posts.length - 1].created_at;
