@@ -26,7 +26,7 @@
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
-<!-- CSS PRINCIPAL -->
+<!-- CSS: el de perfil.html va primero; perfil-publico.css al final para mandar -->
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
 <link rel="stylesheet" href="/features/perfil/css/emojis-animations.css">
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
@@ -34,648 +34,8 @@
 <link rel="stylesheet" href="/features/perfil-publico/css/perfil-publico.css">
 
 <style>
-    /* PUBLICACIONES */
-    #pvPubLista {
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-    }
-
-    .pv-post {
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-        overflow: hidden;
-    }
-
-    .pv-post-meta {
-        width: 100%;
-        min-width: 0;
-        box-sizing: border-box;
-    }
-
-    /* CARGA AUTOMÁTICA AL DESLIZAR */
-    #pvPubSentinel {
-        width: 100%;
-        height: 2px;
-        min-height: 2px;
-        pointer-events: none;
-        visibility: hidden;
-    }
-
-    #pvPubAutoEstado {
-        width: 100%;
-        min-height: 24px;
-        padding: 12px 0;
-        text-align: center;
-        color: #8da8a0;
-        font-size: 12px;
-    }
-
-    #pvPubAutoEstado[hidden] {
-        display: none !important;
-    }
-
-    /* CONTENEDOR DE VIDEO/MEDIA EN FEED */
-    .pub-media-container {
-        width: 100%;
-        aspect-ratio: 9 / 16;
-        border-radius: 8px;
-        background: #000;
-        overflow: hidden;
-        position: relative;
-        margin-top: 12px;
-        box-sizing: border-box;
-    }
-
-    .pub-media-container > video,
-    .pub-media-container > img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
-        display: block;
-    }
-
-    /* VIDEO GRANDE */
-    .pv-media-marco {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        max-width: 100%;
-        min-height: 220px;
-        max-height: 82vh;
-        margin: 14px 0;
-        padding: 0;
-        overflow: hidden;
-        background: #000;
-        border-radius: 14px;
-        isolation: isolate;
-        box-sizing: border-box;
-    }
-
-    .pv-post-video {
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        height: auto;
-        min-height: 220px;
-        max-height: 82vh;
-        margin: 0;
-        background: #000;
-        object-fit: contain;
-    }
-
-    .pv-video-ampliar {
-        position: absolute;
-        z-index: 5;
-        top: 12px;
-        right: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 42px;
-        height: 42px;
-        padding: 0;
-        border: 1px solid rgba(255,255,255,.35);
-        border-radius: 50%;
-        background: rgba(0,0,0,.75);
-        color: #fff;
-        font-size: 24px;
-        cursor: pointer;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-    }
-
-    /* REACCIONES */
-    .pv-post-barra {
-        display: flex;
-        align-items: flex-start;
-        justify-content: flex-start;
-        gap: 12px;
-        width: 100%;
-        min-width: 0;
-        margin-top: 12px;
-        box-sizing: border-box;
-    }
-
-    .pv-reacciones {
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 8px;
-        flex-shrink: 0;
-    }
-
-    .reaccion-wrap {
-        position: relative;
-        display: inline-flex;
-        align-items: center;
-    }
-
-    .reaccion-trigger {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        min-height: 38px;
-        padding: 6px 12px;
-        border: 1px solid rgba(212,175,55,.35);
-        border-radius: 20px;
-        background: rgba(11,16,22,.85);
-        color: inherit;
-        font-size: 13px;
-        cursor: pointer;
-    }
-
-    .reaccion-dropdown {
-        position: absolute;
-        bottom: calc(100% + 8px);
-        left: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        padding: 8px;
-        border-radius: 24px;
-        background: #0b1016;
-        border: 1px solid rgba(212,175,55,.45);
-        box-shadow: 0 12px 28px rgba(0,0,0,.65);
-        z-index: 60;
-    }
-
-    .reaccion-dropdown[hidden] {
-        display: none;
-    }
-
-    .reaccion-opcion-btn {
-        position: relative;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        border: 1px solid rgba(255,255,255,.14);
-        background: rgba(255,255,255,.05);
-        font-size: 20px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-    }
-
-    .mini-count {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        min-width: 17px;
-        height: 17px;
-        padding: 0 4px;
-        border-radius: 999px;
-        background: #D4AF37;
-        color: #05080f;
-        font-size: 10px;
-        font-weight: 700;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        line-height: 1;
-    }
-
-    .mini-count:empty {
-        display: none;
-    }
-
-    .pv-btn-reaccion {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 2px;
-        width: 42px;
-        min-height: 43px;
-        padding: 4px 2px;
-        border: 1px solid transparent;
-        border-radius: 12px;
-        background: transparent;
-        color: inherit;
-        font-size: 22px;
-        line-height: 1.2;
-        cursor: pointer;
-        transition: background .18s ease, transform .18s ease;
-    }
-
-    .pv-btn-reaccion span:first-child {
-        font-size: 23px;
-        line-height: 1.2;
-    }
-
-    .pv-btn-reaccion span:last-child {
-        font-size: 11px;
-        opacity: .85;
-    }
-
-    .pv-btn-reaccion.activo {
-        background: rgba(212,175,55,.13);
-        border-color: rgba(212,175,55,.45);
-    }
-
-    .pv-btn-reaccion:active {
-        transform: scale(.92);
-    }
-
-    .pv-btn-reaccion:disabled {
-        opacity: .5;
-        cursor: wait;
-    }
-
-    .pv-btn-comentar {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        min-height: 40px;
-        padding: 8px 12px;
-        border: 1px solid rgba(128,128,128,.25);
-        border-radius: 20px;
-        background: transparent;
-        color: inherit;
-        cursor: pointer;
-    }
-
-    /* SELECTOR DE EMOJIS */
-    #emojiPickerPerfil {
-        position: fixed;
-        bottom: 84px;
-        right: 16px;
-        width: 300px;
-        max-width: calc(100vw - 32px);
-        background: #0b1016;
-        border: 1px solid rgba(212,175,55,.45);
-        border-radius: 14px;
-        padding: 10px;
-        z-index: 999500;
-        box-shadow: 0 14px 36px rgba(0,0,0,.75);
-    }
-
-    #emojiPickerPerfil[hidden] {
-        display: none;
-    }
-
-    #emojiGridPerfil {
-        display: grid;
-        grid-template-columns: repeat(8, 1fr);
-        gap: 4px;
-        max-height: 220px;
-        overflow-y: auto;
-    }
-
-    /* IMÁGENES Y AUDIO */
-    .pv-post-img {
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        height: auto;
-        max-height: 75vh;
-        margin-top: 12px;
-        border-radius: 14px;
-        object-fit: contain;
-        cursor: zoom-in;
-    }
-
-    .pv-post-audio {
-        display: block;
-        width: 100%;
-        max-width: 100%;
-        margin-top: 12px;
-    }
-
-    /* VISOR INMERSIVO */
-    #pubVisorFull {
-        position: fixed;
-        inset: 0;
-        width: 100%;
-        height: 100dvh;
-        background: #000;
-        z-index: 999990;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        user-select: none;
-        touch-action: none;
-    }
-
-    #pubVisorFull[hidden] {
-        display: none !important;
-    }
-
-    .pub-vf-media {
-        position: fixed;
-        inset: 0;
-        width: 100%;
-        height: 100dvh;
-        background: #000;
-        z-index: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-    }
-
-    .pub-vf-media > video,
-    .pub-vf-media > img {
-        width: 100%;
-        height: 100%;
-        display: block;
-    }
-
-    .pub-vf-header {
-        position: relative;
-        z-index: 4;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 14px 16px;
-        transition: opacity .25s ease;
-    }
-
-    .pub-vf-btn-circle {
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
-        border: 1px solid rgba(255,255,255,.22);
-        background: rgba(12,16,24,.6);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        color: #fff;
-        font-size: 20px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-    }
-
-    #pubVfCenterControls {
-        position: fixed;
-        inset: 0;
-        z-index: 3;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        pointer-events: none;
-        transition: opacity .25s ease;
-    }
-
-    #pubVfCenterControls[hidden] {
-        display: none !important;
-    }
-
-    #pubVfBtnPlayCenter {
-        width: 80px;
-        height: 80px;
-        border-radius: 50%;
-        border: 2px solid rgba(212,175,55,.8);
-        background: rgba(10,14,22,.72);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        color: #D4AF37;
-        font-size: 32px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        pointer-events: auto;
-    }
-
-    .pub-vf-controls {
-        position: relative;
-        z-index: 4;
-        padding: 28px 16px 20px;
-        background: linear-gradient(to top, rgba(0,0,0,.88), rgba(0,0,0,.42) 65%, transparent);
-        transition: opacity .25s ease;
-    }
-
-    #pubVfProgressBar {
-        width: 100%;
-        height: 18px;
-        display: flex;
-        align-items: center;
-        cursor: pointer;
-        touch-action: none;
-        margin-bottom: 10px;
-    }
-
-    #pubVfProgressTrack {
-        width: 100%;
-        height: 4px;
-        border-radius: 999px;
-        background: rgba(255,255,255,.25);
-        overflow: hidden;
-    }
-
-    #pubVfProgressFill {
-        height: 100%;
-        width: 0%;
-        background: #D4AF37;
-        border-radius: 999px;
-    }
-
-    .pub-vf-actions-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        color: #fff;
-        font-size: 13px;
-    }
-
-    .pub-vf-right-actions {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .pub-vf-pill-btn {
-        height: 34px;
-        padding: 0 10px;
-        border-radius: 999px;
-        border: 1px solid rgba(255,255,255,.18);
-        background: rgba(15,20,30,.75);
-        color: #fff;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    #pubVisorFull.controls-hidden .pub-vf-header,
-    #pubVisorFull.controls-hidden .pub-vf-controls {
-        opacity: 0;
-        pointer-events: none;
-    }
-
-    #pubVfSheetBackdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,.62);
-        z-index: 999995;
-    }
-
-    #pubVfSheetBackdrop[hidden] {
-        display: none !important;
-    }
-
-    #pubVfSheet {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        z-index: 999998;
-        background: #0b1016;
-        border-top: 1px solid rgba(212,175,55,.4);
-        border-radius: 18px 18px 0 0;
-        padding: 16px;
-        max-height: 78dvh;
-        overflow: hidden;
-        color: #fff;
-    }
-
-    #pubVfSheet[hidden] {
-        display: none !important;
-    }
-
-    .pub-vf-sheet-track {
-        display: flex;
-        width: 300%;
-        transition: transform .26s cubic-bezier(.22,.61,.36,1);
-    }
-
-    .pub-vf-sheet-view {
-        width: 33.3333%;
-        flex-shrink: 0;
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-    }
-
-    /* VISOR MULTIMEDIA */
-    #pvLightbox {
-        position: fixed;
-        inset: 0;
-        z-index: 999999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        padding: 12px;
-        background: rgba(0,0,0,.97);
-        box-sizing: border-box;
-    }
-
-    #pvLightbox[hidden] {
-        display: none !important;
-    }
-
-    #pvLightbox .pv-lightbox-inner {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        max-width: 1200px;
-        margin: auto;
-    }
-
-    #pvLightboxBody {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        max-width: 1200px;
-        overflow: hidden;
-    }
-
-    #pvLightboxBody video {
-        display: block;
-        width: 100%;
-        height: 100%;
-        max-width: 1200px;
-        max-height: 92vh;
-        background: #000;
-        object-fit: contain;
-    }
-
-    #pvLightboxBody img {
-        display: block;
-        max-width: 95vw;
-        max-height: 90vh;
-        width: auto;
-        height: auto;
-        object-fit: contain;
-    }
-
-    #pvLightboxCerrar {
-        position: absolute;
-        z-index: 1000001;
-        top: max(12px, env(safe-area-inset-top));
-        right: 14px;
-        min-height: 42px;
-        padding: 8px 14px;
-        border: 1px solid rgba(255,255,255,.35);
-        border-radius: 22px;
-        background: rgba(0,0,0,.85);
-        color: #fff;
-        font-size: 14px;
-        cursor: pointer;
-    }
-
-    @media (max-width: 600px) {
-        .pv-media-marco {
-            min-height: 210px;
-            max-height: 78vh;
-            border-radius: 10px;
-        }
-
-        .pv-post-video {
-            min-height: 210px;
-            max-height: 78vh;
-        }
-
-        .pv-post-barra {
-            gap: 8px;
-        }
-
-        .pv-reacciones {
-            gap: 7px;
-        }
-
-        .pv-btn-reaccion {
-            width: 39px;
-            min-height: 40px;
-        }
-
-        #pvLightbox {
-            padding: 5px;
-        }
-
-        #pvLightboxBody video {
-            max-height: 94vh;
-        }
-    }
-
-    @media (orientation: landscape) and (max-height: 500px) {
-        .pv-media-marco,
-        .pv-post-video {
-            max-height: 90vh;
-        }
-
-        #pvLightboxBody video {
-            max-height: 94vh;
-        }
-    }
+    html:not(.auth-ready) .main-nav,
+    html:not(.auth-ready) .header { opacity: 0; pointer-events: none; }
 </style>
 </head>
 
@@ -910,8 +270,7 @@
                     aria-hidden="true"
                 ></div>
 
-                <!-- COMPATIBILIDAD CON EL PAGINADOR EXISTENTE -->
-                <!-- El usuario ya no necesita pulsar este botón. -->
+                <!-- PAGINADOR INTERNO: lo activa la carga automática -->
                 <button
                     type="button"
                     class="btn btn-outline btn-sm pv-mas"
@@ -928,7 +287,7 @@
 
     </main>
 
-    <!-- SELECTOR DE EMOJIS -->
+    <!-- SELECTOR DE EMOJIS (reservado) -->
     <div id="emojiPickerPerfil" hidden role="dialog" aria-label="Selector de emojis">
         <div id="emojiGridPerfil"></div>
     </div>
@@ -973,7 +332,7 @@
         </div>
     </div>
 
-    <!-- VISOR MULTIMEDIA -->
+    <!-- VISOR MULTIMEDIA (respaldo) -->
     <div
         class="pv-lightbox"
         id="pvLightbox"
@@ -982,7 +341,6 @@
         aria-modal="true"
         aria-label="Visor multimedia"
     >
-
         <div class="pv-lightbox-inner">
 
             <button
@@ -995,7 +353,6 @@
             <div id="pvLightboxBody"></div>
 
         </div>
-
     </div>
 
     <!-- FOOTER -->
@@ -1018,24 +375,13 @@
     </div>
 </noscript>
 
-<!-- ============================================================
-     SCRIPTS DEL PERFIL PÚBLICO
-     ============================================================ -->
-
+<!-- SCRIPTS DEL PERFIL PÚBLICO -->
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
-
 <script src="/features/shared/js/reacciones-global.js"></script>
-
 <script src="/features/perfil-publico/js/amigos.js" defer></script>
+<script src="/features/perfil-publico/js/perfil-publico.js?v=4.1" defer></script>
 
-<script src="/features/perfil-publico/js/perfil-publico.js?v=4.0" defer></script>
-
-<!-- ============================================================
-     CARGA AUTOMÁTICA DE PUBLICACIONES AL DESLIZAR
-     Conserva la paginación y el RPC existentes.
-     Utiliza el botón interno existente para no duplicar consultas.
-     ============================================================ -->
-
+<!-- CARGA AUTOMÁTICA DE PUBLICACIONES AL DESLIZAR -->
 <script>
 (function () {
     'use strict';
@@ -1048,17 +394,9 @@
         var estado = document.getElementById('pvPubAutoEstado');
         var seccion = document.getElementById('pvPubSection');
 
-        if (!lista || !sentinel || !boton || !seccion) {
-            return;
-        }
-
-        if (!('IntersectionObserver' in window)) {
-            return;
-        }
-
-        if (sentinel.dataset.inicializado === '1') {
-            return;
-        }
+        if (!lista || !sentinel || !boton || !seccion) return;
+        if (!('IntersectionObserver' in window)) return;
+        if (sentinel.dataset.inicializado === '1') return;
 
         sentinel.dataset.inicializado = '1';
 
@@ -1069,21 +407,11 @@
         var observador = new IntersectionObserver(function (entradas) {
 
             var entrada = entradas[0];
-
-            if (!entrada || !entrada.isIntersecting) {
-                return;
-            }
-
-            if (cargando || terminado) {
-                return;
-            }
-
-            if (seccion.hidden || boton.hidden) {
-                return;
-            }
+            if (!entrada || !entrada.isIntersecting) return;
+            if (cargando || terminado) return;
+            if (seccion.hidden || boton.hidden) return;
 
             cargando = true;
-
             observador.unobserve(sentinel);
 
             if (estado) {
@@ -1091,54 +419,20 @@
                 estado.textContent = 'Cargando publicaciones...';
             }
 
-            /*
-             * Activa el paginador original.
-             * El JavaScript existente conserva su RPC,
-             * cursor, deduplicación y control de paginación.
-             */
             try {
                 boton.click();
             } catch (error) {
                 cargando = false;
-
-                if (estado) {
-                    estado.hidden = true;
-                }
-
+                if (estado) estado.hidden = true;
                 return;
             }
 
-            /*
-             * El contenido nuevo indica que la consulta
-             * terminó y permite observar nuevamente.
-             */
-            if (temporizador) {
-                clearTimeout(temporizador);
-            }
+            if (temporizador) clearTimeout(temporizador);
 
             temporizador = setTimeout(function () {
-
-                if (!cargando) {
-                    return;
-                }
-
-                /*
-                 * No se vuelve a disparar inmediatamente
-                 * mientras el paginador siga procesando.
-                 */
-                if (boton.disabled) {
-                    esperarFinalizacion();
-                    return;
-                }
-
-                /*
-                 * La lista puede no cambiar cuando el servidor
-                 * devuelve cero resultados.
-                 */
-                if (boton.hidden) {
-                    finalizar();
-                }
-
+                if (!cargando) return;
+                if (boton.disabled) { esperarFinalizacion(); return; }
+                if (boton.hidden) finalizar();
             }, 12000);
 
         }, {
@@ -1148,10 +442,7 @@
         });
 
         function observarNuevamente() {
-
-            if (terminado || !sentinel || !boton) {
-                return;
-            }
+            if (terminado || !sentinel || !boton) return;
 
             if (boton.hidden || seccion.hidden) {
                 finalizar();
@@ -1169,10 +460,8 @@
         }
 
         function finalizar() {
-
             terminado = true;
             cargando = false;
-
             observador.disconnect();
 
             if (temporizador) {
@@ -1187,11 +476,9 @@
         }
 
         function esperarFinalizacion() {
-
             var intentos = 0;
 
             var comprobar = setInterval(function () {
-
                 intentos++;
 
                 if (boton.hidden) {
@@ -1209,18 +496,11 @@
                 if (intentos >= 30) {
                     clearInterval(comprobar);
                     cargando = false;
-
-                    if (estado) {
-                        estado.hidden = true;
-                    }
+                    if (estado) estado.hidden = true;
                 }
-
             }, 500);
         }
 
-        /*
-         * Detecta nuevas publicaciones agregadas al feed.
-         */
         var observadorLista = new MutationObserver(function (mutaciones) {
 
             var huboCambios = false;
@@ -1232,46 +512,23 @@
                 }
             }
 
-            if (!huboCambios || !cargando) {
-                return;
-            }
+            if (!huboCambios || !cargando) return;
 
             if (temporizador) {
                 clearTimeout(temporizador);
                 temporizador = null;
             }
 
-            /*
-             * Espera a que termine el renderizado del lote
-             * antes de habilitar la siguiente carga.
-             */
             setTimeout(function () {
-
-                if (boton.hidden) {
-                    finalizar();
-                    return;
-                }
-
+                if (boton.hidden) { finalizar(); return; }
                 observarNuevamente();
-
             }, 350);
         });
 
-        observadorLista.observe(lista, {
-            childList: true,
-            subtree: false
-        });
+        observadorLista.observe(lista, { childList: true, subtree: false });
 
-        /*
-         * Detecta cuando el paginador original informa
-         * que ya no existen más publicaciones.
-         */
         var observadorBoton = new MutationObserver(function () {
-
-            if (boton.hidden && !cargando) {
-                finalizar();
-            }
-
+            if (boton.hidden && !cargando) finalizar();
         });
 
         observadorBoton.observe(boton, {
@@ -1279,16 +536,10 @@
             attributeFilter: ['hidden', 'disabled']
         });
 
-        /*
-         * Espera a que el perfil y sus publicaciones
-         * estén disponibles antes de activar el scroll.
-         */
         var observadorSeccion = new MutationObserver(function () {
-
             if (!seccion.hidden && !boton.hidden && !cargando && !terminado) {
                 observarNuevamente();
             }
-
         });
 
         observadorSeccion.observe(seccion, {
@@ -1296,9 +547,7 @@
             attributeFilter: ['hidden']
         });
 
-        if (!seccion.hidden && !boton.hidden) {
-            observarNuevamente();
-        }
+        if (!seccion.hidden && !boton.hidden) observarNuevamente();
     }
 
     if (document.readyState === 'loading') {
@@ -1318,20 +567,13 @@
     var intentos = 0;
 
     function intentar() {
-
         if (typeof window.inicializarIdiomas === 'function') {
-
             try {
-                Promise.resolve(
-                    window.inicializarIdiomas()
-                ).catch(function () {});
+                Promise.resolve(window.inicializarIdiomas()).catch(function () {});
             } catch (e) {}
-
             return;
         }
-
         if (intentos++ >= 25) return;
-
         setTimeout(intentar, 200);
     }
 
