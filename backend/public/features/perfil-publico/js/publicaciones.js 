@@ -40,6 +40,7 @@
         siguiendo: $('pvSiguiendo'),
         compartir: $('pvCompartir'),
         pasaporte: $('pvPasaporte'),
+        amigosSection: $('pvAmigosSection'),
         pubSection: $('pvPubSection'),
         pubLista: $('pvPubLista'),
         pubMsg: $('pvPubMsg'),
@@ -233,6 +234,15 @@
         } else { window.prompt('Copia este enlace:', url); }
     }
 
+    /* ================= AMIGOS ================= */
+    function cargarAmigos(client, id) {
+        if (!el.amigosSection) return;
+        el.amigosSection.hidden = false;
+        if (window.PerfilPublicoAmigos && typeof window.PerfilPublicoAmigos.cargar === 'function') {
+            window.PerfilPublicoAmigos.cargar(client, id);
+        }
+    }
+
     /* ================= PUBLICACIONES ================= */
     function mostrarMensajePub(texto) {
         el.pubMsg.textContent = texto || '';
@@ -280,7 +290,6 @@
                 pub.idsVistos.add(p.id); return true;
             });
 
-            // Optimización: un solo fetch para todas las reacciones del lote
             var ids = nuevos.map(function (p) { return p.id; });
             var resumenes = new Map();
             if (ids.length) {
@@ -333,7 +342,6 @@
                     window.history.back();
                 }
             });
-            // Si el usuario no viene de dentro del sitio, lo mandamos a Inicio
             if (!mismoOrigenReferrer()) {
                 el.volver.setAttribute('href', '/');
                 el.volver.textContent = '← Ir al inicio';
@@ -355,14 +363,11 @@
         if (!ident) { mostrar(el.noEncontrado); return; }
         if (ident.tipo === 'invalido') { mostrarErrorIdentidad(); return; }
 
-        // Esperar SOLO al cliente de Supabase (no a la sesión completa)
-        // auth-global expone window.supabaseClient cuando lo crea.
         var client = null;
         var intentos = 0;
         while (!client && intentos < 30) {
             client = window.supabaseClient || (window.__sarielsSupabaseSingleton || null);
             if (client) break;
-            // Disparar carga en segundo plano si aún no empezó
             if (window.supabaseReady) {
                 try { client = await window.supabaseReady; } catch(e){}
             }
@@ -371,24 +376,21 @@
         }
         if (!client) throw new Error('Cliente de Supabase no disponible');
 
-        // Pintar el perfil YA (sin esperar sesión)
-        // Leer sesión en paralelo (no bloquea)
         client.auth.getSession().then(function (r) {
             if (r && r.data && r.data.session && r.data.session.user) {
                 window.usuarioActualId = r.data.session.user.id;
-                // Re-renderizar reacciones si ya se habían pintado con usuario null
-                if (perfil && pub.total > 0) cargarPublicaciones(client, perfil.handle, true);
+                if (perfil && perfil.id === window.usuarioActualId) {
+                    window.location.replace(RUTA_PERFIL_PROPIO);
+                }
             }
         }).catch(function(){});
 
-        // Escuchar cambios de auth en vivo
         try {
             client.auth.onAuthStateChange(function (_e, sesion) {
                 window.usuarioActualId = (sesion && sesion.user) ? sesion.user.id : null;
             });
         } catch (e) {}
 
-        // Cargar perfil (crítico)
         var p = await cargarPerfil(client, ident);
 
         if (!p) {
@@ -412,7 +414,6 @@
             mostrarErrorIdentidad(); return;
         }
 
-        // Si el visitante es el dueño, mandarlo a su perfil privado
         if (window.usuarioActualId && p.id === window.usuarioActualId) {
             window.location.replace(RUTA_PERFIL_PROPIO); return;
         }
@@ -425,6 +426,7 @@
             console.warn('[PerfilPublico] Wallet:', e);
         });
 
+        cargarAmigos(client, p.id);
         cargarPublicaciones(client, p.handle, true);
     }
 
@@ -447,7 +449,6 @@
 
     /* ================= ARRANQUE ================= */
     function arrancar() {
-        // Iniciar inmediatamente, sin esperar auth-ready
         init().catch(function (err) {
             console.error('[PerfilPublico]', err);
             mostrar(el.error);
