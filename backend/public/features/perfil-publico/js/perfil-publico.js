@@ -396,13 +396,15 @@
             var marcoVideo = document.createElement('div');
             marcoVideo.className = 'pv-media-marco';
             marcoVideo.style.width = '100%';
-            marcoVideo.style.aspectRatio = '9 / 16';
             marcoVideo.style.maxHeight = '75vh';
             marcoVideo.style.marginTop = '12px';
             marcoVideo.style.borderRadius = '14px';
             marcoVideo.style.overflow = 'hidden';
             marcoVideo.style.background = '#000';
             marcoVideo.style.position = 'relative';
+            marcoVideo.style.display = 'flex';
+            marcoVideo.style.alignItems = 'center';
+            marcoVideo.style.justifyContent = 'center';
 
             var vid = document.createElement('video');
             vid.className = 'pv-post-video';
@@ -415,23 +417,10 @@
             if (sinDescarga) vid.setAttribute('controlsList', 'nodownload');
 
             vid.style.width = '100%';
-            vid.style.height = '100%';
+            vid.style.maxHeight = '75vh';
+            vid.style.height = 'auto';
             vid.style.marginTop = '0';
-            vid.style.objectFit = 'cover';
-            vid.style.objectPosition = 'center';
-
-            vid.addEventListener('loadedmetadata', function () {
-                if (vid.videoWidth && vid.videoHeight) {
-                    var ratio = vid.videoWidth / vid.videoHeight;
-                    if (ratio >= 1) {
-                        marcoVideo.style.aspectRatio = vid.videoWidth + ' / ' + vid.videoHeight;
-                        vid.style.objectFit = 'contain';
-                    } else {
-                        marcoVideo.style.aspectRatio = '9 / 16';
-                        vid.style.objectFit = 'cover';
-                    }
-                }
-            });
+            vid.style.objectFit = 'contain';
 
             registrarReproductorUnico(vid);
             marcoVideo.appendChild(vid);
