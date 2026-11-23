@@ -33,7 +33,6 @@
 <link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
 <link rel="stylesheet" href="/features/perfil-publico/css/perfil-publico.css">
 
-<!-- CSS COMPLEMENTARIO PARA PERFIL PÚBLICO V4 -->
 <style>
     /* PUBLICACIONES */
     #pvPubLista {
@@ -55,7 +54,29 @@
         box-sizing: border-box;
     }
 
-    /* CONTENEDOR DE VIDEO/MEDIA EN FEED (9:16) */
+    /* CARGA AUTOMÁTICA AL DESLIZAR */
+    #pvPubSentinel {
+        width: 100%;
+        height: 2px;
+        min-height: 2px;
+        pointer-events: none;
+        visibility: hidden;
+    }
+
+    #pvPubAutoEstado {
+        width: 100%;
+        min-height: 24px;
+        padding: 12px 0;
+        text-align: center;
+        color: #8da8a0;
+        font-size: 12px;
+    }
+
+    #pvPubAutoEstado[hidden] {
+        display: none !important;
+    }
+
+    /* CONTENEDOR DE VIDEO/MEDIA EN FEED */
     .pub-media-container {
         width: 100%;
         aspect-ratio: 9 / 16;
@@ -128,7 +149,7 @@
         -webkit-backdrop-filter: blur(8px);
     }
 
-    /* REACCIONES EN CÁPSULA VERTICAL */
+    /* REACCIONES */
     .pv-post-barra {
         display: flex;
         align-items: flex-start;
@@ -280,7 +301,7 @@
         cursor: pointer;
     }
 
-    /* SELECTOR DE 97 EMOJIS */
+    /* SELECTOR DE EMOJIS */
     #emojiPickerPerfil {
         position: fixed;
         bottom: 84px;
@@ -327,7 +348,7 @@
         margin-top: 12px;
     }
 
-    /* VISOR INMERSIVO (#pubVisorFull) */
+    /* VISOR INMERSIVO */
     #pubVisorFull {
         position: fixed;
         inset: 0;
@@ -611,7 +632,6 @@
         cursor: pointer;
     }
 
-    /* RESPONSIVE */
     @media (max-width: 600px) {
         .pv-media-marco {
             min-height: 210px;
@@ -747,7 +767,7 @@
                     href="/features/contactos/contactos.html"
                     class="btn btn-outline btn-sm"
                     id="pvVolverNoEncontrado"
-                >← Volver</a>
+                >Volver</a>
             </div>
         </section>
 
@@ -840,12 +860,6 @@
                         data-clave="perfil_compartir"
                     >Compartir</button>
 
-                    <a
-                        href="/features/contactos/contactos.html"
-                        id="pvVolver"
-                        class="btn btn-outline btn-sm pv-volver"
-                    >← Volver</a>
-
                 </div>
 
             </section>
@@ -882,11 +896,30 @@
 
                 <div id="pvPubLista"></div>
 
+                <!-- INDICADOR DE CARGA AUTOMÁTICA -->
+                <div
+                    id="pvPubAutoEstado"
+                    role="status"
+                    aria-live="polite"
+                    hidden
+                ></div>
+
+                <!-- PUNTO DE DETECCIÓN DEL DESPLAZAMIENTO -->
+                <div
+                    id="pvPubSentinel"
+                    aria-hidden="true"
+                ></div>
+
+                <!-- COMPATIBILIDAD CON EL PAGINADOR EXISTENTE -->
+                <!-- El usuario ya no necesita pulsar este botón. -->
                 <button
                     type="button"
                     class="btn btn-outline btn-sm pv-mas"
                     id="pvPubMas"
                     hidden
+                    tabindex="-1"
+                    aria-hidden="true"
+                    style="display:none!important;"
                 >Cargar más</button>
 
             </section>
@@ -895,12 +928,12 @@
 
     </main>
 
-    <!-- SELECTOR DE 97 EMOJIS -->
+    <!-- SELECTOR DE EMOJIS -->
     <div id="emojiPickerPerfil" hidden role="dialog" aria-label="Selector de emojis">
         <div id="emojiGridPerfil"></div>
     </div>
 
-    <!-- VISOR INMERSIVO (#pubVisorFull) -->
+    <!-- VISOR INMERSIVO -->
     <div id="pubVisorFull" hidden role="dialog" aria-modal="true" aria-label="Visor inmersivo">
         <div class="pub-vf-media"></div>
 
@@ -930,7 +963,7 @@
         </div>
     </div>
 
-    <!-- HOJA DESLIZABLE (#pubVfSheet) -->
+    <!-- HOJA DESLIZABLE -->
     <div id="pubVfSheetBackdrop" hidden></div>
     <div id="pubVfSheet" hidden role="dialog" aria-modal="true" aria-label="Opciones de publicación">
         <div class="pub-vf-sheet-track">
@@ -987,7 +1020,6 @@
 
 <!-- ============================================================
      SCRIPTS DEL PERFIL PÚBLICO
-     ORDEN DE CARGA CONSERVADO
      ============================================================ -->
 
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
@@ -998,6 +1030,286 @@
 
 <script src="/features/perfil-publico/js/perfil-publico.js?v=4.0" defer></script>
 
+<!-- ============================================================
+     CARGA AUTOMÁTICA DE PUBLICACIONES AL DESLIZAR
+     Conserva la paginación y el RPC existentes.
+     Utiliza el botón interno existente para no duplicar consultas.
+     ============================================================ -->
+
+<script>
+(function () {
+    'use strict';
+
+    function iniciarCargaAutomatica() {
+
+        var lista = document.getElementById('pvPubLista');
+        var sentinel = document.getElementById('pvPubSentinel');
+        var boton = document.getElementById('pvPubMas');
+        var estado = document.getElementById('pvPubAutoEstado');
+        var seccion = document.getElementById('pvPubSection');
+
+        if (!lista || !sentinel || !boton || !seccion) {
+            return;
+        }
+
+        if (!('IntersectionObserver' in window)) {
+            return;
+        }
+
+        if (sentinel.dataset.inicializado === '1') {
+            return;
+        }
+
+        sentinel.dataset.inicializado = '1';
+
+        var cargando = false;
+        var terminado = false;
+        var temporizador = null;
+
+        var observador = new IntersectionObserver(function (entradas) {
+
+            var entrada = entradas[0];
+
+            if (!entrada || !entrada.isIntersecting) {
+                return;
+            }
+
+            if (cargando || terminado) {
+                return;
+            }
+
+            if (seccion.hidden || boton.hidden) {
+                return;
+            }
+
+            cargando = true;
+
+            observador.unobserve(sentinel);
+
+            if (estado) {
+                estado.hidden = false;
+                estado.textContent = 'Cargando publicaciones...';
+            }
+
+            /*
+             * Activa el paginador original.
+             * El JavaScript existente conserva su RPC,
+             * cursor, deduplicación y control de paginación.
+             */
+            try {
+                boton.click();
+            } catch (error) {
+                cargando = false;
+
+                if (estado) {
+                    estado.hidden = true;
+                }
+
+                return;
+            }
+
+            /*
+             * El contenido nuevo indica que la consulta
+             * terminó y permite observar nuevamente.
+             */
+            if (temporizador) {
+                clearTimeout(temporizador);
+            }
+
+            temporizador = setTimeout(function () {
+
+                if (!cargando) {
+                    return;
+                }
+
+                /*
+                 * No se vuelve a disparar inmediatamente
+                 * mientras el paginador siga procesando.
+                 */
+                if (boton.disabled) {
+                    esperarFinalizacion();
+                    return;
+                }
+
+                /*
+                 * La lista puede no cambiar cuando el servidor
+                 * devuelve cero resultados.
+                 */
+                if (boton.hidden) {
+                    finalizar();
+                }
+
+            }, 12000);
+
+        }, {
+            root: null,
+            rootMargin: '0px 0px 450px 0px',
+            threshold: 0
+        });
+
+        function observarNuevamente() {
+
+            if (terminado || !sentinel || !boton) {
+                return;
+            }
+
+            if (boton.hidden || seccion.hidden) {
+                finalizar();
+                return;
+            }
+
+            cargando = false;
+
+            if (estado) {
+                estado.hidden = true;
+                estado.textContent = '';
+            }
+
+            observador.observe(sentinel);
+        }
+
+        function finalizar() {
+
+            terminado = true;
+            cargando = false;
+
+            observador.disconnect();
+
+            if (temporizador) {
+                clearTimeout(temporizador);
+                temporizador = null;
+            }
+
+            if (estado) {
+                estado.hidden = false;
+                estado.textContent = 'No hay más publicaciones.';
+            }
+        }
+
+        function esperarFinalizacion() {
+
+            var intentos = 0;
+
+            var comprobar = setInterval(function () {
+
+                intentos++;
+
+                if (boton.hidden) {
+                    clearInterval(comprobar);
+                    finalizar();
+                    return;
+                }
+
+                if (!boton.disabled && intentos >= 2) {
+                    clearInterval(comprobar);
+                    observarNuevamente();
+                    return;
+                }
+
+                if (intentos >= 30) {
+                    clearInterval(comprobar);
+                    cargando = false;
+
+                    if (estado) {
+                        estado.hidden = true;
+                    }
+                }
+
+            }, 500);
+        }
+
+        /*
+         * Detecta nuevas publicaciones agregadas al feed.
+         */
+        var observadorLista = new MutationObserver(function (mutaciones) {
+
+            var huboCambios = false;
+
+            for (var i = 0; i < mutaciones.length; i++) {
+                if (mutaciones[i].addedNodes.length > 0) {
+                    huboCambios = true;
+                    break;
+                }
+            }
+
+            if (!huboCambios || !cargando) {
+                return;
+            }
+
+            if (temporizador) {
+                clearTimeout(temporizador);
+                temporizador = null;
+            }
+
+            /*
+             * Espera a que termine el renderizado del lote
+             * antes de habilitar la siguiente carga.
+             */
+            setTimeout(function () {
+
+                if (boton.hidden) {
+                    finalizar();
+                    return;
+                }
+
+                observarNuevamente();
+
+            }, 350);
+        });
+
+        observadorLista.observe(lista, {
+            childList: true,
+            subtree: false
+        });
+
+        /*
+         * Detecta cuando el paginador original informa
+         * que ya no existen más publicaciones.
+         */
+        var observadorBoton = new MutationObserver(function () {
+
+            if (boton.hidden && !cargando) {
+                finalizar();
+            }
+
+        });
+
+        observadorBoton.observe(boton, {
+            attributes: true,
+            attributeFilter: ['hidden', 'disabled']
+        });
+
+        /*
+         * Espera a que el perfil y sus publicaciones
+         * estén disponibles antes de activar el scroll.
+         */
+        var observadorSeccion = new MutationObserver(function () {
+
+            if (!seccion.hidden && !boton.hidden && !cargando && !terminado) {
+                observarNuevamente();
+            }
+
+        });
+
+        observadorSeccion.observe(seccion, {
+            attributes: true,
+            attributeFilter: ['hidden']
+        });
+
+        if (!seccion.hidden && !boton.hidden) {
+            observarNuevamente();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarCargaAutomatica);
+    } else {
+        iniciarCargaAutomatica();
+    }
+
+})();
+</script>
+
 <!-- IDIOMAS -->
 <script>
 (function () {
@@ -1006,7 +1318,9 @@
     var intentos = 0;
 
     function intentar() {
+
         if (typeof window.inicializarIdiomas === 'function') {
+
             try {
                 Promise.resolve(
                     window.inicializarIdiomas()
