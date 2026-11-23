@@ -32,7 +32,7 @@
         RPC_CANJEAR: 'canjear_codigo_amistad',
         RPC_RESPONDER: 'responder_solicitud_amistad',
         RPC_ELIMINAR: 'eliminar_amistad',
-        PERFIL_URL: '/features/perfil/perfil-publico.html',
+        PERFIL_URL: '/features/perfil-publico/perfil-publico.html',
         MENSAJES_URL: '/features/mensajes/mensajes.html',
         PAGE: 50,
         LIMITE_RELACIONES: 100,
@@ -230,7 +230,6 @@
                 var r = await fn();
                 if (r && r.error) {
                     var err = r.error;
-                    // Errores de negocio o permisos: no reintentar
                     if (err.code === '23505' || err.code === '42501' || err.code === 'PGRST116' || err.code === '54000') return r;
                     throw err;
                 }
@@ -350,7 +349,6 @@
         return { id: c.id, contacto_id: c.contacto_id, es_favorito: c.es_favorito === true, fecha: c.fecha || null };
     }
 
-    // Usa el índice (usuario_id, fecha desc) de contactos
     function pedirPagina(client, uid, n) {
         var desde = n * CONFIG.PAGE;
         var hasta = desde + CONFIG.PAGE - 1;
@@ -519,7 +517,6 @@
     /* ---------------- Estadísticas ---------------- */
 
     function actualizarStats() {
-        // "En línea" cuenta solo los contactos ya cargados
         var online = state.contactos.filter(function (c) {
             var p = state.perfiles.get(c.contacto_id);
             return p && p.online === true;
@@ -785,7 +782,6 @@
         var t = normalizarTexto(valor);
         state.texto = t.toLowerCase();
         var input = document.getElementById('searchInput');
-        // Solo reescribe el campo si cambió, para no mover el cursor mientras se escribe
         if (input && input.value !== t) input.value = t;
         var limpiar = document.getElementById('btnLimpiarBusqueda');
         if (limpiar) limpiar.hidden = !t;
@@ -1089,7 +1085,6 @@
 
         var estado = r.data && r.data.estado;
 
-        // El servidor responde rate_limited (no error) para que el intento quede registrado
         if (estado === 'rate_limited') {
             state.canjeBloqueadoHasta = Date.now() + CONFIG.BLOQUEO_CANJE_MS;
             mensajeCanje('Demasiados intentos. Espera unos minutos.', 'error');
@@ -1236,7 +1231,6 @@
             b.addEventListener('click', function () { setFiltro(b.getAttribute('data-filtro') || 'todos'); });
         });
 
-        // Búsqueda: el campo escribe normal (sin micrófono). El micrófono solo con su botón.
         var input = document.getElementById('searchInput');
         var btnVoz = document.getElementById('btnVozBuscar');
         var btnLimpiar = document.getElementById('btnLimpiarBusqueda');
