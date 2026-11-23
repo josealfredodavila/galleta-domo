@@ -1,14 +1,7 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4.1 · Reacciones con clases pv-* (sin choque con emojis-animations),
-   medios sin recorte y reportes en publicacion_reportes.
-   Tablas y RPC verificadas en Supabase:
-   perfil_publico_verificado, perfil_publico_por_handle,
-   perfil_publico_por_id, perfil_visibilidad_estado,
-   perfil_publicaciones_contactos, publicaciones,
-   publicaciones_reacciones, publicaciones_comentarios,
-   publicaciones_comentarios_publicos, publicacion_reportes,
-   wallet_publica.
+   v4.2 · Reacciones desde el módulo global (reacciones-global.js).
+   Tablas y RPC verificadas en Supabase.
    ================================================================ */
 (function () {
     'use strict';
@@ -21,16 +14,7 @@
     var TIMEOUT_CLIENTE_MS = 5000;
     var TIMEOUT_SESION_MS = 4000;
     var TIMEOUT_PERFIL_MS = 12000;
-
-    /* Opciones de reacción aprobadas (coinciden con el CHECK de la tabla). */
-    var EMOJIS_REACCION = ['❤️', '😂', '🥺', '💎'];
-
-    var CLASE_EMO = {
-        '❤️': 'pv-emo-corazon',
-        '😂': 'pv-emo-risa',
-        '🥺': 'pv-emo-brillo',
-        '💎': 'pv-emo-diamante'
-    };
+    var TIMEOUT_CATALOGO_MS = 4000;
 
     var perfil = null;
     var direccionWallet = null;
@@ -173,40 +157,6 @@
 
     function urlPerfil() {
         return window.location.origin + window.location.pathname + '?u=' + encodeURIComponent(perfil.handle);
-    }
-
-    function cerrarTodosDropdowns() {
-        document.querySelectorAll('.pv-reaccion-dropdown').forEach(function (d) { d.hidden = true; });
-    }
-
-    /* ================= REACCIONES: MOVIMIENTO pv-emo-* ================= */
-
-    function aplicarEmo(nodo, emoji) {
-        if (!nodo) return;
-        nodo.classList.add('pv-emo');
-        Object.keys(CLASE_EMO).forEach(function (k) {
-            nodo.classList.remove(CLASE_EMO[k]);
-        });
-        nodo.classList.add(CLASE_EMO[emoji] || 'pv-emo-fluido');
-        nodo.style.setProperty('--delay', (Math.random() * 0.6).toFixed(2) + 's');
-    }
-
-    function RG() {
-        return window.ReaccionesGlobal || {
-            normalizar: function (e) {
-                return EMOJIS_REACCION.indexOf(e) !== -1 ? e : '❤️';
-            },
-            resumir: function (filas, uid) {
-                var self = this, t = {}, total = 0, mi = null;
-                (filas || []).forEach(function (f) {
-                    var x = self.normalizar(f.tipo);
-                    t[x] = (t[x] || 0) + 1;
-                    total++;
-                    if (uid && f.usuario_id === uid) mi = x;
-                });
-                return { totales: t, total: total, miTipo: mi };
-            }
-        };
     }
 
     function registrarReproductorUnico(elMedia) {
@@ -471,7 +421,7 @@
         if (!esDueno) {
             vPrin.appendChild(boton('No quiero ver esto', function () {
                 if (post.id && el.pubLista) {
-                    var card = el.pubLista.querySelector('[data-pub-id="' + post.id + '"]');
+                    var card = el.pubLista.querySelector('.pv-post[data-pub-id="' + post.id + '"]');
                     if (card) card.remove();
                 }
                 vfCerrarSheet();
@@ -488,7 +438,7 @@
                     var del = await client.from('publicaciones').delete().eq('id', post.id);
                     if (del.error) throw del.error;
                     if (el.pubLista) {
-                        var card = el.pubLista.querySelector('[data-pub-id="' + post.id + '"]');
+                        var card = el.pubLista.querySelector('.pv-post[data-pub-id="' + post.id + '"]');
                         if (card) card.remove();
                     }
                     vfCerrarSheet();
@@ -966,7 +916,6 @@
             return;
         }
 
-        /* Sin proporción fija: la foto o el video conservan su proporción real. */
         var marco = document.createElement('div');
         marco.className = 'pv-media-marco';
 
@@ -998,126 +947,6 @@
         });
 
         meta.appendChild(marco);
-    }
-
-    /* ================= BARRA DE REACCIONES ================= */
-
-    function pintarBarraReacciones(bar, resumen) {
-        var r = resumen || { totales: {}, total: 0, miTipo: null };
-
-        bar.innerHTML = '';
-        bar._resumen = r;
-
-        var wrap = document.createElement('div');
-        wrap.className = 'pv-reaccion-wrap';
-
-        var dropdown = document.createElement('div');
-        dropdown.className = 'pv-reaccion-dropdown';
-        dropdown.hidden = true;
-
-        EMOJIS_REACCION.forEach(function (emoji) {
-            var btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'pv-reaccion-opcion' + (r.miTipo === emoji ? ' activo' : '');
-            btn.setAttribute('data-tipo', emoji);
-            btn.setAttribute('aria-label', 'Reaccionar con ' + emoji);
-
-            var ico = document.createElement('span');
-            ico.textContent = emoji;
-            aplicarEmo(ico, emoji);
-            btn.appendChild(ico);
-
-            var n = r.totales[emoji] || 0;
-            if (n > 0) {
-                var cant = document.createElement('span');
-                cant.className = 'pv-count';
-                cant.textContent = String(n);
-                btn.appendChild(cant);
-            }
-
-            dropdown.appendChild(btn);
-        });
-
-        var trigger = document.createElement('button');
-        trigger.type = 'button';
-        trigger.className = 'pv-reaccion-trigger' + (r.miTipo ? ' activo' : '');
-        trigger.setAttribute('aria-label', 'Reacciones');
-
-        var emojiActual = r.miTipo || '❤️';
-        var trigEmoji = document.createElement('span');
-        trigEmoji.className = 'pv-reaccion-icono';
-        trigEmoji.textContent = emojiActual;
-        aplicarEmo(trigEmoji, emojiActual);
-        trigger.appendChild(trigEmoji);
-
-        if (r.total > 0) {
-            var trigCount = document.createElement('span');
-            trigCount.className = 'pv-count pv-count-trigger';
-            trigCount.textContent = String(r.total);
-            trigger.appendChild(trigCount);
-        }
-
-        trigger.addEventListener('click', function (ev) {
-            ev.stopPropagation();
-            var abrir = dropdown.hidden;
-            cerrarTodosDropdowns();
-            dropdown.hidden = !abrir;
-        });
-
-        wrap.appendChild(dropdown);
-        wrap.appendChild(trigger);
-        bar.appendChild(wrap);
-    }
-
-    async function refrescarReacciones(client, pubId, bar) {
-        var r = await client
-            .from('publicaciones_reacciones')
-            .select('tipo, usuario_id')
-            .eq('publicacion_id', pubId);
-
-        if (r.error) throw r.error;
-
-        pintarBarraReacciones(bar, RG().resumir(r.data || [], window.usuarioActualId));
-    }
-
-    async function alternarReaccion(client, pubId, tipo, bar) {
-        if (!window.usuarioActualId) {
-            toast('Inicia sesión para reaccionar', 'error');
-            return;
-        }
-
-        var botones = bar.querySelectorAll('button');
-        botones.forEach(function (b) { b.disabled = true; });
-
-        try {
-            var miTipo = bar._resumen ? bar._resumen.miTipo : null;
-            var res;
-
-            if (miTipo === tipo) {
-                res = await client.from('publicaciones_reacciones')
-                    .delete()
-                    .eq('publicacion_id', pubId)
-                    .eq('usuario_id', window.usuarioActualId);
-            } else if (miTipo) {
-                res = await client.from('publicaciones_reacciones')
-                    .update({ tipo: tipo })
-                    .eq('publicacion_id', pubId)
-                    .eq('usuario_id', window.usuarioActualId);
-            } else {
-                res = await client.from('publicaciones_reacciones')
-                    .insert({ publicacion_id: pubId, usuario_id: window.usuarioActualId, tipo: tipo });
-            }
-
-            if (res.error) throw res.error;
-
-            await refrescarReacciones(client, pubId, bar);
-
-        } catch (e) {
-            console.warn('[PerfilPublico] Reacción:', e);
-            toast('No se pudo reaccionar: ' + msgError(e), 'error');
-        } finally {
-            botones.forEach(function (b) { b.disabled = false; });
-        }
     }
 
     /* ================= COMENTARIOS ================= */
@@ -1167,7 +996,6 @@
             pintarComentarios(listaEl, filas);
 
             if (countEl) countEl.textContent = filas.length > 0 ? String(filas.length) : '';
-
         } catch (e) {
             console.warn('[PerfilPublico] Comentarios:', e);
             listaEl.innerHTML = '<div class="pv-comentario-item">No se pudieron cargar los comentarios: ' + msgError(e) + '</div>';
@@ -1196,7 +1024,6 @@
 
             inputEl.value = '';
             await cargarComentarios(client, pubId, listaEl, countEl);
-
         } catch (e) {
             console.warn('[PerfilPublico] Comentar:', e);
             toast('No se pudo comentar: ' + msgError(e), 'error');
@@ -1262,6 +1089,8 @@
         var barra = document.createElement('div');
         barra.className = 'pv-post-barra';
 
+        /* Contenedor de la barra de reacciones: lo llena el módulo global
+           en cargarPublicaciones. */
         var reacciones = document.createElement('div');
         reacciones.className = 'pv-reacciones';
         reacciones.dataset.pubId = pubId;
@@ -1323,14 +1152,6 @@
         formCom.addEventListener('submit', function (ev) {
             ev.preventDefault();
             enviarComentario(client, pubId, inputCom, listaCom, comCount);
-        });
-
-        reacciones.addEventListener('click', function (ev) {
-            var btn = ev.target.closest('button[data-tipo]');
-            if (!btn) return;
-            ev.stopPropagation();
-            cerrarTodosDropdowns();
-            alternarReaccion(client, pubId, btn.getAttribute('data-tipo'), reacciones);
         });
 
         art.appendChild(av);
@@ -1410,28 +1231,15 @@
                 return true;
             });
 
+            var uid = window.usuarioActualId;
             var ids = nuevos.map(function (p) { return p.id; });
             var resumenes = new Map();
 
-            if (ids.length) {
+            if (ids.length && window.ReaccionesGlobal) {
                 try {
-                    var rReac = await client
-                        .from('publicaciones_reacciones')
-                        .select('publicacion_id, tipo, usuario_id')
-                        .in('publicacion_id', ids);
-
-                    var porPub = {};
-                    (rReac.data || []).forEach(function (row) {
-                        var k = String(row.publicacion_id);
-                        if (!porPub[k]) porPub[k] = [];
-                        porPub[k].push(row);
-                    });
-
-                    ids.forEach(function (id) {
-                        resumenes.set(String(id), RG().resumir(porPub[String(id)] || [], window.usuarioActualId));
-                    });
+                    resumenes = await window.ReaccionesGlobal.cargarResumenLote(client, ids, uid);
                 } catch (e) {
-                    console.warn('[PerfilPublico] Reacciones batch:', e);
+                    console.warn('[PerfilPublico] Reacciones lote:', e);
                 }
             }
 
@@ -1439,11 +1247,19 @@
                 var card = crearPost(client, p);
                 el.pubLista.appendChild(card);
 
-                var bar = card.querySelector('.pv-reacciones');
-                if (bar) {
-                    pintarBarraReacciones(bar, resumenes.get(String(p.id)) || {
-                        totales: {}, total: 0, miTipo: null
+                var contenedorRx = card.querySelector('.pv-reacciones');
+
+                if (contenedorRx && window.ReaccionesGlobal) {
+                    var resumen = resumenes.get(String(p.id)) || { totales: {}, total: 0, miTipo: null };
+
+                    var barraRx = window.ReaccionesGlobal.crearBarra({
+                        client: client,
+                        publicacionId: p.id,
+                        usuarioId: uid,
+                        resumen: resumen
                     });
+
+                    contenedorRx.appendChild(barraRx.el);
                 }
             });
 
@@ -1467,7 +1283,6 @@
 
     window.PerfilPublicoPosts = {
         crearPost: crearPost,
-        pintarBarraReacciones: pintarBarraReacciones,
         abrirVisor: vfAbrir,
         cerrarVisor: vfCerrar,
         toast: toast,
@@ -1544,7 +1359,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v4.1');
+        console.info('[PerfilPublico] iniciando v4.2');
 
         mostrar(el.cargando);
         configurarVolver();
@@ -1563,6 +1378,17 @@
         }
 
         await resolverSesion(client);
+
+        /* Precarga del catálogo de reacciones (con límite de tiempo). */
+        if (window.ReaccionesGlobal) {
+            await conTimeout(
+                window.ReaccionesGlobal.preparar(client),
+                TIMEOUT_CATALOGO_MS,
+                'Catálogo de reacciones lento.'
+            ).catch(function (e) {
+                console.warn('[PerfilPublico] Catálogo:', e);
+            });
+        }
 
         try {
             client.auth.onAuthStateChange(function (_e, sesion) {
@@ -1626,10 +1452,6 @@
     el.lightboxCerrar.addEventListener('click', cerrarLightbox);
     el.lightbox.addEventListener('click', function (e) {
         if (e.target === el.lightbox) cerrarLightbox();
-    });
-
-    document.addEventListener('click', function (ev) {
-        if (!ev.target.closest('.pv-reaccion-wrap')) cerrarTodosDropdowns();
     });
 
     document.addEventListener('keydown', function (e) {
