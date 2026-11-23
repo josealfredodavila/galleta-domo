@@ -22,7 +22,8 @@
         '❤️': 'emo-corazon',
         '😂': 'emo-risa',
         '🥺': 'emo-brillo',
-        '💎': 'emo-diamante'
+        '💎': 'emo-diamante',
+        '🤩': 'emo-estrellas'
     };
 
     var EMOJIS_97 = [
@@ -182,10 +183,10 @@
 
     function aplicarVariablesEmoji(nodo, emoji) {
         if (!nodo) return;
-        var cls = CLASES_EMOJI[emoji] || 'emo-corazon';
-        nodo.classList.remove('emo-corazon', 'emo-risa', 'emo-brillo', 'emo-diamante');
+        var cls = CLASES_EMOJI[emoji] || 'emo-fluido';
+        nodo.classList.remove('emo-corazon', 'emo-risa', 'emo-brillo', 'emo-diamante', 'emo-estrellas', 'emo-fluido');
         nodo.classList.add(cls);
-        nodo.style.setProperty('--dur', (0.75 + Math.random() * 0.65).toFixed(2) + 's');
+        nodo.style.setProperty('--dur', (2.1 + Math.random() * 0.7).toFixed(2) + 's');
         nodo.style.setProperty('--delay', (Math.random() * 0.35).toFixed(2) + 's');
     }
 
@@ -1134,18 +1135,19 @@
             btn.className = 'pv-btn-reaccion reaccion-opcion-btn' + (r.miTipo === emoji ? ' activo' : '');
             btn.setAttribute('data-tipo', emoji);
             btn.setAttribute('aria-label', 'Reaccionar con ' + emoji);
+            aplicarVariablesEmoji(btn, emoji);
+            rg.aplicarMotor(btn, emoji);
 
             var ico = document.createElement('span');
             ico.textContent = emoji;
-            aplicarVariablesEmoji(ico, emoji);
-            rg.aplicarMotor(ico, emoji);
 
             var cant = document.createElement('span');
             cant.className = 'mini-count';
             var n = r.totales[emoji] || 0;
             cant.textContent = n > 0 ? String(n) : '';
 
-            btn.appendChild(ico); btn.appendChild(cant);
+            btn.appendChild(ico);
+            if (cant.textContent) btn.appendChild(cant);
             dropdown.appendChild(btn);
         });
 
@@ -1153,11 +1155,15 @@
         trigger.type = 'button';
         trigger.className = 'reaccion-trigger' + (r.miTipo ? ' activo' : '');
 
+        var emojiActivo = r.miTipo || rg.POR_DEFECTO || '❤️';
         var trigEmoji = document.createElement('span');
-        trigEmoji.textContent = r.miTipo || rg.POR_DEFECTO || '❤️';
-        aplicarVariablesEmoji(trigEmoji, r.miTipo || rg.POR_DEFECTO || '❤️');
+        trigEmoji.className = 'emoji-actual';
+        trigEmoji.textContent = emojiActivo;
+        aplicarVariablesEmoji(trigEmoji, emojiActivo);
+        rg.aplicarMotor(trigEmoji, emojiActivo);
 
         var trigTexto = document.createElement('span');
+        trigTexto.className = 'mini-count';
         trigTexto.textContent = r.total > 0 ? String(r.total) : '';
 
         trigger.appendChild(trigEmoji);
@@ -1169,8 +1175,10 @@
             document.querySelectorAll('.reaccion-dropdown').forEach(function (d) { d.hidden = true; });
             dropdown.hidden = !abrir;
             if (abrir) {
-                dropdown.querySelectorAll('.reaccion-opcion-btn span:first-child').forEach(function (sp, idx) {
-                    aplicarVariablesEmoji(sp, (rg.EMOJIS || EMOJIS_REACCION)[idx]);
+                dropdown.querySelectorAll('.reaccion-opcion-btn').forEach(function (b, idx) {
+                    var em = (rg.EMOJIS || EMOJIS_REACCION)[idx];
+                    aplicarVariablesEmoji(b, em);
+                    rg.aplicarMotor(b, em);
                 });
             }
         });
