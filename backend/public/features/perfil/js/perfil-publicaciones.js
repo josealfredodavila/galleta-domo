@@ -25,20 +25,6 @@ window.listaMultimediaPerfil = [];
 var PUB_RUTA_PERFIL_PUBLICO = '/features/perfil/perfil-publico.html';
 var PUB_RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html';
 
-var PUB_CSS_EMOJIS = '/features/perfil/css/emojis-animations.css';
-
-var PUB_EMOJIS_REACCION_DEFAULT = ['❤️', '😂', '🥺', '💎'];
-
-var PUB_CLASES_EMOJI = {
-    '❤️': 'emo-corazon',
-    '😂': 'emo-risa',
-    '🥺': 'emo-brillo',
-    '💎': 'emo-diamante',
-    '🤩': 'emo-estrellas'
-};
-
-var PUB_CLASES_EMOJI_TODAS = ['emo-corazon', 'emo-risa', 'emo-brillo', 'emo-diamante', 'emo-estrellas', 'emo-fluido'];
-
 var PUB_EMOJIS_PICKER_DEFAULT = [
     '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😋','😛','😜',
     '🤪','😎','🥳','😏','😒','😞','😔','😟','😕','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤯',
@@ -59,46 +45,18 @@ var pubPreviewObjectUrls = {};
 // MOTOR VISUAL DE REACCIONES
 // ================================================================
 
-function pubCargarCssEmojis() {
-    if (document.querySelector('link[href="' + PUB_CSS_EMOJIS + '"]')) return;
-
-    var link = document.createElement('link');
-
-    link.rel = 'stylesheet';
-    link.href = PUB_CSS_EMOJIS;
-
-    document.head.appendChild(link);
-}
-
-pubCargarCssEmojis();
-
-function pubClaseEmoji(emoji) {
-    return PUB_CLASES_EMOJI[emoji] || 'emo-fluido';
+// Motor de reacciones centralizado: /features/shared/js/reacciones-global.js
+function pubEmojisReaccion() {
+    return window.ReaccionesGlobal ? window.ReaccionesGlobal.emojis() : ['❤️', '😂', '🥺', '💎'];
 }
 
 function pubAplicarMotorEmoji(el, emoji) {
-    if (!el) return;
-
-    PUB_CLASES_EMOJI_TODAS.forEach(function (clase) {
-        el.classList.remove(clase);
-    });
-
-    el.classList.add(pubClaseEmoji(emoji));
-
-    var duracion = 1.6 + Math.random() * 1.2;
-    var retraso = -Math.random() * duracion;
-
-    el.style.setProperty('--dur', duracion.toFixed(2) + 's');
-    el.style.setProperty('--delay', retraso.toFixed(2) + 's');
+    if (window.ReaccionesGlobal) window.ReaccionesGlobal.aplicarMotor(el, emoji);
 }
 
 // ================================================================
 // UTILIDADES
 // ================================================================
-
-function pubEmojisReaccion() {
-    return PUB_EMOJIS_REACCION_DEFAULT;
-}
 
 function pubEmojisPicker() {
     return Array.isArray(window.emojisDisponibles) && window.emojisDisponibles.length
@@ -1695,87 +1653,6 @@ function pubCerrarVisor() {
         opacity: .6;
     }
 
-    .reaccion-wrap {
-        position: relative;
-        display: inline-block;
-        margin: 8px 0 0;
-        padding: 0;
-    }
-
-    .reaccion-trigger {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-        padding: 6px 8px;
-        border: 0;
-        border-radius: 6px;
-        background: transparent;
-        color: var(--text-muted,#8c949c);
-        font-size: .82rem;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    .reaccion-trigger.activa {
-        color: var(--gold,#D4AF37);
-    }
-
-    .reaccion-dropdown {
-        position: absolute;
-        bottom: 100%;
-        left: 0;
-        margin-bottom: 8px;
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        width: auto;
-        padding: 6px;
-        background: #0b1016;
-        border: 1px solid rgba(212,175,55,.16);
-        border-radius: 24px;
-        box-shadow: 0 6px 18px rgba(0,0,0,.6);
-        opacity: 0;
-        visibility: hidden;
-        transform: translateY(8px) scale(.95);
-        transition: opacity .18s ease, transform .18s ease;
-        z-index: 100;
-    }
-
-    .reaccion-dropdown.show {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-        transform: translateY(0) scale(1);
-    }
-
-    .reaccion-dropdown button {
-        width: 40px;
-        height: 40px;
-        border: 0;
-        border-radius: 50%;
-        background: transparent;
-        font-size: 1.55rem;
-        cursor: pointer;
-        position: relative;
-    }
-
-    .reaccion-dropdown button.activa {
-        background: rgba(212,175,55,.2);
-    }
-
-    .reaccion-dropdown .mini-count {
-        position: absolute;
-        top: -2px;
-        right: -2px;
-        background: #D4AF37;
-        color: #04070d;
-        font-size: .55rem;
-        font-weight: bold;
-        padding: 2px 5px;
-        border-radius: 10px;
-    }
-
     .publicacion-card .stats {
         display: flex;
         align-items: center;
@@ -2487,6 +2364,10 @@ async function cargarMisPublicaciones(forzarRefresco) {
             return;
         }
 
+        if (window.ReaccionesGlobal) {
+            await window.ReaccionesGlobal.preparar(client);
+        }
+
         var sessionResult = await client.auth.getSession();
 
         if (sessionResult.error) throw sessionResult.error;
@@ -2748,90 +2629,23 @@ async function cargarMisPublicaciones(forzarRefresco) {
                 totalReacciones += conteos[k] || 0;
             });
 
-            var emojiMostrado = reaccionUsuario || '❤️';
-
-            var wrap = document.createElement('div');
-            wrap.className = 'reaccion-wrap';
-
-            var dropdown = document.createElement('div');
-
-            dropdown.className = 'reaccion-dropdown';
-            dropdown.id = 'reaccion-dropdown-' + p.id;
-
-            pubEmojisReaccion().forEach(function (emoji) {
-                var b = document.createElement('button');
-
-                b.textContent = emoji;
-                b.setAttribute('data-emoji', emoji);
-
-                pubAplicarMotorEmoji(b, emoji);
-
-                if (reaccionUsuario === emoji) {
-                    b.classList.add('activa');
-                }
-
-                b.addEventListener('click', function (ev) {
-                    ev.stopPropagation();
-
-                    dropdown.classList.remove('show');
-
-                    reaccionarPublicacionPerfil(p.id, emoji);
-                });
-
-                if (conteos[emoji] > 0) {
-                    var mini = document.createElement('span');
-
-                    mini.className = 'mini-count';
-                    mini.textContent = conteos[emoji];
-
-                    b.appendChild(mini);
-                }
-
-                dropdown.appendChild(b);
-            });
-
-            var trigger = document.createElement('button');
-
-            trigger.className = 'reaccion-trigger' + (reaccionUsuario ? ' activa' : '');
-
-            var emojiActual = document.createElement('span');
-
-            emojiActual.className = 'emoji-actual';
-            emojiActual.textContent = emojiMostrado;
-
-            pubAplicarMotorEmoji(emojiActual, emojiMostrado);
-
-            var countActual = document.createElement('span');
-
-            countActual.className = 'count';
-            countActual.textContent = totalReacciones > 0
-                ? String(totalReacciones)
-                : 'Reaccionar';
-
-            trigger.appendChild(emojiActual);
-            trigger.appendChild(countActual);
-
-            trigger.addEventListener('click', function (e) {
-                e.stopPropagation();
-
-                var estaAbierto = dropdown.classList.contains('show');
-
-                document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) {
-                    el.classList.remove('show');
-                });
-
-                if (!estaAbierto) {
-                    dropdown.classList.add('show');
-                }
-            });
-
-            wrap.appendChild(dropdown);
-            wrap.appendChild(trigger);
-
             var stats = document.createElement('div');
-
             stats.className = 'stats';
-            stats.appendChild(wrap);
+
+            if (window.ReaccionesGlobal) {
+                var barraRx = window.ReaccionesGlobal.crearBarra({
+                    client: client,
+                    publicacionId: p.id,
+                    usuarioId: miId,
+                    resumen: {
+                        totales: conteos,
+                        total: totalReacciones,
+                        miTipo: reaccionUsuario
+                    }
+                });
+
+                stats.appendChild(barraRx.el);
+            }
 
             var btnComentarios = document.createElement('button');
 
@@ -2917,200 +2731,23 @@ async function cargarMisPublicaciones(forzarRefresco) {
 }
 
 // ================================================================
-// CERRAR MENÚS DE REACCIONES
+// REACCIONAR (delegado al módulo global)
 // ================================================================
-
-document.addEventListener('click', function (e) {
-    if (!e.target.closest('.reaccion-wrap')) {
-        document.querySelectorAll('.reaccion-dropdown.show').forEach(function (el) {
-            el.classList.remove('show');
-        });
-    }
-});
-
-// ================================================================
-// ACTUALIZAR REACCIONES
-// ================================================================
-
-function pubActualizarMenuReacciones(card, conteos, usuarioTipo) {
-    if (!card) return;
-
-    card.querySelectorAll('.reaccion-dropdown button[data-emoji]').forEach(function (b) {
-        var emoji = b.getAttribute('data-emoji');
-
-        b.classList.toggle('activa', emoji === usuarioTipo);
-
-        var anterior = b.querySelector('.mini-count');
-
-        if (anterior) anterior.remove();
-
-        var cantidad = conteos[emoji] || 0;
-
-        if (cantidad > 0) {
-            var mini = document.createElement('span');
-
-            mini.className = 'mini-count';
-            mini.textContent = String(cantidad);
-
-            b.appendChild(mini);
-        }
-    });
-}
-
-async function refrescarReaccionesPublicacion(postId) {
-    var client = window.supabaseClient;
-
-    if (!client) return;
-
-    var card = document.querySelector(
-        '.publicacion-card[data-id="' + postId + '"]'
-    );
-
-    if (!card) return;
-
-    var sessionResult = await client.auth.getSession();
-
-    var session = sessionResult.data ? sessionResult.data.session : null;
-    var uid = session ? session.user.id : null;
-
-    var result = await client
-        .from('publicaciones_reacciones')
-        .select('tipo, usuario_id')
-        .eq('publicacion_id', postId);
-
-    if (result.error) throw result.error;
-
-    var conteos = {};
-    var usuarioTipo = null;
-
-    (result.data || []).forEach(function (r) {
-        conteos[r.tipo] = (conteos[r.tipo] || 0) + 1;
-
-        if (uid && r.usuario_id === uid) {
-            usuarioTipo = r.tipo;
-        }
-    });
-
-    var total = 0;
-
-    Object.keys(conteos).forEach(function (tipo) {
-        total += conteos[tipo];
-    });
-
-    var dominante = Object.keys(conteos).sort(function (a, b) {
-        return conteos[b] - conteos[a];
-    })[0];
-
-    var emojiMostrado = usuarioTipo || dominante || '❤️';
-
-    var trigger = card.querySelector('.reaccion-trigger');
-
-    if (trigger) {
-        trigger.classList.toggle('activa', Boolean(usuarioTipo));
-
-        var emojiActual = trigger.querySelector('.emoji-actual');
-        var countActual = trigger.querySelector('.count');
-
-        if (emojiActual) {
-            emojiActual.textContent = emojiMostrado;
-            pubAplicarMotorEmoji(emojiActual, emojiMostrado);
-        }
-
-        if (countActual) {
-            countActual.textContent = total > 0 ? String(total) : 'Reaccionar';
-        }
-    }
-
-    pubActualizarMenuReacciones(card, conteos, usuarioTipo);
-}
-
-// ================================================================
-// REACCIONAR
-// ================================================================
-
-var pubReaccionesEnProceso = {};
 
 async function reaccionarPublicacionPerfil(postId, emoji) {
-    if (
-        !pubEmojisReaccion().includes(emoji) ||
-        pubReaccionesEnProceso[postId]
-    ) {
-        return;
-    }
-
     var client = window.supabaseClient;
 
-    if (!client) {
-        if (window.showToast) {
-            window.showToast('No se pudo conectar. Recarga la página.', 'error');
-        }
+    if (!client || !window.ReaccionesGlobal) return;
 
-        return;
-    }
-
-    pubReaccionesEnProceso[postId] = true;
+    var sesion = await client.auth.getSession();
+    var uid = sesion.data && sesion.data.session ? sesion.data.session.user.id : null;
 
     try {
-        var sessionResult = await client.auth.getSession();
-        var session = sessionResult.data ? sessionResult.data.session : null;
-
-        if (!session) {
-            if (window.showToast) {
-                window.showToast('Inicia sesión para reaccionar.', 'warning');
-            }
-
-            return;
-        }
-
-        var existing = await client
-            .from('publicaciones_reacciones')
-            .select('id, tipo')
-            .eq('publicacion_id', postId)
-            .eq('usuario_id', session.user.id)
-            .maybeSingle();
-
-        if (existing.error) throw existing.error;
-
-        if (existing.data && existing.data.tipo === emoji) {
-            var eliminar = await client
-                .from('publicaciones_reacciones')
-                .delete()
-                .eq('id', existing.data.id);
-
-            if (eliminar.error) throw eliminar.error;
-
-        } else if (existing.data) {
-            var actualizar = await client
-                .from('publicaciones_reacciones')
-                .update({ tipo: emoji })
-                .eq('id', existing.data.id);
-
-            if (actualizar.error) throw actualizar.error;
-
-        } else {
-            var insertar = await client
-                .from('publicaciones_reacciones')
-                .insert({
-                    publicacion_id: postId,
-                    usuario_id: session.user.id,
-                    tipo: emoji
-                });
-
-            if (insertar.error) throw insertar.error;
-        }
-
-        await refrescarReaccionesPublicacion(postId);
-
-    } catch (error) {
-        console.error('[Reacciones] Error al guardar la reacción:', error);
-
+        await window.ReaccionesGlobal.alternar(client, postId, emoji, uid);
+    } catch (e) {
         if (window.showToast) {
-            var detalle = error && error.message ? ' (' + error.message + ')' : '';
-
-            window.showToast('No se pudo guardar tu reacción' + detalle, 'error');
+            window.showToast('No se pudo guardar tu reacción', 'error');
         }
-    } finally {
-        delete pubReaccionesEnProceso[postId];
     }
 }
 
