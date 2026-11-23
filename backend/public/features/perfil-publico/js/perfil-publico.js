@@ -1,6 +1,6 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v3.1 · EMOJIS XL + ANIMACIONES RÁPIDAS + CSS DINÁMICO
+   v3.2 · EMOJIS COMPACTOS + MOVIMIENTO 5X
    ================================================================ */
 (function () {
     'use strict';
@@ -100,45 +100,45 @@
     };
 
     /* ============================================================
-       EMOJIS · CSS DINÁMICO v3.1
-       Mayor tamaño, animación rápida y efectos visuales.
+       EMOJIS · CSS DINÁMICO v3.2
+       Tamaño reducido y movimiento 5 veces más rápido e intenso.
        No modifica Supabase ni las conexiones existentes.
        ============================================================ */
 
     function instalarEstilosEmojis() {
-        if ($('pvEmojisCSS31')) return;
+        if ($('pvEmojisCSS32')) return;
 
         var css = document.createElement('style');
-        css.id = 'pvEmojisCSS31';
+        css.id = 'pvEmojisCSS32';
 
         css.textContent = `
-            /* SELECTOR DE 97 EMOJIS */
+            /* SELECTOR DE 97 EMOJIS · TAMAÑO COMPACTO */
             #emojiGridPerfil .emoji-item {
-                font-size: 27px !important;
-                line-height: 1.35 !important;
-                min-width: 39px;
-                min-height: 39px;
-                padding: 5px !important;
-                border-radius: 11px !important;
+                font-size: 14px !important;
+                line-height: 1.2 !important;
+                min-width: 20px;
+                min-height: 20px;
+                padding: 2px !important;
+                border-radius: 6px !important;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 transform: translateZ(0);
                 transition:
-                    transform .12s ease,
-                    background .12s ease,
-                    filter .12s ease;
+                    transform .08s ease,
+                    background .08s ease,
+                    filter .08s ease;
                 -webkit-tap-highlight-color: transparent;
             }
 
             #emojiGridPerfil .emoji-item:hover {
-                transform: scale(1.28);
+                transform: scale(1.35) rotate(-8deg);
                 background: rgba(0, 229, 255, .13) !important;
-                filter: drop-shadow(0 0 5px rgba(0, 229, 255, .45));
+                filter: drop-shadow(0 0 3px rgba(0, 229, 255, .4));
             }
 
             #emojiGridPerfil .emoji-item:active {
-                transform: scale(1.38);
+                transform: scale(1.45) rotate(8deg);
                 background: rgba(212, 175, 55, .20) !important;
             }
 
@@ -147,92 +147,95 @@
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 30px !important;
-                line-height: 1.2;
+                font-size: 15px !important;
+                line-height: 1.1;
                 transform-origin: center;
                 will-change: transform, filter;
-                animation: pvEmojiTurbo var(--dur, .85s) ease-in-out infinite !important;
+                animation: pvEmojiTurbo32 var(--dur, .16s) linear infinite !important;
             }
 
             /* EMOJIS DEL MENÚ DE REACCIONES */
             .reaccion-opcion-btn {
-                min-width: 43px;
-                min-height: 43px;
+                min-width: 22px;
+                min-height: 22px;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                gap: 3px;
+                gap: 2px;
             }
 
             .reaccion-opcion-btn > span:first-child {
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 29px !important;
-                line-height: 1.2;
+                font-size: 14px !important;
+                line-height: 1.1;
                 transform-origin: center;
                 will-change: transform, filter;
-                animation: pvEmojiTurbo var(--dur, .85s) ease-in-out infinite !important;
+                animation: pvEmojiTurbo32 var(--dur, .16s) linear infinite !important;
             }
 
-            /* EFECTO DE ACTIVACIÓN */
+            /* ACTIVACIÓN */
             .reaccion-trigger:active,
             .reaccion-opcion-btn:active {
-                transform: scale(1.12);
+                transform: scale(1.08);
             }
 
             .reaccion-trigger.activo .emoji-actual {
-                filter: drop-shadow(0 0 5px rgba(212, 175, 55, .55));
+                filter: drop-shadow(0 0 3px rgba(212, 175, 55, .5));
             }
 
             .reaccion-opcion-btn.activo > span:first-child {
-                filter: drop-shadow(0 0 6px rgba(0, 229, 255, .65));
+                filter: drop-shadow(0 0 4px rgba(0, 229, 255, .6));
             }
 
-            /* ANIMACIÓN RÁPIDA */
-            @keyframes pvEmojiTurbo {
+            /* MOVIMIENTO 5X: MÁS FRECUENCIA, GIRO Y DESPLAZAMIENTO */
+            @keyframes pvEmojiTurbo32 {
                 0% {
-                    transform: scale(1) rotate(0deg);
+                    transform: translateY(0) scale(1) rotate(0deg);
                 }
-                25% {
-                    transform: scale(1.16) rotate(-5deg);
+                20% {
+                    transform: translateY(-3px) scale(1.28) rotate(-14deg);
                 }
-                50% {
-                    transform: scale(1.24) rotate(4deg);
+                40% {
+                    transform: translateY(2px) scale(.92) rotate(12deg);
                 }
-                75% {
-                    transform: scale(1.12) rotate(-3deg);
+                60% {
+                    transform: translateY(-4px) scale(1.38) rotate(-16deg);
+                }
+                80% {
+                    transform: translateY(2px) scale(.96) rotate(14deg);
                 }
                 100% {
-                    transform: scale(1) rotate(0deg);
+                    transform: translateY(0) scale(1) rotate(0deg);
                 }
             }
 
-            /* EFECTOS DE REACCIÓN */
+            /* EFECTOS SUTILES POR TIPO DE REACCIÓN */
             .emo-corazon {
-                filter: drop-shadow(0 0 5px rgba(255, 55, 105, .35));
+                filter: drop-shadow(0 0 3px rgba(255, 55, 105, .3));
             }
 
             .emo-risa {
-                filter: drop-shadow(0 0 5px rgba(255, 205, 50, .35));
+                filter: drop-shadow(0 0 3px rgba(255, 205, 50, .3));
             }
 
             .emo-brillo {
-                filter: drop-shadow(0 0 5px rgba(0, 229, 255, .35));
+                filter: drop-shadow(0 0 3px rgba(0, 229, 255, .3));
             }
 
             .emo-diamante {
-                filter: drop-shadow(0 0 6px rgba(0, 229, 255, .45));
+                filter: drop-shadow(0 0 4px rgba(0, 229, 255, .4));
             }
 
             .emo-estrellas {
-                filter: drop-shadow(0 0 6px rgba(255, 215, 0, .45));
+                filter: drop-shadow(0 0 4px rgba(255, 215, 0, .4));
             }
 
             /* CONTADORES */
             .reaccion-trigger .mini-count,
             .reaccion-opcion-btn .mini-count {
-                font-size: 12px;
+                font-size: 11px;
                 font-weight: 700;
             }
 
@@ -372,7 +375,7 @@
     }
 
     /* ============================================================
-       ANIMACIÓN DE EMOJIS · VELOCIDAD AUMENTADA
+       ANIMACIÓN DE EMOJIS · VELOCIDAD 5X
        ============================================================ */
 
     function aplicarVariablesEmoji(nodo, emoji) {
@@ -391,16 +394,15 @@
 
         nodo.classList.add(cls);
 
-        /* Antes: 2.1 - 2.8 segundos.
-           Ahora: 0.65 - 0.95 segundos. */
+        /* Ciclo de animación 5 veces más rápido. */
         nodo.style.setProperty(
             '--dur',
-            (0.65 + Math.random() * 0.30).toFixed(2) + 's'
+            (0.13 + Math.random() * 0.06).toFixed(2) + 's'
         );
 
         nodo.style.setProperty(
             '--delay',
-            (Math.random() * 0.08).toFixed(2) + 's'
+            (Math.random() * 0.02).toFixed(2) + 's'
         );
     }
 
@@ -1228,7 +1230,7 @@
             btn.type = 'button';
             btn.className = 'emoji-item';
             btn.style.cssText =
-                'border:none;background:transparent;font-size:27px;padding:5px;cursor:pointer;border-radius:11px;';
+                'border:none;background:transparent;font-size:14px;padding:2px;min-width:20px;min-height:20px;cursor:pointer;border-radius:6px;line-height:1.2;';
 
             btn.textContent = emo;
 
@@ -1279,6 +1281,7 @@
 
         if (inputEl) inputEmojiDestino = inputEl;
 
+        instalarEstilosEmojis();
         poblarGrid97Emojis();
 
         picker.hidden = false;
@@ -2677,7 +2680,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v3.1');
+        console.info('[PerfilPublico] iniciando v3.2');
 
         instalarEstilosEmojis();
 
