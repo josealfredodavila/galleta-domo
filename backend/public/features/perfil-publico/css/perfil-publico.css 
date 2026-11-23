@@ -30,11 +30,31 @@
 .pv-pasaporte-sub { font-size: .8rem; color: #9fb3c8; line-height: 1.5; }
 .pv-pasaporte-verif { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; font-size: .72rem; font-weight: 600; color: #00d68f; }
 
-/* Publicaciones header */
+/* Encabezados de sección (amigos y publicaciones) */
 .pv-pub-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 6px; }
 .pv-pub-head h3 { margin: 0; font-family: Orbitron, monospace; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: #bfefff; }
 .pv-pub-contador { font-size: .7rem; color: #6f8ba0; }
 .pv-pub-msg { margin: 14px 16px; text-align: center; font-size: .82rem; color: #8aa8b8; line-height: 1.5; }
+
+/* Amigos */
+#pvAmigosLista { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; padding: 4px 16px 16px; }
+#pvAmigosLista .pv-pub-msg { grid-column: 1 / -1; margin: 6px 0; }
+.pv-amigo-card {
+    display: flex; align-items: center; gap: 10px; min-width: 0; padding: 10px; border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08); background: rgba(255, 255, 255, 0.03);
+    color: inherit; text-decoration: none; transition: border-color .18s ease, background .18s ease;
+}
+.pv-amigo-card:hover, .pv-amigo-card:focus-visible { border-color: rgba(0, 229, 255, .4); background: rgba(0, 229, 255, .05); }
+.pv-amigo-av {
+    width: 40px; height: 40px; flex: 0 0 40px; border-radius: 50%; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #0F2D1A, #D4AF37); color: #fff; font-weight: 700;
+    border: 1.5px solid rgba(0, 229, 255, .4);
+}
+.pv-amigo-av img { width: 100%; height: 100%; object-fit: cover; }
+.pv-amigo-info { min-width: 0; flex: 1; }
+.pv-amigo-nombre { font-size: .82rem; font-weight: 700; color: #f5fbff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-amigo-sub { font-size: .7rem; color: #5cc8ff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* Posts */
 .pv-post { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
@@ -109,4 +129,5 @@
 /* Accesibilidad */
 @media (prefers-reduced-motion: reduce) {
     .perfil-header #pvHandle, .perfil-header #pvHandle::before { animation: none !important; }
+    .pv-amigo-card { transition: none; }
 }
