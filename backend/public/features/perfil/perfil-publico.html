@@ -103,7 +103,7 @@
     .pv-acciones { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
     .pv-volver { width: 100%; justify-content: center; margin-top: 14px; }
 
-    /* ================= PASAPORTE DEL VISITANTE (sin correo ni transacciones) ================= */
+    /* ================= PASAPORTE DEL VISITANTE ================= */
     #pvPasaporte { margin: 0 0 12px; }
     .pv-pasaporte {
         position: relative;
@@ -135,7 +135,7 @@
         color: #00d68f;
     }
 
-    /* ================= PUBLICACIONES (solo lectura) ================= */
+    /* ================= PUBLICACIONES, MULTIMEDIA, REACCIONES Y COMENTARIOS ================= */
     .pv-pub-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 6px; }
     .pv-pub-head h3 { margin: 0; font-family: Orbitron, monospace; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: #bfefff; }
     .pv-pub-contador { font-size: .7rem; color: #6f8ba0; }
@@ -154,13 +154,76 @@
     .pv-post-nombre { font-weight: 700; font-size: .9rem; color: #f5fbff; }
     .pv-post-sub { font-size: .7rem; color: #6f8ba0; margin-top: 2px; }
     .pv-post-texto { margin-top: 8px; font-size: .92rem; line-height: 1.55; color: #d5e4ef; white-space: pre-wrap; word-break: break-word; }
-    .pv-post-img { display: block; width: 100%; max-height: 420px; object-fit: cover; border-radius: 14px; margin-top: 10px; background: #050a12; }
+
+    .pv-post-img {
+        display: block; width: 100%; max-height: 420px; object-fit: cover;
+        border-radius: 14px; margin-top: 10px; background: #050a12; cursor: zoom-in;
+    }
+    .pv-post-video {
+        display: block; width: 100%; max-height: 420px;
+        border-radius: 14px; margin-top: 10px; background: #050a12;
+    }
+    .pv-post-audio {
+        display: block; width: 100%; margin-top: 10px; border-radius: 10px;
+    }
+
     .pv-post-venta {
         display: inline-block; margin-top: 10px; padding: 4px 10px; border-radius: 999px;
         font-size: .7rem; color: #D4AF37; border: 1px solid rgba(212, 175, 55, .35); background: rgba(212, 175, 55, .08);
     }
     .pv-post-aviso { margin-top: 8px; font-size: .7rem; color: #f7d44a; }
+
+    .pv-post-barra {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        margin-top: 10px; padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .pv-btn-accion {
+        display: inline-flex; align-items: center; gap: 5px;
+        padding: 5px 10px; border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
+        color: #b7d0e2; font-size: .75rem; cursor: pointer;
+    }
+    .pv-btn-accion.activo {
+        border-color: rgba(0, 229, 255, .5);
+        background: rgba(0, 229, 255, .12);
+        color: #5cc8ff;
+    }
+
+    .pv-comentarios {
+        margin-top: 10px; padding: 10px 12px;
+        border-radius: 12px;
+        background: rgba(5, 10, 20, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .pv-comentarios-lista { display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; }
+    .pv-comentario-item { font-size: .8rem; color: #d5e4ef; line-height: 1.4; }
+    .pv-comentario-autor { font-weight: 700; color: #5cc8ff; margin-right: 6px; }
+    .pv-comentario-form { display: flex; gap: 8px; margin-top: 10px; }
+    .pv-comentario-input {
+        flex: 1; min-width: 0; padding: 7px 10px; border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.04); color: #fff; font-size: .8rem;
+    }
     .pv-mas { display: block; margin: 14px auto 16px; }
+
+    /* ================= VISOR MULTIMEDIA ÚNICO (LIGHTBOX) ================= */
+    .pv-lightbox {
+        position: fixed; inset: 0; z-index: 9999;
+        display: flex; align-items: center; justify-content: center;
+        padding: 16px; background: rgba(2, 6, 14, 0.9);
+    }
+    .pv-lightbox[hidden] { display: none; }
+    .pv-lightbox-inner { position: relative; max-width: 92vw; max-height: 88vh; }
+    .pv-lightbox-inner img,
+    .pv-lightbox-inner video { max-width: 92vw; max-height: 84vh; border-radius: 14px; display: block; }
+    .pv-lightbox-cerrar {
+        position: absolute; top: -38px; right: 0;
+        padding: 4px 10px; border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.25);
+        background: rgba(15,23,42,.9); color: #fff; cursor: pointer;
+    }
 
     /* ================= ESTADOS DE PANTALLA ================= */
     .pv-mensaje { text-align: center; padding: 30px 12px; }
@@ -317,7 +380,7 @@
         <!-- Pasaporte del visitante -->
         <section id="pvPasaporte" aria-label="Identidad"></section>
 
-        <!-- Publicaciones (solo contactos, validado en la base) -->
+        <!-- Publicaciones -->
         <section class="panel" id="pvPubSection" hidden>
             <div class="pv-pub-head">
                 <h3 data-clave="perfil_mis_publicaciones">Publicaciones</h3>
@@ -328,6 +391,14 @@
             <button type="button" class="btn btn-outline btn-sm pv-mas" id="pvPubMas" hidden>Cargar más</button>
         </section>
 
+    </div>
+</div>
+
+<!-- Visor multimedia único reutilizable -->
+<div class="pv-lightbox" id="pvLightbox" hidden role="dialog" aria-modal="true" aria-label="Visor multimedia">
+    <div class="pv-lightbox-inner" id="pvLightboxInner">
+        <button type="button" class="pv-lightbox-cerrar" id="pvLightboxCerrar">✕ Cerrar</button>
+        <div id="pvLightboxBody"></div>
     </div>
 </div>
 
@@ -371,8 +442,9 @@
 /* ================================================================
    PERFIL PÚBLICO · VISITANTE
    - Identidad: ?u=handle&id=uuid se validan juntos en la base.
-   - Visibilidad general: perfil_visibilidad_estado (público / solo contactos).
-   - Publicaciones: solo contactos, desde la base (perfil_publicaciones_contactos).
+   - Multimedia: imagen, video, audio con visor único y un solo audio activo.
+   - Paginación por cursor + deduplicación por ID.
+   - Reacciones y comentarios integrados con Supabase RLS.
    ================================================================ */
 (function () {
     'use strict';
@@ -411,12 +483,17 @@
         pubMsg: $('pvPubMsg'),
         pubMas: $('pvPubMas'),
         pubContador: $('pvPubContador'),
-        volver: $('pvVolver')
+        volver: $('pvVolver'),
+        lightbox: $('pvLightbox'),
+        lightboxBody: $('pvLightboxBody'),
+        lightboxCerrar: $('pvLightboxCerrar')
     };
 
     var perfil = null;
     var direccionWallet = null;
-    var pub = { cargando: false, antes: null, total: 0 };
+    var usuarioActualId = null;
+    var pub = { cargando: false, antes: null, total: 0, idsVistos: new Set() };
+    var audioActivo = null;
 
     /* ---------------- Utilidades ---------------- */
 
@@ -476,9 +553,40 @@
         return window.location.origin + window.location.pathname + '?u=' + encodeURIComponent(perfil.handle);
     }
 
+    /* ---------------- Visor multimedia único ---------------- */
+
+    function cerrarLightbox() {
+        el.lightbox.hidden = true;
+        el.lightboxBody.innerHTML = '';
+    }
+
+    function abrirLightbox(tipo, url) {
+        var segura = safeHttps(url);
+        if (!segura) return;
+        el.lightboxBody.innerHTML = '';
+        if (tipo === 'video') {
+            var vid = document.createElement('video');
+            vid.src = segura;
+            vid.controls = true;
+            vid.autoplay = true;
+            vid.playsInline = true;
+            el.lightboxBody.appendChild(vid);
+        } else {
+            var img = document.createElement('img');
+            img.src = segura;
+            img.alt = '';
+            el.lightboxBody.appendChild(img);
+        }
+        el.lightbox.hidden = false;
+    }
+
+    el.lightboxCerrar.addEventListener('click', cerrarLightbox);
+    el.lightbox.addEventListener('click', function (e) {
+        if (e.target === el.lightbox) cerrarLightbox();
+    });
+
     /* ---------------- Identidad ---------------- */
 
-    // Con ambos parámetros, el UUID y el handle deben corresponder al mismo usuario.
     function leerIdentificador() {
         var sp = new URLSearchParams(window.location.search);
         var tieneU = sp.has('u');
@@ -591,7 +699,6 @@
         pintarPasaporte(p);
     }
 
-    // Pasaporte del visitante: identidad verificada, sin correo ni transacciones.
     function pintarPasaporte(p) {
         el.pasaporte.innerHTML = '';
         var card = document.createElement('div');
@@ -664,7 +771,172 @@
         }
     }
 
-    /* ---------------- Publicaciones (solo contactos) ---------------- */
+    /* ---------------- Multimedia, Reacciones y Comentarios ---------------- */
+
+    function resolverMedia(p) {
+        var url = safeHttps(p.media_url || p.imagen_url);
+        if (!url) return null;
+        var tipo = String(p.media_type || '').toLowerCase();
+        if (!tipo) {
+            if (/\.(mp4|webm|mov)(\?|$)/i.test(url)) tipo = 'video';
+            else if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(url)) tipo = 'audio';
+            else tipo = 'image';
+        }
+        return { url: url, tipo: tipo };
+    }
+
+    function renderMediaPost(meta, p) {
+        var media = resolverMedia(p);
+        if (!media) return;
+
+        if (media.tipo === 'video') {
+            var vid = document.createElement('video');
+            vid.className = 'pv-post-video';
+            vid.src = media.url;
+            vid.controls = true;
+            vid.preload = 'metadata';
+            vid.playsInline = true;
+            meta.appendChild(vid);
+        } else if (media.tipo === 'audio') {
+            var aud = document.createElement('audio');
+            aud.className = 'pv-post-audio';
+            aud.src = media.url;
+            aud.controls = true;
+            aud.preload = 'none';
+            aud.addEventListener('play', function () {
+                if (audioActivo && audioActivo !== aud) {
+                    try { audioActivo.pause(); } catch (e) {}
+                }
+                audioActivo = aud;
+            });
+            meta.appendChild(aud);
+        } else {
+            var img = document.createElement('img');
+            img.className = 'pv-post-img';
+            img.alt = '';
+            img.loading = 'lazy';
+            img.src = media.url;
+            img.addEventListener('click', function () {
+                abrirLightbox('image', media.url);
+            });
+            meta.appendChild(img);
+        }
+    }
+
+    async function alternarReaccion(pubId, btn, countSpan) {
+        var client = await obtenerCliente();
+        if (!client || !usuarioActualId) {
+            toast('Inicia sesión para reaccionar', 'error');
+            return;
+        }
+        if (!pubId) return;
+
+        btn.disabled = true;
+        try {
+            var yaReacciono = btn.classList.contains('activo');
+            var actual = parseInt(countSpan.textContent || '0', 10) || 0;
+
+            if (yaReacciono) {
+                var del = await client
+                    .from('publicaciones_reacciones')
+                    .delete()
+                    .eq('publicacion_id', pubId)
+                    .eq('usuario_id', usuarioActualId);
+                if (del.error) throw del.error;
+                btn.classList.remove('activo');
+                countSpan.textContent = String(Math.max(0, actual - 1));
+            } else {
+                var ins = await client
+                    .from('publicaciones_reacciones')
+                    .insert({ publicacion_id: pubId, usuario_id: usuarioActualId, emoji: '❤️' });
+                if (ins.error) throw ins.error;
+                btn.classList.add('activo');
+                countSpan.textContent = String(actual + 1);
+            }
+        } catch (e) {
+            console.warn('[PerfilPublico] Reacción:', e);
+            toast('No se pudo actualizar la reacción', 'error');
+        } finally {
+            btn.disabled = false;
+        }
+    }
+
+    async function cargarComentarios(pubId, listaEl) {
+        var client = await obtenerCliente();
+        if (!client || !pubId) return;
+
+        listaEl.innerHTML = '<div class="pv-comentario-item">Cargando comentarios...</div>';
+        try {
+            var r = await client
+                .from('publicaciones_comentarios')
+                .select('id, usuario_id, contenido, created_at')
+                .eq('publicacion_id', pubId)
+                .order('created_at', { ascending: true })
+                .limit(50);
+
+            if (r.error) throw r.error;
+            var rows = Array.isArray(r.data) ? r.data : [];
+            listaEl.innerHTML = '';
+
+            if (!rows.length) {
+                var vacio = document.createElement('div');
+                vacio.className = 'pv-comentario-item';
+                vacio.textContent = 'Sin comentarios todavía.';
+                listaEl.appendChild(vacio);
+                return;
+            }
+
+            rows.forEach(function (c) {
+                var item = document.createElement('div');
+                item.className = 'pv-comentario-item';
+
+                var autor = document.createElement('span');
+                autor.className = 'pv-comentario-autor';
+                autor.textContent = c.usuario_id === usuarioActualId ? 'Tú:' : 'Miembro:';
+
+                var txt = document.createElement('span');
+                txt.textContent = c.contenido || '';
+
+                item.appendChild(autor);
+                item.appendChild(txt);
+                listaEl.appendChild(item);
+            });
+        } catch (e) {
+            console.warn('[PerfilPublico] Comentarios:', e);
+            listaEl.innerHTML = '<div class="pv-comentario-item">No se pudieron cargar los comentarios.</div>';
+        }
+    }
+
+    async function enviarComentario(pubId, inputEl, listaEl, countSpan) {
+        var client = await obtenerCliente();
+        if (!client || !usuarioActualId) {
+            toast('Inicia sesión para comentar', 'error');
+            return;
+        }
+        var texto = String(inputEl.value || '').trim();
+        if (!texto || !pubId) return;
+
+        inputEl.disabled = true;
+        try {
+            var ins = await client
+                .from('publicaciones_comentarios')
+                .insert({ publicacion_id: pubId, usuario_id: usuarioActualId, contenido: texto });
+            if (ins.error) throw ins.error;
+
+            inputEl.value = '';
+            var actual = parseInt(countSpan.textContent || '0', 10) || 0;
+            countSpan.textContent = String(actual + 1);
+            await cargarComentarios(pubId, listaEl);
+        } catch (e) {
+            console.warn('[PerfilPublico] Comentar:', e);
+            toast('No se pudo publicar el comentario', 'error');
+        } finally {
+            inputEl.disabled = false;
+            inputEl.focus();
+        }
+    }
+
+    /* ---------------- Publicaciones (paginación por cursor) ---------------- */
 
     function mostrarMensajePub(texto) {
         el.pubMsg.textContent = texto || '';
@@ -709,15 +981,7 @@
             meta.appendChild(texto);
         }
 
-        var img = safeHttps(p.imagen_url);
-        if (img) {
-            var media = document.createElement('img');
-            media.className = 'pv-post-img';
-            media.alt = '';
-            media.loading = 'lazy';
-            media.src = img;
-            meta.appendChild(media);
-        }
+        renderMediaPost(meta, p);
 
         if (Number(p.cantidad_venta) > 0 && !p.vendido) {
             var venta = document.createElement('span');
@@ -733,6 +997,84 @@
             meta.appendChild(aviso);
         }
 
+        var pubId = p.id || p.publicacion_id || null;
+        if (pubId) {
+            var barra = document.createElement('div');
+            barra.className = 'pv-post-barra';
+
+            var btnLike = document.createElement('button');
+            btnLike.type = 'button';
+            btnLike.className = 'pv-btn-accion';
+
+            var corazon = document.createElement('span');
+            corazon.textContent = '❤️';
+
+            var likeCount = document.createElement('span');
+            likeCount.textContent = String(Number(p.likes || p.reacciones_count || 0));
+
+            btnLike.appendChild(corazon);
+            btnLike.appendChild(likeCount);
+
+            var btnCom = document.createElement('button');
+            btnCom.type = 'button';
+            btnCom.className = 'pv-btn-accion';
+
+            var iconoCom = document.createElement('span');
+            iconoCom.textContent = '💬';
+
+            var comCount = document.createElement('span');
+            comCount.textContent = String(Number(p.comentarios || p.comentarios_count || 0));
+
+            btnCom.appendChild(iconoCom);
+            btnCom.appendChild(comCount);
+
+            barra.appendChild(btnLike);
+            barra.appendChild(btnCom);
+            meta.appendChild(barra);
+
+            var cajaCom = document.createElement('div');
+            cajaCom.className = 'pv-comentarios';
+            cajaCom.hidden = true;
+
+            var listaCom = document.createElement('div');
+            listaCom.className = 'pv-comentarios-lista';
+
+            var formCom = document.createElement('form');
+            formCom.className = 'pv-comentario-form';
+
+            var inputCom = document.createElement('input');
+            inputCom.type = 'text';
+            inputCom.className = 'pv-comentario-input';
+            inputCom.maxLength = 500;
+            inputCom.placeholder = 'Escribe un comentario...';
+
+            var btnEnviar = document.createElement('button');
+            btnEnviar.type = 'submit';
+            btnEnviar.className = 'btn btn-outline btn-sm';
+            btnEnviar.textContent = 'Enviar';
+
+            formCom.appendChild(inputCom);
+            formCom.appendChild(btnEnviar);
+            cajaCom.appendChild(listaCom);
+            cajaCom.appendChild(formCom);
+            meta.appendChild(cajaCom);
+
+            btnLike.addEventListener('click', function () {
+                alternarReaccion(pubId, btnLike, likeCount);
+            });
+
+            btnCom.addEventListener('click', function () {
+                var abrir = cajaCom.hidden;
+                cajaCom.hidden = !abrir;
+                if (abrir) cargarComentarios(pubId, listaCom);
+            });
+
+            formCom.addEventListener('submit', function (ev) {
+                ev.preventDefault();
+                enviarComentario(pubId, inputCom, listaCom, comCount);
+            });
+        }
+
         art.appendChild(av);
         art.appendChild(meta);
         return art;
@@ -745,6 +1087,7 @@
         if (reiniciar) {
             pub.antes = null;
             pub.total = 0;
+            pub.idsVistos.clear();
             el.pubLista.innerHTML = '';
         }
         el.pubMas.disabled = true;
@@ -792,9 +1135,17 @@
             }
 
             var posts = Array.isArray(d.posts) ? d.posts : [];
-            posts.forEach(function (p) { el.pubLista.appendChild(crearPost(p)); });
+            var agregados = 0;
 
-            pub.total += posts.length;
+            posts.forEach(function (p) {
+                var claveId = p.id || p.publicacion_id || (p.created_at + '|' + (p.contenido || '').slice(0, 24));
+                if (pub.idsVistos.has(claveId)) return;
+                pub.idsVistos.add(claveId);
+                el.pubLista.appendChild(crearPost(p));
+                agregados++;
+            });
+
+            pub.total += agregados;
             if (posts.length) pub.antes = posts[posts.length - 1].created_at;
 
             el.pubContador.textContent = pub.total ? String(pub.total) : '';
@@ -838,6 +1189,7 @@
         if (!client) throw new Error('Cliente de Supabase no disponible');
 
         var sesionId = await obtenerSesionId(client);
+        usuarioActualId = sesionId;
 
         var p = await cargarPerfil(client, ident);
 
@@ -853,14 +1205,12 @@
             return;
         }
 
-        // Defensa adicional en cliente: la base ya lo garantiza.
         if (ident.tipo === 'verificado' &&
             String(p.handle || '').toLowerCase() !== ident.handle.toLowerCase()) {
             mostrarErrorIdentidad();
             return;
         }
 
-        // Si el visitante es el dueño, va a su perfil completo.
         if (sesionId && p.id === sesionId) {
             window.location.replace(RUTA_PERFIL_PROPIO);
             return;
