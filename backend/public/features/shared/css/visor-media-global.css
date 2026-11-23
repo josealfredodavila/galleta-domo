@@ -1,0 +1,293 @@
+/* ================================================================
+   VISOR-MEDIA-GLOBAL.CSS · Csariel's · v1.0
+   Prefijo vmg- para no chocar con ningún otro estilo.
+   ================================================================ */
+
+.vmg {
+    position: fixed;
+    inset: 0;
+    z-index: 999990;
+    background: #000;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: pan-y;
+    overflow: hidden;
+    height: 100dvh;
+}
+
+.vmg[hidden] {
+    display: none !important;
+}
+
+/* CABECERA */
+.vmg-cabecera {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 14px 12px;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+}
+
+.vmg-cabecera > * {
+    pointer-events: auto;
+}
+
+.vmg-btn-circ {
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(10, 14, 22, 0.7);
+    color: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.vmg-contador {
+    color: #fff;
+    font-size: 13px;
+    font-family: ui-monospace, monospace;
+    background: rgba(0, 0, 0, 0.5);
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+/* ESCENARIO: el contenido ocupa la pantalla completa sin recortes */
+.vmg-escenario {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+.vmg-escenario img,
+.vmg-escenario video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    background: #000;
+    display: block;
+}
+
+/* PLAY CENTRAL */
+.vmg-play-central {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid rgba(212, 175, 55, 0.8);
+    background: rgba(10, 14, 22, 0.72);
+    color: #d4af37;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 4;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+}
+
+.vmg-play-central[hidden] {
+    display: none !important;
+}
+
+/* CONTROLES DE VIDEO */
+.vmg-controles {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
+    padding: 28px 16px calc(16px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.4) 65%, transparent);
+    transition: opacity 0.25s ease;
+}
+
+.vmg-controles[hidden] {
+    display: none !important;
+}
+
+.vmg-barra {
+    position: relative;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    touch-action: none;
+}
+
+.vmg-barra::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 4px;
+    margin-top: -2px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.vmg-progreso {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 4px;
+    margin-top: -2px;
+    width: 0;
+    border-radius: 999px;
+    background: #d4af37;
+    pointer-events: none;
+}
+
+.vmg-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    color: #fff;
+    font-size: 13px;
+}
+
+.vmg-tiempo {
+    font-family: ui-monospace, monospace;
+}
+
+.vmg-acciones {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.vmg-btn-ctrl {
+    background: transparent;
+    border: 0;
+    color: #fff;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 4px;
+    cursor: pointer;
+}
+
+.vmg-btn-ctrl small {
+    font-size: 10px;
+    color: #d4af37;
+}
+
+/* Se ocultan mientras el video se reproduce */
+.vmg.vmg-oculto .vmg-cabecera,
+.vmg.vmg-oculto .vmg-controles,
+.vmg.vmg-oculto .vmg-play-central {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* HOJA DE ACCIONES */
+.vmg-fondo-hoja {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.55);
+}
+
+.vmg-fondo-hoja[hidden] {
+    display: none !important;
+}
+
+.vmg-hoja {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 11;
+    max-height: 78dvh;
+    overflow-y: auto;
+    background: #0b1016;
+    border-top: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 18px 18px 0 0;
+    padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+    color: #f0f4f8;
+}
+
+.vmg-hoja[hidden] {
+    display: none !important;
+}
+
+.vmg-op {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 10px;
+    background: transparent;
+    border: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    color: #f0f4f8;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.vmg-op svg {
+    color: #d4af37;
+    flex-shrink: 0;
+}
+
+.vmg-op.vmg-peligro,
+.vmg-op.vmg-peligro svg {
+    color: #ff3366;
+}
+
+.vmg-hoja h3 {
+    font-size: 15px;
+    margin: 12px 10px 6px;
+    color: #f0f4f8;
+}
+
+.vmg-hoja p {
+    font-size: 13px;
+    color: #8c949c;
+    margin: 6px 10px;
+}
+
+.vmg-hoja p strong {
+    color: #d4af37;
+}
+
+.vmg-btn-primario {
+    width: 100%;
+    margin-top: 12px;
+    padding: 14px;
+    border: 0;
+    border-radius: 12px;
+    background: linear-gradient(120deg, #00e5ff, #3b82f6 55%, #8b5cf6);
+    color: #04070d;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vmg-cabecera,
+    .vmg-controles {
+        transition: none;
+    }
+}
