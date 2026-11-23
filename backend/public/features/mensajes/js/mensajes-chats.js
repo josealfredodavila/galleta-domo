@@ -164,8 +164,6 @@ function aplicarFiltroConversaciones() {
 
 /* ---------------- Capas y estilos del visor de estados ---------------- */
 
-// Quita del DOM de mensajes lo que pueda haber dejado el visor de estados
-// (clases, estilos inline, inert). No abre ni cierra el visor en sí.
 function liberarInterfazChat() {
     try {
         const visor = $('estadoViewer');
@@ -305,7 +303,6 @@ function avatarFichaHTML(nombre, url) {
     return `<span class="ficha-avatar" data-ini="${ini}">${img}</span>`;
 }
 
-// Muestra nombre y foto de inmediato (datos del perfil ya cargado) mientras llega la relación.
 function pintarFichaCargando(p, id) {
     const f = asegurarFichaDOM();
     if (!f) return;
@@ -342,7 +339,6 @@ function pintarFichaServidor(d) {
     f.hidden = false;
 }
 
-// Descarta respuestas de conversaciones que ya no están abiertas (cambio rápido de chat).
 async function cargarFichaContacto(id, secuencia) {
     if (!id || id === BOT_ID) return;
 
@@ -366,7 +362,6 @@ async function cargarFichaContacto(id, secuencia) {
     pintarFichaServidor(r.data);
 }
 
-// Reemplaza bloquearUsuarioActual (tras bloquear o desbloquear, la ficha se actualiza)
 async function bloquearUsuarioActual() {
     if (!current || current.bot) { toast('Marquinhos no se puede bloquear.', 'warning'); return; }
     if (!await auth()) return;
@@ -419,6 +414,7 @@ function marcarBotLeidoEnSegundoPlano() {
             .eq('remitente_id', BOT_UUID)
             .eq('destinatario_id', user.id)
             .eq('leido', false)
+            .eq('eliminado', false)
             .then(() => {}, () => {});
     } catch (e) { }
 }
@@ -1038,8 +1034,6 @@ function vozRestablecerInterfaz() {
     }
 }
 
-// Reinicio completo: invalida eventos pendientes, detiene la grabación
-// activa sin dejar handlers vivos y devuelve la interfaz al estado inicial.
 function vozForzarReinicio() {
     vozGen++;
 
@@ -1098,7 +1092,6 @@ function extensionForMime(mime) {
 /* ---------------- Iniciar grabación ---------------- */
 
 async function recordAudioNota() {
-    // Grabando con grabadora viva: el botón detiene y prepara.
     if (vozEstado === 'recording' && recorder) {
         detenerYPrepararNotaVoz();
         return;
@@ -1109,14 +1102,11 @@ async function recordAudioNota() {
         return;
     }
 
-    // Envío en curso: se respeta, pero con un límite de seguridad.
     if (vozProcesando) {
         toast('Espera un momento, la nota anterior se está enviando.', 'warning');
         return;
     }
 
-    // Cualquier otro estado residual (procesando, cancelado, grabando sin
-    // grabadora) se limpia antes de empezar de nuevo.
     if (vozEstado !== 'idle') vozForzarReinicio();
 
     if (!current) {
@@ -1229,7 +1219,6 @@ function detenerYPrepararNotaVoz() {
         return;
     }
 
-    // Vigilante: si el navegador no dispara onstop, se prepara igual.
     setTimeout(function() {
         if (gen === vozGen && vozEstado === 'processing') {
             vozProcesarGrabacion(rec);
@@ -1465,7 +1454,6 @@ async function enviarNotaVozPreparada() {
         }
         if (cancelBtn) cancelBtn.disabled = false;
     } finally {
-        // Nunca dejar el micrófono bloqueado por un envío que terminó.
         vozProcesando = false;
         if (!exito && vozEstado === 'ready' && !document.getElementById('vozRecorderPanel')?.querySelector('#vozPreviewControls')?.hidden) {
             // Se mantiene la vista previa para reintentar.
@@ -1738,7 +1726,7 @@ function verPerfilDelContacto() {
     if (handle) params.set('u', handle);
     params.set('id', uid);
 
-    window.location.href = '/features/perfil/perfil-publico.html?' + params.toString();
+    window.location.href = '/features/perfil-publico/perfil-publico.html?' + params.toString();
 }
 
 function configurarInfoChat() {
@@ -1746,7 +1734,6 @@ function configurarInfoChat() {
     if (!header || header.dataset.infoListeners) return;
     header.dataset.infoListeners = '1';
 
-    // Al tocar la lista de conversaciones se limpian capas que pudo dejar el visor de estados.
     const lista = $('conversationList');
     if (lista) lista.addEventListener('pointerdown', liberarInterfazChat, true);
 
@@ -1810,8 +1797,6 @@ if (document.readyState === 'loading') {
     configurarInfoChat();
 }
 
-// Disponible para otros módulos (por ejemplo, el visor de estados) que
-// quieran pedir la misma limpieza al cerrarse.
 window.liberarInterfazChat = liberarInterfazChat;
 
 // ================================================================
@@ -2249,7 +2234,6 @@ window.liberarInterfazChat = liberarInterfazChat;
     document.head.appendChild(style);
 })();
 
-// Inicializa el panel sin modificar el HTML original.
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function() {
         vozCrearInterfaz();
