@@ -22,7 +22,7 @@
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
-<!-- CSS modular -->
+<!-- CSS modular (Rutas corregidas) -->
 <link rel="stylesheet" href="/features/shared/css/base.css">
 <link rel="stylesheet" href="/features/perfil-publico/css/perfil-publico.css">
 <link rel="stylesheet" href="/features/perfil/css/emojis-animations.css">
@@ -31,7 +31,6 @@
 
 <!-- CRÍTICO: El perfil público se pinta SIN esperar auth-ready -->
 <style>
-    /* Solo oculta el header de navegación hasta que auth-ready, pero el contenido se ve */
     html:not(.auth-ready) .main-nav,
     html:not(.auth-ready) .header { opacity: 0; pointer-events: none; }
 </style>
