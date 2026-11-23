@@ -104,10 +104,6 @@
     }
     .pv-post-audio { display: block; width: 100%; margin-top: 12px; border-radius: 10px; }
 
-    .pv-post-venta {
-        display: inline-block; margin-top: 10px; padding: 4px 10px; border-radius: 999px;
-        font-size: .7rem; color: #D4AF37; border: 1px solid rgba(212, 175, 55, .35); background: rgba(212, 175, 55, .08);
-    }
     .pv-post-aviso { margin-top: 8px; font-size: .7rem; color: #f7d44a; }
 
     .pv-post-barra {
@@ -306,7 +302,7 @@
 
         <section class="panel" id="pvPubSection" hidden>
             <div class="pv-pub-head">
-                <h3 data-clave="perfil_mis_publicaciones">Publicaciones</h3>
+                <h3>Publicaciones</h3>
                 <span class="pv-pub-contador" id="pvPubContador"></span>
             </div>
             <p class="pv-pub-msg" id="pvPubMsg" hidden></p>
@@ -370,7 +366,34 @@
     var POSTS_PAGE = 20;
     var COMENTARIOS_LIMITE = 50;
 
-    var RG = window.ReaccionesGlobal;
+    // Respaldo interno: si reacciones-global.js no carga, la página sigue funcionando.
+    var RESPALDO_RG = {
+        EMOJIS: ['❤️', '😂', '🥺', '💎'],
+        POR_DEFECTO: '❤️',
+        normalizar: function (e) { return this.EMOJIS.indexOf(e) !== -1 ? e : '❤️'; },
+        aplicarMotor: function (el, emoji) {
+            if (!el) return;
+            var clases = { '❤️': 'emo-corazon', '😂': 'emo-risa', '🥺': 'emo-brillo', '💎': 'emo-diamante' };
+            el.classList.add(clases[emoji] || 'emo-fluido');
+            el.style.setProperty('--dur', (1.6 + Math.random() * 1.2).toFixed(2) + 's');
+            el.style.setProperty('--delay', (-Math.random() * 2).toFixed(2) + 's');
+        },
+        resumir: function (filas, usuarioId) {
+            var totales = {}, total = 0, miTipo = null, self = this;
+            (filas || []).forEach(function (f) {
+                var t = self.normalizar(f.tipo);
+                totales[t] = (totales[t] || 0) + 1;
+                total++;
+                if (usuarioId && f.usuario_id === usuarioId) miTipo = t;
+            });
+            return { totales: totales, total: total, miTipo: miTipo };
+        }
+    };
+
+    // Siempre se lee en el momento de usarlo, para no depender del orden de carga.
+    function RG() {
+        return window.ReaccionesGlobal || RESPALDO_RG;
+    }
 
     function $(id) { return document.getElementById(id); }
 
@@ -706,7 +729,6 @@
             else if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(url)) tipo = 'audio';
             else tipo = 'imagen';
         }
-        if (tipo === 'imagen') tipo = 'imagen';
         return { url: url, tipo: tipo };
     }
 
@@ -765,38 +787,34 @@
 
     /* ================= REACCIONES ================= */
 
-    // Carga el resumen de reacciones de un lote de publicaciones en una sola consulta.
     async function cargarResumenReacciones(client, ids) {
         var mapa = new Map();
         if (!ids.length) return mapa;
+        var porPub = {};
         try {
             var r = await client
                 .from('publicaciones_reacciones')
                 .select('publicacion_id, tipo, usuario_id')
                 .in('publicacion_id', ids);
             if (r.error) throw r.error;
-
-            var porPub = {};
             (r.data || []).forEach(function (row) {
                 var k = String(row.publicacion_id);
                 if (!porPub[k]) porPub[k] = [];
                 porPub[k].push(row);
             });
-            ids.forEach(function (id) {
-                mapa.set(String(id), RG.resumir(porPub[String(id)] || [], usuarioActualId));
-            });
         } catch (e) {
             console.warn('[PerfilPublico] Resumen de reacciones:', e);
-            ids.forEach(function (id) {
-                mapa.set(String(id), RG.resumir([], usuarioActualId));
-            });
         }
+        ids.forEach(function (id) {
+            mapa.set(String(id), RG().resumir(porPub[String(id)] || [], usuarioActualId));
+        });
         return mapa;
     }
 
     function pintarBarraReacciones(bar, resumen) {
+        var rg = RG();
         bar.innerHTML = '';
-        RG.EMOJIS.forEach(function (emoji) {
+        rg.EMOJIS.forEach(function (emoji) {
             var btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'pv-btn-reaccion' + (resumen.miTipo === emoji ? ' activo' : '');
@@ -805,7 +823,7 @@
 
             var ico = document.createElement('span');
             ico.textContent = emoji;
-            RG.aplicarMotor(ico, emoji);
+            rg.aplicarMotor(ico, emoji);
 
             var cant = document.createElement('span');
             var n = resumen.totales[emoji] || 0;
@@ -824,7 +842,7 @@
             .select('tipo, usuario_id')
             .eq('publicacion_id', pubId);
         if (r.error) throw r.error;
-        pintarBarraReacciones(bar, RG.resumir(r.data || [], usuarioActualId));
+        pintarBarraReacciones(bar, RG().resumir(r.data || [], usuarioActualId));
     }
 
     async function alternarReaccion(client, pubId, tipo, bar) {
@@ -836,8 +854,7 @@
         botones.forEach(function (b) { b.disabled = true; });
 
         try {
-            var resumen = bar._resumen || RG.resumir([], usuarioActualId);
-            var miTipo = resumen.miTipo;
+            var miTipo = bar._resumen ? bar._resumen.miTipo : null;
             var res;
 
             if (miTipo === tipo) {
