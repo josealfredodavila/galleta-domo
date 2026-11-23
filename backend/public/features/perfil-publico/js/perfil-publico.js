@@ -48,7 +48,7 @@
         items: [],
         indice: 0,
         post: null,
-        modoFit: 'cover',
+        modoFit: 'contain',
         velocidades: [1, 1.5, 2],
         velIndex: 0,
         ocultarTimer: null,
@@ -350,7 +350,13 @@
             if (visorFullState.post && visorFullState.post.permitir_descarga === false) {
                 vid.setAttribute('controlsList', 'nodownload');
             }
-            vid.addEventListener('loadedmetadata', actualizarProgresoVisorFull);
+            vid.addEventListener('loadedmetadata', function () {
+                if (vid.videoWidth && vid.videoHeight) {
+                    visorFullState.modoFit = (vid.videoHeight > vid.videoWidth) ? 'cover' : 'contain';
+                    aplicarEscalaVisorFull();
+                }
+                actualizarProgresoVisorFull();
+            });
             vid.addEventListener('timeupdate', actualizarProgresoVisorFull);
             vid.addEventListener('play', actualizarControlesPlayPausaVisorFull);
             vid.addEventListener('pause', actualizarControlesPlayPausaVisorFull);
@@ -364,6 +370,12 @@
             var img = document.createElement('img');
             img.src = segura;
             img.alt = '';
+            img.addEventListener('load', function () {
+                if (img.naturalWidth && img.naturalHeight) {
+                    visorFullState.modoFit = (img.naturalHeight > img.naturalWidth) ? 'cover' : 'contain';
+                    aplicarEscalaVisorFull();
+                }
+            });
             n.media.appendChild(img);
             aplicarEscalaVisorFull();
             actualizarControlesPlayPausaVisorFull();
@@ -379,7 +391,7 @@
         visorFullState.abierto = true;
         visorFullState.items = items;
         visorFullState.post = postObj || null;
-        visorFullState.modoFit = 'cover';
+        visorFullState.modoFit = 'contain';
         n.root.hidden = false;
         renderizarItemVisorFull(idxInicial || 0);
     }
@@ -1037,8 +1049,14 @@
             vid.style.width = '100%';
             vid.style.height = '100%';
             vid.style.marginTop = '0';
-            vid.style.objectFit = 'cover';
+            vid.style.objectFit = 'contain';
             vid.style.objectPosition = 'center';
+
+            vid.addEventListener('loadedmetadata', function () {
+                if (vid.videoWidth && vid.videoHeight) {
+                    vid.style.objectFit = (vid.videoHeight > vid.videoWidth) ? 'cover' : 'contain';
+                }
+            });
 
             registrarReproductorUnico(vid);
             marcoVideo.appendChild(vid);
@@ -1060,17 +1078,40 @@
             registrarReproductorUnico(aud);
             meta.appendChild(aud);
         } else {
+            var marcoImg = document.createElement('div');
+            marcoImg.className = 'pv-media-marco pub-media-container';
+            marcoImg.style.width = '100%';
+            marcoImg.style.aspectRatio = '9 / 16';
+            marcoImg.style.marginTop = '12px';
+            marcoImg.style.borderRadius = '8px';
+            marcoImg.style.overflow = 'hidden';
+            marcoImg.style.background = '#000';
+            marcoImg.style.position = 'relative';
+
             var img = document.createElement('img');
             img.className = 'pv-post-img';
             img.alt = '';
             img.loading = 'lazy';
             img.decoding = 'async';
             img.src = media.url;
-            img.addEventListener('click', function () {
+            img.style.width = '100%';
+            img.style.height = '100%';
+            img.style.marginTop = '0';
+            img.style.objectFit = 'contain';
+            img.style.objectPosition = 'center';
+
+            img.addEventListener('load', function () {
+                if (img.naturalWidth && img.naturalHeight) {
+                    img.style.objectFit = (img.naturalHeight > img.naturalWidth) ? 'cover' : 'contain';
+                }
+            });
+
+            marcoImg.appendChild(img);
+            marcoImg.addEventListener('click', function () {
                 if ($('pubVisorFull')) abrirVisorFull(items, 0, p);
                 else abrirLightbox('imagen', media.url);
             });
-            meta.appendChild(img);
+            meta.appendChild(marcoImg);
         }
     }
 
@@ -1117,10 +1158,10 @@
         aplicarVariablesEmoji(trigEmoji, r.miTipo || rg.POR_DEFECTO || '❤️');
 
         var trigTexto = document.createElement('span');
-        trigTexto.textContent = r.total > 0 ? String(r.total) : 'Reaccionar';
+        trigTexto.textContent = r.total > 0 ? String(r.total) : '';
 
         trigger.appendChild(trigEmoji);
-        trigger.appendChild(trigTexto);
+        if (trigTexto.textContent) trigger.appendChild(trigTexto);
 
         trigger.addEventListener('click', function (ev) {
             ev.stopPropagation();
@@ -1206,7 +1247,7 @@
             if (r.error) throw r.error;
             var filas = Array.isArray(r.data) ? r.data : [];
             pintarComentarios(listaEl, filas);
-            if (countEl) countEl.textContent = String(filas.length);
+            if (countEl) countEl.textContent = filas.length > 0 ? String(filas.length) : '';
         } catch (e) {
             console.warn('[PerfilPublico] Comentarios:', e);
             listaEl.innerHTML = '<div class="pv-comentario-item">No se pudieron cargar los comentarios: ' + msgError(e) + '</div>';
@@ -1288,11 +1329,13 @@
         var btnCom = document.createElement('button');
         btnCom.type = 'button';
         btnCom.className = 'pv-btn-comentar';
+        var totalCom = Number(p.comentarios) || 0;
         var iconoCom = document.createElement('span');
-        iconoCom.textContent = '💬';
+        iconoCom.textContent = 'Comentarios';
         var comCount = document.createElement('span');
-        comCount.textContent = String(Number(p.comentarios) || 0);
-        btnCom.appendChild(iconoCom); btnCom.appendChild(comCount);
+        comCount.textContent = totalCom > 0 ? String(totalCom) : '';
+        btnCom.appendChild(iconoCom);
+        if (comCount.textContent) btnCom.appendChild(comCount);
 
         barra.appendChild(reacciones); barra.appendChild(btnCom);
         meta.appendChild(barra);
