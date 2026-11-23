@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="es" data-public>
 <head>
@@ -56,6 +55,27 @@
         box-sizing: border-box;
     }
 
+    /* CONTENEDOR DE VIDEO/MEDIA EN FEED (9:16) */
+    .pub-media-container {
+        width: 100%;
+        aspect-ratio: 9 / 16;
+        border-radius: 8px;
+        background: #000;
+        overflow: hidden;
+        position: relative;
+        margin-top: 12px;
+        box-sizing: border-box;
+    }
+
+    .pub-media-container > video,
+    .pub-media-container > img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        display: block;
+    }
+
     /* VIDEO GRANDE */
     .pv-media-marco {
         position: relative;
@@ -108,7 +128,7 @@
         -webkit-backdrop-filter: blur(8px);
     }
 
-    /* REACCIONES VERTICALES */
+    /* REACCIONES EN CÁPSULA VERTICAL */
     .pv-post-barra {
         display: flex;
         align-items: flex-start;
@@ -122,12 +142,85 @@
 
     .pv-reacciones {
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: flex-start;
-        gap: 9px;
+        gap: 8px;
         flex-shrink: 0;
-        min-width: 44px;
+    }
+
+    .reaccion-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .reaccion-trigger {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        min-height: 38px;
+        padding: 6px 12px;
+        border: 1px solid rgba(212,175,55,.35);
+        border-radius: 20px;
+        background: rgba(11,16,22,.85);
+        color: inherit;
+        font-size: 13px;
+        cursor: pointer;
+    }
+
+    .reaccion-dropdown {
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px;
+        border-radius: 24px;
+        background: #0b1016;
+        border: 1px solid rgba(212,175,55,.45);
+        box-shadow: 0 12px 28px rgba(0,0,0,.65);
+        z-index: 60;
+    }
+
+    .reaccion-dropdown[hidden] {
+        display: none;
+    }
+
+    .reaccion-opcion-btn {
+        position: relative;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,.14);
+        background: rgba(255,255,255,.05);
+        font-size: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .mini-count {
+        position: absolute;
+        top: -5px;
+        right: -5px;
+        min-width: 17px;
+        height: 17px;
+        padding: 0 4px;
+        border-radius: 999px;
+        background: #D4AF37;
+        color: #05080f;
+        font-size: 10px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        line-height: 1;
+    }
+
+    .mini-count:empty {
+        display: none;
     }
 
     .pv-btn-reaccion {
@@ -187,6 +280,33 @@
         cursor: pointer;
     }
 
+    /* SELECTOR DE 97 EMOJIS */
+    #emojiPickerPerfil {
+        position: fixed;
+        bottom: 84px;
+        right: 16px;
+        width: 300px;
+        max-width: calc(100vw - 32px);
+        background: #0b1016;
+        border: 1px solid rgba(212,175,55,.45);
+        border-radius: 14px;
+        padding: 10px;
+        z-index: 999500;
+        box-shadow: 0 14px 36px rgba(0,0,0,.75);
+    }
+
+    #emojiPickerPerfil[hidden] {
+        display: none;
+    }
+
+    #emojiGridPerfil {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 4px;
+        max-height: 220px;
+        overflow-y: auto;
+    }
+
     /* IMÁGENES Y AUDIO */
     .pv-post-img {
         display: block;
@@ -205,6 +325,216 @@
         width: 100%;
         max-width: 100%;
         margin-top: 12px;
+    }
+
+    /* VISOR INMERSIVO (#pubVisorFull) */
+    #pubVisorFull {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100dvh;
+        background: #000;
+        z-index: 999990;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        user-select: none;
+        touch-action: none;
+    }
+
+    #pubVisorFull[hidden] {
+        display: none !important;
+    }
+
+    .pub-vf-media {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100dvh;
+        background: #000;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .pub-vf-media > video,
+    .pub-vf-media > img {
+        width: 100%;
+        height: 100%;
+        display: block;
+    }
+
+    .pub-vf-header {
+        position: relative;
+        z-index: 4;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        transition: opacity .25s ease;
+    }
+
+    .pub-vf-btn-circle {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        border: 1px solid rgba(255,255,255,.22);
+        background: rgba(12,16,24,.6);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: #fff;
+        font-size: 20px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    #pubVfCenterControls {
+        position: fixed;
+        inset: 0;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        pointer-events: none;
+        transition: opacity .25s ease;
+    }
+
+    #pubVfCenterControls[hidden] {
+        display: none !important;
+    }
+
+    #pubVfBtnPlayCenter {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 2px solid rgba(212,175,55,.8);
+        background: rgba(10,14,22,.72);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        color: #D4AF37;
+        font-size: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        pointer-events: auto;
+    }
+
+    .pub-vf-controls {
+        position: relative;
+        z-index: 4;
+        padding: 28px 16px 20px;
+        background: linear-gradient(to top, rgba(0,0,0,.88), rgba(0,0,0,.42) 65%, transparent);
+        transition: opacity .25s ease;
+    }
+
+    #pubVfProgressBar {
+        width: 100%;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        touch-action: none;
+        margin-bottom: 10px;
+    }
+
+    #pubVfProgressTrack {
+        width: 100%;
+        height: 4px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.25);
+        overflow: hidden;
+    }
+
+    #pubVfProgressFill {
+        height: 100%;
+        width: 0%;
+        background: #D4AF37;
+        border-radius: 999px;
+    }
+
+    .pub-vf-actions-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        color: #fff;
+        font-size: 13px;
+    }
+
+    .pub-vf-right-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .pub-vf-pill-btn {
+        height: 34px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.18);
+        background: rgba(15,20,30,.75);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #pubVisorFull.controls-hidden .pub-vf-header,
+    #pubVisorFull.controls-hidden .pub-vf-controls {
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    #pubVfSheetBackdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.62);
+        z-index: 999995;
+    }
+
+    #pubVfSheetBackdrop[hidden] {
+        display: none !important;
+    }
+
+    #pubVfSheet {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 999998;
+        background: #0b1016;
+        border-top: 1px solid rgba(212,175,55,.4);
+        border-radius: 18px 18px 0 0;
+        padding: 16px;
+        max-height: 78dvh;
+        overflow: hidden;
+        color: #fff;
+    }
+
+    #pubVfSheet[hidden] {
+        display: none !important;
+    }
+
+    .pub-vf-sheet-track {
+        display: flex;
+        width: 300%;
+        transition: transform .26s cubic-bezier(.22,.61,.36,1);
+    }
+
+    .pub-vf-sheet-view {
+        width: 33.3333%;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
     }
 
     /* VISOR MULTIMEDIA */
@@ -564,6 +894,51 @@
         </div>
 
     </main>
+
+    <!-- SELECTOR DE 97 EMOJIS -->
+    <div id="emojiPickerPerfil" hidden role="dialog" aria-label="Selector de emojis">
+        <div id="emojiGridPerfil"></div>
+    </div>
+
+    <!-- VISOR INMERSIVO (#pubVisorFull) -->
+    <div id="pubVisorFull" hidden role="dialog" aria-modal="true" aria-label="Visor inmersivo">
+        <div class="pub-vf-media"></div>
+
+        <div class="pub-vf-header">
+            <button type="button" id="btnPubVfClose" class="pub-vf-btn-circle" aria-label="Cerrar visor">×</button>
+            <button type="button" id="btnPubVfMenu" class="pub-vf-btn-circle" aria-label="Opciones">⋮</button>
+        </div>
+
+        <div id="pubVfCenterControls" hidden>
+            <button type="button" id="pubVfBtnPlayCenter" aria-label="Reproducir">▶</button>
+        </div>
+
+        <div class="pub-vf-controls">
+            <div id="pubVfProgressBar" role="slider" aria-label="Progreso">
+                <div id="pubVfProgressTrack">
+                    <div id="pubVfProgressFill"></div>
+                </div>
+            </div>
+            <div class="pub-vf-actions-row">
+                <span id="pubVfTimeLabel">0:00 / 0:00</span>
+                <div class="pub-vf-right-actions">
+                    <button type="button" id="btnPubVfSpeed" class="pub-vf-pill-btn">1x</button>
+                    <button type="button" id="btnPubVfPip" class="pub-vf-pill-btn">PiP</button>
+                    <button type="button" id="btnPubVfExpand" class="pub-vf-pill-btn">Expandir</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HOJA DESLIZABLE (#pubVfSheet) -->
+    <div id="pubVfSheetBackdrop" hidden></div>
+    <div id="pubVfSheet" hidden role="dialog" aria-modal="true" aria-label="Opciones de publicación">
+        <div class="pub-vf-sheet-track">
+            <div class="pub-vf-sheet-view"></div>
+            <div class="pub-vf-sheet-view"></div>
+            <div class="pub-vf-sheet-view"></div>
+        </div>
+    </div>
 
     <!-- VISOR MULTIMEDIA -->
     <div
