@@ -201,7 +201,6 @@
 <!-- Scripts del perfil público -->
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
 <script src="/features/shared/js/reacciones-global.js"></script>
-<script src="/features/perfil-publico/js/publicaciones.js" defer></script>
 <script src="/features/perfil-publico/js/amigos.js" defer></script>
 <script src="/features/perfil-publico/js/perfil-publico.js" defer></script>
 
