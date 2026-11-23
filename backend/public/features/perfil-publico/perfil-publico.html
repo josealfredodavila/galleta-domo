@@ -32,6 +32,7 @@
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
 <link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
 <link rel="stylesheet" href="/features/perfil-publico/css/perfil-publico.css">
+<link rel="stylesheet" href="/features/shared/css/visor-media-global.css">
 
 <style>
     html:not(.auth-ready) .main-nav,
@@ -244,6 +245,34 @@
 
             </section>
 
+            <!-- GALERÍA -->
+            <section class="panel" id="pvGaleriaSection" hidden>
+                <div class="pv-pub-head">
+                    <h3>Galería</h3>
+                    <span class="pv-pub-contador" id="pvGaleriaCount"></span>
+                </div>
+                <p class="pv-pub-msg" id="pvGaleriaMsg" hidden></p>
+                <div id="pvGaleriaGrid"></div>
+                <button type="button" class="btn btn-outline btn-sm pv-mas" id="pvGaleriaMas" hidden>Cargar más</button>
+            </section>
+
+            <!-- ESCRIBIR EN EL MURO (solo contactos activos) -->
+            <section class="panel" id="pvMuroSection" hidden>
+                <div class="pv-pub-head">
+                    <h3>Escribe en su muro</h3>
+                </div>
+                <div class="pv-muro-form">
+                    <textarea id="pvMuroTexto" maxlength="2000" rows="3" placeholder="Escribe algo para su muro..."></textarea>
+                    <div class="pv-muro-acciones">
+                        <button type="button" class="btn btn-outline btn-sm" id="pvMuroAdjuntar">Foto o video</button>
+                        <input type="file" id="pvMuroArchivo" accept="image/*,video/*" hidden>
+                        <span id="pvMuroNombre" class="pv-muro-nombre"></span>
+                        <button type="button" class="btn btn-sm" id="pvMuroPublicar">Publicar</button>
+                    </div>
+                    <p class="pv-pub-msg" id="pvMuroMsg" hidden></p>
+                </div>
+            </section>
+
             <!-- PUBLICACIONES -->
             <section class="panel" id="pvPubSection" hidden>
 
@@ -292,69 +321,6 @@
         <div id="emojiGridPerfil"></div>
     </div>
 
-    <!-- VISOR INMERSIVO -->
-    <div id="pubVisorFull" hidden role="dialog" aria-modal="true" aria-label="Visor inmersivo">
-        <div class="pub-vf-media"></div>
-
-        <div class="pub-vf-header">
-            <button type="button" id="btnPubVfClose" class="pub-vf-btn-circle" aria-label="Cerrar visor">×</button>
-            <button type="button" id="btnPubVfMenu" class="pub-vf-btn-circle" aria-label="Opciones">⋮</button>
-        </div>
-
-        <div id="pubVfCenterControls" hidden>
-            <button type="button" id="pubVfBtnPlayCenter" aria-label="Reproducir">▶</button>
-        </div>
-
-        <div class="pub-vf-controls">
-            <div id="pubVfProgressBar" role="slider" aria-label="Progreso">
-                <div id="pubVfProgressTrack">
-                    <div id="pubVfProgressFill"></div>
-                </div>
-            </div>
-            <div class="pub-vf-actions-row">
-                <span id="pubVfTimeLabel">0:00 / 0:00</span>
-                <div class="pub-vf-right-actions">
-                    <button type="button" id="btnPubVfSpeed" class="pub-vf-pill-btn">1x</button>
-                    <button type="button" id="btnPubVfPip" class="pub-vf-pill-btn">PiP</button>
-                    <button type="button" id="btnPubVfExpand" class="pub-vf-pill-btn">Expandir</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- HOJA DESLIZABLE -->
-    <div id="pubVfSheetBackdrop" hidden></div>
-    <div id="pubVfSheet" hidden role="dialog" aria-modal="true" aria-label="Opciones de publicación">
-        <div class="pub-vf-sheet-track">
-            <div class="pub-vf-sheet-view"></div>
-            <div class="pub-vf-sheet-view"></div>
-            <div class="pub-vf-sheet-view"></div>
-        </div>
-    </div>
-
-    <!-- VISOR MULTIMEDIA (respaldo) -->
-    <div
-        class="pv-lightbox"
-        id="pvLightbox"
-        hidden
-        role="dialog"
-        aria-modal="true"
-        aria-label="Visor multimedia"
-    >
-        <div class="pv-lightbox-inner">
-
-            <button
-                type="button"
-                class="pv-lightbox-cerrar"
-                id="pvLightboxCerrar"
-                aria-label="Cerrar visor multimedia"
-            >✕ Cerrar</button>
-
-            <div id="pvLightboxBody"></div>
-
-        </div>
-    </div>
-
     <!-- FOOTER -->
     <footer class="footer" style="text-align:center;">
         <span data-no-traducir="1">
@@ -379,7 +345,8 @@
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
 <script src="/features/shared/js/reacciones-global.js"></script>
 <script src="/features/perfil-publico/js/amigos.js" defer></script>
-<script src="/features/perfil-publico/js/perfil-publico.js?v=4.1" defer></script>
+<script src="/features/shared/js/visor-media-global.js" defer></script>
+<script src="/features/perfil-publico/js/perfil-publico.js?v=4.3" defer></script>
 
 <!-- CARGA AUTOMÁTICA DE PUBLICACIONES AL DESLIZAR -->
 <script>
