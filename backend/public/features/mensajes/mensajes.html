@@ -256,7 +256,6 @@ select {
 }
 .estado-inner img { width: 100%; height: 100%; object-fit: cover; }
 .estado-name { font-size: .66rem; color: var(--msg-muted); max-width: 66px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-/* Sin etiqueta de número de vistas en la rueda */
 .estado-vistas-badge { display: none !important; }
 
 .convlist, .canales-lista { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: thin; scrollbar-color: #293746 transparent; }
@@ -279,7 +278,7 @@ select {
 .status { color: var(--msg-muted); font-size: .73rem; margin-top: 3px; }
 .actions { display: flex; align-items: center; gap: 7px; }
 .actions .iconbtn {
-    width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%; border: 0;
+    width: 38px; height: 38px; display: grid; place-items: center; border: 0; border-radius: 50%;
     background: transparent; color: #aeb9c5;
 }
 .actions .iconbtn:hover { background: var(--msg-gold-soft); color: #d4af37; }
@@ -296,7 +295,6 @@ select {
     position: sticky; float: right; bottom: 12px; width: 39px; height: 39px; display: grid; place-items: center;
     background: #192532; color: #d4af37; border: 1px solid var(--msg-line-strong); border-radius: 50%;
 }
-/* Al estar ya en el último mensaje, la flecha no se muestra */
 .scroll-down-btn.en-fondo { display: none !important; }
 
 .composer {
@@ -431,7 +429,6 @@ select {
     font-size: .88rem; line-height: 1.45; text-align: center; overflow-wrap: anywhere;
 }
 
-/* Flechas: solo con puntero (escritorio). En tablet y celular se navega tocando o deslizando. */
 .estado-viewer-nav {
     position: absolute; top: 50%; transform: translateY(-50%); z-index: 4; width: 44px; height: 44px;
     display: none; place-items: center; border: 0; border-radius: 50%; background: rgba(0,0,0,.4); color: #fff;
@@ -440,7 +437,6 @@ select {
 .estado-viewer-nav.next { right: 12px; }
 @media (hover: hover) and (pointer: fine) { .estado-viewer-nav { display: grid; } }
 
-/* Controles propios del video */
 .estado-viewer-videobar {
     position: absolute; left: 0; right: 0; z-index: 5; display: flex; align-items: center; gap: 10px;
     bottom: calc(env(safe-area-inset-bottom, 0px) + 74px); padding: 16px 14px 10px;
@@ -466,7 +462,6 @@ select {
     padding: 12px 12px calc(env(safe-area-inset-bottom, 0px) + 14px);
     background: linear-gradient(transparent, rgba(0,0,0,.6));
 }
-/* Botones del visor solo con texto */
 .estado-viewer-foot button {
     display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 8px 18px;
     color: #fff; background: rgba(12,18,27,.8); border: 1px solid rgba(255,255,255,.18); border-radius: 999px;
@@ -586,7 +581,6 @@ select {
     .estado-viewer-caption { bottom: calc(env(safe-area-inset-bottom, 0px) + 140px); }
 }
 
-/* Celulares de gama baja y pantallas muy angostas */
 @media (max-width: 360px) {
     .topbar { padding: 0 9px; }
     .brand { width: 38px; height: 38px; }
@@ -626,7 +620,7 @@ select {
         <button type="button" class="icon-btn" id="btnConfigLlamadas" aria-label="Configuración de llamadas">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
                 <circle cx="12" cy="12" r="3"/>
-                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
         </button>
 
@@ -741,7 +735,6 @@ select {
         </div>
     </div>
 
-    <!-- Oculto: conserva el id que usa mensajes-init.js -->
     <button type="button" class="fab" id="newChat" hidden aria-hidden="true" tabindex="-1"></button>
 </aside>
 
@@ -771,7 +764,6 @@ select {
             </button>
         </div>
 
-        <!-- Herramientas que disparan los módulos desde la información del chat -->
         <div class="tools-ocultas" hidden>
             <button type="button" id="searchChat">Buscar</button>
             <button type="button" id="deleteChat">Eliminar</button>
@@ -828,7 +820,7 @@ select {
 
 </div>
 
-<!-- INFORMACIÓN DEL CHAT (lo controla mensajes-chats.js) -->
+<!-- INFORMACIÓN DEL CHAT -->
 <div class="contact-profile-overlay" id="contactProfileOverlay" role="dialog" aria-modal="true" aria-label="Información del contacto">
     <div class="cp-topbar">
         <button type="button" class="cp-back" id="cpBackBtn" aria-label="Volver">
@@ -909,7 +901,7 @@ select {
     </div>
 </div>
 
-<!-- PANTALLA DE LLAMADA (la estructura la completa llamadas-ui.js) -->
+<!-- PANTALLA DE LLAMADA -->
 <div class="call" id="callOverlay" role="dialog" aria-modal="true" aria-label="Llamada">
     <div class="videos">
         <video id="remoteVideo" autoplay playsinline></video>
@@ -976,11 +968,9 @@ select {
     </div>
 </div>
 
-<!-- VISOR DE HISTORIAS (pantalla completa) -->
+<!-- VISOR DE HISTORIAS -->
 <div class="estado-viewer" id="estadoViewer" role="dialog" aria-modal="true" aria-label="Historia">
-
     <div class="estado-viewer-progress"><div class="estado-viewer-progress-inner" id="estadoProgress"></div></div>
-
     <div class="estado-viewer-header">
         <div class="estado-viewer-avatar" id="evAvatar"></div>
         <div class="estado-viewer-info">
@@ -994,21 +984,17 @@ select {
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
         </button>
     </div>
-
-    <!-- Solo medios y texto: init.js cancela eventos táctiles de este bloque -->
     <div class="estado-viewer-body" id="evBody">
         <img class="estado-viewer-img" id="evImage" alt="">
         <video class="estado-viewer-video hidden" id="evVideo" playsinline preload="auto"></video>
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
     </div>
-
     <button type="button" class="estado-viewer-nav prev hidden" id="evPrev" aria-label="Historia anterior">
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <button type="button" class="estado-viewer-nav next" id="evNext" aria-label="Historia siguiente">
         <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
-
     <div class="estado-viewer-videobar hidden" id="evVideoBar">
         <button type="button" class="ev-ctl" id="evPlay" aria-label="Reproducir o pausar">
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>
@@ -1019,7 +1005,6 @@ select {
             <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
         </button>
     </div>
-
     <div class="estado-viewer-foot">
         <button type="button" class="hidden" id="evVistas" aria-label="Ver vistas">
             Vistas <span id="evVistasCount">0</span>
@@ -1075,7 +1060,7 @@ select {
     </div>
 </div>
 
-<!-- BUSCAR CONTACTO (se conserva; el botón + está oculto) -->
+<!-- BUSCAR CONTACTO -->
 <div class="modal" id="newModal" role="dialog" aria-modal="true" aria-label="Buscar contacto">
     <div class="modalbox">
         <div class="modal-head">
@@ -1233,6 +1218,41 @@ select {
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
 <script>
+/* Redirección segura si algún script abre la ruta antigua de perfil-publico.html */
+(function () {
+    var RUTA_VIEJA = '/features/perfil/perfil-publico.html';
+    var RUTA_NUEVA = '/features/perfil-publico/perfil-publico.html';
+
+    function corregirUrl(urlStr) {
+        if (!urlStr) return urlStr;
+        try {
+            var u = new URL(String(urlStr), window.location.origin);
+            if (u.origin === window.location.origin && u.pathname === RUTA_VIEJA) {
+                u.pathname = RUTA_NUEVA;
+                return u.pathname + u.search + u.hash;
+            }
+        } catch (e) {}
+        return urlStr;
+    }
+
+    var origAssign = window.location.assign.bind(window.location);
+    var origReplace = window.location.replace.bind(window.location);
+    window.location.assign = function (url) { return origAssign(corregirUrl(url)); };
+    window.location.replace = function (url) { return origReplace(corregirUrl(url)); };
+
+    document.addEventListener('click', function (e) {
+        var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+        if (!a) return;
+        var raw = a.getAttribute('href');
+        var corregida = corregirUrl(raw);
+        if (corregida && corregida !== raw) {
+            a.setAttribute('href', corregida);
+        }
+    }, true);
+})();
+</script>
+
+<script>
 /* Puentes que llama mensajes-init.js y que define llamadas-ui.js */
 function abrirModalConfigLlamadas() {
     if (typeof window.abrirModalConfig === 'function') window.abrirModalConfig();
@@ -1245,7 +1265,6 @@ function abrirListaBloqueados() {
     if (typeof window.abrirModalBloqueados === 'function') window.abrirModalBloqueados();
 }
 
-/* El botón Bloquear usa la versión de mensajes-chats.js (tabla bloqueos, igual que Contactos) */
 document.addEventListener('DOMContentLoaded', function () {
     var b = document.getElementById('blockUser');
     if (b && typeof bloquearUsuarioActual === 'function') {
@@ -1255,7 +1274,6 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script>
-/* Visor de historias: al cerrarse queda limpio y no bloquea la pantalla */
 document.addEventListener('DOMContentLoaded', function () {
     var visor = document.getElementById('estadoViewer');
     var video = document.getElementById('evVideo');
@@ -1265,8 +1283,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (video) { video.pause(); video.removeAttribute('src'); video.load(); }
     }
 
-    /* Al tocar la lista de conversaciones con el visor abierto, se cierra primero
-       (captura: se ejecuta antes que el abrir chat) */
     var lista = document.getElementById('conversationList');
     if (lista) {
         lista.addEventListener('click', function () {
@@ -1274,7 +1290,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, true);
     }
 
-    /* Si la pestaña cambia mientras se ve una historia, también se cierra */
     document.querySelectorAll('.sidebar-tab').forEach(function (t) {
         t.addEventListener('click', function () {
             if (visor && visor.classList.contains('show')) limpiarVisor();
@@ -1288,8 +1303,6 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script>
-/* Flecha de bajar: visible solo si no estás en el último mensaje.
-   Al tocarla baja hasta el final, incluso si las imágenes tardan en cargar. */
 document.addEventListener('DOMContentLoaded', function () {
     var m = document.getElementById('messages');
     var b = document.getElementById('scrollDownBtn');
@@ -1320,7 +1333,6 @@ document.addEventListener('DOMContentLoaded', function () {
 </script>
 
 <script>
-/* Barra de escritura: altura automática y alternancia de micrófono / enviar */
 document.addEventListener('DOMContentLoaded', function () {
     var input = document.getElementById('messageInput');
     var composer = document.getElementById('composer');
