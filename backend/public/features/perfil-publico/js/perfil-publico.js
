@@ -2,12 +2,13 @@
    PERFIL-PUBLICO.JS — Csariel's
    Pinta el perfil SIN esperar auth-ready (optimización anti-trabón),
    integra amigos.js y renderiza publicaciones con video optimizado.
+   v2: espera la sesión antes de cargar publicaciones y amigos,
+       para que las reacciones y el "es_yo" usen el usuario correcto.
    ================================================================ */
 (function () {
     'use strict';
 
-    // CORREGIDO: Ruta exacta a la que debe redirigir si es tu propio perfil
-    var RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html'; 
+    var RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html';
     var HANDLE_RE = /^[A-Za-z0-9_]{1,40}$/;
     var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     var POSTS_PAGE = 20;
@@ -780,7 +781,21 @@
         }
     }
 
-    /* ================= INIT SIN BLOQUEO ================= */
+    /* ================= SESIÓN ================= */
+    // Se resuelve ANTES de cargar publicaciones y amigos, para que las
+    // reacciones y el "es_yo" usen el usuario correcto desde el primer render.
+    async function resolverSesion(client) {
+        try {
+            var r = await client.auth.getSession();
+            var user = r && r.data && r.data.session ? r.data.session.user : null;
+            window.usuarioActualId = user ? user.id : null;
+        } catch (e) {
+            window.usuarioActualId = null;
+        }
+        return window.usuarioActualId;
+    }
+
+    /* ================= INIT ================= */
     async function init() {
         mostrar(el.cargando);
         configurarVolver();
@@ -795,21 +810,14 @@
             client = window.supabaseClient || (window.__sarielsSupabaseSingleton || null);
             if (client) break;
             if (window.supabaseReady) {
-                try { client = await window.supabaseReady; } catch(e){}
+                try { client = await window.supabaseReady; } catch (e) {}
             }
-            if (!client) { await new Promise(function(r){ setTimeout(r, 100); }); }
+            if (!client) { await new Promise(function (r) { setTimeout(r, 100); }); }
             intentos++;
         }
         if (!client) throw new Error('Cliente de Supabase no disponible');
 
-        client.auth.getSession().then(function (r) {
-            if (r && r.data && r.data.session && r.data.session.user) {
-                window.usuarioActualId = r.data.session.user.id;
-                if (perfil && perfil.id === window.usuarioActualId) {
-                    window.location.replace(RUTA_PERFIL_PROPIO);
-                }
-            }
-        }).catch(function(){});
+        await resolverSesion(client);
 
         try {
             client.auth.onAuthStateChange(function (_e, sesion) {
