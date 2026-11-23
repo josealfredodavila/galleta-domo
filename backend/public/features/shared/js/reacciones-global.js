@@ -1,5 +1,5 @@
 /* ================================================================
-   REACCIONES GLOBAL · Csariel's · v5.0
+   REACCIONES GLOBAL · Csariel's · v5.1
    Módulo compartido para TODO el ecosistema (muro, perfil, perfil
    público, grupos, videos, live).
 
@@ -24,7 +24,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '5.0';
+    var VERSION = '5.1';
 
     if (window.ReaccionesGlobal && window.ReaccionesGlobal.version === VERSION) return;
 
@@ -300,14 +300,7 @@
 
             b.appendChild(ico);
 
-            var n = r.totales[emoji] || 0;
-
-            if (n > 0) {
-                var cuenta = document.createElement('span');
-                cuenta.className = 'rg-count';
-                cuenta.textContent = String(n);
-                b.appendChild(cuenta);
-            }
+            /* 👇 SE ELIMINÓ EL BLOQUE QUE INYECTABA EL CONTADOR (rg-count) AQUÍ 👇 */
 
             b.addEventListener('click', function (ev) {
                 ev.stopPropagation();
