@@ -217,6 +217,43 @@
     </div>
 
     <script>
+        // Respaldo de ruta si algún script intenta navegar a la ruta antigua del perfil público
+        (function () {
+            var RUTA_VIEJA = '/features/perfil/perfil-publico.html';
+            var RUTA_NUEVA = '/features/perfil-publico/perfil-publico.html';
+
+            function corregirUrl(urlStr) {
+                if (!urlStr) return urlStr;
+                try {
+                    var u = new URL(String(urlStr), window.location.origin);
+                    if (u.origin === window.location.origin && u.pathname === RUTA_VIEJA) {
+                        u.pathname = RUTA_NUEVA;
+                        return u.pathname + u.search + u.hash;
+                    }
+                } catch (e) {}
+                return urlStr;
+            }
+
+            if (window.location.assign) {
+                var origAssign = window.location.assign.bind(window.location);
+                window.location.assign = function (url) { return origAssign(corregirUrl(url)); };
+            }
+            if (window.location.replace) {
+                var origReplace = window.location.replace.bind(window.location);
+                window.location.replace = function (url) { return origReplace(corregirUrl(url)); };
+            }
+
+            document.addEventListener('click', function (e) {
+                var a = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+                if (!a) return;
+                var raw = a.getAttribute('href');
+                var corregida = corregirUrl(raw);
+                if (corregida && corregida !== raw) {
+                    a.setAttribute('href', corregida);
+                }
+            }, true);
+        })();
+
         // Pestañas de Grupos
         window.switchTab = function (tab) {
             var esMis = tab === 'mis-canales';
