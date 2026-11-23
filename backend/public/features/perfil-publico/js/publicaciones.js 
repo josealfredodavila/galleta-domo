@@ -1,0 +1,465 @@
+/* ================================================================
+   PERFIL-PUBLICO.JS — Csariel's
+   Pinta el perfil SIN esperar auth-ready (optimización anti-trabón).
+   ================================================================ */
+(function () {
+    'use strict';
+
+    var RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html';
+    var HANDLE_RE = /^[A-Za-z0-9_]{1,40}$/;
+    var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    var POSTS_PAGE = 20;
+
+    var perfil = null;
+    var direccionWallet = null;
+    var pub = { cargando: false, antes: null, total: 0, idsVistos: new Set() };
+
+    window.usuarioActualId = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    var el = {
+        cargando: $('pvCargando'),
+        noEncontrado: $('pvNoEncontrado'),
+        noEncontradoTitulo: $('pvNoEncontradoTitulo'),
+        noEncontradoTexto: $('pvNoEncontradoTexto'),
+        error: $('pvError'),
+        errorTexto: $('pvErrorTexto'),
+        reintentar: $('pvReintentar'),
+        perfil: $('pvPerfil'),
+        avatar: $('pvAvatar'),
+        nombre: $('pvNombre'),
+        verificado: $('pvVerificado'),
+        handle: $('pvHandle'),
+        estado: $('pvEstado'),
+        estadoDot: $('pvEstadoDot'),
+        estadoTexto: $('pvEstadoTexto'),
+        wallet: $('pvWallet'),
+        walletDir: $('pvWalletDir'),
+        seguidores: $('pvSeguidores'),
+        siguiendo: $('pvSiguiendo'),
+        compartir: $('pvCompartir'),
+        pasaporte: $('pvPasaporte'),
+        pubSection: $('pvPubSection'),
+        pubLista: $('pvPubLista'),
+        pubMsg: $('pvPubMsg'),
+        pubMas: $('pvPubMas'),
+        pubContador: $('pvPubContador'),
+        volver: $('pvVolver'),
+        lightbox: $('pvLightbox'),
+        lightboxCerrar: $('pvLightboxCerrar')
+    };
+
+    /* ================= UTILIDADES ================= */
+    function mostrar(panel) {
+        [el.cargando, el.noEncontrado, el.error, el.perfil].forEach(function (n) {
+            if (n) n.hidden = (n !== panel);
+        });
+    }
+
+    function acortar(d) { return d.slice(0, 6) + '…' + d.slice(-4); }
+
+    function fechaUTC(iso) {
+        if (!iso) return null;
+        return /(Z|[+-]\d{2}:?\d{2})$/i.test(iso) ? iso : iso + 'Z';
+    }
+
+    function tiempoRelativo(iso) {
+        var ms = Date.now() - new Date(iso).getTime();
+        if (!isFinite(ms) || ms < 0) ms = 0;
+        var min = Math.floor(ms / 60000);
+        if (min < 1) return 'hace un momento';
+        if (min < 60) return 'hace ' + min + ' min';
+        var h = Math.floor(min / 60);
+        if (h < 24) return 'hace ' + h + ' h';
+        var d = Math.floor(h / 24);
+        if (d < 30) return 'hace ' + d + ' d';
+        return 'hace más de un mes';
+    }
+
+    function urlPerfil() {
+        return window.location.origin + window.location.pathname + '?u=' + encodeURIComponent(perfil.handle);
+    }
+
+    /* ================= IDENTIDAD ================= */
+    function leerIdentificador() {
+        var sp = new URLSearchParams(window.location.search);
+        var tieneU = sp.has('u'), tieneId = sp.has('id');
+        var u = (sp.get('u') || '').trim().replace(/^@+/, '');
+        var id = (sp.get('id') || '').trim();
+        var uOk = HANDLE_RE.test(u), idOk = UUID_RE.test(id);
+        if (tieneU && tieneId) return (uOk && idOk) ? { tipo: 'verificado', handle: u, id: id } : { tipo: 'invalido' };
+        if (tieneU && uOk) return { tipo: 'handle', valor: u };
+        if (tieneId && idOk) return { tipo: 'id', valor: id };
+        if (tieneU || tieneId) return { tipo: 'invalido' };
+        return null;
+    }
+
+    async function cargarPerfil(client, ident) {
+        var r;
+        if (ident.tipo === 'verificado') r = await client.rpc('perfil_publico_verificado', { p_handle: ident.handle, p_id: ident.id });
+        else if (ident.tipo === 'handle') r = await client.rpc('perfil_publico_por_handle', { p_handle: ident.valor });
+        else r = await client.rpc('perfil_publico_por_id', { p_id: ident.valor });
+        if (r.error) throw r.error;
+        var fila = Array.isArray(r.data) ? r.data[0] : r.data;
+        return fila || null;
+    }
+
+    async function resolverSinPerfil(client, ident) {
+        var id = ident.tipo === 'verificado' ? ident.id : (ident.tipo === 'id' ? ident.valor : null);
+        if (!id) return 'no_encontrado';
+        var params = { p_id: id };
+        if (ident.tipo === 'verificado') params.p_handle = ident.handle;
+        try {
+            var r = await client.rpc('perfil_visibilidad_estado', params);
+            if (!r.error && r.data) return r.data;
+        } catch (e) {}
+        return 'no_encontrado';
+    }
+
+    function mensajeNoEncontrado(titulo, texto) {
+        el.noEncontradoTitulo.removeAttribute('data-clave');
+        el.noEncontradoTexto.removeAttribute('data-clave');
+        el.noEncontradoTitulo.textContent = titulo;
+        el.noEncontradoTexto.textContent = texto;
+        mostrar(el.noEncontrado);
+    }
+
+    function mostrarErrorIdentidad() {
+        el.errorTexto.removeAttribute('data-clave');
+        el.errorTexto.textContent = 'No pudimos verificar la identidad de este perfil. Por seguridad no se muestran sus datos.';
+        mostrar(el.error);
+    }
+
+    /* ================= RENDER ================= */
+    function pintarAvatar(url) {
+        el.avatar.textContent = '';
+        var seguro = window.PerfilPublicoPosts.safeHttps(url);
+        if (!seguro) { el.avatar.textContent = '◈'; return; }
+        var img = document.createElement('img');
+        img.alt = ''; img.style.width = '100%'; img.style.height = '100%'; img.style.objectFit = 'cover';
+        img.onerror = function () { el.avatar.textContent = '◈'; };
+        img.src = seguro;
+        el.avatar.appendChild(img);
+    }
+
+    function pintarEstado(p) {
+        if (!p.ultima_conexion && p.online !== true) { el.estado.hidden = true; return; }
+        el.estado.hidden = false;
+        if (p.online === true) {
+            el.estadoDot.className = 'pv-dot activo';
+            el.estadoTexto.textContent = 'Activo ahora';
+        } else {
+            el.estadoDot.className = 'pv-dot inactivo';
+            el.estadoTexto.textContent = 'Inactivo · ' + tiempoRelativo(fechaUTC(p.ultima_conexion));
+        }
+    }
+
+    function pintarPasaporte(p) {
+        el.pasaporte.innerHTML = '';
+        var card = document.createElement('div');
+        card.className = 'pv-pasaporte';
+        var sello = document.createElement('div'); sello.className = 'pv-pasaporte-sello';
+        sello.textContent = '◈ Csariel\'s · Digital Identity';
+        var titulo = document.createElement('div'); titulo.className = 'pv-pasaporte-titulo';
+        titulo.textContent = 'Pasaporte Digital';
+        var sub = document.createElement('div'); sub.className = 'pv-pasaporte-sub';
+        sub.textContent = 'Identidad en Csariel\'s.';
+        card.appendChild(sello); card.appendChild(titulo); card.appendChild(sub);
+        if (p.verificado) {
+            var verif = document.createElement('div'); verif.className = 'pv-pasaporte-verif';
+            verif.textContent = '✓ Miembro verificado';
+            card.appendChild(verif);
+        }
+        el.pasaporte.appendChild(card);
+    }
+
+    function renderPerfil(p) {
+        el.nombre.textContent = p.nombre || p.handle;
+        el.handle.textContent = '@' + p.handle;
+        el.verificado.hidden = !p.verificado;
+        el.seguidores.textContent = String(p.seguidores_count || 0);
+        el.siguiendo.textContent = String(p.siguiendo_count || 0);
+        pintarAvatar(p.avatar_url);
+        pintarEstado(p);
+        pintarPasaporte(p);
+        actualizarMeta(p);
+    }
+
+    function actualizarMeta(p) {
+        var url = urlPerfil();
+        var titulo = (p.nombre || p.handle) + " (@" + p.handle + ") · Csariel's";
+        var desc = "Perfil público de " + (p.nombre || p.handle) + " en Csariel's · WEB3";
+        var img = window.PerfilPublicoPosts.safeHttps(p.avatar_url) || "";
+        document.title = titulo;
+        var set = function (id, attr, val) {
+            var n = document.getElementById(id);
+            if (n) n.setAttribute(attr, val);
+        };
+        set('ogTitle', 'content', titulo);
+        set('ogDesc', 'content', desc);
+        set('ogImage', 'content', img);
+        set('canonicalLink', 'href', url);
+    }
+
+    async function cargarWallet(client, id) {
+        var r = await client.from('wallet_publica').select('wallet_address').eq('id', id).maybeSingle();
+        if (r.error || !r.data || !r.data.wallet_address) return;
+        direccionWallet = r.data.wallet_address;
+        el.walletDir.textContent = acortar(direccionWallet);
+        el.wallet.hidden = false;
+    }
+
+    function copiarWallet() {
+        if (!direccionWallet || !navigator.clipboard) return;
+        navigator.clipboard.writeText(direccionWallet).then(function () {
+            window.PerfilPublicoPosts.toast('Dirección copiada', 'success');
+        }).catch(function () {
+            window.PerfilPublicoPosts.toast('No se pudo copiar', 'error');
+        });
+    }
+
+    async function compartirPerfil() {
+        var url = urlPerfil();
+        var texto = (perfil.nombre || perfil.handle) + ' en Csariel\'s';
+        if (navigator.share) {
+            try { await navigator.share({ title: texto, text: texto, url: url }); return; }
+            catch (e) { if (e && e.name === 'AbortError') return; }
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function () {
+                window.PerfilPublicoPosts.toast('Enlace copiado', 'success');
+            }).catch(function () { window.prompt('Copia este enlace:', url); });
+        } else { window.prompt('Copia este enlace:', url); }
+    }
+
+    /* ================= PUBLICACIONES ================= */
+    function mostrarMensajePub(texto) {
+        el.pubMsg.textContent = texto || '';
+        el.pubMsg.hidden = !texto;
+    }
+
+    async function cargarPublicaciones(client, handle, reiniciar) {
+        if (pub.cargando || !handle) return;
+        pub.cargando = true;
+
+        if (reiniciar) {
+            pub.antes = null; pub.total = 0; pub.idsVistos.clear();
+            el.pubLista.innerHTML = '';
+        }
+        el.pubMas.disabled = true;
+
+        try {
+            var r = await client.rpc('perfil_publicaciones_contactos', {
+                p_handle: handle, p_antes: reiniciar ? null : pub.antes, p_limite: POSTS_PAGE
+            });
+            if (r.error) {
+                el.pubSection.hidden = false; el.pubMas.hidden = true;
+                mostrarMensajePub(r.error.code === '42501'
+                    ? 'Inicia sesión para ver las publicaciones de tus contactos.'
+                    : 'No se pudieron cargar las publicaciones.');
+                return;
+            }
+            var d = r.data || {};
+            if (d.estado === 'bloqueado' || d.estado === 'no_encontrado') { el.pubSection.hidden = true; return; }
+            el.pubSection.hidden = false;
+            if (d.estado === 'no_autenticado') {
+                el.pubLista.innerHTML = ''; el.pubMas.hidden = true; el.pubContador.textContent = '';
+                mostrarMensajePub('Inicia sesión para ver las publicaciones de tus contactos.');
+                return;
+            }
+            if (d.estado === 'no_contacto') {
+                el.pubLista.innerHTML = ''; el.pubMas.hidden = true; el.pubContador.textContent = '';
+                mostrarMensajePub('Solo tus contactos pueden ver las publicaciones de esta persona.');
+                return;
+            }
+
+            var posts = Array.isArray(d.posts) ? d.posts : [];
+            var nuevos = posts.filter(function (p) {
+                if (!p.id || pub.idsVistos.has(p.id)) return false;
+                pub.idsVistos.add(p.id); return true;
+            });
+
+            // Optimización: un solo fetch para todas las reacciones del lote
+            var ids = nuevos.map(function (p) { return p.id; });
+            var resumenes = new Map();
+            if (ids.length) {
+                try {
+                    var rReac = await client.from('publicaciones_reacciones').select('publicacion_id, tipo, usuario_id').in('publicacion_id', ids);
+                    var porPub = {};
+                    (rReac.data || []).forEach(function (row) {
+                        var k = String(row.publicacion_id);
+                        if (!porPub[k]) porPub[k] = [];
+                        porPub[k].push(row);
+                    });
+                    ids.forEach(function (id) {
+                        resumenes.set(String(id), window.ReaccionesGlobal.resumir(porPub[String(id)] || [], window.usuarioActualId));
+                    });
+                } catch (e) { console.warn('[PerfilPublico] Reacciones batch:', e); }
+            }
+
+            nuevos.forEach(function (p) {
+                var card = window.PerfilPublicoPosts.crearPost(client, p);
+                el.pubLista.appendChild(card);
+                var bar = card.querySelector('.pv-reacciones');
+                if (bar) window.PerfilPublicoPosts.pintarBarraReacciones(bar, resumenes.get(String(p.id)) || { totales: {}, total: 0, miTipo: null });
+            });
+
+            pub.total += nuevos.length;
+            if (posts.length) pub.antes = posts[posts.length - 1].created_at;
+            el.pubContador.textContent = pub.total ? String(pub.total) : '';
+            mostrarMensajePub(pub.total ? '' : 'Sin publicaciones');
+            el.pubMas.hidden = posts.length < POSTS_PAGE;
+        } catch (e) {
+            console.warn('[PerfilPublico] Publicaciones:', e);
+            el.pubSection.hidden = false;
+            mostrarMensajePub('No se pudieron cargar las publicaciones: ' + window.PerfilPublicoPosts.msgError(e));
+        } finally {
+            pub.cargando = false; el.pubMas.disabled = false;
+        }
+    }
+
+    /* ================= EVENTOS ================= */
+    function mismoOrigenReferrer() {
+        try { return !!document.referrer && new URL(document.referrer).origin === window.location.origin; }
+        catch (e) { return false; }
+    }
+
+    function configurarVolver() {
+        if (el.volver) {
+            el.volver.addEventListener('click', function (e) {
+                if (window.history.length > 1 && mismoOrigenReferrer()) {
+                    e.preventDefault();
+                    window.history.back();
+                }
+            });
+            // Si el usuario no viene de dentro del sitio, lo mandamos a Inicio
+            if (!mismoOrigenReferrer()) {
+                el.volver.setAttribute('href', '/');
+                el.volver.textContent = '← Ir al inicio';
+            }
+        }
+        var volverNoEnc = document.getElementById('pvVolverNoEncontrado');
+        if (volverNoEnc && !mismoOrigenReferrer()) {
+            volverNoEnc.setAttribute('href', '/');
+            volverNoEnc.textContent = '← Ir al inicio';
+        }
+    }
+
+    /* ================= INIT SIN BLOQUEO ================= */
+    async function init() {
+        mostrar(el.cargando);
+        configurarVolver();
+
+        var ident = leerIdentificador();
+        if (!ident) { mostrar(el.noEncontrado); return; }
+        if (ident.tipo === 'invalido') { mostrarErrorIdentidad(); return; }
+
+        // Esperar SOLO al cliente de Supabase (no a la sesión completa)
+        // auth-global expone window.supabaseClient cuando lo crea.
+        var client = null;
+        var intentos = 0;
+        while (!client && intentos < 30) {
+            client = window.supabaseClient || (window.__sarielsSupabaseSingleton || null);
+            if (client) break;
+            // Disparar carga en segundo plano si aún no empezó
+            if (window.supabaseReady) {
+                try { client = await window.supabaseReady; } catch(e){}
+            }
+            if (!client) { await new Promise(function(r){ setTimeout(r, 100); }); }
+            intentos++;
+        }
+        if (!client) throw new Error('Cliente de Supabase no disponible');
+
+        // Pintar el perfil YA (sin esperar sesión)
+        // Leer sesión en paralelo (no bloquea)
+        client.auth.getSession().then(function (r) {
+            if (r && r.data && r.data.session && r.data.session.user) {
+                window.usuarioActualId = r.data.session.user.id;
+                // Re-renderizar reacciones si ya se habían pintado con usuario null
+                if (perfil && pub.total > 0) cargarPublicaciones(client, perfil.handle, true);
+            }
+        }).catch(function(){});
+
+        // Escuchar cambios de auth en vivo
+        try {
+            client.auth.onAuthStateChange(function (_e, sesion) {
+                window.usuarioActualId = (sesion && sesion.user) ? sesion.user.id : null;
+            });
+        } catch (e) {}
+
+        // Cargar perfil (crítico)
+        var p = await cargarPerfil(client, ident);
+
+        if (!p) {
+            var vis = await resolverSinPerfil(client, ident);
+            if (vis === 'restringido') {
+                mensajeNoEncontrado('Perfil restringido', 'Este perfil está restringido. Solo sus contactos pueden verlo.');
+            } else if (vis === 'bloqueado' || vis === 'no_disponible') {
+                mensajeNoEncontrado('Perfil no disponible', 'Este perfil no está disponible en este momento.');
+            } else if (ident.tipo === 'verificado') {
+                mostrarErrorIdentidad();
+            } else {
+                mostrar(el.noEncontrado);
+            }
+            return;
+        }
+
+        if (!p.handle && !p.nombre) { mostrar(el.noEncontrado); return; }
+
+        if (ident.tipo === 'verificado' &&
+            String(p.handle || '').toLowerCase() !== ident.handle.toLowerCase()) {
+            mostrarErrorIdentidad(); return;
+        }
+
+        // Si el visitante es el dueño, mandarlo a su perfil privado
+        if (window.usuarioActualId && p.id === window.usuarioActualId) {
+            window.location.replace(RUTA_PERFIL_PROPIO); return;
+        }
+
+        perfil = p;
+        renderPerfil(p);
+        mostrar(el.perfil);
+
+        cargarWallet(client, p.id).catch(function (e) {
+            console.warn('[PerfilPublico] Wallet:', e);
+        });
+
+        cargarPublicaciones(client, p.handle, true);
+    }
+
+    /* ================= LISTENERS ================= */
+    el.wallet.addEventListener('click', copiarWallet);
+    el.compartir.addEventListener('click', compartirPerfil);
+    el.reintentar.addEventListener('click', function () { window.location.reload(); });
+    el.pubMas.addEventListener('click', function () {
+        var client = window.supabaseClient || window.__sarielsSupabaseSingleton;
+        if (client && perfil && perfil.handle) cargarPublicaciones(client, perfil.handle, false);
+    });
+
+    el.lightboxCerrar.addEventListener('click', window.PerfilPublicoPosts.cerrarLightbox);
+    el.lightbox.addEventListener('click', function (e) {
+        if (e.target === el.lightbox) window.PerfilPublicoPosts.cerrarLightbox();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !el.lightbox.hidden) window.PerfilPublicoPosts.cerrarLightbox();
+    });
+
+    /* ================= ARRANQUE ================= */
+    function arrancar() {
+        // Iniciar inmediatamente, sin esperar auth-ready
+        init().catch(function (err) {
+            console.error('[PerfilPublico]', err);
+            mostrar(el.error);
+            if (el.errorTexto) {
+                el.errorTexto.textContent = 'No pudimos cargar este perfil. ' + (err.message || 'Intenta de nuevo.');
+            }
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', arrancar);
+    } else {
+        arrancar();
+    }
+})();
