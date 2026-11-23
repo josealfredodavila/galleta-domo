@@ -28,11 +28,6 @@
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
 <link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
 <link rel="stylesheet" href="/features/perfil-publico/css/perfil-publico.css">
-
-<style>
-    html:not(.auth-ready) .main-nav,
-    html:not(.auth-ready) .header { opacity: 0; pointer-events: none; }
-</style>
 </head>
 <body>
 
@@ -78,10 +73,6 @@
             <span data-clave="nav_internet">Internet</span>
         </a>
     </nav>
-
-    <div class="carrusel-3d-wrapper">
-        <div class="carrusel-3d-track"></div>
-    </div>
 
     <div class="perfil-container">
         <div id="pvCargando" class="panel">
@@ -149,9 +140,12 @@
 
                 <div class="pv-acciones">
                     <button type="button" class="btn btn-outline btn-sm" id="pvCompartir" data-clave="perfil_compartir">Compartir</button>
+                    <a href="/features/contactos/contactos.html" id="pvVolver" class="btn btn-outline btn-sm pv-volver">← Volver</a>
                 </div>
+            </div>
 
-                <a href="/features/contactos/contactos.html" id="pvVolver" class="btn btn-outline pv-volver">← Volver</a>
+            <div class="carrusel-3d-wrapper">
+                <div class="carrusel-3d-track"></div>
             </div>
 
             <section id="pvPasaporte" aria-label="Identidad"></section>
