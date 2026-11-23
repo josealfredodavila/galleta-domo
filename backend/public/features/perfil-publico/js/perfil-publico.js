@@ -1,7 +1,14 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4.2 · Reacciones desde el módulo global (reacciones-global.js).
-   Tablas y RPC verificadas en Supabase.
+   v4.3 · Visor compartido (visor-media-global.js), galería de fotos
+   y videos, y publicación en el muro de un contacto activo.
+   RPC y tablas verificadas en Supabase:
+   perfil_publico_verificado, perfil_publico_por_handle,
+   perfil_publico_por_id, perfil_visibilidad_estado,
+   perfil_publicaciones_contactos, perfil_galeria,
+   puede_publicar_en_muro, publicaciones, publicacion_reportes,
+   publicaciones_reacciones, publicaciones_comentarios,
+   publicaciones_comentarios_publicos, wallet_publica.
    ================================================================ */
 (function () {
     'use strict';
@@ -10,7 +17,11 @@
     var HANDLE_RE = /^[A-Za-z0-9_]{1,40}$/;
     var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     var POSTS_PAGE = 20;
+    var GALERIA_PAGE = 24;
     var COMENTARIOS_LIMITE = 50;
+    var MURO_TEXTO_MAX = 2000;
+    var MAX_IMAGEN = 5 * 1024 * 1024;
+    var MAX_VIDEO = 100 * 1024 * 1024;
     var TIMEOUT_CLIENTE_MS = 5000;
     var TIMEOUT_SESION_MS = 4000;
     var TIMEOUT_PERFIL_MS = 12000;
@@ -19,23 +30,10 @@
     var perfil = null;
     var direccionWallet = null;
     var pub = { cargando: false, antes: null, total: 0, idsVistos: new Set() };
+    var galeria = { cargando: false, antes: null, items: [], idsVistos: new Set() };
+    var mediaPublicaciones = [];
     var medioActivo = null;
-
-    var vf = {
-        abierto: false,
-        items: [],
-        indice: 0,
-        post: null,
-        modoFit: 'contain',
-        velocidades: [1, 1.5, 2],
-        velIndex: 0,
-        ocultarTimer: null,
-        arrastrando: false,
-        startX: 0,
-        startY: 0,
-        movido: false,
-        motivoReporte: ''
-    };
+    var muroArchivo = null;
 
     window.usuarioActualId = null;
 
@@ -64,15 +62,24 @@
         compartir: $('pvCompartir'),
         pasaporte: $('pvPasaporte'),
         amigosSection: $('pvAmigosSection'),
+        galeriaSection: $('pvGaleriaSection'),
+        galeriaCount: $('pvGaleriaCount'),
+        galeriaGrid: $('pvGaleriaGrid'),
+        galeriaMsg: $('pvGaleriaMsg'),
+        galeriaMas: $('pvGaleriaMas'),
+        muroSection: $('pvMuroSection'),
+        muroTexto: $('pvMuroTexto'),
+        muroAdjuntar: $('pvMuroAdjuntar'),
+        muroArchivoInput: $('pvMuroArchivo'),
+        muroNombre: $('pvMuroNombre'),
+        muroPublicar: $('pvMuroPublicar'),
+        muroMsg: $('pvMuroMsg'),
         pubSection: $('pvPubSection'),
         pubLista: $('pvPubLista'),
         pubMsg: $('pvPubMsg'),
         pubMas: $('pvPubMas'),
         pubContador: $('pvPubContador'),
-        volver: $('pvVolver'),
-        lightbox: $('pvLightbox'),
-        lightboxBody: $('pvLightboxBody'),
-        lightboxCerrar: $('pvLightboxCerrar')
+        volver: $('pvVolver')
     };
 
     /* ================= UTILIDADES ================= */
@@ -147,16 +154,20 @@
         return d.toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     }
 
-    function formatearDuracion(seg) {
-        if (!isFinite(seg) || seg < 0) seg = 0;
-        var s = Math.floor(seg);
-        var m = Math.floor(s / 60);
-        var r = s % 60;
-        return m + ':' + (r < 10 ? '0' : '') + r;
-    }
-
     function urlPerfil() {
         return window.location.origin + window.location.pathname + '?u=' + encodeURIComponent(perfil.handle);
+    }
+
+    function esSoyDueno(usuarioId) {
+        return Boolean(window.usuarioActualId && usuarioId && String(usuarioId) === String(window.usuarioActualId));
+    }
+
+    function mediaTipo(tipo, url) {
+        var t = String(tipo || '').toLowerCase();
+        if (t) return t;
+        if (/\.(mp4|webm|mov)(\?|$)/i.test(url)) return 'video';
+        if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(url)) return 'audio';
+        return 'imagen';
     }
 
     function registrarReproductorUnico(elMedia) {
@@ -168,575 +179,53 @@
         });
     }
 
-    /* ================= VISOR INMERSIVO ================= */
+    /* ================= VISOR COMPARTIDO ================= */
 
-    function vfNodo() {
-        return {
-            root: $('pubVisorFull'),
-            media: document.querySelector('#pubVisorFull .pub-vf-media'),
-            btnClose: $('btnPubVfClose'),
-            btnMenu: $('btnPubVfMenu'),
-            centerControls: $('pubVfCenterControls'),
-            btnPlayCenter: $('pubVfBtnPlayCenter'),
-            controls: document.querySelector('#pubVisorFull .pub-vf-controls'),
-            progressBar: $('pubVfProgressBar'),
-            progressFill: $('pubVfProgressFill'),
-            timeLabel: $('pubVfTimeLabel'),
-            btnSpeed: $('btnPubVfSpeed'),
-            btnPip: $('btnPubVfPip'),
-            btnExpand: $('btnPubVfExpand'),
-            sheetBackdrop: $('pubVfSheetBackdrop'),
-            sheet: $('pubVfSheet'),
-            sheetTrack: document.querySelector('#pubVfSheet .pub-vf-sheet-track'),
-            sheetViews: document.querySelectorAll('#pubVfSheet .pub-vf-sheet-view')
-        };
-    }
-
-    function vfVideo() {
-        var n = vfNodo();
-        return n.media ? n.media.querySelector('video') : null;
-    }
-
-    function vfAplicarEscala() {
-        var n = vfNodo();
-        if (!n.media) return;
-        var e = n.media.querySelector('video, img');
-        if (!e) return;
-        e.style.objectFit = vf.modoFit;
-        e.style.objectPosition = 'center';
-    }
-
-    function vfAlternarEscala() {
-        vf.modoFit = vf.modoFit === 'cover' ? 'contain' : 'cover';
-        vfAplicarEscala();
-    }
-
-    function vfMostrarControles(autoOcultar) {
-        var n = vfNodo();
-        if (!n.root) return;
-        n.root.classList.remove('controls-hidden');
-        if (vf.ocultarTimer) { clearTimeout(vf.ocultarTimer); vf.ocultarTimer = null; }
-        var vid = vfVideo();
-        if (autoOcultar && vid && !vid.paused) {
-            vf.ocultarTimer = setTimeout(function () {
-                if (vf.abierto && vid && !vid.paused && !vf.arrastrando) {
-                    n.root.classList.add('controls-hidden');
-                }
-            }, 2500);
-        }
-    }
-
-    function vfActualizarPlay() {
-        var n = vfNodo();
-        var vid = vfVideo();
-        if (!vid) {
-            if (n.centerControls) n.centerControls.hidden = true;
-            if (n.controls) n.controls.hidden = true;
-            vfMostrarControles(false);
-            return;
-        }
-        if (n.controls) n.controls.hidden = false;
-        if (n.centerControls) n.centerControls.hidden = !vid.paused;
-        vfMostrarControles(!vid.paused);
-    }
-
-    function vfActualizarProgreso() {
-        var n = vfNodo();
-        var vid = vfVideo();
-        if (!vid) return;
-        var dur = vid.duration || 0;
-        var cur = vid.currentTime || 0;
-        var pct = dur > 0 ? Math.min(100, Math.max(0, (cur / dur) * 100)) : 0;
-        if (n.progressFill) n.progressFill.style.width = pct + '%';
-        if (n.timeLabel) n.timeLabel.textContent = formatearDuracion(cur) + ' / ' + formatearDuracion(dur);
-    }
-
-    function vfBuscar(ev) {
-        var n = vfNodo();
-        var vid = vfVideo();
-        if (!vid || !n.progressBar || !isFinite(vid.duration) || vid.duration <= 0) return;
-        var rect = n.progressBar.getBoundingClientRect();
-        if (!rect.width) return;
-        var ratio = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width));
-        vid.currentTime = ratio * vid.duration;
-        vfActualizarProgreso();
-    }
-
-    function vfRender(idx) {
-        var n = vfNodo();
-        if (!n.media || !vf.items.length) return;
-
-        var len = vf.items.length;
-        var i = ((idx % len) + len) % len;
-        vf.indice = i;
-
-        var item = vf.items[i];
-        var segura = safeHttps(item.url);
-        if (!segura) return;
-
-        var prev = vfVideo();
-        if (prev) { try { prev.pause(); } catch (e) {} }
-
-        n.media.innerHTML = '';
-        vf.velIndex = 0;
-        if (n.btnSpeed) n.btnSpeed.textContent = '1x';
-
-        if (item.tipo === 'video') {
-            var vid = document.createElement('video');
-            vid.src = segura;
-            vid.controls = false;
-            vid.playsInline = true;
-            vid.setAttribute('playsinline', '');
-            vid.setAttribute('webkit-playsinline', '');
-            if (vf.post && vf.post.permitir_descarga === false) {
-                vid.setAttribute('controlsList', 'nodownload');
-            }
-            vid.addEventListener('loadedmetadata', function () {
-                vf.modoFit = (vid.videoHeight > vid.videoWidth) ? 'cover' : 'contain';
-                vfAplicarEscala();
-                vfActualizarProgreso();
-            });
-            vid.addEventListener('timeupdate', vfActualizarProgreso);
-            vid.addEventListener('play', vfActualizarPlay);
-            vid.addEventListener('pause', vfActualizarPlay);
-            vid.addEventListener('ended', vfActualizarPlay);
-            registrarReproductorUnico(vid);
-            n.media.appendChild(vid);
-            vfAplicarEscala();
-            vid.play().then(vfActualizarPlay).catch(vfActualizarPlay);
-        } else {
-            var img = document.createElement('img');
-            img.src = segura;
-            img.alt = '';
-            img.addEventListener('load', function () {
-                vf.modoFit = (img.naturalHeight > img.naturalWidth) ? 'cover' : 'contain';
-                vfAplicarEscala();
-            });
-            n.media.appendChild(img);
-            vfAplicarEscala();
-            vfActualizarPlay();
-        }
-    }
-
-    function vfAbrir(items, idxInicial, postObj) {
-        var n = vfNodo();
-        if (!n.root || !Array.isArray(items) || !items.length) return;
-        if (medioActivo) { try { medioActivo.pause(); } catch (e) {} }
-        vf.abierto = true;
-        vf.items = items;
-        vf.post = postObj || null;
-        vf.modoFit = 'contain';
-        n.root.hidden = false;
-        vfRender(idxInicial || 0);
-    }
-
-    function vfCerrar(mantenerPip) {
-        var n = vfNodo();
-        vfCerrarSheet();
-        if (vf.ocultarTimer) { clearTimeout(vf.ocultarTimer); vf.ocultarTimer = null; }
-        vf.abierto = false;
-
-        var vid = vfVideo();
-        if (vid && !mantenerPip) {
-            try { vid.pause(); } catch (e) {}
-            if (medioActivo === vid) medioActivo = null;
-        }
-        if (n.media && !mantenerPip) n.media.innerHTML = '';
-        if (n.root) {
-            n.root.hidden = true;
-            n.root.classList.remove('controls-hidden');
-        }
-    }
-
-    function vfIrPaso(paso) {
-        var n = vfNodo();
-        if (n.sheetTrack) n.sheetTrack.style.transform = 'translateX(-' + (paso * 33.3333) + '%)';
-    }
-
-    function vfCerrarSheet() {
-        var n = vfNodo();
-        if (n.sheetBackdrop) n.sheetBackdrop.hidden = true;
-        if (n.sheet) n.sheet.hidden = true;
-        vfIrPaso(0);
-    }
-
-    async function vfGuardar() {
-        var item = vf.items[vf.indice];
-        if (!item || !item.url) return;
-
-        if (vf.post && vf.post.permitir_descarga === false) {
-            toast('La descarga está deshabilitada para este archivo', 'error');
+    function abrirVisor(items, indice) {
+        if (!window.VisorMediaGlobal) {
+            toast('El visor no está disponible. Recarga la página.', 'error');
             return;
         }
 
-        try {
-            toast('Descargando...', 'success');
-            var res = await fetch(item.url);
-            if (!res.ok) throw new Error('Error de red');
-            var blob = await res.blob();
-            var ext = item.tipo === 'video' ? 'mp4' : (item.tipo === 'audio' ? 'mp3' : 'jpg');
-            var u = URL.createObjectURL(blob);
-            var a = document.createElement('a');
-            a.href = u;
-            a.download = 'archivo-' + Date.now() + '.' + ext;
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            setTimeout(function () { URL.revokeObjectURL(u); }, 2000);
-        } catch (e) {
-            toast('No se pudo guardar el archivo', 'error');
-        }
-    }
-
-    function vfAbrirSheet() {
-        var n = vfNodo();
-        if (!n.sheet || !n.sheetViews || n.sheetViews.length < 3) return;
-
-        var vPrin = n.sheetViews[0];
-        var vMot = n.sheetViews[1];
-        var vConf = n.sheetViews[2];
-        var post = vf.post || {};
-
-        var esDueno = Boolean(window.usuarioActualId && post.usuario_id &&
-            String(post.usuario_id) === String(window.usuarioActualId));
-
-        function boton(texto, onClick) {
-            var b = document.createElement('button');
-            b.type = 'button';
-            b.className = 'pub-vf-pill-btn';
-            b.style.width = '100%';
-            b.style.justifyContent = 'flex-start';
-            b.style.height = '44px';
-            b.textContent = texto;
-            b.addEventListener('click', onClick);
-            return b;
-        }
-
-        vPrin.innerHTML = '';
-        vPrin.appendChild(boton('Guardar', function () {
-            vfCerrarSheet();
-            vfGuardar();
-        }));
-
-        if (!esDueno) {
-            vPrin.appendChild(boton('No quiero ver esto', function () {
-                if (post.id && el.pubLista) {
-                    var card = el.pubLista.querySelector('.pv-post[data-pub-id="' + post.id + '"]');
-                    if (card) card.remove();
-                }
-                vfCerrarSheet();
-                vfCerrar(false);
-                toast('Publicación ocultada', 'success');
-            }));
-            vPrin.appendChild(boton('Reportar →', function () { vfIrPaso(1); }));
-        } else {
-            vPrin.appendChild(boton('Eliminar', async function () {
-                if (!post.id) return;
-                try {
-                    var client = await obtenerCliente();
-                    if (!client) throw new Error('Sin conexión');
-                    var del = await client.from('publicaciones').delete().eq('id', post.id);
-                    if (del.error) throw del.error;
-                    if (el.pubLista) {
-                        var card = el.pubLista.querySelector('.pv-post[data-pub-id="' + post.id + '"]');
-                        if (card) card.remove();
-                    }
-                    vfCerrarSheet();
-                    vfCerrar(false);
-                    toast('Publicación eliminada', 'success');
-                } catch (e) {
-                    toast('No se pudo eliminar: ' + msgError(e), 'error');
-                }
-            }));
-        }
-
-        vMot.innerHTML = '';
-        vMot.appendChild(boton('← Volver', function () { vfIrPaso(0); }));
-
-        ['Spam', 'Contenido inapropiado', 'Acoso o fraude', 'Otro motivo'].forEach(function (mot) {
-            vMot.appendChild(boton(mot, function () {
-                vf.motivoReporte = mot;
-                vConf.innerHTML = '';
-
-                vConf.appendChild(boton('← Motivos', function () { vfIrPaso(1); }));
-
-                var p = document.createElement('p');
-                p.style.margin = '8px 0';
-                p.textContent = 'Confirmar reporte por: ' + mot;
-                vConf.appendChild(p);
-
-                vConf.appendChild(boton('Confirmar reporte', async function () {
-                    try {
-                        var client = await obtenerCliente();
-                        if (!client || !post.id || !window.usuarioActualId) {
-                            throw new Error('Inicia sesión para reportar');
-                        }
-                        /* Columnas reales de publicacion_reportes: publicacion_id, usuario_id, motivo.
-                           id, estado ('pendiente') y created_at se llenan solos. */
-                        var ins = await client.from('publicacion_reportes').insert({
-                            publicacion_id: post.id,
-                            usuario_id: window.usuarioActualId,
-                            motivo: vf.motivoReporte
-                        });
-                        if (ins.error) throw ins.error;
-                        vfCerrarSheet();
-                        toast('Reporte enviado', 'success');
-                    } catch (e) {
-                        toast('No se pudo enviar el reporte: ' + msgError(e), 'error');
-                    }
-                }));
-
-                vfIrPaso(2);
-            }));
-        });
-
-        vfIrPaso(0);
-        if (n.sheetBackdrop) n.sheetBackdrop.hidden = false;
-        n.sheet.hidden = false;
-    }
-
-    function enlazarVisor() {
-        var n = vfNodo();
-        if (!n.root) return;
-
-        if (n.btnClose) n.btnClose.addEventListener('click', function (ev) { ev.stopPropagation(); vfCerrar(false); });
-        if (n.btnMenu) n.btnMenu.addEventListener('click', function (ev) { ev.stopPropagation(); vfAbrirSheet(); });
-
-        if (n.btnPlayCenter) {
-            n.btnPlayCenter.addEventListener('click', function (ev) {
-                ev.stopPropagation();
-                var vid = vfVideo();
-                if (vid && vid.paused) vid.play().catch(function () {});
-            });
-        }
-
-        if (n.btnSpeed) {
-            n.btnSpeed.addEventListener('click', function (ev) {
-                ev.stopPropagation();
-                vf.velIndex = (vf.velIndex + 1) % vf.velocidades.length;
-                var v = vf.velocidades[vf.velIndex];
-                var vid = vfVideo();
-                if (vid) vid.playbackRate = v;
-                n.btnSpeed.textContent = v + 'x';
-                vfMostrarControles(true);
-            });
-        }
-
-        if (n.btnPip) {
-            n.btnPip.addEventListener('click', async function (ev) {
-                ev.stopPropagation();
-                var vid = vfVideo();
-                if (!vid || typeof vid.requestPictureInPicture !== 'function') {
-                    toast('PiP no disponible', 'error');
-                    return;
-                }
-                try {
-                    if (document.pictureInPictureElement) {
-                        await document.exitPictureInPicture();
-                    } else {
-                        await vid.requestPictureInPicture();
-                        vfCerrar(true);
-                    }
-                } catch (e) {
-                    toast('No se pudo activar PiP', 'error');
-                }
-            });
-        }
-
-        if (n.btnExpand) {
-            n.btnExpand.addEventListener('click', function (ev) {
-                ev.stopPropagation();
-                vfAlternarEscala();
-            });
-        }
-
-        if (n.progressBar) {
-            n.progressBar.addEventListener('pointerdown', function (ev) {
-                ev.stopPropagation();
-                vf.arrastrando = true;
-                try { n.progressBar.setPointerCapture(ev.pointerId); } catch (e) {}
-                vfBuscar(ev);
-            });
-            n.progressBar.addEventListener('pointermove', function (ev) {
-                if (!vf.arrastrando) return;
-                ev.stopPropagation();
-                vfBuscar(ev);
-            });
-            var finArrastre = function (ev) {
-                if (!vf.arrastrando) return;
-                ev.stopPropagation();
-                vf.arrastrando = false;
-                try { n.progressBar.releasePointerCapture(ev.pointerId); } catch (e) {}
-                vfMostrarControles(true);
-            };
-            n.progressBar.addEventListener('pointerup', finArrastre);
-            n.progressBar.addEventListener('pointercancel', finArrastre);
-        }
-
-        if (n.media) {
-            n.media.addEventListener('touchstart', function (ev) {
-                if (!ev.touches || !ev.touches.length) return;
-                vf.startX = ev.touches[0].clientX;
-                vf.startY = ev.touches[0].clientY;
-                vf.movido = false;
-            }, { passive: true });
-
-            n.media.addEventListener('touchmove', function (ev) {
-                if (!ev.touches || !ev.touches.length) return;
-                var dx = Math.abs(ev.touches[0].clientX - vf.startX);
-                var dy = Math.abs(ev.touches[0].clientY - vf.startY);
-                if (dx > 10 || dy > 10) vf.movido = true;
-            }, { passive: true });
-
-            n.media.addEventListener('touchend', function (ev) {
-                if (!ev.changedTouches || !ev.changedTouches.length) return;
-                var dX = ev.changedTouches[0].clientX - vf.startX;
-                var dY = ev.changedTouches[0].clientY - vf.startY;
-
-                if (dY > 120 && Math.abs(dY) > Math.abs(dX)) {
-                    vfCerrar(false);
-                    return;
-                }
-                if (Math.abs(dX) > 55 && Math.abs(dX) > Math.abs(dY)) {
-                    vfRender(dX < 0 ? vf.indice + 1 : vf.indice - 1);
-                    return;
-                }
-                if (!vf.movido) {
-                    var vid = vfVideo();
-                    if (vid) {
-                        if (vid.paused) vid.play().catch(function () {});
-                        else vid.pause();
-                    } else {
-                        vfMostrarControles(false);
-                    }
-                }
-            }, { passive: true });
-        }
-
-        if (n.sheetBackdrop) n.sheetBackdrop.addEventListener('click', vfCerrarSheet);
-
-        window.addEventListener('resize', function () {
-            if (vf.abierto) vfAlternarEscala();
+        window.VisorMediaGlobal.abrir({
+            items: items,
+            indice: indice,
+            onEliminar: function (item) { eliminarPropia(item.postId); },
+            onOcultar: function (item) { quitarTarjeta(item.postId); }
         });
     }
 
-    /* ================= LIGHTBOX (respaldo si no hay visor) ================= */
+    function quitarTarjeta(postId) {
+        if (!postId) return;
 
-    function cerrarLightbox() {
-        var lb = el.lightbox;
-        var body = el.lightboxBody;
-        if (medioActivo && body && body.contains(medioActivo)) {
-            try { medioActivo.pause(); } catch (e) {}
-            medioActivo = null;
-        }
-        if (lb) lb.hidden = true;
-        if (body) body.innerHTML = '';
+        var card = el.pubLista.querySelector('.pv-post[data-pub-id="' + postId + '"]');
+        if (card) card.remove();
+
+        var mini = el.galeriaGrid.querySelector('[data-id="' + postId + '"]');
+        if (mini) mini.remove();
     }
 
-    function abrirMedioAmpliado(tipo, url, items, idx, post) {
-        var segura = safeHttps(url);
-        if (!segura) return;
+    async function eliminarPropia(postId) {
+        if (!postId) return;
 
-        if ($('pubVisorFull')) {
-            vfAbrir(items || [{ tipo: tipo, url: segura }], idx || 0, post || null);
+        var client = await obtenerCliente();
+        if (!client) {
+            toast('Sin conexión.', 'error');
             return;
         }
 
-        if (!el.lightboxBody) return;
-        el.lightboxBody.innerHTML = '';
+        var r = await client.from('publicaciones').delete().eq('id', postId);
 
-        var nodo;
-        if (tipo === 'video') {
-            nodo = document.createElement('video');
-            nodo.src = segura;
-            nodo.controls = true;
-            nodo.autoplay = true;
-            nodo.playsInline = true;
-            nodo.setAttribute('playsinline', '');
-            registrarReproductorUnico(nodo);
-        } else {
-            nodo = document.createElement('img');
-            nodo.src = segura;
-            nodo.alt = '';
-        }
-        el.lightboxBody.appendChild(nodo);
-        if (el.lightbox) el.lightbox.hidden = false;
-    }
-
-    /* ================= IDENTIDAD ================= */
-
-    function leerIdentificador() {
-        var sp = new URLSearchParams(window.location.search);
-        var tieneU = sp.has('u');
-        var tieneId = sp.has('id');
-        var u = (sp.get('u') || '').trim().replace(/^@+/, '');
-        var id = (sp.get('id') || '').trim();
-        var uOk = HANDLE_RE.test(u);
-        var idOk = UUID_RE.test(id);
-
-        if (tieneU && tieneId) {
-            return (uOk && idOk) ? { tipo: 'verificado', handle: u, id: id } : { tipo: 'invalido' };
-        }
-        if (tieneU && uOk) return { tipo: 'handle', valor: u };
-        if (tieneId && idOk) return { tipo: 'id', valor: id };
-        if (tieneU || tieneId) return { tipo: 'invalido' };
-        return null;
-    }
-
-    async function cargarPerfil(client, ident) {
-        var llamada;
-
-        if (ident.tipo === 'verificado') {
-            llamada = client.rpc('perfil_publico_verificado', { p_handle: ident.handle, p_id: ident.id });
-        } else if (ident.tipo === 'handle') {
-            llamada = client.rpc('perfil_publico_por_handle', { p_handle: ident.valor });
-        } else {
-            llamada = client.rpc('perfil_publico_por_id', { p_id: ident.valor });
+        if (r.error) {
+            toast('No se pudo eliminar: ' + msgError(r.error), 'error');
+            return;
         }
 
-        var r = await conTimeout(llamada, TIMEOUT_PERFIL_MS, 'El servidor tardó demasiado en responder el perfil.');
-        if (r.error) throw r.error;
-
-        var fila = Array.isArray(r.data) ? r.data[0] : r.data;
-        return fila || null;
+        quitarTarjeta(postId);
+        toast('Publicación eliminada', 'success');
     }
 
-    async function resolverSinPerfil(client, ident) {
-        var id = ident.tipo === 'verificado' ? ident.id : (ident.tipo === 'id' ? ident.valor : null);
-        if (!id) return 'no_encontrado';
-
-        var params = { p_id: id };
-        if (ident.tipo === 'verificado') params.p_handle = ident.handle;
-
-        try {
-            var r = await conTimeout(client.rpc('perfil_visibilidad_estado', params), TIMEOUT_PERFIL_MS, 'Sin respuesta');
-            if (!r.error && r.data) return r.data;
-        } catch (e) {}
-
-        return 'no_encontrado';
-    }
-
-    function mensajeNoEncontrado(titulo, texto) {
-        el.noEncontradoTitulo.removeAttribute('data-clave');
-        el.noEncontradoTexto.removeAttribute('data-clave');
-        el.noEncontradoTitulo.textContent = titulo;
-        el.noEncontradoTexto.textContent = texto;
-        mostrar(el.noEncontrado);
-    }
-
-    function mostrarErrorIdentidad() {
-        el.errorTexto.removeAttribute('data-clave');
-        el.errorTexto.textContent = 'No pudimos verificar la identidad de este perfil. Por seguridad no se muestran sus datos.';
-        mostrar(el.error);
-    }
-
-    function mostrarErrorGeneral(detalle) {
-        el.errorTexto.removeAttribute('data-clave');
-        el.errorTexto.textContent = 'No pudimos cargar este perfil. ' + (detalle || 'Intenta de nuevo.');
-        mostrar(el.error);
-    }
-
-    /* ================= RENDER PERFIL ================= */
+    /* ================= RENDER DEL PERFIL ================= */
 
     function pintarAvatar(url) {
         el.avatar.textContent = '';
@@ -873,8 +362,6 @@
         }
     }
 
-    /* ================= AMIGOS ================= */
-
     function cargarAmigos(client, id) {
         if (!el.amigosSection) return;
         el.amigosSection.hidden = false;
@@ -883,47 +370,15 @@
         }
     }
 
-    /* ================= MEDIOS ================= */
+    /* ================= MEDIOS EN LAS PUBLICACIONES ================= */
 
-    function listaMedia(p) {
-        var u = safeHttps(p.media_url);
-        if (!u) return [];
-
-        var t = String(p.media_type || '').toLowerCase();
-        if (!t) {
-            if (/\.(mp4|webm|mov)(\?|$)/i.test(u)) t = 'video';
-            else if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(u)) t = 'audio';
-            else t = 'imagen';
-        }
-        return [{ url: u, tipo: t }];
-    }
-
-    function renderMedia(meta, p) {
-        var media = listaMedia(p)[0];
-        if (!media) return;
-
-        var sinDescarga = p.permitir_descarga === false;
-
-        if (media.tipo === 'audio') {
-            var aud = document.createElement('audio');
-            aud.className = 'pv-post-audio';
-            aud.src = media.url;
-            aud.controls = true;
-            aud.preload = 'none';
-            if (sinDescarga) aud.setAttribute('controlsList', 'nodownload');
-            registrarReproductorUnico(aud);
-            meta.appendChild(aud);
-            return;
-        }
-
-        var marco = document.createElement('div');
-        marco.className = 'pv-media-marco';
-
+    function crearNodoMedia(tipo, url, sinDescarga) {
         var nodo;
-        if (media.tipo === 'video') {
+
+        if (tipo === 'video') {
             nodo = document.createElement('video');
             nodo.className = 'pv-media';
-            nodo.src = media.url;
+            nodo.src = url;
             nodo.preload = 'metadata';
             nodo.playsInline = true;
             nodo.setAttribute('playsinline', '');
@@ -936,14 +391,47 @@
             nodo.alt = '';
             nodo.loading = 'lazy';
             nodo.decoding = 'async';
-            nodo.src = media.url;
+            nodo.src = url;
         }
 
-        marco.appendChild(nodo);
+        return nodo;
+    }
+
+    function renderMedia(meta, p) {
+        var url = safeHttps(p.media_url);
+        if (!url) return;
+
+        var tipo = mediaTipo(p.media_type, url);
+
+        if (tipo === 'audio') {
+            var aud = document.createElement('audio');
+            aud.className = 'pv-post-audio';
+            aud.src = url;
+            aud.controls = true;
+            aud.preload = 'none';
+            if (p.permitir_descarga === false) aud.setAttribute('controlsList', 'nodownload');
+            registrarReproductorUnico(aud);
+            meta.appendChild(aud);
+            return;
+        }
+
+        var item = {
+            url: url,
+            tipo: tipo,
+            permiteDescarga: p.permitir_descarga !== false,
+            postId: p.id,
+            esDueno: esSoyDueno(p.usuario_id)
+        };
+
+        mediaPublicaciones.push(item);
+        var indice = mediaPublicaciones.length - 1;
+
+        var marco = document.createElement('div');
+        marco.className = 'pv-media-marco';
+        marco.appendChild(crearNodoMedia(tipo, url, p.permitir_descarga === false));
 
         marco.addEventListener('click', function () {
-            if (typeof nodo.pause === 'function') { try { nodo.pause(); } catch (e) {} }
-            abrirMedioAmpliado(media.tipo, media.url, [{ tipo: media.tipo, url: media.url }], 0, p);
+            abrirVisor(mediaPublicaciones, indice);
         });
 
         meta.appendChild(marco);
@@ -1033,7 +521,7 @@
         }
     }
 
-    /* ================= PUBLICACIÓN ================= */
+    /* ================= TARJETA DE PUBLICACIÓN ================= */
 
     function crearPost(client, p) {
         var pubId = p.id;
@@ -1089,8 +577,7 @@
         var barra = document.createElement('div');
         barra.className = 'pv-post-barra';
 
-        /* Contenedor de la barra de reacciones: lo llena el módulo global
-           en cargarPublicaciones. */
+        /* Contenedor de la barra de reacciones: lo llena el módulo global en cargarPublicaciones. */
         var reacciones = document.createElement('div');
         reacciones.className = 'pv-reacciones';
         reacciones.dataset.pubId = pubId;
@@ -1173,6 +660,7 @@
             pub.antes = null;
             pub.total = 0;
             pub.idsVistos.clear();
+            mediaPublicaciones = [];
             el.pubLista.innerHTML = '';
         }
 
@@ -1281,14 +769,286 @@
         }
     }
 
-    window.PerfilPublicoPosts = {
-        crearPost: crearPost,
-        abrirVisor: vfAbrir,
-        cerrarVisor: vfCerrar,
-        toast: toast,
-        msgError: msgError,
-        safeHttps: safeHttps
-    };
+    /* ================= GALERÍA ================= */
+
+    function mostrarMsgGaleria(texto) {
+        el.galeriaMsg.textContent = texto || '';
+        el.galeriaMsg.hidden = !texto;
+    }
+
+    function crearMiniatura(item, idx) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pv-galeria-item';
+        b.setAttribute('data-id', item.postId);
+        b.setAttribute('aria-label', item.tipo === 'video' ? 'Abrir video' : 'Abrir foto');
+
+        if (item.tipo === 'video') {
+            var v = document.createElement('video');
+            v.src = item.url;
+            v.muted = true;
+            v.playsInline = true;
+            v.preload = 'metadata';
+            b.appendChild(v);
+
+            var play = document.createElement('span');
+            play.className = 'pv-galeria-play';
+            play.textContent = '▶';
+            b.appendChild(play);
+        } else {
+            var img = document.createElement('img');
+            img.alt = '';
+            img.loading = 'lazy';
+            img.decoding = 'async';
+            img.src = item.url;
+            b.appendChild(img);
+        }
+
+        b.addEventListener('click', function () {
+            abrirVisor(galeria.items, idx);
+        });
+
+        return b;
+    }
+
+    async function cargarGaleria(client, reiniciar) {
+        if (galeria.cargando || !perfil) return;
+        galeria.cargando = true;
+
+        if (reiniciar) {
+            galeria.antes = null;
+            galeria.items = [];
+            galeria.idsVistos.clear();
+            el.galeriaGrid.innerHTML = '';
+        }
+
+        el.galeriaMas.disabled = true;
+
+        try {
+            var r = await conTimeout(
+                client.rpc('perfil_galeria', {
+                    p_handle: perfil.handle,
+                    p_antes: reiniciar ? null : galeria.antes,
+                    p_limite: GALERIA_PAGE
+                }),
+                TIMEOUT_PERFIL_MS,
+                'La galería tardó demasiado.'
+            );
+
+            if (r.error) throw r.error;
+
+            var d = r.data || {};
+
+            if (d.estado === 'bloqueado' || d.estado === 'no_encontrado') {
+                el.galeriaSection.hidden = true;
+                return;
+            }
+
+            el.galeriaSection.hidden = false;
+
+            if (d.estado === 'no_contacto') {
+                mostrarMsgGaleria('La galería de esta persona solo es visible para sus contactos.');
+                el.galeriaMas.hidden = true;
+                return;
+            }
+
+            if (d.estado === 'no_autenticado') {
+                mostrarMsgGaleria('Inicia sesión para ver la galería.');
+                el.galeriaMas.hidden = true;
+                return;
+            }
+
+            var filas = Array.isArray(d.items) ? d.items : [];
+
+            filas.forEach(function (f) {
+                if (!f.id || galeria.idsVistos.has(f.id)) return;
+
+                var url = safeHttps(f.media_url);
+                if (!url) return;
+
+                galeria.idsVistos.add(f.id);
+
+                var item = {
+                    url: url,
+                    tipo: mediaTipo(f.media_type, url),
+                    permiteDescarga: f.permitir_descarga !== false,
+                    postId: f.id,
+                    esDueno: esSoyDueno(perfil.id)
+                };
+
+                galeria.items.push(item);
+                el.galeriaGrid.appendChild(crearMiniatura(item, galeria.items.length - 1));
+            });
+
+            if (filas.length) galeria.antes = filas[filas.length - 1].created_at;
+
+            el.galeriaCount.textContent = galeria.items.length ? String(galeria.items.length) : '';
+            mostrarMsgGaleria(galeria.items.length ? '' : 'Sin fotos ni videos todavía.');
+            el.galeriaMas.hidden = filas.length < GALERIA_PAGE;
+
+        } catch (e) {
+            console.warn('[PerfilPublico] Galería:', e);
+            mostrarMsgGaleria('No se pudo cargar la galería.');
+        } finally {
+            galeria.cargando = false;
+            el.galeriaMas.disabled = false;
+        }
+    }
+
+    /* ================= MURO DE CONTACTO ================= */
+
+    async function verificarMuro(client) {
+        if (!window.usuarioActualId || !perfil || String(perfil.id) === String(window.usuarioActualId)) {
+            el.muroSection.hidden = true;
+            return;
+        }
+
+        try {
+            var r = await client.rpc('puede_publicar_en_muro', { p_destino: perfil.id });
+            el.muroSection.hidden = !(r && r.data === true);
+        } catch (e) {
+            el.muroSection.hidden = true;
+        }
+    }
+
+    function mostrarMsgMuro(texto) {
+        el.muroMsg.textContent = texto || '';
+        el.muroMsg.hidden = !texto;
+    }
+
+    function elegirArchivoMuro(ev) {
+        var input = ev.target;
+        var f = input.files && input.files[0];
+
+        if (!f) return;
+
+        var tipo = f.type.indexOf('image/') === 0
+            ? 'imagen'
+            : (f.type.indexOf('video/') === 0 ? 'video' : null);
+
+        if (!tipo) {
+            toast('Solo se permiten fotos o videos.', 'error');
+            input.value = '';
+            return;
+        }
+
+        if (tipo === 'imagen' && f.size > MAX_IMAGEN) {
+            toast('La imagen supera 5 MB.', 'error');
+            input.value = '';
+            return;
+        }
+
+        if (tipo === 'video' && f.size > MAX_VIDEO) {
+            toast('El video supera 100 MB.', 'error');
+            input.value = '';
+            return;
+        }
+
+        muroArchivo = { file: f, tipo: tipo };
+        el.muroNombre.textContent = f.name;
+    }
+
+    function limpiarArchivoMuro() {
+        muroArchivo = null;
+        el.muroNombre.textContent = '';
+        el.muroArchivoInput.value = '';
+    }
+
+    async function subirMedia(file, tipo, token) {
+        var fd = new FormData();
+        fd.append('file', file);
+        fd.append('destino', 'muro-videos');
+        fd.append('tipo', tipo);
+
+        var resp = await fetch('/api/media/upload', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token },
+            body: fd
+        });
+
+        var data = {};
+        try { data = await resp.json(); } catch (e) {}
+
+        if (!resp.ok || !data.ok) {
+            throw new Error(data.error || 'No se pudo subir el archivo');
+        }
+
+        if (!safeHttps(data.url)) {
+            throw new Error('El servidor no devolvió una URL válida.');
+        }
+
+        return data;
+    }
+
+    async function publicarEnMuro() {
+        var texto = String(el.muroTexto.value || '').trim();
+
+        if (!texto && !muroArchivo) {
+            mostrarMsgMuro('Escribe algo o adjunta una foto o video.');
+            return;
+        }
+
+        var client = await obtenerCliente();
+
+        if (!client) {
+            toast('No se pudo conectar. Recarga la página.', 'error');
+            return;
+        }
+
+        var sesion = await client.auth.getSession();
+        var session = sesion.data && sesion.data.session ? sesion.data.session : null;
+
+        if (!session) {
+            toast('Inicia sesión para publicar.', 'error');
+            return;
+        }
+
+        var original = el.muroPublicar.textContent;
+        el.muroPublicar.disabled = true;
+        el.muroPublicar.textContent = 'Publicando...';
+        mostrarMsgMuro('');
+
+        try {
+            var mediaUrl = null;
+            var mediaType = null;
+
+            if (muroArchivo) {
+                var sub = await subirMedia(muroArchivo.file, muroArchivo.tipo, session.access_token);
+                mediaUrl = sub.url;
+                mediaType = muroArchivo.tipo;
+            }
+
+            var ins = await client.from('publicaciones').insert({
+                usuario_id: session.user.id,
+                perfil_destino_id: perfil.id,
+                contenido: texto,
+                media_url: mediaUrl,
+                media_type: mediaType,
+                estado: 'publicado',
+                permitir_descarga: true
+            });
+
+            if (ins.error) throw ins.error;
+
+            el.muroTexto.value = '';
+            limpiarArchivoMuro();
+            toast('Publicado en el muro.', 'success');
+
+            await cargarPublicaciones(client, perfil.handle, true);
+
+        } catch (e) {
+            var msg = String((e && e.message) || '');
+            toast(
+                msg.indexOf('contenido_no_permitido') !== -1
+                    ? 'Contenido no permitido'
+                    : 'No se pudo publicar: ' + msgError(e),
+                'error'
+            );
+        } finally {
+            el.muroPublicar.disabled = false;
+            el.muroPublicar.textContent = original;
+        }
+    }
 
     /* ================= VOLVER ================= */
 
@@ -1317,6 +1077,79 @@
             volverNoEnc.setAttribute('href', '/');
             volverNoEnc.textContent = '← Ir al inicio';
         }
+    }
+
+    /* ================= IDENTIDAD ================= */
+
+    function leerIdentificador() {
+        var sp = new URLSearchParams(window.location.search);
+        var tieneU = sp.has('u');
+        var tieneId = sp.has('id');
+        var u = (sp.get('u') || '').trim().replace(/^@+/, '');
+        var id = (sp.get('id') || '').trim();
+        var uOk = HANDLE_RE.test(u);
+        var idOk = UUID_RE.test(id);
+
+        if (tieneU && tieneId) {
+            return (uOk && idOk) ? { tipo: 'verificado', handle: u, id: id } : { tipo: 'invalido' };
+        }
+        if (tieneU && uOk) return { tipo: 'handle', valor: u };
+        if (tieneId && idOk) return { tipo: 'id', valor: id };
+        if (tieneU || tieneId) return { tipo: 'invalido' };
+        return null;
+    }
+
+    async function cargarPerfil(client, ident) {
+        var llamada;
+
+        if (ident.tipo === 'verificado') {
+            llamada = client.rpc('perfil_publico_verificado', { p_handle: ident.handle, p_id: ident.id });
+        } else if (ident.tipo === 'handle') {
+            llamada = client.rpc('perfil_publico_por_handle', { p_handle: ident.valor });
+        } else {
+            llamada = client.rpc('perfil_publico_por_id', { p_id: ident.valor });
+        }
+
+        var r = await conTimeout(llamada, TIMEOUT_PERFIL_MS, 'El servidor tardó demasiado en responder el perfil.');
+        if (r.error) throw r.error;
+
+        var fila = Array.isArray(r.data) ? r.data[0] : r.data;
+        return fila || null;
+    }
+
+    async function resolverSinPerfil(client, ident) {
+        var id = ident.tipo === 'verificado' ? ident.id : (ident.tipo === 'id' ? ident.valor : null);
+        if (!id) return 'no_encontrado';
+
+        var params = { p_id: id };
+        if (ident.tipo === 'verificado') params.p_handle = ident.handle;
+
+        try {
+            var r = await conTimeout(client.rpc('perfil_visibilidad_estado', params), TIMEOUT_PERFIL_MS, 'Sin respuesta');
+            if (!r.error && r.data) return r.data;
+        } catch (e) {}
+
+        return 'no_encontrado';
+    }
+
+    function mensajeNoEncontrado(titulo, texto) {
+        el.noEncontradoTitulo.removeAttribute('data-clave');
+        el.noEncontradoTexto.removeAttribute('data-clave');
+        el.noEncontradoTitulo.textContent = titulo;
+        el.noEncontradoTexto.textContent = texto;
+        mostrar(el.noEncontrado);
+    }
+
+    function mostrarErrorIdentidad() {
+        el.errorTexto.removeAttribute('data-clave');
+        el.errorTexto.textContent = 'No pudimos verificar la identidad de este perfil. Por seguridad no se muestran sus datos.';
+        mostrar(el.error);
+    }
+
+    function mostrarErrorGeneral(detalle) {
+        el.errorTexto.removeAttribute('data-clave');
+        el.errorTexto.textContent = 'No pudimos cargar este perfil. ' + (detalle || 'Intenta de nuevo.');
+        mostrar(el.error);
     }
 
     /* ================= CLIENTE Y SESIÓN ================= */
@@ -1359,11 +1192,10 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v4.2');
+        console.info('[PerfilPublico] iniciando v4.3');
 
         mostrar(el.cargando);
         configurarVolver();
-        enlazarVisor();
 
         var ident = leerIdentificador();
 
@@ -1379,7 +1211,6 @@
 
         await resolverSesion(client);
 
-        /* Precarga del catálogo de reacciones (con límite de tiempo). */
         if (window.ReaccionesGlobal) {
             await conTimeout(
                 window.ReaccionesGlobal.preparar(client),
@@ -1436,6 +1267,8 @@
 
         cargarAmigos(client, p.id);
         cargarPublicaciones(client, p.handle, true);
+        cargarGaleria(client, true);
+        verificarMuro(client);
     }
 
     /* ================= LISTENERS ================= */
@@ -1449,20 +1282,18 @@
         if (client && perfil && perfil.handle) cargarPublicaciones(client, perfil.handle, false);
     });
 
-    el.lightboxCerrar.addEventListener('click', cerrarLightbox);
-    el.lightbox.addEventListener('click', function (e) {
-        if (e.target === el.lightbox) cerrarLightbox();
+    el.galeriaMas.addEventListener('click', async function () {
+        var client = await obtenerCliente();
+        if (client && perfil) cargarGaleria(client, false);
     });
 
-    document.addEventListener('keydown', function (e) {
-        if (e.key !== 'Escape') return;
-
-        var n = vfNodo();
-
-        if (n.sheet && !n.sheet.hidden) { vfCerrarSheet(); return; }
-        if (n.root && !n.root.hidden) { vfCerrar(false); return; }
-        if (!el.lightbox.hidden) cerrarLightbox();
+    el.muroAdjuntar.addEventListener('click', function () {
+        el.muroArchivoInput.click();
     });
+
+    el.muroArchivoInput.addEventListener('change', elegirArchivoMuro);
+
+    el.muroPublicar.addEventListener('click', publicarEnMuro);
 
     /* ================= ARRANQUE ================= */
 
