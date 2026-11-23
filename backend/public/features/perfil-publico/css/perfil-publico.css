@@ -902,3 +902,85 @@
         transition: none;
     }
 }
+
+/* ================= GALERÍA Y MURO (agregar al final) ================= */
+
+/* Evita que cualquier contenido ensanche la página */
+#pvPerfil,
+#pvPerfil section {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+#pvPerfil img,
+#pvPerfil video {
+    max-width: 100%;
+}
+
+/* Cuadrícula de la galería */
+#pvGaleriaGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    gap: 6px;
+    padding: 8px 16px 14px;
+}
+.pv-galeria-item {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #0b1016;
+    cursor: pointer;
+}
+.pv-galeria-item img,
+.pv-galeria-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+.pv-galeria-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 22px;
+    background: rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+}
+
+/* Cuadro para escribir en el muro */
+.pv-muro-form {
+    padding: 8px 16px 16px;
+}
+.pv-muro-form textarea {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 72px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+    font-size: 0.9rem;
+    resize: vertical;
+}
+.pv-muro-acciones {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+.pv-muro-nombre {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.75rem;
+    color: #8aa8b8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
