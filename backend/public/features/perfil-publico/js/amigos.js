@@ -1,11 +1,11 @@
 /* ================================================================
    AMIGOS.JS — Csariel's (Perfil Público)
-   Carga y muestra los amigos/contactos del perfil visitado.
+   Muestra los amigos del perfil visitado usando la función
+   perfil_amigos_visibles, que aplica privacidad y bloqueos en la base.
+   Sin lecturas directas a contactos ni a usuarios.
    ================================================================ */
 (function () {
     'use strict';
-
-    var LIMITE_AMIGOS = 60;
 
     function $(id) { return document.getElementById(id); }
 
@@ -17,26 +17,24 @@
         } catch (e) { return null; }
     }
 
-    function urlPerfil(handle, usuarioId) {
-        if (usuarioId && window.usuarioActualId && String(usuarioId) === String(window.usuarioActualId)) {
-            return '/features/perfil/perfil.html';
-        }
-        var h = String(handle || '').trim();
+    function urlPerfil(a) {
+        if (a.es_yo === true) return '/features/perfil/perfil.html';
+        var h = String(a.handle || '').trim();
         if (/^[A-Za-z0-9_]{1,40}$/.test(h)) {
             return '/features/perfil-publico/perfil-publico.html?u=' + encodeURIComponent(h);
         }
-        return usuarioId ? '/features/perfil-publico/perfil-publico.html?id=' + encodeURIComponent(usuarioId) : null;
+        return null;
     }
 
-    function crearTarjetaAmigo(u) {
+    function crearTarjetaAmigo(a) {
         var card = document.createElement('a');
         card.className = 'pv-amigo-card';
-        var href = urlPerfil(u.handle, u.id);
+        var href = urlPerfil(a);
         if (href) card.href = href;
 
         var av = document.createElement('div');
         av.className = 'pv-amigo-av';
-        var imgUrl = safeHttps(u.avatar_url);
+        var imgUrl = safeHttps(a.avatar_url);
         if (imgUrl) {
             var img = document.createElement('img');
             img.src = imgUrl;
@@ -44,7 +42,7 @@
             img.loading = 'lazy';
             av.appendChild(img);
         } else {
-            av.textContent = (u.nombre || u.handle || 'U').charAt(0).toUpperCase();
+            av.textContent = (a.nombre || a.handle || 'U').charAt(0).toUpperCase();
         }
 
         var info = document.createElement('div');
@@ -52,18 +50,28 @@
 
         var nombre = document.createElement('div');
         nombre.className = 'pv-amigo-nombre';
-        nombre.textContent = u.nombre || u.handle || 'Usuario';
-
-        var sub = document.createElement('div');
-        sub.className = 'pv-amigo-sub';
-        sub.textContent = u.handle ? '@' + u.handle : '';
+        nombre.textContent = a.nombre || a.handle || 'Usuario';
 
         info.appendChild(nombre);
-        if (u.handle) info.appendChild(sub);
+
+        if (a.handle) {
+            var sub = document.createElement('div');
+            sub.className = 'pv-amigo-sub';
+            sub.textContent = '@' + a.handle;
+            info.appendChild(sub);
+        }
 
         card.appendChild(av);
         card.appendChild(info);
         return card;
+    }
+
+    function mensaje(listaEl, texto) {
+        listaEl.innerHTML = '';
+        var p = document.createElement('div');
+        p.className = 'pv-pub-msg';
+        p.textContent = texto;
+        listaEl.appendChild(p);
     }
 
     async function cargarAmigosPerfil(client, perfilUsuarioId) {
@@ -71,50 +79,40 @@
         var countEl = $('pvAmigosCount');
         if (!listaEl || !client || !perfilUsuarioId) return;
 
-        listaEl.innerHTML = '<div class="pv-pub-msg">Cargando amigos...</div>';
+        mensaje(listaEl, 'Cargando amigos...');
         if (countEl) countEl.textContent = '0';
 
         try {
-            var relRes = await client
-                .from('contactos')
-                .select('contacto_id')
-                .eq('usuario_id', perfilUsuarioId)
-                .limit(LIMITE_AMIGOS);
+            var r = await client.rpc('perfil_amigos_visibles', {
+                p_id: perfilUsuarioId,
+                p_limite: 60
+            });
 
-            if (relRes.error) throw relRes.error;
+            if (r.error) throw r.error;
 
-            var ids = (relRes.data || [])
-                .map(function (r) { return r.contacto_id; })
-                .filter(Boolean);
+            var d = r.data || {};
 
-            if (!ids.length) {
-                listaEl.innerHTML = '<div class="pv-pub-msg">Aún no tiene amigos agregados visibles.</div>';
-                if (countEl) countEl.textContent = '0';
+            if (d.estado === 'restringido') {
+                mensaje(listaEl, 'La lista de amigos no está disponible para ti.');
                 return;
             }
 
-            var usersRes = await client
-                .from('usuarios')
-                .select('id, nombre, handle, avatar_url, online')
-                .in('id', ids);
+            var amigos = Array.isArray(d.amigos) ? d.amigos : [];
 
-            if (usersRes.error) throw usersRes.error;
+            if (countEl) countEl.textContent = String(amigos.length);
 
-            var usuarios = Array.isArray(usersRes.data) ? usersRes.data : [];
-            if (countEl) countEl.textContent = String(usuarios.length);
-
-            if (!usuarios.length) {
-                listaEl.innerHTML = '<div class="pv-pub-msg">Aún no tiene amigos agregados visibles.</div>';
+            if (!amigos.length) {
+                mensaje(listaEl, 'Aún no tiene amigos agregados.');
                 return;
             }
 
             listaEl.innerHTML = '';
-            usuarios.forEach(function (u) {
-                listaEl.appendChild(crearTarjetaAmigo(u));
+            amigos.forEach(function (a) {
+                listaEl.appendChild(crearTarjetaAmigo(a));
             });
         } catch (err) {
             console.warn('[PerfilPublico] Amigos:', err);
-            listaEl.innerHTML = '<div class="pv-pub-msg">No se pudieron cargar los amigos en este momento.</div>';
+            mensaje(listaEl, 'No se pudieron cargar los amigos en este momento.');
         }
     }
 
