@@ -1124,21 +1124,17 @@
 
         var wrap = document.createElement('div');
         wrap.className = 'reaccion-wrap';
-        wrap.style.cssText = 'position:relative;display:inline-block;margin:8px 0 0;padding:0;';
 
         var dropdown = document.createElement('div');
         dropdown.className = 'reaccion-dropdown';
         dropdown.hidden = true;
-        dropdown.style.cssText = 'position:absolute;bottom:100%;left:0;margin-bottom:8px;display:flex;flex-direction:column;gap:4px;width:auto;padding:6px;background:#0b1016;border:1px solid rgba(212,175,55,.16);border-radius:24px;box-shadow:0 6px 18px rgba(0,0,0,.6);z-index:100;';
 
         (rg.EMOJIS || EMOJIS_REACCION).forEach(function (emoji) {
             var btn = document.createElement('button');
             btn.type = 'button';
-            var activa = r.miTipo === emoji;
-            btn.className = 'pv-btn-reaccion reaccion-opcion-btn' + (activa ? ' activo activa' : '');
+            btn.className = 'pv-btn-reaccion reaccion-opcion-btn' + (r.miTipo === emoji ? ' activo' : '');
             btn.setAttribute('data-tipo', emoji);
             btn.setAttribute('aria-label', 'Reaccionar con ' + emoji);
-            btn.style.cssText = 'width:40px;height:40px;border:0;border-radius:50%;background:' + (activa ? 'rgba(212,175,55,.2)' : 'transparent') + ';font-size:1.55rem;cursor:pointer;position:relative;display:inline-flex;align-items:center;justify-content:center;';
             aplicarVariablesEmoji(btn, emoji);
             rg.aplicarMotor(btn, emoji);
 
@@ -1149,7 +1145,6 @@
             cant.className = 'mini-count';
             var n = r.totales[emoji] || 0;
             cant.textContent = n > 0 ? String(n) : '';
-            cant.style.cssText = 'position:absolute;top:-2px;right:-2px;background:#D4AF37;color:#04070d;font-size:.55rem;font-weight:bold;padding:2px 5px;border-radius:10px;line-height:1;';
 
             btn.appendChild(ico);
             if (cant.textContent) btn.appendChild(cant);
@@ -1158,8 +1153,7 @@
 
         var trigger = document.createElement('button');
         trigger.type = 'button';
-        trigger.className = 'reaccion-trigger' + (r.miTipo ? ' activo activa' : '');
-        trigger.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 8px;border:0;border-radius:6px;background:transparent;color:' + (r.miTipo ? '#D4AF37' : '#8c949c') + ';font-size:.82rem;font-weight:600;cursor:pointer;';
+        trigger.className = 'reaccion-trigger' + (r.miTipo ? ' activo' : '');
 
         var emojiActivo = r.miTipo || rg.POR_DEFECTO || '❤️';
         var trigEmoji = document.createElement('span');
@@ -1169,11 +1163,11 @@
         rg.aplicarMotor(trigEmoji, emojiActivo);
 
         var trigTexto = document.createElement('span');
-        trigTexto.className = 'count';
-        trigTexto.textContent = r.total > 0 ? String(r.total) : 'Reaccionar';
+        trigTexto.className = 'mini-count';
+        trigTexto.textContent = r.total > 0 ? String(r.total) : '';
 
         trigger.appendChild(trigEmoji);
-        trigger.appendChild(trigTexto);
+        if (trigTexto.textContent) trigger.appendChild(trigTexto);
 
         trigger.addEventListener('click', function (ev) {
             ev.stopPropagation();
