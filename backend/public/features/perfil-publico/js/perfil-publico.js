@@ -1,7 +1,8 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4: esperas con límite de tiempo + vídeo 9:16 / visor 100dvh
-       (#pubVisorFull) + reacciones en cápsula vertical + picker 97 emojis.
+   v3: esperas con límite de tiempo. Si el cliente de Supabase, la
+       sesión o el perfil no responden, la página muestra un error
+       en vez de quedarse en "Cargando perfil...".
    ================================================================ */
 (function () {
     'use strict';
@@ -16,8 +17,8 @@
     var TIMEOUT_SESION_MS = 4000;
     var TIMEOUT_PERFIL_MS = 12000;
 
-    var REACCIONES_CATALOGO = ['❤️', '😂', '🥺', '💎'];
-    var CLASE_EMOJI = {
+    var EMOJIS_REACCION = ['❤️', '😂', '🥺', '💎'];
+    var CLASES_EMOJI = {
         '❤️': 'emo-corazon',
         '😂': 'emo-risa',
         '🥺': 'emo-brillo',
@@ -30,32 +31,35 @@
         '😋', '😛', '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔',
         '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄', '😬', '🤥',
         '😌', '😔', '😪', '🤤', '😴', '😷', '🤒', '🤕', '🤢', '🤮',
-        '🤧', '🥵', '🥶', '🥴', ' dizzy', '🤯', '🤠', '🥳', '😎', '🤓',
+        '🤧', '🥵', '🥶', '🥴', '😵', '🤯', '🤠', '🥳', '😎', '🤓',
         '🧐', '😕', '😟', '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺',
         '😦', '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖', '😣',
         '😞', '😓', '😩', '😫', '🥱', '😤', '😡', '😠', '🤬', '👍',
         '👎', '👏', '🙌', '🔥', '💎', '❤️'
-    ].map(function (e) { return e.trim(); });
+    ];
 
     var perfil = null;
     var direccionWallet = null;
     var pub = { cargando: false, antes: null, total: 0, idsVistos: new Set() };
     var medioActivo = null;
 
-    var visorState = {
+    var visorFullState = {
         abierto: false,
         items: [],
         indice: 0,
         post: null,
-        modoEscala: 'cover', // 'cover' | 'contain'
+        modoFit: 'cover',
         velocidades: [1, 1.5, 2],
-        velIdx: 0,
-        hideTimer: null,
-        arrastrandoProgreso: false,
-        touchStartX: 0,
-        touchStartY: 0,
-        touchMoved: false
+        velIndex: 0,
+        ocultarTimer: null,
+        arrastrando: false,
+        startX: 0,
+        startY: 0,
+        movido: false,
+        motivoReporte: ''
     };
+
+    var inputEmojiDestino = null;
 
     window.usuarioActualId = null;
 
@@ -95,49 +99,16 @@
         lightboxCerrar: $('pvLightboxCerrar')
     };
 
-    var vf = {
-        root: null,
-        mediaWrap: null,
-        header: null,
-        btnClose: null,
-        btnMenu: null,
-        centerControls: null,
-        btnPlayCenter: null,
-        controls: null,
-        progressBar: null,
-        progressFill: null,
-        timeLabel: null,
-        btnSpeed: null,
-        btnPip: null,
-        btnExpand: null,
-        sheetBackdrop: null,
-        sheet: null,
-        sheetMainView: null,
-        sheetReportView: null,
-        sheetConfirmView: null,
-        reportMotivoActual: ''
-    };
-
     /* ================= UTILIDADES ================= */
     function toast(msg, tipo) {
         if (typeof window.showToast === 'function') { window.showToast(msg, tipo || 'success'); return; }
         var t = $('toast');
-        if (!t) {
-            t = document.createElement('div');
-            t.id = 'toast';
-            t.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#111827;color:#fff;padding:10px 18px;border-radius:999px;font-size:13px;z-index:100000;opacity:0;transition:all .25s ease;pointer-events:none;border:1px solid rgba(212,175,55,.35);';
-            document.body.appendChild(t);
-        }
+        if (!t) return;
         t.textContent = String(msg || '');
-        t.className = 'toast' + (tipo ? ' ' + tipo : '') + ' show';
-        t.style.opacity = '1';
-        t.style.transform = 'translateX(-50%) translateY(0)';
+        t.className = 'toast' + (tipo ? ' ' + tipo : '');
+        requestAnimationFrame(function () { t.classList.add('show'); });
         clearTimeout(window.__pvToastTimer);
-        window.__pvToastTimer = setTimeout(function () {
-            t.classList.remove('show');
-            t.style.opacity = '0';
-            t.style.transform = 'translateX(-50%) translateY(20px)';
-        }, 3600);
+        window.__pvToastTimer = setTimeout(function () { t.classList.remove('show'); }, 3600);
     }
 
     function msgError(e) {
@@ -145,6 +116,7 @@
         return e.message || e.details || e.hint || e.code || 'error desconocido';
     }
 
+    // Envuelve una promesa con límite de tiempo. Si no responde a tiempo, falla con un mensaje claro.
     function conTimeout(promesa, ms, mensaje) {
         var id;
         var limite = new Promise(function (_, reject) {
@@ -196,51 +168,43 @@
         return d.toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     }
 
-    function formatoTiempo(seg) {
+    function formatearDuracion(seg) {
         if (!isFinite(seg) || seg < 0) seg = 0;
-        var total = Math.floor(seg);
-        var min = Math.floor(total / 60);
-        var rem = total % 60;
-        return min + ':' + (rem < 10 ? '0' : '') + rem;
+        var s = Math.floor(seg);
+        var m = Math.floor(s / 60);
+        var r = s % 60;
+        return m + ':' + (r < 10 ? '0' : '') + r;
     }
 
     function urlPerfil() {
         return window.location.origin + window.location.pathname + '?u=' + encodeURIComponent(perfil.handle);
     }
 
+    function aplicarVariablesEmoji(nodo, emoji) {
+        if (!nodo) return;
+        var cls = CLASES_EMOJI[emoji] || 'emo-corazon';
+        nodo.classList.remove('emo-corazon', 'emo-risa', 'emo-brillo', 'emo-diamante');
+        nodo.classList.add(cls);
+        nodo.style.setProperty('--dur', (0.75 + Math.random() * 0.65).toFixed(2) + 's');
+        nodo.style.setProperty('--delay', (Math.random() * 0.35).toFixed(2) + 's');
+    }
+
     function RG() {
-        if (window.ReaccionesGlobal) return window.ReaccionesGlobal;
-        return {
-            EMOJIS: REACCIONES_CATALOGO,
+        return window.ReaccionesGlobal || {
+            EMOJIS: EMOJIS_REACCION,
             POR_DEFECTO: '❤️',
-            normalizar: function (e) {
-                return REACCIONES_CATALOGO.indexOf(e) !== -1 ? e : '❤️';
-            },
-            aplicarMotor: function (node, emoji) {
-                aplicarAnimacionEmoji(node, emoji);
-            },
+            normalizar: function (e) { return this.EMOJIS.indexOf(e) !== -1 ? e : '❤️'; },
+            aplicarMotor: function (nodo, emoji) { aplicarVariablesEmoji(nodo, emoji); },
             resumir: function (filas, uid) {
                 var t = {}, total = 0, mi = null, self = this;
                 (filas || []).forEach(function (f) {
                     var x = self.normalizar(f.tipo);
-                    t[x] = (t[x] || 0) + 1;
-                    total++;
+                    t[x] = (t[x] || 0) + 1; total++;
                     if (uid && f.usuario_id === uid) mi = x;
                 });
                 return { totales: t, total: total, miTipo: mi };
             }
         };
-    }
-
-    function aplicarAnimacionEmoji(node, emoji) {
-        if (!node) return;
-        var clase = CLASE_EMOJI[emoji] || 'emo-corazon';
-        node.classList.remove('emo-corazon', 'emo-risa', 'emo-brillo', 'emo-diamante');
-        node.classList.add(clase);
-        var dur = (0.75 + Math.random() * 0.65).toFixed(2) + 's';
-        var delay = (Math.random() * 0.35).toFixed(2) + 's';
-        node.style.setProperty('--dur', dur);
-        node.style.setProperty('--delay', delay);
     }
 
     function registrarReproductorUnico(elMedia) {
@@ -252,354 +216,129 @@
         });
     }
 
-    /* ================= ESTILOS BASE PARA VISOR & EMOJIS ================= */
-    function inyectarEstilosBase() {
-        if ($('pvEstilosVisorEmojis')) return;
-        var st = document.createElement('style');
-        st.id = 'pvEstilosVisorEmojis';
-        st.textContent = [
-            '.pub-media-container{width:100%;aspect-ratio:9/16;border-radius:8px;background:#000;overflow:hidden;position:relative;margin-top:12px;cursor:pointer;}',
-            '.pub-media-container>video,.pub-media-container>img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;}',
-            '#pubVisorFull{position:fixed;inset:0;width:100%;height:100dvh;background:#000;z-index:9990;display:flex;flex-direction:column;justify-content:space-between;user-select:none;touch-action:none;}',
-            '#pubVisorFull[hidden]{display:none;}',
-            '.pub-vf-media{position:fixed;inset:0;width:100%;height:100dvh;background:#000;z-index:1;display:flex;align-items:center;justify-content:center;overflow:hidden;}',
-            '.pub-vf-media>video,.pub-vf-media>img{width:100%;height:100%;display:block;transition:object-fit .2s ease;}',
-            '.pub-vf-header{position:relative;z-index:4;display:flex;align-items:center;justify-content:space-between;padding:14px 16px;transition:opacity .25s ease;}',
-            '.pub-vf-btn-circle{width:42px;height:42px;border-radius:50%;border:1px solid rgba(255,255,255,.18);background:rgba(12,16,24,.55);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);color:#fff;font-size:20px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}',
-            '#pubVfCenterControls{position:fixed;inset:0;z-index:3;display:flex;align-items:center;justify-content:center;pointer-events:none;transition:opacity .25s ease;}',
-            '#pubVfCenterControls[hidden]{display:none;}',
-            '#pubVfBtnPlayCenter{width:80px;height:80px;border-radius:50%;border:2px solid rgba(212,175,55,.75);background:rgba(10,14,22,.68);backdrop-filter:blur(8px);color:#D4AF37;font-size:32px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;pointer-events:auto;}',
-            '.pub-vf-controls{position:relative;z-index:4;padding:28px 16px 20px;background:linear-gradient(to top,rgba(0,0,0,.88),rgba(0,0,0,.42) 65%,transparent);transition:opacity .25s ease;}',
-            '#pubVfProgressBar{width:100%;height:18px;display:flex;align-items:center;cursor:pointer;touch-action:none;margin-bottom:10px;}',
-            '#pubVfProgressTrack{width:100%;height:4px;border-radius:999px;background:rgba(255,255,255,.24);overflow:hidden;position:relative;}',
-            '#pubVfProgressFill{height:100%;width:0%;background:#D4AF37;border-radius:999px;}',
-            '.pub-vf-actions-row{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#fff;font-size:13px;}',
-            '.pub-vf-right-actions{display:flex;align-items:center;gap:8px;}',
-            '.pub-vf-pill-btn{height:34px;padding:0 10px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(15,20,30,.72);color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;}',
-            '#pubVisorFull.controls-hidden .pub-vf-header,#pubVisorFull.controls-hidden .pub-vf-controls{opacity:0;pointer-events:none;}',
-            '#pubVfSheetBackdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9998;}',
-            '#pubVfSheetBackdrop[hidden]{display:none;}',
-            '#pubVfSheet{position:fixed;left:0;right:0;bottom:0;z-index:9999;background:#0b1016;border-top:1px solid rgba(212,175,55,.35);border-radius:18px 18px 0 0;padding:16px;max-height:78dvh;overflow:hidden;color:#fff;}',
-            '#pubVfSheet[hidden]{display:none;}',
-            '.pub-vf-sheet-track{display:flex;width:300%;transition:transform .26s cubic-bezier(.22,.61,.36,1);}',
-            '.pub-vf-sheet-view{width:33.3333%;flex-shrink:0;display:flex;flex-direction:column;gap:8px;}',
-            '.pub-vf-sheet-item{width:100%;text-align:left;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:#fff;font-size:14px;cursor:pointer;}',
-            '.pub-vf-sheet-item.danger{color:#ff6b8b;border-color:rgba(255,51,102,.3);}',
-            '.reaccion-wrap{position:relative;display:inline-flex;align-items:center;}',
-            '.reaccion-trigger{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;border:1px solid rgba(212,175,55,.35);background:rgba(11,16,22,.85);color:#fff;font-size:13px;cursor:pointer;}',
-            '.reaccion-trigger.activo{border-color:#D4AF37;background:rgba(212,175,55,.16);}',
-            '.reaccion-dropdown{position:absolute;bottom:calc(100% + 8px);left:0;display:flex;flex-direction:column;gap:8px;padding:8px;border-radius:24px;background:#0b1016;border:1px solid rgba(212,175,55,.45);box-shadow:0 12px 28px rgba(0,0,0,.65);z-index:60;}',
-            '.reaccion-dropdown[hidden]{display:none;}',
-            '.reaccion-opcion-btn{position:relative;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);font-size:20px;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;}',
-            '.reaccion-opcion-btn.activo{border-color:#D4AF37;background:rgba(212,175,55,.2);}',
-            '.mini-count{position:absolute;top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:999px;background:#D4AF37;color:#05080f;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;line-height:1;}',
-            '.mini-count:empty{display:none;}',
-            '#emojiPickerPerfil{position:fixed;bottom:84px;right:16px;width:300px;max-width:calc(100vw - 32px);background:#0b1016;border:1px solid rgba(212,175,55,.45);border-radius:14px;padding:10px;z-index:9950;box-shadow:0 14px 36px rgba(0,0,0,.75);}',
-            '#emojiPickerPerfil[hidden]{display:none;}',
-            '#emojiGridPerfil{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;max-height:220px;overflow-y:auto;}',
-            '.emoji-picker-item{width:100%;aspect-ratio:1/1;border:none;background:transparent;border-radius:6px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}',
-            '.emoji-picker-item:hover{background:rgba(212,175,55,.2);}'
-        ].join('\n');
-        document.head.appendChild(st);
-    }
-
     /* ================= VISOR INMERSIVO (#pubVisorFull) ================= */
-    function construirVisorInmersivo() {
-        if ($('pubVisorFull')) {
-            enlazarReferenciasVisor();
-            return;
-        }
-
-        var root = document.createElement('div');
-        root.id = 'pubVisorFull';
-        root.hidden = true;
-        root.setAttribute('role', 'dialog');
-        root.setAttribute('aria-modal', 'true');
-        root.setAttribute('aria-label', 'Visor multimedia');
-
-        var mediaWrap = document.createElement('div');
-        mediaWrap.className = 'pub-vf-media';
-
-        var header = document.createElement('div');
-        header.className = 'pub-vf-header';
-
-        var btnClose = document.createElement('button');
-        btnClose.type = 'button';
-        btnClose.id = 'btnPubVfClose';
-        btnClose.className = 'pub-vf-btn-circle';
-        btnClose.setAttribute('aria-label', 'Cerrar visor');
-        btnClose.textContent = '×';
-
-        var btnMenu = document.createElement('button');
-        btnMenu.type = 'button';
-        btnMenu.id = 'btnPubVfMenu';
-        btnMenu.className = 'pub-vf-btn-circle';
-        btnMenu.setAttribute('aria-label', 'Más opciones');
-        btnMenu.textContent = '⋮';
-
-        header.appendChild(btnClose);
-        header.appendChild(btnMenu);
-
-        var centerControls = document.createElement('div');
-        centerControls.id = 'pubVfCenterControls';
-        centerControls.hidden = true;
-
-        var btnPlayCenter = document.createElement('button');
-        btnPlayCenter.type = 'button';
-        btnPlayCenter.id = 'pubVfBtnPlayCenter';
-        btnPlayCenter.setAttribute('aria-label', 'Reproducir');
-        btnPlayCenter.textContent = '▶';
-        centerControls.appendChild(btnPlayCenter);
-
-        var controls = document.createElement('div');
-        controls.className = 'pub-vf-controls';
-
-        var progressBar = document.createElement('div');
-        progressBar.id = 'pubVfProgressBar';
-        progressBar.setAttribute('role', 'slider');
-        progressBar.setAttribute('aria-label', 'Progreso del vídeo');
-
-        var progressTrack = document.createElement('div');
-        progressTrack.id = 'pubVfProgressTrack';
-
-        var progressFill = document.createElement('div');
-        progressFill.id = 'pubVfProgressFill';
-        progressTrack.appendChild(progressFill);
-        progressBar.appendChild(progressTrack);
-
-        var actionsRow = document.createElement('div');
-        actionsRow.className = 'pub-vf-actions-row';
-
-        var timeLabel = document.createElement('span');
-        timeLabel.id = 'pubVfTimeLabel';
-        timeLabel.textContent = '0:00 / 0:00';
-
-        var rightActions = document.createElement('div');
-        rightActions.className = 'pub-vf-right-actions';
-
-        var btnSpeed = document.createElement('button');
-        btnSpeed.type = 'button';
-        btnSpeed.id = 'btnPubVfSpeed';
-        btnSpeed.className = 'pub-vf-pill-btn';
-        btnSpeed.textContent = '1x';
-
-        var btnPip = document.createElement('button');
-        btnPip.type = 'button';
-        btnPip.id = 'btnPubVfPip';
-        btnPip.className = 'pub-vf-pill-btn';
-        btnPip.textContent = 'PiP';
-
-        var btnExpand = document.createElement('button');
-        btnExpand.type = 'button';
-        btnExpand.id = 'btnPubVfExpand';
-        btnExpand.className = 'pub-vf-pill-btn';
-        btnExpand.textContent = 'Expandir';
-
-        rightActions.appendChild(btnSpeed);
-        rightActions.appendChild(btnPip);
-        rightActions.appendChild(btnExpand);
-
-        actionsRow.appendChild(timeLabel);
-        actionsRow.appendChild(rightActions);
-
-        controls.appendChild(progressBar);
-        controls.appendChild(actionsRow);
-
-        root.appendChild(mediaWrap);
-        root.appendChild(header);
-        root.appendChild(centerControls);
-        root.appendChild(controls);
-
-        var backdrop = document.createElement('div');
-        backdrop.id = 'pubVfSheetBackdrop';
-        backdrop.hidden = true;
-
-        var sheet = document.createElement('div');
-        sheet.id = 'pubVfSheet';
-        sheet.hidden = true;
-
-        var track = document.createElement('div');
-        track.className = 'pub-vf-sheet-track';
-
-        var mainView = document.createElement('div');
-        mainView.className = 'pub-vf-sheet-view';
-
-        var reportView = document.createElement('div');
-        reportView.className = 'pub-vf-sheet-view';
-
-        var confirmView = document.createElement('div');
-        confirmView.className = 'pub-vf-sheet-view';
-
-        track.appendChild(mainView);
-        track.appendChild(reportView);
-        track.appendChild(confirmView);
-        sheet.appendChild(track);
-
-        document.body.appendChild(root);
-        document.body.appendChild(backdrop);
-        document.body.appendChild(sheet);
-
-        enlazarReferenciasVisor();
-        registrarEventosVisor();
+    function vfNodo() {
+        return {
+            root: $('pubVisorFull'),
+            media: document.querySelector('#pubVisorFull .pub-vf-media'),
+            btnClose: $('btnPubVfClose'),
+            btnMenu: $('btnPubVfMenu'),
+            centerControls: $('pubVfCenterControls'),
+            btnPlayCenter: $('pubVfBtnPlayCenter'),
+            controls: document.querySelector('#pubVisorFull .pub-vf-controls'),
+            progressBar: $('pubVfProgressBar'),
+            progressFill: $('pubVfProgressFill'),
+            timeLabel: $('pubVfTimeLabel'),
+            btnSpeed: $('btnPubVfSpeed'),
+            btnPip: $('btnPubVfPip'),
+            btnExpand: $('btnPubVfExpand'),
+            sheetBackdrop: $('pubVfSheetBackdrop'),
+            sheet: $('pubVfSheet'),
+            sheetTrack: document.querySelector('#pubVfSheet .pub-vf-sheet-track'),
+            sheetViews: document.querySelectorAll('#pubVfSheet .pub-vf-sheet-view')
+        };
     }
 
-    function enlazarReferenciasVisor() {
-        vf.root = $('pubVisorFull');
-        vf.mediaWrap = vf.root ? vf.root.querySelector('.pub-vf-media') : null;
-        vf.header = vf.root ? vf.root.querySelector('.pub-vf-header') : null;
-        vf.btnClose = $('btnPubVfClose');
-        vf.btnMenu = $('btnPubVfMenu');
-        vf.centerControls = $('pubVfCenterControls');
-        vf.btnPlayCenter = $('pubVfBtnPlayCenter');
-        vf.controls = vf.root ? vf.root.querySelector('.pub-vf-controls') : null;
-        vf.progressBar = $('pubVfProgressBar');
-        vf.progressFill = $('pubVfProgressFill');
-        vf.timeLabel = $('pubVfTimeLabel');
-        vf.btnSpeed = $('btnPubVfSpeed');
-        vf.btnPip = $('btnPubVfPip');
-        vf.btnExpand = $('btnPubVfExpand');
-        vf.sheetBackdrop = $('pubVfSheetBackdrop');
-        vf.sheet = $('pubVfSheet');
-        if (vf.sheet) {
-            var views = vf.sheet.querySelectorAll('.pub-vf-sheet-view');
-            vf.sheetMainView = views[0] || null;
-            vf.sheetReportView = views[1] || null;
-            vf.sheetConfirmView = views[2] || null;
-        }
+    function obtenerVideoVisorFull() {
+        var n = vfNodo();
+        return n.media ? n.media.querySelector('video') : null;
     }
 
-    function obtenerVideoActualVisor() {
-        if (!vf.mediaWrap) return null;
-        return vf.mediaWrap.querySelector('video');
-    }
-
-    function aplicarEscalaMediaVisor() {
-        if (!vf.mediaWrap) return;
-        var elem = vf.mediaWrap.querySelector('video, img');
+    function aplicarEscalaVisorFull() {
+        var n = vfNodo();
+        if (!n.media) return;
+        var elem = n.media.querySelector('video, img');
         if (!elem) return;
-        elem.style.objectFit = visorState.modoEscala;
+        elem.style.objectFit = visorFullState.modoFit;
         elem.style.objectPosition = 'center';
-        if (vf.btnExpand) {
-            vf.btnExpand.textContent = visorState.modoEscala === 'cover' ? 'Ajustar' : 'Expandir';
+    }
+
+    function alternarEscalaVisorFull() {
+        visorFullState.modoFit = visorFullState.modoFit === 'cover' ? 'contain' : 'cover';
+        aplicarEscalaVisorFull();
+    }
+
+    function limpiarTimerControlesVisorFull() {
+        if (visorFullState.ocultarTimer) {
+            clearTimeout(visorFullState.ocultarTimer);
+            visorFullState.ocultarTimer = null;
         }
     }
 
-    function alternarEscalaVisor() {
-        visorState.modoEscala = visorState.modoEscala === 'cover' ? 'contain' : 'cover';
-        aplicarEscalaMediaVisor();
-    }
-
-    function limpiarTimerControles() {
-        if (visorState.hideTimer) {
-            clearTimeout(visorState.hideTimer);
-            visorState.hideTimer = null;
-        }
-    }
-
-    function mostrarControlesVisor(programarAutoOcultar) {
-        if (!vf.root) return;
-        vf.root.classList.remove('controls-hidden');
-        limpiarTimerControles();
-        var vid = obtenerVideoActualVisor();
-        if (programarAutoOcultar && vid && !vid.paused) {
-            visorState.hideTimer = setTimeout(function () {
-                if (visorState.abierto && vid && !vid.paused && !visorState.arrastrandoProgreso) {
-                    vf.root.classList.add('controls-hidden');
+    function mostrarControlesVisorFull(autoOcultar) {
+        var n = vfNodo();
+        if (!n.root) return;
+        n.root.classList.remove('controls-hidden');
+        limpiarTimerControlesVisorFull();
+        var vid = obtenerVideoVisorFull();
+        if (autoOcultar && vid && !vid.paused) {
+            visorFullState.ocultarTimer = setTimeout(function () {
+                if (visorFullState.abierto && vid && !vid.paused && !visorFullState.arrastrando) {
+                    n.root.classList.add('controls-hidden');
                 }
             }, 2500);
         }
     }
 
-    function sincronizarEstadoPlayPausa() {
-        var vid = obtenerVideoActualVisor();
+    function actualizarControlesPlayPausaVisorFull() {
+        var n = vfNodo();
+        var vid = obtenerVideoVisorFull();
         if (!vid) {
-            if (vf.centerControls) vf.centerControls.hidden = true;
-            if (vf.controls) vf.controls.hidden = true;
-            mostrarControlesVisor(false);
+            if (n.centerControls) n.centerControls.hidden = true;
+            if (n.controls) n.controls.hidden = true;
+            mostrarControlesVisorFull(false);
             return;
         }
-        if (vf.controls) vf.controls.hidden = false;
+        if (n.controls) n.controls.hidden = false;
         if (vid.paused) {
-            if (vf.centerControls) vf.centerControls.hidden = false;
-            mostrarControlesVisor(false);
+            if (n.centerControls) n.centerControls.hidden = false;
+            mostrarControlesVisorFull(false);
         } else {
-            if (vf.centerControls) vf.centerControls.hidden = true;
-            mostrarControlesVisor(true);
+            if (n.centerControls) n.centerControls.hidden = true;
+            mostrarControlesVisorFull(true);
         }
     }
 
-    function actualizarProgresoVisor() {
-        var vid = obtenerVideoActualVisor();
+    function actualizarProgresoVisorFull() {
+        var n = vfNodo();
+        var vid = obtenerVideoVisorFull();
         if (!vid) return;
         var dur = vid.duration || 0;
         var cur = vid.currentTime || 0;
         var pct = dur > 0 ? Math.min(100, Math.max(0, (cur / dur) * 100)) : 0;
-        if (vf.progressFill) vf.progressFill.style.width = pct + '%';
-        if (vf.timeLabel) vf.timeLabel.textContent = formatoTiempo(cur) + ' / ' + formatoTiempo(dur);
+        if (n.progressFill) n.progressFill.style.width = pct + '%';
+        if (n.timeLabel) n.timeLabel.textContent = formatearDuracion(cur) + ' / ' + formatearDuracion(dur);
     }
 
-    function buscarEnProgresoPorEvento(ev) {
-        var vid = obtenerVideoActualVisor();
-        if (!vid || !vf.progressBar || !isFinite(vid.duration) || vid.duration <= 0) return;
-        var rect = vf.progressBar.getBoundingClientRect();
+    function seekProgresoVisorFull(ev) {
+        var n = vfNodo();
+        var vid = obtenerVideoVisorFull();
+        if (!vid || !n.progressBar || !isFinite(vid.duration) || vid.duration <= 0) return;
+        var rect = n.progressBar.getBoundingClientRect();
         if (!rect.width) return;
         var ratio = Math.min(1, Math.max(0, (ev.clientX - rect.left) / rect.width));
         vid.currentTime = ratio * vid.duration;
-        actualizarProgresoVisor();
+        actualizarProgresoVisorFull();
     }
 
-    function alternarReproduccionVisor() {
-        var vid = obtenerVideoActualVisor();
-        if (!vid) return;
-        if (vid.paused) {
-            vid.play().catch(function () {});
-        } else {
-            vid.pause();
-        }
-    }
-
-    function ciclarVelocidadVisor() {
-        var vid = obtenerVideoActualVisor();
-        visorState.velIdx = (visorState.velIdx + 1) % visorState.velocidades.length;
-        var vel = visorState.velocidades[visorState.velIdx];
-        if (vid) vid.playbackRate = vel;
-        if (vf.btnSpeed) vf.btnSpeed.textContent = vel + 'x';
-        mostrarControlesVisor(true);
-    }
-
-    async function activarPiPVisor() {
-        var vid = obtenerVideoActualVisor();
-        if (!vid) { toast('Solo disponible para vídeos', 'error'); return; }
-        try {
-            if (document.pictureInPictureElement) {
-                await document.exitPictureInPicture();
-            } else if (typeof vid.requestPictureInPicture === 'function') {
-                await vid.requestPictureInPicture();
-                cerrarVisorInmersivo(true);
-            } else {
-                toast('Tu navegador no soporta ventana flotante', 'error');
-            }
-        } catch (e) {
-            toast('No se pudo activar PiP', 'error');
-        }
-    }
-
-    function renderizarItemEnVisor(index) {
-        if (!vf.mediaWrap || !visorState.items.length) return;
-        var idx = ((index % visorState.items.length) + visorState.items.length) % visorState.items.length;
-        visorState.indice = idx;
-        var item = visorState.items[idx];
+    function renderizarItemVisorFull(idx) {
+        var n = vfNodo();
+        if (!n.media || !visorFullState.items.length) return;
+        var len = visorFullState.items.length;
+        var i = ((idx % len) + len) % len;
+        visorFullState.indice = i;
+        var item = visorFullState.items[i];
         var segura = safeHttps(item.url);
         if (!segura) return;
 
-        var prevVid = obtenerVideoActualVisor();
+        var prevVid = obtenerVideoVisorFull();
         if (prevVid) {
             try { prevVid.pause(); } catch (e) {}
         }
 
-        vf.mediaWrap.innerHTML = '';
-        visorState.velIdx = 0;
-        if (vf.btnSpeed) vf.btnSpeed.textContent = '1x';
+        n.media.innerHTML = '';
+        visorFullState.velIndex = 0;
+        if (n.btnSpeed) n.btnSpeed.textContent = '1x';
 
         if (item.tipo === 'video') {
             var vid = document.createElement('video');
@@ -608,156 +347,160 @@
             vid.playsInline = true;
             vid.setAttribute('playsinline', '');
             vid.setAttribute('webkit-playsinline', '');
-            vid.playbackRate = 1;
-            if (visorState.post && visorState.post.permitir_descarga === false) {
+            if (visorFullState.post && visorFullState.post.permitir_descarga === false) {
                 vid.setAttribute('controlsList', 'nodownload');
             }
-
-            vid.addEventListener('loadedmetadata', actualizarProgresoVisor);
-            vid.addEventListener('timeupdate', actualizarProgresoVisor);
-            vid.addEventListener('play', function () {
-                sincronizarEstadoPlayPausa();
-            });
-            vid.addEventListener('pause', function () {
-                sincronizarEstadoPlayPausa();
-            });
-            vid.addEventListener('ended', function () {
-                sincronizarEstadoPlayPausa();
-            });
-
+            vid.addEventListener('loadedmetadata', actualizarProgresoVisorFull);
+            vid.addEventListener('timeupdate', actualizarProgresoVisorFull);
+            vid.addEventListener('play', actualizarControlesPlayPausaVisorFull);
+            vid.addEventListener('pause', actualizarControlesPlayPausaVisorFull);
+            vid.addEventListener('ended', actualizarControlesPlayPausaVisorFull);
             registrarReproductorUnico(vid);
-            vf.mediaWrap.appendChild(vid);
-            aplicarEscalaMediaVisor();
-            actualizarProgresoVisor();
-            vid.play().then(function () {
-                sincronizarEstadoPlayPausa();
-            }).catch(function () {
-                sincronizarEstadoPlayPausa();
-            });
+            n.media.appendChild(vid);
+            aplicarEscalaVisorFull();
+            actualizarProgresoVisorFull();
+            vid.play().then(actualizarControlesPlayPausaVisorFull).catch(actualizarControlesPlayPausaVisorFull);
         } else {
             var img = document.createElement('img');
             img.src = segura;
             img.alt = '';
-            vf.mediaWrap.appendChild(img);
-            aplicarEscalaMediaVisor();
-            sincronizarEstadoPlayPausa();
+            n.media.appendChild(img);
+            aplicarEscalaVisorFull();
+            actualizarControlesPlayPausaVisorFull();
         }
     }
 
-    function abrirVisorInmersivo(items, indiceInicial, postData) {
-        if (!Array.isArray(items) || !items.length) return;
-        construirVisorInmersivo();
-        if (!vf.root) return;
-
+    function abrirVisorFull(items, idxInicial, postObj) {
+        var n = vfNodo();
+        if (!n.root || !Array.isArray(items) || !items.length) return;
         if (medioActivo) {
             try { medioActivo.pause(); } catch (e) {}
         }
-
-        visorState.abierto = true;
-        visorState.items = items;
-        visorState.post = postData || null;
-        visorState.modoEscala = 'cover';
-
-        vf.root.hidden = false;
-        renderizarItemEnVisor(indiceInicial || 0);
+        visorFullState.abierto = true;
+        visorFullState.items = items;
+        visorFullState.post = postObj || null;
+        visorFullState.modoFit = 'cover';
+        n.root.hidden = false;
+        renderizarItemVisorFull(idxInicial || 0);
     }
 
-    function cerrarVisorInmersivo(mantenerPip) {
-        cerrarSheetVisor();
-        limpiarTimerControles();
-        visorState.abierto = false;
-        var vid = obtenerVideoActualVisor();
+    function cerrarVisorFull(mantenerPip) {
+        var n = vfNodo();
+        cerrarSheetVisorFull();
+        limpiarTimerControlesVisorFull();
+        visorFullState.abierto = false;
+        var vid = obtenerVideoVisorFull();
         if (vid && !mantenerPip) {
             try { vid.pause(); } catch (e) {}
             if (medioActivo === vid) medioActivo = null;
         }
-        if (vf.mediaWrap && !mantenerPip) {
-            vf.mediaWrap.innerHTML = '';
+        if (n.media && !mantenerPip) {
+            n.media.innerHTML = '';
         }
-        if (vf.root) {
-            vf.root.hidden = true;
-            vf.root.classList.remove('controls-hidden');
+        if (n.root) {
+            n.root.hidden = true;
+            n.root.classList.remove('controls-hidden');
         }
     }
 
-    /* ================= BOTTOM SHEET (#pubVfSheet) ================= */
-    function irVistaSheet(step) {
-        if (!vf.sheet) return;
-        var track = vf.sheet.querySelector('.pub-vf-sheet-track');
-        if (track) track.style.transform = 'translateX(-' + (step * 33.3333) + '%)';
+    /* ================= HOJA DESLIZABLE (#pubVfSheet) ================= */
+    function irPasoSheet(paso) {
+        var n = vfNodo();
+        if (n.sheetTrack) {
+            n.sheetTrack.style.transform = 'translateX(-' + (paso * 33.3333) + '%)';
+        }
     }
 
-    async function descargarMediaActualBlob() {
-        var item = visorState.items[visorState.indice];
+    function cerrarSheetVisorFull() {
+        var n = vfNodo();
+        if (n.sheetBackdrop) n.sheetBackdrop.hidden = true;
+        if (n.sheet) n.sheet.hidden = true;
+        irPasoSheet(0);
+    }
+
+    async function guardarBlobMediaActual() {
+        var item = visorFullState.items[visorFullState.indice];
         if (!item || !item.url) return;
-        if (visorState.post && visorState.post.permitir_descarga === false) {
-            toast('La descarga está deshabilitada para este contenido', 'error');
+        if (visorFullState.post && visorFullState.post.permitir_descarga === false) {
+            toast('La descarga está deshabilitada para este archivo', 'error');
             return;
         }
         try {
-            toast('Descargando archivo...', 'success');
-            var resp = await fetch(item.url);
-            if (!resp.ok) throw new Error('Error de red');
-            var blob = await resp.blob();
+            toast('Descargando...', 'success');
+            var res = await fetch(item.url);
+            if (!res.ok) throw new Error('Error de red');
+            var blob = await res.blob();
             var ext = item.tipo === 'video' ? 'mp4' : (item.tipo === 'audio' ? 'mp3' : 'jpg');
-            var blobUrl = URL.createObjectURL(blob);
+            var u = URL.createObjectURL(blob);
             var a = document.createElement('a');
-            a.href = blobUrl;
-            a.download = 'csariels-media-' + Date.now() + '.' + ext;
+            a.href = u;
+            a.download = 'archivo-' + Date.now() + '.' + ext;
             document.body.appendChild(a);
             a.click();
             a.remove();
-            setTimeout(function () { URL.revokeObjectURL(blobUrl); }, 2000);
+            setTimeout(function () { URL.revokeObjectURL(u); }, 2000);
         } catch (e) {
-            toast('No se pudo descargar el archivo', 'error');
+            toast('No se pudo guardar el archivo', 'error');
         }
     }
 
-    function construirContenidoSheet() {
-        if (!vf.sheetMainView || !vf.sheetReportView || !vf.sheetConfirmView) return;
-        var post = visorState.post || {};
+    function abrirSheetVisorFull() {
+        var n = vfNodo();
+        if (!n.sheet || !n.sheetViews || n.sheetViews.length < 3) return;
+        var vistaPrincipal = n.sheetViews[0];
+        var vistaMotivos = n.sheetViews[1];
+        var vistaConfirmar = n.sheetViews[2];
+        var post = visorFullState.post || {};
         var esDueno = Boolean(window.usuarioActualId && post.usuario_id && String(post.usuario_id) === String(window.usuarioActualId));
 
-        vf.sheetMainView.innerHTML = '';
+        vistaPrincipal.innerHTML = '';
 
         var btnGuardar = document.createElement('button');
         btnGuardar.type = 'button';
-        btnGuardar.className = 'pub-vf-sheet-item';
+        btnGuardar.className = 'btn btn-outline btn-sm';
+        btnGuardar.style.width = '100%';
+        btnGuardar.style.justifyContent = 'flex-start';
         btnGuardar.textContent = 'Guardar';
         btnGuardar.addEventListener('click', function () {
-            cerrarSheetVisor();
-            descargarMediaActualBlob();
+            cerrarSheetVisorFull();
+            guardarBlobMediaActual();
         });
-        vf.sheetMainView.appendChild(btnGuardar);
+        vistaPrincipal.appendChild(btnGuardar);
 
         if (!esDueno) {
-            var btnNoInteresa = document.createElement('button');
-            btnNoInteresa.type = 'button';
-            btnNoInteresa.className = 'pub-vf-sheet-item';
-            btnNoInteresa.textContent = 'No quiero ver esto';
-            btnNoInteresa.addEventListener('click', function () {
+            var btnNoVer = document.createElement('button');
+            btnNoVer.type = 'button';
+            btnNoVer.className = 'btn btn-outline btn-sm';
+            btnNoVer.style.width = '100%';
+            btnNoVer.style.justifyContent = 'flex-start';
+            btnNoVer.textContent = 'No quiero ver esto';
+            btnNoVer.addEventListener('click', function () {
                 if (post.id && el.pubLista) {
-                    var art = el.pubLista.querySelector('[data-pub-id="' + post.id + '"]');
-                    if (art && art.closest('.pv-post')) art.closest('.pv-post').remove();
+                    var rEl = el.pubLista.querySelector('[data-pub-id="' + post.id + '"]');
+                    if (rEl && rEl.closest('.pv-post')) rEl.closest('.pv-post').remove();
                 }
-                cerrarSheetVisor();
-                cerrarVisorInmersivo(false);
-                toast('Ocultamos esta publicación de tu vista', 'success');
+                cerrarSheetVisorFull();
+                cerrarVisorFull(false);
+                toast('Publicación ocultada', 'success');
             });
-            vf.sheetMainView.appendChild(btnNoInteresa);
+            vistaPrincipal.appendChild(btnNoVer);
 
             var btnReportar = document.createElement('button');
             btnReportar.type = 'button';
-            btnReportar.className = 'pub-vf-sheet-item danger';
+            btnReportar.className = 'btn btn-outline btn-sm';
+            btnReportar.style.width = '100%';
+            btnReportar.style.justifyContent = 'flex-start';
             btnReportar.textContent = 'Reportar →';
             btnReportar.addEventListener('click', function () {
-                irVistaSheet(1);
+                irPasoSheet(1);
             });
-            vf.sheetMainView.appendChild(btnReportar);
+            vistaPrincipal.appendChild(btnReportar);
         } else {
             var btnEliminar = document.createElement('button');
             btnEliminar.type = 'button';
-            btnEliminar.className = 'pub-vf-sheet-item danger';
+            btnEliminar.className = 'btn btn-outline btn-sm';
+            btnEliminar.style.width = '100%';
+            btnEliminar.style.justifyContent = 'flex-start';
             btnEliminar.textContent = 'Eliminar';
             btnEliminar.addEventListener('click', async function () {
                 if (!post.id) return;
@@ -770,227 +513,251 @@
                         var card = el.pubLista.querySelector('[data-pub-id="' + post.id + '"]');
                         if (card && card.closest('.pv-post')) card.closest('.pv-post').remove();
                     }
-                    cerrarSheetVisor();
-                    cerrarVisorInmersivo(false);
+                    cerrarSheetVisorFull();
+                    cerrarVisorFull(false);
                     toast('Publicación eliminada', 'success');
                 } catch (e) {
                     toast('No se pudo eliminar: ' + msgError(e), 'error');
                 }
             });
-            vf.sheetMainView.appendChild(btnEliminar);
+            vistaPrincipal.appendChild(btnEliminar);
         }
 
-        // Vista 2: Motivos de reporte
-        vf.sheetReportView.innerHTML = '';
-        var btnAtrasRep = document.createElement('button');
-        btnAtrasRep.type = 'button';
-        btnAtrasRep.className = 'pub-vf-sheet-item';
-        btnAtrasRep.textContent = '← Volver';
-        btnAtrasRep.addEventListener('click', function () { irVistaSheet(0); });
-        vf.sheetReportView.appendChild(btnAtrasRep);
+        vistaMotivos.innerHTML = '';
+        var btnVolver1 = document.createElement('button');
+        btnVolver1.type = 'button';
+        btnVolver1.className = 'btn btn-outline btn-sm';
+        btnVolver1.textContent = '← Volver';
+        btnVolver1.addEventListener('click', function () { irPasoSheet(0); });
+        vistaMotivos.appendChild(btnVolver1);
 
-        ['Spam o estafa', 'Contenido inapropiado o violento', 'Acoso o suplantación', 'Derechos de autor'].forEach(function (motivo) {
+        ['Spam', 'Contenido inapropiado', 'Acoso o fraude', 'Otro motivo'].forEach(function (mot) {
             var b = document.createElement('button');
             b.type = 'button';
-            b.className = 'pub-vf-sheet-item';
-            b.textContent = motivo;
+            b.className = 'btn btn-outline btn-sm';
+            b.style.width = '100%';
+            b.style.justifyContent = 'flex-start';
+            b.textContent = mot;
             b.addEventListener('click', function () {
-                vf.reportMotivoActual = motivo;
-                pintarConfirmacionReporte();
-                irVistaSheet(2);
+                visorFullState.motivoReporte = mot;
+                vistaConfirmar.innerHTML = '';
+                var btnVolver2 = document.createElement('button');
+                btnVolver2.type = 'button';
+                btnVolver2.className = 'btn btn-outline btn-sm';
+                btnVolver2.textContent = '← Motivos';
+                btnVolver2.addEventListener('click', function () { irPasoSheet(1); });
+                vistaConfirmar.appendChild(btnVolver2);
+
+                var pTxt = document.createElement('p');
+                pTxt.style.margin = '8px 0';
+                pTxt.textContent = 'Confirmar reporte por: ' + mot;
+                vistaConfirmar.appendChild(pTxt);
+
+                var btnEnviarRep = document.createElement('button');
+                btnEnviarRep.type = 'button';
+                btnEnviarRep.className = 'btn btn-outline btn-sm';
+                btnEnviarRep.style.width = '100%';
+                btnEnviarRep.textContent = 'Confirmar reporte';
+                btnEnviarRep.addEventListener('click', async function () {
+                    try {
+                        var client = await obtenerCliente();
+                        if (client && post.id && window.usuarioActualId) {
+                            await client.from('publicaciones_reportes').insert({
+                                publicacion_id: post.id,
+                                usuario_id: window.usuarioActualId,
+                                motivo: visorFullState.motivoReporte
+                            });
+                        }
+                    } catch (e) {}
+                    cerrarSheetVisorFull();
+                    toast('Reporte enviado', 'success');
+                });
+                vistaConfirmar.appendChild(btnEnviarRep);
+                irPasoSheet(2);
             });
-            vf.sheetReportView.appendChild(b);
+            vistaMotivos.appendChild(b);
         });
+
+        irPasoSheet(0);
+        if (n.sheetBackdrop) n.sheetBackdrop.hidden = false;
+        n.sheet.hidden = false;
     }
 
-    function pintarConfirmacionReporte() {
-        if (!vf.sheetConfirmView) return;
-        vf.sheetConfirmView.innerHTML = '';
+    function enlazarEventosVisorFull() {
+        var n = vfNodo();
+        if (!n.root) return;
 
-        var btnAtrasConf = document.createElement('button');
-        btnAtrasConf.type = 'button';
-        btnAtrasConf.className = 'pub-vf-sheet-item';
-        btnAtrasConf.textContent = '← Cambiar motivo';
-        btnAtrasConf.addEventListener('click', function () { irVistaSheet(1); });
-        vf.sheetConfirmView.appendChild(btnAtrasConf);
-
-        var resumen = document.createElement('div');
-        resumen.style.cssText = 'padding:12px;font-size:13px;color:#cbd5e1;';
-        resumen.textContent = 'Motivo seleccionado: ' + vf.reportMotivoActual + '. ¿Confirmas enviar el reporte?';
-        vf.sheetConfirmView.appendChild(resumen);
-
-        var btnConfirmar = document.createElement('button');
-        btnConfirmar.type = 'button';
-        btnConfirmar.className = 'pub-vf-sheet-item danger';
-        btnConfirmar.textContent = 'Enviar reporte';
-        btnConfirmar.addEventListener('click', async function () {
-            try {
-                var client = await obtenerCliente();
-                if (client && visorState.post && visorState.post.id && window.usuarioActualId) {
-                    await client.from('publicaciones_reportes').insert({
-                        publicacion_id: visorState.post.id,
-                        usuario_id: window.usuarioActualId,
-                        motivo: vf.reportMotivoActual
-                    });
+        if (n.btnClose) {
+            n.btnClose.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                cerrarVisorFull(false);
+            });
+        }
+        if (n.btnMenu) {
+            n.btnMenu.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                abrirSheetVisorFull();
+            });
+        }
+        if (n.btnPlayCenter) {
+            n.btnPlayCenter.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                var vid = obtenerVideoVisorFull();
+                if (vid && vid.paused) vid.play().catch(function () {});
+            });
+        }
+        if (n.btnSpeed) {
+            n.btnSpeed.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                visorFullState.velIndex = (visorFullState.velIndex + 1) % visorFullState.velocidades.length;
+                var v = visorFullState.velocidades[visorFullState.velIndex];
+                var vid = obtenerVideoVisorFull();
+                if (vid) vid.playbackRate = v;
+                n.btnSpeed.textContent = v + 'x';
+                mostrarControlesVisorFull(true);
+            });
+        }
+        if (n.btnPip) {
+            n.btnPip.addEventListener('click', async function (ev) {
+                ev.stopPropagation();
+                var vid = obtenerVideoVisorFull();
+                if (!vid || typeof vid.requestPictureInPicture !== 'function') {
+                    toast('PiP no disponible', 'error');
+                    return;
                 }
-            } catch (e) {}
-            cerrarSheetVisor();
-            toast('Reporte enviado. Gracias por ayudar a cuidar la comunidad.', 'success');
-        });
-        vf.sheetConfirmView.appendChild(btnConfirmar);
-    }
-
-    function abrirSheetVisor() {
-        construirContenidoSheet();
-        irVistaSheet(0);
-        if (vf.sheetBackdrop) vf.sheetBackdrop.hidden = false;
-        if (vf.sheet) vf.sheet.hidden = false;
-    }
-
-    function cerrarSheetVisor() {
-        if (vf.sheetBackdrop) vf.sheetBackdrop.hidden = true;
-        if (vf.sheet) vf.sheet.hidden = true;
-        irVistaSheet(0);
-    }
-
-    function registrarEventosVisor() {
-        if (!vf.root) return;
-
-        if (vf.btnClose) {
-            vf.btnClose.addEventListener('click', function (ev) {
-                ev.stopPropagation();
-                cerrarVisorInmersivo(false);
+                try {
+                    if (document.pictureInPictureElement) {
+                        await document.exitPictureInPicture();
+                    } else {
+                        await vid.requestPictureInPicture();
+                        cerrarVisorFull(true);
+                    }
+                } catch (e) {
+                    toast('No se pudo activar PiP', 'error');
+                }
             });
         }
-
-        if (vf.btnMenu) {
-            vf.btnMenu.addEventListener('click', function (ev) {
+        if (n.btnExpand) {
+            n.btnExpand.addEventListener('click', function (ev) {
                 ev.stopPropagation();
-                abrirSheetVisor();
+                alternarEscalaVisorFull();
             });
         }
-
-        if (vf.btnPlayCenter) {
-            vf.btnPlayCenter.addEventListener('click', function (ev) {
+        if (n.progressBar) {
+            n.progressBar.addEventListener('pointerdown', function (ev) {
                 ev.stopPropagation();
-                alternarReproduccionVisor();
+                visorFullState.arrastrando = true;
+                try { n.progressBar.setPointerCapture(ev.pointerId); } catch (e) {}
+                seekProgresoVisorFull(ev);
             });
-        }
-
-        if (vf.btnSpeed) {
-            vf.btnSpeed.addEventListener('click', function (ev) {
+            n.progressBar.addEventListener('pointermove', function (ev) {
+                if (!visorFullState.arrastrando) return;
                 ev.stopPropagation();
-                ciclarVelocidadVisor();
+                seekProgresoVisorFull(ev);
             });
-        }
-
-        if (vf.btnPip) {
-            vf.btnPip.addEventListener('click', function (ev) {
+            var finArrastre = function (ev) {
+                if (!visorFullState.arrastrando) return;
                 ev.stopPropagation();
-                activarPiPVisor();
-            });
-        }
-
-        if (vf.btnExpand) {
-            vf.btnExpand.addEventListener('click', function (ev) {
-                ev.stopPropagation();
-                alternarEscalaVisor();
-            });
-        }
-
-        if (vf.progressBar) {
-            vf.progressBar.addEventListener('pointerdown', function (ev) {
-                ev.stopPropagation();
-                visorState.arrastrandoProgreso = true;
-                try { vf.progressBar.setPointerCapture(ev.pointerId); } catch (e) {}
-                buscarEnProgresoPorEvento(ev);
-            });
-            vf.progressBar.addEventListener('pointermove', function (ev) {
-                if (!visorState.arrastrandoProgreso) return;
-                ev.stopPropagation();
-                buscarEnProgresoPorEvento(ev);
-            });
-            var soltarProgreso = function (ev) {
-                if (!visorState.arrastrandoProgreso) return;
-                ev.stopPropagation();
-                visorState.arrastrandoProgreso = false;
-                try { vf.progressBar.releasePointerCapture(ev.pointerId); } catch (e) {}
-                mostrarControlesVisor(true);
+                visorFullState.arrastrando = false;
+                try { n.progressBar.releasePointerCapture(ev.pointerId); } catch (e) {}
+                mostrarControlesVisorFull(true);
             };
-            vf.progressBar.addEventListener('pointerup', soltarProgreso);
-            vf.progressBar.addEventListener('pointercancel', soltarProgreso);
+            n.progressBar.addEventListener('pointerup', finArrastre);
+            n.progressBar.addEventListener('pointercancel', finArrastre);
         }
-
-        if (vf.mediaWrap) {
-            vf.mediaWrap.addEventListener('touchstart', function (ev) {
+        if (n.media) {
+            n.media.addEventListener('touchstart', function (ev) {
                 if (!ev.touches || !ev.touches.length) return;
-                visorState.touchStartX = ev.touches[0].clientX;
-                visorState.touchStartY = ev.touches[0].clientY;
-                visorState.touchMoved = false;
+                visorFullState.startX = ev.touches[0].clientX;
+                visorFullState.startY = ev.touches[0].clientY;
+                visorFullState.movido = false;
             }, { passive: true });
 
-            vf.mediaWrap.addEventListener('touchmove', function (ev) {
+            n.media.addEventListener('touchmove', function (ev) {
                 if (!ev.touches || !ev.touches.length) return;
-                var dx = Math.abs(ev.touches[0].clientX - visorState.touchStartX);
-                var dy = Math.abs(ev.touches[0].clientY - visorState.touchStartY);
-                if (dx > 10 || dy > 10) visorState.touchMoved = true;
+                var dx = Math.abs(ev.touches[0].clientX - visorFullState.startX);
+                var dy = Math.abs(ev.touches[0].clientY - visorFullState.startY);
+                if (dx > 10 || dy > 10) visorFullState.movido = true;
             }, { passive: true });
 
-            vf.mediaWrap.addEventListener('touchend', function (ev) {
+            n.media.addEventListener('touchend', function (ev) {
                 if (!ev.changedTouches || !ev.changedTouches.length) return;
-                var endX = ev.changedTouches[0].clientX;
-                var endY = ev.changedTouches[0].clientY;
-                var diffX = endX - visorState.touchStartX;
-                var diffY = endY - visorState.touchStartY;
+                var diffX = ev.changedTouches[0].clientX - visorFullState.startX;
+                var diffY = ev.changedTouches[0].clientY - visorFullState.startY;
 
-                // Deslizar hacia abajo (> 120px) cierra el visor
                 if (diffY > 120 && Math.abs(diffY) > Math.abs(diffX)) {
-                    cerrarVisorInmersivo(false);
+                    cerrarVisorFull(false);
                     return;
                 }
-
-                // Deslizar horizontalmente (> 55px) navega entre archivos
                 if (Math.abs(diffX) > 55 && Math.abs(diffX) > Math.abs(diffY)) {
-                    if (diffX < 0) {
-                        renderizarItemEnVisor(visorState.indice + 1);
-                    } else {
-                        renderizarItemEnVisor(visorState.indice - 1);
-                    }
+                    if (diffX < 0) renderizarItemVisorFull(visorFullState.indice + 1);
+                    else renderizarItemVisorFull(visorFullState.indice - 1);
                     return;
                 }
-
-                // Toque simple pausa/reanuda (o muestra controles)
-                if (!visorState.touchMoved) {
-                    var vid = obtenerVideoActualVisor();
+                if (!visorFullState.movido) {
+                    var vid = obtenerVideoVisorFull();
                     if (vid) {
-                        alternarReproduccionVisor();
+                        if (vid.paused) vid.play().catch(function () {});
+                        else vid.pause();
                     } else {
-                        mostrarControlesVisor(false);
+                        mostrarControlesVisorFull(false);
                     }
                 }
             }, { passive: true });
-
-            vf.mediaWrap.addEventListener('click', function (ev) {
-                if (ev.detail === 0) return;
-                var vid = obtenerVideoActualVisor();
-                if (vid) alternarReproduccionVisor();
-            });
         }
-
-        if (vf.sheetBackdrop) {
-            vf.sheetBackdrop.addEventListener('click', cerrarSheetVisor);
+        if (n.sheetBackdrop) {
+            n.sheetBackdrop.addEventListener('click', cerrarSheetVisorFull);
         }
-
         window.addEventListener('resize', function () {
-            if (visorState.abierto) {
-                alternarEscalaVisor();
-            }
+            if (visorFullState.abierto) alternarEscalaVisorFull();
         });
     }
 
-    /* ================= VISOR MULTIMEDIA LEGACY / FALLBACK ================= */
+    /* ================= SELECTOR DE 97 EMOJIS (#emojiPickerPerfil) ================= */
+    function poblarGrid97Emojis() {
+        var grid = $('emojiGridPerfil');
+        if (!grid || grid.dataset.cargado === '1') return;
+        grid.innerHTML = '';
+        EMOJIS_97.forEach(function (emo) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'emoji-item';
+            btn.style.cssText = 'border:none;background:transparent;font-size:18px;padding:4px;cursor:pointer;border-radius:6px;';
+            btn.textContent = emo;
+            btn.addEventListener('click', function (ev) {
+                ev.stopPropagation();
+                var target = inputEmojiDestino || document.querySelector('#pfComposer textarea, #pfComposer input, .pv-comentario-input');
+                if (!target) return;
+                target.focus();
+                var v = String(target.value || '');
+                var s = typeof target.selectionStart === 'number' ? target.selectionStart : v.length;
+                var ePos = typeof target.selectionEnd === 'number' ? target.selectionEnd : v.length;
+                target.value = v.slice(0, s) + emo + v.slice(ePos);
+                var nPos = s + emo.length;
+                try { target.setSelectionRange(nPos, nPos); } catch (err) {}
+                target.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+            grid.appendChild(btn);
+        });
+        grid.dataset.cargado = '1';
+    }
+
+    function abrirPicker97Emojis(inputEl) {
+        var picker = $('emojiPickerPerfil');
+        if (!picker) return;
+        if (inputEl) inputEmojiDestino = inputEl;
+        poblarGrid97Emojis();
+        picker.hidden = false;
+    }
+
+    function cerrarPicker97Emojis() {
+        var picker = $('emojiPickerPerfil');
+        if (picker) picker.hidden = true;
+    }
+
+    /* ================= VISOR MULTIMEDIA ================= */
     function cerrarLightbox() {
-        cerrarVisorInmersivo(false);
+        cerrarVisorFull(false);
         var lb = el.lightbox;
         var body = el.lightboxBody;
         if (medioActivo && body && body.contains(medioActivo)) {
@@ -1004,74 +771,38 @@
     function abrirLightbox(tipo, url) {
         var segura = safeHttps(url);
         if (!segura) return;
-        abrirVisorInmersivo([{ tipo: tipo || 'imagen', url: segura }], 0, null);
-    }
-
-    /* ================= SELECTOR DE 97 EMOJIS (#emojiPickerPerfil) ================= */
-    var pickerState = {
-        targetInput: null,
-        construido: false
-    };
-
-    function asegurarPicker97Emojis() {
-        var picker = $('emojiPickerPerfil');
-        if (!picker) {
-            picker = document.createElement('div');
-            picker.id = 'emojiPickerPerfil';
-            picker.hidden = true;
-            picker.setAttribute('role', 'dialog');
-            picker.setAttribute('aria-label', 'Selector de emojis');
-
-            var grid = document.createElement('div');
-            grid.id = 'emojiGridPerfil';
-            picker.appendChild(grid);
-            document.body.appendChild(picker);
+        if ($('pubVisorFull')) {
+            abrirVisorFull([{ tipo: tipo || 'imagen', url: segura }], 0, null);
+            return;
         }
-
-        var gridEl = $('emojiGridPerfil');
-        if (gridEl && !pickerState.construido) {
-            gridEl.innerHTML = '';
-            EMOJIS_97.forEach(function (emo) {
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'emoji-picker-item';
-                btn.textContent = emo;
-                btn.setAttribute('aria-label', 'Insertar ' + emo);
-                btn.addEventListener('click', function (ev) {
-                    ev.stopPropagation();
-                    insertarEmojiEnCursor(emo);
-                });
-                gridEl.appendChild(btn);
-            });
-            pickerState.construido = true;
+        if (!el.lightboxBody) return;
+        if (medioActivo) {
+            try { medioActivo.pause(); } catch (e) {}
         }
-        return picker;
-    }
-
-    function insertarEmojiEnCursor(emoji) {
-        var inp = pickerState.targetInput || document.querySelector('#nuevaPublicacionTexto, #pubContenido, .pv-comentario-input');
-        if (!inp) return;
-        inp.focus();
-        var val = String(inp.value || '');
-        var start = typeof inp.selectionStart === 'number' ? inp.selectionStart : val.length;
-        var end = typeof inp.selectionEnd === 'number' ? inp.selectionEnd : val.length;
-        inp.value = val.slice(0, start) + emoji + val.slice(end);
-        var nuevaPos = start + emoji.length;
-        try { inp.setSelectionRange(nuevaPos, nuevaPos); } catch (e) {}
-        inp.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-
-    function alternarPicker97Emojis(inputEl, anchorEl) {
-        var picker = asegurarPicker97Emojis();
-        if (inputEl) pickerState.targetInput = inputEl;
-        var seraVisible = picker.hidden;
-        picker.hidden = !seraVisible;
-        if (seraVisible && anchorEl && typeof anchorEl.getBoundingClientRect === 'function') {
-            var r = anchorEl.getBoundingClientRect();
-            picker.style.bottom = (window.innerHeight - r.top + 8) + 'px';
-            picker.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
-            picker.style.left = 'auto';
+        el.lightboxBody.innerHTML = '';
+        if (tipo === 'video') {
+            var vid = document.createElement('video');
+            vid.src = segura;
+            vid.controls = true;
+            vid.autoplay = true;
+            vid.playsInline = true;
+            vid.setAttribute('playsinline', '');
+            vid.style.width = '100%';
+            vid.style.maxWidth = '540px';
+            vid.style.maxHeight = '85vh';
+            vid.style.objectFit = 'contain';
+            registrarReproductorUnico(vid);
+            el.lightboxBody.appendChild(vid);
+        } else {
+            var img = document.createElement('img');
+            img.src = segura;
+            img.alt = '';
+            img.style.maxWidth = '95vw';
+            img.style.maxHeight = '85vh';
+            img.style.objectFit = 'contain';
+            el.lightboxBody.appendChild(img);
         }
+        if (el.lightbox) el.lightbox.hidden = false;
     }
 
     /* ================= IDENTIDAD ================= */
@@ -1089,12 +820,13 @@
     }
 
     async function cargarPerfil(client, ident) {
+        var r;
         var llamada;
         if (ident.tipo === 'verificado') llamada = client.rpc('perfil_publico_verificado', { p_handle: ident.handle, p_id: ident.id });
         else if (ident.tipo === 'handle') llamada = client.rpc('perfil_publico_por_handle', { p_handle: ident.valor });
         else llamada = client.rpc('perfil_publico_por_id', { p_id: ident.valor });
 
-        var r = await conTimeout(llamada, TIMEOUT_PERFIL_MS, 'El servidor tardó demasiado en responder el perfil.');
+        r = await conTimeout(llamada, TIMEOUT_PERFIL_MS, 'El servidor tardó demasiado en responder el perfil.');
         if (r.error) throw r.error;
         var fila = Array.isArray(r.data) ? r.data[0] : r.data;
         return fila || null;
@@ -1244,46 +976,53 @@
     }
 
     /* ================= MEDIA Y PUBLICACIONES ================= */
-    function extraerListaMediaPost(p) {
-        var lista = [];
+    function listaMediaPost(p) {
+        var arr = [];
         if (Array.isArray(p.media_items)) {
-            p.media_items.forEach(function (m) {
-                var u = safeHttps(m && (m.url || m.media_url));
+            p.media_items.forEach(function (it) {
+                var u = safeHttps(it && (it.url || it.media_url));
                 if (!u) return;
-                var t = String((m && (m.tipo || m.media_type)) || '').toLowerCase();
+                var t = String((it && (it.tipo || it.media_type)) || '').toLowerCase();
                 if (!t) t = /\.(mp4|webm|mov)(\?|$)/i.test(u) ? 'video' : 'imagen';
-                lista.push({ url: u, tipo: t });
+                arr.push({ url: u, tipo: t });
             });
         }
-        if (!lista.length) {
-            var uPrincipal = safeHttps(p.media_url);
-            if (uPrincipal) {
-                var tPrincipal = String(p.media_type || '').toLowerCase();
-                if (!tPrincipal) {
-                    if (/\.(mp4|webm|mov)(\?|$)/i.test(uPrincipal)) tPrincipal = 'video';
-                    else if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(uPrincipal)) tPrincipal = 'audio';
-                    else tPrincipal = 'imagen';
+        if (!arr.length) {
+            var u0 = safeHttps(p.media_url);
+            if (u0) {
+                var t0 = String(p.media_type || '').toLowerCase();
+                if (!t0) {
+                    if (/\.(mp4|webm|mov)(\?|$)/i.test(u0)) t0 = 'video';
+                    else if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(u0)) t0 = 'audio';
+                    else t0 = 'imagen';
                 }
-                lista.push({ url: uPrincipal, tipo: tPrincipal });
+                arr.push({ url: u0, tipo: t0 });
             }
         }
-        return lista;
+        return arr;
     }
 
     function resolverMedia(p) {
-        var items = extraerListaMediaPost(p);
-        return items.length ? items[0] : null;
+        var arr = listaMediaPost(p);
+        return arr.length ? arr[0] : null;
     }
 
     function renderMedia(meta, p) {
-        var items = extraerListaMediaPost(p);
+        var items = listaMediaPost(p);
         var media = items[0];
         if (!media) return;
         var sinDescarga = p.permitir_descarga === false;
 
         if (media.tipo === 'video') {
-            var cont = document.createElement('div');
-            cont.className = 'pub-media-container';
+            var marcoVideo = document.createElement('div');
+            marcoVideo.className = 'pv-media-marco pub-media-container';
+            marcoVideo.style.width = '100%';
+            marcoVideo.style.aspectRatio = '9 / 16';
+            marcoVideo.style.marginTop = '12px';
+            marcoVideo.style.borderRadius = '8px';
+            marcoVideo.style.overflow = 'hidden';
+            marcoVideo.style.background = '#000';
+            marcoVideo.style.position = 'relative';
 
             var vid = document.createElement('video');
             vid.className = 'pv-post-video';
@@ -1295,15 +1034,22 @@
             vid.setAttribute('webkit-playsinline', '');
             if (sinDescarga) vid.setAttribute('controlsList', 'nodownload');
 
-            registrarReproductorUnico(vid);
-            cont.appendChild(vid);
+            vid.style.width = '100%';
+            vid.style.height = '100%';
+            vid.style.marginTop = '0';
+            vid.style.objectFit = 'cover';
+            vid.style.objectPosition = 'center';
 
-            cont.addEventListener('click', function () {
+            registrarReproductorUnico(vid);
+            marcoVideo.appendChild(vid);
+
+            marcoVideo.addEventListener('click', function () {
                 try { vid.pause(); } catch (e) {}
-                abrirVisorInmersivo(items, 0, p);
+                if ($('pubVisorFull')) abrirVisorFull(items, 0, p);
+                else abrirLightbox('video', media.url);
             });
 
-            meta.appendChild(cont);
+            meta.appendChild(marcoVideo);
         } else if (media.tipo === 'audio') {
             var aud = document.createElement('audio');
             aud.className = 'pv-post-audio';
@@ -1314,29 +1060,18 @@
             registrarReproductorUnico(aud);
             meta.appendChild(aud);
         } else {
-            var contImg = document.createElement('div');
-            contImg.className = 'pub-media-container';
-
             var img = document.createElement('img');
             img.className = 'pv-post-img';
             img.alt = '';
-            img.loading = 'eager';
+            img.loading = 'lazy';
             img.decoding = 'async';
             img.src = media.url;
-            contImg.appendChild(img);
-
-            contImg.addEventListener('click', function () {
-                abrirVisorInmersivo(items, 0, p);
+            img.addEventListener('click', function () {
+                if ($('pubVisorFull')) abrirVisorFull(items, 0, p);
+                else abrirLightbox('imagen', media.url);
             });
-            meta.appendChild(contImg);
+            meta.appendChild(img);
         }
-    }
-
-    /* ================= REACCIONES EN CÁPSULA VERTICAL (.reaccion-wrap) ================= */
-    function cerrarTodosLosDropdownsReaccion(excepto) {
-        document.querySelectorAll('.reaccion-dropdown').forEach(function (dd) {
-            if (dd !== excepto) dd.hidden = true;
-        });
     }
 
     function pintarBarraReacciones(bar, resumen) {
@@ -1351,58 +1086,50 @@
         var dropdown = document.createElement('div');
         dropdown.className = 'reaccion-dropdown';
         dropdown.hidden = true;
-        dropdown.setAttribute('role', 'menu');
 
-        REACCIONES_CATALOGO.forEach(function (emoji) {
-            var optBtn = document.createElement('button');
-            optBtn.type = 'button';
-            optBtn.className = 'reaccion-opcion-btn' + (r.miTipo === emoji ? ' activo' : '');
-            optBtn.setAttribute('data-tipo', emoji);
-            optBtn.setAttribute('aria-label', 'Reaccionar con ' + emoji);
+        (rg.EMOJIS || EMOJIS_REACCION).forEach(function (emoji) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'pv-btn-reaccion reaccion-opcion-btn' + (r.miTipo === emoji ? ' activo' : '');
+            btn.setAttribute('data-tipo', emoji);
+            btn.setAttribute('aria-label', 'Reaccionar con ' + emoji);
 
-            var emoSpan = document.createElement('span');
-            emoSpan.textContent = emoji;
-            aplicarAnimacionEmoji(emoSpan, emoji);
-            if (typeof rg.aplicarMotor === 'function') {
-                rg.aplicarMotor(emoSpan, emoji);
-            }
+            var ico = document.createElement('span');
+            ico.textContent = emoji;
+            aplicarVariablesEmoji(ico, emoji);
+            rg.aplicarMotor(ico, emoji);
 
-            var mini = document.createElement('span');
-            mini.className = 'mini-count';
+            var cant = document.createElement('span');
+            cant.className = 'mini-count';
             var n = r.totales[emoji] || 0;
-            mini.textContent = n > 0 ? String(n) : '';
+            cant.textContent = n > 0 ? String(n) : '';
 
-            optBtn.appendChild(emoSpan);
-            optBtn.appendChild(mini);
-            dropdown.appendChild(optBtn);
+            btn.appendChild(ico); btn.appendChild(cant);
+            dropdown.appendChild(btn);
         });
 
         var trigger = document.createElement('button');
         trigger.type = 'button';
         trigger.className = 'reaccion-trigger' + (r.miTipo ? ' activo' : '');
-        trigger.setAttribute('aria-haspopup', 'true');
-        trigger.setAttribute('aria-expanded', 'false');
 
-        var activeEmojiSpan = document.createElement('span');
-        var emojiActivo = r.miTipo || rg.POR_DEFECTO || '❤️';
-        activeEmojiSpan.textContent = emojiActivo;
-        aplicarAnimacionEmoji(activeEmojiSpan, emojiActivo);
+        var trigEmoji = document.createElement('span');
+        trigEmoji.textContent = r.miTipo || rg.POR_DEFECTO || '❤️';
+        aplicarVariablesEmoji(trigEmoji, r.miTipo || rg.POR_DEFECTO || '❤️');
 
-        var labelSpan = document.createElement('span');
-        labelSpan.textContent = r.total > 0 ? String(r.total) : 'Reaccionar';
+        var trigTexto = document.createElement('span');
+        trigTexto.textContent = r.total > 0 ? String(r.total) : 'Reaccionar';
 
-        trigger.appendChild(activeEmojiSpan);
-        trigger.appendChild(labelSpan);
+        trigger.appendChild(trigEmoji);
+        trigger.appendChild(trigTexto);
 
         trigger.addEventListener('click', function (ev) {
             ev.stopPropagation();
-            var seraAbierto = dropdown.hidden;
-            cerrarTodosLosDropdownsReaccion(dropdown);
-            dropdown.hidden = !seraAbierto;
-            trigger.setAttribute('aria-expanded', String(seraAbierto));
-            if (seraAbierto) {
+            var abrir = dropdown.hidden;
+            document.querySelectorAll('.reaccion-dropdown').forEach(function (d) { d.hidden = true; });
+            dropdown.hidden = !abrir;
+            if (abrir) {
                 dropdown.querySelectorAll('.reaccion-opcion-btn span:first-child').forEach(function (sp, idx) {
-                    aplicarAnimacionEmoji(sp, REACCIONES_CATALOGO[idx]);
+                    aplicarVariablesEmoji(sp, (rg.EMOJIS || EMOJIS_REACCION)[idx]);
                 });
             }
         });
@@ -1516,7 +1243,7 @@
         av.className = 'pv-post-av';
         var avatarUrl = safeHttps(p.usuario_avatar_url);
         if (avatarUrl) {
-            var im = document.createElement('img'); im.alt = ''; im.src = avatarUrl;
+            var im = document.createElement('img'); im.alt = ''; im.loading = 'lazy'; im.src = avatarUrl;
             av.appendChild(im);
         } else {
             av.textContent = (p.usuario_nombre || 'U').charAt(0).toUpperCase();
@@ -1607,11 +1334,11 @@
 
         reacciones.addEventListener('click', function (ev) {
             ev.stopPropagation();
-            var optBtn = ev.target.closest('button.reaccion-opcion-btn[data-tipo]');
-            if (!optBtn) return;
+            var btn = ev.target.closest('button[data-tipo]');
+            if (!btn) return;
             var dd = reacciones.querySelector('.reaccion-dropdown');
             if (dd) dd.hidden = true;
-            alternarReaccion(client, pubId, optBtn.getAttribute('data-tipo'), reacciones);
+            alternarReaccion(client, pubId, btn.getAttribute('data-tipo'), reacciones);
         });
 
         art.appendChild(av); art.appendChild(meta);
@@ -1711,17 +1438,13 @@
         pintarBarraReacciones: pintarBarraReacciones,
         cerrarLightbox: cerrarLightbox,
         abrirLightbox: abrirLightbox,
-        abrirVisorInmersivo: abrirVisorInmersivo,
-        cerrarVisorInmersivo: cerrarVisorInmersivo,
+        abrirVisorFull: abrirVisorFull,
+        cerrarVisorFull: cerrarVisorFull,
+        abrirPicker97Emojis: abrirPicker97Emojis,
+        cerrarPicker97Emojis: cerrarPicker97Emojis,
         toast: toast,
         msgError: msgError,
         safeHttps: safeHttps
-    };
-
-    window.PerfilPublicoEmojiPicker = {
-        alternar: alternarPicker97Emojis,
-        insertar: insertarEmojiEnCursor,
-        emojis: EMOJIS_97
     };
 
     /* ================= EVENTOS ================= */
@@ -1751,6 +1474,8 @@
     }
 
     /* ================= CLIENTE Y SESIÓN (con límite de tiempo) ================= */
+    // Usa el cliente ya creado si existe. Si no, espera un máximo de 5 s.
+    // Nunca se queda esperando sin fin.
     async function obtenerCliente() {
         if (window.supabaseClient) return window.supabaseClient;
         if (window.__sarielsSupabaseSingleton) return window.__sarielsSupabaseSingleton;
@@ -1788,11 +1513,10 @@
     /* ================= INIT ================= */
     async function init() {
         console.info('[PerfilPublico] iniciando');
-        inyectarEstilosBase();
-        construirVisorInmersivo();
-        asegurarPicker97Emojis();
         mostrar(el.cargando);
         configurarVolver();
+        enlazarEventosVisorFull();
+        poblarGrid97Emojis();
 
         var ident = leerIdentificador();
         if (!ident) { mostrar(el.noEncontrado); return; }
@@ -1860,36 +1584,28 @@
         if (client && perfil && perfil.handle) cargarPublicaciones(client, perfil.handle, false);
     });
 
-    if (el.lightboxCerrar) el.lightboxCerrar.addEventListener('click', cerrarLightbox);
-    if (el.lightbox) {
-        el.lightbox.addEventListener('click', function (e) {
-            if (e.target === el.lightbox) cerrarLightbox();
-        });
-    }
+    el.lightboxCerrar.addEventListener('click', cerrarLightbox);
+    el.lightbox.addEventListener('click', function (e) {
+        if (e.target === el.lightbox) cerrarLightbox();
+    });
 
     document.addEventListener('click', function (ev) {
         if (!ev.target.closest('.reaccion-wrap')) {
-            cerrarTodosLosDropdownsReaccion(null);
+            document.querySelectorAll('.reaccion-dropdown').forEach(function (d) { d.hidden = true; });
         }
         var picker = $('emojiPickerPerfil');
-        if (picker && !picker.hidden && !picker.contains(ev.target) && !ev.target.closest('[data-emoji-picker-trigger]')) {
+        if (picker && !picker.hidden && !picker.contains(ev.target) && !ev.target.closest('[data-emoji-picker-btn]')) {
             picker.hidden = true;
         }
     });
 
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
-            if (vf.sheet && !vf.sheet.hidden) {
-                cerrarSheetVisor();
-                return;
-            }
-            if (vf.root && !vf.root.hidden) {
-                cerrarVisorInmersivo(false);
-                return;
-            }
-            if (el.lightbox && !el.lightbox.hidden) cerrarLightbox();
-            var picker = $('emojiPickerPerfil');
-            if (picker && !picker.hidden) picker.hidden = true;
+            var n = vfNodo();
+            if (n.sheet && !n.sheet.hidden) { cerrarSheetVisorFull(); return; }
+            if (n.root && !n.root.hidden) { cerrarVisorFull(false); return; }
+            if (!el.lightbox.hidden) cerrarLightbox();
+            cerrarPicker97Emojis();
         }
     });
 
