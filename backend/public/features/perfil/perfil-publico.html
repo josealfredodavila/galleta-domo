@@ -12,7 +12,6 @@
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
-<!-- CSS compartido con el perfil propio -->
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
 <link rel="stylesheet" href="/features/perfil/css/emojis-animations.css">
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
@@ -24,60 +23,34 @@
     .btn, .btn-outline, .nav-link, .tab-btn { -webkit-tap-highlight-color: transparent; }
     .anuncios-imagen-contenedor img { display: block; width: 100%; max-width: 100%; height: auto; max-height: 260px; object-fit: cover; border-radius: 16px; }
 
-    /* ================= CABECERA · @HANDLE (igual que perfil propio) ================= */
     .perfil-header #pvHandle {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        margin-top: 4px;
-        padding: 3px 12px 3px 9px;
-        border-radius: 999px;
-        color: #5cc8ff !important;
-        font-weight: 600;
-        font-size: .82rem;
-        letter-spacing: .2px;
+        display: inline-flex; align-items: center; gap: 5px; margin-top: 4px;
+        padding: 3px 12px 3px 9px; border-radius: 999px; color: #5cc8ff !important;
+        font-weight: 600; font-size: .82rem; letter-spacing: .2px;
         background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16));
-        border: 1px solid rgba(0, 229, 255, .38);
-        text-shadow: 0 0 8px rgba(0, 229, 255, .5);
-        box-shadow: 0 0 10px rgba(0, 229, 255, .12);
-        animation: pvHandleHalo 2.4s ease-in-out infinite;
+        border: 1px solid rgba(0, 229, 255, .38); text-shadow: 0 0 8px rgba(0, 229, 255, .5);
+        box-shadow: 0 0 10px rgba(0, 229, 255, .12); animation: pvHandleHalo 2.4s ease-in-out infinite;
     }
     .perfil-header #pvHandle::before {
-        content: '⚡';
-        font-size: .72rem;
-        line-height: 1;
-        filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
+        content: '⚡'; font-size: .72rem; line-height: 1; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
         animation: pvHandleDestello 1.8s steps(2, end) infinite;
     }
     @keyframes pvHandleHalo {
         0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
-        50%      { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
+        50% { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
     }
-    @keyframes pvHandleDestello {
-        0%, 100% { opacity: 1; }
-        50%      { opacity: .35; }
-    }
+    @keyframes pvHandleDestello { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
-    .perfil-header #pvAvatar,
-    .perfil-header .avatar {
+    .perfil-header #pvAvatar, .perfil-header .avatar {
         border: 2px solid rgba(0, 229, 255, .55) !important;
         box-shadow: 0 0 0 3px rgba(139, 92, 246, .18), 0 0 22px rgba(0, 229, 255, .28) !important;
     }
-
     .perfil-header .stats .number {
-        font-family: Orbitron, Inter, sans-serif !important;
-        font-weight: 700;
-        color: #f5fbff;
-        font-size: 1.15rem;
-        line-height: 1.1;
-        font-variant-numeric: tabular-nums;
+        font-family: Orbitron, Inter, sans-serif !important; font-weight: 700; color: #f5fbff;
+        font-size: 1.15rem; line-height: 1.1; font-variant-numeric: tabular-nums;
     }
     .perfil-header .stats .label {
-        font-family: Inter, sans-serif;
-        font-size: .6rem;
-        letter-spacing: .12em;
-        color: #8aa8b8;
-        text-transform: uppercase;
+        font-family: Inter, sans-serif; font-size: .6rem; letter-spacing: .12em; color: #8aa8b8; text-transform: uppercase;
     }
 
     .pv-estado { display: flex; align-items: center; gap: 6px; margin-top: 6px; font-size: .75rem; color: #9fb3c8; }
@@ -86,103 +59,50 @@
     .pv-dot.inactivo { background: var(--text-muted, #6b7d90); }
 
     .pv-wallet {
-        margin-top: 10px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 5px 12px;
-        border-radius: 999px;
-        border: 1px solid rgba(0, 229, 255, .35);
-        background: rgba(0, 229, 255, .05);
-        color: #5cc8ff;
-        font-family: monospace;
-        font-size: .72rem;
-        cursor: pointer;
+        margin-top: 10px; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px;
+        border-radius: 999px; border: 1px solid rgba(0, 229, 255, .35); background: rgba(0, 229, 255, .05);
+        color: #5cc8ff; font-family: monospace; font-size: .72rem; cursor: pointer;
     }
-
     .pv-acciones { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 12px; }
     .pv-volver { width: 100%; justify-content: center; margin-top: 14px; }
 
-    /* ================= PASAPORTE DEL VISITANTE ================= */
     #pvPasaporte { margin: 0 0 12px; }
-    .pv-pasaporte {
-        position: relative;
-        padding: 18px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.09);
-        color: #f0f4f8;
-    }
+    .pv-pasaporte { position: relative; padding: 18px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.09); color: #f0f4f8; }
     .pv-pasaporte-sello {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        font-family: 'Orbitron', monospace;
-        font-size: .6rem;
-        font-weight: 700;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        color: #D4AF37;
-        margin-bottom: 10px;
+        display: inline-flex; align-items: center; gap: 6px; font-family: 'Orbitron', monospace;
+        font-size: .6rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #D4AF37; margin-bottom: 10px;
     }
     .pv-pasaporte-titulo { font-family: 'Orbitron', monospace; font-size: 1rem; font-weight: 700; color: #fff; margin-bottom: 6px; }
     .pv-pasaporte-sub { font-size: .8rem; color: #9fb3c8; line-height: 1.5; }
-    .pv-pasaporte-verif {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        margin-top: 10px;
-        font-size: .72rem;
-        font-weight: 600;
-        color: #00d68f;
-    }
+    .pv-pasaporte-verif { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; font-size: .72rem; font-weight: 600; color: #00d68f; }
 
-    /* ================= PUBLICACIONES, MULTIMEDIA, REACCIONES Y COMENTARIOS ================= */
     .pv-pub-head { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px 6px; }
     .pv-pub-head h3 { margin: 0; font-family: Orbitron, monospace; font-size: .8rem; letter-spacing: .12em; text-transform: uppercase; color: #bfefff; }
     .pv-pub-contador { font-size: .7rem; color: #6f8ba0; }
     .pv-pub-msg { margin: 14px 16px; text-align: center; font-size: .82rem; color: #8aa8b8; line-height: 1.5; }
-    
+
     .pv-post { display: flex; gap: 12px; padding: 14px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.07); }
-    
     .pv-post-av {
-        width: 42px; height: 42px; flex: 0 0 42px;
-        border-radius: 50%; overflow: hidden;
+        width: 42px; height: 42px; flex: 0 0 42px; border-radius: 50%; overflow: hidden;
         display: flex; align-items: center; justify-content: center;
-        background: linear-gradient(135deg, #0F2D1A, #D4AF37);
-        color: #fff; font-weight: 700;
+        background: linear-gradient(135deg, #0F2D1A, #D4AF37); color: #fff; font-weight: 700;
         border: 1.5px solid rgba(0, 229, 255, .45);
     }
     .pv-post-av img { width: 100%; height: 100%; object-fit: cover; }
-    
     .pv-post-meta { min-width: 0; flex: 1; }
     .pv-post-nombre { font-weight: 700; font-size: .9rem; color: #f5fbff; }
     .pv-post-sub { font-size: .7rem; color: #6f8ba0; margin-top: 2px; }
     .pv-post-texto { margin-top: 8px; font-size: .92rem; line-height: 1.55; color: #d5e4ef; white-space: pre-wrap; word-break: break-word; }
 
-    /* Multimedia: Escala real y responsiva */
     .pv-post-img {
-        display: block; 
-        width: 100%; 
-        height: auto;
-        max-height: 70vh; 
-        object-fit: contain; 
-        border-radius: 14px; 
-        margin-top: 12px; 
-        background: #050a12; 
-        cursor: zoom-in;
+        display: block; width: 100%; height: auto; max-height: 80vh; object-fit: contain;
+        border-radius: 14px; margin-top: 12px; cursor: zoom-in;
     }
     .pv-post-video {
-        display: block; 
-        width: 100%; 
-        height: auto;
-        max-height: 70vh; 
-        object-fit: contain;
-        border-radius: 14px; 
-        margin-top: 12px; 
-        background: #050a12;
+        display: block; width: 100%; height: auto; max-height: 80vh; object-fit: contain;
+        border-radius: 14px; margin-top: 12px; background: #000;
     }
-    .pv-post-audio {
-        display: block; width: 100%; margin-top: 12px; border-radius: 10px;
-    }
+    .pv-post-audio { display: block; width: 100%; margin-top: 12px; border-radius: 10px; }
 
     .pv-post-venta {
         display: inline-block; margin-top: 10px; padding: 4px 10px; border-radius: 999px;
@@ -190,66 +110,57 @@
     }
     .pv-post-aviso { margin-top: 8px; font-size: .7rem; color: #f7d44a; }
 
-    /* Barra de acciones y comentarios más espaciosa */
     .pv-post-barra {
-        display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-        margin-top: 14px; padding-top: 12px;
-        border-top: 1px solid rgba(255, 255, 255, 0.05);
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
-    .pv-btn-accion {
-        display: inline-flex; align-items: center; gap: 6px;
-        padding: 6px 12px; border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(255, 255, 255, 0.03);
+    .pv-reacciones { display: flex; gap: 6px; flex-wrap: wrap; }
+    .pv-btn-reaccion {
+        display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.03);
         color: #b7d0e2; font-size: .8rem; cursor: pointer;
     }
-    .pv-btn-accion.activo {
-        border-color: rgba(0, 229, 255, .5);
-        background: rgba(0, 229, 255, .12);
-        color: #5cc8ff;
+    .pv-btn-reaccion.activo { border-color: rgba(0, 229, 255, .5); background: rgba(0, 229, 255, .12); color: #5cc8ff; }
+    .pv-btn-reaccion:disabled { opacity: .5; cursor: wait; }
+    .pv-btn-comentar {
+        display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(255, 255, 255, 0.03);
+        color: #b7d0e2; font-size: .8rem; cursor: pointer;
     }
 
     .pv-comentarios {
-        margin-top: 12px; padding: 12px 14px;
-        border-radius: 12px;
-        background: rgba(5, 10, 20, 0.55);
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        margin-top: 12px; padding: 12px 14px; border-radius: 12px;
+        background: rgba(5, 10, 20, 0.55); border: 1px solid rgba(255, 255, 255, 0.06);
     }
+    .pv-comentarios[hidden] { display: none; }
     .pv-comentarios-lista { display: flex; flex-direction: column; gap: 10px; max-height: 240px; overflow-y: auto; padding-right: 4px; }
     .pv-comentario-item { font-size: .85rem; color: #d5e4ef; line-height: 1.45; }
     .pv-comentario-autor { font-weight: 700; color: #5cc8ff; margin-right: 6px; }
     .pv-comentario-form { display: flex; gap: 8px; margin-top: 12px; }
     .pv-comentario-input {
         flex: 1; min-width: 0; padding: 8px 12px; border-radius: 999px;
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        background: rgba(255, 255, 255, 0.04); color: #fff; font-size: .85rem;
+        border: 1px solid rgba(255, 255, 255, 0.15); background: rgba(255, 255, 255, 0.04); color: #fff; font-size: .85rem;
     }
+    .pv-comentario-input:disabled { opacity: .6; }
     .pv-mas { display: block; margin: 14px auto 16px; }
 
-    /* ================= VISOR MULTIMEDIA ÚNICO (LIGHTBOX) ================= */
     .pv-lightbox {
-        position: fixed; inset: 0; z-index: 9999;
-        display: flex; align-items: center; justify-content: center;
+        position: fixed; inset: 0; z-index: 9999; display: flex; align-items: center; justify-content: center;
         padding: 16px; background: rgba(2, 6, 14, 0.95);
     }
     .pv-lightbox[hidden] { display: none; }
-    .pv-lightbox-inner { position: relative; max-width: 100vw; max-height: 100vh; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
-    .pv-lightbox-inner img,
-    .pv-lightbox-inner video { max-width: 95vw; max-height: 90vh; border-radius: 12px; display: block; object-fit: contain; }
+    .pv-lightbox-inner { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+    .pv-lightbox-inner img, .pv-lightbox-inner video { max-width: 95vw; max-height: 90vh; border-radius: 12px; display: block; object-fit: contain; }
     .pv-lightbox-cerrar {
-        position: absolute; top: 16px; right: 16px;
-        padding: 6px 14px; border-radius: 999px;
-        border: 1px solid rgba(255,255,255,.25);
-        background: rgba(15,23,42,.9); color: #fff; cursor: pointer; z-index: 10;
+        position: absolute; top: 16px; right: 16px; padding: 6px 14px; border-radius: 999px;
+        border: 1px solid rgba(255,255,255,.25); background: rgba(15,23,42,.9); color: #fff; cursor: pointer; z-index: 10;
     }
 
-    /* ================= ESTADOS DE PANTALLA ================= */
     .pv-mensaje { text-align: center; padding: 30px 12px; }
     .pv-mensaje .btn { margin-top: 14px; }
 
     @media (prefers-reduced-motion: reduce) {
-        .perfil-header #pvHandle,
-        .perfil-header #pvHandle::before { animation: none !important; }
+        .perfil-header #pvHandle, .perfil-header #pvHandle::before { animation: none !important; }
     }
 </style>
 </head>
@@ -304,14 +215,12 @@
     </a>
 </nav>
 
-<!-- ============ CARRUSEL 3D HORIZONTAL ============ -->
 <div class="carrusel-3d-wrapper">
     <div class="carrusel-3d-track"></div>
 </div>
 
 <div class="perfil-container">
 
-    <!-- Estados de carga y error -->
     <div id="pvCargando" class="panel">
         <div class="panel-body">
             <div class="empty-state">
@@ -335,11 +244,9 @@
         </div>
     </div>
 
-    <!-- Perfil del visitante -->
     <div id="pvPerfil" hidden>
 
         <div class="perfil-header">
-
             <div class="avatar-container">
                 <div class="avatar" id="pvAvatar">◈</div>
             </div>
@@ -395,10 +302,8 @@
             <a href="/features/contactos/contactos.html" id="pvVolver" class="btn btn-outline pv-volver">← Volver</a>
         </div>
 
-        <!-- Pasaporte del visitante -->
         <section id="pvPasaporte" aria-label="Identidad"></section>
 
-        <!-- Publicaciones -->
         <section class="panel" id="pvPubSection" hidden>
             <div class="pv-pub-head">
                 <h3 data-clave="perfil_mis_publicaciones">Publicaciones</h3>
@@ -412,11 +317,10 @@
     </div>
 </div>
 
-<!-- Visor multimedia único reutilizable -->
 <div class="pv-lightbox" id="pvLightbox" hidden role="dialog" aria-modal="true" aria-label="Visor multimedia">
-    <div class="pv-lightbox-inner" id="pvLightboxInner">
+    <div class="pv-lightbox-inner">
         <button type="button" class="pv-lightbox-cerrar" id="pvLightboxCerrar">✕ Cerrar</button>
-        <div id="pvLightboxBody" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;"></div>
+        <div id="pvLightboxBody" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;"></div>
     </div>
 </div>
 
@@ -430,7 +334,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-/* INICIALIZACIÓN DE IDIOMAS */
 (function () {
     'use strict';
     var intentos = 0;
@@ -455,15 +358,9 @@
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/anuncios/anuncios-carrusel.js" defer></script>
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
+<script src="/features/perfil/js/reacciones-global.js"></script>
 
 <script>
-/* ================================================================
-   PERFIL PÚBLICO · VISITANTE
-   - Identidad: ?u=handle&id=uuid se validan juntos en la base.
-   - Multimedia: imagen, video, audio con visor único y un solo audio activo.
-   - Paginación por cursor + deduplicación por ID.
-   - Reacciones y comentarios integrados con Supabase RLS.
-   ================================================================ */
 (function () {
     'use strict';
 
@@ -471,6 +368,9 @@
     var HANDLE_RE = /^[A-Za-z0-9_]{1,40}$/;
     var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
     var POSTS_PAGE = 20;
+    var COMENTARIOS_LIMITE = 50;
+
+    var RG = window.ReaccionesGlobal;
 
     function $(id) { return document.getElementById(id); }
 
@@ -513,7 +413,7 @@
     var pub = { cargando: false, antes: null, total: 0, idsVistos: new Set() };
     var audioActivo = null;
 
-    /* ---------------- Utilidades ---------------- */
+    /* ================= UTILIDADES ================= */
 
     function mostrar(panel) {
         [el.cargando, el.noEncontrado, el.error, el.perfil].forEach(function (n) {
@@ -529,7 +429,12 @@
         t.className = 'toast' + (tipo ? ' ' + tipo : '');
         requestAnimationFrame(function () { t.classList.add('show'); });
         clearTimeout(window.__pvToastTimer);
-        window.__pvToastTimer = setTimeout(function () { t.classList.remove('show'); }, 3200);
+        window.__pvToastTimer = setTimeout(function () { t.classList.remove('show'); }, 3600);
+    }
+
+    function msgError(e) {
+        if (!e) return 'error desconocido';
+        return e.message || e.details || e.hint || e.code || 'error desconocido';
     }
 
     function acortar(d) { return d.slice(0, 6) + '…' + d.slice(-4); }
@@ -571,7 +476,22 @@
         return window.location.origin + window.location.pathname + '?u=' + encodeURIComponent(perfil.handle);
     }
 
-    /* ---------------- Visor multimedia único ---------------- */
+    async function obtenerCliente() {
+        try {
+            var c = await window.supabaseReady;
+            if (c) return c;
+        } catch (e) {}
+        return window.supabaseClient || null;
+    }
+
+    async function obtenerSesionId(client) {
+        try {
+            var r = await client.auth.getSession();
+            return (r && r.data && r.data.session && r.data.session.user) ? r.data.session.user.id : null;
+        } catch (e) { return null; }
+    }
+
+    /* ================= VISOR MULTIMEDIA ================= */
 
     function cerrarLightbox() {
         el.lightbox.hidden = true;
@@ -603,10 +523,10 @@
         if (e.target === el.lightbox) cerrarLightbox();
     });
     document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && el.lightbox && !el.lightbox.hidden) cerrarLightbox();
+        if (e.key === 'Escape' && !el.lightbox.hidden) cerrarLightbox();
     });
 
-    /* ---------------- Identidad ---------------- */
+    /* ================= IDENTIDAD ================= */
 
     function leerIdentificador() {
         var sp = new URLSearchParams(window.location.search);
@@ -624,21 +544,6 @@
         if (tieneId && idOk) return { tipo: 'id', valor: id };
         if (tieneU || tieneId) return { tipo: 'invalido' };
         return null;
-    }
-
-    async function obtenerCliente() {
-        try {
-            var c = await window.supabaseReady;
-            if (c) return c;
-        } catch (e) {}
-        return window.supabaseClient || null;
-    }
-
-    async function obtenerSesionId(client) {
-        try {
-            var r = await client.auth.getSession();
-            return (r && r.data && r.data.session && r.data.session.user) ? r.data.session.user.id : null;
-        } catch (e) { return null; }
     }
 
     async function cargarPerfil(client, ident) {
@@ -681,7 +586,7 @@
         mostrar(el.error);
     }
 
-    /* ---------------- Render del perfil ---------------- */
+    /* ================= RENDER DEL PERFIL ================= */
 
     function pintarAvatar(url) {
         el.avatar.textContent = '';
@@ -707,17 +612,6 @@
             el.estadoDot.className = 'pv-dot inactivo';
             el.estadoTexto.textContent = 'Inactivo · ' + tiempoRelativo(fechaUTC(p.ultima_conexion));
         }
-    }
-
-    function renderPerfil(p) {
-        el.nombre.textContent = p.nombre || p.handle;
-        el.handle.textContent = '@' + p.handle;
-        el.verificado.hidden = !p.verificado;
-        el.seguidores.textContent = String(p.seguidores_count || 0);
-        el.siguiendo.textContent = String(p.siguiendo_count || 0);
-        pintarAvatar(p.avatar_url);
-        pintarEstado(p);
-        pintarPasaporte(p);
     }
 
     function pintarPasaporte(p) {
@@ -751,6 +645,17 @@
         el.pasaporte.appendChild(card);
     }
 
+    function renderPerfil(p) {
+        el.nombre.textContent = p.nombre || p.handle;
+        el.handle.textContent = '@' + p.handle;
+        el.verificado.hidden = !p.verificado;
+        el.seguidores.textContent = String(p.seguidores_count || 0);
+        el.siguiendo.textContent = String(p.siguiendo_count || 0);
+        pintarAvatar(p.avatar_url);
+        pintarEstado(p);
+        pintarPasaporte(p);
+    }
+
     async function cargarWallet(client, id) {
         var r = await client.from('wallet_publica').select('wallet_address').eq('id', id).maybeSingle();
         if (r.error || !r.data || !r.data.wallet_address) return;
@@ -760,14 +665,12 @@
     }
 
     function copiarWallet() {
-        if (!direccionWallet) return;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(direccionWallet).then(function () {
-                toast('Dirección copiada', 'success');
-            }).catch(function () {
-                toast('No se pudo copiar', 'error');
-            });
-        }
+        if (!direccionWallet || !navigator.clipboard) return;
+        navigator.clipboard.writeText(direccionWallet).then(function () {
+            toast('Dirección copiada', 'success');
+        }).catch(function () {
+            toast('No se pudo copiar', 'error');
+        });
     }
 
     async function compartirPerfil() {
@@ -792,24 +695,25 @@
         }
     }
 
-    /* ---------------- Multimedia, Reacciones y Comentarios ---------------- */
+    /* ================= MULTIMEDIA ================= */
 
     function resolverMedia(p) {
-        var url = safeHttps(p.media_url || p.imagen_url);
+        var url = safeHttps(p.media_url);
         if (!url) return null;
         var tipo = String(p.media_type || '').toLowerCase();
         if (!tipo) {
             if (/\.(mp4|webm|mov)(\?|$)/i.test(url)) tipo = 'video';
             else if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(url)) tipo = 'audio';
-            else tipo = 'image';
+            else tipo = 'imagen';
         }
+        if (tipo === 'imagen') tipo = 'imagen';
         return { url: url, tipo: tipo };
     }
 
-    function renderMediaPost(meta, p) {
+    function renderMedia(meta, p) {
         var media = resolverMedia(p);
         if (!media) return;
-        var bloquearDescarga = p.permitir_descarga === false;
+        var sinDescarga = p.permitir_descarga === false;
 
         if (media.tipo === 'video') {
             var vid = document.createElement('video');
@@ -818,9 +722,17 @@
             vid.controls = true;
             vid.preload = 'metadata';
             vid.playsInline = true;
-            if (bloquearDescarga) vid.setAttribute('controlsList', 'nodownload');
-            vid.addEventListener('click', function(e) {
-                if(e.target === vid && vid.paused) abrirLightbox('video', media.url);
+            vid.setAttribute('playsinline', '');
+            if (sinDescarga) vid.setAttribute('controlsList', 'nodownload');
+            vid.addEventListener('loadedmetadata', function () {
+                if (vid.videoWidth && vid.videoHeight) {
+                    vid.style.aspectRatio = vid.videoWidth + ' / ' + vid.videoHeight;
+                }
+            });
+            vid.addEventListener('play', function () {
+                if (audioActivo && audioActivo !== vid) {
+                    try { audioActivo.pause(); } catch (e) {}
+                }
             });
             meta.appendChild(vid);
         } else if (media.tipo === 'audio') {
@@ -829,7 +741,7 @@
             aud.src = media.url;
             aud.controls = true;
             aud.preload = 'none';
-            if (bloquearDescarga) aud.setAttribute('controlsList', 'nodownload');
+            if (sinDescarga) aud.setAttribute('controlsList', 'nodownload');
             aud.addEventListener('play', function () {
                 if (audioActivo && audioActivo !== aud) {
                     try { audioActivo.pause(); } catch (e) {}
@@ -842,122 +754,174 @@
             img.className = 'pv-post-img';
             img.alt = '';
             img.loading = 'lazy';
+            img.decoding = 'async';
             img.src = media.url;
             img.addEventListener('click', function () {
-                abrirLightbox('image', media.url);
+                abrirLightbox('imagen', media.url);
             });
             meta.appendChild(img);
         }
     }
 
-    async function marcarReaccionesPrevias(client, pubIds, mapaBotones) {
-        if (!client || !usuarioActualId || !pubIds.length) return;
+    /* ================= REACCIONES ================= */
+
+    // Carga el resumen de reacciones de un lote de publicaciones en una sola consulta.
+    async function cargarResumenReacciones(client, ids) {
+        var mapa = new Map();
+        if (!ids.length) return mapa;
         try {
             var r = await client
                 .from('publicaciones_reacciones')
-                .select('publicacion_id')
-                .eq('usuario_id', usuarioActualId)
-                .in('publicacion_id', pubIds);
-            if (r.error || !Array.isArray(r.data)) return;
-            r.data.forEach(function (row) {
-                var btn = mapaBotones.get(String(row.publicacion_id));
-                if (btn) btn.classList.add('activo');
+                .select('publicacion_id, tipo, usuario_id')
+                .in('publicacion_id', ids);
+            if (r.error) throw r.error;
+
+            var porPub = {};
+            (r.data || []).forEach(function (row) {
+                var k = String(row.publicacion_id);
+                if (!porPub[k]) porPub[k] = [];
+                porPub[k].push(row);
             });
-        } catch (e) {}
+            ids.forEach(function (id) {
+                mapa.set(String(id), RG.resumir(porPub[String(id)] || [], usuarioActualId));
+            });
+        } catch (e) {
+            console.warn('[PerfilPublico] Resumen de reacciones:', e);
+            ids.forEach(function (id) {
+                mapa.set(String(id), RG.resumir([], usuarioActualId));
+            });
+        }
+        return mapa;
     }
 
-    async function alternarReaccion(pubId, btn, countSpan) {
-        var client = await obtenerCliente();
-        if (!client || !usuarioActualId) {
+    function pintarBarraReacciones(bar, resumen) {
+        bar.innerHTML = '';
+        RG.EMOJIS.forEach(function (emoji) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'pv-btn-reaccion' + (resumen.miTipo === emoji ? ' activo' : '');
+            btn.setAttribute('data-tipo', emoji);
+            btn.setAttribute('aria-label', 'Reaccionar con ' + emoji);
+
+            var ico = document.createElement('span');
+            ico.textContent = emoji;
+            RG.aplicarMotor(ico, emoji);
+
+            var cant = document.createElement('span');
+            var n = resumen.totales[emoji] || 0;
+            cant.textContent = n > 0 ? String(n) : '';
+
+            btn.appendChild(ico);
+            btn.appendChild(cant);
+            bar.appendChild(btn);
+        });
+        bar._resumen = resumen;
+    }
+
+    async function refrescarReacciones(client, pubId, bar) {
+        var r = await client
+            .from('publicaciones_reacciones')
+            .select('tipo, usuario_id')
+            .eq('publicacion_id', pubId);
+        if (r.error) throw r.error;
+        pintarBarraReacciones(bar, RG.resumir(r.data || [], usuarioActualId));
+    }
+
+    async function alternarReaccion(client, pubId, tipo, bar) {
+        if (!usuarioActualId) {
             toast('Inicia sesión para reaccionar', 'error');
             return;
         }
-        if (!pubId) return;
+        var botones = bar.querySelectorAll('button');
+        botones.forEach(function (b) { b.disabled = true; });
 
-        btn.disabled = true;
         try {
-            var yaReacciono = btn.classList.contains('activo');
-            var actual = parseInt(countSpan.textContent || '0', 10) || 0;
+            var resumen = bar._resumen || RG.resumir([], usuarioActualId);
+            var miTipo = resumen.miTipo;
+            var res;
 
-            if (yaReacciono) {
-                var del = await client
+            if (miTipo === tipo) {
+                res = await client
                     .from('publicaciones_reacciones')
                     .delete()
                     .eq('publicacion_id', pubId)
                     .eq('usuario_id', usuarioActualId);
-                if (del.error) throw del.error;
-                btn.classList.remove('activo');
-                countSpan.textContent = String(Math.max(0, actual - 1));
-            } else {
-                var ins = await client
+            } else if (miTipo) {
+                res = await client
                     .from('publicaciones_reacciones')
-                    .insert({ publicacion_id: pubId, usuario_id: usuarioActualId, emoji: '❤️' });
-                if (ins.error) throw ins.error;
-                btn.classList.add('activo');
-                countSpan.textContent = String(actual + 1);
+                    .update({ tipo: tipo })
+                    .eq('publicacion_id', pubId)
+                    .eq('usuario_id', usuarioActualId);
+            } else {
+                res = await client
+                    .from('publicaciones_reacciones')
+                    .insert({ publicacion_id: pubId, usuario_id: usuarioActualId, tipo: tipo });
             }
+
+            if (res.error) throw res.error;
+            await refrescarReacciones(client, pubId, bar);
         } catch (e) {
             console.warn('[PerfilPublico] Reacción:', e);
-            toast('No se pudo actualizar la reacción', 'error');
+            toast('No se pudo reaccionar: ' + msgError(e), 'error');
         } finally {
-            btn.disabled = false;
+            botones.forEach(function (b) { b.disabled = false; });
         }
     }
 
-    async function cargarComentarios(pubId, listaEl) {
-        var client = await obtenerCliente();
-        if (!client || !pubId) return;
+    /* ================= COMENTARIOS ================= */
 
+    function pintarComentarios(listaEl, filas) {
+        listaEl.innerHTML = '';
+        if (!filas.length) {
+            var vacio = document.createElement('div');
+            vacio.className = 'pv-comentario-item';
+            vacio.textContent = 'Sin comentarios todavía.';
+            listaEl.appendChild(vacio);
+            return;
+        }
+        filas.forEach(function (c) {
+            var item = document.createElement('div');
+            item.className = 'pv-comentario-item';
+
+            var autor = document.createElement('span');
+            autor.className = 'pv-comentario-autor';
+            autor.textContent = c.usuario_nombre || c.usuario_handle || 'Miembro';
+
+            var txt = document.createElement('span');
+            txt.textContent = c.contenido || '';
+
+            item.appendChild(autor);
+            item.appendChild(txt);
+            listaEl.appendChild(item);
+        });
+    }
+
+    async function cargarComentarios(client, pubId, listaEl, countEl) {
         listaEl.innerHTML = '<div class="pv-comentario-item">Cargando comentarios...</div>';
         try {
             var r = await client
-                .from('publicaciones_comentarios')
-                .select('id, usuario_id, contenido, created_at')
+                .from('publicaciones_comentarios_publicos')
+                .select('id, usuario_id, contenido, created_at, usuario_nombre, usuario_handle')
                 .eq('publicacion_id', pubId)
                 .order('created_at', { ascending: true })
-                .limit(50);
-
+                .limit(COMENTARIOS_LIMITE);
             if (r.error) throw r.error;
-            var rows = Array.isArray(r.data) ? r.data : [];
-            listaEl.innerHTML = '';
-
-            if (!rows.length) {
-                var vacio = document.createElement('div');
-                vacio.className = 'pv-comentario-item';
-                vacio.textContent = 'Sin comentarios todavía.';
-                listaEl.appendChild(vacio);
-                return;
-            }
-
-            rows.forEach(function (c) {
-                var item = document.createElement('div');
-                item.className = 'pv-comentario-item';
-
-                var autor = document.createElement('span');
-                autor.className = 'pv-comentario-autor';
-                autor.textContent = c.usuario_id === usuarioActualId ? 'Tú:' : 'Miembro:';
-
-                var txt = document.createElement('span');
-                txt.textContent = c.contenido || '';
-
-                item.appendChild(autor);
-                item.appendChild(txt);
-                listaEl.appendChild(item);
-            });
+            var filas = Array.isArray(r.data) ? r.data : [];
+            pintarComentarios(listaEl, filas);
+            if (countEl) countEl.textContent = String(filas.length);
         } catch (e) {
             console.warn('[PerfilPublico] Comentarios:', e);
-            listaEl.innerHTML = '<div class="pv-comentario-item">No se pudieron cargar los comentarios.</div>';
+            listaEl.innerHTML = '<div class="pv-comentario-item">No se pudieron cargar los comentarios: ' + msgError(e) + '</div>';
         }
     }
 
-    async function enviarComentario(pubId, inputEl, listaEl, countSpan) {
-        var client = await obtenerCliente();
-        if (!client || !usuarioActualId) {
+    async function enviarComentario(client, pubId, inputEl, listaEl, countEl) {
+        if (!usuarioActualId) {
             toast('Inicia sesión para comentar', 'error');
             return;
         }
         var texto = String(inputEl.value || '').trim();
-        if (!texto || !pubId) return;
+        if (!texto) return;
 
         inputEl.disabled = true;
         try {
@@ -967,26 +931,21 @@
             if (ins.error) throw ins.error;
 
             inputEl.value = '';
-            var actual = parseInt(countSpan.textContent || '0', 10) || 0;
-            countSpan.textContent = String(actual + 1);
-            await cargarComentarios(pubId, listaEl);
+            await cargarComentarios(client, pubId, listaEl, countEl);
         } catch (e) {
             console.warn('[PerfilPublico] Comentar:', e);
-            toast('No se pudo publicar el comentario', 'error');
+            toast('No se pudo comentar: ' + msgError(e), 'error');
         } finally {
             inputEl.disabled = false;
             inputEl.focus();
         }
     }
 
-    /* ---------------- Publicaciones (paginación por cursor) ---------------- */
+    /* ================= TARJETA DE PUBLICACIÓN ================= */
 
-    function mostrarMensajePub(texto) {
-        el.pubMsg.textContent = texto || '';
-        el.pubMsg.hidden = !texto;
-    }
+    function crearPost(client, p) {
+        var pubId = p.id;
 
-    function crearPost(p, mapaBotones) {
         var art = document.createElement('article');
         art.className = 'pv-post';
 
@@ -1024,14 +983,7 @@
             meta.appendChild(texto);
         }
 
-        renderMediaPost(meta, p);
-
-        if (Number(p.cantidad_venta) > 0 && !p.vendido) {
-            var venta = document.createElement('span');
-            venta.className = 'pv-post-venta';
-            venta.textContent = 'En venta · ' + p.cantidad_venta + ' tokens';
-            meta.appendChild(venta);
-        }
+        renderMedia(meta, p);
 
         if (p.aviso_moderacion === 'lenguaje_inapropiado') {
             var aviso = document.createElement('div');
@@ -1040,88 +992,85 @@
             meta.appendChild(aviso);
         }
 
-        var pubId = p.id || p.publicacion_id || null;
-        if (pubId) {
-            var barra = document.createElement('div');
-            barra.className = 'pv-post-barra';
+        var barra = document.createElement('div');
+        barra.className = 'pv-post-barra';
 
-            var btnLike = document.createElement('button');
-            btnLike.type = 'button';
-            btnLike.className = 'pv-btn-accion';
+        var reacciones = document.createElement('div');
+        reacciones.className = 'pv-reacciones';
+        reacciones.dataset.pubId = pubId;
 
-            var corazon = document.createElement('span');
-            corazon.textContent = '❤️';
+        var btnCom = document.createElement('button');
+        btnCom.type = 'button';
+        btnCom.className = 'pv-btn-comentar';
 
-            var likeCount = document.createElement('span');
-            likeCount.textContent = String(Number(p.likes || p.reacciones_count || 0));
+        var iconoCom = document.createElement('span');
+        iconoCom.textContent = '💬';
 
-            btnLike.appendChild(corazon);
-            btnLike.appendChild(likeCount);
-            if (mapaBotones) mapaBotones.set(String(pubId), btnLike);
+        var comCount = document.createElement('span');
+        comCount.textContent = String(Number(p.comentarios) || 0);
 
-            var btnCom = document.createElement('button');
-            btnCom.type = 'button';
-            btnCom.className = 'pv-btn-accion';
+        btnCom.appendChild(iconoCom);
+        btnCom.appendChild(comCount);
 
-            var iconoCom = document.createElement('span');
-            iconoCom.textContent = '💬';
+        barra.appendChild(reacciones);
+        barra.appendChild(btnCom);
+        meta.appendChild(barra);
 
-            var comCount = document.createElement('span');
-            comCount.textContent = String(Number(p.comentarios || p.comentarios_count || 0));
+        var cajaCom = document.createElement('div');
+        cajaCom.className = 'pv-comentarios';
+        cajaCom.hidden = true;
 
-            btnCom.appendChild(iconoCom);
-            btnCom.appendChild(comCount);
+        var listaCom = document.createElement('div');
+        listaCom.className = 'pv-comentarios-lista';
 
-            barra.appendChild(btnLike);
-            barra.appendChild(btnCom);
-            meta.appendChild(barra);
+        var formCom = document.createElement('form');
+        formCom.className = 'pv-comentario-form';
 
-            var cajaCom = document.createElement('div');
-            cajaCom.className = 'pv-comentarios';
-            cajaCom.hidden = true;
+        var inputCom = document.createElement('input');
+        inputCom.type = 'text';
+        inputCom.className = 'pv-comentario-input';
+        inputCom.maxLength = 500;
+        inputCom.placeholder = 'Escribe un comentario...';
+        inputCom.setAttribute('aria-label', 'Escribe un comentario');
 
-            var listaCom = document.createElement('div');
-            listaCom.className = 'pv-comentarios-lista';
+        var btnEnviar = document.createElement('button');
+        btnEnviar.type = 'submit';
+        btnEnviar.className = 'btn btn-outline btn-sm';
+        btnEnviar.textContent = 'Enviar';
 
-            var formCom = document.createElement('form');
-            formCom.className = 'pv-comentario-form';
+        formCom.appendChild(inputCom);
+        formCom.appendChild(btnEnviar);
+        cajaCom.appendChild(listaCom);
+        cajaCom.appendChild(formCom);
+        meta.appendChild(cajaCom);
 
-            var inputCom = document.createElement('input');
-            inputCom.type = 'text';
-            inputCom.className = 'pv-comentario-input';
-            inputCom.maxLength = 500;
-            inputCom.placeholder = 'Escribe un comentario...';
+        btnCom.addEventListener('click', function () {
+            var abrir = cajaCom.hidden;
+            cajaCom.hidden = !abrir;
+            if (abrir) cargarComentarios(client, pubId, listaCom, comCount);
+        });
 
-            var btnEnviar = document.createElement('button');
-            btnEnviar.type = 'submit';
-            btnEnviar.className = 'btn btn-outline btn-sm';
-            btnEnviar.textContent = 'Enviar';
+        formCom.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            enviarComentario(client, pubId, inputCom, listaCom, comCount);
+        });
 
-            formCom.appendChild(inputCom);
-            formCom.appendChild(btnEnviar);
-            cajaCom.appendChild(listaCom);
-            cajaCom.appendChild(formCom);
-            meta.appendChild(cajaCom);
-
-            btnLike.addEventListener('click', function () {
-                alternarReaccion(pubId, btnLike, likeCount);
-            });
-
-            btnCom.addEventListener('click', function () {
-                var abrir = cajaCom.hidden;
-                cajaCom.hidden = !abrir;
-                if (abrir) cargarComentarios(pubId, listaCom);
-            });
-
-            formCom.addEventListener('submit', function (ev) {
-                ev.preventDefault();
-                enviarComentario(pubId, inputCom, listaCom, comCount);
-            });
-        }
+        reacciones.addEventListener('click', function (ev) {
+            var btn = ev.target.closest('button[data-tipo]');
+            if (!btn) return;
+            alternarReaccion(client, pubId, btn.getAttribute('data-tipo'), reacciones);
+        });
 
         art.appendChild(av);
         art.appendChild(meta);
         return art;
+    }
+
+    /* ================= PUBLICACIONES (cursor + sin duplicados) ================= */
+
+    function mostrarMensajePub(texto) {
+        el.pubMsg.textContent = texto || '';
+        el.pubMsg.hidden = !texto;
     }
 
     async function cargarPublicaciones(client, handle, reiniciar) {
@@ -1149,7 +1098,6 @@
 
             if (r.error) {
                 el.pubSection.hidden = false;
-                el.pubLista.innerHTML = '';
                 el.pubMas.hidden = true;
                 mostrarMensajePub(r.error.code === '42501'
                     ? 'Inicia sesión para ver las publicaciones de tus contactos.'
@@ -1183,24 +1131,23 @@
             }
 
             var posts = Array.isArray(d.posts) ? d.posts : [];
-            var agregados = 0;
-            var mapaBotones = new Map();
-            var idsLote = [];
-
-            posts.forEach(function (p) {
-                var claveId = p.id || p.publicacion_id || (p.created_at + '|' + (p.contenido || '').slice(0, 24));
-                if (pub.idsVistos.has(claveId)) return;
-                pub.idsVistos.add(claveId);
-                el.pubLista.appendChild(crearPost(p, mapaBotones));
-                if (p.id || p.publicacion_id) idsLote.push(p.id || p.publicacion_id);
-                agregados++;
+            var nuevos = posts.filter(function (p) {
+                if (!p.id || pub.idsVistos.has(p.id)) return false;
+                pub.idsVistos.add(p.id);
+                return true;
             });
 
-            if (idsLote.length) {
-                marcarReaccionesPrevias(client, idsLote, mapaBotones);
-            }
+            var ids = nuevos.map(function (p) { return p.id; });
+            var resumenes = await cargarResumenReacciones(client, ids);
 
-            pub.total += agregados;
+            nuevos.forEach(function (p) {
+                var card = crearPost(client, p);
+                el.pubLista.appendChild(card);
+                var bar = card.querySelector('.pv-reacciones');
+                if (bar) pintarBarraReacciones(bar, resumenes.get(String(p.id)));
+            });
+
+            pub.total += nuevos.length;
             if (posts.length) pub.antes = posts[posts.length - 1].created_at;
 
             el.pubContador.textContent = pub.total ? String(pub.total) : '';
@@ -1209,14 +1156,14 @@
         } catch (e) {
             console.warn('[PerfilPublico] Publicaciones:', e);
             el.pubSection.hidden = false;
-            mostrarMensajePub('No se pudieron cargar las publicaciones.');
+            mostrarMensajePub('No se pudieron cargar las publicaciones: ' + msgError(e));
         } finally {
             pub.cargando = false;
             el.pubMas.disabled = false;
         }
     }
 
-    /* ---------------- Regreso ---------------- */
+    /* ================= REGRESO ================= */
 
     function mismoOrigenReferrer() {
         try {
@@ -1231,7 +1178,7 @@
         }
     });
 
-    /* ---------------- Arranque ---------------- */
+    /* ================= ARRANQUE ================= */
 
     async function init() {
         mostrar(el.cargando);
@@ -1243,8 +1190,7 @@
         var client = await obtenerCliente();
         if (!client) throw new Error('Cliente de Supabase no disponible');
 
-        var sesionId = await obtenerSesionId(client);
-        usuarioActualId = sesionId;
+        usuarioActualId = await obtenerSesionId(client);
 
         var p = await cargarPerfil(client, ident);
 
@@ -1266,7 +1212,7 @@
             return;
         }
 
-        if (sesionId && p.id === sesionId) {
+        if (usuarioActualId && p.id === usuarioActualId) {
             window.location.replace(RUTA_PERFIL_PROPIO);
             return;
         }
