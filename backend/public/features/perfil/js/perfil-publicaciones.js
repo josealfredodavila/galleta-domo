@@ -1,6 +1,13 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v15.0 — VISOR COMPARTIDO (visor-media-global.js)
+// v15.1 — sin duplicados (visor único: VisorMediaGlobal)
+// Ruta: backend/public/features/perfil/js/perfil-publicaciones.js
+//
+// Cambios v15.1:
+//  - Un solo visor: VisorMediaGlobal. Se quitó el duplicado de visor.
+//  - Se eliminaron estilos repetidos (ya están en perfil.css).
+//  - Se eliminó la función de ruta de autor duplicada en el feed;
+//    se usa una sola (pubUrlPerfilAutor).
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -25,10 +32,9 @@ var archivosSeleccionados = window.archivosSeleccionados;
 var pubPreviewObjectUrls = {};
 
 // ================================================================
-// MOTOR VISUAL DE REACCIONES
+// MOTOR DE REACCIONES (centralizado en reacciones-global.js)
 // ================================================================
 
-// Motor de reacciones centralizado: /features/shared/js/reacciones-global.js
 function pubEmojisReaccion() {
     return window.ReaccionesGlobal ? window.ReaccionesGlobal.emojis() : ['❤️', '😂', '🥺', '💎'];
 }
@@ -61,14 +67,6 @@ function pubEscapeHtml(valor) {
             "'": '&#39;'
         }[c];
     });
-}
-
-function pubEscaparHTML(valor) {
-    if (typeof window.escaparHTML === 'function') {
-        return window.escaparHTML(valor);
-    }
-
-    return pubEscapeHtml(valor);
 }
 
 function pubEsUrlSegura(url) {
@@ -122,6 +120,7 @@ function pubCodigoIdioma() {
     return 'es-MX';
 }
 
+// Única función de ruta de perfil del autor (la usan el feed y el menú).
 function pubUrlPerfilAutor(handle, usuarioId, miId) {
     if (miId && usuarioId && String(usuarioId) === String(miId)) {
         return PUB_RUTA_PERFIL_PROPIO;
@@ -137,16 +136,9 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
 // ================================================================
 // MOTOR DE REPRODUCCIÓN
 // ================================================================
-// reproduccionSolicitada = estado MANUAL deseado por el usuario.
-// Solo se modifica desde acciones explícitas de la UI (play/pause),
-// NUNCA por cambios de layout, resize, orientación, PiP o visibilidad.
-// ================================================================
 
 var pubMotorVideo = {
-    videoActivo: null,
-    reproduccionSolicitada: false,
-    ultimaInteraccion: 0,
-    restaurando: false
+    videoActivo: null
 };
 
 function pubEsVideoDelVisor(video) {
@@ -154,10 +146,7 @@ function pubEsVideoDelVisor(video) {
 }
 
 function pubEsVideoFlotante(video) {
-    return Boolean(
-        video &&
-        document.pictureInPictureElement === video
-    );
+    return Boolean(video && document.pictureInPictureElement === video);
 }
 
 function pubVisorEstaAbierto() {
@@ -179,10 +168,8 @@ function pubReproducirVideo(video) {
 }
 
 // ================================================================
-// VISOR (adaptador al visor compartido /features/shared/js/visor-media-global.js)
+// VISOR ÚNICO (VisorMediaGlobal)
 // ================================================================
-
-var pubVisor = { videoActual: null, urlVideoActual: null };
 
 function pubAbrirVisor(indice, postId, esDueno) {
     var lista = Array.isArray(window.listaMultimediaPerfil) ? window.listaMultimediaPerfil : [];
@@ -205,187 +192,6 @@ function pubAbrirVisor(indice, postId, esDueno) {
 function pubCerrarVisor() {
     if (window.VisorMediaGlobal) window.VisorMediaGlobal.cerrar();
 }
-
-// ================================================================
-// ESTILOS (VISOR INMERSIVO 100% PANTALLA)
-// ================================================================
-
-(function inyectarEstilosReaccionesPerfil() {
-    if (document.getElementById('perfil-reacciones-fb-styles')) return;
-
-    var style = document.createElement('style');
-    style.id = 'perfil-reacciones-fb-styles';
-
-    style.appendChild(document.createTextNode(`
-
-    #misPublicacionesList .publicacion-card {
-        background: transparent !important;
-        border: 0 !important;
-        border-bottom: 1px solid var(--flat-line, rgba(255,255,255,.12)) !important;
-        border-radius: 0 !important;
-        box-shadow: none !important;
-        padding: 14px 0 12px !important;
-        margin: 0 !important;
-        width: 100%;
-    }
-
-    #misPublicacionesList .publicacion-card .header {
-        display: flex !important;
-        flex-direction: row !important;
-        align-items: center !important;
-        gap: 10px !important;
-        padding: 0 !important;
-        margin: 0 0 10px 0 !important;
-        background: transparent !important;
-    }
-
-    #misPublicacionesList .publicacion-card .header > .avatar {
-        width: 40px !important;
-        height: 40px !important;
-        min-width: 40px !important;
-        flex: 0 0 40px !important;
-        border-radius: 50% !important;
-        overflow: hidden !important;
-    }
-
-    #misPublicacionesList .publicacion-card .nombre {
-        font-weight: 700 !important;
-        font-size: .92rem !important;
-        color: var(--text-primary, #ffffff) !important;
-    }
-
-    #misPublicacionesList .publicacion-card .fecha {
-        font-size: .72rem !important;
-        color: var(--text-muted, #737373) !important;
-        margin-top: 2px !important;
-    }
-
-    .pub-autor-enlace {
-        color: inherit;
-        text-decoration: none;
-    }
-
-    .pub-autor-handle {
-        color: var(--text-secondary, #a3a3a3) !important;
-        font-weight: 500 !important;
-        font-size: .75rem !important;
-    }
-
-    .publicacion-card .contenido {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-        color: var(--text-secondary, #a3a3a3);
-        font-size: .95rem;
-        line-height: 1.5;
-    }
-
-    .pub-media-wrap {
-        position: relative;
-        margin-top: 6px;
-        display: flex;
-        justify-content: center;
-    }
-
-    .pub-media-container {
-        width: 100%;
-        aspect-ratio: 9 / 16;
-        position: relative;
-        overflow: hidden;
-        background: #000000;
-        border-radius: 8px;
-    }
-
-    .pub-media-container video {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
-        max-width: 100%;
-    }
-
-    .pub-media-container img {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        object-position: center;
-    }
-
-    .publicacion-card .stats {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin: 2px 0 0 !important;
-        padding: 6px 0 0 !important;
-        border-top: 1px solid var(--flat-line, rgba(255,255,255,.12));
-        flex-wrap: wrap;
-    }
-
-    .btn-accion-pub {
-        background: transparent !important;
-        border: 0 !important;
-        border-radius: 6px !important;
-        padding: 6px 10px !important;
-        color: var(--text-muted, #737373) !important;
-        font-size: .82rem !important;
-        font-weight: 600 !important;
-    }
-
-    .btn-accion-pub.danger {
-        color: var(--text-primary, #ffffff) !important;
-    }
-
-    .comentarios-container {
-        display: none;
-        margin-top: 8px;
-        padding-top: 8px;
-        border-top: 1px solid var(--flat-line, rgba(255,255,255,.12));
-    }
-
-    .comentarios-container.show {
-        display: block;
-    }
-
-    .comentario-item {
-        border-bottom: 0;
-        padding: 6px 0;
-    }
-
-    .comentario-input-row input {
-        background: transparent !important;
-        border: 0 !important;
-        border-bottom: 1px solid var(--flat-line, rgba(255,255,255,.12)) !important;
-        border-radius: 0 !important;
-        padding: 6px 2px !important;
-        color: var(--text-primary, #ffffff);
-    }
-
-    .comentario-input-row button {
-        background: transparent !important;
-        color: var(--text-primary, #ffffff) !important;
-        border: 0 !important;
-        font-weight: 700 !important;
-    }
-
-    .avatar-placeholder {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        border-radius: 50%;
-        background: var(--avatar-bg, #262626);
-        color: var(--avatar-text, #ffffff);
-        font-weight: 600;
-        overflow: hidden;
-    }
-
-    `));
-
-    document.head.appendChild(style);
-})();
 
 // ================================================================
 // MODERACIÓN
@@ -533,7 +339,7 @@ async function descargarArchivoForzado(url, nombreOriginal) {
 }
 
 // ================================================================
-// EMOJIS
+// EMOJIS E HASHTAGS
 // ================================================================
 
 function toggleEmojiPickerPerfil() {
@@ -699,13 +505,11 @@ function renderizarPreviewPerfil() {
         if (tipo === 'imagen') {
             media = document.createElement('img');
             media.alt = 'Vista previa';
-        } else if (tipo === 'video') {
+        } else {
             media = document.createElement('video');
             media.muted = true;
             media.controls = true;
             media.playsInline = true;
-        } else {
-            return;
         }
 
         var objectUrl = URL.createObjectURL(file);
@@ -868,13 +672,11 @@ async function publicarDesdePerfil() {
         pubRevocarUrlPreview('imagen');
         pubRevocarUrlPreview('video');
 
-        if (document.getElementById('inputFotoPerfilPost')) {
-            document.getElementById('inputFotoPerfilPost').value = '';
-        }
+        var inputFoto = document.getElementById('inputFotoPerfilPost');
+        var inputVideo = document.getElementById('inputVideoPerfilPost');
 
-        if (document.getElementById('inputVideoPerfilPost')) {
-            document.getElementById('inputVideoPerfilPost').value = '';
-        }
+        if (inputFoto) inputFoto.value = '';
+        if (inputVideo) inputVideo.value = '';
 
         renderizarPreviewPerfil();
 
@@ -898,10 +700,8 @@ async function publicarDesdePerfil() {
 }
 
 // ================================================================
-// OBSERVADOR DE VÍDEOS DEL FEED
-// ================================================================
-// Importante: si el visor está abierto, NO tocamos los videos del feed.
-// Así evitamos pausas cruzadas entre el video del feed y el del visor.
+// OBSERVADOR DE VIDEOS DEL FEED
+// Si el visor está abierto no se toca ningún video del feed.
 // ================================================================
 
 var videoObserverPerfil = null;
@@ -913,7 +713,6 @@ if (typeof IntersectionObserver !== 'undefined') {
 
             if (!video || !video.isConnected) return;
 
-            // Si el visor está abierto, no interferir con videos de fondo.
             if (pubVisorEstaAbierto()) return;
 
             if (pubEsVideoDelVisor(video)) return;
@@ -935,43 +734,14 @@ if (typeof IntersectionObserver !== 'undefined') {
                     }
                 }
 
-            } else {
-                if (
-                    video !== pubMotorVideo.videoActivo &&
-                    document.pictureInPictureElement !== video
-                ) {
-                    video.pause();
-                }
+            } else if (video !== pubMotorVideo.videoActivo) {
+                video.pause();
             }
         });
     }, {
         threshold: [0, 0.25, 0.5, 0.75, 1]
     });
 }
-
-// ================================================================
-// VISIBILIDAD DE LA PÁGINA
-// ================================================================
-// Ya NO marcamos reproduccionSolicitada aquí. Solo registramos que
-// el usuario no está mirando para no forzar reanudaciones.
-// Si el video del visor está en PiP, no hacemos nada.
-// ================================================================
-
-document.addEventListener('visibilitychange', function () {
-    if (!document.hidden) return;
-
-    var video = pubVisor.videoActual;
-
-    if (
-        video &&
-        pubVisorEstaAbierto() &&
-        !video.paused &&
-        document.pictureInPictureElement !== video
-    ) {
-        // Solo informativo; NO tocamos play/pause ni reproduccionSolicitada.
-        pubMotorVideo.ultimaInteraccion = Date.now();
-    }
-});
 
 // ================================================================
 // CARGA DE PUBLICACIONES
@@ -1087,11 +857,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
             var nombreReal = p.usuario_nombre || 'Explorador';
             var handleSeguro = p.usuario_handle || '';
 
-            var urlAutor = pubUrlPerfilAutor(
-                p.usuario_handle,
-                p.usuario_id,
-                miId
-            );
+            var urlAutor = pubUrlPerfilAutor(p.usuario_handle, p.usuario_id, miId);
 
             var esDueno = String(p.usuario_id) === String(miId);
 
@@ -1133,8 +899,8 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
             if (handleSeguro) {
                 var spanHandle = document.createElement('span');
-                spanHandle.className = 'pub-autor-handle';
-                spanHandle.textContent = ' @' + handleSeguro;
+                spanHandle.className = 'pub-autor-handle web3-handle';
+                spanHandle.textContent = '@' + handleSeguro;
                 nombreBloque.appendChild(spanHandle);
             }
 
@@ -1243,7 +1009,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
                         mediaEl.addEventListener('click', function (e) {
                             e.stopPropagation();
-
                             pubAbrirVisor(indexEnLista, p.id, esDueno);
                         });
                     }
@@ -1392,9 +1157,7 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
 // ================================================================
 
 async function toggleComentariosPerfil(publicacionId) {
-    var container = document.getElementById(
-        'comentarios-container-' + publicacionId
-    );
+    var container = document.getElementById('comentarios-container-' + publicacionId);
 
     if (!container) return;
 
@@ -1409,15 +1172,11 @@ async function toggleComentariosPerfil(publicacionId) {
 }
 
 async function cargarComentariosPerfil(publicacionId) {
-    var lista = document.getElementById(
-        'comentarios-lista-' + publicacionId
-    );
+    var lista = document.getElementById('comentarios-lista-' + publicacionId);
 
     if (!lista) return;
 
-    var contenedor = document.getElementById(
-        'comentarios-container-' + publicacionId
-    );
+    var contenedor = document.getElementById('comentarios-container-' + publicacionId);
 
     var duenoId = contenedor ? contenedor.dataset.dueno : '';
 
@@ -1460,9 +1219,7 @@ async function cargarComentariosPerfil(publicacionId) {
             var avatarMini = document.createElement('div');
 
             avatarMini.className = 'avatar-mini';
-            avatarMini.appendChild(
-                pubCrearAvatar(c.usuario_nombre, c.usuario_avatar_url)
-            );
+            avatarMini.appendChild(pubCrearAvatar(c.usuario_nombre, c.usuario_avatar_url));
 
             item.appendChild(avatarMini);
 
@@ -1525,9 +1282,7 @@ async function cargarComentariosPerfil(publicacionId) {
 var pubComentariosEnProceso = {};
 
 async function enviarComentarioPerfil(publicacionId) {
-    var input = document.getElementById(
-        'comentario-input-' + publicacionId
-    );
+    var input = document.getElementById('comentario-input-' + publicacionId);
 
     var texto = input ? input.value.trim() : '';
 
@@ -1696,5 +1451,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v15.0
+// FIN · PERFIL PUBLICACIONES v15.1
 // ================================================================
