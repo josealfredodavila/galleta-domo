@@ -61,9 +61,7 @@
 
         .app { width: 100%; max-width: var(--col); margin: 0 auto; min-height: 100vh; padding: 0 14px 24px; }
 
-        /* ================================================================
-           ENCABEZADO (mismo estilo que perfil)
-           ================================================================ */
+        /* ENCABEZADO */
         .header {
             position: sticky; top: 0; z-index: 1000;
             display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -100,9 +98,7 @@
         }
         .token-badge .icon { width: 14px; height: 14px; color: var(--gold); }
 
-        /* ================================================================
-           NAVEGACIÓN
-           ================================================================ */
+        /* NAVEGACIÓN */
         .main-nav {
             display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none;
             margin: 14px 0 12px; padding: 4px; border-radius: 999px;
@@ -122,9 +118,7 @@
         }
         .nav-link.live { color: #ff8a9b; }
 
-        /* ================================================================
-           BÚSQUEDA
-           ================================================================ */
+        /* BÚSQUEDA */
         .global-search-container { position: relative; margin-bottom: 14px; z-index: 100; }
         .global-search-bar {
             display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 16px;
@@ -157,9 +151,7 @@
             background: linear-gradient(120deg, var(--cyan), var(--purple)); color: #04070d; border: 0;
         }
 
-        /* ================================================================
-           FILTROS
-           ================================================================ */
+        /* FILTROS */
         .muro-filter-nav {
             display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
             margin-bottom: 14px; padding: 6px; border-radius: 16px;
@@ -179,9 +171,7 @@
         }
         .dot-live { width: 7px; height: 7px; border-radius: 50%; background: #ff4d6d; display: inline-block; box-shadow: 0 0 8px #ff4d6d; }
 
-        /* ================================================================
-           HISTORIAS
-           ================================================================ */
+        /* HISTORIAS */
         #csStoryStrip {
             display: flex; gap: 12px; padding: 14px; margin-bottom: 14px; overflow-x: auto; scrollbar-width: none;
             background: var(--surface); border: 1px solid var(--glass-border); border-radius: var(--radius);
@@ -207,9 +197,7 @@
         .cs-story-plus { width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center; color: var(--cyan); }
         .cs-story-plus .icon { width: 22px; height: 22px; stroke-width: 2.2; }
 
-        /* ================================================================
-           TARJETAS (valor de mercado, tendencias, tokens)
-           ================================================================ */
+        /* TARJETAS */
         .card {
             background: var(--surface); border: 1px solid var(--glass-border); border-radius: var(--radius);
             padding: 16px; margin-bottom: 14px; position: relative; overflow: hidden;
@@ -258,9 +246,7 @@
         .filtro-temas .toggle-btn.active { color: var(--gold); border-color: rgba(212, 175, 55, .5); background: rgba(212, 175, 55, .08); }
         .filtro-temas .info { font-size: .76rem; color: var(--muted); }
 
-        /* ================================================================
-           COMPOSITOR
-           ================================================================ */
+        /* COMPOSITOR */
         .pf-composer {
             position: relative; display: grid; grid-template-columns: 42px 1fr; gap: 12px;
             padding: 16px; margin-bottom: 14px; border-radius: 22px;
@@ -343,9 +329,7 @@
         #btnPublicar:disabled { opacity: .45; }
         #btnPublicar .icon { display: none; }
 
-        /* ================================================================
-           FEED (tarjetas que genera muro-publicaciones.js)
-           ================================================================ */
+        /* FEED */
         #feedContainer { display: block; }
         .post-card {
             background: var(--surface) !important; border: 1px solid var(--glass-border) !important;
@@ -382,8 +366,13 @@
         .post-content { color: var(--text); font-size: .98rem; line-height: 1.45; margin: 4px 0 8px; word-wrap: break-word; }
         .post-content .hashtag, .post-content .mencion { color: var(--cyan); text-decoration: none; font-weight: 600; }
         .post-content .hashtag:hover, .post-content .mencion:hover { text-decoration: underline; }
-        .post-media { width: 100%; max-width: 100%; margin-top: 8px; border-radius: 14px; overflow: hidden; background: #000; cursor: pointer; border: 1px solid var(--line); }
+        .post-media { width: 100%; max-width: 100%; margin-top: 8px; border-radius: 14px; overflow: hidden; background: #000; cursor: pointer; border: 1px solid var(--line); position: relative; }
         .post-imagen { display: block; width: 100%; max-width: 100%; max-height: 560px; object-fit: cover; border-radius: 14px; }
+        .post-media-play {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 52px; height: 52px; border-radius: 50%;
+            background: rgba(5,8,15,.6); border: 1px solid rgba(255,255,255,.25); display: grid; place-items: center; pointer-events: none;
+        }
+        .post-media-play svg { width: 22px; height: 22px; fill: #fff; }
         .post-venta {
             margin-top: 10px; padding: 10px 12px; border-radius: 14px; background: rgba(212,175,55,.05); border: 1px solid rgba(212,175,55,.2);
             display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
@@ -425,9 +414,7 @@
         .btn-eliminar-comentario { background: none; border: 0; color: var(--danger); font-size: .7rem; padding: 0; margin-top: 2px; }
         .empty-state { text-align: center; padding: 50px 20px; color: var(--muted); border: 1px dashed var(--glass-border); border-radius: var(--radius); }
 
-        /* ================================================================
-           VISOR DE MEDIA A PANTALLA COMPLETA
-           ================================================================ */
+        /* VISOR DE MEDIA */
         .xv { position: fixed; inset: 0; z-index: 6000; background: #000; display: flex; flex-direction: column; }
         .xv-top {
             position: absolute; top: 0; left: 0; right: 0; z-index: 5;
@@ -462,6 +449,7 @@
             height: 32px; padding: 0 16px; border-radius: 999px; border: 0; color: #04070d; font-size: .8rem; font-weight: 800;
             background: linear-gradient(120deg, var(--cyan), var(--purple));
         }
+        .xv-follow.on { background: rgba(255,255,255,.1); color: var(--text); border: 1px solid var(--glass-border); }
         .xv-text { margin: 10px 0; color: #fff; font-size: .94rem; line-height: 1.45; max-height: 96px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
         .xv-actions { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
         .xv-act {
@@ -470,6 +458,9 @@
         }
         .xv-act .icon { width: 17px; height: 17px; }
         .xv-act.round { width: 36px; padding: 0; justify-content: center; }
+        .xv-act.on { color: var(--gold); border-color: rgba(212,175,55,.5); }
+        .xv-act.like-on { color: var(--danger); border-color: rgba(255,51,102,.5); }
+        .xv-act.like-on .icon { fill: var(--danger); stroke: var(--danger); }
         .xv-bar {
             position: absolute; left: 0; right: 0; bottom: 0; height: 52px; z-index: 5;
             display: flex; align-items: center; gap: 12px; padding: 0 14px; background: var(--space); border-top: 1px solid var(--glass-border);
@@ -481,9 +472,27 @@
         .xv-prog span { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--cyan); border-radius: 4px; box-shadow: 0 0 8px rgba(0,229,255,.6); }
         .xv-time { font-family: 'Orbitron', monospace; font-size: .66rem; color: var(--text-2); min-width: 60px; text-align: right; }
 
-        /* ================================================================
-           MODALES
-           ================================================================ */
+        /* MENÚ DE OPCIONES DEL VISOR */
+        .xv-menu-fondo { position: absolute; inset: 0; z-index: 7; background: rgba(0,0,0,.55); }
+        .xv-menu {
+            position: absolute; left: 0; right: 0; bottom: 0; z-index: 8;
+            max-height: 78vh; overflow-y: auto; padding: 10px 12px calc(14px + env(safe-area-inset-bottom, 0px));
+            background: var(--surface); border-top: 1px solid rgba(0,229,255,.22); border-radius: 22px 22px 0 0;
+            box-shadow: 0 -10px 40px rgba(0,0,0,.6);
+        }
+        .xv-menu-tirador { width: 40px; height: 4px; border-radius: 4px; background: rgba(255,255,255,.2); margin: 0 auto 10px; }
+        .xv-menu-titulo { font-family: 'Orbitron', monospace; font-size: .7rem; letter-spacing: 1.5px; color: #bfefff; padding: 4px 6px 10px; text-transform: uppercase; }
+        .xv-menu-op {
+            display: flex; align-items: center; gap: 14px; width: 100%; padding: 13px 10px; border-radius: 14px;
+            background: transparent; border: 0; color: var(--text); font-size: .92rem; font-weight: 600; text-align: left;
+        }
+        .xv-menu-op:hover, .xv-menu-op:active { background: rgba(0,229,255,.08); }
+        .xv-menu-op .icon { width: 20px; height: 20px; color: var(--cyan); }
+        .xv-menu-op.peligro, .xv-menu-op.peligro .icon { color: var(--danger); }
+        .xv-menu-op.cancelar { justify-content: center; color: var(--muted); margin-top: 6px; }
+        .xv-menu-op.cancelar:hover { background: transparent; }
+
+        /* MODALES */
         .modal-overlay { background: rgba(0,0,0,.78); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); }
         .modal-overlay .modal, .modal-overlay.modal-content {
             background: var(--surface); border: 1px solid rgba(0,229,255,.22); border-radius: 20px;
@@ -546,9 +555,7 @@
         .footer-net { display: inline-flex; align-items: center; gap: 5px; color: var(--cyan); }
         .footer-net .icon { width: 11px; height: 11px; fill: currentColor; stroke: none; }
 
-        /* ================================================================
-           HISTORIAS · VISOR
-           ================================================================ */
+        /* HISTORIAS · VISOR */
         #csHistoriaVisor { display: none; position: fixed; inset: 0; z-index: 5000; align-items: center; justify-content: center; }
         .cs-historia-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,.94); }
         .cs-historia-card { position: relative; max-width: 440px; width: 100%; max-height: 92vh; background: #000; border-radius: 18px; overflow: hidden; display: flex; flex-direction: column; border: 1px solid rgba(0,229,255,.18); }
@@ -590,6 +597,8 @@
         .cs-panel-nombre { font-size: .88rem; font-weight: 800; color: var(--text); }
         .cs-panel-sub { font-size: .76rem; color: var(--muted); }
         .cs-panel-texto { font-size: .88rem; color: var(--text); line-height: 1.45; word-break: break-word; }
+
+        .post-card.resaltada { outline: 1px solid var(--cyan); }
 
         @media (max-width: 600px) {
             .app { padding: 0 10px 20px; }
@@ -642,7 +651,7 @@
             <a href="/features/mercado/index.html" class="nav-link" data-nav="mercado">Mercado</a>
         </nav>
 
-        <!-- BÚSQUEDA GLOBAL (lógica en /features/muro/js/buscador-global.js) -->
+        <!-- BÚSQUEDA GLOBAL -->
         <div class="global-search-container">
             <div class="global-search-bar">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -808,7 +817,7 @@
                     <span class="xv-name" id="xvName">Usuario</span>
                     <span class="xv-handle" id="xvHandle">@usuario</span>
                 </div>
-                <button type="button" class="xv-follow" id="xvSeguir">Seguir</button>
+                <button type="button" class="xv-follow" id="xvSeguir" hidden>Seguir</button>
             </div>
             <p class="xv-text" id="xvText"></p>
             <div class="xv-actions">
@@ -835,6 +844,10 @@
                 <svg class="icon" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>
             </button>
         </div>
+
+        <!-- MENÚ DE OPCIONES (se llena desde JS) -->
+        <div class="xv-menu-fondo" id="xvMenuFondo" hidden></div>
+        <div class="xv-menu" id="xvMenu" role="menu" hidden></div>
     </div>
 
     <!-- MODAL VENDER -->
@@ -1090,6 +1103,25 @@
         } else {
             arrancarHistorias();
         }
+
+        // Abrir una publicación desde un enlace compartido: muro.html#post-123
+        var coincidencia = location.hash.match(/^#post-(\d+)$/);
+        if (coincidencia) {
+            var idBuscado = coincidencia[1];
+            var intentos = 0;
+            var temporizador = setInterval(function () {
+                intentos++;
+                var tarjeta = document.querySelector('.post-card[data-post-id="' + idBuscado + '"]');
+                if (tarjeta) {
+                    clearInterval(temporizador);
+                    tarjeta.classList.add('resaltada');
+                    tarjeta.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setTimeout(function () { tarjeta.classList.remove('resaltada'); }, 2500);
+                } else if (intentos > 40) {
+                    clearInterval(temporizador);
+                }
+            }, 250);
+        }
     })();
 
     function insertarMencion() {
@@ -1113,20 +1145,6 @@
         if (!ta) return;
         ta.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setTimeout(function () { ta.focus(); }, 300);
-    }
-
-    function compartirMuro() {
-        var url = window.location.href;
-        var titulo = "Csariel's";
-        if (navigator.share) {
-            navigator.share({ title: titulo, url: url }).catch(function () {});
-        } else if (navigator.clipboard) {
-            navigator.clipboard.writeText(url).then(function () {
-                if (typeof showToast === 'function') showToast('Enlace copiado', 'success');
-            }).catch(function () {
-                if (typeof showToast === 'function') showToast('No se pudo copiar el enlace', 'error');
-            });
-        }
     }
     </script>
 
@@ -1158,7 +1176,7 @@
     })();
     </script>
 
-    <!-- VISOR DE MEDIA A PANTALLA COMPLETA -->
+    <!-- VISOR DE PUBLICACIÓN: reproduce, y acciones reales en Supabase -->
     <script>
     (function () {
         'use strict';
@@ -1179,18 +1197,39 @@
         var texto = document.getElementById('xvText');
         var likeN = document.getElementById('xvLikeN');
         var likeBtn = document.getElementById('xvLike');
-        var seguir = document.getElementById('xvSeguir');
-        var guardar = document.getElementById('xvGuardar');
-        var compartir = document.getElementById('xvCompartir');
-        var cerrar = document.getElementById('xvClose');
-        var mas = document.getElementById('xvMas');
+        var seguirBtn = document.getElementById('xvSeguir');
+        var guardarBtn = document.getElementById('xvGuardar');
+        var compartirBtn = document.getElementById('xvCompartir');
+        var cerrarBtn = document.getElementById('xvClose');
+        var masBtn = document.getElementById('xvMas');
         var bar = document.getElementById('xvBar');
+        var menu = document.getElementById('xvMenu');
+        var menuFondo = document.getElementById('xvMenuFondo');
 
-        var actual = { src: '', tipo: 'imagen', id: null };
-        var liked = false;
-        var seguido = false;
-        var guardado = false;
+        var MOTIVOS = ['Spam o engañoso', 'Discurso de odio', 'Violencia o peligro', 'Contenido sexual', 'Información falsa', 'Otro motivo'];
 
+        var ICONOS = {
+            guardar: '<svg class="icon" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
+            seguir: '<svg class="icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>',
+            enlace: '<svg class="icon" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>',
+            compartir: '<svg class="icon" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>',
+            descargar: '<svg class="icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+            reportar: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+            eliminar: '<svg class="icon" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M10 11v6M14 11v6"/><path d="M6 7l.9 11.2A2 2 0 0 0 8.9 20h6.2a2 2 0 0 0 2-1.8L18 7"/><path d="M9.5 7V4.8c0-.9.7-1.6 1.6-1.6h1.8c.9 0 1.6.7 1.6 1.6V7"/></svg>',
+            cerrar: '<svg class="icon" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+        };
+
+        var actual = {
+            id: null, tipo: 'imagen', src: '', name: '', handle: '', avatar: '', text: '',
+            autorId: null, esMio: false, liked: false, likes: 0, guardado: false, siguiendo: false
+        };
+        var solicitud = 0;
+
+        function avisar(msg, tipo) {
+            if (typeof showToast === 'function') showToast(msg, tipo || 'success');
+        }
+        function sb() { return window.supabaseClient; }
+        function miId() { return (typeof sessionUser !== 'undefined' && sessionUser) ? sessionUser.id : null; }
         function fmt(s) {
             var t = Math.max(0, Math.floor(s || 0));
             return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0');
@@ -1201,26 +1240,77 @@
                 ? '<svg class="icon" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></svg>'
                 : '<svg class="icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>';
         }
-
         function iconoMute() {
             mute.innerHTML = vid.muted
                 ? '<svg class="icon" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><line x1="16" y1="9" x2="22" y2="15"/><line x1="22" y1="9" x2="16" y2="15"/></svg>'
                 : '<svg class="icon" viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></svg>';
         }
-
         function reproducir() {
             var p = vid.play();
             if (p && p.catch) p.catch(function () { vid.muted = true; iconoMute(); vid.play().catch(function () {}); });
         }
 
+        /* ---------- Estado visual ---------- */
+        function pintarEstado() {
+            likeN.textContent = String(actual.likes);
+            likeBtn.classList.toggle('like-on', actual.liked);
+            guardarBtn.classList.toggle('on', actual.guardado);
+            guardarBtn.setAttribute('aria-pressed', actual.guardado ? 'true' : 'false');
+
+            var puedeSeguir = !!actual.autorId && !actual.esMio;
+            seguirBtn.hidden = !puedeSeguir;
+            seguirBtn.classList.toggle('on', actual.siguiendo);
+            seguirBtn.textContent = actual.siguiendo ? 'Siguiendo' : 'Seguir';
+        }
+
+        /* ---------- Carga del estado real desde Supabase ---------- */
+        async function cargarEstado(id, token) {
+            var c = sb();
+            var uid = miId();
+
+            var post = await c.from('muro_posts').select('usuario_id').eq('id', id).maybeSingle();
+            if (token !== solicitud) return;
+            if (post.error) throw post.error;
+
+            actual.autorId = post.data ? post.data.usuario_id : null;
+            actual.esMio = !!(uid && actual.autorId && actual.autorId === uid);
+
+            var conteo = await c.from('muro_likes').select('id', { count: 'exact', head: true }).eq('post_id', id);
+            var mio = uid ? await c.from('muro_likes').select('id').eq('post_id', id).eq('usuario_id', uid).maybeSingle() : { data: null };
+            var guard = uid ? await c.from('muro_guardados').select('id').eq('post_id', id).eq('usuario_id', uid).maybeSingle() : { data: null };
+            var sig = (uid && actual.autorId && !actual.esMio)
+                ? await c.from('seguidores').select('id').eq('seguidor_id', uid).eq('seguido_id', actual.autorId).maybeSingle()
+                : { data: null };
+
+            if (token !== solicitud) return;
+            actual.likes = conteo.count || 0;
+            actual.liked = !!mio.data;
+            actual.guardado = !!guard.data;
+            actual.siguiendo = !!sig.data;
+            pintarEstado();
+        }
+
+        /* ---------- Abrir y cerrar ---------- */
         function abrir(o) {
-            actual.src = o.src || '';
+            solicitud++;
+            var token = solicitud;
+
+            actual.id = Number(o.id) || null;
             actual.tipo = o.tipo || 'imagen';
-            actual.id = o.id || null;
+            actual.src = o.src || '';
+            actual.name = o.name || 'Usuario';
+            actual.handle = o.handle || 'usuario';
+            actual.avatar = o.avatar || '';
+            actual.text = o.text || '';
+            actual.autorId = null;
+            actual.esMio = false;
+            actual.liked = false;
+            actual.guardado = false;
+            actual.siguiendo = false;
+            actual.likes = Number(o.likes) || 0;
 
             var esVideo = actual.tipo === 'video';
             stage.classList.toggle('es-video', esVideo);
-
             if (esVideo) {
                 img.removeAttribute('src');
                 vid.src = actual.src;
@@ -1233,25 +1323,13 @@
                 vid.load();
                 img.src = actual.src;
             }
+            bar.hidden = !esVideo;
 
-            if (bar) bar.hidden = !esVideo;
-
-            var inicial = (o.name || 'U').charAt(0).toUpperCase();
-            av.innerHTML = o.avatar ? '<img src="' + o.avatar.replace(/"/g, '&quot;') + '" alt="">' : inicial;
-            nombre.textContent = o.name || 'Usuario';
-            handle.textContent = '@' + (o.handle || 'usuario');
-            texto.textContent = o.text || '';
-            likeN.textContent = o.likes || '0';
-
-            liked = false;
-            likeBtn.style.color = '';
-            likeBtn.querySelector('.icon').style.fill = 'none';
-            likeBtn.querySelector('.icon').style.stroke = 'currentColor';
-
-            seguido = false;
-            seguir.textContent = 'Seguir';
-            guardado = false;
-            guardar.style.color = '';
+            var inicial = (actual.name || 'U').charAt(0).toUpperCase();
+            av.innerHTML = actual.avatar ? '<img src="' + actual.avatar.replace(/"/g, '&quot;') + '" alt="">' : inicial;
+            nombre.textContent = actual.name;
+            handle.textContent = '@' + actual.handle;
+            texto.textContent = actual.text;
 
             progFill.style.width = '0%';
             tiempo.textContent = '0:00';
@@ -1260,9 +1338,24 @@
             document.body.style.overflow = 'hidden';
             iconoPlay();
             iconoMute();
+            pintarEstado();
+
+            if (actual.id) {
+                cargarEstado(actual.id, token).catch(function (e) {
+                    console.error('[Visor] No se cargó el estado:', e);
+                });
+            }
+        }
+
+        function cerrarMenu() {
+            menu.hidden = true;
+            menuFondo.hidden = true;
+            menu.innerHTML = '';
         }
 
         function cerrarVisor() {
+            cerrarMenu();
+            solicitud++;
             vid.pause();
             vid.removeAttribute('src');
             vid.load();
@@ -1271,6 +1364,228 @@
             document.body.style.overflow = '';
         }
 
+        /* ---------- Acciones reales ---------- */
+        async function alternarLike() {
+            var uid = miId();
+            if (!uid) return avisar('Inicia sesión para dar me gusta', 'error');
+            var id = actual.id;
+            var previo = actual.liked;
+            actual.liked = !previo;
+            actual.likes += previo ? -1 : 1;
+            pintarEstado();
+
+            var r = previo
+                ? await sb().from('muro_likes').delete().eq('post_id', id).eq('usuario_id', uid)
+                : await sb().from('muro_likes').insert({ post_id: id, usuario_id: uid });
+
+            if (r.error && actual.id === id) {
+                actual.liked = previo;
+                actual.likes += previo ? 1 : -1;
+                pintarEstado();
+                avisar('No se pudo guardar tu me gusta', 'error');
+            }
+        }
+
+        async function alternarGuardado() {
+            var uid = miId();
+            if (!uid) return avisar('Inicia sesión para guardar', 'error');
+            var id = actual.id;
+            var previo = actual.guardado;
+            actual.guardado = !previo;
+            pintarEstado();
+
+            var r = previo
+                ? await sb().from('muro_guardados').delete().eq('post_id', id).eq('usuario_id', uid)
+                : await sb().from('muro_guardados').insert({ post_id: id, usuario_id: uid });
+
+            if (r.error && actual.id === id) {
+                actual.guardado = previo;
+                pintarEstado();
+                avisar('No se pudo actualizar tu guardado', 'error');
+            } else {
+                avisar(previo ? 'Quitado de guardados' : 'Guardado en tus guardados', 'success');
+            }
+        }
+
+        async function alternarSeguir() {
+            var uid = miId();
+            if (!uid) return avisar('Inicia sesión para seguir', 'error');
+            if (!actual.autorId || actual.esMio) return;
+            var autor = actual.autorId;
+            var id = actual.id;
+            var previo = actual.siguiendo;
+            actual.siguiendo = !previo;
+            pintarEstado();
+
+            var r = previo
+                ? await sb().from('seguidores').delete().eq('seguidor_id', uid).eq('seguido_id', autor)
+                : await sb().from('seguidores').insert({ seguidor_id: uid, seguido_id: autor });
+
+            if (r.error && actual.id === id) {
+                actual.siguiendo = previo;
+                pintarEstado();
+                avisar('No se pudo actualizar el seguimiento', 'error');
+            } else {
+                avisar(previo ? 'Dejaste de seguir a @' + actual.handle : 'Ahora sigues a @' + actual.handle, 'success');
+            }
+        }
+
+        function enlacePost() {
+            return location.origin + '/features/muro/muro.html#post-' + actual.id;
+        }
+
+        async function copiarEnlace() {
+            try {
+                await navigator.clipboard.writeText(enlacePost());
+                avisar('Enlace copiado', 'success');
+            } catch (e) {
+                window.prompt('Copia el enlace:', enlacePost());
+            }
+        }
+
+        async function compartirPost() {
+            var datos = { title: "Csariel's", text: actual.text || '', url: enlacePost() };
+            if (navigator.share) {
+                try { await navigator.share(datos); return; }
+                catch (e) { if (e && e.name === 'AbortError') return; }
+            }
+            copiarEnlace();
+        }
+
+        async function descargarMedia() {
+            if (!actual.src) return;
+            try {
+                var r = await fetch(actual.src);
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                var blob = await r.blob();
+                var url = URL.createObjectURL(blob);
+                var a = document.createElement('a');
+                a.href = url;
+                a.download = 'csariels-' + actual.id + (actual.tipo === 'video' ? '.mp4' : '.jpg');
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+            } catch (e) {
+                avisar('No se pudo descargar el archivo', 'error');
+            }
+        }
+
+        async function reportarPost(motivo) {
+            var uid = miId();
+            if (!uid) return avisar('Inicia sesión para reportar', 'error');
+            var c = sb();
+            var previo = await c.from('muro_reportes').select('id').eq('post_id', actual.id).eq('usuario_id', uid).maybeSingle();
+            if (previo.data) return avisar('Ya reportaste esta publicación', 'warning');
+            var r = await c.from('muro_reportes').insert({ post_id: actual.id, usuario_id: uid, motivo: motivo });
+            if (r.error) avisar('No se pudo enviar el reporte', 'error');
+            else avisar('Gracias. Revisaremos la publicación.', 'success');
+        }
+
+        async function eliminarPost() {
+            if (!actual.esMio) return;
+            if (!confirm('¿Eliminar esta publicación? No se puede deshacer.')) return;
+            if (typeof window.eliminarPublicacion !== 'function') {
+                return avisar('Eliminar no está disponible en este momento', 'error');
+            }
+            try {
+                await window.eliminarPublicacion(actual.id);
+                cerrarVisor();
+                if (typeof window.cargarPublicaciones === 'function') window.cargarPublicaciones(true);
+            } catch (e) {
+                avisar('No se pudo eliminar la publicación', 'error');
+            }
+        }
+
+        /* ---------- Menú de opciones ---------- */
+        function renderMenu(titulo, opciones) {
+            menu.innerHTML = '';
+            menu.appendChild(Object.assign(document.createElement('div'), { className: 'xv-menu-tirador' }));
+            menu.appendChild(Object.assign(document.createElement('div'), { className: 'xv-menu-titulo', textContent: titulo }));
+
+            opciones.forEach(function (op) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'xv-menu-op' + (op.peligro ? ' peligro' : '');
+                b.setAttribute('role', 'menuitem');
+                b.innerHTML = op.icono;
+                var span = document.createElement('span');
+                span.textContent = op.texto;
+                b.appendChild(span);
+                b.addEventListener('click', function () {
+                    if (op.mantener !== true) cerrarMenu();
+                    op.accion();
+                });
+                menu.appendChild(b);
+            });
+
+            var cancel = document.createElement('button');
+            cancel.type = 'button';
+            cancel.className = 'xv-menu-op cancelar';
+            cancel.textContent = 'Cancelar';
+            cancel.addEventListener('click', cerrarMenu);
+            menu.appendChild(cancel);
+
+            menuFondo.hidden = false;
+            menu.hidden = false;
+        }
+
+        function abrirMotivos() {
+            var opciones = MOTIVOS.map(function (m) {
+                return {
+                    texto: m,
+                    icono: ICONOS.reportar,
+                    mantener: false,
+                    accion: function () { reportarPost(m); }
+                };
+            });
+            renderMenu('Motivo del reporte', opciones);
+        }
+
+        function abrirMenu() {
+            var opciones = [];
+
+            opciones.push({
+                texto: actual.guardado ? 'Quitar de guardados' : 'Guardar',
+                icono: ICONOS.guardar,
+                accion: alternarGuardado
+            });
+
+            if (actual.autorId && !actual.esMio) {
+                opciones.push({
+                    texto: actual.siguiendo ? 'Dejar de seguir a @' + actual.handle : 'Seguir a @' + actual.handle,
+                    icono: ICONOS.seguir,
+                    accion: alternarSeguir
+                });
+            }
+
+            opciones.push({ texto: 'Copiar enlace', icono: ICONOS.enlace, accion: copiarEnlace });
+            opciones.push({ texto: 'Compartir', icono: ICONOS.compartir, accion: compartirPost });
+
+            if (actual.src) {
+                opciones.push({
+                    texto: actual.tipo === 'video' ? 'Descargar video' : 'Descargar foto',
+                    icono: ICONOS.descargar,
+                    accion: descargarMedia
+                });
+            }
+
+            if (actual.esMio) {
+                opciones.push({ texto: 'Eliminar publicación', icono: ICONOS.eliminar, peligro: true, accion: eliminarPost });
+            } else {
+                opciones.push({
+                    texto: 'Reportar publicación',
+                    icono: ICONOS.reportar,
+                    peligro: true,
+                    mantener: true,
+                    accion: abrirMotivos
+                });
+            }
+
+            renderMenu('Opciones', opciones);
+        }
+
+        /* ---------- Eventos ---------- */
         window.abrirVisorMedia = abrir;
         window.cerrarVisorMedia = cerrarVisor;
 
@@ -1292,8 +1607,14 @@
             });
         });
 
-        cerrar.addEventListener('click', cerrarVisor);
-        mas.addEventListener('click', function () { if (typeof showToast === 'function') showToast('Más opciones próximamente', 'warning'); });
+        cerrarBtn.addEventListener('click', cerrarVisor);
+        masBtn.addEventListener('click', abrirMenu);
+        menuFondo.addEventListener('click', cerrarMenu);
+
+        likeBtn.addEventListener('click', alternarLike);
+        guardarBtn.addEventListener('click', alternarGuardado);
+        seguirBtn.addEventListener('click', alternarSeguir);
+        compartirBtn.addEventListener('click', compartirPost);
 
         tap.addEventListener('click', function () {
             if (actual.tipo !== 'video') return;
@@ -1313,7 +1634,7 @@
             tiempo.textContent = fmt(vid.currentTime);
         });
         vid.addEventListener('loadedmetadata', function () { tiempo.textContent = fmt(vid.duration); });
-        vid.addEventListener('ended', function () { iconoPlay(); });
+        vid.addEventListener('ended', iconoPlay);
 
         prog.addEventListener('click', function (e) {
             if (!vid.duration || !isFinite(vid.duration)) return;
@@ -1322,40 +1643,12 @@
             vid.currentTime = ratio * vid.duration;
         });
 
-        likeBtn.addEventListener('click', function () {
-            liked = !liked;
-            var iconSvg = likeBtn.querySelector('.icon');
-            likeBtn.style.color = liked ? 'var(--danger)' : '';
-            iconSvg.style.fill = liked ? 'var(--danger)' : 'none';
-            iconSvg.style.stroke = liked ? 'var(--danger)' : 'currentColor';
-
-            var n = parseInt(likeN.textContent, 10) || 0;
-            likeN.textContent = String(liked ? n + 1 : Math.max(0, n - 1));
-        });
-
-        seguir.addEventListener('click', function () {
-            seguido = !seguido;
-            seguir.textContent = seguido ? 'Siguiendo' : 'Seguir';
-        });
-        guardar.addEventListener('click', function () {
-            guardado = !guardado;
-            guardar.style.color = guardado ? 'var(--gold)' : '';
-            if (typeof showToast === 'function') showToast(guardado ? 'Guardado' : 'Quitado de guardados', 'success');
-        });
-        compartir.addEventListener('click', function () {
-            var url = actual.src || window.location.href;
-            if (navigator.share) {
-                navigator.share({ title: "Csariel's", url: url }).catch(function () {});
-            } else if (navigator.clipboard) {
-                navigator.clipboard.writeText(url).then(function () {
-                    if (typeof showToast === 'function') showToast('Enlace copiado', 'success');
-                }).catch(function () {});
-            }
-        });
-
         document.addEventListener('keydown', function (e) {
             if (visor.hidden) return;
-            if (e.key === 'Escape') cerrarVisor();
+            if (e.key === 'Escape') {
+                if (!menu.hidden) cerrarMenu();
+                else cerrarVisor();
+            }
             if (e.key === ' ' && actual.tipo === 'video') {
                 e.preventDefault();
                 if (vid.paused) reproducir(); else vid.pause();
