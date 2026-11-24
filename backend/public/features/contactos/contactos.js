@@ -1,19 +1,10 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v28.2
-   Cambios v28.2:
-   - El micrófono ya NO se activa al tocar el campo de texto.
-     Solo se activa con el botón 🎤.
-   - Escribir en el campo busca al dejar de teclear (350 ms) y con Enter.
-   - El botón ✕ aparece al escribir, sin esperar la búsqueda.
-   - Al buscar no se mueve el cursor si se escribe en medio del texto.
-   - El micrófono no se puede iniciar dos veces seguidas.
-   Sin QR ni cámara (eso vive en Perfil).
-   RPC: perfiles_por_ids, buscar_usuarios, sugerencias_usuarios,
-        bloquear_contacto, obtener_o_crear_invitacion,
-        canjear_codigo_amistad, responder_solicitud_amistad,
-        eliminar_amistad.
-   Tablas: contactos, bloqueos, preferencias_usuario (prefs jsonb),
-           usuarios (ocultar_estado).
+   CSARIEL'S · CONTACTOS · v28.3
+   Cambios v28.3:
+   - Sincronización inmediata de a11y (texto y alto contraste) en
+     document.documentElement, localStorage y preferencias_usuario.
+   - Emite evento global "contactos:a11y-cambio" para scripts compartidos.
+   - Conserva toda la lógica de contactos, búsqueda, voz, códigos y config.
    ============================================================ */
 
 (function () {
@@ -32,8 +23,7 @@
         RPC_CANJEAR: 'canjear_codigo_amistad',
         RPC_RESPONDER: 'responder_solicitud_amistad',
         RPC_ELIMINAR: 'eliminar_amistad',
-        // RUTA CORREGIDA: Apunta al archivo correcto en tu servidor
-        PERFIL_URL: '/features/perfil-publico/perfil-publico.html', 
+        PERFIL_URL: '/features/perfil-publico/perfil-publico.html',
         MENSAJES_URL: '/features/mensajes/mensajes.html',
         PAGE: 50,
         LIMITE_RELACIONES: 100,
@@ -320,20 +310,31 @@
     function normalizarA11y(a) {
         a = a || {};
         var texto = ['80', '100', '120', '140'].indexOf(String(a.texto)) !== -1 ? String(a.texto) : '100';
-        return { texto: texto, contraste: a.contraste === true };
+        var contraste = a.contraste === true || a.altoContraste === true || a.alto_contraste === true;
+        return { texto: texto, contraste: contraste };
     }
 
     function aplicarA11y() {
         var h = document.documentElement;
+        var b = document.body;
         h.classList.remove('a11y-texto-80', 'a11y-texto-120', 'a11y-texto-140');
         if (state.a11y.texto !== '100') h.classList.add('a11y-texto-' + state.a11y.texto);
-        h.classList.toggle('a11y-contraste', state.a11y.contraste === true);
+        var alto = state.a11y.contraste === true;
+        h.classList.toggle('a11y-contraste', alto);
+        h.setAttribute('data-a11y-contraste', alto ? 'true' : 'false');
+        if (b) {
+            b.classList.toggle('a11y-contraste', alto);
+        }
+        try {
+            window.dispatchEvent(new CustomEvent('contactos:a11y-cambio', { detail: Object.assign({}, state.a11y) }));
+        } catch (e) {}
     }
 
     async function guardarA11y(patch) {
         state.a11y = normalizarA11y(Object.assign({}, state.a11y, patch));
         aplicarA11y();
         try { localStorage.setItem(CONFIG.A11Y_KEY, JSON.stringify(state.a11y)); } catch (e) {}
+        renderConfig();
         try {
             await guardarPrefs({ accesibilidad: state.a11y });
             showToast('Accesibilidad guardada.', 'success');
@@ -341,7 +342,6 @@
             console.error('[Contactos] Accesibilidad:', detalleError(e));
             showToast('Guardado solo en este dispositivo.', 'warning');
         }
-        renderConfig();
     }
 
     /* ---------------- Carga de datos (paginada) ---------------- */
@@ -999,7 +999,6 @@
 
     function abrirPerfil(id) {
         var p = state.perfiles.get(id);
-        // CORRECCIÓN QUIRÚRGICA: Si no hay handle, usamos el ID como respaldo para que siempre funcione
         if (!id) {
             showToast('Perfil no disponible.', 'warning');
             return;
