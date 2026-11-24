@@ -1,19 +1,14 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.8
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.9
    ================================================================
-   Cambios v3.8 (biblioteca de sonidos):
-   - Filas con portada visual por género (degradado + glifo) y duración m:ss.
-   - Favoritos por pista (♡ / ♥) en Para ti y Populares; pestaña Favoritos
-     se actualiza al instante y muestra un mensaje si está vacía.
-   - Ecualizador: corregido. El analizador de audio ahora controla las barras
-     (antes la animación CSS las sobrescribía). Sin analizador, usa una
-     animación CSS de respaldo.
-   - Barra inferior: tiempo transcurrido / total y progreso junto al título
-     y al botón "Usar este sonido".
-   - Buscador fijo arriba del listado; render con delegación de eventos y
-     búsqueda con debounce para que pestañas y scroll sean fluidos.
-   - Corregido: el estado de reproducción se conserva al cambiar de pestaña.
-   Sin cambios funcionales en borradores, preview, subida ni feed.
+   Cambios v3.9 (quirúrgicos):
+   - Eliminado el autoplay del feed: lo controla videos.html (carrusel).
+     Este módulo ya no pausa, reinicia ni silencia videos del feed.
+   - Eliminado el botón de pausa duplicado en la barra lateral.
+   - Marca de agua (escudo con la "C") en cada video del feed y en la
+     vista previa. Se controla con MARCA_AGUA.ACTIVA.
+   - Estilos duplicados unificados y constantes sin uso retiradas.
+   Sin cambios en borradores, sonido, ubicación, subida ni cuota.
    ================================================================ */
 
 (function () {
@@ -22,12 +17,18 @@
     if (window.__csarielsVideosPublicarLoaded) return;
     window.__csarielsVideosPublicarLoaded = true;
 
-    const Z = { CAMARA: 99999, SHEET_BACKDROP: 100000, SHEET: 100001, PREVIEW: 100030, CONFIRM: 100010, TOAST: 100020 };
+    const Z = { SHEET_BACKDROP: 100000, SHEET: 100001, PREVIEW: 100030, CONFIRM: 100010, TOAST: 100020 };
 
     const FEED_UI = {
         ocultarLikes: true,
         ocultarCompartir: true,
         ocultarReacciones: true
+    };
+
+    /* Marca de agua. Pon ACTIVA en false si los videos ya traen la marca incluida. */
+    const MARCA_AGUA = {
+        ACTIVA: true,
+        OPACIDAD: 0.9
     };
 
     const EQ_COLORES = ['#ff2bd6', '#ff3d7f', '#00f0ff', '#39ff14', '#ffe600', '#b026ff'];
@@ -41,9 +42,6 @@
 
     const FAV_KEY = 'cs_sonidos_favoritos_v1';
     const DURACION_PREVIEW_MS = 5000;
-
-    const ICONO_PAUSA = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
-    const ICONO_PLAY = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><polygon points="7 5 19 12 7 19 7 5"/></svg>';
 
     function vt(clave, respaldo) {
         if (typeof window.tConFallback === 'function') return window.tConFallback(clave, respaldo);
@@ -59,7 +57,6 @@
         VIDEO_TYPES: ['video/mp4', 'video/webm', 'video/quicktime'],
         IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp'],
         PORTADA_TIMEOUT_MS: 4000,
-        BARRAS_EQ: EQ_COLORES.length,
         MAX_BORRADORES_LISTA: 50
     };
 
@@ -68,7 +65,6 @@
 
     const SUPABASE_URL = 'https://zultnlogdoajehbswlih.supabase.co';
     const SUPABASE_STORAGE_URL = SUPABASE_URL + '/storage/v1/object/public/audios';
-    const AUDIO_PREFIJO_PERMITIDO = SUPABASE_STORAGE_URL + '/';
 
     /* Estilo visual por género: degradado + glifo. Sin imágenes externas. */
     const GENEROS = {
@@ -222,6 +218,34 @@
         if (!sb) return null;
         const r = await sb.auth.getSession();
         return (r && r.data && r.data.session) || null;
+    }
+
+    /* ----------------------------------------------------------------
+       MARCA DE AGUA (escudo dorado con la "C")
+       ---------------------------------------------------------------- */
+    function marcaHTML() {
+        return '<span class="cs-marca" aria-hidden="true" style="opacity:' + MARCA_AGUA.OPACIDAD + '">' +
+            '<svg viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">' +
+            '<rect x="2" y="2" width="56" height="76" rx="8" fill="rgba(0,0,0,.28)" stroke="#D4AF37" stroke-width="3"/>' +
+            '<text x="30" y="58" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="50" fill="#D4AF37">C</text>' +
+            '</svg></span>';
+    }
+
+    function asegurarMarca(contenedor) {
+        if (!MARCA_AGUA.ACTIVA || !contenedor) return;
+        if (contenedor.querySelector(':scope > .cs-marca')) return;
+        contenedor.insertAdjacentHTML('beforeend', marcaHTML());
+    }
+
+    function iniciarMarcaFeed() {
+        if (!MARCA_AGUA.ACTIVA) return;
+        const cont = $('videosContainer');
+        if (!cont) return;
+        const aplicar = () => {
+            cont.querySelectorAll('.video-card .thumbnail').forEach(asegurarMarca);
+        };
+        aplicar();
+        new MutationObserver(aplicar).observe(cont, { childList: true });
     }
 
     function csToast(mensaje, tipo, duracion) {
@@ -627,7 +651,7 @@
 
         function iniciar(elementoEq, elementoAudio) {
             pausar();
-            fuente && (function () { try { fuente.disconnect(); } catch (e) {} fuente = null; })();
+            if (fuente) { try { fuente.disconnect(); } catch (e) {} fuente = null; }
             const conAnalizador = elementoAudio ? asegurarContexto(elementoAudio) : false;
             audioActual = elementoAudio || null;
             marcarEq(elementoEq, conAnalizador);
@@ -1465,6 +1489,8 @@
             </div>`;
         document.body.appendChild(d);
 
+        asegurarMarca(d.querySelector('.cs-prev-stage'));
+
         $('csPrevCerrar').addEventListener('click', cerrarPreview);
         $('csPrevSeguir').addEventListener('click', cerrarPreview);
         $('csPrevPublicar').addEventListener('click', publicarDesdePreview);
@@ -1659,10 +1685,6 @@
             window.dispatchEvent(new CustomEvent('csariels:videos:refresh'));
             log('📡 Evento csariels:videos:refresh disparado');
         } catch (e) { warn('No se pudo disparar el evento:', e); }
-        try {
-            const feed = $('videosContainer');
-            if (feed) feed.scrollTo({ top: 0, behavior: 'smooth' });
-        } catch (e) {}
     }
     window.csRefrescarFeedVideos = refrescarFeedAutomatico;
 
@@ -1675,62 +1697,8 @@
 
         const st = document.createElement('style');
         st.id = 'cs-feed-ui';
-        st.textContent = (ocultar.length ? ocultar.join(',') + ' { display: none !important; }' : '') + `
-            .video-card .cs-pausa-btn { cursor: pointer; }
-            .video-card .cs-pausa-btn .icono { display: flex; align-items: center; justify-content: center; }
-            .video-card .cs-pausa-btn svg { filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6)); }
-        `;
+        st.textContent = ocultar.length ? ocultar.join(',') + ' { display: none !important; }' : '';
         document.head.appendChild(st);
-    }
-
-    function decorarTarjeta(card) {
-        if (!card || card.dataset.csDecorada === '1') return;
-        const acciones = card.querySelector('.sidebar-acciones');
-        const video = card.querySelector('video');
-        if (!acciones || !video) return;
-        card.dataset.csDecorada = '1';
-
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'acc-btn cs-pausa-btn';
-        btn.setAttribute('aria-label', 'Pausar o reproducir');
-        btn.innerHTML = '<span class="icono cs-pausa-ico"></span>';
-        acciones.insertBefore(btn, acciones.firstChild);
-
-        const icono = btn.querySelector('.cs-pausa-ico');
-        function pintar() {
-            icono.innerHTML = video.paused ? ICONO_PLAY : ICONO_PAUSA;
-        }
-        pintar();
-        video.addEventListener('play', pintar);
-        video.addEventListener('pause', pintar);
-
-        btn.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-            if (!video.getAttribute('src') && video.dataset.src) {
-                video.src = video.dataset.src;
-                video.load();
-            }
-            if (video.paused) {
-                video.play().catch(() => {});
-                card.classList.add('playing');
-            } else {
-                video.pause();
-                card.classList.remove('playing');
-            }
-            pintar();
-        });
-    }
-
-    function observarFeed() {
-        const cont = $('videosContainer');
-        if (!cont) return;
-        cont.querySelectorAll('.video-card').forEach(decorarTarjeta);
-        const obs = new MutationObserver(function () {
-            cont.querySelectorAll('.video-card').forEach(decorarTarjeta);
-        });
-        obs.observe(cont, { childList: true });
     }
 
     /* ----------------------------------------------------------------
@@ -1776,7 +1744,7 @@
     }
 
     /* ----------------------------------------------------------------
-       ESTILOS
+       ESTILOS (una sola inyección)
        ---------------------------------------------------------------- */
     function inyectarEstilosExtra() {
         if ($('cs-videos-publicar-inline')) return;
@@ -1798,9 +1766,16 @@
             .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,43,214,0.25); border-top-color: #ff2bd6; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
 
-            .pub-media-container { width: 100%; aspect-ratio: 9 / 16; position: relative; overflow: hidden; background: #000; border-radius: 14px; }
-            .pub-media-container video { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; object-position: center; display: block; max-width: 100%; filter: none !important; }
-            .pub-media-container img { width: 100%; height: 100%; position: absolute; inset: 0; object-fit: cover; object-position: center; display: block; }
+            /* ---- Marca de agua (escudo con la "C") ---- */
+            .cs-marca {
+                position: absolute; top: 14px; left: 14px; z-index: 7;
+                width: 44px; height: 58px; pointer-events: none;
+                filter: drop-shadow(0 2px 6px rgba(0,0,0,.65));
+            }
+            .cs-marca svg { width: 100%; height: 100%; display: block; }
+            .cs-prev-stage .cs-marca { top: 70px; left: 14px; }
+            .cs-preview-video .cs-marca { top: 12px; left: 12px; width: 36px; height: 48px; }
+            @media (max-width: 480px) { .cs-marca { width: 38px; height: 50px; } }
 
             .cs-preview-video {
                 position: relative; width: 100%; height: min(78vh, 720px);
@@ -2213,6 +2188,7 @@
         else form.appendChild(wrap);
 
         wrap.style.display = 'none';
+        asegurarMarca(wrap.querySelector('.cs-preview-video'));
 
         $('csBtnVistaPrevia').addEventListener('click', abrirPreview);
         $('csBtnVerBorradores').addEventListener('click', abrirModalBorradores);
@@ -2632,103 +2608,6 @@
         });
     }
 
-    let _autoplayObserver = null;
-    let _autoplayInterval = null;
-    let _intersectionObserver = null;
-    let _visibilityListener = null;
-
-    function iniciarVigilanteAutoplay() {
-        if (_intersectionObserver) return;
-
-        function usuarioQuiereAutoplay() {
-            const pref = localStorage.getItem('contenido_auto_reproducir');
-            return pref === null || pref === 'true';
-        }
-
-        function esVideoDelFeed(video) {
-            if (!video) return false;
-            if (video.id === 'csPreviewVideo' || video.id === 'csPrevVideo') return false;
-            if (video.closest && video.closest('#csPreviewWrap')) return false;
-            if (video.closest && video.closest('#csModalPreview')) return false;
-            if (video.closest && video.closest('#csModalCamara')) return false;
-            if (video.dataset.csAutoplayIgnorar === 'true') return false;
-            return true;
-        }
-
-        _intersectionObserver = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                const video = entry.target;
-                if (!esVideoDelFeed(video)) return;
-                if (entry.isIntersecting) {
-                    if (usuarioQuiereAutoplay() && !document.hidden) {
-                        video.muted = true;
-                        video.play().catch(e => {
-                            if (e.name !== 'AbortError') console.log('Autoplay bloqueado:', e.name);
-                        });
-                    }
-                } else {
-                    try { video.pause(); video.currentTime = 0; } catch (e) {}
-                }
-            });
-        }, { threshold: 0.5 });
-
-        function observarVideo(video) {
-            if (!esVideoDelFeed(video)) return;
-            if (video.dataset.csAutoplayObservado === 'true') return;
-            video.dataset.csAutoplayObservado = 'true';
-            _intersectionObserver.observe(video);
-        }
-
-        function observarTodos() {
-            const contenedor = $('videosContainer');
-            if (contenedor) contenedor.querySelectorAll('video').forEach(observarVideo);
-        }
-
-        observarTodos();
-
-        const contenedorFeed = $('videosContainer');
-        if (contenedorFeed) {
-            _autoplayObserver = new MutationObserver((mutations) => {
-                mutations.forEach(m => {
-                    m.addedNodes.forEach(nodo => {
-                        if (nodo.nodeType !== 1) return;
-                        if (nodo.tagName === 'VIDEO') observarVideo(nodo);
-                        else if (nodo.querySelectorAll) nodo.querySelectorAll('video').forEach(observarVideo);
-                    });
-                });
-            });
-            _autoplayObserver.observe(contenedorFeed, { childList: true, subtree: true });
-        }
-
-        window.addEventListener('csariels:videos:refresh', () => {
-            setTimeout(observarTodos, 300);
-        });
-
-        _autoplayInterval = setInterval(observarTodos, 15000);
-
-        _visibilityListener = () => {
-            if (document.hidden) {
-                const contenedor = $('videosContainer');
-                if (contenedor) {
-                    contenedor.querySelectorAll('video').forEach(v => {
-                        try { v.pause(); } catch (e) {}
-                    });
-                }
-            }
-        };
-        document.addEventListener('visibilitychange', _visibilityListener);
-
-        window.addEventListener('beforeunload', () => {
-            if (_autoplayObserver) { _autoplayObserver.disconnect(); _autoplayObserver = null; }
-            if (_autoplayInterval) { clearInterval(_autoplayInterval); _autoplayInterval = null; }
-            if (_intersectionObserver) { _intersectionObserver.disconnect(); _intersectionObserver = null; }
-            if (_visibilityListener) { document.removeEventListener('visibilitychange', _visibilityListener); _visibilityListener = null; }
-            AudioPreview.detener();
-            detenerPistaPreview();
-            limpiarTodasLasURLs();
-        });
-    }
-
     function engancharListenersGlobales() {
         if (window.__csVideosPublicarListeners) return;
         window.__csVideosPublicarListeners = true;
@@ -2771,6 +2650,13 @@
             if (e.target && e.target.id === 'csBtnConfirmarSonido') confirmarSonido();
             if (e.target && e.target.id === 'csBtnConfirmarUbicacion') confirmarUbicacion();
         });
+
+        /* Limpieza al salir: solo recursos de la vista previa y URLs temporales. */
+        window.addEventListener('beforeunload', () => {
+            AudioPreview.detener();
+            detenerPistaPreview();
+            limpiarTodasLasURLs();
+        });
     }
 
     window.VideosPublicar = {
@@ -2791,7 +2677,7 @@
         eliminarBorrador,
         quitarVideoSeleccionado,
         mostrarAvisoCuota,
-        getConfig: () => ({ ...CONFIG, FEED_UI: { ...FEED_UI }, LIMITE_BORRADORES, RUTA_MEMBRESIA_PRO }),
+        getConfig: () => ({ ...CONFIG, FEED_UI: { ...FEED_UI }, MARCA_AGUA: { ...MARCA_AGUA }, LIMITE_BORRADORES, RUTA_MEMBRESIA_PRO }),
         setProvider: (p) => { CONFIG.PROVIDER = p; },
         setFeedUI: (parcial) => { Object.assign(FEED_UI, parcial || {}); const old = $('cs-feed-ui'); if (old) old.remove(); inyectarEstilosFeed(); },
         getState: () => {
@@ -2825,11 +2711,10 @@
         engancharPersistenciaCampos();
         engancharListenersGlobales();
         engancharEventoPublicacionExitosa();
-        iniciarVigilanteAutoplay();
-        observarFeed();
+        iniciarMarcaFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v3.8 listo');
+        log('✅ Módulo Publicar v3.9 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
