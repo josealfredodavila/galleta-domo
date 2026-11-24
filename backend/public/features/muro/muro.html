@@ -310,11 +310,17 @@
         #emojiPicker .grid button { background: transparent; border: 0; font-size: 1.2rem; padding: 4px; border-radius: 8px; }
         #emojiPicker .grid button:hover { background: var(--surface-2); }
 
+        /* Contador de caracteres: oculto hasta que el usuario escribe */
         .pf-pie { display: flex; align-items: center; gap: 10px; }
-        .pf-anillo { position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+        .pf-anillo {
+            position: relative; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
+            opacity: 0; transform: scale(.7); pointer-events: none;
+            transition: opacity .2s ease, transform .2s ease;
+        }
+        .pf-anillo.visible { opacity: 1; transform: scale(1); }
         .pf-anillo svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
         .pf-anillo circle { fill: none; stroke-width: 2.4; stroke-linecap: round; }
-        .pf-anillo .bg { stroke: rgba(255,255,255,.1); }
+        .pf-anillo .bg { stroke: rgba(255,255,255,.12); }
         .pf-anillo .fg { stroke: var(--cyan); stroke-dasharray: 94.25; stroke-dashoffset: 94.25; transition: stroke-dashoffset .2s ease, stroke .2s ease; }
         .pf-anillo.cerca .fg { stroke: var(--gold); }
         .pf-anillo.lleno .fg { stroke: var(--danger); }
@@ -1148,7 +1154,7 @@
     }
     </script>
 
-    <!-- CONTADOR DE CARACTERES -->
+    <!-- CONTADOR DE CARACTERES (el anillo aparece solo al escribir) -->
     <script>
     (function () {
         'use strict';
@@ -1166,6 +1172,7 @@
             var ratio = Math.min(len / MAX, 1);
             progreso.style.strokeDashoffset = String(CIRC - (CIRC * ratio));
             contador.textContent = String(len);
+            anillo.classList.toggle('visible', len > 0);
             anillo.classList.toggle('cerca', ratio >= 0.85 && ratio < 1);
             anillo.classList.toggle('lleno', ratio >= 1);
             if (btn) btn.disabled = len === 0;
