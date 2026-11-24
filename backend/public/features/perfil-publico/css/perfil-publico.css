@@ -1,8 +1,8 @@
 /* ================================================================
    PERFIL-PUBLICO.CSS — Csariel's
-   v4.4 · Reacciones sin contadores repetidos, galería en fila
-   deslizable y medios sin recorte. Prefijo pv- para no chocar
-   con emojis-animations.css ni con los estilos globales.
+   v4.5 · Galería al ancho del dispositivo (estilo X), reacciones
+   sin contadores repetidos y medios sin recorte. Prefijo pv-
+   para no chocar con emojis-animations.css ni con los estilos globales.
    ================================================================ */
 
 /* ================= ESTADOS Y WALLET ================= */
@@ -912,7 +912,7 @@
 
 /* ================= GALERÍA Y MURO ================= */
 
-/* La sección nunca debe ensanchar la página */
+/* Ninguna sección puede ensanchar la página */
 #pvPerfil,
 #pvPerfil section {
     max-width: 100%;
@@ -923,11 +923,15 @@
     max-width: 100%;
 }
 
-/* Galería: una sola fila deslizable a los lados.
-   Así la página no crece por cada foto nueva. */
+/* Galería: cada foto o video ocupa el ancho del dispositivo,
+   con su proporción real, y se desliza de lado a lado (como X).
+   La página no crece por cada archivo nuevo. */
 #pvGaleriaGrid {
     display: flex;
-    gap: 10px;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     overflow-x: auto;
     overflow-y: hidden;
     scroll-snap-type: x mandatory;
@@ -942,26 +946,36 @@
     border-radius: 999px;
 }
 
-/* Cada foto o video ocupa casi la mitad de la pantalla */
 .pv-galeria-item {
     position: relative;
-    flex: 0 0 auto;
-    width: min(56vw, 320px);
-    height: min(50vh, 440px);
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 0;
     border: 0;
-    border-radius: 12px;
+    border-radius: 16px;
     overflow: hidden;
-    background: #0b1016;
+    background: #000;
     cursor: pointer;
     scroll-snap-align: start;
 }
 .pv-galeria-item img,
 .pv-galeria-item video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
     display: block;
+    width: 100%;
+    height: auto;
+    max-height: 80vh;
+    object-fit: contain;
+    background: #000;
+}
+/* Mientras el video carga sus metadatos, reserva espacio para que se vea */
+.pv-galeria-item video {
+    min-height: 220px;
 }
 .pv-galeria-play {
     position: absolute;
