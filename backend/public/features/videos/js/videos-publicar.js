@@ -1,11 +1,19 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.7
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.8
    ================================================================
-   Cambios respecto a v3.6:
-   - Eliminado el menú de 3 puntos duplicado del feed. Ahora el único
-     menú de opciones vive en videos.html.
-   - El botón de pausa del feed se integra con los controles que se
-     ocultan solos (no tapa el video cuando están ocultos).
+   Cambios v3.8 (biblioteca de sonidos):
+   - Filas con portada visual por género (degradado + glifo) y duración m:ss.
+   - Favoritos por pista (♡ / ♥) en Para ti y Populares; pestaña Favoritos
+     se actualiza al instante y muestra un mensaje si está vacía.
+   - Ecualizador: corregido. El analizador de audio ahora controla las barras
+     (antes la animación CSS las sobrescribía). Sin analizador, usa una
+     animación CSS de respaldo.
+   - Barra inferior: tiempo transcurrido / total y progreso junto al título
+     y al botón "Usar este sonido".
+   - Buscador fijo arriba del listado; render con delegación de eventos y
+     búsqueda con debounce para que pestañas y scroll sean fluidos.
+   - Corregido: el estado de reproducción se conserva al cambiar de pestaña.
+   Sin cambios funcionales en borradores, preview, subida ni feed.
    ================================================================ */
 
 (function () {
@@ -30,6 +38,9 @@
     const KEY_FILE = 'file';
 
     const MAX_FILE_SIZE_FOR_IDB = 15 * 1024 * 1024;
+
+    const FAV_KEY = 'cs_sonidos_favoritos_v1';
+    const DURACION_PREVIEW_MS = 5000;
 
     const ICONO_PAUSA = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
     const ICONO_PLAY = '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff"><polygon points="7 5 19 12 7 19 7 5"/></svg>';
@@ -59,24 +70,34 @@
     const SUPABASE_STORAGE_URL = SUPABASE_URL + '/storage/v1/object/public/audios';
     const AUDIO_PREFIJO_PERMITIDO = SUPABASE_STORAGE_URL + '/';
 
+    /* Estilo visual por género: degradado + glifo. Sin imágenes externas. */
+    const GENEROS = {
+        phonk:   { label: 'Phonk',   bg: 'linear-gradient(135deg,#ff2bd6,#3b0a4f 70%)', glyph: '◆' },
+        epico:   { label: 'Épico',   bg: 'linear-gradient(135deg,#ffe600,#6b3d00 70%)', glyph: '✦' },
+        comedia: { label: 'Comedia', bg: 'linear-gradient(135deg,#39ff14,#0b3d14 70%)', glyph: '◉' },
+        trap:    { label: 'Trap',    bg: 'linear-gradient(135deg,#ff3d7f,#2a0010 70%)', glyph: '▲' },
+        house:   { label: 'House',   bg: 'linear-gradient(135deg,#00f0ff,#03303d 70%)', glyph: '◈' },
+        electro: { label: 'Electro', bg: 'linear-gradient(135deg,#b026ff,#00f0ff 120%)', glyph: '●' }
+    };
+
     const SONIDOS_SEED = {
         parati: [
-            { id: 'sd-phonk', nombre: 'Phonk Bass Drop', artista: 'Echoes of Lumen', url: `${SUPABASE_STORAGE_URL}/echoes_of_lumen-phonk-bass-neon-aura-night-drive-588671.mp3`, duracion: 128 },
-            { id: 'sd-suspenso', nombre: 'Suspenso Épico', artista: 'Absolute Sound', url: `${SUPABASE_STORAGE_URL}/absolutesound-suspense-tense-atmosphere-514617.mp3`, duracion: 137 },
-            { id: 'sd-comedia', nombre: 'Risa y Caos', artista: 'Alex Morgan', url: `${SUPABASE_STORAGE_URL}/alex-morgan-comedy-bgm-funny-background-music-583242.mp3`, duracion: 62 },
-            { id: 'sd-n1', nombre: 'Brazilian Phonk', artista: 'Sub Clair', url: `${SUPABASE_STORAGE_URL}/sub_clair-brazilian-phonk-instrumental-585588.mp3`, duracion: 120 },
-            { id: 'sd-n2', nombre: 'Sosin Phonk Music', artista: 'Sosin', url: `${SUPABASE_STORAGE_URL}/sosin-phonk-phonk-music-621003.mp3`, duracion: 110 },
-            { id: 'sd-n3', nombre: 'Phonk No Copyright', artista: 'ARP Media', url: `${SUPABASE_STORAGE_URL}/arpmedia-phonk-no-copyright-music-588451.mp3`, duracion: 95 },
-            { id: 'sd-n4', nombre: 'Gym Workout', artista: 'Echoes of Lumen', url: `${SUPABASE_STORAGE_URL}/echoes_of_lumen-sport-phonk-gym-workout-586978.mp3`, duracion: 105 }
+            { id: 'sd-phonk', nombre: 'Phonk Bass Drop', artista: 'Echoes of Lumen', genero: 'phonk', url: `${SUPABASE_STORAGE_URL}/echoes_of_lumen-phonk-bass-neon-aura-night-drive-588671.mp3`, duracion: 128 },
+            { id: 'sd-suspenso', nombre: 'Suspenso Épico', artista: 'Absolute Sound', genero: 'epico', url: `${SUPABASE_STORAGE_URL}/absolutesound-suspense-tense-atmosphere-514617.mp3`, duracion: 137 },
+            { id: 'sd-comedia', nombre: 'Risa y Caos', artista: 'Alex Morgan', genero: 'comedia', url: `${SUPABASE_STORAGE_URL}/alex-morgan-comedy-bgm-funny-background-music-583242.mp3`, duracion: 62 },
+            { id: 'sd-n1', nombre: 'Brazilian Phonk', artista: 'Sub Clair', genero: 'phonk', url: `${SUPABASE_STORAGE_URL}/sub_clair-brazilian-phonk-instrumental-585588.mp3`, duracion: 120 },
+            { id: 'sd-n2', nombre: 'Sosin Phonk Music', artista: 'Sosin', genero: 'phonk', url: `${SUPABASE_STORAGE_URL}/sosin-phonk-phonk-music-621003.mp3`, duracion: 110 },
+            { id: 'sd-n3', nombre: 'Phonk No Copyright', artista: 'ARP Media', genero: 'phonk', url: `${SUPABASE_STORAGE_URL}/arpmedia-phonk-no-copyright-music-588451.mp3`, duracion: 95 },
+            { id: 'sd-n4', nombre: 'Gym Workout', artista: 'Echoes of Lumen', genero: 'trap', url: `${SUPABASE_STORAGE_URL}/echoes_of_lumen-sport-phonk-gym-workout-586978.mp3`, duracion: 105 }
         ],
         populares: [
-            { id: 'sd-trend1', nombre: 'Aesthetic Vibes', artista: 'Adrihuwu', url: `${SUPABASE_STORAGE_URL}/adrihuwu-adrihuwu-join-my-server-209103.mp3`, duracion: 134 },
-            { id: 'sd-trend2', nombre: 'Corrido Bélico (Trap)', artista: 'LN Plus Music', url: `${SUPABASE_STORAGE_URL}/lnplusmusic-cuban-latin-trap-beat-469610.mp3`, duracion: 127 },
-            { id: 'sd-reward', nombre: 'Gancho de Éxito', artista: 'Freesound Community', url: `${SUPABASE_STORAGE_URL}/freesound_community-victoria_claudia_baja_fidelidad_almacen_exito_cali-79564.mp3`, duracion: 55 },
-            { id: 'sd-n5', nombre: 'Dark Aggressive Bass', artista: 'Watermelon Beats', url: `${SUPABASE_STORAGE_URL}/watermelon_beats-phonk-drift-dark-aggressive-bass-612474.mp3`, duracion: 140 },
-            { id: 'sd-n6', nombre: 'House Phonk', artista: 'Alex Zavesa', url: `${SUPABASE_STORAGE_URL}/alexzavesa-house-phonk-short-version-613118.mp3`, duracion: 85 },
-            { id: 'sd-n7', nombre: 'Phonk Instrumental', artista: 'Sub Clair', url: `${SUPABASE_STORAGE_URL}/sub_clair-phonk-instrumental-610091.mp3`, duracion: 115 },
-            { id: 'sd-n8', nombre: 'Ultrakill', artista: 'Cloud System', url: `${SUPABASE_STORAGE_URL}/cloudsystem-ultrakill-46s-621400.mp3`, duracion: 46 }
+            { id: 'sd-trend1', nombre: 'Aesthetic Vibes', artista: 'Adrihuwu', genero: 'house', url: `${SUPABASE_STORAGE_URL}/adrihuwu-adrihuwu-join-my-server-209103.mp3`, duracion: 134 },
+            { id: 'sd-trend2', nombre: 'Corrido Bélico (Trap)', artista: 'LN Plus Music', genero: 'trap', url: `${SUPABASE_STORAGE_URL}/lnplusmusic-cuban-latin-trap-beat-469610.mp3`, duracion: 127 },
+            { id: 'sd-reward', nombre: 'Gancho de Éxito', artista: 'Freesound Community', genero: 'electro', url: `${SUPABASE_STORAGE_URL}/freesound_community-victoria_claudia_baja_fidelidad_almacen_exito_cali-79564.mp3`, duracion: 55 },
+            { id: 'sd-n5', nombre: 'Dark Aggressive Bass', artista: 'Watermelon Beats', genero: 'phonk', url: `${SUPABASE_STORAGE_URL}/watermelon_beats-phonk-drift-dark-aggressive-bass-612474.mp3`, duracion: 140 },
+            { id: 'sd-n6', nombre: 'House Phonk', artista: 'Alex Zavesa', genero: 'house', url: `${SUPABASE_STORAGE_URL}/alexzavesa-house-phonk-short-version-613118.mp3`, duracion: 85 },
+            { id: 'sd-n7', nombre: 'Phonk Instrumental', artista: 'Sub Clair', genero: 'phonk', url: `${SUPABASE_STORAGE_URL}/sub_clair-phonk-instrumental-610091.mp3`, duracion: 115 },
+            { id: 'sd-n8', nombre: 'Ultrakill', artista: 'Cloud System', genero: 'electro', url: `${SUPABASE_STORAGE_URL}/cloudsystem-ultrakill-46s-621400.mp3`, duracion: 46 }
         ],
         favoritos: []
     };
@@ -125,6 +146,26 @@
     }
     function log(...args) { console.log('[VideosPublicar]', ...args); }
     function warn(...args) { console.warn('[VideosPublicar]', ...args); }
+
+    function debouncer(fn, ms) {
+        let t = null;
+        return function (...args) {
+            clearTimeout(t);
+            t = setTimeout(() => fn.apply(this, args), ms);
+        };
+    }
+
+    /* Formatea segundos como m:ss (ej. 134 → 2:14). */
+    function fmtDuracion(seg) {
+        const s = Math.max(0, Math.floor(Number(seg) || 0));
+        const m = Math.floor(s / 60);
+        const r = s % 60;
+        return m + ':' + (r < 10 ? '0' : '') + r;
+    }
+
+    function generoDe(s) {
+        return GENEROS[s && s.genero] || GENEROS.phonk;
+    }
 
     function crearObjectURL(blob) {
         const url = URL.createObjectURL(blob);
@@ -502,6 +543,10 @@
         }
     }
 
+    /* ----------------------------------------------------------------
+       VISUALIZADOR: el analizador controla las barras del ecualizador.
+       Pausar y reanudar no destruye el contexto de audio.
+       ---------------------------------------------------------------- */
     const Visualizador = (function () {
         let ctx = null;
         let analyser = null;
@@ -509,6 +554,9 @@
         let datos = null;
         let rafId = null;
         let activo = false;
+        let eqActual = null;
+        let barrasActual = [];
+        let audioActual = null;
 
         function asegurarContexto(elemento) {
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -532,58 +580,104 @@
             }
         }
 
-        function pintarBarras(barras) {
-            if (!analyser || !datos) return;
+        function pintarBarras() {
+            if (!analyser || !datos || !barrasActual.length) return;
             analyser.getByteFrequencyData(datos);
-            const paso = Math.floor(datos.length / barras.length) || 1;
-            barras.forEach((barra, i) => {
+            const paso = Math.floor(datos.length / barrasActual.length) || 1;
+            barrasActual.forEach((barra, i) => {
                 const valor = datos[i * paso] || 0;
                 const energia = valor / 255;
-                const altura = 4 + energia * 22;
-                barra.style.height = altura + 'px';
+                barra.style.height = (4 + energia * 22) + 'px';
                 barra.style.opacity = String(0.55 + energia * 0.45);
-                barra.style.filter = `brightness(${1 + energia * 0.6})`;
             });
         }
 
-        function iniciar(elementoEq, elementoAudio) {
-            detener();
-            const barras = elementoEq ? Array.from(elementoEq.querySelectorAll('.cs-eq-bar')) : [];
-            const conAnalizador = elementoAudio ? asegurarContexto(elementoAudio) : false;
-            activo = true;
-            function bucle() {
-                if (!activo) return;
-                if (conAnalizador && barras.length) pintarBarras(barras);
-                rafId = requestAnimationFrame(bucle);
+        function bucle() {
+            if (!activo) return;
+            pintarBarras();
+            rafId = requestAnimationFrame(bucle);
+        }
+
+        function marcarEq(elementoEq, conAnalizador) {
+            eqActual = elementoEq || null;
+            barrasActual = eqActual ? Array.from(eqActual.querySelectorAll('.cs-eq-bar')) : [];
+            if (eqActual) eqActual.classList.toggle('cs-eq-live', !!conAnalizador);
+        }
+
+        function resetearBarras() {
+            if (eqActual) eqActual.classList.remove('cs-eq-live');
+            barrasActual.forEach(b => { b.style.height = ''; b.style.opacity = ''; });
+        }
+
+        function pausar() {
+            activo = false;
+            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            resetearBarras();
+        }
+
+        function reanudar(elementoEq, elementoAudio) {
+            if (elementoAudio && audioActual === elementoAudio && fuente && analyser) {
+                marcarEq(elementoEq, true);
+                activo = true;
+                bucle();
+                return;
             }
-            bucle();
+            iniciar(elementoEq, elementoAudio);
+        }
+
+        function iniciar(elementoEq, elementoAudio) {
+            pausar();
+            fuente && (function () { try { fuente.disconnect(); } catch (e) {} fuente = null; })();
+            const conAnalizador = elementoAudio ? asegurarContexto(elementoAudio) : false;
+            audioActual = elementoAudio || null;
+            marcarEq(elementoEq, conAnalizador);
+            if (conAnalizador) {
+                activo = true;
+                bucle();
+            }
         }
 
         function detener() {
-            activo = false;
-            if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+            pausar();
             if (fuente) { try { fuente.disconnect(); } catch (e) {} fuente = null; }
-            if (ctx) {
-                try { ctx.close(); } catch (e) {}
-                ctx = null;
-            }
+            if (ctx) { try { ctx.close(); } catch (e) {} ctx = null; }
             analyser = null;
             datos = null;
+            audioActual = null;
+            eqActual = null;
+            barrasActual = [];
         }
 
-        return { iniciar, detener };
+        return { iniciar, pausar, reanudar, detener };
     })();
 
+    /* ----------------------------------------------------------------
+       PREVIEW DE AUDIO: reproducción de 5 s, estado y tiempo para la UI.
+       ---------------------------------------------------------------- */
     const AudioPreview = (function () {
         let audio = null;
         let timerId = null;
+        let tickId = null;
         let generation = 0;
         let pistaActual = null;
         let estado = 'idle';
-        const DURACION_PREVIEW_MS = 5000;
+
+        function eqDe(id) {
+            return document.querySelector(`[data-art-id="${id}"] .cs-eq`);
+        }
+
+        function iniciarTicker() {
+            detenerTicker();
+            tickId = setInterval(actualizarTiempoFooter, 250);
+        }
+
+        function detenerTicker() {
+            if (tickId !== null) { clearInterval(tickId); tickId = null; }
+        }
 
         function limpiar() {
             if (timerId !== null) { clearTimeout(timerId); timerId = null; }
+            detenerTicker();
             Visualizador.detener();
             if (audio) {
                 try { audio.pause(); audio.removeAttribute('src'); audio.load(); } catch (e) {}
@@ -674,14 +768,17 @@
             estado = 'playing';
             if (onEstado) onEstado('playing', pista);
 
-            Visualizador.iniciar(document.querySelector(`.cs-sonido-item[data-sonido-id="${pista.id}"] .cs-eq`), nuevoAudio);
+            Visualizador.iniciar(eqDe(pista.id), nuevoAudio);
+            iniciarTicker();
 
             timerId = setTimeout(() => {
                 if (miGeneracion !== generation) return;
                 if (audio === nuevoAudio) {
                     try { nuevoAudio.pause(); } catch (e) {}
                     estado = 'paused';
-                    Visualizador.detener();
+                    Visualizador.pausar();
+                    detenerTicker();
+                    actualizarTiempoFooter();
                     if (onEstado) onEstado('paused', pista);
                 }
                 timerId = null;
@@ -694,7 +791,9 @@
             if (audio && estado === 'playing') {
                 try { audio.pause(); } catch (e) {}
                 estado = 'paused';
-                Visualizador.detener();
+                Visualizador.pausar();
+                detenerTicker();
+                actualizarTiempoFooter();
                 if (window._audioPreviewOnEstado) window._audioPreviewOnEstado('paused', pistaActual);
             }
         }
@@ -703,7 +802,8 @@
             if (audio && estado === 'paused' && pistaActual) {
                 audio.play().then(() => {
                     estado = 'playing';
-                    Visualizador.iniciar(document.querySelector(`.cs-sonido-item[data-sonido-id="${pistaActual.id}"] .cs-eq`), audio);
+                    Visualizador.reanudar(eqDe(pistaActual.id), audio);
+                    iniciarTicker();
                     if (window._audioPreviewOnEstado) window._audioPreviewOnEstado('playing', pistaActual);
                 }).catch(() => {});
             }
@@ -711,7 +811,17 @@
 
         function getEstado() { return { estado, pista: pistaActual }; }
 
-        return { reproducir, detener, pausar, reanudar, getEstado };
+        /* Tiempo para la barra inferior. Usa la duración real si ya cargó. */
+        function getTiempo() {
+            if (!pistaActual) return null;
+            const total = (audio && isFinite(audio.duration) && audio.duration > 0)
+                ? audio.duration
+                : (pistaActual.duracion || 0);
+            const actual = audio ? (audio.currentTime || 0) : 0;
+            return { actual, total, pista: pistaActual };
+        }
+
+        return { reproducir, detener, pausar, reanudar, getEstado, getTiempo };
     })();
 
     async function subirMultimedia(archivo, tipo, opciones) {
@@ -1623,6 +1733,51 @@
         obs.observe(cont, { childList: true });
     }
 
+    /* ----------------------------------------------------------------
+       FAVORITOS (por dispositivo, en localStorage)
+       ---------------------------------------------------------------- */
+    function cargarFavoritos() {
+        try {
+            const arr = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+            return Array.isArray(arr) ? arr.filter(id => typeof id === 'string') : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    let favoritos = cargarFavoritos();
+
+    function guardarFavoritos() {
+        try { localStorage.setItem(FAV_KEY, JSON.stringify(favoritos)); } catch (e) {}
+    }
+
+    function esFavorito(id) {
+        return favoritos.indexOf(id) !== -1;
+    }
+
+    function listaFavoritos() {
+        return favoritos.map(buscarSonidoPorId).filter(Boolean);
+    }
+
+    function alternarFavorito(id) {
+        const i = favoritos.indexOf(id);
+        if (i === -1) favoritos.push(id);
+        else favoritos.splice(i, 1);
+        guardarFavoritos();
+        actualizarContadorFavoritos();
+    }
+
+    function actualizarContadorFavoritos() {
+        const n = listaFavoritos().length;
+        document.querySelectorAll('.cs-tab-count[data-count="favoritos"]').forEach(el => {
+            el.textContent = n > 0 ? String(n) : '';
+            el.style.display = n > 0 ? 'inline-flex' : 'none';
+        });
+    }
+
+    /* ----------------------------------------------------------------
+       ESTILOS
+       ---------------------------------------------------------------- */
     function inyectarEstilosExtra() {
         if ($('cs-videos-publicar-inline')) return;
         const st = document.createElement('style');
@@ -1692,83 +1847,191 @@
             .cs-prev-acciones { display: flex; gap: 10px; padding: 12px 14px max(16px, env(safe-area-inset-bottom)); background: #000; }
             .cs-prev-acciones button { flex: 1; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; }
 
-            .cs-sonido-play {
-                position: relative; width: 44px; height: 44px; border-radius: 50%; margin-right: 12px; flex-shrink: 0;
-                display: flex; align-items: center; justify-content: center; overflow: hidden; cursor: pointer;
-                background: radial-gradient(circle at 30% 30%, #2a0d3a, #0a0612 70%);
-                border: 2px solid transparent;
-                background-clip: padding-box;
-                box-shadow: 0 0 0 1px rgba(255,43,214,.35), 0 0 12px rgba(255,43,214,.25);
-                transition: box-shadow .25s ease, transform .15s ease;
+            /* ---- Sheets: encabezado, búsqueda fija y listado con scroll propio ---- */
+            .cs-sheet .cs-sheet-body {
+                flex: 1; min-height: 0; overflow: hidden;
+                display: flex; flex-direction: column;
+                padding: 0 14px;
             }
-            .cs-sonido-play:active { transform: scale(.92); }
-            .cs-sonido-ico { position: relative; z-index: 2; font-size: .9rem; color: #fff; text-shadow: 0 0 8px #ff2bd6; }
-            .cs-eq { position: absolute; inset: 0; display: none; align-items: center; justify-content: center; gap: 2px; pointer-events: none; z-index: 1; }
+            .cs-sheet-fijo {
+                flex-shrink: 0;
+                padding: 12px 0 6px;
+                background: #0b1410;
+                position: relative; z-index: 2;
+            }
+            .cs-sonidos-lista, .cs-ubicaciones-lista {
+                flex: 1; min-height: 0;
+                overflow-y: auto; overscroll-behavior: contain;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 12px;
+            }
+
+            /* ---- Biblioteca de sonidos ---- */
+            .cs-sonido-item {
+                display: flex; align-items: center; gap: 12px;
+                padding: 10px 4px;
+                border-bottom: 1px solid rgba(255,255,255,.05);
+                cursor: pointer; position: relative;
+                transition: background .2s ease, transform .15s ease;
+                animation: cs-fila-in .28s ease both;
+                animation-delay: calc(var(--i, 0) * 18ms);
+                outline: none;
+            }
+            .cs-sonido-item:hover { background: rgba(255,255,255,.025); }
+            .cs-sonido-item:focus-visible { box-shadow: inset 0 0 0 1px #00f0ff; }
+            .cs-sonido-item:active { transform: scale(.985); }
+            .cs-sonido-item.activo { background: linear-gradient(90deg, rgba(255,43,214,.10), rgba(0,240,255,.06)); }
+            @keyframes cs-fila-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+            .cs-sonido-art {
+                position: relative; width: 46px; height: 46px; flex: 0 0 46px;
+                border-radius: 12px; overflow: hidden;
+                display: grid; place-items: center;
+                box-shadow: inset 0 0 0 1px rgba(255,255,255,.12), 0 4px 12px rgba(0,0,0,.4);
+                cursor: pointer;
+            }
+            .cs-sonido-glyph {
+                font-size: 1rem; color: rgba(255,255,255,.88);
+                text-shadow: 0 0 10px rgba(255,255,255,.35);
+                transition: opacity .2s ease;
+            }
+            .cs-sonido-play-ico {
+                position: absolute; font-size: .9rem; color: #fff; opacity: 0;
+                text-shadow: 0 0 8px rgba(0,0,0,.7);
+                transition: opacity .2s ease;
+            }
+            .cs-sonido-art:hover .cs-sonido-play-ico { opacity: 1; }
+            .cs-sonido-art:hover .cs-sonido-glyph { opacity: 0; }
+
+            .cs-eq {
+                position: absolute; inset: 0; display: none;
+                align-items: flex-end; justify-content: center; gap: 3px;
+                padding-bottom: 9px; background: rgba(0,0,0,.38);
+                pointer-events: none;
+            }
             .cs-eq-bar {
                 width: 3px; height: 5px; border-radius: 3px;
                 background: var(--eq-c, #ff2bd6);
-                box-shadow: 0 0 6px var(--eq-c, #ff2bd6), 0 0 14px var(--eq-c, #ff2bd6);
-                transition: height .07s linear, opacity .07s linear;
+                box-shadow: 0 0 6px var(--eq-c, #ff2bd6);
             }
-
-            .cs-sonido-item { position: relative; overflow: hidden; transition: background .25s ease, transform .15s ease; }
-            .cs-sonido-item:active { transform: scale(.985); }
-            .cs-sonido-nombre { color: #fff; font-weight: 700; letter-spacing: .2px; }
-            .cs-sonido-artista { color: #9fb4c8; }
-            .cs-sonido-check { color: #ff2bd6; text-shadow: 0 0 8px #ff2bd6; }
-
-            .cs-sonido-item.activo, .cs-sonido-item.cs-sonando {
-                background: linear-gradient(120deg, rgba(255,43,214,.16), rgba(0,240,255,.12), rgba(57,255,20,.10));
-                box-shadow: 0 0 0 1px rgba(0,240,255,.55), 0 0 22px rgba(255,43,214,.35), inset 0 0 18px rgba(0,240,255,.08);
-            }
-            .cs-sonido-item.cs-sonando::after {
-                content: ''; position: absolute; inset: -40% -10%; pointer-events: none;
-                background: conic-gradient(from 0deg, #ff2bd6, #00f0ff, #39ff14, #ffe600, #b026ff, #ff2bd6);
-                opacity: .10; animation: cs-halo-giro 6s linear infinite;
-            }
-            @keyframes cs-halo-giro { to { transform: rotate(360deg); } }
-
-            .cs-sonido-item.cs-sonando .cs-sonido-play {
-                box-shadow: 0 0 0 2px #00f0ff, 0 0 18px #ff2bd6, 0 0 30px rgba(0,240,255,.45);
-                background: radial-gradient(circle at 30% 30%, #3a0f4f, #070410 75%);
-            }
-            .cs-sonido-item.cs-sonando .cs-sonido-ico { display: none; }
-            .cs-sonido-item.cs-sonando .cs-eq { display: flex; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar { animation: cs-eq-bounce .8s ease-in-out infinite; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(2) { animation-delay: .12s; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(3) { animation-delay: .24s; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(4) { animation-delay: .36s; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(5) { animation-delay: .48s; }
-            .cs-sonido-item.cs-sonando .cs-eq-bar:nth-child(6) { animation-delay: .6s; }
+            /* Modo analizador: la altura la fija el audio en tiempo real */
+            .cs-eq.cs-eq-live .cs-eq-bar { animation: none; transition: height .08s linear, opacity .08s linear; }
+            /* Modo respaldo: animación CSS cuando el navegador no da analizador */
+            .cs-eq:not(.cs-eq-live) .cs-eq-bar { animation: cs-eq-bounce .8s ease-in-out infinite; }
+            .cs-eq-bar:nth-child(2) { animation-delay: .12s !important; }
+            .cs-eq-bar:nth-child(3) { animation-delay: .24s !important; }
+            .cs-eq-bar:nth-child(4) { animation-delay: .36s !important; }
+            .cs-eq-bar:nth-child(5) { animation-delay: .48s !important; }
+            .cs-eq-bar:nth-child(6) { animation-delay: .6s !important; }
             @keyframes cs-eq-bounce { 0%,100% { height: 5px; } 50% { height: 22px; } }
 
-            .cs-sonido-item.cs-sonando .cs-sonido-nombre { background: linear-gradient(90deg,#ff2bd6,#00f0ff,#39ff14); -webkit-background-clip: text; background-clip: text; color: transparent; }
+            .cs-sonido-info { display: flex; flex-direction: column; flex: 1; min-width: 0; gap: 2px; }
+            .cs-sonido-nombre {
+                color: #fff; font-weight: 700; font-size: .86rem; letter-spacing: .2px;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            }
+            .cs-sonido-artista {
+                color: #9fb4c8; font-size: .7rem;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            }
+            .cs-sonido-genero { color: #c9b6ff; }
 
-            .cs-sonido-item.cs-cargando .cs-sonido-ico { animation: cs-spin-inline .8s linear infinite; display: inline-block; color: #00f0ff; text-shadow: 0 0 8px #00f0ff; }
-            .cs-sonido-item.cs-pausado .cs-sonido-play { box-shadow: 0 0 0 2px #ffe600, 0 0 14px rgba(255,230,0,.5); }
-            .cs-sonido-item.cs-pausado .cs-sonido-ico { color: #ffe600; text-shadow: 0 0 8px #ffe600; }
-            .cs-sonido-item.cs-error .cs-sonido-play { box-shadow: 0 0 0 2px #ff3d7f, 0 0 14px rgba(255,61,127,.6); }
-            .cs-sonido-item.cs-error .cs-sonido-ico { color: #ff3d7f; text-shadow: 0 0 8px #ff3d7f; }
+            .cs-fav-btn {
+                flex: 0 0 34px; width: 34px; height: 34px; border-radius: 50%;
+                border: 1px solid rgba(255,255,255,.12); background: transparent;
+                color: #8fa1b3; font-size: 1rem; cursor: pointer;
+                display: grid; place-items: center; padding: 0;
+                transition: color .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+            }
+            .cs-fav-btn:active { transform: scale(.88); }
+            .cs-fav-btn.on {
+                color: #ff2bd6; border-color: rgba(255,43,214,.6);
+                text-shadow: 0 0 8px #ff2bd6;
+                box-shadow: 0 0 12px rgba(255,43,214,.35);
+                animation: cs-fav-pop .3s ease;
+            }
+            @keyframes cs-fav-pop { 0% { transform: scale(.8); } 60% { transform: scale(1.18); } 100% { transform: scale(1); } }
 
-            .cs-tab { color: #9fb4c8; font-weight: 700; transition: color .2s ease; }
-            .cs-tab.active { color: #fff; text-shadow: 0 0 10px rgba(255,43,214,.7); }
-            .cs-tab.active::after {
-                content: ''; display: block; height: 3px; margin: 6px auto 0; width: 44px; border-radius: 3px;
-                background: linear-gradient(90deg,#ff2bd6,#00f0ff); box-shadow: 0 0 10px #ff2bd6;
+            .cs-sonido-check { color: #ff2bd6; text-shadow: 0 0 8px #ff2bd6; opacity: 0; font-size: .85rem; flex-shrink: 0; }
+            .cs-sonido-item.activo .cs-sonido-check { opacity: 1; }
+
+            /* Estados de reproducción por fila */
+            .cs-sonido-item.cs-sonando { background: linear-gradient(90deg, rgba(255,43,214,.14), rgba(0,240,255,.10)); }
+            .cs-sonido-item.cs-sonando .cs-sonido-art {
+                box-shadow: 0 0 0 2px #00f0ff, 0 0 18px rgba(255,43,214,.55);
+            }
+            .cs-sonido-item.cs-sonando .cs-sonido-glyph,
+            .cs-sonido-item.cs-sonando .cs-sonido-play-ico { display: none; }
+            .cs-sonido-item.cs-sonando .cs-eq { display: flex; }
+            .cs-sonido-item.cs-sonando .cs-sonido-nombre {
+                background: linear-gradient(90deg,#ff2bd6,#00f0ff,#39ff14);
+                -webkit-background-clip: text; background-clip: text; color: transparent;
+            }
+            .cs-sonido-item.cs-cargando .cs-sonido-glyph { opacity: 0; }
+            .cs-sonido-item.cs-cargando .cs-sonido-play-ico {
+                opacity: 1; color: #00f0ff; text-shadow: 0 0 8px #00f0ff;
+                animation: cs-spin-inline .8s linear infinite;
+            }
+            .cs-sonido-item.cs-pausado .cs-sonido-glyph { opacity: 0; }
+            .cs-sonido-item.cs-pausado .cs-sonido-play-ico { opacity: 1; color: #ffe600; text-shadow: 0 0 8px #ffe600; }
+            .cs-sonido-item.cs-error .cs-sonido-glyph { opacity: 0; }
+            .cs-sonido-item.cs-error .cs-sonido-play-ico { opacity: 1; color: #ff3d7f; text-shadow: 0 0 8px #ff3d7f; }
+
+            .cs-vacio-favs { text-align: center; padding: 34px 18px; color: #9fb4c8; }
+            .cs-vacio-favs .cs-vacio-ico { display: block; font-size: 2rem; color: #ff2bd6; text-shadow: 0 0 10px #ff2bd6; margin-bottom: 10px; }
+            .cs-vacio-favs p { font-size: .8rem; line-height: 1.5; margin: 0; }
+
+            /* Pestañas */
+            .cs-tabs { display: flex; gap: 4px; padding: 10px 14px 0; border-bottom: 1px solid var(--glass-border); flex-shrink: 0; }
+            .cs-tab {
+                flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+                padding: 8px 10px; background: transparent; border: none;
+                border-bottom: 2px solid transparent; color: #9fb4c8;
+                font-size: .72rem; font-weight: 700; cursor: pointer;
+                transition: color .2s ease, border-color .2s ease;
+            }
+            .cs-tab.active { color: #fff; border-bottom-color: #ff2bd6; text-shadow: 0 0 10px rgba(255,43,214,.6); }
+            .cs-tab-count {
+                display: none; align-items: center; justify-content: center;
+                min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+                background: rgba(255,43,214,.2); color: #ff2bd6; font-size: .6rem; font-weight: 800;
             }
 
-            .cs-btn-primary {
-                background: linear-gradient(120deg,#ff2bd6,#b026ff 45%,#00f0ff) !important;
-                color: #fff !important; border: none !important; font-weight: 800; letter-spacing: .3px;
-                box-shadow: 0 0 16px rgba(255,43,214,.45), 0 0 28px rgba(0,240,255,.25);
-                text-shadow: 0 1px 2px rgba(0,0,0,.4);
+            /* Barra inferior: título, tiempo, progreso y botón */
+            .cs-footer-sonido { align-items: center; gap: 12px; }
+            .cs-footer-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+            .cs-sonido-actual {
+                color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,.4);
+                font-size: .76rem; font-weight: 600;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
             }
-            .cs-btn-primary:disabled { opacity: .45; box-shadow: none; }
-            .cs-btn-primary:not(:disabled):active { transform: scale(.97); }
+            .cs-sonido-meta { display: flex; align-items: center; gap: 8px; }
+            .cs-sonido-tiempo {
+                font-size: .66rem; color: #9fb4c8;
+                font-variant-numeric: tabular-nums; white-space: nowrap;
+            }
+            .cs-sonido-prog {
+                flex: 1; height: 3px; border-radius: 3px;
+                background: rgba(255,255,255,.12); overflow: hidden;
+            }
+            .cs-sonido-prog > span {
+                display: block; height: 100%; width: 0%;
+                background: linear-gradient(90deg,#ff2bd6,#00f0ff);
+                transition: width .25s linear;
+            }
+            .cs-footer-sonido .cs-btn-primary { flex-shrink: 0; }
 
-            .cs-sonido-actual { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,.5); }
-            .cs-btn-header.cs-activo { box-shadow: 0 0 16px rgba(255,43,214,.55), 0 0 26px rgba(0,240,255,.35); }
-            .cs-btn-header.cs-activo .cs-ico { color: #ff2bd6; text-shadow: 0 0 8px #ff2bd6; }
+            /* Ubicaciones */
+            .cs-ubicacion-item { display: flex; align-items: center; gap: 12px; padding: 12px 4px; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,.05); cursor: pointer; text-align: left; color: var(--text-primary); }
+            .cs-ubicacion-item:hover { background: rgba(255,255,255,.025); }
+            .cs-ubicacion-item.activo { background: rgba(0,229,255,.06); }
+            .cs-ubicacion-ico { font-size: .8rem; color: var(--cyan); }
+            .cs-ubicacion-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+            .cs-ubicacion-nombre { color: var(--text-primary); font-weight: 600; font-size: .85rem; }
+            .cs-ubicacion-pais { color: var(--text-muted); font-size: .7rem; }
+            .cs-ubicacion-check { color: var(--cyan); font-size: .9rem; opacity: 0; }
+            .cs-ubicacion-item.activo .cs-ubicacion-check { opacity: 1; }
+            .cs-ubicacion-actual { flex: 1; min-width: 0; font-size: .76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
             .cs-borrador-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid rgba(255,43,214,0.35); border-radius: 12px; background: linear-gradient(120deg, rgba(255,43,214,.08), rgba(0,240,255,.06)); margin-bottom: 8px; box-shadow: 0 0 14px rgba(255,43,214,.12); }
             .cs-borrador-portada { width: 48px; height: 64px; border-radius: 8px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; color: #00f0ff; flex-shrink: 0; box-shadow: 0 0 10px rgba(0,240,255,.35); }
@@ -1780,11 +2043,12 @@
             .cs-borrador-acciones .cs-btn-ghost { padding: 6px 10px; font-size: .6rem; }
             .cs-btn-peligro { border-color: rgba(255,61,127,.6) !important; color: #ff3d7f !important; }
 
+            .cs-btn-primary:not(:disabled):active { transform: scale(.97); }
+
             @media (prefers-reduced-motion: reduce) {
-                .cs-sonido-item.cs-sonando .cs-eq-bar,
-                .cs-sonido-item.cs-sonando::after,
-                #csPreviewBadge { animation: none !important; }
-                .cs-sonido-item.cs-sonando .cs-eq-bar { height: 14px; }
+                .cs-sonido-item, .cs-fav-btn.on, #csPreviewBadge { animation: none !important; }
+                .cs-eq:not(.cs-eq-live) .cs-eq-bar { animation: none !important; height: 14px; }
+                .cs-sonido-item.cs-cargando .cs-sonido-play-ico { animation: none !important; }
             }
         `;
         document.head.appendChild(st);
@@ -1832,19 +2096,27 @@
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="sonidos">✕</button>
                 </div>
                 <div class="cs-tabs" role="tablist">
-                    <button type="button" role="tab" class="cs-tab active" data-tab="parati" data-clave="videos_sonidos_parati">Para ti</button>
-                    <button type="button" role="tab" class="cs-tab" data-tab="populares" data-clave="videos_sonidos_populares">Populares</button>
-                    <button type="button" role="tab" class="cs-tab" data-tab="favoritos" data-clave="videos_sonidos_favoritos">Favoritos</button>
+                    <button type="button" role="tab" class="cs-tab active" data-tab="parati"><span data-clave="videos_sonidos_parati">Para ti</span></button>
+                    <button type="button" role="tab" class="cs-tab" data-tab="populares"><span data-clave="videos_sonidos_populares">Populares</span></button>
+                    <button type="button" role="tab" class="cs-tab" data-tab="favoritos"><span data-clave="videos_sonidos_favoritos">Favoritos</span><span class="cs-tab-count" data-count="favoritos"></span></button>
                 </div>
                 <div class="cs-sheet-body">
-                    <div class="cs-buscar-wrap">
-                        <span class="cs-ico-buscar">◇</span>
-                        <input type="text" id="csBuscarSonido" data-placeholder="videos_buscar_sonido" placeholder="Buscar pista o artista..." autocomplete="off" />
+                    <div class="cs-sheet-fijo">
+                        <div class="cs-buscar-wrap">
+                            <span class="cs-ico-buscar">◇</span>
+                            <input type="text" id="csBuscarSonido" data-placeholder="videos_buscar_sonido" placeholder="Buscar pista o artista..." autocomplete="off" />
+                        </div>
                     </div>
                     <div class="cs-sonidos-lista" id="csSonidosLista"></div>
                 </div>
-                <div class="cs-sheet-footer">
-                    <div class="cs-sonido-actual" id="csSonidoActualInfo" data-clave="videos_sonido_sin_sel">Sin sonido seleccionado</div>
+                <div class="cs-sheet-footer cs-footer-sonido">
+                    <div class="cs-footer-info">
+                        <div class="cs-sonido-actual" id="csSonidoActualInfo" data-clave="videos_sonido_sin_sel">Sin sonido seleccionado</div>
+                        <div class="cs-sonido-meta">
+                            <span class="cs-sonido-tiempo" id="csSonidoTiempo">0:00 / 0:00</span>
+                            <div class="cs-sonido-prog"><span id="csSonidoProg"></span></div>
+                        </div>
+                    </div>
                     <button type="button" class="cs-btn-primary" id="csBtnConfirmarSonido" disabled data-clave="videos_btn_usar_sonido">Usar este sonido</button>
                 </div>
             </div>
@@ -1857,9 +2129,11 @@
                     <button type="button" class="cs-sheet-close" aria-label="Cerrar" data-cs-close="ubicacion">✕</button>
                 </div>
                 <div class="cs-sheet-body">
-                    <div class="cs-buscar-wrap">
-                        <span class="cs-ico-buscar">◇</span>
-                        <input type="text" id="csBuscarUbicacion" data-placeholder="videos_buscar_ubicacion" placeholder="Buscar ciudad o municipio..." autocomplete="off" />
+                    <div class="cs-sheet-fijo">
+                        <div class="cs-buscar-wrap">
+                            <span class="cs-ico-buscar">◇</span>
+                            <input type="text" id="csBuscarUbicacion" data-placeholder="videos_buscar_ubicacion" placeholder="Buscar ciudad o municipio..." autocomplete="off" />
+                        </div>
                     </div>
                     <div class="cs-ubicaciones-lista" id="csUbicacionesLista"></div>
                 </div>
@@ -1886,6 +2160,8 @@
                 </div>
             </div>`;
         while (contenedor.firstChild) document.body.appendChild(contenedor.firstChild);
+        engancharListaSonidos();
+        engancharListaUbicaciones();
     }
 
     function inyectarSeccionPreviewEnUpload() {
@@ -1983,6 +2259,8 @@
 
     function abrirModalSonidos() {
         renderSonidos(state.tabSonidosActiva, '');
+        actualizarContadorFavoritos();
+        pintarFooterSonido(state.sonidoSeleccionado, state.sonidoSeleccionado ? (AudioPreview.getTiempo() || null) : null);
         mostrarSheet('csModalSonidos', 'csSheetSonidosBackdrop');
     }
     function abrirModalUbicacion() {
@@ -2022,23 +2300,36 @@
         cerrarSheet('csModalBorradores', 'csSheetBorradoresBackdrop');
     }
 
+    /* Clase de estado para una fila según la reproducción actual. */
+    function claseEstadoFila(id) {
+        const actual = AudioPreview.getEstado();
+        if (!actual.pista || actual.pista.id !== id) return '';
+        if (actual.estado === 'loading') return 'cs-cargando';
+        if (actual.estado === 'playing') return 'cs-sonando';
+        if (actual.estado === 'paused') return 'cs-pausado';
+        if (actual.estado === 'error') return 'cs-error';
+        return '';
+    }
+
+    /* Actualiza solo las clases de las filas visibles (sin volver a renderizar). */
     function actualizarIndicadorSonido(estado, pista, error) {
-        document.querySelectorAll('.cs-sonido-item').forEach(el => {
-            const ico = el.querySelector('.cs-sonido-ico');
+        document.querySelectorAll('#csSonidosLista .cs-sonido-item').forEach(el => {
             const esActivo = pista && el.dataset.sonidoId === pista.id;
             el.classList.remove('cs-sonando', 'cs-cargando', 'cs-pausado', 'cs-error');
-            if (!ico) return;
-            if (!esActivo) { ico.textContent = '▶'; return; }
-            if (estado === 'loading') { ico.textContent = '◌'; el.classList.add('cs-cargando'); }
-            else if (estado === 'playing') { ico.textContent = '⏸'; el.classList.add('cs-sonando'); }
-            else if (estado === 'paused') { ico.textContent = '▶'; el.classList.add('cs-pausado'); }
-            else if (estado === 'error') { ico.textContent = '⚠'; el.classList.add('cs-error'); }
+            if (!esActivo) return;
+            if (estado === 'loading') el.classList.add('cs-cargando');
+            else if (estado === 'playing') el.classList.add('cs-sonando');
+            else if (estado === 'paused') el.classList.add('cs-pausado');
+            else if (estado === 'error') el.classList.add('cs-error');
         });
         if (estado === 'error') {
             const mensaje = error && error.indexOf('timeout') !== -1
                 ? 'La pista tardó demasiado en cargar.'
                 : 'No se pudo reproducir esta pista.';
             csToast(mensaje, 'error', 3500);
+        }
+        if (estado === 'loading' || estado === 'playing' || estado === 'paused') {
+            actualizarTiempoFooter();
         }
     }
     window._audioPreviewOnEstado = actualizarIndicadorSonido;
@@ -2050,57 +2341,128 @@
         return `<span class="cs-eq" aria-hidden="true">${barras}</span>`;
     }
 
-    function renderSonidos(tab, filtro) {
-        state.tabSonidosActiva = tab || 'parati';
-        const lista = $('csSonidosLista');
-        if (!lista) return;
-        const fuente = SONIDOS_SEED[state.tabSonidosActiva] || [];
-        const term = (filtro || '').toLowerCase().trim();
-        const arr = term
-            ? fuente.filter(s => (s.nombre + ' ' + s.artista).toLowerCase().indexOf(term) !== -1)
-            : fuente;
-        if (arr.length === 0) {
-            lista.innerHTML = `<div class="cs-vacio"><span class="cs-ico-vacio">♪</span><p data-clave="videos_sin_pistas">Sin pistas en esta sección.</p></div>`;
-            return;
-        }
-
-        lista.innerHTML = arr.map(s => `
-            <button type="button" class="cs-sonido-item ${state.sonidoSeleccionado && state.sonidoSeleccionado.id === s.id ? 'activo' : ''}" data-sonido-id="${esc(s.id)}">
-                <span class="cs-sonido-play" data-play-id="${esc(s.id)}" role="button" aria-label="Reproducir o pausar">
-                    <span class="cs-sonido-ico">▶</span>
+    function filaSonidoHTML(s, indice) {
+        const activo = state.sonidoSeleccionado && state.sonidoSeleccionado.id === s.id;
+        const g = generoDe(s);
+        const fav = esFavorito(s.id);
+        const clases = ['cs-sonido-item'];
+        if (activo) clases.push('activo');
+        const estadoClase = claseEstadoFila(s.id);
+        if (estadoClase) clases.push(estadoClase);
+        return `
+            <div class="${clases.join(' ')}" tabindex="0" data-sonido-id="${esc(s.id)}" style="--i:${Math.min(indice, 12)}">
+                <span class="cs-sonido-art" data-art-id="${esc(s.id)}" style="background:${g.bg}" role="button" aria-label="Reproducir o pausar">
+                    <span class="cs-sonido-glyph" aria-hidden="true">${g.glyph}</span>
+                    <span class="cs-sonido-play-ico" aria-hidden="true">▶</span>
                     ${filaEqualizador()}
                 </span>
                 <span class="cs-sonido-info">
                     <span class="cs-sonido-nombre">${esc(s.nombre)}</span>
-                    <span class="cs-sonido-artista">${esc(s.artista)} · ${esc(s.duracion)}s</span>
+                    <span class="cs-sonido-artista">${esc(s.artista)} · <span class="cs-sonido-genero">${esc(g.label)}</span> · ${esc(fmtDuracion(s.duracion))}</span>
                 </span>
-                <span class="cs-sonido-check">◆</span>
-            </button>`).join('');
+                <button type="button" class="cs-fav-btn ${fav ? 'on' : ''}" data-fav-id="${esc(s.id)}" aria-pressed="${fav ? 'true' : 'false'}" aria-label="${fav ? 'Quitar de favoritos' : 'Guardar en favoritos'}">${fav ? '♥' : '♡'}</button>
+                <span class="cs-sonido-check" aria-hidden="true">◆</span>
+            </div>`;
+    }
 
-        lista.querySelectorAll('.cs-sonido-play').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const id = btn.dataset.playId;
-                const actual = AudioPreview.getEstado();
-                if (actual.pista && actual.pista.id === id) {
-                    if (actual.estado === 'playing') AudioPreview.pausar();
-                    else if (actual.estado === 'paused') AudioPreview.reanudar();
-                } else {
-                    previsualizarSonido(id);
-                }
-            });
+    function mensajeVacioSonidos(term) {
+        if (term) {
+            return `<div class="cs-vacio"><span class="cs-ico-vacio">♪</span><p>${esc(vt('videos_sin_resultados', 'Sin resultados.'))}</p></div>`;
+        }
+        if (state.tabSonidosActiva === 'favoritos') {
+            return `<div class="cs-vacio-favs"><span class="cs-vacio-ico">♡</span><p>${esc(vt('videos_fav_vacio', 'Aún no tienes favoritos. Toca ♡ en cualquier sonido para guardarlo aquí.'))}</p></div>`;
+        }
+        return `<div class="cs-vacio"><span class="cs-ico-vacio">♪</span><p>${esc(vt('videos_sin_pistas', 'Sin pistas en esta sección.'))}</p></div>`;
+    }
+
+    function renderSonidos(tab, filtro) {
+        state.tabSonidosActiva = tab || 'parati';
+        const lista = $('csSonidosLista');
+        if (!lista) return;
+
+        document.querySelectorAll('#csModalSonidos .cs-tab').forEach(t => {
+            t.classList.toggle('active', t.dataset.tab === state.tabSonidosActiva);
         });
 
-        lista.querySelectorAll('.cs-sonido-item').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                if (e.target.closest('.cs-sonido-play')) return;
-                seleccionarSonido(btn.dataset.sonidoId);
+        const term = (filtro || '').toLowerCase().trim();
+        let arr = state.tabSonidosActiva === 'favoritos'
+            ? listaFavoritos()
+            : (SONIDOS_SEED[state.tabSonidosActiva] || []);
+
+        if (term) {
+            arr = arr.filter(s => {
+                const etiqueta = (s.nombre + ' ' + s.artista + ' ' + generoDe(s).label).toLowerCase();
+                return etiqueta.indexOf(term) !== -1;
             });
+        }
+
+        if (!arr.length) {
+            lista.innerHTML = mensajeVacioSonidos(term);
+            return;
+        }
+
+        lista.innerHTML = arr.map((s, i) => filaSonidoHTML(s, i)).join('');
+        lista.scrollTop = 0;
+    }
+
+    function togglePreview(id) {
+        const actual = AudioPreview.getEstado();
+        if (actual.pista && actual.pista.id === id) {
+            if (actual.estado === 'playing') AudioPreview.pausar();
+            else if (actual.estado === 'paused') AudioPreview.reanudar();
+            return;
+        }
+        previsualizarSonido(id);
+    }
+
+    function pintarBotonFav(btn, activo) {
+        btn.classList.toggle('on', activo);
+        btn.setAttribute('aria-pressed', activo ? 'true' : 'false');
+        btn.setAttribute('aria-label', activo ? 'Quitar de favoritos' : 'Guardar en favoritos');
+        btn.textContent = activo ? '♥' : '♡';
+    }
+
+    /* Un solo listener delegado para toda la lista (sin uno por fila). */
+    function engancharListaSonidos() {
+        const lista = $('csSonidosLista');
+        if (!lista || lista.dataset.enganchada === '1') return;
+        lista.dataset.enganchada = '1';
+
+        lista.addEventListener('click', (e) => {
+            const fav = e.target.closest('[data-fav-id]');
+            if (fav) {
+                e.stopPropagation();
+                const id = fav.dataset.favId;
+                alternarFavorito(id);
+                pintarBotonFav(fav, esFavorito(id));
+                if (state.tabSonidosActiva === 'favoritos') {
+                    renderSonidos('favoritos', ($('csBuscarSonido') || {}).value || '');
+                }
+                return;
+            }
+
+            const art = e.target.closest('[data-art-id]');
+            if (art) {
+                e.stopPropagation();
+                togglePreview(art.dataset.artId);
+                return;
+            }
+
+            const fila = e.target.closest('[data-sonido-id]');
+            if (fila) seleccionarSonido(fila.dataset.sonidoId);
+        });
+
+        lista.addEventListener('keydown', (e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            const fila = e.target.closest && e.target.closest('.cs-sonido-item');
+            if (!fila) return;
+            e.preventDefault();
+            seleccionarSonido(fila.dataset.sonidoId);
         });
     }
 
     function buscarSonidoPorId(id) {
-        const todas = [].concat(SONIDOS_SEED.parati).concat(SONIDOS_SEED.populares).concat(SONIDOS_SEED.favoritos);
+        const todas = [].concat(SONIDOS_SEED.parati).concat(SONIDOS_SEED.populares);
         return todas.find(x => x.id === id) || null;
     }
 
@@ -2116,9 +2478,10 @@
         state.sonidoSeleccionado = s;
         AudioPreview.reproducir(s, actualizarIndicadorSonido);
 
-        document.querySelectorAll('.cs-sonido-item').forEach(el => {
+        document.querySelectorAll('#csSonidosLista .cs-sonido-item').forEach(el => {
             el.classList.toggle('activo', el.dataset.sonidoId === id);
         });
+
         const info = $('csSonidoActualInfo');
         if (info) {
             info.removeAttribute('data-clave');
@@ -2126,6 +2489,33 @@
         }
         const btn = $('csBtnConfirmarSonido');
         if (btn) btn.disabled = false;
+
+        pintarFooterSonido(s, AudioPreview.getTiempo());
+    }
+
+    /* Barra inferior: tiempo transcurrido / total y progreso. */
+    function pintarFooterSonido(pista, tiempo) {
+        const txt = $('csSonidoTiempo');
+        const prog = $('csSonidoProg');
+        if (!txt || !prog) return;
+        if (!pista) {
+            txt.textContent = '0:00 / 0:00';
+            prog.style.width = '0%';
+            return;
+        }
+        const actual = tiempo && tiempo.pista && tiempo.pista.id === pista.id ? tiempo.actual : 0;
+        const total = tiempo && tiempo.pista && tiempo.pista.id === pista.id
+            ? tiempo.total
+            : (pista.duracion || 0);
+        txt.textContent = fmtDuracion(actual) + ' / ' + fmtDuracion(total);
+        const pct = total > 0 ? Math.min(100, (actual / total) * 100) : 0;
+        prog.style.width = pct + '%';
+    }
+
+    function actualizarTiempoFooter() {
+        const t = AudioPreview.getTiempo();
+        if (!t) return;
+        pintarFooterSonido(t.pista, t);
     }
 
     function confirmarSonido() {
@@ -2160,8 +2550,15 @@
                 </span>
                 <span class="cs-ubicacion-check">◆</span>
             </button>`).join('');
-        lista.querySelectorAll('.cs-ubicacion-item').forEach(btn => {
-            btn.addEventListener('click', () => seleccionarUbicacion(btn.dataset.ubicacionId));
+    }
+
+    function engancharListaUbicaciones() {
+        const lista = $('csUbicacionesLista');
+        if (!lista || lista.dataset.enganchada === '1') return;
+        lista.dataset.enganchada = '1';
+        lista.addEventListener('click', (e) => {
+            const item = e.target.closest('[data-ubicacion-id]');
+            if (item) seleccionarUbicacion(item.dataset.ubicacionId);
         });
     }
 
@@ -2349,17 +2746,25 @@
             }
         });
 
+        /* Cambio de pestaña: solo re-renderiza si realmente cambia. */
         document.addEventListener('click', function (e) {
-            const tab = e.target.closest && e.target.closest('.cs-tab[data-tab]');
+            const tab = e.target.closest && e.target.closest('#csModalSonidos .cs-tab[data-tab]');
             if (!tab) return;
-            document.querySelectorAll('.cs-tab').forEach(x => x.classList.remove('active'));
-            tab.classList.add('active');
+            if (tab.dataset.tab === state.tabSonidosActiva) return;
             renderSonidos(tab.dataset.tab, ($('csBuscarSonido') || {}).value || '');
         });
 
+        const buscarSonidoDeb = debouncer((valor) => {
+            renderSonidos(state.tabSonidosActiva, valor);
+        }, 120);
+        const buscarUbicacionDeb = debouncer((valor) => {
+            renderUbicaciones(valor);
+        }, 120);
+
         document.addEventListener('input', function (e) {
-            if (e.target && e.target.id === 'csBuscarSonido') renderSonidos(state.tabSonidosActiva, e.target.value);
-            if (e.target && e.target.id === 'csBuscarUbicacion') renderUbicaciones(e.target.value);
+            if (!e.target) return;
+            if (e.target.id === 'csBuscarSonido') buscarSonidoDeb(e.target.value);
+            if (e.target.id === 'csBuscarUbicacion') buscarUbicacionDeb(e.target.value);
         });
 
         document.addEventListener('click', function (e) {
@@ -2424,7 +2829,7 @@
         observarFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v3.7 listo');
+        log('✅ Módulo Publicar v3.8 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
