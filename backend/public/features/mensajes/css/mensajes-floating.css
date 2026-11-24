@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · MENSAJES FLOTANTES v1.2
+   CSARIEL'S · MENSAJES FLOTANTES v1.3
    Contactos flotantes, panel y ajustes móviles.
    Solo CSS. No modifica la lógica JavaScript.
    ================================================================ */
@@ -116,6 +116,7 @@ html[data-tema="dia"] {
 .conv .convname {
     font-size: .94rem !important;
     font-weight: 700 !important;
+    color: var(--ms-text) !important;
 }
 
 .conv .convmsg {
@@ -298,6 +299,18 @@ html[data-tema="dia"] {
     min-height: 0;
     border: 0;
     background: var(--ms-panel-bg);
+}
+
+/* Fijar textos clave en negro cuando el tema está en blanco */
+html.tema-bn-claro .conv .convname,
+html[data-tema="bn-claro"] .conv .convname,
+html.tema-dia .conv .convname,
+html[data-tema="dia"] .conv .convname,
+html.tema-bn-claro .cf-head,
+html[data-tema="bn-claro"] .cf-head,
+html.tema-dia .cf-head,
+html[data-tema="dia"] .cf-head {
+    color: #000000 !important;
 }
 
 /* 8. Móvil: panel amplio y sin desbordamientos */
