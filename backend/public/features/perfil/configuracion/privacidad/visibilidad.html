@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="../../../shared/config-layout.css" />
     <script src="/features/shared/js/apariencia-global.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    
+
     <script>
     (function () {
         'use strict';
@@ -63,12 +63,68 @@
         .cfg-save-status.success { color: #35c77a; }
         .cfg-save-status.error { color: #ff6262; }
         .cfg-toggle-saving { opacity: 0.55; pointer-events: none; }
+
+        /* Opciones de quién puede ver el perfil */
+        .cfg-vis-opcion {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            text-align: left;
+            background: transparent;
+            border: 0;
+            color: inherit;
+            font: inherit;
+            cursor: pointer;
+        }
+        .cfg-vis-opcion:disabled { opacity: 0.55; cursor: wait; }
+        .cfg-vis-opcion[aria-checked="true"] .cfg-vis-radio {
+            border-color: #d4af37;
+            background: rgba(212, 175, 55, 0.18);
+        }
+        .cfg-vis-radio {
+            flex: 0 0 22px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #d4af37;
+            font-size: 12px;
+            line-height: 1;
+        }
+        .cfg-vis-texto { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+        .cfg-vis-titulo { font-weight: 700; font-size: 0.95rem; }
+        .cfg-vis-desc { font-size: 0.8rem; color: var(--cfg-text-secondary, #8aa8b8); line-height: 1.45; }
+        .cfg-vis-cargando { font-size: 0.85rem; color: var(--cfg-text-secondary, #8aa8b8); padding: 14px 16px; }
     </style>
 </head>
 
 <body class="cfg-page">
     <div id="cfgHeaderSlot"></div>
     <main class="cfg-content">
+
+        <h2 class="cfg-section-title">Quién puede ver tu perfil</h2>
+        <div class="cfg-list" id="seccionQuienVe" role="radiogroup" aria-label="Quién puede ver tu perfil">
+            <div class="cfg-vis-cargando" id="visCargando">Cargando tu configuración…</div>
+            <button type="button" class="cfg-item cfg-vis-opcion" id="visPublico" data-valor="publico" role="radio" aria-checked="false" disabled>
+                <span class="cfg-vis-radio" aria-hidden="true"></span>
+                <span class="cfg-vis-texto">
+                    <span class="cfg-vis-titulo">Público</span>
+                    <span class="cfg-vis-desc">Tus publicaciones, tu galería y tus amigos son visibles para cualquier persona que abra tu perfil.</span>
+                </span>
+            </button>
+            <button type="button" class="cfg-item cfg-vis-opcion" id="visContactos" data-valor="contactos" role="radio" aria-checked="false" disabled>
+                <span class="cfg-vis-radio" aria-hidden="true"></span>
+                <span class="cfg-vis-texto">
+                    <span class="cfg-vis-titulo">Solo contactos</span>
+                    <span class="cfg-vis-desc">Solo tus contactos activos verán tus publicaciones, tu galería y tus amigos. Los demás verán tu perfil como restringido.</span>
+                </span>
+            </button>
+        </div>
+
         <h2 class="cfg-section-title">Visibilidad</h2>
         <div class="cfg-list" id="seccionVisibilidad"></div>
 
@@ -98,6 +154,9 @@
         let usuarioId = null;
         let guardando = false;
 
+        let visibilidadActual = null;
+        let guardandoVisibilidad = false;
+
         cfgInitPage({
             title: 'Visibilidad y contactos',
             subtitle: '', // Se llenará con el handle
@@ -110,6 +169,80 @@
             el.textContent = mensaje;
             el.className = 'cfg-save-status' + (tipo ? ' ' + tipo : '');
         }
+
+        /* ============================================================
+           QUIÉN PUEDE VER EL PERFIL (público / solo contactos)
+           ============================================================ */
+
+        function opcionesVisibilidad() {
+            return Array.from(document.querySelectorAll('.cfg-vis-opcion'));
+        }
+
+        function pintarVisibilidad(valor) {
+            opcionesVisibilidad().forEach(function (btn) {
+                const activa = btn.dataset.valor === valor;
+                btn.setAttribute('aria-checked', activa ? 'true' : 'false');
+                const radio = btn.querySelector('.cfg-vis-radio');
+                if (radio) radio.textContent = activa ? '●' : '';
+            });
+        }
+
+        function bloquearVisibilidad(bloquear) {
+            opcionesVisibilidad().forEach(function (btn) {
+                btn.disabled = bloquear;
+            });
+        }
+
+        async function cargarVisibilidad() {
+            const { data, error } = await cliente.rpc('mi_visibilidad_perfil');
+            if (error) throw error;
+
+            visibilidadActual = (data === 'contactos') ? 'contactos' : 'publico';
+            pintarVisibilidad(visibilidadActual);
+
+            const cargando = $('#visCargando');
+            if (cargando) cargando.hidden = true;
+
+            bloquearVisibilidad(false);
+        }
+
+        async function cambiarVisibilidad(valor) {
+            if (guardandoVisibilidad) return;
+            if (!valor || valor === visibilidadActual) return;
+
+            guardandoVisibilidad = true;
+            bloquearVisibilidad(true);
+            mostrarEstado('Guardando cambios...', '');
+
+            try {
+                const { data, error } = await cliente.rpc('set_visibilidad_perfil', { p_valor: valor });
+                if (error) throw error;
+
+                visibilidadActual = (data === 'contactos') ? 'contactos' : 'publico';
+                pintarVisibilidad(visibilidadActual);
+                mostrarEstado('✓ Visibilidad actualizada.', 'success');
+            } catch (error) {
+                console.error('[Visibilidad] Error al cambiar visibilidad:', error);
+                pintarVisibilidad(visibilidadActual);
+                mostrarEstado('No se pudo guardar. Revisa tu conexión.', 'error');
+            } finally {
+                guardandoVisibilidad = false;
+                bloquearVisibilidad(false);
+                setTimeout(function () { mostrarEstado('', ''); }, 3000);
+            }
+        }
+
+        function conectarVisibilidad() {
+            opcionesVisibilidad().forEach(function (btn) {
+                btn.addEventListener('click', function () {
+                    cambiarVisibilidad(this.dataset.valor);
+                });
+            });
+        }
+
+        /* ============================================================
+           INTERRUPTORES EXISTENTES
+           ============================================================ */
 
         function renderToggles(prefsJson) {
             // 1. Preferencias de búsqueda (guardadas en prefs JSONB)
@@ -171,14 +304,14 @@
                 if (subEl && usuario.handle) subEl.textContent = '@' + usuario.handle;
 
                 // Obtenemos las preferencias JSON
-                const { data: pref, error: errPref } = await cliente
+                const { data: pref } = await cliente
                     .from('preferencias_usuario')
                     .select('prefs')
                     .eq('usuario_id', usuarioId)
                     .maybeSingle();
 
                 let prefs = (pref && pref.prefs) ? pref.prefs : {};
-                
+
                 // Inyectamos el valor actual de 'ocultar_estado' al objeto JSON para renderizarlo
                 prefs.ocultar_estado = usuario.ocultar_estado;
 
@@ -207,9 +340,9 @@
                 } else {
                     // Se guarda usando tu RPC existente para la tabla preferencias_usuario
                     // Enviamos el JSON con la estructura exacta { value: true/false }
-                    const { error } = await cliente.rpc('actualizar_preferencia', { 
-                        p_key: clave, 
-                        p_value: { value: valor } 
+                    const { error } = await cliente.rpc('actualizar_preferencia', {
+                        p_key: clave,
+                        p_value: { value: valor }
                     });
                     if (error) throw error;
                 }
@@ -246,6 +379,10 @@
             });
         }
 
+        /* ============================================================
+           INICIO
+           ============================================================ */
+
         async function iniciar() {
             try {
                 cliente = await window.supabaseReady;
@@ -255,6 +392,14 @@
                 if (!session) return; // El bloque de arriba ya redirige
 
                 usuarioId = session.user.id;
+
+                conectarVisibilidad();
+                cargarVisibilidad().catch(function (error) {
+                    console.error('[Visibilidad] Error cargando visibilidad:', error);
+                    const cargando = $('#visCargando');
+                    if (cargando) cargando.textContent = 'No se pudo cargar esta opción.';
+                });
+
                 await cargarPreferencias();
 
             } catch (error) {
