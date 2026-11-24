@@ -1,37 +1,54 @@
 // ================================================================
-// MENSAJES · SCROLL Y MEDIA v2.1 · MÓDULO 2 DE 8
-// Ruta: frontend/features/mensajes/js/mensajes-scroll-media.js
-// Depende de: mensajes-core.js (db, $, toast, esc, session, signedCache,
-//             isUserAtBottom, unreadCount, scrollRetryTimer, etc.)
-// Cambios v2.1:
-//  - Adjuntos de chat (chat-attachments y chat-audio) se firman desde el
-//    backend (/api/media/chat/:id/url), solo para remitente o destinatario.
-//  - Tipo texto no pide firma; los adjuntos se piden una vez por mensaje
-//    y se reutilizan 50 minutos.
-// Cambios v2.0: sin emojis en mensajes ni botones; descarga con
-//               estilo plano del ecosistema.
+// MENSAJES · SCROLL Y MEDIA v2.2 · MÓDULO 2 DE 8
+// Ruta: backend/public/features/mensajes/js/mensajes-scroll-media.js
+// Depende de: mensajes-core.js (db, $, toast, session, signedCache,
+//             isUserAtBottom, unreadCount, scrollRetryTimer,
+//             SCROLL_THRESHOLD, TTL_SIGNED_MS)
+// Cambios v2.2 (corrección de atascos):
+//  - scrollToBottom ya no usa intervalos de 100 ms con scrollIntoView.
+//    Hace un solo scroll por frame (requestAnimationFrame) y, como
+//    máximo, dos reintentos cortos.
+//  - observarCargaMultimedia usa UN solo listener de captura en el
+//    contenedor de mensajes, en vez de tres por cada imagen/audio/video.
+//  - detectarSiEstaAbajo se limita a una lectura de layout por frame.
+//  - Las firmas de adjuntos se deduplican (una sola petición por mensaje
+//    aunque se pida varias veces) y se limitan a 4 simultáneas.
+// Cambios v2.1: adjuntos firmados desde el backend, solo remitente o
+//               destinatario; reutilización de firmas 50 minutos.
 // ================================================================
 
 'use strict';
+
+/* ---------------- Scroll ---------------- */
+
+let scrollFramePendiente = false;
+let detectarFramePendiente = false;
+
+/* Un solo ajuste de scroll por frame, aunque lleguen muchos eventos. */
+function irAlFondoAhora(box) {
+    if (!box || scrollFramePendiente) return;
+    scrollFramePendiente = true;
+    requestAnimationFrame(function () {
+        scrollFramePendiente = false;
+        box.scrollTop = box.scrollHeight;
+    });
+}
 
 function scrollToBottom(force = false) {
     const box = $('messages');
     if (!box) return;
     if (!force && !isUserAtBottom) return;
-    const doScroll = () => {
-        const anchor = document.getElementById('scrollAnchor');
-        if (anchor) anchor.scrollIntoView({ behavior: 'auto', block: 'end' });
-        else box.scrollTop = box.scrollHeight;
-    };
-    doScroll();
-    requestAnimationFrame(doScroll);
-    if (scrollRetryTimer) clearInterval(scrollRetryTimer);
-    let intentos = 0;
-    scrollRetryTimer = setInterval(() => {
-        intentos++;
-        if (force || isUserAtBottom) doScroll();
-        if (intentos >= 10) { clearInterval(scrollRetryTimer); scrollRetryTimer = null; }
-    }, 100);
+
+    irAlFondoAhora(box);
+
+    /* Dos reintentos cortos: cubren el caso de que el layout aún no esté
+       listo al pintar. Ya no hay intervalos de 100 ms. */
+    if (scrollRetryTimer) clearTimeout(scrollRetryTimer);
+    scrollRetryTimer = setTimeout(function () {
+        scrollRetryTimer = null;
+        if (force || isUserAtBottom) irAlFondoAhora(box);
+    }, 150);
+
     if (force || isUserAtBottom) ocultarFlechaNuevos();
 }
 
@@ -51,31 +68,41 @@ function actualizarFlecha() {
 
 function ocultarFlechaNuevos() { unreadCount = 0; actualizarFlecha(); }
 
+/* Se llama en cada evento de scroll, pero solo lee el layout una vez por frame. */
 function detectarSiEstaAbajo() {
-    const box = $('messages');
-    if (!box) return;
-    const distanciaAlFondo = box.scrollHeight - box.scrollTop - box.clientHeight;
-    const estabaAbajo = isUserAtBottom;
-    isUserAtBottom = distanciaAlFondo < SCROLL_THRESHOLD;
-    if (isUserAtBottom && !estabaAbajo) ocultarFlechaNuevos();
-}
-
-function observarCargaMultimedia(box) {
-    box.querySelectorAll('img, audio, video').forEach(el => {
-        if (el.dataset.scrollListener) return;
-        el.dataset.scrollListener = '1';
-        const onLoad = () => {
-            if (isUserAtBottom) {
-                const anchor = document.getElementById('scrollAnchor');
-                if (anchor) anchor.scrollIntoView({ behavior: 'auto', block: 'end' });
-                else box.scrollTop = box.scrollHeight;
-            }
-        };
-        el.addEventListener('load', onLoad, { once: true });
-        el.addEventListener('loadedmetadata', onLoad, { once: true });
-        el.addEventListener('error', onLoad, { once: true });
+    if (detectarFramePendiente) return;
+    detectarFramePendiente = true;
+    requestAnimationFrame(function () {
+        detectarFramePendiente = false;
+        const box = $('messages');
+        if (!box) return;
+        const distanciaAlFondo = box.scrollHeight - box.scrollTop - box.clientHeight;
+        const estabaAbajo = isUserAtBottom;
+        isUserAtBottom = distanciaAlFondo < SCROLL_THRESHOLD;
+        if (isUserAtBottom && !estabaAbajo) ocultarFlechaNuevos();
     });
 }
+
+/* ---------------- Carga de multimedia ---------------- */
+
+let listenerMediaInstalado = false;
+
+/* Un solo listener de captura en el contenedor. Las imágenes, audios y
+   videos que se carguen dentro disparan el mismo ajuste (agrupado por frame). */
+function observarCargaMultimedia(box) {
+    if (!box || listenerMediaInstalado) return;
+    listenerMediaInstalado = true;
+
+    const alCargar = function () {
+        if (!isUserAtBottom) return;
+        irAlFondoAhora(box);
+    };
+
+    box.addEventListener('load', alCargar, true);
+    box.addEventListener('loadedmetadata', alCargar, true);
+}
+
+/* ---------------- Firmas de archivos ---------------- */
 
 async function firmarConCache(bucket, filePath) {
     const clave = bucket + '/' + filePath;
@@ -87,30 +114,69 @@ async function firmarConCache(bucket, filePath) {
     return data.signedUrl;
 }
 
-// Firma de adjuntos de chat desde el backend (chat-attachments y chat-audio).
-// El backend verifica que el usuario sea remitente o destinatario.
+/* Firma de adjuntos de chat desde el backend (chat-attachments y chat-audio).
+   El backend verifica que el usuario sea remitente o destinatario. */
 const firmasChat = new Map();
+const firmasPendientes = new Map();
 const TTL_FIRMA_CHAT_MS = 50 * 60 * 1000;
+
+/* Límite de peticiones simultáneas al backend: evita saturar la red
+   y el teléfono cuando un chat tiene muchos archivos. */
+const FIRMA_CONCURRENCIA_MAX = 4;
+let firmaEnVuelo = 0;
+const firmaCola = [];
+
+function drenarColaFirmas() {
+    while (firmaEnVuelo < FIRMA_CONCURRENCIA_MAX && firmaCola.length) {
+        const tarea = firmaCola.shift();
+        firmaEnVuelo++;
+        Promise.resolve()
+            .then(tarea.fn)
+            .then(tarea.resolve, tarea.reject)
+            .finally(function () {
+                firmaEnVuelo--;
+                drenarColaFirmas();
+            });
+    }
+}
+
+function conLimiteFirma(fn) {
+    return new Promise(function (resolve, reject) {
+        firmaCola.push({ fn: fn, resolve: resolve, reject: reject });
+        drenarColaFirmas();
+    });
+}
 
 async function firmarMediaChat(mensajeId) {
     const enCache = firmasChat.get(mensajeId);
     if (enCache && Date.now() - enCache.ts < TTL_FIRMA_CHAT_MS) return enCache.url;
 
-    const s = await session();
-    if (!s) return null;
+    /* Si ya hay una petición en curso para este mensaje, se reutiliza. */
+    if (firmasPendientes.has(mensajeId)) return firmasPendientes.get(mensajeId);
 
-    try {
-        const r = await fetch('/api/media/chat/' + encodeURIComponent(mensajeId) + '/url', {
-            headers: { 'Authorization': 'Bearer ' + s.access_token }
-        });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok || !d.ok || !d.url) return null;
-        firmasChat.set(mensajeId, { ts: Date.now(), url: d.url });
-        return d.url;
-    } catch (e) {
-        console.warn('No se pudo firmar el adjunto:', e);
-        return null;
-    }
+    const promesa = conLimiteFirma(async function () {
+        try {
+            const s = await session();
+            if (!s) return null;
+
+            const r = await fetch('/api/media/chat/' + encodeURIComponent(mensajeId) + '/url', {
+                headers: { 'Authorization': 'Bearer ' + s.access_token }
+            });
+            const d = await r.json().catch(() => ({}));
+            if (!r.ok || !d.ok || !d.url) return null;
+
+            firmasChat.set(mensajeId, { ts: Date.now(), url: d.url });
+            return d.url;
+        } catch (e) {
+            console.warn('No se pudo firmar el adjunto:', e);
+            return null;
+        }
+    }).finally(function () {
+        firmasPendientes.delete(mensajeId);
+    });
+
+    firmasPendientes.set(mensajeId, promesa);
+    return promesa;
 }
 
 async function getSignedUrlForMessage(m) {
@@ -155,6 +221,8 @@ function urlSegura(u) {
         return (x.protocol === 'https:' || x.protocol === 'blob:') ? x.href : null;
     } catch (e) { return null; }
 }
+
+/* ---------------- Visor de fotos ---------------- */
 
 function verFotoAmpliada(url, nombre, handle) {
     if (!url) { toast('Este usuario no tiene foto de perfil.', 'warning'); return; }
