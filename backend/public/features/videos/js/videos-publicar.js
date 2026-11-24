@@ -25,10 +25,10 @@
         ocultarReacciones: true
     };
 
-    /* Marca de agua. Pon ACTIVA en false si los videos ya traen la marca incluida. */
+        /* Marca de agua (escudo con la "C"). ACTIVA: false la quita del feed y de la vista previa. */
     const MARCA_AGUA = {
         ACTIVA: true,
-        OPACIDAD: 0.9
+        OPACIDAD: 1
     };
 
     const EQ_COLORES = ['#ff2bd6', '#ff3d7f', '#00f0ff', '#39ff14', '#ffe600', '#b026ff'];
