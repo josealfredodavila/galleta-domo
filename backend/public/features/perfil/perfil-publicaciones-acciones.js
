@@ -1,14 +1,15 @@
 // ================================================================
-// PERFIL · ACCIONES DE PUBLICACIÓN · v1.1
+// PERFIL · ACCIONES DE PUBLICACIÓN · v2.0
 // Ruta: backend/public/features/perfil/perfil-publicaciones-acciones.js
 // Se carga DESPUÉS de perfil-publicaciones.js.
 //
-// Cambios v1.1:
-//  - El ☰ se inserta en la cabecera (.header) de cada publicación.
-//    Si no existe, usa .stats o la propia tarjeta.
-//  - idDeTarjeta() prueba varios atributos para encontrar el id.
-//  - Iconos del menú en SVG de línea (sin emojis).
-//  - Visor, reportes, guardados y señales sin cambios de comportamiento.
+// Cambios v2.0:
+//  - Se quita el visor propio (#pfVisor). El visor de publicaciones
+//    es VisorMediaGlobal (lo usa perfil-publicaciones.js).
+//  - Se mantiene el menú ☰ en la cabecera de cada publicación:
+//    me interesa / no me interesa, notificar, guardar, descargar foto,
+//    copiar enlace, compartir, etiquetar (si es tuya) y reportar.
+//  - Iconos en SVG de línea (sin emojis ni engranes).
 //
 // Requiere en la página: window.supabaseClient, descargarArchivoForzado
 // (de perfil-publicaciones.js) y opcionalmente window.showToast.
@@ -95,37 +96,18 @@
     }
 
     // ============================================================
-    // ESTILOS
+    // ESTILOS DEL MENÚ
     // ============================================================
     function estilosBase() {
         if (document.getElementById('pf-estilos')) return;
         var s = document.createElement('style');
         s.id = 'pf-estilos';
         s.textContent = [
-            'body.pf-visor-abierto [id*="marquinhos" i],',
-            'body.pf-visor-abierto [class*="marquinhos" i],',
-            'body.pf-visor-abierto [data-marquinhos] { display: none !important; }',
-
-            '#pfVisor { position: fixed; inset: 0; z-index: 100080; display: none;',
-            '  align-items: center; justify-content: center; background: radial-gradient(ellipse at center, rgba(0,229,255,.06), #000 70%);',
-            '  touch-action: manipulation; }',
-            '#pfVisor.show { display: flex; }',
-            '#pfVisor .pf-v-media { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;',
-            '  box-sizing: border-box; padding: 24px 10px; }',
-            '#pfVisor .pf-v-media img, #pfVisor .pf-v-media video { max-width: 100%; max-height: 100%; object-fit: contain;',
-            '  border-radius: 14px; box-shadow: 0 0 40px rgba(0,229,255,.18); user-select: none; -webkit-user-drag: none; }',
-            '#pfVisor .pf-v-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 40px; height: 40px;',
-            '  border-radius: 50%; border: 1px solid rgba(0,229,255,.35); background: rgba(0,0,0,.45); color: #00e5ff;',
-            '  font-size: 22px; line-height: 1; cursor: pointer; display: none; }',
-            '#pfVisor .pf-v-prev { left: 8px; }',
-            '#pfVisor .pf-v-next { right: 8px; }',
-            '#pfVisor .pf-v-contador { position: absolute; top: calc(14px + env(safe-area-inset-top,0px)); left: 50%;',
-            '  transform: translateX(-50%); font-size: .7rem; letter-spacing: 1px; color: #8aa8b8; font-family: "Orbitron", monospace; }',
-
             '.pf-menu-btn { width: 32px; height: 32px; margin-left: auto; border-radius: 50%; border: 1px solid rgba(0,229,255,.25);',
             '  background: rgba(0,229,255,.06); color: #00e5ff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; }',
             '.pf-menu-btn:hover { background: rgba(0,229,255,.16); }',
             '.pf-menu-btn .pf-svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }',
+
             '.pf-menu { position: fixed; z-index: 100090; min-width: 230px; max-width: calc(100vw - 24px); padding: 8px 0;',
             '  border-radius: 16px; background: rgba(8,15,26,.97); border: 1px solid rgba(0,229,255,.28);',
             '  box-shadow: 0 16px 50px rgba(0,0,0,.6), 0 0 28px rgba(0,229,255,.12); backdrop-filter: blur(10px); }',
@@ -155,118 +137,6 @@
         ].join('\n');
         document.head.appendChild(s);
     }
-
-    // ============================================================
-    // VISOR
-    // ============================================================
-    var visor = { items: [], index: 0, x: 0, y: 0 };
-
-    function visorEl() {
-        var el = document.getElementById('pfVisor');
-        if (el) return el;
-
-        el = document.createElement('div');
-        el.id = 'pfVisor';
-        el.setAttribute('role', 'dialog');
-        el.setAttribute('aria-modal', 'true');
-        el.innerHTML =
-            '<div class="pf-v-contador"></div>' +
-            '<button type="button" class="pf-v-nav pf-v-prev" aria-label="Anterior">‹</button>' +
-            '<div class="pf-v-media"></div>' +
-            '<button type="button" class="pf-v-nav pf-v-next" aria-label="Siguiente">›</button>';
-        document.body.appendChild(el);
-
-        el.addEventListener('click', function (e) {
-            if (e.target.closest('.pf-v-nav')) return;
-            cerrarVisor();
-        });
-        el.querySelector('.pf-v-prev').addEventListener('click', function (e) { e.stopPropagation(); navegar(-1); });
-        el.querySelector('.pf-v-next').addEventListener('click', function (e) { e.stopPropagation(); navegar(1); });
-
-        el.addEventListener('touchstart', function (e) {
-            visor.x = e.changedTouches[0].clientX;
-            visor.y = e.changedTouches[0].clientY;
-        }, { passive: true });
-        el.addEventListener('touchend', function (e) {
-            var dx = e.changedTouches[0].clientX - visor.x;
-            var dy = e.changedTouches[0].clientY - visor.y;
-            if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) navegar(dx < 0 ? 1 : -1);
-            else if (dy > 110 && Math.abs(dy) > Math.abs(dx)) cerrarVisor();
-        }, { passive: true });
-
-        return el;
-    }
-
-    function pintarItem() {
-        var el = visorEl();
-        var caja = el.querySelector('.pf-v-media');
-        var item = visor.items[visor.index];
-        if (!item) return;
-
-        caja.innerHTML = '';
-        if (item.tipo === 'video') {
-            var v = document.createElement('video');
-            v.controls = true;
-            v.playsInline = true;
-            v.preload = 'auto';
-            v.src = item.url;
-            caja.appendChild(v);
-            var p = v.play();
-            if (p && typeof p.catch === 'function') p.catch(function () {});
-        } else {
-            var im = document.createElement('img');
-            im.alt = '';
-            im.src = item.url;
-            caja.appendChild(im);
-        }
-
-        var varios = visor.items.length > 1;
-        el.querySelector('.pf-v-contador').textContent = varios ? (visor.index + 1) + ' / ' + visor.items.length : '';
-        el.querySelector('.pf-v-prev').style.display = varios && visor.index > 0 ? 'block' : 'none';
-        el.querySelector('.pf-v-next').style.display = varios && visor.index < visor.items.length - 1 ? 'block' : 'none';
-    }
-
-    function navegar(dir) {
-        var n = visor.index + dir;
-        if (n < 0 || n >= visor.items.length) return;
-        visor.index = n;
-        pintarItem();
-    }
-
-    function abrirVisor(indice) {
-        var lista = Array.isArray(window.listaMultimediaPerfil) ? window.listaMultimediaPerfil : [];
-        if (!lista[indice]) return;
-
-        estilosBase();
-        visor.items = lista.slice();
-        visor.index = indice;
-        pintarItem();
-        visorEl().classList.add('show');
-        document.body.classList.add('pf-visor-abierto');
-        document.body.style.overflow = 'hidden';
-    }
-
-    function cerrarVisor() {
-        var el = document.getElementById('pfVisor');
-        if (!el) return;
-        var v = el.querySelector('video');
-        if (v) { v.pause(); v.removeAttribute('src'); v.load(); }
-        el.querySelector('.pf-v-media').innerHTML = '';
-        el.classList.remove('show');
-        document.body.classList.remove('pf-visor-abierto');
-        document.body.style.overflow = '';
-    }
-
-    document.addEventListener('keydown', function (e) {
-        var el = document.getElementById('pfVisor');
-        if (!el || !el.classList.contains('show')) return;
-        if (e.key === 'Escape') cerrarVisor();
-        if (e.key === 'ArrowLeft') navegar(-1);
-        if (e.key === 'ArrowRight') navegar(1);
-    });
-
-    window.pubAbrirVisor = abrirVisor;
-    window.pubCerrarVisor = cerrarVisor;
 
     // ============================================================
     // MENÚ ☰ POR PUBLICACIÓN
@@ -374,17 +244,17 @@
         } catch (e) { console.error(e); toast('No se pudo guardar tu preferencia', 'error'); }
     }
 
-    function ocultarTarjeta(id) {
-        var card = buscarTarjeta(id);
-        if (card) card.style.display = 'none';
-    }
-
     function buscarTarjeta(id) {
         var tarjetas = document.querySelectorAll('#misPublicacionesList .publicacion-card');
         for (var i = 0; i < tarjetas.length; i++) {
             if (idDeTarjeta(tarjetas[i]) === String(id)) return tarjetas[i];
         }
         return null;
+    }
+
+    function ocultarTarjeta(id) {
+        var card = buscarTarjeta(id);
+        if (card) card.style.display = 'none';
     }
 
     async function alternarSuscripcion(d, sesion, suscrito) {
@@ -601,5 +471,5 @@
     }
     window.addEventListener('load', resaltarDesdeHash);
 
-    window.pfPublicacionesAcciones = { abrirVisor: abrirVisor, cerrarVisor: cerrarVisor };
+    window.pfPublicacionesAcciones = {};
 })();
