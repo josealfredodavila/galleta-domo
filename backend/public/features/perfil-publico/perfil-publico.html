@@ -26,11 +26,12 @@
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
-<!-- CSS: el de perfil.html va primero; perfil-publico.css al final para mandar -->
+<!-- CSS: el de perfil.html va primero; identidad-web3.css y perfil-publico.css al final -->
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
 <link rel="stylesheet" href="/features/perfil/css/emojis-animations.css">
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
 <link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
+<link rel="stylesheet" href="/features/shared/css/identidad-web3.css">
 <link rel="stylesheet" href="/features/perfil-publico/css/perfil-publico.css">
 <link rel="stylesheet" href="/features/shared/css/visor-media-global.css">
 
@@ -38,7 +39,7 @@
     html:not(.auth-ready) .main-nav,
     html:not(.auth-ready) .header { opacity: 0; pointer-events: none; }
 
-    /* ---------- Cuadro "Menciona a @usuario" (mismo diseño que Crear publicación) ---------- */
+    /* Cuadro del muro: el diseño viene de identidad-web3.css (.web3-composer). */
     #pvMuroSection {
         background: transparent;
         border: 0;
@@ -46,112 +47,6 @@
         margin: 14px 0;
         box-shadow: none;
     }
-
-    .pv-muro-card {
-        position: relative;
-        padding: 20px 18px 18px;
-        border-radius: 24px;
-        background: linear-gradient(180deg, #0b1624 0%, #070d16 100%);
-        border: 1px solid rgba(0, 229, 255, 0.22);
-        box-shadow: 0 0 40px rgba(0, 229, 255, 0.06);
-        overflow: hidden;
-    }
-
-    .pv-muro-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 2px;
-        background: linear-gradient(90deg, #00e5ff, #a855f7);
-        opacity: 0.8;
-    }
-
-    .pv-muro-titulo {
-        margin: 0 0 14px 0;
-        font-family: 'Orbitron', monospace;
-        font-size: 0.82rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        color: #3b9dff;
-        line-height: 1.4;
-        word-break: break-word;
-    }
-
-    .pv-muro-card textarea {
-        width: 100%;
-        min-height: 120px;
-        padding: 14px 16px;
-        border-radius: 18px;
-        background: #0a1220;
-        border: 1px solid rgba(0, 229, 255, 0.18);
-        color: #e6f7ff;
-        font-family: 'Inter', sans-serif;
-        font-size: 0.95rem;
-        line-height: 1.5;
-        resize: vertical;
-        outline: none;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .pv-muro-card textarea:focus {
-        border-color: rgba(0, 229, 255, 0.55);
-        box-shadow: 0 0 0 3px rgba(0, 229, 255, 0.12);
-    }
-
-    .pv-muro-card textarea::placeholder { color: #5f7a92; }
-
-    .pv-muro-card .pv-muro-acciones {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex-wrap: wrap;
-        margin-top: 12px;
-    }
-
-    #pvMuroAdjuntar {
-        padding: 10px 14px;
-        border-radius: 14px;
-        background: #0c1828;
-        border: 1px solid rgba(0, 229, 255, 0.25);
-        color: #bfeeff;
-        font-size: 0.78rem;
-        font-weight: 600;
-        cursor: pointer;
-    }
-
-    #pvMuroAdjuntar:hover { border-color: rgba(0, 229, 255, 0.55); }
-
-    #pvMuroPublicar {
-        margin-left: auto;
-        padding: 12px 26px;
-        border: 0;
-        border-radius: 999px;
-        background: linear-gradient(90deg, #00e5ff, #a855f7);
-        color: #041018;
-        font-family: 'Orbitron', monospace;
-        font-size: 0.72rem;
-        font-weight: 700;
-        letter-spacing: 0.12em;
-        cursor: pointer;
-        box-shadow: 0 6px 22px rgba(0, 229, 255, 0.25);
-        transition: transform 0.15s ease, opacity 0.2s ease;
-    }
-
-    #pvMuroPublicar:active { transform: scale(0.97); }
-    #pvMuroPublicar:disabled { opacity: 0.5; cursor: not-allowed; box-shadow: none; }
-
-    .pv-muro-card .pv-muro-nombre {
-        width: 100%;
-        color: #8fb8d0;
-        font-size: 0.72rem;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .pv-muro-card .pv-pub-msg { color: #8fb8d0; margin-top: 10px; }
 </style>
 </head>
 
@@ -289,7 +184,7 @@
                         </span>
                     </div>
 
-                    <div class="handle" id="pvHandle"></div>
+                    <div class="handle web3-handle" id="pvHandle"></div>
 
                     <div class="pv-estado" id="pvEstado" hidden>
                         <span class="pv-dot" id="pvEstadoDot"></span>
@@ -373,18 +268,43 @@
 
             <!-- ESCRIBIR EN EL MURO (solo contactos activos) -->
             <section id="pvMuroSection" aria-label="Escribir en el muro" hidden>
-                <div class="pv-muro-card">
-                    <p class="pv-muro-titulo" id="pvMuroMencion">Menciona a</p>
+                <div class="web3-composer" id="pvMuroComposer">
 
-                    <textarea id="pvMuroTexto" maxlength="2000" rows="3" placeholder="Escribe algo para su muro..."></textarea>
-
-                    <div class="pv-muro-acciones">
-                        <button type="button" id="pvMuroAdjuntar">Foto o video</button>
-                        <input type="file" id="pvMuroArchivo" accept="image/*,video/*" hidden>
-                        <span id="pvMuroNombre" class="pv-muro-nombre"></span>
-                        <button type="button" id="pvMuroPublicar">Publicar</button>
+                    <div class="web3-composer-cabecera">
+                        <span class="web3-composer-pulso" aria-hidden="true"></span>
+                        <div>
+                            <div class="web3-composer-titulo">Escribir en el muro</div>
+                            <div class="web3-composer-sub">Texto, foto o video</div>
+                        </div>
                     </div>
 
+                    <textarea id="pvMuroTexto" maxlength="2000" rows="3" placeholder="¿Qué quieres compartir hoy?"></textarea>
+
+                    <div class="web3-composer-barra">
+                        <div class="web3-composer-iconos">
+                            <button type="button" class="web3-composer-icono" id="pvMuroAdjuntar" title="Foto o video" aria-label="Foto o video">
+                                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+                            </button>
+                        </div>
+
+                        <input type="file" id="pvMuroArchivo" accept="image/*,video/*" hidden>
+
+                        <div class="web3-composer-pie">
+                            <div class="web3-composer-anillo" id="pvMuroAnillo" aria-hidden="true">
+                                <svg viewBox="0 0 36 36">
+                                    <circle class="fondo" cx="18" cy="18" r="15"/>
+                                    <circle class="progreso" id="pvMuroAnilloProgreso" cx="18" cy="18" r="15"/>
+                                </svg>
+                            </div>
+                            <span class="web3-composer-contador" id="pvMuroContador">0 / 2000</span>
+                            <button type="button" class="web3-btn-publicar" id="pvMuroPublicar">
+                                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                Publicar
+                            </button>
+                        </div>
+                    </div>
+
+                    <span id="pvMuroNombre" class="web3-archivo-nombre"></span>
                     <p class="pv-pub-msg" id="pvMuroMsg" hidden></p>
                 </div>
             </section>
@@ -464,34 +384,44 @@
 <script src="/features/shared/js/visor-media-global.js" defer></script>
 <script src="/features/perfil-publico/js/perfil-publico.js?v=4.3" defer></script>
 
-<!-- TÍTULO DEL MURO: "Menciona a @usuario" según el perfil que se visita -->
+<!-- CONTADOR DEL CUADRO DEL MURO (mismo comportamiento que "Crear publicación") -->
 <script>
 (function () {
     'use strict';
 
-    function iniciarMencion() {
-        var handle = document.getElementById('pvHandle');
-        var titulo = document.getElementById('pvMuroMencion');
-        if (!handle || !titulo) return;
+    function iniciar() {
+        var input = document.getElementById('pvMuroTexto');
+        var contador = document.getElementById('pvMuroContador');
+        var anillo = document.getElementById('pvMuroAnillo');
+        var progreso = document.getElementById('pvMuroAnilloProgreso');
+        if (!input || !contador) return;
+
+        var MAX = 2000;
+        var CIRCUNFERENCIA = 94.25;
 
         function pintar() {
-            var valor = (handle.textContent || '').replace(/^@+/, '').trim();
-            titulo.textContent = valor ? 'Menciona a @' + valor : 'Menciona a';
+            var n = input.value.length;
+            var ratio = Math.min(n / MAX, 1);
+            contador.textContent = n + ' / ' + MAX;
+            var cerca = n >= MAX * 0.9 && n < MAX;
+            var lleno = n >= MAX;
+            contador.classList.toggle('cerca', cerca);
+            contador.classList.toggle('lleno', lleno);
+            if (anillo) {
+                anillo.classList.toggle('cerca', cerca);
+                anillo.classList.toggle('lleno', lleno);
+            }
+            if (progreso) progreso.style.strokeDashoffset = String(CIRCUNFERENCIA * (1 - ratio));
         }
 
-        new MutationObserver(pintar).observe(handle, {
-            childList: true,
-            characterData: true,
-            subtree: true
-        });
-
+        input.addEventListener('input', pintar);
         pintar();
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', iniciarMencion);
+        document.addEventListener('DOMContentLoaded', iniciar);
     } else {
-        iniciarMencion();
+        iniciar();
     }
 })();
 </script>
