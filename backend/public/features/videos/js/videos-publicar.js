@@ -223,13 +223,13 @@
     /* ----------------------------------------------------------------
        MARCA DE AGUA (escudo dorado con la "C")
        ---------------------------------------------------------------- */
-    function marcaHTML() {
+        function marcaHTML() {
         return '<span class="cs-marca" aria-hidden="true" style="opacity:' + MARCA_AGUA.OPACIDAD + '">' +
             '<svg viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">' +
-            '<rect x="2" y="2" width="56" height="76" rx="8" fill="rgba(0,0,0,.28)" stroke="#D4AF37" stroke-width="3"/>' +
+            '<rect x="2" y="2" width="56" height="76" rx="8" fill="none" stroke="#D4AF37" stroke-width="3"/>' +
             '<text x="30" y="58" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="50" fill="#D4AF37">C</text>' +
             '</svg></span>';
-    }
+        }
 
     function asegurarMarca(contenedor) {
         if (!MARCA_AGUA.ACTIVA || !contenedor) return;
