@@ -1,0 +1,373 @@
+/* ================================================================
+   IDENTIDAD WEB3 · SELLO COMPARTIDO DEL ECOSISTEMA
+   Ruta: backend/public/features/shared/css/identidad-web3.css
+   Contiene:
+   - Rayo ⚡ + @handle (perfil propio, perfil público y cada publicación).
+   - Cuadro de composición "Crear publicación" (también para el muro).
+   Se carga después de perfil.css / perfil-publico.css.
+   ================================================================ */
+
+:root {
+    --web3-cyan: #00e5ff;
+    --web3-violet: #8b5cf6;
+    --web3-sky: #5cc8ff;
+    --web3-text: #bfefff;
+    --web3-muted: #6f8ba0;
+}
+
+/* ---------- @HANDLE CON RAYO ⚡ ----------
+   Se aplica a: #perfilHandle (perfil propio), #pvHandle (perfil público),
+   .pub-autor-handle (autor de cada publicación) y .web3-handle (uso general). */
+.web3-handle,
+#perfilHandle,
+#pvHandle,
+.pub-autor-handle {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 4px;
+    padding: 2px 11px 2px 8px;
+    max-width: 100%;
+    border-radius: 999px;
+    color: var(--web3-sky) !important;
+    font-weight: 600;
+    font-size: .8rem;
+    line-height: 1.5;
+    letter-spacing: .2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16));
+    border: 1px solid rgba(0, 229, 255, .38);
+    text-shadow: 0 0 8px rgba(0, 229, 255, .5);
+    box-shadow: 0 0 10px rgba(0, 229, 255, .12);
+    animation: web3Halo 2.4s ease-in-out infinite;
+}
+
+.web3-handle::before,
+#perfilHandle::before,
+#pvHandle::before,
+.pub-autor-handle::before {
+    content: '⚡';
+    font-size: .72rem;
+    line-height: 1;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
+    animation: web3Destello 1.8s steps(2, end) infinite;
+}
+
+.pub-autor-enlace:hover .pub-autor-handle,
+.pub-autor-enlace:focus-visible .pub-autor-handle,
+a.web3-handle:hover,
+a.web3-handle:focus-visible {
+    border-color: rgba(0, 229, 255, .75) !important;
+    color: #b8f0ff !important;
+}
+
+@keyframes web3Halo {
+    0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
+    50%      { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
+}
+
+@keyframes web3Destello {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: .35; }
+}
+
+/* ---------- CUADRO "CREAR PUBLICACIÓN" ----------
+   Mismo diseño para .pf-composer (perfil propio) y .web3-composer (muro). */
+.pf-composer,
+.web3-composer {
+    position: relative;
+    border-radius: 24px;
+    padding: 18px 16px 16px;
+    background:
+        radial-gradient(120% 90% at 0% 0%, rgba(0, 229, 255, .10), transparent 55%),
+        radial-gradient(120% 90% at 100% 100%, rgba(139, 92, 246, .12), transparent 55%),
+        linear-gradient(170deg, rgba(10, 18, 30, .96), rgba(4, 7, 13, .98));
+    border: 1px solid rgba(0, 229, 255, .16);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, .02) inset,
+        0 18px 50px rgba(0, 0, 0, .55),
+        0 0 40px rgba(0, 229, 255, .06);
+    overflow: hidden;
+    transition: box-shadow .35s ease, border-color .35s ease;
+}
+
+.pf-composer::after,
+.web3-composer::after {
+    content: '';
+    position: absolute;
+    left: 18px;
+    right: 18px;
+    top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 229, 255, .8), rgba(139, 92, 246, .8), transparent);
+    opacity: .6;
+    pointer-events: none;
+}
+
+.pf-composer:focus-within,
+.web3-composer:focus-within {
+    border-color: rgba(0, 229, 255, .45);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, .02) inset,
+        0 18px 50px rgba(0, 0, 0, .55),
+        0 0 48px rgba(0, 229, 255, .18);
+}
+
+.pf-composer-cabecera,
+.web3-composer-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.pf-composer-pulso,
+.web3-composer-pulso {
+    width: 8px;
+    height: 8px;
+    flex: 0 0 8px;
+    border-radius: 50%;
+    background: var(--web3-cyan);
+    animation: web3Pulso 2.2s ease-out infinite;
+}
+
+@keyframes web3Pulso {
+    0%   { box-shadow: 0 0 0 0 rgba(0, 229, 255, .55); }
+    70%  { box-shadow: 0 0 0 10px rgba(0, 229, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+}
+
+.pf-composer-titulo,
+.web3-composer-titulo {
+    font-family: 'Orbitron', monospace;
+    font-size: .72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--web3-text);
+    text-shadow: 0 0 12px rgba(0, 229, 255, .35);
+}
+
+.pf-composer-sub,
+.web3-composer-sub {
+    font-size: .66rem;
+    color: var(--web3-muted);
+    margin-top: 3px;
+    letter-spacing: .2px;
+}
+
+.pf-composer textarea#inputNuevaPublicacion,
+.web3-composer textarea {
+    width: 100%;
+    min-height: 96px;
+    resize: vertical;
+    background: rgba(0, 0, 0, .28);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 18px;
+    padding: 14px 16px;
+    color: #eef6ff;
+    font-family: 'Inter', sans-serif;
+    font-size: .96rem;
+    line-height: 1.55;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
+}
+
+.pf-composer textarea#inputNuevaPublicacion::placeholder,
+.web3-composer textarea::placeholder { color: #4f6577; }
+
+.pf-composer textarea#inputNuevaPublicacion:focus,
+.web3-composer textarea:focus {
+    background: rgba(0, 0, 0, .42);
+    border-color: rgba(0, 229, 255, .55);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, .10), 0 0 26px rgba(0, 229, 255, .14);
+}
+
+.pf-composer-barra,
+.web3-composer-barra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.pf-composer-iconos,
+.web3-composer-iconos { display: flex; gap: 8px; }
+
+.pf-composer-icono,
+.web3-composer-icono {
+    width: 40px;
+    height: 40px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, .07);
+    background: rgba(255, 255, 255, .03);
+    color: #7fdcff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease, color .2s ease;
+}
+
+.pf-composer-icono svg,
+.web3-composer-icono svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+}
+
+.pf-composer-icono:hover,
+.web3-composer-icono:hover {
+    background: rgba(0, 229, 255, .10);
+    border-color: rgba(0, 229, 255, .35);
+    box-shadow: 0 0 14px rgba(0, 229, 255, .22);
+    color: #cdf6ff;
+}
+
+.pf-composer-icono:active,
+.web3-composer-icono:active { transform: scale(.92); }
+
+.pf-composer-icono:focus-visible,
+.web3-composer-icono:focus-visible { outline: 2px solid var(--web3-cyan); outline-offset: 2px; }
+
+.pf-composer-pie,
+.web3-composer-pie {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.pf-composer-anillo,
+.web3-composer-anillo {
+    position: relative;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+}
+
+.pf-composer-anillo svg,
+.web3-composer-anillo svg {
+    width: 36px;
+    height: 36px;
+    transform: rotate(-90deg);
+}
+
+.pf-composer-anillo circle,
+.web3-composer-anillo circle { fill: none; stroke-width: 3; }
+
+.pf-composer-anillo .fondo,
+.web3-composer-anillo .fondo { stroke: rgba(255, 255, 255, .08); }
+
+.pf-composer-anillo .progreso,
+.web3-composer-anillo .progreso {
+    stroke: var(--web3-cyan);
+    stroke-linecap: round;
+    stroke-dasharray: 94.25;
+    stroke-dashoffset: 94.25;
+    transition: stroke-dashoffset .3s ease, stroke .3s ease;
+    filter: drop-shadow(0 0 4px rgba(0, 229, 255, .6));
+}
+
+.pf-composer-anillo.cerca .progreso,
+.web3-composer-anillo.cerca .progreso { stroke: #D4AF37; filter: drop-shadow(0 0 4px rgba(212, 175, 55, .6)); }
+
+.pf-composer-anillo.lleno .progreso,
+.web3-composer-anillo.lleno .progreso { stroke: #ff3366; filter: drop-shadow(0 0 4px rgba(255, 51, 102, .6)); }
+
+.pf-composer-contador,
+.web3-composer-contador {
+    font-family: 'Orbitron', monospace;
+    font-size: .58rem;
+    color: var(--web3-muted);
+    min-width: 58px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: .5px;
+}
+
+.pf-composer-contador.cerca,
+.web3-composer-contador.cerca { color: #D4AF37; }
+
+.pf-composer-contador.lleno,
+.web3-composer-contador.lleno { color: #ff3366; }
+
+/* Botón Publicar: mismo degradado en perfil propio y muro */
+.pf-composer #btnPublicarPerfil,
+.web3-btn-publicar {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px !important;
+    border-radius: 14px !important;
+    border: 0 !important;
+    background: linear-gradient(120deg, #00e5ff 0%, #3b82f6 55%, #8b5cf6 100%) !important;
+    background-size: 200% 100%;
+    color: #04070d !important;
+    font-family: 'Orbitron', monospace !important;
+    font-size: .68rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 1.5px !important;
+    text-transform: uppercase;
+    cursor: pointer;
+    box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
+    transition: background-position .6s ease, transform .15s ease, box-shadow .25s ease, opacity .2s ease;
+}
+
+.pf-composer #btnPublicarPerfil svg,
+.web3-btn-publicar svg {
+    width: 15px;
+    height: 15px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.pf-composer #btnPublicarPerfil:hover,
+.web3-btn-publicar:hover {
+    background-position: 100% 0;
+    box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4);
+}
+
+.pf-composer #btnPublicarPerfil:active,
+.web3-btn-publicar:active { transform: scale(.96); }
+
+.pf-composer #btnPublicarPerfil:disabled,
+.web3-btn-publicar:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+.web3-archivo-nombre {
+    display: block;
+    margin-top: 8px;
+    color: var(--web3-muted);
+    font-size: .7rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .web3-handle,
+    .web3-handle::before,
+    #perfilHandle,
+    #perfilHandle::before,
+    #pvHandle,
+    #pvHandle::before,
+    .pub-autor-handle,
+    .pub-autor-handle::before,
+    .pf-composer-pulso,
+    .web3-composer-pulso { animation: none !important; }
+    .pf-composer #btnPublicarPerfil,
+    .web3-btn-publicar { transition: none !important; }
+}
