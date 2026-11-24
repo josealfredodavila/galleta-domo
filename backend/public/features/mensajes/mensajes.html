@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="description" content="Mensajes · Csariel's">
 <meta name="theme-color" content="#080d12">
+<meta name="color-scheme" content="dark">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <title>Mensajes · Csariel's</title>
 
@@ -12,7 +13,8 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"></noscript>
 
 <script src="/features/shared/js/api-config.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -25,23 +27,33 @@
     var url = 'https://cdn.jsdelivr.net/npm/livekit-client@1/dist/livekit-client.umd.min.js';
     var maxIntentos = 3;
     var intento = 0;
+    var cargando = false;
+
+    function marcarListo() {
+        window.__livekitReady = true;
+        window.dispatchEvent(new CustomEvent('livekit:ready'));
+    }
 
     function cargarScript() {
         if (window.LivekitClient) { window.__livekitReady = true; return; }
+        if (cargando) return;
         if (intento >= maxIntentos) { window.dispatchEvent(new CustomEvent('livekit:error')); return; }
+
         intento++;
+        cargando = true;
+
         var s = document.createElement('script');
         s.src = url;
         s.async = true;
         s.onload = function () {
-            if (window.LivekitClient) {
-                window.__livekitReady = true;
-                window.dispatchEvent(new CustomEvent('livekit:ready'));
-            } else {
-                setTimeout(cargarScript, 1500);
-            }
+            cargando = false;
+            if (window.LivekitClient) marcarListo();
+            else setTimeout(cargarScript, 1500);
         };
-        s.onerror = function () { setTimeout(cargarScript, 1500); };
+        s.onerror = function () {
+            cargando = false;
+            setTimeout(cargarScript, 1500);
+        };
         document.head.appendChild(s);
     }
 
@@ -330,7 +342,7 @@ select {
 /* Modales */
 .modal {
     display: none; position: fixed; inset: 0; z-index: 100000; align-items: center; justify-content: center;
-    padding: 14px; background: rgba(0,0,0,.74); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    padding: 14px; background: rgba(0,0,0,.74); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
 .modal.show { display: flex; }
 .modalbox {
@@ -986,7 +998,7 @@ select {
     </div>
     <div class="estado-viewer-body" id="evBody">
         <img class="estado-viewer-img" id="evImage" alt="">
-        <video class="estado-viewer-video hidden" id="evVideo" playsinline preload="auto"></video>
+        <video class="estado-viewer-video hidden" id="evVideo" playsinline preload="none"></video>
         <div class="estado-viewer-caption hidden" id="evCaption"></div>
     </div>
     <button type="button" class="estado-viewer-nav prev hidden" id="evPrev" aria-label="Historia anterior">
@@ -1202,19 +1214,19 @@ select {
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- SCRIPTS (el orden importa) -->
+<!-- SCRIPTS: todos en defer para no bloquear el render. El orden se conserva. -->
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
-<script src="/features/js/teclado-emojis.js?v=4"></script>
+<script src="/features/js/teclado-emojis.js?v=4" defer></script>
 
-<script src="/features/mensajes/js/mensajes-core.js?v=1"></script>
-<script src="/features/mensajes/js/mensajes-scroll-media.js?v=1"></script>
-<script src="/features/mensajes/js/mensajes-chats.js?v=1"></script>
-<script src="/features/mensajes/js/mensajes-bot.js?v=1"></script>
-<script src="/features/mensajes/js/mensajes-estados.js?v=4"></script>
-<script src="/features/mensajes/js/mensajes-canales.js?v=2"></script>
-<script src="/features/mensajes/js/mensajes-llamadas.js?v=1"></script>
-<script src="/features/mensajes/js/mensajes-init.js?v=1"></script>
-<script src="/features/mensajes/js/llamadas-ui.js?v=3"></script>
+<script src="/features/mensajes/js/mensajes-core.js?v=1" defer></script>
+<script src="/features/mensajes/js/mensajes-scroll-media.js?v=1" defer></script>
+<script src="/features/mensajes/js/mensajes-chats.js?v=2" defer></script>
+<script src="/features/mensajes/js/mensajes-bot.js?v=1" defer></script>
+<script src="/features/mensajes/js/mensajes-estados.js?v=4" defer></script>
+<script src="/features/mensajes/js/mensajes-canales.js?v=2" defer></script>
+<script src="/features/mensajes/js/mensajes-llamadas.js?v=1" defer></script>
+<script src="/features/mensajes/js/mensajes-init.js?v=1" defer></script>
+<script src="/features/mensajes/js/llamadas-ui.js?v=3" defer></script>
 <script src="/features/mensajes/js/mensajes-contactos-flotante.js?v=1" defer></script>
 
 <script>
@@ -1264,13 +1276,6 @@ function cerrarModalConfigLlamadas() {
 function abrirListaBloqueados() {
     if (typeof window.abrirModalBloqueados === 'function') window.abrirModalBloqueados();
 }
-
-document.addEventListener('DOMContentLoaded', function () {
-    var b = document.getElementById('blockUser');
-    if (b && typeof bloquearUsuarioActual === 'function') {
-        b.onclick = function () { bloquearUsuarioActual(); };
-    }
-});
 </script>
 
 <script>
@@ -1312,8 +1317,15 @@ document.addEventListener('DOMContentLoaded', function () {
         return m.scrollHeight - m.scrollTop - m.clientHeight < 60;
     }
 
+    /* Se agrupa con requestAnimationFrame: como máximo una lectura de layout por cuadro. */
+    var actualizarPendiente = false;
     function actualizar() {
-        b.classList.toggle('en-fondo', alFinal());
+        if (actualizarPendiente) return;
+        actualizarPendiente = true;
+        requestAnimationFrame(function () {
+            actualizarPendiente = false;
+            b.classList.toggle('en-fondo', alFinal());
+        });
     }
 
     function irAlFinal() {
@@ -1327,7 +1339,8 @@ document.addEventListener('DOMContentLoaded', function () {
     m.addEventListener('load', actualizar, true);
     b.addEventListener('click', irAlFinal);
 
-    new MutationObserver(actualizar).observe(m, { childList: true, subtree: true });
+    /* Solo hijos directos: las burbujas, audios y videos internos no disparan recálculos. */
+    new MutationObserver(actualizar).observe(m, { childList: true });
     actualizar();
 });
 </script>
