@@ -1106,3 +1106,37 @@ button {
     position: relative;
     z-index: 2;
 }
+
+/* ================================================================
+   AJUSTES v1.4 · Fijar letras en negro cuando está en blanco
+   ================================================================ */
+html.tema-bn-claro .received .bubble,
+html.tema-bn-claro .received .bubble *,
+html[data-tema="bn-claro"] .received .bubble,
+html[data-tema="bn-claro"] .received .bubble *,
+html.tema-dia .received .bubble,
+html.tema-dia .received .bubble *,
+html[data-tema="dia"] .received .bubble,
+html[data-tema="dia"] .received .bubble *,
+html.tema-bn-claro .topbar h1,
+html.tema-bn-claro .header h1,
+html.tema-bn-claro .logo span,
+html.tema-bn-claro .convname,
+html.tema-bn-claro .chatname,
+html[data-tema="bn-claro"] .topbar h1,
+html[data-tema="bn-claro"] .header h1,
+html[data-tema="bn-claro"] .logo span,
+html[data-tema="bn-claro"] .convname,
+html[data-tema="bn-claro"] .chatname,
+html.tema-dia .topbar h1,
+html.tema-dia .header h1,
+html.tema-dia .logo span,
+html.tema-dia .convname,
+html.tema-dia .chatname,
+html[data-tema="dia"] .topbar h1,
+html[data-tema="dia"] .header h1,
+html[data-tema="dia"] .logo span,
+html[data-tema="dia"] .convname,
+html[data-tema="dia"] .chatname {
+    color: #000000 !important;
+}
