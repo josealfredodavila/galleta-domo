@@ -1,21 +1,68 @@
 /* ================================================================
    CSARIEL'S · MENSAJES MESSENGER THEME v1.2
-   Interfaz oscura, adaptable y accesible.
+   Interfaz adaptable y accesible.
    Capa visual sobre mensajes.css y llamadas.css.
    No modifica IDs, clases de JS ni lógica de negocio.
    ================================================================ */
 
 :root {
-    --ms-accent: #a855f7;
-    --ms-accent-2: #00e5ff;
+    --ms-accent: #ffffff;
+    --ms-accent-2: #a3a3a3;
     --ms-bg: #000000;
     --ms-surface: #121212;
     --ms-surface-2: #1c1c1e;
-    --ms-border: rgba(255, 255, 255, .08);
+    --ms-border: rgba(255, 255, 255, .12);
     --ms-text: #f5f5f5;
     --ms-muted: #8e8e93;
-    --ms-bubble-sent: #a855f7;
-    --ms-bubble-recv: #262626;
+    --ms-bubble-sent: #ffffff;
+    --ms-bubble-recv: #1c1c1e;
+    --ms-on-accent: #000000;
+    --ms-hover-soft: rgba(255, 255, 255, .08);
+    --ms-focus-ring: rgba(255, 255, 255, .22);
+    --ms-estado-visto: #3a3a3c;
+    --ms-danger: #d9d9d9;
+}
+
+html.tema-bn-oscuro,
+html[data-tema="bn-oscuro"] {
+    --ms-accent: #ffffff;
+    --ms-accent-2: #a3a3a3;
+    --ms-bg: #000000;
+    --ms-surface: #121212;
+    --ms-surface-2: #1c1c1e;
+    --ms-border: rgba(255, 255, 255, .12);
+    --ms-text: #f5f5f5;
+    --ms-muted: #8e8e93;
+    --ms-bubble-sent: #ffffff;
+    --ms-bubble-recv: #1c1c1e;
+    --ms-on-accent: #000000;
+    --ms-hover-soft: rgba(255, 255, 255, .08);
+    --ms-focus-ring: rgba(255, 255, 255, .22);
+    --ms-estado-visto: #3a3a3c;
+    --ms-danger: #d9d9d9;
+    color-scheme: dark;
+}
+
+html.tema-bn-claro,
+html[data-tema="bn-claro"],
+html.tema-dia,
+html[data-tema="dia"] {
+    --ms-accent: #000000;
+    --ms-accent-2: #525252;
+    --ms-bg: #ffffff;
+    --ms-surface: #f5f5f5;
+    --ms-surface-2: #e9e9eb;
+    --ms-border: rgba(0, 0, 0, .12);
+    --ms-text: #000000;
+    --ms-muted: #666666;
+    --ms-bubble-sent: #000000;
+    --ms-bubble-recv: #f5f5f5;
+    --ms-on-accent: #ffffff;
+    --ms-hover-soft: rgba(0, 0, 0, .06);
+    --ms-focus-ring: rgba(0, 0, 0, .18);
+    --ms-estado-visto: #c7c7cc;
+    --ms-danger: #111111;
+    color-scheme: light;
 }
 
 /* ---------- Base y fondo ---------- */
@@ -26,13 +73,16 @@
 html {
     min-height: 100%;
     background: var(--ms-bg) !important;
-    color-scheme: dark;
 }
 
 html,
 body,
 html.tema-dia body,
-html[data-tema="dia"] body {
+html[data-tema="dia"] body,
+html.tema-bn-claro body,
+html[data-tema="bn-claro"] body,
+html.tema-bn-oscuro body,
+html[data-tema="bn-oscuro"] body {
     background: var(--ms-bg) !important;
     background-image: none !important;
     color: var(--ms-text) !important;
@@ -64,22 +114,26 @@ button {
 }
 
 /* ---------- Cabecera ---------- */
-.header {
+.header,
+.topbar {
     background: var(--ms-bg) !important;
     border-bottom: 1px solid var(--ms-border) !important;
     backdrop-filter: none !important;
     box-shadow: none !important;
     padding: 12px 14px !important;
+    color: var(--ms-text) !important;
+}
+
+.topbar h1,
+.logo span {
+    color: var(--ms-text) !important;
+    letter-spacing: .3px !important;
+    font-weight: 800 !important;
+    font-size: 1.1rem;
 }
 
 .logo b {
     color: var(--ms-accent) !important;
-}
-
-.logo span {
-    letter-spacing: .3px !important;
-    font-weight: 800 !important;
-    font-size: 1.1rem;
 }
 
 .badge,
@@ -90,11 +144,12 @@ button {
 }
 
 .header-avatar {
-    border: none !important;
+    border: 1px solid var(--ms-border) !important;
     box-shadow: none !important;
     width: 34px;
     height: 34px;
-    background: var(--ms-accent) !important;
+    background: var(--ms-surface-2) !important;
+    color: var(--ms-text) !important;
 }
 
 /* ---------- Navegación ---------- */
@@ -231,7 +286,7 @@ button {
 .searchbox input:focus-visible {
     outline: 2px solid var(--ms-accent);
     outline-offset: 2px;
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, .2) !important;
+    box-shadow: 0 0 0 3px var(--ms-focus-ring) !important;
 }
 
 /* ---------- Estados ---------- */
@@ -249,13 +304,14 @@ button {
 
 .btn-subir-estado {
     background: var(--ms-surface-2) !important;
-    color: var(--ms-accent) !important;
+    color: var(--ms-text) !important;
     box-shadow: none !important;
 }
 
 .btn-subir-estado:hover {
     transform: none !important;
     box-shadow: none !important;
+    background: var(--ms-hover-soft) !important;
 }
 
 .estado-circle {
@@ -264,12 +320,12 @@ button {
 }
 
 .estado-circle.visto {
-    background: #3a3a3c !important;
+    background: var(--ms-estado-visto) !important;
 }
 
 .estado-inner {
-    background: #000 !important;
-    color: var(--ms-accent) !important;
+    background: var(--ms-bg) !important;
+    color: var(--ms-text) !important;
 }
 
 .estado-name {
@@ -331,7 +387,7 @@ button {
 .avatar {
     background: var(--ms-surface-2) !important;
     color: var(--ms-text) !important;
-    border: none !important;
+    border: 1px solid var(--ms-border) !important;
     width: 50px !important;
     height: 50px !important;
     flex: 0 0 50px !important;
@@ -344,15 +400,15 @@ button {
 }
 
 .avatar-bot {
-    background: var(--ms-accent) !important;
+    background: var(--ms-surface-2) !important;
     font-size: 1.2rem !important;
-    color: #fff !important;
+    color: var(--ms-text) !important;
 }
 
 .avatar-bot::after {
     width: 11px;
     height: 11px;
-    border: 2px solid #000 !important;
+    border: 2px solid var(--ms-bg) !important;
 }
 
 .conv-bot .convname {
@@ -382,9 +438,9 @@ button {
 /* La posición final y el área segura se definen en mensajes-floating.css. */
 .fab {
     background: var(--ms-accent) !important;
-    color: #fff !important;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, .45) !important;
-    border: none !important;
+    color: var(--ms-on-accent) !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, .28) !important;
+    border: 1px solid var(--ms-border) !important;
     border-radius: 50% !important;
     width: 52px !important;
     height: 52px !important;
@@ -400,12 +456,12 @@ button {
 }
 
 .fab:hover {
-    background: #9333ea !important;
-    box-shadow: 0 6px 18px rgba(0, 0, 0, .5) !important;
+    opacity: .9;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .35) !important;
 }
 
 .fab:focus-visible {
-    outline: 3px solid var(--ms-accent-2) !important;
+    outline: 3px solid var(--ms-accent) !important;
     outline-offset: 4px !important;
 }
 
@@ -442,19 +498,19 @@ button {
 }
 
 .status.online {
-    color: var(--ms-accent-2) !important;
+    color: var(--ms-text) !important;
 }
 
 .backbtn {
     background: transparent !important;
     border: none !important;
-    color: var(--ms-accent) !important;
+    color: var(--ms-text) !important;
     box-shadow: none !important;
 }
 
 .backbtn:hover,
 .backbtn:focus-visible {
-    background: rgba(168, 85, 247, .12) !important;
+    background: var(--ms-hover-soft) !important;
     box-shadow: none !important;
 }
 
@@ -468,7 +524,7 @@ button {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    color: var(--ms-accent) !important;
+    color: var(--ms-text) !important;
     padding: 6px !important;
     border-radius: 50% !important;
 }
@@ -479,15 +535,15 @@ button {
 
 .action-labeled:hover,
 .iconbtn:hover {
-    background: rgba(168, 85, 247, .12) !important;
+    background: var(--ms-hover-soft) !important;
     box-shadow: none !important;
     transform: none !important;
-    color: var(--ms-accent) !important;
+    color: var(--ms-text) !important;
 }
 
 .action-labeled.danger,
 #blockUser {
-    color: #ff453a !important;
+    color: var(--ms-danger) !important;
 }
 
 /* ---------- Videollamadas ---------- */
@@ -495,7 +551,7 @@ button {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    color: var(--ms-accent-2) !important;
+    color: var(--ms-text) !important;
     padding: 6px !important;
     font-size: 0 !important;
     gap: 0 !important;
@@ -506,7 +562,7 @@ button {
 }
 
 .btn-videollamada:hover {
-    background: rgba(0, 229, 255, .1) !important;
+    background: var(--ms-hover-soft) !important;
     box-shadow: none !important;
     transform: none !important;
 }
@@ -536,14 +592,14 @@ button {
 
 .sent .bubble {
     background: var(--ms-bubble-sent) !important;
-    color: #fff !important;
+    color: var(--ms-on-accent) !important;
     font-weight: 500 !important;
     border-radius: 18px !important;
 }
 
 .received .bubble {
     background: var(--ms-bubble-recv) !important;
-    border: none !important;
+    border: 1px solid var(--ms-border) !important;
     color: var(--ms-text) !important;
     border-radius: 18px !important;
 }
@@ -560,7 +616,7 @@ button {
 }
 
 .bubble-bot-info {
-    color: var(--ms-accent) !important;
+    color: var(--ms-text) !important;
     opacity: 1 !important;
     font-family: inherit !important;
     font-size: .68rem !important;
@@ -603,7 +659,7 @@ button {
 .composer #messageInput:focus-visible {
     outline: 2px solid var(--ms-accent);
     outline-offset: 2px;
-    box-shadow: 0 0 0 3px rgba(168, 85, 247, .2) !important;
+    box-shadow: 0 0 0 3px var(--ms-focus-ring) !important;
 }
 
 /* Botones de la barra de escritura */
@@ -611,7 +667,7 @@ button {
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    color: var(--ms-accent) !important;
+    color: var(--ms-text) !important;
     min-width: 0 !important;
     padding: 4px !important;
 }
@@ -627,20 +683,20 @@ button {
 }
 
 .composer-btn:hover {
-    background: rgba(168, 85, 247, .1) !important;
+    background: var(--ms-hover-soft) !important;
     box-shadow: none !important;
 }
 
 .composer .btn {
     background: transparent !important;
     border: none !important;
-    color: var(--ms-accent) !important;
+    color: var(--ms-text) !important;
     box-shadow: none !important;
     padding: 4px 6px !important;
 }
 
 .composer .btn:hover:not(:disabled) {
-    background: rgba(168, 85, 247, .1) !important;
+    background: var(--ms-hover-soft) !important;
     box-shadow: none !important;
 }
 
@@ -648,7 +704,7 @@ button {
 .composer .btn.send,
 .composer .composer-send {
     background: transparent !important;
-    color: var(--ms-accent) !important;
+    color: var(--ms-text) !important;
     box-shadow: none !important;
     padding: 6px !important;
     font-size: 0 !important;
@@ -659,7 +715,7 @@ button {
 .composer .composer-send::after {
     content: "➤";
     font-size: 1.3rem;
-    color: var(--ms-accent);
+    color: var(--ms-text);
 }
 
 .composer .composer-send span {
@@ -676,13 +732,14 @@ button {
 .scroll-down-btn {
     background: var(--ms-surface-2) !important;
     color: var(--ms-text) !important;
-    border: none !important;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .5) !important;
+    border: 1px solid var(--ms-border) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .28) !important;
     opacity: 1 !important;
 }
 
 .scroll-down-btn.has-new {
     background: var(--ms-accent) !important;
+    color: var(--ms-on-accent) !important;
     animation: none !important;
 }
 
@@ -691,7 +748,7 @@ button {
     background: var(--ms-surface-2) !important;
     border: 1px solid var(--ms-border) !important;
     border-radius: 14px !important;
-    box-shadow: 0 8px 28px rgba(0, 0, 0, .6) !important;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .35) !important;
 }
 
 .msg-context-menu button {
@@ -699,7 +756,7 @@ button {
 }
 
 .msg-context-menu button:hover {
-    background: rgba(168, 85, 247, .12) !important;
+    background: var(--ms-hover-soft) !important;
 }
 
 /* ---------- Modales ---------- */
@@ -708,7 +765,7 @@ button {
 .profile-modal-box {
     background: var(--ms-surface) !important;
     border: 1px solid var(--ms-border) !important;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, .6) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .38) !important;
     border-radius: 18px !important;
     max-width: calc(100vw - 24px);
 }
@@ -719,7 +776,7 @@ button {
 
 .neon-modal-card.danger {
     border: 1px solid var(--ms-border) !important;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, .6) !important;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, .38) !important;
 }
 
 .neon-modal-title,
@@ -740,17 +797,18 @@ button {
 .neon-modal-btn.danger {
     background: var(--ms-accent) !important;
     border: none !important;
-    color: #fff !important;
+    color: var(--ms-on-accent) !important;
 }
 
 .neon-modal-btn.danger {
-    background: #ff453a !important;
+    background: var(--ms-danger) !important;
+    color: var(--ms-on-accent) !important;
 }
 
 .neon-modal-btn.cancel {
     background: transparent !important;
     border: none !important;
-    color: var(--ms-accent) !important;
+    color: var(--ms-text) !important;
 }
 
 /* ---------- Notificaciones ---------- */
@@ -762,11 +820,11 @@ button {
 }
 
 .toast.error {
-    color: #ff453a !important;
+    color: var(--ms-text) !important;
 }
 
 .toast.success {
-    color: var(--ms-accent-2) !important;
+    color: var(--ms-text) !important;
 }
 
 /* Ocultar el footer de la pantalla de chat */
@@ -777,7 +835,7 @@ button {
 /* ---------- Pantallas de llamada ---------- */
 #callOverlay.call,
 #incomingOverlay.call {
-    background: #000 !important;
+    background: #000000 !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
 }
@@ -791,12 +849,12 @@ button {
 
 #callOverlay .call-avatar-halo,
 #incomingOverlay .incoming-halo {
-    background: var(--ms-accent) !important;
-    color: #fff !important;
+    background: #1c1c1e !important;
+    color: #ffffff !important;
 }
 
 #callOverlay .call-timer {
-    color: var(--ms-text) !important;
+    color: #f5f5f5 !important;
     text-shadow: none !important;
     font-weight: 400 !important;
 }
@@ -804,14 +862,14 @@ button {
 #callOverlay .call-name,
 #incomingOverlay h2 {
     text-shadow: none !important;
-    color: var(--ms-text) !important;
+    color: #f5f5f5 !important;
 }
 
 #callOverlay .call-e2e-header {
     border: none !important;
     background: transparent !important;
     box-shadow: none !important;
-    color: var(--ms-muted) !important;
+    color: #8e8e93 !important;
     text-transform: none !important;
     font-weight: 500 !important;
     letter-spacing: 0 !important;
@@ -850,14 +908,14 @@ button {
 #callOverlay .call-ctrl.hang .ctrl-circle,
 #callOverlay .controls .hang .ctrl-icon,
 #incomingOverlay .controls button.hang .ctrl-circle {
-    background: #ff453a !important;
+    background: #48484a !important;
     box-shadow: none !important;
 }
 
 #incomingOverlay .controls button.accept .ctrl-circle,
 #incomingOverlay .controls .accept .ctrl-icon {
-    background: var(--ms-accent-2) !important;
-    color: #000 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
     box-shadow: none !important;
     animation: none !important;
 }
@@ -963,7 +1021,7 @@ button {
 
 /* ---------- Accesibilidad ---------- */
 :focus-visible {
-    outline-color: var(--ms-accent-2);
+    outline-color: var(--ms-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {
