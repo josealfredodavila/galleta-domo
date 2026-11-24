@@ -25,7 +25,7 @@
         ocultarReacciones: true
     };
 
-        /* Marca de agua (escudo con la "C"). ACTIVA: false la quita del feed y de la vista previa. */
+    /* Marca de agua (escudo con la "C"). ACTIVA: false la quita del feed y de la vista previa. */
     const MARCA_AGUA = {
         ACTIVA: true,
         OPACIDAD: 1
@@ -223,13 +223,13 @@
     /* ----------------------------------------------------------------
        MARCA DE AGUA (escudo dorado con la "C")
        ---------------------------------------------------------------- */
-        function marcaHTML() {
+    function marcaHTML() {
         return '<span class="cs-marca" aria-hidden="true" style="opacity:' + MARCA_AGUA.OPACIDAD + '">' +
             '<svg viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">' +
             '<rect x="2" y="2" width="56" height="76" rx="8" fill="none" stroke="#D4AF37" stroke-width="3"/>' +
             '<text x="30" y="58" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="50" fill="#D4AF37">C</text>' +
             '</svg></span>';
-        }
+    }
 
     function asegurarMarca(contenedor) {
         if (!MARCA_AGUA.ACTIVA || !contenedor) return;
@@ -1768,14 +1768,14 @@
 
             /* ---- Marca de agua (escudo con la "C") ---- */
             .cs-marca {
-                position: absolute; top: 14px; left: 14px; z-index: 7;
-                width: 44px; height: 58px; pointer-events: none;
+                position: absolute; top: 12px; left: 12px; z-index: 7;
+                width: 56px; height: 75px; pointer-events: none;
                 filter: drop-shadow(0 2px 6px rgba(0,0,0,.65));
             }
             .cs-marca svg { width: 100%; height: 100%; display: block; }
-            .cs-prev-stage .cs-marca { top: 70px; left: 14px; }
-            .cs-preview-video .cs-marca { top: 12px; left: 12px; width: 36px; height: 48px; }
-            @media (max-width: 480px) { .cs-marca { width: 38px; height: 50px; } }
+            .cs-prev-stage .cs-marca { top: 70px; left: 14px; width: 60px; height: 80px; }
+            .cs-preview-video .cs-marca { top: 12px; left: 12px; width: 48px; height: 64px; }
+            @media (max-width: 480px) { .cs-marca { width: 56px; height: 75px; } }
 
             .cs-preview-video {
                 position: relative; width: 100%; height: min(78vh, 720px);
