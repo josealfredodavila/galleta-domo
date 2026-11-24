@@ -1,5 +1,5 @@
 /* ============================================================
-   CSARIEL'S · CONTACTOS · v4.0 · Diseño plano
+   CSARIEL'S · CONTACTOS · v4.1 · Diseño plano + Alto contraste
    Única hoja de estilos de /features/contactos/contactos.html
    ============================================================ */
 
@@ -23,11 +23,26 @@
 html.a11y-texto-80 { font-size: 12.8px; }
 html.a11y-texto-120 { font-size: 19.2px; }
 html.a11y-texto-140 { font-size: 22.4px; }
+
 html.a11y-contraste {
     --text: #ffffff;
-    --muted: #c9d3df;
-    --line: rgba(255,255,255,.35);
-    --line-strong: rgba(255,255,255,.55);
+    --muted: #dce4ee;
+    --line: rgba(255,255,255,.42);
+    --line-strong: rgba(255,255,255,.72);
+    --panel: #090e17;
+    --panel-2: #131d2e;
+}
+
+html.tema-bn-claro.a11y-contraste,
+html[data-tema="bn-claro"].a11y-contraste,
+html.tema-dia.a11y-contraste,
+html[data-tema="dia"].a11y-contraste {
+    --text: #000000;
+    --muted: #1f2937;
+    --line: rgba(0,0,0,.45);
+    --line-strong: rgba(0,0,0,.75);
+    --panel: #ffffff;
+    --panel-2: #f1f5f9;
 }
 
 *, *::before, *::after { box-sizing: border-box; }
@@ -327,6 +342,46 @@ a.fila { text-decoration: none; color: inherit; }
     margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line);
     color: var(--muted); font-size: .72rem; display: flex;
     justify-content: space-between; gap: 8px; flex-wrap: wrap;
+}
+
+/* ---------- Alto contraste forzado en Contactos ---------- */
+html.a11y-contraste .topbar,
+html.a11y-contraste .nav,
+html.a11y-contraste .lista,
+html.a11y-contraste .fila,
+html.a11y-contraste .cfg-fila,
+html.a11y-contraste .cfg-link,
+html.a11y-contraste .footer {
+    border-color: var(--line-strong);
+}
+
+html.a11y-contraste .search,
+html.a11y-contraste .filtro,
+html.a11y-contraste .icon-btn,
+html.a11y-contraste .btn-mic,
+html.a11y-contraste .accion,
+html.a11y-contraste .bloque,
+html.a11y-contraste .modal,
+html.a11y-contraste .confirm-box,
+html.a11y-contraste .sel,
+html.a11y-contraste .seg,
+html.a11y-contraste .btn-plano,
+html.a11y-contraste .campo {
+    border-color: var(--line-strong);
+}
+
+html.a11y-contraste .cfg-fila-txt small,
+html.a11y-contraste .cfg-sec,
+html.a11y-contraste .cfg-cuenta,
+html.a11y-contraste .meta,
+html.a11y-contraste .stats,
+html.a11y-contraste .nav a:not(.active) {
+    color: var(--muted);
+}
+
+html.a11y-contraste #headerAvatar {
+    border-color: #ffffff;
+    color: #ffffff;
 }
 
 /* ---------- Movimiento reducido ---------- */
