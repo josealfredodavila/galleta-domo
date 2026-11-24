@@ -1,20 +1,18 @@
 // ================================================================
-// MENSAJES · CORE v2.1 · MÓDULO 1 DE 8
-// Ruta: frontend/features/mensajes/js/mensajes-core.js
+// MENSAJES · CORE v2.2 · MÓDULO 1 DE 8
+// Ruta: backend/public/features/mensajes/js/mensajes-core.js
 // Contenido: constantes, estado compartido, helpers de texto,
 //            toast, modal propio (NeonModal), sesión, subida de
 //            archivos, perfiles y envío de mensajes.
-// Cambios v2.1:
-//  - profile(id) lee con la RPC perfiles_por_ids (SECURITY DEFINER),
-//    ya no con la vista perfiles_publicos, que solo mostraba la fila
-//    propia y dejaba "Usuario / Desconectado" en los demás chats.
-//  - El perfil no disponible se guarda con TTL corto (30 s) para
-//    reintentar pronto en vez de quedar fijo 5 minutos.
-// Cambios v2.0:
-//  - Sin emojis en toasts, mensajes de error ni textos del sistema
-//  - Toast con role/aria-live para lectores de pantalla
-//  - NeonModal sin icono por defecto (ya no muestra "?")
-//  - profile() incluye bloqueado/online para el estado de bloqueo
+// Cambios v2.2:
+//  - profile(id) deduplica peticiones en vuelo: si el mismo perfil ya
+//    se está pidiendo, todas las llamadas esperan la misma promesa.
+//  - NeonModal limpia su listener de teclado en cada cierre, incluso
+//    si se abre otro modal antes de cerrar el anterior.
+// Cambios v2.1: profile() con perfiles_por_ids; TTL corto (30 s) cuando
+//               no hay datos.
+// Cambios v2.0: sin emojis en textos; toast accesible; NeonModal sin
+//               icono por defecto.
 // ================================================================
 
 'use strict';
@@ -40,6 +38,7 @@ let scrollRetryTimer = null;
 let currentUserProfile = null;
 
 const perfilCache = new Map();
+const perfilEnVuelo = new Map();
 const TTL_PERFIL_MS = 5 * 60 * 1000;
 const TTL_PERFIL_FALLBACK_MS = 30 * 1000;
 const signedCache = new Map();
@@ -152,14 +151,25 @@ function limpiarMarkdown(texto) {
 const NeonModal = (function () {
     let activeBackdrop = null, activeResolve = null, activeEscHandler = null;
 
+    /* Quita el modal activo y su listener de teclado. Es idempotente. */
     function _cleanup() {
-        if (activeBackdrop && activeBackdrop.parentNode) activeBackdrop.parentNode.removeChild(activeBackdrop);
-        if (activeEscHandler) document.removeEventListener('keydown', activeEscHandler);
-        activeBackdrop = null; activeResolve = null; activeEscHandler = null;
+        if (activeEscHandler) {
+            document.removeEventListener('keydown', activeEscHandler);
+            activeEscHandler = null;
+        }
+        if (activeBackdrop && activeBackdrop.parentNode) {
+            activeBackdrop.parentNode.removeChild(activeBackdrop);
+        }
+        activeBackdrop = null;
+        activeResolve = null;
     }
 
     function _open(opts, resolveFn) {
+        /* Si había un modal abierto, se cierra primero (resuelve null). */
+        const anterior = activeResolve;
         _cleanup();
+        if (typeof anterior === 'function') anterior(null);
+
         activeResolve = resolveFn;
         const backdrop = document.createElement('div');
         backdrop.className = 'neon-modal-backdrop show';
@@ -217,6 +227,7 @@ const NeonModal = (function () {
         if (inputEl) inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') { e.preventDefault(); const v = inputEl.value.trim(); finish(v || null); }
         });
+
         activeEscHandler = (e) => { if (e.key === 'Escape') { e.preventDefault(); finish(null); } };
         document.addEventListener('keydown', activeEscHandler);
     }
@@ -291,6 +302,50 @@ function avatar(name, url, cls = 'avatar') {
     return `<div class="${cls}">${esc((name || 'U').charAt(0).toUpperCase())}</div>`;
 }
 
+/* Carga el perfil una sola vez aunque se pida varias veces al mismo tiempo. */
+async function cargarPerfilRemoto(id) {
+    if (perfilEnVuelo.has(id)) return perfilEnVuelo.get(id);
+
+    const promesa = (async function () {
+        let data = null;
+        try {
+            // perfiles_por_ids es SECURITY DEFINER: devuelve el perfil de cualquier
+            // usuario, enmascara "en línea" si ocultó su estado y omite cuentas inválidas.
+            const { data: filas, error } = await db.rpc('perfiles_por_ids', { p_ids: [id] });
+            if (error) throw error;
+            const p = Array.isArray(filas) ? filas[0] : null;
+            if (p) {
+                data = {
+                    id: p.id,
+                    nombre: p.nombre || 'Usuario',
+                    handle: p.handle || null,
+                    avatar_url: p.avatar_url || null,
+                    online: p.online === true,
+                    ultima_conexion: p.ultima_conexion || null,
+                    bloqueado: false
+                };
+            }
+        } catch (e) {
+            console.warn('No se pudo cargar el perfil:', e);
+        }
+
+        const ttl = data ? TTL_PERFIL_MS : TTL_PERFIL_FALLBACK_MS;
+        if (!data) data = { id, nombre: 'Usuario', handle: null, avatar_url: null, online: false, bloqueado: false };
+
+        if (perfilCache.size >= PERFIL_CACHE_LIMITE) {
+            const primera = perfilCache.keys().next().value;
+            if (primera !== undefined) perfilCache.delete(primera);
+        }
+        perfilCache.set(id, { ts: Date.now(), ttl, data });
+        return data;
+    })().finally(function () {
+        perfilEnVuelo.delete(id);
+    });
+
+    perfilEnVuelo.set(id, promesa);
+    return promesa;
+}
+
 async function profile(id) {
     if (id === BOT_ID) {
         return { id: BOT_ID, nombre: 'Marquinhos', handle: 'marquinhos', avatar_url: null, online: true, bot: true, bloqueado: false };
@@ -299,36 +354,5 @@ async function profile(id) {
     const enCache = perfilCache.get(id);
     if (enCache && Date.now() - enCache.ts < enCache.ttl) return enCache.data;
 
-    let data = null;
-    try {
-        // perfiles_por_ids es SECURITY DEFINER: devuelve el perfil de cualquier
-        // usuario, enmascara "en línea" si ocultó su estado y omite cuentas inválidas.
-        const { data: filas, error } = await db.rpc('perfiles_por_ids', { p_ids: [id] });
-        if (error) throw error;
-        const p = Array.isArray(filas) ? filas[0] : null;
-        if (p) {
-            data = {
-                id: p.id,
-                nombre: p.nombre || 'Usuario',
-                handle: p.handle || null,
-                avatar_url: p.avatar_url || null,
-                online: p.online === true,
-                ultima_conexion: p.ultima_conexion || null,
-                bloqueado: false
-            };
-        }
-    } catch (e) {
-        console.warn('No se pudo cargar el perfil:', e);
-    }
-
-    // Sin datos: fallback con TTL corto para reintentar pronto
-    const ttl = data ? TTL_PERFIL_MS : TTL_PERFIL_FALLBACK_MS;
-    if (!data) data = { id, nombre: 'Usuario', handle: null, avatar_url: null, online: false, bloqueado: false };
-
-    if (perfilCache.size >= PERFIL_CACHE_LIMITE) {
-        const primera = perfilCache.keys().next().value;
-        if (primera !== undefined) perfilCache.delete(primera);
-    }
-    perfilCache.set(id, { ts: Date.now(), ttl, data });
-    return data;
+    return cargarPerfilRemoto(id);
 }
