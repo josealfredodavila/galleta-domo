@@ -313,8 +313,7 @@ function pintarFichaCargando(p, id) {
             <div class="ficha-nombre">${esc(p.nombre || 'Usuario')}</div>
             ${p.handle ? `<div class="ficha-handle">@${esc(p.handle)}</div>` : ''}
             <div class="ficha-meta"><span class="ficha-rel">Cargando…</span></div>
-        </div>
-        <button type="button" class="ficha-ver" data-act="ver-perfil" disabled>Ver perfil</button>`;
+        </div>`;
     f.hidden = false;
 }
 
@@ -322,7 +321,6 @@ function pintarFichaServidor(d) {
     const f = asegurarFichaDOM();
     if (!f) return;
     const rel = FICHA_RELACION[d.relacion] || FICHA_RELACION.ninguna;
-    const puedeVer = d.puede_ver_perfil === true;
     const conexion = d.online === true ? 'En línea' : (d.online === false ? 'Desconectado' : '');
     f.dataset.userId = d.id;
     f.innerHTML = `
@@ -334,8 +332,7 @@ function pintarFichaServidor(d) {
                 <span class="ficha-rel ${rel.clase}">${esc(rel.texto)}</span>
                 ${conexion ? `<span class="ficha-conexion ${d.online === true ? 'on' : ''}">${esc(conexion)}</span>` : ''}
             </div>
-        </div>
-        <button type="button" class="ficha-ver" data-act="ver-perfil" ${puedeVer ? '' : 'disabled'}>${puedeVer ? 'Ver perfil' : 'No disponible'}</button>`;
+        </div>`;
     f.hidden = false;
 }
 
