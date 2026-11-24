@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es" data-public>
 <head>
@@ -26,7 +27,7 @@
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
-<!-- CSS: el de perfil.html va primero; perfil-publico.css al final para mandar -->
+<!-- CSS -->
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
 <link rel="stylesheet" href="/features/perfil/css/emojis-animations.css">
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
@@ -35,8 +36,67 @@
 <link rel="stylesheet" href="/features/shared/css/visor-media-global.css">
 
 <style>
-    html:not(.auth-ready) .main-nav,
-    html:not(.auth-ready) .header { opacity: 0; pointer-events: none; }
+html:not(.auth-ready) .main-nav,
+html:not(.auth-ready) .header {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* =========================================================
+   CSARIEL'S · MENCIÓN DEL PERFIL VISITADO
+   Diseño integrado con el cuadro de publicaciones
+   ========================================================= */
+
+.pv-muro-mencion {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0 22px 12px;
+    color: #aebdca;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.5;
+    letter-spacing: .1px;
+}
+
+.pv-muro-mencion-texto {
+    color: #aebdca;
+}
+
+.pv-muro-mencion-usuario {
+    color: #00E5FF !important;
+    font-weight: 800;
+    text-decoration: none;
+    text-shadow: 0 0 9px rgba(0, 229, 255, .17);
+    transition: color .2s ease, text-shadow .2s ease;
+}
+
+.pv-muro-mencion-usuario:hover {
+    color: #73F4FF !important;
+    text-shadow: 0 0 12px rgba(0, 229, 255, .4);
+}
+
+.pv-muro-form textarea {
+    box-sizing: border-box;
+}
+
+@media (max-width: 600px) {
+    .pv-muro-mencion {
+        padding-left: 22px;
+        padding-right: 22px;
+        font-size: 14px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pv-muro-mencion-usuario {
+        transition: none;
+    }
+}
 </style>
 </head>
 
@@ -67,6 +127,7 @@
 
     <!-- NAVEGACIÓN -->
     <nav class="main-nav">
+
         <a href="/" class="nav-link">
             <svg class="icon icon-sm" viewBox="0 0 24 24">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -101,6 +162,7 @@
         <a href="/features/internet/internet.html" class="nav-link">
             <span data-clave="nav_internet">Internet</span>
         </a>
+
     </nav>
 
     <!-- CONTENIDO DEL PERFIL -->
@@ -118,6 +180,7 @@
         <!-- PERFIL NO ENCONTRADO -->
         <section id="pvNoEncontrado" class="panel" hidden>
             <div class="panel-body pv-mensaje">
+
                 <h4 id="pvNoEncontradoTitulo">Perfil no encontrado</h4>
 
                 <p id="pvNoEncontradoTexto">
@@ -129,12 +192,14 @@
                     class="btn btn-outline btn-sm"
                     id="pvVolverNoEncontrado"
                 >Volver</a>
+
             </div>
         </section>
 
         <!-- ERROR -->
         <section id="pvError" class="panel" hidden>
             <div class="panel-body pv-mensaje">
+
                 <p id="pvErrorTexto">
                     No pudimos cargar este perfil. Intenta de nuevo.
                 </p>
@@ -144,6 +209,7 @@
                     id="pvReintentar"
                     class="btn btn-outline btn-sm"
                 >Reintentar</button>
+
             </div>
         </section>
 
@@ -159,6 +225,7 @@
                 <div class="info">
 
                     <div class="nombre">
+
                         <span id="pvNombre" data-no-traducir="1"></span>
 
                         <span
@@ -172,6 +239,7 @@
                             </svg>
                             VERIFICADO
                         </span>
+
                     </div>
 
                     <div class="handle" id="pvHandle"></div>
@@ -247,30 +315,91 @@
 
             <!-- GALERÍA -->
             <section class="panel" id="pvGaleriaSection" hidden>
+
                 <div class="pv-pub-head">
                     <h3>Galería</h3>
                     <span class="pv-pub-contador" id="pvGaleriaCount"></span>
                 </div>
+
                 <p class="pv-pub-msg" id="pvGaleriaMsg" hidden></p>
+
                 <div id="pvGaleriaGrid"></div>
-                <button type="button" class="btn btn-outline btn-sm pv-mas" id="pvGaleriaMas" hidden>Cargar más</button>
+
+                <button
+                    type="button"
+                    class="btn btn-outline btn-sm pv-mas"
+                    id="pvGaleriaMas"
+                    hidden
+                >Cargar más</button>
+
             </section>
 
-            <!-- ESCRIBIR EN EL MURO (solo contactos activos) -->
+            <!-- =================================================
+                 ESCRIBIR EN SU MURO
+                 MENCIÓN AUTOMÁTICA DEL PERFIL VISITADO
+                 ================================================= -->
             <section class="panel" id="pvMuroSection" hidden>
+
                 <div class="pv-pub-head">
                     <h3>Escribe en su muro</h3>
                 </div>
+
                 <div class="pv-muro-form">
-                    <textarea id="pvMuroTexto" maxlength="2000" rows="3" placeholder="Escribe algo para su muro..."></textarea>
-                    <div class="pv-muro-acciones">
-                        <button type="button" class="btn btn-outline btn-sm" id="pvMuroAdjuntar">Foto o video</button>
-                        <input type="file" id="pvMuroArchivo" accept="image/*,video/*" hidden>
-                        <span id="pvMuroNombre" class="pv-muro-nombre"></span>
-                        <button type="button" class="btn btn-sm" id="pvMuroPublicar">Publicar</button>
+
+                    <!-- MENCIÓN DINÁMICA EN AZUL -->
+                    <div
+                        class="pv-muro-mencion"
+                        id="pvMuroMencion"
+                        aria-live="polite"
+                    >
+                        <span class="pv-muro-mencion-texto">Menciona a</span>
+
+                        <span
+                            class="pv-muro-mencion-usuario"
+                            id="pvMuroMencionUsuario"
+                            data-no-traducir="1"
+                        >@usuario</span>
                     </div>
+
+                    <textarea
+                        id="pvMuroTexto"
+                        maxlength="2000"
+                        rows="3"
+                        placeholder="Escribe algo para su muro..."
+                    ></textarea>
+
+                    <div class="pv-muro-acciones">
+
+                        <button
+                            type="button"
+                            class="btn btn-outline btn-sm"
+                            id="pvMuroAdjuntar"
+                        >Foto o video</button>
+
+                        <input
+                            type="file"
+                            id="pvMuroArchivo"
+                            accept="image/*,video/*"
+                            hidden
+                        >
+
+                        <span
+                            id="pvMuroNombre"
+                            class="pv-muro-nombre"
+                        ></span>
+
+                        <button
+                            type="button"
+                            class="btn btn-sm"
+                            id="pvMuroPublicar"
+                        >Publicar</button>
+
+                    </div>
+
                     <p class="pv-pub-msg" id="pvMuroMsg" hidden></p>
+
                 </div>
+
             </section>
 
             <!-- PUBLICACIONES -->
@@ -293,13 +422,13 @@
                     hidden
                 ></div>
 
-                <!-- PUNTO DE DETECCIÓN DEL DESPLAZAMIENTO -->
+                <!-- PUNTO DE DETECCIÓN -->
                 <div
                     id="pvPubSentinel"
                     aria-hidden="true"
                 ></div>
 
-                <!-- PAGINADOR INTERNO: lo activa la carga automática -->
+                <!-- PAGINADOR INTERNO -->
                 <button
                     type="button"
                     class="btn btn-outline btn-sm pv-mas"
@@ -316,7 +445,7 @@
 
     </main>
 
-    <!-- SELECTOR DE EMOJIS (reservado) -->
+    <!-- SELECTOR DE EMOJIS -->
     <div id="emojiPickerPerfil" hidden role="dialog" aria-label="Selector de emojis">
         <div id="emojiGridPerfil"></div>
     </div>
@@ -348,7 +477,63 @@
 <script src="/features/shared/js/visor-media-global.js" defer></script>
 <script src="/features/perfil-publico/js/perfil-publico.js?v=4.3" defer></script>
 
-<!-- CARGA AUTOMÁTICA DE PUBLICACIONES AL DESLIZAR -->
+<!-- =========================================================
+     MENCIÓN AUTOMÁTICA DEL PERFIL VISITADO
+     Lee el handle real de pvHandle.
+     No modifica el contenido de las publicaciones.
+     ========================================================= -->
+<script>
+(function () {
+    'use strict';
+
+    function iniciarMencionPerfil() {
+
+        var handle = document.getElementById('pvHandle');
+        var mencion = document.getElementById('pvMuroMencionUsuario');
+
+        if (!handle || !mencion) return;
+
+        function actualizarMencion() {
+
+            var texto = (handle.textContent || '').trim();
+
+            if (!texto) return;
+
+            texto = texto.replace(/\s+/g, '');
+
+            if (texto.charAt(0) !== '@') {
+                texto = '@' + texto;
+            }
+
+            mencion.textContent = texto;
+        }
+
+        /* Primera lectura */
+        actualizarMencion();
+
+        /* Actualización cuando el perfil termina de cargar */
+        var observador = new MutationObserver(function () {
+            actualizarMencion();
+        });
+
+        observador.observe(handle, {
+            childList: true,
+            characterData: true,
+            subtree: true
+        });
+
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', iniciarMencionPerfil);
+    } else {
+        iniciarMencionPerfil();
+    }
+
+})();
+</script>
+
+<!-- CARGA AUTOMÁTICA DE PUBLICACIONES -->
 <script>
 (function () {
     'use strict';
@@ -370,10 +555,12 @@
         var cargando = false;
         var terminado = false;
         var temporizador = null;
+        var intervaloComprobacion = null;
 
         var observador = new IntersectionObserver(function (entradas) {
 
             var entrada = entradas[0];
+
             if (!entrada || !entrada.isIntersecting) return;
             if (cargando || terminado) return;
             if (seccion.hidden || boton.hidden) return;
@@ -398,7 +585,10 @@
 
             temporizador = setTimeout(function () {
                 if (!cargando) return;
-                if (boton.disabled) { esperarFinalizacion(); return; }
+                if (boton.disabled) {
+                    esperarFinalizacion();
+                    return;
+                }
                 if (boton.hidden) finalizar();
             }, 12000);
 
@@ -409,6 +599,7 @@
         });
 
         function observarNuevamente() {
+
             if (terminado || !sentinel || !boton) return;
 
             if (boton.hidden || seccion.hidden) {
@@ -427,13 +618,20 @@
         }
 
         function finalizar() {
+
             terminado = true;
             cargando = false;
+
             observador.disconnect();
 
             if (temporizador) {
                 clearTimeout(temporizador);
                 temporizador = null;
+            }
+
+            if (intervaloComprobacion) {
+                clearInterval(intervaloComprobacion);
+                intervaloComprobacion = null;
             }
 
             if (estado) {
@@ -443,28 +641,39 @@
         }
 
         function esperarFinalizacion() {
+
             var intentos = 0;
 
-            var comprobar = setInterval(function () {
+            if (intervaloComprobacion) {
+                clearInterval(intervaloComprobacion);
+            }
+
+            intervaloComprobacion = setInterval(function () {
+
                 intentos++;
 
                 if (boton.hidden) {
-                    clearInterval(comprobar);
+                    clearInterval(intervaloComprobacion);
+                    intervaloComprobacion = null;
                     finalizar();
                     return;
                 }
 
                 if (!boton.disabled && intentos >= 2) {
-                    clearInterval(comprobar);
+                    clearInterval(intervaloComprobacion);
+                    intervaloComprobacion = null;
                     observarNuevamente();
                     return;
                 }
 
                 if (intentos >= 30) {
-                    clearInterval(comprobar);
+                    clearInterval(intervaloComprobacion);
+                    intervaloComprobacion = null;
                     cargando = false;
+
                     if (estado) estado.hidden = true;
                 }
+
             }, 500);
         }
 
@@ -487,12 +696,20 @@
             }
 
             setTimeout(function () {
-                if (boton.hidden) { finalizar(); return; }
+                if (boton.hidden) {
+                    finalizar();
+                    return;
+                }
+
                 observarNuevamente();
             }, 350);
+
         });
 
-        observadorLista.observe(lista, { childList: true, subtree: false });
+        observadorLista.observe(lista, {
+            childList: true,
+            subtree: false
+        });
 
         var observadorBoton = new MutationObserver(function () {
             if (boton.hidden && !cargando) finalizar();
@@ -504,9 +721,11 @@
         });
 
         var observadorSeccion = new MutationObserver(function () {
+
             if (!seccion.hidden && !boton.hidden && !cargando && !terminado) {
                 observarNuevamente();
             }
+
         });
 
         observadorSeccion.observe(seccion, {
@@ -514,7 +733,10 @@
             attributeFilter: ['hidden']
         });
 
-        if (!seccion.hidden && !boton.hidden) observarNuevamente();
+        if (!seccion.hidden && !boton.hidden) {
+            observarNuevamente();
+        }
+
     }
 
     if (document.readyState === 'loading') {
@@ -534,17 +756,23 @@
     var intentos = 0;
 
     function intentar() {
+
         if (typeof window.inicializarIdiomas === 'function') {
+
             try {
                 Promise.resolve(window.inicializarIdiomas()).catch(function () {});
             } catch (e) {}
+
             return;
         }
+
         if (intentos++ >= 25) return;
+
         setTimeout(intentar, 200);
     }
 
     intentar();
+
 })();
 </script>
 
