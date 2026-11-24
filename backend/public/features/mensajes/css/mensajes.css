@@ -1,5 +1,5 @@
 /* ============================================================
-   CSARIEL'S · MENSAJES · v4.1 (B/N quirúrgico)
+   CSARIEL'S · MENSAJES · v4.2 (B/N quirúrgico)
    Mismo sistema visual que Contactos. Sin emojis ni diamantes.
    ============================================================ */
 
@@ -20,7 +20,8 @@
     font-size: 16px;
 }
 
-html.tema-bn-oscuro {
+html.tema-bn-oscuro,
+html[data-tema="bn-oscuro"] {
     color-scheme: dark;
     --bg: #000000;
     --panel: #000000;
@@ -35,7 +36,10 @@ html.tema-bn-oscuro {
     --gold: #ffffff;
 }
 
-html.tema-bn-claro {
+html.tema-bn-claro,
+html[data-tema="bn-claro"],
+html.tema-dia,
+html[data-tema="dia"] {
     color-scheme: light;
     --bg: #ffffff;
     --panel: #ffffff;
@@ -59,7 +63,10 @@ html.a11y-contraste {
     --line: rgba(255,255,255,.35);
     --line-strong: rgba(255,255,255,.55);
 }
-html.tema-bn-claro.a11y-contraste {
+html.tema-bn-claro.a11y-contraste,
+html[data-tema="bn-claro"].a11y-contraste,
+html.tema-dia.a11y-contraste,
+html[data-tema="dia"].a11y-contraste {
     --text: #000000;
     --muted: #262626;
     --line: rgba(0,0,0,.35);
@@ -107,7 +114,7 @@ svg { display: block; }
     width: 44px; height: 44px; border-radius: var(--radius); border: 1px solid var(--line-strong);
     display: grid; place-items: center; color: var(--text); font-weight: 700; font-size: 1.1rem; flex-shrink: 0;
 }
-.topbar h1 { margin: 0; font-size: 1.15rem; font-weight: 700; white-space: nowrap; }
+.topbar h1 { margin: 0; font-size: 1.15rem; font-weight: 700; white-space: nowrap; color: var(--text); }
 .topbar-actions { display: flex; align-items: center; gap: 8px; }
 .icon-btn {
     width: 40px; height: 40px; border-radius: 10px; border: 1px solid var(--line-strong);
@@ -203,7 +210,7 @@ svg { display: block; }
 .conv:hover { background: var(--panel-2); }
 .conv.active { background: var(--panel-2); box-shadow: inset 3px 0 0 var(--text); }
 .convinfo { min-width: 0; flex: 1; }
-.convname { font-size: .92rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.convname { font-size: .92rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
 .convmsg { font-size: .75rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
 .convtime { font-size: .66rem; color: var(--muted); }
 .conv-bot .convname { color: var(--text); }
@@ -280,7 +287,7 @@ svg { display: block; }
 }
 .chathead .avatar { width: 42px; height: 42px; flex-basis: 42px; cursor: pointer; }
 .chat-title { flex: 1; min-width: 0; cursor: pointer; }
-.chatname { font-weight: 700; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chatname { font-weight: 700; font-size: .95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text); }
 .status { font-size: .72rem; color: var(--muted); }
 .status.online { color: var(--text); }
 
@@ -515,6 +522,38 @@ svg { display: block; }
 .estado-viewer-nav.hidden { display: none; }
 .estado-viewer-vistas { position: absolute; bottom: 20px; left: 0; right: 0; text-align: center; color: #fff; font-size: .8rem; z-index: 4; cursor: pointer; pointer-events: auto; }
 .estado-viewer-vistas-pill { display: inline-block; background: rgba(0,0,0,.55); padding: 8px 16px; border-radius: 10px; }
+
+/* ---------- Contraste en modo claro / blanco ---------- */
+html.tema-bn-claro .received .bubble,
+html.tema-bn-claro .received .bubble *,
+html[data-tema="bn-claro"] .received .bubble,
+html[data-tema="bn-claro"] .received .bubble *,
+html.tema-dia .received .bubble,
+html.tema-dia .received .bubble *,
+html[data-tema="dia"] .received .bubble,
+html[data-tema="dia"] .received .bubble *,
+html.tema-bn-claro .topbar h1,
+html.tema-bn-claro .header h1,
+html.tema-bn-claro .logo span,
+html.tema-bn-claro .convname,
+html.tema-bn-claro .chatname,
+html[data-tema="bn-claro"] .topbar h1,
+html[data-tema="bn-claro"] .header h1,
+html[data-tema="bn-claro"] .logo span,
+html[data-tema="bn-claro"] .convname,
+html[data-tema="bn-claro"] .chatname,
+html.tema-dia .topbar h1,
+html.tema-dia .header h1,
+html.tema-dia .logo span,
+html.tema-dia .convname,
+html.tema-dia .chatname,
+html[data-tema="dia"] .topbar h1,
+html[data-tema="dia"] .header h1,
+html[data-tema="dia"] .logo span,
+html[data-tema="dia"] .convname,
+html[data-tema="dia"] .chatname {
+    color: #000000 !important;
+}
 
 /* ---------- Responsive ---------- */
 @media (max-width: 760px) {
