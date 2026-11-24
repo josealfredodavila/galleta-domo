@@ -1,15 +1,17 @@
 // ================================================================
-// MENSAJES · ESTADOS (HISTORIAS) v4.6 · MÓDULO 5 DE 8
-// Ruta: frontend/features/mensajes/js/mensajes-estados.js
+// MENSAJES · ESTADOS (HISTORIAS) v4.7 · MÓDULO 5 DE 8
+// Ruta: backend/public/features/mensajes/js/mensajes-estados.js
 // Depende de: mensajes-core.js
 //
-// ACTUALIZACIÓN v4.6:
-// - Resuelve el nombre real del amigo consultando perfiles_publicos
-//   y, si no viene ahí, toma respaldo desde estados_activos_por_usuario
-//   para evitar que quede como "Usuario".
-// - Mantiene intacto el flujo de publicación (previewEstado,
-//   consultarCuotas, publicarUno, publicarEstado), vistas,
-//   comentarios, eliminación y comparación de IDs como string.
+// ACTUALIZACIÓN v4.7:
+// - Botón "Comentar" conectado: cualquier visor (no dueño) puede
+//   comentar la historia. Pausa el video mientras escribe y lo reanuda.
+// - Mensajes de error del servidor traducidos al español.
+// - Eliminar: el borrado confirma por número de filas (count) en vez de
+//   leer la fila de vuelta. Ya no da falso error si la historia sí se
+//   borró. Solo se recarga la rueda una vez.
+// - Se mantiene todo lo demás: vistas, comentarios del dueño, publicación,
+//   nombres reales y gestos del visor.
 // ================================================================
 
 'use strict';
@@ -69,6 +71,7 @@ let estadoEliminandoId = null;
 let estadoGestosListos = false;
 let estadoVisorListo = false;
 let estadoAccionesListas = false;
+let estadoComentarListo = false;
 
 /* ================================================================
    UTILIDADES
@@ -228,9 +231,26 @@ function urlPerfil(handle, uid) {
     return null;
 }
 
+/* Traduce los errores de las funciones de la base a mensajes claros. */
+function mensajeErrorEstado(e, contexto) {
+    const msg = String((e && (e.message || e.details || e.hint)) || '');
+
+    const mapa = {
+        no_autenticado: 'Inicia sesión para continuar.',
+        historia_no_existe: 'Esta historia ya no está disponible.',
+        no_puedes_comentar_tu_historia: 'No puedes comentar tu propia historia.',
+        no_permitido: 'No puedes comentar en esta historia.',
+        texto_vacio: 'Escribe un comentario.'
+    };
+
+    const llave = Object.keys(mapa).find(k => msg.indexOf(k) !== -1);
+    if (llave) return mapa[llave];
+
+    return msg || (contexto || 'Ocurrió un error.');
+}
+
 /* ================================================================
    IDENTIDAD REAL DEL USUARIO
-   CORRECCIÓN PRINCIPAL v4.6
 ================================================================ */
 
 function normalizarIdEstado(uid) {
@@ -675,7 +695,7 @@ async function cargarEstados() {
 }
 
 /* ================================================================
-   RUEDA DE HISTORIAS v4.6
+   RUEDA DE HISTORIAS
 ================================================================ */
 
 function renderizarRueda(rueda, porUsuario, otros) {
@@ -1595,7 +1615,7 @@ function instalarControlesVideo() {
 }
 
 /* ================================================================
-   PANEL DE VISTAS Y COMENTARIOS
+   PANEL DE VISTAS Y COMENTARIOS (dueño)
 ================================================================ */
 
 function pintarMensajePanel(lista, texto) {
@@ -1823,41 +1843,14 @@ async function pintarComentarios(estadoId, lista, cont) {
 
     lista.innerHTML = '';
 
-    await Promise.all(arr.map(async c => {
+    arr.forEach(c => {
 
-        const uid =
-            c.usuario_id ||
-            c.autor_id ||
-            c.user_id ||
-            c.perfil_id;
+        const nombre = nombreRealEstado({
+            nombre: c.nombre,
+            handle: c.handle
+        });
 
-        let perfil = null;
-
-        if (uid) {
-            perfil = await perfilDe(uid);
-        }
-
-        const nombre =
-            nombreRealEstado(perfil) !== 'Usuario'
-                ? nombreRealEstado(perfil)
-                : (
-                    c.nombre ||
-                    c.nombre_completo ||
-                    c.display_name ||
-                    c.usuario_handle ||
-                    'Usuario'
-                );
-
-        const avatar =
-            (perfil && perfil.avatar_url) ||
-            c.avatar_url ||
-            null;
-
-        const texto =
-            c.comentario ||
-            c.texto ||
-            c.contenido ||
-            '';
+        const texto = c.texto || c.comentario || c.contenido || '';
 
         const fila = document.createElement('div');
 
@@ -1866,7 +1859,7 @@ async function pintarComentarios(estadoId, lista, cont) {
 
         fila.innerHTML =
             '<div class="avatar">' +
-            avatarHTML(nombre, avatar) +
+            avatarHTML(nombre, c.avatar_url) +
             '</div>' +
             '<div class="estado-result-info"><b>' +
             esc(nombre) +
@@ -1884,7 +1877,7 @@ async function pintarComentarios(estadoId, lista, cont) {
             '</div>';
 
         lista.appendChild(fila);
-    }));
+    });
 }
 
 function abrirVistasModal(estadoId) {
@@ -1915,7 +1908,106 @@ function cerrarVistasModal() {
 }
 
 /* ================================================================
-   ELIMINAR HISTORIA
+   COMENTAR HISTORIA (cualquier visor que no sea el dueño)
+================================================================ */
+
+function instalarAccionComentarEstado() {
+    const btn = $('evComentar');
+
+    if (!btn || estadoComentarListo) return;
+
+    estadoComentarListo = true;
+
+    btn.addEventListener('click', async e => {
+
+        e.preventDefault();
+        e.stopPropagation();
+
+        const estadoId = btn.dataset.estadoId;
+
+        if (!estadoId) {
+            aviso(
+                'No se pudo identificar la historia.',
+                'error'
+            );
+            return;
+        }
+
+        /* Pausa la historia mientras el visor escribe el comentario. */
+        estadoPausado = true;
+
+        const v = $('evVideo');
+
+        if (estadoVideoActivo && v && !v.paused) {
+            v.pause();
+        }
+
+        try {
+            await comentarHistoriaMensajes(estadoId);
+        } finally {
+            estadoPausado = false;
+
+            if (estadoVideoActivo && !estadoVideoPausadoPorUsuario) {
+                reproducirVideo();
+            }
+        }
+    });
+}
+
+async function comentarHistoriaMensajes(estadoId) {
+    if (!estadoId || !user) {
+        aviso('Inicia sesión para comentar.', 'warning');
+        return;
+    }
+
+    const texto = await NeonModal.prompt({
+        title: 'Comentar historia',
+        message: 'Escribe un comentario de hasta 200 caracteres.',
+        placeholder: 'Escribe tu comentario',
+        confirmText: 'Enviar',
+        cancelText: 'Cancelar',
+        maxlength: 200
+    });
+
+    if (!texto) return;
+
+    const contenido = texto.trim().slice(0, 200);
+
+    if (!contenido) return;
+
+    try {
+
+        const r = await db.rpc(
+            'estado_enviar_comentario',
+            {
+                p_estado_id: estadoId,
+                p_texto: contenido
+            }
+        );
+
+        if (r.error) throw r.error;
+
+        aviso(
+            'Comentario enviado.',
+            'success'
+        );
+
+    } catch (e) {
+
+        console.error(
+            '[Estados] Error comentando:',
+            e
+        );
+
+        aviso(
+            mensajeErrorEstado(e, 'No se pudo enviar el comentario.'),
+            'error'
+        );
+    }
+}
+
+/* ================================================================
+   ELIMINAR HISTORIA (dueño)
 ================================================================ */
 
 function validarPropiedadHistoria(estadoId) {
@@ -2011,27 +2103,18 @@ async function eliminarHistoriaMensajes(estadoId) {
 
         if (!ok) return;
 
-        const propietario = validarPropiedadHistoria(estadoId);
-
-        if (!propietario) {
-            throw new Error(
-                'La historia ya no está disponible o no te pertenece.'
-            );
-        }
-
+        /* count: 'exact' confirma el borrado por número de filas, sin
+           depender de leer la fila de vuelta. */
         const r = await db.from('estados')
-            .delete()
+            .delete({ count: 'exact' })
             .eq('id', estadoId)
-            .eq('usuario_id', user.id)
-            .select('id');
+            .eq('usuario_id', user.id);
 
-        if (r.error) {
-            throw r.error;
-        }
+        if (r.error) throw r.error;
 
-        if (!r.data || !r.data.length) {
+        if (!r.count) {
             throw new Error(
-                'Supabase no confirmó la eliminación. Revisa los permisos RLS de la tabla estados.'
+                'La historia ya no existe o no se pudo eliminar. Actualiza la pantalla.'
             );
         }
 
@@ -2064,7 +2147,11 @@ async function eliminarHistoriaMensajes(estadoId) {
             );
         }
 
-        if (estadoActualUserId === user.id) {
+        if (
+            estadoActualUserId !== null &&
+            normalizarIdEstado(estadoActualUserId) ===
+            normalizarIdEstado(user.id)
+        ) {
 
             const restantes = estadosDe(user.id);
 
@@ -2090,13 +2177,10 @@ async function eliminarHistoriaMensajes(estadoId) {
 
                 mostrarEstadoActual();
             }
-
-        } else {
-
-            await cargarEstados();
         }
 
-        await cargarEstados();
+        /* Una sola recarga de la rueda, sin bloquear la vista. */
+        cargarEstados().catch(() => {});
 
     } catch (e) {
 
@@ -2106,8 +2190,7 @@ async function eliminarHistoriaMensajes(estadoId) {
         );
 
         aviso(
-            e.message ||
-            'No se pudo eliminar la historia.',
+            mensajeErrorEstado(e, 'No se pudo eliminar la historia.'),
             'error'
         );
 
@@ -2121,70 +2204,7 @@ async function eliminarHistoriaMensajes(estadoId) {
         if (boton) {
             boton.disabled = false;
             boton.classList.remove('is-loading');
-
-            const actual = estadosDe(user ? user.id : null);
-
-            if (
-                !actual.length ||
-                estadoActualUserId !== (user ? user.id : null)
-            ) {
-                boton.classList.add('hidden');
-            }
         }
-    }
-}
-
-/* ================================================================
-   COMENTAR HISTORIA
-================================================================ */
-
-async function comentarHistoriaMensajes(estadoId) {
-    if (!estadoId || !user) return;
-
-    const texto = await NeonModal.prompt({
-        title: 'Comentar historia',
-        message: 'Escribe un comentario de hasta 200 caracteres.',
-        placeholder: 'Escribe tu comentario',
-        confirmText: 'Enviar',
-        cancelText: 'Cancelar',
-        maxlength: 200
-    });
-
-    if (!texto) return;
-
-    const contenido = texto.trim().slice(0, 200);
-
-    if (!contenido) return;
-
-    try {
-
-        const r = await db.rpc(
-            'estado_enviar_comentario',
-            {
-                p_estado_id: estadoId,
-                p_texto: contenido
-            }
-        );
-
-        if (r.error) throw r.error;
-
-        aviso(
-            'Comentario enviado.',
-            'success'
-        );
-
-    } catch (e) {
-
-        console.error(
-            '[Estados] Error comentando:',
-            e
-        );
-
-        aviso(
-            e.message ||
-            'No se pudo enviar el comentario.',
-            'error'
-        );
     }
 }
 
@@ -2829,6 +2849,8 @@ function inicializarEstados() {
 
     instalarAccionEliminarEstado();
 
+    instalarAccionComentarEstado();
+
     document.addEventListener(
         'visibilitychange',
         () => {
@@ -2856,6 +2878,8 @@ function reinicializarEstados() {
     instalarControlesVideo();
 
     instalarAccionEliminarEstado();
+
+    instalarAccionComentarEstado();
 }
 
 if (document.readyState === 'loading') {
@@ -2872,5 +2896,5 @@ if (document.readyState === 'loading') {
 }
 
 // ================================================================
-// FIN · MENSAJES · ESTADOS v4.6
+// FIN · MENSAJES · ESTADOS v4.7
 // ================================================================
