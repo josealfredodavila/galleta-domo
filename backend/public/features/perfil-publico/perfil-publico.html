@@ -37,156 +37,6 @@
 <style>
     html:not(.auth-ready) .main-nav,
     html:not(.auth-ready) .header { opacity: 0; pointer-events: none; }
-
-    /* ESTILOS PARA EL NUEVO CUADRO DE ESCRIBIR EN EL MURO (DISEÑO CAPTURA) */
-    .custom-muro-card {
-        background: linear-gradient(145deg, #0a1526, #06101a);
-        border: 1px solid #1a3c5a;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(0, 255, 255, 0.1);
-        margin-top: 15px;
-    }
-    
-    .custom-muro-header {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        color: #fff;
-        font-family: 'Orbitron', sans-serif;
-        font-size: 14px;
-        letter-spacing: 1px;
-        text-transform: uppercase;
-        margin-bottom: 5px;
-    }
-    
-    .custom-muro-header .dot {
-        width: 10px;
-        height: 10px;
-        background-color: #00e5ff;
-        border-radius: 50%;
-        box-shadow: 0 0 8px #00e5ff;
-    }
-
-    .custom-muro-sub {
-        color: #6b8cae;
-        font-size: 12px;
-        margin-bottom: 15px;
-        padding-left: 20px;
-    }
-
-    .custom-muro-textarea {
-        width: 100%;
-        background: rgba(5, 12, 20, 0.8);
-        border: 1px solid #1e3a5f;
-        border-radius: 12px;
-        color: #fff;
-        padding: 15px;
-        font-family: 'Inter', sans-serif;
-        font-size: 14px;
-        resize: none;
-        outline: none;
-        transition: border-color 0.3s;
-    }
-
-    .custom-muro-textarea:focus {
-        border-color: #00e5ff;
-        box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
-    }
-
-    .custom-muro-textarea::placeholder {
-        color: #6b8cae;
-    }
-
-    /* Resaltado azul para la mención */
-    .custom-muro-textarea .mencion-azul {
-        color: #00e5ff;
-        font-weight: bold;
-    }
-
-    .custom-muro-acciones {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-top: 15px;
-    }
-
-    .custom-muro-iconos {
-        display: flex;
-        gap: 10px;
-    }
-
-    .custom-muro-iconos button {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid #1e3a5f;
-        border-radius: 10px;
-        width: 36px;
-        height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #00e5ff;
-        cursor: pointer;
-        transition: all 0.3s;
-    }
-
-    .custom-muro-iconos button:hover {
-        background: rgba(0, 229, 255, 0.1);
-        border-color: #00e5ff;
-    }
-
-    .custom-muro-iconos button svg {
-        width: 18px;
-        height: 18px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
-
-    .custom-muro-footer {
-        display: flex;
-        justify-content: flex-end;
-        align-items: center;
-        gap: 15px;
-    }
-
-    .custom-muro-contador {
-        color: #6b8cae;
-        font-size: 12px;
-    }
-
-    .custom-muro-btn-publicar {
-        background: linear-gradient(90deg, #00e5ff, #007bff);
-        border: none;
-        border-radius: 20px;
-        padding: 10px 24px;
-        color: #fff;
-        font-weight: 700;
-        font-family: 'Orbitron', sans-serif;
-        font-size: 13px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        cursor: pointer;
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .custom-muro-btn-publicar:hover {
-        transform: scale(1.02);
-        box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
-    }
-
-    .custom-muro-btn-publicar svg {
-        width: 16px;
-        height: 16px;
-        fill: none;
-        stroke: currentColor;
-        stroke-width: 2;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-    }
 </style>
 </head>
 
@@ -406,53 +256,21 @@
                 <button type="button" class="btn btn-outline btn-sm pv-mas" id="pvGaleriaMas" hidden>Cargar más</button>
             </section>
 
-            <!-- ESCRIBIR EN EL MURO (NUEVO DISEÑO IDÉNTICO A LA CAPTURA) -->
+            <!-- ESCRIBIR EN EL MURO (solo contactos activos) -->
             <section class="panel" id="pvMuroSection" hidden>
-                
-                <!-- CUADRO PERSONALIZADO -->
-                <div class="custom-muro-card">
-                    <div class="custom-muro-header">
-                        <span class="dot"></span> CREAR PUBLICACIÓN
+                <div class="pv-pub-head">
+                    <h3>Escribe en su muro</h3>
+                </div>
+                <div class="pv-muro-form">
+                    <textarea id="pvMuroTexto" maxlength="2000" rows="3" placeholder="Escribe algo para su muro..."></textarea>
+                    <div class="pv-muro-acciones">
+                        <button type="button" class="btn btn-outline btn-sm" id="pvMuroAdjuntar">Foto o video</button>
+                        <input type="file" id="pvMuroArchivo" accept="image/*,video/*" hidden>
+                        <span id="pvMuroNombre" class="pv-muro-nombre"></span>
+                        <button type="button" class="btn btn-sm" id="pvMuroPublicar">Publicar</button>
                     </div>
-                    <div class="custom-muro-sub">
-                        Texto, foto o video · #hashtags · @menciones
-                    </div>
-                    
-                    <!-- Área de texto con la mención inicial -->
-                    <textarea id="pvMuroTexto" class="custom-muro-textarea" maxlength="2000" rows="4" placeholder="¿Qué piensas?"></textarea>
-                    
-                    <div class="custom-muro-acciones">
-                        <!-- Iconos a la izquierda -->
-                        <div class="custom-muro-iconos">
-                            <button type="button" title="Emoji">
-                                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-                            </button>
-                            <button type="button" title="Hashtag">
-                                <svg viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg>
-                            </button>
-                            <button type="button" title="Foto/Video">
-                                <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                            </button>
-                            <button type="button" title="Cámara">
-                                <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-                            </button>
-                        </div>
-
-                        <!-- Contador y Botón Publicar a la derecha -->
-                        <div class="custom-muro-footer">
-                            <span class="custom-muro-contador"><span id="pvMuroContador">0</span> / 2000</span>
-                            <button type="button" class="custom-muro-btn-publicar" id="pvMuroPublicar">
-                                <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                                PUBLICAR
-                            </button>
-                        </div>
-                    </div>
-                    <!-- Input oculto para archivos -->
-                    <input type="file" id="pvMuroArchivo" accept="image/*,video/*" hidden>
-                    <span id="pvMuroNombre" class="pv-muro-nombre"></span>
                     <p class="pv-pub-msg" id="pvMuroMsg" hidden></p>
                 </div>
-
             </section>
 
             <!-- PUBLICACIONES -->
@@ -529,58 +347,6 @@
 <script src="/features/perfil-publico/js/amigos.js" defer></script>
 <script src="/features/shared/js/visor-media-global.js" defer></script>
 <script src="/features/perfil-publico/js/perfil-publico.js?v=4.3" defer></script>
-
-<!-- SCRIPT PARA LA MENCIÓN AUTOMÁTICA Y CONTADOR -->
-<script>
-(function() {
-    'use strict';
-
-    document.addEventListener('DOMContentLoaded', function() {
-        var textarea = document.getElementById('pvMuroTexto');
-        var contador = document.getElementById('pvMuroContador');
-        var handleElement = document.getElementById('pvHandle'); // Este es el @usuario que se visita
-
-        if (!textarea) return;
-
-        // 1. Lógica para inyectar la mención automática cuando el perfil carga
-        var checkPerfilCargado = setInterval(function() {
-            var handleTexto = handleElement ? handleElement.innerText || handleElement.textContent : '';
-            
-            // Si el handle ya se cargó y el textarea está vacío, inyectamos la mención
-            if (handleTexto && handleTexto.trim() !== '' && textarea.value.trim() === '') {
-                var username = handleTexto.replace('@', '').trim();
-                
-                // Insertamos el texto. Usamos un formato estándar.
-                textarea.value = "Menciona a @" + username + " ";
-                
-                // Opcional: Mover el cursor al final
-                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-                
-                // Actualizar contador
-                if (contador) contador.innerText = textarea.value.length;
-                
-                clearInterval(checkPerfilCargado);
-            }
-        }, 500); // Revisa cada medio segundo
-
-        // 2. Lógica del contador de caracteres
-        textarea.addEventListener('input', function() {
-            if (contador) contador.innerText = this.value.length;
-        });
-
-        // 3. Lógica para el input de archivo (opcional)
-        var btnAdjuntar = document.querySelector('.custom-muro-iconos button[title="Foto/Video"]');
-        var inputArchivo = document.getElementById('pvMuroArchivo');
-        
-        if (btnAdjuntar && inputArchivo) {
-            btnAdjuntar.addEventListener('click', function(e) {
-                e.preventDefault();
-                inputArchivo.click();
-            });
-        }
-    });
-})();
-</script>
 
 <!-- CARGA AUTOMÁTICA DE PUBLICACIONES AL DESLIZAR -->
 <script>
