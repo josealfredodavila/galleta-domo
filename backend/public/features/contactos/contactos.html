@@ -15,7 +15,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- CSS (Ruta correcta) -->
-    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=7">
+    <link rel="stylesheet" href="/features/contactos/css/contactos.css?v=7.1">
 
     <!-- Avatar de la barra superior: mismo aspecto que en Mensajes -->
     <style>
@@ -39,6 +39,18 @@
             height: 100%;
             object-fit: cover;
             display: block;
+        }
+        html.a11y-contraste #headerAvatar {
+            border-color: #ffffff;
+            color: #ffffff;
+        }
+        html.tema-bn-claro.a11y-contraste #headerAvatar,
+        html[data-tema="bn-claro"].a11y-contraste #headerAvatar,
+        html.tema-dia.a11y-contraste #headerAvatar,
+        html[data-tema="dia"].a11y-contraste #headerAvatar {
+            border-color: #000000;
+            color: #000000;
+            background: #ffffff;
         }
     </style>
 
@@ -263,6 +275,6 @@
     </script>
 
     <!-- Script de contactos (Ruta corregida) -->
-    <script src="/features/contactos/contactos.js?v=28_2" defer></script>
+    <script src="/features/contactos/contactos.js?v=28_3" defer></script>
 </body>
 </html>
