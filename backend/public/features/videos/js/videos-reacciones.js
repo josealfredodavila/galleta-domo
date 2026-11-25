@@ -1,5 +1,5 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · REACCIONES (v1)
+// CSARIEL'S · VIDEOS · REACCIONES (v1.1)
 // ================================================================
 // Acciones de reacción sobre un video.
 // - Elegir: crea el voto si no existe.
@@ -9,6 +9,8 @@
 // en pantalla sin recargar el feed.
 // Las tablas tienen RLS: el usuario solo modifica sus propios votos
 // (política INSERT/UPDATE/DELETE por usuario_id = auth.uid()).
+// v1.1: corregido el nombre de la lista de reacciones permitidas
+//       (VA.reacciones(), definida en videos-config.js).
 // Expuesto en window.VideosApp.reacciones.
 // Requiere: config, utils, feed, controles.
 // ================================================================
@@ -69,7 +71,7 @@
             U.showToast('Inicia sesión para reaccionar', 'error');
             return;
         }
-        if (VA.reacciones_lista().indexOf(emoji) === -1) return;
+        if (VA.reacciones().indexOf(emoji) === -1) return;
 
         VA.controles.cerrarBarrasReacciones();
 
