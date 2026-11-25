@@ -737,7 +737,7 @@ function renderizarPublicacionHTML(p) {
     var mias = misInteracciones[id] || {};
     var claseMK = p.tipo_marketplace ? ' marketplace ' + grpEscapeHTML(p.tipo_marketplace) : '';
     var avisoHTML = p.aviso_moderacion === 'lenguaje_inapropiado' ? htmlAvisoModeracionGrupo() : '';
-    var textoHTML = p.contenido ? '<p>' + grpEscapeHTML(p.contenido) + '</p>' : '';
+    var textoHTML = p.contenido ? '<p class="grp-texto">' + grpEscapeHTML(p.contenido) + '</p>' : '';
 
     return '<div class="publicacion-card' + claseMK + '" data-pub-id="' + id + '">' +
         '<div class="header">' +
@@ -764,7 +764,7 @@ function renderizarPublicacionHTML(p) {
                 '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> ' +
                 (mias.me_interesa ? 'Interesado' : 'Me interesa') +
             '</span>' +
-            (misNotificaciones[id] ? '<span class="grp-notificado"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg> Notificado</span>' : '') +
+            (misNotificaciones[id] ? '<span class="grp-notificado"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notificado</span>' : '') +
         '</div>' +
         '<div class="comentarios-container" id="comentariosContainer-' + id + '" style="display:none;">' +
             '<div id="comentariosLista-' + id + '"></div>' +
