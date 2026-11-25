@@ -1,14 +1,13 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.7
+   CSARIEL'S · VIDEOS · CÁMARA ESTILO TIKTOK v5.6
    ================================================================
-   Cambios respecto a v5.6:
-   - Conserva state.lastResults al cambiar de filtro para dibujar de
-     inmediato si ya hay un rostro detectado.
-   - Si se selecciona un filtro cuando FaceMesh aún no está listo,
-     reintenta inicializarlo o avisa si el dispositivo/red no soporta
-     detección facial.
-   - Registra y notifica de forma clara si algún PNG o MediaPipe falla.
-   - Mantiene filtros, sonido, modos 15/60 s, grabación y API
+   Cambios respecto a v5.5:
+   - iniciarFaceMesh() tiene tiempo límite en initialize(); si
+     MediaPipe no responde, la cámara sigue funcionando sin filtros.
+   - obtenerFaceMeshCtor() restaura window.FaceMesh solo si existía
+     un valor previo (antes asignaba undefined).
+   - Se eliminó una regla CSS vacía.
+   - Se mantienen filtros, sonido, modos 15/60 s, grabación y API
      pública (window.VideosCamara, __csMiniaturaCamara,
      csCamaraOnVideoGrabado).
    ================================================================ */
@@ -75,6 +74,7 @@
         alien: { partes: [{ src: ASSETS_BASE + '/antenas-alien-1.png', scale: 1.1, offsetX: 0, offsetY: -0.27, ancla: 'ojos' }] }
     };
 
+    // Selectores de la mascota y de cualquier widget flotante ajeno a la cámara
     var SELECTORES_EXTERNOS = [
         '#marquinhos', '.marquinhos', '.marquinhos-robot',
         '[id*="marquinhos" i]', '[class*="marquinhos" i]',
@@ -86,14 +86,12 @@
     var FACE_STASH_KEY = '__csFaceMeshCtor';
 
     var state = {
-        stream: null, faceMesh: null, faceMeshListo: false, inicializandoFaceMesh: false,
-        video: null, canvas: null, ctx: null,
+        stream: null, faceMesh: null, faceMeshListo: false, video: null, canvas: null, ctx: null,
         mediaRecorder: null, chunks: [], grabando: false, iniciada: false,
         abriendo: false, descartar: false, enviando: false, filtroActual: 'ninguno',
         renderFrameId: null, detectionFrameId: null, lastDetectionTime: 0,
         lastResults: null, facingMode: 'user', timerInterval: null,
-        segundosGrabados: 0, imagenes: {}, imagenesConError: new Set(),
-        externosOcultos: [], ocultarTimer: null,
+        segundosGrabados: 0, imagenes: {}, externosOcultos: [], ocultarTimer: null,
         duracionActual: CONFIG.DURACION_DEFAULT,
         cuentaRegresivaActiva: false, cuentaRegresivaTimer: null,
         audioCtx: null, audioDestino: null, audioPista: null,
@@ -182,6 +180,8 @@
 
     // ============================================================
     // MEDIAPIPE AISLADO
+    // Carga FaceMesh sin usar window.FaceMesh de otros scripts y
+    // guarda el constructor para reutilizarlo.
     // ============================================================
     async function obtenerFaceMeshCtor() {
         if (window[FACE_STASH_KEY]) return window[FACE_STASH_KEY];
@@ -203,6 +203,7 @@
             } catch (error) {
                 ultimoError = error;
             } finally {
+                // Restaura el global original solo si existía; no deja "undefined" como valor.
                 if (existiaPrevio) {
                     window.FaceMesh = previo;
                 } else {
@@ -214,9 +215,7 @@
     }
 
     async function iniciarFaceMesh() {
-        if (state.faceMeshListo && state.faceMesh) return true;
-        if (state.inicializandoFaceMesh) return false;
-        state.inicializandoFaceMesh = true;
+        if (state.faceMeshListo) return true;
         try {
             var stash = await obtenerFaceMeshCtor();
             var faceMesh = new stash.ctor({
@@ -227,47 +226,10 @@
             await conTimeout(faceMesh.initialize(), CONFIG.INIT_TIMEOUT_MS, 'MediaPipe tardó demasiado en iniciar');
             state.faceMesh = faceMesh;
             state.faceMeshListo = true;
-            if (state.iniciada && !state.detectionFrameId) iniciarLoopDeteccion();
             return true;
         } catch (error) {
-            state.faceMeshListo = false;
             console.error('[CSARIELS Cámara] MediaPipe no disponible; la cámara funciona sin filtros:', error);
             return false;
-        } finally {
-            state.inicializandoFaceMesh = false;
-        }
-    }
-
-    async function aplicarFiltro(id) {
-        if (!ASSETS[id] && id !== 'ninguno') return;
-        state.filtroActual = id;
-        renderizarFiltros();
-
-        if (id === 'ninguno') return;
-
-        var filtroDef = ASSETS[id];
-        var faltaImagen = filtroDef && filtroDef.partes.some(function (parte) {
-            var img = state.imagenes[parte.src];
-            return !img || !img.complete || !img.naturalWidth;
-        });
-
-        if (faltaImagen) {
-            await precargarImagenes();
-            var sigueFallando = filtroDef.partes.some(function (parte) {
-                return state.imagenesConError.has(parte.src);
-            });
-            if (sigueFallando) {
-                mostrarAviso('No cargó la imagen del filtro "' + id + '".');
-                return;
-            }
-        }
-
-        if (!state.faceMeshListo) {
-            mostrarAviso('Activando detección facial…');
-            var ok = await iniciarFaceMesh();
-            if (!ok) {
-                mostrarAviso('Filtros faciales no disponibles en este dispositivo.');
-            }
         }
     }
 
@@ -351,17 +313,9 @@
                 if (existente && existente.complete && existente.naturalWidth > 0) { terminar(); return; }
                 var imagen = new Image();
                 imagen.crossOrigin = 'anonymous';
-                imagen.onload = function () {
-                    state.imagenesConError.delete(url);
-                    terminar();
-                };
-                imagen.onerror = function () {
-                    state.imagenesConError.add(url);
-                    console.error('[CSARIELS Cámara] No se pudo cargar el PNG:', url);
-                    terminar();
-                };
-                state.imagenes[url] = imagen;
-                imagen.src = url;
+                imagen.onload = terminar;
+                imagen.onerror = function () { console.error('[CSARIELS Cámara] No se pudo cargar el PNG:', url); terminar(); };
+                state.imagenes[url] = imagen; imagen.src = url;
             });
         });
     }
@@ -556,7 +510,9 @@
         $('csCamaraFiltros').addEventListener('click', function (evento) {
             var boton = evento.target.closest('.cs-filtro-btn');
             if (!boton) return;
-            aplicarFiltro(boton.dataset.filtroId);
+            state.filtroActual = boton.dataset.filtroId;
+            state.lastResults = null;
+            renderizarFiltros();
         });
         $('csCamaraModos').addEventListener('click', function (evento) {
             var boton = evento.target.closest('.cs-camara-modo');
@@ -581,7 +537,7 @@
         el.textContent = texto;
         el.classList.add('visible');
         clearTimeout(avisoTimer);
-        avisoTimer = setTimeout(function () { el.classList.remove('visible'); }, 2600);
+        avisoTimer = setTimeout(function () { el.classList.remove('visible'); }, 2200);
     }
 
     var temporizadoresCuenta = [3, 5, 10];
@@ -679,12 +635,11 @@
     // DETECCIÓN FACIAL · bucle independiente del render
     // ============================================================
     function iniciarLoopDeteccion() {
-        if (state.detectionFrameId) cancelAnimationFrame(state.detectionFrameId);
         var intervalo = 1000 / CONFIG.DETECTION_FPS;
         async function detectar() {
-            if (!state.iniciada) { state.detectionFrameId = null; return; }
+            if (!state.iniciada) return;
             var ahora = performance.now();
-            if (state.faceMesh && state.faceMeshListo && !state.enviando && state.video && state.video.videoWidth > 0 &&
+            if (state.faceMesh && !state.enviando && state.video && state.video.videoWidth > 0 &&
                 ahora - state.lastDetectionTime >= intervalo) {
                 state.lastDetectionTime = ahora;
                 state.enviando = true;
@@ -693,7 +648,6 @@
                 finally { state.enviando = false; }
             }
             if (state.iniciada) state.detectionFrameId = requestAnimationFrame(detectar);
-            else state.detectionFrameId = null;
         }
         state.detectionFrameId = requestAnimationFrame(detectar);
     }
@@ -716,9 +670,8 @@
     }
 
     function iniciarLoopRender() {
-        if (state.renderFrameId) cancelAnimationFrame(state.renderFrameId);
         function dibujar() {
-            if (!state.iniciada) { state.renderFrameId = null; return; }
+            if (!state.iniciada) return;
             var video = state.video, canvas = state.canvas, ctx = state.ctx;
             if (video && video.videoWidth > 0 && video.videoHeight > 0) {
                 if (canvas.width !== CONFIG.CANVAS_WIDTH || canvas.height !== CONFIG.CANVAS_HEIGHT) {
@@ -1101,7 +1054,9 @@
         cambiarCamara: cambiarCamara,
         setFiltro: function (id) {
             if (ASSETS[id] || id === 'ninguno') {
-                aplicarFiltro(id);
+                state.filtroActual = id;
+                state.lastResults = null;
+                renderizarFiltros();
             }
         },
         setDuracion: establecerDuracion,
