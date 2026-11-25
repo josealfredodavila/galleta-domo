@@ -7,9 +7,8 @@
    - Botón de archivo sin estilos en línea (lo define videos-composer-pro.css).
    - Retirados estilos sin uso y duplicados con videos-composer-pro.css.
    - Estilo para botones del header con sonido/ubicación elegidos (.cs-activo).
-   Estilos de componentes que NO están en videos-publicar.css (pestañas,
-   filas de sonidos, ubicaciones, vista previa modal, borradores, marca de
-   agua y estados de reproducción) se mantienen en el <style> inyectado.
+   - Marca de agua del frontend apagada (MARCA_AGUA.ACTIVA: false) para
+     dejar únicamente la marca de agua procesada desde el router/backend.
    ================================================================ */
 
 (function () {
@@ -26,9 +25,9 @@
         ocultarReacciones: true
     };
 
-    /* Marca de agua (escudo con la "C"). ACTIVA: false la quita del feed y de la vista previa. */
+    /* Marca de agua (escudo con la "C"). Apagada para que solo quede la del router. */
     const MARCA_AGUA = {
-        ACTIVA: true,
+        ACTIVA: false,
         OPACIDAD: 1
     };
 
