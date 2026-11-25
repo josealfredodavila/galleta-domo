@@ -1,10 +1,10 @@
 // ================================================================
-// GRUPOS · LISTA / DIRECTORIO (v2)
+// GRUPOS · LISTA / DIRECTORIO (v3)
 // ================================================================
 // Listado de canales, filtros, paginación y "Crear Comunidad".
-// v2:
-//  - Filtro por categoría: se compara el UUID tal cual (antes se usaba
-//    parseInt, que rompía el filtro).
+// v3:
+//  - Campo "Ciudad" restaurado: se guarda en grupos_video.ciudad.
+//  - Filtro por categoría: se compara el UUID tal cual.
 //  - "Solo mis canales" incluye tus canales privados (RLS lo permite
 //    para miembros). El listado general solo muestra públicos.
 //  - Filtros de estado y municipio solo consideran canales públicos.
@@ -44,7 +44,8 @@ async function cargarGrupos(esPaginaSiguiente) {
     if (!esPaginaSiguiente) grpPagina = 0;
 
     var timeoutId = setTimeout(function () {
-        if (grid.querySelector('.empty-state h3') && grid.querySelector('.empty-state h3').textContent.indexOf('Cargando') !== -1) {
+        var titulo = grid.querySelector('.empty-state h3');
+        if (titulo && titulo.textContent.indexOf('Cargando') !== -1) {
             grid.innerHTML = htmlVacio('La carga está tardando', true, 'Intenta recargar la página');
         }
     }, 8000);
@@ -72,7 +73,7 @@ async function cargarGrupos(esPaginaSiguiente) {
 
         var query = window.supabaseClient
             .from('grupos_video')
-            .select('id, nombre, descripcion, avatar_url, municipio, estado_region, visibilidad, precio_usdt, marketplace_activo')
+            .select('id, nombre, descripcion, avatar_url, municipio, estado_region, ciudad, visibilidad, precio_usdt, marketplace_activo')
             .order('created_at', { ascending: false });
 
         // Listado general: solo canales públicos.
@@ -189,6 +190,7 @@ function htmlTarjetaGrupo(liveMap, g) {
         : '';
 
     var ubicacion = [];
+    if (g.ciudad) ubicacion.push(g.ciudad);
     if (g.municipio) ubicacion.push(g.municipio);
     if (g.estado_region) ubicacion.push(g.estado_region);
     var ubicacionTexto = ubicacion.length > 0 ? ubicacion.join(', ') : 'Sin ubicación';
@@ -341,6 +343,7 @@ async function crearGrupo() {
     var categoriaNombre = campo('inputCategoriaGrupo').value || 'General';
     var estadoRegion = (campo('inputEstadoGrupo').value || '').trim();
     var municipio = (campo('inputMunicipioGrupo').value || '').trim();
+    var ciudad = (campo('inputCiudadGrupo').value || '').trim();
     var pais = (campo('inputPaisGrupo').value || '').trim() || 'México';
     var precioUsdt = campo('inputPrecioUsdt').value;
     var marketplaceActivo = !!campo('inputMarketplaceActivo').checked;
@@ -370,6 +373,7 @@ async function crearGrupo() {
             categoria_id: categoriaId,
             estado_region: estadoRegion || null,
             municipio: municipio,
+            ciudad: ciudad || null,
             pais: pais,
             precio_usdt: parseFloat(precioUsdt) || 0,
             firma_ligera: 'Yo me hago cargo de lo que digo aquí',
