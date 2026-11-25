@@ -3,6 +3,11 @@
 //   POST /api/livekit/token   → token para unirse a una sala
 //   GET  /api/livekit/streams → transmisiones activas (público, sin datos sensibles)
 // La sala y el permiso de publicar los decide SIEMPRE el servidor.
+// v6: POST /token valida visibilidad y membresía de canales privados:
+//     - canal privado sin membresía → 403 'canal_privado'
+//     - transmitir sin ser miembro del canal → 403 'no_es_miembro'
+//     La membresía se valida antes del candado de pago y antes de
+//     registrar espectadores, así que un no miembro no queda registrado.
 // v5: /streams incluye lives de canal públicos (tipo 'canal') además de los
 //     lives normales (tipo 'live'). Los canales privados nunca se listan.
 // ================================================================
@@ -32,6 +37,7 @@ router.post('/token', verificarToken, async (req, res) => {
     try {
         const user = req.usuario;
         const streamId = Number(req.body?.streamId);
+        const rolSolicitado = req.body?.rol === 'streamer' ? 'streamer' : 'viewer';
 
         if (!Number.isInteger(streamId) || streamId <= 0) {
             return res.status(400).json({ success: false, error: 'streamId_invalido' });
@@ -61,6 +67,53 @@ router.post('/token', verificarToken, async (req, res) => {
         const esDueno = stream.streamer_id === user.id;
         const esCanal = stream.grupo_id != null;
 
+        // ---------- Canal: visibilidad y membresía (validación del servidor) ----------
+        let esMiembroCanal = false;
+
+        if (esCanal) {
+            const { data: grupo, error: errGrupo } = await db
+                .from('grupos_video')
+                .select('visibilidad, creador_id')
+                .eq('id', stream.grupo_id)
+                .maybeSingle();
+
+            if (errGrupo) {
+                logger.error(`[LiveKit] grupo: ${errGrupo.message}`);
+                return res.status(500).json({ success: false, error: 'db' });
+            }
+            if (!grupo) {
+                return res.status(404).json({ success: false, error: 'transmision_no_activa' });
+            }
+
+            esMiembroCanal = grupo.creador_id === user.id;
+
+            if (!esMiembroCanal) {
+                const { data: miembro, error: errMiembro } = await db
+                    .from('grupos_video_miembros')
+                    .select('id')
+                    .eq('grupo_id', stream.grupo_id)
+                    .eq('usuario_id', user.id)
+                    .eq('estado', 'activo')
+                    .maybeSingle();
+
+                if (errMiembro) {
+                    logger.error(`[LiveKit] miembro: ${errMiembro.message}`);
+                    return res.status(500).json({ success: false, error: 'db' });
+                }
+                esMiembroCanal = !!miembro;
+            }
+
+            // Canal privado: solo miembros o creador pueden entrar a la sala
+            if (grupo.visibilidad !== 'publico' && !esMiembroCanal && !esDueno) {
+                return res.status(403).json({ success: false, error: 'canal_privado' });
+            }
+
+            // Transmitir requiere ser miembro del canal (o su creador)
+            if (rolSolicitado === 'streamer' && !esMiembroCanal) {
+                return res.status(403).json({ success: false, error: 'no_es_miembro' });
+            }
+        }
+
         // ---------- Candado de pago (solo lives normales con precio) ----------
         const precio = Number(stream.precio_acceso) || 0;
         if (!esCanal && !esDueno && precio > 0) {
@@ -89,7 +142,7 @@ router.post('/token', verificarToken, async (req, res) => {
 
         // ---------- Publicar ----------
         let canPublish = false;
-        if (req.body?.rol === 'streamer' && esDueno) {
+        if (rolSolicitado === 'streamer' && esDueno) {
             if (esCanal) {
                 // Canal: sin Live Pass; solo tiempo diario personal
                 const { data: uso, error: errUso } = await db
