@@ -1,9 +1,10 @@
 // ================================================================
 // PERFIL · DATOS DEL USUARIO
 // ================================================================
-// CAMBIO v6.2 (Visor de Avatar Integrado):
-// - Se agregó la función window.abrirVisorImagen en el evento onclick
-//   del avatar para que la foto se abra a pantalla completa al tocarla.
+// CAMBIO v6.3:
+// - Corrección de marca: Sariel's → Csariel's.
+// - Biografía predeterminada actualizada.
+// - Valor predeterminado al guardar perfil actualizado.
 // ================================================================
 
 // 🔥 IMPORTANTE: PON AQUÍ TU URL DE RAILWAY (Sin la barra final)
@@ -18,7 +19,6 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
     fd.append('destino', destino);
     fd.append('tipo', tipo);
 
-    // Si BACKEND_URL tiene la URL real, úsala. Si no, usa ruta relativa.
     const urlDestino = (BACKEND_URL && BACKEND_URL.includes('railway.app')) 
         ? BACKEND_URL + '/api/media/upload' 
         : '/api/media/upload';
@@ -40,8 +40,7 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
 
     if (!respuesta.ok || !data.ok) {
         let mensaje = 'No se pudo subir el archivo';
-        
-        // Manejo de errores específicos del backend
+
         if (respuesta.status === 422) {
             mensaje = data.error || 'Contenido no permitido por las normas de la comunidad.';
         } else if (respuesta.status === 413) {
@@ -165,9 +164,11 @@ function actualizarUI(data) {
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
 
     if (bioEl) {
-        const bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
+        // ✅ MARCA CORRECTA: CSARIEL'S
+        const bioDefault = "Explorando el ecosistema Csariel's · WEB3 · Comunidad";
         const bioT = perfilT('perfil_biografia_default', bioDefault);
-        if (!data.bio || data.bio === bioDefault) {
+
+        if (!data.bio || data.bio === bioDefault || data.bio === "Explorando el ecosistema Sariel's · WEB3 · Comunidad") {
             bioEl.setAttribute('data-clave', 'perfil_biografia_default');
             bioEl.removeAttribute('data-no-traducir');
             bioEl.textContent = bioT;
@@ -184,9 +185,8 @@ function actualizarUI(data) {
             escaparHTML(perfilT('perfil_opciones', 'Opciones')) + '">✎</span>';
         if (data.avatar_url) {
             const urlSafe = escaparHTML(data.avatar_url);
-            // 🔥 AQUÍ ESTÁ LA MAGIA: Agregamos el onclick para abrir el visor
             avatarEl.innerHTML = '<img src="' + urlSafe + '" alt="" style="cursor: zoom-in;" onclick="window.abrirVisorImagen(\'' + urlSafe + '\', \'Foto de perfil\', \'perfilAvatarModal\')" onerror="this.style.display=\'none\'">' + toggle;
-            
+
             const img = avatarEl.querySelector('img');
             if (img) img.addEventListener('error', function () { avatarEl.innerHTML = '◈' + toggle; });
         } else {
@@ -322,7 +322,7 @@ async function guardarPerfil() {
     const perfil = {
         nombre: (document.getElementById('editNombre')?.value || '').trim() || perfilT('perfil_nombre_usuario', 'Explorador'),
         handle: (document.getElementById('editHandle')?.value || '').trim().replace('@', '') || 'explorador',
-        bio: (document.getElementById('editBio')?.value || '').trim() || perfilT('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
+        bio: (document.getElementById('editBio')?.value || '').trim() || perfilT('perfil_biografia_default', "Explorando el ecosistema Csariel's · WEB3 · Comunidad")
     };
     if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
         showToast(perfilT('perfil_handle_invalido', '❌ Handle inválido'), 'error');
@@ -366,9 +366,9 @@ function compartirPerfil() {
         .split(' ')[0] || perfilT('perfil_nombre_usuario', 'Explorador');
     const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
     const url = window.location.origin + '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
-    const textoBase = perfilT('perfil_compartir_texto', "◈ Perfil de {nombre} en Sariel's")
+    const textoBase = perfilT('perfil_compartir_texto', "◈ Perfil de {nombre} en Csariel's")
         .split('{nombre}').join(nombre);
-    const texto = textoBase + "\n◈ " + url + "\n\n#Sariels #WEB3";
+    const texto = textoBase + "\n◈ " + url + "\n\n#Csariels #WEB3";
     if (navigator.share) {
         navigator.share({ title: textoBase, text: texto, url: url }).catch(() => {});
     } else {
@@ -592,11 +592,8 @@ function irAMuro() {
 }
 
 // ================================================================
-// EXPORTACIONES A WINDOW (🔥 ESTO ES LO QUE FALTABA)
+// EXPORTACIONES A WINDOW
 // ================================================================
-// Hacemos que el HTML pueda encontrar estas funciones
-// para que no salga el error de "No se pudo subir la foto".
-
 window.subirFoto = subirFoto;
 window.eliminarFotoPerfil = eliminarFotoPerfil;
 window.subirVideo = subirVideo;
