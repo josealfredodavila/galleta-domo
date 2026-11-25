@@ -1,14 +1,15 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v3.9
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v4.0
    ================================================================
-   Cambios v3.9 (quirúrgicos):
-   - Eliminado el autoplay del feed: lo controla videos.html (carrusel).
-     Este módulo ya no pausa, reinicia ni silencia videos del feed.
-   - Eliminado el botón de pausa duplicado en la barra lateral.
-   - Marca de agua (escudo con la "C") en cada video del feed y en la
-     vista previa. Se controla con MARCA_AGUA.ACTIVA.
-   - Estilos duplicados unificados y constantes sin uso retiradas.
-   Sin cambios en borradores, sonido, ubicación, subida ni cuota.
+   Cambios v4.0:
+   - Helper seguro para cambiar texto de elementos (no falla si falta el nodo).
+   - Aviso de cuota neutral cuando el plan no llega del servidor.
+   - Botón de archivo sin estilos en línea (lo define videos-composer-pro.css).
+   - Retirados estilos sin uso y duplicados con videos-composer-pro.css.
+   - Estilo para botones del header con sonido/ubicación elegidos (.cs-activo).
+   Estilos de componentes que NO están en videos-publicar.css (pestañas,
+   filas de sonidos, ubicaciones, vista previa modal, borradores, marca de
+   agua y estados de reproducción) se mantienen en el <style> inyectado.
    ================================================================ */
 
 (function () {
@@ -142,6 +143,18 @@
     }
     function log(...args) { console.log('[VideosPublicar]', ...args); }
     function warn(...args) { console.warn('[VideosPublicar]', ...args); }
+
+    /* Cambia el texto de un elemento solo si existe. Evita errores si el DOM está incompleto. */
+    function setTexto(el, texto) {
+        if (el) el.textContent = texto;
+    }
+
+    /* Cambia el texto de un .cs-preview-txt dentro de una línea de la vista previa. */
+    function setTextoLinea(contenedor, texto) {
+        if (!contenedor) return;
+        const txt = contenedor.querySelector('.cs-preview-txt');
+        if (txt) txt.textContent = texto;
+    }
 
     function debouncer(fn, ms) {
         let t = null;
@@ -335,10 +348,13 @@
         csToast('No hay video para descargar', 'warning');
     }
 
+    /* Aviso de cuota. Si el servidor no informa el plan, el texto no asume ninguno. */
     function mostrarAvisoCuota(cuota) {
         document.getElementById('csModalCuota')?.remove();
         const c = cuota || {};
+        const planDesconocido = c.plan == null;
         const esPro = c.plan === 'pro';
+        const tieneCifras = c.limite_mb != null;
 
         const overlay = document.createElement('div');
         overlay.id = 'csModalCuota';
@@ -356,15 +372,22 @@
 
         const detalle = document.createElement('div');
         detalle.className = 'cs-confirm-mensaje';
-        const tieneCifras = c.limite_mb != null;
-        detalle.textContent = esPro
-            ? (tieneCifras
+
+        if (planDesconocido) {
+            detalle.textContent = (tieneCifras
+                ? `Tu espacio disponible es de ${formatearEspacio(c.limite_mb)} y ya lo usaste. `
+                : 'Ya usaste el espacio disponible en tu cuenta. ') +
+              'Tus videos y borradores siguen guardados. Libera espacio o revisa tus planes para subir más.';
+        } else if (esPro) {
+            detalle.textContent = tieneCifras
                 ? `Tu plan Pro incluye ${formatearEspacio(c.limite_mb)} y ya lo usaste. Libera espacio para seguir subiendo.`
-                : 'Ya usaste el espacio de tu plan Pro. Libera espacio para seguir subiendo.')
-            : (tieneCifras
+                : 'Ya usaste el espacio de tu plan Pro. Libera espacio para seguir subiendo.';
+        } else {
+            detalle.textContent = (tieneCifras
                 ? `Tu plan gratuito incluye ${formatearEspacio(c.limite_mb)} y ya lo usaste. `
                 : 'Ya usaste el espacio de tu plan gratuito. ') +
               'Tus videos y borradores siguen guardados. Para subir más, amplía a Pro o libera espacio.';
+        }
 
         const acciones = document.createElement('div');
         acciones.className = 'cs-confirm-acciones';
@@ -374,7 +397,7 @@
             const btnPro = document.createElement('button');
             btnPro.type = 'button';
             btnPro.className = 'cs-confirm-btn cs-confirm-ok';
-            btnPro.textContent = 'Subir a Pro · $300 MXN por 5 GB';
+            btnPro.textContent = planDesconocido ? 'Ver planes' : 'Subir a Pro · $300 MXN por 5 GB';
             btnPro.addEventListener('click', () => { window.location.href = RUTA_MEMBRESIA_PRO; });
             acciones.appendChild(btnPro);
         }
@@ -1301,14 +1324,8 @@
         const u = state.ubicacionSeleccionada;
         const pSon = $('csPreviewSonido');
         const pUb = $('csPreviewUbicacion');
-        if (pSon) {
-            const txt = pSon.querySelector('.cs-preview-txt');
-            if (txt) { txt.removeAttribute('data-clave'); txt.textContent = s ? `${s.nombre} — ${s.artista}` : vt('videos_preview_sin_sonido', 'Sin sonido'); }
-        }
-        if (pUb) {
-            const txt = pUb.querySelector('.cs-preview-txt');
-            if (txt) { txt.removeAttribute('data-clave'); txt.textContent = u ? textoUbicacion(u) : vt('videos_preview_sin_ubicacion', 'Sin ubicación'); }
-        }
+        setTextoLinea(pSon, s ? `${s.nombre} — ${s.artista}` : vt('videos_preview_sin_sonido', 'Sin sonido'));
+        setTextoLinea(pUb, u ? textoUbicacion(u) : vt('videos_preview_sin_ubicacion', 'Sin ubicación'));
         actualizarBadgePreview();
     }
 
@@ -1638,10 +1655,9 @@
 
         state.sonidoSeleccionado = null;
         state.ubicacionSeleccionada = null;
-        const previewSonido = $('csPreviewSonido');
-        const previewUbic = $('csPreviewUbicacion');
-        if (previewSonido) previewSonido.querySelector('.cs-preview-txt').textContent = vt('videos_preview_sin_sonido', 'Sin sonido');
-        if (previewUbic) previewUbic.querySelector('.cs-preview-txt').textContent = vt('videos_preview_sin_ubicacion', 'Sin ubicación');
+        setTextoLinea($('csPreviewSonido'), vt('videos_preview_sin_sonido', 'Sin sonido'));
+        setTextoLinea($('csPreviewUbicacion'), vt('videos_preview_sin_ubicacion', 'Sin ubicación'));
+
         const badge = $('csPreviewBadge');
         if (badge) badge.style.display = 'none';
 
@@ -1652,13 +1668,14 @@
         const progressFill = $('progressFill');
         const progressText = $('progressText');
         if (progressEl) progressEl.style.display = 'none';
+        setTexto(progressFill, '');
         if (progressFill) progressFill.style.width = '0%';
-        if (progressText) progressText.textContent = '0%';
+        setTexto(progressText, '0%');
 
         const pFill = $('processingProgressFill');
         const pText = $('processingProgressText');
         if (pFill) pFill.style.width = '0%';
-        if (pText) pText.textContent = '0%';
+        setTexto(pText, '0%');
 
         limpiarPersistencia();
         actualizarBotonesSonidoUbicacion();
@@ -1744,7 +1761,10 @@
     }
 
     /* ----------------------------------------------------------------
-       ESTILOS (una sola inyección)
+       ESTILOS INYECTADOS (una sola vez)
+       Componentes que no están en videos-publicar.css: pestañas, filas de
+       sonidos y ubicaciones, estados de reproducción, vista previa modal,
+       borradores y marca de agua.
        ---------------------------------------------------------------- */
     function inyectarEstilosExtra() {
         if ($('cs-videos-publicar-inline')) return;
@@ -1763,7 +1783,16 @@
                 -webkit-tap-highlight-color: transparent;
             }
 
-            .cs-spinner-inline { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,43,214,0.25); border-top-color: #ff2bd6; border-radius: 50%; animation: cs-spin-inline 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
+            /* Botones del header con sonido o ubicación elegidos */
+            .cs-btn-header.cs-activo {
+                background: rgba(212, 175, 55, 0.12);
+                border-color: #D4AF37;
+            }
+            .cs-btn-ubicacion.cs-activo {
+                background: rgba(0, 229, 255, 0.10);
+                border-color: #00E5FF;
+            }
+
             @keyframes cs-spin-inline { to { transform: rotate(360deg); } }
 
             /* ---- Marca de agua (escudo con la "C") ---- */
@@ -1777,6 +1806,7 @@
             .cs-preview-video .cs-marca { top: 12px; left: 12px; width: 48px; height: 64px; }
             @media (max-width: 480px) { .cs-marca { width: 56px; height: 75px; } }
 
+            /* ---- Vista previa del video dentro de la publicación ---- */
             .cs-preview-video {
                 position: relative; width: 100%; height: min(78vh, 720px);
                 background: #000; border-radius: 14px; overflow: hidden;
@@ -1808,8 +1838,8 @@
                 color: #ff3366; font-size: 1rem; cursor: pointer; padding: 0;
             }
             #csQuitarVideo:active { transform: scale(.92); }
-            .cs-btn-quitar { color: #ff3366 !important; border-color: rgba(255,51,102,.6) !important; }
 
+            /* ---- Vista previa a pantalla completa ---- */
             .cs-prev-modal { position: fixed; inset: 0; z-index: ${Z.PREVIEW}; background: #000; display: none; flex-direction: column; color: #fff; }
             .cs-prev-modal.show { display: flex; }
             .cs-prev-top { position: absolute; top: 0; left: 0; right: 0; z-index: 5; display: flex; align-items: center; justify-content: space-between; padding: max(12px, env(safe-area-inset-top)) 14px 10px; background: linear-gradient(to bottom, rgba(0,0,0,.6), transparent); }
@@ -1822,7 +1852,7 @@
             .cs-prev-acciones { display: flex; gap: 10px; padding: 12px 14px max(16px, env(safe-area-inset-bottom)); background: #000; }
             .cs-prev-acciones button { flex: 1; padding: 14px; border-radius: 14px; font-weight: 700; cursor: pointer; }
 
-            /* ---- Sheets: encabezado, búsqueda fija y listado con scroll propio ---- */
+            /* ---- Sheets de sonidos y ubicación: encabezado fijo y lista con scroll ---- */
             .cs-sheet .cs-sheet-body {
                 flex: 1; min-height: 0; overflow: hidden;
                 display: flex; flex-direction: column;
@@ -1839,6 +1869,22 @@
                 overflow-y: auto; overscroll-behavior: contain;
                 -webkit-overflow-scrolling: touch;
                 padding-bottom: 12px;
+            }
+
+            /* ---- Pestañas de sonidos ---- */
+            .cs-tabs { display: flex; gap: 4px; padding: 10px 14px 0; border-bottom: 1px solid var(--glass-border); flex-shrink: 0; }
+            .cs-tab {
+                flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+                padding: 8px 10px; background: transparent; border: none;
+                border-bottom: 2px solid transparent; color: #9fb4c8;
+                font-size: .72rem; font-weight: 700; cursor: pointer;
+                transition: color .2s ease, border-color .2s ease;
+            }
+            .cs-tab.active { color: #fff; border-bottom-color: #ff2bd6; text-shadow: 0 0 10px rgba(255,43,214,.6); }
+            .cs-tab-count {
+                display: none; align-items: center; justify-content: center;
+                min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+                background: rgba(255,43,214,.2); color: #ff2bd6; font-size: .6rem; font-weight: 800;
             }
 
             /* ---- Biblioteca de sonidos ---- */
@@ -1956,23 +2002,7 @@
             .cs-vacio-favs .cs-vacio-ico { display: block; font-size: 2rem; color: #ff2bd6; text-shadow: 0 0 10px #ff2bd6; margin-bottom: 10px; }
             .cs-vacio-favs p { font-size: .8rem; line-height: 1.5; margin: 0; }
 
-            /* Pestañas */
-            .cs-tabs { display: flex; gap: 4px; padding: 10px 14px 0; border-bottom: 1px solid var(--glass-border); flex-shrink: 0; }
-            .cs-tab {
-                flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-                padding: 8px 10px; background: transparent; border: none;
-                border-bottom: 2px solid transparent; color: #9fb4c8;
-                font-size: .72rem; font-weight: 700; cursor: pointer;
-                transition: color .2s ease, border-color .2s ease;
-            }
-            .cs-tab.active { color: #fff; border-bottom-color: #ff2bd6; text-shadow: 0 0 10px rgba(255,43,214,.6); }
-            .cs-tab-count {
-                display: none; align-items: center; justify-content: center;
-                min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
-                background: rgba(255,43,214,.2); color: #ff2bd6; font-size: .6rem; font-weight: 800;
-            }
-
-            /* Barra inferior: título, tiempo, progreso y botón */
+            /* ---- Barra inferior del sheet de sonidos ---- */
             .cs-footer-sonido { align-items: center; gap: 12px; }
             .cs-footer-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
             .cs-sonido-actual {
@@ -1996,7 +2026,7 @@
             }
             .cs-footer-sonido .cs-btn-primary { flex-shrink: 0; }
 
-            /* Ubicaciones */
+            /* ---- Ubicaciones ---- */
             .cs-ubicacion-item { display: flex; align-items: center; gap: 12px; padding: 12px 4px; background: transparent; border: none; border-bottom: 1px solid rgba(255,255,255,.05); cursor: pointer; text-align: left; color: var(--text-primary); }
             .cs-ubicacion-item:hover { background: rgba(255,255,255,.025); }
             .cs-ubicacion-item.activo { background: rgba(0,229,255,.06); }
@@ -2008,6 +2038,7 @@
             .cs-ubicacion-item.activo .cs-ubicacion-check { opacity: 1; }
             .cs-ubicacion-actual { flex: 1; min-width: 0; font-size: .76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
+            /* ---- Borradores ---- */
             .cs-borrador-item { display: flex; align-items: center; gap: 12px; padding: 10px; border: 1px solid rgba(255,43,214,0.35); border-radius: 12px; background: linear-gradient(120deg, rgba(255,43,214,.08), rgba(0,240,255,.06)); margin-bottom: 8px; box-shadow: 0 0 14px rgba(255,43,214,.12); }
             .cs-borrador-portada { width: 48px; height: 64px; border-radius: 8px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; color: #00f0ff; flex-shrink: 0; box-shadow: 0 0 10px rgba(0,240,255,.35); }
             .cs-borrador-portada img { width: 100%; height: 100%; object-fit: cover; }
@@ -2198,6 +2229,7 @@
         actualizarBotonQuitar(false);
     }
 
+    /* Oculta el input original y pone en su lugar el botón plano (estilo en videos-composer-pro.css). */
     function transformarInputArchivo(scope) {
         const input = scope.querySelector('#inputArchivoVideo') || $('inputArchivoVideo');
         if (!input) { warn('inputArchivoVideo no encontrado'); return; }
@@ -2217,10 +2249,10 @@
         const btnWrap = document.createElement('div');
         btnWrap.className = 'cs-file-btn-wrap';
         btnWrap.innerHTML = `
-            <button type="button" class="cs-file-btn" id="csFileBtnVideo" aria-label="Elegir video de la galería" style="border:1px solid rgba(255,255,255,0.15); background:transparent; border-radius:8px; padding:16px; width:100%; display:flex; flex-direction:column; align-items:center; gap:8px; color:var(--text-muted); cursor:pointer;">
-                <span class="cs-file-btn-ico" style="font-size:1.5rem;">▶</span>
-                <span class="cs-file-btn-txt" id="csFileBtnTxt" data-clave="videos_elegir_galeria" style="font-weight:600; font-size:0.85rem;">Elegir video de la galería</span>
-                <span class="cs-file-btn-hint" id="csFileBtnHint" data-clave="videos_archivo_hint" style="font-size:0.7rem; opacity:0.7;">MP4 · WebM · MOV · Máx 100 MB</span>
+            <button type="button" class="cs-file-btn" id="csFileBtnVideo" aria-label="Elegir video de la galería">
+                <span class="cs-file-btn-ico" aria-hidden="true">▶</span>
+                <span class="cs-file-btn-txt" id="csFileBtnTxt" data-clave="videos_elegir_galeria">Elegir video de la galería</span>
+                <span class="cs-file-btn-hint" id="csFileBtnHint" data-clave="videos_archivo_hint">MP4 · WebM · MOV · Máx 100 MB</span>
             </button>`;
         if (input.parentNode) input.parentNode.insertBefore(btnWrap, input.nextSibling);
 
@@ -2714,7 +2746,7 @@
         iniciarMarcaFeed();
         actualizarBotonesSonidoUbicacion();
         await restaurarLocal();
-        log('✅ Módulo Publicar v3.9 listo');
+        log('✅ Módulo Publicar v4.0 listo');
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
