@@ -2,23 +2,8 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title data-clave="videos_titulo_pagina">◈ Videos · Csariel's</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
-    <link rel="stylesheet" href="/features/videos/css/videos-base.css">
-    <link rel="stylesheet" href="/features/videos/css/videos-feed.css">
-    <link rel="stylesheet" href="/features/videos/css/videos-hojas.css">
-    <link rel="stylesheet" href="/features/videos/css/videos-publicar.css">
-    <link rel="stylesheet" href="/features/videos/css/videos-composer-pro.css">
-
-    <script src="/features/shared/js/api-config.js"></script>
-    <script src="/features/shared/js/apariencia-global.js"></script>
-
-    <!-- ===== DIAGNÓSTICO TEMPORAL (INYECTADO POR INSTRUCCIÓN DE ANTROPIC) ===== -->
+    <!-- TEMPORAL: diagnóstico en pantalla. Borrar este bloque cuando se resuelva. -->
     <script>
     (function () {
         function mostrar(t) {
@@ -31,6 +16,7 @@
             }
             b.textContent += t + '\n';
         }
+        window.__dbgVideos = mostrar;
         window.addEventListener('error', function (e) {
             mostrar('ERROR: ' + e.message + ' @' + String(e.filename || '').split('/').pop() + ':' + e.lineno);
         });
@@ -52,7 +38,22 @@
         };
     })();
     </script>
-    <!-- ===== FIN DEL DIAGNÓSTICO ===== -->
+    <!-- FIN TEMPORAL -->
+
+    <title data-clave="videos_titulo_pagina">◈ Videos · Csariel's</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <link rel="stylesheet" href="/features/videos/css/videos-base.css">
+    <link rel="stylesheet" href="/features/videos/css/videos-feed.css">
+    <link rel="stylesheet" href="/features/videos/css/videos-hojas.css">
+    <link rel="stylesheet" href="/features/videos/css/videos-publicar.css">
+    <link rel="stylesheet" href="/features/videos/css/videos-composer-pro.css">
+
+    <script src="/features/shared/js/api-config.js"></script>
+    <script src="/features/shared/js/apariencia-global.js"></script>
 </head>
 <body>
 
@@ -252,5 +253,28 @@
 
     <script src="/features/videos/js/videos-camara.js" defer></script>
     <script src="/features/videos/js/videos-publicar.js" defer></script>
+
+    <!-- TEMPORAL: reporte de módulos cargados. Borrar cuando se resuelva. -->
+    <script>
+    window.addEventListener('load', function () {
+        setTimeout(function () {
+            var mostrar = window.__dbgVideos || function () {};
+            var VA = window.VideosApp || {};
+            var modulos = ['__config', 'utils', 'hojas', 'sesion', 'audio', 'controles',
+                           'feed', 'navegacion', 'reacciones', 'comentarios', 'menu',
+                           'mapa', 'cola', 'atras', '__init'];
+            var faltan = modulos.filter(function (m) { return !VA[m]; });
+            var btnBuscar = document.getElementById('btnBuscar');
+            var btnPublicar = document.getElementById('btnAbrirPublicar');
+            mostrar('DIAGNOSTICO · módulos que faltan: ' + (faltan.join(', ') || 'ninguno'));
+            mostrar('DIAGNOSTICO · SDK Supabase: ' + (window.supabase ? 'ok' : 'NO'));
+            mostrar('DIAGNOSTICO · cliente sbVideos: ' + (window.sbVideos ? 'ok' : 'NO'));
+            mostrar('DIAGNOSTICO · lupa enlazada: ' + (btnBuscar && btnBuscar.dataset.navEnganchado === '1' ? 'sí' : 'NO'));
+            mostrar('DIAGNOSTICO · botón + enlazado: ' + (btnPublicar && btnPublicar.dataset.navEnganchado === '1' ? 'sí' : 'NO'));
+            mostrar('DIAGNOSTICO · función cargarVideos: ' + (typeof window.cargarVideos === 'function' ? 'ok' : 'NO'));
+        }, 1500);
+    });
+    </script>
+    <!-- FIN TEMPORAL -->
 </body>
 </html>
