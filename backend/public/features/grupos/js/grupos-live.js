@@ -1,5 +1,5 @@
 // ================================================================
-// GRUPOS · LIVE DE CANAL (LiveKit)
+// GRUPOS · LIVE DE CANAL (LiveKit) (v3)
 // ================================================================
 // Transmisión libre dentro del canal, estilo TikTok.
 // - Sin Live Pass y sin costo de entrada.
@@ -7,7 +7,13 @@
 //   reinicio a medianoche hora de México. Lo controla el servidor.
 // - Solo el streamer consume tiempo. Los espectadores no.
 // - Una sola sala activa a la vez en el navegador.
+// - El servidor (POST /api/livekit/token) es la autoridad: valida
+//   visibilidad y membresía. El cliente solo muestra mensajes.
 // - API para la tarjeta de video (feed): window.grpLiveTarjeta.
+// v3:
+//  - Helpers DOM seguros: la API de la tarjeta puede usarse fuera de
+//    grupos.html (videos.html) sin romper por elementos ausentes.
+//  - Mensajes de error centralizados (incluye canal_privado y no_es_miembro).
 // Depende de: grupos-config.js, grupos-utils.js, grupos-interno.js
 // ================================================================
 
@@ -22,7 +28,6 @@ const MENSAJES_ERROR_CANAL = {
     live_pass_invalido: 'Error de permisos del canal. Intenta de nuevo.',
     canal_privado: 'Este canal es privado. Solo sus miembros pueden ver el live.',
     no_es_miembro: 'Debes ser miembro del canal para transmitir.',
-    'Debes ser miembro del canal': 'Debes ser miembro del canal',
     'Ya tienes una transmisión activa': 'Ya tienes una transmisión activa en otro canal'
 };
 
@@ -33,6 +38,28 @@ const ICONO_RELOJ_SVG =
 
 const ICONO_EN_VIVO_SVG =
     '<svg class="icon icon-sm" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><circle cx="12" cy="12" r="6"/></svg>';
+
+// ================================================================
+// HELPERS DOM SEGUROS
+// ================================================================
+function elGrp(id) {
+    return document.getElementById(id);
+}
+
+function mostrarGrp(id, display) {
+    var el = elGrp(id);
+    if (el) el.style.display = display;
+}
+
+function textoGrp(id, texto) {
+    var el = elGrp(id);
+    if (el) el.textContent = texto;
+}
+
+function htmlGrp(id, html) {
+    var el = elGrp(id);
+    if (el) el.innerHTML = html;
+}
 
 // ================================================================
 // TOKEN DE LIVEKIT (endpoint real: streamId + rol)
@@ -83,10 +110,10 @@ function formatoTiempoLive(minutos) {
 }
 
 function asegurarBannerCanal() {
-    let b = document.getElementById('canalTiempoBanner');
+    let b = elGrp('canalTiempoBanner');
     if (b) return b;
 
-    const cont = document.getElementById('grupoLiveContainer');
+    const cont = elGrp('grupoLiveContainer');
     if (!cont) return null;
 
     b = document.createElement('div');
@@ -159,7 +186,7 @@ async function terminarLivePorTiempo() {
 // SALAS DE LIVEKIT: una a la vez, con listeners creados una sola vez
 // ================================================================
 function actualizarEspectadoresLive() {
-    const el = document.getElementById('grupoLiveEspectadores');
+    const el = elGrp('grupoLiveEspectadores');
     if (el && liveKitRoomGrupo) {
         el.textContent = liveKitRoomGrupo.remoteParticipants.size || 0;
     }
@@ -201,14 +228,14 @@ async function limpiarEstadoLiveCanal() {
 
     cerrarLiveGrupoInline();
 
-    const banner = document.getElementById('canalTiempoBanner');
+    const banner = elGrp('canalTiempoBanner');
     if (banner) banner.remove();
 
-    document.getElementById('grupoLiveBadge').style.display = 'none';
-    document.getElementById('btnIniciarLive').style.display = 'inline-flex';
-    document.getElementById('btnVerLive').style.display = 'none';
-    document.getElementById('btnFinalizarLive').style.display = 'none';
-    document.getElementById('grupoLiveEndBtn').style.display = 'none';
+    mostrarGrp('grupoLiveBadge', 'none');
+    mostrarGrp('btnIniciarLive', 'inline-flex');
+    mostrarGrp('btnVerLive', 'none');
+    mostrarGrp('btnFinalizarLive', 'none');
+    mostrarGrp('grupoLiveEndBtn', 'none');
 
     if (grupoActualId) await cargarPublicacionesGrupo(grupoActualId);
     await cargarDashboard();
@@ -219,7 +246,7 @@ async function limpiarEstadoLiveCanal() {
 // ================================================================
 // Cerrar la vista no corta el live del streamer. Al espectador sí se le desconecta.
 async function cerrarLiveGrupoInline() {
-    const container = document.getElementById('grupoLiveContainer');
+    const container = elGrp('grupoLiveContainer');
     if (container) container.classList.remove('visible');
 
     if (!esStreamerDelLiveGrupo) {
@@ -228,11 +255,10 @@ async function cerrarLiveGrupoInline() {
 }
 
 function mostrarLiveGrupoInline(transmision) {
-    const container = document.getElementById('grupoLiveContainer');
-    const titulo = document.getElementById('grupoLiveTitulo');
+    const container = elGrp('grupoLiveContainer');
     if (!container) return;
     container.classList.add('visible');
-    if (titulo) titulo.textContent = transmision.titulo || 'Transmisión del canal';
+    textoGrp('grupoLiveTitulo', transmision.titulo || 'Transmisión del canal');
 }
 
 // ================================================================
@@ -302,11 +328,11 @@ async function iniciarLiveEnGrupo() {
 
         mostrarLiveGrupoInline(transmision);
         actualizarBannerCanal(minutos);
-        document.getElementById('grupoLiveBadge').style.display = 'inline-flex';
-        document.getElementById('btnIniciarLive').style.display = 'none';
-        document.getElementById('btnFinalizarLive').style.display = 'inline-flex';
-        document.getElementById('btnVerLive').style.display = 'inline-flex';
-        document.getElementById('grupoLiveEndBtn').style.display = 'flex';
+        mostrarGrp('grupoLiveBadge', 'inline-flex');
+        mostrarGrp('btnIniciarLive', 'none');
+        mostrarGrp('btnFinalizarLive', 'inline-flex');
+        mostrarGrp('btnVerLive', 'inline-flex');
+        mostrarGrp('grupoLiveEndBtn', 'flex');
 
         await cargarDashboard();
 
@@ -314,7 +340,7 @@ async function iniciarLiveEnGrupo() {
         const { Room, Track } = await grpCargarLiveKit();
         await desconectarSalaLive();
         liveKitRoomGrupo = crearSalaLive(Room);
-        _videoDestinoLive = document.getElementById('grupoLiveVideo');
+        _videoDestinoLive = elGrp('grupoLiveVideo');
 
         const tokenInfo = await obtenerTokenLiveKitGrupo(transmision.id, 'streamer');
         if (!tokenInfo.canPublish) throw new Error(MENSAJES_ERROR_CANAL.sin_minutos_hoy);
@@ -329,7 +355,7 @@ async function iniciarLiveEnGrupo() {
             localVideoTrack.attach(_videoDestinoLive);
         }
 
-        document.getElementById('grupoLiveEstado').innerHTML = ICONO_EN_VIVO_SVG + ' En vivo';
+        htmlGrp('grupoLiveEstado', ICONO_EN_VIVO_SVG + ' En vivo');
         grpShowToast('Transmitiendo en el canal', 'success');
 
         iniciarContadorCanal(transmision.id);
@@ -352,7 +378,7 @@ async function iniciarLiveEnGrupo() {
 }
 
 // ================================================================
-// CANAL PRIVADO: ¿puede este usuario ver el live?
+// CANAL PRIVADO: validación de visibilidad (UX; el servidor decide)
 // ================================================================
 async function puedeVerLive(grupoId) {
     if (!sessionUser) return false;
@@ -382,13 +408,13 @@ async function conectarEspectadorLive(transmision, videoEl) {
     if (!transmision) throw new Error('No hay transmisión');
 
     if (!(await puedeVerLive(transmision.grupo_id))) {
-        throw new Error('Este canal es privado. Solo sus miembros pueden ver el live.');
+        throw new Error(MENSAJES_ERROR_CANAL.canal_privado);
     }
 
     const { Room } = await grpCargarLiveKit();
     await desconectarSalaLive();
     liveKitRoomGrupo = crearSalaLive(Room);
-    _videoDestinoLive = videoEl || document.getElementById('grupoLiveVideo');
+    _videoDestinoLive = videoEl || elGrp('grupoLiveVideo');
 
     const tokenInfo = await obtenerTokenLiveKitGrupo(transmision.id, 'viewer');
     await liveKitRoomGrupo.connect(tokenInfo.url, tokenInfo.token);
@@ -411,9 +437,9 @@ async function verLiveActivo() {
 
     mostrarLiveGrupoInline(liveActivoEnGrupo);
     esStreamerDelLiveGrupo = !!(sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id);
-    document.getElementById('grupoLiveEndBtn').style.display = esStreamerDelLiveGrupo ? 'flex' : 'none';
+    mostrarGrp('grupoLiveEndBtn', esStreamerDelLiveGrupo ? 'flex' : 'none');
 
-    const videoEl = document.getElementById('grupoLiveVideo');
+    const videoEl = elGrp('grupoLiveVideo');
     if (videoEl) videoEl.muted = esStreamerDelLiveGrupo;
 
     try {
@@ -427,7 +453,7 @@ async function verLiveActivo() {
             const tokenInfo = await obtenerTokenLiveKitGrupo(liveActivoEnGrupo.id, 'streamer');
             await liveKitRoomGrupo.connect(tokenInfo.url, tokenInfo.token);
 
-            document.getElementById('grupoLiveEstado').innerHTML = ICONO_EN_VIVO_SVG + ' En vivo';
+            htmlGrp('grupoLiveEstado', ICONO_EN_VIVO_SVG + ' En vivo');
             grpShowToast('Conectado al LIVE', 'success');
 
             actualizarBannerCanal(null);
@@ -440,7 +466,7 @@ async function verLiveActivo() {
         } else {
             // Espectador: no consume tiempo y no abre contador.
             await conectarEspectadorLive(liveActivoEnGrupo, videoEl);
-            document.getElementById('grupoLiveEstado').innerHTML = ICONO_EN_VIVO_SVG + ' En vivo';
+            htmlGrp('grupoLiveEstado', ICONO_EN_VIVO_SVG + ' En vivo');
             grpShowToast('Conectado al LIVE', 'success');
         }
     } catch (e) {
@@ -452,7 +478,7 @@ async function verLiveActivo() {
 // ADJUNTAR TRACK (video/audio) al destino actual
 // ================================================================
 function adjuntarTrackGrupo(track) {
-    const destino = _videoDestinoLive || document.getElementById('grupoLiveVideo');
+    const destino = _videoDestinoLive || elGrp('grupoLiveVideo');
 
     if (track.kind === 'video') {
         if (destino) {
@@ -460,7 +486,7 @@ function adjuntarTrackGrupo(track) {
             destino.play().catch(() => {});
         }
     } else if (track.kind === 'audio') {
-        let audioEl = document.getElementById('grupoLiveAudio');
+        let audioEl = elGrp('grupoLiveAudio');
         if (!audioEl) {
             audioEl = document.createElement('audio');
             audioEl.id = 'grupoLiveAudio';
@@ -494,7 +520,7 @@ function suscribirseAlChatGrupo() {
 }
 
 async function enviarMensajeLiveGrupo() {
-    const input = document.getElementById('grupoLiveChatInput');
+    const input = elGrp('grupoLiveChatInput');
     const mensaje = (input?.value || '').trim();
     if (!mensaje) return;
     if (!sessionUser) { grpShowToast('Inicia sesión para chatear', 'error'); return; }
@@ -516,7 +542,7 @@ async function enviarMensajeLiveGrupo() {
 }
 
 function agregarMensajeChatGrupo(mensaje) {
-    const container = document.getElementById('grupoLiveChat');
+    const container = elGrp('grupoLiveChat');
     if (!container) return;
 
     const div = document.createElement('div');
@@ -584,12 +610,8 @@ async function finalizarLiveGrupo() {
         const { error } = await window.supabaseClient.rpc('finalizar_transmision', {
             p_transmision_id: transmisionActiva.id
         });
-        if (error) {
-            await window.supabaseClient
-                .from('transmisiones')
-                .update({ estado: 'finalizada', is_live: false, fecha_fin: new Date().toISOString() })
-                .eq('id', transmisionActiva.id);
-        }
+        if (error) throw error;
+
         grpShowToast('LIVE finalizado', 'success');
         await limpiarEstadoLiveCanal();
         await cargarGrupos();
