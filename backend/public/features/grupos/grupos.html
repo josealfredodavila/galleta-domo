@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title data-clave="grupos_titulo_pagina">◈ Canales · Csariel's</title>
+    <title data-clave="grupos_titulo_pagina">Canales · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 
     <script>
@@ -50,11 +50,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <script src="/features/shared/js/apariencia-global.js"></script>
     <link rel="stylesheet" href="/features/grupos/css/grupos.css">
-    <link rel="stylesheet" href="/features/perfil/css/emojis-animations.css">
 
     <style>
         /* ================================================================
-           COMPOSITOR WEB3 (ESTILOS INYECTADOS PARA CANALES)
+           COMPOSITOR WEB3 · estilos del compositor de canales
+           (pasarán a grupos.css en la siguiente entrega)
            ================================================================ */
         .form-publicacion {
             position: relative;
@@ -97,13 +97,11 @@
         .form-publicacion .acciones {
             display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; flex-wrap: wrap;
         }
-        
         .form-publicacion .acciones > button:not(.btn-publicar):not(.btn-mk) {
-            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            display: inline-flex; align-items: center; justify-content: center;
             width: 40px; height: 40px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .07);
             background: rgba(255, 255, 255, .03); color: #7fdcff; cursor: pointer; padding: 0;
             transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease, color .2s ease;
-            font-size: 0;
         }
         .form-publicacion .acciones > button:not(.btn-publicar):not(.btn-mk) svg { width: 18px; height: 18px; }
         .form-publicacion .acciones > button:not(.btn-publicar):not(.btn-mk):hover {
@@ -132,9 +130,7 @@
         .form-publicacion .btn-publicar:active { transform: scale(.96); }
 
         /* Contador WEB3 */
-        .pf-composer-pie {
-            margin-left: auto; display: flex; align-items: center; gap: 12px;
-        }
+        .pf-composer-pie { margin-left: auto; display: flex; align-items: center; gap: 12px; }
         .pf-composer-anillo { position: relative; width: 36px; height: 36px; flex: 0 0 36px; }
         .pf-composer-anillo svg { width: 36px; height: 36px; transform: rotate(-90deg); }
         .pf-composer-anillo circle { fill: none; stroke-width: 3; }
@@ -146,71 +142,28 @@
         .pf-composer-contador.cerca { color: #D4AF37; }
         .pf-composer-contador.lleno { color: #ff3366; }
 
-        /* ================================================================
-           ESTILOS DINÁMICOS PARA EL AVATAR Y HANDLE DEL COMPOSITOR
-           ================================================================ */
-        #userAvatarGrupo {
-            background-size: cover;
-            background-position: center;
-            color: transparent;
-        }
+        /* Avatar y handle del compositor */
+        #userAvatarGrupo { background-size: cover; background-position: center; color: transparent; }
         #userHandleGrupo {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            margin-top: 4px;
-            padding: 2px 10px 2px 9px;
-            border-radius: 999px;
-            color: #5cc8ff !important;
-            font-weight: 600;
-            font-size: .72rem;
-            letter-spacing: .2px;
+            display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 2px 10px 2px 9px;
+            border-radius: 999px; color: #5cc8ff !important; font-weight: 600; font-size: .72rem; letter-spacing: .2px;
             background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16));
-            border: 1px solid rgba(0, 229, 255, .38);
-            text-shadow: 0 0 8px rgba(0, 229, 255, .5);
+            border: 1px solid rgba(0, 229, 255, .38); text-shadow: 0 0 8px rgba(0, 229, 255, .5);
             box-shadow: 0 0 10px rgba(0, 229, 255, .12);
-            animation: perfilHandleHalo 2.4s ease-in-out infinite;
+            animation: grpHandleHalo 2.4s ease-in-out infinite;
         }
-        #userHandleGrupo::before {
-            content: '⚡';
-            font-size: .72rem;
-            line-height: 1;
-            filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));
-            animation: perfilHandleDestello 1.8s steps(2, end) infinite;
-        }
-        @keyframes perfilHandleHalo {
+        #userHandleGrupo .grp-bolt { display: inline-flex; color: #00e5ff; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9)); animation: grpHandleDestello 1.8s steps(2, end) infinite; }
+        #userHandleGrupo .grp-bolt svg { width: 11px; height: 11px; }
+        @keyframes grpHandleHalo {
             0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
             50%      { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
         }
-        @keyframes perfilHandleDestello {
+        @keyframes grpHandleDestello {
             0%, 100% { opacity: 1; }
             50%      { opacity: .35; }
         }
-
-        /* ================================================================
-           UNIFORM VIDEO DISPLAY ENGINE (UVDE) - 9:16
-           ================================================================ */
-        .uvde-live-video-container {
-            width: 100%;
-            aspect-ratio: 9 / 16;
-            position: relative;
-            overflow: hidden;
-            background: #000;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-        }
-        .uvde-live-video-container video {
-            width: 100%;
-            height: 100%;
-            position: absolute;
-            inset: 0;
-            object-fit: cover;
-            object-position: center;
-            display: block;
-            max-width: 100%;
+        @media (prefers-reduced-motion: reduce) {
+            #userHandleGrupo, #userHandleGrupo .grp-bolt { animation: none !important; }
         }
     </style>
 
@@ -229,7 +182,12 @@
                     var raw = localStorage.getItem(CLAVES_MASCOTA[i]);
                     if (raw == null) continue;
                     var valor = raw;
-                    try { var parsed = JSON.parse(raw); if (typeof parsed === 'string') valor = parsed; else if (parsed && typeof parsed === 'object' && parsed.mascota) valor = parsed.mascota; else if (parsed && typeof parsed === 'object' && parsed.id) valor = parsed.id; } catch (e) {}
+                    try {
+                        var parsed = JSON.parse(raw);
+                        if (typeof parsed === 'string') valor = parsed;
+                        else if (parsed && typeof parsed === 'object' && parsed.mascota) valor = parsed.mascota;
+                        else if (parsed && typeof parsed === 'object' && parsed.id) valor = parsed.id;
+                    } catch (e) {}
                     valor = String(valor).trim().toLowerCase();
                     if (SIN_MASCOTA.indexOf(valor) !== -1) return null;
                     if (MASCOTAS[valor]) return valor;
@@ -238,21 +196,44 @@
             return undefined;
         }
         var _mascotasCargadas = {};
-        function inyectarCSS(href) { if (document.querySelector('link[data-mascota-css="' + href + '"]')) return; var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.setAttribute('data-mascota-css', href); document.head.appendChild(l); }
-        function inyectarJS(src) { return new Promise(function (resolve) { if (document.querySelector('script[data-mascota-js="' + src + '"]')) { resolve(); return; } var s = document.createElement('script'); s.src = src; s.defer = true; s.setAttribute('data-mascota-js', src); s.onload = resolve; s.onerror = resolve; document.head.appendChild(s); }); }
+        function inyectarCSS(href) {
+            if (document.querySelector('link[data-mascota-css="' + href + '"]')) return;
+            var l = document.createElement('link');
+            l.rel = 'stylesheet'; l.href = href; l.setAttribute('data-mascota-css', href);
+            document.head.appendChild(l);
+        }
+        function inyectarJS(src) {
+            return new Promise(function (resolve) {
+                if (document.querySelector('script[data-mascota-js="' + src + '"]')) { resolve(); return; }
+                var s = document.createElement('script');
+                s.src = src; s.defer = true; s.setAttribute('data-mascota-js', src);
+                s.onload = resolve; s.onerror = resolve;
+                document.head.appendChild(s);
+            });
+        }
         function cargarMascota(nombre) {
             if (!nombre || !MASCOTAS[nombre] || _mascotasCargadas[nombre]) return;
             _mascotasCargadas[nombre] = true;
-            var def = MASCOTAS[nombre]; def.css.forEach(inyectarCSS);
-            (function secuencia(i) { if (i >= def.js.length) return; inyectarJS(def.js[i]).then(function () { secuencia(i + 1); }); })(0);
-            console.log('[Mascotas] Cargando mascota activa:', nombre);
+            var def = MASCOTAS[nombre];
+            def.css.forEach(inyectarCSS);
+            (function secuencia(i) {
+                if (i >= def.js.length) return;
+                inyectarJS(def.js[i]).then(function () { secuencia(i + 1); });
+            })(0);
         }
         window.__cargarMascotaActiva = cargarMascota;
         var preferida = leerMascotaLocal();
         if (preferida === undefined) {
             var intentos = 0;
-            var timer = setInterval(function () { intentos++; var p = leerMascotaLocal(); if (p !== undefined) { clearInterval(timer); if (p) cargarMascota(p); } else if (intentos >= 15) { clearInterval(timer); } }, 100);
-        } else if (preferida) { cargarMascota(preferida); }
+            var timer = setInterval(function () {
+                intentos++;
+                var p = leerMascotaLocal();
+                if (p !== undefined) { clearInterval(timer); if (p) cargarMascota(p); }
+                else if (intentos >= 15) { clearInterval(timer); }
+            }, 100);
+        } else if (preferida) {
+            cargarMascota(preferida);
+        }
     })();
     </script>
 </head>
@@ -262,7 +243,7 @@
             <a href="/" class="logo">
                 <span class="logo-hex">◈</span>
                 <span class="logo-text">Csariel<span>'s</span></span>
-                <span class="logo-badge">◇ CABLERa</span>
+                <span class="logo-badge">CABLERa</span>
             </a>
             <div class="header-actions">
                 <span class="network-badge">
@@ -280,7 +261,8 @@
             <a href="/" class="nav-link"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Inicio</a>
             <a href="/features/muro/muro.html" class="nav-link"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Muro</a>
             <a href="/features/perfil/perfil.html" class="nav-link"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Perfil</a>
-            <a href="/features/mensajes/contactos.html" class="nav-link"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Contactos</a>
+            <a href="/features/contactos/contactos.html" class="nav-link"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>Contactos</a>
+            <a href="/features/mensajes/mensajes.html" class="nav-link"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Mensajes</a>
             <a href="/features/live/live.html" class="nav-link live"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>Live</a>
             <a href="/features/internet/internet.html" class="nav-link"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4.93 19.07A10 10 0 0 1 4.93 4.93M19.07 19.07a10 10 0 0 0 0-14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 16.24a6 6 0 0 0 0-8.48"/><circle cx="12" cy="12" r="2"/></svg>Internet</a>
             <a href="/features/videos/videos.html" class="nav-link"><svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>Videos</a>
@@ -374,21 +356,28 @@
             <div class="grupo-live-container" id="grupoLiveContainer">
                 <div class="live-header-bar">
                     <div class="live-tag"><span class="dot"></span><span><span data-clave="grupos_en_vivo">EN VIVO</span> · <span id="grupoLiveTitulo">Transmisión del canal</span></span></div>
-                    <button class="live-close" onclick="cerrarLiveGrupoInline()" title="Cerrar">×</button>
+                    <button class="live-close" onclick="cerrarLiveGrupoInline()" title="Cerrar" aria-label="Cerrar">×</button>
                 </div>
                 <div class="live-video-wrap">
-                    <!-- UVDE: CONTENEDOR UNIFORME 9:16 -->
-                    <div class="uvde-live-video-container">
+                    <!-- Contenedor 9:16 con marca de agua, igual que el feed de videos -->
+                    <div class="video-9x16">
                         <video id="grupoLiveVideo" autoplay playsinline muted></video>
+                        <span class="marca-agua" aria-hidden="true">
+                            <svg viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="2" y="2" width="56" height="76" rx="8" fill="none" stroke="#D4AF37" stroke-width="3"/>
+                                <text x="30" y="58" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="50" fill="#D4AF37">C</text>
+                            </svg>
+                        </span>
                         <div class="live-controls-inline">
-                            <button class="live-ctrl-btn" onclick="toggleMuteGrupoLive()" id="grupoLiveMuteBtn" title="Micrófono" style="position: absolute; bottom: 12px; right: 12px; background: rgba(0,0,0,0.7); border: 1px solid var(--glass-border); color: var(--gold); font-size: 1.2rem; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; z-index: 20; backdrop-filter: blur(4px);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
-                            <button class="live-ctrl-btn end" onclick="finalizarLiveGrupo()" id="grupoLiveEndBtn" title="Finalizar" style="display:none; position: absolute; bottom: 12px; left: 12px; background: rgba(255,0,68,0.3); border: 1px solid var(--live-red); color: #fff; width: 40px; height: 40px; align-items: center; justify-content: center; border-radius: 50%; cursor: pointer; z-index: 20; backdrop-filter: blur(4px);"><svg viewBox="0 0 24 24" fill="currentColor" style="width: 20px; height: 20px;"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></button>
+                            <button class="live-ctrl-btn" onclick="toggleMuteGrupoLive()" id="grupoLiveMuteBtn" title="Micrófono" aria-label="Micrófono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                            <button class="live-ctrl-btn end" onclick="finalizarLiveGrupo()" id="grupoLiveEndBtn" title="Finalizar" aria-label="Finalizar live" style="display:none;"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg></button>
+                            <button class="live-ctrl-btn regalo" onclick="abrirRegaloLive()" id="grupoLiveRegaloBtn" title="Regalar USDT" aria-label="Regalar USDT"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg></button>
                         </div>
                     </div>
                 </div>
                 <div class="live-info">
-                    <span style="display:inline-flex;align-items:center;gap:5px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span id="grupoLiveEspectadores">0</span> <span data-clave="grupos_espectadores">espectadores</span></span>
-                    <span id="grupoLiveEstado" style="display:inline-flex;align-items:center;gap:5px;"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/></svg><span data-clave="grupos_conectando">Conectando...</span></span>
+                    <span class="live-info-item"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span id="grupoLiveEspectadores">0</span> <span data-clave="grupos_espectadores">espectadores</span></span>
+                    <span id="grupoLiveEstado" class="live-info-item"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/></svg><span data-clave="grupos_conectando">Conectando...</span></span>
                 </div>
                 <div class="live-chat-inline" id="grupoLiveChat"></div>
                 <div class="live-chat-input-row">
@@ -412,26 +401,26 @@
                 </div>
             </div>
 
-            <!-- COMPOSITOR WEB3 (AHORA CON DATOS DINÁMICOS) -->
+            <!-- COMPOSITOR DEL CANAL -->
             <div class="form-publicacion" id="formPublicacion" style="display:none;">
                 <div class="form-header" style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;">
                     <div class="avatar" id="userAvatarGrupo">◈</div>
                     <div>
                         <div class="nombre" id="userNombreGrupo">Cargando...</div>
-                        <div class="handle" id="userHandleGrupo" style="display: none;">⚡ @cargando</div>
+                        <div class="handle" id="userHandleGrupo" style="display: none;"><span class="grp-bolt" aria-hidden="true"></span><span class="grp-handle-txt"></span></div>
                     </div>
                 </div>
 
                 <textarea id="inputPublicacion" data-placeholder="grupos_que_pasa_canal" placeholder="¿Qué está pasando en el canal?" maxlength="2000"></textarea>
-                
+
                 <div class="acciones">
-                    <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo" title="Emoji"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
-                    <button onclick="insertarHashtagGrupo()" title="Hashtag"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg></button>
-                    <button onclick="insertarMencionGrupo()" title="Mención"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg></button>
-                    <button onclick="subirFotoGrupo()" title="Publica una foto como contenido normal del canal"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
-                    <button onclick="subirVideoGrupo()" title="Publica un video como contenido normal del canal"><svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
+                    <button onclick="toggleEmojiPickerGrupo()" id="btnEmojiGrupo" title="Emoji" aria-label="Insertar emoji"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></button>
+                    <button onclick="insertarHashtagGrupo()" title="Hashtag" aria-label="Agregar hashtag"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/></svg></button>
+                    <button onclick="insertarMencionGrupo()" title="Mención" aria-label="Mencionar a alguien"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg></button>
+                    <button onclick="subirFotoGrupo()" title="Publica una foto como contenido normal del canal" aria-label="Subir foto"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
+                    <button onclick="subirVideoGrupo()" title="Publica un video como contenido normal del canal" aria-label="Subir video"><svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
                     <button class="btn-mk" onclick="abrirModalMarketplace()" id="btnMarketplace" title="Vende un producto o servicio con precio, stock y wallet de cobro"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Vender</span></button>
-                    
+
                     <div class="pf-composer-pie">
                         <div class="pf-composer-anillo" id="pfAnillo" aria-hidden="true">
                             <svg viewBox="0 0 36 36">
@@ -442,9 +431,9 @@
                         <span class="pf-composer-contador" id="pfContador">0 / 2000</span>
                         <button class="btn-publicar" onclick="publicarEnGrupo()" title="Publica un mensaje de texto en el canal"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg><span>Publicar</span></button>
                     </div>
-                    
+
                     <div class="emoji-picker" id="emojiPickerGrupo">
-                        <div class="titulo" data-clave="grupos_elige_emoji">◇ Elige tu emoji</div>
+                        <div class="titulo" data-clave="grupos_elige_emoji">Elige tu emoji</div>
                         <div class="grid" id="emojiGridGrupo"></div>
                     </div>
                 </div>
@@ -462,12 +451,12 @@
             </div>
         </div>
 
-        <!-- MODALES (SE MANTIENEN INTACTOS) -->
+        <!-- MODALES -->
         <div class="modal-overlay" id="modalCrearGrupo">
             <div class="modal">
                 <div class="modal-header">
                     <h2><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><span data-clave="grupos_crear_comunidad">Crear Comunidad</span></h2>
-                    <button class="btn-cerrar" onclick="cerrarModalCrearGrupo()">×</button>
+                    <button class="btn-cerrar" onclick="cerrarModalCrearGrupo()" aria-label="Cerrar">×</button>
                 </div>
                 <form id="formCrearGrupo" onsubmit="event.preventDefault(); crearGrupo();">
                     <div class="form-group"><label data-clave="grupos_nombre_grupo">Nombre del Canal *</label><input type="text" id="inputNombreGrupo" required /></div>
@@ -508,7 +497,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span data-clave="grupos_ajustes_canal">Ajustes del Canal</span></h2>
-                    <button class="btn-cerrar" onclick="cerrarAjustesCanal()">×</button>
+                    <button class="btn-cerrar" onclick="cerrarAjustesCanal()" aria-label="Cerrar">×</button>
                 </div>
                 <div class="ajustes-menu">
                     <div id="marketplaceAviso" style="font-size:0.65rem;color:var(--text-muted);padding:10px 12px;background:rgba(0,0,0,0.2);border-radius:10px;margin-bottom:8px;line-height:1.5;display:none;">
@@ -528,7 +517,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2><svg class="icon" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><span data-clave="grupos_administrar_canal">Administrar Canal</span></h2>
-                    <button class="btn-cerrar" onclick="cerrarModalAdmin()">×</button>
+                    <button class="btn-cerrar" onclick="cerrarModalAdmin()" aria-label="Cerrar">×</button>
                 </div>
                 <div id="adminContenido">
                     <div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><h3 data-clave="grupos_cargando_admin">Cargando...</h3></div>
@@ -547,7 +536,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2 style="color:var(--danger);"><svg class="icon" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg><span data-clave="grupos_eliminar_canal">Eliminar Canal</span></h2>
-                    <button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()">×</button>
+                    <button class="btn-cerrar" onclick="cerrarConfirmacionEliminarGrupo()" aria-label="Cerrar">×</button>
                 </div>
                 <div style="padding:12px 0;">
                     <p style="color:var(--text-secondary); font-size:0.9rem; margin-bottom:12px;" data-clave="grupos_confirmar_eliminar_pregunta">¿Eliminar este canal?</p>
@@ -566,7 +555,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg><span data-clave="grupos_donar_usdt">Donar USDT</span></h2>
-                    <button class="btn-cerrar" onclick="cerrarModalRegalos()">×</button>
+                    <button class="btn-cerrar" onclick="cerrarModalRegalos()" aria-label="Cerrar">×</button>
                 </div>
                 <div style="text-align:center;padding:10px 0;">
                     <p style="color:var(--text-muted);font-size:0.8rem;margin-bottom:12px;"><span data-clave="grupos_apoya_creador">Apoya a</span> <strong id="giftStreamerName" style="color:var(--gold);">el creador</strong> <span data-clave="grupos_con_usdt">con USDT/USDC</span></p>
@@ -580,7 +569,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2><svg class="icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg><span data-clave="grupos_reportar_publicacion">Reportar Publicación</span></h2>
-                    <button class="btn-cerrar" onclick="cerrarModalReportar()">×</button>
+                    <button class="btn-cerrar" onclick="cerrarModalReportar()" aria-label="Cerrar">×</button>
                 </div>
                 <div class="form-group">
                     <label data-clave="grupos_motivo_reporte">Motivo del reporte *</label>
@@ -609,7 +598,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2><svg class="icon" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span data-clave="grupos_reportar_admin">Reportar al Administrador</span></h2>
-                    <button class="btn-cerrar" onclick="cerrarModalReportarAdmin()">×</button>
+                    <button class="btn-cerrar" onclick="cerrarModalReportarAdmin()" aria-label="Cerrar">×</button>
                 </div>
                 <div class="form-group">
                     <label data-clave="grupos_tipo_reporte">Tipo de reporte *</label>
@@ -643,9 +632,9 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2><svg class="icon" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg><span data-clave="grupos_etiquetar_foto">Etiquetar Foto</span></h2>
-                    <button class="btn-cerrar" onclick="cerrarModalEtiquetar()">×</button>
+                    <button class="btn-cerrar" onclick="cerrarModalEtiquetar()" aria-label="Cerrar">×</button>
                 </div>
-                <div style="background:rgba(0,0,0,0.4);border-radius:12px;padding:12px;margin-bottom:12px;text-align:center;"><img id="imagenEtiquetar" src="" style="max-width:100%;max-height:200px;border-radius:8px;" /></div>
+                <div style="background:rgba(0,0,0,0.4);border-radius:12px;padding:12px;margin-bottom:12px;text-align:center;"><img id="imagenEtiquetar" src="" alt="" style="max-width:100%;max-height:200px;border-radius:8px;" /></div>
                 <div class="form-group"><label data-clave="grupos_buscar_usuario">Buscar usuario</label><input type="text" id="inputBuscarUsuarioEtiqueta" data-placeholder="grupos_nombre_usuario" placeholder="Nombre o @usuario..." oninput="buscarUsuariosEtiqueta()" /></div>
                 <div id="resultadosUsuariosEtiqueta" style="max-height:200px;overflow-y:auto;margin-bottom:12px;"></div>
                 <div id="etiquetadosSeleccionados" style="margin-bottom:12px;display:flex;flex-wrap:wrap;gap:6px;"></div>
@@ -657,7 +646,7 @@
             <div class="modal">
                 <div class="modal-header">
                     <h2><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span data-clave="grupos_publicar_marketplace">Publicar en Marketplace</span></h2>
-                    <button class="btn-cerrar" onclick="cerrarModalMarketplace()">×</button>
+                    <button class="btn-cerrar" onclick="cerrarModalMarketplace()" aria-label="Cerrar">×</button>
                 </div>
                 <div class="form-group">
                     <label data-clave="grupos_tipo_publicacion">Tipo de publicación *</label>
@@ -691,7 +680,7 @@
 
         <footer class="footer">
             <span><span class="brand">◈ Csariel's</span> · Sabor al Paladar · WEB3</span>
-            <span style="opacity:0.3;display:inline-flex;align-items:center;gap:4px;" data-no-traducir="1"><svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Polygon</span>
+            <span class="footer-net" data-no-traducir="1"><svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Polygon</span>
         </footer>
     </div>
 
@@ -716,26 +705,25 @@
 
     <script>
     // ================================================================
-    // CONTROL DEL CONTADOR Y BOTÓN @
+    // COMPOSITOR DEL CANAL · contador, mención y datos del usuario
     // ================================================================
-    (function() {
+    (function () {
         'use strict';
+
+        var MAX = 2000;
+        var CIRCUNFERENCIA = 94.25;
         var input = document.getElementById('inputPublicacion');
         var contador = document.getElementById('pfContador');
         var anillo = document.getElementById('pfAnillo');
         var progreso = document.getElementById('pfAnilloProgreso');
-        var MAX = 2000;
-        var CIRCUNFERENCIA = 94.25;
 
         function actualizarContador() {
             if (!input || !contador) return;
             var len = input.value.length;
             var ratio = Math.min(len / MAX, 1);
-            
             contador.textContent = len + ' / ' + MAX;
             contador.classList.toggle('cerca', len >= MAX * 0.9 && len < MAX);
             contador.classList.toggle('lleno', len >= MAX);
-            
             if (progreso) progreso.style.strokeDashoffset = String(CIRCUNFERENCIA * (1 - ratio));
             if (anillo) {
                 anillo.classList.toggle('cerca', len >= MAX * 0.9 && len < MAX);
@@ -748,108 +736,104 @@
             actualizarContador();
         }
 
-        window.insertarMencionGrupo = function() {
+        window.insertarMencionGrupo = function () {
             if (!input) return;
-            const start = input.selectionStart || 0;
-            const end = input.selectionEnd || 0;
-            const valor = input.value || '';
-            const texto = '@';
-            input.value = valor.substring(0, start) + texto + valor.substring(end);
-            const nuevaPos = start + texto.length;
+            var start = input.selectionStart || 0;
+            var end = input.selectionEnd || 0;
+            var valor = input.value || '';
+            input.value = valor.substring(0, start) + '@' + valor.substring(end);
+            var nuevaPos = start + 1;
             input.selectionStart = nuevaPos;
             input.selectionEnd = nuevaPos;
             input.focus();
             input.dispatchEvent(new Event('input', { bubbles: true }));
         };
-    })();
 
-    // ================================================================
-    // CARGAR DATOS DEL USUARIO (AVATAR Y NOMBRE) EN EL COMPOSITOR
-    // ================================================================
-    window.cargarDatosUsuarioCompositor = function() {
-        var intentos = 0;
-        function intentarCarga() {
-            if (intentos++ > 50) return; // 5 segundos máximo
-            
-            if (!window.supabaseClient) {
-                setTimeout(intentarCarga, 100);
-                return;
+        // Icono de rayo (SVG) para el handle del usuario
+        var RAYO_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
+
+        function avatarSeguro(url) {
+            return (typeof url === 'string' && url.indexOf('https://') === 0) ? url : '';
+        }
+
+        window.cargarDatosUsuarioCompositor = function () {
+            var intentos = 0;
+
+            function intentarCarga() {
+                if (intentos++ > 50) return;
+                if (!window.supabaseClient) { setTimeout(intentarCarga, 100); return; }
+
+                window.supabaseClient.auth.getSession().then(function (res) {
+                    var session = res && res.data && res.data.session;
+                    if (!session) return;
+
+                    window.supabaseClient
+                        .from('usuarios')
+                        .select('nombre, handle, avatar_url')
+                        .eq('id', session.user.id)
+                        .maybeSingle()
+                        .then(function (r) {
+                            if (r.error || !r.data) {
+                                console.warn('[Compositor] No se pudo cargar el perfil:', r.error);
+                                return;
+                            }
+                            var perfil = r.data;
+
+                            var elAvatar = document.getElementById('userAvatarGrupo');
+                            if (elAvatar) {
+                                var url = avatarSeguro(perfil.avatar_url);
+                                if (url) {
+                                    elAvatar.style.backgroundImage = 'url("' + url + '")';
+                                    elAvatar.textContent = '';
+                                } else {
+                                    elAvatar.style.backgroundImage = '';
+                                    elAvatar.textContent = (perfil.nombre || 'U').charAt(0).toUpperCase();
+                                }
+                            }
+
+                            var elNombre = document.getElementById('userNombreGrupo');
+                            if (elNombre) elNombre.textContent = perfil.nombre || 'Usuario';
+
+                            var elHandle = document.getElementById('userHandleGrupo');
+                            if (elHandle) {
+                                if (perfil.handle) {
+                                    var bolt = elHandle.querySelector('.grp-bolt');
+                                    var txt = elHandle.querySelector('.grp-handle-txt');
+                                    if (bolt) bolt.innerHTML = RAYO_SVG;
+                                    if (txt) txt.textContent = '@' + perfil.handle;
+                                    elHandle.style.display = 'inline-flex';
+                                } else {
+                                    elHandle.style.display = 'none';
+                                }
+                            }
+                        })
+                        .catch(function (e) {
+                            console.warn('[Compositor] Error cargando datos:', e);
+                        });
+                }).catch(function (e) {
+                    console.warn('[Compositor] Error obteniendo sesión:', e);
+                });
             }
 
-            // Obtener sesión
-            window.supabaseClient.auth.getSession().then(function(res) {
-                var session = res.data.session;
-                if (!session) return; // No hay sesión, no hacer nada
+            intentarCarga();
+        };
 
-                // Consultar la tabla usuarios
-                window.supabaseClient
-                    .from('usuarios')
-                    .select('nombre, handle, avatar_url')
-                    .eq('id', session.user.id)
-                    .maybeSingle()
-                    .then(function(r) {
-                        if (r.error || !r.data) {
-                            console.warn('[Compositor] No se pudo cargar el perfil:', r.error);
-                            return;
-                        }
+        document.addEventListener('DOMContentLoaded', function () {
+            window.cargarDatosUsuarioCompositor();
 
-                        var perfil = r.data;
-                        
-                        // 1. Actualizar Avatar
-                        var elAvatar = document.getElementById('userAvatarGrupo');
-                        if (elAvatar) {
-                            if (perfil.avatar_url) {
-                                elAvatar.style.backgroundImage = 'url(' + perfil.avatar_url + ')';
-                                elAvatar.textContent = '';
-                            } else {
-                                elAvatar.textContent = (perfil.nombre || 'U').charAt(0).toUpperCase();
-                            }
+            var form = document.getElementById('formPublicacion');
+            if (form) {
+                var observer = new MutationObserver(function (mutations) {
+                    mutations.forEach(function (m) {
+                        if (m.attributeName === 'style' && form.style.display !== 'none') {
+                            window.cargarDatosUsuarioCompositor();
                         }
-
-                        // 2. Actualizar Nombre
-                        var elNombre = document.getElementById('userNombreGrupo');
-                        if (elNombre) {
-                            elNombre.textContent = perfil.nombre || 'Usuario';
-                        }
-
-                        // 3. Actualizar Handle
-                        var elHandle = document.getElementById('userHandleGrupo');
-                        if (elHandle) {
-                            if (perfil.handle) {
-                                elHandle.innerHTML = '⚡ @' + perfil.handle;
-                                elHandle.style.display = 'inline-flex'; 
-                            } else {
-                                elHandle.style.display = 'none';
-                            }
-                        }
-                    })
-                    .catch(function(e) {
-                        console.warn('[Compositor] Error cargando datos:', e);
                     });
-            }).catch(function(e) {
-                console.warn('[Compositor] Error obteniendo sesión:', e);
-            });
-        }
-        intentarCarga();
-    };
-
-    // Ejecutar al cargar la página
-    document.addEventListener('DOMContentLoaded', function() {
-        window.cargarDatosUsuarioCompositor();
-        
-        // Observador para asegurar que se cargue cuando el compositor se muestre
-        var formPublicacion = document.getElementById('formPublicacion');
-        if (formPublicacion) {
-            var observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.attributeName === 'style' && formPublicacion.style.display !== 'none') {
-                        window.cargarDatosUsuarioCompositor();
-                    }
                 });
-            });
-            observer.observe(formPublicacion, { attributes: true });
-        }
-    });
+                observer.observe(form, { attributes: true });
+            }
+        });
+    })();
     </script>
 </body>
 </html>
