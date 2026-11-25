@@ -20,6 +20,8 @@ const MENSAJES_ERROR_CANAL = {
     canal_ya_en_vivo: 'Este canal ya tiene un live activo',
     transmision_no_activa: 'Esta transmisión ya finalizó',
     live_pass_invalido: 'Error de permisos del canal. Intenta de nuevo.',
+    canal_privado: 'Este canal es privado. Solo sus miembros pueden ver el live.',
+    no_es_miembro: 'Debes ser miembro del canal para transmitir.',
     'Debes ser miembro del canal': 'Debes ser miembro del canal',
     'Ya tienes una transmisión activa': 'Ya tienes una transmisión activa en otro canal'
 };
