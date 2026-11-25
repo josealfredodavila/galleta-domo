@@ -2,44 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-
-    <!-- TEMPORAL: diagnóstico en pantalla. Borrar este bloque cuando se resuelva. -->
-    <script>
-    (function () {
-        function mostrar(t) {
-            var b = document.getElementById('dbgVideos');
-            if (!b) {
-                b = document.createElement('div');
-                b.id = 'dbgVideos';
-                b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:999999;background:#b00020;color:#fff;font:12px monospace;padding:8px;max-height:35vh;overflow:auto;white-space:pre-wrap';
-                document.body.appendChild(b);
-            }
-            b.textContent += t + '\n';
-        }
-        window.__dbgVideos = mostrar;
-        window.addEventListener('error', function (e) {
-            mostrar('ERROR: ' + e.message + ' @' + String(e.filename || '').split('/').pop() + ':' + e.lineno);
-        });
-        window.addEventListener('unhandledrejection', function (e) {
-            mostrar('PROMESA: ' + ((e.reason && e.reason.message) || e.reason));
-        });
-        var ce = console.error, cw = console.warn;
-        console.error = function () {
-            mostrar('CONSOLA: ' + Array.prototype.map.call(arguments, function (a) {
-                return (a && a.message) ? a.message : String(a);
-            }).join(' '));
-            ce.apply(console, arguments);
-        };
-        console.warn = function () {
-            mostrar('AVISO: ' + Array.prototype.map.call(arguments, function (a) {
-                return (a && a.message) ? a.message : String(a);
-            }).join(' '));
-            cw.apply(console, arguments);
-        };
-    })();
-    </script>
-    <!-- FIN TEMPORAL -->
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title data-clave="videos_titulo_pagina">◈ Videos · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 
@@ -253,28 +216,5 @@
 
     <script src="/features/videos/js/videos-camara.js" defer></script>
     <script src="/features/videos/js/videos-publicar.js" defer></script>
-
-    <!-- TEMPORAL: reporte de módulos cargados. Borrar cuando se resuelva. -->
-    <script>
-    window.addEventListener('load', function () {
-        setTimeout(function () {
-            var mostrar = window.__dbgVideos || function () {};
-            var VA = window.VideosApp || {};
-            var modulos = ['__config', 'utils', 'hojas', 'sesion', 'audio', 'controles',
-                           'feed', 'navegacion', 'reacciones', 'comentarios', 'menu',
-                           'mapa', 'cola', 'atras', '__init'];
-            var faltan = modulos.filter(function (m) { return !VA[m]; });
-            var btnBuscar = document.getElementById('btnBuscar');
-            var btnPublicar = document.getElementById('btnAbrirPublicar');
-            mostrar('DIAGNOSTICO · módulos que faltan: ' + (faltan.join(', ') || 'ninguno'));
-            mostrar('DIAGNOSTICO · SDK Supabase: ' + (window.supabase ? 'ok' : 'NO'));
-            mostrar('DIAGNOSTICO · cliente sbVideos: ' + (window.sbVideos ? 'ok' : 'NO'));
-            mostrar('DIAGNOSTICO · lupa enlazada: ' + (btnBuscar && btnBuscar.dataset.navEnganchado === '1' ? 'sí' : 'NO'));
-            mostrar('DIAGNOSTICO · botón + enlazado: ' + (btnPublicar && btnPublicar.dataset.navEnganchado === '1' ? 'sí' : 'NO'));
-            mostrar('DIAGNOSTICO · función cargarVideos: ' + (typeof window.cargarVideos === 'function' ? 'ok' : 'NO'));
-        }, 1500);
-    });
-    </script>
-    <!-- FIN TEMPORAL -->
 </body>
 </html>
