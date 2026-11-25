@@ -1,6 +1,7 @@
 /* ================================================================
-   CANALES · grupos.css (v2)
+   CANALES · grupos.css (v3 · final)
    Diseño alineado con perfil y muro del ecosistema.
+   v3: accesibilidad (reduced-motion), sin duplicados, orden limpio.
    ================================================================ */
 
 /* ----------------------------------------------------------------
@@ -41,6 +42,7 @@ body {
     border-bottom: 1px solid var(--glass-border); background: rgba(5, 8, 15, 0.92);
     position: sticky; top: 0; z-index: 100;
 }
+.header-actions { display: flex; align-items: center; gap: 8px; }
 .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
 .logo-hex { font-size: 1.8rem; color: var(--gold); font-family: 'Orbitron', monospace; text-shadow: 0 0 18px rgba(212,175,55,0.8), 0 0 36px rgba(212,175,55,0.4); }
 .logo-text { font-family: 'Orbitron', monospace; font-size: 1.2rem; color: var(--text-primary); letter-spacing: 2px; }
@@ -188,9 +190,12 @@ body {
     position: relative; z-index: 2; width: 100%; height: 100%;
     display: flex; align-items: center; justify-content: center; pointer-events: none;
 }
-.uvde-live-overlay > img {
+.en-vivo-avatar {
     width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--gold);
     box-shadow: 0 0 20px rgba(212,175,55,0.6); object-fit: cover;
+}
+.en-vivo-sin-portada {
+    color: #fff; font-size: 2rem; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;
 }
 
 .no-live-box {
@@ -206,6 +211,7 @@ body {
 /* ----------------------------------------------------------------
    9. DIRECTORIO DE CANALES
    ---------------------------------------------------------------- */
+.grupos-header h1 { font-family: 'Orbitron', monospace; font-size: 1.1rem; }
 .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .grupo-card {
     background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
@@ -436,6 +442,7 @@ body {
 }
 .publicacion-card .stats span.interesado { color: var(--success); background: rgba(0,214,143,0.1); border-color: rgba(0,214,143,0.3); }
 .publicacion-card .stats span.no-interesado { color: var(--danger); background: rgba(255,51,102,0.1); border-color: rgba(255,51,102,0.3); }
+.no-interesado { color: var(--danger); }
 
 /* Selector de reacciones: las 5 reacciones compartidas se mantienen */
 .grp-react-wrap { position: relative; display: inline-flex; align-items: center; gap: 8px; }
@@ -695,142 +702,75 @@ body {
 .marketing-ad-title {
     font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;
 }
+.marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
+.marketing-ad-cta {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
+    font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; transition: var(--transition);
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5); }
 
-/* ================================================================
-   18. CLASES DE grupos-interno.js (v4)
-   ================================================================ */
+/* ----------------------------------------------------------------
+   18. CLASES DE grupos-interno.js
+   ---------------------------------------------------------------- */
 
 /* Texto de la publicación: conserva saltos de línea */
-.grp-texto {
-    white-space: pre-line;
-    word-break: break-word;
-    margin: 0;
-}
+.grp-texto { white-space: pre-line; word-break: break-word; margin: 0; }
 
 /* Avatar con inicial cuando no hay foto */
 .grp-inicial {
-    font-weight: 800;
-    color: #fff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
+    font-weight: 800; color: #fff; display: inline-flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
 }
 
 /* Insignia "Notificado" en la barra de la publicación */
 .grp-notificado {
-    color: var(--gold);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: 22px;
-    border: 1px solid rgba(212, 175, 55, 0.3);
-    font-size: 0.75rem;
+    color: var(--gold); display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px;
+    border-radius: 22px; border: 1px solid rgba(212, 175, 55, 0.3); font-size: 0.75rem;
 }
 
 /* Fila del campo de comentario */
-.grp-comentar-row {
-    display: flex;
-    gap: 10px;
-    margin-top: 10px;
-    align-items: center;
-}
+.grp-comentar-row { display: flex; gap: 10px; margin-top: 10px; align-items: center; }
 .grp-comentar-row input {
-    flex: 1;
-    min-height: 44px;
-    padding: 10px 18px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--glass-border);
-    border-radius: 24px;
-    color: var(--text-primary);
-    font-size: 0.95rem;
-    outline: none;
+    flex: 1; min-height: 44px; padding: 10px 18px; background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--glass-border); border-radius: 24px; color: var(--text-primary); font-size: 0.95rem; outline: none;
 }
-.grp-comentar-row input:focus {
-    border-color: var(--gold);
-    box-shadow: 0 0 15px rgba(212, 175, 55, 0.25);
-}
+.grp-comentar-row input:focus { border-color: var(--gold); box-shadow: 0 0 15px rgba(212, 175, 55, 0.25); }
 .grp-comentar-row button {
-    min-height: 44px;
-    background: linear-gradient(135deg, var(--gold), var(--gold-dark));
-    color: var(--space);
-    border: none;
-    padding: 10px 22px;
-    border-radius: 24px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    cursor: pointer;
+    min-height: 44px; background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
+    border: none; padding: 10px 22px; border-radius: 24px; font-weight: 700; font-size: 0.9rem; cursor: pointer;
 }
 
 /* Comentarios */
 .grp-comentario {
-    display: flex;
-    gap: 10px;
-    padding: 8px 0;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.06);
+    display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid rgba(212, 175, 55, 0.06);
 }
 .grp-comentario-avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--green-deep), var(--gold));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    overflow: hidden;
-    flex-shrink: 0;
+    width: 34px; height: 34px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold));
+    display: flex; align-items: center; justify-content: center; font-size: 0.8rem; overflow: hidden; flex-shrink: 0;
 }
 .grp-comentario-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .grp-comentario-texto {
-    flex: 1;
-    font-size: 0.9rem;
-    line-height: 1.45;
-    white-space: pre-line;
-    word-break: break-word;
+    flex: 1; font-size: 0.9rem; line-height: 1.45; white-space: pre-line; word-break: break-word;
 }
 .grp-comentario-texto strong { color: var(--gold); }
-.grp-comentario-fecha {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    margin-top: 2px;
-}
+.grp-comentario-fecha { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; }
 
 /* Mensajes vacíos y de error dentro de listas */
-.grp-vacio-mini {
-    color: var(--text-muted);
-    font-size: 0.85rem;
-    padding: 6px 0;
-}
+.grp-vacio-mini { color: var(--text-muted); font-size: 0.85rem; padding: 6px 0; }
 .grp-error { color: var(--danger); }
 
 /* Buscador de etiquetas */
 .usuario-etiqueta-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px;
-    border-bottom: 1px solid rgba(212, 175, 55, 0.05);
-    cursor: pointer;
+    display: flex; align-items: center; gap: 10px; padding: 8px;
+    border-bottom: 1px solid rgba(212, 175, 55, 0.05); cursor: pointer;
 }
 .usuario-etiqueta-item:hover { background: rgba(212, 175, 55, 0.06); }
-.usuario-etiqueta-item.seleccionado {
-    opacity: 0.4;
-    pointer-events: none;
-}
+.usuario-etiqueta-item.seleccionado { opacity: 0.4; pointer-events: none; }
 .grp-etiqueta-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--green-deep), var(--gold));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    font-weight: 700;
-    flex-shrink: 0;
+    width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--green-deep), var(--gold));
+    display: flex; align-items: center; justify-content: center; overflow: hidden; font-weight: 700; flex-shrink: 0;
 }
 .grp-etiqueta-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .grp-etiqueta-nombre { font-size: 0.75rem; font-weight: 600; }
@@ -838,40 +778,20 @@ body {
 
 /* Chips de personas etiquetadas */
 .grp-chip {
-    background: rgba(212, 175, 55, 0.15);
-    color: var(--gold);
-    padding: 4px 10px;
-    border-radius: 20px;
-    font-size: 0.65rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+    background: rgba(212, 175, 55, 0.15); color: var(--gold); padding: 4px 10px; border-radius: 20px;
+    font-size: 0.65rem; display: inline-flex; align-items: center; gap: 6px;
 }
-.grp-chip button {
-    background: none;
-    border: none;
-    color: var(--gold);
-    cursor: pointer;
-    font-size: 0.8rem;
-    padding: 0;
-}
+.grp-chip button { background: none; border: none; color: var(--gold); cursor: pointer; font-size: 0.8rem; padding: 0; }
 
 /* Descripción de artículos del marketplace */
 .mk-descripcion {
-    font-size: 0.7rem;
-    color: var(--text-secondary);
-    line-height: 1.5;
-    margin: 6px 0;
-    white-space: pre-line;
-    word-break: break-word;
+    font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin: 6px 0;
+    white-space: pre-line; word-break: break-word;
 }
 
-/* ================================================================
-   19. CONTINUACIÓN DE COMPONENTES BASE
-   ================================================================ */
-
-.header-actions { display: flex; align-items: center; gap: 8px; }
-.grupos-header h1 { font-family: 'Orbitron', monospace; font-size: 1.1rem; }
+/* ----------------------------------------------------------------
+   19. COMPONENTES BASE (formularios, modales, listas, pie)
+   ---------------------------------------------------------------- */
 
 /* Lista vacía */
 .empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
@@ -881,17 +801,13 @@ body {
 
 /* Campos de texto (base global) */
 input, select, textarea {
-    background-color: rgba(0, 0, 0, 0.3);
-    color: var(--text-primary);
-    border: 1px solid var(--glass-border);
-    font-family: 'Inter', sans-serif;
+    background-color: rgba(0, 0, 0, 0.3); color: var(--text-primary);
+    border: 1px solid var(--glass-border); font-family: 'Inter', sans-serif;
 }
 input::placeholder, textarea::placeholder { color: var(--text-muted); }
 select option { background-color: var(--space); color: var(--text-primary); }
 input:focus, select:focus, textarea:focus {
-    outline: none;
-    border-color: var(--gold);
-    box-shadow: 0 0 18px rgba(212, 175, 55, 0.25);
+    outline: none; border-color: var(--gold); box-shadow: 0 0 18px rgba(212, 175, 55, 0.25);
 }
 
 /* Modales */
@@ -993,16 +909,6 @@ input:focus, select:focus, textarea:focus {
 .btn-whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); color: #fff; }
 .btn-llamar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); }
 
-/* Publicidad del canal: resto de componentes */
-.marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
-.marketing-ad-cta {
-    display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px;
-    background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
-    font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; transition: var(--transition);
-    text-transform: uppercase; letter-spacing: 0.5px;
-}
-.marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5); }
-
 /* Regalos en USDT */
 .gift-options { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
 .gift-btn {
@@ -1014,13 +920,6 @@ input:focus, select:focus, textarea:focus {
 .gift-btn .monto { font-weight: 700; color: var(--gold); font-size: 0.9rem; }
 .gift-btn .label { font-size: 0.5rem; color: var(--text-muted); display: block; }
 
-/* En vivo: portada sin imagen y avatar sobre el contenedor 9:16 */
-.en-vivo-sin-portada { color: #fff; font-size: 2rem; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
-.en-vivo-avatar {
-    width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--gold);
-    box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); object-fit: cover;
-}
-
 /* Pie de página */
 .footer {
     margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border);
@@ -1031,16 +930,14 @@ input:focus, select:focus, textarea:focus {
 .footer-net { display: inline-flex; align-items: center; gap: 4px; color: var(--cyan); }
 .footer-net .icon { width: 11px; height: 11px; fill: currentColor; stroke: none; }
 
-/* ================================================================
+/* ----------------------------------------------------------------
    20. MODO DÍA (apariencia global)
-   ================================================================ */
+   ---------------------------------------------------------------- */
 html.tema-dia, html[data-tema="dia"] {
     --space: #f5f7fa; --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
     --glass-bg: rgba(255, 255, 255, 0.9); --glass-border: rgba(0, 0, 0, 0.1);
 }
-html.tema-dia body, html[data-tema="dia"] body {
-    background: #f5f7fa; color: var(--text-primary);
-}
+html.tema-dia body, html[data-tema="dia"] body { background: #f5f7fa; color: var(--text-primary); }
 html.tema-dia .header, html[data-tema="dia"] .header {
     background: rgba(255, 255, 255, 0.95); border-bottom-color: rgba(0, 0, 0, 0.1);
 }
@@ -1069,9 +966,23 @@ html[data-tema="dia"] .feed-filtros, html[data-tema="dia"] .mobile-tabs {
 }
 html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096; border-top-color: rgba(0, 0, 0, 0.1); }
 
-/* ================================================================
-   21. ADAPTACIÓN PARA MÓVIL
-   ================================================================ */
+/* ----------------------------------------------------------------
+   21. ACCESIBILIDAD
+   Quita animaciones para usuarios que las desactivan en su sistema.
+   ---------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    #userHandleGrupo, #userHandleGrupo .grp-bolt,
+    .live-badge, .btn-salir-aire, .grupo-live-container .live-tag .dot {
+        animation: none !important;
+    }
+    .grupo-card, .en-vivo-card, .canal-item, .btn-gold, .btn-donar, .btn-guardar {
+        transition: none !important;
+    }
+}
+
+/* ----------------------------------------------------------------
+   22. ADAPTACIÓN PARA MÓVIL
+   ---------------------------------------------------------------- */
 @media (max-width: 768px) {
     .app { padding: 12px 14px; }
     .grupos-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
