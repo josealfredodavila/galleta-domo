@@ -1,25 +1,22 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR v1.4 (Diseño Plano y Video Ancho)
+   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR (v2 · limpio)
    ================================================================
-   Cambios:
-   - Eliminado el botón punteado tipo "lego".
-   - Eliminadas las cajas de "Sin sonido", "Sin ubicación", etc.
-   - Eliminado el fondo pesado del contenedor de preview.
-   - Todo basado en líneas divisorias finas.
-   - El video de vista previa ahora ocupa todo el ancho disponible.
+   Estilos de los componentes que se inyectan desde videos-publicar.js:
+   - Botones del header (sonido y ubicación).
+   - Selector de archivo plano y ocultamiento del input original.
+   - Toast propio (.cs-toast) y modal de confirmación (.cs-confirm-*).
+   - Hojas inferiores de publicar: sonidos, ubicación y borradores
+     (.cs-sheet, .cs-sheet-backdrop).
+   - Vista previa del video y acciones (.cs-preview-*).
+   Quitado en esta versión (lo define videos-publicar.js en tiempo de
+   ejecución o ya vive en otros CSS): contenedor de la vista previa de
+   video, pestañas y listas de sonidos/ubicaciones, chips de tarjeta,
+   reglas del header de la versión anterior y el bloque PULL TO REFRESH.
    ================================================================ */
 
 /* ----------------------------------------------------------------
-   HEADER · Botones agregados con mejor espaciado
+   1. BOTONES DEL HEADER (sonido y ubicación)
    ---------------------------------------------------------------- */
-.header .header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-}
-
 .cs-btn-header {
     display: inline-flex;
     align-items: center;
@@ -58,15 +55,14 @@
 }
 
 @media (max-width: 640px) {
-    .header .header-actions { gap: 6px; }
-    .cs-btn-header { font-size: 0.55rem; padding: 5px 10px; }
+    .cs-btn-header { font-size: 0.55rem; padding: 6px 10px; }
     .cs-btn-header .cs-ico { font-size: 0.75rem; }
     .cs-btn-header .cs-btn-txt { display: none; }
-    .cs-btn-header { padding: 6px 10px; }
 }
 
 /* ----------------------------------------------------------------
-   BOTÓN DE ARCHIVO PLANO (ADIÓS AL BORDE AMARILLO PUNTEADO)
+   2. SELECTOR DE ARCHIVO PLANO
+   El input original se oculta; el botón visible lo dispara.
    ---------------------------------------------------------------- */
 #inputArchivoVideo,
 input#inputArchivoVideo[type="file"] {
@@ -88,7 +84,6 @@ input#inputArchivoVideo[type="file"] {
     gap: 8px;
     padding: 16px;
     background: transparent;
-    /* Aquí quitamos el punteado y lo dejamos con una línea sólida fina */
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
     color: var(--text-muted);
@@ -98,7 +93,6 @@ input#inputArchivoVideo[type="file"] {
     -webkit-tap-highlight-color: transparent;
     text-align: center;
 }
-
 .cs-file-btn:hover {
     border-color: rgba(255, 255, 255, 0.35);
     background: rgba(255, 255, 255, 0.02);
@@ -122,46 +116,14 @@ input#inputArchivoVideo[type="file"] {
     opacity: 0.7;
 }
 
-.cs-file-con-archivo .cs-file-btn {
-    border-color: var(--success);
-}
+.cs-file-con-archivo .cs-file-btn { border-color: var(--success); }
 .cs-file-con-archivo .cs-file-btn-ico { color: var(--success); }
 .cs-file-con-archivo .cs-file-btn-txt { color: var(--success); }
 .cs-file-con-archivo .cs-file-btn-hint { color: var(--success); }
 
 /* ----------------------------------------------------------------
-   CHIPS DE METADATA EN LAS CARDS
-   ---------------------------------------------------------------- */
-.video-meta-chips {
-    display: flex;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-top: 6px;
-}
-.video-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-size: 0.62rem;
-    font-weight: 600;
-    font-family: 'Orbitron', monospace;
-    white-space: nowrap;
-}
-.video-chip-sonido {
-    background: rgba(212, 175, 55, 0.2);
-    border: 1px solid rgba(212, 175, 55, 0.55);
-    color: #D4AF37;
-}
-.video-chip-ubicacion {
-    background: rgba(0, 229, 255, 0.15);
-    border: 1px solid rgba(0, 229, 255, 0.5);
-    color: #00E5FF;
-}
-
-/* ----------------------------------------------------------------
-   TOAST PROPIO
+   3. TOAST PROPIO DEL COMPOSITOR (.cs-toast)
+   El toast del feed (#toast) está en videos-base.css.
    ---------------------------------------------------------------- */
 .cs-toast {
     position: fixed;
@@ -208,7 +170,7 @@ input#inputArchivoVideo[type="file"] {
 .cs-toast-error { border-color: var(--danger); color: var(--danger); }
 
 /* ----------------------------------------------------------------
-   CONFIRM MODAL
+   4. MODAL DE CONFIRMACIÓN (.cs-confirm-*)
    ---------------------------------------------------------------- */
 .cs-confirm-overlay {
     position: fixed;
@@ -297,7 +259,9 @@ input#inputArchivoVideo[type="file"] {
 }
 
 /* ----------------------------------------------------------------
-   BOTTOM SHEETS
+   5. HOJAS INFERIORES DE PUBLICAR (.cs-sheet)
+   Sonidos, ubicación y borradores. El contenido de cada lista
+   (pestañas, filas, estados de reproducción) lo estila videos-publicar.js.
    ---------------------------------------------------------------- */
 .cs-sheet-backdrop {
     position: fixed;
@@ -372,37 +336,7 @@ input#inputArchivoVideo[type="file"] {
 }
 .cs-sheet-close:hover { color: var(--danger); }
 
-.cs-tabs {
-    display: flex;
-    gap: 4px;
-    padding: 10px 14px 0;
-    border-bottom: 1px solid var(--glass-border);
-    flex-shrink: 0;
-}
-.cs-tab {
-    flex: 1;
-    padding: 8px 12px;
-    background: transparent;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-muted);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-.cs-tab.active {
-    color: var(--gold);
-    border-bottom-color: var(--gold);
-}
-
-.cs-sheet-body {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding: 12px 14px;
-}
+/* Buscador de la hoja (sonidos y ubicaciones) */
 .cs-buscar-wrap {
     display: flex;
     align-items: center;
@@ -422,52 +356,7 @@ input#inputArchivoVideo[type="file"] {
     font-size: 0.85rem;
 }
 
-/* Listas de sonidos y ubicaciones planas */
-.cs-sonidos-lista { display: flex; flex-direction: column; }
-.cs-sonido-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    cursor: pointer;
-    text-align: left;
-    color: var(--text-primary);
-    transition: background 0.2s ease;
-}
-.cs-sonido-item:hover { background: rgba(255, 255, 255, 0.02); }
-.cs-sonido-item.activo { background: rgba(212, 175, 55, 0.05); }
-.cs-sonido-ico { font-size: 0.8rem; color: var(--gold); }
-.cs-sonido-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.cs-sonido-nombre { color: var(--text-primary); font-weight: 600; font-size: 0.85rem; }
-.cs-sonido-artista { color: var(--text-muted); font-size: 0.7rem; }
-.cs-sonido-check { color: var(--gold); font-size: 0.9rem; opacity: 0; }
-.cs-sonido-item.activo .cs-sonido-check { opacity: 1; }
-
-.cs-ubicaciones-lista { display: flex; flex-direction: column; }
-.cs-ubicacion-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px 0;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    cursor: pointer;
-    text-align: left;
-    color: var(--text-primary);
-}
-.cs-ubicacion-item:hover { background: rgba(255, 255, 255, 0.02); }
-.cs-ubicacion-item.activo { background: rgba(0, 229, 255, 0.05); }
-.cs-ubicacion-ico { font-size: 0.8rem; color: var(--cyan); }
-.cs-ubicacion-info { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-.cs-ubicacion-nombre { color: var(--text-primary); font-weight: 600; font-size: 0.85rem; }
-.cs-ubicacion-pais { color: var(--text-muted); font-size: 0.7rem; }
-.cs-ubicacion-check { color: var(--cyan); font-size: 0.9rem; opacity: 0; }
-.cs-ubicacion-item.activo .cs-ubicacion-check { opacity: 1; }
-
+/* Pie de la hoja: resumen y botón de confirmar */
 .cs-sheet-footer {
     flex-shrink: 0;
     padding: 12px 16px;
@@ -477,15 +366,6 @@ input#inputArchivoVideo[type="file"] {
     align-items: center;
     gap: 12px;
     justify-content: space-between;
-}
-.cs-sonido-actual, .cs-ubicacion-actual {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.75rem;
-    color: var(--text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 .cs-btn-primary {
     padding: 10px 22px;
@@ -501,7 +381,8 @@ input#inputArchivoVideo[type="file"] {
 .cs-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ----------------------------------------------------------------
-   PREVIEW EN UPLOAD (DISEÑO PLANO Y VIDEO ANCHO)
+   6. VISTA PREVIA DEL VIDEO EN LA PUBLICACIÓN
+   El tamaño del video (9:16) lo fija videos-publicar.js.
    ---------------------------------------------------------------- */
 .cs-preview-wrap {
     display: flex;
@@ -512,29 +393,6 @@ input#inputArchivoVideo[type="file"] {
     border-top: 1px solid var(--glass-border);
     margin-top: 16px;
     margin-bottom: 12px;
-}
-
-/* El contenedor del video ocupa todo el ancho */
-.cs-preview-video {
-    position: relative;
-    border-radius: 8px;
-    overflow: hidden;
-    background: #000;
-    width: 100%;
-    /* Quitamos la restricción vertical para que aproveche todo el espacio */
-    max-height: 400px; 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.cs-preview-video video {
-    width: 100%;
-    height: 100%;
-    max-height: 400px;
-    object-fit: contain;
-    background: #000;
-    display: block;
 }
 
 .cs-preview-badge {
@@ -549,7 +407,9 @@ input#inputArchivoVideo[type="file"] {
     font-weight: 700;
     border-radius: 12px;
 }
+
 .cs-preview-meta { display: flex; flex-direction: column; gap: 4px; }
+
 .cs-preview-line {
     display: flex;
     align-items: center;
@@ -568,6 +428,7 @@ input#inputArchivoVideo[type="file"] {
     text-overflow: ellipsis;
     white-space: nowrap;
 }
+
 .cs-preview-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 .cs-btn-ghost {
     flex: 1;
@@ -589,34 +450,31 @@ input#inputArchivoVideo[type="file"] {
     color: var(--text-primary);
 }
 
+/* ----------------------------------------------------------------
+   7. ESTADOS VACÍOS Y LISTA DE BORRADORES
+   ---------------------------------------------------------------- */
 .cs-vacio { text-align: center; padding: 30px 20px; color: var(--text-muted); }
-.cs-vacio .cs-ico-vacio { display: block; font-size: 2rem; color: var(--gold); opacity: 0.3; margin-bottom: 10px; }
+.cs-vacio .cs-ico-vacio {
+    display: block;
+    font-size: 2rem;
+    color: var(--gold);
+    opacity: 0.3;
+    margin-bottom: 10px;
+}
 .cs-vacio p { font-size: 0.8rem; margin: 0; }
 .cs-borradores-lista { display: flex; flex-direction: column; gap: 10px; }
 
 /* ----------------------------------------------------------------
-   RESPONSIVE
+   8. ADAPTACIÓN PARA ESCRITORIO Y MÓVIL
    ---------------------------------------------------------------- */
 @media (min-width: 640px) {
     .cs-preview-wrap { flex-direction: row; align-items: flex-start; }
-    .cs-preview-video { width: 100%; max-height: 400px; } /* Ancho completo en desktop también */
     .cs-preview-meta { flex: 1; }
 }
+
 @media (max-width: 480px) {
     .cs-sheet { max-height: 86vh; }
     .cs-sheet-header { padding: 4px 12px 10px; }
-    .cs-sheet-body { padding: 10px 12px; }
     .cs-sheet-footer { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     .cs-btn-primary { padding: 9px 16px; font-size: 0.65rem; }
-}
-
-/* ----------------------------------------------------------------
-   PULL TO REFRESH
-   ---------------------------------------------------------------- */
-html, body {
-    overscroll-behavior-y: auto !important;
-    -webkit-overflow-scrolling: touch;
-}
-#videosContainer {
-    overscroll-behavior-y: auto !important;
 }
