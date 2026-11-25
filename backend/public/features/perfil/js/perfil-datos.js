@@ -165,7 +165,7 @@ function actualizarUI(data) {
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
 
     if (bioEl) {
-        const bioDefault = "Explorando el ecosistema Csariel's · WEB3 · Comunidad";
+        const bioDefault = "Explorando el ecosistema Sariel's · WEB3 · Comunidad";
         const bioT = perfilT('perfil_biografia_default', bioDefault);
         if (!data.bio || data.bio === bioDefault) {
             bioEl.setAttribute('data-clave', 'perfil_biografia_default');
@@ -322,7 +322,7 @@ async function guardarPerfil() {
     const perfil = {
         nombre: (document.getElementById('editNombre')?.value || '').trim() || perfilT('perfil_nombre_usuario', 'Explorador'),
         handle: (document.getElementById('editHandle')?.value || '').trim().replace('@', '') || 'explorador',
-        bio: (document.getElementById('editBio')?.value || '').trim() || perfilT('perfil_biografia_default', "Explorando el ecosistema Csariel's · WEB3 · Comunidad")
+        bio: (document.getElementById('editBio')?.value || '').trim() || perfilT('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad")
     };
     if (!/^[a-zA-Z0-9_]+$/.test(perfil.handle)) {
         showToast(perfilT('perfil_handle_invalido', '❌ Handle inválido'), 'error');
@@ -366,9 +366,9 @@ function compartirPerfil() {
         .split(' ')[0] || perfilT('perfil_nombre_usuario', 'Explorador');
     const handle = document.getElementById('perfilHandle')?.textContent.replace('@', '') || 'explorador';
     const url = window.location.origin + '/features/perfil/perfil-publico.html?u=' + encodeURIComponent(handle);
-    const textoBase = perfilT('perfil_compartir_texto', "◈ Perfil de {nombre} en Csariel's")
+    const textoBase = perfilT('perfil_compartir_texto', "◈ Perfil de {nombre} en Sariel's")
         .split('{nombre}').join(nombre);
-    const texto = textoBase + "\n◈ " + url + "\n\n#Csariels #WEB3";
+    const texto = textoBase + "\n◈ " + url + "\n\n#Sariels #WEB3";
     if (navigator.share) {
         navigator.share({ title: textoBase, text: texto, url: url }).catch(() => {});
     } else {
