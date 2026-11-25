@@ -175,7 +175,6 @@ body {
     font-size: 0.6rem; color: var(--text-muted); margin-top: 6px; display: inline-flex; align-items: center; gap: 4px;
 }
 
-/* Contenedor uniforme 9:16 para las tarjetas en vivo y la vista del live */
 .uvde-live-container {
     width: 100%; aspect-ratio: 9 / 16; position: relative; overflow: hidden; background: #000;
     border-radius: 12px; display: flex; align-items: center; justify-content: center;
@@ -192,6 +191,9 @@ body {
     width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--gold);
     box-shadow: 0 0 20px rgba(212,175,55,0.6); object-fit: cover;
 }
+.en-vivo-sin-portada {
+    font-family: 'Orbitron', monospace; font-size: 2rem; color: var(--gold); opacity: 0.75;
+}
 
 .no-live-box {
     grid-column: 1 / -1; text-align: center; padding: 20px 16px;
@@ -204,8 +206,13 @@ body {
 .no-live-box p { font-size: 0.7rem; color: var(--text-muted); margin-bottom: 12px; }
 
 /* ----------------------------------------------------------------
-   9. DIRECTORIO DE CANALES
+   9. DIRECTORIO DE CANALES Y FILTROS
    ---------------------------------------------------------------- */
+.grupos-filtros {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px;
+    margin-bottom: 16px; background: rgba(15,45,26,0.3); padding: 12px;
+    border-radius: var(--radius); border: 1px solid var(--glass-border); align-items: center;
+}
 .grupos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
 .grupo-card {
     background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
@@ -242,7 +249,6 @@ body {
     border: 1px solid rgba(0,214,143,0.25);
 }
 
-/* Insignias usadas en cabecera y tarjetas */
 .live-badge {
     font-size: 0.5rem; padding: 2px 10px; border-radius: 12px; background: var(--live-red); color: #fff;
     animation: pulse-live 2s infinite; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 0 12px rgba(255,0,68,0.7);
@@ -272,7 +278,7 @@ body {
 }
 
 /* ----------------------------------------------------------------
-   11. COMPOSITOR WEB3 (mismo estilo que muro y perfil)
+   11. COMPOSITOR WEB3
    ---------------------------------------------------------------- */
 .form-publicacion {
     position: relative; border-radius: 24px; padding: 18px 16px 16px;
@@ -354,7 +360,6 @@ body {
 .pf-composer-contador.cerca { color: #D4AF37; }
 .pf-composer-contador.lleno { color: #ff3366; }
 
-/* Avatar y handle del compositor */
 #userAvatarGrupo { background-size: cover; background-position: center; color: transparent; }
 #userHandleGrupo {
     display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 2px 10px 2px 9px; border-radius: 999px;
@@ -379,8 +384,6 @@ body {
 
 /* ----------------------------------------------------------------
    12. PUBLICACIONES Y MEDIOS
-   Fotos: ancho completo, alto máximo 560 px, bordes de 14 px.
-   Videos: contenedor 9:16.
    ---------------------------------------------------------------- */
 .publicaciones-container { margin-top: 16px; position: relative; }
 .publicacion-card {
@@ -413,13 +416,14 @@ body {
 .grp-post-handle .grp-bolt svg { width: 10px; height: 10px; }
 
 .publicacion-card .contenido { color: var(--text-primary); font-size: 0.9rem; line-height: 1.6; margin-bottom: 12px; }
+.grp-texto { white-space: pre-line; word-break: break-word; }
+.publicacion-card .contenido img.post-imagen,
 .publicacion-card .contenido img {
     display: block; width: 100%; max-width: 100%; max-height: var(--media-max-h); object-fit: cover;
     border-radius: var(--media-radius); margin-top: 10px; border: 1px solid rgba(255, 255, 255, 0.08); cursor: pointer;
 }
 .publicacion-card .contenido video {
-    display: block; width: 100%; max-width: 360px; aspect-ratio: 9 / 16; object-fit: cover;
-    border-radius: var(--media-radius); margin: 10px auto 0; background: #000; border: 1px solid rgba(255, 255, 255, 0.08);
+    display: block; width: 100%; height: 100%; object-fit: cover; background: #000;
 }
 
 .publicacion-card .stats {
@@ -437,7 +441,7 @@ body {
 .publicacion-card .stats span.interesado { color: var(--success); background: rgba(0,214,143,0.1); border-color: rgba(0,214,143,0.3); }
 .publicacion-card .stats span.no-interesado { color: var(--danger); background: rgba(255,51,102,0.1); border-color: rgba(255,51,102,0.3); }
 
-/* Selector de reacciones: las 5 reacciones compartidas se mantienen */
+/* Selector de reacciones */
 .grp-react-wrap { position: relative; display: inline-flex; align-items: center; gap: 8px; }
 .grp-react-trigger {
     display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 22px;
@@ -458,7 +462,7 @@ body {
 .grp-react-picker button:hover { background: rgba(212, 175, 55, 0.15); transform: scale(1.1); }
 .grp-react-picker button.activa { background: rgba(212, 175, 55, 0.25); }
 
-/* Aviso de moderación (sin emoji; icono SVG) */
+/* Aviso de moderación */
 .grp-aviso-moderacion {
     display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin: 8px 0; border-radius: 10px;
     background: rgba(247, 212, 74, 0.12); border: 1px solid rgba(247, 212, 74, 0.4); color: #f7d44a; font-size: 0.72rem;
@@ -580,7 +584,6 @@ body {
 
 /* ----------------------------------------------------------------
    16. LIVE DEL CANAL
-   Contenedor 9:16 con marca de agua "C", igual que el feed de videos.
    ---------------------------------------------------------------- */
 .grupo-live-container {
     display: none; margin-bottom: 20px; background: var(--glass-bg); border: 1px solid var(--live-red);
@@ -606,10 +609,12 @@ body {
 }
 .grupo-live-container .live-close:hover { color: var(--danger); background: rgba(255,0,68,0.1); }
 
-.live-video-wrap { position: relative; width: 100%; max-width: 420px; margin: 0 auto; background: #000; }
+.live-video-wrap { position: relative; width: 100%; max-width: 420px; margin: 12px auto 0; background: #000; border-radius: var(--media-radius); overflow: hidden; }
 .video-9x16 {
-    position: relative; width: 100%; aspect-ratio: 9 / 16; background: #000; overflow: hidden; border-radius: var(--media-radius);
+    position: relative; width: 100%; max-width: 360px; aspect-ratio: 9 / 16; background: #000;
+    overflow: hidden; border-radius: var(--media-radius); margin: 10px auto 0; border: 1px solid rgba(255, 255, 255, 0.08);
 }
+.live-video-wrap .video-9x16 { max-width: 100%; margin: 0; border: 0; }
 .video-9x16 > video {
     position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center; display: block;
 }
@@ -636,7 +641,7 @@ body {
 
 .grupo-live-container .live-info {
     padding: 12px 16px; border-top: 1px solid var(--glass-border); display: flex; justify-content: space-between;
-    align-items: center; font-size: 0.7rem; color: var(--text-secondary);
+    align-items: center; font-size: 0.7rem; color: var(--text-secondary); margin-top: 12px;
 }
 .live-info-item { display: inline-flex; align-items: center; gap: 5px; }
 .grupo-live-container .live-chat-inline {
@@ -693,4 +698,173 @@ body {
 .marketing-ad-media img, .marketing-ad-media video { width: 100%; height: 100%; object-fit: cover; }
 .marketing-ad-content { flex: 1; min-width: 0; }
 .marketing-ad-title {
-    font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom:
+    font-family: 'Orbitron', monospace; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;
+}
+.marketing-ad-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 10px; }
+.marketing-ad-cta {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
+    font-size: 0.65rem; font-weight: 700; text-decoration: none;
+}
+
+/* ----------------------------------------------------------------
+   18. MODALES (OCULTOS POR DEFECTO, VISIBLES CON .show)
+   ---------------------------------------------------------------- */
+.modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 10000;
+    background: rgba(2, 5, 10, 0.82); backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px); padding: 16px; overflow-y: auto;
+    align-items: center; justify-content: center;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
+    background: linear-gradient(170deg, rgba(15, 45, 26, 0.94), rgba(6, 11, 20, 0.98));
+    border: 1px solid rgba(212, 175, 55, 0.28); border-radius: var(--radius-xl);
+    padding: 20px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.85), var(--shadow-gold);
+    position: relative; margin: auto;
+}
+.modal-header {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding-bottom: 12px; margin-bottom: 16px; border-bottom: 1px solid var(--glass-border);
+}
+.modal-header h3 {
+    font-family: 'Orbitron', monospace; font-size: 0.9rem; color: var(--gold);
+    display: inline-flex; align-items: center; gap: 8px;
+}
+.modal-close {
+    width: 32px; height: 32px; border-radius: 50%; border: 1px solid var(--glass-border);
+    background: rgba(255, 255, 255, 0.05); color: var(--text-secondary);
+    font-size: 1.1rem; line-height: 1; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center; transition: var(--transition);
+}
+.modal-close:hover { background: rgba(255, 51, 102, 0.2); border-color: var(--danger); color: #fff; }
+
+.form-group { margin-bottom: 12px; }
+.form-group label {
+    display: block; font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 5px; font-weight: 600;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%; padding: 9px 12px; border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12); background: rgba(0, 0, 0, 0.45);
+    color: var(--text-primary); font-family: 'Inter', sans-serif; font-size: 0.8rem;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none; border-color: var(--gold); box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.18);
+}
+.form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 520px) { .form-row { grid-template-columns: 1fr; } }
+
+.checkbox-row {
+    display: flex; align-items: center; gap: 8px; font-size: 0.75rem;
+    color: var(--text-secondary); margin-bottom: 12px; cursor: pointer;
+}
+.checkbox-row input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--gold); }
+
+.btn-guardar {
+    width: 100%; padding: 10px 16px; border-radius: 14px; border: 0;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
+    font-family: 'Orbitron', monospace; font-size: 0.72rem; font-weight: 700;
+    cursor: pointer; transition: var(--transition); margin-top: 6px;
+}
+.btn-guardar:hover { box-shadow: var(--shadow-gold); transform: translateY(-1px); }
+
+.ajustes-menu { display: flex; flex-direction: column; gap: 8px; }
+.ajustes-item {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 11px 14px; border-radius: 12px; border: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.3); color: var(--text-primary); font-size: 0.78rem;
+    font-weight: 600; cursor: pointer; text-align: left; width: 100%; transition: var(--transition);
+}
+.ajustes-item:hover { border-color: var(--gold); background: rgba(212, 175, 55, 0.1); color: var(--gold); }
+.ajustes-item.danger { border-color: rgba(255, 51, 102, 0.35); color: var(--danger); }
+.ajustes-item.danger:hover { background: rgba(255, 51, 102, 0.14); }
+
+/* ----------------------------------------------------------------
+   19. COMENTARIOS, ETIQUETAS, MARKETPLACE Y ESTADOS VACÍOS
+   ---------------------------------------------------------------- */
+.comentarios-container {
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+.grp-comentar-row { display: flex; gap: 8px; margin-top: 10px; }
+.grp-comentar-row input {
+    flex: 1; padding: 8px 12px; border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(0, 0, 0, 0.35);
+    color: var(--text-primary); font-size: 0.78rem;
+}
+.grp-comentar-row button {
+    padding: 8px 14px; border-radius: 12px; border: 0;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
+    font-weight: 700; font-size: 0.72rem; cursor: pointer;
+}
+.grp-comentario { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+.grp-comentario-avatar {
+    width: 30px; height: 30px; border-radius: 50%; background: var(--green-mid);
+    display: flex; align-items: center; justify-content: center; font-size: 0.75rem;
+    overflow: hidden; flex-shrink: 0;
+}
+.grp-comentario-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.grp-comentario-texto { flex: 1; font-size: 0.76rem; color: var(--text-secondary); line-height: 1.4; }
+.grp-comentario-texto strong { color: var(--text-primary); margin-right: 4px; }
+.grp-comentario-fecha { font-size: 0.62rem; color: var(--text-muted); margin-top: 2px; }
+
+.grp-inicial { font-family: 'Orbitron', monospace; font-weight: 700; color: #fff; }
+.grp-notificado { color: var(--cyan); }
+.grp-vacio-mini { font-size: 0.72rem; color: var(--text-muted); padding: 8px 0; }
+.grp-error { color: var(--danger); }
+
+.usuario-etiqueta-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px;
+    cursor: pointer; transition: var(--transition);
+}
+.usuario-etiqueta-item:hover { background: rgba(212, 175, 55, 0.12); }
+.usuario-etiqueta-item.seleccionado { opacity: 0.55; pointer-events: none; }
+.grp-etiqueta-avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--green-mid);
+    display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0;
+}
+.grp-etiqueta-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.grp-etiqueta-nombre { font-size: 0.78rem; font-weight: 600; color: var(--text-primary); }
+.grp-etiqueta-handle { font-size: 0.66rem; color: var(--text-muted); }
+.grp-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px;
+    background: rgba(0, 229, 255, 0.14); border: 1px solid rgba(0, 229, 255, 0.35);
+    color: var(--cyan); font-size: 0.72rem; margin: 4px 4px 0 0;
+}
+.quitar-etiqueta-btn {
+    background: transparent; border: 0; color: inherit; font-weight: 700; cursor: pointer; padding: 0 2px;
+}
+
+.marketplace-info {
+    margin-top: 10px; padding: 12px; border-radius: 14px;
+    background: rgba(0, 0, 0, 0.25); border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.titulo-mk {
+    font-family: 'Orbitron', monospace; font-size: 0.7rem; color: var(--gold);
+    display: inline-flex; align-items: center; gap: 6px; margin-bottom: 6px;
+}
+.mk-descripcion { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 8px; }
+.precio { color: var(--success); font-weight: 700; font-size: 0.8rem; margin-right: 10px; }
+.precio-usdt { color: var(--cyan); font-weight: 700; font-size: 0.78rem; }
+.ubicacion { font-size: 0.68rem; color: var(--text-muted); margin-top: 6px; display: inline-flex; align-items: center; gap: 4px; }
+.contacto { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+.btn-whatsapp, .btn-llamar {
+    padding: 5px 12px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; text-decoration: none;
+}
+.btn-whatsapp { background: rgba(0, 214, 143, 0.18); color: var(--success); border: 1px solid rgba(0, 214, 143, 0.4); }
+.btn-llamar { background: rgba(0, 229, 255, 0.15); color: var(--cyan); border: 1px solid rgba(0, 229, 255, 0.35); }
+
+.empty-state {
+    text-align: center; padding: 28px 16px; color: var(--text-muted);
+    background: rgba(15, 45, 26, 0.25); border-radius: var(--radius); border: 1px dashed var(--glass-border);
+}
+.empty-state .icon { width: 1.6rem; height: 1.6rem; color: var(--gold); margin-bottom: 8px; }
+
+.footer {
+    margin-top: 32px; padding: 16px 0; border-top: 1px solid var(--glass-border);
+    text-align: center; font-size: 0.68rem; color: var(--text-muted);
+}
