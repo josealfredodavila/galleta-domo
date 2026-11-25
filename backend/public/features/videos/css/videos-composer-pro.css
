@@ -1,5 +1,5 @@
 /* ================================================================
-   VIDEOS · COMPOSER PRO (v2 · limpio)
+   VIDEOS · COMPOSER PRO (v2.1 · blindado)
    ================================================================
    Estilos de la hoja de publicar (#uploadSection y .pf-composer).
    - Tarjeta contenedora #uploadSection.
@@ -8,9 +8,6 @@
    - Barra de cola de subida (#colaEstado / #colaCancelar).
    - Compositor interno (.pf-composer): cabecera, iconos, anillo del
      contador y botón Publicar (#btnSubirVideo).
-   Quitado: título h3, botón de cámara (ahora está en el header),
-   contenedor .file-input-wrapper y el botón antiguo .btn-subir-video
-   (reemplazado por #btnSubirVideo), con sus reglas de hover y móvil.
    ================================================================ */
 
 /* ----------------------------------------------------------------
@@ -28,6 +25,7 @@
         linear-gradient(170deg, rgba(10, 18, 30, .96), rgba(4, 7, 13, .98));
     box-shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 0 40px rgba(0, 229, 255, .06);
     overflow: hidden;
+    box-sizing: border-box;
 }
 #uploadSection::after {
     content: '';
@@ -59,6 +57,7 @@
     font-size: .92rem;
     line-height: 1.5;
     transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
+    box-sizing: border-box;
 }
 #uploadSection .form-group input::placeholder,
 #uploadSection .form-group textarea::placeholder { color: #4f6577; }
@@ -74,13 +73,19 @@
 /* ----------------------------------------------------------------
    3. SELECTOR DE ARCHIVO PLANO (lo genera videos-publicar.js)
    ---------------------------------------------------------------- */
-#uploadSection .cs-file-btn-wrap { margin: 4px 0 10px; }
+#uploadSection .cs-file-btn-wrap {
+    margin: 10px 0;
+    width: 100%;
+    box-sizing: border-box;
+}
 #uploadSection #csFileBtnVideo {
-    border: 1px solid rgba(255, 255, 255, .07) !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgba(255, 255, 255, .08) !important;
     border-radius: 18px !important;
     background: rgba(255, 255, 255, .03) !important;
     color: #7fdcff !important;
-    padding: 18px 14px !important;
+    padding: 16px 14px !important;
     transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
 }
 #uploadSection #csFileBtnVideo:hover {
@@ -160,8 +165,6 @@
 
 /* ----------------------------------------------------------------
    6. COMPOSITOR INTERNO (.pf-composer)
-   Restaurado: estaba en el <style> que se quitó de videos.html.
-   La tarjeta visible es #uploadSection; .pf-composer solo ordena contenido.
    ---------------------------------------------------------------- */
 .pf-composer {
     position: relative;
@@ -170,6 +173,8 @@
     border: 0;
     box-shadow: none;
     overflow: visible;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .pf-composer-cabecera {
@@ -207,7 +212,7 @@
 .pf-composer .form-group-old { display: none !important; }
 
 .pf-composer textarea#inputDescripcionVideo {
-    width: 100%;
+    width: 100% !important;
     min-height: 96px;
     resize: vertical;
     box-sizing: border-box;
@@ -234,12 +239,18 @@
     margin-top: 14px;
     flex-wrap: wrap;
 }
-.pf-composer-iconos { display: flex; gap: 8px; }
+.pf-composer-iconos {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
 .pf-composer-icono {
-    width: 40px;
-    height: 40px;
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
     border-radius: 14px;
-    padding: 0;
+    padding: 0 !important;
     border: 1px solid rgba(255, 255, 255, .07);
     background: rgba(255, 255, 255, .03);
     color: #7fdcff;
@@ -247,37 +258,62 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
 }
 .pf-composer-icono svg {
-    width: 18px;
-    height: 18px;
-    fill: none;
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    max-width: 18px !important;
+    max-height: 18px !important;
+    fill: none !important;
     stroke: currentColor;
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
     pointer-events: none;
+    display: block;
+    flex-shrink: 0;
 }
 
 .pf-composer-pie {
     margin-left: auto;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 .pf-composer-anillo {
     position: relative;
-    width: 36px;
-    height: 36px;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
     flex: 0 0 36px;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 .pf-composer-anillo svg {
-    width: 36px;
-    height: 36px;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
     transform: rotate(-90deg);
     display: block;
+    flex-shrink: 0;
 }
-.pf-composer-anillo circle { fill: none; stroke-width: 3; }
+.pf-composer-anillo circle {
+    fill: none !important;
+    stroke-width: 3;
+}
 .pf-composer-anillo .fondo { stroke: rgba(255, 255, 255, .08); }
 .pf-composer-anillo .progreso {
     stroke: #00e5ff;
@@ -303,6 +339,7 @@
     min-width: 58px;
     text-align: right;
     font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
 }
 .pf-composer-contador.cerca { color: #D4AF37; }
 .pf-composer-contador.lleno { color: #ff3366; }
@@ -311,6 +348,7 @@
 .pf-composer #btnSubirVideo {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
     padding: 11px 22px;
     border: 0;
@@ -325,15 +363,22 @@
     text-transform: uppercase;
     box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
     transition: transform .15s ease, box-shadow .25s ease, opacity .2s ease;
+    box-sizing: border-box;
 }
 .pf-composer #btnSubirVideo svg {
-    width: 15px;
-    height: 15px;
-    fill: none;
+    width: 15px !important;
+    height: 15px !important;
+    min-width: 15px !important;
+    min-height: 15px !important;
+    max-width: 15px !important;
+    max-height: 15px !important;
+    fill: none !important;
     stroke: currentColor;
     stroke-width: 2.2;
     stroke-linecap: round;
     stroke-linejoin: round;
+    display: block;
+    flex-shrink: 0;
 }
 .pf-composer #btnSubirVideo:hover {
     box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4);
@@ -345,7 +390,15 @@
    7. ADAPTACIÓN PARA MÓVIL Y ACCESIBILIDAD
    ---------------------------------------------------------------- */
 @media (max-width: 480px) {
-    .pf-composer #btnSubirVideo { width: 100%; justify-content: center; }
+    .pf-composer-pie {
+        width: 100%;
+        margin-left: 0;
+        justify-content: space-between;
+    }
+    .pf-composer #btnSubirVideo {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
