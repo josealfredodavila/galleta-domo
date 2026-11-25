@@ -1,10 +1,9 @@
 // ================================================================
 // PERFIL · DATOS DEL USUARIO
 // ================================================================
-// CAMBIO v6.3:
-// - Corrección de marca: Sariel's → Csariel's.
-// - Biografía predeterminada actualizada.
-// - Valor predeterminado al guardar perfil actualizado.
+// CAMBIO v6.2 (Visor de Avatar Integrado):
+// - Se agregó la función window.abrirVisorImagen en el evento onclick
+//   del avatar para que la foto se abra a pantalla completa al tocarla.
 // ================================================================
 
 // 🔥 IMPORTANTE: PON AQUÍ TU URL DE RAILWAY (Sin la barra final)
@@ -19,6 +18,7 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
     fd.append('destino', destino);
     fd.append('tipo', tipo);
 
+    // Si BACKEND_URL tiene la URL real, úsala. Si no, usa ruta relativa.
     const urlDestino = (BACKEND_URL && BACKEND_URL.includes('railway.app')) 
         ? BACKEND_URL + '/api/media/upload' 
         : '/api/media/upload';
@@ -40,7 +40,8 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
 
     if (!respuesta.ok || !data.ok) {
         let mensaje = 'No se pudo subir el archivo';
-
+        
+        // Manejo de errores específicos del backend
         if (respuesta.status === 422) {
             mensaje = data.error || 'Contenido no permitido por las normas de la comunidad.';
         } else if (respuesta.status === 413) {
@@ -164,11 +165,9 @@ function actualizarUI(data) {
     if (handleEl) handleEl.textContent = '@' + (data.handle || 'explorador');
 
     if (bioEl) {
-        // ✅ MARCA CORRECTA: CSARIEL'S
         const bioDefault = "Explorando el ecosistema Csariel's · WEB3 · Comunidad";
         const bioT = perfilT('perfil_biografia_default', bioDefault);
-
-        if (!data.bio || data.bio === bioDefault || data.bio === "Explorando el ecosistema Sariel's · WEB3 · Comunidad") {
+        if (!data.bio || data.bio === bioDefault) {
             bioEl.setAttribute('data-clave', 'perfil_biografia_default');
             bioEl.removeAttribute('data-no-traducir');
             bioEl.textContent = bioT;
@@ -185,8 +184,9 @@ function actualizarUI(data) {
             escaparHTML(perfilT('perfil_opciones', 'Opciones')) + '">✎</span>';
         if (data.avatar_url) {
             const urlSafe = escaparHTML(data.avatar_url);
+            // 🔥 AQUÍ ESTÁ LA MAGIA: Agregamos el onclick para abrir el visor
             avatarEl.innerHTML = '<img src="' + urlSafe + '" alt="" style="cursor: zoom-in;" onclick="window.abrirVisorImagen(\'' + urlSafe + '\', \'Foto de perfil\', \'perfilAvatarModal\')" onerror="this.style.display=\'none\'">' + toggle;
-
+            
             const img = avatarEl.querySelector('img');
             if (img) img.addEventListener('error', function () { avatarEl.innerHTML = '◈' + toggle; });
         } else {
@@ -592,8 +592,11 @@ function irAMuro() {
 }
 
 // ================================================================
-// EXPORTACIONES A WINDOW
+// EXPORTACIONES A WINDOW (🔥 ESTO ES LO QUE FALTABA)
 // ================================================================
+// Hacemos que el HTML pueda encontrar estas funciones
+// para que no salga el error de "No se pudo subir la foto".
+
 window.subirFoto = subirFoto;
 window.eliminarFotoPerfil = eliminarFotoPerfil;
 window.subirVideo = subirVideo;
