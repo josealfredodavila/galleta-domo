@@ -51,122 +51,6 @@
     <script src="/features/shared/js/apariencia-global.js"></script>
     <link rel="stylesheet" href="/features/grupos/css/grupos.css">
 
-    <style>
-        /* ================================================================
-           COMPOSITOR WEB3 · estilos del compositor de canales
-           (pasarán a grupos.css en la siguiente entrega)
-           ================================================================ */
-        .form-publicacion {
-            position: relative;
-            border-radius: 24px;
-            padding: 18px 16px 16px;
-            background:
-                radial-gradient(120% 90% at 0% 0%, rgba(0, 229, 255, .10), transparent 55%),
-                radial-gradient(120% 90% at 100% 100%, rgba(139, 92, 246, .12), transparent 55%),
-                linear-gradient(170deg, rgba(10, 18, 30, .96), rgba(4, 7, 13, .98)) !important;
-            border: 1px solid rgba(0, 229, 255, .16) !important;
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, .02) inset, 0 18px 50px rgba(0, 0, 0, .55), 0 0 40px rgba(0, 229, 255, .06) !important;
-            overflow: visible;
-            transition: box-shadow .35s ease, border-color .35s ease;
-            margin-bottom: 20px;
-            z-index: 10;
-        }
-        .form-publicacion::after {
-            content: '';
-            position: absolute; left: 18px; right: 18px; top: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(0, 229, 255, .8), rgba(139, 92, 246, .8), transparent);
-            opacity: .6; pointer-events: none;
-        }
-        .form-publicacion:focus-within {
-            border-color: rgba(0, 229, 255, .45) !important;
-            box-shadow: 0 0 0 1px rgba(255, 255, 255, .02) inset, 0 18px 50px rgba(0, 0, 0, .55), 0 0 48px rgba(0, 229, 255, .18) !important;
-        }
-
-        .form-publicacion textarea {
-            width: 100%; min-height: 96px; resize: vertical; background: rgba(0, 0, 0, .28);
-            border: 1px solid rgba(255, 255, 255, .06); border-radius: 18px; padding: 14px 16px;
-            color: #eef6ff; font-family: 'Inter', sans-serif; font-size: .96rem; line-height: 1.55;
-            box-sizing: border-box; transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
-        }
-        .form-publicacion textarea::placeholder { color: #4f6577; }
-        .form-publicacion textarea:focus {
-            outline: none; background: rgba(0, 0, 0, .42); border-color: rgba(0, 229, 255, .55);
-            box-shadow: 0 0 0 3px rgba(0, 229, 255, .10), 0 0 26px rgba(0, 229, 255, .14);
-        }
-
-        .form-publicacion .acciones {
-            display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 14px; flex-wrap: wrap;
-        }
-        .form-publicacion .acciones > button:not(.btn-publicar):not(.btn-mk) {
-            display: inline-flex; align-items: center; justify-content: center;
-            width: 40px; height: 40px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .07);
-            background: rgba(255, 255, 255, .03); color: #7fdcff; cursor: pointer; padding: 0;
-            transition: background .2s ease, border-color .2s ease, box-shadow .2s ease, transform .15s ease, color .2s ease;
-        }
-        .form-publicacion .acciones > button:not(.btn-publicar):not(.btn-mk) svg { width: 18px; height: 18px; }
-        .form-publicacion .acciones > button:not(.btn-publicar):not(.btn-mk):hover {
-            background: rgba(0, 229, 255, .10); border-color: rgba(0, 229, 255, .35); box-shadow: 0 0 14px rgba(0, 229, 255, .22); color: #cdf6ff;
-        }
-        .form-publicacion .acciones > button:not(.btn-publicar):not(.btn-mk):active { transform: scale(.92); }
-
-        .form-publicacion .acciones > button.venta, .form-publicacion .acciones > button.btn-mk {
-            width: auto; padding: 0 14px; font-size: .7rem; border-color: rgba(212, 175, 55, .3); color: #D4AF37;
-        }
-        .form-publicacion .acciones > button.venta:hover, .form-publicacion .acciones > button.btn-mk:hover {
-            background: rgba(212, 175, 55, .1); border-color: rgba(212, 175, 55, .6); box-shadow: 0 0 14px rgba(212, 175, 55, .2);
-        }
-
-        .form-publicacion .btn-publicar {
-            position: relative; display: inline-flex; align-items: center; gap: 8px; padding: 11px 22px !important;
-            border-radius: 14px !important; border: 0 !important;
-            background: linear-gradient(120deg, #00e5ff 0%, #3b82f6 55%, #8b5cf6 100%) !important;
-            background-size: 200% 100%; color: #04070d !important; font-family: 'Orbitron', monospace !important;
-            font-size: .68rem !important; font-weight: 700 !important; letter-spacing: 1.5px !important; text-transform: uppercase;
-            cursor: pointer; box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
-            transition: background-position .6s ease, transform .15s ease, box-shadow .25s ease, opacity .2s ease; overflow: hidden;
-        }
-        .form-publicacion .btn-publicar svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-        .form-publicacion .btn-publicar:hover { background-position: 100% 0; box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4); }
-        .form-publicacion .btn-publicar:active { transform: scale(.96); }
-
-        /* Contador WEB3 */
-        .pf-composer-pie { margin-left: auto; display: flex; align-items: center; gap: 12px; }
-        .pf-composer-anillo { position: relative; width: 36px; height: 36px; flex: 0 0 36px; }
-        .pf-composer-anillo svg { width: 36px; height: 36px; transform: rotate(-90deg); }
-        .pf-composer-anillo circle { fill: none; stroke-width: 3; }
-        .pf-composer-anillo .fondo { stroke: rgba(255, 255, 255, .08); }
-        .pf-composer-anillo .progreso { stroke: #00e5ff; stroke-linecap: round; stroke-dasharray: 94.25; stroke-dashoffset: 94.25; transition: stroke-dashoffset .3s ease, stroke .3s ease; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .6)); }
-        .pf-composer-anillo.cerca .progreso { stroke: #D4AF37; filter: drop-shadow(0 0 4px rgba(212, 175, 55, .6)); }
-        .pf-composer-anillo.lleno .progreso { stroke: #ff3366; filter: drop-shadow(0 0 4px rgba(255, 51, 102, .6)); }
-        .pf-composer-contador { font-family: 'Orbitron', monospace; font-size: .58rem; color: #6f8ba0; min-width: 58px; text-align: right; font-variant-numeric: tabular-nums; letter-spacing: .5px; }
-        .pf-composer-contador.cerca { color: #D4AF37; }
-        .pf-composer-contador.lleno { color: #ff3366; }
-
-        /* Avatar y handle del compositor */
-        #userAvatarGrupo { background-size: cover; background-position: center; color: transparent; }
-        #userHandleGrupo {
-            display: inline-flex; align-items: center; gap: 5px; margin-top: 4px; padding: 2px 10px 2px 9px;
-            border-radius: 999px; color: #5cc8ff !important; font-weight: 600; font-size: .72rem; letter-spacing: .2px;
-            background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16));
-            border: 1px solid rgba(0, 229, 255, .38); text-shadow: 0 0 8px rgba(0, 229, 255, .5);
-            box-shadow: 0 0 10px rgba(0, 229, 255, .12);
-            animation: grpHandleHalo 2.4s ease-in-out infinite;
-        }
-        #userHandleGrupo .grp-bolt { display: inline-flex; color: #00e5ff; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9)); animation: grpHandleDestello 1.8s steps(2, end) infinite; }
-        #userHandleGrupo .grp-bolt svg { width: 11px; height: 11px; }
-        @keyframes grpHandleHalo {
-            0%, 100% { box-shadow: 0 0 6px rgba(0, 229, 255, .15); }
-            50%      { box-shadow: 0 0 14px rgba(0, 229, 255, .45), 0 0 22px rgba(139, 92, 246, .25); }
-        }
-        @keyframes grpHandleDestello {
-            0%, 100% { opacity: 1; }
-            50%      { opacity: .35; }
-        }
-        @media (prefers-reduced-motion: reduce) {
-            #userHandleGrupo, #userHandleGrupo .grp-bolt { animation: none !important; }
-        }
-    </style>
-
     <script>
     (function () {
         'use strict';
@@ -419,7 +303,7 @@
                     <button onclick="insertarMencionGrupo()" title="Mención" aria-label="Mencionar a alguien"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/></svg></button>
                     <button onclick="subirFotoGrupo()" title="Publica una foto como contenido normal del canal" aria-label="Subir foto"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></button>
                     <button onclick="subirVideoGrupo()" title="Publica un video como contenido normal del canal" aria-label="Subir video"><svg class="icon icon-sm" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg></button>
-                    <button class="btn-mk" onclick="abrirModalMarketplace()" id="btnMarketplace" title="Vende un producto o servicio con precio, stock y wallet de cobro"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Vender</span></button>
+                    <button class="btn-mk" onclick="abrirModalMarketplace()" id="btnMarketplace" title="Vende un producto o servicio con precio y wallet de cobro"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span>Vender</span></button>
 
                     <div class="pf-composer-pie">
                         <div class="pf-composer-anillo" id="pfAnillo" aria-hidden="true">
@@ -581,7 +465,6 @@
                         <option value="estafa" data-clave="grupos_motivo_estafa">Estafa o fraude</option>
                         <option value="violencia" data-clave="grupos_motivo_violencia">Violencia o peligro</option>
                         <option value="derechos_autor" data-clave="grupos_motivo_derechos">Violación de derechos de autor</option>
-                        <option value="cripto" data-clave="grupos_motivo_cripto">Venta de cripto/tokens (prohibido)</option>
                         <option value="otro" data-clave="grupos_motivo_otro">Otro</option>
                     </select>
                 </div>
@@ -749,7 +632,6 @@
             input.dispatchEvent(new Event('input', { bubbles: true }));
         };
 
-        // Icono de rayo (SVG) para el handle del usuario
         var RAYO_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>';
 
         function avatarSeguro(url) {
