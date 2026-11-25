@@ -1,24 +1,41 @@
 // ================================================================
-// GRUPOS · VISTA INTERNA DEL GRUPO
+// GRUPOS · VISTA INTERNA DEL CANAL (v4)
 // ================================================================
-// Abrir grupo, membresía, feed de publicaciones, interacciones,
-// reportes, etiquetas, comentarios, reacciones y acciones del canal.
+// Abrir canal, membresía, feed de publicaciones, reacciones,
+// interacciones, reportes, etiquetas, comentarios y acciones del canal.
+// v4:
+//  - Emojis decorativos reemplazados por SVG (rayo, alerta, menú, sonrisa).
+//  - Las 5 reacciones compartidas se mantienen: ❤️ 😂 🥺 💎 🤩.
+//  - Videos en contenedor 9:16 con marca de agua "C".
+//  - Fotos con clase .post-imagen (ancho completo, max-height 560 px).
+//  - Estilos inline eliminados: se usan las clases de grupos.css.
+//  - volverALista() desconecta la sala con desconectarSalaLive().
 // Depende de: grupos-config.js, grupos-utils.js, grupos-anuncios.js,
 //             grupos-marketplace.js (mkTarjetaCompraHTML),
-//             reacciones-global.js (ReaccionesGlobal)
-// v3.3: emojis unificados con perfil-publicaciones.js
-//       (mismo picker, mismas clases de animación, mismo CSS).
-// v3.2: reacciones unificadas a ❤️ 😂 🥺 💎 (reacciones-global.js),
-//       con animación de emojis y normalización de valores antiguos.
-// v3.1: menú completo para el autor (+ eliminar); borrado por RPC.
-// v3.0:
-//   - El dueño puede eliminar su propia publicación (borrado lógico).
-//   - Avatar del autor visible para todos; sin foto, muestra la inicial.
-//   - Caja de comentarios más grande.
+//             grupos-live.js (desconectarSalaLive), reacciones-global.js
 // ================================================================
 
 // ================================================================
-// EMOJIS · CONFIGURACIÓN COMPARTIDA CON PERFIL
+// ICONOS SVG (sustituyen los emojis decorativos)
+// ================================================================
+var GRP_ICONO = {
+    rayo: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+    alerta: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    menu: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>',
+    sonrisa: '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>'
+};
+
+// Marca de agua "C" (misma que el feed de videos y el live)
+var GRP_MARCA_AGUA =
+    '<span class="marca-agua" aria-hidden="true">' +
+        '<svg viewBox="0 0 60 80" xmlns="http://www.w3.org/2000/svg">' +
+            '<rect x="2" y="2" width="56" height="76" rx="8" fill="none" stroke="#D4AF37" stroke-width="3"/>' +
+            '<text x="30" y="58" text-anchor="middle" font-family="Georgia, serif" font-style="italic" font-size="50" fill="#D4AF37">C</text>' +
+        '</svg>' +
+    '</span>';
+
+// ================================================================
+// EMOJIS · REACCIONES COMPARTIDAS CON PERFIL
 // ================================================================
 var GRP_CSS_EMOJIS = '/features/perfil/css/emojis-animations.css';
 
@@ -32,6 +49,7 @@ var GRP_CLASES_EMOJI = {
 
 var GRP_CLASES_EMOJI_TODAS = ['emo-corazon', 'emo-risa', 'emo-brillo', 'emo-diamante', 'emo-estrellas', 'emo-fluido'];
 
+// Picker de emojis para el texto de la publicación (contenido del usuario, no decorativo)
 var GRP_EMOJIS_PICKER_DEFAULT = [
 '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😋','😛','😜',
 '🤪','😎','🥳','😏','😒','😞','😔','😟','😕','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤯',
@@ -47,19 +65,15 @@ function grpCargarCssEmojis() {
     link.href = GRP_CSS_EMOJIS;
     document.head.appendChild(link);
 }
-
 grpCargarCssEmojis();
 
 function grpClaseEmoji(emoji) {
     return GRP_CLASES_EMOJI[emoji] || 'emo-fluido';
 }
 
-// Motor local (fallback si ReaccionesGlobal no está disponible)
 function grpAplicarMotorEmojiLocal(el, emoji) {
     if (!el) return;
-    GRP_CLASES_EMOJI_TODAS.forEach(function (clase) {
-        el.classList.remove(clase);
-    });
+    GRP_CLASES_EMOJI_TODAS.forEach(function (clase) { el.classList.remove(clase); });
     el.classList.add(grpClaseEmoji(emoji));
     var duracion = 1.6 + Math.random() * 1.2;
     var retraso = -Math.random() * duracion;
@@ -71,16 +85,17 @@ function grpAplicarMotorEmojiLocal(el, emoji) {
 // REACCIONES Y AVATARES
 // ================================================================
 var RG_GRUPOS = window.ReaccionesGlobal;
-var REACCIONES_DISPONIBLES = RG_GRUPOS ? RG_GRUPOS.EMOJIS.slice() : ['❤️', '😂', '🥺', '💎'];
+// Las 5 reacciones compartidas. ReaccionesGlobal es la fuente de verdad.
+var REACCIONES_DISPONIBLES = RG_GRUPOS
+    ? RG_GRUPOS.EMOJIS.slice()
+    : ['❤️', '😂', '🥺', '💎', '🤩'];
 var misReacciones = {};
 
-// Normaliza cualquier valor guardado (👍, 🥰, like, nulos) a uno de los 4 emojis
 function normalizarReaccion(tipo) {
-    return RG_GRUPOS ? RG_GRUPOS.normalizar(tipo) : (REACCIONES_DISPONIBLES.indexOf(tipo) !== -1 ? tipo : '❤️');
+    if (RG_GRUPOS) return RG_GRUPOS.normalizar(tipo);
+    return REACCIONES_DISPONIBLES.indexOf(tipo) !== -1 ? tipo : '❤️';
 }
 
-// Aplica la animación del emoji (clase + duración aleatoria).
-// Usa ReaccionesGlobal si está disponible; si no, el motor local.
 function animarEmojiGrupo(el, emoji) {
     if (!el) return;
     if (RG_GRUPOS && typeof RG_GRUPOS.aplicarMotor === 'function') {
@@ -90,14 +105,14 @@ function animarEmojiGrupo(el, emoji) {
     }
 }
 
-// Avatar: foto si existe; si no, la inicial del nombre (nunca un símbolo vacío)
+// Avatar: foto si existe; si no, la inicial del nombre
 function avatarHTML(url, nombre) {
     var safe = grpSafeUrl(url);
     if (safe) {
-        return '<img src="' + grpEscapeHTML(safe) + '" alt="" style="width:100%;height:100%;object-fit:cover;">';
+        return '<img src="' + grpEscapeHTML(safe) + '" alt="">';
     }
     var inicial = (String(nombre || '?').trim().charAt(0) || '?').toUpperCase();
-    return '<span style="font-weight:800;color:#fff;">' + grpEscapeHTML(inicial) + '</span>';
+    return '<span class="grp-inicial">' + grpEscapeHTML(inicial) + '</span>';
 }
 
 async function cargarMisReacciones() {
@@ -109,7 +124,7 @@ async function cargarMisReacciones() {
             .select('publicacion_id, tipo')
             .eq('usuario_id', sessionUser.id);
         if (!result.error && result.data) {
-            result.data.forEach(function(r) {
+            result.data.forEach(function (r) {
                 misReacciones[r.publicacion_id] = normalizarReaccion(r.tipo);
             });
         }
@@ -122,69 +137,60 @@ async function cargarMisReacciones() {
 // VISOR DE IMÁGENES (PANTALLA COMPLETA)
 // ================================================================
 function abrirVisorGrupo(urlImagen) {
-    let visor = document.getElementById('visorGrupoFull');
+    var visor = document.getElementById('visorGrupoFull');
     if (visor) visor.remove();
 
     visor = document.createElement('div');
     visor.id = 'visorGrupoFull';
-    visor.style.cssText = `
-        position: fixed; inset: 0; z-index: 100000; background: #000;
-        display: flex; align-items: center; justify-content: center;
-        opacity: 0; transition: opacity 0.3s ease; touch-action: manipulation;
-    `;
+    visor.style.cssText =
+        'position:fixed;inset:0;z-index:100000;background:#000;display:flex;align-items:center;' +
+        'justify-content:center;opacity:0;transition:opacity .3s ease;touch-action:manipulation;';
 
-    let img = document.createElement('img');
+    var img = document.createElement('img');
     img.src = urlImagen;
-    img.style.cssText = `
-        max-width: 100%; max-height: 100%; object-fit: contain;
-        transform: scale(0.95); transition: transform 0.3s ease;
-    `;
+    img.alt = '';
+    img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain;transform:scale(.95);transition:transform .3s ease;';
 
-    let btnCerrar = document.createElement('button');
-    btnCerrar.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">
-            <line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-    `;
-    btnCerrar.style.cssText = `
-        position: absolute; top: calc(16px + env(safe-area-inset-top, 0px)); right: 16px;
-        width: 44px; height: 44px; border-radius: 50%; border: 0;
-        background: rgba(255,255,255,0.1); cursor: pointer;
-        display: flex; align-items: center; justify-content: center;
-    `;
+    var btnCerrar = document.createElement('button');
+    btnCerrar.type = 'button';
+    btnCerrar.setAttribute('aria-label', 'Cerrar');
+    btnCerrar.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:28px;height:28px;">' +
+            '<line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line>' +
+        '</svg>';
+    btnCerrar.style.cssText =
+        'position:absolute;top:calc(16px + env(safe-area-inset-top, 0px));right:16px;width:44px;height:44px;' +
+        'border-radius:50%;border:0;background:rgba(255,255,255,0.1);cursor:pointer;display:flex;align-items:center;justify-content:center;';
 
-    let cerrar = function() {
+    var cerrar = function () {
         visor.style.opacity = '0';
-        img.style.transform = 'scale(0.95)';
-        setTimeout(() => visor.remove(), 300);
+        img.style.transform = 'scale(.95)';
+        setTimeout(function () { visor.remove(); }, 300);
         document.body.style.overflow = '';
     };
 
     btnCerrar.onclick = cerrar;
-    visor.onclick = function(e) {
-        if (e.target === visor) cerrar();
-    };
+    visor.onclick = function (e) { if (e.target === visor) cerrar(); };
 
-    let tocoY = 0;
-    visor.addEventListener('touchstart', (e) => { tocoY = e.changedTouches[0].clientY; }, {passive: true});
-    visor.addEventListener('touchend', (e) => {
-        let dy = e.changedTouches[0].clientY - tocoY;
-        if (dy > 100) cerrar();
-    }, {passive: true});
+    var tocoY = 0;
+    visor.addEventListener('touchstart', function (e) { tocoY = e.changedTouches[0].clientY; }, { passive: true });
+    visor.addEventListener('touchend', function (e) {
+        if (e.changedTouches[0].clientY - tocoY > 100) cerrar();
+    }, { passive: true });
 
     visor.appendChild(img);
     visor.appendChild(btnCerrar);
     document.body.appendChild(visor);
     document.body.style.overflow = 'hidden';
 
-    requestAnimationFrame(() => {
+    requestAnimationFrame(function () {
         visor.style.opacity = '1';
         img.style.transform = 'scale(1)';
     });
 }
 
 // ================================================================
-// HELPERS — Moderación
+// MODERACIÓN
 // ================================================================
 function esErrorModeracionGrupo(error) {
     var msg = (error && error.message) ? String(error.message) : '';
@@ -192,57 +198,47 @@ function esErrorModeracionGrupo(error) {
 }
 
 function htmlAvisoModeracionGrupo() {
-    return '<div class="grp-aviso-moderacion" style="' +
-        'display:flex;align-items:center;gap:8px;' +
-        'padding:8px 12px;margin:8px 0;border-radius:10px;' +
-        'background:rgba(247,212,74,0.12);' +
-        'border:1px solid rgba(247,212,74,0.4);' +
-        'color:#f7d44a;font-size:0.72rem;' +
-    '">' +
-        '<span style="font-size:1rem;">⚠️</span>' +
-        '<span>Este mensaje contiene lenguaje inapropiado. ' +
-            'Considera expresarte con respeto.</span>' +
+    return '<div class="grp-aviso-moderacion">' +
+        GRP_ICONO.alerta +
+        '<span>Este mensaje contiene lenguaje inapropiado. Considera expresarte con respeto.</span>' +
     '</div>';
 }
 
 // ================================================================
-// HELPER — Subida segura con moderación
+// SUBIDA SEGURA CON MODERACIÓN
 // ================================================================
 async function subirArchivoConModeracionGrupo(archivo, destino, tipo, token) {
-    const fd = new FormData();
+    var fd = new FormData();
     fd.append('file', archivo);
     fd.append('destino', destino);
     fd.append('tipo', tipo);
 
-    const respuesta = await fetch('/api/media/upload', {
+    var respuesta = await fetch('/api/media/upload', {
         method: 'POST',
-        headers: {
-            'Authorization': 'Bearer ' + token
-        },
+        headers: { 'Authorization': 'Bearer ' + token },
         body: fd
     });
 
-    let data = null;
-    try {
-        data = await respuesta.json();
-    } catch (e) {
-        data = {};
-    }
+    var data = null;
+    try { data = await respuesta.json(); } catch (e) { data = {}; }
 
     if (!respuesta.ok || !data.ok) {
-        const mensaje = data && data.error
-            ? data.error
-            : 'No se pudo subir el archivo';
-        const error = new Error(mensaje);
+        var error = new Error(data && data.error ? data.error : 'No se pudo subir el archivo');
         error.status = respuesta.status;
         throw error;
     }
-
     return data;
 }
 
+async function obtenerTokenSesion() {
+    var session = await window.supabaseClient.auth.getSession();
+    var token = session && session.data && session.data.session && session.data.session.access_token;
+    if (!token) throw new Error('Sesión no disponible');
+    return token;
+}
+
 // ================================================================
-// ABRIR GRUPO
+// ABRIR CANAL
 // ================================================================
 async function abrirGrupo(grupoId) {
     try {
@@ -252,6 +248,7 @@ async function abrirGrupo(grupoId) {
             .eq('id', grupoId)
             .single();
         if (result.error) throw result.error;
+
         grupoActual = result.data;
         grupoActualId = grupoId;
 
@@ -274,9 +271,13 @@ async function abrirGrupo(grupoId) {
         if (grupoActual.municipio) ubicacion.push(grupoActual.municipio);
         if (grupoActual.estado_region) ubicacion.push(grupoActual.estado_region);
         if (grupoActual.pais) ubicacion.push(grupoActual.pais);
-        document.getElementById('grupoCiudad').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + (ubicacion.length > 0 ? ubicacion.join(', ') : 'Sin ubicación');
+        document.getElementById('grupoCiudad').innerHTML =
+            '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' +
+            grpEscapeHTML(ubicacion.length > 0 ? ubicacion.join(', ') : 'Sin ubicación');
 
-        document.getElementById('grupoMiembros').innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' + (grupoActual.miembros?.[0]?.count || 0) + ' seguidores';
+        document.getElementById('grupoMiembros').innerHTML =
+            '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>' +
+            grpEscapeHTML(grupoActual.miembros && grupoActual.miembros[0] ? grupoActual.miembros[0].count || 0 : 0) + ' seguidores';
 
         var vis = grupoActual.visibilidad || 'publico';
         document.getElementById('grupoEstadoBadge').innerHTML = vis === 'publico'
@@ -287,39 +288,33 @@ async function abrirGrupo(grupoId) {
         if (mkBadgeEl) mkBadgeEl.style.display = grupoActual.marketplace_activo ? 'inline-flex' : 'none';
 
         var btnMk = document.getElementById('btnMarketplace');
-        if (btnMk) {
-            if (!grupoActual.marketplace_activo) btnMk.style.display = 'none';
-            else if (esMiembro()) btnMk.style.display = 'inline-flex';
-            else btnMk.style.display = 'none';
-        }
+        if (btnMk) btnMk.style.display = (grupoActual.marketplace_activo && esMiembro()) ? 'inline-flex' : 'none';
 
         var mkAviso = document.getElementById('marketplaceAviso');
         if (mkAviso) mkAviso.style.display = !grupoActual.marketplace_activo ? 'block' : 'none';
 
         var btnDonar = document.getElementById('btnDonar');
         if (btnDonar) {
-            if (grupoActual.precio_usdt > 0) {
-                btnDonar.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg> Donar $' + grupoActual.precio_usdt + ' USDT';
-            } else {
-                btnDonar.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg> Donar USDT';
-            }
+            var etiquetaDonar = grupoActual.precio_usdt > 0 ? 'Donar $' + grupoActual.precio_usdt + ' USDT' : 'Donar USDT';
+            btnDonar.innerHTML =
+                '<svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v8M9 11h6"/></svg> ' +
+                grpEscapeHTML(etiquetaDonar);
         }
 
         var avatarEl = document.getElementById('grupoAvatar');
         var avatarImg = grpSafeUrl(grupoActual.avatar_url);
-        if (avatarImg) avatarEl.innerHTML = '<img src="' + grpEscapeHTML(avatarImg) + '">';
+        if (avatarImg) avatarEl.innerHTML = '<img src="' + grpEscapeHTML(avatarImg) + '" alt="">';
         else avatarEl.textContent = '◈';
 
         var portadaEl = document.getElementById('grupoPortada');
         var portadaImg = grpSafeUrl(grupoActual.portada_url);
         if (portadaImg) {
-            portadaEl.innerHTML = `<video src="${grpEscapeHTML(portadaImg)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
+            portadaEl.innerHTML = '<video src="' + grpEscapeHTML(portadaImg) + '" autoplay loop muted playsinline></video>';
         } else {
             portadaEl.textContent = '◈';
         }
 
-        var esAdminOGerente = esAdmin || esCreador;
-        document.getElementById('btnAjustesCanal').style.display = esAdminOGerente ? 'flex' : 'none';
+        document.getElementById('btnAjustesCanal').style.display = (esAdmin || esCreador) ? 'flex' : 'none';
 
         reconstruirBotonesAcciones();
 
@@ -349,13 +344,9 @@ function reconstruirBotonesAcciones() {
     if (liveActivoEnGrupo) {
         if (btnVerLive) btnVerLive.style.display = 'inline-flex';
         document.getElementById('grupoLiveBadge').style.display = 'inline-flex';
-        if (sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id) {
-            if (btnFinalizarLive) btnFinalizarLive.style.display = 'inline-flex';
-            if (btnLive) btnLive.style.display = 'none';
-        } else {
-            if (btnFinalizarLive) btnFinalizarLive.style.display = 'none';
-            if (btnLive) btnLive.style.display = 'none';
-        }
+        var soyStreamer = !!(sessionUser && liveActivoEnGrupo.streamer_id === sessionUser.id);
+        if (btnFinalizarLive) btnFinalizarLive.style.display = soyStreamer ? 'inline-flex' : 'none';
+        if (btnLive) btnLive.style.display = 'none';
     } else {
         if (btnVerLive) btnVerLive.style.display = 'none';
         document.getElementById('grupoLiveBadge').style.display = 'none';
@@ -364,11 +355,11 @@ function reconstruirBotonesAcciones() {
     }
 
     if (sessionUser && !esMiembro()) {
-        var modo = grupoActual?.modo_ingreso || 'abierto';
+        var modo = grupoActual && grupoActual.modo_ingreso ? grupoActual.modo_ingreso : 'abierto';
         var btnUnirse = document.createElement('button');
         btnUnirse.id = 'btnUnirseGrupo';
         btnUnirse.className = 'btn-gold btn-sm';
-        btnUnirse.style.cssText = 'display:inline-flex;';
+        btnUnirse.style.display = 'inline-flex';
 
         if (modo === 'abierto') {
             btnUnirse.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg> Unirse';
@@ -381,9 +372,7 @@ function reconstruirBotonesAcciones() {
             btnUnirse.style.opacity = '0.5';
             btnUnirse.style.cursor = 'not-allowed';
             btnUnirse.innerHTML = '<svg class="icon icon-sm" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Solo por invitación';
-            btnUnirse.onclick = null;
         }
-
         contenedor.appendChild(btnUnirse);
     }
 }
@@ -395,13 +384,12 @@ async function unirseAlGrupo() {
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     if (!grupoActualId) return;
     try {
-        var r = await window.supabaseClient.from('grupos_video_miembros').insert({
+        grpOk(await window.supabaseClient.from('grupos_video_miembros').insert({
             grupo_id: grupoActualId,
             usuario_id: sessionUser.id,
             rol: 'miembro',
             estado: 'activo'
-        });
-        grpOk(r);
+        }));
         grpShowToast('Te has unido al canal', 'success');
         await abrirGrupo(grupoActualId);
     } catch (e) {
@@ -424,11 +412,10 @@ async function solicitarUnirseAlGrupo() {
             grpShowToast('Solicitud enviada', 'info');
             return;
         }
-        var r = await window.supabaseClient.from('grupos_video_solicitudes').insert({
+        grpOk(await window.supabaseClient.from('grupos_video_solicitudes').insert({
             grupo_id: grupoActualId,
             usuario_id: sessionUser.id
-        });
-        grpOk(r);
+        }));
         grpShowToast('Solicitud enviada', 'success');
     } catch (e) {
         grpShowToast('Error: ' + (e.message || e), 'error');
@@ -436,7 +423,7 @@ async function solicitarUnirseAlGrupo() {
 }
 
 // ================================================================
-// VERIFICAR MEMBRESÍA / LIVE ACTIVO
+// MEMBRESÍA / LIVE ACTIVO
 // ================================================================
 async function verificarMembresia(grupoId) {
     try {
@@ -487,7 +474,7 @@ async function verificarLiveActivoGrupo(grupoId) {
 }
 
 // ================================================================
-// CARGAR INTERACCIONES / NOTIFICACIONES
+// INTERACCIONES / NOTIFICACIONES
 // ================================================================
 async function cargarMisInteracciones() {
     misInteracciones = {};
@@ -498,7 +485,7 @@ async function cargarMisInteracciones() {
             .select('publicacion_id, tipo')
             .eq('usuario_id', sessionUser.id);
         if (!result.error && result.data) {
-            result.data.forEach(function(i) {
+            result.data.forEach(function (i) {
                 if (!misInteracciones[i.publicacion_id]) misInteracciones[i.publicacion_id] = {};
                 misInteracciones[i.publicacion_id][i.tipo] = true;
             });
@@ -517,7 +504,7 @@ async function cargarMisNotificaciones() {
             .select('publicacion_id')
             .eq('usuario_id', sessionUser.id);
         if (!result.error && result.data) {
-            result.data.forEach(function(n) { misNotificaciones[n.publicacion_id] = true; });
+            result.data.forEach(function (n) { misNotificaciones[n.publicacion_id] = true; });
         }
     } catch (e) {
         console.warn('Error notificaciones:', e);
@@ -529,7 +516,7 @@ async function cargarMisNotificaciones() {
 // ================================================================
 function filtrarFeed(filtro) {
     filtroFeedActual = filtro;
-    document.querySelectorAll('.feed-filtro-btn').forEach(function(btn) {
+    document.querySelectorAll('.feed-filtro-btn').forEach(function (btn) {
         btn.classList.toggle('active', btn.dataset.filtro === filtro);
     });
     renderizarPublicacionesCache();
@@ -539,16 +526,16 @@ function renderizarPublicacionesCache() {
     var container = document.getElementById('publicacionesContainer');
     if (!container) return;
 
-    var filtradas = publicacionesCache.filter(function(p) {
-        return !(misInteracciones[p.id]?.no_quiero_ver);
+    var filtradas = publicacionesCache.filter(function (p) {
+        return !(misInteracciones[p.id] && misInteracciones[p.id].no_quiero_ver);
     });
 
     if (filtroFeedActual === 'marketplace') {
-        filtradas = filtradas.filter(function(p) { return !!p.tipo_marketplace; });
+        filtradas = filtradas.filter(function (p) { return !!p.tipo_marketplace; });
     } else if (filtroFeedActual === 'publicaciones') {
-        filtradas = filtradas.filter(function(p) { return !p.tipo_marketplace; });
+        filtradas = filtradas.filter(function (p) { return !p.tipo_marketplace; });
     } else if (filtroFeedActual === 'interesados') {
-        filtradas = filtradas.filter(function(p) {
+        filtradas = filtradas.filter(function (p) {
             return misInteracciones[p.id] && misInteracciones[p.id].me_interesa;
         });
     }
@@ -560,74 +547,74 @@ function renderizarPublicacionesCache() {
             'publicaciones': 'No hay publicaciones normales',
             'interesados': 'Aún no has marcado ninguna publicación como "Me interesa"'
         };
-        container.innerHTML = '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg><h3>' + mensajes[filtroFeedActual] + '</h3></div>';
+        container.innerHTML =
+            '<div class="empty-state"><svg class="icon" viewBox="0 0 24 24"><polygon points="12 2 20 7 20 17 12 22 4 17 4 7 12 2"/></svg>' +
+            '<h3>' + grpEscapeHTML(mensajes[filtroFeedActual] || 'Sin publicaciones') + '</h3></div>';
         return;
     }
 
-    container.innerHTML = filtradas.map(function(p) { return renderizarPublicacionHTML(p); }).join('');
+    container.innerHTML = filtradas.map(renderizarPublicacionHTML).join('');
 
-    // Aplica la animación a cada emoji del menú y de la barra
-    container.querySelectorAll('.grp-react-picker button[data-emoji]').forEach(function(b) {
+    container.querySelectorAll('.grp-react-picker button[data-emoji]').forEach(function (b) {
         animarEmojiGrupo(b, b.getAttribute('data-emoji'));
     });
-    container.querySelectorAll('.grp-react-trigger-emoji').forEach(function(el) {
-        animarEmojiGrupo(el, el.getAttribute('data-emoji'));
+    container.querySelectorAll('.grp-react-trigger-emoji[data-emoji]').forEach(function (el) {
+        var valor = el.getAttribute('data-emoji');
+        if (valor && valor !== 'ninguna') animarEmojiGrupo(el, valor);
     });
 }
 
 // ================================================================
-// REACCIONES · barra de emojis y conteo
+// REACCIONES · barra y conteo
 // ================================================================
 function htmlBarraReacciones(p) {
     var mia = misReacciones[p.id] || null;
     var total = p.likes_count || 0;
 
-    // Resumen por emoji (normaliza valores antiguos a ❤️)
     var resumen = {};
     var crudo = p.reacciones_resumen || {};
-    Object.keys(crudo).forEach(function(k) {
+    Object.keys(crudo).forEach(function (k) {
         var e = normalizarReaccion(k);
         resumen[e] = (resumen[e] || 0) + (Number(crudo[k]) || 0);
     });
-    var resumenTxt = Object.keys(resumen).filter(function(e) { return resumen[e] > 0; })
-        .map(function(e) { return e + ' ' + resumen[e]; }).join('  ');
+    var resumenTxt = Object.keys(resumen)
+        .filter(function (e) { return resumen[e] > 0; })
+        .map(function (e) { return e + ' ' + resumen[e]; })
+        .join('  ');
 
-    var opciones = REACCIONES_DISPONIBLES.map(function(e) {
-        var activa = mia === e;
-        return '<button type="button" data-emoji="' + e + '" onclick="reaccionarPublicacion(' + p.id + ', \'' + e + '\')" ' +
-            'style="font-size:1.35rem;background:' + (activa ? 'rgba(212,175,55,0.25)' : 'transparent') + ';' +
-            'border:none;border-radius:50%;width:44px;height:44px;cursor:pointer;line-height:1;">' + e + '</button>';
+    var opciones = REACCIONES_DISPONIBLES.map(function (e) {
+        var activa = mia === e ? ' activa' : '';
+        return '<button type="button" data-emoji="' + grpEscapeHTML(e) + '" class="' + activa.trim() + '" ' +
+            'onclick="reaccionarPublicacion(' + Number(p.id) + ', \'' + e + '\')">' + e + '</button>';
     }).join('');
 
-    return '<div class="grp-react-wrap" style="position:relative;display:inline-flex;align-items:center;gap:8px;">' +
-        '<button type="button" onclick="toggleReaccionPicker(' + p.id + ')" ' +
-            'style="display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:22px;' +
-            'border:1px solid var(--glass-border);background:rgba(0,0,0,0.25);color:var(--text-primary);font-size:0.95rem;cursor:pointer;">' +
-            '<span class="grp-react-trigger-emoji" data-emoji="' + (mia || '❤️') + '" style="font-size:1.15rem;">' + (mia || '🙂') + '</span>' +
-            '<span style="font-size:0.85rem;">' + total + '</span>' +
+    var disparador = mia
+        ? '<span class="grp-react-trigger-emoji" data-emoji="' + grpEscapeHTML(mia) + '">' + mia + '</span>'
+        : '<span class="grp-react-trigger-emoji" data-emoji="ninguna">' + GRP_ICONO.sonrisa + '</span>';
+
+    return '<div class="grp-react-wrap">' +
+        '<button type="button" class="grp-react-trigger" onclick="toggleReaccionPicker(' + Number(p.id) + ')">' +
+            disparador +
+            '<span>' + grpEscapeHTML(total) + '</span>' +
         '</button>' +
-        (resumenTxt ? '<span style="font-size:0.85rem;color:var(--text-muted);">' + grpEscapeHTML(resumenTxt) + '</span>' : '') +
-        '<div id="reactPicker-' + p.id + '" class="grp-react-picker" style="display:none;position:absolute;bottom:calc(100% + 8px);left:0;' +
-            'background:rgba(8,15,26,0.97);border:1px solid var(--glass-border-strong);border-radius:26px;' +
-            'padding:6px 8px;gap:4px;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,0.5);">' +
-            opciones +
-        '</div>' +
+        (resumenTxt ? '<span class="grp-react-resumen">' + grpEscapeHTML(resumenTxt) + '</span>' : '') +
+        '<div id="reactPicker-' + Number(p.id) + '" class="grp-react-picker">' + opciones + '</div>' +
     '</div>';
 }
 
 function toggleReaccionPicker(publicacionId) {
     var picker = document.getElementById('reactPicker-' + publicacionId);
     if (!picker) return;
-    var abierto = picker.style.display !== 'none';
-    document.querySelectorAll('.grp-react-picker').forEach(function(p) { p.style.display = 'none'; });
+    var abierto = picker.style.display === 'flex';
+    document.querySelectorAll('.grp-react-picker').forEach(function (p) { p.style.display = 'none'; });
     picker.style.display = abierto ? 'none' : 'flex';
 }
 
-// Una reacción por persona: misma reacción la quita; otra la cambia; ninguna la agrega
+// Una reacción por persona: la misma la quita; otra la cambia; ninguna la agrega
 async function reaccionarPublicacion(publicacionId, emoji) {
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     if (REACCIONES_DISPONIBLES.indexOf(emoji) === -1) return;
-    document.querySelectorAll('.grp-react-picker').forEach(function(p) { p.style.display = 'none'; });
+    document.querySelectorAll('.grp-react-picker').forEach(function (p) { p.style.display = 'none'; });
 
     var actual = misReacciones[publicacionId] || null;
     try {
@@ -655,143 +642,145 @@ async function reaccionarPublicacion(publicacionId, emoji) {
 }
 
 // ================================================================
-// RENDERIZAR PUBLICACIÓN (HTML)
+// MEDIOS DE LA PUBLICACIÓN
+// Foto: .post-imagen (ancho completo, max 560 px).
+// Video: contenedor 9:16 con marca de agua.
 // ================================================================
-function renderizarPublicacionHTML(p) {
-    var esMia = !!(sessionUser && p.usuario_id === sessionUser.id);
-
-    var avatarUrl = avatarHTML(p.usuario_avatar_url, p.usuario_nombre);
-
-    var nombre = grpEscapeHTML(p.usuario_nombre || 'Usuario');
-
-    var handleHTML = '';
-    if (p.usuario_handle) {
-        handleHTML = '<span class="grp-post-handle" style="' +
-            'display: inline-flex; align-items: center; gap: 4px; margin-left: 6px; padding: 1px 8px 1px 6px; ' +
-            'border-radius: 999px; color: #5cc8ff !important; font-weight: 600 !important; font-size: .7rem !important; ' +
-            'line-height: 1.5; background: linear-gradient(135deg, rgba(0, 229, 255, .12), rgba(139, 92, 246, .16)) !important; ' +
-            'border: 1px solid rgba(0, 229, 255, .35) !important; text-shadow: 0 0 8px rgba(0, 229, 255, .55); ' +
-            'white-space: nowrap;' +
-        '">' +
-            '<span style="font-size:.65rem; filter: drop-shadow(0 0 4px rgba(0, 229, 255, .9));">⚡</span> @' + grpEscapeHTML(p.usuario_handle) +
-        '</span>';
-    }
-
-    var contenido = grpEscapeHTML(p.contenido || '');
+function htmlMediaPublicacion(p) {
+    var html = '';
     var imgUrl = grpSafeUrl(p.imagen_url);
     var vidUrl = grpSafeUrl(p.video_url);
 
     if (imgUrl) {
-        contenido += '<br><img src="' + grpEscapeHTML(imgUrl) + '" loading="lazy" style="cursor: pointer;" onclick="abrirVisorGrupo(this.src)" />';
+        html += '<img class="post-imagen" src="' + grpEscapeHTML(imgUrl) + '" alt="" loading="lazy" ' +
+            'onclick="abrirVisorGrupo(this.src)">';
     }
-
-    if (vidUrl) contenido += '<br><video src="' + grpEscapeHTML(vidUrl) + '" controls preload="metadata"></video>';
-
-    var comentariosCount = p.comentarios_count || 0;
-
-    var mias = misInteracciones[p.id] || {};
-
-    var avisoHTML = '';
-    if (p.aviso_moderacion === 'lenguaje_inapropiado') {
-        avisoHTML = htmlAvisoModeracionGrupo();
+    if (vidUrl) {
+        html += '<div class="video-9x16">' +
+            '<video src="' + grpEscapeHTML(vidUrl) + '" controls playsinline preload="metadata"></video>' +
+            GRP_MARCA_AGUA +
+        '</div>';
     }
-
-    var mkHTML = '';
-    if (p.tipo_marketplace) {
-        var tipoLabels = { vendo: 'VENDO', rento: 'RENTO', busco: 'BUSCO', regalo: 'REGALO', servicio: 'SERVICIO' };
-        var tipoLabel = tipoLabels[p.tipo_marketplace] || p.tipo_marketplace.toUpperCase();
-        var precioHTML = '';
-        if (p.precio_mxn) precioHTML += '<span class="precio">$' + parseFloat(p.precio_mxn).toFixed(2) + ' MXN</span>';
-        if (p.precio_usdt) precioHTML += '<span class="precio-usdt">≈ $' + parseFloat(p.precio_usdt).toFixed(2) + ' USDT</span>';
-        var ubicacionHTML = '';
-        var ubiParts = [];
-        if (p.municipio) ubiParts.push(p.municipio);
-        if (p.estado_region) ubiParts.push(p.estado_region);
-        if (ubiParts.length > 0) ubicacionHTML = '<div class="ubicacion"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + grpEscapeHTML(ubiParts.join(', ')) + '</div>';
-
-        var contactoHTML = '';
-        if (p.whatsapp) {
-            var wapp = String(p.whatsapp).replace(/\D/g, '');
-            if (wapp.length >= 10) contactoHTML += '<a href="https://wa.me/52' + wapp + '" target="_blank" rel="noopener" class="btn-whatsapp">WhatsApp</a>';
-        }
-        if (p.telefono_contacto) {
-            var tel = String(p.telefono_contacto).replace(/\D/g, '');
-            if (tel.length >= 10) contactoHTML += '<a href="tel:+52' + tel + '" class="btn-llamar">Llamar</a>';
-        }
-        var contactoDiv = contactoHTML ? '<div class="contacto">' + contactoHTML + '</div>' : '';
-
-        var descripcionHTML = p.descripcion
-            ? '<div class="mk-descripcion" style="font-size:0.7rem;color:var(--text-secondary);line-height:1.5;margin:6px 0;">' + grpEscapeHTML(p.descripcion) + '</div>'
-            : '';
-
-        mkHTML = '<div class="marketplace-info">' +
-            '<div class="titulo-mk"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' + tipoLabel + '</div>' +
-            descripcionHTML +
-            '<div>' + precioHTML + '</div>' + ubicacionHTML + contactoDiv + '</div>';
-
-        mkHTML += mkTarjetaCompraHTML(p);
-    }
-
-    var claseMK = p.tipo_marketplace ? ' marketplace ' + p.tipo_marketplace : '';
-
-    // Menú: el dueño ve "Eliminar mi publicación"; los demás ven las opciones de lectura y reporte
-    // Menú completo para todos. Al autor se le agrega arriba "Eliminar mi publicación".
-    var eliminarItem = esMia
-        ? '<button class="post-menu-item danger" onclick="eliminarMiPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Eliminar mi publicación</button><div class="post-menu-separator"></div>'
-        : '';
-    var menuItems = eliminarItem +
-        '<button class="post-menu-item" onclick="toggleMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> Me interesa</button>' +
-        '<button class="post-menu-item" onclick="toggleNoMeInteresa(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No me interesa</button>' +
-        '<button class="post-menu-item" onclick="abrirModalEtiquetar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Etiquetar foto</button>' +
-        '<button class="post-menu-item" onclick="toggleNotificacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> ' + (misNotificaciones[p.id] ? 'Desactivar notificaciones' : 'Activar notificaciones') + '</button>' +
-        '<button class="post-menu-item" onclick="ocultarPublicacionUsuario(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> No quiero ver esto</button>' +
-        '<button class="post-menu-item" onclick="copiarEnlacePost(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar enlace</button>' +
-        '<button class="post-menu-item" onclick="compartirPublicacion(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg> Compartir</button>' +
-        '<div class="post-menu-separator"></div>' +
-        '<button class="post-menu-item danger" onclick="abrirModalReportar(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Reportar publicación</button>' +
-        '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + p.id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reportar al administrador</button>';
-
-    return '<div class="publicacion-card' + claseMK + '" data-pub-id="' + p.id + '">' +
-        '<div class="header">' +
-        '<div class="avatar" style="overflow:hidden;display:flex;align-items:center;justify-content:center;">' + avatarUrl + '</div>' +
-        '<div style="flex:1;min-width:0;">' +
-        '<div class="nombre" style="display:flex; align-items:center; flex-wrap:wrap; gap:4px;">' + nombre + handleHTML + '</div>' +
-        '<div class="fecha">' + new Date(p.created_at).toLocaleString() + '</div>' +
-        '</div>' +
-        '<div class="post-menu-wrapper">' +
-        '<button class="post-menu-btn" onclick="togglePostMenu(event, ' + p.id + ')" title="Opciones">⋯</button>' +
-        '<div class="post-menu-dropdown" id="postMenu-' + p.id + '">' +
-        menuItems +
-        '</div></div></div>' +
-        avisoHTML +
-        '<div class="contenido">' + contenido + '</div>' + mkHTML +
-        '<div class="stats" style="display:flex;align-items:center;flex-wrap:wrap;gap:12px;">' +
-        htmlBarraReacciones(p) +
-        '<span onclick="toggleComentariosPublicacion(' + p.id + ')" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border-radius:22px;border:1px solid var(--glass-border);">' +
-            '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> ' +
-            '<span id="comentarios-' + p.id + '">' + comentariosCount + '</span>' +
-        '</span>' +
-        '<span class="' + (mias.me_interesa ? 'interesado' : '') + '" onclick="toggleMeInteresa(' + p.id + ')" id="interesa-' + p.id + '" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:8px 14px;border-radius:22px;border:1px solid var(--glass-border);">' +
-            '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> ' + (mias.me_interesa ? 'Interesado' : 'Me interesa') +
-        '</span>' +
-        (misNotificaciones[p.id] ? '<span style="color:var(--gold);"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg> Notificado</span>' : '') +
-        '</div>' +
-        '<div class="comentarios-container" id="comentariosContainer-' + p.id + '" style="display:none;margin-top:12px;">' +
-        '<div id="comentariosLista-' + p.id + '"></div>' +
-        '<div style="display:flex;gap:10px;margin-top:10px;align-items:center;">' +
-        '<input type="text" id="inputComentario-' + p.id + '" placeholder="Escribe un comentario…" maxlength="500" ' +
-            'style="flex:1;min-height:44px;padding:10px 18px;background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:24px;color:var(--text-primary);font-size:0.95rem;outline:none;">' +
-        '<button onclick="enviarComentarioPublicacion(' + p.id + ')" ' +
-            'style="min-height:44px;background:linear-gradient(135deg,var(--gold),var(--gold-dark));color:var(--space);border:none;padding:10px 22px;border-radius:24px;font-weight:700;font-size:0.9rem;cursor:pointer;">Enviar</button>' +
-        '</div></div></div>';
+    return html;
 }
 
 // ================================================================
-// ELIMINAR MI PUBLICACIÓN (solo el dueño)
-// Borrado lógico: estado = 'eliminado'. La vista ya no la muestra.
+// RENDERIZAR PUBLICACIÓN
+// ================================================================
+function htmlHandle(handle) {
+    if (!handle) return '';
+    return '<span class="grp-post-handle"><span class="grp-bolt">' + GRP_ICONO.rayo + '</span>@' +
+        grpEscapeHTML(handle) + '</span>';
+}
+
+function htmlMarketplace(p) {
+    if (!p.tipo_marketplace) return '';
+
+    var tipoLabels = { vendo: 'VENDO', rento: 'RENTO', busco: 'BUSCO', regalo: 'REGALO', servicio: 'SERVICIO' };
+    var tipoLabel = tipoLabels[p.tipo_marketplace] || String(p.tipo_marketplace).toUpperCase();
+
+    var precioHTML = '';
+    if (p.precio_mxn) precioHTML += '<span class="precio">$' + parseFloat(p.precio_mxn).toFixed(2) + ' MXN</span>';
+    if (p.precio_usdt) precioHTML += '<span class="precio-usdt">≈ $' + parseFloat(p.precio_usdt).toFixed(2) + ' USDT</span>';
+
+    var ubiParts = [];
+    if (p.municipio) ubiParts.push(p.municipio);
+    if (p.estado_region) ubiParts.push(p.estado_region);
+    var ubicacionHTML = ubiParts.length > 0
+        ? '<div class="ubicacion"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>' + grpEscapeHTML(ubiParts.join(', ')) + '</div>'
+        : '';
+
+    var contactoHTML = '';
+    if (p.whatsapp) {
+        var wapp = String(p.whatsapp).replace(/\D/g, '');
+        if (wapp.length >= 10) contactoHTML += '<a href="https://wa.me/52' + wapp + '" target="_blank" rel="noopener" class="btn-whatsapp">WhatsApp</a>';
+    }
+    if (p.telefono_contacto) {
+        var tel = String(p.telefono_contacto).replace(/\D/g, '');
+        if (tel.length >= 10) contactoHTML += '<a href="tel:+52' + tel + '" class="btn-llamar">Llamar</a>';
+    }
+    var contactoDiv = contactoHTML ? '<div class="contacto">' + contactoHTML + '</div>' : '';
+
+    var descripcionHTML = p.descripcion
+        ? '<div class="mk-descripcion">' + grpEscapeHTML(p.descripcion) + '</div>'
+        : '';
+
+    return '<div class="marketplace-info">' +
+        '<div class="titulo-mk"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>' + grpEscapeHTML(tipoLabel) + '</div>' +
+        descripcionHTML +
+        '<div>' + precioHTML + '</div>' + ubicacionHTML + contactoDiv +
+    '</div>' + mkTarjetaCompraHTML(p);
+}
+
+function htmlMenuPublicacion(p, esMia) {
+    var id = Number(p.id);
+    var eliminarItem = esMia
+        ? '<button class="post-menu-item danger" onclick="eliminarMiPublicacion(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg> Eliminar mi publicación</button><div class="post-menu-separator"></div>'
+        : '';
+
+    return eliminarItem +
+        '<button class="post-menu-item" onclick="toggleMeInteresa(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> Me interesa</button>' +
+        '<button class="post-menu-item" onclick="toggleNoMeInteresa(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> No me interesa</button>' +
+        '<button class="post-menu-item" onclick="abrirModalEtiquetar(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg> Etiquetar foto</button>' +
+        '<button class="post-menu-item" onclick="toggleNotificacion(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> ' + (misNotificaciones[id] ? 'Desactivar notificaciones' : 'Activar notificaciones') + '</button>' +
+        '<button class="post-menu-item" onclick="ocultarPublicacionUsuario(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> No quiero ver esto</button>' +
+        '<button class="post-menu-item" onclick="copiarEnlacePost(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Copiar enlace</button>' +
+        '<button class="post-menu-item" onclick="compartirPublicacion(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/></svg> Compartir</button>' +
+        '<div class="post-menu-separator"></div>' +
+        '<button class="post-menu-item danger" onclick="abrirModalReportar(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg> Reportar publicación</button>' +
+        '<button class="post-menu-item danger" onclick="abrirModalReportarAdmin(' + id + ')"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Reportar al administrador</button>';
+}
+
+function renderizarPublicacionHTML(p) {
+    var id = Number(p.id);
+    var esMia = !!(sessionUser && p.usuario_id === sessionUser.id);
+    var mias = misInteracciones[id] || {};
+    var claseMK = p.tipo_marketplace ? ' marketplace ' + grpEscapeHTML(p.tipo_marketplace) : '';
+    var avisoHTML = p.aviso_moderacion === 'lenguaje_inapropiado' ? htmlAvisoModeracionGrupo() : '';
+    var textoHTML = p.contenido ? '<p>' + grpEscapeHTML(p.contenido) + '</p>' : '';
+
+    return '<div class="publicacion-card' + claseMK + '" data-pub-id="' + id + '">' +
+        '<div class="header">' +
+            '<div class="avatar">' + avatarHTML(p.usuario_avatar_url, p.usuario_nombre) + '</div>' +
+            '<div style="flex:1;min-width:0;">' +
+                '<div class="nombre">' + grpEscapeHTML(p.usuario_nombre || 'Usuario') + htmlHandle(p.usuario_handle) + '</div>' +
+                '<div class="fecha">' + grpEscapeHTML(new Date(p.created_at).toLocaleString()) + '</div>' +
+            '</div>' +
+            '<div class="post-menu-wrapper">' +
+                '<button type="button" class="post-menu-btn" onclick="togglePostMenu(event, ' + id + ')" aria-label="Opciones">' + GRP_ICONO.menu + '</button>' +
+                '<div class="post-menu-dropdown" id="postMenu-' + id + '">' + htmlMenuPublicacion(p, esMia) + '</div>' +
+            '</div>' +
+        '</div>' +
+        avisoHTML +
+        '<div class="contenido">' + textoHTML + htmlMediaPublicacion(p) + '</div>' +
+        htmlMarketplace(p) +
+        '<div class="stats">' +
+            htmlBarraReacciones(p) +
+            '<span onclick="toggleComentariosPublicacion(' + id + ')">' +
+                '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> ' +
+                '<span id="comentarios-' + id + '">' + grpEscapeHTML(p.comentarios_count || 0) + '</span>' +
+            '</span>' +
+            '<span class="' + (mias.me_interesa ? 'interesado' : '') + '" onclick="toggleMeInteresa(' + id + ')" id="interesa-' + id + '">' +
+                '<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1 3-6z"/></svg> ' +
+                (mias.me_interesa ? 'Interesado' : 'Me interesa') +
+            '</span>' +
+            (misNotificaciones[id] ? '<span class="grp-notificado"><svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg> Notificado</span>' : '') +
+        '</div>' +
+        '<div class="comentarios-container" id="comentariosContainer-' + id + '" style="display:none;">' +
+            '<div id="comentariosLista-' + id + '"></div>' +
+            '<div class="grp-comentar-row">' +
+                '<input type="text" id="inputComentario-' + id + '" placeholder="Escribe un comentario…" maxlength="500">' +
+                '<button type="button" onclick="enviarComentarioPublicacion(' + id + ')">Enviar</button>' +
+            '</div>' +
+        '</div>' +
+    '</div>';
+}
+
+// ================================================================
+// ELIMINAR MI PUBLICACIÓN (solo el autor)
 // ================================================================
 async function eliminarMiPublicacion(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     if (!confirm('¿Eliminar esta publicación? Ya no se verá en el canal.')) return;
     try {
@@ -811,22 +800,22 @@ async function eliminarMiPublicacion(publicacionId) {
 }
 
 // ================================================================
-// MENÚ DE POST (⋯)
+// MENÚ DE PUBLICACIÓN
 // ================================================================
 function togglePostMenu(event, publicacionId) {
     event.stopPropagation();
     var menuActual = document.getElementById('postMenu-' + publicacionId);
     var menuAbierto = menuActual && menuActual.classList.contains('show');
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
     if (!menuAbierto && menuActual) menuActual.classList.add('show');
 }
 
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     if (!e.target.closest('.post-menu-wrapper')) {
-        document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
+        document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
     }
     if (!e.target.closest('.grp-react-wrap')) {
-        document.querySelectorAll('.grp-react-picker').forEach(function(p) { p.style.display = 'none'; });
+        document.querySelectorAll('.grp-react-picker').forEach(function (p) { p.style.display = 'none'; });
     }
 });
 
@@ -840,7 +829,6 @@ async function toggleInteraccion(publicacionId, tipo) {
         if (tieneActual) {
             grpOk(await window.supabaseClient.from('grupos_video_interacciones').delete()
                 .eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id).eq('tipo', tipo));
-            if (!misInteracciones[publicacionId]) misInteracciones[publicacionId] = {};
             delete misInteracciones[publicacionId][tipo];
         } else {
             if (tipo === 'me_interesa' || tipo === 'no_me_interesa') {
@@ -868,9 +856,8 @@ async function toggleInteraccion(publicacionId, tipo) {
 }
 
 async function toggleMeInteresa(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-    var exitoso = await toggleInteraccion(publicacionId, 'me_interesa');
-    if (exitoso) {
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
+    if (await toggleInteraccion(publicacionId, 'me_interesa')) {
         var esta = misInteracciones[publicacionId] && misInteracciones[publicacionId].me_interesa;
         grpShowToast(esta ? 'Marcado como interesado' : 'Interacción quitada', esta ? 'success' : '');
         renderizarPublicacionesCache();
@@ -878,9 +865,8 @@ async function toggleMeInteresa(publicacionId) {
 }
 
 async function toggleNoMeInteresa(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-    var exitoso = await toggleInteraccion(publicacionId, 'no_me_interesa');
-    if (exitoso) {
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
+    if (await toggleInteraccion(publicacionId, 'no_me_interesa')) {
         var esta = misInteracciones[publicacionId] && misInteracciones[publicacionId].no_me_interesa;
         grpShowToast(esta ? 'Marcado como "no me interesa"' : 'Interacción quitada', esta ? 'warning' : '');
         renderizarPublicacionesCache();
@@ -888,20 +874,18 @@ async function toggleNoMeInteresa(publicacionId) {
 }
 
 async function ocultarPublicacionUsuario(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-    var exitoso = await toggleInteraccion(publicacionId, 'no_quiero_ver');
-    if (exitoso) {
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
+    if (await toggleInteraccion(publicacionId, 'no_quiero_ver')) {
         grpShowToast('Publicación oculta', 'success');
         renderizarPublicacionesCache();
     }
 }
 
 async function toggleNotificacion(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     try {
-        var tiene = misNotificaciones[publicacionId];
-        if (tiene) {
+        if (misNotificaciones[publicacionId]) {
             grpOk(await window.supabaseClient.from('grupos_video_notificaciones').delete()
                 .eq('publicacion_id', publicacionId).eq('usuario_id', sessionUser.id));
             delete misNotificaciones[publicacionId];
@@ -923,25 +907,30 @@ async function toggleNotificacion(publicacionId) {
 // ================================================================
 // COMPARTIR / COPIAR ENLACE
 // ================================================================
+function urlPublicacion(publicacionId) {
+    return window.location.origin + '/features/grupos/grupos.html?grupo=' +
+        encodeURIComponent(grupoActualId) + '&publicacion=' + encodeURIComponent(publicacionId);
+}
+
 function copiarEnlacePost(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-    var url = window.location.origin + '/features/grupos/grupos.html?grupo=' + grupoActualId + '&publicacion=' + publicacionId;
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
+    var url = urlPublicacion(publicacionId);
     if (navigator.clipboard) {
         navigator.clipboard.writeText(url)
-            .then(function() { grpShowToast('Enlace copiado', 'success'); })
-            .catch(function() { prompt('Copia el enlace:', url); });
+            .then(function () { grpShowToast('Enlace copiado', 'success'); })
+            .catch(function () { prompt('Copia el enlace:', url); });
     } else {
         prompt('Copia el enlace:', url);
     }
 }
 
 function compartirPublicacion(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
-    var url = window.location.origin + '/features/grupos/grupos.html?grupo=' + grupoActualId + '&publicacion=' + publicacionId;
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
+    var url = urlPublicacion(publicacionId);
     if (navigator.share) {
-        navigator.share({ title: 'Sariel\'s', text: 'Mira esto', url: url }).catch(function() {});
+        navigator.share({ title: "Csariel's", text: 'Mira esto', url: url }).catch(function () {});
     } else {
-        navigator.clipboard.writeText(url).then(function() { grpShowToast('Enlace copiado', 'success'); });
+        navigator.clipboard.writeText(url).then(function () { grpShowToast('Enlace copiado', 'success'); });
     }
 }
 
@@ -949,7 +938,7 @@ function compartirPublicacion(publicacionId) {
 // REPORTES
 // ================================================================
 function abrirModalReportar(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     publicacionReportando = publicacionId;
     document.getElementById('inputMotivoReporte').value = '';
@@ -972,7 +961,7 @@ async function enviarReportePublicacion() {
     statusEl.textContent = 'Enviando reporte...';
     statusEl.style.color = 'var(--text-muted)';
     try {
-        var result = await window.supabaseClient.from('grupos_video_reportes').insert({
+        grpOk(await window.supabaseClient.from('grupos_video_reportes').insert({
             publicacion_id: publicacionReportando,
             grupo_id: grupoActualId,
             usuario_id: sessionUser.id,
@@ -980,8 +969,7 @@ async function enviarReportePublicacion() {
             motivo: motivo,
             descripcion: descripcion || null,
             estado: 'pendiente'
-        });
-        if (result.error) throw result.error;
+        }));
         statusEl.textContent = 'Reporte enviado. Gracias.';
         statusEl.style.color = 'var(--success)';
         grpShowToast('Reporte enviado', 'success');
@@ -993,7 +981,7 @@ async function enviarReportePublicacion() {
 }
 
 function abrirModalReportarAdmin(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     publicacionReportando = publicacionId;
     document.getElementById('inputTipoReporteAdmin').value = '';
@@ -1018,7 +1006,7 @@ async function enviarReporteAdmin() {
     statusEl.textContent = 'Enviando reporte al admin...';
     statusEl.style.color = 'var(--text-muted)';
     try {
-        var result = await window.supabaseClient.from('grupos_video_reportes').insert({
+        grpOk(await window.supabaseClient.from('grupos_video_reportes').insert({
             publicacion_id: publicacionReportando || null,
             grupo_id: grupoActualId,
             usuario_id: sessionUser.id,
@@ -1026,8 +1014,7 @@ async function enviarReporteAdmin() {
             motivo: motivo,
             descripcion: descripcion,
             estado: 'pendiente'
-        });
-        if (result.error) throw result.error;
+        }));
         statusEl.textContent = 'Reporte enviado al administrador.';
         statusEl.style.color = 'var(--success)';
         grpShowToast('Reporte al admin enviado', 'success');
@@ -1042,9 +1029,9 @@ async function enviarReporteAdmin() {
 // ETIQUETAR FOTO
 // ================================================================
 function abrirModalEtiquetar(publicacionId) {
-    document.querySelectorAll('.post-menu-dropdown.show').forEach(function(m) { m.classList.remove('show'); });
+    document.querySelectorAll('.post-menu-dropdown.show').forEach(function (m) { m.classList.remove('show'); });
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
-    var pub = publicacionesCache.find(function(p) { return p.id === publicacionId; });
+    var pub = publicacionesCache.find(function (p) { return p.id === publicacionId; });
     if (!pub || !pub.imagen_url) {
         grpShowToast('Esta publicación no tiene foto para etiquetar', 'warning');
         return;
@@ -1072,24 +1059,26 @@ async function buscarUsuariosEtiqueta() {
         var result = await window.supabaseClient
             .from('perfiles_publicos')
             .select('id, nombre, handle, avatar_url')
-            .or(`nombre.ilike.%${q}%,handle.ilike.%${q}%`)
+            .or('nombre.ilike.%' + q + '%,handle.ilike.%' + q + '%')
             .neq('id', sessionUser.id)
             .limit(10);
         if (result.error || !result.data) {
-            container.innerHTML = '<div style="color:var(--text-muted);font-size:0.7rem;padding:8px;">Sin resultados</div>';
+            container.innerHTML = '<div class="grp-vacio-mini">Sin resultados</div>';
             return;
         }
-        container.innerHTML = result.data.map(function(u) {
-            var yaSel = etiquetadosSeleccionados.find(function(e) { return e.id === u.id; });
-            var avatar = avatarHTML(u.avatar_url, u.nombre);
-            return '<div class="usuario-etiqueta-item" data-id="' + grpEscapeHTML(u.id) + '" data-nombre="' + grpEscapeHTML(u.nombre || '') + '" data-handle="' + grpEscapeHTML(u.handle || '') + '" data-avatar="' + grpEscapeHTML(grpSafeUrl(u.avatar_url) || '') + '" style="display:flex;align-items:center;gap:10px;padding:8px;border-bottom:1px solid rgba(212,175,55,0.05);cursor:pointer;' + (yaSel ? 'opacity:0.4;pointer-events:none;' : '') + '">' +
-                '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;overflow:hidden;font-weight:700;">' + avatar + '</div>' +
-                '<div><div style="font-size:0.75rem;font-weight:600;">' + grpEscapeHTML(u.nombre || 'Usuario') + '</div>' +
-                '<div style="font-size:0.6rem;color:var(--text-muted);">@' + grpEscapeHTML(u.handle || 'usuario') + '</div></div></div>';
+        container.innerHTML = result.data.map(function (u) {
+            var yaSel = etiquetadosSeleccionados.find(function (e) { return e.id === u.id; });
+            return '<div class="usuario-etiqueta-item' + (yaSel ? ' seleccionado' : '') + '" data-id="' + grpEscapeHTML(u.id) + '" ' +
+                'data-nombre="' + grpEscapeHTML(u.nombre || '') + '" data-handle="' + grpEscapeHTML(u.handle || '') + '" ' +
+                'data-avatar="' + grpEscapeHTML(grpSafeUrl(u.avatar_url) || '') + '">' +
+                '<div class="grp-etiqueta-avatar">' + avatarHTML(u.avatar_url, u.nombre) + '</div>' +
+                '<div><div class="grp-etiqueta-nombre">' + grpEscapeHTML(u.nombre || 'Usuario') + '</div>' +
+                '<div class="grp-etiqueta-handle">@' + grpEscapeHTML(u.handle || 'usuario') + '</div></div>' +
+            '</div>';
         }).join('');
 
-        container.querySelectorAll('.usuario-etiqueta-item').forEach(function(el) {
-            el.addEventListener('click', function() {
+        container.querySelectorAll('.usuario-etiqueta-item:not(.seleccionado)').forEach(function (el) {
+            el.addEventListener('click', function () {
                 agregarEtiqueta(el.dataset.id, el.dataset.nombre, el.dataset.handle, el.dataset.avatar);
             });
         });
@@ -1099,7 +1088,7 @@ async function buscarUsuariosEtiqueta() {
 }
 
 function agregarEtiqueta(id, nombre, handle, avatarUrl) {
-    if (etiquetadosSeleccionados.find(function(e) { return e.id === id; })) return;
+    if (etiquetadosSeleccionados.find(function (e) { return e.id === id; })) return;
     etiquetadosSeleccionados.push({ id: id, nombre: nombre, handle: handle, avatar_url: avatarUrl });
     renderEtiquetadosSeleccionados();
     document.getElementById('inputBuscarUsuarioEtiqueta').value = '';
@@ -1109,17 +1098,18 @@ function agregarEtiqueta(id, nombre, handle, avatarUrl) {
 function renderEtiquetadosSeleccionados() {
     var container = document.getElementById('etiquetadosSeleccionados');
     if (etiquetadosSeleccionados.length === 0) { container.innerHTML = ''; return; }
-    container.innerHTML = etiquetadosSeleccionados.map(function(e) {
-        return '<span style="background:rgba(212,175,55,0.15);color:var(--gold);padding:4px 10px;border-radius:20px;font-size:0.65rem;display:inline-flex;align-items:center;gap:6px;">@' + grpEscapeHTML(e.handle) + ' <button class="quitar-etiqueta-btn" data-id="' + grpEscapeHTML(e.id) + '" style="background:none;border:none;color:var(--gold);cursor:pointer;font-size:0.8rem;padding:0;">×</button></span>';
+    container.innerHTML = etiquetadosSeleccionados.map(function (e) {
+        return '<span class="grp-chip">@' + grpEscapeHTML(e.handle) +
+            ' <button type="button" class="quitar-etiqueta-btn" data-id="' + grpEscapeHTML(e.id) + '" aria-label="Quitar">×</button></span>';
     }).join('');
 
-    container.querySelectorAll('.quitar-etiqueta-btn').forEach(function(btn) {
-        btn.addEventListener('click', function() { quitarEtiqueta(btn.dataset.id); });
+    container.querySelectorAll('.quitar-etiqueta-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () { quitarEtiqueta(btn.dataset.id); });
     });
 }
 
 function quitarEtiqueta(id) {
-    etiquetadosSeleccionados = etiquetadosSeleccionados.filter(function(e) { return e.id !== id; });
+    etiquetadosSeleccionados = etiquetadosSeleccionados.filter(function (e) { return e.id !== id; });
     renderEtiquetadosSeleccionados();
 }
 
@@ -1131,17 +1121,12 @@ async function guardarEtiquetas() {
     if (!publicacionReportando) return;
     grpShowToast('Guardando etiquetas...', '');
     try {
-        var inserts = etiquetadosSeleccionados.map(function(e) {
-            return {
-                publicacion_id: publicacionReportando,
-                etiquetado_id: e.id,
-                etiquetado_por: sessionUser.id
-            };
+        var inserts = etiquetadosSeleccionados.map(function (e) {
+            return { publicacion_id: publicacionReportando, etiquetado_id: e.id, etiquetado_por: sessionUser.id };
         });
-        var result = await window.supabaseClient
+        grpOk(await window.supabaseClient
             .from('grupos_video_etiquetas')
-            .upsert(inserts, { onConflict: 'publicacion_id,etiquetado_id', ignoreDuplicates: true });
-        if (result.error) throw result.error;
+            .upsert(inserts, { onConflict: 'publicacion_id,etiquetado_id', ignoreDuplicates: true }));
         grpShowToast('Personas etiquetadas', 'success');
         cerrarModalEtiquetar();
     } catch (e) {
@@ -1150,7 +1135,7 @@ async function guardarEtiquetas() {
 }
 
 // ================================================================
-// CARGAR PUBLICACIONES DEL GRUPO
+// CARGAR PUBLICACIONES DEL CANAL
 // ================================================================
 async function cargarPublicacionesGrupo(grupoId) {
     try {
@@ -1173,7 +1158,7 @@ async function cargarPublicacionesGrupo(grupoId) {
 }
 
 // ================================================================
-// PUBLICAR EN GRUPO — con moderación
+// PUBLICAR TEXTO · con moderación
 // ================================================================
 async function publicarEnGrupo() {
     if (publicando) { grpShowToast('Ya estás publicando...', 'warning'); return; }
@@ -1198,7 +1183,7 @@ async function publicarEnGrupo() {
 
         if (result.error) {
             if (esErrorModeracionGrupo(result.error)) {
-                grpShowToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
+                grpShowToast('Contenido no permitido por las normas de la comunidad', 'error', 6000);
                 return;
             }
             throw result.error;
@@ -1215,85 +1200,47 @@ async function publicarEnGrupo() {
 }
 
 // ================================================================
-// SUBIR FOTO DE GRUPO — con moderación
+// SUBIR FOTO / VIDEO DEL CANAL · con moderación
 // ================================================================
-async function subirFotoGrupo() {
-    if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
-    if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
-    if (!esMiembro()) { grpShowToast('Debes ser miembro', 'error'); return; }
-
+function seleccionarArchivo(accept, maxBytes, tipo, etiqueta) {
     var input = document.createElement('input');
     input.type = 'file';
-    input.accept = 'image/*';
-    input.onchange = async function(e) {
+    input.accept = accept;
+    input.onchange = async function (e) {
         var file = e.target.files[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) { grpShowToast('Imagen > 5 MB', 'error'); return; }
-        grpShowToast('Subiendo imagen...', '');
+        if (file.size > maxBytes) { grpShowToast(etiqueta + ' demasiado grande', 'error'); return; }
+        grpShowToast('Subiendo ' + etiqueta.toLowerCase() + '...', '');
         try {
-            var session = await window.supabaseClient.auth.getSession();
-            var token = session && session.data && session.data.session && session.data.session.access_token;
-            if (!token) throw new Error('Sesión no disponible');
+            var token = await obtenerTokenSesion();
+            var subida = await subirArchivoConModeracionGrupo(file, 'grupos-publicaciones', tipo, token);
 
-            var subida = await subirArchivoConModeracionGrupo(file, 'grupos-publicaciones', 'imagen', token);
+            var campo = tipo === 'video' ? 'video_url' : 'imagen_url';
+            var datos = { grupo_id: grupoActualId, usuario_id: sessionUser.id, tipo: tipo, estado: 'publicado' };
+            datos[campo] = subida.url;
 
-            var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({
-                grupo_id: grupoActualId,
-                usuario_id: sessionUser.id,
-                imagen_url: subida.url,
-                tipo: 'imagen',
-                estado: 'publicado'
-            }).select().single();
-            if (result.error) throw result.error;
-            grpShowToast('Foto publicada', 'success');
+            grpOk(await window.supabaseClient.from('grupos_video_publicaciones').insert(datos).select().single());
+            grpShowToast(etiqueta + ' publicado', 'success');
             await cargarPublicacionesGrupo(grupoActualId);
         } catch (error) {
-            var msg = error && error.message ? error.message : 'Error';
-            grpShowToast('Error: ' + msg, 'error');
+            grpShowToast('Error: ' + (error && error.message ? error.message : 'Error'), 'error');
         }
     };
     input.click();
 }
 
-// ================================================================
-// SUBIR VIDEO DE GRUPO — con moderación
-// ================================================================
-async function subirVideoGrupo() {
+function subirFotoGrupo() {
     if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
     if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
     if (!esMiembro()) { grpShowToast('Debes ser miembro', 'error'); return; }
+    seleccionarArchivo('image/*', 5 * 1024 * 1024, 'imagen', 'Foto');
+}
 
-    var input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'video/*';
-    input.onchange = async function(e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        if (file.size > 100 * 1024 * 1024) { grpShowToast('Video > 100 MB', 'error'); return; }
-        grpShowToast('Subiendo video...', '');
-        try {
-            var session = await window.supabaseClient.auth.getSession();
-            var token = session && session.data && session.data.session && session.data.session.access_token;
-            if (!token) throw new Error('Sesión no disponible');
-
-            var subida = await subirArchivoConModeracionGrupo(file, 'grupos-publicaciones', 'video', token);
-
-            var result = await window.supabaseClient.from('grupos_video_publicaciones').insert({
-                grupo_id: grupoActualId,
-                usuario_id: sessionUser.id,
-                video_url: subida.url,
-                tipo: 'video',
-                estado: 'publicado'
-            }).select().single();
-            if (result.error) throw result.error;
-            grpShowToast('Video publicado', 'success');
-            await cargarPublicacionesGrupo(grupoActualId);
-        } catch (error) {
-            var msg = error && error.message ? error.message : 'Error';
-            grpShowToast('Error: ' + msg, 'error');
-        }
-    };
-    input.click();
+function subirVideoGrupo() {
+    if (!sessionUser) { grpShowToast('Inicia sesión', 'error'); return; }
+    if (!grupoActualId) { grpShowToast('No hay canal', 'error'); return; }
+    if (!esMiembro()) { grpShowToast('Debes ser miembro', 'error'); return; }
+    seleccionarArchivo('video/*', 100 * 1024 * 1024, 'video', 'Video');
 }
 
 // ================================================================
@@ -1319,18 +1266,20 @@ async function cargarComentariosPublicacion(publicacionId) {
         if (result.error) throw result.error;
         var data = result.data || [];
         if (data.length === 0) {
-            lista.innerHTML = '<div style="color:var(--text-muted);font-size:0.85rem;padding:6px 0;">Sin comentarios aún. Sé el primero.</div>';
+            lista.innerHTML = '<div class="grp-vacio-mini">Sin comentarios aún. Sé el primero.</div>';
             return;
         }
-        lista.innerHTML = data.map(function(c) {
-            var avatar = avatarHTML(c.usuario_avatar_url, c.usuario_nombre);
-            return '<div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(212,175,55,0.06);">' +
-                '<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,var(--green-deep),var(--gold));display:flex;align-items:center;justify-content:center;font-size:0.8rem;overflow:hidden;flex-shrink:0;">' + avatar + '</div>' +
-                '<div style="flex:1;font-size:0.9rem;line-height:1.45;"><strong style="color:var(--gold);">' + grpEscapeHTML(c.usuario_nombre || 'Usuario') + '</strong> ' + grpEscapeHTML(c.contenido || '') +
-                '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:2px;">' + new Date(c.created_at).toLocaleString() + '</div></div></div>';
+        lista.innerHTML = data.map(function (c) {
+            return '<div class="grp-comentario">' +
+                '<div class="grp-comentario-avatar">' + avatarHTML(c.usuario_avatar_url, c.usuario_nombre) + '</div>' +
+                '<div class="grp-comentario-texto"><strong>' + grpEscapeHTML(c.usuario_nombre || 'Usuario') + '</strong> ' +
+                    grpEscapeHTML(c.contenido || '') +
+                    '<div class="grp-comentario-fecha">' + grpEscapeHTML(new Date(c.created_at).toLocaleString()) + '</div>' +
+                '</div>' +
+            '</div>';
         }).join('');
     } catch (e) {
-        lista.innerHTML = '<div style="color:var(--danger);font-size:0.85rem;">No se pudieron cargar los comentarios</div>';
+        lista.innerHTML = '<div class="grp-vacio-mini grp-error">No se pudieron cargar los comentarios</div>';
     }
 }
 
@@ -1346,18 +1295,16 @@ async function enviarComentarioPublicacion(publicacionId) {
             usuario_id: sessionUser.id,
             contenido: texto
         });
-
         if (result.error) {
             if (esErrorModeracionGrupo(result.error)) {
-                grpShowToast('❌ Contenido no permitido por las normas de la comunidad', 'error', 6000);
+                grpShowToast('Contenido no permitido por las normas de la comunidad', 'error', 6000);
                 return;
             }
             throw result.error;
         }
-
         input.value = '';
         var countSpan = document.getElementById('comentarios-' + publicacionId);
-        if (countSpan) countSpan.textContent = (parseInt(countSpan.textContent) || 0) + 1;
+        if (countSpan) countSpan.textContent = (parseInt(countSpan.textContent, 10) || 0) + 1;
         cargarComentariosPublicacion(publicacionId);
     } catch (e) {
         grpShowToast('Error: ' + (e.message || e), 'error');
@@ -1365,7 +1312,7 @@ async function enviarComentarioPublicacion(publicacionId) {
 }
 
 // ================================================================
-// FORM DE PUBLICACIÓN (toggle + emojis + hashtags)
+// COMPOSITOR (toggle, emojis de texto, hashtags)
 // ================================================================
 function abrirFormPublicacion() {
     var form = document.getElementById('formPublicacion');
@@ -1383,14 +1330,15 @@ function toggleEmojiPickerGrupo() {
     var picker = document.getElementById('emojiPickerGrupo');
     if (!picker) return;
     if (picker.classList.contains('show')) { picker.classList.remove('show'); return; }
+
     var grid = document.getElementById('emojiGridGrupo');
     if (grid && grid.children.length === 0) {
-        grpEmojisPicker().forEach(function(emoji) {
+        grpEmojisPicker().forEach(function (emoji) {
             var btn = document.createElement('button');
+            btn.type = 'button';
             btn.textContent = emoji;
-            // Aplica la animación del emoji también en el picker
             animarEmojiGrupo(btn, emoji);
-            btn.addEventListener('click', function(e) {
+            btn.addEventListener('click', function (e) {
                 e.stopPropagation();
                 insertarEmojiSeleccionadoGrupo(emoji);
                 picker.classList.remove('show');
@@ -1406,8 +1354,7 @@ function insertarEmojiSeleccionadoGrupo(emoji) {
     if (!input) return;
     var start = input.selectionStart || 0;
     var end = input.selectionEnd || 0;
-    var texto = input.value;
-    input.value = texto.substring(0, start) + emoji + texto.substring(end);
+    input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
     input.focus();
     input.selectionStart = input.selectionEnd = start + emoji.length;
 }
@@ -1417,8 +1364,7 @@ function insertarHashtagGrupo() {
     if (!input) return;
     var start = input.selectionStart || 0;
     var end = input.selectionEnd || 0;
-    var texto = input.value;
-    input.value = texto.substring(0, start) + '#' + texto.substring(end);
+    input.value = input.value.substring(0, start) + '#' + input.value.substring(end);
     input.focus();
     input.selectionStart = input.selectionEnd = start + 1;
 }
@@ -1426,9 +1372,10 @@ function insertarHashtagGrupo() {
 // ================================================================
 // VOLVER A LA LISTA
 // ================================================================
-function volverALista() {
+async function volverALista() {
     document.getElementById('vistaLista').style.display = 'block';
     document.getElementById('vistaGrupo').classList.remove('show');
+
     grupoActual = null;
     grupoActualId = null;
     liveActivoEnGrupo = null;
@@ -1437,13 +1384,9 @@ function volverALista() {
     esStreamerDelLiveGrupo = false;
     publicacionesCache = [];
 
-    if (liveKitRoomGrupo) {
-        try { liveKitRoomGrupo.disconnect(); } catch(e) {}
-        liveKitRoomGrupo = null;
-    }
-    if (channelChatGrupo) {
-        try { window.supabaseClient.removeChannel(channelChatGrupo); } catch(e) {}
-        channelChatGrupo = null;
+    // Cierra la sala de LiveKit y el chat (definidos en grupos-live.js)
+    if (typeof desconectarSalaLive === 'function') {
+        await desconectarSalaLive();
     }
 
     cerrarLiveGrupoInline();
@@ -1457,7 +1400,7 @@ function volverALista() {
 }
 
 // ================================================================
-// AJUSTES DEL CANAL (modal)
+// AJUSTES DEL CANAL
 // ================================================================
 function abrirAjustesCanal() {
     var mkAviso = document.getElementById('marketplaceAviso');
@@ -1470,7 +1413,7 @@ function cerrarAjustesCanal() {
 }
 
 // ================================================================
-// CAMBIAR AVATAR DEL CANAL — con moderación
+// CAMBIAR AVATAR / PORTADA DEL CANAL · con moderación
 // ================================================================
 async function cambiarAvatarGrupo() {
     cerrarAjustesCanal();
@@ -1480,37 +1423,24 @@ async function cambiarAvatarGrupo() {
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
-    input.onchange = async function(e) {
+    input.onchange = async function (e) {
         var file = e.target.files[0];
         if (!file) return;
         if (file.size > 5 * 1024 * 1024) { grpShowToast('Imagen > 5 MB', 'error'); return; }
         grpShowToast('Subiendo avatar...', '');
         try {
-            var session = await window.supabaseClient.auth.getSession();
-            var token = session && session.data && session.data.session && session.data.session.access_token;
-            if (!token) throw new Error('Sesión no disponible');
-
+            var token = await obtenerTokenSesion();
             var subida = await subirArchivoConModeracionGrupo(file, 'grupos-publicaciones', 'imagen', token);
-
-            var updateResult = await window.supabaseClient
-                .from('grupos_video')
-                .update({ avatar_url: subida.url })
-                .eq('id', grupoActualId);
-            if (updateResult.error) throw updateResult.error;
-
-            document.getElementById('grupoAvatar').innerHTML = '<img src="' + grpEscapeHTML(grpSafeUrl(subida.url)) + '">';
+            grpOk(await window.supabaseClient.from('grupos_video').update({ avatar_url: subida.url }).eq('id', grupoActualId));
+            document.getElementById('grupoAvatar').innerHTML = '<img src="' + grpEscapeHTML(grpSafeUrl(subida.url)) + '" alt="">';
             grpShowToast('Foto actualizada', 'success');
         } catch (error) {
-            var msg = error && error.message ? error.message : 'Error';
-            grpShowToast('Error: ' + msg, 'error');
+            grpShowToast('Error: ' + (error && error.message ? error.message : 'Error'), 'error');
         }
     };
     input.click();
 }
 
-// ================================================================
-// CAMBIAR PORTADA DEL CANAL — con moderación
-// ================================================================
 async function cambiarPortadaGrupo() {
     cerrarAjustesCanal();
     if (!sessionUser || !grupoActualId) { grpShowToast('Error de sesión', 'error'); return; }
@@ -1519,44 +1449,32 @@ async function cambiarPortadaGrupo() {
     var input = document.createElement('input');
     input.type = 'file';
     input.accept = 'video/mp4,video/webm,image/*';
-    input.onchange = async function(e) {
+    input.onchange = async function (e) {
         var file = e.target.files[0];
         if (!file) return;
         if (file.size > 20 * 1024 * 1024) { grpShowToast('Archivo > 20 MB', 'error'); return; }
         grpShowToast('Subiendo portada...', '');
         try {
-            var session = await window.supabaseClient.auth.getSession();
-            var token = session && session.data && session.data.session && session.data.session.access_token;
-            if (!token) throw new Error('Sesión no disponible');
-
-            var tipo = file.type.startsWith('video/') ? 'video' : 'imagen';
-
+            var token = await obtenerTokenSesion();
+            var tipo = file.type.indexOf('video/') === 0 ? 'video' : 'imagen';
             var subida = await subirArchivoConModeracionGrupo(file, 'grupos-publicaciones', tipo, token);
-
-            var updateResult = await window.supabaseClient
-                .from('grupos_video')
-                .update({ portada_url: subida.url })
-                .eq('id', grupoActualId);
-            if (updateResult.error) throw updateResult.error;
+            grpOk(await window.supabaseClient.from('grupos_video').update({ portada_url: subida.url }).eq('id', grupoActualId));
 
             var portadaEl = document.getElementById('grupoPortada');
-            var safePortada = grpSafeUrl(subida.url);
-            if (tipo === 'video') {
-                portadaEl.innerHTML = `<video src="${grpEscapeHTML(safePortada)}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover;"></video>`;
-            } else {
-                portadaEl.innerHTML = `<img src="${grpEscapeHTML(safePortada)}" style="width:100%; height:100%; object-fit:cover;">`;
-            }
+            var safePortada = grpEscapeHTML(grpSafeUrl(subida.url));
+            portadaEl.innerHTML = tipo === 'video'
+                ? '<video src="' + safePortada + '" autoplay loop muted playsinline></video>'
+                : '<img src="' + safePortada + '" alt="">';
             grpShowToast('Portada actualizada', 'success');
         } catch (error) {
-            var msg = error && error.message ? error.message : 'Error';
-            grpShowToast('Error: ' + msg, 'error');
+            grpShowToast('Error: ' + (error && error.message ? error.message : 'Error'), 'error');
         }
     };
     input.click();
 }
 
 // ================================================================
-// ELIMINAR GRUPO (confirmación)
+// ELIMINAR CANAL (confirmación)
 // ================================================================
 function mostrarConfirmacionEliminarGrupo() {
     cerrarAjustesCanal();
@@ -1579,14 +1497,16 @@ async function ejecutarEliminarGrupo() {
     statusEl.textContent = 'Eliminando...';
     statusEl.style.color = 'var(--text-secondary)';
     try {
-        const { data, error } = await window.supabaseClient.rpc('eliminar_grupo', { p_grupo_id: grupoActualId });
-        if (error) throw error;
-        if (data && data.error) throw new Error(data.error);
+        var rpc = await window.supabaseClient.rpc('eliminar_grupo', { p_grupo_id: grupoActualId });
+        if (rpc.error) throw rpc.error;
+        if (rpc.data && rpc.data.error) throw new Error(rpc.data.error);
+
         grpShowToast('Canal eliminado', 'success');
         cerrarConfirmacionEliminarGrupo();
         cerrarModalAdmin();
         document.getElementById('vistaGrupo').classList.remove('show');
         document.getElementById('vistaLista').style.display = 'block';
+
         grupoActual = null;
         grupoActualId = null;
         liveActivoEnGrupo = null;
@@ -1596,9 +1516,11 @@ async function ejecutarEliminarGrupo() {
         esModerador = false;
         esCreador = false;
         rolEnGrupo = null;
+
         var url = new URL(window.location);
         url.searchParams.delete('grupo');
         window.history.replaceState({}, '', url);
+
         await cargarGrupos();
         await cargarDashboard();
     } catch (e) {
