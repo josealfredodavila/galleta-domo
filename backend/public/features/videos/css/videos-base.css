@@ -1,0 +1,300 @@
+/* ================================================================
+   CSARIEL'S · VIDEOS · BASE (v1)
+   ================================================================
+   Estilos compartidos por toda la página de videos.
+   - Variables de color y espaciado.
+   - Reset y cuerpo a pantalla completa sin scroll.
+   - Cabecera fija: logo, botones, saldo de Es.stoks, avatar.
+   - Pestañas y buscador.
+   - Estado vacío, toast y botón flotante de audio.
+   Los estilos del carrusel están en videos-feed.css; las hojas,
+   comentarios, menú y mapa en videos-hojas.css; el compositor en
+   videos-composer-pro.css y videos-publicar.css.
+   ================================================================ */
+
+/* ----------------------------------------------------------------
+   1. VARIABLES
+   ---------------------------------------------------------------- */
+:root {
+    --gold: #D4AF37;
+    --gold-light: #e8c84a;
+    --green-deep: #0F2D1A;
+    --space: #05080f;
+    --text-primary: #f0f4f8;
+    --text-secondary: #c0d8e8;
+    --text-muted: #8aa8b8;
+    --glass-border: rgba(255, 255, 255, 0.09);
+    --linea: rgba(255, 255, 255, 0.08);
+    --success: #00d68f;
+    --danger: #ff3366;
+    --warning: #f7d44a;
+    --cyan: #00e5ff;
+    --purple: #a855f7;
+    --vf-top: 112px;
+}
+
+/* ----------------------------------------------------------------
+   2. RESET Y CUERPO
+   La página es un carrusel a pantalla completa: sin scroll general.
+   ---------------------------------------------------------------- */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; overflow: hidden; }
+
+body {
+    background: var(--space);
+    color: var(--text-primary);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ----------------------------------------------------------------
+   3. CABECERA FIJA
+   ---------------------------------------------------------------- */
+.header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background: rgba(5, 8, 15, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: calc(8px + env(safe-area-inset-top, 0px)) 12px 0;
+}
+
+.vf-fila1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    flex-shrink: 0;
+}
+.logo-hex {
+    font-size: 1.3rem;
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
+}
+.logo-text {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    letter-spacing: 1px;
+}
+.logo-text span { color: var(--gold); }
+
+.header .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.header .header-actions::-webkit-scrollbar { display: none; }
+
+.vf-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    background: rgba(0, 0, 0, 0.35);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+}
+.vf-btn svg { width: 17px; height: 17px; }
+
+.token-badge {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid rgba(212, 175, 55, 0.3);
+    padding: 5px 10px;
+    border-radius: 20px;
+    font-size: 0.62rem;
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.header-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    border: 1.5px solid var(--cyan);
+    background: var(--green-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #fff;
+    text-decoration: none;
+}
+.header-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* ----------------------------------------------------------------
+   4. PESTAÑAS
+   ---------------------------------------------------------------- */
+.vf-tabs {
+    display: flex;
+    gap: 18px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding: 6px 4px 0;
+}
+.vf-tabs::-webkit-scrollbar { display: none; }
+
+.vf-tab {
+    background: none;
+    border: 0;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 700;
+    padding: 6px 0 9px;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    cursor: pointer;
+}
+.vf-tab.active {
+    color: #fff;
+    border-bottom-color: #fff;
+}
+
+/* ----------------------------------------------------------------
+   5. BUSCADOR (se abre con el botón de la cabecera)
+   ---------------------------------------------------------------- */
+.vf-buscar { display: none; padding: 8px 0 10px; }
+.vf-buscar.show { display: block; }
+
+.vf-buscar input {
+    width: 100%;
+    padding: 9px 14px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-border);
+    color: #fff;
+    font-size: 0.85rem;
+    outline: none;
+    font-family: inherit;
+}
+
+/* ----------------------------------------------------------------
+   6. ESTADO VACÍO (feed y listas)
+   ---------------------------------------------------------------- */
+.empty-state {
+    text-align: center;
+    padding: 60px 24px;
+    color: var(--text-muted);
+    max-width: 360px;
+}
+.empty-state .icon {
+    font-size: 2.6rem;
+    display: block;
+    margin-bottom: 14px;
+    color: var(--gold);
+    opacity: 0.35;
+}
+.empty-state h3 {
+    font-family: 'Orbitron', monospace;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    margin-bottom: 8px;
+}
+.empty-state p { font-size: 0.8rem; line-height: 1.5; }
+
+/* ----------------------------------------------------------------
+   7. TOAST DEL FEED (#toast)
+   Los avisos del compositor usan .cs-toast (videos-publicar.css).
+   ---------------------------------------------------------------- */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    background: var(--green-deep);
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 14px 24px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    transform: translateY(100px);
+    opacity: 0;
+    transition: all 0.4s ease;
+    z-index: 99999;
+    max-width: 380px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.error { border-color: var(--danger); color: var(--danger); }
+.toast.warning { border-color: var(--warning); color: var(--warning); }
+.toast.success { border-color: var(--success); color: var(--success); }
+
+/* ----------------------------------------------------------------
+   8. BOTÓN FLOTANTE DE AUDIO (#btnAudioGlobal)
+   Aparece cuando el navegador bloquea el sonido del autoplay.
+   ---------------------------------------------------------------- */
+.btn-audio-global {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 9998;
+    display: none;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 1px solid var(--gold);
+    border-radius: 8px;
+    color: var(--gold);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+.btn-audio-global.visible { display: flex; }
+.btn-audio-global.activo { background: rgba(212, 175, 55, 0.15); }
+.btn-audio-global .ico svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--gold);
+    fill: none;
+    stroke-width: 2;
+}
+
+/* ----------------------------------------------------------------
+   9. ANUNCIO (oculto: la página de videos no muestra publicidad)
+   ---------------------------------------------------------------- */
+.marketing-ad-container { display: none; }
+
+/* ----------------------------------------------------------------
+   10. ACCESIBILIDAD
+   ---------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .toast, .vf-tab, .vf-btn { transition: none !important; }
+}
+
+/* ----------------------------------------------------------------
+   11. ADAPTACIÓN PARA MÓVIL PEQUEÑO
+   ---------------------------------------------------------------- */
+@media (max-width: 480px) {
+    .token-badge { font-size: 0.55rem; padding: 4px 8px; }
+    .vf-btn { width: 30px; height: 30px; }
+    .vf-btn svg { width: 15px; height: 15px; }
+}
