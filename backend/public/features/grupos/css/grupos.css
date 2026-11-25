@@ -865,3 +865,232 @@ body {
     white-space: pre-line;
     word-break: break-word;
 }
+
+/* ================================================================
+   19. CONTINUACIÓN DE COMPONENTES BASE
+   ================================================================ */
+
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.grupos-header h1 { font-family: 'Orbitron', monospace; font-size: 1.1rem; }
+
+/* Lista vacía */
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text-muted); }
+.empty-state .icon { display: block; margin: 0 auto 12px; color: var(--gold); opacity: 0.3; width: 2.5rem; height: 2.5rem; }
+.empty-state h3 { font-size: 0.85rem; color: var(--text-secondary); font-family: 'Orbitron', monospace; margin-bottom: 4px; }
+.empty-state p { font-size: 0.7rem; }
+
+/* Campos de texto (base global) */
+input, select, textarea {
+    background-color: rgba(0, 0, 0, 0.3);
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+    font-family: 'Inter', sans-serif;
+}
+input::placeholder, textarea::placeholder { color: var(--text-muted); }
+select option { background-color: var(--space); color: var(--text-primary); }
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 18px rgba(212, 175, 55, 0.25);
+}
+
+/* Modales */
+.modal-overlay {
+    position: fixed; inset: 0; background: rgba(5, 8, 15, 0.9); display: none;
+    align-items: center; justify-content: center; z-index: 1000; padding: 20px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+    background: var(--glass-bg); border: 1px solid var(--glass-border); border-radius: var(--radius-xl);
+    padding: 24px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto;
+}
+.modal .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 8px; }
+.modal .modal-header h2 {
+    font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1rem;
+    display: inline-flex; align-items: center; gap: 6px; text-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+}
+.btn-cerrar { background: none; border: none; color: var(--text-muted); font-size: 1.4rem; cursor: pointer; line-height: 1; }
+
+/* Formularios dentro de modales */
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 0.7rem; color: var(--text-muted); margin-bottom: 4px; }
+.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px 12px; border-radius: 10px; font-size: 0.85rem; }
+
+.checkbox-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.2); border-radius: 10px; margin-bottom: 12px;
+}
+.checkbox-row input[type="checkbox"] { width: auto; transform: scale(1.3); cursor: pointer; accent-color: var(--gold); }
+.checkbox-row label { margin: 0; cursor: pointer; font-size: 0.75rem; color: var(--text-primary); }
+.checkbox-row .hint { font-size: 0.6rem; color: var(--text-muted); margin-left: auto; }
+
+.btn-guardar {
+    width: 100%; padding: 10px; border-radius: 30px; border: none;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
+    font-weight: 700; font-size: 0.85rem; cursor: pointer; display: inline-flex;
+    align-items: center; justify-content: center; gap: 6px; transition: var(--transition);
+}
+.btn-guardar:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(212, 175, 55, 0.6); }
+.btn-confirmar-eliminar {
+    width: 100%; padding: 10px; border-radius: 30px; border: none;
+    background: var(--danger); color: #fff; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+}
+
+/* Menú de ajustes del canal */
+.ajustes-menu { display: flex; flex-direction: column; gap: 8px; }
+.ajustes-menu button {
+    width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.2); color: var(--text-primary); cursor: pointer; text-align: left;
+    font-size: 0.8rem; transition: var(--transition); display: inline-flex; align-items: center; gap: 8px;
+}
+.ajustes-menu button:hover {
+    border-color: var(--gold); background: rgba(212, 175, 55, 0.1); color: var(--gold);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.25);
+}
+.ajustes-menu a { text-decoration: none; }
+
+/* Selector de emojis del compositor */
+.emoji-picker {
+    display: none; position: absolute; bottom: 100%; left: 0; background: rgba(15, 25, 20, 0.95);
+    border: 1px solid var(--glass-border); border-radius: var(--radius); padding: 12px; width: 280px;
+    max-width: 90vw; z-index: 1000; box-shadow: var(--shadow-gold-strong); backdrop-filter: blur(12px); margin-bottom: 8px;
+}
+.emoji-picker.show { display: block; }
+.emoji-picker .titulo {
+    color: var(--text-muted); font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 8px; text-align: center; font-family: 'Orbitron', monospace;
+}
+.emoji-picker .grid { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.emoji-picker .grid button {
+    background: transparent; border: none; font-size: 1.5rem; padding: 6px 4px; cursor: pointer;
+    border-radius: 8px; line-height: 1; transition: var(--transition);
+}
+.emoji-picker .grid button:hover { background: rgba(212, 175, 55, 0.15); transform: scale(1.15); }
+
+/* Marketplace dentro de la publicación */
+.marketplace-info {
+    background: rgba(0, 214, 143, 0.06); border: 1px solid rgba(0, 214, 143, 0.15);
+    border-radius: 12px; padding: 10px 14px; margin-top: 10px;
+}
+.marketplace-info .titulo-mk {
+    font-family: 'Orbitron', monospace; color: var(--success); font-size: 0.75rem; font-weight: 700;
+    margin-bottom: 6px; display: inline-flex; align-items: center; gap: 6px;
+}
+.marketplace-info .titulo-mk .icon { width: 14px; height: 14px; }
+.marketplace-info .precio {
+    font-family: 'Orbitron', monospace; color: var(--gold); font-size: 1.1rem; font-weight: 700;
+    text-shadow: 0 0 12px rgba(212, 175, 55, 0.4);
+}
+.marketplace-info .precio-usdt { font-size: 0.75rem; color: var(--text-muted); margin-left: 8px; }
+.marketplace-info .ubicacion {
+    font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; display: inline-flex; align-items: center; gap: 4px;
+}
+.marketplace-info .contacto { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+.marketplace-info .contacto a {
+    padding: 6px 14px; border-radius: 20px; font-size: 0.65rem; font-weight: 700;
+    text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
+}
+.btn-whatsapp { background: linear-gradient(135deg, #25D366, #128C7E); color: #fff; }
+.btn-llamar { background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space); }
+
+/* Publicidad del canal: resto de componentes */
+.marketing-ad-desc { font-size: 0.7rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 12px; word-wrap: break-word; }
+.marketing-ad-cta {
+    display: inline-flex; align-items: center; gap: 6px; padding: 8px 20px; border-radius: 30px;
+    background: linear-gradient(135deg, var(--gold), var(--gold-dark)); color: var(--space);
+    font-size: 0.7rem; font-weight: 700; border: none; cursor: pointer; transition: var(--transition);
+    text-transform: uppercase; letter-spacing: 0.5px;
+}
+.marketing-ad-cta:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5); }
+
+/* Regalos en USDT */
+.gift-options { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 12px 0; }
+.gift-btn {
+    padding: 10px 16px; border-radius: 12px; border: 1px solid var(--glass-border);
+    background: rgba(0, 0, 0, 0.3); color: var(--text-primary); cursor: pointer;
+    transition: var(--transition); text-align: center; min-width: 70px;
+}
+.gift-btn:hover { border-color: var(--gold); transform: scale(1.05); background: rgba(212, 175, 55, 0.1); box-shadow: 0 0 22px rgba(212, 175, 55, 0.35); }
+.gift-btn .monto { font-weight: 700; color: var(--gold); font-size: 0.9rem; }
+.gift-btn .label { font-size: 0.5rem; color: var(--text-muted); display: block; }
+
+/* En vivo: portada sin imagen y avatar sobre el contenedor 9:16 */
+.en-vivo-sin-portada { color: #fff; font-size: 2rem; display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.en-vivo-avatar {
+    width: 60px; height: 60px; border-radius: 50%; border: 2px solid var(--gold);
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.6); object-fit: cover;
+}
+
+/* Pie de página */
+.footer {
+    margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--glass-border);
+    display: flex; justify-content: space-between; align-items: center; font-size: 0.7rem;
+    color: var(--text-muted); flex-wrap: wrap; gap: 10px;
+}
+.footer .brand { color: var(--gold); font-weight: 600; text-shadow: 0 0 12px rgba(212, 175, 55, 0.5); }
+.footer-net { display: inline-flex; align-items: center; gap: 4px; color: var(--cyan); }
+.footer-net .icon { width: 11px; height: 11px; fill: currentColor; stroke: none; }
+
+/* ================================================================
+   20. MODO DÍA (apariencia global)
+   ================================================================ */
+html.tema-dia, html[data-tema="dia"] {
+    --space: #f5f7fa; --text-primary: #1a2332; --text-secondary: #4a5568; --text-muted: #718096;
+    --glass-bg: rgba(255, 255, 255, 0.9); --glass-border: rgba(0, 0, 0, 0.1);
+}
+html.tema-dia body, html[data-tema="dia"] body {
+    background: #f5f7fa; color: var(--text-primary);
+}
+html.tema-dia .header, html[data-tema="dia"] .header {
+    background: rgba(255, 255, 255, 0.95); border-bottom-color: rgba(0, 0, 0, 0.1);
+}
+html.tema-dia .main-nav, html[data-tema="dia"] .main-nav {
+    background: rgba(255, 255, 255, 0.7); border-color: rgba(0, 0, 0, 0.1);
+}
+html.tema-dia .canal-item, html.tema-dia .en-vivo-card, html.tema-dia .grupo-card,
+html.tema-dia .grupo-header-interno, html.tema-dia .publicacion-card, html.tema-dia .form-publicacion,
+html.tema-dia .marketing-ad-container, html.tema-dia .modal, html.tema-dia .no-live-box,
+html[data-tema="dia"] .canal-item, html[data-tema="dia"] .en-vivo-card, html[data-tema="dia"] .grupo-card,
+html[data-tema="dia"] .grupo-header-interno, html[data-tema="dia"] .publicacion-card,
+html[data-tema="dia"] .form-publicacion, html[data-tema="dia"] .marketing-ad-container,
+html[data-tema="dia"] .modal, html[data-tema="dia"] .no-live-box {
+    background: rgba(255, 255, 255, 0.9); border-color: rgba(0, 0, 0, 0.1); box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+html.tema-dia input, html.tema-dia textarea, html.tema-dia select,
+html[data-tema="dia"] input, html[data-tema="dia"] textarea, html[data-tema="dia"] select {
+    background-color: rgba(0, 0, 0, 0.03); color: var(--text-primary); border-color: rgba(0, 0, 0, 0.15);
+}
+html.tema-dia .post-menu-dropdown, html[data-tema="dia"] .post-menu-dropdown {
+    background: rgba(255, 255, 255, 0.98); border-color: rgba(0, 0, 0, 0.15);
+}
+html.tema-dia .feed-filtros, html.tema-dia .mobile-tabs,
+html[data-tema="dia"] .feed-filtros, html[data-tema="dia"] .mobile-tabs {
+    background: rgba(255, 255, 255, 0.7);
+}
+html.tema-dia .footer, html[data-tema="dia"] .footer { color: #718096; border-top-color: rgba(0, 0, 0, 0.1); }
+
+/* ================================================================
+   21. ADAPTACIÓN PARA MÓVIL
+   ================================================================ */
+@media (max-width: 768px) {
+    .app { padding: 12px 14px; }
+    .grupos-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .grupo-header-interno .portada { height: 120px; }
+    .modal { padding: 16px; }
+    .grupo-header-interno .info-row { flex-direction: column; align-items: center; text-align: center; }
+    .grupo-header-interno .acciones { justify-content: center; }
+    .form-publicacion .acciones { justify-content: center; }
+    .emoji-picker { width: 220px; left: 50%; transform: translateX(-50%); }
+    .emoji-picker .grid { grid-template-columns: repeat(6, 1fr); }
+    .grupo-live-container .live-chat-inline { max-height: 120px; }
+    .post-menu-dropdown { min-width: 220px; }
+}
+@media (max-width: 480px) {
+    .grupos-grid { grid-template-columns: 1fr; }
+    .emoji-picker { width: 180px; }
+    .emoji-picker .grid { grid-template-columns: repeat(5, 1fr); }
+    .emoji-picker .grid button { font-size: 1.2rem; padding: 4px; }
+    .publicacion-card { padding: 14px; }
+    .publicacion-card .header .avatar { width: 38px; height: 38px; }
+    .publicacion-card .stats span { padding: 4px 10px; font-size: 0.65rem; }
+}
