@@ -17,6 +17,42 @@
 
     <script src="/features/shared/js/api-config.js"></script>
     <script src="/features/shared/js/apariencia-global.js"></script>
+
+    <!-- ===== DIAGNÓSTICO TEMPORAL (INYECTADO POR INSTRUCCIÓN DE ANTROPIC) ===== -->
+    <script>
+    (function () {
+        function mostrar(t) {
+            var b = document.getElementById('dbgVideos');
+            if (!b) {
+                b = document.createElement('div');
+                b.id = 'dbgVideos';
+                b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:999999;background:#b00020;color:#fff;font:12px monospace;padding:8px;max-height:35vh;overflow:auto;white-space:pre-wrap';
+                document.body.appendChild(b);
+            }
+            b.textContent += t + '\n';
+        }
+        window.addEventListener('error', function (e) {
+            mostrar('ERROR: ' + e.message + ' @' + String(e.filename || '').split('/').pop() + ':' + e.lineno);
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+            mostrar('PROMESA: ' + ((e.reason && e.reason.message) || e.reason));
+        });
+        var ce = console.error, cw = console.warn;
+        console.error = function () {
+            mostrar('CONSOLA: ' + Array.prototype.map.call(arguments, function (a) {
+                return (a && a.message) ? a.message : String(a);
+            }).join(' '));
+            ce.apply(console, arguments);
+        };
+        console.warn = function () {
+            mostrar('AVISO: ' + Array.prototype.map.call(arguments, function (a) {
+                return (a && a.message) ? a.message : String(a);
+            }).join(' '));
+            cw.apply(console, arguments);
+        };
+    })();
+    </script>
+    <!-- ===== FIN DEL DIAGNÓSTICO ===== -->
 </head>
 <body>
 
