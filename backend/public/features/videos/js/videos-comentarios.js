@@ -1,15 +1,16 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · COMENTARIOS (v1)
+// CSARIEL'S · VIDEOS · COMENTARIOS (v2)
 // ================================================================
 // Hoja de comentarios de un video.
 // - Abrir: muestra la hoja y carga los comentarios del video.
-// - Enviar: inserta un comentario propio (RLS: usuario_id = auth.uid()).
+// - Enviar: inserta un comentario propio (RLS: usuario_id = auth.uid()),
+//   protegido contra dobles envíos por toques rápidos o Enter repetido.
 // - Eliminar: lo puede borrar el autor del comentario o el dueño del video.
 //   Permisos en Supabase:
 //     · "Videos comentarios DELETE propietario"  → autor del comentario
 //     · "Videos comentarios DELETE dueño del video" → dueño del video
 // - Actualiza el contador de la tarjeta sin recargar el feed.
-// Expuesto en window.VideosApp.comentarios.
+// Expuesto en window.VideosApp.comentarios y window.abrirComentarios.
 // Requiere: config, utils, feed, hojas.
 // ================================================================
 
@@ -27,6 +28,11 @@
     var U = VA.utils;
     var S = VA.state;
 
+    // Bandera anti-doble-envío.
+    var enviandoComentario = false;
+    // Token para evitar temporizadores de scroll colgados tras cambiar de video.
+    var tokenCarga = 0;
+
     /* Fecha corta en español de México para cada comentario. */
     function formatearFecha(iso) {
         if (!iso) return '';
@@ -40,6 +46,7 @@
 
     /* Suma o resta uno al contador de comentarios de la tarjeta. */
     function ajustarContadorTarjeta(videoId, delta) {
+        if (!videoId) return;
         var contEl = document.getElementById('comentCount-' + videoId);
         if (!contEl) return;
         var actual = U.leerContadorMostrado(contEl.textContent);
@@ -48,6 +55,7 @@
 
     /* Abre la hoja de comentarios y carga los del video. */
     function abrirComentarios(videoId) {
+        if (!videoId) return;
         S.videoIdComentariosActual = videoId;
 
         var lista = document.getElementById('comentariosLista');
@@ -62,16 +70,28 @@
 
     /* Consulta los comentarios con el autor y los pinta en la hoja. */
     async function cargarComentarios(videoId) {
+        if (!videoId) return;
         var lista = document.getElementById('comentariosLista');
         if (!lista) return;
 
+        var miToken = ++tokenCarga;
         var sb = VA.cliente();
+        if (!sb) return;
+
         try {
             var result = await sb.from(CONFIG.TABLA_VIDEOS_COMENTARIOS)
                 .select('*, usuarios:usuario_id (id, nombre, handle, avatar_url)')
                 .eq('video_id', videoId)
                 .order('created_at', { ascending: true });
             if (result.error) throw result.error;
+
+            // Descartar resultados si el usuario cambió de video mientras se cargaba.
+            if (miToken !== tokenCarga) return;
+            if (S.videoIdComentariosActual && S.videoIdComentariosActual !== videoId) return;
+
+            // Revalidar que la lista siga en el DOM.
+            lista = document.getElementById('comentariosLista');
+            if (!lista) return;
 
             var data = result.data || [];
 
@@ -110,10 +130,20 @@
             });
 
             lista.innerHTML = html;
-            setTimeout(function () { lista.scrollTop = lista.scrollHeight; }, 80);
+
+            // Scroll al final con revalidación del token para evitar timers colgados.
+            setTimeout(function () {
+                if (miToken !== tokenCarga) return;
+                var listaActual = document.getElementById('comentariosLista');
+                if (!listaActual || !listaActual.isConnected) return;
+                if (S.videoIdComentariosActual && S.videoIdComentariosActual !== videoId) return;
+                listaActual.scrollTop = listaActual.scrollHeight;
+            }, 80);
         } catch (e) {
+            if (miToken !== tokenCarga) return;
             console.warn('[Videos] Error cargando comentarios:', e && e.message ? e.message : e);
-            lista.innerHTML = '<div class="vacio">No se pudieron cargar los comentarios.</div>';
+            var listaErr = document.getElementById('comentariosLista');
+            if (listaErr) listaErr.innerHTML = '<div class="vacio">No se pudieron cargar los comentarios.</div>';
         }
     }
 
@@ -137,6 +167,9 @@
             return;
         }
 
+        // Evitar envíos simultáneos por toques rápidos o Enter repetido.
+        if (enviandoComentario) return;
+        enviandoComentario = true;
         if (btn) btn.disabled = true;
 
         try {
@@ -150,11 +183,16 @@
 
             input.value = '';
             ajustarContadorTarjeta(videoId, 1);
-            await cargarComentarios(videoId);
+
+            // Refrescar solo si seguimos en el mismo video.
+            if (S.videoIdComentariosActual === videoId) {
+                await cargarComentarios(videoId);
+            }
         } catch (e) {
             console.warn('[Videos] Error enviando comentario:', e && e.message ? e.message : e);
             U.showToast('No se pudo enviar el comentario', 'error');
         } finally {
+            enviandoComentario = false;
             if (btn) btn.disabled = false;
         }
     }
@@ -163,17 +201,19 @@
        aquí solo se confirma con el usuario y se refresca la lista. */
     async function eliminarComentario(comentarioId, videoId) {
         if (!S.sessionUser) return;
+        if (!comentarioId || !videoId) return;
         if (!confirm('¿Eliminar este comentario?')) return;
 
         try {
             var sb = VA.cliente();
+            if (!sb) return;
+
             var del = await sb.from(CONFIG.TABLA_VIDEOS_COMENTARIOS)
                 .delete()
                 .eq('id', comentarioId);
             if (del.error) throw del.error;
 
-            // Si no hubo error pero no se borró nada, Supabase no dio permiso.
-            // Se verifica releyendo el comentario.
+            // Comprobación de permiso: si no se eliminó, Supabase no lo permitió.
             var verifica = await sb.from(CONFIG.TABLA_VIDEOS_COMENTARIOS)
                 .select('id')
                 .eq('id', comentarioId)
@@ -184,7 +224,11 @@
             }
 
             ajustarContadorTarjeta(videoId, -1);
-            await cargarComentarios(videoId);
+
+            // Refrescar solo si seguimos en el mismo video.
+            if (S.videoIdComentariosActual === videoId) {
+                await cargarComentarios(videoId);
+            }
         } catch (e) {
             console.warn('[Videos] Error eliminando comentario:', e && e.message ? e.message : e);
             U.showToast('No se pudo eliminar', 'error');
