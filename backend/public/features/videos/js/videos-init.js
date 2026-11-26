@@ -1,15 +1,14 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · ARRANQUE (v2)
+// CSARIEL'S · VIDEOS · ARRANQUE (v3)
 // ================================================================
 // Punto de entrada del módulo de videos. Se ejecuta una sola vez.
-// Orden de arranque:
-//   1. Cabecera y teclado móvil
-//   2. Hojas, navegación del feed/cabecera, botón atrás
-//   3. Sesión (usuario y contactos) → idiomas → feed
-//   4. Cola de subida y jobs pendientes
-//   5. Enlace ?v=id (si viene en la URL)
-// Eventos globales: conexión, visibilidad, botón de audio,
-// cierre de reacciones al tocar fuera, contador y botones del compositor.
+// v3 · arranque rápido:
+//   1. Cabecera, hojas, navegación, botón atrás y eventos (síncrono).
+//   2. Estado "Cargando…" y feed: arranca sin esperar a nada más.
+//   3. En paralelo: sesión (reacciones propias), contactos (Comunidad)
+//      e idiomas. Ninguno retrasa el feed.
+//   4. Enlace ?v=id cuando el carrusel ya está pintado.
+//   5. Jobs pendientes y cola de subida en un momento diferido.
 // Cada paso va en su propio try: si uno falla, los demás siguen.
 // Requiere: todos los módulos de videos/js cargados antes.
 // ================================================================
@@ -31,12 +30,30 @@
 
     var CIRCUNFERENCIA_ANILLO = 94.25;
 
-    /* Ejecuta un paso del arranque sin que un error detenga los demás. */
-    async function paso(nombre, fn) {
+    /* Ejecuta un paso asíncrono sin que un error detenga los demás. */
+    function paso(nombre, fn) {
+        return Promise.resolve()
+            .then(fn)
+            .catch(function (e) {
+                console.error('[Videos] Falló el paso "' + nombre + '":', e);
+            });
+    }
+
+    /* Ejecuta un paso síncrono sin que un error detenga los demás. */
+    function pasoSync(nombre, fn) {
         try {
-            await fn();
+            fn();
         } catch (e) {
             console.error('[Videos] Falló el paso "' + nombre + '":', e);
+        }
+    }
+
+    /* Ejecuta una tarea cuando el navegador está libre (o tras un pequeño retardo). */
+    function enDiferido(fn) {
+        if (typeof window.requestIdleCallback === 'function') {
+            window.requestIdleCallback(fn, { timeout: 2000 });
+        } else {
+            setTimeout(fn, 300);
         }
     }
 
@@ -96,7 +113,6 @@
         btn.dataset.initEnganchado = '1';
         btn.addEventListener('click', function (e) {
             e.preventDefault();
-            // Pausar el video activo si está reproduciéndose.
             var activa = S.cardActiva && S.cardActiva.querySelector('video');
             if (activa && !activa.paused) {
                 try { activa.pause(); } catch (_) {}
@@ -198,14 +214,12 @@
     function engancharEventosGlobales() {
         window.addEventListener('resize', ajustarAlturaCabecera);
 
-        // Al volver la conexión, los items en espera vuelven a intentarse.
         window.addEventListener('online', function () {
             VA.cola.marcarColaComoReintentable();
             VA.cola.actualizarEstadoCola();
             VA.cola.procesarCola();
         });
 
-        // Al volver a la pestaña, se procesa la cola; al salir, se pausa el video activo.
         document.addEventListener('visibilitychange', function () {
             if (!document.hidden) {
                 VA.cola.procesarCola();
@@ -215,7 +229,6 @@
             }
         });
 
-        // Publicar puede pedir refrescar el feed por evento (respaldo de cargarVideos).
         window.addEventListener('csariels:videos:refresh', function () {
             VA.feed.cargarVideos();
         });
@@ -234,20 +247,35 @@
     }
 
     /* ----------------------------------------------------------------
+       Tareas diferidas: jobs pendientes y cola de subida
+       ---------------------------------------------------------------- */
+
+    function iniciarTareasDiferidas() {
+        paso('jobs', function () { return VA.cola.reanudarJobsPendientes(); })
+            .then(function () {
+                return paso('cola', async function () {
+                    await VA.cola.cargarColaEnMemoria();
+                    VA.cola.actualizarEstadoCola();
+                    VA.cola.procesarCola();
+                });
+            });
+    }
+
+    /* ----------------------------------------------------------------
        Arranque principal
        ---------------------------------------------------------------- */
 
-    async function arrancar() {
-        await paso('cabecera', function () {
+    function arrancar() {
+        // 1. Interfaz: síncrono y sin esperas de red.
+        pasoSync('cabecera', function () {
             U.aplicarI18N();
             ajustarAlturaCabecera();
             configurarTecladoMovil();
         });
-
-        await paso('hojas', function () { VA.hojas.engancharHojas(); });
-        await paso('navegacion', function () { VA.navegacion.iniciar(); });
-        await paso('atras', function () { VA.atras.activar(); });
-        await paso('eventos', function () {
+        pasoSync('hojas', function () { VA.hojas.engancharHojas(); });
+        pasoSync('navegacion', function () { VA.navegacion.iniciar(); });
+        pasoSync('atras', function () { VA.atras.activar(); });
+        pasoSync('eventos', function () {
             engancharBotonAudio();
             engancharCierreReacciones();
             engancharBotonPublicar();
@@ -256,24 +284,42 @@
             engancharEventosGlobales();
         });
 
-        // Sesión e idiomas antes del feed, para que las traducciones y los contactos existan.
-        await paso('sesion', function () { return VA.sesion.cargarUsuarioActual(); });
-        await paso('idiomas', async function () {
+        // 2. Estado inicial visible y feed: no esperan a sesión, contactos ni idiomas.
+        pasoSync('estado inicial', function () { VA.feed.mostrarCargando(); });
+        var feed = paso('feed', function () { return VA.feed.cargarVideos(); });
+
+        // 3. En paralelo: nada de esto retrasa el feed.
+        paso('sesion', function () { return VA.sesion.cargarUsuarioActual(); })
+            .then(function () {
+                pasoSync('reacciones de sesión', function () { VA.feed.refrescarReacciones(); });
+            });
+
+        paso('contactos', function () { return VA.sesion.cargarSiguiendo(); })
+            .then(function () {
+                S.contactosListos = true;
+                // Solo repinta si el usuario está en Comunidad, para no interrumpir otros videos.
+                pasoSync('comunidad', function () {
+                    if (VA.feed.pestanaActual() === 'comunidad') VA.feed.renderFeed();
+                });
+            });
+
+        paso('idiomas', async function () {
             if (typeof window.inicializarIdiomas === 'function') await window.inicializarIdiomas();
             U.aplicarI18N();
         });
-        await paso('contactos', function () { return VA.sesion.cargarSiguiendo(); });
-        await paso('feed', function () { return VA.feed.cargarVideos(); });
-        await paso('enlace', abrirVideoDelEnlace);
 
-        await paso('jobs', function () { return VA.cola.reanudarJobsPendientes(); });
-        await paso('cola', async function () {
-            await VA.cola.cargarColaEnMemoria();
-            VA.cola.actualizarEstadoCola();
-            VA.cola.procesarCola();
+        // 4. Enlace ?v=id: después de que el carrusel terminó de pintarse.
+        feed.then(function () {
+            return VA.feed.esperarRender();
+        }).then(function () {
+            pasoSync('enlace', abrirVideoDelEnlace);
+            ajustarAlturaCabecera();
         });
 
-        ajustarAlturaCabecera();
+        // 5. Tareas secundarias: cuando el feed ya está en pantalla.
+        feed.then(function () {
+            enDiferido(iniciarTareasDiferidas);
+        });
     }
 
     /* ----------------------------------------------------------------
