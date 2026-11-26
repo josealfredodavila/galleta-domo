@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#000000" />
     <title>Accesibilidad · Sariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
@@ -28,8 +27,11 @@
         <h2 class="cfg-section-title">Audio</h2>
         <div class="cfg-list" id="seccionAudio"></div>
 
+        <h2 class="cfg-section-title">Botones flotantes</h2>
+        <div class="cfg-list" id="seccionBotones"></div>
+
         <div class="cfg-aviso cfg-aviso-info">
-            ℹ️ Estas opciones afectan a todas las cuentas de Sariel's en este dispositivo.
+            ℹ️ Estas opciones afectan a todas las cuentas de Sariel's en este dispositivo. La opción de botones flotantes se guarda en tu cuenta y se aplica en cualquier dispositivo.
         </div>
 
         <div class="cfg-footer">
@@ -62,6 +64,88 @@
             texto_grande: 'accesibilidad_texto_grande',
             subtitulos: 'accesibilidad_subtitulos',
         };
+
+        /* Preferencia guardada en Supabase (tabla preferencias_usuario, columna prefs jsonb).
+           Si no existe, el botón se considera visible. */
+        const CLAVE_BOTON_LLAMADAS = 'boton_llamadas_visible';
+        const SB_URL = 'https://zultnlogdoajehbswlih.supabase.co';
+        const SB_KEY = 'sb_publishable_S3jONAz3mRO4JKBRhUdI1A_-nsyVhKu';
+
+        let clienteSb = null;
+        let usuarioId = null;
+        let prefsRemotas = {};
+        let prefsListas = false;
+
+        async function obtenerCliente() {
+            if (clienteSb) return clienteSb;
+            if (window.supabaseClient && window.supabaseClient.auth) {
+                clienteSb = window.supabaseClient;
+                return clienteSb;
+            }
+            if (window.supabase && typeof window.supabase.createClient === 'function') {
+                clienteSb = window.supabase.createClient(SB_URL, SB_KEY, {
+                    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+                });
+                window.supabaseClient = clienteSb;
+                return clienteSb;
+            }
+            return null;
+        }
+
+        async function obtenerSesion() {
+            const c = await obtenerCliente();
+            if (!c) return null;
+            const { data } = await c.auth.getSession();
+            return (data && data.session) || null;
+        }
+
+        async function cargarPrefsRemotas() {
+            try {
+                const sesion = await obtenerSesion();
+                if (!sesion) {
+                    usuarioId = null;
+                    prefsRemotas = {};
+                    return;
+                }
+                usuarioId = sesion.user.id;
+                const c = await obtenerCliente();
+                const r = await c
+                    .from('preferencias_usuario')
+                    .select('prefs')
+                    .eq('usuario_id', usuarioId)
+                    .maybeSingle();
+                if (r.error) throw r.error;
+                prefsRemotas = (r.data && r.data.prefs) || {};
+            } catch (e) {
+                console.warn('[Accesibilidad] No se pudieron leer las preferencias:', e);
+                prefsRemotas = {};
+            } finally {
+                prefsListas = true;
+            }
+        }
+
+        async function guardarPrefRemota(clave, valor) {
+            const sesion = await obtenerSesion();
+            if (!sesion) throw new Error('Inicia sesión para guardar esta opción.');
+            const c = await obtenerCliente();
+            const uid = sesion.user.id;
+            const nuevas = Object.assign({}, prefsRemotas, { [clave]: valor });
+
+            const existe = await c
+                .from('preferencias_usuario')
+                .select('usuario_id')
+                .eq('usuario_id', uid)
+                .maybeSingle();
+            if (existe.error) throw existe.error;
+
+            const ahora = new Date().toISOString();
+            const r = existe.data
+                ? await c.from('preferencias_usuario').update({ prefs: nuevas, updated_at: ahora }).eq('usuario_id', uid)
+                : await c.from('preferencias_usuario').insert({ usuario_id: uid, prefs: nuevas, updated_at: ahora });
+            if (r.error) throw r.error;
+
+            prefsRemotas = nuevas;
+        }
 
         function renderSecciones() {
             // ============================================================
@@ -105,7 +189,6 @@
                     icon: 'type',
                     title: 'Tamaño de fuente',
                     desc: 'Elige el tamaño exacto: 80%, 100%, 120%, 140%',
-                    // ✅ CORRECCIÓN: Se cambió la 'ñ' por 'n' para evitar problemas de codificación
                     onclick: 'window.onTamanoFuente()',
                 }),
             ].join('');
@@ -122,6 +205,32 @@
                     onChange: `window.onToggleSubtitulos(this.checked)`,
                 }),
             ].join('');
+
+            renderBotones();
+        }
+
+        /* Botón de llamadas: se muestra según la preferencia guardada en Supabase. */
+        function renderBotones() {
+            const el = $('#seccionBotones');
+            if (!el) return;
+
+            if (!prefsListas) {
+                el.innerHTML = '<div class="cfg-item-desc" style="padding:12px 4px;opacity:.6;">Cargando…</div>';
+                return;
+            }
+
+            const sinSesion = !usuarioId;
+            const visible = prefsRemotas[CLAVE_BOTON_LLAMADAS] !== false;
+
+            el.innerHTML = cfgRenderToggle({
+                id: 'toggleBotonLlamadas',
+                title: 'Botón de llamadas',
+                desc: sinSesion
+                    ? 'Inicia sesión para cambiar esta opción.'
+                    : 'Muestra u oculta el botón flotante de llamadas en tu perfil.',
+                checked: visible,
+                onChange: `window.onToggleBotonLlamadas(this.checked)`,
+            });
         }
 
         // ============================================================
@@ -162,7 +271,20 @@
             );
         };
 
-        // ✅ CORRECCIÓN: Nombre de función sin 'ñ'
+        window.onToggleBotonLlamadas = async (value) => {
+            try {
+                await guardarPrefRemota(CLAVE_BOTON_LLAMADAS, value);
+                cfgToast(
+                    value ? '📞 Botón de llamadas visible' : '📞 Botón de llamadas oculto',
+                    value ? 'success' : 'warning'
+                );
+            } catch (e) {
+                console.error('[Accesibilidad] Error guardando botón de llamadas:', e);
+                cfgToast((e && e.message) || 'No se pudo guardar la opción', 'error');
+                renderBotones();
+            }
+        };
+
         window.onTamanoFuente = () => {
             cfgToast('⏳ Selector de tamaño próximamente', 'warning');
         };
@@ -173,7 +295,7 @@
         window.addEventListener('DOMContentLoaded', async () => {
             await new Promise(resolve => setTimeout(resolve, 400));
 
-            // Aplicar preferencias guardadas al cargar
+            // Aplicar preferencias locales guardadas al cargar
             if (cfgGetPref(PREF_KEYS.reducir_movimiento, false)) {
                 document.body.classList.add('reduce-motion');
             }
@@ -185,6 +307,8 @@
             }
 
             renderSecciones();
+            await cargarPrefsRemotas();
+            renderBotones();
         });
 
     })();
