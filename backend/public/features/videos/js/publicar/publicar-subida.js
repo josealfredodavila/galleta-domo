@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · PUBLICAR · SUBIDA (v1)
+   CSARIEL'S · VIDEOS · PUBLICAR · SUBIDA (v1.1)
    ================================================================
    Sexto módulo de la división de videos-publicar.js.
    - Valida el tipo, el tamaño y la integridad del video antes de subir.
@@ -7,9 +7,10 @@
    - Si el servidor responde cuota_excedida, muestra el aviso de cuota.
    - Expone subirMultimedia, usado por el contrato global de la entrada.
    Los proveedores R2 y S3 no están habilitados (Fase 3) y devuelven error.
+   v1.1: el aviso de cuota se pide a NS.borradores (donde ahora vive),
+         con respaldo en window.VideosPublicar.
    Dependencias en tiempo de uso:
-     NS.preview → mostrarAvisoCuota (desde publicar-ui o publicar-preview)
-     NS.u.obtenerSesion, NS.u.crearObjectURL (base)
+     NS.borradores → mostrarAvisoCuota
    Expuesto en NS.subida.
    Requiere: publicar-base.js, publicar-ui.js.
    ================================================================ */
@@ -26,14 +27,6 @@
 
     var C = NS.C;
     var U = NS.u;
-
-    /* Llama una función de otro módulo solo si ya existe. */
-    function llamar(modulo, fn) {
-        var args = Array.prototype.slice.call(arguments, 2);
-        var m = NS[modulo];
-        if (m && typeof m[fn] === 'function') return m[fn].apply(m, args);
-        return undefined;
-    }
 
     /* ----------------------------------------------------------------
        VALIDACIÓN DEL ARCHIVO
@@ -89,6 +82,21 @@
         }
 
         return null;
+    }
+
+    /* ----------------------------------------------------------------
+       AVISO DE CUOTA
+       Vive en NS.borradores. Si aún no está cargado, usa el respaldo global.
+       ---------------------------------------------------------------- */
+
+    function mostrarAvisoCuota(cuota) {
+        if (NS.borradores && typeof NS.borradores.mostrarAvisoCuota === 'function') {
+            NS.borradores.mostrarAvisoCuota(cuota);
+            return;
+        }
+        if (window.VideosPublicar && typeof window.VideosPublicar.mostrarAvisoCuota === 'function') {
+            window.VideosPublicar.mostrarAvisoCuota(cuota);
+        }
     }
 
     /* ----------------------------------------------------------------
@@ -166,20 +174,6 @@
 
     async function subirMultimediaS3() {
         return { ok: false, error: 'Proveedor S3 aún no habilitado (Fase 3 del proyecto)' };
-    }
-
-    /* ----------------------------------------------------------------
-       AVISO DE CUOTA (si el módulo de interfaz lo tiene, lo usa)
-       ---------------------------------------------------------------- */
-
-    function mostrarAvisoCuota(cuota) {
-        if (NS.preview && typeof NS.preview.mostrarAvisoCuota === 'function') {
-            NS.preview.mostrarAvisoCuota(cuota);
-            return;
-        }
-        if (typeof window.VideosPublicar === 'object' && typeof window.VideosPublicar.mostrarAvisoCuota === 'function') {
-            window.VideosPublicar.mostrarAvisoCuota(cuota);
-        }
     }
 
     /* ----------------------------------------------------------------
