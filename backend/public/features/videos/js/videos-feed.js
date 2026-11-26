@@ -1,14 +1,17 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · FEED (v2)
+// CSARIEL'S · VIDEOS · FEED (v3)
 // ================================================================
 // Carga y render del carrusel de videos.
-// - Consulta videos publicados (con join al autor) y sus reacciones.
-// - Filtra por pestaña (Explorando / Comunidad / Puebla) y búsqueda.
-// - Pinta cada tarjeta, el indicador de posición y la barra de tiempo.
-// - Scrub táctil/pointer en .barra-prog con actualización en vivo.
-// - Pausa/reanudación automática por cámara o visibilidad.
-// - Recuperación básica ante error/stalled del <video>.
-// - Señales ligeras de reproducción (sin analítica pesada).
+// v3 · arranque rápido y precarga ligera:
+// - El feed pinta en cuanto llegan los videos; las reacciones se
+//   completan después sin repintar el carrusel.
+// - Primera tarjeta sincrónica; el resto en lotes por frame.
+// - Precarga por ventana: activo "auto", siguiente "metadata",
+//   lejanos sin red (src removido) para no saturar memoria.
+// - Estado inicial "Cargando…" y estado de error con reintento.
+// - Pestaña Comunidad espera a que los contactos estén listos.
+// - Mantiene pausa por cámara/visibilidad, scrub, señales y
+//   recuperación básica de video.
 // Lo que NO hace este módulo (vive en otros):
 //   navegación y observador  → videos-navegacion.js (VA.navegacion)
 //   audio y autoplay         → videos-audio.js      (VA.audio)
@@ -36,12 +39,39 @@
 
     /* ---------------- Estado interno (no público) ---------------- */
 
-    // Pausa automática por cámara/visibilidad, independiente de la pausa manual del usuario.
+    // Pausa automática por cámara/visibilidad, independiente de la pausa manual.
     var pausadoPorCamara = false;
-    // Reintentos por tarjeta (para no caer en bucles infinitos).
+    // Reintentos por <video> para no caer en bucles.
     var MAX_REINTENTOS_RED = 2;
-    // Guarda por <video> el número de reintentos realizados.
     var reintentosPorVideo = new WeakMap();
+
+    // Carga de videos en curso (evita consultas duplicadas).
+    var cargaEnCurso = null;
+    var cargaPendiente = false;
+
+    // Ciclo de render: la promesa se resuelve cuando el carrusel quedó pintado.
+    var renderPromise = Promise.resolve();
+    var renderResolve = null;
+
+    // Precarga por ventana.
+    var ultimoIndiceVentana = -1;
+    var TAM_LOTE_RENDER = 5;
+
+    /* ---------------- Utilidades de programación ---------------- */
+
+    function programar(fn) {
+        if (typeof requestAnimationFrame === 'function') requestAnimationFrame(fn);
+        else setTimeout(fn, 0);
+    }
+
+    /* Inicia un ciclo de render y libera la promesa del anterior. */
+    function nuevoCicloRender() {
+        if (renderResolve) renderResolve();
+        var resolver = null;
+        renderPromise = new Promise(function (r) { resolver = r; });
+        renderResolve = resolver;
+        return resolver;
+    }
 
     /* ---------------- Reacciones: cache de lectura ---------------- */
 
@@ -93,17 +123,70 @@
         return S.likeCache.get(videoId + '_' + S.sessionUser.id) || null;
     }
 
+    /* Actualiza contador, emoji y barra de las tarjetas ya pintadas,
+       sin volver a construir el carrusel. */
+    function refrescarReacciones() {
+        document.querySelectorAll('#videosContainer .video-card').forEach(function (card) {
+            var id = card.dataset.videoId;
+            if (!id) return;
+
+            var miTipo = miReaccion(id);
+            var total = contarReacciones(id, 0);
+
+            var cont = document.getElementById('likeCount-' + id);
+            if (cont) cont.textContent = U.formatContador(total);
+
+            var btn = card.querySelector('.reac-btn');
+            if (btn) {
+                var actual = btn.querySelector('.reac-emoji');
+                var actualTxt = actual ? actual.textContent : '';
+                if ((miTipo || '') !== actualTxt) {
+                    btn.innerHTML = miTipo
+                        ? '<span class="reac-emoji emoji-actual">' + U.escapeHTML(miTipo) + '</span>'
+                        : ICONO.corazon;
+                    var nuevo = btn.querySelector('.reac-emoji');
+                    if (nuevo && miTipo) animarEmoji(nuevo, miTipo);
+                }
+            }
+
+            card.querySelectorAll('.reac-op').forEach(function (op) {
+                op.classList.toggle('activa', op.dataset.e === miTipo);
+            });
+        });
+    }
+
     /* ---------------- Carga de videos ---------------- */
 
-    /* Consulta con join al autor. Si el join falla, reintenta sin él. */
-    async function cargarVideos() {
+    /* Punto de entrada público. Si ya hay una carga en curso, pide otra al terminar. */
+    function cargarVideos() {
+        if (cargaEnCurso) {
+            cargaPendiente = true;
+            return cargaEnCurso;
+        }
+        cargaEnCurso = ejecutarCarga().then(function () {
+            cargaEnCurso = null;
+            if (cargaPendiente) {
+                cargaPendiente = false;
+                cargarVideos();
+            }
+        });
+        return cargaEnCurso;
+    }
+
+    /* Consulta con join al autor. Pinta en cuanto hay datos y completa
+       las reacciones después. Si el join falla, reintenta sin él. */
+    async function ejecutarCarga() {
+        var sb = VA.cliente();
+        if (!sb) {
+            S.errorCarga = !S.videosPublicados.length;
+            renderFeed();
+            return;
+        }
+
+        var columnasConAutor = 'id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, sonido_id, sonido_nombre, ubicacion_nombre, latitud, longitud, usuarios:usuario_id (id, nombre, handle, avatar_url)';
+        var columnasBasicas = 'id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at';
+
         try {
-            var sb = VA.cliente();
-            if (!sb) throw new Error('Cliente no disponible');
-
-            var columnasConAutor = 'id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at, sonido_id, sonido_nombre, ubicacion_nombre, latitud, longitud, usuarios:usuario_id (id, nombre, handle, avatar_url)';
-            var columnasBasicas = 'id, titulo, descripcion, url_video, url_miniatura, usuario_id, reproducciones, likes, comentarios, created_at';
-
             var result = await sb.from(CONFIG.TABLA_VIDEOS)
                 .select(columnasConAutor)
                 .eq('estado', 'publicado')
@@ -119,18 +202,28 @@
                     .eq('es_borrador', false)
                     .order('created_at', { ascending: false })
                     .limit(CONFIG.LIMITE_VIDEOS_FEED);
+                if (respaldo.error) throw respaldo.error;
                 data = respaldo.data;
             } else {
                 data = result.data;
             }
 
             S.videosPublicados = data || [];
-            await cargarReaccionesDeVideos(S.videosPublicados.map(function (v) { return v.id; }));
-            renderFeed();
+            S.errorCarga = false;
         } catch (e) {
             console.error('[Videos] Error al cargar:', e);
+            S.errorCarga = !S.videosPublicados.length;
             renderFeed();
+            return;
         }
+
+        // Pinta primero; las reacciones llegan después sin repintar el carrusel.
+        renderFeed();
+
+        var ids = S.videosPublicados.map(function (v) { return v.id; });
+        cargarReaccionesDeVideos(ids).then(function () {
+            refrescarReacciones();
+        });
     }
 
     /* ---------------- Filtros / pestañas ---------------- */
@@ -163,7 +256,6 @@
                 return CONFIG.PUEBLA_LUGARES.some(function (p) { return lugar.indexOf(p) !== -1; });
             });
         }
-        // 'explorando' no filtra más allá de la búsqueda.
 
         if (S.textoBusqueda) {
             var t = U.normalizarTexto(S.textoBusqueda);
@@ -203,6 +295,46 @@
         renderFeed();
     }
 
+    /* ---------------- Estados visibles del carrusel ---------------- */
+
+    function obtenerContenedor() {
+        return document.getElementById('videosContainer');
+    }
+
+    /* Estado de "cargando": se muestra al entrar, antes de tener datos. */
+    function mostrarCargando() {
+        var c = obtenerContenedor();
+        if (!c || c.querySelector('.video-card')) return;
+        c.classList.add('vacio');
+        c.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>Cargando videos…</h3></div>';
+        pintarIndicador(0);
+    }
+
+    /* Estado de error con botón para reintentar. */
+    function pintarError() {
+        var c = obtenerContenedor();
+        if (!c) return;
+        c.classList.add('vacio');
+        c.innerHTML = '';
+
+        var caja = document.createElement('div');
+        caja.className = 'empty-state';
+        caja.innerHTML = '<span class="icon">◈</span><h3>No se pudieron cargar los videos</h3>' +
+            '<p>Revisa tu conexión e intenta de nuevo.</p>';
+
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.textContent = 'Reintentar';
+        btn.style.cssText = 'margin-top:12px;padding:8px 16px;border-radius:999px;' +
+            'border:1px solid rgba(212,175,55,.5);background:transparent;color:#D4AF37;' +
+            'font-family:Orbitron,monospace;font-size:.7rem;cursor:pointer;';
+        btn.addEventListener('click', function () { cargarVideos(); });
+
+        caja.appendChild(btn);
+        c.appendChild(caja);
+        pintarIndicador(0);
+    }
+
     /* ---------------- Indicador de posición ---------------- */
 
     function pintarIndicador(total) {
@@ -225,6 +357,64 @@
             p.style.width = (activo ? 18 : 6) + 'px';
             p.style.background = activo ? '#fff' : 'rgba(255,255,255,.35)';
         });
+    }
+
+    /* ---------------- Precarga por ventana ---------------- */
+
+    /* Asigna src desde data-src solo si el video todavía no lo tiene. */
+    function asegurarSrcLigero(video) {
+        if (video.getAttribute('src')) return;
+        var ds = video.getAttribute('data-src');
+        if (ds) video.src = ds;
+    }
+
+    /* Activo: "auto". Siguiente: solo metadatos. Lejanos: sin red ni memoria. */
+    function aplicarVentanaPrecarga(indiceActivo) {
+        document.querySelectorAll('#videosContainer .video-card').forEach(function (card, i) {
+            var video = card.querySelector('video');
+            if (!video) return;
+
+            var dist = Math.abs(i - indiceActivo);
+
+            if (dist === 0) {
+                video.preload = 'auto';
+                asegurarSrcLigero(video);
+            } else if (dist === 1) {
+                video.preload = 'metadata';
+                asegurarSrcLigero(video);
+            } else {
+                if (!video.paused) {
+                    try { video.pause(); } catch (_) {}
+                }
+                video.preload = 'none';
+                if (video.getAttribute('src')) {
+                    video.removeAttribute('src');
+                    try { video.load(); } catch (_) {}
+                }
+            }
+        });
+    }
+
+    /* Recalcula la ventana cuando el usuario desliza, una vez por frame. */
+    function engancharVentanaPrecarga() {
+        var c = obtenerContenedor();
+        if (!c || c.dataset.precargaEnganchada === '1') return;
+        c.dataset.precargaEnganchada = '1';
+
+        var ticking = false;
+        c.addEventListener('scroll', function () {
+            if (ticking) return;
+            ticking = true;
+            programar(function () {
+                ticking = false;
+                var ancho = c.clientWidth || 1;
+                var idx = Math.round(c.scrollLeft / ancho);
+                if (idx !== ultimoIndiceVentana) {
+                    ultimoIndiceVentana = idx;
+                    aplicarVentanaPrecarga(idx);
+                }
+            });
+        }, { passive: true });
     }
 
     /* ---------------- Tarjeta ---------------- */
@@ -272,10 +462,13 @@
         var titulo = U.escapeHTML(v.titulo || '');
         var desc = U.escapeHTML((v.descripcion || '').substring(0, 140));
 
+        // Solo las dos primeras tarjetas piden metadatos; el resto no hace red.
+        var preload = indice < 2 ? 'metadata' : 'none';
+
         var html = '';
 
         // Miniatura y botón de reproducir
-        html += '<div class="thumbnail"><video preload="metadata" playsinline webkit-playsinline data-src="' +
+        html += '<div class="thumbnail"><video preload="' + preload + '" playsinline webkit-playsinline data-src="' +
             videoUrl + '" data-cs-autoplay-ignorar="true"' + (poster ? ' poster="' + poster + '"' : '') + '></video>';
         html += '<div class="play-btn" role="button" aria-label="Reproducir">' + ICONO.play + '</div></div>';
 
@@ -329,8 +522,8 @@
 
     /* ---------------- Scrub táctil/pointer de la barra de tiempo ---------------- */
 
-    /* Convierte coordenada X dentro de la barra a segundos y aplica al video. */
-    function calcularSegundosDesdeX(barra, clientX) {
+    /* Convierte coordenada X dentro de la barra a una proporción 0..1. */
+    function calcularRatioDesdeX(barra, clientX) {
         var rect = barra.getBoundingClientRect();
         if (!rect || rect.width <= 0) return 0;
         var ratio = (clientX - rect.left) / rect.width;
@@ -343,7 +536,7 @@
     function aplicarScrub(card, videoEl, barra, clientX) {
         var dur = videoEl.duration;
         if (!isFinite(dur) || dur <= 0) return;
-        var ratio = calcularSegundosDesdeX(barra, clientX);
+        var ratio = calcularRatioDesdeX(barra, clientX);
         var segundos = ratio * dur;
 
         var fill = card.querySelector('.barra-prog .fill');
@@ -354,7 +547,7 @@
         try {
             videoEl.currentTime = segundos;
         } catch (e) {
-            // Algunos navegadores pueden rechazar si el metadata aún no está; se ignora.
+            // Algunos navegadores rechazan si aún no hay metadata; se ignora.
         }
     }
 
@@ -365,18 +558,16 @@
 
         // Área táctil cómoda: el .barra-inferior envuelve a .barra-prog.
         var zonaTactil = card.querySelector('.barra-inferior') || barra;
-        zonaTactil.style.touchAction = 'pan-y'; // Permitir scroll vertical normal.
+        zonaTactil.style.touchAction = 'pan-y';
 
         var arrastrando = false;
         var pointerId = null;
 
         function iniciar(e) {
-            // Solo botón principal / touch.
             if (e.pointerType === 'mouse' && e.button !== 0) return;
             arrastrando = true;
             pointerId = e.pointerId;
             card.dataset.scrubbing = '1';
-            // Durante el drag bloqueamos gestos de scroll para no pelear con el carrusel.
             zonaTactil.style.touchAction = 'none';
             try { zonaTactil.setPointerCapture(pointerId); } catch (_) {}
             aplicarScrub(card, videoEl, barra, e.clientX);
@@ -395,7 +586,6 @@
             arrastrando = false;
             pointerId = null;
             delete card.dataset.scrubbing;
-            // Restaurar scroll vertical permitido.
             zonaTactil.style.touchAction = 'pan-y';
             if (e) {
                 try { zonaTactil.releasePointerCapture(e.pointerId); } catch (_) {}
@@ -436,11 +626,9 @@
         videoEl.addEventListener('loadedmetadata', function () {
             var tTotal = card.querySelector('.tiempo-total');
             if (tTotal) tTotal.textContent = U.formatearTiempo(videoEl.duration);
-            // Resetear contador de reintentos al cargar con éxito.
             reintentosPorVideo.set(videoEl, 0);
         });
 
-        // Señales ligeras de reproducción (sin analítica pesada).
         videoEl.addEventListener('playing', function () {
             card.classList.add('playing');
             if (VA.controles) VA.controles.mostrarControles(card);
@@ -476,8 +664,7 @@
         });
     }
 
-    /* Señal ligera de reproducción: emite un evento DOM en la tarjeta.
-       Otros módulos (analítica) pueden escucharlo si lo desean. */
+    /* Señal ligera de reproducción: evento DOM que otros módulos pueden escuchar. */
     function emitirSenal(tipo, videoId) {
         try {
             var detalle = { tipo: tipo, videoId: videoId, t: Date.now() };
@@ -503,7 +690,6 @@
 
         reintentosPorVideo.set(videoEl, intentos + 1);
 
-        // Pequeño backoff para no saturar.
         setTimeout(function () {
             try {
                 videoEl.src = src;
@@ -521,10 +707,26 @@
 
     /* ---------------- Render del carrusel ---------------- */
 
+    function finalizarRender(lista, contenedor, version, resolver) {
+        if (version !== S.renderVersion) {
+            resolver();
+            return;
+        }
+        contenedor.scrollLeft = 0;
+        ultimoIndiceVentana = 0;
+        aplicarVentanaPrecarga(0);
+        engancharVentanaPrecarga();
+        U.aplicarI18N(contenedor);
+        if (VA.navegacion) VA.navegacion.observarCarrusel();
+        pintarIndicador(lista.length);
+        resolver();
+    }
+
     function renderFeed() {
         var version = ++S.renderVersion;
-        var contenedor = document.getElementById('videosContainer');
-        if (!contenedor) return;
+        var resolver = nuevoCicloRender();
+        var contenedor = obtenerContenedor();
+        if (!contenedor) { resolver(); return; }
 
         if (S.observerCarrusel) {
             S.observerCarrusel.disconnect();
@@ -532,6 +734,21 @@
         }
         S.cardActiva = null;
         S.indiceActivo = 0;
+        ultimoIndiceVentana = -1;
+
+        // Comunidad: no mostrar "vacío" mientras los contactos siguen cargando.
+        if (normalizarPestana(S.pestanaActiva) === 'comunidad' && !S.contactosListos && !S.textoBusqueda) {
+            mostrarCargando();
+            resolver();
+            return;
+        }
+
+        // Sin datos y con error: mensaje con reintento, no "No hay videos".
+        if (S.errorCarga && !S.videosPublicados.length) {
+            pintarError();
+            resolver();
+            return;
+        }
 
         var lista = filtrarVideos();
         contenedor.innerHTML = '';
@@ -541,44 +758,39 @@
             contenedor.innerHTML = '<div class="empty-state"><span class="icon">◈</span><h3>' +
                 U.escapeHTML(mensajeVacio()) + '</h3></div>';
             pintarIndicador(0);
+            resolver();
             return;
         }
 
         contenedor.classList.remove('vacio');
 
-        // Render ágil: agregamos tarjetas al DOM una a una con rAF para no
-        // bloquear el primer pintado. La info básica y el poster ya van en el HTML.
-        var i = 0;
+        // Primera tarjeta de inmediato: el video activo aparece sin esperar al resto.
+        contenedor.appendChild(crearVideoCard(lista[0], 0));
+
+        if (lista.length === 1) {
+            finalizarRender(lista, contenedor, version, resolver);
+            return;
+        }
+
+        var i = 1;
         function pintarLote() {
-            if (version !== S.renderVersion) return; // otra versión pisó el render
-            var fin = Math.min(i + 3, lista.length);
+            if (version !== S.renderVersion) { resolver(); return; }
+            var fin = Math.min(i + TAM_LOTE_RENDER, lista.length);
             for (; i < fin; i++) {
                 contenedor.appendChild(crearVideoCard(lista[i], i));
             }
             if (i < lista.length) {
-                if (typeof requestAnimationFrame === 'function') {
-                    requestAnimationFrame(pintarLote);
-                } else {
-                    setTimeout(pintarLote, 0);
-                }
+                programar(pintarLote);
             } else {
-                finalizarRender(lista, contenedor, version);
+                finalizarRender(lista, contenedor, version, resolver);
             }
         }
-
-        if (typeof requestAnimationFrame === 'function') {
-            requestAnimationFrame(pintarLote);
-        } else {
-            pintarLote();
-        }
+        programar(pintarLote);
     }
 
-    function finalizarRender(lista, contenedor, version) {
-        if (version !== S.renderVersion) return;
-        contenedor.scrollLeft = 0;
-        U.aplicarI18N(contenedor);
-        if (VA.navegacion) VA.navegacion.observarCarrusel();
-        pintarIndicador(lista.length);
+    /* Promesa que se resuelve cuando el carrusel actual terminó de pintarse. */
+    function esperarRender() {
+        return renderPromise;
     }
 
     /* Busca un video por id en la lista cargada (para el deep link ?v=). */
@@ -589,7 +801,6 @@
     /* Inserta un video recién publicado al inicio y repinta el carrusel. */
     function insertarVideoArriba(nuevoVideo) {
         if (!nuevoVideo || !nuevoVideo.id) return;
-        // Evitar duplicados si ya estaba.
         var existente = S.videosPublicados.findIndex(function (x) { return x.id === nuevoVideo.id; });
         if (existente !== -1) S.videosPublicados.splice(existente, 1);
         S.videosPublicados.unshift(nuevoVideo);
@@ -608,18 +819,17 @@
         return null;
     }
 
-    /* Pausa automática: no toca pausa manual del usuario. */
+    /* Pausa automática: no toca la pausa manual del usuario. */
     function pausarPorCamara() {
         var video = videoActivo();
         if (!video) return;
-        // Solo marcamos pausa automática si estaba reproduciendo y no está pausado.
         if (!video.paused && !video.ended) {
             pausadoPorCamara = true;
             try { video.pause(); } catch (_) {}
         }
     }
 
-    /* Reanuda automáticamente si fue una pausa por cámara/visibilidad. */
+    /* Reanuda solo si la pausa fue automática. */
     function reanudarPorCamara() {
         if (!pausadoPorCamara) return;
         var video = videoActivo();
@@ -638,22 +848,16 @@
 
     /* ---------------- Listeners globales de visibilidad/cámara ---------------- */
 
-    // document.hidden: al pasar a segundo plano, pausamos.
     if (typeof document !== 'undefined') {
         document.addEventListener('visibilitychange', function () {
-            if (document.hidden) {
-                pausarPorCamara();
-            } else {
-                reanudarPorCamara();
-            }
+            if (document.hidden) pausarPorCamara();
+            else reanudarPorCamara();
         });
     }
 
-    // pagehide: por si el navegador se va antes de visibilitychange.
     window.addEventListener('pagehide', function () { pausarPorCamara(); });
     window.addEventListener('pageshow', function () { reanudarPorCamara(); });
 
-    // Cámara / grabación: eventos personalizados que otros módulos pueden emitir.
     window.addEventListener('cs:camara-abrir', function () { pausarPorCamara(); });
     window.addEventListener('cs:camara-cerrar', function () { reanudarPorCamara(); });
     window.addEventListener('cs:grabacion-iniciar', function () { pausarPorCamara(); });
@@ -667,9 +871,14 @@
         filtrarVideos: filtrarVideos,
         setPestana: setPestana,
         setBusqueda: setBusqueda,
+        pestanaActual: function () { return normalizarPestana(S.pestanaActiva); },
         contarReacciones: contarReacciones,
         miReaccion: miReaccion,
         cargarReaccionesDeVideos: cargarReaccionesDeVideos,
+        refrescarReacciones: refrescarReacciones,
+        mostrarCargando: mostrarCargando,
+        esperarRender: esperarRender,
+        aplicarVentanaPrecarga: aplicarVentanaPrecarga,
         pintarIndicador: pintarIndicador,
         actualizarIndicador: actualizarIndicador,
         crearVideoCard: crearVideoCard,
