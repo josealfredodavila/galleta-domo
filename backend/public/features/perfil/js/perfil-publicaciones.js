@@ -1,18 +1,34 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v15.2 — avatar del feed dibujado localmente (fix foto de autor)
+// v15.3 — motor de video más limpio + publicación/descarga sólidas
 // Ruta: backend/public/features/perfil/js/perfil-publicaciones.js
 //
+// Cambios v15.3:
+//  - PUB_EMOJIS_PICKER_DEFAULT ampliado (se conservan todos los
+//    existentes y se agregan más emojis variados al final).
+//  - pubMotorVideo: se limpia videoActivo en 'ended', 'pause'
+//    (natural), 'emptied' y 'abort'; se protege contra videos
+//    desconectados; no interfiere con VisorMediaGlobal ni PiP.
+//  - Se agregan listeners 'ended', 'pause', 'emptied', 'abort'
+//    y 'beforeunload' por video del feed para mantener el motor
+//    consistente.
+//  - publicarDesdePerfil(): candado pubPublicandoEnCurso para
+//    evitar dobles envíos concurrentes.
+//  - descargarArchivoForzado(): mimeMap ampliado (avif, mov,
+//    heic, heif, m4v, ogv, mkv, avi, svg, bmp, tiff, ico, pdf,
+//    mp3, wav, ogg, m4a, aac, flac, webp, etc.) y try/catch en
+//    localStorage / window.showToast.
+//  - Se mantienen intactos todos los contratos globales, IDs,
+//    clases, tablas/vistas y la API pública del módulo.
+//
 // Cambios v15.2:
-//  - pubCrearAvatar ya no delega en window.crearAvatar; dibuja la
-//    imagen directamente a partir de usuario_avatar_url. Corrige
-//    que se mostrara la inicial ("A") en vez de la foto del autor.
+//  - pubCrearAvatar dibuja la imagen directamente a partir de
+//    usuario_avatar_url. Corrige que se mostrara la inicial.
 //
 // Cambios v15.1:
-//  - Un solo visor: VisorMediaGlobal. Se quitó el duplicado de visor.
+//  - Un solo visor: VisorMediaGlobal.
 //  - Se eliminaron estilos repetidos (ya están en perfil.css).
-//  - Se eliminó la función de ruta de autor duplicada en el feed;
-//    se usa una sola (pubUrlPerfilAutor).
+//  - Una sola función de ruta de autor (pubUrlPerfilAutor).
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -20,12 +36,52 @@ window.listaMultimediaPerfil = [];
 var PUB_RUTA_PERFIL_PUBLICO = '/features/perfil/perfil-publico.html';
 var PUB_RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html';
 
+// Los 4 emojis de reacción se resuelven vía ReaccionesGlobal.
+// PUB_EMOJIS_PICKER_DEFAULT es SOLO el selector de inserción de
+// emojis en el compositor; NO son los emojis de reacción.
 var PUB_EMOJIS_PICKER_DEFAULT = [
     '😀','😃','😄','😁','😆','😅','😂','🤣','😊','😇','🙂','🙃','😉','😌','😍','🥰','😘','😋','😛','😜',
     '🤪','😎','🥳','😏','😒','😞','😔','😟','😕','😣','😖','😫','😩','🥺','😢','😭','😤','😠','😡','🤯',
     '😳','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🙄','😴','🤒','👍','👎','👏','🙌','🙏','🤝','💪','✌️',
     '🤞','👌','❤️','🧡','💛','💚','💙','💜','🖤','💔','💯','🤩','⭐','✨','🎉','🎊','🎈','🎁','🏆','🥇',
-    '☕','🍕','🍔','🌮','🍩','🎵','🎶','🐶','🐱','🌹','🌈','☀️','🌙','⚡','💰','🚀','📸'
+    '☕','🍕','🍔','🌮','🍩','🎵','🎶','🐶','🐱','🌹','🌈','☀️','🌙','⚡','💰','🚀','📸',
+    // --- Ampliación v15.3 (no reemplaza ni altera los anteriores) ---
+    '😺','😸','😹','😻','😼','😽','🙀','😿','😾',
+    '🙈','🙉','🙊','👋','🤚','🖐️','✋','🖖','👌🏻','🫶','🤲','🤜','🤛','🫰','🫱','🫲',
+    '🧠','👀','👁️','🫀','🫁','🦾','🦿','🧑‍💻','👨‍💻','👩‍💻','🧑‍🎤','🧑‍🚀','🦸','🦹',
+    '🐯','🦁','🐮','🐷','🐸','🐵','🐔','🐧','🐦','🦅','🦋','🐝','🐞','🐢','🐍','🐙','🦑','🐬','🐳','🦈',
+    '🌵','🌲','🌳','🌴','🌱','🌿','☘️','🍀','🍁','🍂','🍃','🌸','🌼','🌻','🌷','🌺','💐','🌾','🪷',
+    '🍎','🍐','🍊','🍋','🍌','🍉','🍇','🍓','🫐','🍒','🍑','🥭','🍍','🥥','🥝','🍅','🥑','🥦','🥕','🌽',
+    '🍞','🥐','🥖','🥨','🧀','🥚','🍳','🥞','🧇','🥓','🍗','🍖','🌭','🍟','🍿','🧂','🥫','🍱','🍣','🍤',
+    '🍦','🍧','🍨','🍪','🎂','🍰','🧁','🥧','🍫','🍬','🍭','🍮','🍯','🧋','🍵','🍶','🍺','🍻','🥂','🍷',
+    '⚽','🏀','🏈','⚾','🎾','🏐','🏉','🎱','🏓','🏸','🥊','🥋','⛳','🏹','🎣','🤿','🎿','🛹','🛼','🏂',
+    '🎮','🕹️','🎲','🧩','🎯','🎳','🎰','🃏','🀄','🎴',
+    '✈️','🛫','🛬','🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','🚐','🛻','🚚','🚛','🚜','🛴','🚲','🛵',
+    '🏍️','🚨','🚔','🚍','🚘','🚖','🚡','🚠','🚟','🚃','🚋','🚞','🚝','🚄','🚅','🚈','🚂','🚆','🚇','🚊',
+    '🏠','🏡','🏢','🏣','🏤','🏥','🏦','🏨','🏩','🏪','🏫','🏬','🏭','🏯','🏰','💒','🗼','🗽','⛪','🕌',
+    '💡','🔦','🕯️','🪔','🧯','🛢️','💸','💵','💴','💶','💷','🪙','💳','🧾','✉️','📩','📨','📧','💌','📥',
+    '📦','📫','📪','📬','📭','📮','🗳️','✏️','✒️','🖋️','🖊️','🖌️','🖍️','📝','💼','📁','📂','🗂️','📅','📆',
+    '📇','📈','📉','📊','📋','📌','📍','📎','🖇️','📏','📐','✂️','🗃️','🗄️','🗑️','🔒','🔓','🔏','🔐','🔑',
+    '🗝️','🔨','🪓','⛏️','🛠️','🗡️','⚔️','🔫','🛡️','🔧','🔩','⚙️','🗜️','⚖️','🦯','🔗','⛓️','🧰','🧲','🔬',
+    '🔭','📡','💉','💊','🩸','🩹','🩺','🚪','🛏️','🛋️','🪑','🚽','🚿','🛁','🪒','🧴','🧷','🧹','🧺','🧻',
+    '🧼','🧽','🧯','🛒','🚬','⚰️','🪦','🗿','🪧','🪪','🎗️','🎟️','🎫','🎖️','🏅','🥈','🥉','🏵️','🎀','🎁',
+    '🌍','🌎','🌏','🌐','🗺️','🗾','🧭','🏔️','⛰️','🌋','🗻','🏕️','🏖️','🏜️','🏝️','🏞️','🏟️','🏛️','🏗️','🧱',
+    '🌊','🌬️','🌀','🌁','🌫️','🌡️','⛱️','🌞','🌝','🌚','🌛','🌜','🌗','🌓','🌑','🌒','🌔','🌕','🌖','🌘',
+    '🪐','🌟','💫','⭐','🌠','🌌','☄️','🛸','🛰️','🪂','🪁','🎏','🎐','🧿','🪬','🎎','🎍','🎋','🎄','🎃',
+    '🧨','🎆','🎇','🪅','🪩','🎠','🎡','🎢','🎪','🤹','🎭','🎨','🖼️','🎬','🎤','🎧','🎼','🎹','🥁','🎷','🎺',
+    '🪗','🎸','🎻','🪕','🎙️','📻','📺','📷','📹','📼','📀','💿','💾','💽','🖥️','🖨️','⌨️','🖱️','🖲️','🕹️',
+    '📱','📲','☎️','📞','📟','📠','📡','🔋','🪫','🔌','💻','🖥️','🖲️','🧮','⌚','⏰','⏱️','⏲️','🕰️','🕛',
+    '♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓','⛎','🔀','🔁','🔂','▶️','⏸️','⏹️','⏺️','⏭️',
+    '⏮️','⏩','⏪','⏫','⏬','◀️','🔼','🔽','➡️','⬅️','⬆️','⬇️','↗️','↘️','↙️','↖️','↕️','↔️','↩️','↪️',
+    '⤴️','⤵️','🔃','🔄','🔙','🔚','🔛','🔜','🔝','🛐','⚛️','🕉️','✡️','☸️','☯️','✝️','☦️','☪️','☮️','🕎',
+    '🔯','♈','♿','🚭','🚮','🚰','🚹','🚺','🚻','🚼','🚾','🛂','🛃','🛄','🛅','⚠️','🚸','⛔','🚫','🚳',
+    '🚯','🚱','🚷','📵','🔞','☢️','☣️','⬆️','⬇️','⬅️','➡️','🆗','🆕','🆒','🆓','🆙','🆖','🆑','🆘','🆔',
+    '🔠','🔡','🔢','🔣','🔤','🅰️','🅱️','🆎','🅾️','🅿️','🆋','🈁','🈂️','🈷️','🈶','🈯','🉐','🈹','🈚','🈲',
+    '🉑','🈸','🈴','🈳','㊗️','㊙️','🈺','🈵','🔴','🟠','🟡','🟢','🔵','🟣','⚫','⚪','🟤','🔶','🔷','🔸',
+    '🔹','🔺','🔻','💠','🔘','🔳','🔲','▪️','▫️','◾','◽','◼️','◻️','🟥','🟧','🟨','🟩','🟦','🟪','⬛',
+    '⬜','🟫','🔈','🔇','🔉','🔊','🔔','🔕','📣','📢','💬','💭','🗯️','♠️','♣️','♥️','♦️','🃏','🎴','🀄',
+    '🕐','🕑','🕒','🕓','🕔','🕕','🕖','🕗','🕘','🕙','🕚','🕛','🕜','🕝','🕞','🕟','🕠','🕡','🕢','🕣',
+    '🕤','🕥','🕦','🕧'
 ];
 
 if (typeof window.archivosSeleccionados === 'undefined') {
@@ -35,6 +91,36 @@ if (typeof window.archivosSeleccionados === 'undefined') {
 var archivosSeleccionados = window.archivosSeleccionados;
 
 var pubPreviewObjectUrls = {};
+
+// Candado contra dobles envíos concurrentes de publicaciones.
+var pubPublicandoEnCurso = false;
+
+// ================================================================
+// HELPERS DE ALMACENAMIENTO / TOAST SEGUROS
+// ================================================================
+
+function pubPrefAutoReproducir() {
+    try {
+        var valor = localStorage.getItem('contenido_auto_reproducir');
+        return valor === null ? 'true' : String(valor);
+    } catch (e) {
+        return 'true';
+    }
+}
+
+function pubToastSeguro(mensaje, tipo, duracion) {
+    try {
+        if (typeof window.showToast === 'function') {
+            if (typeof duracion === 'number') {
+                window.showToast(mensaje, tipo || 'info', duracion);
+            } else {
+                window.showToast(mensaje, tipo || 'info');
+            }
+        }
+    } catch (e) {
+        // Silencioso: el toast es cosmético.
+    }
+}
 
 // ================================================================
 // MOTOR DE REACCIONES (centralizado en reacciones-global.js)
@@ -165,6 +251,39 @@ function pubReproducirVideo(video) {
     }
 }
 
+/**
+ * Limpia pubMotorVideo.videoActivo solo si es el video indicado.
+ * No toca videos del visor ni en PiP.
+ */
+function pubLimpiarVideoActivo(video) {
+    if (!video) return;
+
+    if (pubMotorVideo.videoActivo === video) {
+        pubMotorVideo.videoActivo = null;
+    }
+}
+
+/**
+ * Pausa cualquier otro video del feed que esté activo.
+ * No toca el visor ni PiP.
+ */
+function pubPausarOtrosVideos(videoActual) {
+    var anterior = pubMotorVideo.videoActivo;
+
+    if (!anterior || anterior === videoActual) return;
+
+    if (!anterior.isConnected) {
+        pubLimpiarVideoActivo(anterior);
+        return;
+    }
+
+    if (pubEsVideoDelVisor(anterior) || pubEsVideoFlotante(anterior)) return;
+
+    try {
+        anterior.pause();
+    } catch (e) {}
+}
+
 // ================================================================
 // VISOR ÚNICO (VisorMediaGlobal)
 // ================================================================
@@ -173,6 +292,15 @@ function pubAbrirVisor(indice, postId, esDueno) {
     var lista = Array.isArray(window.listaMultimediaPerfil) ? window.listaMultimediaPerfil : [];
 
     if (!lista[indice] || !window.VisorMediaGlobal) return;
+
+    // Al abrir el visor, pausamos cualquier video del feed activo
+    // para no superponer audio. El visor maneja sus propios videos.
+    if (pubMotorVideo.videoActivo && pubMotorVideo.videoActivo.isConnected) {
+        try {
+            pubMotorVideo.videoActivo.pause();
+        } catch (e) {}
+        pubMotorVideo.videoActivo = null;
+    }
 
     window.VisorMediaGlobal.abrir({
         items: lista,
@@ -269,6 +397,54 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
 // DESCARGAS
 // ================================================================
 
+var PUB_MIME_MAP = {
+    // Imágenes
+    'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+    'image/webp': 'webp',
+    'image/avif': 'avif',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
+    'image/svg+xml': 'svg',
+    'image/bmp': 'bmp',
+    'image/tiff': 'tiff',
+    'image/x-icon': 'ico',
+    'image/vnd.microsoft.icon': 'ico',
+    // Video
+    'video/mp4': 'mp4',
+    'video/webm': 'webm',
+    'video/quicktime': 'mov',
+    'video/x-quicktime': 'mov',
+    'video/x-m4v': 'm4v',
+    'video/ogg': 'ogv',
+    'video/x-matroska': 'mkv',
+    'video/x-msvideo': 'avi',
+    'video/3gpp': '3gp',
+    'video/3gpp2': '3g2',
+    // Audio
+    'audio/mpeg': 'mp3',
+    'audio/mp3': 'mp3',
+    'audio/wav': 'wav',
+    'audio/x-wav': 'wav',
+    'audio/ogg': 'ogg',
+    'audio/mp4': 'm4a',
+    'audio/x-m4a': 'm4a',
+    'audio/aac': 'aac',
+    'audio/flac': 'flac',
+    'audio/x-flac': 'flac',
+    'audio/webm': 'weba',
+    // Documentos
+    'application/pdf': 'pdf',
+    'application/zip': 'zip',
+    'application/json': 'json',
+    'text/plain': 'txt',
+    'text/html': 'html',
+    'text/css': 'css',
+    'application/javascript': 'js'
+};
+
 async function descargarArchivoForzado(url, nombreOriginal) {
     var blobUrl = null;
 
@@ -277,9 +453,7 @@ async function descargarArchivoForzado(url, nombreOriginal) {
             throw new Error('La dirección del archivo no es válida.');
         }
 
-        if (window.showToast) {
-            window.showToast('Preparando descarga...', 'info', 2000);
-        }
+        pubToastSeguro('Preparando descarga...', 'info', 2000);
 
         var response = await fetch(url);
 
@@ -291,19 +465,12 @@ async function descargarArchivoForzado(url, nombreOriginal) {
         var extension = '';
 
         if (nombreOriginal && nombreOriginal.indexOf('.') !== -1) {
-            extension = nombreOriginal.split('.').pop().split('?')[0];
+            extension = nombreOriginal.split('.').pop().split('?')[0].toLowerCase();
         } else if (blob.type) {
-            var mimeMap = {
-                'image/jpeg': 'jpg',
-                'image/png': 'png',
-                'image/gif': 'gif',
-                'image/webp': 'webp',
-                'video/mp4': 'mp4',
-                'video/webm': 'webm'
-            };
-
-            extension = mimeMap[blob.type] || 'file';
+            extension = PUB_MIME_MAP[blob.type] || 'file';
         }
+
+        if (!extension) extension = 'file';
 
         var nombreDescarga = 'descarga_' + Date.now() + '.' + extension;
 
@@ -319,18 +486,16 @@ async function descargarArchivoForzado(url, nombreOriginal) {
         a.click();
         document.body.removeChild(a);
 
-        if (window.showToast) {
-            window.showToast('Descarga iniciada', 'success', 2000);
-        }
+        pubToastSeguro('Descarga iniciada', 'success', 2000);
 
     } catch (error) {
-        if (window.showToast) {
-            window.showToast('Error al descargar el archivo', 'error');
-        }
+        pubToastSeguro('Error al descargar el archivo', 'error');
     } finally {
         if (blobUrl) {
             setTimeout(function () {
-                URL.revokeObjectURL(blobUrl);
+                try {
+                    URL.revokeObjectURL(blobUrl);
+                } catch (e) {}
             }, 1000);
         }
     }
@@ -418,7 +583,7 @@ function seleccionarArchivoPerfil(event, tipo) {
     if (!file) return;
 
     if (tipo !== 'imagen' && tipo !== 'video') {
-        if (window.showToast) window.showToast('Tipo de archivo no válido', 'error');
+        pubToastSeguro('Tipo de archivo no válido', 'error');
         if (input) input.value = '';
         return;
     }
@@ -426,36 +591,32 @@ function seleccionarArchivoPerfil(event, tipo) {
     var otroTipo = tipo === 'imagen' ? 'video' : 'imagen';
 
     if (archivosSeleccionados[otroTipo]) {
-        if (window.showToast) {
-            window.showToast('Por ahora puedes adjuntar una imagen o un video por publicación.', 'warning');
-        }
-
+        pubToastSeguro('Por ahora puedes adjuntar una imagen o un video por publicación.', 'warning');
         if (input) input.value = '';
-
         return;
     }
 
     if (tipo === 'imagen') {
         if (file.size > 5 * 1024 * 1024) {
-            if (window.showToast) window.showToast('Imagen mayor a 5 MB', 'error');
+            pubToastSeguro('Imagen mayor a 5 MB', 'error');
             input.value = '';
             return;
         }
 
         if (!file.type || file.type.indexOf('image/') !== 0) {
-            if (window.showToast) window.showToast('Solo se permiten imágenes', 'error');
+            pubToastSeguro('Solo se permiten imágenes', 'error');
             input.value = '';
             return;
         }
     } else {
         if (file.size > 100 * 1024 * 1024) {
-            if (window.showToast) window.showToast('Video mayor a 100 MB', 'error');
+            pubToastSeguro('Video mayor a 100 MB', 'error');
             input.value = '';
             return;
         }
 
         if (!file.type || file.type.indexOf('video/') !== 0) {
-            if (window.showToast) window.showToast('Solo se permiten videos', 'error');
+            pubToastSeguro('Solo se permiten videos', 'error');
             input.value = '';
             return;
         }
@@ -576,22 +737,24 @@ function quitarArchivoPerfil(tipo) {
 // ================================================================
 
 async function publicarDesdePerfil() {
+    // Candado global: evita dobles envíos concurrentes.
+    if (pubPublicandoEnCurso) return;
+
     var btn = document.getElementById('btnPublicarPerfil');
     var input = document.getElementById('inputNuevaPublicacion');
 
     var contenido = input ? input.value.trim() : '';
 
     if (!contenido && !archivosSeleccionados.imagen && !archivosSeleccionados.video) {
-        if (window.showToast) {
-            window.showToast('Escribe algo o sube una foto/video', 'warning');
-        }
-
+        pubToastSeguro('Escribe algo o sube una foto/video', 'warning');
         return;
     }
 
-    var textoOriginalBtn = btn ? btn.innerHTML : 'Publicar';
-
     if (btn && btn.disabled) return;
+
+    pubPublicandoEnCurso = true;
+
+    var textoOriginalBtn = btn ? btn.innerHTML : 'Publicar';
 
     if (btn) {
         btn.disabled = true;
@@ -610,10 +773,7 @@ async function publicarDesdePerfil() {
         var session = sessionResult.data ? sessionResult.data.session : null;
 
         if (!session) {
-            if (window.showToast) {
-                window.showToast('Inicia sesión para publicar', 'error');
-            }
-
+            pubToastSeguro('Inicia sesión para publicar', 'error');
             return;
         }
 
@@ -658,9 +818,7 @@ async function publicarDesdePerfil() {
 
         if (insertResult.error) throw insertResult.error;
 
-        if (window.showToast) {
-            window.showToast('Publicación creada', 'success');
-        }
+        pubToastSeguro('Publicación creada', 'success');
 
         if (input) input.value = '';
 
@@ -681,15 +839,15 @@ async function publicarDesdePerfil() {
         await cargarMisPublicaciones(true);
 
     } catch (error) {
-        if (window.showToast) {
-            window.showToast(
-                esErrorModeracionPerfil(error)
-                    ? 'Contenido no permitido'
-                    : (error.message || 'No se pudo crear la publicación'),
-                'error'
-            );
-        }
+        pubToastSeguro(
+            esErrorModeracionPerfil(error)
+                ? 'Contenido no permitido'
+                : (error.message || 'No se pudo crear la publicación'),
+            'error'
+        );
     } finally {
+        pubPublicandoEnCurso = false;
+
         if (btn) {
             btn.disabled = false;
             btn.innerHTML = textoOriginalBtn;
@@ -709,7 +867,10 @@ if (typeof IntersectionObserver !== 'undefined') {
         entries.forEach(function (entry) {
             var video = entry.target;
 
-            if (!video || !video.isConnected) return;
+            if (!video || !video.isConnected) {
+                if (video) pubLimpiarVideoActivo(video);
+                return;
+            }
 
             if (pubVisorEstaAbierto()) return;
 
@@ -718,11 +879,7 @@ if (typeof IntersectionObserver !== 'undefined') {
             if (pubEsVideoFlotante(video)) return;
 
             if (entry.isIntersecting && entry.intersectionRatio >= 0.5) {
-                var autoPlayPref = 'true';
-
-                try {
-                    autoPlayPref = localStorage.getItem('contenido_auto_reproducir');
-                } catch (e) {}
+                var autoPlayPref = pubPrefAutoReproducir();
 
                 if (autoPlayPref !== 'false') {
                     video.muted = true;
@@ -733,7 +890,9 @@ if (typeof IntersectionObserver !== 'undefined') {
                 }
 
             } else if (video !== pubMotorVideo.videoActivo) {
-                video.pause();
+                try {
+                    video.pause();
+                } catch (e) {}
             }
         });
     }, {
@@ -965,11 +1124,7 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
                         mediaEl.setAttribute('playsinline', '');
 
-                        var autoplayInicial = 'true';
-
-                        try {
-                            autoplayInicial = localStorage.getItem('contenido_auto_reproducir');
-                        } catch (e) {}
+                        var autoplayInicial = pubPrefAutoReproducir();
 
                         mediaEl.muted = autoplayInicial !== 'false';
 
@@ -978,19 +1133,36 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         }
 
                         mediaEl.addEventListener('play', function () {
-                            if (pubMotorVideo.videoActivo && pubMotorVideo.videoActivo !== mediaEl) {
-                                var anterior = pubMotorVideo.videoActivo;
+                            pubPausarOtrosVideos(mediaEl);
 
-                                if (
-                                    anterior.isConnected &&
-                                    !pubEsVideoDelVisor(anterior) &&
-                                    !pubEsVideoFlotante(anterior)
-                                ) {
-                                    anterior.pause();
-                                }
+                            // No tomamos control si el video está en
+                            // el visor global o en PiP.
+                            if (pubEsVideoDelVisor(mediaEl) || pubEsVideoFlotante(mediaEl)) {
+                                return;
                             }
 
                             pubMotorVideo.videoActivo = mediaEl;
+                        });
+
+                        mediaEl.addEventListener('pause', function () {
+                            // Si es una pausa voluntaria (no PiP ni visor),
+                            // liberamos el slot para permitir que otro
+                            // video del feed tome el control.
+                            if (!pubEsVideoFlotante(mediaEl)) {
+                                pubLimpiarVideoActivo(mediaEl);
+                            }
+                        });
+
+                        mediaEl.addEventListener('ended', function () {
+                            pubLimpiarVideoActivo(mediaEl);
+                        });
+
+                        mediaEl.addEventListener('emptied', function () {
+                            pubLimpiarVideoActivo(mediaEl);
+                        });
+
+                        mediaEl.addEventListener('abort', function () {
+                            pubLimpiarVideoActivo(mediaEl);
                         });
 
                         mediaEl.addEventListener('click', function (e) {
@@ -1144,9 +1316,7 @@ async function reaccionarPublicacionPerfil(postId, emoji) {
     try {
         await window.ReaccionesGlobal.alternar(client, postId, emoji, uid);
     } catch (e) {
-        if (window.showToast) {
-            window.showToast('No se pudo guardar tu reacción', 'error');
-        }
+        pubToastSeguro('No se pudo guardar tu reacción', 'error');
     }
 }
 
@@ -1315,9 +1485,7 @@ async function enviarComentarioPerfil(publicacionId) {
         await cargarComentariosPerfil(publicacionId);
 
     } catch (error) {
-        if (window.showToast) {
-            window.showToast('Error al enviar comentario', 'error');
-        }
+        pubToastSeguro('Error al enviar comentario', 'error');
     } finally {
         delete pubComentariosEnProceso[publicacionId];
     }
@@ -1345,9 +1513,7 @@ async function eliminarComentarioPerfil(comentarioId, publicacionId) {
         await cargarComentariosPerfil(publicacionId);
 
     } catch (e) {
-        if (window.showToast) {
-            window.showToast('Error al eliminar comentario', 'error');
-        }
+        pubToastSeguro('Error al eliminar comentario', 'error');
     }
 }
 
@@ -1423,11 +1589,17 @@ async function eliminarMiPublicacion(publicacionId, event) {
         await cargarMisPublicaciones(true);
 
     } catch (error) {
-        if (window.showToast) {
-            window.showToast('Error al eliminar publicación', 'error');
-        }
+        pubToastSeguro('Error al eliminar publicación', 'error');
     }
 }
+
+// ================================================================
+// LIMPIEZA AL DESCARGAR / CERRAR PÁGINA
+// ================================================================
+
+window.addEventListener('pagehide', function () {
+    pubMotorVideo.videoActivo = null;
+});
 
 // ================================================================
 // EXPORTAR FUNCIONES GLOBALES
@@ -1449,5 +1621,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v15.2
+// FIN · PERFIL PUBLICACIONES v15.3
 // ================================================================
