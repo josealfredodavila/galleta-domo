@@ -1,5 +1,5 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · AUDIO Y AUTOPLAY (v2)
+// CSARIEL'S · VIDEOS · AUDIO Y AUTOPLAY (v2.1)
 // ================================================================
 // Sonido y reproducción del carrusel.
 // - Detecta el primer gesto del usuario (los navegadores bloquean
@@ -10,6 +10,16 @@
 // - Carga el video siguiente para que el cambio sea inmediato.
 // Expuesto en window.VideosApp.audio y window.activarAudioGlobal.
 // Requiere: config, utils.
+//
+// Cambios v2.1:
+//  - onGesto: al primer gesto, si hay S.cardActiva conectada y la
+//    página es visible, se intenta desmutear y reproducir su <video>
+//    (aunque estuviera silenciado o pausado por bloqueo previo).
+//  - Sincronía de estado: si audioDesbloqueadoEnSesion() es true,
+//    se alinea S.audioGlobalActivado y no se muestra el botón.
+//  - Reproducción y precarga más limpias: se valida v.isConnected
+//    antes de pausar/precargar, y las lecturas/escrituras de
+//    localStorage/sessionStorage quedan protegidas con try/catch.
 // ================================================================
 
 (function () {
@@ -98,7 +108,13 @@
         v.volume = 1;
         v.removeAttribute('muted');
 
-        var promesa = v.play();
+        var promesa;
+        try {
+            promesa = v.play();
+        } catch (err) {
+            mostrarBotonAudioGlobal();
+            return;
+        }
         if (promesa && typeof promesa.then === 'function') {
             promesa.catch(function (err) {
                 // Si aún falla, mostrar botón para reintentar.
@@ -116,6 +132,7 @@
     function pausarOtrosVideos(videoQueSuena) {
         document.querySelectorAll('.video-card video').forEach(function (v) {
             if (v === videoQueSuena) return;
+            if (v.isConnected === false) return;
             if (!v.paused) {
                 try { v.pause(); } catch (_) {}
             }
@@ -156,6 +173,7 @@
         var sig = document.querySelector('.video-card[data-indice="' + (S.indiceActivo + 1) + '"]');
         if (!sig) return;
         var v = sig.querySelector('video');
+        if (!videoValido(v)) return;
         asegurarSrc(v);
     }
 
@@ -229,10 +247,12 @@
 
     /* ---------------- Primer gesto del usuario ---------------- */
 
-    /* Primer gesto del usuario: habilita el audio y oculta el botón.
-       Idempotente y detecta el desbloqueo desde la sesión. */
+    /* Primer gesto del usuario: habilita el audio, oculta el botón y,
+       si hay una card activa conectada y visible, intenta desmutear y
+       reproducir su <video> (por si quedó silenciado/pausado antes). */
     (function detectarPrimerGesto() {
-        // Si ya se desbloqueó antes en esta sesión, marcar y salir.
+        // Sincronía de estado: si ya se desbloqueó en esta sesión,
+        // alinear S.audioGlobalActivado y evitar que el botón aparezca.
         if (audioDesbloqueadoEnSesion()) {
             S.audioGlobalActivado = true;
             ocultarBotonAudioGlobal();
@@ -245,12 +265,53 @@
         function onGesto() {
             if (disparado) return;
             disparado = true;
+
             marcarAudioDesbloqueado();
             ocultarBotonAudioGlobal();
 
             eventos.forEach(function (ev) {
                 document.removeEventListener(ev, onGesto, true);
             });
+
+            // Intento de reanudar el video activo con audio tras el gesto.
+            try {
+                if (!paginaVisible()) return;
+                var card = S.cardActiva;
+                if (!card || !card.isConnected) return;
+
+                var v = card.querySelector('video');
+                if (!v || !v.isConnected) return;
+
+                // Desmutear y forzar reproducción si quedó bloqueado antes.
+                v.muted = false;
+                v.volume = 1;
+                v.removeAttribute('muted');
+
+                var necesitaPlay = v.paused || v.muted;
+                if (!necesitaPlay) {
+                    // Ya está reproduciéndose con audio; nada que hacer.
+                    return;
+                }
+
+                var p;
+                try {
+                    p = v.play();
+                } catch (err) {
+                    // Si falla, dejamos que el módulo de reproducción
+                    // muestre el botón en un segundo paso si aplica.
+                    mostrarBotonAudioGlobal();
+                    return;
+                }
+                if (p && typeof p.then === 'function') {
+                    p.catch(function (err) {
+                        if (err && err.name === 'NotAllowedError') {
+                            mostrarBotonAudioGlobal();
+                        }
+                    });
+                }
+            } catch (e) {
+                // Silencioso: el gesto de audio ya quedó registrado.
+            }
         }
 
         eventos.forEach(function (ev) {
@@ -266,6 +327,7 @@
         var v = e.target;
         if (!v || v.tagName !== 'VIDEO') return;
         if (!v.closest || !v.closest('.video-card')) return;
+        if (v.isConnected === false) return;
         pausarOtrosVideos(v);
     }, true);
 
