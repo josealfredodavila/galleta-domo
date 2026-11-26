@@ -171,6 +171,18 @@
         <div class="hoja-lista" id="menuLista"></div>
     </div>
 
+    <!-- REACCIONES: resumen transparente (se abre al tocar el número de reacciones) -->
+    <div class="hoja" id="hojaReacciones" role="dialog" aria-modal="true" aria-label="Reacciones">
+        <div class="hoja-tirador"></div>
+        <div class="hoja-cab">
+            <span class="hoja-titulo">Reacciones</span>
+            <button type="button" class="hoja-cerrar" data-cerrar="hojaReacciones" aria-label="Cerrar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="rx-cuerpo" id="reaccionesCuerpo"></div>
+    </div>
+
     <!-- MAPA -->
     <div class="hoja" id="hojaMapa" role="dialog" aria-modal="true" aria-label="Mapa de ubicación">
         <div class="hoja-tirador"></div>
