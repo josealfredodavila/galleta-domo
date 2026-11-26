@@ -1,28 +1,18 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · PUBLICAR · ENTRADA v5.2 ULTRA PRO
+   CSARIEL'S · VIDEOS · PUBLICAR · ENTRADA v5.3
    ================================================================
-   ORQUESTADOR OPTIMIZADO · CARGA INTELIGENTE · ALTO RENDIMIENTO
+   ORQUESTADOR · CARGA INTELIGENTE · ALTO RENDIMIENTO
 
-   OPTIMIZACIONES:
    - Carga secuencial controlada de módulos dependientes.
    - Evita descargas duplicadas de scripts.
    - Caché de promesas de carga para evitar inicializaciones repetidas.
    - Gestión de errores individuales sin detener todo el sistema.
    - Inicialización segura y protegida contra duplicados.
-   - Preparación anticipada del compositor.
    - Delegación dinámica de funciones sin referencias obsoletas.
-   - Estado de publicación protegido ante módulos incompletos.
-   - Configuración pública compatible con módulos existentes.
-   - Menos operaciones innecesarias en el DOM.
-   - Estilos de respaldo optimizados.
+   - Puente global window.subirVideo para el formulario de videos.html
+     (v5.3): busca la función en los módulos que la expongan y avisa
+     con un error claro si ninguno la tiene.
    - Diagnóstico de carga y tiempos de inicialización.
-   - Compatible con arquitectura modular existente.
-
-   IMPORTANTE:
-   Este archivo coordina el módulo de publicación.
-   La velocidad real de descarga y reproducción de videos
-   depende también de videos.html, el reproductor, la CDN,
-   los formatos multimedia y los módulos del feed.
 
    NO modifica tablas, RPC, Supabase, rutas ni almacenamiento.
    NO reconstruye los módulos existentes.
@@ -39,7 +29,7 @@
 
     window.__csarielsVideosPublicarLoaded = true;
 
-    var VERSION = '5.2.0';
+    var VERSION = '5.3.0';
     var BASE = '/features/videos/js/publicar/';
 
     var inicio = Date.now();
@@ -887,6 +877,47 @@
         /* Arranque manual compatible */
 
         inicializar: iniciar
+    };
+
+    /* ============================================================
+       15b. PUENTE GLOBAL PARA EL FORMULARIO (v5.3)
+       videos.html llama a window.subirVideo() al enviar el formulario.
+       Se busca la función en los módulos que la expongan.
+       Si ninguno la tiene, se lanza un error claro que el formulario
+       muestra en pantalla.
+       ============================================================ */
+
+    function resolverSubirVideo() {
+        var N = ns();
+
+        if (!N) return null;
+
+        var candidatos = [N.preview, N.ui, N.subida, N.borradores];
+
+        for (var i = 0; i < candidatos.length; i++) {
+            var m = candidatos[i];
+
+            if (m && typeof m.subirVideo === 'function') {
+                return m.subirVideo.bind(m);
+            }
+        }
+
+        return null;
+    }
+
+    window.subirVideo = function () {
+        var fn = resolverSubirVideo();
+
+        if (!fn) {
+            var msg = 'Los módulos de publicación no exponen subirVideo ' +
+                '(revisa publicar-preview.js y publicar-ui.js).';
+
+            console.error('[VideosPublicar] ' + msg);
+
+            throw new Error(msg);
+        }
+
+        return fn.apply(null, arguments);
     };
 
     /* ============================================================
