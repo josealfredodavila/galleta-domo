@@ -1,12 +1,16 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.3
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.4
    Visor de pantalla completa compartido para fotos y videos.
 
-   Cambios v1.3:
-   - Soporte de notificación «¿Te interesa?» / «Rechazar para ver más»
-     con callbacks opcionales onInteres / onRechazo (no invasiva).
-   - Nuevas opciones autoReproducir, ahorradorDatos, videosAltaCalidad.
-   - Respeta contratos y API pública existentes; sin dependencias nuevas.
+   Cambios v1.4:
+   - Scrub con el dedo en carrusel vertical: arrastre horizontal
+     sobre un video activo adelanta/atrasa currentTime de forma fluida
+     (proporcional al ancho del escenario) sin disparar play/pausa al
+     soltar ni romper el snap vertical.
+   - Swipe horizontal limpio cuando NO es carrusel: izquierda/derecha
+     cambia de elemento con fluidez; swipe-down sigue cerrando.
+   - Notificación «¿Te interesa?» permanece 9 s (o hasta responder/
+     cerrar) y no se auto-oculta al instante.
 
    API pública:
      VisorMediaGlobal.abrir, cerrar, estaAbierto, contieneVideo, version.
@@ -14,12 +18,13 @@
 (function () {
     'use strict';
 
-    var VERSION = '1.3';
+    var VERSION = '1.4';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
     var CSS_PATH = '/features/shared/css/visor-media-global.css';
     var VELOCIDADES = [1, 1.25, 1.5, 2];
+    var NOTIF_MS = 9000;
 
     var MOTIVOS = [
         'Problema que involucra a un menor de 18 años',
@@ -83,7 +88,12 @@
         notifTimer: null,
         notifDescartados: new Set(),
         onInteres: null,
-        onRechazo: null
+        onRechazo: null,
+        // scrub horizontal (carrusel)
+        scrubActivo: false,
+        scrubBaseTime: 0,
+        scrubUltimoDx: 0,
+        scrubSuprimirClick: false
     };
 
     /* ================= UTILIDADES ================= */
@@ -258,7 +268,10 @@
         var escenario = ref('escenario');
 
         escenario.addEventListener('click', function () {
-            if (st.movido) return;
+            if (st.movido || st.scrubSuprimirClick) {
+                st.scrubSuprimirClick = false;
+                return;
+            }
             if (videoActual()) togglePlay();
             else programarOcultado();
         });
@@ -268,12 +281,46 @@
             st.inicioX = e.touches[0].clientX;
             st.inicioY = e.touches[0].clientY;
             st.movido = false;
+            st.scrubUltimoDx = 0;
+            st.scrubActivo = false;
+
+            // Si es carrusel con video activo, preparamos scrub sin iniciarlo aún
+            if (st.carrusel) {
+                var v = videoActual();
+                if (v && isFinite(v.duration) && v.duration > 0) {
+                    st.scrubBaseTime = v.currentTime || 0;
+                } else {
+                    st.scrubBaseTime = 0;
+                }
+            }
         }, { passive: true });
 
         escenario.addEventListener('touchmove', function (e) {
             if (!e.touches || !e.touches.length) return;
-            if (Math.abs(e.touches[0].clientX - st.inicioX) > 10 || Math.abs(e.touches[0].clientY - st.inicioY) > 10) {
-                st.movido = true;
+
+            var t = e.touches[0];
+            var dx = t.clientX - st.inicioX;
+            var dy = t.clientY - st.inicioY;
+
+            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) st.movido = true;
+
+            // Scrub horizontal en carrusel con video activo
+            if (st.carrusel && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy)) {
+                var v = videoActual();
+                if (v && isFinite(v.duration) && v.duration > 0) {
+                    st.scrubActivo = true;
+
+                    // Ancho del escenario para escalar el desplazamiento a la duración
+                    var ancho = escenario.clientWidth || window.innerWidth || 1;
+                    var delta = (dx / ancho) * v.duration;
+                    var nuevo = st.scrubBaseTime + delta;
+                    if (nuevo < 0) nuevo = 0;
+                    if (nuevo > v.duration) nuevo = v.duration;
+
+                    try { v.currentTime = nuevo; } catch (err) { /* ignorar */ }
+                    st.scrubUltimoDx = dx;
+                    actualizarTiempo();
+                }
             }
         }, { passive: true });
 
@@ -283,10 +330,25 @@
             var dx = e.changedTouches[0].clientX - st.inicioX;
             var dy = e.changedTouches[0].clientY - st.inicioY;
 
+            var hizoScrub = st.scrubActivo;
+            st.scrubActivo = false;
+
+            if (hizoScrub) {
+                // Evita que el click siguiente pause/reproduzca
+                st.scrubSuprimirClick = true;
+                setTimeout(function () { st.scrubSuprimirClick = false; }, 350);
+                programarOcultado();
+                return;
+            }
+
             if (!st.carrusel) {
+                // Swipe-down cierra; swipe horizontal (limpio) navega
                 if (dy > 120 && Math.abs(dy) > Math.abs(dx)) { cerrar(); return; }
-                if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) { navegar(dx < 0 ? 1 : -1); }
+                if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) {
+                    navegar(dx < 0 ? 1 : -1);
+                }
             } else {
+                // En carrusel: swipe-down largo cierra. Scroll vertical lo maneja el snap.
                 if (dy > 140 && Math.abs(dy) > Math.abs(dx)) { cerrar(); }
             }
         }, { passive: true });
@@ -485,9 +547,9 @@
 
         n.hidden = false;
 
-        // Se auto-oculta a los 6s si no se interactúa
+        // Permanece 9 s o hasta que el usuario responda / cierre
         clearTimeout(st.notifTimer);
-        st.notifTimer = setTimeout(function () { n.hidden = true; }, 6000);
+        st.notifTimer = setTimeout(function () { n.hidden = true; }, NOTIF_MS);
     }
 
     /* ================= DATOS DE AUTOR / TEXTO (estilo X) ================= */
@@ -700,11 +762,14 @@
                 v.play().then(function () {
                     try { v.playbackRate = VELOCIDADES[st.velIdx]; } catch (e) {}
                     estadoVideo();
+                    mostrarNotifSiAplica();
                 }).catch(function () {
                     estadoVideo();
+                    mostrarNotifSiAplica();
                 });
             } else {
                 estadoVideo();
+                mostrarNotifSiAplica();
             }
         } else {
             controles.hidden = true;
@@ -1048,6 +1113,8 @@
         st.velIdx = 0;
         st.hojaHistory = false;
         st.ignorarPopstate = false;
+        st.scrubActivo = false;
+        st.scrubSuprimirClick = false;
         ref('vel').textContent = '1x';
 
         st.onInteres = typeof opts.onInteres === 'function' ? opts.onInteres : null;
@@ -1088,6 +1155,8 @@
             st.observer = null;
         }
         st.videosMap = [];
+        st.scrubActivo = false;
+        st.scrubSuprimirClick = false;
 
         ocultarHoja(true);
         ocultarNotif();
