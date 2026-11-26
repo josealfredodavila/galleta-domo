@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · PUBLICAR · ENTRADA v5.3
+   CSARIEL'S · VIDEOS · PUBLICAR · ENTRADA v5.4
    ================================================================
    ORQUESTADOR · CARGA INTELIGENTE · ALTO RENDIMIENTO
 
@@ -9,10 +9,12 @@
    - Gestión de errores individuales sin detener todo el sistema.
    - Inicialización segura y protegida contra duplicados.
    - Delegación dinámica de funciones sin referencias obsoletas.
-   - Puente global window.subirVideo para el formulario de videos.html
-     (v5.3): busca la función en los módulos que la expongan y avisa
-     con un error claro si ninguno la tiene.
    - Diagnóstico de carga y tiempos de inicialización.
+
+   v5.4: el puente window.subirVideo ya NO sobrescribe la función real
+   de videos-cola.js. Antes la v5.3 la reemplazaba por un puente que
+   no tenía subirVideo, y el botón Publicar lanzaba error.
+   El puente solo se define si no existe ninguna función previa.
 
    NO modifica tablas, RPC, Supabase, rutas ni almacenamiento.
    NO reconstruye los módulos existentes.
@@ -29,7 +31,7 @@
 
     window.__csarielsVideosPublicarLoaded = true;
 
-    var VERSION = '5.3.0';
+    var VERSION = '5.4.0';
     var BASE = '/features/videos/js/publicar/';
 
     var inicio = Date.now();
@@ -632,8 +634,6 @@
         window.VideosPublicar._seed =
             N.DATA || null;
 
-        /* Estilos */
-
         paso(
             'estilos del feed',
             function () {
@@ -652,8 +652,6 @@
             }
         );
 
-        /* Header */
-
         paso(
             'botones del header',
             function () {
@@ -670,16 +668,12 @@
             }
         );
 
-        /* Hojas */
-
         paso(
             'hojas',
             function () {
                 N.sheets.inicializar();
             }
         );
-
-        /* Preview */
 
         paso(
             'vista previa',
@@ -688,16 +682,12 @@
             }
         );
 
-        /* Borradores */
-
         paso(
             'borradores',
             function () {
                 N.borradores.inicializar();
             }
         );
-
-        /* Marca de agua */
 
         paso(
             'marca del feed',
@@ -707,8 +697,6 @@
                 }
             }
         );
-
-        /* Restauración local */
 
         paso(
             'restauración de borradores',
@@ -768,27 +756,17 @@
 
         version: VERSION,
 
-        /* Sonidos */
-
         abrirModalSonidos:
             delegar('sheets', 'abrirModalSonidos'),
-
-        /* Ubicación */
 
         abrirModalUbicacion:
             delegar('sheets', 'abrirModalUbicacion'),
 
-        /* Borradores */
-
         abrirModalBorradores:
             delegar('sheets', 'abrirModalBorradores'),
 
-        /* Sheets */
-
         cerrarTodosLosSheets:
             delegar('sheets', 'cerrarTodosLosSheets'),
-
-        /* Vista previa */
 
         abrirPreview:
             delegar('preview', 'abrirPreview'),
@@ -808,12 +786,8 @@
         refrescarFeedAutomatico:
             delegar('preview', 'refrescarFeedAutomatico'),
 
-        /* Subida */
-
         subirMultimedia:
             delegar('subida', 'subirMultimedia'),
-
-        /* Borradores */
 
         guardarBorrador:
             delegar('borradores', 'guardarBorrador'),
@@ -827,15 +801,11 @@
         mostrarAvisoCuota:
             delegar('borradores', 'mostrarAvisoCuota'),
 
-        /* UI */
-
         csToast:
             delegar('ui', 'csToast'),
 
         csConfirm:
             delegar('ui', 'csConfirm'),
-
-        /* Configuración */
 
         getConfig: getConfig,
 
@@ -855,8 +825,6 @@
 
         getState: getState,
 
-        /* Diagnóstico */
-
         getDiagnostics: function () {
             return {
                 version: VERSION,
@@ -868,70 +836,47 @@
             };
         },
 
-        /* Referencias compatibles */
-
         Z: null,
 
         _seed: null,
-
-        /* Arranque manual compatible */
 
         inicializar: iniciar
     };
 
     /* ============================================================
-       15b. PUENTE GLOBAL PARA EL FORMULARIO (v5.3)
-       videos.html llama a window.subirVideo() al enviar el formulario.
-       Se busca la función en los módulos que la expongan.
-       Si ninguno la tiene, se lanza un error claro que el formulario
-       muestra en pantalla.
+       16. PUENTE window.subirVideo (solo si no existe)
+       videos-cola.js define la función real de subida. Este puente
+       NUNCA la sobrescribe: solo se define si todavía no existe, y
+       en ese caso avisa con un error claro en lugar de fallar en
+       silencio.
        ============================================================ */
 
-    function resolverSubirVideo() {
-        var N = ns();
+    function puenteSubirVideo() {
+        if (typeof window.subirVideo === 'function') return;
 
-        if (!N) return null;
-
-        var candidatos = [N.preview, N.ui, N.subida, N.borradores];
-
-        for (var i = 0; i < candidatos.length; i++) {
-            var m = candidatos[i];
-
-            if (m && typeof m.subirVideo === 'function') {
-                return m.subirVideo.bind(m);
-            }
-        }
-
-        return null;
-    }
-
-    window.subirVideo = function () {
-        var fn = resolverSubirVideo();
-
-        if (!fn) {
-            var msg = 'Los módulos de publicación no exponen subirVideo ' +
-                '(revisa publicar-preview.js y publicar-ui.js).';
+        window.subirVideo = function () {
+            var msg = 'La función de subida no está cargada (revisa videos-cola.js).';
 
             console.error('[VideosPublicar] ' + msg);
 
-            throw new Error(msg);
-        }
+            if (typeof window.csToast === 'function') {
+                window.csToast(msg, 'error');
+            }
 
-        return fn.apply(null, arguments);
-    };
+            throw new Error(msg);
+        };
+    }
 
     /* ============================================================
-       16. PREPARACIÓN INMEDIATA DEL COMPOSITOR
+       17. ARRANQUE
        ============================================================ */
+
+    paso('puente subirVideo', puenteSubirVideo);
 
     paso(
         'estilos iniciales',
         inyectarEstilosRespaldo
     );
-
-    /* ============================================================
-       17. ARRANQUE AUTOMÁTICO
-       ============================================================ */
 
     iniciar().catch(function (e) {
         console.error(
