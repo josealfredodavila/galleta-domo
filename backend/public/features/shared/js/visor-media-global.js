@@ -1,15 +1,23 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.0
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.1
    Visor de pantalla completa compartido para fotos y videos.
    - Muestra la foto o el video COMPLETO (sin recortar por defecto).
-   - Deslizar a izquierda/derecha para cambiar; hacia abajo para cerrar.
-   - Controles de video: reproducir/pausar, progreso, velocidad, PiP, ajustar.
-   - Hoja de acciones: guardar, ocultar, reportar y eliminar (si es tuya).
+   - Carrusel vertical fluido (scroll-snap) cuando hay múltiples videos
+     o cuando se pasa carruselVertical: true. Reproducción exclusiva del
+     video visible + precarga del siguiente.
+   - Datos del autor y texto estilo X opcionales por item.
+   - Controles transparentes, velocidades [1, 1.25, 1.5, 2] sin pausar.
+   - Manejo seguro del botón atrás (history.pushState / popstate).
 
    Uso:
      VisorMediaGlobal.abrir({
-         items: [{ url, tipo: 'imagen' | 'video', permiteDescarga, postId, esDueno }],
+         items: [{
+             url, tipo: 'imagen' | 'video',
+             permiteDescarga, postId, esDueno,
+             autorNombre, autorHandle, autorAvatar, texto
+         }],
          indice: 0,
+         carruselVertical: true, // opcional
          onEliminar: function (item) {},
          onOcultar: function (item) {}
      });
@@ -19,12 +27,12 @@
 (function () {
     'use strict';
 
-    var VERSION = '1.0';
+    var VERSION = '1.1';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
     var CSS_PATH = '/features/shared/css/visor-media-global.css';
-    var VELOCIDADES = [1, 1.5, 2];
+    var VELOCIDADES = [1, 1.25, 1.5, 2];
 
     var MOTIVOS = [
         'Problema que involucra a un menor de 18 años',
@@ -45,6 +53,7 @@
         cerrar: SVG('<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>'),
         menu: SVG('<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>'),
         play: '<svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>',
+        pausa: '<svg viewBox="0 0 24 24" fill="currentColor" width="36" height="36" aria-hidden="true"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
         velocidad: SVG('<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>'),
         pip: SVG('<rect x="3" y="4" width="18" height="16" rx="2"/><rect x="11" y="11" width="8" height="6" rx="1"/>'),
         expandir: SVG('<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>'),
@@ -67,7 +76,15 @@
         arrastrando: false,
         inicioX: 0,
         inicioY: 0,
-        movido: false
+        movido: false,
+        carrusel: false,
+        // history
+        historyDepth: 0,
+        popstateHandler: null,
+        hojaHistory: false,
+        // observers
+        observer: null,
+        videosMap: [] // [{ wrap, video }]
     };
 
     /* ================= UTILIDADES ================= */
@@ -111,12 +128,44 @@
     }
 
     function videoActual() {
-        return st.root ? st.root.querySelector('[data-ref="escenario"] video') : null;
+        if (!st.root) return null;
+        if (st.carrusel && st.videosMap[st.indice]) return st.videosMap[st.indice].video;
+        return st.root.querySelector('[data-ref="escenario"] video');
     }
 
     async function uidActual(cliente) {
         var s = await cliente.auth.getSession();
         return s.data && s.data.session ? s.data.session.user.id : null;
+    }
+
+    /* ================= HISTORY (botón atrás) ================= */
+
+    function pushHistorySeguro() {
+        try {
+            history.pushState({ vmg: true, depth: st.historyDepth + 1 }, '');
+            st.historyDepth++;
+        } catch (e) { /* ignorar */ }
+    }
+
+    function instalarPopstate() {
+        if (st.popstateHandler) return;
+        st.popstateHandler = function () {
+            // Si hay hoja abierta, cerrarla primero
+            if (st.root && !ref('hoja').hidden) {
+                ocultarHoja(true);
+                return;
+            }
+            if (st.abierto) {
+                cerrar(true);
+            }
+        };
+        window.addEventListener('popstate', st.popstateHandler);
+    }
+
+    function desinstalarPopstate() {
+        if (!st.popstateHandler) return;
+        window.removeEventListener('popstate', st.popstateHandler);
+        st.popstateHandler = null;
     }
 
     /* ================= CONSTRUCCIÓN ================= */
@@ -200,8 +249,14 @@
             var dx = e.changedTouches[0].clientX - st.inicioX;
             var dy = e.changedTouches[0].clientY - st.inicioY;
 
-            if (dy > 120 && Math.abs(dy) > Math.abs(dx)) { cerrar(); return; }
-            if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) { navegar(dx < 0 ? 1 : -1); }
+            // En modo carrusel vertical, el scroll nativo se maneja por snap;
+            // solo cerramos si es un swipe-down largo fuera del carril vertical de snap.
+            if (!st.carrusel) {
+                if (dy > 120 && Math.abs(dy) > Math.abs(dx)) { cerrar(); return; }
+                if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) { navegar(dx < 0 ? 1 : -1); }
+            } else {
+                if (dy > 140 && Math.abs(dy) > Math.abs(dx)) { cerrar(); }
+            }
         }, { passive: true });
 
         var barra = ref('barra');
@@ -229,11 +284,15 @@
             if (!st.abierto) return;
 
             if (e.key === 'Escape') {
-                if (!ref('hoja').hidden) ocultarHoja();
+                if (!ref('hoja').hidden) ocultarHoja(true);
                 else cerrar();
-            } else if (e.key === 'ArrowRight') {
+            } else if (e.key === 'ArrowRight' && !st.carrusel) {
                 navegar(1);
-            } else if (e.key === 'ArrowLeft') {
+            } else if (e.key === 'ArrowLeft' && !st.carrusel) {
+                navegar(-1);
+            } else if (e.key === 'ArrowDown' && st.carrusel) {
+                navegar(1);
+            } else if (e.key === 'ArrowUp' && st.carrusel) {
                 navegar(-1);
             } else if (e.key === ' ' && videoActual()) {
                 e.preventDefault();
@@ -270,8 +329,12 @@
     }
 
     function pausar() {
-        var v = videoActual();
-        if (v) { try { v.pause(); } catch (e) {} }
+        if (st.carrusel) {
+            st.videosMap.forEach(function (x) { try { x.video.pause(); } catch (e) {} });
+        } else {
+            var v = videoActual();
+            if (v) { try { v.pause(); } catch (e) {} }
+        }
     }
 
     function actualizarTiempo() {
@@ -297,7 +360,14 @@
         }
 
         controles.hidden = false;
-        centro.hidden = !v.paused;
+        // El botón central SOLO se muestra cuando el video está pausado
+        if (v.paused) {
+            centro.hidden = false;
+            centro.innerHTML = ICONO.play;
+            centro.setAttribute('aria-label', 'Reproducir');
+        } else {
+            centro.hidden = true;
+        }
         actualizarTiempo();
         programarOcultado();
     }
@@ -316,6 +386,14 @@
 
     function aplicarFit() {
         if (!st.root) return;
+        var cont = st.carrusel ? st.videosMap : null;
+        if (cont) {
+            cont.forEach(function (x) {
+                x.video.style.objectFit = st.fit;
+                x.video.style.objectPosition = 'center';
+            });
+            return;
+        }
         var e = ref('escenario').querySelector('video, img');
         if (!e) return;
         e.style.objectFit = st.fit;
@@ -324,9 +402,14 @@
 
     function velocidad() {
         st.velIdx = (st.velIdx + 1) % VELOCIDADES.length;
+        var val = VELOCIDADES[st.velIdx];
         var v = videoActual();
-        if (v) v.playbackRate = VELOCIDADES[st.velIdx];
-        ref('vel').textContent = VELOCIDADES[st.velIdx] + 'x';
+        if (v) {
+            try { v.playbackRate = val; } catch (e) {}
+        }
+        ref('vel').textContent = val + 'x';
+        // No pausamos; solo se reanuda programación de ocultado
+        programarOcultado();
     }
 
     function pip() {
@@ -346,12 +429,255 @@
         }
     }
 
+    /* ================= DATOS DE AUTOR / TEXTO (estilo X) ================= */
+
+    function construirInfoAutor(item) {
+        var nombre = item.autorNombre ? escapeHtml(item.autorNombre) : '';
+        var handleRaw = item.autorHandle ? String(item.autorHandle) : '';
+        var handle = handleRaw ? escapeHtml(handleRaw.charAt(0) === '@' ? handleRaw : '@' + handleRaw) : '';
+        var avatar = safeHttps(item.autorAvatar);
+        var texto = item.texto ? escapeHtml(item.texto) : '';
+
+        if (!nombre && !handle && !avatar && !texto) return null;
+
+        var wrap = document.createElement('div');
+        wrap.className = 'vmg-info-autor';
+
+        if (avatar || nombre || handle) {
+            var fila = document.createElement('div');
+            fila.className = 'vmg-info-fila';
+
+            if (avatar) {
+                var img = document.createElement('img');
+                img.className = 'vmg-info-avatar';
+                img.src = avatar;
+                img.alt = '';
+                img.draggable = false;
+                img.addEventListener('error', function () { img.style.display = 'none'; });
+                fila.appendChild(img);
+            }
+
+            var meta = document.createElement('div');
+            meta.className = 'vmg-info-meta';
+
+            if (nombre) {
+                var n = document.createElement('span');
+                n.className = 'vmg-info-nombre';
+                n.textContent = nombre;
+                meta.appendChild(n);
+            }
+            if (handle) {
+                var h = document.createElement('span');
+                h.className = 'vmg-info-handle';
+                h.textContent = handle;
+                meta.appendChild(h);
+            }
+
+            fila.appendChild(meta);
+            wrap.appendChild(fila);
+        }
+
+        if (texto) {
+            var p = document.createElement('p');
+            p.className = 'vmg-info-texto';
+            p.textContent = texto;
+            wrap.appendChild(p);
+        }
+
+        return wrap;
+    }
+
     /* ================= MOSTRAR Y NAVEGAR ================= */
+
+    function crearVideo(item) {
+        var url = safeHttps(item.url);
+        if (!url) return null;
+        var v = document.createElement('video');
+        v.src = url;
+        v.preload = 'metadata';
+        v.playsInline = true;
+        v.setAttribute('playsinline', '');
+        v.setAttribute('webkit-playsinline', '');
+        v.dataset.vmgSrc = url;
+        if (item.permiteDescarga === false) v.setAttribute('controlsList', 'nodownload');
+
+        v.addEventListener('loadedmetadata', function () {
+            if (videoActual() === v) actualizarTiempo();
+        });
+        v.addEventListener('timeupdate', function () {
+            if (videoActual() === v) actualizarTiempo();
+        });
+        v.addEventListener('play', function () {
+            if (videoActual() === v) estadoVideo();
+        });
+        v.addEventListener('pause', function () {
+            if (videoActual() === v) estadoVideo();
+        });
+        v.addEventListener('ended', function () {
+            if (videoActual() === v) estadoVideo();
+        });
+        v.addEventListener('error', function () {
+            if (videoActual() === v) toast('No se pudo cargar este video.', 'error');
+        });
+
+        return v;
+    }
+
+    function crearItemCarrusel(item, idx) {
+        var slide = document.createElement('div');
+        slide.className = 'vmg-slide';
+        slide.dataset.index = String(idx);
+
+        var url = safeHttps(item.url);
+        if (!url) {
+            slide.innerHTML = '<div class="vmg-slide-error">No se pudo cargar</div>';
+            return { slide: slide, video: null };
+        }
+
+        var v = null;
+        if (item.tipo === 'video') {
+            v = crearVideo(item);
+            if (v) slide.appendChild(v);
+        } else {
+            var img = document.createElement('img');
+            img.src = url;
+            img.alt = '';
+            img.draggable = false;
+            slide.appendChild(img);
+        }
+
+        var info = construirInfoAutor(item);
+        if (info) slide.appendChild(info);
+
+        return { slide: slide, video: v };
+    }
+
+    function prepararCarrusel() {
+        var esc = ref('escenario');
+        esc.innerHTML = '';
+        esc.classList.add('vmg-escenario--carrusel');
+
+        st.videosMap = [];
+
+        st.items.forEach(function (item, idx) {
+            var c = crearItemCarrusel(item, idx);
+            esc.appendChild(c.slide);
+            st.videosMap.push({ slide: c.slide, video: c.video });
+        });
+
+        // Scroll snap nativo
+        var slides = esc.querySelectorAll('.vmg-slide');
+        slides.forEach(function (s, i) {
+            s.style.scrollSnapAlign = 'start';
+            s.dataset.index = String(i);
+        });
+
+        // Observador: el slide "activo" es el que más se ve
+        if (st.observer) st.observer.disconnect();
+        st.observer = new IntersectionObserver(function (entries) {
+            var best = null;
+            entries.forEach(function (en) {
+                if (en.isIntersecting && (!best || en.intersectionRatio > best.intersectionRatio)) best = en;
+            });
+            if (best && best.intersectionRatio > 0.6) {
+                var idx = parseInt(best.target.dataset.index, 10);
+                if (!isNaN(idx) && idx !== st.indice) {
+                    st.indice = idx;
+                    activarVideoVisible();
+                    actualizarContador();
+                }
+            }
+        }, { root: esc, threshold: [0, 0.25, 0.5, 0.6, 0.75, 1] });
+
+        slides.forEach(function (s) { st.observer.observe(s); });
+
+        // Ir al índice inicial
+        requestAnimationFrame(function () {
+            var target = slides[st.indice];
+            if (target) {
+                esc.scrollTop = target.offsetTop;
+            }
+            activarVideoVisible();
+        });
+    }
+
+    function actualizarContador() {
+        ref('contador').textContent = st.items.length > 1 ? (st.indice + 1) + ' / ' + st.items.length : '';
+    }
+
+    function activarVideoVisible() {
+        var centro = ref('centro');
+        var controles = ref('controles');
+        var idx = st.indice;
+
+        st.videosMap.forEach(function (x, i) {
+            if (!x.video) return;
+            // Pausar los no visibles
+            if (i !== idx) {
+                try { x.video.pause(); } catch (e) {}
+            }
+            // Precargar el siguiente (i === idx + 1): preload auto
+            // Mantener ligeros los lejanos: preload none y limpiar src si muy lejos
+            if (i === idx + 1) {
+                x.video.preload = 'auto';
+                if (!x.video.src && x.video.dataset.vmgSrc) {
+                    x.video.src = x.video.dataset.vmgSrc;
+                }
+            } else if (Math.abs(i - idx) > 2) {
+                x.video.preload = 'none';
+            } else if (i !== idx) {
+                x.video.preload = 'metadata';
+            }
+        });
+
+        var actual = st.videosMap[idx];
+        var v = actual && actual.video;
+
+        if (v) {
+            controles.hidden = false;
+            // Reproducir el visible
+            v.play().then(function () {
+                estadoVideo();
+            }).catch(function () {
+                estadoVideo();
+            });
+        } else {
+            controles.hidden = true;
+            centro.hidden = true;
+            // Reaplicar fit a imágenes
+            if (actual) {
+                var im = actual.slide.querySelector('img');
+                if (im) {
+                    im.style.objectFit = st.fit;
+                    im.style.objectPosition = 'center';
+                }
+            }
+            programarOcultado();
+        }
+    }
 
     function mostrarItem() {
         var item = st.items[st.indice];
-        var url = item ? safeHttps(item.url) : null;
+        if (!item) return;
 
+        var debeCarrusel = st.opts.carruselVertical === true || contarVideos() > 1;
+        st.carrusel = debeCarrusel;
+
+        if (st.carrusel) {
+            mostrarCarrusel(item);
+        } else {
+            mostrarSimple(item);
+        }
+    }
+
+    function contarVideos() {
+        var n = 0;
+        st.items.forEach(function (i) { if (i.tipo === 'video') n++; });
+        return n;
+    }
+
+    function mostrarSimple(item) {
+        var url = safeHttps(item.url);
         if (!url) {
             toast('No se pudo abrir este archivo.', 'error');
             return;
@@ -360,32 +686,26 @@
         pausar();
 
         var esc = ref('escenario');
+        esc.classList.remove('vmg-escenario--carrusel');
         esc.innerHTML = '';
+        esc.style.overflow = '';
+
+        if (st.observer) {
+            st.observer.disconnect();
+            st.observer = null;
+        }
+        st.videosMap = [];
 
         st.velIdx = 0;
         ref('vel').textContent = '1x';
-        ref('contador').textContent = st.items.length > 1 ? (st.indice + 1) + ' / ' + st.items.length : '';
+        actualizarContador();
 
-        ocultarHoja();
+        ocultarHoja(true);
 
         if (item.tipo === 'video') {
-            var v = document.createElement('video');
-            v.src = url;
+            var v = crearVideo(item);
+            if (!v) return;
             v.preload = 'auto';
-            v.playsInline = true;
-            v.setAttribute('playsinline', '');
-            v.setAttribute('webkit-playsinline', '');
-            if (item.permiteDescarga === false) v.setAttribute('controlsList', 'nodownload');
-
-            v.addEventListener('loadedmetadata', actualizarTiempo);
-            v.addEventListener('timeupdate', actualizarTiempo);
-            v.addEventListener('play', estadoVideo);
-            v.addEventListener('pause', estadoVideo);
-            v.addEventListener('ended', estadoVideo);
-            v.addEventListener('error', function () {
-                toast('No se pudo cargar este video.', 'error');
-            });
-
             esc.appendChild(v);
             aplicarFit();
             v.play().then(estadoVideo).catch(estadoVideo);
@@ -396,15 +716,38 @@
             img.draggable = false;
 
             esc.appendChild(img);
+
+            var info = construirInfoAutor(item);
+            if (info) esc.appendChild(info);
+
             aplicarFit();
             estadoVideo();
         }
     }
 
+    function mostrarCarrusel(item) {
+        st.velIdx = 0;
+        ref('vel').textContent = '1x';
+        ocultarHoja(true);
+        prepararCarrusel();
+        actualizarContador();
+    }
+
     function navegar(dir) {
-        var nuevo = st.indice + dir;
-        if (nuevo < 0 || nuevo >= st.items.length) return;
-        st.indice = nuevo;
+        if (st.carrusel) {
+            var esc = ref('escenario');
+            var slides = esc.querySelectorAll('.vmg-slide');
+            var nuevo = st.indice + dir;
+            if (nuevo < 0 || nuevo >= slides.length) return;
+            var target = slides[nuevo];
+            if (target) {
+                esc.scrollTo({ top: target.offsetTop, behavior: 'smooth' });
+            }
+            return;
+        }
+        var n = st.indice + dir;
+        if (n < 0 || n >= st.items.length) return;
+        st.indice = n;
         mostrarItem();
     }
 
@@ -445,13 +788,28 @@
         hoja.innerHTML = html;
         hoja.hidden = false;
         ref('fondo').hidden = false;
+
+        // Push history al abrir la hoja
+        if (!st.hojaHistory) {
+            pushHistorySeguro();
+            st.hojaHistory = true;
+        }
     }
 
-    function ocultarHoja() {
+    function ocultarHoja(desdePop) {
         if (!st.root) return;
+        var estabaAbierta = !ref('hoja').hidden;
         ref('hoja').hidden = true;
         ref('hoja').innerHTML = '';
         ref('fondo').hidden = true;
+
+        if (estabaAbierta && st.hojaHistory && !desdePop) {
+            st.hojaHistory = false;
+            // Consumimos el estado empujado
+            try { history.back(); } catch (e) { /* ignorar */ }
+            return;
+        }
+        st.hojaHistory = false;
     }
 
     function accion(nombre, btn) {
@@ -600,14 +958,22 @@
         st.indice = Math.min(Math.max(0, parseInt(opts.indice, 10) || 0), st.items.length - 1);
         st.fit = 'contain';
         st.abierto = true;
+        st.velIdx = 0;
+        st.hojaHistory = false;
+        ref('vel').textContent = '1x';
 
         st.root.hidden = false;
+        st.root.classList.remove('vmg-oculto');
         document.body.style.overflow = 'hidden';
+
+        // History para el visor
+        instalarPopstate();
+        pushHistorySeguro();
 
         mostrarItem();
     }
 
-    function cerrar() {
+    function cerrar(desdePop) {
         if (!st.root || !st.abierto) return;
 
         pausar();
@@ -617,16 +983,39 @@
         }
 
         clearTimeout(st.timerOcultar);
-        ref('escenario').innerHTML = '';
-        ocultarHoja();
+        var esc = ref('escenario');
+        esc.innerHTML = '';
+        esc.classList.remove('vmg-escenario--carrusel');
+        esc.style.overflow = '';
+
+        if (st.observer) {
+            st.observer.disconnect();
+            st.observer = null;
+        }
+        st.videosMap = [];
+
+        ocultarHoja(true);
 
         st.root.hidden = true;
         st.root.classList.remove('vmg-oculto');
 
         st.abierto = false;
         st.items = [];
+        st.carrusel = false;
 
         document.body.style.overflow = '';
+
+        // Consumir el estado empujado si no venimos de popstate
+        if (!desdePop && st.historyDepth > 0) {
+            st.historyDepth--;
+            try { history.back(); } catch (e) { /* ignorar */ }
+        } else if (desdePop) {
+            st.historyDepth = Math.max(0, st.historyDepth - 1);
+        }
+
+        if (st.historyDepth === 0) {
+            desinstalarPopstate();
+        }
     }
 
     /* ================= API PÚBLICA ================= */
