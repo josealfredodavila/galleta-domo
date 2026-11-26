@@ -1,15 +1,18 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · NAVEGACIÓN DEL CARRUSEL (v1)
+// CSARIEL'S · VIDEOS · NAVEGACIÓN DEL CARRUSEL (v2)
 // ================================================================
 // Navegación y eventos del feed y de la cabecera.
-// - Observa qué tarjeta está visible y la activa (≥ 60 % visible).
-// - Reproduce la tarjeta activa, cuenta la vista y precarga la siguiente.
+// - Observa qué tarjeta está visible y la activa (≥ 60 % visible),
+//   eligiendo candidata con mayor visibilidad / más cercana al centro.
+// - Reproducción exclusiva: nunca dos videos a la vez.
+// - Ventana cercana: solo activo ± vecinos cargados en memoria.
+// - Cuenta la vista y precarga la siguiente.
 // - Avanza o retrocede entre videos (irAVideo).
-// - Enruta los toques del feed: reacciones, comentarios, mapa, menú,
-//   reproducir/pausar y mostrar controles.
+// - Enruta los toques del feed respetando controles y barra de tiempo.
 // - Conecta la cabecera: buscar, pestañas, publicar, grabar y perfil.
+// - Coordina pausa con cámara y visibilidad sin tocar pausa manual.
 // - Abre el video del enlace ?v=id cuando el feed ya cargó.
-// Expuesto en window.VideosApp.navegacion.
+// Expuesto en window.VideosApp.navegacion y window.togglePlayCard.
 // Requiere: config, utils, feed, audio, controles, hojas.
 // ================================================================
 
@@ -29,6 +32,22 @@
 
     var UMBRAL_ACTIVA = 0.6;
     var RETARDO_BUSQUEDA_MS = 160;
+    // Ventana de memoria: activo ± VENTANA_VECINOS.
+    var VENTANA_VECINOS = 1;
+
+    // Control de generación de activación: una carga vieja no debe activar
+    // una tarjeta que ya no corresponde.
+    var generacionActivacion = 0;
+    // Solicitud rAF para el cálculo de "mejor tarjeta" del observer.
+    var rafPendiente = null;
+    // Últimas entradas vistas por el observer (para elegir la mejor).
+    var entradasActuales = new Map();
+    // Estado: ¿cámara abierta ahora?
+    var camaraAbierta = false;
+    // Estado: ¿pausamos por cámara/visibilidad? (distinto de pausa manual)
+    var pausadoPorEntorno = false;
+    // ¿La vista está oculta?
+    var vistaOculta = false;
 
     /* ----------------------------------------------------------------
        Vistas
@@ -51,20 +70,36 @@
        Observador del carrusel
        ---------------------------------------------------------------- */
 
-    /* Observa cada tarjeta. Al estar ≥ 60 % visible, la activa; si sale, pausa. */
+    /* Observa cada tarjeta. Al estar ≥ 60 % visible, la activa; si sale, pausa.
+       Optimizado con rAF + generación para no activar tarjetas obsoletas. */
     function observarCarrusel() {
         var contenedor = document.getElementById('videosContainer');
         if (!contenedor || !('IntersectionObserver' in window)) return;
 
+        // Evitar observadores duplicados.
+        if (S.observerCarrusel) {
+            S.observerCarrusel.disconnect();
+            S.observerCarrusel = null;
+        }
+        entradasActuales.clear();
+
         S.observerCarrusel = new IntersectionObserver(function (entradas) {
+            // Actualizar snapshot de visibilidad por tarjeta.
             entradas.forEach(function (entrada) {
-                var card = entrada.target;
-                var video = card.querySelector('video');
-                if (entrada.isIntersecting && entrada.intersectionRatio >= UMBRAL_ACTIVA) {
-                    activarCard(card);
-                } else if (video && !video.paused) {
+                entradasActuales.set(entrada.target, entrada);
+
+                // Si salió de vista y estaba reproduciendo, pausar.
+                var video = entrada.target.querySelector('video');
+                if (!entrada.isIntersecting && video && !video.paused) {
                     video.pause();
                 }
+            });
+
+            // Evaluar cuál es la mejor tarjeta con rAF (una sola pasada por frame).
+            if (rafPendiente) return;
+            rafPendiente = requestAnimationFrame(function () {
+                rafPendiente = null;
+                evaluarMejorTarjeta();
             });
         }, { root: contenedor, threshold: [0, UMBRAL_ACTIVA, 0.9] });
 
@@ -73,9 +108,48 @@
         });
     }
 
-    /* Hace activa una tarjeta: indicador, precarga, reproducción y vista. */
+    /* Elige la tarjeta candidata: mayor visibilidad, empate → más cercana al centro. */
+    function evaluarMejorTarjeta() {
+        var contenedor = document.getElementById('videosContainer');
+        if (!contenedor) return;
+        var centro = contenedor.scrollLeft + contenedor.clientWidth / 2;
+
+        var mejor = null;
+        var mejorRatio = 0;
+        var mejorDist = Infinity;
+
+        entradasActuales.forEach(function (entrada) {
+            if (!entrada.isIntersecting) return;
+            if (entrada.intersectionRatio < UMBRAL_ACTIVA) return;
+            var card = entrada.target;
+            var idx = Number(card.dataset.indice) || 0;
+            var cardCentro = idx * contenedor.clientWidth + contenedor.clientWidth / 2;
+            var dist = Math.abs(cardCentro - centro);
+
+            if (entrada.intersectionRatio > mejorRatio + 0.001 ||
+                (Math.abs(entrada.intersectionRatio - mejorRatio) <= 0.001 && dist < mejorDist)) {
+                mejor = card;
+                mejorRatio = entrada.intersectionRatio;
+                mejorDist = dist;
+            }
+        });
+
+        if (mejor && mejor !== S.cardActiva) {
+            activarCard(mejor);
+        }
+    }
+
+    /* Hace activa una tarjeta: indicador, precarga, reproducción y vista.
+       Protegido con generación para no activar tarjetas obsoletas. */
     function activarCard(card) {
-        if (card === S.cardActiva) return;
+        if (!card) return;
+        if (card === S.cardActiva) {
+            // Aun así, revalidar reproducción exclusiva y ventana.
+            aplicarVentanaDeMemoria(card);
+            return;
+        }
+
+        var gen = ++generacionActivacion;
 
         S.cardActiva = card;
         S.indiceActivo = Number(card.dataset.indice) || 0;
@@ -86,15 +160,76 @@
         VA.audio.asegurarSrc(video);
         VA.audio.precargarSiguiente();
 
-        if (VA.audio.autoplayActivo()) {
+        // Reproducción exclusiva: pausar TODOS los demás videos del carrusel.
+        pausarTodosMenos(video);
+
+        // Gestión de memoria: solo cargar activo ± vecinos.
+        aplicarVentanaDeMemoria(card);
+
+        // Comprobar generación: si mientras tanto llegó otra activación, abortar.
+        if (gen !== generacionActivacion) return;
+
+        if (VA.audio.autoplayActivo() && !pausadoPorEntorno && !vistaOculta && !camaraAbierta) {
             VA.audio.reproducirVideoConSonido(video);
             incrementarVista(card.dataset.videoId);
         } else {
-            VA.audio.pausarOtrosVideos(null);
             card.classList.remove('playing');
         }
 
         VA.controles.mostrarControles(card);
+    }
+
+    /* Pausa todos los <video> del carrusel excepto el indicado. */
+    function pausarTodosMenos(videoActivo) {
+        var contenedor = document.getElementById('videosContainer');
+        if (!contenedor) return;
+        contenedor.querySelectorAll('.video-card video').forEach(function (v) {
+            if (v === videoActivo) return;
+            if (!v.paused) {
+                try { v.pause(); } catch (_) {}
+            }
+            var card = v.closest('.video-card');
+            if (card) card.classList.remove('playing');
+        });
+    }
+
+    /* Mantiene cargados solo activo ± VENTANA_VECINOS. El resto se descarga
+       (removeAttribute('src') + load()) conservando data-src y poster. */
+    function aplicarVentanaDeMemoria(cardActiva) {
+        var contenedor = document.getElementById('videosContainer');
+        if (!contenedor) return;
+        var cards = Array.prototype.slice.call(contenedor.querySelectorAll('.video-card'));
+        var idxActivo = cards.indexOf(cardActiva);
+        if (idxActivo < 0) return;
+
+        var min = idxActivo - VENTANA_VECINOS;
+        var max = idxActivo + VENTANA_VECINOS;
+
+        cards.forEach(function (card, i) {
+            var video = card.querySelector('video');
+            if (!video) return;
+            var dataSrc = video.getAttribute('data-src');
+            var dentro = i >= min && i <= max;
+
+            if (dentro) {
+                // Restaurar src si se había liberado.
+                if (!video.getAttribute('src') && dataSrc) {
+                    video.setAttribute('src', dataSrc);
+                    // Sin load() explícito para no forzar descarga de vecinos
+                    // que no se van a reproducir; el navegador lo hace al necesitarlo.
+                }
+            } else {
+                // Liberar memoria: pausar y quitar src conservando data-src y poster.
+                if (!video.paused) {
+                    try { video.pause(); } catch (_) {}
+                }
+                if (video.getAttribute('src')) {
+                    video.removeAttribute('src');
+                    try { video.load(); } catch (_) {}
+                }
+                card.classList.remove('playing');
+            }
+        });
     }
 
     /* Desplaza el carrusel al video con ese índice. */
@@ -113,10 +248,19 @@
         if (!video) return;
 
         if (video.paused) {
+            // Reproducción exclusiva.
+            pausarTodosMenos(video);
+            VA.audio.asegurarSrc(video);
             VA.audio.reproducirVideoConSonido(video);
             incrementarVista(card.dataset.videoId);
+            // Un play manual invalida pausa por entorno.
+            pausadoPorEntorno = false;
+            if (VA.feed && VA.feed.marcarPausaManual) VA.feed.marcarPausaManual();
         } else {
             video.pause();
+            // Un pause manual invalida pausa por entorno.
+            pausadoPorEntorno = false;
+            if (VA.feed && VA.feed.marcarPausaManual) VA.feed.marcarPausaManual();
         }
     }
 
@@ -132,8 +276,114 @@
     }
 
     /* ----------------------------------------------------------------
+       Coordinación con cámara y visibilidad
+       ---------------------------------------------------------------- */
+
+    /* Pausa por entorno (cámara/visibilidad): solo si estaba reproduciendo
+       y no hay pausa manual del usuario. */
+    function pausarPorEntorno() {
+        var card = S.cardActiva;
+        if (!card) return;
+        var video = card.querySelector('video');
+        if (!video) return;
+        if (!video.paused && !video.ended) {
+            pausadoPorEntorno = true;
+            try { video.pause(); } catch (_) {}
+            // Sincronizar con VA.feed para que también marque pausadoPorCamara.
+            if (VA.feed && VA.feed.pausarPorCamara) VA.feed.pausarPorCamara();
+        }
+    }
+
+    /* Reanuda por entorno: solo si `pausadoPorEntorno` está activo, no hay
+       cámara abierta, la vista está visible y VA.audio permite autoplay. */
+    function reanudarPorEntorno() {
+        if (!pausadoPorEntorno) return;
+        if (camaraAbierta) return;
+        if (vistaOculta) return;
+        var card = S.cardActiva;
+        if (!card) { pausadoPorEntorno = false; return; }
+        var video = card.querySelector('video');
+        if (!video) { pausadoPorEntorno = false; return; }
+        if (video.paused && VA.audio.autoplayActivo()) {
+            VA.audio.asegurarSrc(video);
+            VA.audio.reproducirVideoConSonido(video);
+        }
+        pausadoPorEntorno = false;
+        if (VA.feed && VA.feed.reanudarPorCamara) VA.feed.reanudarPorCamara();
+    }
+
+    /* Marca eventos relacionados con cámara. */
+    function marcarCamaraAbierta() {
+        camaraAbierta = true;
+        pausarPorEntorno();
+    }
+
+    function marcarCamaraCerrada() {
+        camaraAbierta = false;
+        reanudarPorEntorno();
+    }
+
+    /* Listeners globales (idempotentes). */
+    var entornoEnganchado = false;
+    function engancharEntorno() {
+        if (entornoEnganchado) return;
+        entornoEnganchado = true;
+
+        document.addEventListener('visibilitychange', function () {
+            vistaOculta = !!document.hidden;
+            if (vistaOculta) pausarPorEntorno();
+            else reanudarPorEntorno();
+        });
+
+        window.addEventListener('pagehide', function () {
+            vistaOculta = true;
+            pausarPorEntorno();
+        });
+
+        window.addEventListener('pageshow', function () {
+            vistaOculta = false;
+            reanudarPorEntorno();
+        });
+
+        // Eventos personalizados que el módulo de cámara/grabación puede emitir.
+        window.addEventListener('cs:camara-abrir', marcarCamaraAbierta);
+        window.addEventListener('cs:camara-cerrar', marcarCamaraCerrada);
+        window.addEventListener('cs:grabacion-iniciar', marcarCamaraAbierta);
+        window.addEventListener('cs:grabacion-detener', marcarCamaraCerrada);
+    }
+
+    /* ----------------------------------------------------------------
        Eventos del feed (delegados en el contenedor)
        ---------------------------------------------------------------- */
+
+    /* Devuelve true si el target está dentro de una zona interactiva que
+       NO debe disparar togglePlayCard. */
+    function esZonaInteractiva(target) {
+        if (!target || !target.closest) return false;
+        var selectores = [
+            '.barra-inferior',
+            '.barra-prog',
+            '.tiempo-actual',
+            '.tiempo-total',
+            '.reac-btn',
+            '.reac-op',
+            '.reac-barra',
+            '.com-btn',
+            '.btn-abrir-mapa',
+            '[data-accion]',
+            'a',
+            'button',
+            'input',
+            'textarea',
+            'select',
+            'form',
+            'label'
+        ];
+        for (var i = 0; i < selectores.length; i++) {
+            if (target.closest(selectores[i])) return true;
+        }
+        return false;
+    }
 
     function engancharFeed() {
         var contenedor = document.getElementById('videosContainer');
@@ -189,6 +439,9 @@
                 }
                 return;
             }
+
+            // Excluir barra de tiempo y otras zonas interactivas.
+            if (esZonaInteractiva(t)) return;
 
             var card = t.closest('.video-card');
             if (card) {
@@ -253,6 +506,8 @@
                 document.querySelectorAll('.vf-tab').forEach(function (t) {
                     t.classList.toggle('active', t === tab);
                 });
+                // setPestana normaliza y repinta; pausamos por seguridad.
+                pausarTodosMenos(null);
                 VA.feed.setPestana(tab.dataset.tab);
             });
         });
@@ -270,8 +525,15 @@
             btnCamara.dataset.navEnganchado = '1';
             btnCamara.addEventListener('click', function (e) {
                 e.preventDefault();
-                if (window.VideosCamara) window.VideosCamara.abrirCamara();
-                else U.showToast('El módulo de cámara no está disponible', 'error');
+                // Marcar cámara abierta ANTES de abrir.
+                marcarCamaraAbierta();
+                if (window.VideosCamara && typeof window.VideosCamara.abrirCamara === 'function') {
+                    window.VideosCamara.abrirCamara();
+                } else {
+                    U.showToast('El módulo de cámara no está disponible', 'error');
+                    // Revertir si no se pudo abrir.
+                    marcarCamaraCerrada();
+                }
             });
         }
 
@@ -299,6 +561,7 @@
        ---------------------------------------------------------------- */
 
     function iniciar() {
+        engancharEntorno();
         engancharFeed();
         engancharCabecera();
     }
@@ -310,11 +573,15 @@
         irAVideo: irAVideo,
         irAVideoPorId: irAVideoPorId,
         togglePlayCard: togglePlayCard,
-        incrementarVista: incrementarVista
+        incrementarVista: incrementarVista,
+        // Auxiliares de entorno expuestos (útiles para otros módulos).
+        pausarPorEntorno: pausarPorEntorno,
+        reanudarPorEntorno: reanudarPorEntorno
     };
 
     /* Contrato global: lo usa el HTML en el toque del video. */
     window.togglePlayCard = function (e, videoId) {
+        if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
         var card = document.querySelector('.video-card[data-video-id="' + videoId + '"]');
         togglePlayCard(card);
     };
