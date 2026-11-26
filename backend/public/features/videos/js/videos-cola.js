@@ -1,5 +1,5 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · COLA DE SUBIDA (v1)
+// CSARIEL'S · VIDEOS · COLA DE SUBIDA (v1.1)
 // ================================================================
 // Subida de videos en segundo plano con reintentos.
 // Flujo por cada item:
@@ -13,6 +13,17 @@
 // Errores fatales (ej. cuota excedida): se descarta el item.
 // Expuesto en window.VideosApp.cola.
 // Requiere: config, utils, feed, hojas.
+//
+// Cambios v1.1:
+//  - marcarColaComoReintentable() ahora persiste en IndexedDB
+//    (colaGuardar) los ítems que estaban en espera antes de recargar
+//    memoria, así el reintento sobrevive recargas de página.
+//  - seguirJob / detenerJob más resilientes: se valida r.ok y d,
+//    se evitan intervalos duplicados o colgados, y al completarse se
+//    refresca el feed y se limpia el estado de progreso.
+//  - subirVideo() valida con seguridad los elementos del DOM del
+//    formulario y maneja leerJSONSeguro inesperado en los pasos de
+//    upload/queue sin fallos silenciosos.
 // ================================================================
 
 (function () {
@@ -30,6 +41,25 @@
     var S = VA.state;
 
     /* ----------------------------------------------------------------
+       Helpers defensivos
+       ---------------------------------------------------------------- */
+
+    /* Obtiene el valor de un input de forma segura (nunca lanza). */
+    function valorInputSeguro(id) {
+        try {
+            var el = document.getElementById(id);
+            return el && typeof el.value === 'string' ? el.value : '';
+        } catch (e) {
+            return '';
+        }
+    }
+
+    /* Devuelve un objeto JSON válido o {} si leerJSONSeguro no lo dio. */
+    function jsonSeguro(datos) {
+        return datos && typeof datos === 'object' ? datos : {};
+    }
+
+    /* ----------------------------------------------------------------
        IndexedDB: almacén de la cola
        ---------------------------------------------------------------- */
 
@@ -37,7 +67,9 @@
         return new Promise(function (resolve, reject) {
             var req = indexedDB.open(CONFIG.COLA_DB, CONFIG.COLA_VERSION);
             req.onupgradeneeded = function () {
-                req.result.createObjectStore(CONFIG.COLA_STORE, { keyPath: 'id' });
+                if (!req.result.objectStoreNames.contains(CONFIG.COLA_STORE)) {
+                    req.result.createObjectStore(CONFIG.COLA_STORE, { keyPath: 'id' });
+                }
             };
             req.onsuccess = function () { resolve(req.result); };
             req.onerror = function () { reject(req.error); };
@@ -180,8 +212,10 @@
                     body: fd
                 }, CONFIG.TIMEOUT_SUBIDA_MS);
 
-                var j = await U.leerJSONSeguro(r);
-                if (!r.ok || !j.ok) throw U.errorDeRespuesta('Subida', r, j);
+                var j = jsonSeguro(await U.leerJSONSeguro(r));
+                if (!r || !r.ok || !j.ok || !j.url) {
+                    throw U.errorDeRespuesta('Subida', r || {}, j);
+                }
 
                 it.url = j.url;
                 it.path = j.path;
@@ -241,8 +275,10 @@
                     })
                 }, CONFIG.TIMEOUT_COLA_MS);
 
-                var qj = await U.leerJSONSeguro(q);
-                if (!q.ok || !qj.success) throw U.errorDeRespuesta('Procesamiento', q, qj);
+                var qj = jsonSeguro(await U.leerJSONSeguro(q));
+                if (!q || !q.ok || !qj.success || !qj.jobId) {
+                    throw U.errorDeRespuesta('Procesamiento', q || {}, qj);
+                }
 
                 it.jobId = qj.jobId;
             }
@@ -359,8 +395,10 @@
         }
 
         var pub = (window.VideosPublicar && window.VideosPublicar.getState) ? window.VideosPublicar.getState() : {};
-        var titulo = (document.getElementById('inputTituloVideo').value || '').trim();
-        var descripcion = (document.getElementById('inputDescripcionVideo').value || '').trim();
+
+        // Lectura segura de los campos del formulario (nunca lanza).
+        var titulo = valorInputSeguro('inputTituloVideo').trim();
+        var descripcion = valorInputSeguro('inputDescripcionVideo').trim();
 
         var item = {
             id: 'v' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
@@ -407,7 +445,14 @@
 
     /* Consulta el estado del job cada pocos segundos hasta terminar. */
     function seguirJob(jobId, videoId) {
-        if (!jobId || S.jobsSeguidos[jobId]) return;
+        if (!jobId) return;
+
+        // Si ya hay un seguidor para este job, no duplicamos intervalo.
+        if (S.jobsSeguidos[jobId]) {
+            // Pero si el intervalo guardado está inválido, lo limpiamos.
+            try { clearInterval(S.jobsSeguidos[jobId]); } catch (e) {}
+            delete S.jobsSeguidos[jobId];
+        }
 
         var intentos = 0;
         var temporizador = setInterval(async function () {
@@ -424,15 +469,20 @@
                     headers: { 'Authorization': 'Bearer ' + session.access_token }
                 }, CONFIG.TIMEOUT_ESTADO_MS);
 
-                var d = await U.leerJSONSeguro(r);
-                if (!d.success) return;
+                // Validar respuesta HTTP y JSON antes de leer campos.
+                if (!r || !r.ok) return;
+
+                var d = jsonSeguro(await U.leerJSONSeguro(r));
+                if (!d || d.success !== true) return;
 
                 S.progresoJob = typeof d.progreso === 'number' ? d.progreso : null;
                 actualizarEstadoCola();
 
                 if (d.estado === 'completado') detenerJob(jobId, temporizador, true);
                 else if (d.estado === 'fallido') detenerJob(jobId, temporizador, false);
-            } catch (e) {}
+            } catch (e) {
+                // Un fallo de red puntual no debe romper el seguimiento.
+            }
         }, CONFIG.SONDEO_JOB_MS);
 
         S.jobsSeguidos[jobId] = temporizador;
@@ -441,14 +491,14 @@
 
     /* Termina el seguimiento de un job. exito: true, false o null (tiempo agotado). */
     function detenerJob(jobId, temporizador, exito) {
-        clearInterval(temporizador);
+        try { clearInterval(temporizador); } catch (e) {}
         delete S.jobsSeguidos[jobId];
         S.progresoJob = null;
         actualizarEstadoCola();
 
         if (exito === true) {
             U.showToast('Video publicado', 'success', 2500);
-            VA.feed.cargarVideos();
+            try { VA.feed.cargarVideos(); } catch (e) {}
         } else if (exito === false) {
             U.showToast('No se pudo procesar tu video', 'error', 4000);
         }
@@ -463,17 +513,49 @@
                 .select('job_id, video_id')
                 .eq('usuario_id', S.sessionUser.id)
                 .in('estado', ['pendiente', 'procesando']);
-            (r.data || []).forEach(function (j) { seguirJob(j.job_id, j.video_id); });
+            (r.data || []).forEach(function (j) {
+                // No duplicar si ya hay un seguidor activo.
+                if (j && j.job_id && !S.jobsSeguidos[j.job_id]) {
+                    seguirJob(j.job_id, j.video_id);
+                }
+            });
         } catch (e) {}
     }
 
-    /* Al volver la conexión: los items en espera vuelven a intentarse. */
-    function marcarColaComoReintentable() {
+    /* Al volver la conexión: los items en espera vuelven a intentarse.
+       Se persiste en IndexedDB para sobrevivir recargas de página. */
+    async function marcarColaComoReintentable() {
+        try {
+            await cargarColaEnMemoria();
+        } catch (e) {
+            S.colaCache = S.colaCache || [];
+        }
+
+        var cambiados = [];
         S.colaCache.forEach(function (x) {
-            x.espera = false;
-            x.intentos = 0;
-            x.siguienteIntento = 0;
+            if (!x) return;
+            if (x.espera) {
+                x.espera = false;
+                x.intentos = 0;
+                x.siguienteIntento = 0;
+                cambiados.push(x);
+            }
         });
+
+        // Persistir los cambios en IndexedDB antes de recargar memoria.
+        for (var i = 0; i < cambiados.length; i++) {
+            try {
+                await colaGuardar(cambiados[i]);
+            } catch (e) { /* seguir con los demás aunque uno falle */ }
+        }
+
+        // Recargar memoria para reflejar el estado persistido real.
+        await cargarColaEnMemoria();
+        actualizarEstadoCola();
+
+        if (S.colaCache.length > 0 && navigator.onLine !== false) {
+            procesarCola();
+        }
     }
 
     VA.cola = {
