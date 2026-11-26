@@ -1,14 +1,16 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · PUBLICAR · SUBIDA (v1.1)
+   CSARIEL'S · VIDEOS · PUBLICAR · SUBIDA (v1.2)
    ================================================================
    Sexto módulo de la división de videos-publicar.js.
-   - Valida el tipo, el tamaño y la integridad del video antes de subir.
-   - Sube el archivo a /api/media/upload con el token de sesión.
+   - Valida el tipo y el tamaño del archivo antes de subir.
+   - La comprobación de legibilidad del video ya NO bloquea la subida:
+     si el navegador no puede leer metadatos (HEVC, .mov, equipos lentos),
+     se registra en consola y el servidor (worker) decide.
+   - Deduce el tipo MIME por extensión cuando file.type viene vacío.
+   - Sube a /api/media/upload con el token de sesión y tiempo límite.
    - Si el servidor responde cuota_excedida, muestra el aviso de cuota.
    - Expone subirMultimedia, usado por el contrato global de la entrada.
    Los proveedores R2 y S3 no están habilitados (Fase 3) y devuelven error.
-   v1.1: el aviso de cuota se pide a NS.borradores (donde ahora vive),
-         con respaldo en window.VideosPublicar.
    Dependencias en tiempo de uso:
      NS.borradores → mostrarAvisoCuota
    Expuesto en NS.subida.
@@ -28,12 +30,35 @@
     var C = NS.C;
     var U = NS.u;
 
+    var TIMEOUT_LEGIBILIDAD_MS = 15000;
+    var TIMEOUT_SUBIDA_MS = 900000;
+
+    var EXT_MIME = {
+        mp4: 'video/mp4',
+        m4v: 'video/mp4',
+        webm: 'video/webm',
+        mov: 'video/quicktime'
+    };
+
+    /* ----------------------------------------------------------------
+       TIPO DEL ARCHIVO
+       ---------------------------------------------------------------- */
+
+    /* Usa file.type; si viene vacío (pasa en algunos Android), deduce por extensión. */
+    function tipoEfectivo(archivo) {
+        if (archivo.type) return archivo.type;
+        var partes = String(archivo.name || '').toLowerCase().split('.');
+        var ext = partes.length > 1 ? partes.pop() : '';
+        return EXT_MIME[ext] || '';
+    }
+
     /* ----------------------------------------------------------------
        VALIDACIÓN DEL ARCHIVO
        ---------------------------------------------------------------- */
 
-    /* Comprueba que el video se pueda abrir con un <video> antes de subirlo.
-       Si el navegador no lo lee en 2 segundos, se considera dañado. */
+    /* Intenta leer los metadatos del video en el navegador.
+       Devuelve true si se pudo leer, false si no. No bloquea la subida:
+       el servidor es quien valida el video definitivamente. */
     function validarIntegridadVideo(file) {
         return new Promise(function (resolve) {
             var url = U.crearObjectURL(file);
@@ -41,19 +66,19 @@
             v.preload = 'metadata';
             v.muted = true;
 
-            var timeout = setTimeout(function () {
+            var temporizador = setTimeout(function () {
                 U.revocarObjectURL(url);
                 resolve(false);
-            }, 2000);
+            }, TIMEOUT_LEGIBILIDAD_MS);
 
             v.onloadedmetadata = function () {
-                clearTimeout(timeout);
+                clearTimeout(temporizador);
                 U.revocarObjectURL(url);
                 resolve(true);
             };
 
             v.onerror = function () {
-                clearTimeout(timeout);
+                clearTimeout(temporizador);
                 U.revocarObjectURL(url);
                 resolve(false);
             };
@@ -62,14 +87,16 @@
         });
     }
 
-    /* Valida tipo y tamaño según el proveedor activo. Devuelve un error o null. */
+    /* Valida tipo y tamaño según el proveedor activo. Devuelve un mensaje de error o null. */
     function validarArchivo(archivo, tipo) {
         if (!archivo) return 'Archivo vacío';
 
-        if (tipo === 'video' && C.CONFIG.VIDEO_TYPES.indexOf(archivo.type) === -1) {
-            return 'Formato de video no soportado';
+        var mime = tipoEfectivo(archivo);
+
+        if (tipo === 'video' && C.CONFIG.VIDEO_TYPES.indexOf(mime) === -1) {
+            return 'Formato de video no soportado. Usa MP4, WebM o MOV.';
         }
-        if (tipo === 'imagen' && C.CONFIG.IMAGE_TYPES.indexOf(archivo.type) === -1) {
+        if (tipo === 'imagen' && C.CONFIG.IMAGE_TYPES.indexOf(mime) === -1) {
             return 'Formato de imagen no soportado';
         }
 
@@ -78,7 +105,7 @@
             : C.CONFIG.MAX_VIDEO_MB_R2;
 
         if (tipo === 'video' && archivo.size > limiteMB * 1024 * 1024) {
-            return 'Archivo supera ' + limiteMB + ' MB';
+            return 'El archivo supera ' + limiteMB + ' MB';
         }
 
         return null;
@@ -100,20 +127,35 @@
     }
 
     /* ----------------------------------------------------------------
+       MENSAJES DE ERROR DEL SERVIDOR
+       ---------------------------------------------------------------- */
+
+    function mensajeErrorServidor(status, data) {
+        if (status === 401 || status === 403) {
+            return 'Tu sesión expiró. Vuelve a iniciar sesión.';
+        }
+        if (status === 413) {
+            return 'El video es demasiado grande para el servidor.';
+        }
+        if (data && data.error) return data.error;
+        return 'No se pudo subir el archivo (error ' + status + ').';
+    }
+
+    /* ----------------------------------------------------------------
        SUBIDA A SUPABASE (proveedor activo)
        ---------------------------------------------------------------- */
 
     async function subirMultimediaSupabase(archivo, tipo) {
         var session = await U.obtenerSesion();
-        if (!session) return { ok: false, error: 'Sin sesión activa' };
-
+        if (!session || !session.access_token) {
+            return { ok: false, error: 'Tu sesión no está activa. Vuelve a iniciar sesión.' };
+        }
         var token = session.access_token;
-        if (!token) return { ok: false, error: 'Sin token de sesión' };
 
         if (tipo === 'video') {
-            var esValido = await validarIntegridadVideo(archivo);
-            if (!esValido) {
-                return { ok: false, error: 'El archivo de video está corrupto o no es válido.' };
+            var legible = await validarIntegridadVideo(archivo);
+            if (!legible) {
+                U.warn('El navegador no pudo leer metadatos del video; se envía y el servidor lo valida.');
             }
         }
 
@@ -122,26 +164,41 @@
         fd.append('destino', C.CONFIG.BUCKET);
         fd.append('tipo', tipo);
 
+        var controlador = typeof AbortController === 'function' ? new AbortController() : null;
+        var temporizador = controlador
+            ? setTimeout(function () { controlador.abort(); }, TIMEOUT_SUBIDA_MS)
+            : null;
+
         var respuesta;
+        var data = null;
+
         try {
             respuesta = await fetch('/api/media/upload', {
                 method: 'POST',
                 headers: { 'Authorization': 'Bearer ' + token },
-                body: fd
+                body: fd,
+                signal: controlador ? controlador.signal : undefined
             });
+
+            try {
+                data = await respuesta.json();
+            } catch (e) {
+                data = {};
+            }
         } catch (e) {
             U.warn('Error de red subiendo archivo:', e);
-            return { ok: false, error: 'No se pudo conectar con el servidor' };
+            var tiempoAgotado = e && e.name === 'AbortError';
+            return {
+                ok: false,
+                error: tiempoAgotado
+                    ? 'La subida tardó demasiado. Revisa tu conexión e intenta de nuevo.'
+                    : 'No se pudo conectar con el servidor'
+            };
+        } finally {
+            if (temporizador) clearTimeout(temporizador);
         }
 
-        var data = null;
-        try {
-            data = await respuesta.json();
-        } catch (e) {
-            data = {};
-        }
-
-        if (!respuesta.ok || !data.ok) {
+        if (!respuesta.ok || !data || !data.ok) {
             /* Cuota excedida: muestra el aviso y devuelve el detalle para la cola. */
             if (data && data.error === 'cuota_excedida') {
                 var cuota = {
@@ -160,8 +217,11 @@
                 };
             }
 
-            var mensaje = data && data.error ? data.error : 'No se pudo subir el archivo';
-            return { ok: false, error: mensaje, status: respuesta.status };
+            return {
+                ok: false,
+                error: mensajeErrorServidor(respuesta.status, data),
+                status: respuesta.status
+            };
         }
 
         return { ok: true, url: data.url, path: data.path, provider: 'supabase' };
@@ -205,6 +265,7 @@
         subirMultimedia: subirMultimedia,
         validarArchivo: validarArchivo,
         validarIntegridadVideo: validarIntegridadVideo,
-        mostrarAvisoCuota: mostrarAvisoCuota
+        mostrarAvisoCuota: mostrarAvisoCuota,
+        tipoEfectivo: tipoEfectivo
     };
 })();
