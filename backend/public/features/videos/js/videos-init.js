@@ -1,5 +1,5 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · ARRANQUE (v1)
+// CSARIEL'S · VIDEOS · ARRANQUE (v2)
 // ================================================================
 // Punto de entrada del módulo de videos. Se ejecuta una sola vez.
 // Orden de arranque:
@@ -66,7 +66,7 @@
     }
 
     /* ----------------------------------------------------------------
-       Botón de audio y cierre de reacciones
+       Botón de audio, cierre de reacciones y botón +
        ---------------------------------------------------------------- */
 
     function engancharBotonAudio() {
@@ -86,6 +86,22 @@
             if (!e.target.closest('.reac-barra, .reac-btn')) {
                 VA.controles.cerrarBarrasReacciones();
             }
+        });
+    }
+
+    /* Botón + (#btnAbrirPublicar): abre la hoja de publicar y pausa el video activo. */
+    function engancharBotonPublicar() {
+        var btn = document.getElementById('btnAbrirPublicar');
+        if (!btn || btn.dataset.initEnganchado === '1') return;
+        btn.dataset.initEnganchado = '1';
+        btn.addEventListener('click', function (e) {
+            e.preventDefault();
+            // Pausar el video activo si está reproduciéndose.
+            var activa = S.cardActiva && S.cardActiva.querySelector('video');
+            if (activa && !activa.paused) {
+                try { activa.pause(); } catch (_) {}
+            }
+            VA.hojas.abrirHoja('hojaPublicar');
         });
     }
 
@@ -234,6 +250,7 @@
         await paso('eventos', function () {
             engancharBotonAudio();
             engancharCierreReacciones();
+            engancharBotonPublicar();
             engancharCompositor();
             engancharCamaraGrabada();
             engancharEventosGlobales();
