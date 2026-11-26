@@ -1,12 +1,12 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · FEED (v1)
+   CSARIEL'S · VIDEOS · FEED (v2)
    ================================================================
    Carrusel de videos a pantalla completa.
    - Contenedor con desplazamiento horizontal y ajuste por tarjeta.
    - Tarjeta: miniatura, botón de reproducir, información del autor,
      chips de sonido y ubicación.
-   - Barra lateral de acciones y barra de reacciones.
-   - Barra inferior con tiempos, vistas y progreso.
+   - Barra lateral de acciones y barra de reacciones transparente.
+   - Barra inferior con tiempos, vistas y progreso (fondo transparente).
    - Indicador de puntos y estados que ocultan los controles.
    Requiere videos-base.css (variables y --vf-top).
    ================================================================ */
@@ -71,7 +71,8 @@
     display: block;
 }
 
-/* Botón de reproducir: visible solo mientras el video está en pausa. */
+/* Botón de reproducir: visible solo mientras el video está en pausa.
+   Fondo transparente con sombra mínima para legibilidad. */
 .video-card .play-btn {
     position: absolute;
     top: 50%;
@@ -80,14 +81,15 @@
     width: 64px;
     height: 64px;
     border-radius: 50%;
-    background: rgba(0, 0, 0, 0.42);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.35);
     display: flex;
     align-items: center;
     justify-content: center;
     color: #fff;
     z-index: 3;
     cursor: pointer;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.75));
 }
 .video-card .play-btn svg { width: 26px; height: 26px; }
 .video-card.playing .play-btn { display: none; }
@@ -229,18 +231,20 @@
     gap: 3px;
 }
 
+/* Botón de acción: fondo transparente, solo sombra sutil para legibilidad. */
 .acc-btn {
     width: 44px;
     height: 44px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: rgba(0, 0, 0, 0.32);
+    border: none;
+    background: transparent;
     color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     padding: 0;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.75));
     transition: transform 0.2s ease, background 0.2s ease;
 }
 .acc-btn:active { transform: scale(0.9); }
@@ -256,6 +260,7 @@
 
 /* ----------------------------------------------------------------
    5. BARRA DE REACCIONES (se despliega al tocar el botón)
+   Fondo, borde y pastilla eliminados: solo los emojis flotando.
    ---------------------------------------------------------------- */
 .reac-barra {
     position: absolute;
@@ -264,9 +269,9 @@
     display: none;
     gap: 2px;
     padding: 4px 6px;
-    background: rgba(12, 14, 18, 0.95);
-    border: 1px solid rgba(255, 255, 255, 0.10);
-    border-radius: 999px;
+    background: transparent;
+    border: none;
+    border-radius: 0;
     white-space: nowrap;
     z-index: 8;
 }
@@ -292,9 +297,14 @@
     align-items: center;
     justify-content: center;
     overflow: visible;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.75));
 }
 .reac-op:active { transform: scale(0.88); }
-.reac-op.activa { background: rgba(255, 255, 255, 0.12); }
+/* Reacción activa: sin pastilla ni fondo; la identidad la marca el emoji. */
+.reac-op.activa {
+    background: transparent;
+    border: none;
+}
 
 /* Movimiento de los emojis (duración y retardo los fija RG.aplicarMotor). */
 .reac-op,
@@ -306,8 +316,14 @@
     animation-timing-function: cubic-bezier(0.36, 0.07, 0.19, 0.97);
 }
 
+/* Sombra sutil para emojis que aparecen fuera de la barra (botón activo). */
+.reac-emoji {
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.75));
+}
+
 /* ----------------------------------------------------------------
    6. BARRA INFERIOR (tiempos, vistas y progreso)
+   Fondo transparente; solo un gradiente mínimo inferior para legibilidad.
    ---------------------------------------------------------------- */
 .video-card .barra-inferior {
     position: absolute;
@@ -316,7 +332,8 @@
     bottom: 0;
     z-index: 6;
     padding: 8px 12px 10px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.9) 0%, transparent 100%);
+    background: transparent;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9);
 }
 
 .video-card .fila-tiempo {
