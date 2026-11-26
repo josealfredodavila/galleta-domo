@@ -1,5 +1,5 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.1
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.2
    Visor de pantalla completa compartido para fotos y videos.
    - Muestra la foto o el video COMPLETO (sin recortar por defecto).
    - Carrusel vertical fluido (scroll-snap) cuando hay múltiples videos
@@ -8,6 +8,12 @@
    - Datos del autor y texto estilo X opcionales por item.
    - Controles transparentes, velocidades [1, 1.25, 1.5, 2] sin pausar.
    - Manejo seguro del botón atrás (history.pushState / popstate).
+
+   Cambios v1.2:
+   - History/popstate sincronizado: sin desfases de historyDepth al
+     cerrar (por botón o por atrás) ni cierres cruzados.
+   - Velocidad aplicada al video activo al cambiar de slide en carrusel.
+   - Texto sin doble escape en construirInfoAutor (usar textContent puro).
 
    Uso:
      VisorMediaGlobal.abrir({
@@ -27,7 +33,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '1.1';
+    var VERSION = '1.2';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
@@ -82,6 +88,8 @@
         historyDepth: 0,
         popstateHandler: null,
         hojaHistory: false,
+        // Flag para ignorar el popstate disparado por history.back() provocado por nosotros
+        ignorarPopstate: false,
         // observers
         observer: null,
         videosMap: [] // [{ wrap, video }]
@@ -147,16 +155,45 @@
         } catch (e) { /* ignorar */ }
     }
 
+    // Consume un estado que empujamos nosotros sin que el popstate dispare lógica de cierre.
+    function consumirEstadoSinPopstate() {
+        if (st.historyDepth <= 0) return;
+        st.historyDepth--;
+        st.ignorarPopstate = true;
+        try {
+            history.back();
+        } catch (e) {
+            st.ignorarPopstate = false;
+        }
+        // Red de seguridad: si el navegador no dispara popstate (raro), liberamos el flag
+        setTimeout(function () { st.ignorarPopstate = false; }, 400);
+    }
+
     function instalarPopstate() {
         if (st.popstateHandler) return;
         st.popstateHandler = function () {
-            // Si hay hoja abierta, cerrarla primero
-            if (st.root && !ref('hoja').hidden) {
-                ocultarHoja(true);
+            // Si es el back() provocado por nosotros, no hacer nada más
+            if (st.ignorarPopstate) {
+                st.ignorarPopstate = false;
                 return;
             }
+
+            // Popstate "real" del usuario: decrementar profundidad y cerrar capa correspondiente
+            st.historyDepth = Math.max(0, st.historyDepth - 1);
+
+            if (!st.root) return;
+
+            // Si hay hoja abierta, cerrarla primero (sin volver a hacer back)
+            if (!ref('hoja').hidden) {
+                st.hojaHistory = false;
+                ocultarHoja(true);
+                if (st.historyDepth === 0) desinstalarPopstate();
+                return;
+            }
+
             if (st.abierto) {
                 cerrar(true);
+                if (st.historyDepth === 0) desinstalarPopstate();
             }
         };
         window.addEventListener('popstate', st.popstateHandler);
@@ -389,8 +426,10 @@
         var cont = st.carrusel ? st.videosMap : null;
         if (cont) {
             cont.forEach(function (x) {
-                x.video.style.objectFit = st.fit;
-                x.video.style.objectPosition = 'center';
+                if (x.video) {
+                    x.video.style.objectFit = st.fit;
+                    x.video.style.objectPosition = 'center';
+                }
             });
             return;
         }
@@ -403,6 +442,7 @@
     function velocidad() {
         st.velIdx = (st.velIdx + 1) % VELOCIDADES.length;
         var val = VELOCIDADES[st.velIdx];
+        // Aplicar al video actual (y en carrusel al que esté activo)
         var v = videoActual();
         if (v) {
             try { v.playbackRate = val; } catch (e) {}
@@ -432,11 +472,12 @@
     /* ================= DATOS DE AUTOR / TEXTO (estilo X) ================= */
 
     function construirInfoAutor(item) {
-        var nombre = item.autorNombre ? escapeHtml(item.autorNombre) : '';
+        var nombre = item.autorNombre ? String(item.autorNombre) : '';
         var handleRaw = item.autorHandle ? String(item.autorHandle) : '';
-        var handle = handleRaw ? escapeHtml(handleRaw.charAt(0) === '@' ? handleRaw : '@' + handleRaw) : '';
+        var handle = handleRaw ? (handleRaw.charAt(0) === '@' ? handleRaw : '@' + handleRaw) : '';
         var avatar = safeHttps(item.autorAvatar);
-        var texto = item.texto ? escapeHtml(item.texto) : '';
+        // Texto crudo: .textContent escapa de forma segura en el DOM.
+        var texto = item.texto != null ? String(item.texto) : '';
 
         if (!nombre && !handle && !avatar && !texto) return null;
 
@@ -635,8 +676,17 @@
 
         if (v) {
             controles.hidden = false;
+
+            // Aplicar velocidad actual al video activo (algunos navegadores móviles
+            // resetean playbackRate al cambiar de video o al reproducir).
+            try {
+                v.playbackRate = VELOCIDADES[st.velIdx];
+            } catch (e) { /* ignorar */ }
+
             // Reproducir el visible
             v.play().then(function () {
+                // Reaplicar velocidad tras play (por si el navegador la reseteó)
+                try { v.playbackRate = VELOCIDADES[st.velIdx]; } catch (e) {}
                 estadoVideo();
             }).catch(function () {
                 estadoVideo();
@@ -789,7 +839,7 @@
         hoja.hidden = false;
         ref('fondo').hidden = false;
 
-        // Push history al abrir la hoja
+        // Push history al abrir la hoja (una sola vez)
         if (!st.hojaHistory) {
             pushHistorySeguro();
             st.hojaHistory = true;
@@ -803,13 +853,14 @@
         ref('hoja').innerHTML = '';
         ref('fondo').hidden = true;
 
-        if (estabaAbierta && st.hojaHistory && !desdePop) {
-            st.hojaHistory = false;
-            // Consumimos el estado empujado
-            try { history.back(); } catch (e) { /* ignorar */ }
-            return;
-        }
+        var teniaHistory = st.hojaHistory;
         st.hojaHistory = false;
+
+        if (estabaAbierta && teniaHistory && !desdePop) {
+            // Consumir el estado que empujamos al abrir la hoja, sin que el popstate
+            // dispare lógica de cierre cruzada.
+            consumirEstadoSinPopstate();
+        }
     }
 
     function accion(nombre, btn) {
@@ -960,6 +1011,7 @@
         st.abierto = true;
         st.velIdx = 0;
         st.hojaHistory = false;
+        st.ignorarPopstate = false;
         ref('vel').textContent = '1x';
 
         st.root.hidden = false;
@@ -994,6 +1046,7 @@
         }
         st.videosMap = [];
 
+        // Cerrar hoja sin disparar back (el cierre del visor ya consume lo suyo)
         ocultarHoja(true);
 
         st.root.hidden = true;
@@ -1005,15 +1058,14 @@
 
         document.body.style.overflow = '';
 
-        // Consumir el estado empujado si no venimos de popstate
-        if (!desdePop && st.historyDepth > 0) {
-            st.historyDepth--;
-            try { history.back(); } catch (e) { /* ignorar */ }
-        } else if (desdePop) {
-            st.historyDepth = Math.max(0, st.historyDepth - 1);
+        if (!desdePop) {
+            // Cierre desde UI: consumir el estado del visor sin popstate cruzado.
+            consumirEstadoSinPopstate();
         }
+        // Si viene de popstate "real", el handler ya decrementó historyDepth.
 
-        if (st.historyDepth === 0) {
+        if (st.historyDepth <= 0) {
+            st.historyDepth = 0;
             desinstalarPopstate();
         }
     }
