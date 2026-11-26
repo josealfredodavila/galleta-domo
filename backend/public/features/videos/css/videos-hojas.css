@@ -1,11 +1,11 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · HOJAS INFERIORES (v1)
+   CSARIEL'S · VIDEOS · HOJAS INFERIORES (v2)
    ================================================================
    Hojas que suben desde abajo en videos.html.
-   - Fondo oscuro y contenedor de cada hoja (.hoja).
-   - Encabezado, tirador y botón de cerrar.
-   - Lista de opciones del menú del video (.hoja-op).
-   - Comentarios: lista y campo de texto.
+   - Fondo oscuro suave y contenedor transparente de cada hoja (.hoja).
+   - Encabezado, tirador y botón de cerrar sin divisorias.
+   - Lista de opciones del menú del video (.hoja-op) sin divisorias.
+   - Comentarios: lista y campo de texto minimalista.
    - Mapa de ubicación con Leaflet (pin y popups).
    El compositor de publicar NO está aquí: vive en videos-composer-pro.css
    y videos-publicar.css. Los sheets de sonidos y ubicación de publicar
@@ -19,7 +19,7 @@
 .hoja-fondo {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.25);
     z-index: 9000;
     opacity: 0;
     visibility: hidden;
@@ -37,14 +37,15 @@
     bottom: 0;
     z-index: 9001;
     max-height: 88vh;
-    background: #0b1410;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    background: transparent;
+    border-top: none;
     border-top-left-radius: 22px;
     border-top-right-radius: 22px;
     display: flex;
     flex-direction: column;
     transform: translateY(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 .hoja.show { transform: translateY(0); }
 
@@ -70,7 +71,6 @@
     align-items: center;
     gap: 10px;
     padding: 6px 16px 12px;
-    border-bottom: 1px solid var(--linea);
     flex-shrink: 0;
 }
 
@@ -79,11 +79,13 @@
     font-weight: 700;
     color: var(--text-primary);
     flex: 1;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 
 .hoja-cont {
     font-size: 0.7rem;
     color: var(--text-muted);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 
 .hoja-cerrar {
@@ -94,7 +96,11 @@
     padding: 4px;
     display: flex;
 }
-.hoja-cerrar svg { width: 20px; height: 20px; }
+.hoja-cerrar svg {
+    width: 20px;
+    height: 20px;
+    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.85));
+}
 
 /* ----------------------------------------------------------------
    3. LISTA DE OPCIONES (menú del video)
@@ -112,17 +118,18 @@
     padding: 14px 18px;
     background: none;
     border: 0;
-    border-bottom: 1px solid var(--linea);
     color: var(--text-primary);
     font-size: 0.88rem;
     text-align: left;
     cursor: pointer;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 .hoja-op svg {
     width: 20px;
     height: 20px;
     color: var(--text-muted);
     flex-shrink: 0;
+    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.85));
 }
 .hoja-op:active { background: rgba(255, 255, 255, 0.03); }
 
@@ -153,7 +160,6 @@
     display: flex;
     gap: 10px;
     padding: 12px 0;
-    border-bottom: 1px solid var(--linea);
     position: relative;
 }
 
@@ -179,6 +185,7 @@
     font-size: 0.76rem;
     font-weight: 600;
     color: var(--text-primary);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 .comentario .nombre .handle {
     color: var(--text-muted);
@@ -193,12 +200,14 @@
     line-height: 1.45;
     margin-top: 2px;
     word-wrap: break-word;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 
 .comentario .fecha {
     font-size: 0.6rem;
     color: var(--text-muted);
     margin-top: 4px;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 
 /* Botón "Eliminar", visible para el autor del comentario y el dueño del video. */
@@ -211,6 +220,7 @@
     color: var(--text-muted);
     font-size: 0.66rem;
     cursor: pointer;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 .comentario .borrar:hover { color: var(--danger); }
 
@@ -218,7 +228,7 @@
 .hoja .sheet-input {
     flex-shrink: 0;
     padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-    border-top: 1px solid var(--linea);
+    border-top: none;
     display: flex;
     gap: 8px;
     align-items: center;
@@ -229,14 +239,19 @@
     padding: 10px 0;
     background: transparent;
     border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.35);
     color: var(--text-primary);
     font-size: 0.85rem;
     outline: none;
     font-family: inherit;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 .hoja .sheet-input input:focus {
-    border-bottom-color: rgba(255, 255, 255, 0.5);
+    border-bottom-color: rgba(255, 255, 255, 0.75);
+}
+.hoja .sheet-input input::placeholder {
+    color: rgba(255, 255, 255, 0.55);
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 
 .hoja .sheet-input button {
@@ -261,6 +276,7 @@
     font-size: 0.82rem;
     padding: 28px 20px;
     text-align: center;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 
 /* ----------------------------------------------------------------
