@@ -1,17 +1,17 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · MÓDULO PUBLICAR (v2 · limpio)
+   CSARIEL'S · VIDEOS · PUBLICAR (v3.0 · unificado)
    ================================================================
-   Estilos de los componentes que se inyectan desde videos-publicar.js:
-   - Botones del header (sonido y ubicación).
-   - Selector de archivo plano y ocultamiento del input original.
-   - Toast propio (.cs-toast) y modal de confirmación (.cs-confirm-*).
-   - Hojas inferiores de publicar: sonidos, ubicación y borradores
-     (.cs-sheet, .cs-sheet-backdrop).
-   - Vista previa del video y acciones (.cs-preview-*).
-   Quitado en esta versión (lo define videos-publicar.js en tiempo de
-   ejecución o ya vive en otros CSS): contenedor de la vista previa de
-   video, pestañas y listas de sonidos/ubicaciones, chips de tarjeta,
-   reglas del header de la versión anterior y el bloque PULL TO REFRESH.
+   Todo el CSS de la hoja de publicar en un solo archivo.
+   1. Botones del header (sonido y ubicación).
+   2. Selector de archivo plano.
+   3. Toast propio y confirmación.
+   4. Hojas inferiores de publicar (sonidos, ubicación, borradores).
+   5. Vista previa del video y acciones.
+   6. Tarjeta del compositor (#uploadSection).
+   7. Compositor interno (.pf-composer): cabecera, campos, iconos,
+      anillo del contador y botón Publicar.
+   8. Adaptación para móvil y accesibilidad.
+   Reemplaza a videos-composer-pro.css (que ya no es necesario).
    ================================================================ */
 
 /* ----------------------------------------------------------------
@@ -53,6 +53,8 @@
     background: rgba(0, 229, 255, 0.05);
     border-color: #00E5FF;
 }
+.cs-btn-header.cs-activo { background: rgba(212, 175, 55, 0.12); border-color: #D4AF37; }
+.cs-btn-ubicacion.cs-activo { background: rgba(0, 229, 255, 0.10); border-color: #00E5FF; }
 
 @media (max-width: 640px) {
     .cs-btn-header { font-size: 0.55rem; padding: 6px 10px; }
@@ -122,8 +124,7 @@ input#inputArchivoVideo[type="file"] {
 .cs-file-con-archivo .cs-file-btn-hint { color: var(--success); }
 
 /* ----------------------------------------------------------------
-   3. TOAST PROPIO DEL COMPOSITOR (.cs-toast)
-   El toast del feed (#toast) está en videos-base.css.
+   3. TOAST PROPIO DEL COMPOSITOR Y CONFIRMACIÓN
    ---------------------------------------------------------------- */
 .cs-toast {
     position: fixed;
@@ -169,9 +170,6 @@ input#inputArchivoVideo[type="file"] {
 .cs-toast-warning { border-color: var(--warning); color: var(--warning); }
 .cs-toast-error { border-color: var(--danger); color: var(--danger); }
 
-/* ----------------------------------------------------------------
-   4. MODAL DE CONFIRMACIÓN (.cs-confirm-*)
-   ---------------------------------------------------------------- */
 .cs-confirm-overlay {
     position: fixed;
     inset: 0;
@@ -259,9 +257,7 @@ input#inputArchivoVideo[type="file"] {
 }
 
 /* ----------------------------------------------------------------
-   5. HOJAS INFERIORES DE PUBLICAR (.cs-sheet)
-   Sonidos, ubicación y borradores. El contenido de cada lista
-   (pestañas, filas, estados de reproducción) lo estila videos-publicar.js.
+   4. HOJAS INFERIORES DE PUBLICAR (sonidos, ubicación, borradores)
    ---------------------------------------------------------------- */
 .cs-sheet-backdrop {
     position: fixed;
@@ -336,7 +332,6 @@ input#inputArchivoVideo[type="file"] {
 }
 .cs-sheet-close:hover { color: var(--danger); }
 
-/* Buscador de la hoja (sonidos y ubicaciones) */
 .cs-buscar-wrap {
     display: flex;
     align-items: center;
@@ -356,7 +351,6 @@ input#inputArchivoVideo[type="file"] {
     font-size: 0.85rem;
 }
 
-/* Pie de la hoja: resumen y botón de confirmar */
 .cs-sheet-footer {
     flex-shrink: 0;
     padding: 12px 16px;
@@ -381,8 +375,7 @@ input#inputArchivoVideo[type="file"] {
 .cs-btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* ----------------------------------------------------------------
-   6. VISTA PREVIA DEL VIDEO EN LA PUBLICACIÓN
-   El tamaño del video (9:16) lo fija videos-publicar.js.
+   5. VISTA PREVIA DEL VIDEO Y ACCIONES
    ---------------------------------------------------------------- */
 .cs-preview-wrap {
     display: flex;
@@ -450,9 +443,6 @@ input#inputArchivoVideo[type="file"] {
     color: var(--text-primary);
 }
 
-/* ----------------------------------------------------------------
-   7. ESTADOS VACÍOS Y LISTA DE BORRADORES
-   ---------------------------------------------------------------- */
 .cs-vacio { text-align: center; padding: 30px 20px; color: var(--text-muted); }
 .cs-vacio .cs-ico-vacio {
     display: block;
@@ -465,7 +455,369 @@ input#inputArchivoVideo[type="file"] {
 .cs-borradores-lista { display: flex; flex-direction: column; gap: 10px; }
 
 /* ----------------------------------------------------------------
-   8. ADAPTACIÓN PARA ESCRITORIO Y MÓVIL
+   6. TARJETA DEL COMPOSITOR (#uploadSection)
+   ---------------------------------------------------------------- */
+#uploadSection {
+    position: relative;
+    margin: 12px 0 20px;
+    padding: 18px 16px 16px;
+    border: 1px solid rgba(0, 229, 255, .16);
+    border-radius: 24px;
+    background:
+        radial-gradient(120% 90% at 0% 0%, rgba(0, 229, 255, .10), transparent 55%),
+        radial-gradient(120% 90% at 100% 100%, rgba(139, 92, 246, .12), transparent 55%),
+        linear-gradient(170deg, rgba(10, 18, 30, .96), rgba(4, 7, 13, .98));
+    box-shadow: 0 18px 50px rgba(0, 0, 0, .55), 0 0 40px rgba(0, 229, 255, .06);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+#uploadSection::after {
+    content: '';
+    position: absolute;
+    left: 18px; right: 18px; top: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 229, 255, .8), rgba(139, 92, 246, .8), transparent);
+    opacity: .6;
+    pointer-events: none;
+}
+
+#uploadSection .form-group { margin-bottom: 12px; }
+#uploadSection .form-group label {
+    font-size: .66rem;
+    letter-spacing: .3px;
+    color: #6f8ba0;
+    margin-bottom: 6px;
+}
+#uploadSection .form-group input,
+#uploadSection .form-group textarea {
+    background: rgba(0, 0, 0, .28);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 18px;
+    padding: 12px 14px;
+    color: #eef6ff;
+    font-size: .92rem;
+    line-height: 1.5;
+    transition: border-color .25s ease, background .25s ease, box-shadow .25s ease;
+    box-sizing: border-box;
+}
+#uploadSection .form-group input::placeholder,
+#uploadSection .form-group textarea::placeholder { color: #4f6577; }
+#uploadSection .form-group input:focus,
+#uploadSection .form-group textarea:focus {
+    outline: none;
+    background: rgba(0, 0, 0, .42);
+    border-color: rgba(0, 229, 255, .55);
+    box-shadow: 0 0 0 3px rgba(0, 229, 255, .10), 0 0 26px rgba(0, 229, 255, .14);
+}
+#uploadSection .form-group textarea { min-height: 96px; }
+
+#uploadSection .cs-file-btn-wrap {
+    margin: 10px 0;
+    width: 100%;
+    box-sizing: border-box;
+}
+#uploadSection #csFileBtnVideo {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border: 1px solid rgba(255, 255, 255, .08) !important;
+    border-radius: 18px !important;
+    background: rgba(255, 255, 255, .03) !important;
+    color: #7fdcff !important;
+    padding: 16px 14px !important;
+    transition: background .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+#uploadSection #csFileBtnVideo:hover {
+    background: rgba(0, 229, 255, .08) !important;
+    border-color: rgba(0, 229, 255, .35) !important;
+    box-shadow: 0 0 14px rgba(0, 229, 255, .18);
+}
+#uploadSection .cs-file-btn-wrap.cs-file-con-archivo #csFileBtnTxt { color: #5ef0a8 !important; }
+
+#uploadSection #progressFill {
+    background: linear-gradient(90deg, #00e5ff, #8b5cf6) !important;
+    box-shadow: 0 0 10px rgba(0, 229, 255, .5);
+}
+#uploadSection #progressText { color: #7fdcff !important; }
+
+#uploadSection .cola-estado {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin: 12px 2px 0;
+    padding: 10px 4px 2px;
+    border-top: 1px solid rgba(255, 255, 255, .08);
+    font-size: .74rem;
+    color: #8aa8b8;
+    letter-spacing: .2px;
+}
+#uploadSection .cola-estado[hidden] { display: none !important; }
+#uploadSection .cola-estado #colaTexto { color: #9fdcff; }
+#uploadSection .cola-estado #colaCancelar {
+    flex-shrink: 0;
+    background: rgba(255, 51, 102, .06);
+    border: 1px solid rgba(255, 51, 102, .4);
+    border-radius: 999px;
+    color: #ff7a9a;
+    font-family: 'Inter', sans-serif;
+    font-size: .7rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: background .18s ease, border-color .18s ease, transform .14s ease;
+}
+#uploadSection .cola-estado #colaCancelar:hover {
+    background: rgba(255, 51, 102, .14);
+    border-color: rgba(255, 51, 102, .65);
+}
+#uploadSection .cola-estado #colaCancelar:active { transform: scale(.97); }
+#uploadSection .cola-estado #colaCancelar[hidden] { display: none !important; }
+
+#uploadSection .cs-btn-ghost {
+    border: 1px solid rgba(0, 229, 255, .22);
+    background: rgba(0, 229, 255, .05);
+    color: #7fdcff;
+    border-radius: 999px;
+    font-size: .72rem;
+    font-weight: 600;
+    padding: 8px 14px;
+    transition: background .18s ease, border-color .18s ease, transform .14s ease;
+}
+#uploadSection .cs-btn-ghost:hover {
+    background: rgba(0, 229, 255, .14);
+    border-color: rgba(0, 229, 255, .55);
+}
+#uploadSection .cs-btn-ghost:active { transform: scale(.97); }
+#uploadSection .cs-btn-quitar {
+    color: #ff7a9a !important;
+    border-color: rgba(255, 51, 102, .4) !important;
+    background: rgba(255, 51, 102, .05) !important;
+}
+
+/* ----------------------------------------------------------------
+   7. COMPOSITOR INTERNO (.pf-composer)
+   ---------------------------------------------------------------- */
+.pf-composer {
+    position: relative;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    overflow: visible;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.pf-composer-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+.pf-composer-pulso {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: 0 0 8px;
+    background: #00e5ff;
+    box-shadow: 0 0 0 0 rgba(0, 229, 255, .6);
+    animation: pfPulso 2.2s ease-out infinite;
+}
+@keyframes pfPulso {
+    0%   { box-shadow: 0 0 0 0 rgba(0, 229, 255, .55); }
+    70%  { box-shadow: 0 0 0 10px rgba(0, 229, 255, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(0, 229, 255, 0); }
+}
+.pf-composer-titulo {
+    font-family: 'Orbitron', monospace;
+    font-size: .72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #bfefff;
+}
+.pf-composer-sub {
+    font-size: .66rem;
+    color: #6f8ba0;
+    margin-top: 3px;
+}
+.pf-composer .form-group-old { display: none !important; }
+
+.pf-composer textarea#inputDescripcionVideo {
+    width: 100% !important;
+    min-height: 96px;
+    resize: vertical;
+    box-sizing: border-box;
+    background: rgba(0, 0, 0, .28);
+    border: 1px solid rgba(255, 255, 255, .06);
+    border-radius: 18px;
+    padding: 14px 16px;
+    color: #eef6ff;
+    font-family: 'Inter', sans-serif;
+    font-size: .96rem;
+    line-height: 1.55;
+    outline: none;
+}
+.pf-composer textarea#inputDescripcionVideo::placeholder { color: #4f6577; }
+.pf-composer textarea#inputDescripcionVideo:focus {
+    background: rgba(0, 0, 0, .42);
+    border-color: rgba(0, 229, 255, .55);
+}
+
+.pf-composer-barra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+.pf-composer-iconos {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.pf-composer-icono {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    border-radius: 14px;
+    padding: 0 !important;
+    border: 1px solid rgba(255, 255, 255, .07);
+    background: rgba(255, 255, 255, .03);
+    color: #7fdcff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-sizing: border-box;
+}
+.pf-composer-icono svg {
+    width: 18px !important;
+    height: 18px !important;
+    min-width: 18px !important;
+    min-height: 18px !important;
+    max-width: 18px !important;
+    max-height: 18px !important;
+    fill: none !important;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    pointer-events: none;
+    display: block;
+    flex-shrink: 0;
+}
+
+.pf-composer-pie {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+.pf-composer-anillo {
+    position: relative;
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    flex: 0 0 36px;
+    overflow: hidden;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.pf-composer-anillo svg {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+    max-width: 36px !important;
+    max-height: 36px !important;
+    transform: rotate(-90deg);
+    display: block;
+    flex-shrink: 0;
+}
+.pf-composer-anillo circle {
+    fill: none !important;
+    stroke-width: 3;
+}
+.pf-composer-anillo .fondo { stroke: rgba(255, 255, 255, .08); }
+.pf-composer-anillo .progreso {
+    stroke: #00e5ff;
+    stroke-linecap: round;
+    stroke-dasharray: 94.25;
+    stroke-dashoffset: 94.25;
+    transition: stroke-dashoffset .3s ease, stroke .3s ease;
+    filter: drop-shadow(0 0 4px rgba(0, 229, 255, .6));
+}
+.pf-composer-anillo.cerca .progreso {
+    stroke: #D4AF37;
+    filter: drop-shadow(0 0 4px rgba(212, 175, 55, .6));
+}
+.pf-composer-anillo.lleno .progreso {
+    stroke: #ff3366;
+    filter: drop-shadow(0 0 4px rgba(255, 51, 102, .6));
+}
+
+.pf-composer-contador {
+    font-family: 'Orbitron', monospace;
+    font-size: .58rem;
+    color: #6f8ba0;
+    min-width: 58px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    flex-shrink: 0;
+}
+.pf-composer-contador.cerca { color: #D4AF37; }
+.pf-composer-contador.lleno { color: #ff3366; }
+
+.pf-composer #btnSubirVideo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 22px;
+    border: 0;
+    border-radius: 14px;
+    cursor: pointer;
+    background: linear-gradient(120deg, #00e5ff 0%, #3b82f6 55%, #8b5cf6 100%);
+    color: #04070d;
+    font-family: 'Orbitron', monospace;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    box-shadow: 0 8px 26px rgba(0, 229, 255, .25), inset 0 1px 0 rgba(255, 255, 255, .35);
+    transition: transform .15s ease, box-shadow .25s ease, opacity .2s ease;
+    box-sizing: border-box;
+}
+.pf-composer #btnSubirVideo svg {
+    width: 15px !important;
+    height: 15px !important;
+    min-width: 15px !important;
+    min-height: 15px !important;
+    max-width: 15px !important;
+    max-height: 15px !important;
+    fill: none !important;
+    stroke: currentColor;
+    stroke-width: 2.2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    display: block;
+    flex-shrink: 0;
+}
+.pf-composer #btnSubirVideo:hover {
+    box-shadow: 0 10px 34px rgba(0, 229, 255, .42), inset 0 1px 0 rgba(255, 255, 255, .4);
+}
+.pf-composer #btnSubirVideo:active { transform: scale(.96); }
+.pf-composer #btnSubirVideo:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+
+/* ----------------------------------------------------------------
+   8. ADAPTACIÓN PARA MÓVIL Y ACCESIBILIDAD
    ---------------------------------------------------------------- */
 @media (min-width: 640px) {
     .cs-preview-wrap { flex-direction: row; align-items: flex-start; }
@@ -477,4 +829,20 @@ input#inputArchivoVideo[type="file"] {
     .cs-sheet-header { padding: 4px 12px 10px; }
     .cs-sheet-footer { padding: 10px 12px; padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
     .cs-btn-primary { padding: 9px 16px; font-size: 0.65rem; }
+    .pf-composer-pie {
+        width: 100%;
+        margin-left: 0;
+        justify-content: space-between;
+    }
+    .pf-composer #btnSubirVideo {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .pf-composer-pulso { animation: none !important; }
+    #uploadSection .cs-btn-ghost,
+    #uploadSection .cola-estado #colaCancelar,
+    .pf-composer #btnSubirVideo { transition: none !important; }
 }
