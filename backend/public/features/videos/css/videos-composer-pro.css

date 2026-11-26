@@ -1,5 +1,5 @@
 /* ================================================================
-   VIDEOS · COMPOSER PRO (v2.1 · blindado)
+   VIDEOS · COMPOSER PRO (v2.2)
    ================================================================
    Estilos de la hoja de publicar (#uploadSection y .pf-composer).
    - Tarjeta contenedora #uploadSection.
@@ -8,6 +8,7 @@
    - Barra de cola de subida (#colaEstado / #colaCancelar).
    - Compositor interno (.pf-composer): cabecera, iconos, anillo del
      contador y botón Publicar (#btnSubirVideo).
+   v2.2: sin cambios de estilo; solo versión para verificar la carga.
    ================================================================ */
 
 /* ----------------------------------------------------------------
