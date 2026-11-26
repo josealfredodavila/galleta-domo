@@ -1,6 +1,7 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.CSS · Csariel's · v1.1
+   VISOR-MEDIA-GLOBAL.CSS · Csariel's · v1.2
    Prefijo vmg- para no chocar con ningún otro estilo.
+   Cambios v1.2: bloque .vmg-notif para «¿Te interesa?».
    ================================================================ */
 
 .vmg {
@@ -314,9 +315,87 @@
 .vmg.vmg-oculto .vmg-cabecera,
 .vmg.vmg-oculto .vmg-controles,
 .vmg.vmg-oculto .vmg-play-central,
-.vmg.vmg-oculto .vmg-info-autor {
+.vmg.vmg-oculto .vmg-info-autor,
+.vmg.vmg-oculto .vmg-notif {
     opacity: 0;
     pointer-events: none;
+}
+
+/* NOTIFICACIÓN «¿TE INTERESA?» — discreta, encima de controles */
+.vmg-notif {
+    position: absolute;
+    left: 50%;
+    bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    z-index: 6;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(10, 14, 22, 0.82);
+    color: #fff;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    max-width: min(460px, calc(100% - 32px));
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.vmg-notif[hidden] {
+    display: none !important;
+}
+
+.vmg-notif-texto {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+}
+
+.vmg-notif-acciones {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.vmg-notif-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.vmg-notif-btn:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+
+.vmg-notif-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.vmg-notif-si {
+    border-color: rgba(0, 229, 255, 0.5);
+    color: #b9f5ff;
+}
+
+.vmg-notif-si:hover {
+    background: rgba(0, 229, 255, 0.14);
+}
+
+.vmg-notif-no {
+    border-color: rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.85);
 }
 
 /* HOJA DE ACCIONES */
@@ -407,7 +486,8 @@
 @media (prefers-reduced-motion: reduce) {
     .vmg-cabecera,
     .vmg-controles,
-    .vmg-play-central {
+    .vmg-play-central,
+    .vmg-notif {
         transition: none;
     }
     .vmg-escenario--carrusel {
