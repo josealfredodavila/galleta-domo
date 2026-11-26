@@ -11,6 +11,9 @@
 // - window.t queda protegido para que idiomas.js no lo reemplace.
 //   Así t(clave, respaldo) siempre devuelve el respaldo cuando falta
 //   una traducción, en lugar de mostrar el nombre técnico de la clave.
+//
+// CAMBIO v3 (marca):
+// - La biografía por defecto dice "Csariel's" (antes "Sariel's").
 // ================================================================
 
 // ================================================================
@@ -194,7 +197,7 @@ function perfilBasico(session) {
         email: session.user.email,
         nombre: session.user.user_metadata?.nombre || perfilT('perfil_nombre_usuario', 'Explorador'),
         handle: session.user.email?.split('@')[0] || 'explorador',
-        bio: perfilT('perfil_biografia_default', "Explorando el ecosistema Sariel's · WEB3 · Comunidad"),
+        bio: perfilT('perfil_biografia_default', "Explorando el ecosistema Csariel's · WEB3 · Comunidad"),
         avatar_url: null,
         tokens: 0,
         online: true
