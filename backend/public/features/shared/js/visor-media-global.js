@@ -1,39 +1,20 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.2
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.3
    Visor de pantalla completa compartido para fotos y videos.
-   - Muestra la foto o el video COMPLETO (sin recortar por defecto).
-   - Carrusel vertical fluido (scroll-snap) cuando hay múltiples videos
-     o cuando se pasa carruselVertical: true. Reproducción exclusiva del
-     video visible + precarga del siguiente.
-   - Datos del autor y texto estilo X opcionales por item.
-   - Controles transparentes, velocidades [1, 1.25, 1.5, 2] sin pausar.
-   - Manejo seguro del botón atrás (history.pushState / popstate).
 
-   Cambios v1.2:
-   - History/popstate sincronizado: sin desfases de historyDepth al
-     cerrar (por botón o por atrás) ni cierres cruzados.
-   - Velocidad aplicada al video activo al cambiar de slide en carrusel.
-   - Texto sin doble escape en construirInfoAutor (usar textContent puro).
+   Cambios v1.3:
+   - Soporte de notificación «¿Te interesa?» / «Rechazar para ver más»
+     con callbacks opcionales onInteres / onRechazo (no invasiva).
+   - Nuevas opciones autoReproducir, ahorradorDatos, videosAltaCalidad.
+   - Respeta contratos y API pública existentes; sin dependencias nuevas.
 
-   Uso:
-     VisorMediaGlobal.abrir({
-         items: [{
-             url, tipo: 'imagen' | 'video',
-             permiteDescarga, postId, esDueno,
-             autorNombre, autorHandle, autorAvatar, texto
-         }],
-         indice: 0,
-         carruselVertical: true, // opcional
-         onEliminar: function (item) {},
-         onOcultar: function (item) {}
-     });
-
-   Requiere window.supabaseClient para ocultar y reportar.
+   API pública:
+     VisorMediaGlobal.abrir, cerrar, estaAbierto, contieneVideo, version.
    ================================================================ */
 (function () {
     'use strict';
 
-    var VERSION = '1.2';
+    var VERSION = '1.3';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
@@ -66,7 +47,9 @@
         descargar: SVG('<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>'),
         ocultar: SVG('<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><line x1="1" y1="1" x2="23" y2="23"/>'),
         reportar: SVG('<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'),
-        eliminar: SVG('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>')
+        eliminar: SVG('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'),
+        interes: SVG('<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'),
+        rechazo: SVG('<circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>')
     };
 
     var st = {
@@ -88,11 +71,19 @@
         historyDepth: 0,
         popstateHandler: null,
         hojaHistory: false,
-        // Flag para ignorar el popstate disparado por history.back() provocado por nosotros
         ignorarPopstate: false,
         // observers
         observer: null,
-        videosMap: [] // [{ wrap, video }]
+        videosMap: [],
+        // preferencias
+        autoReproducir: true,
+        ahorradorDatos: false,
+        videosAltaCalidad: true,
+        // notificación de interés
+        notifTimer: null,
+        notifDescartados: new Set(),
+        onInteres: null,
+        onRechazo: null
     };
 
     /* ================= UTILIDADES ================= */
@@ -141,6 +132,10 @@
         return st.root.querySelector('[data-ref="escenario"] video');
     }
 
+    function itemActual() {
+        return st.items[st.indice] || null;
+    }
+
     async function uidActual(cliente) {
         var s = await cliente.auth.getSession();
         return s.data && s.data.session ? s.data.session.user.id : null;
@@ -155,7 +150,6 @@
         } catch (e) { /* ignorar */ }
     }
 
-    // Consume un estado que empujamos nosotros sin que el popstate dispare lógica de cierre.
     function consumirEstadoSinPopstate() {
         if (st.historyDepth <= 0) return;
         st.historyDepth--;
@@ -165,25 +159,21 @@
         } catch (e) {
             st.ignorarPopstate = false;
         }
-        // Red de seguridad: si el navegador no dispara popstate (raro), liberamos el flag
         setTimeout(function () { st.ignorarPopstate = false; }, 400);
     }
 
     function instalarPopstate() {
         if (st.popstateHandler) return;
         st.popstateHandler = function () {
-            // Si es el back() provocado por nosotros, no hacer nada más
             if (st.ignorarPopstate) {
                 st.ignorarPopstate = false;
                 return;
             }
 
-            // Popstate "real" del usuario: decrementar profundidad y cerrar capa correspondiente
             st.historyDepth = Math.max(0, st.historyDepth - 1);
 
             if (!st.root) return;
 
-            // Si hay hoja abierta, cerrarla primero (sin volver a hacer back)
             if (!ref('hoja').hidden) {
                 st.hojaHistory = false;
                 ocultarHoja(true);
@@ -239,6 +229,13 @@
                     '</div>' +
                 '</div>' +
             '</div>' +
+            '<div class="vmg-notif" data-ref="notif" hidden aria-live="polite">' +
+                '<div class="vmg-notif-texto">¿Te interesa este video?</div>' +
+                '<div class="vmg-notif-acciones">' +
+                    '<button type="button" class="vmg-notif-btn vmg-notif-si" data-accion="interes-si">' + ICONO.interes + ' <span>Sí, me interesa</span></button>' +
+                    '<button type="button" class="vmg-notif-btn vmg-notif-no" data-accion="interes-no">' + ICONO.rechazo + ' <span>Rechazar para ver más</span></button>' +
+                '</div>' +
+            '</div>' +
             '<div class="vmg-fondo-hoja" data-ref="fondo" data-accion="cerrarhoja" hidden></div>' +
             '<div class="vmg-hoja" data-ref="hoja" hidden></div>';
 
@@ -286,8 +283,6 @@
             var dx = e.changedTouches[0].clientX - st.inicioX;
             var dy = e.changedTouches[0].clientY - st.inicioY;
 
-            // En modo carrusel vertical, el scroll nativo se maneja por snap;
-            // solo cerramos si es un swipe-down largo fuera del carril vertical de snap.
             if (!st.carrusel) {
                 if (dy > 120 && Math.abs(dy) > Math.abs(dx)) { cerrar(); return; }
                 if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) { navegar(dx < 0 ? 1 : -1); }
@@ -397,7 +392,6 @@
         }
 
         controles.hidden = false;
-        // El botón central SOLO se muestra cuando el video está pausado
         if (v.paused) {
             centro.hidden = false;
             centro.innerHTML = ICONO.play;
@@ -442,13 +436,11 @@
     function velocidad() {
         st.velIdx = (st.velIdx + 1) % VELOCIDADES.length;
         var val = VELOCIDADES[st.velIdx];
-        // Aplicar al video actual (y en carrusel al que esté activo)
         var v = videoActual();
         if (v) {
             try { v.playbackRate = val; } catch (e) {}
         }
         ref('vel').textContent = val + 'x';
-        // No pausamos; solo se reanuda programación de ocultado
         programarOcultado();
     }
 
@@ -469,6 +461,35 @@
         }
     }
 
+    /* ================= NOTIFICACIÓN «¿TE INTERESA?» ================= */
+
+    function ocultarNotif() {
+        if (!st.root) return;
+        var n = ref('notif');
+        if (n) n.hidden = true;
+        clearTimeout(st.notifTimer);
+    }
+
+    function mostrarNotifSiAplica() {
+        if (!st.root) return;
+        var n = ref('notif');
+        if (!n) return;
+
+        var item = itemActual();
+        if (!item || item.tipo !== 'video') { n.hidden = true; return; }
+        if (!st.onInteres && !st.onRechazo) { n.hidden = true; return; }
+        if (item.postId && st.notifDescartados.has(String(item.postId))) { n.hidden = true; return; }
+
+        // Solo en carrusel (recomendaciones) para no estorbar el visor simple
+        if (!st.carrusel) { n.hidden = true; return; }
+
+        n.hidden = false;
+
+        // Se auto-oculta a los 6s si no se interactúa
+        clearTimeout(st.notifTimer);
+        st.notifTimer = setTimeout(function () { n.hidden = true; }, 6000);
+    }
+
     /* ================= DATOS DE AUTOR / TEXTO (estilo X) ================= */
 
     function construirInfoAutor(item) {
@@ -476,7 +497,6 @@
         var handleRaw = item.autorHandle ? String(item.autorHandle) : '';
         var handle = handleRaw ? (handleRaw.charAt(0) === '@' ? handleRaw : '@' + handleRaw) : '';
         var avatar = safeHttps(item.autorAvatar);
-        // Texto crudo: .textContent escapa de forma segura en el DOM.
         var texto = item.texto != null ? String(item.texto) : '';
 
         if (!nombre && !handle && !avatar && !texto) return null;
@@ -502,10 +522,10 @@
             meta.className = 'vmg-info-meta';
 
             if (nombre) {
-                var n = document.createElement('span');
-                n.className = 'vmg-info-nombre';
-                n.textContent = nombre;
-                meta.appendChild(n);
+                var nn = document.createElement('span');
+                nn.className = 'vmg-info-nombre';
+                nn.textContent = nombre;
+                meta.appendChild(nn);
             }
             if (handle) {
                 var h = document.createElement('span');
@@ -535,7 +555,8 @@
         if (!url) return null;
         var v = document.createElement('video');
         v.src = url;
-        v.preload = 'metadata';
+        // Ahorro de datos o video no prioritario
+        v.preload = st.ahorradorDatos ? 'none' : 'metadata';
         v.playsInline = true;
         v.setAttribute('playsinline', '');
         v.setAttribute('webkit-playsinline', '');
@@ -606,14 +627,12 @@
             st.videosMap.push({ slide: c.slide, video: c.video });
         });
 
-        // Scroll snap nativo
         var slides = esc.querySelectorAll('.vmg-slide');
         slides.forEach(function (s, i) {
             s.style.scrollSnapAlign = 'start';
             s.dataset.index = String(i);
         });
 
-        // Observador: el slide "activo" es el que más se ve
         if (st.observer) st.observer.disconnect();
         st.observer = new IntersectionObserver(function (entries) {
             var best = null;
@@ -626,19 +645,20 @@
                     st.indice = idx;
                     activarVideoVisible();
                     actualizarContador();
+                    mostrarNotifSiAplica();
                 }
             }
         }, { root: esc, threshold: [0, 0.25, 0.5, 0.6, 0.75, 1] });
 
         slides.forEach(function (s) { st.observer.observe(s); });
 
-        // Ir al índice inicial
         requestAnimationFrame(function () {
             var target = slides[st.indice];
             if (target) {
                 esc.scrollTop = target.offsetTop;
             }
             activarVideoVisible();
+            mostrarNotifSiAplica();
         });
     }
 
@@ -653,14 +673,11 @@
 
         st.videosMap.forEach(function (x, i) {
             if (!x.video) return;
-            // Pausar los no visibles
             if (i !== idx) {
                 try { x.video.pause(); } catch (e) {}
             }
-            // Precargar el siguiente (i === idx + 1): preload auto
-            // Mantener ligeros los lejanos: preload none y limpiar src si muy lejos
             if (i === idx + 1) {
-                x.video.preload = 'auto';
+                x.video.preload = st.ahorradorDatos ? 'none' : 'auto';
                 if (!x.video.src && x.video.dataset.vmgSrc) {
                     x.video.src = x.video.dataset.vmgSrc;
                 }
@@ -677,24 +694,21 @@
         if (v) {
             controles.hidden = false;
 
-            // Aplicar velocidad actual al video activo (algunos navegadores móviles
-            // resetean playbackRate al cambiar de video o al reproducir).
-            try {
-                v.playbackRate = VELOCIDADES[st.velIdx];
-            } catch (e) { /* ignorar */ }
+            try { v.playbackRate = VELOCIDADES[st.velIdx]; } catch (e) {}
 
-            // Reproducir el visible
-            v.play().then(function () {
-                // Reaplicar velocidad tras play (por si el navegador la reseteó)
-                try { v.playbackRate = VELOCIDADES[st.velIdx]; } catch (e) {}
+            if (st.autoReproducir) {
+                v.play().then(function () {
+                    try { v.playbackRate = VELOCIDADES[st.velIdx]; } catch (e) {}
+                    estadoVideo();
+                }).catch(function () {
+                    estadoVideo();
+                });
+            } else {
                 estadoVideo();
-            }).catch(function () {
-                estadoVideo();
-            });
+            }
         } else {
             controles.hidden = true;
             centro.hidden = true;
-            // Reaplicar fit a imágenes
             if (actual) {
                 var im = actual.slide.querySelector('img');
                 if (im) {
@@ -713,11 +727,8 @@
         var debeCarrusel = st.opts.carruselVertical === true || contarVideos() > 1;
         st.carrusel = debeCarrusel;
 
-        if (st.carrusel) {
-            mostrarCarrusel(item);
-        } else {
-            mostrarSimple(item);
-        }
+        if (st.carrusel) mostrarCarrusel(item);
+        else mostrarSimple(item);
     }
 
     function contarVideos() {
@@ -751,14 +762,19 @@
         actualizarContador();
 
         ocultarHoja(true);
+        ocultarNotif();
 
         if (item.tipo === 'video') {
             var v = crearVideo(item);
             if (!v) return;
-            v.preload = 'auto';
+            v.preload = st.ahorradorDatos ? 'none' : 'auto';
             esc.appendChild(v);
             aplicarFit();
-            v.play().then(estadoVideo).catch(estadoVideo);
+            if (st.autoReproducir) {
+                v.play().then(estadoVideo).catch(estadoVideo);
+            } else {
+                estadoVideo();
+            }
         } else {
             var img = document.createElement('img');
             img.src = url;
@@ -839,7 +855,6 @@
         hoja.hidden = false;
         ref('fondo').hidden = false;
 
-        // Push history al abrir la hoja (una sola vez)
         if (!st.hojaHistory) {
             pushHistorySeguro();
             st.hojaHistory = true;
@@ -857,8 +872,6 @@
         st.hojaHistory = false;
 
         if (estabaAbierta && teniaHistory && !desdePop) {
-            // Consumir el estado que empujamos al abrir la hoja, sin que el popstate
-            // dispare lógica de cierre cruzada.
             consumirEstadoSinPopstate();
         }
     }
@@ -887,6 +900,29 @@
                 break;
             case 'enviar-reporte': reportar(); break;
             case 'eliminar': eliminar(); break;
+            case 'interes-si': responderInteres(true); break;
+            case 'interes-no': responderInteres(false); break;
+        }
+    }
+
+    function responderInteres(positivo) {
+        var item = itemActual();
+        if (!item) return;
+
+        if (item.postId) st.notifDescartados.add(String(item.postId));
+
+        try {
+            if (positivo && typeof st.onInteres === 'function') st.onInteres(item);
+            if (!positivo && typeof st.onRechazo === 'function') st.onRechazo(item);
+        } catch (e) {
+            console.warn('[VisorMediaGlobal] interes:', e);
+        }
+
+        ocultarNotif();
+
+        if (!positivo && st.carrusel) {
+            // Avanzar con fluidez al siguiente video
+            setTimeout(function () { navegar(1); }, 80);
         }
     }
 
@@ -1014,11 +1050,17 @@
         st.ignorarPopstate = false;
         ref('vel').textContent = '1x';
 
+        st.onInteres = typeof opts.onInteres === 'function' ? opts.onInteres : null;
+        st.onRechazo = typeof opts.onRechazo === 'function' ? opts.onRechazo : null;
+        st.autoReproducir = opts.autoReproducir !== false;
+        st.ahorradorDatos = opts.ahorradorDatos === true;
+        st.videosAltaCalidad = opts.videosAltaCalidad !== false;
+        st.notifDescartados = new Set();
+
         st.root.hidden = false;
         st.root.classList.remove('vmg-oculto');
         document.body.style.overflow = 'hidden';
 
-        // History para el visor
         instalarPopstate();
         pushHistorySeguro();
 
@@ -1035,6 +1077,7 @@
         }
 
         clearTimeout(st.timerOcultar);
+        clearTimeout(st.notifTimer);
         var esc = ref('escenario');
         esc.innerHTML = '';
         esc.classList.remove('vmg-escenario--carrusel');
@@ -1046,8 +1089,8 @@
         }
         st.videosMap = [];
 
-        // Cerrar hoja sin disparar back (el cierre del visor ya consume lo suyo)
         ocultarHoja(true);
+        ocultarNotif();
 
         st.root.hidden = true;
         st.root.classList.remove('vmg-oculto');
@@ -1059,10 +1102,8 @@
         document.body.style.overflow = '';
 
         if (!desdePop) {
-            // Cierre desde UI: consumir el estado del visor sin popstate cruzado.
             consumirEstadoSinPopstate();
         }
-        // Si viene de popstate "real", el handler ya decrementó historyDepth.
 
         if (st.historyDepth <= 0) {
             st.historyDepth = 0;
