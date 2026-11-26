@@ -1,7 +1,8 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4.3 · Visor compartido (visor-media-global.js), galería de fotos
-   y videos, y publicación en el muro de un contacto activo.
+   v4.4 · Biografía (mismo texto que el perfil propio), visor
+   compartido (visor-media-global.js), galería de fotos y videos,
+   y publicación en el muro de un contacto activo.
    RPC y tablas verificadas en Supabase:
    perfil_publico_verificado, perfil_publico_por_handle,
    perfil_publico_por_id, perfil_visibilidad_estado,
@@ -26,6 +27,9 @@
     var TIMEOUT_SESION_MS = 4000;
     var TIMEOUT_PERFIL_MS = 12000;
     var TIMEOUT_CATALOGO_MS = 4000;
+
+    /* Mismo texto por defecto que el perfil propio (clave perfil_biografia_default). */
+    var BIO_POR_DEFECTO = "Explorando el ecosistema Csariel's · WEB3 · Comunidad";
 
     var perfil = null;
     var direccionWallet = null;
@@ -52,6 +56,7 @@
         nombre: $('pvNombre'),
         verificado: $('pvVerificado'),
         handle: $('pvHandle'),
+        bio: $('pvBio'),
         estado: $('pvEstado'),
         estadoDot: $('pvEstadoDot'),
         estadoTexto: $('pvEstadoTexto'),
@@ -242,6 +247,24 @@
         el.avatar.appendChild(img);
     }
 
+    /* Texto de la biografía: el de la función si existe; si no, la traducción
+       perfil_biografia_default (la misma que muestra el perfil propio). */
+    function textoBio(p) {
+        var propia = p && typeof p.bio === 'string' ? p.bio.trim() : '';
+        if (propia) return propia;
+
+        if (typeof window.tConFallback === 'function') {
+            return window.tConFallback('perfil_biografia_default', BIO_POR_DEFECTO);
+        }
+        return BIO_POR_DEFECTO;
+    }
+
+    function pintarBio(p) {
+        if (!el.bio) return;
+        el.bio.textContent = textoBio(p);
+        el.bio.hidden = false;
+    }
+
     function pintarEstado(p) {
         if (!p.ultima_conexion && p.online !== true) {
             el.estado.hidden = true;
@@ -314,6 +337,7 @@
         el.seguidores.textContent = String(p.seguidores_count || 0);
         el.siguiendo.textContent = String(p.siguiendo_count || 0);
         pintarAvatar(p.avatar_url);
+        pintarBio(p);
         pintarEstado(p);
         pintarPasaporte(p);
         actualizarMeta(p);
@@ -1192,7 +1216,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v4.3');
+        console.info('[PerfilPublico] iniciando v4.4');
 
         mostrar(el.cargando);
         configurarVolver();
