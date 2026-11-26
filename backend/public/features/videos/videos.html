@@ -234,24 +234,13 @@
         }
     </script>
 
-    <!-- ===== SCRIPTS (Orden de carga estricto para la nueva arquitectura) ===== -->
-    
-    <!-- 1. SDK Base y Globales -->
+    <!-- ===== SCRIPTS (orden de carga importante) ===== -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="/features/shared/js/idiomas.js?v=6"></script>
     <script src="/features/shared/js/reacciones-global.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- 2. Configuración Global (Crea VideosApp, estado y utilidades de red) -->
     <script src="/features/videos/js/videos-config.js"></script>
-    
-    <!-- 3. Base del Compositor (Se adapta a VideosApp y expone NS) -->
-    <script src="/features/videos/js/publicar-base.js"></script>
-
-    <!-- 4. Cola de Subida (Lee VideosApp y el estado compartido) -->
-    <script src="/features/videos/js/videos-cola.js"></script>
-
-    <!-- 5. Módulos del Feed (Usan VideosApp) -->
     <script src="/features/videos/js/videos-utils.js"></script>
     <script src="/features/videos/js/videos-hojas.js"></script>
     <script src="/features/videos/js/videos-sesion.js"></script>
@@ -263,18 +252,10 @@
     <script src="/features/videos/js/videos-comentarios.js"></script>
     <script src="/features/videos/js/videos-menu.js"></script>
     <script src="/features/videos/js/videos-mapa.js"></script>
+    <script src="/features/videos/js/videos-cola.js"></script>
     <script src="/features/videos/js/videos-atras.js"></script>
-
-    <!-- 6. Módulos del Compositor (Interfaz, UI, Previews) -->
-    <script src="/features/videos/js/publicar-ui.js"></script>
-    <script src="/features/videos/js/publicar-audio.js"></script>
-    <script src="/features/videos/js/publicar-preview.js"></script>
-    <script src="/features/videos/js/publicar-sheets.js"></script>
-    <script src="/features/videos/js/publicar-borradores.js"></script>
-    <script src="/features/videos/js/publicar-subida.js"></script>
-
-    <!-- 7. Inicialización Final -->
     <script src="/features/videos/js/videos-init.js"></script>
+
     <script src="/features/videos/js/videos-camara.js" defer></script>
     <script src="/features/videos/js/videos-publicar.js" defer></script>
 </body>
