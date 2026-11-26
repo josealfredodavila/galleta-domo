@@ -1,10 +1,14 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · FEED (v1)
+// CSARIEL'S · VIDEOS · FEED (v2)
 // ================================================================
 // Carga y render del carrusel de videos.
 // - Consulta videos publicados (con join al autor) y sus reacciones.
-// - Filtra por pestaña (Para ti / Siguiendo / Puebla) y búsqueda.
-// - Pinta cada tarjeta y el indicador de posición.
+// - Filtra por pestaña (Explorando / Comunidad / Puebla) y búsqueda.
+// - Pinta cada tarjeta, el indicador de posición y la barra de tiempo.
+// - Scrub táctil/pointer en .barra-prog con actualización en vivo.
+// - Pausa/reanudación automática por cámara o visibilidad.
+// - Recuperación básica ante error/stalled del <video>.
+// - Señales ligeras de reproducción (sin analítica pesada).
 // Lo que NO hace este módulo (vive en otros):
 //   navegación y observador  → videos-navegacion.js (VA.navegacion)
 //   audio y autoplay         → videos-audio.js      (VA.audio)
@@ -29,6 +33,15 @@
     var S = VA.state;
     var ICONO = U.ICONO;
     var RG = window.ReaccionesGlobal;
+
+    /* ---------------- Estado interno (no público) ---------------- */
+
+    // Pausa automática por cámara/visibilidad, independiente de la pausa manual del usuario.
+    var pausadoPorCamara = false;
+    // Reintentos por tarjeta (para no caer en bucles infinitos).
+    var MAX_REINTENTOS_RED = 2;
+    // Guarda por <video> el número de reintentos realizados.
+    var reintentosPorVideo = new WeakMap();
 
     /* ---------------- Reacciones: cache de lectura ---------------- */
 
@@ -120,19 +133,37 @@
         }
     }
 
-    /* ---------------- Filtros ---------------- */
+    /* ---------------- Filtros / pestañas ---------------- */
+
+    // Normaliza nombres de pestaña antiguos y nuevos.
+    function normalizarPestana(p) {
+        switch (p) {
+            case 'para_ti':
+            case 'explorando':
+                return 'explorando';
+            case 'siguiendo':
+            case 'comunidad':
+                return 'comunidad';
+            case 'puebla':
+                return 'puebla';
+            default:
+                return p || 'explorando';
+        }
+    }
 
     function filtrarVideos() {
         var lista = S.videosPublicados.slice();
+        var pestana = normalizarPestana(S.pestanaActiva);
 
-        if (S.pestanaActiva === 'siguiendo') {
+        if (pestana === 'comunidad') {
             lista = lista.filter(function (v) { return VA.sesion.sigoAlAutor(v.usuario_id); });
-        } else if (S.pestanaActiva === 'puebla') {
+        } else if (pestana === 'puebla') {
             lista = lista.filter(function (v) {
                 var lugar = U.normalizarTexto(v.ubicacion_nombre);
                 return CONFIG.PUEBLA_LUGARES.some(function (p) { return lugar.indexOf(p) !== -1; });
             });
         }
+        // 'explorando' no filtra más allá de la búsqueda.
 
         if (S.textoBusqueda) {
             var t = U.normalizarTexto(S.textoBusqueda);
@@ -148,15 +179,21 @@
 
     function mensajeVacio() {
         if (S.textoBusqueda) return 'Sin resultados para tu búsqueda.';
-        if (S.pestanaActiva === 'siguiendo') return 'Aún no tienes contactos activos. Cuando te conectes con alguien, sus videos aparecerán aquí.';
-        if (S.pestanaActiva === 'puebla') return 'Todavía no hay videos publicados desde Puebla.';
+        var pestana = normalizarPestana(S.pestanaActiva);
+        if (pestana === 'comunidad') {
+            return 'Aún no tienes contactos activos. Cuando te conectes con alguien, sus videos aparecerán aquí.';
+        }
+        if (pestana === 'puebla') {
+            return 'Todavía no hay videos publicados desde Puebla.';
+        }
         return "Sé el primero en compartir un video en Csariel's.";
     }
 
     /* Cambia de pestaña y repinta. Lo llama videos-navegacion.js. */
     function setPestana(nueva) {
-        if (nueva === S.pestanaActiva) return;
-        S.pestanaActiva = nueva;
+        var norm = normalizarPestana(nueva);
+        if (norm === normalizarPestana(S.pestanaActiva)) return;
+        S.pestanaActiva = norm;
         renderFeed();
     }
 
@@ -199,9 +236,9 @@
 
         var chipUbic = '';
         if (v.ubicacion_nombre) {
-            var lat = v.latitud ? Number(v.latitud) : null;
-            var lng = v.longitud ? Number(v.longitud) : null;
-            if (lat && lng) {
+            var lat = Number(v.latitud);
+            var lng = Number(v.longitud);
+            if (Number.isFinite(lat) && Number.isFinite(lng)) {
                 chipUbic = '<button type="button" class="chip chip-ubic btn-abrir-mapa" data-lat="' + lat +
                     '" data-lng="' + lng + '" data-nombre="' + U.escapeHTML(v.ubicacion_nombre) + '">◆ ' +
                     U.escapeHTML(v.ubicacion_nombre) + '</button>';
@@ -286,10 +323,96 @@
         card.innerHTML = html;
 
         enlazarMedios(card, v);
+        enlazarBarraScrub(card);
         return card;
     }
 
-    /* Movimiento de los emojis y eventos del <video> de la tarjeta. */
+    /* ---------------- Scrub táctil/pointer de la barra de tiempo ---------------- */
+
+    /* Convierte coordenada X dentro de la barra a segundos y aplica al video. */
+    function calcularSegundosDesdeX(barra, clientX) {
+        var rect = barra.getBoundingClientRect();
+        if (!rect || rect.width <= 0) return 0;
+        var ratio = (clientX - rect.left) / rect.width;
+        if (ratio < 0) ratio = 0;
+        if (ratio > 1) ratio = 1;
+        return ratio;
+    }
+
+    /* Aplica visual y lógicamente el segundo calculado. */
+    function aplicarScrub(card, videoEl, barra, clientX) {
+        var dur = videoEl.duration;
+        if (!isFinite(dur) || dur <= 0) return;
+        var ratio = calcularSegundosDesdeX(barra, clientX);
+        var segundos = ratio * dur;
+
+        var fill = card.querySelector('.barra-prog .fill');
+        if (fill) fill.style.width = (ratio * 100) + '%';
+        var tActual = card.querySelector('.tiempo-actual');
+        if (tActual) tActual.textContent = U.formatearTiempo(segundos);
+
+        try {
+            videoEl.currentTime = segundos;
+        } catch (e) {
+            // Algunos navegadores pueden rechazar si el metadata aún no está; se ignora.
+        }
+    }
+
+    function enlazarBarraScrub(card) {
+        var barra = card.querySelector('.barra-prog') || card.querySelector('.barra-inferior');
+        var videoEl = card.querySelector('video');
+        if (!barra || !videoEl) return;
+
+        // Área táctil cómoda: el .barra-inferior envuelve a .barra-prog.
+        var zonaTactil = card.querySelector('.barra-inferior') || barra;
+        zonaTactil.style.touchAction = 'pan-y'; // Permitir scroll vertical normal.
+
+        var arrastrando = false;
+        var pointerId = null;
+
+        function iniciar(e) {
+            // Solo botón principal / touch.
+            if (e.pointerType === 'mouse' && e.button !== 0) return;
+            arrastrando = true;
+            pointerId = e.pointerId;
+            card.dataset.scrubbing = '1';
+            // Durante el drag bloqueamos gestos de scroll para no pelear con el carrusel.
+            zonaTactil.style.touchAction = 'none';
+            try { zonaTactil.setPointerCapture(pointerId); } catch (_) {}
+            aplicarScrub(card, videoEl, barra, e.clientX);
+            e.preventDefault();
+        }
+
+        function mover(e) {
+            if (!arrastrando || e.pointerId !== pointerId) return;
+            aplicarScrub(card, videoEl, barra, e.clientX);
+            e.preventDefault();
+        }
+
+        function terminar(e) {
+            if (!arrastrando) return;
+            if (e && e.pointerId !== undefined && e.pointerId !== pointerId) return;
+            arrastrando = false;
+            pointerId = null;
+            delete card.dataset.scrubbing;
+            // Restaurar scroll vertical permitido.
+            zonaTactil.style.touchAction = 'pan-y';
+            if (e) {
+                try { zonaTactil.releasePointerCapture(e.pointerId); } catch (_) {}
+            }
+        }
+
+        zonaTactil.addEventListener('pointerdown', iniciar, { passive: false });
+        zonaTactil.addEventListener('pointermove', mover, { passive: false });
+        zonaTactil.addEventListener('pointerup', terminar);
+        zonaTactil.addEventListener('pointercancel', terminar);
+        zonaTactil.addEventListener('pointerleave', function (e) {
+            if (arrastrando && e.pointerType === 'mouse') terminar(e);
+        });
+    }
+
+    /* ---------------- Movimiento de emojis y eventos del <video> ---------------- */
+
     function enlazarMedios(card, v) {
         card.querySelectorAll('.reac-op').forEach(function (op) { animarEmoji(op, op.dataset.e); });
         var emojiBtn = card.querySelector('.reac-emoji');
@@ -300,7 +423,9 @@
         videoEl.volume = 1;
         videoEl.removeAttribute('muted');
 
+        // timeupdate: se respeta si el usuario está haciendo scrub.
         videoEl.addEventListener('timeupdate', function () {
+            if (card.dataset.scrubbing === '1') return;
             if (!videoEl.duration) return;
             var fill = card.querySelector('.barra-prog .fill');
             if (fill) fill.style.width = (videoEl.currentTime / videoEl.duration * 100) + '%';
@@ -311,23 +436,87 @@
         videoEl.addEventListener('loadedmetadata', function () {
             var tTotal = card.querySelector('.tiempo-total');
             if (tTotal) tTotal.textContent = U.formatearTiempo(videoEl.duration);
+            // Resetear contador de reintentos al cargar con éxito.
+            reintentosPorVideo.set(videoEl, 0);
+        });
+
+        // Señales ligeras de reproducción (sin analítica pesada).
+        videoEl.addEventListener('playing', function () {
+            card.classList.add('playing');
+            if (VA.controles) VA.controles.mostrarControles(card);
+            emitirSenal('playing', v.id);
         });
 
         videoEl.addEventListener('play', function () {
             card.classList.add('playing');
-            if (VA.controles) VA.controles.mostrarControles(card);
+            emitirSenal('play', v.id);
         });
 
         videoEl.addEventListener('pause', function () {
             card.classList.remove('playing');
             if (VA.controles) VA.controles.ocultarControlesYa(card);
+            emitirSenal('pause', v.id);
         });
 
         videoEl.addEventListener('ended', function () {
             card.classList.remove('playing');
+            emitirSenal('ended', v.id);
             if (!VA.audio || !VA.audio.autoplayActivo()) return;
             if (VA.navegacion) VA.navegacion.irAVideo(S.indiceActivo + 1);
         });
+
+        videoEl.addEventListener('error', function () {
+            emitirSenal('error', v.id);
+            intentarRecuperarVideo(videoEl, card, v);
+        });
+
+        videoEl.addEventListener('stalled', function () {
+            emitirSenal('stalled', v.id);
+            intentarRecuperarVideo(videoEl, card, v);
+        });
+    }
+
+    /* Señal ligera de reproducción: emite un evento DOM en la tarjeta.
+       Otros módulos (analítica) pueden escucharlo si lo desean. */
+    function emitirSenal(tipo, videoId) {
+        try {
+            var detalle = { tipo: tipo, videoId: videoId, t: Date.now() };
+            var ev;
+            if (typeof CustomEvent === 'function') {
+                ev = new CustomEvent('cs:video-senal', { detail: detalle });
+            } else {
+                ev = document.createEvent('CustomEvent');
+                ev.initCustomEvent('cs:video-senal', false, false, detalle);
+            }
+            window.dispatchEvent(ev);
+        } catch (_) { /* silencioso */ }
+    }
+
+    /* Recuperación básica: preserva currentTime y reintenta cargar con límite. */
+    function intentarRecuperarVideo(videoEl, card, v) {
+        var intentos = reintentosPorVideo.get(videoEl) || 0;
+        if (intentos >= MAX_REINTENTOS_RED) return;
+
+        var t = videoEl.currentTime || 0;
+        var src = videoEl.getAttribute('data-src') || v.url_video;
+        if (!src) return;
+
+        reintentosPorVideo.set(videoEl, intentos + 1);
+
+        // Pequeño backoff para no saturar.
+        setTimeout(function () {
+            try {
+                videoEl.src = src;
+                videoEl.load();
+                var reanudarEn = function () {
+                    try { videoEl.currentTime = t; } catch (_) {}
+                    videoEl.removeEventListener('loadedmetadata', reanudarEn);
+                };
+                videoEl.addEventListener('loadedmetadata', reanudarEn);
+            } catch (e) {
+                console.warn('[Videos] No se pudo reintentar carga:', e);
+            }
+        }, 500 + intentos * 700);
     }
 
     /* ---------------- Render del carrusel ---------------- */
@@ -356,14 +545,37 @@
         }
 
         contenedor.classList.remove('vacio');
-        lista.forEach(function (v, i) {
-            contenedor.appendChild(crearVideoCard(v, i));
-        });
-        contenedor.scrollLeft = 0;
 
-        // Si durante el render llegó otra versión, esta ya no es la vigente.
+        // Render ágil: agregamos tarjetas al DOM una a una con rAF para no
+        // bloquear el primer pintado. La info básica y el poster ya van en el HTML.
+        var i = 0;
+        function pintarLote() {
+            if (version !== S.renderVersion) return; // otra versión pisó el render
+            var fin = Math.min(i + 3, lista.length);
+            for (; i < fin; i++) {
+                contenedor.appendChild(crearVideoCard(lista[i], i));
+            }
+            if (i < lista.length) {
+                if (typeof requestAnimationFrame === 'function') {
+                    requestAnimationFrame(pintarLote);
+                } else {
+                    setTimeout(pintarLote, 0);
+                }
+            } else {
+                finalizarRender(lista, contenedor, version);
+            }
+        }
+
+        if (typeof requestAnimationFrame === 'function') {
+            requestAnimationFrame(pintarLote);
+        } else {
+            pintarLote();
+        }
+    }
+
+    function finalizarRender(lista, contenedor, version) {
         if (version !== S.renderVersion) return;
-
+        contenedor.scrollLeft = 0;
         U.aplicarI18N(contenedor);
         if (VA.navegacion) VA.navegacion.observarCarrusel();
         pintarIndicador(lista.length);
@@ -373,6 +585,81 @@
     function buscarVideoPorId(id) {
         return S.videosPublicados.find(function (x) { return x.id === id; }) || null;
     }
+
+    /* Inserta un video recién publicado al inicio y repinta el carrusel. */
+    function insertarVideoArriba(nuevoVideo) {
+        if (!nuevoVideo || !nuevoVideo.id) return;
+        // Evitar duplicados si ya estaba.
+        var existente = S.videosPublicados.findIndex(function (x) { return x.id === nuevoVideo.id; });
+        if (existente !== -1) S.videosPublicados.splice(existente, 1);
+        S.videosPublicados.unshift(nuevoVideo);
+        renderFeed();
+    }
+
+    /* ---------------- Pausa/reanudación automática ---------------- */
+
+    /* Devuelve el <video> de la tarjeta activa, si lo hay. */
+    function videoActivo() {
+        var card = S.cardActiva;
+        if (card && card.querySelector) {
+            var v = card.querySelector('video');
+            if (v) return v;
+        }
+        return null;
+    }
+
+    /* Pausa automática: no toca pausa manual del usuario. */
+    function pausarPorCamara() {
+        var video = videoActivo();
+        if (!video) return;
+        // Solo marcamos pausa automática si estaba reproduciendo y no está pausado.
+        if (!video.paused && !video.ended) {
+            pausadoPorCamara = true;
+            try { video.pause(); } catch (_) {}
+        }
+    }
+
+    /* Reanuda automáticamente si fue una pausa por cámara/visibilidad. */
+    function reanudarPorCamara() {
+        if (!pausadoPorCamara) return;
+        var video = videoActivo();
+        pausadoPorCamara = false;
+        if (!video) return;
+        if (video.paused) {
+            var p = video.play();
+            if (p && typeof p.catch === 'function') p.catch(function () {});
+        }
+    }
+
+    /* Hook manual: el usuario pausó/reprodujo → cancelar pausa automática. */
+    function marcarPausaManual() {
+        pausadoPorCamara = false;
+    }
+
+    /* ---------------- Listeners globales de visibilidad/cámara ---------------- */
+
+    // document.hidden: al pasar a segundo plano, pausamos.
+    if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', function () {
+            if (document.hidden) {
+                pausarPorCamara();
+            } else {
+                reanudarPorCamara();
+            }
+        });
+    }
+
+    // pagehide: por si el navegador se va antes de visibilitychange.
+    window.addEventListener('pagehide', function () { pausarPorCamara(); });
+    window.addEventListener('pageshow', function () { reanudarPorCamara(); });
+
+    // Cámara / grabación: eventos personalizados que otros módulos pueden emitir.
+    window.addEventListener('cs:camara-abrir', function () { pausarPorCamara(); });
+    window.addEventListener('cs:camara-cerrar', function () { reanudarPorCamara(); });
+    window.addEventListener('cs:grabacion-iniciar', function () { pausarPorCamara(); });
+    window.addEventListener('cs:grabacion-detener', function () { reanudarPorCamara(); });
+
+    /* ---------------- API pública ---------------- */
 
     VA.feed = {
         cargarVideos: cargarVideos,
@@ -386,7 +673,11 @@
         pintarIndicador: pintarIndicador,
         actualizarIndicador: actualizarIndicador,
         crearVideoCard: crearVideoCard,
-        buscarVideoPorId: buscarVideoPorId
+        buscarVideoPorId: buscarVideoPorId,
+        insertarVideoArriba: insertarVideoArriba,
+        pausarPorCamara: pausarPorCamara,
+        reanudarPorCamara: reanudarPorCamara,
+        marcarPausaManual: marcarPausaManual
     };
 
     /* Contrato global: lo usan videos-publicar.js y videos-init.js. */
