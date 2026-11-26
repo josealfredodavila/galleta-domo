@@ -1,15 +1,17 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4.4 · Biografía (mismo texto que el perfil propio), visor
-   compartido (visor-media-global.js), galería de fotos y videos,
-   y publicación en el muro de un contacto activo.
+   v4.5 · Biografía (mismo texto que el perfil propio), visor
+   compartido (visor-media-global.js v1.3), galería de fotos y videos,
+   publicación en el muro de un contacto activo y relleno de videos
+   públicos de otros autores con notificación «¿Te interesa?».
    RPC y tablas verificadas en Supabase:
    perfil_publico_verificado, perfil_publico_por_handle,
    perfil_publico_por_id, perfil_visibilidad_estado,
    perfil_publicaciones_contactos, perfil_galeria,
    puede_publicar_en_muro, publicaciones, publicacion_reportes,
    publicaciones_reacciones, publicaciones_comentarios,
-   publicaciones_comentarios_publicos, wallet_publica.
+   publicaciones_comentarios_publicos, wallet_publica,
+   publicaciones_ocultas.
    ================================================================ */
 (function () {
     'use strict';
@@ -27,6 +29,9 @@
     var TIMEOUT_SESION_MS = 4000;
     var TIMEOUT_PERFIL_MS = 12000;
     var TIMEOUT_CATALOGO_MS = 4000;
+    var TIMEOUT_RELLENO_MS = 8000;
+    var LIMITE_RELLENO = 14; // lote acotado de videos públicos de otros autores
+    var LIMITE_PREFS = 32;
 
     /* Mismo texto por defecto que el perfil propio (clave perfil_biografia_default). */
     var BIO_POR_DEFECTO = "Explorando el ecosistema Csariel's · WEB3 · Comunidad";
@@ -38,6 +43,23 @@
     var mediaPublicaciones = [];
     var medioActivo = null;
     var muroArchivo = null;
+
+    /* Estado de relleno escalado y anti-repetición */
+    var videoSesion = {
+        idsVistos: new Set(),      // postId ya mostrados durante esta sesión de página
+        temasInteres: [],          // ids de temas de interés
+        temasBloqueados: new Set(),// ids de temas bloqueados
+        idiomasPref: [],           // códigos de idioma preferidos
+        mostrarSensible: false,
+        ahorradorDatos: false,
+        videosAltaCalidad: true,
+        autoReproducir: true,
+        rechazados: new Set(),     // ids de tema rechazados durante la sesión
+        autorRechazado: new Set(), // ids de usuario rechazados durante la sesión
+        afinidadTema: new Map(),   // temaId -> delta acumulado
+        afinidadAutor: new Map(),  // autorId -> delta acumulado
+        prefsCargadas: false
+    };
 
     window.usuarioActualId = null;
 
@@ -186,17 +208,37 @@
 
     /* ================= VISOR COMPARTIDO ================= */
 
-    function abrirVisor(items, indice) {
+    function esCarrusel(items) {
+        var videos = 0;
+        for (var i = 0; i < items.length; i++) {
+            if (items[i] && items[i].tipo === 'video') videos++;
+        }
+        return videos > 1 || items.length > 1;
+    }
+
+    function abrirVisor(items, indice, opciones) {
         if (!window.VisorMediaGlobal) {
             toast('El visor no está disponible. Recarga la página.', 'error');
             return;
         }
 
+        opciones = opciones || {};
+
+        // Solo activamos carrusel vertical cuando aplica (múltiples videos o >1 item)
+        var carruselVertical = opciones.carruselVertical === true || esCarrusel(items);
+
         window.VisorMediaGlobal.abrir({
             items: items,
             indice: indice,
+            carruselVertical: carruselVertical,
             onEliminar: function (item) { eliminarPropia(item.postId); },
-            onOcultar: function (item) { quitarTarjeta(item.postId); }
+            onOcultar: function (item) { quitarTarjeta(item.postId); },
+            onInteres: typeof opciones.onInteres === 'function' ? opciones.onInteres : null,
+            onRechazo: typeof opciones.onRechazo === 'function' ? opciones.onRechazo : null,
+            // Configuración de reproducción / ahorro de datos (defensivo)
+            autoReproducir: opciones.autoReproducir !== false && videoSesion.autoReproducir !== false,
+            ahorradorDatos: opciones.ahorradorDatos === true || videoSesion.ahorradorDatos === true,
+            videosAltaCalidad: opciones.videosAltaCalidad !== false && videoSesion.videosAltaCalidad !== false
         });
     }
 
@@ -208,6 +250,9 @@
 
         var mini = el.galeriaGrid.querySelector('[data-id="' + postId + '"]');
         if (mini) mini.remove();
+
+        // Lo sacamos también del pool de relleno
+        videoSesion.idsVistos.add(String(postId));
     }
 
     async function eliminarPropia(postId) {
@@ -230,6 +275,37 @@
         toast('Publicación eliminada', 'success');
     }
 
+    /* ================= AUTOR / TEXTO PARA EL VISOR ================= */
+
+    function itemVisorDesdeMedia(item, autorInfo) {
+        // Combina los datos del media con los del autor (si están disponibles)
+        var out = {
+            url: item.url,
+            tipo: item.tipo,
+            permiteDescarga: item.permiteDescarga !== false,
+            postId: item.postId,
+            esDueno: item.esDueno === true
+        };
+        if (autorInfo) {
+            if (autorInfo.autorNombre) out.autorNombre = autorInfo.autorNombre;
+            if (autorInfo.autorHandle) out.autorHandle = autorInfo.autorHandle;
+            var av = safeHttps(autorInfo.autorAvatar);
+            if (av) out.autorAvatar = av;
+            if (autorInfo.texto) out.texto = String(autorInfo.texto);
+        }
+        return out;
+    }
+
+    function autorDePost(p) {
+        if (!p) return null;
+        return {
+            autorNombre: p.usuario_nombre || p.usuario_handle || null,
+            autorHandle: p.usuario_handle ? String(p.usuario_handle) : null,
+            autorAvatar: safeHttps(p.usuario_avatar_url) || null,
+            texto: p.contenido ? String(p.contenido) : null
+        };
+    }
+
     /* ================= RENDER DEL PERFIL ================= */
 
     function pintarAvatar(url) {
@@ -247,8 +323,6 @@
         el.avatar.appendChild(img);
     }
 
-    /* Texto de la biografía: el de la función si existe; si no, la traducción
-       perfil_biografia_default (la misma que muestra el perfil propio). */
     function textoBio(p) {
         var propia = p && typeof p.bio === 'string' ? p.bio.trim() : '';
         if (propia) return propia;
@@ -394,6 +468,79 @@
         }
     }
 
+    /* ================= PREFERENCIAS (defensivo) ================= */
+
+    async function cargarPreferenciasVideo(client) {
+        videoSesion.prefsCargadas = true;
+
+        if (!window.usuarioActualId || !client) {
+            // Visitante anónimo: preferencias por defecto, sin tocar tablas
+            videoSesion.mostrarSensible = false;
+            videoSesion.ahorradorDatos = false;
+            videoSesion.videosAltaCalidad = true;
+            videoSesion.autoReproducir = true;
+            return;
+        }
+
+        // Intentamos primero perfiles / usuarios (defensivo: si falta tabla/columna, seguimos).
+        try {
+            var uid = window.usuarioActualId;
+
+            // Temas de interés y bloqueados
+            try {
+                var rt = await conTimeout(
+                    client.from('usuarios_temas_interes').select('tema_id').eq('usuario_id', uid).limit(LIMITE_PREFS),
+                    TIMEOUT_CATALOGO_MS,
+                    'temas_interes timeout'
+                );
+                if (!rt.error && Array.isArray(rt.data)) {
+                    videoSesion.temasInteres = rt.data.map(function (x) { return String(x.tema_id); }).filter(Boolean);
+                }
+            } catch (e) { /* ignorar */ }
+
+            try {
+                var rb = await conTimeout(
+                    client.from('usuarios_temas_bloqueados').select('tema_id').eq('usuario_id', uid).limit(LIMITE_PREFS),
+                    TIMEOUT_CATALOGO_MS,
+                    'temas_bloqueados timeout'
+                );
+                if (!rb.error && Array.isArray(rb.data)) {
+                    videoSesion.temasBloqueados = new Set(rb.data.map(function (x) { return String(x.tema_id); }).filter(Boolean));
+                }
+            } catch (e) { /* ignorar */ }
+
+            // Idiomas preferidos
+            try {
+                var ri = await conTimeout(
+                    client.from('usuarios_idiomas_contenido').select('idioma').eq('usuario_id', uid).limit(LIMITE_PREFS),
+                    TIMEOUT_CATALOGO_MS,
+                    'idiomas timeout'
+                );
+                if (!ri.error && Array.isArray(ri.data)) {
+                    videoSesion.idiomasPref = ri.data.map(function (x) { return String(x.idioma || '').toLowerCase(); }).filter(Boolean);
+                }
+            } catch (e) { /* ignorar */ }
+
+            // Preferencias de contenido (puede fallar si no existe la tabla/columnas)
+            try {
+                var rp = await conTimeout(
+                    client.from('preferencias_contenido').select('*').eq('usuario_id', uid).maybeSingle(),
+                    TIMEOUT_CATALOGO_MS,
+                    'preferencias timeout'
+                );
+                if (!rp.error && rp.data) {
+                    var d = rp.data;
+                    if (typeof d.contenido_mostrar_sensible === 'boolean') videoSesion.mostrarSensible = d.contenido_mostrar_sensible;
+                    if (typeof d.contenido_ahorrador_datos === 'boolean') videoSesion.ahorradorDatos = d.contenido_ahorrador_datos;
+                    if (typeof d.contenido_videos_alta_calidad === 'boolean') videoSesion.videosAltaCalidad = d.contenido_videos_alta_calidad;
+                    if (typeof d.contenido_auto_reproducir === 'boolean') videoSesion.autoReproducir = d.contenido_auto_reproducir;
+                }
+            } catch (e) { /* ignorar */ }
+        } catch (e) {
+            console.warn('[PerfilPublico] Preferencias:', e);
+        }
+    }
+
     /* ================= MEDIOS EN LAS PUBLICACIONES ================= */
 
     function crearNodoMedia(tipo, url, sinDescarga) {
@@ -403,7 +550,7 @@
             nodo = document.createElement('video');
             nodo.className = 'pv-media';
             nodo.src = url;
-            nodo.preload = 'metadata';
+            nodo.preload = videoSesion.ahorradorDatos ? 'none' : 'metadata';
             nodo.playsInline = true;
             nodo.setAttribute('playsinline', '');
             nodo.setAttribute('webkit-playsinline', '');
@@ -439,13 +586,19 @@
             return;
         }
 
-        var item = {
+        var autor = autorDePost(p);
+        var itemBase = {
             url: url,
             tipo: tipo,
             permiteDescarga: p.permitir_descarga !== false,
             postId: p.id,
             esDueno: esSoyDueno(p.usuario_id)
         };
+        var item = itemVisorDesdeMedia(itemBase, autor);
+        item.temaId = p.tema_id ? String(p.tema_id) : null;
+        item.idioma = p.idioma ? String(p.idioma).toLowerCase() : null;
+        item.sensible = p.es_sensible === true;
+        item.autorUsuarioId = p.usuario_id ? String(p.usuario_id) : null;
 
         mediaPublicaciones.push(item);
         var indice = mediaPublicaciones.length - 1;
@@ -455,7 +608,7 @@
         marco.appendChild(crearNodoMedia(tipo, url, p.permitir_descarga === false));
 
         marco.addEventListener('click', function () {
-            abrirVisor(mediaPublicaciones, indice);
+            abrirVisorConRelleno(item, indice);
         });
 
         meta.appendChild(marco);
@@ -601,7 +754,6 @@
         var barra = document.createElement('div');
         barra.className = 'pv-post-barra';
 
-        /* Contenedor de la barra de reacciones: lo llena el módulo global en cargarPublicaciones. */
         var reacciones = document.createElement('div');
         reacciones.className = 'pv-reacciones';
         reacciones.dataset.pubId = pubId;
@@ -773,6 +925,9 @@
 
                     contenedorRx.appendChild(barraRx.el);
                 }
+
+                // Registro sesión para evitar repetir en relleno
+                if (p.id) videoSesion.idsVistos.add(String(p.id));
             });
 
             pub.total += nuevos.length;
@@ -829,7 +984,11 @@
         }
 
         b.addEventListener('click', function () {
-            abrirVisor(galeria.items, idx);
+            if (item.tipo === 'video') {
+                abrirVisorConRelleno(item, idx);
+            } else {
+                abrirVisor(galeria.items, idx);
+            }
         });
 
         return b;
@@ -892,16 +1051,29 @@
 
                 galeria.idsVistos.add(f.id);
 
-                var item = {
+                var autorInfo = {
+                    autorNombre: perfil.nombre || perfil.handle || null,
+                    autorHandle: perfil.handle || null,
+                    autorAvatar: safeHttps(perfil.avatar_url) || null,
+                    texto: f.contenido ? String(f.contenido) : null
+                };
+
+                var item = itemVisorDesdeMedia({
                     url: url,
                     tipo: mediaTipo(f.media_type, url),
                     permiteDescarga: f.permitir_descarga !== false,
                     postId: f.id,
                     esDueno: esSoyDueno(perfil.id)
-                };
+                }, autorInfo);
+                item.temaId = f.tema_id ? String(f.tema_id) : null;
+                item.idioma = f.idioma ? String(f.idioma).toLowerCase() : null;
+                item.sensible = f.es_sensible === true;
+                item.autorUsuarioId = perfil.id ? String(perfil.id) : null;
 
                 galeria.items.push(item);
                 el.galeriaGrid.appendChild(crearMiniatura(item, galeria.items.length - 1));
+
+                if (f.id) videoSesion.idsVistos.add(String(f.id));
             });
 
             if (filas.length) galeria.antes = filas[filas.length - 1].created_at;
@@ -1074,6 +1246,343 @@
         }
     }
 
+    /* ================= RELLENO ESCALADO DE VIDEOS PÚBLICOS ================= */
+
+    function prefiereIdioma(idioma) {
+        if (!idioma) return 0;
+        var i = String(idioma).toLowerCase();
+        return videoSesion.idiomasPref.indexOf(i) !== -1 ? 1 : 0;
+    }
+
+    function afinidadDe(temaId, autorId) {
+        var t = temaId ? (videoSesion.afinidadTema.get(temaId) || 0) : 0;
+        var a = autorId ? (videoSesion.afinidadAutor.get(autorId) || 0) : 0;
+        return t + a;
+    }
+
+    /* Puntuación escalada y ponderada con anti-repetición + preferencias. */
+    function puntuarVideo(p) {
+        var score = 0;
+
+        // Bono temas de interés
+        var tema = p.tema_id ? String(p.tema_id) : null;
+        if (tema) {
+            if (videoSesion.temasInteres.indexOf(tema) !== -1) score += 3;
+            if (videoSesion.temasBloqueados.has(tema)) score -= 8;
+            if (videoSesion.rechazados.has(tema)) score -= 6;
+        }
+
+        // Idioma preferido
+        if (p.idioma) score += prefiereIdioma(p.idioma) * 2;
+
+        // Sensible
+        if (p.es_sensible === true) {
+            if (!videoSesion.mostrarSensible) score -= 5;
+            else score -= 1;
+        }
+
+        // Autor rechazado
+        if (p.usuario_id && videoSesion.autorRechazado.has(String(p.usuario_id))) score -= 5;
+
+        // Afinidad acumulada (Sí me interesa)
+        score += afinidadDe(tema, p.usuario_id ? String(p.usuario_id) : null);
+
+        // Popularidad suave: logaritmo de interacciones evita que 10 top dominen
+        var inter = (Number(p.reacciones) || 0) + (Number(p.comentarios) || 0);
+        if (inter > 0) score += Math.log10(inter + 1) * 1.4;
+
+        // Antigüedad: decae suave, no nula
+        if (p.created_at) {
+            var ms = Date.now() - new Date(p.created_at).getTime();
+            if (isFinite(ms) && ms > 0) {
+                var dias = ms / 86400000;
+                score += Math.max(0, 3 - Math.min(3, dias * 0.15));
+            }
+        }
+
+        return score;
+    }
+
+    /* Intercalado anti-repetición: no poner dos del mismo autor seguidos si hay alternativa. */
+    function intercalarAntiRepeticion(lista) {
+        var out = [];
+        var pendientes = lista.slice();
+
+        while (pendientes.length) {
+            var idxElegido = 0;
+            var ultimo = out.length ? out[out.length - 1] : null;
+            var ultimoAutor = ultimo ? String(ultimo.usuario_id || '') : null;
+
+            for (var i = 0; i < pendientes.length; i++) {
+                var autor = String(pendientes[i].usuario_id || '');
+                if (!ultimoAutor || autor !== ultimoAutor) { idxElegido = i; break; }
+            }
+
+            out.push(pendientes.splice(idxElegido, 1)[0]);
+        }
+
+        return out;
+    }
+
+    async function obtenerExcluidosOcultos(client) {
+        var excluidos = new Set();
+        if (!window.usuarioActualId || !client) return excluidos;
+
+        try {
+            var r = await conTimeout(
+                client.from('publicaciones_ocultas')
+                    .select('publicacion_id')
+                    .eq('usuario_id', window.usuarioActualId)
+                    .limit(200),
+                TIMEOUT_CATALOGO_MS,
+                'ocultas timeout'
+            );
+            if (!r.error && Array.isArray(r.data)) {
+                r.data.forEach(function (x) {
+                    if (x && x.publicacion_id) excluidos.add(String(x.publicacion_id));
+                });
+            }
+        } catch (e) { /* ignorar */ }
+
+        return excluidos;
+    }
+
+    async function cargarRellenoVideos(client, yaPresentes) {
+        // Devolvemos un array acotado de publicaciones con media_type='video' públicas
+        // (estado='publicado', sin perfil_destino_id => no muros de otros usuarios),
+        // excluyendo postId ya presentes, ocultas y lo ya visto en sesión.
+        if (!client) return [];
+
+        var excluir = new Set();
+        (yaPresentes || []).forEach(function (id) { if (id) excluir.add(String(id)); });
+        videoSesion.idsVistos.forEach(function (id) { excluir.add(String(id)); });
+
+        var ocultas = await obtenerExcluidosOcultos(client);
+        ocultas.forEach(function (id) { excluir.add(String(id)); });
+
+        var columnasBase = 'id, usuario_id, contenido, media_url, media_type, created_at, permitir_descarga, perfil_destino_id';
+        // Intentamos con columnas opcionales que mejoran el ranking; si falla, caemos a base.
+        var columnasExtendidas = columnasBase + ', tema_id, idioma, es_sensible';
+
+        async function intentar(columnas) {
+            try {
+                var q = client
+                    .from('publicaciones')
+                    .select(columnas)
+                    .eq('estado', 'publicado')
+                    .eq('media_type', 'video')
+                    .is('perfil_destino_id', null)
+                    .order('created_at', { ascending: false })
+                    .limit(Math.max(LIMITE_RELLENO * 4, 40));
+
+                return await conTimeout(q, TIMEOUT_RELLENO_MS, 'relleno timeout');
+            } catch (e) {
+                return { data: null, error: e };
+            }
+        }
+
+        var r = await intentar(columnasExtendidas);
+        if (r.error) {
+            r = await intentar(columnasBase);
+        }
+
+        if (r.error || !Array.isArray(r.data)) return [];
+
+        var filas = r.data.filter(function (p) {
+            if (!p || !p.id || !p.media_url) return false;
+            if (excluir.has(String(p.id))) return false;
+            // Autor propio: no rellenamos con videos propios en muro de otro
+            if (window.usuarioActualId && String(p.usuario_id) === String(window.usuarioActualId)) return false;
+            return true;
+        });
+
+        // Puntuamos y ordenamos con mezcla (sensible + score)
+        filas.forEach(function (p) { p.__score = puntuarVideo(p); });
+        filas.sort(function (a, b) { return (b.__score || 0) - (a.__score || 0); });
+
+        // Intercalado anti-repetición
+        filas = intercalarAntiRepeticion(filas);
+
+        return filas.slice(0, LIMITE_RELLENO);
+    }
+
+    async function hidratarAutores(client, filas) {
+        // Devuelve un Map<usuario_id, {nombre, handle, avatar_url}>
+        var map = new Map();
+        if (!client || !filas.length) return map;
+
+        var ids = [];
+        var set = new Set();
+        filas.forEach(function (p) {
+            if (p.usuario_id) {
+                var k = String(p.usuario_id);
+                if (!set.has(k)) { set.add(k); ids.push(p.usuario_id); }
+            }
+        });
+
+        if (!ids.length) return map;
+
+        try {
+            var r = await conTimeout(
+                client.from('perfiles_publicos')
+                    .select('id, nombre, handle, avatar_url')
+                    .in('id', ids)
+                    .limit(ids.length),
+                TIMEOUT_CATALOGO_MS,
+                'autores timeout'
+            );
+            if (!r.error && Array.isArray(r.data)) {
+                r.data.forEach(function (u) {
+                    if (!u || !u.id) return;
+                    map.set(String(u.id), {
+                        nombre: u.nombre || null,
+                        handle: u.handle || null,
+                        avatar_url: safeHttps(u.avatar_url) || null
+                    });
+                });
+            }
+        } catch (e) {
+            // Tabla/columna puede no existir: devolvemos vacío sin romper
+        }
+
+        return map;
+    }
+
+    function itemDesdePublicacionRelleno(p, autorMap) {
+        var url = safeHttps(p.media_url);
+        if (!url) return null;
+
+        var autor = autorMap ? autorMap.get(String(p.usuario_id || '')) : null;
+
+        var base = {
+            url: url,
+            tipo: 'video',
+            permiteDescarga: p.permitir_descarga !== false,
+            postId: p.id,
+            esDueno: false
+        };
+
+        var info = null;
+        if (autor) {
+            info = {
+                autorNombre: autor.nombre || autor.handle || null,
+                autorHandle: autor.handle || null,
+                autorAvatar: autor.avatar_url || null,
+                texto: p.contenido ? String(p.contenido) : null
+            };
+        } else if (p.contenido) {
+            info = { texto: String(p.contenido) };
+        }
+
+        var item = itemVisorDesdeMedia(base, info);
+        item.temaId = p.tema_id ? String(p.tema_id) : null;
+        item.idioma = p.idioma ? String(p.idioma).toLowerCase() : null;
+        item.sensible = p.es_sensible === true;
+        item.autorUsuarioId = p.usuario_id ? String(p.usuario_id) : null;
+        item.__esRelleno = true;
+        return item;
+    }
+
+    /* Abre el visor con el video tocado al inicio + videos del perfil ya cargados
+       + un lote acotado de videos públicos de otros autores, relleno escalado. */
+    async function abrirVisorConRelleno(itemTocado, indiceEnMedia) {
+        if (!itemTocado) return;
+
+        // 1) Base: videos del perfil ya cargados en mediaPublicaciones/galería
+        var baseItems;
+        var indiceInicial;
+
+        // Preferimos la lista completa de mediaPublicaciones (todas las publicaciones del perfil)
+        if (mediaPublicaciones.length) {
+            baseItems = mediaPublicaciones.slice();
+            indiceInicial = Math.max(0, mediaPublicaciones.indexOf(itemTocado));
+            if (indiceInicial < 0) indiceInicial = 0;
+        } else {
+            baseItems = [itemTocado];
+            indiceInicial = 0;
+        }
+
+        // 2) Relleno de otros autores (sólo si el usuario está autenticado: el relleno
+        //    requiere leer publicaciones públicas; si no hay sesión, mantenemos base).
+        var relleno = [];
+        var client = await obtenerCliente();
+
+        if (client && window.usuarioActualId) {
+            try {
+                if (!videoSesion.prefsCargadas) {
+                    await cargarPreferenciasVideo(client);
+                }
+                var yaPresentes = baseItems.map(function (x) { return x.postId; });
+                var filas = await cargarRellenoVideos(client, yaPresentes);
+                var autorMap = await hidratarAutores(client, filas);
+                filas.forEach(function (p) {
+                    var it = itemDesdePublicacionRelleno(p, autorMap);
+                    if (it) relleno.push(it);
+                });
+            } catch (e) {
+                console.warn('[PerfilPublico] Relleno:', e);
+            }
+        }
+
+        // 3) Concatena asegurando que el video tocado siga primero
+        var todos = baseItems.slice();
+
+        // Si el tocado no está en baseItems (por ej. miniatura de galería de video no listada), lo anteponemos.
+        var tocadoIdx = todos.indexOf(itemTocado);
+        if (tocadoIdx === -1) {
+            todos.unshift(itemTocado);
+            tocadoIdx = 0;
+        }
+
+        // Relleno: intercalado por autor ya aplicado; lo añadimos detrás de los del perfil.
+        relleno.forEach(function (r) {
+            if (!r.postId) return;
+            var dup = todos.some(function (x) { return x.postId === r.postId; });
+            if (!dup) todos.push(r);
+        });
+
+        // Aseguramos que el índice inicial sea el del video tocado
+        indiceInicial = todos.indexOf(itemTocado);
+        if (indiceInicial < 0) indiceInicial = 0;
+
+        // Registramos como vistos los postId inicialmente visibles (base + relleno)
+        todos.forEach(function (x) { if (x.postId) videoSesion.idsVistos.add(String(x.postId)); });
+
+        // 4) Abrimos con hooks de interés / rechazo
+        abrirVisor(todos, indiceInicial, {
+            carruselVertical: esCarrusel(todos),
+            autoReproducir: videoSesion.autoReproducir,
+            ahorradorDatos: videoSesion.ahorradorDatos,
+            videosAltaCalidad: videoSesion.videosAltaCalidad,
+            onInteres: function (item) {
+                if (!item) return;
+                if (item.temaId) {
+                    var prevT = videoSesion.afinidadTema.get(item.temaId) || 0;
+                    videoSesion.afinidadTema.set(item.temaId, prevT + 2);
+                    videoSesion.rechazados.delete(item.temaId);
+                }
+                if (item.autorUsuarioId) {
+                    var prevA = videoSesion.afinidadAutor.get(item.autorUsuarioId) || 0;
+                    videoSesion.afinidadAutor.set(item.autorUsuarioId, prevA + 1.5);
+                    videoSesion.autorRechazado.delete(item.autorUsuarioId);
+                }
+            },
+            onRechazo: function (item) {
+                if (!item) return;
+                if (item.temaId) {
+                    videoSesion.rechazados.add(item.temaId);
+                    var prevT = videoSesion.afinidadTema.get(item.temaId) || 0;
+                    videoSesion.afinidadTema.set(item.temaId, prevT - 3);
+                }
+                if (item.autorUsuarioId) {
+                    videoSesion.autorRechazado.add(item.autorUsuarioId);
+                    var prevA = videoSesion.afinidadAutor.get(item.autorUsuarioId) || 0;
+                    videoSesion.afinidadAutor.set(item.autorUsuarioId, prevA - 2);
+                }
+            }
+        });
+    }
+
     /* ================= VOLVER ================= */
 
     function mismoOrigenReferrer() {
@@ -1216,7 +1725,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v4.4');
+        console.info('[PerfilPublico] iniciando v4.5');
 
         mostrar(el.cargando);
         configurarVolver();
@@ -1287,6 +1796,11 @@
 
         cargarWallet(client, p.id).catch(function (e) {
             console.warn('[PerfilPublico] Wallet:', e);
+        });
+
+        // Cargamos preferencias antes de rellenar
+        cargarPreferenciasVideo(client).catch(function (e) {
+            console.warn('[PerfilPublico] Preferencias:', e);
         });
 
         cargarAmigos(client, p.id);
