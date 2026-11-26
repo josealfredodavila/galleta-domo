@@ -1,5 +1,5 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · PUBLICAR · BASE (v1)
+   CSARIEL'S · VIDEOS · PUBLICAR · BASE (v1.1)
    ================================================================
    Primer módulo de la división de videos-publicar.js.
    Contiene solo lo compartido por todos los demás módulos:
@@ -8,6 +8,9 @@
    - Estado compartido de la publicación.
    - Utilidades (DOM, texto, URLs temporales, Supabase, sesión).
    No crea interfaz ni hace peticiones de subida.
+   v1.1: MARCA_AGUA.ACTIVA = false. La marca de Sariel's ya la pone el
+         Worker al procesar el video (video-processor.js); la C del
+         frontend se quitó para no duplicarla.
    Expuesto en window.VideosPublicarNS:
      NS.C      → constantes
      NS.DATA   → catálogos
@@ -41,9 +44,9 @@
         ocultarReacciones: true
     };
 
-    /* Escudo con la "C" sobre los videos. ACTIVA: false lo quita. */
+    /* C dorada del frontend. Desactivada: la marca de Sariel's la pone el Worker. */
     var MARCA_AGUA = {
-        ACTIVA: true,
+        ACTIVA: false,
         OPACIDAD: 1
     };
 
