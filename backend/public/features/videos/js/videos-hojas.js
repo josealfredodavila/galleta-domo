@@ -1,12 +1,12 @@
 // ================================================================
-// CSARIEL'S · VIDEOS · HOJAS INFERIORES (v1)
+// CSARIEL'S · VIDEOS · HOJAS INFERIORES (v2)
 // ================================================================
 // Control de las hojas inferiores de videos.html:
 // comentarios, menú del video, mapa y publicar.
-// - Abrir y cerrar una hoja por id.
-// - Mostrar u ocultar el fondo oscuro (#hojaFondo).
+// - Abrir y cerrar una hoja por id (validando existencia).
+// - Mostrar u ocultar el fondo oscuro (#hojaFondo) de forma consistente.
 // - Bloquear el scroll de la página mientras hay una hoja abierta.
-// - Conectar los botones de cierre y el toque en el fondo.
+// - Conectar los botones de cierre y el toque en el fondo (idempotente).
 // Expuesto en window.VideosApp.hojas.
 // Requiere: config, utils.
 // Debe cargarse antes que videos-comentarios.js y videos-menu.js.
@@ -24,16 +24,35 @@
 
     var S = VA.state;
 
-    /* Muestra el fondo oscuro si está en el DOM. */
+    /* ---------------- Fondo y bloqueo de scroll ---------------- */
+
+    /* Muestra u oculta el fondo oscuro si está en el DOM. */
     function mostrarFondo(visible) {
         var fondo = document.getElementById('hojaFondo');
-        if (fondo) fondo.classList.toggle('show', !!visible);
+        if (!fondo) return;
+        fondo.classList.toggle('show', !!visible);
+    }
+
+    /* Restaura el scroll del body de forma segura. */
+    function restaurarScroll() {
+        if (document.body && document.body.style) {
+            document.body.style.overflow = '';
+        }
+    }
+
+    /* Bloquea el scroll del body mientras hay hoja abierta. */
+    function bloquearScroll() {
+        if (document.body && document.body.style) {
+            document.body.style.overflow = 'hidden';
+        }
     }
 
     /* ¿Queda alguna hoja abierta? */
     function hayHojaAbierta() {
         return !!document.querySelector('.hoja.show');
     }
+
+    /* ---------------- Abrir / cerrar ---------------- */
 
     /* Abre una hoja por id, con fondo y bloqueo de scroll. */
     function abrirHoja(id) {
@@ -42,7 +61,7 @@
 
         hoja.classList.add('show');
         mostrarFondo(true);
-        document.body.style.overflow = 'hidden';
+        bloquearScroll();
     }
 
     /* Cierra una hoja por id. Si era la última abierta, quita el fondo
@@ -53,7 +72,7 @@
 
         if (!hayHojaAbierta()) {
             mostrarFondo(false);
-            document.body.style.overflow = '';
+            restaurarScroll();
         }
 
         if (id === 'hojaComentarios') S.videoIdComentariosActual = null;
@@ -65,15 +84,17 @@
             h.classList.remove('show');
         });
         mostrarFondo(false);
-        document.body.style.overflow = '';
+        restaurarScroll();
         S.videoIdComentariosActual = null;
     }
 
+    /* ---------------- Enganche de eventos ---------------- */
+
     /* Conecta el toque en el fondo y los botones con data-cerrar.
-       Lo llama videos-init.js una sola vez. */
+       Idempotente: no duplica listeners aunque se llame varias veces. */
     function engancharHojas() {
         var fondo = document.getElementById('hojaFondo');
-        if (fondo && !fondo.dataset.hojasEnganchado) {
+        if (fondo && fondo.dataset.hojasEnganchado !== '1') {
             fondo.dataset.hojasEnganchado = '1';
             fondo.addEventListener('click', cerrarTodasHojas);
         }
@@ -86,6 +107,8 @@
             });
         });
     }
+
+    /* ---------------- Contrato público ---------------- */
 
     VA.hojas = {
         abrirHoja: abrirHoja,
