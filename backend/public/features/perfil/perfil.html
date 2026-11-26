@@ -1915,6 +1915,58 @@
 
     if (!btn || !panel) return;
 
+    // ---------- VISIBILIDAD CONTROLADA POR SUPABASE ----------
+    var UID = null;
+    var visibilidadDecidida = false;
+
+    function ocultarBotonYPanel() {
+        btn.style.display = 'none';
+        panel.classList.remove('abierto');
+        panel.style.display = 'none';
+    }
+
+    async function comprobarVisibilidadDesdeSupabase() {
+        if (!window.supabaseClient) return;
+        try {
+            const client = window.supabaseClient;
+            const sesion = await client.auth.getSession();
+            const uid = sesion?.data?.session?.user?.id;
+            if (!uid) return; // sin sesión, se queda visible (true por defecto)
+
+            const { data, error } = await client
+                .from('preferencias_usuario')
+                .select('prefs')
+                .eq('usuario_id', uid)
+                .maybeSingle();
+
+            if (error) {
+                console.warn('[Perfil] Error leyendo preferencia de botón llamadas:', error);
+                return;
+            }
+
+            const prefs = data?.prefs;
+            if (prefs && prefs.boton_llamadas_visible === false) {
+                ocultarBotonYPanel();
+            }
+        } catch (e) {
+            console.warn('[Perfil] Error comprobando visibilidad del botón de llamadas:', e);
+        }
+    }
+
+    // Esperar a que supabaseClient esté listo y decidir visibilidad
+    (function iniciarVisibilidad() {
+        let intentos = 0;
+        const intervalo = setInterval(() => {
+            if (window.supabaseClient) {
+                clearInterval(intervalo);
+                comprobarVisibilidadDesdeSupabase();
+            } else if (++intentos >= 150) {
+                clearInterval(intervalo); // 15 segundos máximo
+            }
+        }, 100);
+    })();
+
+    // ---------- POSICIÓN ARRASTRABLE (localStorage permitido) ----------
     var pid = null;
     var inicioX = 0, inicioY = 0;
     var origenLeft = 0, origenTop = 0;
@@ -1922,6 +1974,23 @@
 
     function limitar(valor, min, max) {
         return Math.min(Math.max(valor, min), max);
+    }
+
+    function esPosicionVisible(left, top) {
+        const ancho = window.innerWidth;
+        const alto = window.innerHeight;
+        const w = btn.offsetWidth || 56;
+        const h = btn.offsetHeight || 56;
+        // Si está fuera de los bordes o demasiado centrada (en medio de la pantalla), no es válida
+        if (left < 0 || top < 0 || left + w > ancho || top + h > alto) return false;
+        // Si está en la zona central (entre 20% y 80% del ancho y alto), la consideramos inválida
+        const centroX = left + w / 2;
+        const centroY = top + h / 2;
+        if (centroX > ancho * 0.2 && centroX < ancho * 0.8 &&
+            centroY > alto * 0.2 && centroY < alto * 0.8) {
+            return false;
+        }
+        return true;
     }
 
     function aplicarPosicion(left, top) {
@@ -1948,6 +2017,13 @@
         try {
             var guardada = JSON.parse(localStorage.getItem(CLAVE_POS) || 'null');
             if (guardada && Number.isFinite(guardada.left) && Number.isFinite(guardada.top)) {
+                // Verificar que la posición guardada sea visible y no esté en zona central
+                if (!esPosicionVisible(guardada.left, guardada.top)) {
+                    // Si no es visible, usar posición por defecto (esquina inferior derecha)
+                    aplicarPosicion(window.innerWidth - 72, window.innerHeight - 150);
+                    guardarPosicion();
+                    return;
+                }
                 aplicarPosicion(guardada.left, guardada.top);
                 return;
             }
