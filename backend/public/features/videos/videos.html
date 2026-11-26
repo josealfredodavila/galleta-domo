@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title data-clave="videos_titulo_pagina">◈ Videos · Csariel's</title>
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>" />
 
@@ -44,8 +44,8 @@
         </div>
 
         <nav class="vf-tabs" role="tablist" aria-label="Secciones de videos">
-            <button type="button" class="vf-tab active" data-tab="para_ti" role="tab">Para ti</button>
-            <button type="button" class="vf-tab" data-tab="siguiendo" role="tab">Siguiendo</button>
+            <button type="button" class="vf-tab active" data-tab="para_ti" role="tab">Explorando</button>
+            <button type="button" class="vf-tab" data-tab="siguiendo" role="tab">Comunidad</button>
             <button type="button" class="vf-tab" data-tab="puebla" role="tab">Puebla</button>
         </nav>
 
@@ -89,9 +89,9 @@
                         </div>
                     </div>
 
-                    <form id="formSubirVideo" onsubmit="event.preventDefault(); subirVideo();" style="margin:0;">
-                        <div class="form-group-old">
-                            <label>Título del video</label>
+                    <form id="formSubirVideo" onsubmit="return enviarPublicacion(event);" style="margin:0;">
+                        <div class="cs-campo-titulo">
+                            <label for="inputTituloVideo">Título del video</label>
                             <input type="text" id="inputTituloVideo" placeholder="Ej: Mi primer video en Csariel's" maxlength="200" />
                         </div>
 
@@ -126,7 +126,7 @@
                             </div>
                         </div>
 
-                        <div class="cola-estado" id="colaEstado" hidden>
+                        <div class="cola-estado" id="colaEstado" role="alert" hidden>
                             <span id="colaTexto"></span>
                             <button type="button" id="colaCancelar" hidden>Cancelar</button>
                         </div>
@@ -192,8 +192,38 @@
 
     <div class="toast" id="toast"></div>
 
+    <!-- Envío de publicación: muestra el error en pantalla si la función no está cargada -->
+    <script>
+        function mostrarErrorPublicar(msg) {
+            var caja = document.getElementById('colaEstado');
+            var txt = document.getElementById('colaTexto');
+            if (txt) txt.textContent = msg;
+            if (caja) caja.hidden = false;
+            console.error('[Videos] ' + msg);
+        }
+
+        function enviarPublicacion(ev) {
+            if (ev && ev.preventDefault) ev.preventDefault();
+            if (typeof window.subirVideo !== 'function') {
+                mostrarErrorPublicar('No se pudo iniciar la publicación: falta la función subirVideo en los módulos de publicar.');
+                return false;
+            }
+            try {
+                var r = window.subirVideo();
+                if (r && typeof r.catch === 'function') {
+                    r.catch(function (err) {
+                        mostrarErrorPublicar('Error al publicar: ' + ((err && err.message) || err));
+                    });
+                }
+            } catch (err) {
+                mostrarErrorPublicar('Error al publicar: ' + ((err && err.message) || err));
+            }
+            return false;
+        }
+    </script>
+
     <!-- ===== SCRIPTS (orden de carga importante) ===== -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
     <script src="/features/shared/js/idiomas.js?v=6"></script>
     <script src="/features/shared/js/reacciones-global.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
