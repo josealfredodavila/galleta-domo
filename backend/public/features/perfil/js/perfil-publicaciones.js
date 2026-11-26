@@ -1,7 +1,12 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v15.1 — sin duplicados (visor único: VisorMediaGlobal)
+// v15.2 — avatar del feed dibujado localmente (fix foto de autor)
 // Ruta: backend/public/features/perfil/js/perfil-publicaciones.js
+//
+// Cambios v15.2:
+//  - pubCrearAvatar ya no delega en window.crearAvatar; dibuja la
+//    imagen directamente a partir de usuario_avatar_url. Corrige
+//    que se mostrara la inicial ("A") en vez de la foto del autor.
 //
 // Cambios v15.1:
 //  - Un solo visor: VisorMediaGlobal. Se quitó el duplicado de visor.
@@ -81,10 +86,6 @@ function pubEsUrlSegura(url) {
 }
 
 function pubCrearAvatar(nombre, url) {
-    if (typeof window.crearAvatar === 'function') {
-        return window.crearAvatar(nombre, url);
-    }
-
     var avatar = document.createElement('div');
     avatar.className = 'avatar-placeholder';
     avatar.textContent = String(nombre || '?').trim().charAt(0).toUpperCase() || '?';
@@ -94,10 +95,7 @@ function pubCrearAvatar(nombre, url) {
         imagen.src = url;
         imagen.alt = '';
         imagen.loading = 'lazy';
-        imagen.style.width = '100%';
-        imagen.style.height = '100%';
-        imagen.style.objectFit = 'cover';
-        imagen.style.borderRadius = '50%';
+        imagen.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:50%;display:block;';
 
         imagen.onerror = function () {
             if (imagen.parentNode) imagen.parentNode.removeChild(imagen);
@@ -1451,5 +1449,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v15.1
+// FIN · PERFIL PUBLICACIONES v15.2
 // ================================================================
