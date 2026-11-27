@@ -1,17 +1,14 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v5.3 · Conteo de comentarios en cada ítem del visor.
-   CAMBIOS v5.3:
-   · Cada ítem que se pasa al visor (publicaciones, galería y feed)
-     lleva comentarios: número. El visor usa ese conteo y no hace una
-     consulta extra por cambio de video.
-   · Al abrir el visor desde el lote del feed, los comentarios vienen
-     de f.comentarios (si el servidor lo envía) o de la respuesta de
-     respaldo.
-   CAMBIOS v5.2 (se conservan):
-   · Publicaciones con foto o video: la tarjeta muestra solo un resumen
-     de lectura (emoji dominante con total y número de comentarios). La
-     reacción y el comentario se hacen únicamente dentro del visor.
+   v5.4 · Tarjetas con foto o video limpias (sin resumen ni aviso
+   inferior; reacciones y comentarios en el visor).
+   CAMBIOS v5.4:
+   · Publicaciones con foto o video: no muestran el resumen estático
+     (emoji/reacciones ni comentarios) ni el letrero inferior en la
+     tarjeta; todo se gestiona dentro del visor.
+   · Se conserva el conteo de comentarios en cada ítem del visor
+     (publicaciones, galería y feed).
+   CAMBIOS v5.3 y v5.2 (se conservan):
    · Publicaciones sin media (solo texto o audio): conservan la barra de
      reacciones y los comentarios en la tarjeta.
    · Comentarios con avatar (o inicial) y nombre, leídos de
@@ -19,15 +16,6 @@
    · Índice inicial del visor por postId; orden: perfil, galería, feed.
    · Catálogo de reacciones esperado antes de pintar las publicaciones.
    · Sin sessionStorage.
-   RPC y tablas verificadas en Supabase:
-   perfil_publico_verificado, perfil_publico_por_handle,
-   perfil_publico_por_id, perfil_visibilidad_estado,
-   perfil_publicaciones_contactos, perfil_galeria,
-   puede_publicar_en_muro, publicaciones, publicacion_reportes,
-   publicaciones_reacciones, publicaciones_comentarios,
-   publicaciones_comentarios_publicos (incluye usuario_avatar_url),
-   wallet_publica, publicaciones_ocultas, usuarios_preferencias,
-   usuarios_idiomas_contenido, idiomas_sistema, perfiles_publicos.
    ================================================================ */
 (function () {
     'use strict';
@@ -292,11 +280,7 @@
             '.pv-comentario-av img{width:100%;height:100%;object-fit:cover;}' +
             '.pv-comentario-cuerpo{min-width:0;flex:1;font-size:.85rem;line-height:1.45;color:#d5e4ef;}' +
             '.pv-comentario-cuerpo .pv-comentario-autor{display:block;margin-right:0;line-height:1.3;}' +
-            '.pv-comentario-texto{word-break:break-word;white-space:pre-wrap;}' +
-            '.pv-resumen{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}' +
-            '.pv-resumen-item{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#b7d0e2;font-size:.82rem;}' +
-            '.pv-resumen-rx{color:#ffffff;}' +
-            '.pv-post-pista{margin-top:8px;font-size:.72rem;color:#6f8ba0;}';
+            '.pv-comentario-texto{word-break:break-word;white-space:pre-wrap;}';
         document.head.appendChild(est);
     }
 
@@ -803,46 +787,9 @@
         }
     }
 
-    /* ================= RESUMEN DE SOLO LECTURA (publicaciones con visor) ================= */
-
-    /* Emoji con más reacciones según el resumen de ReaccionesGlobal. */
-    function emojiDominante(resumen) {
-        var totales = (resumen && resumen.totales) || {};
-        var mejor = null;
-        var max = 0;
-        Object.keys(totales).forEach(function (k) {
-            if (totales[k] > max) {
-                max = totales[k];
-                mejor = k;
-            }
-        });
-        return mejor;
-    }
-
-    function crearResumen(resumen, comentarios) {
-        var box = document.createElement('div');
-        box.className = 'pv-resumen';
-
-        var total = resumen && resumen.total ? resumen.total : 0;
-
-        if (total > 0) {
-            var rx = document.createElement('span');
-            rx.className = 'pv-resumen-item pv-resumen-rx';
-            rx.textContent = (emojiDominante(resumen) || '❤️') + ' ' + total;
-            box.appendChild(rx);
-        }
-
-        var com = document.createElement('span');
-        com.className = 'pv-resumen-item';
-        com.textContent = 'Comentarios ' + (numeroComentarios(comentarios) || 0);
-        box.appendChild(com);
-
-        return box;
-    }
-
     /* ================= TARJETA DE PUBLICACIÓN ================= */
 
-    function crearPost(client, p, resumen) {
+    function crearPost(client, p) {
         var pubId = p.id;
         var conVisor = tieneVisor(p);
 
@@ -894,22 +841,12 @@
             meta.appendChild(aviso);
         }
 
-        var barra = document.createElement('div');
-        barra.className = 'pv-post-barra';
+        /* Publicaciones con foto o video quedan limpias en la tarjeta:
+           reacciones y comentarios se manejan dentro del visor. */
+        if (!conVisor) {
+            var barra = document.createElement('div');
+            barra.className = 'pv-post-barra';
 
-        if (conVisor) {
-            /* Interacción única: vive dentro del visor. Aquí solo se lee el resumen. */
-            barra.appendChild(crearResumen(resumen, p.comentarios));
-            meta.appendChild(barra);
-
-            var pista = document.createElement('div');
-            pista.className = 'pv-post-pista';
-            pista.textContent = mediaTipo(p.media_type, p.media_url) === 'video'
-                ? 'Toca el video para reaccionar y comentar'
-                : 'Toca la foto para reaccionar y comentar';
-            meta.appendChild(pista);
-        } else {
-            /* Sin foto ni video: la interacción sí vive en la tarjeta. */
             var reacciones = document.createElement('div');
             reacciones.className = 'pv-reacciones';
             reacciones.dataset.pubId = pubId;
@@ -1114,23 +1051,25 @@
             });
 
             var uid = window.usuarioActualId;
-            var ids = nuevos.map(function (p) { return p.id; });
+            var sinVisorIds = nuevos
+                .filter(function (p) { return !tieneVisor(p) && p.id; })
+                .map(function (p) { return p.id; });
             var resumenes = new Map();
 
-            if (ids.length && window.ReaccionesGlobal && typeof window.ReaccionesGlobal.cargarResumenLote === 'function') {
+            if (sinVisorIds.length && window.ReaccionesGlobal && typeof window.ReaccionesGlobal.cargarResumenLote === 'function') {
                 try {
-                    resumenes = await window.ReaccionesGlobal.cargarResumenLote(client, ids, uid);
+                    resumenes = await window.ReaccionesGlobal.cargarResumenLote(client, sinVisorIds, uid);
                 } catch (e) {
                     console.warn('[PerfilPublico] Resumen de reacciones:', e);
                 }
             }
 
             nuevos.forEach(function (p) {
-                var resumen = resumenes && resumenes.get ? resumenes.get(String(p.id)) : null;
-                var card = crearPost(client, p, resumen);
+                var card = crearPost(client, p);
                 el.pubLista.appendChild(card);
 
                 if (!tieneVisor(p)) {
+                    var resumen = resumenes && resumenes.get ? resumenes.get(String(p.id)) : null;
                     var contenedorRx = card.querySelector('.pv-reacciones');
                     montarReacciones(contenedorRx, client, p.id, uid, resumen);
                 }
@@ -1817,7 +1756,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v5.3');
+        console.info('[PerfilPublico] iniciando v5.4');
 
         asegurarEstilosComentarios();
         mostrar(el.cargando);
