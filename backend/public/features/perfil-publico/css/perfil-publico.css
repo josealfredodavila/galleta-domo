@@ -1,9 +1,70 @@
 /* ================================================================
    PERFIL-PUBLICO.CSS — Csariel's
-   v4.5 · Galería al ancho del dispositivo (estilo X), reacciones
-   sin contadores repetidos y medios sin recorte. Prefijo pv-
-   para no chocar con emojis-animations.css ni con los estilos globales.
+   v4.6 · Correcciones: bio completa (#pvBio) y apilamiento del
+   muro (#pvMuroSection). Galería al ancho del dispositivo (estilo X),
+   reacciones sin contadores repetidos y medios sin recorte.
+   Prefijo pv- para no chocar con emojis-animations.css ni con los
+   estilos globales.
    ================================================================ */
+
+/* ================= CORRECCIONES v4.6 ================= */
+
+/* Bio completa: el .bio heredado de perfil.css puede recortar líneas
+   (max-height / line-clamp). Aquí se anulan para #pvBio. */
+#pvBio,
+.perfil-header #pvBio,
+.perfil-header .bio {
+    display: block !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    -webkit-line-clamp: none !important;
+    line-clamp: none !important;
+    -webkit-box-orient: horizontal !important;
+    white-space: normal !important;
+    text-overflow: clip !important;
+    word-break: break-word;
+}
+#pvBio[hidden] {
+    display: none !important;
+}
+
+/* Apilamiento: cada bloque de la página va en su propio plano y el
+   muro no se encima sobre la galería ni sobre el carrusel. */
+#pvPerfil {
+    position: relative;
+    isolation: isolate;
+}
+#pvPerfil > section,
+#pvPerfil > .carrusel-3d-wrapper,
+#pvPerfil > .panel {
+    position: relative;
+    z-index: 1;
+}
+#pvGaleriaSection {
+    z-index: 1;
+}
+#pvMuroSection {
+    position: relative;
+    z-index: 2;
+    clear: both;
+    margin: 18px 0 14px;
+    padding: 0;
+    isolation: isolate;
+}
+#pvMuroSection[hidden] {
+    display: none !important;
+}
+#pvMuroSection .web3-composer {
+    position: relative;
+    z-index: 2;
+    margin: 0;
+}
+#pvPubSection {
+    position: relative;
+    z-index: 1;
+    clear: both;
+}
 
 /* ================= ESTADOS Y WALLET ================= */
 
