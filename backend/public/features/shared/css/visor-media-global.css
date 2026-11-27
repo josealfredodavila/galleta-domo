@@ -1,6 +1,9 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.CSS · Csariel's · v1.5
+   VISOR-MEDIA-GLOBAL.CSS · Csariel's · v1.6
    Prefijo vmg- para no chocar con ningún otro estilo.
+   Cambios v1.6:
+   - Reacciones dentro del visor (.vmg) transparentes y flotantes
+     sobre el video sin cápsula, borde ni fondo oscuro.
    Cambios v1.5:
    - Eliminados estilos de tarjeta/foto de autor (.vmg-info-autor)
      para mantener el visor limpio sin datos ni foto del usuario.
@@ -269,9 +272,72 @@
 .vmg.vmg-oculto .vmg-cabecera,
 .vmg.vmg-oculto .vmg-controles,
 .vmg.vmg-oculto .vmg-play-central,
-.vmg.vmg-oculto .vmg-notif {
+.vmg.vmg-oculto .vmg-notif,
+.vmg.vmg-oculto [class*="vmg-reaccion"],
+.vmg.vmg-oculto [class*="vmg-rx"],
+.vmg.vmg-oculto .rx-barra {
     opacity: 0;
     pointer-events: none;
+}
+
+/* REACCIONES TRANSPARENTES FLOTANTES SOBRE EL VIDEO EN EL VISOR */
+.vmg [class*="vmg-reaccion"],
+.vmg [class*="vmg-rx"],
+.vmg .rx-barra,
+.vmg .rx-lista,
+.vmg .rx-grupo {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+}
+
+.vmg [class*="vmg-reaccion"] button,
+.vmg [class*="vmg-rx"] button,
+.vmg .rx-btn,
+.vmg .rx-chip,
+.vmg .rx-item button {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.85);
+    transition: transform 0.16s ease, opacity 0.16s ease;
+}
+
+.vmg [class*="vmg-reaccion"] button:hover,
+.vmg [class*="vmg-rx"] button:hover,
+.vmg .rx-btn:hover,
+.vmg .rx-chip:hover,
+.vmg .rx-item button:hover {
+    background: transparent !important;
+    background-color: transparent !important;
+    transform: scale(1.14);
+}
+
+.vmg [class*="vmg-reaccion"] button:active,
+.vmg [class*="vmg-rx"] button:active,
+.vmg .rx-btn:active,
+.vmg .rx-chip:active,
+.vmg .rx-item button:active,
+.vmg [class*="vmg-reaccion"] button.activo,
+.vmg [class*="vmg-rx"] button.activo,
+.vmg [class*="vmg-reaccion"] button.activa,
+.vmg [class*="vmg-rx"] button.activa,
+.vmg .rx-btn.activo,
+.vmg .rx-btn.activa,
+.vmg .rx-chip.activo,
+.vmg .rx-chip.activa {
+    background: transparent !important;
+    background-color: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    transform: scale(1.2);
 }
 
 /* LETRERO DISCRETO «¿TE INTERESA?» */
@@ -446,7 +512,12 @@
     .vmg-cabecera,
     .vmg-controles,
     .vmg-play-central,
-    .vmg-notif {
+    .vmg-notif,
+    .vmg [class*="vmg-reaccion"] button,
+    .vmg [class*="vmg-rx"] button,
+    .vmg .rx-btn,
+    .vmg .rx-chip,
+    .vmg .rx-item button {
         transition: none;
     }
     .vmg-escenario--carrusel {
