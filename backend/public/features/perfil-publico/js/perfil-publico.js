@@ -1,14 +1,19 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v5.2 · Una sola interacción por publicación.
-   CAMBIOS v5.2:
+   v5.3 · Conteo de comentarios en cada ítem del visor.
+   CAMBIOS v5.3:
+   · Cada ítem que se pasa al visor (publicaciones, galería y feed)
+     lleva comentarios: número. El visor usa ese conteo y no hace una
+     consulta extra por cambio de video.
+   · Al abrir el visor desde el lote del feed, los comentarios vienen
+     de f.comentarios (si el servidor lo envía) o de la respuesta de
+     respaldo.
+   CAMBIOS v5.2 (se conservan):
    · Publicaciones con foto o video: la tarjeta muestra solo un resumen
      de lectura (emoji dominante con total y número de comentarios). La
-     reacción y el comentario se hacen únicamente dentro del visor, así
-     no aparecen duplicados.
+     reacción y el comentario se hacen únicamente dentro del visor.
    · Publicaciones sin media (solo texto o audio): conservan la barra de
-     reacciones y los comentarios en la tarjeta, para que siempre exista
-     una forma de interactuar.
+     reacciones y los comentarios en la tarjeta.
    · Comentarios con avatar (o inicial) y nombre, leídos de
      publicaciones_comentarios_publicos.usuario_avatar_url.
    · Índice inicial del visor por postId; orden: perfil, galería, feed.
@@ -185,6 +190,13 @@
         return -1;
     }
 
+    /* Número seguro de comentarios: entero no negativo, o null si no se conoce. */
+    function numeroComentarios(v) {
+        var n = Number(v);
+        if (v === null || v === undefined || v === '' || !isFinite(n)) return null;
+        return n < 0 ? 0 : Math.floor(n);
+    }
+
     function inicialDe(nombre) {
         var t = String(nombre || '').trim();
         return t ? t.charAt(0).toUpperCase() : '•';
@@ -357,6 +369,8 @@
 
     /* ================= ITEMS PARA EL VISOR ================= */
 
+    /* Ítem del visor. El conteo de comentarios (comentarios) viaja aquí
+       para que el visor no haga una consulta extra por cada video. */
     function itemVisorDesdeMedia(item, autorInfo) {
         var out = {
             url: item.url,
@@ -365,6 +379,10 @@
             postId: item.postId,
             esDueno: item.esDueno === true
         };
+
+        var com = numeroComentarios(item.comentarios);
+        if (com !== null) out.comentarios = com;
+
         if (autorInfo) {
             if (autorInfo.autorNombre) out.autorNombre = autorInfo.autorNombre;
             if (autorInfo.autorHandle) out.autorHandle = autorInfo.autorHandle;
@@ -643,7 +661,8 @@
             tipo: tipo,
             permiteDescarga: p.permitir_descarga !== false,
             postId: p.id,
-            esDueno: esSoyDueno(p.usuario_id)
+            esDueno: esSoyDueno(p.usuario_id),
+            comentarios: p.comentarios
         }, autor);
         item.temaId = p.tema_id ? String(p.tema_id) : null;
         item.idioma = idiomaDe(p);
@@ -815,7 +834,7 @@
 
         var com = document.createElement('span');
         com.className = 'pv-resumen-item';
-        com.textContent = 'Comentarios ' + (Number(comentarios) || 0);
+        com.textContent = 'Comentarios ' + (numeroComentarios(comentarios) || 0);
         box.appendChild(com);
 
         return box;
@@ -899,7 +918,7 @@
             btnCom.type = 'button';
             btnCom.className = 'pv-btn-comentar';
 
-            var totalCom = Number(p.comentarios) || 0;
+            var totalCom = numeroComentarios(p.comentarios) || 0;
 
             var iconoCom = document.createElement('span');
             iconoCom.textContent = 'Comentarios';
@@ -1245,7 +1264,8 @@
                     tipo: mediaTipo(f.media_type, url),
                     permiteDescarga: f.permitir_descarga !== false,
                     postId: f.id,
-                    esDueno: esSoyDueno(perfil.id)
+                    esDueno: esSoyDueno(perfil.id),
+                    comentarios: f.comentarios
                 }, {
                     autorNombre: perfil.nombre || perfil.handle || null,
                     autorHandle: perfil.handle || null,
@@ -1519,6 +1539,7 @@
                     usuario_nombre: null,
                     usuario_handle: null,
                     usuario_avatar_url: null,
+                    comentarios: null,
                     fuente: 'reciente'
                 };
             });
@@ -1534,7 +1555,8 @@
             tipo: 'video',
             permiteDescarga: f.permitir_descarga !== false,
             postId: f.id,
-            esDueno: false
+            esDueno: false,
+            comentarios: f.comentarios
         }, {
             autorNombre: f.usuario_nombre || f.usuario_handle || null,
             autorHandle: f.usuario_handle || null,
@@ -1795,7 +1817,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v5.2');
+        console.info('[PerfilPublico] iniciando v5.3');
 
         asegurarEstilosComentarios();
         mostrar(el.cargando);
