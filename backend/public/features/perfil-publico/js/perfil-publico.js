@@ -1,21 +1,16 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4.7 · Biografía (mismo texto que el perfil propio), visor
-   compartido (visor-media-global.js v1.6), galería de fotos y videos,
+   v4.8 · Biografía (mismo texto que el perfil propio), visor
+   compartido (visor-media-global.js), galería de fotos y videos,
    publicación en el muro de un contacto activo y relleno de videos
    públicos de otros autores con notificación «¿Te interesa?».
-   CAMBIOS v4.7:
-   · Blindaje estricto videos vs. fotos al abrir el visor:
-     - Video tocado → carruselVertical solo con videos reales
-       (perfil + relleno), descartando cualquier extensión de imagen.
-     - Foto tocada → carruselVertical:false solo con fotos reales.
-   · Conserva la posición de desplazamiento de la página al abrir y
-     cerrar el visor para evitar saltos bruscos hasta arriba del perfil.
-   · cargarRellenoVideos / hidratarAutores defensivos:
-     si perfiles_publicos falla, igual devuelve los videos de relleno.
-   · Ítems de relleno marcados con esRecomendado + mostrarInteres
-     y callbacks onInteres/onRechazo que actualizan afinidades,
-     temas y autores rechazados en memoria (videoSesion).
+   CAMBIOS v4.8 (alineado con el esquema real de Supabase):
+   · Preferencias de contenido leídas de usuarios_preferencias
+     (antes preferencias_contenido, que no existe).
+   · Idiomas: usuarios_idiomas_contenido.idioma_id → idiomas_sistema.codigo
+     (antes una columna idioma de texto que no existe).
+   · publicaciones ahora tiene tema_id, idioma_id y es_sensible: se
+     leen y se usan para ordenar el relleno.
    RPC y tablas verificadas en Supabase:
    perfil_publico_verificado, perfil_publico_por_handle,
    perfil_publico_por_id, perfil_visibilidad_estado,
@@ -23,7 +18,9 @@
    puede_publicar_en_muro, publicaciones, publicacion_reportes,
    publicaciones_reacciones, publicaciones_comentarios,
    publicaciones_comentarios_publicos, wallet_publica,
-   publicaciones_ocultas.
+   publicaciones_ocultas, usuarios_temas_interes,
+   usuarios_temas_bloqueados, usuarios_idiomas_contenido,
+   usuarios_preferencias, idiomas_sistema, perfiles_publicos.
    ================================================================ */
 (function () {
     'use strict';
@@ -63,6 +60,7 @@
         temasInteres: [],
         temasBloqueados: new Set(),
         idiomasPref: [],
+        idiomaCodigoPorId: new Map(),
         mostrarSensible: false,
         ahorradorDatos: false,
         videosAltaCalidad: true,
@@ -227,6 +225,14 @@
         if (t) return t;
         if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(u)) return 'audio';
         return 'imagen';
+    }
+
+    /* Código de idioma (ej. "es") a partir de idioma_id. */
+    function idiomaDe(p) {
+        if (p && p.idioma_id && videoSesion.idiomaCodigoPorId.has(String(p.idioma_id))) {
+            return videoSesion.idiomaCodigoPorId.get(String(p.idioma_id));
+        }
+        return null;
     }
 
     function registrarReproductorUnico(elMedia) {
@@ -497,10 +503,31 @@
         }
     }
 
-    /* ================= PREFERENCIAS (defensivo) ================= */
+    /* ================= PREFERENCIAS Y CATÁLOGO DE IDIOMAS ================= */
+
+    /* Carga el catálogo de idiomas (id → código) una sola vez. */
+    async function cargarCatalogoIdiomas(client) {
+        if (!client || videoSesion.idiomaCodigoPorId.size) return;
+        try {
+            var r = await conTimeout(
+                client.from('idiomas_sistema').select('id, codigo').eq('activo', true),
+                TIMEOUT_CATALOGO_MS,
+                'idiomas_sistema timeout'
+            );
+            if (!r.error && Array.isArray(r.data)) {
+                r.data.forEach(function (x) {
+                    if (x && x.id && x.codigo) {
+                        videoSesion.idiomaCodigoPorId.set(String(x.id), String(x.codigo).toLowerCase());
+                    }
+                });
+            }
+        } catch (e) { /* no fatal */ }
+    }
 
     async function cargarPreferenciasVideo(client) {
         videoSesion.prefsCargadas = true;
+
+        await cargarCatalogoIdiomas(client);
 
         if (!window.usuarioActualId || !client) {
             videoSesion.mostrarSensible = false;
@@ -537,18 +564,20 @@
 
             try {
                 var ri = await conTimeout(
-                    client.from('usuarios_idiomas_contenido').select('idioma').eq('usuario_id', uid).limit(LIMITE_PREFS),
+                    client.from('usuarios_idiomas_contenido').select('idioma_id').eq('usuario_id', uid).limit(LIMITE_PREFS),
                     TIMEOUT_CATALOGO_MS,
                     'idiomas timeout'
                 );
                 if (!ri.error && Array.isArray(ri.data)) {
-                    videoSesion.idiomasPref = ri.data.map(function (x) { return String(x.idioma || '').toLowerCase(); }).filter(Boolean);
+                    videoSesion.idiomasPref = ri.data
+                        .map(function (x) { return videoSesion.idiomaCodigoPorId.get(String(x.idioma_id)); })
+                        .filter(Boolean);
                 }
             } catch (e) { /* ignorar */ }
 
             try {
                 var rp = await conTimeout(
-                    client.from('preferencias_contenido').select('*').eq('usuario_id', uid).maybeSingle(),
+                    client.from('usuarios_preferencias').select('*').eq('usuario_id', uid).maybeSingle(),
                     TIMEOUT_CATALOGO_MS,
                     'preferencias timeout'
                 );
@@ -620,7 +649,7 @@
         };
         var item = itemVisorDesdeMedia(itemBase, autor);
         item.temaId = p.tema_id ? String(p.tema_id) : null;
-        item.idioma = p.idioma ? String(p.idioma).toLowerCase() : null;
+        item.idioma = idiomaDe(p);
         item.sensible = p.es_sensible === true;
         item.autorUsuarioId = p.usuario_id ? String(p.usuario_id) : null;
 
@@ -1095,7 +1124,7 @@
                     esDueno: esSoyDueno(perfil.id)
                 }, autorInfo);
                 item.temaId = f.tema_id ? String(f.tema_id) : null;
-                item.idioma = f.idioma ? String(f.idioma).toLowerCase() : null;
+                item.idioma = idiomaDe(f);
                 item.sensible = f.es_sensible === true;
                 item.autorUsuarioId = perfil.id ? String(perfil.id) : null;
 
@@ -1378,7 +1407,7 @@
         ocultas.forEach(function (id) { excluir.add(String(id)); });
 
         var columnasBase = 'id, usuario_id, contenido, media_url, media_type, created_at, permitir_descarga, perfil_destino_id';
-        var columnasExtendidas = columnasBase + ', tema_id, idioma, es_sensible';
+        var columnasExtendidas = columnasBase + ', tema_id, idioma_id, es_sensible';
 
         async function intentar(columnas) {
             try {
@@ -1413,7 +1442,10 @@
             return true;
         });
 
-        filas.forEach(function (p) { p.__score = puntuarVideo(p); });
+        filas.forEach(function (p) {
+            p.idioma = idiomaDe(p);
+            p.__score = puntuarVideo(p);
+        });
         filas.sort(function (a, b) { return (b.__score || 0) - (a.__score || 0); });
 
         filas = intercalarAntiRepeticion(filas);
@@ -1490,7 +1522,7 @@
 
         var item = itemVisorDesdeMedia(base, info);
         item.temaId = p.tema_id ? String(p.tema_id) : null;
-        item.idioma = p.idioma ? String(p.idioma).toLowerCase() : null;
+        item.idioma = p.idioma || null;
         item.sensible = p.es_sensible === true;
         item.autorUsuarioId = p.usuario_id ? String(p.usuario_id) : null;
         item.esRecomendado = true;
@@ -1769,7 +1801,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v4.7');
+        console.info('[PerfilPublico] iniciando v4.8');
 
         mostrar(el.cargando);
         configurarVolver();
