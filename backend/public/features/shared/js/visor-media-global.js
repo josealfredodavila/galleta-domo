@@ -17,7 +17,8 @@
    · Al cambiar de video con la hoja de comentarios abierta, la hoja se
      cierra para que nunca se comente sobre un video distinto.
    · Comentarios con avatar (o inicial) y nombre del autor.
-   · Barra de reacciones sin caja negra sobre el video (CSS interno).
+   · Barra de reacciones transparente y flotante sobre el video sin caja
+     negra ni bordes rígidos.
    · API pública sin cambios. Sin sessionStorage.
 
    API pública (sin cambios):
@@ -227,19 +228,18 @@
                 '.vmg-pg-slide video,.vmg-pg-slide img{width:100%;height:100%;object-fit:contain;background:#000;display:block;user-select:none;-webkit-user-drag:none;}' +
                 '.vmg-pg-err{color:rgba(255,255,255,.6);font-size:14px;}' +
 
-                '.vmg2-lateral{position:absolute;right:10px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;align-items:center;gap:14px;}' +
+                '.vmg2-lateral{position:absolute;right:10px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;align-items:center;gap:14px;background:transparent!important;border:0!important;box-shadow:none!important;transition:opacity 0.25s ease;}' +
                 '.vmg2-lateral[hidden]{display:none!important;}' +
                 '.vmg-oculto .vmg2-lateral{opacity:0;pointer-events:none;}' +
-                '.vmg2-lat-btn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(10,14,22,.72);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11px;cursor:pointer;}' +
-                '.vmg2-lat-btn svg{width:22px;height:22px;}' +
-                '.vmg2-lat-n{font-size:10px;line-height:1;color:rgba(255,255,255,.85);}' +
+                '.vmg2-lat-btn{width:46px;height:46px;border-radius:50%;border:0;background:transparent!important;box-shadow:none!important;color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11px;cursor:pointer;text-shadow:0 2px 8px rgba(0,0,0,.85);}' +
+                '.vmg2-lat-btn svg{width:22px;height:22px;filter:drop-shadow(0 2px 6px rgba(0,0,0,.85));}' +
+                '.vmg2-lat-n{font-size:11px;font-weight:700;line-height:1;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.85);}' +
 
-                /* Barra de reacciones dentro del visor: sin caja negra fija.
-                   Solo el disparador es visible; el menú aparece al abrirlo. */
-                '.vmg2-lateral .rg-wrap{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;}' +
-                '.vmg2-lateral .rg-disparador{background:rgba(10,14,22,.72)!important;box-shadow:none!important;}' +
+                /* Reacciones transparentes flotantes sobre el video en el visor */
+                '.vmg2-lateral .rg-wrap,.vmg2-lateral .rg-barra,.vmg2-lateral .rg-lista,.vmg2-lateral .rg-grupo{background:transparent!important;background-color:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;}' +
+                '.vmg2-lateral .rg-disparador,.vmg2-lateral .rg-btn,.vmg2-lateral .rg-chip,.vmg2-lateral button{background:transparent!important;background-color:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;text-shadow:0 2px 10px rgba(0,0,0,.85);}' +
                 '.vmg2-lateral .rg-menu[hidden]{display:none!important;}' +
-                '.vmg2-lateral .rg-menu{background:rgba(10,14,22,.94);border-radius:24px;box-shadow:0 8px 22px rgba(0,0,0,.5);}' +
+                '.vmg2-lateral .rg-menu{background:transparent!important;background-color:transparent!important;border:0!important;box-shadow:none!important;}' +
 
                 '.vmg-hoja.vmg-hoja-cm{padding:0;display:flex;flex-direction:column;}' +
                 '.vmg-cm-lista{flex:1;min-height:30dvh;max-height:52dvh;overflow-y:auto;padding:4px 0;}' +
