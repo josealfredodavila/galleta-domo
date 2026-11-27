@@ -1,16 +1,26 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.4
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.5
    Visor de pantalla completa compartido para fotos y videos.
 
-   Cambios v1.4:
-   - Scrub con el dedo en carrusel vertical: arrastre horizontal
-     sobre un video activo adelanta/atrasa currentTime de forma fluida
-     (proporcional al ancho del escenario) sin disparar play/pausa al
-     soltar ni romper el snap vertical.
-   - Swipe horizontal limpio cuando NO es carrusel: izquierda/derecha
-     cambia de elemento con fluidez; swipe-down sigue cerrando.
-   - Notificación «¿Te interesa?» permanece 9 s (o hasta responder/
-     cerrar) y no se auto-oculta al instante.
+   Cambios v1.5:
+   - Notificación «¿Te interesa este video?» con aparición dinámica:
+     · Solo se dispara tras 6 s viendo el mismo video (o si lo
+       reinicia/repita).
+     · Enfriamiento de al menos 4 videos entre apariciones.
+     · Máximo 2 apariciones por sesión del visor.
+     · Si el usuario cambia de video antes de los 6 s, se cancela
+       el temporizador.
+   - La tarjeta del autor (nombre, handle, avatar, texto) se mantiene
+     limpia: la notificación nunca la oculta ni la pisa.
+   - Respuesta ágil: al pulsar «Sí, me interesa» o «Rechazar para
+     ver más», se ejecuta onInteres/onRechazo, se oculta el aviso
+     de inmediato y, si rechaza, avanza al siguiente video sin
+     trabar la reproducción.
+
+   Cambios v1.4 (heredados):
+   - Scrub con el dedo en carrusel vertical.
+   - Swipe horizontal limpio cuando NO es carrusel.
+   - Notificación «¿Te interesa?» permanece visible hasta responder.
 
    API pública:
      VisorMediaGlobal.abrir, cerrar, estaAbierto, contieneVideo, version.
@@ -18,13 +28,17 @@
 (function () {
     'use strict';
 
-    var VERSION = '1.4';
+    var VERSION = '1.5';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
     var CSS_PATH = '/features/shared/css/visor-media-global.css';
     var VELOCIDADES = [1, 1.25, 1.5, 2];
-    var NOTIF_MS = 9000;
+
+    // Reglas de aparición de la notificación «¿Te interesa?»
+    var NOTIF_DELAY_MS = 6000;        // 6 s viendo el mismo video
+    var NOTIF_ENFRIAMIENTO_VIDEOS = 4; // 4 videos entre apariciones
+    var NOTIF_MAX_POR_SESION = 2;      // máx. 2 veces por sesión
 
     var MOTIVOS = [
         'Problema que involucra a un menor de 18 años',
@@ -89,6 +103,11 @@
         notifDescartados: new Set(),
         onInteres: null,
         onRechazo: null,
+        // control de aparición de la notificación
+        notifSesionUsos: 0,          // cuántas veces se mostró en esta sesión
+        notifVideosDesdeUltima: 0,   // videos vistos desde la última aparición
+        notifItemActual: null,       // referencia al item en cuyo contexto apareció
+        notifCanceladaPorCambio: false,
         // scrub horizontal (carrusel)
         scrubActivo: false,
         scrubBaseTime: 0,
@@ -149,6 +168,13 @@
     async function uidActual(cliente) {
         var s = await cliente.auth.getSession();
         return s.data && s.data.session ? s.data.session.user.id : null;
+    }
+
+    function mismoItem(a, b) {
+        if (!a || !b) return false;
+        if (a === b) return true;
+        if (a.postId && b.postId) return String(a.postId) === String(b.postId);
+        return a.url === b.url;
     }
 
     /* ================= HISTORY (botón atrás) ================= */
@@ -523,33 +549,107 @@
         }
     }
 
-    /* ================= NOTIFICACIÓN «¿TE INTERESA?» ================= */
+    /* ================= NOTIFICACIÓN «¿TE INTERESA?» =================
+       Reglas de aparición:
+       - Solo para videos (nunca fotos).
+       - Solo si hay onInteres o onRechazo configurados.
+       - Solo si el usuario lleva ≥ 6 s viendo el mismo video, o si
+         lo reinicia/repita.
+       - Enfriamiento: al menos 4 videos distintos vistos entre
+         apariciones.
+       - Máximo 2 apariciones por sesión del visor.
+       - Si cambia de video antes de los 6 s, se cancela el timer.
+       - El aviso se coloca en la franja inferior, sin tocar la
+         tarjeta del autor (que vive dentro del slide).
+    ================================================================ */
+
+    function puedeMostrarNotifAhora() {
+        if (st.notifSesionUsos >= NOTIF_MAX_POR_SESION) return false;
+        if (st.notifVideosDesdeUltima < NOTIF_ENFRIAMIENTO_VIDEOS) return false;
+        return true;
+    }
 
     function ocultarNotif() {
         if (!st.root) return;
         var n = ref('notif');
         if (n) n.hidden = true;
         clearTimeout(st.notifTimer);
+        st.notifTimer = null;
     }
 
-    function mostrarNotifSiAplica() {
+    function cancelarTimerNotif() {
+        clearTimeout(st.notifTimer);
+        st.notifTimer = null;
+    }
+
+    /**
+     * Programa la notificación para el item actual.
+     * Solo si es video, tiene postId, hay callbacks y se cumplen
+     * las reglas de enfriamiento/sesión.
+     */
+    function programarNotif() {
+        cancelarTimerNotif();
+
         if (!st.root) return;
-        var n = ref('notif');
-        if (!n) return;
 
         var item = itemActual();
-        if (!item || item.tipo !== 'video') { n.hidden = true; return; }
-        if (!st.onInteres && !st.onRechazo) { n.hidden = true; return; }
-        if (item.postId && st.notifDescartados.has(String(item.postId))) { n.hidden = true; return; }
+        if (!item || item.tipo !== 'video') { return; }
+        if (!st.onInteres && !st.onRechazo) { return; }
+        if (item.postId && st.notifDescartados.has(String(item.postId))) { return; }
+        if (!puedeMostrarNotifAhora()) { return; }
 
-        // Solo en carrusel (recomendaciones) para no estorbar el visor simple
-        if (!st.carrusel) { n.hidden = true; return; }
+        // Guardamos el item de referencia: si el usuario cambia de video
+        // antes de que dispare el timer, no mostramos nada.
+        st.notifItemActual = item;
 
-        n.hidden = false;
+        st.notifTimer = setTimeout(function () {
+            st.notifTimer = null;
+            // Verificación final: seguimos en el mismo video
+            if (!st.abierto) return;
+            var actual = itemActual();
+            if (!mismoItem(actual, st.notifItemActual)) return;
+            if (!actual || actual.tipo !== 'video') return;
+            if (actual.postId && st.notifDescartados.has(String(actual.postId))) return;
+            if (!puedeMostrarNotifAhora()) return;
 
-        // Permanece 9 s o hasta que el usuario responda / cierre
-        clearTimeout(st.notifTimer);
-        st.notifTimer = setTimeout(function () { n.hidden = true; }, NOTIF_MS);
+            var n = ref('notif');
+            if (!n) return;
+
+            n.hidden = false;
+            st.notifSesionUsos++;
+            // El contador de enfriamiento se reinicia al mostrar
+            st.notifVideosDesdeUltima = 0;
+        }, NOTIF_DELAY_MS);
+    }
+
+    /**
+     * Llamado cuando el usuario navega a un nuevo video (por scroll
+     * en carrusel o por navegar() en simple).
+     * Cancela timers pendientes, incrementa contadores de enfriamiento
+     * y programa uno nuevo para el item actual.
+     */
+    function alCambiarVideo() {
+        cancelarTimerNotif();
+        ocultarNotif();
+
+        st.notifVideosDesdeUltima++;
+        st.notifItemActual = null;
+
+        programarNotif();
+    }
+
+    /**
+     * Llamado cuando el video activo emite 'ended' o el usuario lo
+     * reinicia. Reintenta la notificación (permite "repetir" el video).
+     */
+    function alRepetirVideo() {
+        var item = itemActual();
+        if (!item || item.tipo !== 'video') return;
+        if (st.notifItemActual && mismoItem(st.notifItemActual, item)) {
+            // Ya se está programando para este item; no duplicar
+            return;
+        }
+        programarNotif();
     }
 
     /* ================= DATOS DE AUTOR / TEXTO (estilo X) ================= */
@@ -632,13 +732,29 @@
             if (videoActual() === v) actualizarTiempo();
         });
         v.addEventListener('play', function () {
-            if (videoActual() === v) estadoVideo();
+            if (videoActual() === v) {
+                estadoVideo();
+                // Si el usuario reinicia (currentTime ~0) y estaba
+                // esperando repetir, reprogramamos la notificación
+                if (v.currentTime < 0.5) {
+                    var item = st.items[st.indice];
+                    if (item && item.tipo === 'video') {
+                        // Solo si ya pasó el enfriamiento o nunca se mostró
+                        if (!st.notifItemActual || !mismoItem(st.notifItemActual, item)) {
+                            st.notifVideosDesdeUltima = Math.max(0, st.notifVideosDesdeUltima);
+                        }
+                    }
+                }
+            }
         });
         v.addEventListener('pause', function () {
             if (videoActual() === v) estadoVideo();
         });
         v.addEventListener('ended', function () {
-            if (videoActual() === v) estadoVideo();
+            if (videoActual() === v) {
+                estadoVideo();
+                alRepetirVideo();
+            }
         });
         v.addEventListener('error', function () {
             if (videoActual() === v) toast('No se pudo cargar este video.', 'error');
@@ -670,6 +786,8 @@
             slide.appendChild(img);
         }
 
+        // La tarjeta del autor se agrega SIEMPRE y vive dentro del slide.
+        // La notificación vive fuera y abajo, así que nunca la pisa.
         var info = construirInfoAutor(item);
         if (info) slide.appendChild(info);
 
@@ -705,9 +823,9 @@
                 var idx = parseInt(best.target.dataset.index, 10);
                 if (!isNaN(idx) && idx !== st.indice) {
                     st.indice = idx;
+                    alCambiarVideo();        // cancela notif pendiente, actualiza contadores
                     activarVideoVisible();
                     actualizarContador();
-                    mostrarNotifSiAplica();
                 }
             }
         }, { root: esc, threshold: [0, 0.25, 0.5, 0.6, 0.75, 1] });
@@ -720,7 +838,7 @@
                 esc.scrollTop = target.offsetTop;
             }
             activarVideoVisible();
-            mostrarNotifSiAplica();
+            programarNotif();
         });
     }
 
@@ -762,14 +880,11 @@
                 v.play().then(function () {
                     try { v.playbackRate = VELOCIDADES[st.velIdx]; } catch (e) {}
                     estadoVideo();
-                    mostrarNotifSiAplica();
                 }).catch(function () {
                     estadoVideo();
-                    mostrarNotifSiAplica();
                 });
             } else {
                 estadoVideo();
-                mostrarNotifSiAplica();
             }
         } else {
             controles.hidden = true;
@@ -828,6 +943,7 @@
 
         ocultarHoja(true);
         ocultarNotif();
+        cancelarTimerNotif();
 
         if (item.tipo === 'video') {
             var v = crearVideo(item);
@@ -836,9 +952,16 @@
             esc.appendChild(v);
             aplicarFit();
             if (st.autoReproducir) {
-                v.play().then(estadoVideo).catch(estadoVideo);
+                v.play().then(function () {
+                    estadoVideo();
+                    programarNotif();
+                }).catch(function () {
+                    estadoVideo();
+                    programarNotif();
+                });
             } else {
                 estadoVideo();
+                programarNotif();
             }
         } else {
             var img = document.createElement('img');
@@ -862,6 +985,7 @@
         ocultarHoja(true);
         prepararCarrusel();
         actualizarContador();
+        programarNotif();
     }
 
     function navegar(dir) {
@@ -879,6 +1003,7 @@
         var n = st.indice + dir;
         if (n < 0 || n >= st.items.length) return;
         st.indice = n;
+        alCambiarVideo();
         mostrarItem();
     }
 
@@ -976,6 +1101,10 @@
 
         if (item.postId) st.notifDescartados.add(String(item.postId));
 
+        // Ocultar aviso de inmediato, antes de cualquier callback
+        ocultarNotif();
+        cancelarTimerNotif();
+
         try {
             if (positivo && typeof st.onInteres === 'function') st.onInteres(item);
             if (!positivo && typeof st.onRechazo === 'function') st.onRechazo(item);
@@ -983,11 +1112,22 @@
             console.warn('[VisorMediaGlobal] interes:', e);
         }
 
-        ocultarNotif();
-
-        if (!positivo && st.carrusel) {
-            // Avanzar con fluidez al siguiente video
-            setTimeout(function () { navegar(1); }, 80);
+        if (!positivo) {
+            // Avanzar al siguiente video sin trabar la reproducción.
+            // En carrusel usamos scroll suave; en simple usamos navegar.
+            if (st.carrusel) {
+                // Pequeño retardo para que la UI se sienta ágil, pero
+                // el video actual sigue reproduciéndose hasta el cambio.
+                setTimeout(function () { navegar(1); }, 50);
+            } else {
+                // En modo simple, navegar si hay más items
+                if (st.indice < st.items.length - 1) {
+                    setTimeout(function () { navegar(1); }, 50);
+                }
+            }
+        } else {
+            // Tras aceptar, si seguimos en el mismo video no reprogramamos.
+            // El contador de enfriamiento ya se reinició al mostrar el aviso.
         }
     }
 
@@ -1124,6 +1264,13 @@
         st.videosAltaCalidad = opts.videosAltaCalidad !== false;
         st.notifDescartados = new Set();
 
+        // Reiniciar estado de la notificación en cada apertura del visor
+        // (una "sesión" es cada abrir/cerrar)
+        st.notifSesionUsos = 0;
+        st.notifVideosDesdeUltima = NOTIF_ENFRIAMIENTO_VIDEOS; // permitir si cumple tiempo
+        st.notifItemActual = null;
+        st.notifCanceladaPorCambio = false;
+
         st.root.hidden = false;
         st.root.classList.remove('vmg-oculto');
         document.body.style.overflow = 'hidden';
@@ -1144,7 +1291,8 @@
         }
 
         clearTimeout(st.timerOcultar);
-        clearTimeout(st.notifTimer);
+        cancelarTimerNotif();
+
         var esc = ref('escenario');
         esc.innerHTML = '';
         esc.classList.remove('vmg-escenario--carrusel');
@@ -1167,6 +1315,7 @@
         st.abierto = false;
         st.items = [];
         st.carrusel = false;
+        st.notifItemActual = null;
 
         document.body.style.overflow = '';
 
