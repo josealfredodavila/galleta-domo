@@ -1,16 +1,19 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4.8 · Biografía (mismo texto que el perfil propio), visor
-   compartido (visor-media-global.js), galería de fotos y videos,
-   publicación en el muro de un contacto activo y relleno de videos
-   públicos de otros autores con notificación «¿Te interesa?».
-   CAMBIOS v4.8 (alineado con el esquema real de Supabase):
-   · Preferencias de contenido leídas de usuarios_preferencias
-     (antes preferencias_contenido, que no existe).
-   · Idiomas: usuarios_idiomas_contenido.idioma_id → idiomas_sistema.codigo
-     (antes una columna idioma de texto que no existe).
-   · publicaciones ahora tiene tema_id, idioma_id y es_sensible: se
-     leen y se usan para ordenar el relleno.
+   v4.9 · Consume el feed de recomendación y los eventos/votos nuevos.
+   CAMBIOS v4.9:
+   · Relleno de videos desde GET /api/recomendacion/feed (reglas v1 en
+     el servidor). Si el feed no responde, respaldo simple ordenado por
+     fecha, excluyendo lo ya visto.
+   · Al abrir el visor se pasan requestId, rankingVersion y entrada
+     («perfil_publico») para trazar impresiones y votos por lote.
+   · Impresiones y votos «¿Te interesa?» los envía el propio visor
+     (v1.8). Esta página ya no puntúa ni filtra en el cliente.
+   · Preferencias desde usuarios_preferencias; idiomas por idioma_id
+     (idiomas_sistema); tema_id, idioma_id y es_sensible en publicaciones.
+   · Visor limpio: no se pasa avatar ni ID de usuario como estorbo.
+     Carrusel vertical solo con videos reales. Sin sessionStorage.
+   · Al cerrar el visor se restaura la posición de la página.
    RPC y tablas verificadas en Supabase:
    perfil_publico_verificado, perfil_publico_por_handle,
    perfil_publico_por_id, perfil_visibilidad_estado,
@@ -18,9 +21,8 @@
    puede_publicar_en_muro, publicaciones, publicacion_reportes,
    publicaciones_reacciones, publicaciones_comentarios,
    publicaciones_comentarios_publicos, wallet_publica,
-   publicaciones_ocultas, usuarios_temas_interes,
-   usuarios_temas_bloqueados, usuarios_idiomas_contenido,
-   usuarios_preferencias, idiomas_sistema, perfiles_publicos.
+   publicaciones_ocultas, usuarios_preferencias,
+   usuarios_idiomas_contenido, idiomas_sistema, perfiles_publicos.
    ================================================================ */
 (function () {
     'use strict';
@@ -33,16 +35,15 @@
     var POSTS_PAGE = 20;
     var GALERIA_PAGE = 24;
     var COMENTARIOS_LIMITE = 50;
-    var MURO_TEXTO_MAX = 2000;
     var MAX_IMAGEN = 5 * 1024 * 1024;
     var MAX_VIDEO = 100 * 1024 * 1024;
     var TIMEOUT_CLIENTE_MS = 5000;
     var TIMEOUT_SESION_MS = 4000;
     var TIMEOUT_PERFIL_MS = 12000;
     var TIMEOUT_CATALOGO_MS = 4000;
-    var TIMEOUT_RELLENO_MS = 8000;
-    var LIMITE_RELLENO = 14;
-    var LIMITE_PREFS = 32;
+    var TIMEOUT_FEED_MS = 8000;
+    var FEED_LIMITE = 20;
+    var RESPALDO_LIMITE = 14;
 
     var BIO_POR_DEFECTO = "Explorando el ecosistema Csariel's · WEB3 · Comunidad";
 
@@ -55,20 +56,13 @@
     var muroArchivo = null;
     var scrollAntesVisor = 0;
 
+    /* Estado de sesión de esta página (solo memoria, sin sessionStorage). */
     var videoSesion = {
         idsVistos: new Set(),
-        temasInteres: [],
-        temasBloqueados: new Set(),
-        idiomasPref: [],
         idiomaCodigoPorId: new Map(),
-        mostrarSensible: false,
+        autoReproducir: true,
         ahorradorDatos: false,
         videosAltaCalidad: true,
-        autoReproducir: true,
-        rechazados: new Set(),
-        autorRechazado: new Set(),
-        afinidadTema: new Map(),
-        afinidadAutor: new Map(),
         prefsCargadas: false
     };
 
@@ -261,16 +255,16 @@
 
         opciones = opciones || {};
         scrollAntesVisor = window.scrollY || window.pageYOffset || 0;
-        var carruselVertical = opciones.carruselVertical === true;
 
         window.VisorMediaGlobal.abrir({
             items: items,
             indice: indice,
-            carruselVertical: carruselVertical,
+            carruselVertical: opciones.carruselVertical === true,
+            requestId: opciones.requestId || null,
+            rankingVersion: opciones.rankingVersion || null,
+            entrada: opciones.entrada || 'perfil_publico',
             onEliminar: function (item) { eliminarPropia(item.postId); },
             onOcultar: function (item) { quitarTarjeta(item.postId); },
-            onInteres: typeof opciones.onInteres === 'function' ? opciones.onInteres : null,
-            onRechazo: typeof opciones.onRechazo === 'function' ? opciones.onRechazo : null,
             autoReproducir: opciones.autoReproducir !== false && videoSesion.autoReproducir !== false,
             ahorradorDatos: opciones.ahorradorDatos === true || videoSesion.ahorradorDatos === true,
             videosAltaCalidad: opciones.videosAltaCalidad !== false && videoSesion.videosAltaCalidad !== false
@@ -311,7 +305,7 @@
         toast('Publicación eliminada', 'success');
     }
 
-    /* ================= AUTOR / TEXTO PARA EL VISOR ================= */
+    /* ================= ITEMS PARA EL VISOR ================= */
 
     function itemVisorDesdeMedia(item, autorInfo) {
         var out = {
@@ -503,9 +497,8 @@
         }
     }
 
-    /* ================= PREFERENCIAS Y CATÁLOGO DE IDIOMAS ================= */
+    /* ================= PREFERENCIAS E IDIOMAS ================= */
 
-    /* Carga el catálogo de idiomas (id → código) una sola vez. */
     async function cargarCatalogoIdiomas(client) {
         if (!client || videoSesion.idiomaCodigoPorId.size) return;
         try {
@@ -524,71 +517,26 @@
         } catch (e) { /* no fatal */ }
     }
 
+    /* Solo preferencias de reproducción. Lo sensible y los intereses los aplica el servidor. */
     async function cargarPreferenciasVideo(client) {
         videoSesion.prefsCargadas = true;
 
         await cargarCatalogoIdiomas(client);
 
-        if (!window.usuarioActualId || !client) {
-            videoSesion.mostrarSensible = false;
-            videoSesion.ahorradorDatos = false;
-            videoSesion.videosAltaCalidad = true;
-            videoSesion.autoReproducir = true;
-            return;
-        }
+        if (!window.usuarioActualId || !client) return;
 
         try {
-            var uid = window.usuarioActualId;
-
-            try {
-                var rt = await conTimeout(
-                    client.from('usuarios_temas_interes').select('tema_id').eq('usuario_id', uid).limit(LIMITE_PREFS),
-                    TIMEOUT_CATALOGO_MS,
-                    'temas_interes timeout'
-                );
-                if (!rt.error && Array.isArray(rt.data)) {
-                    videoSesion.temasInteres = rt.data.map(function (x) { return String(x.tema_id); }).filter(Boolean);
-                }
-            } catch (e) { /* ignorar */ }
-
-            try {
-                var rb = await conTimeout(
-                    client.from('usuarios_temas_bloqueados').select('tema_id').eq('usuario_id', uid).limit(LIMITE_PREFS),
-                    TIMEOUT_CATALOGO_MS,
-                    'temas_bloqueados timeout'
-                );
-                if (!rb.error && Array.isArray(rb.data)) {
-                    videoSesion.temasBloqueados = new Set(rb.data.map(function (x) { return String(x.tema_id); }).filter(Boolean));
-                }
-            } catch (e) { /* ignorar */ }
-
-            try {
-                var ri = await conTimeout(
-                    client.from('usuarios_idiomas_contenido').select('idioma_id').eq('usuario_id', uid).limit(LIMITE_PREFS),
-                    TIMEOUT_CATALOGO_MS,
-                    'idiomas timeout'
-                );
-                if (!ri.error && Array.isArray(ri.data)) {
-                    videoSesion.idiomasPref = ri.data
-                        .map(function (x) { return videoSesion.idiomaCodigoPorId.get(String(x.idioma_id)); })
-                        .filter(Boolean);
-                }
-            } catch (e) { /* ignorar */ }
-
-            try {
-                var rp = await conTimeout(
-                    client.from('usuarios_preferencias').select('*').eq('usuario_id', uid).maybeSingle(),
-                    TIMEOUT_CATALOGO_MS,
-                    'preferencias timeout'
-                );
-                if (!rp.error && rp.data) {
-                    var d = rp.data;
-                    if (typeof d.contenido_mostrar_sensible === 'boolean') videoSesion.mostrarSensible = d.contenido_mostrar_sensible;
-                    if (typeof d.contenido_ahorrador_datos === 'boolean') videoSesion.ahorradorDatos = d.contenido_ahorrador_datos;
-                    if (typeof d.contenido_videos_alta_calidad === 'boolean') videoSesion.videosAltaCalidad = d.contenido_videos_alta_calidad;
-                    if (typeof d.contenido_auto_reproducir === 'boolean') videoSesion.autoReproducir = d.contenido_auto_reproducir;
-                }
-            } catch (e) { /* ignorar */ }
+            var rp = await conTimeout(
+                client.from('usuarios_preferencias').select('*').eq('usuario_id', window.usuarioActualId).maybeSingle(),
+                TIMEOUT_CATALOGO_MS,
+                'preferencias timeout'
+            );
+            if (!rp.error && rp.data) {
+                var d = rp.data;
+                if (typeof d.contenido_ahorrador_datos === 'boolean') videoSesion.ahorradorDatos = d.contenido_ahorrador_datos;
+                if (typeof d.contenido_videos_alta_calidad === 'boolean') videoSesion.videosAltaCalidad = d.contenido_videos_alta_calidad;
+                if (typeof d.contenido_auto_reproducir === 'boolean') videoSesion.autoReproducir = d.contenido_auto_reproducir;
+            }
         } catch (e) {
             console.warn('[PerfilPublico] Preferencias:', e);
         }
@@ -640,14 +588,13 @@
         }
 
         var autor = autorDePost(p);
-        var itemBase = {
+        var item = itemVisorDesdeMedia({
             url: url,
             tipo: tipo,
             permiteDescarga: p.permitir_descarga !== false,
             postId: p.id,
             esDueno: esSoyDueno(p.usuario_id)
-        };
-        var item = itemVisorDesdeMedia(itemBase, autor);
+        }, autor);
         item.temaId = p.tema_id ? String(p.tema_id) : null;
         item.idioma = idiomaDe(p);
         item.sensible = p.es_sensible === true;
@@ -1107,22 +1054,18 @@
 
                 galeria.idsVistos.add(f.id);
 
-                var tipoDetectado = mediaTipo(f.media_type, url);
-
-                var autorInfo = {
+                var item = itemVisorDesdeMedia({
+                    url: url,
+                    tipo: mediaTipo(f.media_type, url),
+                    permiteDescarga: f.permitir_descarga !== false,
+                    postId: f.id,
+                    esDueno: esSoyDueno(perfil.id)
+                }, {
                     autorNombre: perfil.nombre || perfil.handle || null,
                     autorHandle: perfil.handle || null,
                     autorAvatar: safeHttps(perfil.avatar_url) || null,
                     texto: f.contenido ? String(f.contenido) : null
-                };
-
-                var item = itemVisorDesdeMedia({
-                    url: url,
-                    tipo: tipoDetectado,
-                    permiteDescarga: f.permitir_descarga !== false,
-                    postId: f.id,
-                    esDueno: esSoyDueno(perfil.id)
-                }, autorInfo);
+                });
                 item.temaId = f.tema_id ? String(f.tema_id) : null;
                 item.idioma = idiomaDe(f);
                 item.sensible = f.es_sensible === true;
@@ -1131,7 +1074,7 @@
                 galeria.items.push(item);
                 el.galeriaGrid.appendChild(crearMiniatura(item, galeria.items.length - 1));
 
-                if (f.id) videoSesion.idsVistos.add(String(f.id));
+                videoSesion.idsVistos.add(String(f.id));
             });
 
             if (filas.length) galeria.antes = filas[filas.length - 1].created_at;
@@ -1304,235 +1247,125 @@
         }
     }
 
-    /* ================= RELLENO ESCALADO DE VIDEOS PÚBLICOS ================= */
+    /* ================= RELLENO DE VIDEOS (feed de recomendación) ================= */
 
-    function prefiereIdioma(idioma) {
-        if (!idioma) return 0;
-        var i = String(idioma).toLowerCase();
-        return videoSesion.idiomasPref.indexOf(i) !== -1 ? 1 : 0;
+    /* Pide el lote al servidor. Devuelve { requestId, rankingVersion, items }. */
+    async function obtenerFeedVideos(client) {
+        var sesion = await conTimeout(client.auth.getSession(), TIMEOUT_SESION_MS, 'sesión timeout');
+        var token = sesion.data && sesion.data.session ? sesion.data.session.access_token : null;
+        if (!token) throw new Error('sin sesión');
+
+        var r = await conTimeout(
+            fetch('/api/recomendacion/feed?limite=' + FEED_LIMITE, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            }),
+            TIMEOUT_FEED_MS,
+            'feed timeout'
+        );
+
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+
+        var d = await r.json().catch(function () { return {}; });
+
+        return {
+            requestId: d.request_id || null,
+            rankingVersion: d.ranking_version || null,
+            items: Array.isArray(d.items) ? d.items : []
+        };
     }
 
-    function afinidadDe(temaId, autorId) {
-        var t = temaId ? (videoSesion.afinidadTema.get(temaId) || 0) : 0;
-        var a = autorId ? (videoSesion.afinidadAutor.get(autorId) || 0) : 0;
-        return t + a;
-    }
-
-    function puntuarVideo(p) {
-        var score = 0;
-
-        var tema = p.tema_id ? String(p.tema_id) : null;
-        if (tema) {
-            if (videoSesion.temasInteres.indexOf(tema) !== -1) score += 3;
-            if (videoSesion.temasBloqueados.has(tema)) score -= 8;
-            if (videoSesion.rechazados.has(tema)) score -= 6;
-        }
-
-        if (p.idioma) score += prefiereIdioma(p.idioma) * 2;
-
-        if (p.es_sensible === true) {
-            if (!videoSesion.mostrarSensible) score -= 5;
-            else score -= 1;
-        }
-
-        if (p.usuario_id && videoSesion.autorRechazado.has(String(p.usuario_id))) score -= 5;
-
-        score += afinidadDe(tema, p.usuario_id ? String(p.usuario_id) : null);
-
-        var inter = (Number(p.reacciones) || 0) + (Number(p.comentarios) || 0);
-        if (inter > 0) score += Math.log10(inter + 1) * 1.4;
-
-        if (p.created_at) {
-            var ms = Date.now() - new Date(p.created_at).getTime();
-            if (isFinite(ms) && ms > 0) {
-                var dias = ms / 86400000;
-                score += Math.max(0, 3 - Math.min(3, dias * 0.15));
-            }
-        }
-
-        return score;
-    }
-
-    function intercalarAntiRepeticion(lista) {
-        var out = [];
-        var pendientes = lista.slice();
-
-        while (pendientes.length) {
-            var idxElegido = 0;
-            var ultimo = out.length ? out[out.length - 1] : null;
-            var ultimoAutor = ultimo ? String(ultimo.usuario_id || '') : null;
-
-            for (var i = 0; i < pendientes.length; i++) {
-                var autor = String(pendientes[i].usuario_id || '');
-                if (!ultimoAutor || autor !== ultimoAutor) { idxElegido = i; break; }
-            }
-
-            out.push(pendientes.splice(idxElegido, 1)[0]);
-        }
-
-        return out;
-    }
-
-    async function obtenerExcluidosOcultos(client) {
-        var excluidos = new Set();
-        if (!window.usuarioActualId || !client) return excluidos;
-
-        try {
-            var r = await conTimeout(
-                client.from('publicaciones_ocultas')
-                    .select('publicacion_id')
-                    .eq('usuario_id', window.usuarioActualId)
-                    .limit(200),
-                TIMEOUT_CATALOGO_MS,
-                'ocultas timeout'
-            );
-            if (!r.error && Array.isArray(r.data)) {
-                r.data.forEach(function (x) {
-                    if (x && x.publicacion_id) excluidos.add(String(x.publicacion_id));
-                });
-            }
-        } catch (e) { /* ignorar */ }
-
-        return excluidos;
-    }
-
-    async function cargarRellenoVideos(client, yaPresentes) {
-        if (!client) return [];
-
+    /* Respaldo si el feed no responde: publicaciones de video recientes,
+       sin ordenar por intereses, excluyendo lo ya visto y lo oculto. */
+    async function obtenerRespaldoVideos(client, yaPresentes) {
         var excluir = new Set();
         (yaPresentes || []).forEach(function (id) { if (id) excluir.add(String(id)); });
         videoSesion.idsVistos.forEach(function (id) { excluir.add(String(id)); });
 
-        var ocultas = await obtenerExcluidosOcultos(client);
-        ocultas.forEach(function (id) { excluir.add(String(id)); });
-
-        var columnasBase = 'id, usuario_id, contenido, media_url, media_type, created_at, permitir_descarga, perfil_destino_id';
-        var columnasExtendidas = columnasBase + ', tema_id, idioma_id, es_sensible';
-
-        async function intentar(columnas) {
+        if (window.usuarioActualId) {
             try {
-                var q = client
-                    .from('publicaciones')
-                    .select(columnas)
-                    .eq('estado', 'publicado')
-                    .eq('media_type', 'video')
-                    .is('perfil_destino_id', null)
-                    .order('created_at', { ascending: false })
-                    .limit(Math.max(LIMITE_RELLENO * 4, 40));
-
-                return await conTimeout(q, TIMEOUT_RELLENO_MS, 'relleno timeout');
-            } catch (e) {
-                return { data: null, error: e };
-            }
+                var ocultas = await conTimeout(
+                    client.from('publicaciones_ocultas')
+                        .select('publicacion_id')
+                        .eq('usuario_id', window.usuarioActualId)
+                        .limit(200),
+                    TIMEOUT_CATALOGO_MS,
+                    'ocultas timeout'
+                );
+                if (!ocultas.error && Array.isArray(ocultas.data)) {
+                    ocultas.data.forEach(function (x) {
+                        if (x && x.publicacion_id) excluir.add(String(x.publicacion_id));
+                    });
+                }
+            } catch (e) { /* ignorar */ }
         }
 
-        var r = await intentar(columnasExtendidas);
-        if (r.error) {
-            r = await intentar(columnasBase);
-        }
+        var r = await conTimeout(
+            client.from('publicaciones')
+                .select('id, usuario_id, contenido, media_url, media_type, created_at, permitir_descarga, tema_id')
+                .eq('estado', 'publicado')
+                .eq('media_type', 'video')
+                .is('perfil_destino_id', null)
+                .order('created_at', { ascending: false })
+                .limit(RESPALDO_LIMITE * 3),
+            TIMEOUT_FEED_MS,
+            'respaldo timeout'
+        );
 
         if (r.error || !Array.isArray(r.data)) return [];
 
-        var filas = r.data.filter(function (p) {
-            if (!p || !p.id || !p.media_url) return false;
-            var u = safeHttps(p.media_url);
-            if (!u || EXT_IMAGEN_RE.test(u)) return false;
-            if (excluir.has(String(p.id))) return false;
-            if (window.usuarioActualId && String(p.usuario_id) === String(window.usuarioActualId)) return false;
-            return true;
-        });
-
-        filas.forEach(function (p) {
-            p.idioma = idiomaDe(p);
-            p.__score = puntuarVideo(p);
-        });
-        filas.sort(function (a, b) { return (b.__score || 0) - (a.__score || 0); });
-
-        filas = intercalarAntiRepeticion(filas);
-
-        return filas.slice(0, LIMITE_RELLENO);
+        return r.data
+            .filter(function (p) {
+                if (!p || !p.id || excluir.has(String(p.id))) return false;
+                if (window.usuarioActualId && String(p.usuario_id) === String(window.usuarioActualId)) return false;
+                var u = safeHttps(p.media_url);
+                return !!u && !EXT_IMAGEN_RE.test(u);
+            })
+            .slice(0, RESPALDO_LIMITE)
+            .map(function (p) {
+                return {
+                    id: p.id,
+                    usuario_id: p.usuario_id,
+                    contenido: p.contenido,
+                    media_url: p.media_url,
+                    media_type: p.media_type,
+                    permitir_descarga: p.permitir_descarga,
+                    tema_id: p.tema_id,
+                    usuario_nombre: null,
+                    usuario_handle: null,
+                    usuario_avatar_url: null,
+                    fuente: 'reciente'
+                };
+            });
     }
 
-    async function hidratarAutores(client, filas) {
-        var map = new Map();
-        if (!client || !filas.length) return map;
-
-        var ids = [];
-        var set = new Set();
-        filas.forEach(function (p) {
-            if (p.usuario_id) {
-                var k = String(p.usuario_id);
-                if (!set.has(k)) { set.add(k); ids.push(p.usuario_id); }
-            }
-        });
-
-        if (!ids.length) return map;
-
-        try {
-            var r = await conTimeout(
-                client.from('perfiles_publicos')
-                    .select('id, nombre, handle, avatar_url')
-                    .in('id', ids)
-                    .limit(ids.length),
-                TIMEOUT_CATALOGO_MS,
-                'autores timeout'
-            );
-            if (!r.error && Array.isArray(r.data)) {
-                r.data.forEach(function (u) {
-                    if (!u || !u.id) return;
-                    map.set(String(u.id), {
-                        nombre: u.nombre || null,
-                        handle: u.handle || null,
-                        avatar_url: safeHttps(u.avatar_url) || null
-                    });
-                });
-            }
-        } catch (e) {
-            console.warn('[PerfilPublico] hidratarAutores (no fatal):', e);
-        }
-
-        return map;
-    }
-
-    function itemDesdePublicacionRelleno(p, autorMap) {
-        var url = safeHttps(p.media_url);
+    /* Convierte un ítem del feed en ítem del visor (solo videos reales). */
+    function itemDesdeFeed(f) {
+        var url = safeHttps(f.media_url);
         if (!url || EXT_IMAGEN_RE.test(url)) return null;
 
-        var autor = autorMap ? autorMap.get(String(p.usuario_id || '')) : null;
-
-        var base = {
+        var item = itemVisorDesdeMedia({
             url: url,
             tipo: 'video',
-            permiteDescarga: p.permitir_descarga !== false,
-            postId: p.id,
+            permiteDescarga: f.permitir_descarga !== false,
+            postId: f.id,
             esDueno: false
-        };
-
-        var info = null;
-        if (autor) {
-            info = {
-                autorNombre: autor.nombre || autor.handle || null,
-                autorHandle: autor.handle || null,
-                autorAvatar: autor.avatar_url || null,
-                texto: p.contenido ? String(p.contenido) : null
-            };
-        } else if (p.contenido) {
-            info = { texto: String(p.contenido) };
-        }
-
-        var item = itemVisorDesdeMedia(base, info);
-        item.temaId = p.tema_id ? String(p.tema_id) : null;
-        item.idioma = p.idioma || null;
-        item.sensible = p.es_sensible === true;
-        item.autorUsuarioId = p.usuario_id ? String(p.usuario_id) : null;
+        }, {
+            autorNombre: f.usuario_nombre || f.usuario_handle || null,
+            autorHandle: f.usuario_handle || null,
+            autorAvatar: f.usuario_avatar_url || null,
+            texto: f.contenido || null
+        });
+        item.temaId = f.tema_id ? String(f.tema_id) : null;
+        item.autorUsuarioId = f.usuario_id ? String(f.usuario_id) : null;
+        item.fuente = f.fuente || null;
         item.esRecomendado = true;
-        item.mostrarInteres = true;
         item.__esRelleno = true;
         return item;
     }
 
     /* ========================================================
        ABRIR VISOR DE VIDEOS (solo videos reales, vertical)
+       Orden: video tocado → videos del perfil → lote del feed.
        ======================================================== */
     async function abrirVisorConRelleno(itemTocado) {
         if (!esVideoItem(itemTocado)) return;
@@ -1550,40 +1383,46 @@
             baseVideos.unshift(itemTocado);
         }
 
-        var relleno = [];
         var client = await obtenerCliente();
+        var lote = { requestId: null, rankingVersion: null, items: [] };
 
         if (client && window.usuarioActualId) {
+            if (!videoSesion.prefsCargadas) {
+                await cargarPreferenciasVideo(client);
+            }
+
+            var yaPresentes = baseVideos.map(function (x) { return x.postId; });
+
             try {
-                if (!videoSesion.prefsCargadas) {
-                    await cargarPreferenciasVideo(client);
-                }
-                var yaPresentes = baseVideos.map(function (x) { return x.postId; });
-                var filas = await cargarRellenoVideos(client, yaPresentes);
-                var autorMap = await hidratarAutores(client, filas);
-                filas.forEach(function (p) {
-                    var it = itemDesdePublicacionRelleno(p, autorMap);
-                    if (it && esVideoItem(it)) relleno.push(it);
+                lote = await obtenerFeedVideos(client);
+                lote.items = lote.items.filter(function (f) {
+                    return f && f.id && yaPresentes.indexOf(f.id) === -1;
                 });
             } catch (e) {
-                console.warn('[PerfilPublico] Relleno:', e);
+                console.warn('[PerfilPublico] Feed (respaldo):', e);
+                try {
+                    lote = { requestId: null, rankingVersion: 'respaldo', items: await obtenerRespaldoVideos(client, yaPresentes) };
+                } catch (e2) {
+                    console.warn('[PerfilPublico] Respaldo:', e2);
+                    lote = { requestId: null, rankingVersion: null, items: [] };
+                }
             }
         }
 
         var todos = [];
-        var pusheados = new Set();
+        var vistos = new Set();
 
         function pushSeguro(it) {
             if (!esVideoItem(it)) return;
             var key = it.postId || (it.url + '|' + it.tipo);
-            if (pusheados.has(key)) return;
-            pusheados.add(key);
+            if (vistos.has(key)) return;
+            vistos.add(key);
             todos.push(it);
         }
 
         pushSeguro(itemTocado);
         baseVideos.forEach(pushSeguro);
-        relleno.forEach(pushSeguro);
+        lote.items.forEach(function (f) { pushSeguro(itemDesdeFeed(f)); });
 
         if (!todos.length) return;
 
@@ -1595,39 +1434,14 @@
             }
         }
 
-        todos.forEach(function (x) { if (x.postId) videoSesion.idsVistos.add(String(x.postId)); });
-
         abrirVisor(todos, indiceInicial, {
             carruselVertical: true,
+            requestId: lote.requestId,
+            rankingVersion: lote.rankingVersion,
+            entrada: 'perfil_publico',
             autoReproducir: videoSesion.autoReproducir,
             ahorradorDatos: videoSesion.ahorradorDatos,
-            videosAltaCalidad: videoSesion.videosAltaCalidad,
-            onInteres: function (item) {
-                if (!item) return;
-                if (item.temaId) {
-                    var prevT = videoSesion.afinidadTema.get(item.temaId) || 0;
-                    videoSesion.afinidadTema.set(item.temaId, prevT + 2);
-                    videoSesion.rechazados.delete(item.temaId);
-                }
-                if (item.autorUsuarioId) {
-                    var prevA = videoSesion.afinidadAutor.get(item.autorUsuarioId) || 0;
-                    videoSesion.afinidadAutor.set(item.autorUsuarioId, prevA + 1.5);
-                    videoSesion.autorRechazado.delete(item.autorUsuarioId);
-                }
-            },
-            onRechazo: function (item) {
-                if (!item) return;
-                if (item.temaId) {
-                    videoSesion.rechazados.add(item.temaId);
-                    var prevT = videoSesion.afinidadTema.get(item.temaId) || 0;
-                    videoSesion.afinidadTema.set(item.temaId, prevT - 3);
-                }
-                if (item.autorUsuarioId) {
-                    videoSesion.autorRechazado.add(item.autorUsuarioId);
-                    var prevA = videoSesion.afinidadAutor.get(item.autorUsuarioId) || 0;
-                    videoSesion.afinidadAutor.set(item.autorUsuarioId, prevA - 2);
-                }
-            }
+            videosAltaCalidad: videoSesion.videosAltaCalidad
         });
     }
 
@@ -1655,7 +1469,8 @@
 
         abrirVisor(fotos, indice, {
             carruselVertical: false,
-            autoReproducir: false
+            autoReproducir: false,
+            entrada: 'perfil_publico'
         });
     }
 
@@ -1801,7 +1616,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v4.8');
+        console.info('[PerfilPublico] iniciando v4.9');
 
         mostrar(el.cargando);
         configurarVolver();
