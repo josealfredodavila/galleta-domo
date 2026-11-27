@@ -1,14 +1,22 @@
 /* ================================================================
-   REACCIONES GLOBAL · Csariel's · v5.1
+   REACCIONES GLOBAL · Csariel's · v5.2
    Módulo compartido para TODO el ecosistema (muro, perfil, perfil
-   público, grupos, videos, live).
+   público, visor de videos, grupos, live).
 
-   Fuente de verdad: public.reacciones_emojis (activo = true),
-   leída con la RPC obtener_emojis_reaccion().
-   Escritura: public.publicaciones_reacciones, validada en la base
-   (clave foránea al catálogo + políticas RLS).
+   CAMBIOS v5.2:
+   · Animación solo en el emoji activo: el del disparador anima mientras
+     la barra está en pantalla; los del menú solo mientras el menú está
+     abierto. Así hay como máximo unos pocos elementos animados.
+   · Pausa fuera de pantalla: cada barra se observa con
+     IntersectionObserver. Fuera de pantalla se quita la clase
+     rg-activo y la animación se detiene.
+   · Sin backdrop-filter en el CSS (estilo sólido semitransparente).
+   · API pública sin cambios. Sin sessionStorage.
 
-   Uso en cualquier página:
+   Fuente de verdad: public.reacciones_emojis (activo = true), leída con
+   la RPC obtener_emojis_reaccion(). Escritura: public.publicaciones_reacciones.
+
+   Uso:
      <link rel="stylesheet" href="/features/shared/css/reacciones-global.css">
      <script src="/features/shared/js/reacciones-global.js"></script>
 
@@ -24,7 +32,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '5.1';
+    var VERSION = '5.2';
 
     if (window.ReaccionesGlobal && window.ReaccionesGlobal.version === VERSION) return;
 
@@ -46,6 +54,9 @@
     var catalogo = null;
     var cargandoCatalogo = null;
     var cerradorInstalado = false;
+
+    /* Observador compartido: pausa las animaciones de las barras fuera de pantalla. */
+    var observadorPantalla = null;
 
     /* ================= UTILIDADES ================= */
 
@@ -132,6 +143,40 @@
         });
 
         return claves[0];
+    }
+
+    /* ================= PAUSA FUERA DE PANTALLA ================= */
+
+    /* Un solo IntersectionObserver para todas las barras. Cuando una barra
+       sale de la pantalla, deja de animarse; al volver, se reanuda. */
+    function obtenerObservador() {
+        if (observadorPantalla) return observadorPantalla;
+        if (!('IntersectionObserver' in window)) return null;
+
+        observadorPantalla = new IntersectionObserver(function (entradas) {
+            entradas.forEach(function (en) {
+                var nodo = en.target;
+                if (en.isIntersecting) {
+                    nodo.classList.add('rg-activo');
+                } else {
+                    nodo.classList.remove('rg-activo');
+                }
+            });
+        }, { root: null, threshold: 0 });
+
+        return observadorPantalla;
+    }
+
+    function vigilarPantalla(raiz) {
+        var obs = obtenerObservador();
+
+        if (!obs) {
+            /* Sin observador (navegadores antiguos): se anima siempre. */
+            raiz.classList.add('rg-activo');
+            return;
+        }
+
+        obs.observe(raiz);
     }
 
     /* ================= CATÁLOGO ================= */
@@ -260,6 +305,8 @@
     function cerrarTodos() {
         document.querySelectorAll('.rg-menu').forEach(function (m) {
             m.hidden = true;
+            var raiz = m.parentNode;
+            if (raiz) raiz.classList.remove('rg-menu-abierto');
         });
     }
 
@@ -300,11 +347,9 @@
 
             b.appendChild(ico);
 
-            /* 👇 SE ELIMINÓ EL BLOQUE QUE INYECTABA EL CONTADOR (rg-count) AQUÍ 👇 */
-
             b.addEventListener('click', function (ev) {
                 ev.stopPropagation();
-                menu.hidden = true;
+                cerrarTodos();
                 reaccionar(emoji);
             });
 
@@ -337,7 +382,9 @@
             var abrir = menu.hidden;
 
             cerrarTodos();
+
             menu.hidden = !abrir;
+            if (abrir) wrap.classList.add('rg-menu-abierto');
         });
 
         wrap.appendChild(menu);
@@ -376,9 +423,11 @@
 
             if (estado.raiz && estado.raiz.parentNode) {
                 estado.raiz.parentNode.replaceChild(nueva, estado.raiz);
+                if (observadorPantalla) observadorPantalla.unobserve(estado.raiz);
             }
 
             estado.raiz = nueva;
+            vigilarPantalla(nueva);
         }
 
         async function reaccionar(emoji) {
@@ -414,6 +463,7 @@
         }
 
         estado.raiz = construir(estado.resumen, reaccionar);
+        vigilarPantalla(estado.raiz);
 
         return {
             get el() { return estado.raiz; },
