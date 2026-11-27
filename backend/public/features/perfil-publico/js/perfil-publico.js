@@ -1,19 +1,20 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4.9 · Consume el feed de recomendación y los eventos/votos nuevos.
-   CAMBIOS v4.9:
-   · Relleno de videos desde GET /api/recomendacion/feed (reglas v1 en
-     el servidor). Si el feed no responde, respaldo simple ordenado por
-     fecha, excluyendo lo ya visto.
-   · Al abrir el visor se pasan requestId, rankingVersion y entrada
-     («perfil_publico») para trazar impresiones y votos por lote.
-   · Impresiones y votos «¿Te interesa?» los envía el propio visor
-     (v1.8). Esta página ya no puntúa ni filtra en el cliente.
-   · Preferencias desde usuarios_preferencias; idiomas por idioma_id
-     (idiomas_sistema); tema_id, idioma_id y es_sensible en publicaciones.
-   · Visor limpio: no se pasa avatar ni ID de usuario como estorbo.
-     Carrusel vertical solo con videos reales. Sin sessionStorage.
-   · Al cerrar el visor se restaura la posición de la página.
+   v5.0 · Corrige el índice inicial del visor y el montaje de
+   emojis de reacción en cada publicación.
+   CAMBIOS v5.0:
+   · Índice inicial: el medio tocado se localiza por postId, no por
+     identidad de objeto. Antes el mismo medio existía en la lista del
+     perfil y en la galería, y el visor abría en 1 / N o al final.
+   · El orden del visor es el de la página: primero los medios del
+     perfil y de la galería en su orden, luego el lote del feed.
+   · Reacciones: se espera el catálogo de ReaccionesGlobal antes de
+     pintar las publicaciones (sin el límite corto de 4 s). Cada barra
+     se monta aislada: si una falla, las demás siguen funcionando y la
+     publicación muestra un aviso discreto en lugar de quedar vacía.
+   · Feed de recomendación (requestId y rankingVersion) sin cambios.
+   · Visor limpio, carrusel vertical solo con videos reales, sin
+     sessionStorage.
    RPC y tablas verificadas en Supabase:
    perfil_publico_verificado, perfil_publico_por_handle,
    perfil_publico_por_id, perfil_visibilidad_estado,
@@ -41,6 +42,7 @@
     var TIMEOUT_SESION_MS = 4000;
     var TIMEOUT_PERFIL_MS = 12000;
     var TIMEOUT_CATALOGO_MS = 4000;
+    var TIMEOUT_REACCIONES_MS = 15000;
     var TIMEOUT_FEED_MS = 8000;
     var FEED_LIMITE = 20;
     var RESPALDO_LIMITE = 14;
@@ -167,6 +169,21 @@
         if (!url) return false;
         if (EXT_VIDEO_RE.test(url)) return false;
         return true;
+    }
+
+    /* Clave estable de un medio: su publicación, o su URL si no tiene. */
+    function claveItem(it) {
+        if (!it) return '';
+        return it.postId ? String(it.postId) : String(it.url || '');
+    }
+
+    /* Posición de un medio dentro de una lista, comparando por clave. */
+    function indiceDeItem(lista, it) {
+        var clave = claveItem(it);
+        for (var i = 0; i < lista.length; i++) {
+            if (claveItem(lista[i]) === clave) return i;
+        }
+        return -1;
     }
 
     function mostrar(panel) {
@@ -601,7 +618,6 @@
         item.autorUsuarioId = p.usuario_id ? String(p.usuario_id) : null;
 
         mediaPublicaciones.push(item);
-        var indice = mediaPublicaciones.length - 1;
 
         var marco = document.createElement('div');
         marco.className = 'pv-media-marco';
@@ -609,7 +625,7 @@
 
         marco.addEventListener('click', function () {
             if (tipo === 'video') {
-                abrirVisorConRelleno(item, indice);
+                abrirVisorConRelleno(item);
             } else {
                 abrirVisorFotosDesde(item);
             }
@@ -827,6 +843,67 @@
         return art;
     }
 
+    /* ================= REACCIONES (ReaccionesGlobal) ================= */
+
+    /* Monta la barra de emojis en el contenedor de la publicación.
+       Si el módulo de reacciones falla, la publicación sigue visible
+       y muestra un aviso discreto. */
+    function montarReacciones(contenedor, client, pubId, uid, resumen) {
+        if (!contenedor) return;
+
+        if (!window.ReaccionesGlobal || typeof window.ReaccionesGlobal.crearBarra !== 'function') {
+            aviso(contenedor, 'Reacciones no disponibles');
+            return;
+        }
+
+        try {
+            var barraRx = window.ReaccionesGlobal.crearBarra({
+                client: client,
+                publicacionId: pubId,
+                usuarioId: uid,
+                resumen: resumen || { totales: {}, total: 0, miTipo: null }
+            });
+
+            if (barraRx && barraRx.el) {
+                contenedor.appendChild(barraRx.el);
+            } else {
+                aviso(contenedor, 'Reacciones no disponibles');
+            }
+        } catch (e) {
+            console.warn('[PerfilPublico] Reacciones (publicación ' + pubId + '):', e);
+            aviso(contenedor, 'Reacciones no disponibles');
+        }
+    }
+
+    function aviso(contenedor, texto) {
+        var s = document.createElement('span');
+        s.className = 'pv-reacciones-aviso';
+        s.style.cssText = 'font-size:0.72rem;color:#6f8ba0;';
+        s.textContent = texto;
+        contenedor.appendChild(s);
+    }
+
+    /* Espera a que el catálogo de emojis esté cargado antes de pintar
+       las publicaciones. Sin límite corto: el catálogo es necesario. */
+    async function prepararReacciones(client) {
+        if (!window.ReaccionesGlobal || typeof window.ReaccionesGlobal.preparar !== 'function') {
+            return false;
+        }
+        try {
+            await conTimeout(
+                window.ReaccionesGlobal.preparar(client),
+                TIMEOUT_REACCIONES_MS,
+                'Catálogo de reacciones lento.'
+            );
+            return true;
+        } catch (e) {
+            console.warn('[PerfilPublico] Catálogo de reacciones:', e);
+            return false;
+        }
+    }
+
+    /* ================= PUBLICACIONES DEL PERFIL ================= */
+
     function mostrarMensajePub(texto) {
         el.pubMsg.textContent = texto || '';
         el.pubMsg.hidden = !texto;
@@ -903,11 +980,11 @@
             var ids = nuevos.map(function (p) { return p.id; });
             var resumenes = new Map();
 
-            if (ids.length && window.ReaccionesGlobal) {
+            if (ids.length && window.ReaccionesGlobal && typeof window.ReaccionesGlobal.cargarResumenLote === 'function') {
                 try {
                     resumenes = await window.ReaccionesGlobal.cargarResumenLote(client, ids, uid);
                 } catch (e) {
-                    console.warn('[PerfilPublico] Reacciones lote:', e);
+                    console.warn('[PerfilPublico] Resumen de reacciones:', e);
                 }
             }
 
@@ -916,19 +993,9 @@
                 el.pubLista.appendChild(card);
 
                 var contenedorRx = card.querySelector('.pv-reacciones');
+                var resumen = resumenes && resumenes.get ? resumenes.get(String(p.id)) : null;
 
-                if (contenedorRx && window.ReaccionesGlobal) {
-                    var resumen = resumenes.get(String(p.id)) || { totales: {}, total: 0, miTipo: null };
-
-                    var barraRx = window.ReaccionesGlobal.crearBarra({
-                        client: client,
-                        publicacionId: p.id,
-                        usuarioId: uid,
-                        resumen: resumen
-                    });
-
-                    contenedorRx.appendChild(barraRx.el);
-                }
+                montarReacciones(contenedorRx, client, p.id, uid, resumen);
 
                 if (p.id) videoSesion.idsVistos.add(String(p.id));
             });
@@ -958,7 +1025,7 @@
         el.galeriaMsg.hidden = !texto;
     }
 
-    function crearMiniatura(item, idx) {
+    function crearMiniatura(item) {
         var b = document.createElement('button');
         b.type = 'button';
         b.className = 'pv-galeria-item';
@@ -988,7 +1055,7 @@
 
         b.addEventListener('click', function () {
             if (item.tipo === 'video') {
-                abrirVisorConRelleno(item, idx);
+                abrirVisorConRelleno(item);
             } else {
                 abrirVisorFotosDesde(item);
             }
@@ -1072,7 +1139,7 @@
                 item.autorUsuarioId = perfil.id ? String(perfil.id) : null;
 
                 galeria.items.push(item);
-                el.galeriaGrid.appendChild(crearMiniatura(item, galeria.items.length - 1));
+                el.galeriaGrid.appendChild(crearMiniatura(item));
 
                 videoSesion.idsVistos.add(String(f.id));
             });
@@ -1365,23 +1432,30 @@
 
     /* ========================================================
        ABRIR VISOR DE VIDEOS (solo videos reales, vertical)
-       Orden: video tocado → videos del perfil → lote del feed.
+       Orden: medios del perfil y de la galería en su orden de
+       página; luego el lote del feed. El índice inicial es el del
+       medio tocado, localizado por publicación.
        ======================================================== */
     async function abrirVisorConRelleno(itemTocado) {
         if (!esVideoItem(itemTocado)) return;
 
-        var baseVideos = mediaPublicaciones.filter(esVideoItem);
+        var lista = [];
+        var vistos = new Set();
 
-        galeria.items.forEach(function (x) {
-            if (esVideoItem(x) && baseVideos.indexOf(x) === -1) {
-                var dup = baseVideos.some(function (y) { return y.postId && x.postId && y.postId === x.postId; });
-                if (!dup) baseVideos.push(x);
-            }
-        });
-
-        if (baseVideos.indexOf(itemTocado) === -1) {
-            baseVideos.unshift(itemTocado);
+        function agregar(it) {
+            if (!esVideoItem(it)) return false;
+            var clave = claveItem(it);
+            if (vistos.has(clave)) return false;
+            vistos.add(clave);
+            lista.push(it);
+            return true;
         }
+
+        mediaPublicaciones.forEach(agregar);
+        galeria.items.forEach(agregar);
+
+        var claveTocado = claveItem(itemTocado);
+        if (!vistos.has(claveTocado)) agregar(itemTocado);
 
         var client = await obtenerCliente();
         var lote = { requestId: null, rankingVersion: null, items: [] };
@@ -1391,7 +1465,7 @@
                 await cargarPreferenciasVideo(client);
             }
 
-            var yaPresentes = baseVideos.map(function (x) { return x.postId; });
+            var yaPresentes = lista.map(function (x) { return x.postId; });
 
             try {
                 lote = await obtenerFeedVideos(client);
@@ -1409,32 +1483,14 @@
             }
         }
 
-        var todos = [];
-        var vistos = new Set();
+        lote.items.forEach(function (f) { agregar(itemDesdeFeed(f)); });
 
-        function pushSeguro(it) {
-            if (!esVideoItem(it)) return;
-            var key = it.postId || (it.url + '|' + it.tipo);
-            if (vistos.has(key)) return;
-            vistos.add(key);
-            todos.push(it);
-        }
+        if (!lista.length) return;
 
-        pushSeguro(itemTocado);
-        baseVideos.forEach(pushSeguro);
-        lote.items.forEach(function (f) { pushSeguro(itemDesdeFeed(f)); });
+        var indiceInicial = indiceDeItem(lista, itemTocado);
+        if (indiceInicial < 0) indiceInicial = 0;
 
-        if (!todos.length) return;
-
-        var indiceInicial = 0;
-        for (var i = 0; i < todos.length; i++) {
-            if (todos[i] === itemTocado || (itemTocado.postId && todos[i].postId === itemTocado.postId)) {
-                indiceInicial = i;
-                break;
-            }
-        }
-
-        abrirVisor(todos, indiceInicial, {
+        abrirVisor(lista, indiceInicial, {
             carruselVertical: true,
             requestId: lote.requestId,
             rankingVersion: lote.rankingVersion,
@@ -1447,27 +1503,31 @@
 
     /* ========================================================
        ABRIR VISOR DE FOTOS (solo fotos reales, horizontal)
+       El índice inicial es el de la foto tocada, por publicación.
        ======================================================== */
     function abrirVisorFotosDesde(itemTocado) {
         if (!esImagenItem(itemTocado)) return;
 
-        var fotos = mediaPublicaciones.filter(esImagenItem);
+        var lista = [];
+        var vistos = new Set();
 
-        galeria.items.forEach(function (x) {
-            if (esImagenItem(x) && fotos.indexOf(x) === -1) {
-                var dup = fotos.some(function (y) { return y.postId && x.postId && y.postId === x.postId; });
-                if (!dup) fotos.push(x);
-            }
-        });
-
-        if (fotos.indexOf(itemTocado) === -1) {
-            fotos.push(itemTocado);
+        function agregar(it) {
+            if (!esImagenItem(it)) return;
+            var clave = claveItem(it);
+            if (vistos.has(clave)) return;
+            vistos.add(clave);
+            lista.push(it);
         }
 
-        var indice = fotos.indexOf(itemTocado);
+        mediaPublicaciones.forEach(agregar);
+        galeria.items.forEach(agregar);
+
+        if (!vistos.has(claveItem(itemTocado))) agregar(itemTocado);
+
+        var indice = indiceDeItem(lista, itemTocado);
         if (indice < 0) indice = 0;
 
-        abrirVisor(fotos, indice, {
+        abrirVisor(lista, indice, {
             carruselVertical: false,
             autoReproducir: false,
             entrada: 'perfil_publico'
@@ -1616,7 +1676,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v4.9');
+        console.info('[PerfilPublico] iniciando v5.0');
 
         mostrar(el.cargando);
         configurarVolver();
@@ -1635,15 +1695,8 @@
 
         await resolverSesion(client);
 
-        if (window.ReaccionesGlobal) {
-            await conTimeout(
-                window.ReaccionesGlobal.preparar(client),
-                TIMEOUT_CATALOGO_MS,
-                'Catálogo de reacciones lento.'
-            ).catch(function (e) {
-                console.warn('[PerfilPublico] Catálogo:', e);
-            });
-        }
+        /* El catálogo de emojis se espera aquí, antes de pintar publicaciones. */
+        await prepararReacciones(client);
 
         try {
             client.auth.onAuthStateChange(function (_e, sesion) {
