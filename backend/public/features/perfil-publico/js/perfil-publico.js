@@ -1,13 +1,16 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v4.6 · Biografía (mismo texto que el perfil propio), visor
-   compartido (visor-media-global.js v1.3), galería de fotos y videos,
+   v4.7 · Biografía (mismo texto que el perfil propio), visor
+   compartido (visor-media-global.js v1.6), galería de fotos y videos,
    publicación en el muro de un contacto activo y relleno de videos
    públicos de otros autores con notificación «¿Te interesa?».
-   CAMBIOS v4.6:
-   · Separación estricta videos vs. fotos al abrir el visor:
-     - Video tocado → carruselVertical solo con videos (perfil + relleno).
-     - Foto tocada → carruselVertical:false con solo fotos del perfil.
+   CAMBIOS v4.7:
+   · Blindaje estricto videos vs. fotos al abrir el visor:
+     - Video tocado → carruselVertical solo con videos reales
+       (perfil + relleno), descartando cualquier extensión de imagen.
+     - Foto tocada → carruselVertical:false solo con fotos reales.
+   · Conserva la posición de desplazamiento de la página al abrir y
+     cerrar el visor para evitar saltos bruscos hasta arriba del perfil.
    · cargarRellenoVideos / hidratarAutores defensivos:
      si perfiles_publicos falla, igual devuelve los videos de relleno.
    · Ítems de relleno marcados con esRecomendado + mostrarInteres
@@ -28,6 +31,8 @@
     var RUTA_PERFIL_PROPIO = '/features/perfil/perfil.html';
     var HANDLE_RE = /^[A-Za-z0-9_]{1,40}$/;
     var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    var EXT_IMAGEN_RE = /\.(jpe?g|png|webp|gif|avif|bmp|svg)(\?|#|$)/i;
+    var EXT_VIDEO_RE = /\.(mp4|webm|mov|m4v|3gp)(\?|#|$)/i;
     var POSTS_PAGE = 20;
     var GALERIA_PAGE = 24;
     var COMENTARIOS_LIMITE = 50;
@@ -51,6 +56,7 @@
     var mediaPublicaciones = [];
     var medioActivo = null;
     var muroArchivo = null;
+    var scrollAntesVisor = 0;
 
     var videoSesion = {
         idsVistos: new Set(),
@@ -155,6 +161,22 @@
         } catch (e) { return null; }
     }
 
+    function esVideoItem(item) {
+        if (!item || item.tipo !== 'video') return false;
+        var url = safeHttps(item.url);
+        if (!url) return false;
+        if (EXT_IMAGEN_RE.test(url)) return false;
+        return true;
+    }
+
+    function esImagenItem(item) {
+        if (!item || item.tipo !== 'imagen') return false;
+        var url = safeHttps(item.url);
+        if (!url) return false;
+        if (EXT_VIDEO_RE.test(url)) return false;
+        return true;
+    }
+
     function mostrar(panel) {
         [el.cargando, el.noEncontrado, el.error, el.perfil].forEach(function (n) {
             if (n) n.hidden = (n !== panel);
@@ -197,10 +219,13 @@
     }
 
     function mediaTipo(tipo, url) {
+        var u = String(url || '');
+        if (EXT_IMAGEN_RE.test(u)) return 'imagen';
+        if (EXT_VIDEO_RE.test(u)) return 'video';
         var t = String(tipo || '').toLowerCase();
+        if (t === 'image' || t === 'photo' || t === 'foto') return 'imagen';
         if (t) return t;
-        if (/\.(mp4|webm|mov)(\?|$)/i.test(url)) return 'video';
-        if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(url)) return 'audio';
+        if (/\.(mp3|ogg|wav|m4a|aac)(\?|$)/i.test(u)) return 'audio';
         return 'imagen';
     }
 
@@ -215,6 +240,13 @@
 
     /* ================= VISOR COMPARTIDO ================= */
 
+    function restaurarScrollPerfil() {
+        var y = scrollAntesVisor;
+        requestAnimationFrame(function () {
+            try { window.scrollTo(0, y); } catch (e) {}
+        });
+    }
+
     function abrirVisor(items, indice, opciones) {
         if (!window.VisorMediaGlobal) {
             toast('El visor no está disponible. Recarga la página.', 'error');
@@ -222,8 +254,7 @@
         }
 
         opciones = opciones || {};
-
-        // v4.6: NO forzamos carruselVertical aquí; el llamador decide.
+        scrollAntesVisor = window.scrollY || window.pageYOffset || 0;
         var carruselVertical = opciones.carruselVertical === true;
 
         window.VisorMediaGlobal.abrir({
@@ -238,6 +269,8 @@
             ahorradorDatos: opciones.ahorradorDatos === true || videoSesion.ahorradorDatos === true,
             videosAltaCalidad: opciones.videosAltaCalidad !== false && videoSesion.videosAltaCalidad !== false
         });
+
+        setTimeout(restaurarScrollPerfil, 80);
     }
 
     function quitarTarjeta(postId) {
@@ -591,7 +624,6 @@
         item.sensible = p.es_sensible === true;
         item.autorUsuarioId = p.usuario_id ? String(p.usuario_id) : null;
 
-        // Guardamos con índice estable dentro de mediaPublicaciones
         mediaPublicaciones.push(item);
         var indice = mediaPublicaciones.length - 1;
 
@@ -1046,6 +1078,8 @@
 
                 galeria.idsVistos.add(f.id);
 
+                var tipoDetectado = mediaTipo(f.media_type, url);
+
                 var autorInfo = {
                     autorNombre: perfil.nombre || perfil.handle || null,
                     autorHandle: perfil.handle || null,
@@ -1055,7 +1089,7 @@
 
                 var item = itemVisorDesdeMedia({
                     url: url,
-                    tipo: mediaTipo(f.media_type, url),
+                    tipo: tipoDetectado,
                     permiteDescarga: f.permitir_descarga !== false,
                     postId: f.id,
                     esDueno: esSoyDueno(perfil.id)
@@ -1372,6 +1406,8 @@
 
         var filas = r.data.filter(function (p) {
             if (!p || !p.id || !p.media_url) return false;
+            var u = safeHttps(p.media_url);
+            if (!u || EXT_IMAGEN_RE.test(u)) return false;
             if (excluir.has(String(p.id))) return false;
             if (window.usuarioActualId && String(p.usuario_id) === String(window.usuarioActualId)) return false;
             return true;
@@ -1385,7 +1421,6 @@
         return filas.slice(0, LIMITE_RELLENO);
     }
 
-    /* Devuelve un Map aunque perfiles_publicos falle. */
     async function hidratarAutores(client, filas) {
         var map = new Map();
         if (!client || !filas.length) return map;
@@ -1429,7 +1464,7 @@
 
     function itemDesdePublicacionRelleno(p, autorMap) {
         var url = safeHttps(p.media_url);
-        if (!url) return null;
+        if (!url || EXT_IMAGEN_RE.test(url)) return null;
 
         var autor = autorMap ? autorMap.get(String(p.usuario_id || '')) : null;
 
@@ -1458,33 +1493,31 @@
         item.idioma = p.idioma ? String(p.idioma).toLowerCase() : null;
         item.sensible = p.es_sensible === true;
         item.autorUsuarioId = p.usuario_id ? String(p.usuario_id) : null;
-        item.esRecomendado = true;    // v4.6: marca de relleno público
-        item.mostrarInteres = true;   // v4.6: mostrar «¿Te interesa?»
+        item.esRecomendado = true;
+        item.mostrarInteres = true;
         item.__esRelleno = true;
         return item;
     }
 
     /* ========================================================
-       ABRIR VISOR DE VIDEOS (solo videos, vertical)
-       - Toma el video tocado al inicio.
-       - Agrega solo videos del perfil (mediaPublicaciones + galeria)
-       - Agrega solo videos de relleno de otros autores.
-       - carruselVertical: true.
+       ABRIR VISOR DE VIDEOS (solo videos reales, vertical)
        ======================================================== */
-    async function abrirVisorConRelleno(itemTocado, indiceEnMedia) {
-        if (!itemTocado || itemTocado.tipo !== 'video') return;
+    async function abrirVisorConRelleno(itemTocado) {
+        if (!esVideoItem(itemTocado)) return;
 
-        // 1) Base: solo videos del perfil ya cargados
-        var baseVideos = mediaPublicaciones.filter(function (x) {
-            return x && x.tipo === 'video';
+        var baseVideos = mediaPublicaciones.filter(esVideoItem);
+
+        galeria.items.forEach(function (x) {
+            if (esVideoItem(x) && baseVideos.indexOf(x) === -1) {
+                var dup = baseVideos.some(function (y) { return y.postId && x.postId && y.postId === x.postId; });
+                if (!dup) baseVideos.push(x);
+            }
         });
 
-        // Si el tocado vino de galería y no está en mediaPublicaciones, lo agregamos.
         if (baseVideos.indexOf(itemTocado) === -1) {
-            baseVideos.push(itemTocado);
+            baseVideos.unshift(itemTocado);
         }
 
-        // 2) Relleno de otros autores (solo si autenticado)
         var relleno = [];
         var client = await obtenerCliente();
 
@@ -1498,19 +1531,18 @@
                 var autorMap = await hidratarAutores(client, filas);
                 filas.forEach(function (p) {
                     var it = itemDesdePublicacionRelleno(p, autorMap);
-                    if (it) relleno.push(it);
+                    if (it && esVideoItem(it)) relleno.push(it);
                 });
             } catch (e) {
                 console.warn('[PerfilPublico] Relleno:', e);
             }
         }
 
-        // 3) Unir sin duplicados, video tocado primero
         var todos = [];
         var pusheados = new Set();
 
         function pushSeguro(it) {
-            if (!it) return;
+            if (!esVideoItem(it)) return;
             var key = it.postId || (it.url + '|' + it.tipo);
             if (pusheados.has(key)) return;
             pusheados.add(key);
@@ -1521,7 +1553,8 @@
         baseVideos.forEach(pushSeguro);
         relleno.forEach(pushSeguro);
 
-        // 4) Índice del tocado
+        if (!todos.length) return;
+
         var indiceInicial = 0;
         for (var i = 0; i < todos.length; i++) {
             if (todos[i] === itemTocado || (itemTocado.postId && todos[i].postId === itemTocado.postId)) {
@@ -1530,10 +1563,8 @@
             }
         }
 
-        // 5) Registro de vistos
         todos.forEach(function (x) { if (x.postId) videoSesion.idsVistos.add(String(x.postId)); });
 
-        // 6) Abrir en modo vertical
         abrirVisor(todos, indiceInicial, {
             carruselVertical: true,
             autoReproducir: videoSesion.autoReproducir,
@@ -1569,20 +1600,15 @@
     }
 
     /* ========================================================
-       ABRIR VISOR DE FOTOS (solo fotos, horizontal)
-       - Solo items tipo 'imagen' del perfil (mediaPublicaciones + galeria)
-       - carruselVertical: false.
+       ABRIR VISOR DE FOTOS (solo fotos reales, horizontal)
        ======================================================== */
     function abrirVisorFotosDesde(itemTocado) {
-        if (!itemTocado || itemTocado.tipo !== 'imagen') return;
+        if (!esImagenItem(itemTocado)) return;
 
-        var fotos = mediaPublicaciones.filter(function (x) {
-            return x && x.tipo === 'imagen';
-        });
+        var fotos = mediaPublicaciones.filter(esImagenItem);
 
-        // Incluir fotos de la galería que no estén en mediaPublicaciones
         galeria.items.forEach(function (x) {
-            if (x && x.tipo === 'imagen' && fotos.indexOf(x) === -1) {
+            if (esImagenItem(x) && fotos.indexOf(x) === -1) {
                 var dup = fotos.some(function (y) { return y.postId && x.postId && y.postId === x.postId; });
                 if (!dup) fotos.push(x);
             }
@@ -1743,7 +1769,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v4.6');
+        console.info('[PerfilPublico] iniciando v4.7');
 
         mostrar(el.cargando);
         configurarVolver();
