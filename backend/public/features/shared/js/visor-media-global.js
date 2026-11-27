@@ -1,20 +1,24 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v2.1
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v2.2
    Visor de pantalla completa compartido para fotos y videos.
 
-   CAMBIOS v2.1:
-   · Barra lateral de reacciones sin caja negra sobre el video: el
-     contenedor del módulo se vuelve transparente y el menú de emojis
-     solo se ve cuando el usuario lo abre (se fuerza el atributo hidden
-     sobre el CSS del módulo).
-   · Comentarios con avatar y nombre del autor: se lee usuario_avatar_url
-     de publicaciones_comentarios_publicos. Si no hay foto, se muestra la
-     inicial del nombre. Las filas se construyen con DOM (sin innerHTML).
-   · Hojas internas sin historial (v2.0): cerrar la X de comentarios no
-     cierra el visor.
-   · Índice único, sin negro ni 0:00 al cambiar, impresiones con
-     visibilidad real, eventos view_start/complete, voto «¿Te interesa?».
-   · Carrusel vertical solo con videos reales. Sin sessionStorage.
+   CAMBIOS v2.2:
+   · Menos consultas por cambio de video: el conteo de comentarios se
+     toma de item.comentarios (dato de la página) o de la caché del
+     video. Solo si no existe ningún dato se pide el conteo, una vez por
+     video. Con item.comentarios enviado por la página, cada cambio de
+     video hace una sola consulta (el resumen de reacciones).
+   · Peticiones obsoletas: cada cambio de video (y cerrar el visor)
+     cancela la consulta de comentarios en curso con AbortController y
+     descarta cualquier resultado tardío mediante una secuencia de video.
+     Así no hay datos cruzados entre videos.
+   · Al cerrar la hoja de comentarios, el contador del botón se actualiza
+     con el total real de la lista cargada (sin consulta extra).
+   · Al cambiar de video con la hoja de comentarios abierta, la hoja se
+     cierra para que nunca se comente sobre un video distinto.
+   · Comentarios con avatar (o inicial) y nombre del autor.
+   · Barra de reacciones sin caja negra sobre el video (CSS interno).
+   · API pública sin cambios. Sin sessionStorage.
 
    API pública (sin cambios):
      VisorMediaGlobal.abrir, cerrar, estaAbierto, contieneVideo, version.
@@ -22,7 +26,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '2.1';
+    var VERSION = '2.2';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
@@ -118,6 +122,7 @@
         notifVideosDesdeUltima: 0,
         notifItemActual: null,
         lateralToken: 0,
+        lateralCtrl: null,
         io: null,
         impresionTimer: null,
         visibleSince: 0,
@@ -128,9 +133,18 @@
         flushTimer: null,
         reintentos: 0,
         token: null,
+        uid: null,
         requestId: null,
         rankingVersion: null,
-        scrollY: 0
+        scrollY: 0,
+        /* Secuencia de video: cambia en cada cambio de video. Lo asíncrono
+           compara su secuencia y descarta lo que llegó de otro video. */
+        itemSeq: 0,
+        comentariosCache: new Map(),
+        cmCtrl: null,
+        hojaTipo: null,
+        hojaPostId: null,
+        hojaSeq: -1
     };
 
     /* ================= UTILIDADES ================= */
@@ -181,6 +195,14 @@
         } catch (e) {
             return null;
         }
+    }
+
+    /* Aplica la señal de cancelación a una consulta de Supabase, si el cliente lo admite. */
+    function conSenal(consulta, senal) {
+        if (senal && consulta && typeof consulta.abortSignal === 'function') {
+            return consulta.abortSignal(senal);
+        }
+        return consulta;
     }
 
     function inicialDe(nombre) {
@@ -253,6 +275,11 @@
         return st.items[st.indice] || null;
     }
 
+    function postIdActual() {
+        var it = itemActual();
+        return it && it.postId ? String(it.postId) : null;
+    }
+
     function mismoItem(a, b) {
         if (!a || !b) return false;
         if (a === b) return true;
@@ -264,6 +291,10 @@
         var esc = ref('escenario');
         if (st.modo === 'v') return esc.clientHeight || window.innerHeight;
         return esc.clientWidth || window.innerWidth;
+    }
+
+    function hojaAbierta() {
+        return !!st.root && !ref('hoja').hidden;
     }
 
     /* ================= API Y EVENTOS ================= */
@@ -559,7 +590,7 @@
             if (!st.abierto) return;
 
             if (e.key === 'Escape') {
-                if (!ref('hoja').hidden) ocultarHoja();
+                if (hojaAbierta()) ocultarHoja();
                 else cerrar();
             } else if (e.key === 'ArrowRight' && st.modo === 'h') {
                 navegar(1);
@@ -817,8 +848,13 @@
         s.media = null;
     }
 
-    /* Un cambio de video: pausa el anterior, actualiza la UI y arranca el actual. */
+    /* Un cambio de video: nueva secuencia, cierra la hoja de comentarios,
+       cancela lo pendiente del video anterior y arranca el actual. */
     function onIndiceCambio() {
+        st.itemSeq++;
+
+        if (hojaAbierta()) ocultarHoja();
+
         actualizarContador();
         activarActual();
         alCambiarVideo();
@@ -1049,10 +1085,56 @@
         ref('contador').textContent = st.items.length > 1 ? (st.indice + 1) + ' / ' + st.items.length : '';
     }
 
+    /* ================= CONTADOR DE COMENTARIOS ================= */
+
+    /* Valor conocido del conteo para el video actual: caché, o el dato de la página. */
+    function valorComentarios(item) {
+        if (!item || !item.postId) return null;
+        var id = String(item.postId);
+        if (st.comentariosCache.has(id)) return st.comentariosCache.get(id);
+        return typeof item.comentarios === 'number' ? item.comentarios : null;
+    }
+
+    function textoComentarios(n) {
+        return n == null ? '…' : String(n);
+    }
+
+    function setNcom(n) {
+        var e = ref('ncom');
+        if (e) e.textContent = textoComentarios(n);
+    }
+
+    /* Conteo exacto solo si no hay ningún dato previo. Se cancela con la señal. */
+    async function contarComentarios(c, postId, senal) {
+        try {
+            var r = await conSenal(
+                c.from('publicaciones_comentarios')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('publicacion_id', postId),
+                senal
+            );
+            if (r.error) return null;
+            return r.count || 0;
+        } catch (e) {
+            return null;
+        }
+    }
+
     /* ================= LATERAL: REACCIONES Y COMENTARIOS ================= */
 
+    /* Vigente solo si el video, la petición y el visor siguen siendo los mismos. */
+    function vigente(seq, token) {
+        return st.abierto && seq === st.itemSeq && token === st.lateralToken;
+    }
+
     async function refrescarLateral() {
+        var seq = st.itemSeq;
         var token = ++st.lateralToken;
+
+        if (st.lateralCtrl) st.lateralCtrl.abort();
+        st.lateralCtrl = typeof AbortController === 'function' ? new AbortController() : null;
+        var senal = st.lateralCtrl ? st.lateralCtrl.signal : undefined;
+
         var lat = ref('lateral');
         if (!lat) return;
 
@@ -1062,6 +1144,7 @@
         var item = itemActual();
         if (!item || !item.postId) return;
 
+        var postId = String(item.postId);
         lat.hidden = false;
 
         var btnCom = document.createElement('button');
@@ -1069,76 +1152,52 @@
         btnCom.className = 'vmg2-lat-btn';
         btnCom.setAttribute('data-accion', 'comentarios');
         btnCom.setAttribute('aria-label', 'Comentarios');
-        btnCom.innerHTML = ICONO.comentario + '<span class="vmg2-lat-n" data-ref="ncom">…</span>';
+        btnCom.innerHTML = ICONO.comentario;
+
+        var nCom = document.createElement('span');
+        nCom.className = 'vmg2-lat-n';
+        nCom.setAttribute('data-ref', 'ncom');
+        nCom.textContent = textoComentarios(valorComentarios(item));
+        btnCom.appendChild(nCom);
+
         lat.appendChild(btnCom);
 
         var c = cliente();
         if (!c || !window.ReaccionesGlobal) return;
 
-        var uid = await uidActual(c);
-        if (token !== st.lateralToken) return;
+        if (!st.uid) st.uid = await uidActual(c);
+        if (!vigente(seq, token)) return;
 
         try {
             await window.ReaccionesGlobal.preparar(c);
         } catch (e) { /* usa respaldo */ }
+        if (!vigente(seq, token)) return;
 
+        /* Única consulta de red por video: el resumen de reacciones. */
         var resumen = { totales: {}, total: 0, miTipo: null };
         try {
-            resumen = await window.ReaccionesGlobal.cargarResumen(c, item.postId, uid);
+            resumen = await window.ReaccionesGlobal.cargarResumen(c, postId, st.uid);
         } catch (e) { /* ignorar */ }
-        if (token !== st.lateralToken) return;
+        if (!vigente(seq, token)) return;
 
         var barra = window.ReaccionesGlobal.crearBarra({
             client: c,
             publicacionId: item.postId,
-            usuarioId: uid,
+            usuarioId: st.uid,
             resumen: resumen
         });
         lat.insertBefore(barra.el, lat.firstChild);
 
-        try {
-            var r = await c.from('publicaciones_comentarios')
-                .select('id', { count: 'exact', head: true })
-                .eq('publicacion_id', item.postId);
-            if (token !== st.lateralToken) return;
-            var n = ref('ncom');
-            if (n) n.textContent = String(r.count || 0);
-        } catch (e) {
-            var n2 = ref('ncom');
-            if (n2) n2.textContent = '';
+        /* Solo si la página no envió el conteo ni hay caché: se pide una vez. */
+        if (valorComentarios(item) == null) {
+            var n = await contarComentarios(c, postId, senal);
+            if (!vigente(seq, token) || n == null) return;
+            st.comentariosCache.set(postId, n);
+            setNcom(n);
         }
     }
 
-    function sumarComentariosLateral(delta) {
-        var n = ref('ncom');
-        if (!n) return;
-        var actual = parseInt(n.textContent, 10);
-        if (isNaN(actual)) actual = 0;
-        n.textContent = String(Math.max(0, actual + delta));
-    }
-
-    function pintarComentarios() {
-        var hoja = ref('hoja');
-        hoja.classList.add('vmg-hoja-cm');
-        hoja.innerHTML =
-            '<div class="vmg-cm-head"><strong>Comentarios</strong>' +
-                '<button type="button" data-accion="cerrarhoja" aria-label="Cerrar">' + ICONO.cerrar + '</button></div>' +
-            '<div class="vmg-cm-lista" data-ref="cmLista"><div class="vmg-cm-vacio">Cargando…</div></div>' +
-            '<form class="vmg-cm-form" data-ref="cmForm">' +
-                '<input type="text" maxlength="500" placeholder="Escribe un comentario…" data-ref="cmInput" autocomplete="off">' +
-                '<button type="submit">Enviar</button>' +
-            '</form>';
-
-        hoja.hidden = false;
-        ref('fondo').hidden = false;
-
-        ref('cmForm').addEventListener('submit', function (e) {
-            e.preventDefault();
-            enviarComentario();
-        });
-
-        cargarComentarios();
-    }
+    /* ================= HOJA DE COMENTARIOS ================= */
 
     /* Fila de comentario: avatar (o inicial) y nombre del autor, con el texto. */
     function filaComentario(f) {
@@ -1184,10 +1243,39 @@
         return fila;
     }
 
-    async function cargarComentarios() {
-        var item = itemActual();
+    /* La hoja sigue abierta y pertenece al mismo video que originó la carga. */
+    function hojaComentariosVigente(seq, postId) {
+        return st.abierto &&
+            st.hojaTipo === 'comentarios' &&
+            seq === st.itemSeq &&
+            st.hojaPostId === postId &&
+            !!ref('cmLista');
+    }
+
+    function pintarListaComentarios(filas) {
+        var l = ref('cmLista');
+        if (!l) return;
+
+        l.innerHTML = '';
+
+        if (!filas.length) {
+            var vacio = document.createElement('div');
+            vacio.className = 'vmg-cm-vacio';
+            vacio.textContent = 'Sin comentarios todavía.';
+            l.appendChild(vacio);
+            return;
+        }
+
+        filas.forEach(function (f) {
+            l.appendChild(filaComentario(f));
+        });
+
+        l.scrollTop = l.scrollHeight;
+    }
+
+    async function cargarComentarios(seq, postId) {
         var lista = ref('cmLista');
-        if (!item || !item.postId || !lista) return;
+        if (!lista) return;
 
         var c = cliente();
         if (!c) {
@@ -1195,38 +1283,72 @@
             return;
         }
 
-        try {
-            var r = await c.from('publicaciones_comentarios_publicos')
-                .select('id, contenido, created_at, usuario_nombre, usuario_handle, usuario_avatar_url')
-                .eq('publicacion_id', item.postId)
-                .order('created_at', { ascending: true })
-                .limit(COMENTARIOS_LIMITE);
-            if (r.error) throw r.error;
+        var senal = st.cmCtrl ? st.cmCtrl.signal : undefined;
 
-            var l = ref('cmLista');
-            if (!l) return;
+        try {
+            var r = await conSenal(
+                c.from('publicaciones_comentarios_publicos')
+                    .select('id, contenido, created_at, usuario_nombre, usuario_handle, usuario_avatar_url')
+                    .eq('publicacion_id', postId)
+                    .order('created_at', { ascending: true })
+                    .limit(COMENTARIOS_LIMITE),
+                senal
+            );
+            if (r.error) throw r.error;
+            if (!hojaComentariosVigente(seq, postId)) return;
 
             var filas = Array.isArray(r.data) ? r.data : [];
+            var total = filas.length;
 
-            l.innerHTML = '';
-
-            if (!filas.length) {
-                var vacio = document.createElement('div');
-                vacio.className = 'vmg-cm-vacio';
-                vacio.textContent = 'Sin comentarios todavía.';
-                l.appendChild(vacio);
-                return;
+            /* La lista llegó completa en esta consulta; solo si está truncada se pide el total. */
+            if (filas.length >= COMENTARIOS_LIMITE) {
+                var n = await contarComentarios(c, postId, senal);
+                if (!hojaComentariosVigente(seq, postId)) return;
+                if (n != null) total = n;
             }
 
-            filas.forEach(function (f) {
-                l.appendChild(filaComentario(f));
-            });
+            st.comentariosCache.set(postId, total);
+            if (postIdActual() === postId) setNcom(total);
 
-            l.scrollTop = l.scrollHeight;
+            pintarListaComentarios(filas);
         } catch (e) {
+            if (!hojaComentariosVigente(seq, postId)) return;
             var l2 = ref('cmLista');
             if (l2) l2.innerHTML = '<div class="vmg-cm-vacio">No se pudieron cargar los comentarios.</div>';
         }
+    }
+
+    function pintarComentarios() {
+        var item = itemActual();
+        if (!item || !item.postId) return;
+
+        var hoja = ref('hoja');
+        hoja.classList.add('vmg-hoja-cm');
+        hoja.innerHTML =
+            '<div class="vmg-cm-head"><strong>Comentarios</strong>' +
+                '<button type="button" data-accion="cerrarhoja" aria-label="Cerrar">' + ICONO.cerrar + '</button></div>' +
+            '<div class="vmg-cm-lista" data-ref="cmLista"><div class="vmg-cm-vacio">Cargando…</div></div>' +
+            '<form class="vmg-cm-form" data-ref="cmForm">' +
+                '<input type="text" maxlength="500" placeholder="Escribe un comentario…" data-ref="cmInput" autocomplete="off">' +
+                '<button type="submit">Enviar</button>' +
+            '</form>';
+
+        hoja.hidden = false;
+        ref('fondo').hidden = false;
+
+        st.hojaTipo = 'comentarios';
+        st.hojaPostId = String(item.postId);
+        st.hojaSeq = st.itemSeq;
+
+        if (st.cmCtrl) st.cmCtrl.abort();
+        st.cmCtrl = typeof AbortController === 'function' ? new AbortController() : null;
+
+        ref('cmForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            enviarComentario();
+        });
+
+        cargarComentarios(st.itemSeq, st.hojaPostId);
     }
 
     async function enviarComentario() {
@@ -1238,8 +1360,11 @@
         if (!texto) return;
 
         var c = cliente();
-        var uid = await uidActual(c);
-        if (!uid) {
+        var seq = st.itemSeq;
+        var postId = String(item.postId);
+
+        if (!st.uid) st.uid = await uidActual(c);
+        if (!st.uid) {
             toast('Inicia sesión para comentar', 'error');
             return;
         }
@@ -1247,7 +1372,7 @@
         input.disabled = true;
         var r = await c.from('publicaciones_comentarios').insert({
             publicacion_id: item.postId,
-            usuario_id: uid,
+            usuario_id: st.uid,
             contenido: texto
         });
         input.disabled = false;
@@ -1257,10 +1382,21 @@
             return;
         }
 
+        /* El comentario se guardó aunque el usuario ya haya cambiado de video. */
+        var previo = st.comentariosCache.get(postId);
+        if (previo != null) {
+            st.comentariosCache.set(postId, previo + 1);
+        }
+
+        if (seq !== st.itemSeq || !hojaComentariosVigente(seq, postId)) {
+            return;
+        }
+
         input.value = '';
         input.focus();
-        sumarComentariosLateral(1);
-        cargarComentarios();
+        if (postIdActual() === postId) setNcom(st.comentariosCache.get(postId));
+
+        cargarComentarios(seq, postId);
     }
 
     /* ================= LETRERO «¿TE INTERESA?» ================= */
@@ -1367,6 +1503,7 @@
         var html = '';
 
         hoja.classList.remove('vmg-hoja-cm');
+        st.hojaTipo = 'acciones';
 
         if (vista === 'acciones') {
             html += boton('guardar', ICONO.descargar, 'Guardar');
@@ -1396,14 +1533,34 @@
         ref('fondo').hidden = false;
     }
 
-    /* Cierra la hoja interna. No toca el historial: el visor sigue abierto. */
+    /* Cierra la hoja interna. No toca el historial: el visor sigue abierto.
+       Al cerrar comentarios, el botón muestra el total real de la lista. */
     function ocultarHoja() {
         if (!st.root) return;
+
         var hoja = ref('hoja');
+        var eraComentarios = st.hojaTipo === 'comentarios';
+        var postId = st.hojaPostId;
+        var seq = st.hojaSeq;
+
+        if (st.cmCtrl) {
+            st.cmCtrl.abort();
+            st.cmCtrl = null;
+        }
+
         hoja.hidden = true;
         hoja.innerHTML = '';
         hoja.classList.remove('vmg-hoja-cm');
         ref('fondo').hidden = true;
+
+        st.hojaTipo = null;
+        st.hojaPostId = null;
+        st.hojaSeq = -1;
+
+        if (eraComentarios && postId && seq === st.itemSeq && postIdActual() === postId) {
+            var total = st.comentariosCache.get(postId);
+            if (total != null) setNcom(total);
+        }
     }
 
     function accion(nombre, btn) {
@@ -1481,7 +1638,7 @@
         }
 
         try {
-            var uid = await uidActual(c);
+            var uid = st.uid || await uidActual(c);
             if (!uid) throw new Error('Inicia sesión');
 
             var r = await c.from('publicaciones_ocultas').insert({
@@ -1510,7 +1667,7 @@
         }
 
         try {
-            var uid = await uidActual(c);
+            var uid = st.uid || await uidActual(c);
             if (!uid) throw new Error('Inicia sesión');
 
             var r = await c.from('publicacion_reportes').insert({
@@ -1588,6 +1745,11 @@
         st.rankingVersion = opts.rankingVersion || null;
         st.iniciados = new Set();
         st.completados = new Set();
+        st.comentariosCache = new Map();
+        st.hojaTipo = null;
+        st.hojaPostId = null;
+        st.hojaSeq = -1;
+        st.itemSeq++;
         ref('vel').textContent = '1x';
 
         st.onInteres = typeof opts.onInteres === 'function' ? opts.onInteres : null;
@@ -1620,6 +1782,13 @@
 
     function cerrar(desdePop) {
         if (!st.root || !st.abierto) return;
+
+        /* Invalida todo lo asíncrono pendiente del visor. */
+        st.itemSeq++;
+        if (st.lateralCtrl) {
+            st.lateralCtrl.abort();
+            st.lateralCtrl = null;
+        }
 
         pausar();
         cancelarImpresion();
