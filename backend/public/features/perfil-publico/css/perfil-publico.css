@@ -1,16 +1,14 @@
 /* ================================================================
    PERFIL-PUBLICO.CSS — Csariel's
-   v4.6 · Correcciones: bio completa (#pvBio) y apilamiento del
-   muro (#pvMuroSection). Galería al ancho del dispositivo (estilo X),
-   reacciones sin contadores repetidos y medios sin recorte.
-   Prefijo pv- para no chocar con emojis-animations.css ni con los
-   estilos globales.
+   v5.3 · Sincronizado con perfil-publico.js v5.3, visor v2.2 y
+   reacciones-global v5.2.
+   - Sin código muerto (reacciones/visores antiguos eliminados).
+   - Estilos nativos para comentarios con avatar y resumen de lectura.
+   - Contención de layout y composición fluida en Android.
    ================================================================ */
 
-/* ================= CORRECCIONES v4.6 ================= */
+/* ================= BIO Y APILAMIENTO ================= */
 
-/* Bio completa: el .bio heredado de perfil.css puede recortar líneas
-   (max-height / line-clamp). Aquí se anulan para #pvBio. */
 #pvBio,
 .perfil-header #pvBio,
 .perfil-header .bio {
@@ -29,8 +27,11 @@
     display: none !important;
 }
 
-/* Apilamiento: cada bloque de la página va en su propio plano y el
-   muro no se encima sobre la galería ni sobre el carrusel. */
+#pvPerfil,
+#pvPerfil section {
+    max-width: 100%;
+    box-sizing: border-box;
+}
 #pvPerfil {
     position: relative;
     isolation: isolate;
@@ -41,9 +42,11 @@
     position: relative;
     z-index: 1;
 }
-#pvGaleriaSection {
-    z-index: 1;
+#pvPerfil img,
+#pvPerfil video {
+    max-width: 100%;
 }
+
 #pvMuroSection {
     position: relative;
     z-index: 2;
@@ -232,6 +235,7 @@
     background: rgba(255, 255, 255, 0.03);
     color: inherit;
     text-decoration: none;
+    contain: layout style;
     transition: border-color 0.18s ease, background 0.18s ease;
 }
 .pv-amigo-card:hover,
@@ -278,6 +282,71 @@
     text-overflow: ellipsis;
 }
 
+/* ================= GALERÍA (estilo carrusel horizontal) ================= */
+
+#pvGaleriaGrid {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding: 8px 16px 14px;
+}
+#pvGaleriaGrid::-webkit-scrollbar {
+    height: 4px;
+}
+#pvGaleriaGrid::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 255, 0.35);
+    border-radius: 999px;
+}
+
+.pv-galeria-item {
+    position: relative;
+    flex: 0 0 100%;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #000;
+    cursor: pointer;
+    scroll-snap-align: start;
+    contain: layout style;
+}
+.pv-galeria-item img,
+.pv-galeria-item video {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 80vh;
+    object-fit: contain;
+    background: #000;
+}
+.pv-galeria-item video {
+    min-height: 220px;
+}
+.pv-galeria-play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 22px;
+    background: rgba(0, 0, 0, 0.25);
+    pointer-events: none;
+}
+
 /* ================= PUBLICACIONES ================= */
 
 #pvPubLista {
@@ -294,6 +363,7 @@
     padding: 14px 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.07);
     overflow: hidden;
+    contain: layout style;
 }
 .pv-post:last-child {
     border-bottom: none;
@@ -346,7 +416,7 @@
     color: #f7d44a;
 }
 
-/* Medios: proporción real del archivo, sin cuadro fijo 9:16 */
+/* Medios: proporción real del archivo */
 .pv-media-marco {
     position: relative;
     display: flex;
@@ -378,7 +448,8 @@
     border-radius: 10px;
 }
 
-/* Barra de acciones */
+/* ================= BARRA DE ACCIONES Y RESUMEN v5.3 ================= */
+
 .pv-post-barra {
     display: flex;
     align-items: center;
@@ -411,182 +482,35 @@
     cursor: pointer;
 }
 
-/* ================= REACCIONES ================= */
-
-/* El menú del módulo global no repite los contadores:
-   el total queda visible en el botón de reacción. */
-#pvPubLista .rg-menu .rg-count {
-    display: none !important;
-}
-
-.pv-reaccion-wrap {
-    position: relative;
-    display: inline-flex;
+/* Resumen de solo lectura en publicaciones con foto o video */
+.pv-resumen {
+    display: flex;
+    gap: 10px;
     align-items: center;
+    flex-wrap: wrap;
 }
-.pv-reaccion-trigger {
-    position: relative;
+.pv-resumen-item {
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    min-height: 38px;
+    min-height: 34px;
     padding: 6px 12px;
-    border: 1px solid rgba(212, 175, 55, 0.35);
     border-radius: 20px;
-    background: rgba(11, 16, 22, 0.85);
-    color: inherit;
-    font-size: 13px;
-    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.04);
+    color: #b7d0e2;
+    font-size: 0.82rem;
 }
-.pv-reaccion-trigger.activo {
-    background: rgba(212, 175, 55, 0.12);
-    border-color: rgba(212, 175, 55, 0.6);
+.pv-resumen-rx {
+    color: #ffffff;
 }
-.pv-reaccion-icono {
-    font-size: 1.15rem;
-    line-height: 1;
-}
-.pv-reaccion-dropdown {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 8px;
-    border-radius: 24px;
-    background: #0b1016;
-    border: 1px solid rgba(212, 175, 55, 0.45);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
-    z-index: 60;
-}
-.pv-reaccion-dropdown[hidden] {
-    display: none;
-}
-.pv-reaccion-opcion {
-    position: relative;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.05);
-    font-size: 20px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-.pv-reaccion-opcion.activo {
-    border-color: #d4af37;
-    background: rgba(212, 175, 55, 0.18);
-}
-.pv-reaccion-opcion:disabled {
-    opacity: 0.5;
-    cursor: wait;
+.pv-post-pista {
+    margin-top: 8px;
+    font-size: 0.72rem;
+    color: #6f8ba0;
 }
 
-/* Contador del botón de reacción */
-.pv-count {
-    position: absolute;
-    top: -5px;
-    right: -5px;
-    min-width: 17px;
-    height: 17px;
-    padding: 0 4px;
-    border-radius: 999px;
-    background: #d4af37;
-    color: #05080f;
-    font-size: 10px;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-}
-.pv-count-trigger {
-    position: static;
-    min-width: 0;
-    height: auto;
-    padding: 0;
-    background: transparent;
-    color: #d4af37;
-    font-size: 12px;
-    font-weight: 700;
-}
-
-/* ================= MOVIMIENTO DE EMOJIS (estructura del motor v3.1) ================= */
-
-.pv-emo {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transform-origin: center;
-    animation-duration: var(--dur, 2.4s);
-    animation-delay: var(--delay, 0s);
-    animation-timing-function: ease-in-out;
-    animation-iteration-count: infinite;
-    animation-fill-mode: both;
-    will-change: transform, filter;
-}
-.pv-emo-corazon { animation-name: pvPulsoCorazon; }
-.pv-emo-risa { animation-name: pvSaltoRisa; }
-.pv-emo-brillo { animation-name: pvBrilloSuave; }
-.pv-emo-diamante { animation-name: pvGiroDiamante; }
-.pv-emo-fluido { animation-name: pvFluido; }
-
-@keyframes pvPulsoCorazon {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 0 rgba(255, 45, 85, 0)); }
-    8% { transform: scale(1.24, 1.2) translateY(-2px); filter: drop-shadow(0 0 6px rgba(255, 45, 85, 0.75)); }
-    15% { transform: scale(0.95, 0.97) translateY(1px); }
-    24% { transform: scale(1.18, 1.15) translateY(-2px); filter: drop-shadow(0 0 8px rgba(255, 45, 85, 0.85)); }
-    33% { transform: scale(0.98, 1.01) translateY(0.5px); }
-    46% { transform: scale(1.04, 1.02) translateY(-1px); }
-    58% { transform: scale(0.995, 1) translateY(0.5px); }
-    72% { transform: scale(1.02, 1.01) translateY(-0.5px); }
-    86% { transform: scale(1) translateY(0); }
-}
-@keyframes pvSaltoRisa {
-    0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1, 1); }
-    6% { transform: translate3d(-1.5px, -4px, 0) rotate(-9deg) scale(1.08, 0.92); }
-    12% { transform: translate3d(1.5px, -6px, 0) rotate(10deg) scale(0.93, 1.1); }
-    18% { transform: translate3d(-1px, -4px, 0) rotate(-11deg) scale(1.07, 0.93); }
-    25% { transform: translate3d(1.5px, -5px, 0) rotate(8deg) scale(0.94, 1.08); }
-    33% { transform: translate3d(0, 1.5px, 0) rotate(-3deg) scale(1.05, 0.97); }
-    40% { transform: translate3d(-1.5px, -2px, 0) rotate(6deg) scale(0.97, 1.05); }
-    48% { transform: translate3d(1.5px, -3.5px, 0) rotate(-7deg) scale(1.05, 0.96); }
-    56% { transform: translate3d(-1px, -0.5px, 0) rotate(4deg) scale(0.98, 1.04); }
-    64% { transform: translate3d(0.8px, -1.5px, 0) rotate(-3deg) scale(1.03, 0.98); }
-    80% { transform: translate3d(0.6px, -1px, 0) rotate(-1.5deg) scale(1.01, 1); }
-    90% { transform: translate3d(0, -0.5px, 0) rotate(1deg) scale(1.005, 1.005); }
-}
-@keyframes pvBrilloSuave {
-    0%, 100% { transform: scale(1) translate3d(0, 0, 0) rotate(0deg); filter: drop-shadow(0 0 0 rgba(255, 214, 64, 0)) brightness(1); }
-    12% { transform: scale(1.04) translate3d(0, -1.5px, 0) rotate(-1.5deg); filter: drop-shadow(0 0 4px rgba(255, 214, 64, 0.5)) brightness(1.1); }
-    22% { transform: scale(0.99) translate3d(0.5px, 0, 0) rotate(1deg); }
-    30% { transform: scale(1.02) translate3d(-0.5px, 0, 0) rotate(-1deg); }
-    42% { transform: scale(1.09) translate3d(0, -2.5px, 0) rotate(-2deg); filter: drop-shadow(0 0 9px rgba(255, 214, 64, 0.9)) brightness(1.25); }
-    52% { transform: scale(1.02) translate3d(0, 0, 0) rotate(0deg); }
-    66% { transform: scale(1.07) translate3d(0, -1.5px, 0) rotate(1.5deg); filter: drop-shadow(0 0 7px rgba(255, 214, 64, 0.75)) brightness(1.18); }
-    78% { transform: scale(0.995) translate3d(0, 0, 0) rotate(-0.5deg); }
-    90% { transform: scale(1.02) translate3d(0, -0.5px, 0) rotate(0.5deg); }
-}
-@keyframes pvGiroDiamante {
-    0%, 100% { transform: rotate(0deg) scale(1) translateY(0); filter: brightness(1) saturate(1); }
-    10% { transform: rotate(-5deg) scale(1.04) translateY(-1px); filter: brightness(1.2) saturate(1.1); }
-    22% { transform: rotate(4deg) scale(1.09) translateY(-1.5px); filter: brightness(1.45) saturate(1.25) drop-shadow(0 0 8px rgba(110, 220, 255, 0.8)); }
-    34% { transform: rotate(-3deg) scale(1.12) translateY(-2px); filter: brightness(1.7) saturate(1.4) drop-shadow(0 0 12px rgba(120, 220, 255, 0.95)); }
-    44% { transform: rotate(1deg) scale(1.03) translateY(0); }
-    58% { transform: rotate(-4deg) scale(1.08) translateY(-1.5px); filter: brightness(1.5) saturate(1.3); }
-    70% { transform: rotate(2deg) scale(1.02) translateY(0); }
-    84% { transform: rotate(-1.5deg) scale(1.05) translateY(-1px); filter: brightness(1.25) saturate(1.12); }
-}
-@keyframes pvFluido {
-    0%, 100% { transform: translate3d(0, 0, 0) scale(1) rotate(0deg); }
-    35% { transform: translate3d(-0.8px, -4px, 0) scale(1.06) rotate(1.5deg); }
-    70% { transform: translate3d(-0.6px, -3.5px, 0) scale(1.04) rotate(0.8deg); }
-}
-
-/* ================= COMENTARIOS ================= */
+/* ================= COMENTARIOS EN TARJETA ================= */
 
 .pv-comentarios {
     margin-top: 12px;
@@ -611,10 +535,47 @@
     color: #d5e4ef;
     line-height: 1.45;
 }
+.pv-comentario-fila {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+}
+.pv-comentario-av {
+    width: 30px;
+    height: 30px;
+    flex: 0 0 30px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #0f2d1a, #d4af37);
+    color: #fff;
+    font-weight: 700;
+    font-size: 12px;
+    border: 1.5px solid rgba(0, 229, 255, 0.4);
+}
+.pv-comentario-av img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.pv-comentario-cuerpo {
+    min-width: 0;
+    flex: 1;
+    font-size: 0.85rem;
+    line-height: 1.45;
+    color: #d5e4ef;
+}
 .pv-comentario-autor {
+    display: block;
     font-weight: 700;
     color: #5cc8ff;
-    margin-right: 6px;
+    line-height: 1.3;
+}
+.pv-comentario-texto {
+    word-break: break-word;
+    white-space: pre-wrap;
 }
 .pv-comentario-form {
     display: flex;
@@ -629,7 +590,7 @@
     border: 1px solid rgba(255, 255, 255, 0.15);
     background: rgba(255, 255, 255, 0.04);
     color: #fff;
-    font-size: 0.85rem;
+    font-size: 16px;
 }
 .pv-comentario-input:disabled {
     opacity: 0.6;
@@ -639,7 +600,8 @@
     margin: 14px auto 16px;
 }
 
-/* Indicadores de carga automática */
+/* ================= PAGINACIÓN Y SENTINEL ================= */
+
 #pvPubSentinel {
     width: 100%;
     height: 2px;
@@ -650,10 +612,10 @@
 #pvPubAutoEstado {
     width: 100%;
     min-height: 24px;
-    padding: 12px 0;
+    padding: 12px 14px;
     text-align: center;
-    color: #8da8a0;
-    font-size: 12px;
+    color: #9fb8cb;
+    font-size: 0.82rem;
 }
 #pvPubAutoEstado[hidden] {
     display: none !important;
@@ -685,255 +647,7 @@
     overflow-y: auto;
 }
 
-/* ================= LIGHTBOX (respaldo) ================= */
-
-#pvLightbox {
-    position: fixed;
-    inset: 0;
-    z-index: 999999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    padding: 12px;
-    background: rgba(0, 0, 0, 0.97);
-    box-sizing: border-box;
-}
-#pvLightbox[hidden] {
-    display: none !important;
-}
-#pvLightbox .pv-lightbox-inner {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-#pvLightboxBody {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-}
-#pvLightboxBody video,
-#pvLightboxBody img {
-    max-width: 95vw;
-    max-height: 90vh;
-    width: auto;
-    height: auto;
-    object-fit: contain;
-    background: #000;
-}
-#pvLightboxCerrar {
-    position: absolute;
-    z-index: 1000001;
-    top: max(12px, env(safe-area-inset-top));
-    right: 14px;
-    min-height: 42px;
-    padding: 8px 14px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: 22px;
-    background: rgba(0, 0, 0, 0.85);
-    color: #fff;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-/* ================= VISOR INMERSIVO (respaldo) ================= */
-
-#pubVisorFull {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100dvh;
-    background: #000;
-    z-index: 999990;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    user-select: none;
-    touch-action: none;
-}
-#pubVisorFull[hidden] {
-    display: none !important;
-}
-.pub-vf-media {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100dvh;
-    background: #000;
-    z-index: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-}
-.pub-vf-media > video,
-.pub-vf-media > img {
-    width: 100%;
-    height: 100%;
-    display: block;
-}
-.pub-vf-header {
-    position: relative;
-    z-index: 4;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 14px 16px;
-    transition: opacity 0.25s ease;
-}
-.pub-vf-btn-circle {
-    width: 42px;
-    height: 42px;
-    border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    background: rgba(12, 16, 24, 0.6);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: #fff;
-    font-size: 20px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-}
-#pubVfCenterControls {
-    position: fixed;
-    inset: 0;
-    z-index: 3;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    pointer-events: none;
-    transition: opacity 0.25s ease;
-}
-#pubVfCenterControls[hidden] {
-    display: none !important;
-}
-#pubVfBtnPlayCenter {
-    width: 80px;
-    height: 80px;
-    border-radius: 50%;
-    border: 2px solid rgba(212, 175, 55, 0.8);
-    background: rgba(10, 14, 22, 0.72);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    color: #d4af37;
-    font-size: 32px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    pointer-events: auto;
-}
-.pub-vf-controls {
-    position: relative;
-    z-index: 4;
-    padding: 28px 16px 20px;
-    background: linear-gradient(to top, rgba(0, 0, 0, 0.88), rgba(0, 0, 0, 0.42) 65%, transparent);
-    transition: opacity 0.25s ease;
-}
-#pubVfProgressBar {
-    width: 100%;
-    height: 18px;
-    display: flex;
-    align-items: center;
-    cursor: pointer;
-    touch-action: none;
-    margin-bottom: 10px;
-}
-#pubVfProgressTrack {
-    width: 100%;
-    height: 4px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.25);
-    overflow: hidden;
-}
-#pubVfProgressFill {
-    height: 100%;
-    width: 0%;
-    background: #d4af37;
-    border-radius: 999px;
-}
-.pub-vf-actions-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    color: #fff;
-    font-size: 13px;
-}
-.pub-vf-right-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.pub-vf-pill-btn {
-    height: 34px;
-    padding: 0 10px;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    background: rgba(15, 20, 30, 0.75);
-    color: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-}
-#pubVisorFull.controls-hidden .pub-vf-header,
-#pubVisorFull.controls-hidden .pub-vf-controls {
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Hoja deslizable del visor */
-#pubVfSheetBackdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.62);
-    z-index: 999995;
-}
-#pubVfSheetBackdrop[hidden] {
-    display: none !important;
-}
-#pubVfSheet {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 999998;
-    background: #0b1016;
-    border-top: 1px solid rgba(212, 175, 55, 0.4);
-    border-radius: 18px 18px 0 0;
-    padding: 16px;
-    max-height: 78dvh;
-    overflow: hidden;
-    color: #fff;
-}
-#pubVfSheet[hidden] {
-    display: none !important;
-}
-.pub-vf-sheet-track {
-    display: flex;
-    width: 300%;
-    transition: transform 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
-}
-.pub-vf-sheet-view {
-    width: 33.3333%;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* ================= PANTALLAS PEQUEÑAS Y MOVIMIENTO REDUCIDO ================= */
+/* ================= PANTALLAS PEQUEÑAS Y ACCESIBILIDAD ================= */
 
 @media (max-width: 600px) {
     .pv-post {
@@ -948,137 +662,15 @@
     .pv-media-marco {
         border-radius: 10px;
     }
-    #pvLightbox {
-        padding: 5px;
-    }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .perfil-header #pvHandle,
-    .perfil-header #pvHandle::before,
-    .pv-emo {
+    .perfil-header #pvHandle::before {
         animation: none !important;
     }
     .pv-amigo-card,
-    .pv-wallet,
-    .pv-reaccion-trigger,
-    .pv-reaccion-opcion,
-    .pub-vf-header,
-    .pub-vf-controls,
-    #pubVfCenterControls,
-    .pub-vf-sheet-track {
+    .pv-wallet {
         transition: none;
     }
-}
-
-/* ================= GALERÍA Y MURO ================= */
-
-/* Ninguna sección puede ensanchar la página */
-#pvPerfil,
-#pvPerfil section {
-    max-width: 100%;
-    box-sizing: border-box;
-}
-#pvPerfil img,
-#pvPerfil video {
-    max-width: 100%;
-}
-
-/* Galería: cada foto o video ocupa el ancho del dispositivo,
-   con su proporción real, y se desliza de lado a lado (como X).
-   La página no crece por cada archivo nuevo. */
-#pvGaleriaGrid {
-    display: flex;
-    gap: 12px;
-    width: 100%;
-    max-width: 100%;
-    box-sizing: border-box;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    padding: 8px 16px 14px;
-}
-#pvGaleriaGrid::-webkit-scrollbar {
-    height: 4px;
-}
-#pvGaleriaGrid::-webkit-scrollbar-thumb {
-    background: rgba(0, 229, 255, 0.35);
-    border-radius: 999px;
-}
-
-.pv-galeria-item {
-    position: relative;
-    flex: 0 0 100%;
-    width: 100%;
-    max-width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    border: 0;
-    border-radius: 16px;
-    overflow: hidden;
-    background: #000;
-    cursor: pointer;
-    scroll-snap-align: start;
-}
-.pv-galeria-item img,
-.pv-galeria-item video {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 80vh;
-    object-fit: contain;
-    background: #000;
-}
-/* Mientras el video carga sus metadatos, reserva espacio para que se vea */
-.pv-galeria-item video {
-    min-height: 220px;
-}
-.pv-galeria-play {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 22px;
-    background: rgba(0, 0, 0, 0.25);
-    pointer-events: none;
-}
-
-/* Cuadro para escribir en el muro */
-.pv-muro-form {
-    padding: 8px 16px 16px;
-}
-.pv-muro-form textarea {
-    width: 100%;
-    box-sizing: border-box;
-    min-height: 72px;
-    padding: 10px 12px;
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.04);
-    color: #fff;
-    font-size: 0.9rem;
-    resize: vertical;
-}
-.pv-muro-acciones {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 10px;
-}
-.pv-muro-nombre {
-    flex: 1;
-    min-width: 0;
-    font-size: 0.75rem;
-    color: #8aa8b8;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
 }
