@@ -12,28 +12,21 @@
 // v3.9: Health check desacoplado de Supabase: /api/health es liveness
 //       (siempre 200) y /api/health/detalle muestra el estado completo.
 // v4.0: Noticias montado en /api/noticias y ruta amigable /noticias.
-// v4.1: Montaje de noticias con diagnóstico: registra la ruta exacta
-//       del archivo, el tipo de export y sus claves. Si el export no
-//       es un router, monta un 503 con el motivo en vez de un 404.
+// v4.1: Montaje de noticias con diagnóstico.
 // v4.2: Montaje de /api/marketplace (compras del Marketplace de canales).
 // v4.3: Csariel's Pay: webhooks de Pay fuera del rate limit, polling
 //       público exento, ruta /pay/cobrar/:token y redirección de /pay.
-// v4.4: Telnyx: webhook montado con montarRouter (no tumba el arranque
-//       si falta el archivo), excluido del rate limit, y ciclo de
-//       mantenimiento de eSIM cada 5 minutos con require protegido.
-// v4.5: Generación de imagen y video (/api/ai/media, Cosmos3 Nano).
-//       El seguimiento GET de /api/ai/media queda fuera del límite
-//       de peticiones, porque el video se consulta cada pocos segundos.
-// v4.6: Promi montado en /api/promi (después de /api/ai/media y antes
-//       de /api/ai, para que /api/promi/chat no caiga en el 404 de /api).
-// v4.7: Turismo montado en /api/turismo (buscador turístico, versión
-//       5.5 de routes/lugares-api). El módulo no lanza al cargarse:
-//       si falta TURISMO_CURSOR_SECRET o GOOGLE_MAPS_API_KEY, la ruta
-//       responde con error claro y el servidor sigue arrancando.
-// v4.8: Contactos: /features/contactos/contactos.html con mensaje de
-//       error claro si el archivo no está desplegado. La ruta vieja
-//       /features/mensajes/contactos.html redirige (301) a la nueva.
-//       Diagnóstico temporal en /diag-contactos (borrar al terminar).
+// v4.4: Telnyx: webhook montado con montarRouter, excluido del rate limit,
+//       y ciclo de mantenimiento de eSIM cada 5 minutos con require protegido.
+// v4.5: Generación de imagen y video (/api/ai/media). El seguimiento GET
+//       queda fuera del límite de peticiones.
+// v4.6: Promi montado en /api/promi.
+// v4.7: Turismo montado en /api/turismo.
+// v4.8: Contactos con mensaje de error claro y redirección de la ruta vieja.
+// v4.9: Recomendación montada en /api/recomendacion (feed por reglas,
+//       eventos de visualización y votos «¿Te interesa?»). El registro
+//       de eventos queda fuera del límite general de peticiones, porque
+//       el visor envía lotes cada pocos segundos.
 // ================================================================
 
 require('dotenv').config();
@@ -446,10 +439,11 @@ const RUTA_WEBHOOK_TELNYX = '/api/telnyx/webhook';
 // ================================================================
 // Webhooks: sin límite. Los proveedores reintentan, y un 429 haría
 // que se pierdan eventos (IPN de NOWPayments, transfers de Fintoc,
-// eventos de Telnyx). Polling público de intenciones (GET): exento;
-// el frontend consulta cada pocos segundos y no debe bloquearse por
-// la cuota compartida de IP. El seguimiento de borradores de IA
-// (GET /api/ai/media/:id) también es polling, así que queda exento.
+// eventos de Telnyx). Polling público de intenciones (GET): exento.
+// El seguimiento de borradores de IA (GET /api/ai/media/:id) también
+// es polling, así que queda exento.
+// Recomendación: el registro de eventos (POST /api/recomendacion/eventos)
+// envía lotes cada pocos segundos desde el visor, así que queda exento.
 
 const RUTAS_WEBHOOK_SIN_LIMITE = [
     '/api/webhook/',
@@ -470,7 +464,8 @@ const apiLimiter = rateLimit({
     skip: (req) =>
         RUTAS_WEBHOOK_SIN_LIMITE.some((ruta) => req.originalUrl.startsWith(ruta)) ||
         (req.method === 'GET' && req.originalUrl.startsWith('/api/pay/intenciones/')) ||
-        (req.method === 'GET' && req.originalUrl.startsWith('/api/ai/media/'))
+        (req.method === 'GET' && req.originalUrl.startsWith('/api/ai/media/')) ||
+        (req.method === 'POST' && req.originalUrl.startsWith('/api/recomendacion/eventos'))
 });
 
 app.use('/api/', apiLimiter);
@@ -1066,6 +1061,9 @@ montarRouter('/api/turismo', './routes/lugares-api', 'routes/lugares-api');
 
 // Media (moderación de imagen/video + subida centralizada + liberación)
 montarRouter('/api/media', './routes/media', 'routes/media');
+
+// Recomendación: feed por reglas, eventos de visualización y votos «¿Te interesa?»
+montarRouter('/api/recomendacion', './routes/recomendacion', 'routes/recomendacion');
 
 // Moderación de texto (OpenAI Moderation API)
 montarRouter('/api/moderar-texto', './routes/moderar-texto', 'routes/moderar-texto');
