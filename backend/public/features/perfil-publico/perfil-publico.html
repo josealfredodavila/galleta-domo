@@ -396,7 +396,7 @@
 <script src="/features/shared/js/reacciones-global.js?v=5.2" defer></script>
 <script src="/features/perfil-publico/js/amigos.js" defer></script>
 <script src="/features/shared/js/visor-media-global.js?v=2.2" defer></script>
-<script src="/features/perfil-publico/js/perfil-publico.js?v=5.3" defer></script>
+<script src="/features/perfil-publico/js/perfil-publico.js?v=5.4" defer></script>
 <script src="/features/shared/js/idiomas.js?v=9" defer></script>
 <script src="/features/anuncios/anuncios-carrusel.js" defer></script>
 
@@ -487,7 +487,7 @@
         sentinel.dataset.obsListo = '1';
 
         var enCurso = false;
-        var reintentoTimer = null;
+        var pollTimer = null;
 
         var io = new IntersectionObserver(function (entradas) {
             var entry = entradas[0];
@@ -502,19 +502,26 @@
 
             boton.click();
 
-            clearTimeout(reintentoTimer);
-            reintentoTimer = setTimeout(function () {
-                enCurso = false;
+            clearInterval(pollTimer);
+            var checks = 0;
+            pollTimer = setInterval(function () {
+                checks++;
                 if (boton.hidden) {
+                    clearInterval(pollTimer);
+                    enCurso = false;
                     io.disconnect();
                     if (estado) {
                         estado.hidden = false;
                         estado.textContent = 'No hay más publicaciones.';
                     }
-                } else if (estado) {
-                    estado.hidden = true;
+                    return;
                 }
-            }, 900);
+                if (!boton.disabled || checks >= 40) {
+                    clearInterval(pollTimer);
+                    enCurso = false;
+                    if (estado) estado.hidden = true;
+                }
+            }, 250);
         }, {
             root: null,
             rootMargin: '0px 0px 450px 0px',
