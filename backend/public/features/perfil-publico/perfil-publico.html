@@ -390,7 +390,7 @@
 <script src="/features/shared/js/reacciones-global.js"></script>
 <script src="/features/perfil-publico/js/amigos.js" defer></script>
 <script src="/features/shared/js/visor-media-global.js" defer></script>
-<script src="/features/perfil-publico/js/perfil-publico.js?v=4.4" defer></script>
+<script src="/features/perfil-publico/js/perfil-publico.js?v=4.7" defer></script>
 
 <!-- CONTADOR Y BOTONES DEL CUADRO DEL MURO -->
 <script>
@@ -406,7 +406,6 @@
         var btnFoto = document.getElementById('pvMuroAdjuntar');
         var btnVideo = document.getElementById('pvMuroAdjuntarVideo');
 
-        // Contador del texto (igual que "Crear publicación")
         if (input && contador) {
             var MAX = 2000;
             var CIRCUNFERENCIA = 94.25;
@@ -430,8 +429,6 @@
             pintar();
         }
 
-        // Foto y video: ambos abren el mismo selector (imagen o video).
-        // perfil-publico.js recibe el archivo desde #pvMuroArchivo.
         if (archivo) {
             if (btnFoto) {
                 btnFoto.addEventListener('click', function () {
