@@ -1,13 +1,17 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.9
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v2.0
    Visor de pantalla completa compartido para fotos y videos.
 
-   CAMBIOS v1.9 (correcciones de la prueba en el teléfono):
+   CAMBIOS v2.0 (correcciones de la prueba en el teléfono):
+   · Las hojas internas (comentarios, menú ⋮, motivos de reporte) ya
+     NO tocan el historial del navegador. Antes cada hoja hacía
+     history.back() al cerrarse, y ese popstate hacía que la página
+     cerrara el visor entero. Ahora solo el visor usa una entrada de
+     historial: al abrirse y al cerrarse.
+   · Botón atrás del teléfono: si una hoja está abierta, la cierra; si
+     no, cierra el visor.
    · Índice único: se actualiza una sola vez al terminar el gesto.
-     Contador, barra de tiempo y letrero usan siempre el mismo video.
-   · Sin negro ni 0:00 al cambiar: el video nuevo muestra su póster
-     mientras carga y arranca solo cuando tiene metadatos.
-   · Cierre sin saltos: la posición de la página se restaura una sola vez.
+   · Sin negro ni 0:00 al cambiar: el video espera a tener metadatos.
    · Impresiones con visibilidad real (60 % durante 1 s, pestaña activa).
    · Eventos view_start y complete por lotes a /api/recomendacion/eventos.
    · Voto «¿Te interesa?» a /api/recomendacion/interes.
@@ -20,7 +24,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '1.9';
+    var VERSION = '2.0';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
@@ -103,7 +107,6 @@
         drag: null,
         historyDepth: 0,
         popstateHandler: null,
-        hojaHistory: false,
         ignorarPopstate: false,
         autoReproducir: true,
         ahorradorDatos: false,
@@ -128,8 +131,7 @@
         token: null,
         requestId: null,
         rankingVersion: null,
-        scrollY: 0,
-        cambioPendiente: false
+        scrollY: 0
     };
 
     /* ================= UTILIDADES ================= */
@@ -245,6 +247,11 @@
         var esc = ref('escenario');
         if (st.modo === 'v') return esc.clientHeight || window.innerHeight;
         return esc.clientWidth || window.innerWidth;
+    }
+
+    /* Hoja abierta (comentarios, menú, motivos). */
+    function hojaAbierta() {
+        return !!st.root && !ref('hoja').hidden;
     }
 
     /* ================= API Y EVENTOS ================= */
@@ -409,16 +416,19 @@
         st.io.observe(s.el);
     }
 
-    /* ================= HISTORY (botón atrás) ================= */
+    /* ================= HISTORIAL (solo el visor) =================
+       Una sola entrada de historial por visor abierto. Las hojas
+       internas NO la usan, así que cerrarlas nunca dispara popstate. */
 
     function pushHistorySeguro() {
         try {
-            history.pushState({ vmg: true, depth: st.historyDepth + 1 }, '');
+            history.pushState({ vmg: true }, '');
             st.historyDepth++;
         } catch (e) { /* ignorar */ }
     }
 
-    function consumirEstadoSinPopstate() {
+    /* Retira la entrada de historial que dejó el visor, sin disparar cierre. */
+    function consumirEntradaVisor() {
         if (st.historyDepth <= 0) return;
         st.historyDepth--;
         st.ignorarPopstate = true;
@@ -432,7 +442,9 @@
 
     function instalarPopstate() {
         if (st.popstateHandler) return;
+
         st.popstateHandler = function () {
+            /* Popstate provocado por cerrar() con history.back(): ya está cerrado. */
             if (st.ignorarPopstate) {
                 st.ignorarPopstate = false;
                 return;
@@ -440,20 +452,10 @@
 
             st.historyDepth = Math.max(0, st.historyDepth - 1);
 
-            if (!st.root) return;
-
-            if (!ref('hoja').hidden) {
-                st.hojaHistory = false;
-                ocultarHoja(true);
-                if (st.historyDepth === 0) desinstalarPopstate();
-                return;
-            }
-
-            if (st.abierto) {
-                cerrar(true);
-                if (st.historyDepth === 0) desinstalarPopstate();
-            }
+            /* El botón atrás del teléfono cierra el visor completo. */
+            if (st.abierto) cerrar(true);
         };
+
         window.addEventListener('popstate', st.popstateHandler);
     }
 
@@ -549,7 +551,7 @@
             if (!st.abierto) return;
 
             if (e.key === 'Escape') {
-                if (!ref('hoja').hidden) ocultarHoja(true);
+                if (hojaAbierta()) ocultarHoja();
                 else cerrar();
             } else if (e.key === 'ArrowRight' && st.modo === 'h') {
                 navegar(1);
@@ -975,8 +977,8 @@
         }
     }
 
-    /* El video se crea con póster y sin reproducción automática; el ciclo de
-       play lo decide activarActual(). Eventos de vista y finalización aquí. */
+    /* El video se crea sin reproducción automática; el ciclo de play lo decide
+       activarActual(). Eventos de vista y finalización aquí. */
     function crearVideo(item, s) {
         var url = safeHttps(item.url);
         if (!url) return null;
@@ -987,7 +989,6 @@
         v.playsInline = true;
         v.setAttribute('playsinline', '');
         v.setAttribute('webkit-playsinline', '');
-        v.setAttribute('poster', '');
         v.style.background = '#000';
         if (item.permiteDescarga === false) v.setAttribute('controlsList', 'nodownload');
 
@@ -1122,11 +1123,6 @@
 
         hoja.hidden = false;
         ref('fondo').hidden = false;
-
-        if (!st.hojaHistory) {
-            pushHistorySeguro();
-            st.hojaHistory = true;
-        }
 
         ref('cmForm').addEventListener('submit', function (e) {
             e.preventDefault();
@@ -1299,7 +1295,7 @@
         }
     }
 
-    /* ================= HOJA DE ACCIONES ================= */
+    /* ================= HOJA DE ACCIONES (sin historial) ================= */
 
     function boton(nombreAccion, icono, texto, extra) {
         return '<button type="button" class="vmg-op ' + (extra || '') + '" data-accion="' + nombreAccion + '">' + icono + ' ' + texto + '</button>';
@@ -1338,28 +1334,16 @@
         hoja.innerHTML = html;
         hoja.hidden = false;
         ref('fondo').hidden = false;
-
-        if (!st.hojaHistory) {
-            pushHistorySeguro();
-            st.hojaHistory = true;
-        }
     }
 
-    function ocultarHoja(desdePop) {
+    /* Cierra la hoja interna. No toca el historial: el visor sigue abierto. */
+    function ocultarHoja() {
         if (!st.root) return;
         var hoja = ref('hoja');
-        var estabaAbierta = !hoja.hidden;
         hoja.hidden = true;
         hoja.innerHTML = '';
         hoja.classList.remove('vmg-hoja-cm');
         ref('fondo').hidden = true;
-
-        var teniaHistory = st.hojaHistory;
-        st.hojaHistory = false;
-
-        if (estabaAbierta && teniaHistory && !desdePop) {
-            consumirEstadoSinPopstate();
-        }
     }
 
     function accion(nombre, btn) {
@@ -1511,7 +1495,7 @@
         var itemsFinales = opts.items.slice();
         var indiceFinal = indiceSolicitado;
 
-        // Carrusel vertical: solo videos reales.
+        // Carrusel vertical: solo videos reales. El índice sigue al elemento pedido.
         if (opts.carruselVertical === true) {
             itemsFinales = itemsFinales.filter(esVideoReal);
             if (!itemsFinales.length) return;
@@ -1537,7 +1521,6 @@
         st.fit = 'contain';
         st.abierto = true;
         st.velIdx = 0;
-        st.hojaHistory = false;
         st.ignorarPopstate = false;
         st.drag = null;
         st.offsetPx = 0;
@@ -1598,7 +1581,7 @@
         ref('lateral').innerHTML = '';
         ref('lateral').hidden = true;
 
-        ocultarHoja(true);
+        ocultarHoja();
         ocultarNotif();
 
         st.root.hidden = true;
@@ -1613,12 +1596,13 @@
 
         document.body.style.overflow = '';
 
-        // Restauración única de la posición de la página (la hace el perfil público
-        // al cerrar; aquí no se fuerza otra para evitar saltos dobles).
+        // La posición de la página la restaura el perfil público al cerrar.
         st.scrollY = 0;
 
+        /* Si el cierre viene de la interfaz, retira la entrada de historial del visor.
+           Si viene del botón atrás (desdePop), la entrada ya no existe. */
         if (!desdePop) {
-            consumirEstadoSinPopstate();
+            consumirEntradaVisor();
         }
 
         if (st.historyDepth <= 0) {
