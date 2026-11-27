@@ -1,21 +1,19 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v2.0
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v2.1
    Visor de pantalla completa compartido para fotos y videos.
 
-   CAMBIOS v2.0 (correcciones de la prueba en el teléfono):
-   · Las hojas internas (comentarios, menú ⋮, motivos de reporte) ya
-     NO tocan el historial del navegador. Antes cada hoja hacía
-     history.back() al cerrarse, y ese popstate hacía que la página
-     cerrara el visor entero. Ahora solo el visor usa una entrada de
-     historial: al abrirse y al cerrarse.
-   · Botón atrás del teléfono: si una hoja está abierta, la cierra; si
-     no, cierra el visor.
-   · Índice único: se actualiza una sola vez al terminar el gesto.
-   · Sin negro ni 0:00 al cambiar: el video espera a tener metadatos.
-   · Impresiones con visibilidad real (60 % durante 1 s, pestaña activa).
-   · Eventos view_start y complete por lotes a /api/recomendacion/eventos.
-   · Voto «¿Te interesa?» a /api/recomendacion/interes.
-   · Visor limpio: sin foto, avatar ni ID de usuario.
+   CAMBIOS v2.1:
+   · Barra lateral de reacciones sin caja negra sobre el video: el
+     contenedor del módulo se vuelve transparente y el menú de emojis
+     solo se ve cuando el usuario lo abre (se fuerza el atributo hidden
+     sobre el CSS del módulo).
+   · Comentarios con avatar y nombre del autor: se lee usuario_avatar_url
+     de publicaciones_comentarios_publicos. Si no hay foto, se muestra la
+     inicial del nombre. Las filas se construyen con DOM (sin innerHTML).
+   · Hojas internas sin historial (v2.0): cerrar la X de comentarios no
+     cierra el visor.
+   · Índice único, sin negro ni 0:00 al cambiar, impresiones con
+     visibilidad real, eventos view_start/complete, voto «¿Te interesa?».
    · Carrusel vertical solo con videos reales. Sin sessionStorage.
 
    API pública (sin cambios):
@@ -24,7 +22,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '2.0';
+    var VERSION = '2.1';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
@@ -47,6 +45,7 @@
     var NOTIF_MAX_POR_SESION = 2;
 
     var UMBRAL_GESTO_PX = 8;
+    var COMENTARIOS_LIMITE = 100;
 
     var MOTIVOS = [
         'Problema que involucra a un menor de 18 años',
@@ -184,6 +183,11 @@
         }
     }
 
+    function inicialDe(nombre) {
+        var t = String(nombre || '').trim();
+        return t ? t.charAt(0).toUpperCase() : '•';
+    }
+
     function asegurarCss() {
         if (!document.querySelector('link[href="' + CSS_PATH + '"]')) {
             var link = document.createElement('link');
@@ -200,16 +204,29 @@
                 '.vmg-pg-slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;will-change:transform;}' +
                 '.vmg-pg-slide video,.vmg-pg-slide img{width:100%;height:100%;object-fit:contain;background:#000;display:block;user-select:none;-webkit-user-drag:none;}' +
                 '.vmg-pg-err{color:rgba(255,255,255,.6);font-size:14px;}' +
+
                 '.vmg2-lateral{position:absolute;right:10px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;align-items:center;gap:14px;}' +
                 '.vmg2-lateral[hidden]{display:none!important;}' +
                 '.vmg-oculto .vmg2-lateral{opacity:0;pointer-events:none;}' +
                 '.vmg2-lat-btn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(10,14,22,.72);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11px;cursor:pointer;}' +
                 '.vmg2-lat-btn svg{width:22px;height:22px;}' +
                 '.vmg2-lat-n{font-size:10px;line-height:1;color:rgba(255,255,255,.85);}' +
+
+                /* Barra de reacciones dentro del visor: sin caja negra fija.
+                   Solo el disparador es visible; el menú aparece al abrirlo. */
+                '.vmg2-lateral .rg-wrap{background:transparent!important;border:0!important;box-shadow:none!important;padding:0!important;}' +
+                '.vmg2-lateral .rg-disparador{background:rgba(10,14,22,.72)!important;box-shadow:none!important;}' +
+                '.vmg2-lateral .rg-menu[hidden]{display:none!important;}' +
+                '.vmg2-lateral .rg-menu{background:rgba(10,14,22,.94);border-radius:24px;box-shadow:0 8px 22px rgba(0,0,0,.5);}' +
+
                 '.vmg-hoja.vmg-hoja-cm{padding:0;display:flex;flex-direction:column;}' +
                 '.vmg-cm-lista{flex:1;min-height:30dvh;max-height:52dvh;overflow-y:auto;padding:4px 0;}' +
-                '.vmg-cm-item{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;color:#eef6ff;line-height:1.4;}' +
-                '.vmg-cm-autor{font-weight:700;color:#d4af37;margin-right:6px;}' +
+                '.vmg-cm-fila{display:flex;gap:10px;align-items:flex-start;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.06);}' +
+                '.vmg-cm-av{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f2d1a,#d4af37);color:#fff;font-weight:700;font-size:14px;border:1.5px solid rgba(0,229,255,.4);}' +
+                '.vmg-cm-av img{width:100%;height:100%;object-fit:cover;}' +
+                '.vmg-cm-cuerpo{min-width:0;flex:1;}' +
+                '.vmg-cm-nombre{display:block;font-weight:700;color:#5cc8ff;font-size:13px;line-height:1.3;}' +
+                '.vmg-cm-texto{display:block;color:#eef6ff;font-size:14px;line-height:1.4;word-break:break-word;white-space:pre-wrap;}' +
                 '.vmg-cm-vacio{color:#8c949c;font-size:13px;padding:16px 14px;}' +
                 '.vmg-cm-form{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);}' +
                 '.vmg-cm-form input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:16px;outline:none;}' +
@@ -247,11 +264,6 @@
         var esc = ref('escenario');
         if (st.modo === 'v') return esc.clientHeight || window.innerHeight;
         return esc.clientWidth || window.innerWidth;
-    }
-
-    /* Hoja abierta (comentarios, menú, motivos). */
-    function hojaAbierta() {
-        return !!st.root && !ref('hoja').hidden;
     }
 
     /* ================= API Y EVENTOS ================= */
@@ -416,9 +428,7 @@
         st.io.observe(s.el);
     }
 
-    /* ================= HISTORIAL (solo el visor) =================
-       Una sola entrada de historial por visor abierto. Las hojas
-       internas NO la usan, así que cerrarlas nunca dispara popstate. */
+    /* ================= HISTORIAL (solo el visor) ================= */
 
     function pushHistorySeguro() {
         try {
@@ -444,7 +454,6 @@
         if (st.popstateHandler) return;
 
         st.popstateHandler = function () {
-            /* Popstate provocado por cerrar() con history.back(): ya está cerrado. */
             if (st.ignorarPopstate) {
                 st.ignorarPopstate = false;
                 return;
@@ -452,7 +461,6 @@
 
             st.historyDepth = Math.max(0, st.historyDepth - 1);
 
-            /* El botón atrás del teléfono cierra el visor completo. */
             if (st.abierto) cerrar(true);
         };
 
@@ -551,7 +559,7 @@
             if (!st.abierto) return;
 
             if (e.key === 'Escape') {
-                if (hojaAbierta()) ocultarHoja();
+                if (!ref('hoja').hidden) ocultarHoja();
                 else cerrar();
             } else if (e.key === 'ArrowRight' && st.modo === 'h') {
                 navegar(1);
@@ -1132,6 +1140,50 @@
         cargarComentarios();
     }
 
+    /* Fila de comentario: avatar (o inicial) y nombre del autor, con el texto. */
+    function filaComentario(f) {
+        var nombre = f.usuario_nombre || f.usuario_handle || 'Miembro';
+
+        var fila = document.createElement('div');
+        fila.className = 'vmg-cm-fila';
+
+        var av = document.createElement('div');
+        av.className = 'vmg-cm-av';
+
+        var url = safeHttps(f.usuario_avatar_url);
+        if (url) {
+            var img = document.createElement('img');
+            img.alt = '';
+            img.loading = 'lazy';
+            img.src = url;
+            img.onerror = function () {
+                av.textContent = inicialDe(nombre);
+            };
+            av.appendChild(img);
+        } else {
+            av.textContent = inicialDe(nombre);
+        }
+
+        var cuerpo = document.createElement('div');
+        cuerpo.className = 'vmg-cm-cuerpo';
+
+        var nom = document.createElement('span');
+        nom.className = 'vmg-cm-nombre';
+        nom.textContent = nombre;
+
+        var txt = document.createElement('span');
+        txt.className = 'vmg-cm-texto';
+        txt.textContent = f.contenido || '';
+
+        cuerpo.appendChild(nom);
+        cuerpo.appendChild(txt);
+
+        fila.appendChild(av);
+        fila.appendChild(cuerpo);
+
+        return fila;
+    }
+
     async function cargarComentarios() {
         var item = itemActual();
         var lista = ref('cmLista');
@@ -1145,23 +1197,31 @@
 
         try {
             var r = await c.from('publicaciones_comentarios_publicos')
-                .select('id, contenido, created_at, usuario_nombre, usuario_handle')
+                .select('id, contenido, created_at, usuario_nombre, usuario_handle, usuario_avatar_url')
                 .eq('publicacion_id', item.postId)
                 .order('created_at', { ascending: true })
-                .limit(100);
+                .limit(COMENTARIOS_LIMITE);
             if (r.error) throw r.error;
 
             var l = ref('cmLista');
             if (!l) return;
 
-            var filas = r.data || [];
-            l.innerHTML = filas.length
-                ? filas.map(function (f) {
-                    return '<div class="vmg-cm-item"><span class="vmg-cm-autor">' +
-                        escapeHtml(f.usuario_nombre || f.usuario_handle || 'Miembro') +
-                        '</span>' + escapeHtml(f.contenido || '') + '</div>';
-                }).join('')
-                : '<div class="vmg-cm-vacio">Sin comentarios todavía.</div>';
+            var filas = Array.isArray(r.data) ? r.data : [];
+
+            l.innerHTML = '';
+
+            if (!filas.length) {
+                var vacio = document.createElement('div');
+                vacio.className = 'vmg-cm-vacio';
+                vacio.textContent = 'Sin comentarios todavía.';
+                l.appendChild(vacio);
+                return;
+            }
+
+            filas.forEach(function (f) {
+                l.appendChild(filaComentario(f));
+            });
+
             l.scrollTop = l.scrollHeight;
         } catch (e) {
             var l2 = ref('cmLista');
