@@ -1,16 +1,12 @@
 /* ================================================================
-   CSARIEL'S · VIDEOS · HOJAS INFERIORES (v2)
+   CSARIEL'S · VIDEOS · HOJAS INFERIORES (v3)
    ================================================================
    Hojas que suben desde abajo en videos.html.
-   - Fondo oscuro suave y contenedor transparente de cada hoja (.hoja).
-   - Encabezado, tirador y botón de cerrar sin divisorias.
-   - Lista de opciones del menú del video (.hoja-op) sin divisorias.
-   - Comentarios: lista y campo de texto minimalista.
-   - Mapa de ubicación con Leaflet (pin y popups).
-   El compositor de publicar NO está aquí: vive en videos-composer-pro.css
-   y videos-publicar.css. Los sheets de sonidos y ubicación de publicar
-   tampoco: usan las clases .cs-sheet de videos-publicar.css.
-   Requiere videos-base.css (variables).
+   - Panel negro sólido (#0b1016) con borde superior sutil y esquinas
+     redondeadas arriba, idéntico al visor global.
+   - Sin text-shadow ni fondos transparentes/verdosos.
+   - Comentarios con avatar, nombre en azul (#5cc8ff), texto limpio
+     y barra inferior con input redondeado + botón Enviar en cian.
    ================================================================ */
 
 /* ----------------------------------------------------------------
@@ -19,11 +15,11 @@
 .hoja-fondo {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.25);
+    background: rgba(0, 0, 0, 0.65);
     z-index: 9000;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.25s ease, visibility 0.25s ease;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
 }
 .hoja-fondo.show {
     opacity: 1;
@@ -36,70 +32,77 @@
     right: 0;
     bottom: 0;
     z-index: 9001;
-    max-height: 88vh;
-    background: transparent;
-    border-top: none;
-    border-top-left-radius: 22px;
-    border-top-right-radius: 22px;
+    max-height: 78vh;
+    background: #0b1016;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    border-top-left-radius: 18px;
+    border-top-right-radius: 18px;
+    box-shadow: 0 -10px 32px rgba(0, 0, 0, 0.85);
     display: flex;
     flex-direction: column;
     transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
+    transition: transform 0.26s cubic-bezier(0.22, 0.61, 0.36, 1);
+    color: #f0f4f8;
 }
-.hoja.show { transform: translateY(0); }
+.hoja.show {
+    transform: translateY(0);
+}
 
 /* ----------------------------------------------------------------
    2. ENCABEZADO Y TIRADOR
    ---------------------------------------------------------------- */
 .hoja-tirador {
-    padding: 8px 0 4px;
+    padding: 8px 0 2px;
     display: flex;
     justify-content: center;
     flex-shrink: 0;
 }
 .hoja-tirador::before {
     content: '';
-    width: 40px;
+    width: 36px;
     height: 4px;
     background: rgba(255, 255, 255, 0.22);
-    border-radius: 4px;
+    border-radius: 999px;
 }
 
 .hoja-cab {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 6px 16px 12px;
+    padding: 8px 16px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     flex-shrink: 0;
 }
 
 .hoja-titulo {
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: #ffffff;
     flex: 1;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 
 .hoja-cont {
-    font-size: 0.7rem;
-    color: var(--text-muted);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
+    font-size: 0.75rem;
+    color: #8aa8b8;
 }
 
 .hoja-cerrar {
     background: none;
     border: 0;
-    color: var(--text-muted);
+    color: #d5e4ef;
     cursor: pointer;
     padding: 4px;
     display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.hoja-cerrar:hover,
+.hoja-cerrar:active {
+    color: #ffffff;
 }
 .hoja-cerrar svg {
-    width: 20px;
-    height: 20px;
-    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.85));
+    width: 22px;
+    height: 22px;
 }
 
 /* ----------------------------------------------------------------
@@ -107,7 +110,7 @@
    ---------------------------------------------------------------- */
 .hoja-lista {
     overflow-y: auto;
-    padding: 4px 0 calc(12px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 0 calc(12px + env(safe-area-inset-bottom, 0px));
 }
 
 .hoja-op {
@@ -118,24 +121,25 @@
     padding: 14px 18px;
     background: none;
     border: 0;
-    color: var(--text-primary);
-    font-size: 0.88rem;
+    color: #f0f4f8;
+    font-size: 0.9rem;
     text-align: left;
     cursor: pointer;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 .hoja-op svg {
     width: 20px;
     height: 20px;
-    color: var(--text-muted);
+    color: #8aa8b8;
     flex-shrink: 0;
-    filter: drop-shadow(0 1px 4px rgba(0, 0, 0, 0.85));
 }
-.hoja-op:active { background: rgba(255, 255, 255, 0.03); }
+.hoja-op:active {
+    background: rgba(255, 255, 255, 0.05);
+}
 
-/* Acción destructiva (eliminar): rojo en el texto y el icono. */
 .hoja-op.peligro,
-.hoja-op.peligro svg { color: var(--danger); }
+.hoja-op.peligro svg {
+    color: #ff5c7c;
+}
 
 /* ----------------------------------------------------------------
    4. HOJA DE PUBLICAR (solo el contenedor; el formulario tiene su estilo)
@@ -146,89 +150,108 @@
 }
 
 /* ----------------------------------------------------------------
-   5. COMENTARIOS
+   5. COMENTARIOS (estilo negro limpio tipo visor)
    ---------------------------------------------------------------- */
+#hojaComentarios {
+    min-height: 52vh;
+    max-height: 78vh;
+}
+
 .comentarios-lista {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 4px 16px;
+    padding: 8px 16px;
 }
 
 .comentario {
     display: flex;
     gap: 10px;
-    padding: 12px 0;
+    padding: 10px 0;
     position: relative;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+.comentario:last-child {
+    border-bottom: none;
 }
 
 .comentario .avatar {
-    width: 32px;
-    height: 32px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
     overflow: hidden;
     flex-shrink: 0;
-    background: var(--green-deep);
+    background: #141c26;
+    border: 1px solid rgba(255, 255, 255, 0.14);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     font-weight: 700;
-    color: #fff;
+    color: #ffffff;
 }
-.comentario .avatar img { width: 100%; height: 100%; object-fit: cover; }
+.comentario .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
 
-.comentario .cuerpo { flex: 1; min-width: 0; }
+.comentario .cuerpo {
+    flex: 1;
+    min-width: 0;
+}
 
 .comentario .nombre {
-    font-size: 0.76rem;
-    font-weight: 600;
-    color: var(--text-primary);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #5cc8ff;
+    line-height: 1.3;
 }
 .comentario .nombre .handle {
-    color: var(--text-muted);
+    color: #6f8ba0;
     font-weight: 400;
-    font-size: 0.68rem;
-    margin-left: 4px;
+    font-size: 0.72rem;
+    margin-left: 5px;
 }
 
 .comentario .texto {
-    font-size: 0.82rem;
-    color: var(--text-secondary);
-    line-height: 1.45;
+    font-size: 0.9rem;
+    color: #e6eff6;
+    line-height: 1.42;
     margin-top: 2px;
-    word-wrap: break-word;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
+    word-break: break-word;
+    white-space: pre-wrap;
 }
 
 .comentario .fecha {
-    font-size: 0.6rem;
-    color: var(--text-muted);
+    font-size: 0.65rem;
+    color: #6f8ba0;
     margin-top: 4px;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 
-/* Botón "Eliminar", visible para el autor del comentario y el dueño del video. */
 .comentario .borrar {
     position: absolute;
     right: 0;
-    top: 12px;
+    top: 10px;
     background: none;
     border: 0;
-    color: var(--text-muted);
-    font-size: 0.66rem;
+    color: #6f8ba0;
+    font-size: 0.7rem;
     cursor: pointer;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
+    padding: 2px 6px;
 }
-.comentario .borrar:hover { color: var(--danger); }
+.comentario .borrar:hover,
+.comentario .borrar:active {
+    color: #ff5c7c;
+}
 
-/* Campo de texto fijo al pie de la hoja de comentarios. */
+/* Barra inferior fija con input redondeado + botón cian */
 .hoja .sheet-input {
     flex-shrink: 0;
-    padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px));
-    border-top: none;
+    padding: 10px 14px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: #0b1016;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     gap: 8px;
     align-items: center;
@@ -236,53 +259,67 @@
 
 .hoja .sheet-input input {
     flex: 1;
-    padding: 10px 0;
-    background: transparent;
-    border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.35);
-    color: var(--text-primary);
-    font-size: 0.85rem;
+    min-width: 0;
+    height: 40px;
+    padding: 0 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 16px;
     outline: none;
     font-family: inherit;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
+    transition: border-color 0.18s ease, background 0.18s ease;
 }
 .hoja .sheet-input input:focus {
-    border-bottom-color: rgba(255, 255, 255, 0.75);
+    border-color: #00e5ff;
+    background: rgba(255, 255, 255, 0.07);
 }
 .hoja .sheet-input input::placeholder {
-    color: rgba(255, 255, 255, 0.55);
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
+    color: #7d93a6;
 }
 
 .hoja .sheet-input button {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    background: #fff;
+    height: 40px;
+    min-width: 40px;
+    padding: 0 16px;
+    border-radius: 12px;
+    background: #00e5ff;
     color: #05080f;
     border: 0;
+    font-size: 0.85rem;
+    font-weight: 700;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
 }
-.hoja .sheet-input button:disabled { opacity: 0.5; }
-.hoja .sheet-input button svg { width: 18px; height: 18px; }
+.hoja .sheet-input button:active {
+    background: #33ecff;
+}
+.hoja .sheet-input button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+.hoja .sheet-input button svg {
+    width: 18px;
+    height: 18px;
+}
 
-/* Mensaje cuando no hay comentarios o hubo un error al cargarlos. */
 .vacio {
-    color: var(--text-muted);
-    font-size: 0.82rem;
-    padding: 28px 20px;
+    color: #7d93a6;
+    font-size: 0.85rem;
+    padding: 32px 20px;
     text-align: center;
-    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.92);
 }
 
 /* ----------------------------------------------------------------
    6. MAPA DE UBICACIÓN (#hojaMapa)
    ---------------------------------------------------------------- */
-#hojaMapa { max-height: 82vh; }
+#hojaMapa {
+    max-height: 82vh;
+}
 
 .mapa-container {
     position: relative;
@@ -295,15 +332,14 @@
 #mapaLeaflet {
     width: 100%;
     height: 100%;
-    background: var(--space);
+    background: #0b1016;
 }
 
 .leaflet-container {
-    background: var(--space) !important;
+    background: #0b1016 !important;
     font-family: 'Inter', sans-serif;
 }
 
-/* Pin con el estilo del ecosistema (rombo cian con diamante blanco). */
 .pin-lujo {
     position: relative;
     width: 40px;
@@ -325,20 +361,23 @@
     font-weight: bold;
 }
 
-/* Popup del marcador */
 .leaflet-popup-content-wrapper {
-    background: rgba(11, 20, 16, 0.85) !important;
+    background: #0b1016 !important;
     border: 1px solid rgba(0, 229, 255, 0.4) !important;
     border-radius: 16px !important;
-    color: var(--text-primary) !important;
+    color: #f0f4f8 !important;
     padding: 0 !important;
 }
 .leaflet-popup-content {
     margin: 16px !important;
     font-family: 'Inter', sans-serif !important;
 }
-.leaflet-popup-tip { background: rgba(11, 20, 16, 0.85) !important; }
-.leaflet-popup-close-button { color: #00e5ff !important; }
+.leaflet-popup-tip {
+    background: #0b1016 !important;
+}
+.leaflet-popup-close-button {
+    color: #00e5ff !important;
+}
 
 .popup-titulo {
     font-family: 'Orbitron', monospace;
@@ -349,25 +388,33 @@
 }
 .popup-desc {
     font-size: 0.75rem;
-    color: var(--text-secondary);
+    color: #9fb3c8;
     line-height: 1.4;
 }
 
-/* Atribución del mapa (CARTO) */
 .leaflet-control-attribution {
-    background: rgba(11, 20, 16, 0.8) !important;
-    color: var(--text-muted) !important;
+    background: #0b1016 !important;
+    color: #6f8ba0 !important;
 }
-.leaflet-control-attribution a { color: #00e5ff !important; }
+.leaflet-control-attribution a {
+    color: #00e5ff !important;
+}
 
 /* ----------------------------------------------------------------
    7. ADAPTACIÓN PARA MÓVIL Y ACCESIBILIDAD
    ---------------------------------------------------------------- */
 @media (max-width: 480px) {
-    .comentarios-lista { padding: 4px 12px; }
-    .hoja-op { padding: 12px 14px; }
+    .comentarios-lista {
+        padding: 6px 14px;
+    }
+    .hoja-op {
+        padding: 13px 16px;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
-    .hoja, .hoja-fondo { transition: none !important; }
+    .hoja,
+    .hoja-fondo {
+        transition: none !important;
+    }
 }
