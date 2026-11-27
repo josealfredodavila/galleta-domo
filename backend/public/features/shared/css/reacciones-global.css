@@ -1,7 +1,14 @@
 /* ================================================================
-   REACCIONES GLOBAL · Csariel's · v5.0
+   REACCIONES GLOBAL · Csariel's · v5.1
    Estilos compartidos de la barra, el menú y las animaciones.
    Prefijo rg- para no chocar con ningún otro módulo.
+
+   CAMBIOS v5.1:
+   · Se elimina la caja negra: el disparador y el menú son vidrio
+     translúcido con borde suave, sin fondo sólido oscuro.
+   · El menú de emojis queda oculto mientras no esté abierto, incluso
+     si otro CSS define display en el contenedor (atributo hidden).
+   · El fondo del módulo no tapa el video cuando está dentro del visor.
    ================================================================ */
 
 /* ================= BARRA ================= */
@@ -10,6 +17,9 @@
     position: relative;
     display: inline-flex;
     align-items: center;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
 }
 
 .rg-disparador {
@@ -18,23 +28,27 @@
     gap: 6px;
     min-height: 38px;
     padding: 6px 12px;
-    border: 1px solid rgba(212, 175, 55, 0.35);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 20px;
-    background: rgba(11, 16, 22, 0.85);
-    color: inherit;
+    background: rgba(255, 255, 255, 0.10);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    color: #ffffff;
     font-size: 13px;
     cursor: pointer;
+    box-shadow: none;
 }
 
 .rg-disparador.activa {
-    background: rgba(212, 175, 55, 0.12);
+    background: rgba(212, 175, 55, 0.22);
     border-color: rgba(212, 175, 55, 0.6);
 }
 
 .rg-disparador .rg-total {
     font-size: 12px;
     font-weight: 700;
-    color: #d4af37;
+    color: #ffffff;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 .rg-disparador:disabled {
@@ -53,14 +67,17 @@
     gap: 8px;
     padding: 8px;
     border-radius: 24px;
-    background: #0b1016;
-    border: 1px solid rgba(212, 175, 55, 0.45);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.65);
+    background: rgba(255, 255, 255, 0.14);
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
     z-index: 60;
 }
 
+/* El atributo hidden siempre gana: el menú no se ve hasta abrirlo. */
 .rg-menu[hidden] {
-    display: none;
+    display: none !important;
 }
 
 .rg-opcion {
@@ -69,8 +86,8 @@
     height: 40px;
     padding: 0;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -79,7 +96,7 @@
 
 .rg-opcion.activa {
     border-color: #d4af37;
-    background: rgba(212, 175, 55, 0.18);
+    background: rgba(212, 175, 55, 0.30);
 }
 
 .rg-opcion:disabled {
@@ -99,7 +116,7 @@
     font-size: 1.15rem;
 }
 
-/* Contador sobre la opción */
+/* Contador sobre la opción (no se genera desde v5.1, se conserva por compatibilidad) */
 .rg-count {
     position: absolute;
     top: -5px;
