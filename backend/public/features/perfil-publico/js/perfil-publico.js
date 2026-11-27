@@ -1,28 +1,28 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v5.0 · Corrige el índice inicial del visor y el montaje de
-   emojis de reacción en cada publicación.
-   CAMBIOS v5.0:
-   · Índice inicial: el medio tocado se localiza por postId, no por
-     identidad de objeto. Antes el mismo medio existía en la lista del
-     perfil y en la galería, y el visor abría en 1 / N o al final.
-   · El orden del visor es el de la página: primero los medios del
-     perfil y de la galería en su orden, luego el lote del feed.
-   · Reacciones: se espera el catálogo de ReaccionesGlobal antes de
-     pintar las publicaciones (sin el límite corto de 4 s). Cada barra
-     se monta aislada: si una falla, las demás siguen funcionando y la
-     publicación muestra un aviso discreto en lugar de quedar vacía.
-   · Feed de recomendación (requestId y rankingVersion) sin cambios.
-   · Visor limpio, carrusel vertical solo con videos reales, sin
-     sessionStorage.
+   v5.1 · Avatar y nombre en los comentarios de cada publicación.
+   CAMBIOS v5.1:
+   · Los comentarios leen usuario_avatar_url de
+     publicaciones_comentarios_publicos y muestran el avatar del autor.
+     Si no tiene foto, se muestra la inicial de su nombre.
+   · Cada comentario se construye con DOM (sin innerHTML).
+   · Estilos de los comentarios inyectados desde este archivo (no hace
+     falta cambiar perfil-publico.css).
+   CAMBIOS v5.0 (se conservan):
+   · Índice inicial del visor por postId, no por identidad de objeto.
+   · Orden del visor: medios del perfil y de la galería, luego el feed.
+   · Reacciones: se espera el catálogo antes de pintar las publicaciones;
+     cada barra se monta aislada, con aviso discreto si falla.
+   · Feed de recomendación (requestId y rankingVersion), visor limpio,
+     carrusel vertical solo con videos reales, sin sessionStorage.
    RPC y tablas verificadas en Supabase:
    perfil_publico_verificado, perfil_publico_por_handle,
    perfil_publico_por_id, perfil_visibilidad_estado,
    perfil_publicaciones_contactos, perfil_galeria,
    puede_publicar_en_muro, publicaciones, publicacion_reportes,
    publicaciones_reacciones, publicaciones_comentarios,
-   publicaciones_comentarios_publicos, wallet_publica,
-   publicaciones_ocultas, usuarios_preferencias,
+   publicaciones_comentarios_publicos (incluye usuario_avatar_url),
+   wallet_publica, publicaciones_ocultas, usuarios_preferencias,
    usuarios_idiomas_contenido, idiomas_sistema, perfiles_publicos.
    ================================================================ */
 (function () {
@@ -186,6 +186,11 @@
         return -1;
     }
 
+    function inicialDe(nombre) {
+        var t = String(nombre || '').trim();
+        return t ? t.charAt(0).toUpperCase() : '•';
+    }
+
     function mostrar(panel) {
         [el.cargando, el.noEncontrado, el.error, el.perfil].forEach(function (n) {
             if (n) n.hidden = (n !== panel);
@@ -253,6 +258,23 @@
             }
             medioActivo = elMedia;
         });
+    }
+
+    /* ================= ESTILOS DE COMENTARIOS (inyectados una vez) ================= */
+
+    function asegurarEstilosComentarios() {
+        if (document.getElementById('pv-comentarios-estilos')) return;
+
+        var est = document.createElement('style');
+        est.id = 'pv-comentarios-estilos';
+        est.textContent =
+            '.pv-comentario-fila{display:flex;gap:9px;align-items:flex-start;}' +
+            '.pv-comentario-av{width:30px;height:30px;flex:0 0 30px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#0f2d1a,#d4af37);color:#fff;font-weight:700;font-size:12px;border:1.5px solid rgba(0,229,255,.4);}' +
+            '.pv-comentario-av img{width:100%;height:100%;object-fit:cover;}' +
+            '.pv-comentario-cuerpo{min-width:0;flex:1;font-size:.85rem;line-height:1.45;color:#d5e4ef;}' +
+            '.pv-comentario-cuerpo .pv-comentario-autor{display:block;margin-right:0;line-height:1.3;}' +
+            '.pv-comentario-texto{word-break:break-word;white-space:pre-wrap;}';
+        document.head.appendChild(est);
     }
 
     /* ================= VISOR COMPARTIDO ================= */
@@ -634,7 +656,52 @@
         meta.appendChild(marco);
     }
 
-    /* ================= COMENTARIOS ================= */
+    /* ================= COMENTARIOS (avatar y nombre del autor) ================= */
+
+    /* Fila de comentario: avatar (o inicial) y nombre, con el texto debajo. */
+    function filaComentarioPerfil(c) {
+        var nombre = c.usuario_nombre || c.usuario_handle || 'Miembro';
+
+        var fila = document.createElement('div');
+        fila.className = 'pv-comentario-item pv-comentario-fila';
+
+        var av = document.createElement('div');
+        av.className = 'pv-comentario-av';
+
+        var url = safeHttps(c.usuario_avatar_url);
+        if (url) {
+            var img = document.createElement('img');
+            img.alt = '';
+            img.loading = 'lazy';
+            img.src = url;
+            img.onerror = function () {
+                av.textContent = inicialDe(nombre);
+                img.remove();
+            };
+            av.appendChild(img);
+        } else {
+            av.textContent = inicialDe(nombre);
+        }
+
+        var cuerpo = document.createElement('div');
+        cuerpo.className = 'pv-comentario-cuerpo';
+
+        var autor = document.createElement('span');
+        autor.className = 'pv-comentario-autor';
+        autor.textContent = nombre;
+
+        var txt = document.createElement('span');
+        txt.className = 'pv-comentario-texto';
+        txt.textContent = c.contenido || '';
+
+        cuerpo.appendChild(autor);
+        cuerpo.appendChild(txt);
+
+        fila.appendChild(av);
+        fila.appendChild(cuerpo);
+
+        return fila;
+    }
 
     function pintarComentarios(listaEl, filas) {
         listaEl.innerHTML = '';
@@ -648,19 +715,7 @@
         }
 
         filas.forEach(function (c) {
-            var item = document.createElement('div');
-            item.className = 'pv-comentario-item';
-
-            var autor = document.createElement('span');
-            autor.className = 'pv-comentario-autor';
-            autor.textContent = c.usuario_nombre || c.usuario_handle || 'Miembro';
-
-            var txt = document.createElement('span');
-            txt.textContent = c.contenido || '';
-
-            item.appendChild(autor);
-            item.appendChild(txt);
-            listaEl.appendChild(item);
+            listaEl.appendChild(filaComentarioPerfil(c));
         });
     }
 
@@ -670,7 +725,7 @@
         try {
             var r = await client
                 .from('publicaciones_comentarios_publicos')
-                .select('id, usuario_id, contenido, created_at, usuario_nombre, usuario_handle')
+                .select('id, usuario_id, contenido, created_at, usuario_nombre, usuario_handle, usuario_avatar_url')
                 .eq('publicacion_id', pubId)
                 .order('created_at', { ascending: true })
                 .limit(COMENTARIOS_LIMITE);
@@ -1676,8 +1731,9 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v5.0');
+        console.info('[PerfilPublico] iniciando v5.1');
 
+        asegurarEstilosComentarios();
         mostrar(el.cargando);
         configurarVolver();
 
