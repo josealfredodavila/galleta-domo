@@ -1,20 +1,19 @@
 /* ================================================================
    PERFIL-PUBLICO.JS — Csariel's
-   v5.1 · Avatar y nombre en los comentarios de cada publicación.
-   CAMBIOS v5.1:
-   · Los comentarios leen usuario_avatar_url de
-     publicaciones_comentarios_publicos y muestran el avatar del autor.
-     Si no tiene foto, se muestra la inicial de su nombre.
-   · Cada comentario se construye con DOM (sin innerHTML).
-   · Estilos de los comentarios inyectados desde este archivo (no hace
-     falta cambiar perfil-publico.css).
-   CAMBIOS v5.0 (se conservan):
-   · Índice inicial del visor por postId, no por identidad de objeto.
-   · Orden del visor: medios del perfil y de la galería, luego el feed.
-   · Reacciones: se espera el catálogo antes de pintar las publicaciones;
-     cada barra se monta aislada, con aviso discreto si falla.
-   · Feed de recomendación (requestId y rankingVersion), visor limpio,
-     carrusel vertical solo con videos reales, sin sessionStorage.
+   v5.2 · Una sola interacción por publicación.
+   CAMBIOS v5.2:
+   · Publicaciones con foto o video: la tarjeta muestra solo un resumen
+     de lectura (emoji dominante con total y número de comentarios). La
+     reacción y el comentario se hacen únicamente dentro del visor, así
+     no aparecen duplicados.
+   · Publicaciones sin media (solo texto o audio): conservan la barra de
+     reacciones y los comentarios en la tarjeta, para que siempre exista
+     una forma de interactuar.
+   · Comentarios con avatar (o inicial) y nombre, leídos de
+     publicaciones_comentarios_publicos.usuario_avatar_url.
+   · Índice inicial del visor por postId; orden: perfil, galería, feed.
+   · Catálogo de reacciones esperado antes de pintar las publicaciones.
+   · Sin sessionStorage.
    RPC y tablas verificadas en Supabase:
    perfil_publico_verificado, perfil_publico_por_handle,
    perfil_publico_por_id, perfil_visibilidad_estado,
@@ -260,7 +259,15 @@
         });
     }
 
-    /* ================= ESTILOS DE COMENTARIOS (inyectados una vez) ================= */
+    /* ¿La publicación tiene foto o video? Entonces su interacción vive en el visor. */
+    function tieneVisor(p) {
+        var url = safeHttps(p.media_url);
+        if (!url) return false;
+        var tipo = mediaTipo(p.media_type, url);
+        return tipo === 'video' || tipo === 'imagen';
+    }
+
+    /* ================= ESTILOS (inyectados una vez) ================= */
 
     function asegurarEstilosComentarios() {
         if (document.getElementById('pv-comentarios-estilos')) return;
@@ -273,7 +280,11 @@
             '.pv-comentario-av img{width:100%;height:100%;object-fit:cover;}' +
             '.pv-comentario-cuerpo{min-width:0;flex:1;font-size:.85rem;line-height:1.45;color:#d5e4ef;}' +
             '.pv-comentario-cuerpo .pv-comentario-autor{display:block;margin-right:0;line-height:1.3;}' +
-            '.pv-comentario-texto{word-break:break-word;white-space:pre-wrap;}';
+            '.pv-comentario-texto{word-break:break-word;white-space:pre-wrap;}' +
+            '.pv-resumen{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}' +
+            '.pv-resumen-item{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:6px 12px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#b7d0e2;font-size:.82rem;}' +
+            '.pv-resumen-rx{color:#ffffff;}' +
+            '.pv-post-pista{margin-top:8px;font-size:.72rem;color:#6f8ba0;}';
         document.head.appendChild(est);
     }
 
@@ -773,10 +784,48 @@
         }
     }
 
+    /* ================= RESUMEN DE SOLO LECTURA (publicaciones con visor) ================= */
+
+    /* Emoji con más reacciones según el resumen de ReaccionesGlobal. */
+    function emojiDominante(resumen) {
+        var totales = (resumen && resumen.totales) || {};
+        var mejor = null;
+        var max = 0;
+        Object.keys(totales).forEach(function (k) {
+            if (totales[k] > max) {
+                max = totales[k];
+                mejor = k;
+            }
+        });
+        return mejor;
+    }
+
+    function crearResumen(resumen, comentarios) {
+        var box = document.createElement('div');
+        box.className = 'pv-resumen';
+
+        var total = resumen && resumen.total ? resumen.total : 0;
+
+        if (total > 0) {
+            var rx = document.createElement('span');
+            rx.className = 'pv-resumen-item pv-resumen-rx';
+            rx.textContent = (emojiDominante(resumen) || '❤️') + ' ' + total;
+            box.appendChild(rx);
+        }
+
+        var com = document.createElement('span');
+        com.className = 'pv-resumen-item';
+        com.textContent = 'Comentarios ' + (Number(comentarios) || 0);
+        box.appendChild(com);
+
+        return box;
+    }
+
     /* ================= TARJETA DE PUBLICACIÓN ================= */
 
-    function crearPost(client, p) {
+    function crearPost(client, p, resumen) {
         var pubId = p.id;
+        var conVisor = tieneVisor(p);
 
         var art = document.createElement('article');
         art.className = 'pv-post';
@@ -829,68 +878,82 @@
         var barra = document.createElement('div');
         barra.className = 'pv-post-barra';
 
-        var reacciones = document.createElement('div');
-        reacciones.className = 'pv-reacciones';
-        reacciones.dataset.pubId = pubId;
+        if (conVisor) {
+            /* Interacción única: vive dentro del visor. Aquí solo se lee el resumen. */
+            barra.appendChild(crearResumen(resumen, p.comentarios));
+            meta.appendChild(barra);
 
-        var btnCom = document.createElement('button');
-        btnCom.type = 'button';
-        btnCom.className = 'pv-btn-comentar';
+            var pista = document.createElement('div');
+            pista.className = 'pv-post-pista';
+            pista.textContent = mediaTipo(p.media_type, p.media_url) === 'video'
+                ? 'Toca el video para reaccionar y comentar'
+                : 'Toca la foto para reaccionar y comentar';
+            meta.appendChild(pista);
+        } else {
+            /* Sin foto ni video: la interacción sí vive en la tarjeta. */
+            var reacciones = document.createElement('div');
+            reacciones.className = 'pv-reacciones';
+            reacciones.dataset.pubId = pubId;
 
-        var totalCom = Number(p.comentarios) || 0;
+            var btnCom = document.createElement('button');
+            btnCom.type = 'button';
+            btnCom.className = 'pv-btn-comentar';
 
-        var iconoCom = document.createElement('span');
-        iconoCom.textContent = 'Comentarios';
+            var totalCom = Number(p.comentarios) || 0;
 
-        var comCount = document.createElement('span');
-        comCount.textContent = totalCom > 0 ? String(totalCom) : '';
+            var iconoCom = document.createElement('span');
+            iconoCom.textContent = 'Comentarios';
 
-        btnCom.appendChild(iconoCom);
-        if (comCount.textContent) btnCom.appendChild(comCount);
+            var comCount = document.createElement('span');
+            comCount.textContent = totalCom > 0 ? String(totalCom) : '';
 
-        barra.appendChild(reacciones);
-        barra.appendChild(btnCom);
-        meta.appendChild(barra);
+            btnCom.appendChild(iconoCom);
+            if (comCount.textContent) btnCom.appendChild(comCount);
 
-        var cajaCom = document.createElement('div');
-        cajaCom.className = 'pv-comentarios';
-        cajaCom.hidden = true;
+            barra.appendChild(reacciones);
+            barra.appendChild(btnCom);
+            meta.appendChild(barra);
 
-        var listaCom = document.createElement('div');
-        listaCom.className = 'pv-comentarios-lista';
+            var cajaCom = document.createElement('div');
+            cajaCom.className = 'pv-comentarios';
+            cajaCom.hidden = true;
 
-        var formCom = document.createElement('form');
-        formCom.className = 'pv-comentario-form';
+            var listaCom = document.createElement('div');
+            listaCom.className = 'pv-comentarios-lista';
 
-        var inputCom = document.createElement('input');
-        inputCom.type = 'text';
-        inputCom.className = 'pv-comentario-input';
-        inputCom.maxLength = 500;
-        inputCom.placeholder = 'Escribe un comentario...';
-        inputCom.setAttribute('aria-label', 'Escribe un comentario');
+            var formCom = document.createElement('form');
+            formCom.className = 'pv-comentario-form';
 
-        var btnEnviar = document.createElement('button');
-        btnEnviar.type = 'submit';
-        btnEnviar.className = 'btn btn-outline btn-sm';
-        btnEnviar.textContent = 'Enviar';
+            var inputCom = document.createElement('input');
+            inputCom.type = 'text';
+            inputCom.className = 'pv-comentario-input';
+            inputCom.maxLength = 500;
+            inputCom.placeholder = 'Escribe un comentario...';
+            inputCom.setAttribute('aria-label', 'Escribe un comentario');
 
-        formCom.appendChild(inputCom);
-        formCom.appendChild(btnEnviar);
+            var btnEnviar = document.createElement('button');
+            btnEnviar.type = 'submit';
+            btnEnviar.className = 'btn btn-outline btn-sm';
+            btnEnviar.textContent = 'Enviar';
 
-        cajaCom.appendChild(listaCom);
-        cajaCom.appendChild(formCom);
-        meta.appendChild(cajaCom);
+            formCom.appendChild(inputCom);
+            formCom.appendChild(btnEnviar);
 
-        btnCom.addEventListener('click', function () {
-            var abrir = cajaCom.hidden;
-            cajaCom.hidden = !abrir;
-            if (abrir) cargarComentarios(client, pubId, listaCom, comCount);
-        });
+            cajaCom.appendChild(listaCom);
+            cajaCom.appendChild(formCom);
+            meta.appendChild(cajaCom);
 
-        formCom.addEventListener('submit', function (ev) {
-            ev.preventDefault();
-            enviarComentario(client, pubId, inputCom, listaCom, comCount);
-        });
+            btnCom.addEventListener('click', function () {
+                var abrir = cajaCom.hidden;
+                cajaCom.hidden = !abrir;
+                if (abrir) cargarComentarios(client, pubId, listaCom, comCount);
+            });
+
+            formCom.addEventListener('submit', function (ev) {
+                ev.preventDefault();
+                enviarComentario(client, pubId, inputCom, listaCom, comCount);
+            });
+        }
 
         art.appendChild(av);
         art.appendChild(meta);
@@ -900,9 +963,9 @@
 
     /* ================= REACCIONES (ReaccionesGlobal) ================= */
 
-    /* Monta la barra de emojis en el contenedor de la publicación.
-       Si el módulo de reacciones falla, la publicación sigue visible
-       y muestra un aviso discreto. */
+    /* Monta la barra de emojis en el contenedor de la publicación (solo
+       publicaciones sin visor). Si el módulo falla, la publicación sigue
+       visible y muestra un aviso discreto. */
     function montarReacciones(contenedor, client, pubId, uid, resumen) {
         if (!contenedor) return;
 
@@ -1044,13 +1107,14 @@
             }
 
             nuevos.forEach(function (p) {
-                var card = crearPost(client, p);
+                var resumen = resumenes && resumenes.get ? resumenes.get(String(p.id)) : null;
+                var card = crearPost(client, p, resumen);
                 el.pubLista.appendChild(card);
 
-                var contenedorRx = card.querySelector('.pv-reacciones');
-                var resumen = resumenes && resumenes.get ? resumenes.get(String(p.id)) : null;
-
-                montarReacciones(contenedorRx, client, p.id, uid, resumen);
+                if (!tieneVisor(p)) {
+                    var contenedorRx = card.querySelector('.pv-reacciones');
+                    montarReacciones(contenedorRx, client, p.id, uid, resumen);
+                }
 
                 if (p.id) videoSesion.idsVistos.add(String(p.id));
             });
@@ -1731,7 +1795,7 @@
     /* ================= INIT ================= */
 
     async function init() {
-        console.info('[PerfilPublico] iniciando v5.1');
+        console.info('[PerfilPublico] iniciando v5.2');
 
         asegurarEstilosComentarios();
         mostrar(el.cargando);
