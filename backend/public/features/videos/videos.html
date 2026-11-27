@@ -292,5 +292,27 @@
 
     <script src="/features/videos/js/videos-camara.js" defer></script>
     <script src="/features/videos/js/videos-publicar.js" defer></script>
+
+    <!-- DIAGNÓSTICO: muestra en pantalla los errores de JavaScript de esta página -->
+    <div id="csErrorBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3366;color:#fff;padding:10px 14px;font:12px monospace;word-break:break-word;">
+        <strong>Error:</strong> <span id="csErrorTexto"></span>
+        <button type="button" onclick="this.parentElement.style.display='none'" style="float:right;background:none;border:1px solid #fff;color:#fff;border-radius:6px;padding:2px 8px;">Cerrar</button>
+    </div>
+    <script>
+    (function () {
+        function mostrar(msg) {
+            var b = document.getElementById('csErrorBanner');
+            var t = document.getElementById('csErrorTexto');
+            if (t) t.textContent = msg;
+            if (b) b.style.display = 'block';
+        }
+        window.addEventListener('error', function (e) {
+            mostrar((e.message || 'Error desconocido') + ' — ' + (e.filename || '') + ':' + (e.lineno || ''));
+        });
+        window.addEventListener('unhandledrejection', function (e) {
+            mostrar('Promesa rechazada: ' + ((e.reason && e.reason.message) || e.reason));
+        });
+    })();
+    </script>
 </body>
 </html>
