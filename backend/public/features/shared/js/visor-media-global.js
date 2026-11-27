@@ -1,26 +1,20 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.5
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.6
    Visor de pantalla completa compartido para fotos y videos.
 
-   Cambios v1.5:
-   - Notificación «¿Te interesa este video?» con aparición dinámica:
-     · Solo se dispara tras 6 s viendo el mismo video (o si lo
-       reinicia/repita).
-     · Enfriamiento de al menos 4 videos entre apariciones.
-     · Máximo 2 apariciones por sesión del visor.
-     · Si el usuario cambia de video antes de los 6 s, se cancela
-       el temporizador.
-   - La tarjeta del autor (nombre, handle, avatar, texto) se mantiene
-     limpia: la notificación nunca la oculta ni la pisa.
-   - Respuesta ágil: al pulsar «Sí, me interesa» o «Rechazar para
-     ver más», se ejecuta onInteres/onRechazo, se oculta el aviso
-     de inmediato y, si rechaza, avanza al siguiente video sin
-     trabar la reproducción.
+   Cambios v1.6:
+   - Eliminada por completo la foto, nombre y @handle del usuario
+     dentro del visor (pantalla limpia sin tarjeta de autor).
+   - Blindaje en carrusel vertical: filtra estrictamente solo
+     videos reales (nunca fotos) al abrir en modo carrusel.
+   - Letrero compacto y discreto «¿Te interesa?» («Sí» /
+     «No me interesa») con aparición dinámica (6 s de permanencia,
+     enfriamiento de 4 videos, máx. 2 veces por sesión) para
+     retroalimentar el sistema de recomendación.
 
-   Cambios v1.4 (heredados):
-   - Scrub con el dedo en carrusel vertical.
+   Cambios v1.5 / v1.4 (heredados):
+   - Scrub horizontal con el dedo en carrusel vertical.
    - Swipe horizontal limpio cuando NO es carrusel.
-   - Notificación «¿Te interesa?» permanece visible hasta responder.
 
    API pública:
      VisorMediaGlobal.abrir, cerrar, estaAbierto, contieneVideo, version.
@@ -28,15 +22,16 @@
 (function () {
     'use strict';
 
-    var VERSION = '1.5';
+    var VERSION = '1.6';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
     var CSS_PATH = '/features/shared/css/visor-media-global.css';
     var VELOCIDADES = [1, 1.25, 1.5, 2];
+    var EXT_IMAGEN_RE = /\.(jpe?g|png|webp|gif|avif|bmp|svg)(\?|#|$)/i;
 
-    // Reglas de aparición de la notificación «¿Te interesa?»
-    var NOTIF_DELAY_MS = 6000;        // 6 s viendo el mismo video
+    // Reglas de aparición del letrero «¿Te interesa?»
+    var NOTIF_DELAY_MS = 6000;         // 6 s viendo el mismo video
     var NOTIF_ENFRIAMIENTO_VIDEOS = 4; // 4 videos entre apariciones
     var NOTIF_MAX_POR_SESION = 2;      // máx. 2 veces por sesión
 
@@ -52,7 +47,7 @@
     ];
 
     var SVG = function (cuerpo) {
-        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="22" height="22" aria-hidden="true">' + cuerpo + '</svg>';
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20" aria-hidden="true">' + cuerpo + '</svg>';
     };
 
     var ICONO = {
@@ -67,8 +62,7 @@
         ocultar: SVG('<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><line x1="1" y1="1" x2="23" y2="23"/>'),
         reportar: SVG('<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>'),
         eliminar: SVG('<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>'),
-        interes: SVG('<path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>'),
-        rechazo: SVG('<circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/>')
+        flecha: SVG('<polyline points="6 9 12 15 18 9"/>')
     };
 
     var st = {
@@ -103,11 +97,9 @@
         notifDescartados: new Set(),
         onInteres: null,
         onRechazo: null,
-        // control de aparición de la notificación
-        notifSesionUsos: 0,          // cuántas veces se mostró en esta sesión
-        notifVideosDesdeUltima: 0,   // videos vistos desde la última aparición
-        notifItemActual: null,       // referencia al item en cuyo contexto apareció
-        notifCanceladaPorCambio: false,
+        notifSesionUsos: 0,
+        notifVideosDesdeUltima: 0,
+        notifItemActual: null,
         // scrub horizontal (carrusel)
         scrubActivo: false,
         scrubBaseTime: 0,
@@ -129,6 +121,14 @@
             var x = new URL(String(u), window.location.href);
             return x.protocol === 'https:' ? x.href : null;
         } catch (e) { return null; }
+    }
+
+    function esVideoReal(item) {
+        if (!item || item.tipo !== 'video') return false;
+        var url = safeHttps(item.url);
+        if (!url) return false;
+        if (EXT_IMAGEN_RE.test(url)) return false;
+        return true;
     }
 
     function toast(msg, tipo) {
@@ -266,10 +266,10 @@
                 '</div>' +
             '</div>' +
             '<div class="vmg-notif" data-ref="notif" hidden aria-live="polite">' +
-                '<div class="vmg-notif-texto">¿Te interesa este video?</div>' +
+                '<span class="vmg-notif-texto">' + ICONO.flecha + ' ¿Te interesa?</span>' +
                 '<div class="vmg-notif-acciones">' +
-                    '<button type="button" class="vmg-notif-btn vmg-notif-si" data-accion="interes-si">' + ICONO.interes + ' <span>Sí, me interesa</span></button>' +
-                    '<button type="button" class="vmg-notif-btn vmg-notif-no" data-accion="interes-no">' + ICONO.rechazo + ' <span>Rechazar para ver más</span></button>' +
+                    '<button type="button" class="vmg-notif-btn vmg-notif-si" data-accion="interes-si">Sí</button>' +
+                    '<button type="button" class="vmg-notif-btn vmg-notif-no" data-accion="interes-no">No me interesa</button>' +
                 '</div>' +
             '</div>' +
             '<div class="vmg-fondo-hoja" data-ref="fondo" data-accion="cerrarhoja" hidden></div>' +
@@ -310,7 +310,6 @@
             st.scrubUltimoDx = 0;
             st.scrubActivo = false;
 
-            // Si es carrusel con video activo, preparamos scrub sin iniciarlo aún
             if (st.carrusel) {
                 var v = videoActual();
                 if (v && isFinite(v.duration) && v.duration > 0) {
@@ -330,13 +329,11 @@
 
             if (Math.abs(dx) > 10 || Math.abs(dy) > 10) st.movido = true;
 
-            // Scrub horizontal en carrusel con video activo
             if (st.carrusel && Math.abs(dx) > 14 && Math.abs(dx) > Math.abs(dy)) {
                 var v = videoActual();
                 if (v && isFinite(v.duration) && v.duration > 0) {
                     st.scrubActivo = true;
 
-                    // Ancho del escenario para escalar el desplazamiento a la duración
                     var ancho = escenario.clientWidth || window.innerWidth || 1;
                     var delta = (dx / ancho) * v.duration;
                     var nuevo = st.scrubBaseTime + delta;
@@ -360,7 +357,6 @@
             st.scrubActivo = false;
 
             if (hizoScrub) {
-                // Evita que el click siguiente pause/reproduzca
                 st.scrubSuprimirClick = true;
                 setTimeout(function () { st.scrubSuprimirClick = false; }, 350);
                 programarOcultado();
@@ -368,13 +364,11 @@
             }
 
             if (!st.carrusel) {
-                // Swipe-down cierra; swipe horizontal (limpio) navega
                 if (dy > 120 && Math.abs(dy) > Math.abs(dx)) { cerrar(); return; }
                 if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)) {
                     navegar(dx < 0 ? 1 : -1);
                 }
             } else {
-                // En carrusel: swipe-down largo cierra. Scroll vertical lo maneja el snap.
                 if (dy > 140 && Math.abs(dy) > Math.abs(dx)) { cerrar(); }
             }
         }, { passive: true });
@@ -549,19 +543,7 @@
         }
     }
 
-    /* ================= NOTIFICACIÓN «¿TE INTERESA?» =================
-       Reglas de aparición:
-       - Solo para videos (nunca fotos).
-       - Solo si hay onInteres o onRechazo configurados.
-       - Solo si el usuario lleva ≥ 6 s viendo el mismo video, o si
-         lo reinicia/repita.
-       - Enfriamiento: al menos 4 videos distintos vistos entre
-         apariciones.
-       - Máximo 2 apariciones por sesión del visor.
-       - Si cambia de video antes de los 6 s, se cancela el timer.
-       - El aviso se coloca en la franja inferior, sin tocar la
-         tarjeta del autor (que vive dentro del slide).
-    ================================================================ */
+    /* ================= LETRERO «¿TE INTERESA?» ================= */
 
     function puedeMostrarNotifAhora() {
         if (st.notifSesionUsos >= NOTIF_MAX_POR_SESION) return false;
@@ -582,33 +564,25 @@
         st.notifTimer = null;
     }
 
-    /**
-     * Programa la notificación para el item actual.
-     * Solo si es video, tiene postId, hay callbacks y se cumplen
-     * las reglas de enfriamiento/sesión.
-     */
     function programarNotif() {
         cancelarTimerNotif();
 
         if (!st.root) return;
 
         var item = itemActual();
-        if (!item || item.tipo !== 'video') { return; }
+        if (!esVideoReal(item)) { return; }
         if (!st.onInteres && !st.onRechazo) { return; }
         if (item.postId && st.notifDescartados.has(String(item.postId))) { return; }
         if (!puedeMostrarNotifAhora()) { return; }
 
-        // Guardamos el item de referencia: si el usuario cambia de video
-        // antes de que dispare el timer, no mostramos nada.
         st.notifItemActual = item;
 
         st.notifTimer = setTimeout(function () {
             st.notifTimer = null;
-            // Verificación final: seguimos en el mismo video
             if (!st.abierto) return;
             var actual = itemActual();
             if (!mismoItem(actual, st.notifItemActual)) return;
-            if (!actual || actual.tipo !== 'video') return;
+            if (!esVideoReal(actual)) return;
             if (actual.postId && st.notifDescartados.has(String(actual.postId))) return;
             if (!puedeMostrarNotifAhora()) return;
 
@@ -617,17 +591,10 @@
 
             n.hidden = false;
             st.notifSesionUsos++;
-            // El contador de enfriamiento se reinicia al mostrar
             st.notifVideosDesdeUltima = 0;
         }, NOTIF_DELAY_MS);
     }
 
-    /**
-     * Llamado cuando el usuario navega a un nuevo video (por scroll
-     * en carrusel o por navegar() en simple).
-     * Cancela timers pendientes, incrementa contadores de enfriamiento
-     * y programa uno nuevo para el item actual.
-     */
     function alCambiarVideo() {
         cancelarTimerNotif();
         ocultarNotif();
@@ -638,76 +605,13 @@
         programarNotif();
     }
 
-    /**
-     * Llamado cuando el video activo emite 'ended' o el usuario lo
-     * reinicia. Reintenta la notificación (permite "repetir" el video).
-     */
     function alRepetirVideo() {
         var item = itemActual();
-        if (!item || item.tipo !== 'video') return;
+        if (!esVideoReal(item)) return;
         if (st.notifItemActual && mismoItem(st.notifItemActual, item)) {
-            // Ya se está programando para este item; no duplicar
             return;
         }
         programarNotif();
-    }
-
-    /* ================= DATOS DE AUTOR / TEXTO (estilo X) ================= */
-
-    function construirInfoAutor(item) {
-        var nombre = item.autorNombre ? String(item.autorNombre) : '';
-        var handleRaw = item.autorHandle ? String(item.autorHandle) : '';
-        var handle = handleRaw ? (handleRaw.charAt(0) === '@' ? handleRaw : '@' + handleRaw) : '';
-        var avatar = safeHttps(item.autorAvatar);
-        var texto = item.texto != null ? String(item.texto) : '';
-
-        if (!nombre && !handle && !avatar && !texto) return null;
-
-        var wrap = document.createElement('div');
-        wrap.className = 'vmg-info-autor';
-
-        if (avatar || nombre || handle) {
-            var fila = document.createElement('div');
-            fila.className = 'vmg-info-fila';
-
-            if (avatar) {
-                var img = document.createElement('img');
-                img.className = 'vmg-info-avatar';
-                img.src = avatar;
-                img.alt = '';
-                img.draggable = false;
-                img.addEventListener('error', function () { img.style.display = 'none'; });
-                fila.appendChild(img);
-            }
-
-            var meta = document.createElement('div');
-            meta.className = 'vmg-info-meta';
-
-            if (nombre) {
-                var nn = document.createElement('span');
-                nn.className = 'vmg-info-nombre';
-                nn.textContent = nombre;
-                meta.appendChild(nn);
-            }
-            if (handle) {
-                var h = document.createElement('span');
-                h.className = 'vmg-info-handle';
-                h.textContent = handle;
-                meta.appendChild(h);
-            }
-
-            fila.appendChild(meta);
-            wrap.appendChild(fila);
-        }
-
-        if (texto) {
-            var p = document.createElement('p');
-            p.className = 'vmg-info-texto';
-            p.textContent = texto;
-            wrap.appendChild(p);
-        }
-
-        return wrap;
     }
 
     /* ================= MOSTRAR Y NAVEGAR ================= */
@@ -717,7 +621,6 @@
         if (!url) return null;
         var v = document.createElement('video');
         v.src = url;
-        // Ahorro de datos o video no prioritario
         v.preload = st.ahorradorDatos ? 'none' : 'metadata';
         v.playsInline = true;
         v.setAttribute('playsinline', '');
@@ -734,17 +637,6 @@
         v.addEventListener('play', function () {
             if (videoActual() === v) {
                 estadoVideo();
-                // Si el usuario reinicia (currentTime ~0) y estaba
-                // esperando repetir, reprogramamos la notificación
-                if (v.currentTime < 0.5) {
-                    var item = st.items[st.indice];
-                    if (item && item.tipo === 'video') {
-                        // Solo si ya pasó el enfriamiento o nunca se mostró
-                        if (!st.notifItemActual || !mismoItem(st.notifItemActual, item)) {
-                            st.notifVideosDesdeUltima = Math.max(0, st.notifVideosDesdeUltima);
-                        }
-                    }
-                }
             }
         });
         v.addEventListener('pause', function () {
@@ -768,28 +660,17 @@
         slide.className = 'vmg-slide';
         slide.dataset.index = String(idx);
 
-        var url = safeHttps(item.url);
-        if (!url) {
+        if (!esVideoReal(item)) {
             slide.innerHTML = '<div class="vmg-slide-error">No se pudo cargar</div>';
             return { slide: slide, video: null };
         }
 
-        var v = null;
-        if (item.tipo === 'video') {
-            v = crearVideo(item);
-            if (v) slide.appendChild(v);
+        var v = crearVideo(item);
+        if (v) {
+            slide.appendChild(v);
         } else {
-            var img = document.createElement('img');
-            img.src = url;
-            img.alt = '';
-            img.draggable = false;
-            slide.appendChild(img);
+            slide.innerHTML = '<div class="vmg-slide-error">No se pudo cargar</div>';
         }
-
-        // La tarjeta del autor se agrega SIEMPRE y vive dentro del slide.
-        // La notificación vive fuera y abajo, así que nunca la pisa.
-        var info = construirInfoAutor(item);
-        if (info) slide.appendChild(info);
 
         return { slide: slide, video: v };
     }
@@ -823,7 +704,7 @@
                 var idx = parseInt(best.target.dataset.index, 10);
                 if (!isNaN(idx) && idx !== st.indice) {
                     st.indice = idx;
-                    alCambiarVideo();        // cancela notif pendiente, actualiza contadores
+                    alCambiarVideo();
                     activarVideoVisible();
                     actualizarContador();
                 }
@@ -889,13 +770,6 @@
         } else {
             controles.hidden = true;
             centro.hidden = true;
-            if (actual) {
-                var im = actual.slide.querySelector('img');
-                if (im) {
-                    im.style.objectFit = st.fit;
-                    im.style.objectPosition = 'center';
-                }
-            }
             programarOcultado();
         }
     }
@@ -913,7 +787,7 @@
 
     function contarVideos() {
         var n = 0;
-        st.items.forEach(function (i) { if (i.tipo === 'video') n++; });
+        st.items.forEach(function (i) { if (esVideoReal(i)) n++; });
         return n;
     }
 
@@ -945,7 +819,7 @@
         ocultarNotif();
         cancelarTimerNotif();
 
-        if (item.tipo === 'video') {
+        if (esVideoReal(item)) {
             var v = crearVideo(item);
             if (!v) return;
             v.preload = st.ahorradorDatos ? 'none' : 'auto';
@@ -971,15 +845,12 @@
 
             esc.appendChild(img);
 
-            var info = construirInfoAutor(item);
-            if (info) esc.appendChild(info);
-
             aplicarFit();
             estadoVideo();
         }
     }
 
-    function mostrarCarrusel(item) {
+    function mostrarCarrusel() {
         st.velIdx = 0;
         ref('vel').textContent = '1x';
         ocultarHoja(true);
@@ -1101,7 +972,6 @@
 
         if (item.postId) st.notifDescartados.add(String(item.postId));
 
-        // Ocultar aviso de inmediato, antes de cualquier callback
         ocultarNotif();
         cancelarTimerNotif();
 
@@ -1113,21 +983,11 @@
         }
 
         if (!positivo) {
-            // Avanzar al siguiente video sin trabar la reproducción.
-            // En carrusel usamos scroll suave; en simple usamos navegar.
             if (st.carrusel) {
-                // Pequeño retardo para que la UI se sienta ágil, pero
-                // el video actual sigue reproduciéndose hasta el cambio.
                 setTimeout(function () { navegar(1); }, 50);
-            } else {
-                // En modo simple, navegar si hay más items
-                if (st.indice < st.items.length - 1) {
-                    setTimeout(function () { navegar(1); }, 50);
-                }
+            } else if (st.indice < st.items.length - 1) {
+                setTimeout(function () { navegar(1); }, 50);
             }
-        } else {
-            // Tras aceptar, si seguimos en el mismo video no reprogramamos.
-            // El contador de enfriamiento ya se reinició al mostrar el aviso.
         }
     }
 
@@ -1155,7 +1015,7 @@
 
             var a = document.createElement('a');
             a.href = objUrl;
-            a.download = 'csariels-' + Date.now() + '.' + (item.tipo === 'video' ? 'mp4' : 'jpg');
+            a.download = 'csariels-' + Date.now() + '.' + (esVideoReal(item) ? 'mp4' : 'jpg');
             document.body.appendChild(a);
             a.click();
             a.remove();
@@ -1245,9 +1105,30 @@
 
         if (!Array.isArray(opts.items) || !opts.items.length) return;
 
+        var indiceSolicitado = Math.min(Math.max(0, parseInt(opts.indice, 10) || 0), opts.items.length - 1);
+        var itemSolicitado = opts.items[indiceSolicitado] || null;
+        var itemsFinales = opts.items.slice();
+        var indiceFinal = indiceSolicitado;
+
+        // En carrusel vertical: prohibido meter fotos; solo videos reales
+        if (opts.carruselVertical === true) {
+            itemsFinales = itemsFinales.filter(esVideoReal);
+            if (!itemsFinales.length) return;
+
+            indiceFinal = 0;
+            if (itemSolicitado) {
+                for (var i = 0; i < itemsFinales.length; i++) {
+                    if (mismoItem(itemsFinales[i], itemSolicitado)) {
+                        indiceFinal = i;
+                        break;
+                    }
+                }
+            }
+        }
+
         st.opts = opts;
-        st.items = opts.items;
-        st.indice = Math.min(Math.max(0, parseInt(opts.indice, 10) || 0), st.items.length - 1);
+        st.items = itemsFinales;
+        st.indice = indiceFinal;
         st.fit = 'contain';
         st.abierto = true;
         st.velIdx = 0;
@@ -1264,12 +1145,9 @@
         st.videosAltaCalidad = opts.videosAltaCalidad !== false;
         st.notifDescartados = new Set();
 
-        // Reiniciar estado de la notificación en cada apertura del visor
-        // (una "sesión" es cada abrir/cerrar)
         st.notifSesionUsos = 0;
-        st.notifVideosDesdeUltima = NOTIF_ENFRIAMIENTO_VIDEOS; // permitir si cumple tiempo
+        st.notifVideosDesdeUltima = NOTIF_ENFRIAMIENTO_VIDEOS;
         st.notifItemActual = null;
-        st.notifCanceladaPorCambio = false;
 
         st.root.hidden = false;
         st.root.classList.remove('vmg-oculto');
