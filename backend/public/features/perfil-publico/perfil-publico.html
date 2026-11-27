@@ -9,6 +9,8 @@
 
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect x='10' y='10' width='80' height='80' rx='12' fill='%230F2D1A' stroke='%23D4AF37' stroke-width='4'/><text x='50' y='68' font-family='Orbitron, monospace' font-size='50' font-weight='900' fill='%23D4AF37' text-anchor='middle'>◈</text></svg>">
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
 
 <!-- SEO Y REDES SOCIALES -->
@@ -26,18 +28,34 @@
 <script src="/features/shared/js/auth-global.js"></script>
 <script src="/features/shared/js/apariencia-global.js?v=7" defer></script>
 
-<!-- CSS: el de perfil.html va primero; identidad-web3.css y perfil-publico.css al final -->
+<!-- CSS: base del perfil, reacciones v5.2, visor v2.2 y estilos del perfil público -->
 <link rel="stylesheet" href="/features/perfil/css/perfil.css">
 <link rel="stylesheet" href="/features/perfil/css/emojis-animations.css">
 <link rel="stylesheet" href="/features/perfil/css/carrusel-3d.css">
 <link rel="stylesheet" href="/features/anuncios/anuncios-carrusel.css">
 <link rel="stylesheet" href="/features/shared/css/identidad-web3.css">
-<link rel="stylesheet" href="/features/perfil-publico/css/perfil-publico.css?v=4.6">
-<link rel="stylesheet" href="/features/shared/css/visor-media-global.css">
+<link rel="stylesheet" href="/features/shared/css/reacciones-global.css?v=5.2">
+<link rel="stylesheet" href="/features/perfil-publico/css/perfil-publico.css?v=5.3">
+<link rel="stylesheet" href="/features/shared/css/visor-media-global.css?v=2.2">
 
 <style>
     html:not(.auth-ready) .main-nav,
     html:not(.auth-ready) .header { opacity: 0; pointer-events: none; }
+
+    /* Optimización de renderizado en Android para scroll fluido */
+    #pvPubLista .pv-post,
+    #pvGaleriaSection,
+    #pvAmigosSection {
+        content-visibility: auto;
+        contain-intrinsic-size: auto 260px;
+    }
+
+    #pvPubAutoEstado {
+        padding: 12px 14px;
+        text-align: center;
+        font-size: 0.85rem;
+        color: #9fb8cb;
+    }
 </style>
 </head>
 
@@ -87,7 +105,7 @@
             <span data-clave="nav_noticias">Noticias</span>
         </a>
 
-        <a href="/features/perfil/perfil.html" class="nav-link active">
+        <a href="/features/perfil/perfil.html" class="nav-link">
             <span data-clave="nav_perfil">Perfil</span>
         </a>
 
@@ -331,7 +349,7 @@
                     aria-hidden="true"
                 ></div>
 
-                <!-- PAGINADOR INTERNO: lo activa la carga automática -->
+                <!-- PAGINADOR INTERNO: disparado por el observador de scroll -->
                 <button
                     type="button"
                     class="btn btn-outline btn-sm pv-mas"
@@ -373,19 +391,21 @@
     </div>
 </noscript>
 
-<!-- SCRIPTS DEL PERFIL PÚBLICO -->
+<!-- SCRIPTS DEL PERFIL PÚBLICO (orden y versiones sincronizadas) -->
 <script src="/features/perfil/js/carrusel-3d.js" defer></script>
-<script src="/features/shared/js/reacciones-global.js"></script>
+<script src="/features/shared/js/reacciones-global.js?v=5.2" defer></script>
 <script src="/features/perfil-publico/js/amigos.js" defer></script>
-<script src="/features/shared/js/visor-media-global.js?v=1.9" defer></script>
-<script src="/features/perfil-publico/js/perfil-publico.js?v=4.9" defer></script>
+<script src="/features/shared/js/visor-media-global.js?v=2.2" defer></script>
+<script src="/features/perfil-publico/js/perfil-publico.js?v=5.3" defer></script>
+<script src="/features/shared/js/idiomas.js?v=9" defer></script>
+<script src="/features/anuncios/anuncios-carrusel.js" defer></script>
 
-<!-- CONTADOR Y BOTONES DEL CUADRO DEL MURO -->
+<!-- CONTADOR Y SELECTOR DE ARCHIVO DEL MURO -->
 <script>
 (function () {
     'use strict';
 
-    function iniciar() {
+    function iniciarMuroUI() {
         var input = document.getElementById('pvMuroTexto');
         var contador = document.getElementById('pvMuroContador');
         var anillo = document.getElementById('pvMuroAnillo');
@@ -397,8 +417,10 @@
         if (input && contador) {
             var MAX = 2000;
             var CIRCUNFERENCIA = 94.25;
+            var rafId = null;
 
             var pintar = function () {
+                rafId = null;
                 var n = input.value.length;
                 var ratio = Math.min(n / MAX, 1);
                 contador.textContent = n + ' / ' + MAX;
@@ -410,241 +432,130 @@
                     anillo.classList.toggle('cerca', cerca);
                     anillo.classList.toggle('lleno', lleno);
                 }
-                if (progreso) progreso.style.strokeDashoffset = String(CIRCUNFERENCIA * (1 - ratio));
+                if (progreso) {
+                    progreso.style.strokeDashoffset = String(CIRCUNFERENCIA * (1 - ratio));
+                }
             };
 
-            input.addEventListener('input', pintar);
+            input.addEventListener('input', function () {
+                if (!rafId) rafId = requestAnimationFrame(pintar);
+            }, { passive: true });
+
             pintar();
         }
 
         if (archivo) {
+            var abrirSelector = function (accept) {
+                archivo.setAttribute('accept', accept);
+                archivo.click();
+            };
+
             if (btnFoto) {
                 btnFoto.addEventListener('click', function () {
-                    archivo.setAttribute('accept', 'image/*');
-                    archivo.click();
+                    abrirSelector('image/*,video/*');
                 });
             }
             if (btnVideo) {
                 btnVideo.addEventListener('click', function () {
-                    archivo.setAttribute('accept', 'video/*');
-                    archivo.click();
+                    abrirSelector('video/*');
                 });
             }
         }
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', iniciar);
+        document.addEventListener('DOMContentLoaded', iniciarMuroUI, { once: true });
     } else {
-        iniciar();
+        iniciarMuroUI();
     }
 })();
 </script>
 
-<!-- CARGA AUTOMÁTICA DE PUBLICACIONES AL DESLIZAR -->
+<!-- CARGA AUTOMÁTICA LIGERA DE PUBLICACIONES -->
 <script>
 (function () {
     'use strict';
 
-    function iniciarCargaAutomatica() {
-
-        var lista = document.getElementById('pvPubLista');
+    function iniciarPaginacionFluida() {
         var sentinel = document.getElementById('pvPubSentinel');
         var boton = document.getElementById('pvPubMas');
         var estado = document.getElementById('pvPubAutoEstado');
         var seccion = document.getElementById('pvPubSection');
 
-        if (!lista || !sentinel || !boton || !seccion) return;
-        if (!('IntersectionObserver' in window)) return;
-        if (sentinel.dataset.inicializado === '1') return;
+        if (!sentinel || !boton || !seccion || !('IntersectionObserver' in window)) return;
+        if (sentinel.dataset.obsListo === '1') return;
+        sentinel.dataset.obsListo = '1';
 
-        sentinel.dataset.inicializado = '1';
+        var enCurso = false;
+        var reintentoTimer = null;
 
-        var cargando = false;
-        var terminado = false;
-        var temporizador = null;
+        var io = new IntersectionObserver(function (entradas) {
+            var entry = entradas[0];
+            if (!entry || !entry.isIntersecting || enCurso) return;
+            if (seccion.hidden || boton.hidden || boton.disabled) return;
 
-        var observador = new IntersectionObserver(function (entradas) {
-
-            var entrada = entradas[0];
-            if (!entrada || !entrada.isIntersecting) return;
-            if (cargando || terminado) return;
-            if (seccion.hidden || boton.hidden) return;
-
-            cargando = true;
-            observador.unobserve(sentinel);
-
+            enCurso = true;
             if (estado) {
                 estado.hidden = false;
                 estado.textContent = 'Cargando publicaciones...';
             }
 
-            try {
-                boton.click();
-            } catch (error) {
-                cargando = false;
-                if (estado) estado.hidden = true;
-                return;
-            }
+            boton.click();
 
-            if (temporizador) clearTimeout(temporizador);
-
-            temporizador = setTimeout(function () {
-                if (!cargando) return;
-                if (boton.disabled) { esperarFinalizacion(); return; }
-                if (boton.hidden) finalizar();
-            }, 12000);
-
+            clearTimeout(reintentoTimer);
+            reintentoTimer = setTimeout(function () {
+                enCurso = false;
+                if (boton.hidden) {
+                    io.disconnect();
+                    if (estado) {
+                        estado.hidden = false;
+                        estado.textContent = 'No hay más publicaciones.';
+                    }
+                } else if (estado) {
+                    estado.hidden = true;
+                }
+            }, 900);
         }, {
             root: null,
             rootMargin: '0px 0px 450px 0px',
             threshold: 0
         });
 
-        function observarNuevamente() {
-            if (terminado || !sentinel || !boton) return;
-
-            if (boton.hidden || seccion.hidden) {
-                finalizar();
-                return;
-            }
-
-            cargando = false;
-
-            if (estado) {
-                estado.hidden = true;
-                estado.textContent = '';
-            }
-
-            observador.observe(sentinel);
-        }
-
-        function finalizar() {
-            terminado = true;
-            cargando = false;
-            observador.disconnect();
-
-            if (temporizador) {
-                clearTimeout(temporizador);
-                temporizador = null;
-            }
-
-            if (estado) {
-                estado.hidden = false;
-                estado.textContent = 'No hay más publicaciones.';
-            }
-        }
-
-        function esperarFinalizacion() {
-            var intentos = 0;
-
-            var comprobar = setInterval(function () {
-                intentos++;
-
-                if (boton.hidden) {
-                    clearInterval(comprobar);
-                    finalizar();
-                    return;
-                }
-
-                if (!boton.disabled && intentos >= 2) {
-                    clearInterval(comprobar);
-                    observarNuevamente();
-                    return;
-                }
-
-                if (intentos >= 30) {
-                    clearInterval(comprobar);
-                    cargando = false;
-                    if (estado) estado.hidden = true;
-                }
-            }, 500);
-        }
-
-        var observadorLista = new MutationObserver(function (mutaciones) {
-
-            var huboCambios = false;
-
-            for (var i = 0; i < mutaciones.length; i++) {
-                if (mutaciones[i].addedNodes.length > 0) {
-                    huboCambios = true;
-                    break;
-                }
-            }
-
-            if (!huboCambios || !cargando) return;
-
-            if (temporizador) {
-                clearTimeout(temporizador);
-                temporizador = null;
-            }
-
-            setTimeout(function () {
-                if (boton.hidden) { finalizar(); return; }
-                observarNuevamente();
-            }, 350);
-        });
-
-        observadorLista.observe(lista, { childList: true, subtree: false });
-
-        var observadorBoton = new MutationObserver(function () {
-            if (boton.hidden && !cargando) finalizar();
-        });
-
-        observadorBoton.observe(boton, {
-            attributes: true,
-            attributeFilter: ['hidden', 'disabled']
-        });
-
-        var observadorSeccion = new MutationObserver(function () {
-            if (!seccion.hidden && !boton.hidden && !cargando && !terminado) {
-                observarNuevamente();
-            }
-        });
-
-        observadorSeccion.observe(seccion, {
-            attributes: true,
-            attributeFilter: ['hidden']
-        });
-
-        if (!seccion.hidden && !boton.hidden) observarNuevamente();
+        io.observe(sentinel);
     }
 
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', iniciarCargaAutomatica);
+        document.addEventListener('DOMContentLoaded', iniciarPaginacionFluida, { once: true });
     } else {
-        iniciarCargaAutomatica();
+        iniciarPaginacionFluida();
     }
-
 })();
 </script>
 
-<!-- IDIOMAS -->
+<!-- ARRANQUE DE IDIOMAS -->
 <script>
 (function () {
     'use strict';
 
     var intentos = 0;
 
-    function intentar() {
+    function arrancarIdiomas() {
         if (typeof window.inicializarIdiomas === 'function') {
-            try {
-                Promise.resolve(window.inicializarIdiomas()).catch(function () {});
-            } catch (e) {}
+            Promise.resolve(window.inicializarIdiomas()).catch(function () {});
             return;
         }
-        if (intentos++ >= 25) return;
-        setTimeout(intentar, 200);
+        if (intentos++ < 25) {
+            setTimeout(arrancarIdiomas, 200);
+        }
     }
 
-    intentar();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', arrancarIdiomas, { once: true });
+    } else {
+        arrancarIdiomas();
+    }
 })();
 </script>
-
-<script src="/features/shared/js/idiomas.js?v=9" defer></script>
-
-<!-- ANUNCIOS -->
-<script src="/features/anuncios/anuncios-carrusel.js" defer></script>
 
 </body>
 </html>
