@@ -1,5 +1,5 @@
 /* ================================================================
-   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v4.0 (blanco y negro)
+   SARIEL'S ECOSYSTEM · APARIENCIA GLOBAL v4.1 (blanco y negro)
    Archivo: backend/public/features/shared/js/apariencia-global.js
 
    Dos temas, ambos en blanco y negro puro:
@@ -19,6 +19,19 @@
    - setColor() queda como función vacía (ya no hay acento).
    - Se conservan: tamaño de fuente (80–140 %), sincronización con
      Supabase, window.SarielApariencia y la inyección de mascotas.
+
+   CAMBIOS v4.1:
+   - Las mascotas (Marquinhos, Capitán Maíz, Itlasuhua) no se montan
+     en rutas de visor o perfil público.
+   - Mientras haya un visor multimedia abierto (VisorMediaGlobal,
+     #visorMediaGlobal, #pvLightbox o #pubVisorFull), <html> recibe
+     la clase sariels-visor-abierto, que oculta cualquier mascota
+     encima de fotos o videos. Si la mascota aparece después, la misma
+     regla la oculta sin recargar.
+   - El visor sube su z-index para quedar por encima de las mascotas.
+   - Supabase: preferencias_usuario(usuario_id, prefs jsonb),
+     obtener_mis_preferencias() y actualizar_preferencia(p_key, p_value)
+     verificados en el esquema real.
    ================================================================ */
 
 (function () {
@@ -202,6 +215,9 @@
         });
     }
 
+    /* Lectura desde Supabase: primero la RPC obtener_mis_preferencias()
+       (sin parámetros); si no responde, la tabla preferencias_usuario
+       (usuario_id, prefs jsonb). */
     async function leerDeSupabase() {
         try {
             const client = getSupabase();
@@ -257,6 +273,8 @@
         }
     }
 
+    /* Escritura: primero la RPC actualizar_preferencia(p_key text, p_value jsonb);
+       si falla, upsert en preferencias_usuario conservando el resto de prefs. */
     async function guardarPref(clave, valor) {
         try {
             localStorage.setItem(clave, String(valor));
@@ -525,6 +543,104 @@
     }
 
     /* ================================================================
+       VISOR MULTIMEDIA · MASCOTA OCULTA ENCIMA DE FOTOS Y VIDEOS
+       ================================================================ */
+
+    const CLASE_VISOR_ABIERTO = 'sariels-visor-abierto';
+
+    /* Elementos del visor que pueden estar abiertos. */
+    const IDS_VISOR = ['visorMediaGlobal', 'pvLightbox', 'pubVisorFull'];
+
+    function visorAbierto() {
+        for (let i = 0; i < IDS_VISOR.length; i++) {
+            const el = document.getElementById(IDS_VISOR[i]);
+            if (el && !el.hidden) return true;
+        }
+
+        try {
+            if (window.VisorMediaGlobal &&
+                typeof window.VisorMediaGlobal.estaAbierto === 'function' &&
+                window.VisorMediaGlobal.estaAbierto()) {
+                return true;
+            }
+        } catch (_) {}
+
+        return false;
+    }
+
+    function sincronizarVisor() {
+        document.documentElement.classList.toggle(CLASE_VISOR_ABIERTO, visorAbierto());
+    }
+
+    /* Regla que oculta cualquier mascota mientras el visor esté abierto,
+       y pone el visor por encima de todo lo demás. */
+    const CSS_VISOR_MASCOTAS = `
+        html.${CLASE_VISOR_ABIERTO} [id*="marquinhos"],
+        html.${CLASE_VISOR_ABIERTO} [class*="marquinhos-pet"],
+        html.${CLASE_VISOR_ABIERTO} [id*="capitan-maiz"],
+        html.${CLASE_VISOR_ABIERTO} [class*="capitan-maiz-pet"],
+        html.${CLASE_VISOR_ABIERTO} [id*="itlasuhua"],
+        html.${CLASE_VISOR_ABIERTO} [class*="itlasuhua-pet"],
+        html.${CLASE_VISOR_ABIERTO} [data-mascota] {
+            display: none !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+
+        #visorMediaGlobal,
+        #pvLightbox,
+        #pubVisorFull {
+            z-index: 2147483600 !important;
+        }
+    `;
+
+    function instalarReglasVisor() {
+        if (document.getElementById('sariels-visor-mascotas-css')) return;
+
+        const style = document.createElement('style');
+        style.id = 'sariels-visor-mascotas-css';
+        style.textContent = CSS_VISOR_MASCOTAS;
+
+        (document.head || document.documentElement).appendChild(style);
+    }
+
+    let pendienteSincronizacion = false;
+
+    function programarSincronizacionVisor() {
+        if (pendienteSincronizacion) return;
+        pendienteSincronizacion = true;
+
+        const ejecutar = function () {
+            pendienteSincronizacion = false;
+            sincronizarVisor();
+        };
+
+        if (window.requestAnimationFrame) {
+            window.requestAnimationFrame(ejecutar);
+        } else {
+            setTimeout(ejecutar, 16);
+        }
+    }
+
+    function vigilarVisor() {
+        if (!window.MutationObserver) return;
+
+        const observador = new MutationObserver(programarSincronizacionVisor);
+
+        observador.observe(document.documentElement, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['hidden', 'class']
+        });
+
+        /* Respaldo: revisa cada segundo por si el visor cambia sin mutación visible. */
+        setInterval(sincronizarVisor, 1000);
+
+        sincronizarVisor();
+    }
+
+    /* ================================================================
        MICROINTERACCIONES (sin colores de acento)
        ================================================================ */
 
@@ -655,11 +771,15 @@
 
     instalarMicrointeracciones();
     instalarEstilosTemas();
+    instalarReglasVisor();
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', function () {
             aplicarTodo();
+            vigilarVisor();
         }, { once: true });
+    } else {
+        vigilarVisor();
     }
 
     /* ================================================================
@@ -703,6 +823,7 @@
         },
 
         recargar: inicializar,
+        visorAbierto: visorAbierto,
         KEYS: KEYS,
         DEFAULTS: DEFAULTS,
         TEMAS: TEMAS_VALIDOS.slice(),
@@ -710,7 +831,7 @@
     };
 
     /* ================================================================
-       MASCOTA ACTIVA · INYECCIÓN (sin cambios respecto a v3.9)
+       MASCOTA ACTIVA · INYECCIÓN
        ================================================================ */
 
     function rutaExcluida(rutas) {
@@ -775,16 +896,26 @@
         '/features/mensajes',
         '/features/videos',
         '/features/live',
-        '/features/grupos'
+        '/features/grupos',
+        '/features/perfil-publico',
+        '/features/galeria',
+        '/visor'
     ];
 
     function puedeInyectarMascota(rutaTienda) {
         return !rutaExcluida(RUTAS_EXCLUIDAS_BASE.concat(rutaTienda));
     }
 
+    /* Nunca montar una mascota mientras hay un visor abierto.
+       Si el visor se abre después, CSS_VISOR_MASCOTAS la oculta. */
+    function puedeMontarAhora() {
+        return !visorAbierto();
+    }
+
     function inyectarMarquinhosPet() {
         if (getMascotaActiva() !== 'marquinhos') return;
         if (!puedeInyectarMascota(['/features/marquinhos/tienda'])) return;
+        if (!puedeMontarAhora()) return;
         if (document.getElementById('marquinhos-pet-script')) return;
 
         alDOMListo(function () {
@@ -801,6 +932,7 @@
     function inyectarCapitanMaizPet() {
         if (getMascotaActiva() !== 'capitan-maiz') return;
         if (!puedeInyectarMascota(['/features/capitan-maiz/tienda'])) return;
+        if (!puedeMontarAhora()) return;
         if (document.getElementById('capitan-maiz-pet-script')) return;
 
         alDOMListo(function () {
@@ -814,6 +946,7 @@
     function inyectarItlasuhuaPet() {
         if (getMascotaActiva() !== 'itlasuhua') return;
         if (!puedeInyectarMascota(['/features/itlasuhua/tienda'])) return;
+        if (!puedeMontarAhora()) return;
         if (document.getElementById('itlasuhua-pet-script')) return;
 
         alDOMListo(function () {
@@ -835,7 +968,7 @@
         inyectarCapitanMaizPet();
         inyectarItlasuhuaPet();
 
-        console.log('[Apariencia] Módulo global v4.0 cargado. Tema:', prefsActuales.tema,
+        console.log('[Apariencia] Módulo global v4.1 cargado. Tema:', prefsActuales.tema,
             '· Mascota activa:', getMascotaActiva());
     }
 
