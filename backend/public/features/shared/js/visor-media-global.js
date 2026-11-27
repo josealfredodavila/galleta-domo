@@ -1,22 +1,18 @@
 /* ================================================================
-   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.8
+   VISOR-MEDIA-GLOBAL.JS · Csariel's · v1.9
    Visor de pantalla completa compartido para fotos y videos.
 
-   Cambios v1.8:
-   - Impresiones con visibilidad real: se registra `impression` solo
-     cuando el ítem está al menos 60 % visible durante 1 s seguidos
-     y la pestaña está activa. Sin precargas ni elementos fuera de pantalla.
-   - Eventos de vista: `view_start` (primer play), `complete` (fin).
-   - Envío por lotes a POST /api/recomendacion/eventos (idempotente por
-     event_id). Se vacía cada 4 s o al llegar a 10 eventos, y al ocultar
-     la página se envía con keepalive.
-   - Letrero «¿Te interesa?»: el voto va a POST /api/recomendacion/interes.
-     Ya no depende de que exista un callback; sí necesita publicacion_id.
-   - Sin sessionStorage: identificador de sesión y cola solo en memoria.
-   - Scroll: se recuerda la posición al abrir y se restaura al cerrar,
-     para no saltar al inicio del perfil.
-   - Sigue limpio: sin foto, avatar ni ID de usuario dentro del visor.
-     Carrusel vertical solo con videos reales.
+   CAMBIOS v1.9 (correcciones de la prueba en el teléfono):
+   · Índice único: se actualiza una sola vez al terminar el gesto.
+     Contador, barra de tiempo y letrero usan siempre el mismo video.
+   · Sin negro ni 0:00 al cambiar: el video nuevo muestra su póster
+     mientras carga y arranca solo cuando tiene metadatos.
+   · Cierre sin saltos: la posición de la página se restaura una sola vez.
+   · Impresiones con visibilidad real (60 % durante 1 s, pestaña activa).
+   · Eventos view_start y complete por lotes a /api/recomendacion/eventos.
+   · Voto «¿Te interesa?» a /api/recomendacion/interes.
+   · Visor limpio: sin foto, avatar ni ID de usuario.
+   · Carrusel vertical solo con videos reales. Sin sessionStorage.
 
    API pública (sin cambios):
      VisorMediaGlobal.abrir, cerrar, estaAbierto, contieneVideo, version.
@@ -24,7 +20,7 @@
 (function () {
     'use strict';
 
-    var VERSION = '1.8';
+    var VERSION = '1.9';
 
     if (window.VisorMediaGlobal && window.VisorMediaGlobal.version === VERSION) return;
 
@@ -34,20 +30,19 @@
     var EXT_IMAGEN_RE = /\.(jpe?g|png|webp|gif|avif|bmp|svg)(\?|#|$)/i;
     var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-    // Reglas de visibilidad para impresiones
     var IMPRESION_MIN_MS = 1000;
     var UMBRAL_VISIBLE = 0.6;
 
-    // Lotes de eventos
     var FLUSH_MS = 4000;
     var FLUSH_MAX = 10;
     var FLUSH_LOTE_MAX = 50;
     var REINTENTOS_MAX = 3;
 
-    // Reglas de aparición del letrero «¿Te interesa?»
     var NOTIF_DELAY_MS = 6000;
     var NOTIF_ENFRIAMIENTO_VIDEOS = 4;
     var NOTIF_MAX_POR_SESION = 2;
+
+    var UMBRAL_GESTO_PX = 8;
 
     var MOTIVOS = [
         'Problema que involucra a un menor de 18 años',
@@ -60,7 +55,6 @@
         'Propiedad intelectual'
     ];
 
-    /* Identificador de sesión de visualización: solo en memoria de la página. */
     function uuid() {
         if (window.crypto && typeof window.crypto.randomUUID === 'function') {
             return window.crypto.randomUUID();
@@ -68,9 +62,8 @@
         return 'v' + Date.now().toString(36) + Math.random().toString(36).slice(2, 12);
     }
 
+    /* Solo en memoria de la página: no se usa sessionStorage. */
     var SESION_ID = uuid();
-
-    /* Impresiones ya enviadas en esta página (no se repiten al reabrir). */
     var enviadasGlobal = new Set();
 
     var SVG = function (cuerpo) {
@@ -103,23 +96,18 @@
         motivo: '',
         timerOcultar: null,
         arrastrando: false,
-        // modo: 'v' (videos, vertical) | 'h' (fotos, horizontal)
         modo: 'h',
         carrusel: false,
         slides: [],
-        track: null,
         offsetPx: 0,
         drag: null,
-        // history
         historyDepth: 0,
         popstateHandler: null,
         hojaHistory: false,
         ignorarPopstate: false,
-        // preferencias
         autoReproducir: true,
         ahorradorDatos: false,
         videosAltaCalidad: true,
-        // notificación de interés
         notifTimer: null,
         notifDescartados: new Set(),
         onInteres: null,
@@ -127,9 +115,7 @@
         notifSesionUsos: 0,
         notifVideosDesdeUltima: 0,
         notifItemActual: null,
-        // lateral (reacciones / comentarios)
         lateralToken: 0,
-        // impresiones y eventos
         io: null,
         impresionTimer: null,
         visibleSince: 0,
@@ -142,7 +128,8 @@
         token: null,
         requestId: null,
         rankingVersion: null,
-        scrollY: 0
+        scrollY: 0,
+        cambioPendiente: false
     };
 
     /* ================= UTILIDADES ================= */
@@ -196,17 +183,46 @@
     }
 
     function asegurarCss() {
-        if (document.querySelector('link[href="' + CSS_PATH + '"]')) return;
-        var link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = CSS_PATH;
-        document.head.appendChild(link);
+        if (!document.querySelector('link[href="' + CSS_PATH + '"]')) {
+            var link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = CSS_PATH;
+            document.head.appendChild(link);
+        }
+        if (!document.getElementById('vmg2-estilos')) {
+            var est = document.createElement('style');
+            est.id = 'vmg2-estilos';
+            est.textContent =
+                '.vmg-escenario{touch-action:none;overflow:hidden;}' +
+                '.vmg-pg-track{position:absolute;inset:0;}' +
+                '.vmg-pg-slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#000;will-change:transform;}' +
+                '.vmg-pg-slide video,.vmg-pg-slide img{width:100%;height:100%;object-fit:contain;background:#000;display:block;user-select:none;-webkit-user-drag:none;}' +
+                '.vmg-pg-err{color:rgba(255,255,255,.6);font-size:14px;}' +
+                '.vmg2-lateral{position:absolute;right:10px;bottom:calc(150px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;flex-direction:column;align-items:center;gap:14px;}' +
+                '.vmg2-lateral[hidden]{display:none!important;}' +
+                '.vmg-oculto .vmg2-lateral{opacity:0;pointer-events:none;}' +
+                '.vmg2-lat-btn{width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.22);background:rgba(10,14,22,.72);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11px;cursor:pointer;}' +
+                '.vmg2-lat-btn svg{width:22px;height:22px;}' +
+                '.vmg2-lat-n{font-size:10px;line-height:1;color:rgba(255,255,255,.85);}' +
+                '.vmg-hoja.vmg-hoja-cm{padding:0;display:flex;flex-direction:column;}' +
+                '.vmg-cm-lista{flex:1;min-height:30dvh;max-height:52dvh;overflow-y:auto;padding:4px 0;}' +
+                '.vmg-cm-item{padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.06);font-size:14px;color:#eef6ff;line-height:1.4;}' +
+                '.vmg-cm-autor{font-weight:700;color:#d4af37;margin-right:6px;}' +
+                '.vmg-cm-vacio{color:#8c949c;font-size:13px;padding:16px 14px;}' +
+                '.vmg-cm-form{display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(255,255,255,.08);}' +
+                '.vmg-cm-form input{flex:1;padding:10px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;font-size:16px;outline:none;}' +
+                '.vmg-cm-form button{padding:10px 14px;border-radius:12px;border:0;background:#00e5ff;color:#04070d;font-weight:700;cursor:pointer;}' +
+                '.vmg-cm-head{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.08);color:#f0f4f8;}' +
+                '.vmg-cm-head button{background:transparent;border:0;color:#fff;cursor:pointer;}';
+            document.head.appendChild(est);
+        }
     }
 
     function ref(nombre) {
         return st.root.querySelector('[data-ref="' + nombre + '"]');
     }
 
+    /* Video del slide que está en el índice actual (única fuente de verdad). */
     function videoActual() {
         if (!st.root) return null;
         var s = st.slides[st.indice];
@@ -305,10 +321,7 @@
             await apiPost('/recomendacion/eventos', { eventos: lote }, keepalive);
             st.reintentos = 0;
         } catch (e) {
-            if (e && e.message === 'sin sesión') {
-                // Sin sesión no se guarda la visualización; se descarta.
-                return;
-            }
+            if (e && e.message === 'sin sesión') return;
             if (!keepalive && st.reintentos < REINTENTOS_MAX) {
                 st.reintentos++;
                 st.cola = lote.concat(st.cola);
@@ -341,8 +354,7 @@
         st.impresionTimer = null;
     }
 
-    function iniciarImpresion() {
-        var item = itemActual();
+    function iniciarImpresion(item) {
         if (!item || !item.postId || !UUID_RE.test(String(item.postId))) return;
         if (st.enviadas.has(String(item.postId))) return;
         if (st.impresionTimer) return;
@@ -353,8 +365,7 @@
         st.impresionTimer = setTimeout(function () {
             st.impresionTimer = null;
 
-            var actual = itemActual();
-            if (!mismoItem(actual, item)) return;
+            if (!mismoItem(itemActual(), item)) return;
             if (st.enviadas.has(String(item.postId))) return;
 
             st.enviadas.add(String(item.postId));
@@ -369,6 +380,7 @@
         }, IMPRESION_MIN_MS);
     }
 
+    /* Observa solo el slide actual. Se vuelve a crear en cada cambio de índice. */
     function observarVisibilidad() {
         if (st.io) {
             st.io.disconnect();
@@ -381,11 +393,13 @@
         var s = st.slides[st.indice];
         if (!s) return;
 
+        var item = s.item;
+
         st.io = new IntersectionObserver(function (entradas) {
             entradas.forEach(function (en) {
                 if (en.target !== s.el) return;
                 if (en.isIntersecting && en.intersectionRatio >= UMBRAL_VISIBLE) {
-                    iniciarImpresion();
+                    iniciarImpresion(item);
                 } else {
                     cancelarImpresion();
                 }
@@ -552,6 +566,7 @@
         });
 
         window.addEventListener('resize', function () {
+            if (!st.abierto) return;
             aplicarFit();
             colocar(false);
         });
@@ -594,7 +609,7 @@
             var dy = e.clientY - d.y0;
 
             if (!d.axis) {
-                if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+                if (Math.abs(dx) < UMBRAL_GESTO_PX && Math.abs(dy) < UMBRAL_GESTO_PX) return;
                 d.moved = true;
 
                 if (st.modo === 'v') {
@@ -637,6 +652,7 @@
         return raw;
     }
 
+    /* El índice cambia AQUÍ y solo aquí (una vez por gesto). */
     function finGesto(esc, e, cancelado) {
         var d = st.drag;
         st.drag = null;
@@ -658,19 +674,21 @@
             var raw = d.axis === 'v' ? dy : dx;
             var vel = raw / dt;
             var umbral = dimension() * 0.18;
-            var next = st.indice;
+            var siguiente = st.indice;
 
-            if (raw < -umbral || vel < -0.5) next = st.indice + 1;
-            else if (raw > umbral || vel > 0.5) next = st.indice - 1;
+            if (raw < -umbral || vel < -0.5) siguiente = st.indice + 1;
+            else if (raw > umbral || vel > 0.5) siguiente = st.indice - 1;
 
-            if (next < 0) next = 0;
-            if (next > st.items.length - 1) next = st.items.length - 1;
+            if (siguiente < 0) siguiente = 0;
+            if (siguiente > st.items.length - 1) siguiente = st.items.length - 1;
 
             st.offsetPx = 0;
-            var cambio = next !== st.indice;
-            st.indice = next;
-            colocar(true);
-            if (cambio) onIndiceCambio();
+
+            if (siguiente !== st.indice) {
+                cambiarIndice(siguiente, true);
+            } else {
+                colocar(true);
+            }
             return;
         }
 
@@ -691,6 +709,14 @@
         }
     }
 
+    /* Punto único de cambio de índice: contador, reproducción, letrero, lateral y observador. */
+    function cambiarIndice(nuevo, animar) {
+        if (nuevo === st.indice) return;
+        st.indice = nuevo;
+        colocar(animar);
+        onIndiceCambio();
+    }
+
     /* ================= COLOCAR SLIDES ================= */
 
     function limpiarEscenario() {
@@ -700,7 +726,6 @@
         esc.style.overflow = 'hidden';
         esc.style.touchAction = 'none';
         st.slides = [];
-        st.track = null;
     }
 
     function montar() {
@@ -710,7 +735,6 @@
         var track = document.createElement('div');
         track.className = 'vmg-pg-track';
         esc.appendChild(track);
-        st.track = track;
 
         st.items.forEach(function (item, i) {
             var s = document.createElement('div');
@@ -722,7 +746,6 @@
         bindGestos(esc);
         st.offsetPx = 0;
         colocar(false);
-        observarVisibilidad();
     }
 
     function colocar(animar) {
@@ -754,12 +777,11 @@
         }
 
         if (esVideoReal(item)) {
-            var v = crearVideo(item);
+            var v = crearVideo(item, s);
             if (!v) {
                 s.el.innerHTML = '<div class="vmg-pg-err">No se pudo cargar</div>';
                 return;
             }
-            v.preload = st.ahorradorDatos ? 'none' : (s.i === st.indice ? 'auto' : 'metadata');
             s.el.appendChild(v);
             s.media = v;
         } else {
@@ -785,6 +807,7 @@
         s.media = null;
     }
 
+    /* Un cambio de video: pausa el anterior, actualiza la UI y arranca el actual. */
     function onIndiceCambio() {
         actualizarContador();
         activarActual();
@@ -805,11 +828,26 @@
         if (v) {
             try { v.playbackRate = VELOCIDADES[st.velIdx]; } catch (e) {}
             if (st.autoReproducir) {
-                v.play().then(function () { estadoVideo(); }).catch(function () { estadoVideo(); });
+                reproducirCuandoListo(v);
             } else {
                 estadoVideo();
             }
         } else {
+            estadoVideo();
+        }
+    }
+
+    /* Espera a tener metadatos antes de dar play: evita negro y 0:00. */
+    function reproducirCuandoListo(v) {
+        var intentar = function () {
+            if (videoActual() !== v) return;
+            v.play().then(function () { estadoVideo(); }).catch(function () { estadoVideo(); });
+        };
+
+        if (v.readyState >= 1) {
+            intentar();
+        } else {
+            v.addEventListener('loadedmetadata', intentar, { once: true });
             estadoVideo();
         }
     }
@@ -937,15 +975,20 @@
         }
     }
 
-    function crearVideo(item) {
+    /* El video se crea con póster y sin reproducción automática; el ciclo de
+       play lo decide activarActual(). Eventos de vista y finalización aquí. */
+    function crearVideo(item, s) {
         var url = safeHttps(item.url);
         if (!url) return null;
+
         var v = document.createElement('video');
         v.src = url;
-        v.preload = st.ahorradorDatos ? 'none' : 'metadata';
+        v.preload = st.ahorradorDatos ? 'none' : (s.i === st.indice ? 'auto' : 'metadata');
         v.playsInline = true;
         v.setAttribute('playsinline', '');
         v.setAttribute('webkit-playsinline', '');
+        v.setAttribute('poster', '');
+        v.style.background = '#000';
         if (item.permiteDescarga === false) v.setAttribute('controlsList', 'nodownload');
 
         v.addEventListener('loadedmetadata', function () {
@@ -990,9 +1033,7 @@
     function navegar(dir) {
         var n = st.indice + dir;
         if (n < 0 || n >= st.items.length) return;
-        st.indice = n;
-        colocar(true);
-        onIndiceCambio();
+        cambiarIndice(n, true);
     }
 
     function actualizarContador() {
@@ -1486,7 +1527,6 @@
             }
         }
 
-        // Posición de la página, para no saltar al inicio al cerrar.
         st.scrollY = window.scrollY || window.pageYOffset || 0;
 
         st.opts = opts;
@@ -1532,6 +1572,7 @@
         activarActual();
         alCambiarVideo();
         refrescarLateral();
+        observarVisibilidad();
     }
 
     function cerrar(desdePop) {
@@ -1572,11 +1613,9 @@
 
         document.body.style.overflow = '';
 
-        var y = st.scrollY || 0;
+        // Restauración única de la posición de la página (la hace el perfil público
+        // al cerrar; aquí no se fuerza otra para evitar saltos dobles).
         st.scrollY = 0;
-        requestAnimationFrame(function () {
-            try { window.scrollTo(0, y); } catch (e) {}
-        });
 
         if (!desdePop) {
             consumirEstadoSinPopstate();
