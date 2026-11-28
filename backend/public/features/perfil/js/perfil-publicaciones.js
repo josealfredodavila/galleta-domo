@@ -1,47 +1,8 @@
 // ================================================================
 // PERFIL · PUBLICACIONES
-// v15.4 — back seguro (history/popstate), play/pausa sutil y
-//          playbackRate sin pausas accidentales
+// v15.5 — back seguro sincronizado con cierre de visor,
+//          play/pausa sutil y playbackRate sin pausas accidentales
 // Ruta: backend/public/features/perfil/js/perfil-publicaciones.js
-//
-// Cambios v15.4:
-//  - Botón atrás del celular: se intercepta con history.pushState
-//    + popstate para cerrar primero la capa activa (emoji picker,
-//    comentarios, menú, visor) sin salir de la app. Todo con
-//    try/catch para no romper nada si history no está disponible.
-//  - Play/Pausa sutil: se inyecta (una sola vez) una hoja de
-//    estilos para neutralizar fondos amarillos/sólidos y hacer
-//    transparentes los controles superpuestos. No se toca ningún
-//    ID/clase existente, solo se agregan overrides acotados.
-//  - playbackRate: cambio de velocidad sin pausar ni reiniciar el
-//    estado. Se neutraliza el toggle de 'pause' cuando el video
-//    sigue "playing" tras cambiar la velocidad, y se conserva la
-//    velocidad al re-entrar al visor.
-//  - Transiciones más fluidas: pubPausarOtrosVideos agrupa la
-//    pausa de los otros <video> y pubAbrirVisor pausa en lote
-//    sin re-render.
-//  - Se conservan intactos: los 4 emojis de reacción vía
-//    ReaccionesGlobal, PUB_EMOJIS_PICKER_DEFAULT completo,
-//    contratos globales, IDs, clases, tablas/vistas Supabase,
-//    VisorMediaGlobal, ReaccionesGlobal, y la prohibición de
-//    sessionStorage.
-//
-// Cambios v15.3:
-//  - PUB_EMOJIS_PICKER_DEFAULT ampliado (conserva anteriores).
-//  - pubMotorVideo robusto: limpia videoActivo en ended/pause/
-//    emptied/abort; no interfiere con Visor ni PiP.
-//  - publicarDesdePerfil(): candado pubPublicandoEnCurso.
-//  - descargarArchivoForzado(): PUB_MIME_MAP ampliado +
-//    try/catch en localStorage / window.showToast.
-//
-// Cambios v15.2:
-//  - pubCrearAvatar dibuja la imagen directamente a partir de
-//    usuario_avatar_url. Corrige que se mostrara la inicial.
-//
-// Cambios v15.1:
-//  - Un solo visor: VisorMediaGlobal.
-//  - Se eliminaron estilos repetidos (ya están en perfil.css).
-//  - Una sola función de ruta de autor (pubUrlPerfilAutor).
 // ================================================================
 
 window.listaMultimediaPerfil = [];
@@ -58,7 +19,6 @@ var PUB_EMOJIS_PICKER_DEFAULT = [
     '😳','😱','😨','😰','😥','😓','🤗','🤔','🤭','🤫','🙄','😴','🤒','👍','👎','👏','🙌','🙏','🤝','💪','✌️',
     '🤞','👌','❤️','🧡','💛','💚','💙','💜','🖤','💔','💯','🤩','⭐','✨','🎉','🎊','🎈','🎁','🏆','🥇',
     '☕','🍕','🍔','🌮','🍩','🎵','🎶','🐶','🐱','🌹','🌈','☀️','🌙','⚡','💰','🚀','📸',
-    // --- Ampliación v15.3 (no reemplaza ni altera los anteriores) ---
     '😺','😸','😹','😻','😼','😽','🙀','😿','😾',
     '🙈','🙉','🙊','👋','🤚','🖐️','✋','🖖','👌🏻','🫶','🤲','🤜','🤛','🫰','🫱','🫲',
     '🧠','👀','👁️','🫀','🫁','🦾','🦿','🧑‍💻','👨‍💻','👩‍💻','🧑‍🎤','🧑‍🚀','🦸','🦹',
@@ -233,17 +193,6 @@ function pubUrlPerfilAutor(handle, usuarioId, miId) {
 // ================================================================
 // BACK SEGURO (history / popstate)
 // ================================================================
-// Estrategia:
-//  - Una sola "capa de historial" virtual por cada overlay abierto.
-//  - Al abrir una capa (emoji picker, comentarios, menú, visor)
-//    se hace history.pushState con un marcador propio.
-//  - Al recibir popstate, si hay capa activa, se cierra la capa
-//    y NO se navega. Si no hay capa activa, se deja pasar el
-//    comportamiento nativo (salida controlada del navegador).
-//  - Todo con try/catch: si history/popstate no está disponible
-//    la app sigue funcionando igual que antes.
-//  - NO se usa sessionStorage ni localStorage para esto: el
-//    estado vive solo en memoria (var pubCapasHistorial).
 
 var pubCapasHistorial = [];
 var pubHistorialListenerActivo = false;
@@ -272,8 +221,6 @@ function pubRegistrarCapaHistorial(tipo, cerrarFn) {
             ''
         );
     } catch (e) {
-        // Si pushState falla, quitamos la capa para no dejar
-        // estado inconsistente.
         pubCapasHistorial.pop();
         return null;
     }
@@ -299,26 +246,29 @@ function pubQuitarCapaHistorial(capa) {
     }
 }
 
+function pubLimpiarCapasPorTipo(tipo) {
+    for (var i = pubCapasHistorial.length - 1; i >= 0; i--) {
+        if (pubCapasHistorial[i].tipo === tipo) {
+            pubCapasHistorial.splice(i, 1);
+        }
+    }
+}
+
 function pubHayCapaActiva() {
     return pubCapasHistorial.length > 0;
 }
 
-function pubManejarPopstate(ev) {
+function pubManejarPopstate() {
     if (!pubHayCapaActiva()) {
-        // Sin capas activas: dejar el comportamiento nativo.
         return;
     }
 
-    // Hay al menos una capa abierta. Cerramos la más reciente y
-    // consumimos el evento para evitar salir de la app.
     var capa = pubCapasHistorial.pop();
 
     try {
         capa.cerrar();
     } catch (e) {}
 
-    // Si aún quedan capas, empujamos un estado para mantener el
-    // "cojín" de historial que nos permite seguir interceptando.
     if (pubHistorialDisponible() && pubCapasHistorial.length > 0) {
         try {
             window.history.pushState(
@@ -328,10 +278,6 @@ function pubManejarPopstate(ev) {
         } catch (e) {}
     }
 }
-
-// Wrapper para capas conocidas: emoji picker, comentarios, visor.
-// Se invoca desde los toggles/abrir existentes sin cambiar sus
-// firmas públicas.
 
 function pubCapaEmojiPicker() {
     var picker = document.getElementById('emojiPickerPerfil');
@@ -366,11 +312,6 @@ function pubCapaVisor() {
 // ================================================================
 // ESTILOS SUTILES PARA CONTROLES (sin tocar clases/IDs)
 // ================================================================
-// Se inyecta una sola vez una hoja de estilos que neutraliza
-// fondos sólidos/amarillos en los controles superpuestos del
-// reproductor (play/pausa, velocidad, etc.). Se aplica a botones
-// y overlays dentro de contenedores de media y del visor. NO
-// modifica estructuralmente nada: solo overrides visuales.
 
 (function pubInyectarEstilosControlesSutiles() {
     try {
@@ -380,7 +321,6 @@ function pubCapaVisor() {
 
         style.id = 'pubEstilosControlesSutiles';
         style.textContent = [
-            // Contenedores de media del feed: botón central play/pausa
             '.pub-media-container .pub-btn-play,',
             '.pub-media-container .pub-play-toggle,',
             '.pub-media-container .play-btn,',
@@ -403,8 +343,6 @@ function pubCapaVisor() {
             '  transform: scale(.96);',
             '  opacity: 1;',
             '}',
-
-            // Barra de controles superpuesta (velocidad, mute, etc.)
             '.pub-media-container .pub-media-controles,',
             '.pub-media-container .controles-media,',
             '.pub-media-container .media-controls {',
@@ -412,8 +350,6 @@ function pubCapaVisor() {
             '  background-color: transparent !important;',
             '  border: 0 !important;',
             '}',
-
-            // Botones de velocidad (1x, 1.25x, 1.5x, 2x)
             '.pub-media-container .pub-velocidad,',
             '.pub-media-container .velocidad-btn,',
             '.pub-media-container [data-velocidad] {',
@@ -427,8 +363,6 @@ function pubCapaVisor() {
             '.pub-media-container [data-velocidad].activo {',
             '  background: rgba(255,255,255,.18) !important;',
             '}',
-
-            // Visor global: mismos overrides por consistencia.
             '.visor-media-global .play-btn,',
             '.visor-media-global .play-pause,',
             '.visor-media-global .pub-btn-play,',
@@ -436,6 +370,7 @@ function pubCapaVisor() {
             '.visor-media-global [data-accion="pausa"] {',
             '  background: transparent !important;',
             '  background-color: transparent !important;',
+            '  background-image: none !important;',
             '  border: 0 !important;',
             '  box-shadow: none !important;',
             '  color: rgba(255,255,255,0.92) !important;',
@@ -453,7 +388,6 @@ function pubCapaVisor() {
             '}'
         ].join('\n');
 
-        // Anexamos al <head> si existe; si no, al <html>.
         var head = document.head || document.documentElement;
         if (head) head.appendChild(style);
 
@@ -468,12 +402,11 @@ function pubCapaVisor() {
 
 var pubMotorVideo = {
     videoActivo: null,
-    // Velocidad "recordada" para reaplicar al visor / reentradas.
     velocidadRecordada: 1
 };
 
 function pubEsVideoDelVisor(video) {
-    return Boolean(window.VisorMediaGlobal && window.VisorMediaGlobal.contieneVideo(video));
+    return Boolean(window.VisorMediaGlobal && typeof window.VisorMediaGlobal.contieneVideo === 'function' && window.VisorMediaGlobal.contieneVideo(video));
 }
 
 function pubEsVideoFlotante(video) {
@@ -481,7 +414,7 @@ function pubEsVideoFlotante(video) {
 }
 
 function pubVisorEstaAbierto() {
-    return Boolean(window.VisorMediaGlobal && window.VisorMediaGlobal.estaAbierto());
+    return Boolean(window.VisorMediaGlobal && typeof window.VisorMediaGlobal.estaAbierto === 'function' && window.VisorMediaGlobal.estaAbierto());
 }
 
 function pubReproducirVideo(video) {
@@ -498,10 +431,6 @@ function pubReproducirVideo(video) {
     }
 }
 
-/**
- * Aplica playbackRate de forma segura sin pausar ni reiniciar
- * el estado del video. Guarda la velocidad para reaplicarla.
- */
 function pubAplicarVelocidad(video, rate) {
     if (!video || !video.isConnected) return;
 
@@ -515,10 +444,6 @@ function pubAplicarVelocidad(video, rate) {
     } catch (e) {}
 }
 
-/**
- * Limpia pubMotorVideo.videoActivo solo si es el video indicado.
- * No toca videos del visor ni en PiP.
- */
 function pubLimpiarVideoActivo(video) {
     if (!video) return;
 
@@ -527,10 +452,6 @@ function pubLimpiarVideoActivo(video) {
     }
 }
 
-/**
- * Pausa cualquier otro video del feed que esté activo, en lote,
- * sin re-render. No toca el visor ni PiP.
- */
 function pubPausarOtrosVideos(videoActual) {
     var anterior = pubMotorVideo.videoActivo;
 
@@ -548,10 +469,6 @@ function pubPausarOtrosVideos(videoActual) {
     } catch (e) {}
 }
 
-/**
- * Pausa TODOS los videos del feed (excepto el indicado).
- * Útil al abrir el visor para no superponer audio.
- */
 function pubPausarTodosLosVideosDelFeed(excepto) {
     try {
         var videos = document.querySelectorAll('#misPublicacionesList video, .pub-media-container video');
@@ -582,12 +499,8 @@ function pubAbrirVisor(indice, postId, esDueno) {
 
     if (!lista[indice] || !window.VisorMediaGlobal) return;
 
-    // Pausa en lote de todos los videos del feed para evitar
-    // superposición de audio y transición más limpia.
     pubPausarTodosLosVideosDelFeed(null);
 
-    // El visor maneja sus propios <video>; registramos capa de
-    // historial para que el botón atrás cierre el visor primero.
     pubRegistrarCapaHistorial('visor', function () {
         if (window.VisorMediaGlobal) window.VisorMediaGlobal.cerrar();
     });
@@ -595,8 +508,6 @@ function pubAbrirVisor(indice, postId, esDueno) {
     window.VisorMediaGlobal.abrir({
         items: lista,
         indice: indice,
-        // Preservamos la velocidad recordada al abrir el visor,
-        // si VisorMediaGlobal la respeta (no rompemos si no).
         playbackRate: pubMotorVideo.velocidadRecordada || 1,
         onEliminar: function (item) {
             eliminarMiPublicacion(item.postId || postId, null);
@@ -609,7 +520,10 @@ function pubAbrirVisor(indice, postId, esDueno) {
 }
 
 function pubCerrarVisor() {
-    if (window.VisorMediaGlobal) window.VisorMediaGlobal.cerrar();
+    pubLimpiarCapasPorTipo('visor');
+    if (window.VisorMediaGlobal && typeof window.VisorMediaGlobal.cerrar === 'function') {
+        window.VisorMediaGlobal.cerrar();
+    }
 }
 
 // ================================================================
@@ -691,7 +605,6 @@ async function subirArchivoConModeracion(archivo, destino, tipo, token) {
 // ================================================================
 
 var PUB_MIME_MAP = {
-    // Imágenes
     'image/jpeg': 'jpg',
     'image/jpg': 'jpg',
     'image/png': 'png',
@@ -705,7 +618,6 @@ var PUB_MIME_MAP = {
     'image/tiff': 'tiff',
     'image/x-icon': 'ico',
     'image/vnd.microsoft.icon': 'ico',
-    // Video
     'video/mp4': 'mp4',
     'video/webm': 'webm',
     'video/quicktime': 'mov',
@@ -716,7 +628,6 @@ var PUB_MIME_MAP = {
     'video/x-msvideo': 'avi',
     'video/3gpp': '3gp',
     'video/3gpp2': '3g2',
-    // Audio
     'audio/mpeg': 'mp3',
     'audio/mp3': 'mp3',
     'audio/wav': 'wav',
@@ -728,7 +639,6 @@ var PUB_MIME_MAP = {
     'audio/flac': 'flac',
     'audio/x-flac': 'flac',
     'audio/webm': 'weba',
-    // Documentos
     'application/pdf': 'pdf',
     'application/zip': 'zip',
     'application/json': 'json',
@@ -806,7 +716,6 @@ function toggleEmojiPickerPerfil() {
     if (picker.classList.contains('show')) {
         picker.classList.remove('show');
 
-        // Consumir la capa de historial si existía.
         for (var i = pubCapasHistorial.length - 1; i >= 0; i--) {
             if (pubCapasHistorial[i].tipo === 'emoji') {
                 pubCapasHistorial.splice(i, 1);
@@ -836,7 +745,6 @@ function toggleEmojiPickerPerfil() {
                 var p = document.getElementById('emojiPickerPerfil');
                 if (p) p.classList.remove('show');
 
-                // Consumir capa si existe.
                 for (var j = pubCapasHistorial.length - 1; j >= 0; j--) {
                     if (pubCapasHistorial[j].tipo === 'emoji') {
                         pubCapasHistorial.splice(j, 1);
@@ -1060,7 +968,6 @@ function quitarArchivoPerfil(tipo) {
 // ================================================================
 
 async function publicarDesdePerfil() {
-    // Candado global: evita dobles envíos concurrentes.
     if (pubPublicandoEnCurso) return;
 
     var btn = document.getElementById('btnPublicarPerfil');
@@ -1180,7 +1087,6 @@ async function publicarDesdePerfil() {
 
 // ================================================================
 // OBSERVADOR DE VIDEOS DEL FEED
-// Si el visor está abierto no se toca ningún video del feed.
 // ================================================================
 
 var videoObserverPerfil = null;
@@ -1447,8 +1353,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
 
                         mediaEl.setAttribute('playsinline', '');
 
-                        // Velocidad recordada (persistente entre
-                        // videos del feed y el visor).
                         try {
                             if (pubMotorVideo.velocidadRecordada && pubMotorVideo.velocidadRecordada !== 1) {
                                 mediaEl.playbackRate = pubMotorVideo.velocidadRecordada;
@@ -1463,14 +1367,9 @@ async function cargarMisPublicaciones(forzarRefresco) {
                             videoObserverPerfil.observe(mediaEl);
                         }
 
-                        // Cambio de playbackRate sin pausar ni
-                        // reiniciar el estado del video.
                         mediaEl.addEventListener('ratechange', function () {
                             if (!mediaEl.isConnected) return;
 
-                            // Si el navegador pausó por artefacto
-                            // del ratechange y el video estaba en
-                            // reproducción, lo reanudamos suave.
                             try {
                                 if (mediaEl.ended) return;
 
@@ -1483,8 +1382,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         mediaEl.addEventListener('play', function () {
                             pubPausarOtrosVideos(mediaEl);
 
-                            // No tomamos control si el video está en
-                            // el visor global o en PiP.
                             if (pubEsVideoDelVisor(mediaEl) || pubEsVideoFlotante(mediaEl)) {
                                 return;
                             }
@@ -1493,9 +1390,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
                         });
 
                         mediaEl.addEventListener('pause', function () {
-                            // Solo liberamos el slot si NO es PiP,
-                            // NO es cambio de velocidad forzado y
-                            // el video realmente sigue en pausa.
                             if (pubEsVideoFlotante(mediaEl)) return;
 
                             if (mediaEl.ended) {
@@ -1503,11 +1397,6 @@ async function cargarMisPublicaciones(forzarRefresco) {
                                 return;
                             }
 
-                            // En algunos Android, cambiar playbackRate
-                            // dispara un 'pause' espurio seguido de
-                            // 'play'. Damos un pequeño margen antes
-                            // de liberar el slot: si en el siguiente
-                            // tick sigue en pausa, liberamos.
                             var video = mediaEl;
 
                             setTimeout(function () {
@@ -1698,7 +1587,6 @@ async function toggleComentariosPerfil(publicacionId) {
     if (container.classList.contains('show')) {
         container.classList.remove('show');
 
-        // Consumir capa de historial si existía.
         for (var i = pubCapasHistorial.length - 1; i >= 0; i--) {
             if (pubCapasHistorial[i].tipo === 'comentarios') {
                 pubCapasHistorial.splice(i, 1);
@@ -2005,5 +1893,5 @@ window.pubAbrirVisor = pubAbrirVisor;
 window.pubCerrarVisor = pubCerrarVisor;
 
 // ================================================================
-// FIN · PERFIL PUBLICACIONES v15.4
+// FIN · PERFIL PUBLICACIONES v15.5
 // ================================================================
