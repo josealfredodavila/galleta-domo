@@ -1,34 +1,29 @@
 // ================================================================
-// MENSAJES · CHATS v2.6 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.7 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
 //
-// ACTUALIZACIÓN v2.6 · CORRECCIÓN DE NOTAS DE VOZ Y APERTURA DE CHATS
-//  - Cada grabación tiene un identificador de generación. Un evento
-//    tardío de una grabación descartada ya no puede anular la nueva.
-//  - vozForzarReinicio() libera micrófono, recorder, temporizadores y
-//    panel en un solo paso; se usa al descartar, al enviar y al detectar
-//    un estado atascado.
-//  - Vigilante: si la nota no termina de procesarse en 4 s, se prepara
-//    de todas formas o se reinicia el micrófono.
-//  - Envío protegido con finally: el micrófono nunca queda bloqueado
-//    por un error de red o de subida.
-//  - liberarInterfazChat(): al abrir una conversación o tocar la lista
-//    se limpian capas, estilos inline y clases que deje el visor de
-//    estados, sin tocar el visor en sí.
+// ACTUALIZACIÓN v2.7 · INTEGRACIÓN CON MENSAJES-CORE v2.3 (C-PME)
+//  - Horas visibles: metaTexto() usa resumenTiempos() del core para
+//    mostrar envío, entrega y visto con el tiempo transcurrido. Si la
+//    base aún no trae entregado_at / leido_at, usa m.leido como respaldo.
+//  - Reconciliación: registro de mensajes de la conversación activa
+//    (mensajesActivos). Render, append y realtime pasan por
+//    registrarMensaje() -> fusionarMensaje(), que nunca retrocede el
+//    estado ni borra marcas conocidas.
+//  - Lectura por visibilidad real: IntersectionObserver (umbral 50 %,
+//    permanencia 400 ms) marca como leídos solo los mensajes recibidos
+//    que el usuario ve, con la pestaña visible. Agrupa en un solo
+//    UPDATE con .in('id', ...). Ya no se marca todo al abrir.
+//  - Actualización quirúrgica: UPDATE y edición tocan solo el .meta
+//    (y el .bubble si cambió el texto) del .bubblewrap afectado.
+//  - Presencia refrescada cada 20 s con presenciaDePerfil(id), sin
+//    re-renderizar el chat.
+//  - Idempotencia: clientMessageId en sendMessage (reutilizado en
+//    reintentos del mismo texto), uploadFile y enviarNotaVozPreparada.
 //
-// ACTUALIZACIÓN v2.5 · AJUSTES VISUALES DE NOTA DE VOZ
-//  - Vista previa en una sola fila: deshacer, reproducir, texto y enviar.
-//  - Botón de deshacer en lugar de la X roja.
-//
-// ACTUALIZACIÓN v2.4 · EXPERIENCIA DE NOTAS DE VOZ
-//  - Ondas de audio animadas durante la grabación.
-//  - Vista previa antes de enviar.
-//  - Envío únicamente mediante confirmación expresa.
-//  - Compatibilidad con notas de voz para Marquinhos.
-//  - Conserva Supabase, bucket chat-audio y flujo existente.
-//
-// Se conservan las funciones originales de conversaciones,
-// mensajes, bloqueo, multimedia, realtime y menú contextual.
+// Se conservan: conversaciones, bloqueo, ficha de contacto, multimedia,
+// notas de voz (v2.4-v2.6), visor de estados (liberarInterfazChat),
+// menú contextual y realtime.
 // ================================================================
 
 'use strict';
@@ -37,6 +32,30 @@ const ICO_ESTRELLA_CHAT = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="tru
 
 let conversationFilter = '';
 let aperturaSecuencia = 0;
+
+// ================================================================
+// RECONCILIACIÓN, LECTURA Y PRESENCIA · ESTADO
+// ================================================================
+
+/* Mensajes de la conversación activa, por id. Fuente para fusionar estados. */
+const mensajesActivos = new Map();
+
+/* Envío pendiente de reintento (mismo texto, mismo destino = mismo id). */
+let envioPendiente = null;
+
+/* Lectura por visibilidad */
+let obsLectura = null;
+const dwellLectura = new Map();
+const pendientesLectura = new Set();
+let timerLectura = null;
+const DWELL_LECTURA_MS = 400;
+const UMBRAL_LECTURA = 0.5;
+const DEBOUNCE_LECTURA_MS = 300;
+const LOTE_LECTURA_MAX = 50;
+
+/* Presencia */
+let presenciaTimer = null;
+const PRESENCIA_REFRESH_MS = 20000;
 
 // ================================================================
 // NOTAS DE VOZ · ESTADO
@@ -58,6 +77,7 @@ let vozCancelar = false;
 let vozPreviewAudio = null;
 let vozProcesando = false;
 let vozGen = 0;
+let vozClientId = null;
 
 const VOZ_BARRAS = 36;
 const VOZ_MAX_MB = 50;
@@ -402,6 +422,253 @@ async function bloquearUsuarioActual() {
     recargarBandeja();
 }
 
+/* ---------------- Tiempos y estado de mensajes (core C-PME) ---------------- */
+
+/* Texto del pie de un mensaje: horas de envío, entrega y visto.
+   Si la base no trae entregado_at / leido_at, usa m.leido como respaldo. */
+function metaTexto(m, sent) {
+    const partes = [];
+
+    const tiempos = (typeof resumenTiempos === 'function') ? resumenTiempos(m, sent) : '';
+    if (tiempos) {
+        partes.push(tiempos);
+    } else if (typeof formatearHora === 'function') {
+        const h = formatearHora(m.created_at);
+        if (h) partes.push(h);
+    }
+
+    if (sent && m.leido === true && !m.leido_at) partes.push('Leído');
+    if (!sent && m.leido === true && !m.leido_at) partes.push('Visto');
+    if (m.editado === true) partes.push('editado');
+
+    return partes.join(' · ');
+}
+
+/* Alias de compatibilidad: texto corto de estado de lectura. */
+function estadoLecturaTexto(m, sent) {
+    if (!sent) return '';
+    return m.leido ? ' · Leído' : ' · Enviado';
+}
+
+/* Registra o reconcilia un mensaje de la conversación activa. */
+function registrarMensaje(m) {
+    if (!m || !m.id) return m;
+    const prev = mensajesActivos.get(m.id);
+    const f = (typeof fusionarMensaje === 'function')
+        ? fusionarMensaje(prev, m)
+        : Object.assign({}, prev || {}, m);
+    /* Lectura y edición no retroceden aunque llegue un evento antiguo. */
+    if (prev) {
+        f.leido = f.leido === true || prev.leido === true;
+        f.editado = f.editado === true || prev.editado === true;
+    }
+    mensajesActivos.set(m.id, f);
+    return f;
+}
+
+function elementoMensaje(id) {
+    if (!id) return null;
+    return document.querySelector('#messages .bubblewrap[data-mensaje-id="' + id + '"]');
+}
+
+/* Actualiza solo el pie (.meta) de un mensaje ya pintado. */
+function actualizarMetaDOM(m) {
+    const el = elementoMensaje(m.id);
+    if (!el) return;
+    const meta = el.querySelector('.meta');
+    if (!meta) return;
+    meta.textContent = metaTexto(m, el.classList.contains('sent'));
+    el.dataset.estado = (typeof estadoDeMensaje === 'function') ? estadoDeMensaje(m) : '';
+}
+
+/* Actualiza solo el cuerpo de texto (.bubble) de un mensaje ya pintado. */
+function actualizarBurbujaDOM(m) {
+    const el = elementoMensaje(m.id);
+    if (!el) return;
+    const bubble = el.querySelector('.bubble');
+    if (!bubble || m.tipo !== 'texto') return;
+    const sent = el.classList.contains('sent');
+    const textoLimpio = limpiarMarkdown(m.contenido || '');
+    const inner = (typeof window.formatearMensajeConEmotes === 'function')
+        ? window.formatearMensajeConEmotes(textoLimpio)
+        : esc(textoLimpio);
+    const headerBot = (!sent && (m.es_bot || m.bot_message)) ? '<div class="bubble-bot-info">MARQUINHOS</div>' : '';
+    bubble.innerHTML = headerBot + inner + avisoModeracionHTML(m);
+}
+
+/* ---------------- Lectura por visibilidad real ---------------- */
+
+function puedeMarcarLectura() {
+    return !!(current && !current.bot && user && document.visibilityState === 'visible');
+}
+
+function cancelarDwell(id) {
+    const t = dwellLectura.get(id);
+    if (t) {
+        clearTimeout(t);
+        dwellLectura.delete(id);
+    }
+}
+
+function asegurarObservadorLectura() {
+    if (obsLectura) return obsLectura;
+    if (!('IntersectionObserver' in window)) return null;
+
+    obsLectura = new IntersectionObserver(function (entradas) {
+        entradas.forEach(function (en) {
+            const el = en.target;
+            const id = el.dataset.mensajeId;
+            if (!id) return;
+
+            const visible = en.isIntersecting && en.intersectionRatio >= UMBRAL_LECTURA && puedeMarcarLectura();
+
+            if (visible) {
+                if (!dwellLectura.has(id)) {
+                    dwellLectura.set(id, setTimeout(function () {
+                        dwellLectura.delete(id);
+                        confirmarVisto(id);
+                    }, DWELL_LECTURA_MS));
+                }
+            } else {
+                cancelarDwell(id);
+            }
+        });
+    }, { root: $('messages'), threshold: [0, UMBRAL_LECTURA, 1] });
+
+    return obsLectura;
+}
+
+/* Observa solo mensajes recibidos que aún no están leídos. */
+function observarMensajeLectura(el) {
+    if (!el || !el.classList.contains('received')) return;
+    const id = el.dataset.mensajeId;
+    const m = mensajesActivos.get(id);
+    if (!m || m.leido === true) return;
+    const ob = asegurarObservadorLectura();
+    if (ob) ob.observe(el);
+}
+
+function desobservarMensaje(el) {
+    if (obsLectura && el) obsLectura.unobserve(el);
+}
+
+function confirmarVisto(id) {
+    const m = mensajesActivos.get(id);
+    if (!m || m.leido === true || (user && m.remitente_id === user.id)) return;
+    if (!puedeMarcarLectura()) return;
+    pendientesLectura.add(id);
+    clearTimeout(timerLectura);
+    timerLectura = setTimeout(vaciarLecturas, DEBOUNCE_LECTURA_MS);
+}
+
+/* Envía en lote las lecturas confirmadas. Solo marca mensajes que llegaron a mí. */
+async function vaciarLecturas() {
+    timerLectura = null;
+    if (!pendientesLectura.size || !user) return;
+
+    const ids = Array.from(pendientesLectura);
+    pendientesLectura.clear();
+
+    for (let i = 0; i < ids.length; i += LOTE_LECTURA_MAX) {
+        const lote = ids.slice(i, i + LOTE_LECTURA_MAX);
+        try {
+            const { error } = await db.from('mensajes_chat')
+                .update({ leido: true })
+                .in('id', lote)
+                .eq('destinatario_id', user.id)
+                .eq('leido', false)
+                .eq('eliminado', false);
+            if (error) throw error;
+
+            lote.forEach(function (id) {
+                const m = mensajesActivos.get(id);
+                if (!m) return;
+                m.leido = true;
+                mensajesActivos.set(id, m);
+                actualizarMetaDOM(m);
+                const el = elementoMensaje(id);
+                if (el) desobservarMensaje(el);
+            });
+        } catch (e) {
+            console.warn('[Mensajes] No se pudo marcar como leído:', e);
+        }
+    }
+}
+
+function reobservarLecturas() {
+    if (!obsLectura) return;
+    document.querySelectorAll('#messages .bubblewrap.received').forEach(function (el) {
+        obsLectura.unobserve(el);
+        observarMensajeLectura(el);
+    });
+}
+
+function detenerObservadorLectura() {
+    if (obsLectura) {
+        obsLectura.disconnect();
+        obsLectura = null;
+    }
+    dwellLectura.forEach(function (t) { clearTimeout(t); });
+    dwellLectura.clear();
+    clearTimeout(timerLectura);
+    timerLectura = null;
+    pendientesLectura.clear();
+}
+
+document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') {
+        reobservarLecturas();
+    } else {
+        dwellLectura.forEach(function (t, id) { clearTimeout(t); });
+        dwellLectura.clear();
+    }
+});
+
+/* ---------------- Presencia refrescada ---------------- */
+
+function detenerPresencia() {
+    if (presenciaTimer) {
+        clearInterval(presenciaTimer);
+        presenciaTimer = null;
+    }
+}
+
+function iniciarPresencia(id) {
+    detenerPresencia();
+    if (!id || id === BOT_ID) return;
+    presenciaTimer = setInterval(function () { refrescarPresencia(id); }, PRESENCIA_REFRESH_MS);
+}
+
+async function refrescarPresencia(id) {
+    if (!current || current.id !== id || current.bot) return;
+
+    let pr;
+    try {
+        pr = await presenciaDePerfil(id);
+    } catch (e) {
+        return;
+    }
+    if (!current || current.id !== id) return;
+
+    current.profile = Object.assign({}, current.profile, {
+        online: pr.online,
+        ultima_conexion: pr.ultima_conexion
+    });
+
+    const bloqueado = current.bloqueo && (current.bloqueo.yo || current.bloqueo.el);
+    if (bloqueado) return;
+
+    const status = $('chatStatus');
+    if (status) {
+        status.textContent = textoPresencia(current.profile);
+        status.className = 'status' + (current.profile.online ? ' online' : '');
+    }
+    const header = $('chatHeader');
+    if (header) header.dataset.online = current.profile.online ? 'true' : 'false';
+    const dot = $('cpStatusDot');
+    if (dot) dot.hidden = !current.profile.online;
+}
+
 /* ---------------- Abrir y cerrar chat ---------------- */
 
 function marcarBotLeidoEnSegundoPlano() {
@@ -418,6 +685,12 @@ function marcarBotLeidoEnSegundoPlano() {
 
 async function openConversation(id) {
     const secuencia = ++aperturaSecuencia;
+
+    /* Confirma lecturas pendientes de la conversación anterior antes de cambiar. */
+    vaciarLecturas();
+    detenerObservadorLectura();
+    detenerPresencia();
+    mensajesActivos.clear();
 
     liberarInterfazChat();
     limpiarFicha();
@@ -496,13 +769,18 @@ async function openConversation(id) {
 
     await renderMessages(r.data || []);
     if (secuencia !== aperturaSecuencia) return;
-    await markRead(id);
+
+    iniciarPresencia(id);
     subscribeMessages(id);
 }
 
 async function cerrarConversacion() {
+    vaciarLecturas();
     aperturaSecuencia++;
     if (vozEstado !== 'idle') cancelarNotaVoz(true);
+    detenerObservadorLectura();
+    detenerPresencia();
+    mensajesActivos.clear();
     limpiarFicha();
     current = null;
     $('panel').classList.remove('chat-open');
@@ -535,22 +813,25 @@ async function renderMessages(rows) {
     let anchor = box.querySelector('#scrollAnchor');
     if (!anchor) { anchor = document.createElement('div'); anchor.id = 'scrollAnchor'; box.appendChild(anchor); }
     box.querySelectorAll('.empty').forEach(el => el.remove());
+
+    mensajesActivos.clear();
+
     if (!rows.length) {
         anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><p>Sin mensajes</p><small>Envía el primer mensaje</small></div>');
         return;
     }
-    const signedUrls = await Promise.all(rows.map(m => getSignedUrlForMessage(m)));
-    rows.forEach((m, i) => {
+
+    const regs = rows.map(r => registrarMensaje(r));
+    const signedUrls = await Promise.all(regs.map(m => getSignedUrlForMessage(m)));
+    regs.forEach((m, i) => {
         anchor.insertAdjacentHTML('beforebegin', messageHTML(m, m.remitente_id === user.id, signedUrls[i]));
     });
+
+    box.querySelectorAll('.bubblewrap.received').forEach(observarMensajeLectura);
+
     isUserAtBottom = true;
     observarCargaMultimedia(box);
     scrollToBottom(true);
-}
-
-function estadoLecturaTexto(m, sent) {
-    if (!sent) return '';
-    return m.leido ? ' · Leído' : ' · Enviado';
 }
 
 function avisoModeracionHTML(m) {
@@ -581,15 +862,24 @@ function messageHTML(m, sent, signedUrl) {
 
     const esBotRecibido = !sent && (m.es_bot || m.bot_message);
     const headerBot = esBotRecibido ? '<div class="bubble-bot-info">MARQUINHOS</div>' : '';
-    const editadoHTML = m.editado === true ? ' · editado' : '';
-    const hora = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-    return `<div class="bubblewrap ${sent ? 'sent' : 'received'}" data-mensaje-id="${esc(m.id || '')}">
+    const estado = (typeof estadoDeMensaje === 'function') ? estadoDeMensaje(m) : '';
+    return `<div class="bubblewrap ${sent ? 'sent' : 'received'}" data-mensaje-id="${esc(m.id || '')}" data-estado="${esc(estado)}">
         <div class="bubble">${headerBot}${body}${avisoModeracionHTML(m)}</div>
-        <div class="meta">${esc(hora)}${editadoHTML}${estadoLecturaTexto(m, sent)}</div>
+        <div class="meta">${esc(metaTexto(m, sent))}</div>
     </div>`;
 }
 
 /* ---------------- Enviar ---------------- */
+
+/* Mismo texto y mismo destino en un reintento = mismo clientMessageId. */
+function clientIdParaEnvio(texto, destino) {
+    if (envioPendiente && envioPendiente.texto === texto && envioPendiente.destino === destino) {
+        return envioPendiente.clientId;
+    }
+    const clientId = generarClientMessageId();
+    envioPendiente = { texto: texto, destino: destino, clientId: clientId };
+    return clientId;
+}
 
 async function sendMessage(text) {
     if (!current || !text.trim()) return;
@@ -606,9 +896,11 @@ async function sendMessage(text) {
         return;
     }
 
+    const clientId = clientIdParaEnvio(textoLimpio, current.id);
+
     let resp;
     try {
-        resp = await enviarMensajeChat(current.id, textoLimpio, 'texto');
+        resp = await enviarMensajeChat(current.id, textoLimpio, 'texto', null, null, { clientMessageId: clientId });
     } catch (e) {
         console.error('Error enviando mensaje:', e);
         if (esErrorContenidoNoPermitido(e)) toast('Contenido no permitido por las normas de la comunidad.', 'error');
@@ -617,9 +909,24 @@ async function sendMessage(text) {
         return;
     }
 
-    if (resp.estado === 'entregado' && resp.mensaje) { await append(resp.mensaje, true); recargarBandeja(); return; }
-    if (resp.estado === 'solicitud') { toast('Tu mensaje se envió como solicitud. Aparecerá cuando la acepte.', 'success'); recargarBandeja(); return; }
-    if (resp.estado === 'solicitud_en_espera') { toast('Ya tienes una solicitud pendiente con esta persona.', 'warning'); $('messageInput').value = textoLimpio; return; }
+    if (resp.estado === 'entregado' && resp.mensaje) {
+        envioPendiente = null;
+        await append(resp.mensaje, true);
+        recargarBandeja();
+        return;
+    }
+    if (resp.estado === 'solicitud') {
+        envioPendiente = null;
+        toast('Tu mensaje se envió como solicitud. Aparecerá cuando la acepte.', 'success');
+        recargarBandeja();
+        return;
+    }
+    if (resp.estado === 'solicitud_en_espera') {
+        envioPendiente = null;
+        toast('Ya tienes una solicitud pendiente con esta persona.', 'warning');
+        $('messageInput').value = textoLimpio;
+        return;
+    }
     toast('No se pudo enviar el mensaje.', 'error');
     $('messageInput').value = textoLimpio;
 }
@@ -627,16 +934,25 @@ async function sendMessage(text) {
 async function append(m, sent) {
     const box = $('messages');
     box.querySelectorAll('.empty').forEach(el => el.remove());
-    const signedUrl = await getSignedUrlForMessage(m);
+
+    /* Evita duplicados si el mensaje ya está pintado (realtime + respuesta de envío). */
+    if (m.id && elementoMensaje(m.id)) return;
+
+    const reg = registrarMensaje(Object.assign({}, m));
+    const signedUrl = await getSignedUrlForMessage(reg);
     const anchorRef = box.querySelector('#scrollAnchor');
-    if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', messageHTML(m, sent, signedUrl));
-    else box.insertAdjacentHTML('beforeend', messageHTML(m, sent, signedUrl));
+    if (anchorRef) anchorRef.insertAdjacentHTML('beforebegin', messageHTML(reg, sent, signedUrl));
+    else box.insertAdjacentHTML('beforeend', messageHTML(reg, sent, signedUrl));
+
+    if (!sent) observarMensajeLectura(elementoMensaje(reg.id));
+
     observarCargaMultimedia(box);
     if (!sent && !isUserAtBottom) { unreadCount++; actualizarFlecha(); return; }
     isUserAtBottom = true;
     scrollToBottom(true);
 }
 
+/* Lectura masiva anterior. Se conserva por compatibilidad; ya no se usa al abrir. */
 async function markRead(id, force = false) {
     if (!user || id === BOT_ID) return;
     const ahora = Date.now();
@@ -665,6 +981,7 @@ async function deleteConversation() {
         toast('Conversación eliminada.', 'success');
         const box = $('messages');
         box.querySelectorAll('.bubblewrap').forEach(el => el.remove());
+        mensajesActivos.clear();
         const anchor = box.querySelector('#scrollAnchor');
         if (anchor) anchor.insertAdjacentHTML('beforebegin', '<div class="empty"><p>Conversación eliminada</p><small>Envía un mensaje para empezar de nuevo</small></div>');
         unreadCount = 0;
@@ -675,6 +992,33 @@ async function deleteConversation() {
 
 /* ---------------- Realtime ---------------- */
 
+/* Actualización quirúrgica: solo el .meta y, si cambió, el .bubble del mensaje afectado. */
+function manejarUpdate(m) {
+    if (!current || !user || !m || !m.id) return;
+
+    const prev = mensajesActivos.get(m.id);
+    const cambioTexto = !!prev && (prev.contenido !== m.contenido || prev.editado !== m.editado);
+    const reg = registrarMensaje(Object.assign({}, prev || {}, m));
+
+    if (m.eliminado === true) {
+        const el = elementoMensaje(m.id);
+        if (el) el.remove();
+        mensajesActivos.delete(m.id);
+        recargarBandeja();
+        return;
+    }
+
+    const el = elementoMensaje(m.id);
+    if (!el) { recargarBandeja(); return; }
+
+    if (cambioTexto) actualizarBurbujaDOM(reg);
+    actualizarMetaDOM(reg);
+
+    if (reg.leido === true) desobservarMensaje(el);
+
+    recargarBandeja();
+}
+
 function subscribeMessages(id) {
     if (id === BOT_ID) return;
     if (msgChannel) {
@@ -684,39 +1028,10 @@ function subscribeMessages(id) {
     }
     if (!user || !user.id) return;
 
-    const manejarUpdate = (m) => {
-        if (!current || !user) return;
-        const el = document.querySelector(`.bubblewrap[data-mensaje-id="${m.id}"]`);
-        if (!el) { recargarBandeja(); return; }
-
-        if (m.eliminado === true) { el.remove(); recargarBandeja(); return; }
-
-        const bubble = el.querySelector('.bubble');
-        const metaEl = el.querySelector('.meta');
-        const esSent = el.classList.contains('sent');
-
-        if (bubble && m.tipo === 'texto') {
-            const textoLimpio = limpiarMarkdown(m.contenido || '');
-            const innerHtml = (typeof window.formatearMensajeConEmotes === 'function')
-                ? window.formatearMensajeConEmotes(textoLimpio)
-                : esc(textoLimpio);
-            const headerBot = (!esSent && (m.es_bot || m.bot_message)) ? '<div class="bubble-bot-info">MARQUINHOS</div>' : '';
-            bubble.innerHTML = headerBot + innerHtml + avisoModeracionHTML(m);
-        }
-
-        if (metaEl) {
-            const hora = m.created_at ? new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-            const editado = m.editado === true ? ' · editado' : '';
-            metaEl.textContent = hora + editado + estadoLecturaTexto(m, esSent);
-        }
-
-        recargarBandeja();
-    };
-
     msgChannel = db.channel('chat-' + id)
         .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + id }, p => {
             const m = p.new;
-            if (m.destinatario_id === user.id) { append(m, false); markRead(id, true); }
+            if (m.destinatario_id === user.id) append(m, false);
         })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'remitente_id=eq.' + user.id }, p => { manejarUpdate(p.new); })
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'mensajes_chat', filter: 'destinatario_id=eq.' + user.id }, p => { manejarUpdate(p.new); })
@@ -747,7 +1062,7 @@ async function uploadFile(file) {
 
     let resp;
     try {
-        resp = await enviarMensajeChat(current.id, file.name, type, storageRef, file.name);
+        resp = await enviarMensajeChat(current.id, file.name, type, storageRef, file.name, { clientMessageId: generarClientMessageId() });
     } catch (e) {
         console.error('Error enviando archivo:', e);
         if (esErrorContenidoNoPermitido(e)) toast('Contenido no permitido por las normas de la comunidad.', 'error');
@@ -999,6 +1314,7 @@ function vozLimpiarPreview() {
     }
     vozBlobPreparado = null;
     vozDuracion = 0;
+    vozClientId = null;
 }
 
 function vozRestablecerInterfaz() {
@@ -1372,6 +1688,8 @@ async function enviarNotaVozPreparada() {
         type: blob.type || 'audio/webm'
     });
 
+    if (!vozClientId) vozClientId = generarClientMessageId();
+
     let exito = false;
 
     try {
@@ -1406,7 +1724,8 @@ async function enviarNotaVozPreparada() {
             file.name,
             'audio',
             storageRef,
-            file.name
+            file.name,
+            { clientMessageId: vozClientId }
         );
 
         if (resp.estado === 'entregado' && resp.mensaje) {
@@ -1452,9 +1771,7 @@ async function enviarNotaVozPreparada() {
         if (cancelBtn) cancelBtn.disabled = false;
     } finally {
         vozProcesando = false;
-        if (!exito && vozEstado === 'ready' && !document.getElementById('vozRecorderPanel')?.querySelector('#vozPreviewControls')?.hidden) {
-            // Se mantiene la vista previa para reintentar.
-        } else if (!exito && vozEstado !== 'ready') {
+        if (!exito && vozEstado !== 'ready') {
             vozRestablecerInterfaz();
         }
     }
@@ -1514,19 +1831,19 @@ async function mostrarMenuMensaje(bubblewrap, msgId) {
 async function editarMensaje(msgId, bubblewrap) {
     if (!await auth()) return;
     const bubble = bubblewrap.querySelector('.bubble');
-    const metaEl = bubblewrap.querySelector('.meta');
-    const esSent = bubblewrap.classList.contains('sent');
     const contenidoActual = bubble.textContent.trim();
+    const prev = mensajesActivos.get(msgId);
+    const contenidoRegistro = (prev && prev.contenido) || contenidoActual;
 
     const nuevoTexto = await NeonModal.prompt({
         title: 'Editar mensaje',
         message: 'Edita tu mensaje (máximo 15 minutos después de enviarlo):',
         placeholder: 'Nuevo texto',
-        defaultValue: contenidoActual,
+        defaultValue: contenidoRegistro,
         confirmText: 'Guardar',
         cancelText: 'Cancelar'
     });
-    if (!nuevoTexto || nuevoTexto === contenidoActual) return;
+    if (!nuevoTexto || nuevoTexto === contenidoRegistro) return;
 
     try {
         const { error } = await db.rpc('editar_mensaje_chat', { p_mensaje_id: msgId, p_contenido: nuevoTexto });
@@ -1537,16 +1854,15 @@ async function editarMensaje(msgId, bubblewrap) {
             else toast(msgErr || 'No se pudo editar.', 'error');
             return;
         }
-        const textoLimpio = limpiarMarkdown(nuevoTexto);
-        bubble.innerHTML = (typeof window.formatearMensajeConEmotes === 'function')
-            ? window.formatearMensajeConEmotes(textoLimpio)
-            : esc(textoLimpio);
-        if (metaEl) {
-            const horaMatch = metaEl.textContent.match(/^\s*(\d{1,2}:\d{2})/);
-            const hora = horaMatch ? horaMatch[1] : '';
-            const leido = esSent ? (metaEl.textContent.includes('Leído') ? ' · Leído' : ' · Enviado') : '';
-            metaEl.textContent = `${hora} · editado${leido}`;
-        }
+
+        const m = registrarMensaje(Object.assign({}, prev || { id: msgId }, {
+            id: msgId,
+            contenido: nuevoTexto,
+            editado: true
+        }));
+
+        actualizarBurbujaDOM(m);
+        actualizarMetaDOM(m);
         toast('Mensaje editado.', 'success');
         recargarBandeja();
     } catch (e) {
@@ -1568,6 +1884,7 @@ async function eliminarMensajeParaMi(msgId, bubblewrap) {
         const { error } = await db.rpc('eliminar_mensaje_para_mi', { p_mensaje_id: msgId });
         if (error) throw error;
         bubblewrap.remove();
+        mensajesActivos.delete(msgId);
         toast('Mensaje eliminado para ti.', 'success');
         recargarBandeja();
     } catch (e) {
@@ -1589,6 +1906,7 @@ async function eliminarMensajeParaTodos(msgId, bubblewrap) {
         const { error } = await db.rpc('eliminar_mensaje_para_todos', { p_mensaje_id: msgId });
         if (error) throw error;
         bubblewrap.remove();
+        mensajesActivos.delete(msgId);
         toast('Mensaje eliminado para todos.', 'success');
         recargarBandeja();
     } catch (e) {
@@ -1798,8 +2116,6 @@ window.liberarInterfazChat = liberarInterfazChat;
 
 // ================================================================
 // CSS AUTÓNOMO · NOTAS DE VOZ Y REPRODUCTOR
-// Se inyecta desde este módulo para no depender de editar otro
-// archivo. Las reglas son específicas y no alteran otros módulos.
 // ================================================================
 
 (function instalarEstilosNotaVoz() {
@@ -2241,8 +2557,6 @@ if (document.readyState === 'loading') {
 
 // ================================================================
 // CSS AUTÓNOMO · FICHA DEL CONTACTO (Fase 2)
-// Se inyecta desde este módulo para no depender de editar otro
-// archivo. Las reglas son específicas y no alteran otros módulos.
 // ================================================================
 
 (function instalarEstilosFicha() {
