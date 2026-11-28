@@ -1,6 +1,12 @@
 // ================================================================
-// MENSAJES · CHATS v2.7 · MÓDULO 3 DE 8
+// MENSAJES · CHATS v2.8 · MÓDULO 3 DE 8
 // Ruta: frontend/features/mensajes/js/mensajes-chats.js
+//
+// ACTUALIZACIÓN v2.8 · FICHA DE CONTACTO Y PRESENCIA REAL
+//  - Separación visual clara entre relación ("Amigos") y presencia
+//    ("En línea" / "Desconectado") en pintarFichaServidor() y CSS.
+//  - Refresco de presencia al cargar la ficha para evitar datos
+//    desfasados al abrir la conversación.
 //
 // ACTUALIZACIÓN v2.7 · INTEGRACIÓN CON MENSAJES-CORE v2.3 (C-PME)
 //  - Horas visibles: metaTexto() usa resumenTiempos() del core para
@@ -341,7 +347,9 @@ function pintarFichaServidor(d) {
     const f = asegurarFichaDOM();
     if (!f) return;
     const rel = FICHA_RELACION[d.relacion] || FICHA_RELACION.ninguna;
-    const conexion = d.online === true ? 'En línea' : (d.online === false ? 'Desconectado' : '');
+    const tieneEstado = typeof d.online === 'boolean';
+    const conexion = tieneEstado ? (d.online ? 'En línea' : 'Desconectado') : '';
+    const separador = conexion ? '<span class="ficha-sep" aria-hidden="true">·</span>' : '';
     f.dataset.userId = d.id;
     f.innerHTML = `
         ${avatarFichaHTML(d.nombre, d.avatar_url)}
@@ -350,7 +358,8 @@ function pintarFichaServidor(d) {
             ${d.handle ? `<div class="ficha-handle">@${esc(d.handle)}</div>` : ''}
             <div class="ficha-meta">
                 <span class="ficha-rel ${rel.clase}">${esc(rel.texto)}</span>
-                ${conexion ? `<span class="ficha-conexion ${d.online === true ? 'on' : ''}">${esc(conexion)}</span>` : ''}
+                ${separador}
+                ${conexion ? `<span class="ficha-conexion ${d.online ? 'on' : 'off'}">${esc(conexion)}</span>` : ''}
             </div>
         </div>`;
     f.hidden = false;
@@ -375,8 +384,24 @@ async function cargarFichaContacto(id, secuencia) {
         return;
     }
 
-    current.ficha = r.data;
-    pintarFichaServidor(r.data);
+    let fichaDatos = r.data;
+    if (typeof presenciaDePerfil === 'function') {
+        try {
+            const pres = await presenciaDePerfil(id);
+            if (secuencia !== aperturaSecuencia || !current || current.id !== id) return;
+            if (pres && typeof pres.online === 'boolean') {
+                fichaDatos = Object.assign({}, fichaDatos, {
+                    online: pres.online,
+                    ultima_conexion: pres.ultima_conexion ?? fichaDatos.ultima_conexion
+                });
+            }
+        } catch (e) {
+            console.warn('[Mensajes] presenciaDePerfil en ficha falló:', e);
+        }
+    }
+
+    current.ficha = fichaDatos;
+    pintarFichaServidor(fichaDatos);
 }
 
 async function bloquearUsuarioActual() {
@@ -667,6 +692,15 @@ async function refrescarPresencia(id) {
     if (header) header.dataset.online = current.profile.online ? 'true' : 'false';
     const dot = $('cpStatusDot');
     if (dot) dot.hidden = !current.profile.online;
+
+    const ficha = document.getElementById('chatFicha');
+    if (ficha && ficha.dataset.userId === id && current.ficha && current.ficha.id === id) {
+        current.ficha = Object.assign({}, current.ficha, {
+            online: pr.online,
+            ultima_conexion: pr.ultima_conexion
+        });
+        pintarFichaServidor(current.ficha);
+    }
 }
 
 /* ---------------- Abrir y cerrar chat ---------------- */
@@ -2597,13 +2631,18 @@ if (document.readyState === 'loading') {
             font-size: .72rem; color: #5cc8ff;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .ficha-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 3px; font-size: .68rem; }
-        .ficha-rel { color: #9fb3c8; }
+        .ficha-meta {
+            display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+            margin-top: 3px; font-size: .68rem; line-height: 1.25;
+        }
+        .ficha-sep { color: rgba(159, 179, 200, .45); user-select: none; }
+        .ficha-rel { color: #9fb3c8; font-weight: 600; }
         .ficha-rel.ok { color: #2be7b5; }
         .ficha-rel.pend { color: #f7d44a; }
         .ficha-rel.bloq { color: #ff626b; }
-        .ficha-conexion { color: #6f8ba0; }
-        .ficha-conexion.on { color: #2be7b5; }
+        .ficha-conexion { color: #7e94a8; font-weight: 500; }
+        .ficha-conexion.on { color: #5cc8ff; }
+        .ficha-conexion.off { color: #7e94a8; }
         .ficha-ver {
             flex: 0 0 auto;
             padding: 8px 12px;
